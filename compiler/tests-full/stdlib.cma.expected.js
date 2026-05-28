@@ -17774,253 +17774,229 @@
    }
    var _w_ =  /*<<?>>*/ [0, _a_, 1558, 4];
    function make_printf$0(counter, k$2, acc$4, fmt$2){
+    var _ag_ = 0;
     a:
-    {
-     b:
-     {
-      c:
-      {
-       d:
-       {
-        e:
-        {
-         f:
-         {
-          g:
-          {
-           h:
-           {
-            i:
-            {
-             j:
-             {
-              var
-               k =  /*<<camlinternalFormat.ml:1518:17>>*/ k$2,
-               acc = acc$4,
-               fmt = fmt$2;
-              k:
-              for(;;){
-               if(typeof fmt === "number")
-                 /*<<camlinternalFormat.ml:1605:4>>*/ return caml_call1
-                        (k, acc) /*<<camlinternalFormat.ml:1605:9>>*/ ;
-                /*<<camlinternalFormat.ml:1518:17>>*/ switch(fmt[0]){
-                 case 0:
-                  break a;
-                 case 1:
-                  break b;
-                 case 2:
-                  break c;
-                 case 3:
-                  var rest$2 = fmt[2], pad$0 = fmt[1];
-                   /*<<camlinternalFormat.ml:1530:4>>*/ return make_padding
-                          (k, acc, rest$2, pad$0, string_to_caml_string) /*<<camlinternalFormat.ml:1605:9>>*/ ;
-                 case 4:
-                  var
-                   rest$3 =  /*<<camlinternalFormat.ml:1518:17>>*/ fmt[4],
-                   prec = fmt[3],
-                   pad$1 = fmt[2],
-                   iconv = fmt[1];
-                   /*<<camlinternalFormat.ml:1532:4>>*/ return make_int_padding_precision
-                          (k, acc, rest$3, pad$1, prec, convert_int, iconv) /*<<camlinternalFormat.ml:1605:9>>*/ ;
-                 case 5:
-                  var
-                   rest$4 =  /*<<camlinternalFormat.ml:1518:17>>*/ fmt[4],
-                   prec$0 = fmt[3],
-                   pad$2 = fmt[2],
-                   iconv$0 = fmt[1];
-                   /*<<camlinternalFormat.ml:1534:4>>*/ return make_int_padding_precision
-                          (k, acc, rest$4, pad$2, prec$0, convert_int32, iconv$0) /*<<camlinternalFormat.ml:1605:9>>*/ ;
-                 case 6:
-                  var
-                   rest$5 =  /*<<camlinternalFormat.ml:1518:17>>*/ fmt[4],
-                   prec$1 = fmt[3],
-                   pad$3 = fmt[2],
-                   iconv$1 = fmt[1];
-                   /*<<camlinternalFormat.ml:1536:4>>*/ return make_int_padding_precision
-                          (k, acc, rest$5, pad$3, prec$1, convert_nativeint, iconv$1) /*<<camlinternalFormat.ml:1605:9>>*/ ;
-                 case 7:
-                  var
-                   rest$6 =  /*<<camlinternalFormat.ml:1518:17>>*/ fmt[4],
-                   prec$2 = fmt[3],
-                   pad$4 = fmt[2],
-                   iconv$2 = fmt[1];
-                   /*<<camlinternalFormat.ml:1538:4>>*/ return make_int_padding_precision
-                          (k, acc, rest$6, pad$4, prec$2, convert_int64, iconv$2) /*<<camlinternalFormat.ml:1605:9>>*/ ;
-                 case 8:
-                  break d;
-                 case 9:
-                  var
-                   rest$8 =  /*<<camlinternalFormat.ml:1518:17>>*/ fmt[2],
-                   pad$6 = fmt[1];
-                   /*<<camlinternalFormat.ml:1542:4>>*/ return make_padding
-                          (k, acc, rest$8, pad$6, Stdlib[30]) /*<<camlinternalFormat.ml:1605:9>>*/ ;
-                 case 10:
-                  var
-                   rest$9 =  /*<<camlinternalFormat.ml:1518:17>>*/ fmt[1],
-                   acc$0 =  /*<<camlinternalFormat.ml:1560:4>>*/ [7, acc];
-                  acc = acc$0;
-                  fmt = rest$9;
-                  break;
-                 case 11:
-                  var
-                   rest$10 =  /*<<camlinternalFormat.ml:1518:17>>*/ fmt[2],
-                   str = fmt[1],
-                   acc$1 =  /*<<camlinternalFormat.ml:1563:4>>*/ [2, acc, str];
-                  acc = acc$1;
-                  fmt = rest$10;
-                  break;
-                 case 12:
-                  var
-                   rest$11 =  /*<<camlinternalFormat.ml:1518:17>>*/ fmt[2],
-                   chr = fmt[1],
-                   acc$2 =  /*<<camlinternalFormat.ml:1565:4>>*/ [3, acc, chr];
-                  acc = acc$2;
-                  fmt = rest$11;
-                  break;
-                 case 13:
-                  break e;
-                 case 14:
-                  break f;
-                 case 15:
-                  break g;
-                 case 16:
-                  break h;
-                 case 17:
-                  var
-                   rest$16 =  /*<<camlinternalFormat.ml:1518:17>>*/ fmt[2],
-                   fmting_lit = fmt[1],
-                   acc$3 =
-                      /*<<camlinternalFormat.ml:1594:4>>*/ [0, acc, fmting_lit];
-                  acc = acc$3;
-                  fmt = rest$16;
-                  break;
-                 case 18:
-                  var _ag_ =  /*<<camlinternalFormat.ml:1518:17>>*/ fmt[1];
-                  if(0 === _ag_[0]){
-                   var rest$17 = fmt[2], fmt$0 = _ag_[1][1];
-                   let
-                    acc$0 =  /*<<camlinternalFormat.ml:1596:4>>*/ acc,
-                    k$1 = k,
-                    rest = rest$17;
-                   var
-                    k$0 =
-                      function(kacc){
-                        /*<<camlinternalFormat.ml:1597:6>>*/ return make_printf
-                               (k$1, [1, acc$0, [0, kacc]], rest) /*<<camlinternalFormat.ml:1597:70>>*/ ;
-                      };
-                    /*<<camlinternalFormat.ml:1598:4>>*/ k = k$0;
-                   acc = 0;
-                   fmt = fmt$0;
-                  }
-                  else{
-                   var
-                    rest$18 =  /*<<camlinternalFormat.ml:1518:17>>*/ fmt[2],
-                    fmt$1 = _ag_[1][1];
-                   let
-                    acc$0 =  /*<<camlinternalFormat.ml:1600:4>>*/ acc,
-                    k$0 = k,
-                    rest = rest$18;
-                   var
-                    k$1 =
-                      function(kacc){
-                        /*<<camlinternalFormat.ml:1601:6>>*/ return make_printf
-                               (k$0, [1, acc$0, [1, kacc]], rest) /*<<camlinternalFormat.ml:1601:70>>*/ ;
-                      };
-                    /*<<camlinternalFormat.ml:1602:4>>*/ k = k$1;
-                   acc = 0;
-                   fmt = fmt$1;
-                  }
-                  break;
-                 case 19:
-                   /*<<camlinternalFormat.ml:1558:4>>*/ throw caml_maybe_attach_backtrace
-                         ([0, Assert_failure, _w_], 1);
-                 case 20:
-                  break i;
-                 case 21:
-                  break j;
-                 case 22:
-                  break k;
-                 case 23:
-                  var
-                   rest$22 =  /*<<camlinternalFormat.ml:1518:17>>*/ fmt[2],
-                   ign = fmt[1];
-                   /*<<camlinternalFormat.ml:1591:4>>*/ return counter < 50
-                          ? make_ignored_param$0
-                            (counter + 1 | 0, k, acc, ign, rest$22)
-                          : caml_trampoline_return
-                            (make_ignored_param$0, [0, k, acc, ign, rest$22]) /*<<camlinternalFormat.ml:1605:9>>*/ ;
-                 default:
-                  var
-                   rest$23 =  /*<<camlinternalFormat.ml:1518:17>>*/ fmt[3],
-                   f = fmt[2],
-                   arity = fmt[1],
-                   _ag_ =
-                      /*<<camlinternalFormat.ml:1548:33>>*/ caml_call1(f, 0);
-                   /*<<camlinternalFormat.ml:1548:39>>*/ return counter < 50
-                          ? make_custom$0
-                            (counter + 1 | 0, k, acc, rest$23, arity, _ag_)
-                          : caml_trampoline_return
-                            (make_custom$0, [0, k, acc, rest$23, arity, _ag_]) /*<<camlinternalFormat.ml:1605:9>>*/ ;
-               }
-              }
-              var rest$21 =  /*<<camlinternalFormat.ml:1518:17>>*/ fmt[1];
-               /*<<camlinternalFormat.ml:1587:4>>*/ return function(c){
-               var
-                new_acc =  /*<<camlinternalFormat.ml:1588:6>>*/ [5, acc, c];
-                /*<<camlinternalFormat.ml:1589:6>>*/ return make_printf
-                       (k, new_acc, rest$21) /*<<camlinternalFormat.ml:1589:32>>*/ ;} /*<<camlinternalFormat.ml:1587:4>>*/ ;
-             }
-             var rest$20 =  /*<<camlinternalFormat.ml:1518:17>>*/ fmt[2];
-              /*<<camlinternalFormat.ml:1583:4>>*/ return function(n){
-              var
-               new_acc =
-                  /*<<camlinternalFormat.ml:1584:42>>*/ [4,
-                  acc,
-                  caml_format_int(cst_u, n)];
-               /*<<camlinternalFormat.ml:1585:6>>*/ return make_printf
-                      (k, new_acc, rest$20) /*<<camlinternalFormat.ml:1585:32>>*/ ;} /*<<camlinternalFormat.ml:1583:4>>*/ ;
-            }
+     /*<<camlinternalFormat.ml:1518:17>>*/ for(;;){
+     switch(_ag_){
+       case 0:
+        var k = k$2, acc = acc$4, fmt = fmt$2;
+        b:
+        for(;;){
+         if(typeof fmt === "number")
+           /*<<camlinternalFormat.ml:1605:4>>*/ return caml_call1(k, acc) /*<<camlinternalFormat.ml:1605:9>>*/ ;
+          /*<<camlinternalFormat.ml:1518:17>>*/ switch(fmt[0]){
+           case 0:
+            _ag_ = 1; continue a;
+           case 1:
+            _ag_ = 2; continue a;
+           case 2:
+            _ag_ = 3; continue a;
+           case 3:
+            var rest$2 = fmt[2], pad$0 = fmt[1];
+             /*<<camlinternalFormat.ml:1530:4>>*/ return make_padding
+                    (k, acc, rest$2, pad$0, string_to_caml_string) /*<<camlinternalFormat.ml:1605:9>>*/ ;
+           case 4:
             var
-             rest$19 =  /*<<camlinternalFormat.ml:1518:17>>*/ fmt[3],
-             new_acc =
-                /*<<camlinternalFormat.ml:1577:4>>*/ [8,
-                acc,
-                "Printf: bad conversion %["];
-             /*<<camlinternalFormat.ml:1578:4>>*/ return function(param){
-              /*<<camlinternalFormat.ml:1578:13>>*/ return make_printf
-                     (k, new_acc, rest$19) /*<<camlinternalFormat.ml:1578:39>>*/ ;} /*<<camlinternalFormat.ml:1578:4>>*/ ;
-           }
-           var rest$15 =  /*<<camlinternalFormat.ml:1518:17>>*/ fmt[1];
-            /*<<camlinternalFormat.ml:1546:4>>*/ return function(f){
-             /*<<camlinternalFormat.ml:1546:13>>*/ return make_printf
-                    (k, [6, acc, f], rest$15) /*<<camlinternalFormat.ml:1546:52>>*/ ;} /*<<camlinternalFormat.ml:1546:4>>*/ ;
-          }
-          var rest$14 =  /*<<camlinternalFormat.ml:1518:17>>*/ fmt[1];
-           /*<<camlinternalFormat.ml:1544:4>>*/ return function(f, x){
-            /*<<camlinternalFormat.ml:1544:15>>*/ return make_printf
-                   (k,
-                    [6,
-                     acc,
-                     function(o){
-                       /*<<camlinternalFormat.ml:1544:55>>*/ return caml_call2
-                              (f, o, x) /*<<camlinternalFormat.ml:1544:60>>*/ ;
-                     }],
-                    rest$14) /*<<camlinternalFormat.ml:1544:67>>*/ ;} /*<<camlinternalFormat.ml:1544:4>>*/ ;
+             rest$3 =  /*<<camlinternalFormat.ml:1518:17>>*/ fmt[4],
+             prec = fmt[3],
+             pad$1 = fmt[2],
+             iconv = fmt[1];
+             /*<<camlinternalFormat.ml:1532:4>>*/ return make_int_padding_precision
+                    (k, acc, rest$3, pad$1, prec, convert_int, iconv) /*<<camlinternalFormat.ml:1605:9>>*/ ;
+           case 5:
+            var
+             rest$4 =  /*<<camlinternalFormat.ml:1518:17>>*/ fmt[4],
+             prec$0 = fmt[3],
+             pad$2 = fmt[2],
+             iconv$0 = fmt[1];
+             /*<<camlinternalFormat.ml:1534:4>>*/ return make_int_padding_precision
+                    (k, acc, rest$4, pad$2, prec$0, convert_int32, iconv$0) /*<<camlinternalFormat.ml:1605:9>>*/ ;
+           case 6:
+            var
+             rest$5 =  /*<<camlinternalFormat.ml:1518:17>>*/ fmt[4],
+             prec$1 = fmt[3],
+             pad$3 = fmt[2],
+             iconv$1 = fmt[1];
+             /*<<camlinternalFormat.ml:1536:4>>*/ return make_int_padding_precision
+                    (k, acc, rest$5, pad$3, prec$1, convert_nativeint, iconv$1) /*<<camlinternalFormat.ml:1605:9>>*/ ;
+           case 7:
+            var
+             rest$6 =  /*<<camlinternalFormat.ml:1518:17>>*/ fmt[4],
+             prec$2 = fmt[3],
+             pad$4 = fmt[2],
+             iconv$2 = fmt[1];
+             /*<<camlinternalFormat.ml:1538:4>>*/ return make_int_padding_precision
+                    (k, acc, rest$6, pad$4, prec$2, convert_int64, iconv$2) /*<<camlinternalFormat.ml:1605:9>>*/ ;
+           case 8:
+             /*<<camlinternalFormat.ml:1518:17>>*/ _ag_ = 4; continue a;
+           case 9:
+            var rest$8 = fmt[2], pad$6 = fmt[1];
+             /*<<camlinternalFormat.ml:1542:4>>*/ return make_padding
+                    (k, acc, rest$8, pad$6, Stdlib[30]) /*<<camlinternalFormat.ml:1605:9>>*/ ;
+           case 10:
+            var
+             rest$9 =  /*<<camlinternalFormat.ml:1518:17>>*/ fmt[1],
+             acc$0 =  /*<<camlinternalFormat.ml:1560:4>>*/ [7, acc];
+            acc = acc$0;
+            fmt = rest$9;
+            break;
+           case 11:
+            var
+             rest$10 =  /*<<camlinternalFormat.ml:1518:17>>*/ fmt[2],
+             str = fmt[1],
+             acc$1 =  /*<<camlinternalFormat.ml:1563:4>>*/ [2, acc, str];
+            acc = acc$1;
+            fmt = rest$10;
+            break;
+           case 12:
+            var
+             rest$11 =  /*<<camlinternalFormat.ml:1518:17>>*/ fmt[2],
+             chr = fmt[1],
+             acc$2 =  /*<<camlinternalFormat.ml:1565:4>>*/ [3, acc, chr];
+            acc = acc$2;
+            fmt = rest$11;
+            break;
+           case 13:
+             /*<<camlinternalFormat.ml:1518:17>>*/ _ag_ = 5; continue a;
+           case 14:
+            _ag_ = 6; continue a;
+           case 15:
+            _ag_ = 7; continue a;
+           case 16:
+            _ag_ = 8; continue a;
+           case 17:
+            var
+             rest$16 = fmt[2],
+             fmting_lit = fmt[1],
+             acc$3 =
+                /*<<camlinternalFormat.ml:1594:4>>*/ [0, acc, fmting_lit];
+            acc = acc$3;
+            fmt = rest$16;
+            break;
+           case 18:
+             /*<<camlinternalFormat.ml:1518:17>>*/ _ag_ = fmt[1];
+            if(0 === _ag_[0]){
+             var rest$17 = fmt[2], fmt$0 = _ag_[1][1];
+             let
+              acc$0 =  /*<<camlinternalFormat.ml:1596:4>>*/ acc,
+              k$1 = k,
+              rest = rest$17;
+             var
+              k$0 =
+                function(kacc){
+                  /*<<camlinternalFormat.ml:1597:6>>*/ return make_printf
+                         (k$1, [1, acc$0, [0, kacc]], rest) /*<<camlinternalFormat.ml:1597:70>>*/ ;
+                };
+              /*<<camlinternalFormat.ml:1598:4>>*/ k = k$0;
+             acc = 0;
+             fmt = fmt$0;
+            }
+            else{
+             var
+              rest$18 =  /*<<camlinternalFormat.ml:1518:17>>*/ fmt[2],
+              fmt$1 = _ag_[1][1];
+             let
+              acc$0 =  /*<<camlinternalFormat.ml:1600:4>>*/ acc,
+              k$0 = k,
+              rest = rest$18;
+             var
+              k$1 =
+                function(kacc){
+                  /*<<camlinternalFormat.ml:1601:6>>*/ return make_printf
+                         (k$0, [1, acc$0, [1, kacc]], rest) /*<<camlinternalFormat.ml:1601:70>>*/ ;
+                };
+              /*<<camlinternalFormat.ml:1602:4>>*/ k = k$1;
+             acc = 0;
+             fmt = fmt$1;
+            }
+            break;
+           case 19:
+             /*<<camlinternalFormat.ml:1558:4>>*/ throw caml_maybe_attach_backtrace
+                   ([0, Assert_failure, _w_], 1);
+           case 20:
+             /*<<camlinternalFormat.ml:1518:17>>*/ _ag_ = 9; continue a;
+           case 21:
+            _ag_ = 10; continue a;
+           case 22:
+            break b;
+           case 23:
+            var rest$22 = fmt[2], ign = fmt[1];
+             /*<<camlinternalFormat.ml:1591:4>>*/ return counter < 50
+                    ? make_ignored_param$0
+                      (counter + 1 | 0, k, acc, ign, rest$22)
+                    : caml_trampoline_return
+                      (make_ignored_param$0, [0, k, acc, ign, rest$22]) /*<<camlinternalFormat.ml:1605:9>>*/ ;
+           default:
+            var
+             rest$23 =  /*<<camlinternalFormat.ml:1518:17>>*/ fmt[3],
+             f = fmt[2],
+             arity = fmt[1],
+             _ag_ =  /*<<camlinternalFormat.ml:1548:33>>*/ caml_call1(f, 0);
+             /*<<camlinternalFormat.ml:1548:39>>*/ return counter < 50
+                    ? make_custom$0
+                      (counter + 1 | 0, k, acc, rest$23, arity, _ag_)
+                    : caml_trampoline_return
+                      (make_custom$0, [0, k, acc, rest$23, arity, _ag_]) /*<<camlinternalFormat.ml:1605:9>>*/ ;
          }
-         var
-          rest$13 =  /*<<camlinternalFormat.ml:1518:17>>*/ fmt[3],
-          fmtty = fmt[2];
-          /*<<camlinternalFormat.ml:1573:4>>*/ return function(_ag_){
-          var
-           fmt = _ag_[1],
-           _ag_ =  /*<<camlinternalFormat.ml:1574:18>>*/ recast(fmt, fmtty);
-           /*<<camlinternalFormat.ml:1574:6>>*/ return  /*<<camlinternalFormat.ml:1574:42>>*/ make_printf
-                  (k,
-                   acc,
-                    /*<<camlinternalFormat.ml:1574:6>>*/ CamlinternalFormatBasics
-                     [3].call
-                    (null, _ag_, rest$13)) /*<<camlinternalFormat.ml:1574:42>>*/ ;} /*<<camlinternalFormat.ml:1573:4>>*/ ;
         }
+       case 11:
+        var rest$21 =  /*<<camlinternalFormat.ml:1518:17>>*/ fmt[1];
+         /*<<camlinternalFormat.ml:1587:4>>*/ return function(c){
+         var new_acc =  /*<<camlinternalFormat.ml:1588:6>>*/ [5, acc, c];
+          /*<<camlinternalFormat.ml:1589:6>>*/ return make_printf
+                 (k, new_acc, rest$21) /*<<camlinternalFormat.ml:1589:32>>*/ ;} /*<<camlinternalFormat.ml:1587:4>>*/ ;
+       case 10:
+        var rest$20 =  /*<<camlinternalFormat.ml:1518:17>>*/ fmt[2];
+         /*<<camlinternalFormat.ml:1583:4>>*/ return function(n){
+         var
+          new_acc =
+             /*<<camlinternalFormat.ml:1584:42>>*/ [4,
+             acc,
+             caml_format_int(cst_u, n)];
+          /*<<camlinternalFormat.ml:1585:6>>*/ return make_printf
+                 (k, new_acc, rest$20) /*<<camlinternalFormat.ml:1585:32>>*/ ;} /*<<camlinternalFormat.ml:1583:4>>*/ ;
+       case 9:
+        var
+         rest$19 =  /*<<camlinternalFormat.ml:1518:17>>*/ fmt[3],
+         new_acc =
+            /*<<camlinternalFormat.ml:1577:4>>*/ [8,
+            acc,
+            "Printf: bad conversion %["];
+         /*<<camlinternalFormat.ml:1578:4>>*/ return function(param){
+          /*<<camlinternalFormat.ml:1578:13>>*/ return make_printf
+                 (k, new_acc, rest$19) /*<<camlinternalFormat.ml:1578:39>>*/ ;} /*<<camlinternalFormat.ml:1578:4>>*/ ;
+       case 8:
+        var rest$15 =  /*<<camlinternalFormat.ml:1518:17>>*/ fmt[1];
+         /*<<camlinternalFormat.ml:1546:4>>*/ return function(f){
+          /*<<camlinternalFormat.ml:1546:13>>*/ return make_printf
+                 (k, [6, acc, f], rest$15) /*<<camlinternalFormat.ml:1546:52>>*/ ;} /*<<camlinternalFormat.ml:1546:4>>*/ ;
+       case 7:
+        var rest$14 =  /*<<camlinternalFormat.ml:1518:17>>*/ fmt[1];
+         /*<<camlinternalFormat.ml:1544:4>>*/ return function(f, x){
+          /*<<camlinternalFormat.ml:1544:15>>*/ return make_printf
+                 (k,
+                  [6,
+                   acc,
+                   function(o){
+                     /*<<camlinternalFormat.ml:1544:55>>*/ return caml_call2
+                            (f, o, x) /*<<camlinternalFormat.ml:1544:60>>*/ ;
+                   }],
+                  rest$14) /*<<camlinternalFormat.ml:1544:67>>*/ ;} /*<<camlinternalFormat.ml:1544:4>>*/ ;
+       case 6:
+        var
+         rest$13 =  /*<<camlinternalFormat.ml:1518:17>>*/ fmt[3],
+         fmtty = fmt[2];
+         /*<<camlinternalFormat.ml:1573:4>>*/ return function(_ag_){
+         var
+          fmt = _ag_[1],
+          _ag_ =  /*<<camlinternalFormat.ml:1574:18>>*/ recast(fmt, fmtty);
+          /*<<camlinternalFormat.ml:1574:6>>*/ return  /*<<camlinternalFormat.ml:1574:42>>*/ make_printf
+                 (k,
+                  acc,
+                   /*<<camlinternalFormat.ml:1574:6>>*/ CamlinternalFormatBasics
+                    [3].call
+                   (null, _ag_, rest$13)) /*<<camlinternalFormat.ml:1574:42>>*/ ;} /*<<camlinternalFormat.ml:1573:4>>*/ ;
+       case 5:
         var
          rest$12 =  /*<<camlinternalFormat.ml:1518:17>>*/ fmt[3],
          sub_fmtty = fmt[2],
@@ -18029,165 +18005,169 @@
          /*<<camlinternalFormat.ml:1569:4>>*/ return function(str){
           /*<<camlinternalFormat.ml:1571:6>>*/ return make_printf
                  (k, [4, acc, ty], rest$12) /*<<camlinternalFormat.ml:1571:52>>*/ ;} /*<<camlinternalFormat.ml:1569:4>>*/ ;
-       }
-       var
-        rest$7 =  /*<<camlinternalFormat.ml:1518:17>>*/ fmt[4],
-        prec$3 = fmt[3],
-        pad$5 = fmt[2],
-        fconv = fmt[1];
-        /*<<camlinternalFormat.ml:1735:34>>*/ if(typeof pad$5 === "number"){
+       case 4:
+        var
+         rest$7 =  /*<<camlinternalFormat.ml:1518:17>>*/ fmt[4],
+         prec$3 = fmt[3],
+         pad$5 = fmt[2],
+         fconv = fmt[1];
+         /*<<camlinternalFormat.ml:1735:34>>*/ if(typeof pad$5 === "number"){
+         if(typeof prec$3 === "number")
+          return prec$3
+                  ? function
+                   (p, x){
+                    var
+                     str =
+                        /*<<camlinternalFormat.ml:1746:16>>*/ convert_float
+                        (fconv, p, x);
+                     /*<<camlinternalFormat.ml:1747:6>>*/ return make_printf
+                            (k, [4, acc, str], rest$7) /*<<camlinternalFormat.ml:1747:52>>*/ ;
+                   }
+                  : function
+                   (x){
+                    var
+                     str =
+                        /*<<camlinternalFormat.ml:1738:36>>*/  /*<<camlinternalFormat.ml:1738:16>>*/ convert_float
+                        (fconv,
+                          /*<<camlinternalFormat.ml:1738:36>>*/ default_float_precision
+                          (fconv),
+                         x);
+                     /*<<camlinternalFormat.ml:1739:6>>*/ return make_printf
+                            (k, [4, acc, str], rest$7) /*<<camlinternalFormat.ml:1739:52>>*/ ;
+                   } /*<<camlinternalFormat.ml:1605:9>>*/ ;
+         var p =  /*<<camlinternalFormat.ml:1735:34>>*/ prec$3[1];
+          /*<<camlinternalFormat.ml:1741:4>>*/ return function(x){
+          var
+           str =
+              /*<<camlinternalFormat.ml:1742:16>>*/ convert_float(fconv, p, x);
+           /*<<camlinternalFormat.ml:1743:6>>*/ return make_printf
+                  (k, [4, acc, str], rest$7) /*<<camlinternalFormat.ml:1743:52>>*/ ;} /*<<camlinternalFormat.ml:1741:4>>*/ ;
+        }
+         /*<<camlinternalFormat.ml:1735:34>>*/ if(0 === pad$5[0]){
+         var w = pad$5[2], padty = pad$5[1];
+         if(typeof prec$3 === "number")
+          return prec$3
+                  ? function
+                   (p, x){
+                    var
+                     str =
+                        /*<<camlinternalFormat.ml:1759:36>>*/  /*<<camlinternalFormat.ml:1759:16>>*/ fix_padding
+                        (padty,
+                         w,
+                          /*<<camlinternalFormat.ml:1759:36>>*/ convert_float
+                          (fconv, p, x));
+                     /*<<camlinternalFormat.ml:1760:6>>*/ return make_printf
+                            (k, [4, acc, str], rest$7) /*<<camlinternalFormat.ml:1760:52>>*/ ;
+                   }
+                  : function
+                   (x){
+                    var
+                     str =
+                        /*<<camlinternalFormat.ml:1750:36>>*/  /*<<camlinternalFormat.ml:1750:16>>*/ convert_float
+                        (fconv,
+                          /*<<camlinternalFormat.ml:1750:36>>*/ default_float_precision
+                          (fconv),
+                         x),
+                     str$0 =
+                        /*<<camlinternalFormat.ml:1751:17>>*/ fix_padding
+                        (padty, w, str);
+                     /*<<camlinternalFormat.ml:1752:6>>*/ return make_printf
+                            (k, [4, acc, str$0], rest$7) /*<<camlinternalFormat.ml:1752:53>>*/ ;
+                   } /*<<camlinternalFormat.ml:1605:9>>*/ ;
+         var p$0 =  /*<<camlinternalFormat.ml:1735:34>>*/ prec$3[1];
+          /*<<camlinternalFormat.ml:1754:4>>*/ return function(x){
+          var
+           str =
+              /*<<camlinternalFormat.ml:1755:36>>*/  /*<<camlinternalFormat.ml:1755:16>>*/ fix_padding
+              (padty,
+               w,
+                /*<<camlinternalFormat.ml:1755:36>>*/ convert_float
+                (fconv, p$0, x));
+           /*<<camlinternalFormat.ml:1756:6>>*/ return make_printf
+                  (k, [4, acc, str], rest$7) /*<<camlinternalFormat.ml:1756:52>>*/ ;} /*<<camlinternalFormat.ml:1754:4>>*/ ;
+        }
+        var padty$0 =  /*<<camlinternalFormat.ml:1735:34>>*/ pad$5[1];
         if(typeof prec$3 === "number")
          return prec$3
                  ? function
-                  (p, x){
+                  (w, p, x){
                    var
                     str =
-                       /*<<camlinternalFormat.ml:1746:16>>*/ convert_float
-                       (fconv, p, x);
-                    /*<<camlinternalFormat.ml:1747:6>>*/ return make_printf
-                           (k, [4, acc, str], rest$7) /*<<camlinternalFormat.ml:1747:52>>*/ ;
-                  }
-                 : function
-                  (x){
-                   var
-                    str =
-                       /*<<camlinternalFormat.ml:1738:36>>*/  /*<<camlinternalFormat.ml:1738:16>>*/ convert_float
-                       (fconv,
-                         /*<<camlinternalFormat.ml:1738:36>>*/ default_float_precision
-                         (fconv),
-                        x);
-                    /*<<camlinternalFormat.ml:1739:6>>*/ return make_printf
-                           (k, [4, acc, str], rest$7) /*<<camlinternalFormat.ml:1739:52>>*/ ;
-                  } /*<<camlinternalFormat.ml:1605:9>>*/ ;
-        var p =  /*<<camlinternalFormat.ml:1735:34>>*/ prec$3[1];
-         /*<<camlinternalFormat.ml:1741:4>>*/ return function(x){
-         var
-          str =
-             /*<<camlinternalFormat.ml:1742:16>>*/ convert_float(fconv, p, x);
-          /*<<camlinternalFormat.ml:1743:6>>*/ return make_printf
-                 (k, [4, acc, str], rest$7) /*<<camlinternalFormat.ml:1743:52>>*/ ;} /*<<camlinternalFormat.ml:1741:4>>*/ ;
-       }
-        /*<<camlinternalFormat.ml:1735:34>>*/ if(0 === pad$5[0]){
-        var w = pad$5[2], padty = pad$5[1];
-        if(typeof prec$3 === "number")
-         return prec$3
-                 ? function
-                  (p, x){
-                   var
-                    str =
-                       /*<<camlinternalFormat.ml:1759:36>>*/  /*<<camlinternalFormat.ml:1759:16>>*/ fix_padding
-                       (padty,
+                       /*<<camlinternalFormat.ml:1772:36>>*/  /*<<camlinternalFormat.ml:1772:16>>*/ fix_padding
+                       (padty$0,
                         w,
-                         /*<<camlinternalFormat.ml:1759:36>>*/ convert_float
+                         /*<<camlinternalFormat.ml:1772:36>>*/ convert_float
                          (fconv, p, x));
-                    /*<<camlinternalFormat.ml:1760:6>>*/ return make_printf
-                           (k, [4, acc, str], rest$7) /*<<camlinternalFormat.ml:1760:52>>*/ ;
+                    /*<<camlinternalFormat.ml:1773:6>>*/ return make_printf
+                           (k, [4, acc, str], rest$7) /*<<camlinternalFormat.ml:1773:52>>*/ ;
                   }
                  : function
-                  (x){
+                  (w, x){
                    var
                     str =
-                       /*<<camlinternalFormat.ml:1750:36>>*/  /*<<camlinternalFormat.ml:1750:16>>*/ convert_float
+                       /*<<camlinternalFormat.ml:1763:36>>*/  /*<<camlinternalFormat.ml:1763:16>>*/ convert_float
                        (fconv,
-                         /*<<camlinternalFormat.ml:1750:36>>*/ default_float_precision
+                         /*<<camlinternalFormat.ml:1763:36>>*/ default_float_precision
                          (fconv),
                         x),
                     str$0 =
-                       /*<<camlinternalFormat.ml:1751:17>>*/ fix_padding
-                       (padty, w, str);
-                    /*<<camlinternalFormat.ml:1752:6>>*/ return make_printf
-                           (k, [4, acc, str$0], rest$7) /*<<camlinternalFormat.ml:1752:53>>*/ ;
+                       /*<<camlinternalFormat.ml:1764:17>>*/ fix_padding
+                       (padty$0, w, str);
+                    /*<<camlinternalFormat.ml:1765:6>>*/ return make_printf
+                           (k, [4, acc, str$0], rest$7) /*<<camlinternalFormat.ml:1765:53>>*/ ;
                   } /*<<camlinternalFormat.ml:1605:9>>*/ ;
-        var p$0 =  /*<<camlinternalFormat.ml:1735:34>>*/ prec$3[1];
-         /*<<camlinternalFormat.ml:1754:4>>*/ return function(x){
+        var p$1 =  /*<<camlinternalFormat.ml:1735:34>>*/ prec$3[1];
+         /*<<camlinternalFormat.ml:1767:4>>*/ return function(w, x){
          var
           str =
-             /*<<camlinternalFormat.ml:1755:36>>*/  /*<<camlinternalFormat.ml:1755:16>>*/ fix_padding
-             (padty,
+             /*<<camlinternalFormat.ml:1768:36>>*/  /*<<camlinternalFormat.ml:1768:16>>*/ fix_padding
+             (padty$0,
               w,
-               /*<<camlinternalFormat.ml:1755:36>>*/ convert_float
-               (fconv, p$0, x));
-          /*<<camlinternalFormat.ml:1756:6>>*/ return make_printf
-                 (k, [4, acc, str], rest$7) /*<<camlinternalFormat.ml:1756:52>>*/ ;} /*<<camlinternalFormat.ml:1754:4>>*/ ;
-       }
-       var padty$0 =  /*<<camlinternalFormat.ml:1735:34>>*/ pad$5[1];
-       if(typeof prec$3 === "number")
-        return prec$3
-                ? function
-                 (w, p, x){
-                  var
-                   str =
-                      /*<<camlinternalFormat.ml:1772:36>>*/  /*<<camlinternalFormat.ml:1772:16>>*/ fix_padding
-                      (padty$0,
-                       w,
-                        /*<<camlinternalFormat.ml:1772:36>>*/ convert_float
-                        (fconv, p, x));
-                   /*<<camlinternalFormat.ml:1773:6>>*/ return make_printf
-                          (k, [4, acc, str], rest$7) /*<<camlinternalFormat.ml:1773:52>>*/ ;
-                 }
-                : function
-                 (w, x){
-                  var
-                   str =
-                      /*<<camlinternalFormat.ml:1763:36>>*/  /*<<camlinternalFormat.ml:1763:16>>*/ convert_float
-                      (fconv,
-                        /*<<camlinternalFormat.ml:1763:36>>*/ default_float_precision
-                        (fconv),
-                       x),
-                   str$0 =
-                      /*<<camlinternalFormat.ml:1764:17>>*/ fix_padding
-                      (padty$0, w, str);
-                   /*<<camlinternalFormat.ml:1765:6>>*/ return make_printf
-                          (k, [4, acc, str$0], rest$7) /*<<camlinternalFormat.ml:1765:53>>*/ ;
-                 } /*<<camlinternalFormat.ml:1605:9>>*/ ;
-       var p$1 =  /*<<camlinternalFormat.ml:1735:34>>*/ prec$3[1];
-        /*<<camlinternalFormat.ml:1767:4>>*/ return function(w, x){
+               /*<<camlinternalFormat.ml:1768:36>>*/ convert_float
+               (fconv, p$1, x));
+          /*<<camlinternalFormat.ml:1769:6>>*/ return make_printf
+                 (k, [4, acc, str], rest$7) /*<<camlinternalFormat.ml:1769:52>>*/ ;} /*<<camlinternalFormat.ml:1767:4>>*/ ;
+       case 3:
         var
-         str =
-            /*<<camlinternalFormat.ml:1768:36>>*/  /*<<camlinternalFormat.ml:1768:16>>*/ fix_padding
-            (padty$0,
-             w,
-              /*<<camlinternalFormat.ml:1768:36>>*/ convert_float
-              (fconv, p$1, x));
-         /*<<camlinternalFormat.ml:1769:6>>*/ return make_printf
-                (k, [4, acc, str], rest$7) /*<<camlinternalFormat.ml:1769:52>>*/ ;} /*<<camlinternalFormat.ml:1767:4>>*/ ;
-      }
-      var
-       rest$1 =  /*<<camlinternalFormat.ml:1518:17>>*/ fmt[2],
-       pad = fmt[1];
-       /*<<camlinternalFormat.ml:1528:4>>*/ return make_padding
-              (k,
-               acc,
-               rest$1,
-               pad,
-               function(str){
-                 /*<<camlinternalFormat.ml:1528:44>>*/ return str;
-                /*<<camlinternalFormat.ml:1528:47>>*/ }) /*<<camlinternalFormat.ml:1605:9>>*/ ;
+         rest$1 =  /*<<camlinternalFormat.ml:1518:17>>*/ fmt[2],
+         pad = fmt[1];
+         /*<<camlinternalFormat.ml:1528:4>>*/ return make_padding
+                (k,
+                 acc,
+                 rest$1,
+                 pad,
+                 function(str){
+                   /*<<camlinternalFormat.ml:1528:44>>*/ return str;
+                  /*<<camlinternalFormat.ml:1528:47>>*/ }) /*<<camlinternalFormat.ml:1605:9>>*/ ;
+       case 2:
+        var rest$0 =  /*<<camlinternalFormat.ml:1518:17>>*/ fmt[1];
+         /*<<camlinternalFormat.ml:1524:4>>*/ return function(c){
+         var
+          str =
+             /*<<camlinternalFormat.ml:1493:12>>*/ Stdlib_Char[2].call
+             (null, c),
+          l =  /*<<camlinternalFormat.ml:1494:2>>*/ caml_ml_string_length(str),
+          res =
+             /*<<camlinternalFormat.ml:1495:12>>*/ Stdlib_Bytes[1].call
+             (null, l + 2 | 0, 39);
+          /*<<camlinternalFormat.ml:1496:2>>*/ caml_blit_string
+          (str, 0, res, 1, l);
+         var
+          new_acc =
+             /*<<camlinternalFormat.ml:1496:34>>*/ [4,
+             acc,
+             Stdlib_Bytes[44].call(null, res)];
+          /*<<camlinternalFormat.ml:1526:6>>*/ return make_printf
+                 (k, new_acc, rest$0) /*<<camlinternalFormat.ml:1526:32>>*/ ;} /*<<camlinternalFormat.ml:1524:4>>*/ ;
+       case 1:
+        var rest =  /*<<camlinternalFormat.ml:1518:17>>*/ fmt[1];
+         /*<<camlinternalFormat.ml:1520:4>>*/ return function(c){
+         var new_acc =  /*<<camlinternalFormat.ml:1521:6>>*/ [5, acc, c];
+          /*<<camlinternalFormat.ml:1522:6>>*/ return make_printf
+                 (k, new_acc, rest) /*<<camlinternalFormat.ml:1522:32>>*/ ;} /*<<camlinternalFormat.ml:1520:4>>*/ ;
      }
-     var rest$0 =  /*<<camlinternalFormat.ml:1518:17>>*/ fmt[1];
-      /*<<camlinternalFormat.ml:1524:4>>*/ return function(c){
-      var
-       str =
-          /*<<camlinternalFormat.ml:1493:12>>*/ Stdlib_Char[2].call(null, c),
-       l =  /*<<camlinternalFormat.ml:1494:2>>*/ caml_ml_string_length(str),
-       res =
-          /*<<camlinternalFormat.ml:1495:12>>*/ Stdlib_Bytes[1].call
-          (null, l + 2 | 0, 39);
-       /*<<camlinternalFormat.ml:1496:2>>*/ caml_blit_string
-       (str, 0, res, 1, l);
-      var
-       new_acc =
-          /*<<camlinternalFormat.ml:1496:34>>*/ [4,
-          acc,
-          Stdlib_Bytes[44].call(null, res)];
-       /*<<camlinternalFormat.ml:1526:6>>*/ return make_printf
-              (k, new_acc, rest$0) /*<<camlinternalFormat.ml:1526:32>>*/ ;} /*<<camlinternalFormat.ml:1524:4>>*/ ;
+     break;
     }
-    var rest =  /*<<camlinternalFormat.ml:1518:17>>*/ fmt[1];
-     /*<<camlinternalFormat.ml:1520:4>>*/ return function(c){
-     var new_acc =  /*<<camlinternalFormat.ml:1521:6>>*/ [5, acc, c];
-      /*<<camlinternalFormat.ml:1522:6>>*/ return make_printf
-             (k, new_acc, rest) /*<<camlinternalFormat.ml:1522:32>>*/ ;} /*<<camlinternalFormat.ml:1520:4>>*/ ;
     /*<<camlinternalFormat.ml:1605:9>>*/ }
    function make_printf(k, acc, fmt){
      /*<<camlinternalFormat.ml:1518:17>>*/ return  /*<<?>>*/ caml_trampoline

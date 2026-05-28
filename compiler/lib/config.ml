@@ -191,7 +191,7 @@ module Param = struct
       ~desc:
         "set the maximum number of nested labelled blocks before switching to a flat \
          dispatch loop"
-      (int 50)
+      (int 10)
 
   type tc =
     | TcNone
