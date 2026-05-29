@@ -8,10 +8,7 @@
  (names digests)
  (libraries)
  (build_if
-  (and
-   (>= %{ocaml_version} 5.2)
-   (<> %{profile} wasi)
-   (<> %{profile} wasi-with-native-effects)))
+  (>= %{ocaml_version} 5.2))
  (modules digests)
  (modes js wasm))
 
@@ -19,10 +16,6 @@
  (names blake2_long_key)
  (libraries)
  (build_if
-  (and
-   (>= %{ocaml_version} 5.2)
-   ;; blake2 is not implemented in the WASI runtime
-   (<> %{profile} wasi)
-   (<> %{profile} wasi-with-native-effects)))
+  (>= %{ocaml_version} 5.2))
  (modules blake2_long_key)
  (modes js wasm))
