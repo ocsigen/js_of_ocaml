@@ -14,7 +14,7 @@ bench:
 	@date -u +"%FT%TZ - $(NAME): done"
 
 perform:
-	/usr/bin/time -f "%E %R" $(COMPILER) --debug times --opt 2 --pretty main.bc-for-jsoo -o out.js 2>&1 | \
+	/usr/bin/time -f "%E %M" $(COMPILER) --debug times --opt 2 --pretty main.bc-for-jsoo -o out.js 2>&1 | \
 	tee /dev/stderr | \
 	ocaml -I +str str.cma ../utils/compilation_metrics.ml $(COMPILER) "$(NAME)" out.js | \
 	sh ../utils/aggregate.sh $(KIND)
