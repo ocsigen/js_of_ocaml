@@ -1303,13 +1303,13 @@ and focusOptions = object
 end
 
 and showPopover_options = object
-  method source : element t writeonly_prop
+  method source : #element t writeonly_prop
 end
 
 and togglePopover_options = object
   method force : bool t writeonly_prop
 
-  method source : element t writeonly_prop
+  method source : #element t writeonly_prop
 end
 
 and element = object
