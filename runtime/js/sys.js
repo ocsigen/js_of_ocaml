@@ -514,6 +514,18 @@ function caml_sys_const_standard_library_default(_unit) {
 function caml_setup_uncaught_exception_handler() {
   var process = globalThis.process;
   if (process?.on) {
+    // Only emulate OCaml's fatal-error behaviour (report the exception and
+    // exit with code 2) when the program is run directly, e.g. `node a.js`.
+    // When the generated code is loaded as a library (`require("./a.js")`) or
+    // in the Node REPL, registering a process-wide "uncaughtException" handler
+    // that calls process.exit would override the host's error handling and
+    // make unrelated errors abort the whole process. See ocsigen/js_of_ocaml#1277.
+    if (
+      typeof module !== "undefined" &&
+      typeof require !== "undefined" &&
+      require.main !== module
+    )
+      return;
     process.on("uncaughtException", function (err, origin) {
       caml_fatal_uncaught_exception(err);
       process.exit(2);
@@ -525,5 +537,10 @@ function caml_setup_uncaught_exception_handler() {
       }
     });
   }
+  // On QuickJS there is nothing to do: it exposes neither `process.on` nor
+  // `addEventListener`, so we install no global handler. The engine prints
+  // uncaught exceptions and exits itself, and loading the output as a library
+  // never overrides the host's error handling -- so no standalone guard like
+  // the one above (or `import.meta.main`) is needed here.
 }
 caml_setup_uncaught_exception_handler();
