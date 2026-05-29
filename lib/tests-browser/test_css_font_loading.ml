@@ -57,7 +57,9 @@ let fonts = Dom_html.document##.fonts
 let family = "BebasNeueTest"
 
 let bebas =
-  Css_font_loading.create_font_face (Js.string family) (Js.string "url(BebasNeue-Regular.ttf)")
+  Css_font_loading.create_font_face
+    (Js.string family)
+    (Js.string "url(BebasNeue-Regular.ttf)")
 
 let test_initial_state () =
   check
