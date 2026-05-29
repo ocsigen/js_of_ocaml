@@ -870,7 +870,7 @@ end
 and pathSegLinetoHorizontal = object
   inherit pathSeg
 
-  method x : number_t
+  method x : number_t prop
 end
 
 (* interface SVGPathSegLinetoVerticalAbs *)
@@ -878,19 +878,19 @@ end
 and pathSegLinetoVertical = object
   inherit pathSeg
 
-  method y : number_t
+  method y : number_t prop
 end
 
 and pathSegCurvetoCubicSmooth = object
   inherit pathSeg
 
-  method x : number_t
+  method x : number_t prop
 
-  method y : number_t
+  method y : number_t prop
 
-  method x2 : number_t
+  method x2 : number_t prop
 
-  method y2 : number_t
+  method y2 : number_t prop
 end
 
 (* interface SVGPathSegCurvetoQuadraticSmoothAbs *)
@@ -898,9 +898,9 @@ end
 and pathSegCurvetoQuadraticSmooth = object
   inherit pathSeg
 
-  method x : number_t
+  method x : number_t prop
 
-  method y : number_t
+  method y : number_t prop
 end
 
 and pathSegList = [pathSeg t] list
