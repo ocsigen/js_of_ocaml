@@ -238,7 +238,7 @@ type suspendHandleID
 class type ['a] animated = object
   method baseVal : 'a prop
 
-  method animVal : 'a prop
+  method animVal : 'a readonly_prop
 end
 
 class type ['a] list = object
@@ -1076,16 +1076,16 @@ and pathSegList = [pathSeg t] list
 
 (* interface SVGAnimatedPathData *)
 and animatedPathData = object
-  method pathSegList : pathSegList t optdef prop
+  method pathSegList : pathSegList t optdef readonly_prop
   (** @deprecated SVGPathSeg API is deprecated in SVG 2. *)
 
-  method normalizedPathSegList : pathSegList t optdef prop
+  method normalizedPathSegList : pathSegList t optdef readonly_prop
   (** @deprecated SVGPathSeg API is deprecated in SVG 2. Not implemented in most browsers. *)
 
-  method animatedPathSegList : pathSegList t optdef prop
+  method animatedPathSegList : pathSegList t optdef readonly_prop
   (** @deprecated SVGPathSeg API is deprecated in SVG 2. *)
 
-  method animatedNormalizedPathSegList : pathSegList t optdef prop
+  method animatedNormalizedPathSegList : pathSegList t optdef readonly_prop
   (** @deprecated SVGPathSeg API is deprecated in SVG 2. Not implemented in most browsers. *)
 end
 
