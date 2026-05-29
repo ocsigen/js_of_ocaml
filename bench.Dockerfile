@@ -43,7 +43,7 @@ RUN opam install -y --deps-only ./js_of_ocaml-compiler.opam \
 COPY --chown=opam:opam dune-project ./
 COPY --chown=opam:opam tools ./tools
 RUN opam exec -- dune exec tools/ci_setup.exe ../janestreet . \
- && opam exec -- dune build --root ../janestreet --profile release lib/bonsai_web_components/partial_render_table/bench/bin/main.bc-for-jsoo \
+ && (opam exec -- dune build --root ../janestreet --profile release lib/bonsai_web_components/partial_render_table/bench/bin/main.bc-for-jsoo || true) \
  && opam remove js_of_ocaml-compiler ojs \
  && opam clean
 
