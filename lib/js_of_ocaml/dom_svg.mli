@@ -490,9 +490,9 @@ and svgElement = object
 
   method getEnclosureList : rect t -> element t -> element Dom.nodeList t meth
 
-  method checkIntersection : element t -> rect t -> bool t
+  method checkIntersection : element t -> rect t -> bool t meth
 
-  method checkEnclosure : element t -> rect t -> bool t
+  method checkEnclosure : element t -> rect t -> bool t meth
 
   method deselectAll : unit meth
 
@@ -635,7 +635,7 @@ end
 and elementInstanceList = object
   method length : int readonly_prop
 
-  method item : int -> elementInstance t
+  method item : int -> elementInstance t meth
 end
 
 (* interface SVGImageElement *)
@@ -938,7 +938,7 @@ and pathElement = object
 
   method getPointAtLength : number_t -> point t meth
 
-  method getPathSegAtLength : number_t -> int
+  method getPathSegAtLength : number_t -> int meth
 
   method createSVGPathSegClosePath : pathSegClosePath meth
 
