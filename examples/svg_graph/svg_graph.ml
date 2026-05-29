@@ -21,7 +21,8 @@
      packet travelling along each edge;
    - a radial gradient using the SVG 2 [fr] focal radius;
    - a [marker] arrowhead with [orient="auto"];
-   - a [feDropShadow] filter whose blur is driven live via [setStdDeviation];
+   - a node filter chain ([feColorMatrix] hue-rotate + [feDropShadow], with the
+     shadow blur driven live via [setStdDeviation]);
    - [create*] / [CoerceTo] helpers and the inherited DOM event target. *)
 
 open Js_of_ocaml
@@ -65,6 +66,13 @@ let nodes : node list ref = ref []
 
 let edges : edge list ref = ref []
 
+(* "highlight edges" recolours the edge strokes to gold. We set the [stroke]
+   paint attribute directly rather than toggling a filter: dynamically applying
+   a filter to an already-rendered element did not repaint reliably here. *)
+let highlight_on = ref false
+
+let edge_color () = if !highlight_on then "#ffcc55" else "#888"
+
 (* Two layers so edges always render under nodes. Set up in [start]. *)
 let edge_layer : Dom_svg.gElement Js.t option ref = ref None
 
@@ -90,10 +98,6 @@ let node_h = 44.
 let shadow = Dom_svg.createFeDropShadow doc
 
 let hue = Dom_svg.createFeColorMatrix doc
-
-let turb = Dom_svg.createFeTurbulence doc
-
-let disp = Dom_svg.createFeDisplacementMap doc
 
 let build_defs () =
   let defs = Dom_svg.createDefs doc in
@@ -147,25 +151,6 @@ let build_defs () =
   append node_fx hue;
   append node_fx shadow;
   append defs node_fx;
-  (* "Wobble" filter for edges: turbulence drives a displacement map. *)
-  let wobble = Dom_svg.createFilter doc in
-  attr wobble "id" "wobble";
-  attr wobble "x" "-20%";
-  attr wobble "y" "-20%";
-  attr wobble "width" "140%";
-  attr wobble "height" "140%";
-  attr turb "type" "fractalNoise";
-  attr turb "baseFrequency" "0.015";
-  attr turb "numOctaves" "2";
-  attr turb "result" "noise";
-  attr disp "in" "SourceGraphic";
-  attr disp "in2" "noise";
-  attr disp "scale" "12";
-  attr disp "xChannelSelector" "R";
-  attr disp "yChannelSelector" "G";
-  append wobble turb;
-  append wobble disp;
-  append defs wobble;
   defs
 
 (* {2 Coordinate conversion}
@@ -203,7 +188,7 @@ let update_edges_of n =
 let make_edge a b =
   let path = Dom_svg.createPath doc in
   attr path "fill" "none";
-  attr path "stroke" "#888";
+  attr path "stroke" (edge_color ());
   attr path "stroke-width" "2";
   attr path "marker-end" "url(#arrow)";
   let packet = Dom_svg.createCircle doc in
@@ -335,8 +320,6 @@ let rec animate () =
         attrf e.packet "cy" (to_f p##.y)
       end)
     !edges;
-  (* Shimmer the turbulence so the edge "wobble" looks alive. *)
-  attrf turb "baseFrequency" (0.012 +. (0.004 *. sin (float_of_int !frame *. 0.05)));
   animate ()
 
 (* {2 Wiring} *)
@@ -401,23 +384,12 @@ let start () =
               apply ();
               Lwt.return ()))
   | None -> ());
-  (* Displacement amount of the edge "wobble" via feDisplacementMap [scale]. *)
-  (match Dom_html.getElementById_coerce "scale" Dom_html.CoerceTo.input with
-  | Some i ->
-      let apply () = attr disp "scale" (Js.to_string i##.value) in
-      apply ();
-      Lwt.async (fun () ->
-          Lwt_js_events.inputs i (fun _ _ ->
-              apply ();
-              Lwt.return ()))
-  | None -> ());
-  (* Toggle the turbulence/displacement filter on the edge layer. *)
-  (match Dom_html.getElementById_coerce "wobble" Dom_html.CoerceTo.input with
+  (* Toggle the edge highlight by recolouring each edge's stroke. *)
+  (match Dom_html.getElementById_coerce "highlight" Dom_html.CoerceTo.input with
   | Some i ->
       let apply () =
-        if Js.to_bool i##.checked
-        then attr el "filter" "url(#wobble)"
-        else el##removeAttribute (Js.string "filter")
+        highlight_on := Js.to_bool i##.checked;
+        List.iter (fun e -> attr e.path "stroke" (edge_color ())) !edges
       in
       apply ();
       Lwt.async (fun () ->
