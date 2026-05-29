@@ -364,16 +364,15 @@ let start () =
   make_edge a c;
   make_edge b d;
   make_edge c d;
-  (* Double-click the background to add a node (events bound on the container,
-     since svgElement is not an event target in the bindings). *)
+  (* Double-click the background to add a node. *)
   Lwt.async (fun () ->
-      Lwt_js_events.dblclicks container (fun ev _ ->
+      Lwt_js_events.dblclicks svg (fun ev _ ->
           let x, y = client_to_user svg ev in
           ignore (make_node svg x y "node");
           Lwt.return ()));
   (* Click empty background to clear the selection. *)
   Lwt.async (fun () ->
-      Lwt_js_events.clicks container (fun ev _ ->
+      Lwt_js_events.clicks svg (fun ev _ ->
           (match Js.Opt.to_option ev##.target with
           | Some t when (t :> Dom.element Js.t) == (svg :> Dom.element Js.t) ->
               deselect ()

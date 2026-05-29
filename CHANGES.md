@@ -34,7 +34,10 @@
   SVG 1.1 API. Breaking: graphics elements no longer expose the SVG 1.1-only
   `nearestViewportElement`/`farthestViewportElement`/`getTransformToElement`.
   Also bind `markerElement` and the full `SVGFE*` filter-primitive family (with
-  `create*`/`CoerceTo.*` helpers).
+  `create*`/`CoerceTo.*` helpers), make every SVG element an event target so
+  `Dom_html`/`Lwt_js_events` handlers can be attached to them (#519), and fix
+  the `prop`/`readonly_prop` split (e.g. writable `SVGPoint`/`SVGMatrix`
+  coordinates).
 
 ## Bug fixes
 * Compiler: fix UGEINT bytecode lowering (returned wrong result on
