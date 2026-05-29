@@ -22,6 +22,7 @@
   binaryen-version-check
   args
   zstd-impl.wasm
+  blake2-impl.wasm
   (glob_files *.wat))
  (action
   (run
@@ -33,6 +34,7 @@
    --allowed-imports=bindings,Math,js,wasm:js-string,wasm:text-encoder,wasm:text-decoder
    %{target}
    zstd:zstd-impl.wasm
+   blake2:blake2-impl.wasm
    %{read-lines:args})))
 
 (rule
@@ -41,6 +43,7 @@
   binaryen-version-check
   args
   zstd-impl.wasm
+  blake2-impl.wasm
   (glob_files *.wat))
  (action
   (run
@@ -52,6 +55,7 @@
    --allowed-imports=bindings,Math,js,wasm:js-string,wasm:text-encoder,wasm:text-decoder
    %{target}
    zstd:zstd-impl.wasm
+   blake2:blake2-impl.wasm
    %{read-lines:args})))
 
 (rule
@@ -60,7 +64,8 @@
   args
   (glob_files *.wat)
   libc.wasm
-  zstd-impl.wasm)
+  zstd-impl.wasm
+  blake2-impl.wasm)
  (action
   (run
    ../../compiler/bin-wasm_of_ocaml/wasmoo_link_wasm.exe
@@ -72,6 +77,7 @@
    %{target}
    libc:libc.wasm
    zstd:zstd-impl.wasm
+   blake2:blake2-impl.wasm
    %{read-lines:args})))
 
 (rule
@@ -80,7 +86,8 @@
   args
   (glob_files *.wat)
   libc.wasm
-  zstd-impl.wasm)
+  zstd-impl.wasm
+  blake2-impl.wasm)
  (action
   (run
    ../../compiler/bin-wasm_of_ocaml/wasmoo_link_wasm.exe
@@ -91,6 +98,7 @@
    %{target}
    libc:libc.wasm
    zstd:zstd-impl.wasm
+   blake2:blake2-impl.wasm
    %{read-lines:args})))
 
 (rule
@@ -103,15 +111,17 @@
    %{target}
    (run ocaml %{deps}))))
 
-; libc.wasm and zstd-impl.wasm are compiled from C sources with the wasi-sdk,
-; which we run via docker. Normal builds use the committed .wasm files as-is and
-; never need docker: each rebuild rule lives in a vendored subdirectory ('libc',
-; 'zstd'), which dune excludes from @all. After editing the corresponding
-; sources, regenerate the .wasm on demand (docker required) with one of:
+; libc.wasm, zstd-impl.wasm and blake2-impl.wasm are compiled from C sources
+; with the wasi-sdk, which we run via docker. Normal builds use the committed
+; .wasm files as-is and never need docker: each rebuild rule lives in a vendored
+; subdirectory ('libc', 'zstd', 'blake2'), which dune excludes from @all. After
+; editing the corresponding sources, regenerate the .wasm on demand (docker
+; required) with one of:
 ;   dune build @runtime/wasm/recompile-libc
 ;   dune build @runtime/wasm/recompile-zstd
+;   dune build @runtime/wasm/recompile-blake2
 
-(vendored_dirs libc zstd)
+(vendored_dirs libc zstd blake2)
 
 (alias
  (name recompile-libc)
@@ -120,3 +130,7 @@
 (alias
  (name recompile-zstd)
  (deps zstd/zstd-impl.wasm))
+
+(alias
+ (name recompile-blake2)
+ (deps blake2/blake2-impl.wasm))

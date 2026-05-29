@@ -1,0 +1,46 @@
+; Compile the freestanding BLAKE2b decoder with the wasi-sdk (run via docker)
+; and promote the result to ../blake2-impl.wasm. This directory is marked as
+; vendored in ../dune so the rule is excluded from @all and only runs when
+; explicitly requested through the recompile-blake2 alias; see ../dune.
+(rule
+ (target blake2-impl.wasm)
+ ; Depend on (universe) so an explicit 'dune build @recompile-blake2' always
+ ; reruns docker, picking up an updated wasi-sdk image or wasm-opt even when
+ ; the sources are unchanged.
+ (deps blake2b-ref.c blake2_wrap.c blake2.h blake2-impl.h (universe))
+ (mode (promote (into ..)))
+ (action
+  (with-stdout-to
+   %{target}
+   (pipe-stdout
+    (run
+     docker
+     run
+     -v
+     .:/src
+     -w
+     /src
+     ghcr.io/webassembly/wasi-sdk
+     /opt/wasi-sdk/bin/clang
+     ;; -O2 yields a smaller binary than -Oz for the hash core.
+     -O2
+     -flto
+     -nodefaultlibs
+     -nostartfiles
+     -ffreestanding
+     -mbulk-memory
+     -fno-stack-protector
+     -DNDEBUG
+     ;; Strips the sole `volatile` in the sources — secure_zero_memory's
+     ;; anti-DSE trick (blake2-impl.h) — so its memset call inlines to a
+     ;; memory.fill. Safe here: that only scrubs local stack scratch after
+     ;; the digest is already copied out, so it cannot change the result,
+     ;; and Digest.BLAKE* uses no key, so nothing secret is left behind.
+     -Dvolatile=
+     -Wl,--no-entry
+     -Wl,--export-memory=blake2_memory
+     blake2b-ref.c
+     blake2_wrap.c
+     -o
+     -)
+    (run wasm-opt -Oz --strip-debug --strip-dwarf - -o -)))))
