@@ -61,7 +61,7 @@ let%expect_test "match with many shared continuations is a flat dispatch loop" =
     {|
     function kind(param){
      var _c_ = runtime.caml_string_compare(param, cst_let), _b_ = 0;
-     for(;;){
+     for(;;)
       switch(_b_){
         case 0:
          if(0 <= _c_){
@@ -98,8 +98,6 @@ let%expect_test "match with many shared continuations is a flat dispatch loop" =
         case 1:
          return 0;
       }
-      break;
-     }
     }
     //end
     |}]
@@ -148,7 +146,7 @@ let%expect_test "non-independent scopes fall through to the join where adjacent"
     {|
     function score(s){
      var _c_ = runtime.caml_string_compare(s, cst_let), _b_ = 0;
-     for(;;){
+     for(;;)
       switch(_b_){
         case 0:
          if(0 <= _c_){
@@ -188,8 +186,6 @@ let%expect_test "non-independent scopes fall through to the join where adjacent"
         case 1:
          return (n * 100 | 0) + runtime.caml_ml_string_length(s) | 0;
       }
-      break;
-     }
     }
     //end
     |}]

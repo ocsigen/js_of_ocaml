@@ -17776,7 +17776,7 @@
    function make_printf$0(counter, k$2, acc$4, fmt$2){
     var _ag_ = 0;
     a:
-     /*<<camlinternalFormat.ml:1518:17>>*/ for(;;){
+     /*<<camlinternalFormat.ml:1518:17>>*/ for(;;)
      switch(_ag_){
        case 0:
         var k = k$2, acc = acc$4, fmt = fmt$2;
@@ -18166,8 +18166,6 @@
           /*<<camlinternalFormat.ml:1522:6>>*/ return make_printf
                  (k, new_acc, rest) /*<<camlinternalFormat.ml:1522:32>>*/ ;} /*<<camlinternalFormat.ml:1520:4>>*/ ;
      }
-     break;
-    }
     /*<<camlinternalFormat.ml:1605:9>>*/ }
    function make_printf(k, acc, fmt){
      /*<<camlinternalFormat.ml:1518:17>>*/ return  /*<<?>>*/ caml_trampoline
