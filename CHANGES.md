@@ -38,6 +38,16 @@
   from `0.x` fractions, normalise exponent forms (`1e+05` → `1e5`), and
   pick backticks for string literals when they reduce escape count.
   Pretty-printed output (`--pretty`) is unchanged. (#1117)
+* Lib: align `Dom_svg` with SVG 2 — introduce `graphicsElement`
+  (`SVGGraphicsElement`) and `geometryElement` (`SVGGeometryElement`) and
+  reparent the graphics/geometry elements onto them; merge `style`/`className`
+  (+ `dataset`) into `element`; add SVG 2 members (`a` hyperlink attributes,
+  `crossOrigin`, `*Units` enums, `style.disabled`, …) and mark removed/deprecated
+  SVG 1.1 API. Breaking: graphics elements no longer expose the SVG 1.1-only
+  `getTransformToElement`; `nearestViewportElement`/`farthestViewportElement`
+  are kept but typed `optdef` as they are deprecated and dropped by some engines.
+  Also bind `markerElement` and the full `SVGFE*` filter-primitive family (with
+  `create*`/`CoerceTo.*` helpers).
 
 ## Bug fixes
 * Runtime/wasm: `caml_seek_in` validates the seek destination for

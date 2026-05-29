@@ -26,11 +26,13 @@ let xmlns = Js.string "http://www.w3.org/2000/svg"
 (* translate spec from http://www.w3.org/TR/SVG/idl.html *)
 (* http://www.w3.org/TR/SVG/struct.html *)
 
+(** @deprecated Removed in SVG 2. *)
 type error_code =
   | WRONG_TYPE_ERR
   | INVALID_VALUE_ERR
   | MATRIX_NOT_INVERTABLE
 
+(** @deprecated Removed in SVG 2. *)
 class type svg_error = object
   inherit Js.error
 
@@ -38,6 +40,7 @@ class type svg_error = object
 end
 
 exception SVGError of svg_error
+(** @deprecated Removed in SVG 2. *)
 
 type lengthUnitType =
   | LENGTHTYPE_UNKNOWN
@@ -158,6 +161,76 @@ type spreadMethodType =
   | SPREADMETHOD_REFLECT
   | SPREADMETHOD_REPEAT
 
+type markerUnitType =
+  | SVG_MARKERUNITS_UNKNOWN
+  | SVG_MARKERUNITS_USERSPACEONUSE
+  | SVG_MARKERUNITS_STROKEWIDTH
+
+type markerOrientType =
+  | SVG_MARKER_ORIENT_UNKNOWN
+  | SVG_MARKER_ORIENT_AUTO
+  | SVG_MARKER_ORIENT_ANGLE
+
+type blendModeType =
+  | SVG_FEBLEND_MODE_UNKNOWN
+  | SVG_FEBLEND_MODE_NORMAL
+  | SVG_FEBLEND_MODE_MULTIPLY
+  | SVG_FEBLEND_MODE_SCREEN
+  | SVG_FEBLEND_MODE_DARKEN
+  | SVG_FEBLEND_MODE_LIGHTEN
+
+type colorMatrixType =
+  | SVG_FECOLORMATRIX_TYPE_UNKNOWN
+  | SVG_FECOLORMATRIX_TYPE_MATRIX
+  | SVG_FECOLORMATRIX_TYPE_SATURATE
+  | SVG_FECOLORMATRIX_TYPE_HUEROTATE
+  | SVG_FECOLORMATRIX_TYPE_LUMINANCETOALPHA
+
+type componentTransferType =
+  | SVG_FECOMPONENTTRANSFER_TYPE_UNKNOWN
+  | SVG_FECOMPONENTTRANSFER_TYPE_IDENTITY
+  | SVG_FECOMPONENTTRANSFER_TYPE_TABLE
+  | SVG_FECOMPONENTTRANSFER_TYPE_DISCRETE
+  | SVG_FECOMPONENTTRANSFER_TYPE_LINEAR
+  | SVG_FECOMPONENTTRANSFER_TYPE_GAMMA
+
+type compositeOperatorType =
+  | SVG_FECOMPOSITE_OPERATOR_UNKNOWN
+  | SVG_FECOMPOSITE_OPERATOR_OVER
+  | SVG_FECOMPOSITE_OPERATOR_IN
+  | SVG_FECOMPOSITE_OPERATOR_OUT
+  | SVG_FECOMPOSITE_OPERATOR_ATOP
+  | SVG_FECOMPOSITE_OPERATOR_XOR
+  | SVG_FECOMPOSITE_OPERATOR_ARITHMETIC
+
+type edgeModeType =
+  | SVG_EDGEMODE_UNKNOWN
+  | SVG_EDGEMODE_DUPLICATE
+  | SVG_EDGEMODE_WRAP
+  | SVG_EDGEMODE_NONE
+
+type channelSelectorType =
+  | SVG_CHANNEL_UNKNOWN
+  | SVG_CHANNEL_R
+  | SVG_CHANNEL_G
+  | SVG_CHANNEL_B
+  | SVG_CHANNEL_A
+
+type morphologyOperatorType =
+  | SVG_MORPHOLOGY_OPERATOR_UNKNOWN
+  | SVG_MORPHOLOGY_OPERATOR_ERODE
+  | SVG_MORPHOLOGY_OPERATOR_DILATE
+
+type turbulenceType =
+  | SVG_TURBULENCE_TYPE_UNKNOWN
+  | SVG_TURBULENCE_TYPE_FRACTALNOISE
+  | SVG_TURBULENCE_TYPE_TURBULENCE
+
+type stitchType =
+  | SVG_STITCHTYPE_UNKNOWN
+  | SVG_STITCHTYPE_STITCH
+  | SVG_STITCHTYPE_NOSTITCH
+
 type suspendHandleID
 
 (****)
@@ -169,6 +242,9 @@ class type ['a] animated = object
 end
 
 class type ['a] list = object
+  method length : int readonly_prop
+  (** SVG 2 alias of {!numberOfItems}. *)
+
   method numberOfItems : int readonly_prop
 
   method clear : unit meth
@@ -195,10 +271,36 @@ class type element = object
   method id : js_string t prop
 
   method xmlbase : js_string t optdef prop
+  (** @deprecated Removed in SVG 2. *)
 
   method ownerSVGElement : svgElement t opt readonly_prop
 
   method viewportElement : element t opt readonly_prop
+
+  method tabIndex : int prop
+  (** SVG 2 addition. *)
+
+  method focus : unit meth
+  (** SVG 2 addition. *)
+
+  method blur : unit meth
+  (** SVG 2 addition. *)
+
+  method style : Dom_html.cssStyleDeclaration t readonly_prop
+  (** SVG 2: merged in from [SVGStylable]. *)
+
+  method className : animatedString t readonly_prop
+  (** SVG 2: merged in from [SVGStylable].
+      @deprecated Use [classList] (from {!Dom.element}) instead. *)
+
+  method dataset : Dom_html.domStringMap t readonly_prop
+  (** SVG 2 addition (from [HTMLOrForeignElement]). *)
+
+  method autofocus : bool t prop
+  (** SVG 2 addition (from [HTMLOrForeignElement]). *)
+
+  method nonce : js_string t prop
+  (** SVG 2 addition (from [HTMLOrForeignElement]). *)
 end
 
 (* interface SVGAnimatedString *)
@@ -212,6 +314,9 @@ and stringList = [js_string t] list
 
 (* interface SVGAnimatedEnumeration *)
 and animatedEnumeration = [int (*short*)] animated
+
+(* SVGAnimatedEnumeration specialised to SVGUnitTypes *)
+and animatedUnitType = [unitType] animated
 
 (* interface SVGAnimatedInteger *)
 and animatedInteger = [int] animated
@@ -268,9 +373,9 @@ end
 and animatedAngle = [angle t] animated
 
 (* XXXXX Move it *)
-and rgbColor = object end
+and rgbColor = object end (* interface SVGColor *)
 
-(* interface SVGColor *)
+(** @deprecated Removed in SVG 2. *)
 and color = object
   (* XXX inherit cssValue *)
   method colorType : colorType readonly_prop
@@ -284,9 +389,9 @@ and color = object
   method setRGBColorICCColor : js_string t -> js_string t -> unit meth
 
   method setColor : colorType -> js_string t -> js_string t -> unit meth
-end
+end (* interface SVGICCColor *)
 
-(* interface SVGICCColor *)
+(** @deprecated Removed in SVG 2. *)
 and iccColor = object
   method colorProfile : js_string t prop
 
@@ -305,17 +410,18 @@ and rect = object
 end
 
 (* interface SVGAnimatedRect *)
-and animatedRect = [rect t] animated
+and animatedRect = [rect t] animated (* interface SVGStylable *)
 
-(* interface SVGStylable *)
+(** @deprecated Merged into {!element} (SVGElement) in SVG 2; retained only for
+    backward compatibility. Use the [style]/[className] methods on {!element}. *)
 and stylable = object
   method className : animatedString t readonly_prop
 
   method style : Dom_html.cssStyleDeclaration t readonly_prop
   (*   CSSValue getPresentationAttribute(in DOMString name); *)
-end
+end (* interface SVGLocatable *)
 
-(* interface SVGLocatable *)
+(** @deprecated Replaced by SVGGraphicsElement in SVG 2. *)
 and locatable = object
   method nearestViewportElement : element t opt readonly_prop
 
@@ -328,9 +434,10 @@ and locatable = object
   method getScreenCTM : matrix t meth
 
   method getTransformToElement : element t -> matrix t meth
-end
+  (** @deprecated Removed in SVG 2. Use getScreenCTM and matrix inversion. *)
+end (* interface SVGTransformable *)
 
-(* interface SVGTransformable *)
+(** @deprecated Replaced by SVGGraphicsElement in SVG 2. *)
 and transformable = object
   inherit locatable
 
@@ -340,25 +447,70 @@ end
 (* interface SVGTests *)
 and tests = object
   method requiredFeatures : stringList t optdef readonly_prop
+  (** @deprecated Removed in SVG 2. *)
 
   method requiredExtensions : stringList t readonly_prop
 
   method systemLanguage : stringList t readonly_prop
 
   method hasExtension : js_string t -> bool t meth
-end
+  (** @deprecated Removed in SVG 2. *)
+end (* interface SVGLangSpace *)
 
-(* interface SVGLangSpace *)
+(** @deprecated Merged into SVGElement in SVG 2. Use lang/xml:lang attributes. *)
 and langSpace = object
   method xmllang : js_string t prop
 
   method xmlspace : js_string t prop
-end
+end (* interface SVGExternalResourcesRequired *)
 
-(* interface SVGExternalResourcesRequired *)
+(** @deprecated Removed in SVG 2. *)
 and externalResourcesRequired = object
   method externalResourcesRequired : animatedBoolean t readonly_prop
 end
+
+(* interface SVGGraphicsElement - SVG 2 *)
+and graphicsElement = object
+  inherit element
+
+  inherit tests
+
+  method transform : animatedTransformList t readonly_prop
+
+  method getBBox : rect t meth
+
+  method getCTM : matrix t meth
+
+  method getScreenCTM : matrix t meth
+
+  method nearestViewportElement : element t opt optdef readonly_prop
+  (** @deprecated Removed in SVG 2 (and from Safari); gated behind a pref in
+      Firefox but still present, deprecated, in Chrome/Edge. [optdef] reflects
+      its absence in engines that dropped it. *)
+
+  method farthestViewportElement : element t opt optdef readonly_prop
+  (** @deprecated Removed in SVG 2 (and from Safari); gated behind a pref in
+      Firefox but still present, deprecated, in Chrome/Edge. [optdef] reflects
+      its absence in engines that dropped it. *)
+end
+
+(* interface SVGGeometryElement - SVG 2 *)
+and geometryElement = object
+  inherit graphicsElement
+
+  method pathLength : animatedNumber t readonly_prop
+
+  method isPointInFill : point t -> bool t meth
+
+  method isPointInStroke : point t -> bool t meth
+
+  method getTotalLength : number_t meth
+
+  method getPointAtLength : number_t -> point t meth
+end
+
+(* interface SVGUnknownElement - SVG 2 *)
+and unknownElement = graphicsElement
 
 (* interface SVGFitToViewBox *)
 and fitToViewBox = object
@@ -370,9 +522,9 @@ end
 (* interface SVGZoomAndPan *)
 and zoomAndPan = object
   method zoomAndPan : zoomAndPanType prop
-end
+end (* interface SVGViewSpec *)
 
-(* interface SVGViewSpec *)
+(** @deprecated Removed in SVG 2. *)
 and viewSpec = object
   inherit zoomAndPan
 
@@ -419,17 +571,11 @@ end
 
 (* interface SVGSVGElement *)
 and svgElement = object
-  inherit element
-
-  inherit tests
+  inherit graphicsElement
 
   inherit langSpace
 
   inherit externalResourcesRequired
-
-  inherit stylable
-
-  inherit locatable
 
   inherit fitToViewBox
 
@@ -445,34 +591,47 @@ and svgElement = object
   method height : animatedLength t readonly_prop
 
   method contentScriptType : js_string t optdef prop
+  (** @deprecated Removed in SVG 2. *)
 
   method contentStyleType : js_string t optdef prop
+  (** @deprecated Removed in SVG 2. *)
 
   method viewport : rect t optdef readonly_prop
+  (** @deprecated Removed in SVG 2. *)
 
   method pixelUnitToMillimeterX : number_t optdef readonly_prop
+  (** @deprecated Removed in SVG 2. *)
 
   method pixelUnitToMillimeterY : number_t optdef readonly_prop
+  (** @deprecated Removed in SVG 2. *)
 
   method screenPixelUnitToMillimeterX : number_t optdef readonly_prop
+  (** @deprecated Removed in SVG 2. *)
 
   method screenPixelUnitToMillimeterY : number_t optdef readonly_prop
+  (** @deprecated Removed in SVG 2. *)
 
   method useCurrentView : bool t optdef readonly_prop
+  (** @deprecated Removed in SVG 2. *)
 
   method currentView : viewSpec t optdef readonly_prop
+  (** @deprecated Removed in SVG 2. *)
 
   method currentScale : number_t prop
 
   method currentTranslate : point t readonly_prop
 
   method suspendRedraw : int -> suspendHandleID meth
+  (** @deprecated Deprecated in SVG 2. Has no effect. *)
 
   method unsuspendRedraw : suspendHandleID -> unit meth
+  (** @deprecated Deprecated in SVG 2. Has no effect. *)
 
   method unsuspendRedrawAll : unit meth
+  (** @deprecated Deprecated in SVG 2. Has no effect. *)
 
   method forceRedraw : unit meth
+  (** @deprecated Deprecated in SVG 2. Has no effect. *)
 
   method pauseAnimations : unit meth
 
@@ -493,6 +652,7 @@ and svgElement = object
   method checkEnclosure : element t -> rect t -> bool t meth
 
   method deselectAll : unit meth
+  (** @deprecated Deprecated in SVG 2. Use Selection API. *)
 
   method createSVGNumber : number t meth
 
@@ -515,34 +675,22 @@ end
 
 (* interface SVGGElement *)
 and gElement = object
-  inherit element
-
-  inherit tests
+  inherit graphicsElement
 
   inherit langSpace
 
   inherit externalResourcesRequired
-
-  inherit stylable
-
-  inherit transformable
 
   inherit Dom_html.eventTarget
 end
 
 (* interface SVGDefsElement *)
 and defsElement = object
-  inherit element
-
-  inherit tests
+  inherit graphicsElement
 
   inherit langSpace
 
   inherit externalResourcesRequired
-
-  inherit stylable
-
-  inherit transformable
   (* XXXXXXX ? inherit Dom_html.eventTarget *)
 end
 
@@ -552,7 +700,6 @@ and descElement = object
 
   inherit langSpace
 
-  inherit stylable
   (* XXXXXXX ? inherit Dom_html.eventTarget *)
 end
 
@@ -561,40 +708,48 @@ and titleElement = object
   inherit element
 
   inherit langSpace
-
-  inherit stylable
 end
 
 (* interface SVGSymbolElement *)
 and symbolElement = object
-  inherit element
+  inherit graphicsElement
 
   inherit langSpace
 
   inherit externalResourcesRequired
-
-  inherit stylable
 
   inherit fitToViewBox
 
   inherit Dom_html.eventTarget
+
+  method x : animatedLength t readonly_prop
+  (** SVG 2 addition. *)
+
+  method y : animatedLength t readonly_prop
+  (** SVG 2 addition. *)
+
+  method width : animatedLength t readonly_prop
+  (** SVG 2 addition. *)
+
+  method height : animatedLength t readonly_prop
+  (** SVG 2 addition. *)
+
+  method refX : animatedLength t readonly_prop
+  (** SVG 2 addition. *)
+
+  method refY : animatedLength t readonly_prop
+  (** SVG 2 addition. *)
 end
 
 (* interface SVGUseElement *)
 and useElement = object
-  inherit element
+  inherit graphicsElement
 
   inherit uriReference
-
-  inherit tests
 
   inherit langSpace
 
   inherit externalResourcesRequired
-
-  inherit stylable
-
-  inherit transformable
 
   method x : animatedLength t readonly_prop
 
@@ -605,10 +760,15 @@ and useElement = object
   method height : animatedLength t readonly_prop
 
   method instanceRoot : element t opt readonly_prop
+  (** @deprecated In SVG 2 typed [SVGElement?]; in practice browsers expose a
+      shadow tree from [use] rather than populating this. *)
 
   method animatedInstanceRoot : element t opt readonly_prop
+  (** @deprecated In SVG 2 typed [SVGElement?]; in practice browsers expose a
+      shadow tree from [use] rather than populating this. *)
 end
 
+(** @deprecated Removed in SVG 2. *)
 and elementInstance = object
   inherit Dom_html.eventTarget
 
@@ -627,9 +787,9 @@ and elementInstance = object
   method previousSibling : elementInstance t readonly_prop
 
   method nextSibling : elementInstance t readonly_prop
-end
+end (* interface SVGElementInstanceList *)
 
-(* interface SVGElementInstanceList *)
+(** @deprecated Removed in SVG 2. *)
 and elementInstanceList = object
   method length : int readonly_prop
 
@@ -638,19 +798,13 @@ end
 
 (* interface SVGImageElement *)
 and imageElement = object
-  inherit element
+  inherit graphicsElement
 
   inherit uriReference
-
-  inherit tests
 
   inherit langSpace
 
   inherit externalResourcesRequired
-
-  inherit stylable
-
-  inherit transformable
 
   method x : animatedLength t readonly_prop
 
@@ -659,21 +813,19 @@ and imageElement = object
   method width : animatedLength t readonly_prop
 
   method height : animatedLength t readonly_prop
-  (* readonly attribute SVGAnimatedPreserveAspectRatio preserveAspectRatio *)
+
+  method preserveAspectRatio : animatedPreserveAspectRatio t readonly_prop
+
+  method crossOrigin : js_string t opt prop
+  (** SVG 2 addition. *)
 end
 
 and switchElement = object
-  inherit element
-
-  inherit tests
+  inherit graphicsElement
 
   inherit langSpace
 
   inherit externalResourcesRequired
-
-  inherit stylable
-
-  inherit transformable
 end
 
 (* XXX deprecated => interface GetSVGDocument => SVGDocument getSVGDocument() *)
@@ -689,6 +841,25 @@ and styleElement = object
   method media : js_string t prop
 
   method title : js_string t prop
+
+  method disabled : bool t prop
+  (** SVG 2 addition (from [LinkStyle]). *)
+
+  method sheet : cssStyleSheet t opt readonly_prop
+  (** SVG 2 addition (from [LinkStyle]). *)
+end
+
+(* interface StyleSheet (the [sheet] property) *)
+and cssStyleSheet = object
+  method type_ : js_string t readonly_prop
+
+  method href : js_string t opt readonly_prop
+
+  method title : js_string t opt readonly_prop
+
+  method media : js_string t readonly_prop
+
+  method disabled : bool t prop
 end
 
 (* interface SVGPoint *)
@@ -906,35 +1077,27 @@ and pathSegList = [pathSeg t] list
 (* interface SVGAnimatedPathData *)
 and animatedPathData = object
   method pathSegList : pathSegList t optdef prop
+  (** @deprecated SVGPathSeg API is deprecated in SVG 2. *)
 
   method normalizedPathSegList : pathSegList t optdef prop
+  (** @deprecated SVGPathSeg API is deprecated in SVG 2. Not implemented in most browsers. *)
 
   method animatedPathSegList : pathSegList t optdef prop
+  (** @deprecated SVGPathSeg API is deprecated in SVG 2. *)
 
   method animatedNormalizedPathSegList : pathSegList t optdef prop
+  (** @deprecated SVGPathSeg API is deprecated in SVG 2. Not implemented in most browsers. *)
 end
 
 (* interface SVGPathElement *)
 and pathElement = object
-  inherit element
-
-  inherit tests
+  inherit geometryElement
 
   inherit langSpace
 
   inherit externalResourcesRequired
 
-  inherit stylable
-
-  inherit transformable
-
   inherit animatedPathData
-
-  method pathLength : animatedNumber t readonly_prop
-
-  method getTotalLength : number_t meth
-
-  method getPointAtLength : number_t -> point t meth
 
   method getPathSegAtLength : number_t -> int meth
 
@@ -1015,17 +1178,11 @@ end
 
 (* interface SVGRectElement *)
 and rectElement = object
-  inherit element
-
-  inherit tests
+  inherit geometryElement
 
   inherit langSpace
 
   inherit externalResourcesRequired
-
-  inherit stylable
-
-  inherit transformable
 
   method x : animatedLength t readonly_prop
 
@@ -1042,17 +1199,11 @@ end
 
 (* interface SVGCircleElement *)
 and circleElement = object
-  inherit element
-
-  inherit tests
+  inherit geometryElement
 
   inherit langSpace
 
   inherit externalResourcesRequired
-
-  inherit stylable
-
-  inherit transformable
 
   method cx : animatedLength t readonly_prop
 
@@ -1063,17 +1214,11 @@ end
 
 (* interface SVGEllipseElement *)
 and ellipseElement = object
-  inherit element
-
-  inherit tests
+  inherit geometryElement
 
   inherit langSpace
 
   inherit externalResourcesRequired
-
-  inherit stylable
-
-  inherit transformable
 
   method cx : animatedLength t readonly_prop
 
@@ -1086,17 +1231,11 @@ end
 
 (* interface SVGLineElement *)
 class type lineElement = object
-  inherit element
-
-  inherit tests
+  inherit geometryElement
 
   inherit langSpace
 
   inherit externalResourcesRequired
-
-  inherit stylable
-
-  inherit transformable
 
   inherit Dom_html.eventTarget
 
@@ -1118,49 +1257,33 @@ end
 
 (* interface SVGPolylineElement *)
 and polyLineElement = object
-  inherit element
-
-  inherit tests
+  inherit geometryElement
 
   inherit langSpace
 
   inherit externalResourcesRequired
-
-  inherit stylable
-
-  inherit transformable
 
   inherit animatedPoints
 end
 
 (* interface SVGPolygonElement *)
 and polygonElement = object
-  inherit element
-
-  inherit tests
+  inherit geometryElement
 
   inherit langSpace
 
   inherit externalResourcesRequired
-
-  inherit stylable
-
-  inherit transformable
 
   inherit animatedPoints
 end
 
 (* interface SVGTextContentElement *)
 and textContentElement = object
-  inherit element
-
-  inherit tests
+  inherit graphicsElement
 
   inherit langSpace
 
   inherit externalResourcesRequired
-
-  inherit stylable
 
   inherit Dom_html.eventTarget
 
@@ -1205,12 +1328,11 @@ end
 (* interface SVGTextElement *)
 and textElement = object
   inherit textPositioningElement
-
-  inherit transformable
 end
 
 and tspanElement = textPositioningElement
 
+(** @deprecated Removed in SVG 2. Use tspan with href instead. *)
 and trefElement = object
   inherit textPositioningElement
 
@@ -1232,9 +1354,9 @@ and textPathElement = object
   method method_ : textPathElementMethod readonly_prop
 
   method spacing : textPathElementSpacing readonly_prop
-end
+end (* interface SVGAltGlyphElement *)
 
-(* interface SVGAltGlyphElement *)
+(** @deprecated Removed in SVG 2. SVG fonts replaced by WOFF. *)
 and altGlyphElement = object
   inherit textPositioningElement
 
@@ -1243,21 +1365,21 @@ and altGlyphElement = object
   method glyphRef : js_string t prop
 
   method format : js_string t prop
-end
+end (* interface SVGAltGlyphDefElement *)
 
-(* interface SVGAltGlyphDefElement *)
 and altGlyphDefElement = element
-
+(** @deprecated Removed in SVG 2. SVG fonts replaced by WOFF. *)
 (* interface SVGAltGlyphItemElement *)
-and altGlyphItemElement = element
 
+and altGlyphItemElement = element
+(** @deprecated Removed in SVG 2. SVG fonts replaced by WOFF. *)
 (* interface SVGGlyphRefElement *)
+
+(** @deprecated Removed in SVG 2. SVG fonts replaced by WOFF. *)
 and glyphRefElement = object
   inherit element
 
   inherit uriReference
-
-  inherit stylable
 
   method glyphRef : js_string t prop
 
@@ -1292,34 +1414,41 @@ end
 (*   void setUri(in DOMString uri); *)
 (*   void setPaint(in unsigned short paintType, in DOMString uri, in DOMString rgbColor, in DOMString iccColor) raises(SVGException); *)
 (* }; *)
+and animatedMarkerUnit = [markerUnitType] animated
 
-(* interface SVGMarkerElement : SVGElement, *)
-(*                              SVGLangSpace, *)
-(*                              SVGExternalResourcesRequired, *)
-(*                              SVGStylable, *)
-(*                              SVGFitToViewBox { *)
+and animatedMarkerOrient = [markerOrientType] animated
 
-(*   // Marker Unit Types *)
-(*   const unsigned short SVG_MARKERUNITS_UNKNOWN = 0; *)
-(*   const unsigned short SVG_MARKERUNITS_USERSPACEONUSE = 1; *)
-(*   const unsigned short SVG_MARKERUNITS_STROKEWIDTH = 2; *)
+(* interface SVGMarkerElement *)
+and markerElement = object
+  inherit element
 
-(*   // Marker Orientation Types *)
-(*   const unsigned short SVG_MARKER_ORIENT_UNKNOWN = 0; *)
-(*   const unsigned short SVG_MARKER_ORIENT_AUTO = 1; *)
-(*   const unsigned short SVG_MARKER_ORIENT_ANGLE = 2; *)
+  inherit langSpace
 
-(*   readonly attribute SVGAnimatedLength refX; *)
-(*   readonly attribute SVGAnimatedLength refY; *)
-(*   readonly attribute SVGAnimatedEnumeration markerUnits; *)
-(*   readonly attribute SVGAnimatedLength markerWidth; *)
-(*   readonly attribute SVGAnimatedLength markerHeight; *)
-(*   readonly attribute SVGAnimatedEnumeration orientType; *)
-(*   readonly attribute SVGAnimatedAngle orientAngle; *)
+  inherit externalResourcesRequired
 
-(*   void setOrientToAuto() raises(DOMException); *)
-(*   void setOrientToAngle(in SVGAngle angle) raises(DOMException); *)
-(* }; *)
+  inherit fitToViewBox
+
+  method refX : animatedLength t readonly_prop
+
+  method refY : animatedLength t readonly_prop
+
+  method markerUnits : animatedMarkerUnit t readonly_prop
+
+  method markerWidth : animatedLength t readonly_prop
+
+  method markerHeight : animatedLength t readonly_prop
+
+  method orientType : animatedMarkerOrient t readonly_prop
+
+  method orientAngle : animatedAngle t readonly_prop
+
+  method orient : js_string t prop
+  (** SVG 2 addition (string reflection of the [orient] attribute). *)
+
+  method setOrientToAuto : unit meth
+
+  method setOrientToAngle : angle t -> unit meth
+end
 
 (* interface SVGColorProfileElement : SVGElement, *)
 (*                                    SVGURIReference, *)
@@ -1344,9 +1473,8 @@ and gradientElement = object
 
   inherit uriReference
 
-  inherit stylable
+  method gradientUnits : animatedUnitType t readonly_prop
 
-  (*   readonly attribute SVGAnimatedEnumeration gradientUnits; *)
   method gradientTransform : animatedTransformList t readonly_prop
 
   method spreadMethod : animatedSpreadMethod t readonly_prop
@@ -1378,13 +1506,14 @@ and radialGradientElement = object
   method fx : animatedLength t readonly_prop
 
   method fy : animatedLength t readonly_prop
+
+  method fr : animatedLength t readonly_prop
+  (** SVG 2 addition (focal radius). *)
 end
 
 (* interface SVGStopElement *)
 and stopElement = object
   inherit element
-
-  inherit stylable
 
   method offset : animatedNumber t readonly_prop
 end
@@ -1401,12 +1530,12 @@ and patternElement = object
 
   inherit externalResourcesRequired
 
-  inherit stylable
-
   inherit fitToViewBox
 
-  (*   readonly attribute SVGAnimatedEnumeration patternUnits; *)
-  (*   readonly attribute SVGAnimatedEnumeration patternContentUnits; *)
+  method patternUnits : animatedUnitType t readonly_prop
+
+  method patternContentUnits : animatedUnitType t readonly_prop
+
   method patternTransform : animatedTransformList t readonly_prop
 
   method x : animatedLength t readonly_prop
@@ -1428,10 +1557,9 @@ and clipPathElement = object
 
   inherit externalResourcesRequired
 
-  inherit stylable
-
   inherit transformable
-  (*   readonly attribute SVGAnimatedEnumeration clipPathUnits; *)
+
+  method clipPathUnits : animatedUnitType t readonly_prop
 end
 
 (* interface SVGMaskElement *)
@@ -1444,10 +1572,10 @@ and maskElement = object
 
   inherit externalResourcesRequired
 
-  inherit stylable
+  method maskUnits : animatedUnitType t readonly_prop
 
-  (*   readonly attribute SVGAnimatedEnumeration maskUnits; *)
-  (*   readonly attribute SVGAnimatedEnumeration maskContentUnits; *)
+  method maskContentUnits : animatedUnitType t readonly_prop
+
   method x : animatedLength t readonly_prop
 
   method y : animatedLength t readonly_prop
@@ -1467,10 +1595,10 @@ and filterElement = object
 
   inherit externalResourcesRequired
 
-  inherit stylable
+  method filterUnits : animatedUnitType t readonly_prop
 
-  (*   readonly attribute SVGAnimatedEnumeration filterUnits; *)
-  (*   readonly attribute SVGAnimatedEnumeration primitiveUnits; *)
+  method primitiveUnits : animatedUnitType t readonly_prop
+
   method x : animatedLength t readonly_prop
 
   method y : animatedLength t readonly_prop
@@ -1480,267 +1608,387 @@ and filterElement = object
   method height : animatedLength t readonly_prop
 
   method filterResX : animatedInteger t optdef readonly_prop
+  (** @deprecated Removed in SVG 2. *)
 
   method filterResY : animatedInteger t optdef readonly_prop
+  (** @deprecated Removed in SVG 2. *)
 
   method setFilterRes : int -> int -> unit meth
+  (** @deprecated Removed in SVG 2. *)
 end
 
-(* interface SVGFilterPrimitiveStandardAttributes : SVGStylable { *)
-(*   readonly attribute SVGAnimatedLength x; *)
-(*   readonly attribute SVGAnimatedLength y; *)
-(*   readonly attribute SVGAnimatedLength width; *)
-(*   readonly attribute SVGAnimatedLength height; *)
-(*   readonly attribute SVGAnimatedString result; *)
-(* }; *)
+(* interface SVGFilterPrimitiveStandardAttributes *)
+and filterPrimitiveStandardAttributes = object
+  method x : animatedLength t readonly_prop
 
-(* interface SVGFEBlendElement : SVGElement, *)
-(*                               SVGFilterPrimitiveStandardAttributes { *)
+  method y : animatedLength t readonly_prop
 
-(*   // Blend Mode Types *)
-(*   const unsigned short SVG_FEBLEND_MODE_UNKNOWN = 0; *)
-(*   const unsigned short SVG_FEBLEND_MODE_NORMAL = 1; *)
-(*   const unsigned short SVG_FEBLEND_MODE_MULTIPLY = 2; *)
-(*   const unsigned short SVG_FEBLEND_MODE_SCREEN = 3; *)
-(*   const unsigned short SVG_FEBLEND_MODE_DARKEN = 4; *)
-(*   const unsigned short SVG_FEBLEND_MODE_LIGHTEN = 5; *)
+  method width : animatedLength t readonly_prop
 
-(*   readonly attribute SVGAnimatedString in1; *)
-(*   readonly attribute SVGAnimatedString in2; *)
-(*   readonly attribute SVGAnimatedEnumeration mode; *)
-(* }; *)
+  method height : animatedLength t readonly_prop
 
-(* interface SVGFEColorMatrixElement : SVGElement, *)
-(*                                     SVGFilterPrimitiveStandardAttributes { *)
+  method result : animatedString t readonly_prop
+end
 
-(*   // Color Matrix Types *)
-(*   const unsigned short SVG_FECOLORMATRIX_TYPE_UNKNOWN = 0; *)
-(*   const unsigned short SVG_FECOLORMATRIX_TYPE_MATRIX = 1; *)
-(*   const unsigned short SVG_FECOLORMATRIX_TYPE_SATURATE = 2; *)
-(*   const unsigned short SVG_FECOLORMATRIX_TYPE_HUEROTATE = 3; *)
-(*   const unsigned short SVG_FECOLORMATRIX_TYPE_LUMINANCETOALPHA = 4; *)
+and animatedBlendMode = [blendModeType] animated
 
-(*   readonly attribute SVGAnimatedString in1; *)
-(*   readonly attribute SVGAnimatedEnumeration type; *)
-(*   readonly attribute SVGAnimatedNumberList values; *)
-(* }; *)
+and animatedColorMatrixType = [colorMatrixType] animated
 
-(* interface SVGFEComponentTransferElement : SVGElement, *)
-(*                                           SVGFilterPrimitiveStandardAttributes { *)
-(*   readonly attribute SVGAnimatedString in1; *)
-(* }; *)
+and animatedComponentTransferType = [componentTransferType] animated
 
-(* interface SVGComponentTransferFunctionElement : SVGElement { *)
+and animatedCompositeOperator = [compositeOperatorType] animated
 
-(*   // Component Transfer Types *)
-(*   const unsigned short SVG_FECOMPONENTTRANSFER_TYPE_UNKNOWN = 0; *)
-(*   const unsigned short SVG_FECOMPONENTTRANSFER_TYPE_IDENTITY = 1; *)
-(*   const unsigned short SVG_FECOMPONENTTRANSFER_TYPE_TABLE = 2; *)
-(*   const unsigned short SVG_FECOMPONENTTRANSFER_TYPE_DISCRETE = 3; *)
-(*   const unsigned short SVG_FECOMPONENTTRANSFER_TYPE_LINEAR = 4; *)
-(*   const unsigned short SVG_FECOMPONENTTRANSFER_TYPE_GAMMA = 5; *)
+and animatedEdgeMode = [edgeModeType] animated
 
-(*   readonly attribute SVGAnimatedEnumeration type; *)
-(*   readonly attribute SVGAnimatedNumberList tableValues; *)
-(*   readonly attribute SVGAnimatedNumber slope; *)
-(*   readonly attribute SVGAnimatedNumber intercept; *)
-(*   readonly attribute SVGAnimatedNumber amplitude; *)
-(*   readonly attribute SVGAnimatedNumber exponent; *)
-(*   readonly attribute SVGAnimatedNumber offset; *)
-(* }; *)
+and animatedChannelSelector = [channelSelectorType] animated
 
-(* interface SVGFEFuncRElement : SVGComponentTransferFunctionElement { *)
-(* }; *)
+and animatedMorphologyOperator = [morphologyOperatorType] animated
 
-(* interface SVGFEFuncGElement : SVGComponentTransferFunctionElement { *)
-(* }; *)
+and animatedTurbulenceType = [turbulenceType] animated
 
-(* interface SVGFEFuncBElement : SVGComponentTransferFunctionElement { *)
-(* }; *)
+and animatedStitchType = [stitchType] animated
 
-(* interface SVGFEFuncAElement : SVGComponentTransferFunctionElement { *)
-(* }; *)
+(* interface SVGFEBlendElement *)
+and feBlendElement = object
+  inherit element
 
-(* interface SVGFECompositeElement : SVGElement, *)
-(*                                   SVGFilterPrimitiveStandardAttributes { *)
+  inherit filterPrimitiveStandardAttributes
 
-(*   // Composite Operators *)
-(*   const unsigned short SVG_FECOMPOSITE_OPERATOR_UNKNOWN = 0; *)
-(*   const unsigned short SVG_FECOMPOSITE_OPERATOR_OVER = 1; *)
-(*   const unsigned short SVG_FECOMPOSITE_OPERATOR_IN = 2; *)
-(*   const unsigned short SVG_FECOMPOSITE_OPERATOR_OUT = 3; *)
-(*   const unsigned short SVG_FECOMPOSITE_OPERATOR_ATOP = 4; *)
-(*   const unsigned short SVG_FECOMPOSITE_OPERATOR_XOR = 5; *)
-(*   const unsigned short SVG_FECOMPOSITE_OPERATOR_ARITHMETIC = 6; *)
+  method in1 : animatedString t readonly_prop
 
-(*   readonly attribute SVGAnimatedString in1; *)
-(*   readonly attribute SVGAnimatedString in2; *)
-(*   readonly attribute SVGAnimatedEnumeration operator; *)
-(*   readonly attribute SVGAnimatedNumber k1; *)
-(*   readonly attribute SVGAnimatedNumber k2; *)
-(*   readonly attribute SVGAnimatedNumber k3; *)
-(*   readonly attribute SVGAnimatedNumber k4; *)
-(* }; *)
+  method in2 : animatedString t readonly_prop
 
-(* interface SVGFEConvolveMatrixElement : SVGElement, *)
-(*                                        SVGFilterPrimitiveStandardAttributes { *)
+  method mode : animatedBlendMode t readonly_prop
+end
 
-(*   // Edge Mode Values *)
-(*   const unsigned short SVG_EDGEMODE_UNKNOWN = 0; *)
-(*   const unsigned short SVG_EDGEMODE_DUPLICATE = 1; *)
-(*   const unsigned short SVG_EDGEMODE_WRAP = 2; *)
-(*   const unsigned short SVG_EDGEMODE_NONE = 3; *)
+(* interface SVGFEColorMatrixElement *)
+and feColorMatrixElement = object
+  inherit element
 
-(*   readonly attribute SVGAnimatedString in1; *)
-(*   readonly attribute SVGAnimatedInteger orderX; *)
-(*   readonly attribute SVGAnimatedInteger orderY; *)
-(*   readonly attribute SVGAnimatedNumberList kernelMatrix; *)
-(*   readonly attribute SVGAnimatedNumber divisor; *)
-(*   readonly attribute SVGAnimatedNumber bias; *)
-(*   readonly attribute SVGAnimatedInteger targetX; *)
-(*   readonly attribute SVGAnimatedInteger targetY; *)
-(*   readonly attribute SVGAnimatedEnumeration edgeMode; *)
-(*   readonly attribute SVGAnimatedNumber kernelUnitLengthX; *)
-(*   readonly attribute SVGAnimatedNumber kernelUnitLengthY; *)
-(*   readonly attribute SVGAnimatedBoolean preserveAlpha; *)
-(* }; *)
+  inherit filterPrimitiveStandardAttributes
 
-(* interface SVGFEDiffuseLightingElement : SVGElement, *)
-(*                                         SVGFilterPrimitiveStandardAttributes { *)
-(*   readonly attribute SVGAnimatedString in1; *)
-(*   readonly attribute SVGAnimatedNumber surfaceScale; *)
-(*   readonly attribute SVGAnimatedNumber diffuseConstant; *)
-(*   readonly attribute SVGAnimatedNumber kernelUnitLengthX; *)
-(*   readonly attribute SVGAnimatedNumber kernelUnitLengthY; *)
-(* }; *)
+  method in1 : animatedString t readonly_prop
 
-(* interface SVGFEDistantLightElement : SVGElement { *)
-(*   readonly attribute SVGAnimatedNumber azimuth; *)
-(*   readonly attribute SVGAnimatedNumber elevation; *)
-(* }; *)
+  method _type : animatedColorMatrixType t readonly_prop
 
-(* interface SVGFEPointLightElement : SVGElement { *)
-(*   readonly attribute SVGAnimatedNumber x; *)
-(*   readonly attribute SVGAnimatedNumber y; *)
-(*   readonly attribute SVGAnimatedNumber z; *)
-(* }; *)
+  method values : animatedNumberList t readonly_prop
+end
 
-(* interface SVGFESpotLightElement : SVGElement { *)
-(*   readonly attribute SVGAnimatedNumber x; *)
-(*   readonly attribute SVGAnimatedNumber y; *)
-(*   readonly attribute SVGAnimatedNumber z; *)
-(*   readonly attribute SVGAnimatedNumber pointsAtX; *)
-(*   readonly attribute SVGAnimatedNumber pointsAtY; *)
-(*   readonly attribute SVGAnimatedNumber pointsAtZ; *)
-(*   readonly attribute SVGAnimatedNumber specularExponent; *)
-(*   readonly attribute SVGAnimatedNumber limitingConeAngle; *)
-(* }; *)
+(* interface SVGFEComponentTransferElement *)
+and feComponentTransferElement = object
+  inherit element
 
-(* interface SVGFEDisplacementMapElement : SVGElement, *)
-(*                                         SVGFilterPrimitiveStandardAttributes { *)
+  inherit filterPrimitiveStandardAttributes
 
-(*   // Channel Selectors *)
-(*   const unsigned short SVG_CHANNEL_UNKNOWN = 0; *)
-(*   const unsigned short SVG_CHANNEL_R = 1; *)
-(*   const unsigned short SVG_CHANNEL_G = 2; *)
-(*   const unsigned short SVG_CHANNEL_B = 3; *)
-(*   const unsigned short SVG_CHANNEL_A = 4; *)
+  method in1 : animatedString t readonly_prop
+end
 
-(*   readonly attribute SVGAnimatedString in1; *)
-(*   readonly attribute SVGAnimatedString in2; *)
-(*   readonly attribute SVGAnimatedNumber scale; *)
-(*   readonly attribute SVGAnimatedEnumeration xChannelSelector; *)
-(*   readonly attribute SVGAnimatedEnumeration yChannelSelector; *)
-(* }; *)
+(* interface SVGComponentTransferFunctionElement *)
+and componentTransferFunctionElement = object
+  inherit element
 
-(* interface SVGFEFloodElement : SVGElement, *)
-(*                               SVGFilterPrimitiveStandardAttributes { *)
-(* }; *)
+  method _type : animatedComponentTransferType t readonly_prop
 
-(* interface SVGFEGaussianBlurElement : SVGElement, *)
-(*                                      SVGFilterPrimitiveStandardAttributes { *)
+  method tableValues : animatedNumberList t readonly_prop
 
-(*   readonly attribute SVGAnimatedString in1; *)
-(*   readonly attribute SVGAnimatedNumber stdDeviationX; *)
-(*   readonly attribute SVGAnimatedNumber stdDeviationY; *)
+  method slope : animatedNumber t readonly_prop
 
-(*   void setStdDeviation(in float stdDeviationX, in float stdDeviationY) raises(DOMException); *)
-(* }; *)
+  method intercept : animatedNumber t readonly_prop
 
-(* interface SVGFEImageElement : SVGElement, *)
-(*                               SVGURIReference, *)
-(*                               SVGLangSpace, *)
-(*                               SVGExternalResourcesRequired, *)
-(*                               SVGFilterPrimitiveStandardAttributes { *)
-(*   readonly attribute SVGAnimatedPreserveAspectRatio preserveAspectRatio; *)
-(* }; *)
+  method amplitude : animatedNumber t readonly_prop
 
-(* interface SVGFEMergeElement : SVGElement, *)
-(*                               SVGFilterPrimitiveStandardAttributes { *)
-(* }; *)
+  method exponent : animatedNumber t readonly_prop
 
-(* interface SVGFEMergeNodeElement : SVGElement { *)
-(*   readonly attribute SVGAnimatedString in1; *)
-(* }; *)
+  method offset : animatedNumber t readonly_prop
+end
 
-(* interface SVGFEMorphologyElement : SVGElement, *)
-(*                                    SVGFilterPrimitiveStandardAttributes { *)
+(* interface SVGFEFuncRElement *)
+and feFuncRElement = componentTransferFunctionElement
 
-(*   // Morphology Operators *)
-(*   const unsigned short SVG_MORPHOLOGY_OPERATOR_UNKNOWN = 0; *)
-(*   const unsigned short SVG_MORPHOLOGY_OPERATOR_ERODE = 1; *)
-(*   const unsigned short SVG_MORPHOLOGY_OPERATOR_DILATE = 2; *)
+(* interface SVGFEFuncGElement *)
+and feFuncGElement = componentTransferFunctionElement
 
-(*   readonly attribute SVGAnimatedString in1; *)
-(*   readonly attribute SVGAnimatedEnumeration operator; *)
-(*   readonly attribute SVGAnimatedNumber radiusX; *)
-(*   readonly attribute SVGAnimatedNumber radiusY; *)
-(* }; *)
+(* interface SVGFEFuncBElement *)
+and feFuncBElement = componentTransferFunctionElement
 
-(* interface SVGFEOffsetElement : SVGElement, *)
-(*                                SVGFilterPrimitiveStandardAttributes { *)
-(*   readonly attribute SVGAnimatedString in1; *)
-(*   readonly attribute SVGAnimatedNumber dx; *)
-(*   readonly attribute SVGAnimatedNumber dy; *)
-(* }; *)
+(* interface SVGFEFuncAElement *)
+and feFuncAElement = componentTransferFunctionElement
 
-(* interface SVGFESpecularLightingElement : SVGElement, *)
-(*                                          SVGFilterPrimitiveStandardAttributes { *)
-(*   readonly attribute SVGAnimatedString in1; *)
-(*   readonly attribute SVGAnimatedNumber surfaceScale; *)
-(*   readonly attribute SVGAnimatedNumber specularConstant; *)
-(*   readonly attribute SVGAnimatedNumber specularExponent; *)
-(*   readonly attribute SVGAnimatedNumber kernelUnitLengthX; *)
-(*   readonly attribute SVGAnimatedNumber kernelUnitLengthY; *)
-(* }; *)
+(* interface SVGFECompositeElement *)
+and feCompositeElement = object
+  inherit element
 
-(* interface SVGFETileElement : SVGElement, *)
-(*                              SVGFilterPrimitiveStandardAttributes { *)
-(*   readonly attribute SVGAnimatedString in1; *)
-(* }; *)
+  inherit filterPrimitiveStandardAttributes
 
-(* interface SVGFETurbulenceElement : SVGElement, *)
-(*                                    SVGFilterPrimitiveStandardAttributes { *)
+  method in1 : animatedString t readonly_prop
 
-(*   // Turbulence Types *)
-(*   const unsigned short SVG_TURBULENCE_TYPE_UNKNOWN = 0; *)
-(*   const unsigned short SVG_TURBULENCE_TYPE_FRACTALNOISE = 1; *)
-(*   const unsigned short SVG_TURBULENCE_TYPE_TURBULENCE = 2; *)
+  method in2 : animatedString t readonly_prop
 
-(*   // Stitch Options *)
-(*   const unsigned short SVG_STITCHTYPE_UNKNOWN = 0; *)
-(*   const unsigned short SVG_STITCHTYPE_STITCH = 1; *)
-(*   const unsigned short SVG_STITCHTYPE_NOSTITCH = 2; *)
+  method operator : animatedCompositeOperator t readonly_prop
 
-(*   readonly attribute SVGAnimatedNumber baseFrequencyX; *)
-(*   readonly attribute SVGAnimatedNumber baseFrequencyY; *)
-(*   readonly attribute SVGAnimatedInteger numOctaves; *)
-(*   readonly attribute SVGAnimatedNumber seed; *)
-(*   readonly attribute SVGAnimatedEnumeration stitchTiles; *)
-(*   readonly attribute SVGAnimatedEnumeration type; *)
-(* }; *)
+  method k1 : animatedNumber t readonly_prop
 
-(* interface SVGCursorElement *)
+  method k2 : animatedNumber t readonly_prop
+
+  method k3 : animatedNumber t readonly_prop
+
+  method k4 : animatedNumber t readonly_prop
+end
+
+(* interface SVGFEConvolveMatrixElement *)
+and feConvolveMatrixElement = object
+  inherit element
+
+  inherit filterPrimitiveStandardAttributes
+
+  method in1 : animatedString t readonly_prop
+
+  method orderX : animatedInteger t readonly_prop
+
+  method orderY : animatedInteger t readonly_prop
+
+  method kernelMatrix : animatedNumberList t readonly_prop
+
+  method divisor : animatedNumber t readonly_prop
+
+  method bias : animatedNumber t readonly_prop
+
+  method targetX : animatedInteger t readonly_prop
+
+  method targetY : animatedInteger t readonly_prop
+
+  method edgeMode : animatedEdgeMode t readonly_prop
+
+  method kernelUnitLengthX : animatedNumber t readonly_prop
+
+  method kernelUnitLengthY : animatedNumber t readonly_prop
+
+  method preserveAlpha : animatedBoolean t readonly_prop
+end
+
+(* interface SVGFEDiffuseLightingElement *)
+and feDiffuseLightingElement = object
+  inherit element
+
+  inherit filterPrimitiveStandardAttributes
+
+  method in1 : animatedString t readonly_prop
+
+  method surfaceScale : animatedNumber t readonly_prop
+
+  method diffuseConstant : animatedNumber t readonly_prop
+
+  method kernelUnitLengthX : animatedNumber t readonly_prop
+
+  method kernelUnitLengthY : animatedNumber t readonly_prop
+end
+
+(* interface SVGFEDistantLightElement *)
+and feDistantLightElement = object
+  inherit element
+
+  method azimuth : animatedNumber t readonly_prop
+
+  method elevation : animatedNumber t readonly_prop
+end
+
+(* interface SVGFEPointLightElement *)
+and fePointLightElement = object
+  inherit element
+
+  method x : animatedNumber t readonly_prop
+
+  method y : animatedNumber t readonly_prop
+
+  method z : animatedNumber t readonly_prop
+end
+
+(* interface SVGFESpotLightElement *)
+and feSpotLightElement = object
+  inherit element
+
+  method x : animatedNumber t readonly_prop
+
+  method y : animatedNumber t readonly_prop
+
+  method z : animatedNumber t readonly_prop
+
+  method pointsAtX : animatedNumber t readonly_prop
+
+  method pointsAtY : animatedNumber t readonly_prop
+
+  method pointsAtZ : animatedNumber t readonly_prop
+
+  method specularExponent : animatedNumber t readonly_prop
+
+  method limitingConeAngle : animatedNumber t readonly_prop
+end
+
+(* interface SVGFEDisplacementMapElement *)
+and feDisplacementMapElement = object
+  inherit element
+
+  inherit filterPrimitiveStandardAttributes
+
+  method in1 : animatedString t readonly_prop
+
+  method in2 : animatedString t readonly_prop
+
+  method scale : animatedNumber t readonly_prop
+
+  method xChannelSelector : animatedChannelSelector t readonly_prop
+
+  method yChannelSelector : animatedChannelSelector t readonly_prop
+end
+
+(* interface SVGFEFloodElement *)
+and feFloodElement = object
+  inherit element
+
+  inherit filterPrimitiveStandardAttributes
+end
+
+(* interface SVGFEGaussianBlurElement *)
+and feGaussianBlurElement = object
+  inherit element
+
+  inherit filterPrimitiveStandardAttributes
+
+  method in1 : animatedString t readonly_prop
+
+  method stdDeviationX : animatedNumber t readonly_prop
+
+  method stdDeviationY : animatedNumber t readonly_prop
+
+  method edgeMode : animatedEdgeMode t readonly_prop
+
+  method setStdDeviation : number_t -> number_t -> unit meth
+end
+
+(* interface SVGFEImageElement *)
+and feImageElement = object
+  inherit element
+
+  inherit uriReference
+
+  inherit langSpace
+
+  inherit externalResourcesRequired
+
+  inherit filterPrimitiveStandardAttributes
+
+  method preserveAspectRatio : animatedPreserveAspectRatio t readonly_prop
+end
+
+(* interface SVGFEMergeElement *)
+and feMergeElement = object
+  inherit element
+
+  inherit filterPrimitiveStandardAttributes
+end
+
+(* interface SVGFEMergeNodeElement *)
+and feMergeNodeElement = object
+  inherit element
+
+  method in1 : animatedString t readonly_prop
+end
+
+(* interface SVGFEMorphologyElement *)
+and feMorphologyElement = object
+  inherit element
+
+  inherit filterPrimitiveStandardAttributes
+
+  method in1 : animatedString t readonly_prop
+
+  method operator : animatedMorphologyOperator t readonly_prop
+
+  method radiusX : animatedNumber t readonly_prop
+
+  method radiusY : animatedNumber t readonly_prop
+end
+
+(* interface SVGFEOffsetElement *)
+and feOffsetElement = object
+  inherit element
+
+  inherit filterPrimitiveStandardAttributes
+
+  method in1 : animatedString t readonly_prop
+
+  method dx : animatedNumber t readonly_prop
+
+  method dy : animatedNumber t readonly_prop
+end
+
+(* interface SVGFESpecularLightingElement *)
+and feSpecularLightingElement = object
+  inherit element
+
+  inherit filterPrimitiveStandardAttributes
+
+  method in1 : animatedString t readonly_prop
+
+  method surfaceScale : animatedNumber t readonly_prop
+
+  method specularConstant : animatedNumber t readonly_prop
+
+  method specularExponent : animatedNumber t readonly_prop
+
+  method kernelUnitLengthX : animatedNumber t readonly_prop
+
+  method kernelUnitLengthY : animatedNumber t readonly_prop
+end
+
+(* interface SVGFETileElement *)
+and feTileElement = object
+  inherit element
+
+  inherit filterPrimitiveStandardAttributes
+
+  method in1 : animatedString t readonly_prop
+end
+
+(* interface SVGFETurbulenceElement *)
+and feTurbulenceElement = object
+  inherit element
+
+  inherit filterPrimitiveStandardAttributes
+
+  method baseFrequencyX : animatedNumber t readonly_prop
+
+  method baseFrequencyY : animatedNumber t readonly_prop
+
+  method numOctaves : animatedInteger t readonly_prop
+
+  method seed : animatedNumber t readonly_prop
+
+  method stitchTiles : animatedStitchType t readonly_prop
+
+  method _type : animatedTurbulenceType t readonly_prop
+end
+
+(* interface SVGFEDropShadowElement - Filter Effects *)
+and feDropShadowElement = object
+  inherit element
+
+  inherit filterPrimitiveStandardAttributes
+
+  method in1 : animatedString t readonly_prop
+
+  method dx : animatedNumber t readonly_prop
+
+  method dy : animatedNumber t readonly_prop
+
+  method stdDeviationX : animatedNumber t readonly_prop
+
+  method stdDeviationY : animatedNumber t readonly_prop
+
+  method setStdDeviation : number_t -> number_t -> unit meth
+end (* interface SVGCursorElement *)
+
+(** @deprecated Removed in SVG 2. Use CSS cursor property. *)
 and cursorElement = object
   inherit element
 
@@ -1757,21 +2005,60 @@ end
 
 (* interface SVGAElement *)
 and aElement = object
-  inherit element
+  inherit graphicsElement
 
   inherit uriReference
-
-  inherit tests
 
   inherit langSpace
 
   inherit externalResourcesRequired
 
-  inherit stylable
-
-  inherit transformable
-
   method target : animatedString t readonly_prop
+
+  method download : js_string t prop
+  (** SVG 2 addition. *)
+
+  method ping : js_string t prop
+  (** SVG 2 addition. *)
+
+  method rel : js_string t prop
+  (** SVG 2 addition. *)
+
+  method relList : Dom_html.tokenList t readonly_prop
+  (** SVG 2 addition. *)
+
+  method hreflang : js_string t prop
+  (** SVG 2 addition. *)
+
+  method type_ : js_string t prop
+  (** SVG 2 addition. *)
+
+  method referrerPolicy : js_string t prop
+  (** SVG 2 addition. *)
+
+  method text : js_string t prop
+  (** SVG 2 addition (synonym for [textContent]). *)
+
+  method protocol : js_string t prop
+  (** SVG 2 addition (from [HTMLHyperlinkElementUtils]). *)
+
+  method username : js_string t prop
+
+  method password : js_string t prop
+
+  method host : js_string t prop
+
+  method hostname : js_string t prop
+
+  method port : js_string t prop
+
+  method pathname : js_string t prop
+
+  method search : js_string t prop
+
+  method hash : js_string t prop
+
+  method origin : js_string t readonly_prop
 end
 
 (* interface SVGViewElement *)
@@ -1785,6 +2072,7 @@ and viewElement = object
   inherit zoomAndPan
 
   method viewTarget : stringList t readonly_prop
+  (** @deprecated Removed in SVG 2. *)
 end
 
 (* interface SVGScriptElement *)
@@ -1796,6 +2084,9 @@ and scriptElement = object
   inherit externalResourcesRequired
 
   method type_ : js_string t prop
+
+  method crossOrigin : js_string t opt prop
+  (** SVG 2 addition. *)
 end
 
 (* interface SVGZoomEvent : UIEvent *)
@@ -1814,7 +2105,6 @@ and animationElement = object
 
   inherit externalResourcesRequired
 
-  (* inherit elementTimeControl *)
   method targetElement : element t readonly_prop
 
   method getStartTime : number_t meth
@@ -1822,13 +2112,23 @@ and animationElement = object
   method getCurrentTime : number_t meth
 
   method getSimpleDuration : number_t meth
+
+  method beginElement : unit meth
+  (** SVG 2 addition (from [ElementTimeControl]). *)
+
+  method beginElementAt : number_t -> unit meth
+  (** SVG 2 addition (from [ElementTimeControl]). *)
+
+  method endElement : unit meth
+  (** SVG 2 addition (from [ElementTimeControl]). *)
+
+  method endElementAt : number_t -> unit meth
+  (** SVG 2 addition (from [ElementTimeControl]). *)
 end
 
 (* interface SVGAnimateElement *)
 and animateElement = object
   inherit animationElement
-
-  inherit stylable
 end
 
 (* interface SVGSetElement *)
@@ -1849,62 +2149,61 @@ end
 (* interface SVGAnimateColorElement *)
 and animateColorElement = object
   inherit animationElement
-
-  inherit stylable
 end
 
 (* interface SVGAnimateTransformElement *)
-and animateTransformElement = animationElement
+and animateTransformElement = animationElement (* interface SVGFontElement *)
 
-(* interface SVGFontElement *)
+(** @deprecated Removed in SVG 2. Use WOFF/WOFF2 fonts. *)
 and fontElement = object
   inherit element
-
-  inherit stylable
 end
-
 (* interface SVGGlyphElement *)
 (* interface SVGMissingGlyphElement*)
+
+(** @deprecated Removed in SVG 2. Use WOFF/WOFF2 fonts. *)
 and glyphElement = object
   inherit element
-
-  inherit stylable
 end
 
 (* interface SVGHKernElement : SVGElement *)
 (* interface SVGVKernElement : SVGElement *)
 
 (* interface SVGFontFaceElement *)
+
 class type fontFaceElement = element
+(** @deprecated Removed in SVG 2. Use WOFF/WOFF2 fonts. *)
 
 (* interface SVGFontFaceSrcElement *)
+
 class type fontFaceSrcElement = element
+(** @deprecated Removed in SVG 2. Use WOFF/WOFF2 fonts. *)
 
 (* interface SVGFontFaceUriElement *)
+
 class type fontFaceUriElement = element
+(** @deprecated Removed in SVG 2. Use WOFF/WOFF2 fonts. *)
 
 (* interface SVGFontFaceFormatElement *)
+
 class type fontFaceFormatElement = element
+(** @deprecated Removed in SVG 2. Use WOFF/WOFF2 fonts. *)
 
 (* interface SVGFontFaceNameElement *)
+
 class type fontFaceNameElement = element
+(** @deprecated Removed in SVG 2. Use WOFF/WOFF2 fonts. *)
 
 (* interface SVGMetadataElement *)
 class type metadataElement = element
 
 (* interface SVGForeignObjectElement *)
 class type foreignObjectElement = object
-  inherit element
-
-  inherit tests
+  inherit graphicsElement
 
   inherit langSpace
 
   inherit externalResourcesRequired
-
-  inherit stylable
-
-  inherit transformable
 
   method x : animatedLength t readonly_prop
 
@@ -1985,7 +2284,6 @@ let createLineElement doc : lineElement t = unsafeCreateElement doc "line"
 let createLinearElement doc : linearGradientElement t =
   unsafeCreateElement doc "linearGradient"
 
-(* let createMarker doc : markerElement *)
 let createMask doc : maskElement t = unsafeCreateElement doc "mask"
 
 let createMetaData doc : metadataElement t = unsafeCreateElement doc "metadata"
@@ -2036,6 +2334,70 @@ let createUse doc : useElement t = unsafeCreateElement doc "use"
 let createView doc : viewElement t = unsafeCreateElement doc "view"
 
 let createvkern doc : element t = unsafeCreateElement doc "vkern"
+
+let createMarker doc : markerElement t = unsafeCreateElement doc "marker"
+
+let createFeBlend doc : feBlendElement t = unsafeCreateElement doc "feBlend"
+
+let createFeColorMatrix doc : feColorMatrixElement t =
+  unsafeCreateElement doc "feColorMatrix"
+
+let createFeComponentTransfer doc : feComponentTransferElement t =
+  unsafeCreateElement doc "feComponentTransfer"
+
+let createFeFuncR doc : feFuncRElement t = unsafeCreateElement doc "feFuncR"
+
+let createFeFuncG doc : feFuncGElement t = unsafeCreateElement doc "feFuncG"
+
+let createFeFuncB doc : feFuncBElement t = unsafeCreateElement doc "feFuncB"
+
+let createFeFuncA doc : feFuncAElement t = unsafeCreateElement doc "feFuncA"
+
+let createFeComposite doc : feCompositeElement t = unsafeCreateElement doc "feComposite"
+
+let createFeConvolveMatrix doc : feConvolveMatrixElement t =
+  unsafeCreateElement doc "feConvolveMatrix"
+
+let createFeDiffuseLighting doc : feDiffuseLightingElement t =
+  unsafeCreateElement doc "feDiffuseLighting"
+
+let createFeDistantLight doc : feDistantLightElement t =
+  unsafeCreateElement doc "feDistantLight"
+
+let createFePointLight doc : fePointLightElement t =
+  unsafeCreateElement doc "fePointLight"
+
+let createFeSpotLight doc : feSpotLightElement t = unsafeCreateElement doc "feSpotLight"
+
+let createFeDisplacementMap doc : feDisplacementMapElement t =
+  unsafeCreateElement doc "feDisplacementMap"
+
+let createFeFlood doc : feFloodElement t = unsafeCreateElement doc "feFlood"
+
+let createFeGaussianBlur doc : feGaussianBlurElement t =
+  unsafeCreateElement doc "feGaussianBlur"
+
+let createFeImage doc : feImageElement t = unsafeCreateElement doc "feImage"
+
+let createFeMerge doc : feMergeElement t = unsafeCreateElement doc "feMerge"
+
+let createFeMergeNode doc : feMergeNodeElement t = unsafeCreateElement doc "feMergeNode"
+
+let createFeMorphology doc : feMorphologyElement t =
+  unsafeCreateElement doc "feMorphology"
+
+let createFeOffset doc : feOffsetElement t = unsafeCreateElement doc "feOffset"
+
+let createFeSpecularLighting doc : feSpecularLightingElement t =
+  unsafeCreateElement doc "feSpecularLighting"
+
+let createFeTile doc : feTileElement t = unsafeCreateElement doc "feTile"
+
+let createFeTurbulence doc : feTurbulenceElement t =
+  unsafeCreateElement doc "feTurbulence"
+
+let createFeDropShadow doc : feDropShadowElement t =
+  unsafeCreateElement doc "feDropShadow"
 
 (****)
 
@@ -2088,7 +2450,6 @@ module CoerceTo = struct
 
   let ellipse e : ellipseElement t opt = unsafeCoerce e "ellipse"
 
-  (* let Fe* *)
   let filter e : filterElement t opt = unsafeCoerce e "filter"
 
   let font e : fontElement t opt = unsafeCoerce e "font"
@@ -2119,7 +2480,6 @@ module CoerceTo = struct
 
   let linearElement e : linearGradientElement t opt = unsafeCoerce e "lineargradient"
 
-  (* let Marker e : markerElement *)
   let mask e : maskElement t opt = unsafeCoerce e "mask"
 
   let metaData e : metadataElement t opt = unsafeCoerce e "metadata"
@@ -2169,4 +2529,61 @@ module CoerceTo = struct
   let view e : viewElement t opt = unsafeCoerce e "view"
 
   let vkern e : element t opt = unsafeCoerce e "vkern"
+
+  let marker e : markerElement t opt = unsafeCoerce e "marker"
+
+  let feBlend e : feBlendElement t opt = unsafeCoerce e "feblend"
+
+  let feColorMatrix e : feColorMatrixElement t opt = unsafeCoerce e "fecolormatrix"
+
+  let feComponentTransfer e : feComponentTransferElement t opt =
+    unsafeCoerce e "fecomponenttransfer"
+
+  let feFuncR e : feFuncRElement t opt = unsafeCoerce e "fefuncr"
+
+  let feFuncG e : feFuncGElement t opt = unsafeCoerce e "fefuncg"
+
+  let feFuncB e : feFuncBElement t opt = unsafeCoerce e "fefuncb"
+
+  let feFuncA e : feFuncAElement t opt = unsafeCoerce e "fefunca"
+
+  let feComposite e : feCompositeElement t opt = unsafeCoerce e "fecomposite"
+
+  let feConvolveMatrix e : feConvolveMatrixElement t opt =
+    unsafeCoerce e "feconvolvematrix"
+
+  let feDiffuseLighting e : feDiffuseLightingElement t opt =
+    unsafeCoerce e "fediffuselighting"
+
+  let feDistantLight e : feDistantLightElement t opt = unsafeCoerce e "fedistantlight"
+
+  let fePointLight e : fePointLightElement t opt = unsafeCoerce e "fepointlight"
+
+  let feSpotLight e : feSpotLightElement t opt = unsafeCoerce e "fespotlight"
+
+  let feDisplacementMap e : feDisplacementMapElement t opt =
+    unsafeCoerce e "fedisplacementmap"
+
+  let feFlood e : feFloodElement t opt = unsafeCoerce e "feflood"
+
+  let feGaussianBlur e : feGaussianBlurElement t opt = unsafeCoerce e "fegaussianblur"
+
+  let feImage e : feImageElement t opt = unsafeCoerce e "feimage"
+
+  let feMerge e : feMergeElement t opt = unsafeCoerce e "femerge"
+
+  let feMergeNode e : feMergeNodeElement t opt = unsafeCoerce e "femergenode"
+
+  let feMorphology e : feMorphologyElement t opt = unsafeCoerce e "femorphology"
+
+  let feOffset e : feOffsetElement t opt = unsafeCoerce e "feoffset"
+
+  let feSpecularLighting e : feSpecularLightingElement t opt =
+    unsafeCoerce e "fespecularlighting"
+
+  let feTile e : feTileElement t opt = unsafeCoerce e "fetile"
+
+  let feTurbulence e : feTurbulenceElement t opt = unsafeCoerce e "feturbulence"
+
+  let feDropShadow e : feDropShadowElement t opt = unsafeCoerce e "fedropshadow"
 end
