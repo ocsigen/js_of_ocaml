@@ -194,11 +194,11 @@ class type element = object
 
   method id : js_string t prop
 
-  method xmlbase : js_string t prop
+  method xmlbase : js_string t optdef prop
 
-  method ownerSVGElement : svgElement t readonly_prop
+  method ownerSVGElement : svgElement t opt readonly_prop
 
-  method viewportElement : element t readonly_prop
+  method viewportElement : element t opt readonly_prop
 end
 
 (* interface SVGAnimatedString *)
@@ -317,9 +317,9 @@ end
 
 (* interface SVGLocatable *)
 and locatable = object
-  method nearestViewportElement : element t readonly_prop
+  method nearestViewportElement : element t opt readonly_prop
 
-  method farthestViewportElement : element t readonly_prop
+  method farthestViewportElement : element t opt readonly_prop
 
   method getBBox : rect t meth
 
@@ -339,7 +339,7 @@ end
 
 (* interface SVGTests *)
 and tests = object
-  method requiredFeatures : stringList t readonly_prop
+  method requiredFeatures : stringList t optdef readonly_prop
 
   method requiredExtensions : stringList t readonly_prop
 
@@ -444,23 +444,23 @@ and svgElement = object
 
   method height : animatedLength t readonly_prop
 
-  method contentScriptType : js_string t prop
+  method contentScriptType : js_string t optdef prop
 
-  method contentStyleType : js_string t prop
+  method contentStyleType : js_string t optdef prop
 
-  method viewport : rect t readonly_prop
+  method viewport : rect t optdef readonly_prop
 
-  method pixelUnitToMillimeterX : number_t readonly_prop
+  method pixelUnitToMillimeterX : number_t optdef readonly_prop
 
-  method pixelUnitToMillimeterY : number_t readonly_prop
+  method pixelUnitToMillimeterY : number_t optdef readonly_prop
 
-  method screenPixelUnitToMillimeterX : number_t readonly_prop
+  method screenPixelUnitToMillimeterX : number_t optdef readonly_prop
 
-  method screenPixelUnitToMillimeterY : number_t readonly_prop
+  method screenPixelUnitToMillimeterY : number_t optdef readonly_prop
 
-  method useCurrentView : bool t readonly_prop
+  method useCurrentView : bool t optdef readonly_prop
 
-  method currentView : viewSpec t readonly_prop
+  method currentView : viewSpec t optdef readonly_prop
 
   method currentScale : number_t prop
 
@@ -484,9 +484,9 @@ and svgElement = object
 
   method setCurrentTime : int -> unit meth
 
-  method getIntersectionList : rect t -> element t -> element Dom.nodeList t meth
+  method getIntersectionList : rect t -> element t opt -> element Dom.nodeList t meth
 
-  method getEnclosureList : rect t -> element t -> element Dom.nodeList t meth
+  method getEnclosureList : rect t -> element t opt -> element Dom.nodeList t meth
 
   method checkIntersection : element t -> rect t -> bool t meth
 
@@ -604,9 +604,9 @@ and useElement = object
 
   method height : animatedLength t readonly_prop
 
-  method instanceRoot : elementInstance t readonly_prop
+  method instanceRoot : element t opt readonly_prop
 
-  method animatedInstanceRoot : elementInstance t readonly_prop
+  method animatedInstanceRoot : element t opt readonly_prop
 end
 
 and elementInstance = object
@@ -905,13 +905,13 @@ and pathSegList = [pathSeg t] list
 
 (* interface SVGAnimatedPathData *)
 and animatedPathData = object
-  method pathSegList : pathSegList t prop
+  method pathSegList : pathSegList t optdef prop
 
-  method normalizedPathSegList : pathSegList t prop
+  method normalizedPathSegList : pathSegList t optdef prop
 
-  method animatedPathSegList : pathSegList t prop
+  method animatedPathSegList : pathSegList t optdef prop
 
-  method animatedNormalizedPathSegList : pathSegList t prop
+  method animatedNormalizedPathSegList : pathSegList t optdef prop
 end
 
 (* interface SVGPathElement *)
@@ -1479,9 +1479,9 @@ and filterElement = object
 
   method height : animatedLength t readonly_prop
 
-  method filterResX : animatedInteger t readonly_prop
+  method filterResX : animatedInteger t optdef readonly_prop
 
-  method filterResY : animatedInteger t readonly_prop
+  method filterResY : animatedInteger t optdef readonly_prop
 
   method setFilterRes : int -> int -> unit meth
 end
