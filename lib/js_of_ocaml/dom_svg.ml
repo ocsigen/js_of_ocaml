@@ -946,9 +946,9 @@ and animatedTransformList = [transformList t] animated
 
 (* interface SVGPreserveAspectRatio *)
 and preserveAspectRatio = object
-  method align : alignmentType readonly_prop
+  method align : alignmentType prop
 
-  method meetOrSlice : meetOrSliceType readonly_prop
+  method meetOrSlice : meetOrSliceType prop
 end
 
 (* interface SVGAnimatedPreserveAspectRatio *)
