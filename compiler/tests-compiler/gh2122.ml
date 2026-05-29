@@ -61,31 +61,30 @@ let%expect_test "match with many shared continuations is a flat dispatch loop" =
     {|
     function kind(param){
      var _c_ = runtime.caml_string_compare(param, cst_let), _b_ = 0;
-     a:
      for(;;){
       switch(_b_){
         case 0:
          if(0 <= _c_){
-          if(0 >= _c_){_b_ = 3; continue a;}
+          if(0 >= _c_){_b_ = 3; continue;}
           if(caml_string_notequal(param, cst_match)){
            if(caml_string_notequal(param, cst_module)){
-            if(! caml_string_notequal(param, cst_open)){_b_ = 2; continue a;}
-            if(! caml_string_notequal(param, cst_then)){_b_ = 4; continue a;}
-            if(caml_string_notequal(param, cst_type)){_b_ = 1; continue a;}
+            if(! caml_string_notequal(param, cst_open)){_b_ = 2; continue;}
+            if(! caml_string_notequal(param, cst_then)){_b_ = 4; continue;}
+            if(caml_string_notequal(param, cst_type)){_b_ = 1; continue;}
            }
            return 4;
           }
          }
          else{
-          if(! caml_string_notequal(param, cst_else)){_b_ = 4; continue a;}
+          if(! caml_string_notequal(param, cst_else)){_b_ = 4; continue;}
           if
            (caml_string_notequal(param, cst_fun)
             && caml_string_notequal(param, cst_function)){
-           if(! caml_string_notequal(param, cst_if)){_b_ = 4; continue a;}
-           if(! caml_string_notequal(param, cst_in)){_b_ = 3; continue a;}
-           if(caml_string_notequal(param, cst_include)){_b_ = 1; continue a;}
+           if(! caml_string_notequal(param, cst_if)){_b_ = 4; continue;}
+           if(! caml_string_notequal(param, cst_in)){_b_ = 3; continue;}
+           if(caml_string_notequal(param, cst_include)){_b_ = 1; continue;}
            _b_ = 2;
-           continue a;
+           continue;
           }
          }
         case 5:
@@ -149,43 +148,42 @@ let%expect_test "non-independent scopes fall through to the join where adjacent"
     {|
     function score(s){
      var _c_ = runtime.caml_string_compare(s, cst_let), _b_ = 0;
-     a:
      for(;;){
       switch(_b_){
         case 0:
          if(0 <= _c_){
-          if(0 >= _c_){_b_ = 4; continue a;}
+          if(0 >= _c_){_b_ = 4; continue;}
           if(caml_string_notequal(s, cst_match)){
            if(caml_string_notequal(s, cst_module)){
-            if(! caml_string_notequal(s, cst_open)){_b_ = 3; continue a;}
-            if(! caml_string_notequal(s, cst_then)){_b_ = 5; continue a;}
-            if(caml_string_notequal(s, cst_type)){_b_ = 2; continue a;}
+            if(! caml_string_notequal(s, cst_open)){_b_ = 3; continue;}
+            if(! caml_string_notequal(s, cst_then)){_b_ = 5; continue;}
+            if(caml_string_notequal(s, cst_type)){_b_ = 2; continue;}
            }
            var n = 4;
            _b_ = 1;
-           continue a;
+           continue;
           }
          }
          else{
-          if(! caml_string_notequal(s, cst_else)){_b_ = 5; continue a;}
+          if(! caml_string_notequal(s, cst_else)){_b_ = 5; continue;}
           if
            (caml_string_notequal(s, cst_fun)
             && caml_string_notequal(s, cst_function)){
-           if(! caml_string_notequal(s, cst_if)){_b_ = 5; continue a;}
-           if(! caml_string_notequal(s, cst_in)){_b_ = 4; continue a;}
-           if(caml_string_notequal(s, cst_include)){_b_ = 2; continue a;}
+           if(! caml_string_notequal(s, cst_if)){_b_ = 5; continue;}
+           if(! caml_string_notequal(s, cst_in)){_b_ = 4; continue;}
+           if(caml_string_notequal(s, cst_include)){_b_ = 2; continue;}
            _b_ = 3;
-           continue a;
+           continue;
           }
          }
         case 6:
-         n = 3; _b_ = 1; continue a;
+         n = 3; _b_ = 1; continue;
         case 5:
-         n = 1; _b_ = 1; continue a;
+         n = 1; _b_ = 1; continue;
         case 4:
-         n = 2; _b_ = 1; continue a;
+         n = 2; _b_ = 1; continue;
         case 3:
-         n = 5; _b_ = 1; continue a;
+         n = 5; _b_ = 1; continue;
         case 2: n = 0;
         case 1:
          return (n * 100 | 0) + runtime.caml_ml_string_length(s) | 0;

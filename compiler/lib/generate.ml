@@ -354,6 +354,32 @@ type edge_kind =
      selector variable the given case index and [continue] the loop. *)
   | Dispatch of Code.Var.t * int
 
+(* The label for an unlabelled [break]/[continue] reaching [(pc, l)]: [None]
+   when it can be omitted, otherwise [Some l] -- in which case [used] is set,
+   so the target construct is emitted carrying its label.
+
+   An unlabelled jump lands on the innermost enclosing construct that captures
+   it, so the label can be omitted exactly when that construct is the target
+   itself -- i.e. nothing capturing lies in between. [continue] is captured
+   only by loops ([Loop], [Exit_loop], [Dispatch]); [break] also by switches
+   ([Exit_switch]). Labelled blocks ([Forward]) capture neither. *)
+let branch_label kind pc l used scope_stack =
+  let rec can_skip = function
+    | [] -> assert false
+    | (_, (_, _, Forward)) :: rem -> can_skip rem
+    | (_, (_, _, Exit_switch _)) :: rem
+      when match kind with
+           | `Continue -> true
+           | `Break -> false -> can_skip rem
+    | (pc', (l', _, (Loop | Exit_loop _ | Exit_switch _ | Dispatch _))) :: rem ->
+        J.Label.equal l' l && (pc = pc' || can_skip rem)
+  in
+  if can_skip scope_stack
+  then None
+  else (
+    used := true;
+    Some l)
+
 let var x = J.EVar (J.V x)
 
 let int n = J.ENum (J.Num.of_targetint (Targetint.of_int_exn n))
@@ -2413,20 +2439,7 @@ and compile_branch st loc queue ((pc, _) as cont) scope_stack ~fall_through : bo
         | Some (l, used, Loop) ->
             (* Loop back to the beginning of the loop using continue.
                We can skip the label if we're not inside a nested loop. *)
-            let rec can_skip_label scope_stack =
-              match scope_stack with
-              | [] -> assert false
-              | (_, (_, _, (Forward | Exit_switch _))) :: rem -> can_skip_label rem
-              | (pc', (l', _, (Loop | Exit_loop _ | Dispatch _))) :: rem ->
-                  J.Label.equal l' l && (pc = pc' || can_skip_label rem)
-            in
-            let label =
-              if can_skip_label scope_stack
-              then None
-              else (
-                used := true;
-                Some l)
-            in
+            let label = branch_label `Continue pc l used scope_stack in
             if debug ()
             then
               if Option.is_none label
@@ -2438,20 +2451,7 @@ and compile_branch st loc queue ((pc, _) as cont) scope_stack ~fall_through : bo
                We can skip the label if we're not inside a nested loop or switch.
             *)
             branch_used := true;
-            let rec can_skip_label scope_stack =
-              match scope_stack with
-              | [] -> assert false
-              | (_, (_, _, Forward)) :: rem -> can_skip_label rem
-              | (pc', (l', _, (Loop | Exit_loop _ | Exit_switch _ | Dispatch _))) :: rem
-                -> J.Label.equal l' l && (pc = pc' || can_skip_label rem)
-            in
-            let label =
-              if can_skip_label scope_stack
-              then None
-              else (
-                used := true;
-                Some l)
-            in
+            let label = branch_label `Break pc l used scope_stack in
             if debug ()
             then
               if Option.is_none label
@@ -2465,15 +2465,20 @@ and compile_branch st loc queue ((pc, _) as cont) scope_stack ~fall_through : bo
             true, Q.flush_all queue loc [ J.Break_statement (Some l), J.N ]
         | Some (l, used, Dispatch (sel, k)) ->
             (* Reach the target through the enclosing dispatch loop: select the
-               corresponding case and loop back. The label is mandatory. *)
-            if debug () then Format.eprintf "(dispatch %d -> %d)@;" pc k;
-            used := true;
+               corresponding case and loop back. As for [Loop], the label can be
+               skipped when the dispatch loop is the innermost enclosing loop. *)
+            let label = branch_label `Continue pc l used scope_stack in
+            if debug ()
+            then
+              if Option.is_none label
+              then Format.eprintf "(dispatch %d -> %d) continue;@," pc k
+              else Format.eprintf "(dispatch %d -> %d) continue (%d);@," pc k pc;
             ( true
             , Q.flush_all
                 queue
                 loc
                 [ J.Expression_statement (J.EBin (J.Eq, var sel, int k)), loc
-                ; J.Continue_statement (Some l), J.N
+                ; J.Continue_statement label, J.N
                 ] )
         | None -> compile_block st loc queue pc scope_stack ~fall_through)
 
