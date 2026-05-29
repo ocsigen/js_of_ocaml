@@ -110,7 +110,7 @@ let print_flags f flags =
 
 let () =
   let () = set_binary_mode_out stdout true in
-  let js_runtime, deps, wat_files, runtimes =
+  let js_runtime, deps, wat_files, runtimes, impl_modules =
     match Array.to_list Sys.argv with
     | _ :: js_runtime :: deps :: rest ->
         assert (Filename.check_suffix js_runtime ".js");
@@ -122,7 +122,14 @@ let () =
           List.partition rest ~f:(fun f -> Filename.check_suffix f ".wasm")
         in
         assert (List.is_empty rest);
-        js_runtime, deps, wat_files, wasm_files
+        (* The precompiled runtimes are named [runtime-*.wasm]; any other
+           [.wasm] file is an implementation module ([*-impl.wasm]) that must
+           be merged into the runtime. *)
+        let runtimes, impl_modules =
+          List.partition wasm_files ~f:(fun f ->
+              String.starts_with (Filename.basename f) ~prefix:"runtime-")
+        in
+        js_runtime, deps, wat_files, runtimes, impl_modules
     | _ -> assert false
   in
   check_js_file js_runtime;
@@ -138,6 +145,13 @@ let () =
            Filename.(chop_suffix (basename file) ".wat")
            (Fs.read_file file)))
     wat_files;
+  Format.printf
+    "let wasm_files = [%a]@."
+    (Format.pp_print_list (fun f file ->
+         (* [foo-impl.wasm] provides the module imported as ["foo"]. *)
+         let name = Filename.chop_suffix (Filename.basename file) "-impl.wasm" in
+         Format.fprintf f "%S,@;%S;@;" name (Fs.read_file file)))
+    impl_modules;
   Format.printf
     "let precompiled_runtimes = [%a]@."
     (Format.pp_print_list (fun f (standard, flags) ->
