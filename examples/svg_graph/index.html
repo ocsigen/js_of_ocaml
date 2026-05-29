@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>SVG node-graph editor</title>
+    <style>
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background: #0f1426;
+        color: #dfe6f3;
+      }
+      header { padding: 12px 18px; }
+      h1 { font-size: 1.25em; font-weight: 600; margin: 0 0 4px; }
+      .hint { font-size: 0.85em; color: #9fb0d0; }
+      .controls {
+        display: flex;
+        gap: 18px;
+        align-items: center;
+        padding: 8px 18px;
+        background: #161d33;
+        border-top: 1px solid #243155;
+        border-bottom: 1px solid #243155;
+      }
+      .controls label { font-size: 0.85em; display: flex; align-items: center; gap: 6px; }
+      #canvas { flex: 1; min-height: 0; }
+      svg { display: block; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>SVG node-graph editor</h1>
+      <div class="hint">
+        Drag nodes to move them. Double-click the background to add a node.
+        Enable “link mode” and click two nodes to connect them. Click a node to
+        select it (shows its bounding box); click the background to deselect.
+      </div>
+    </header>
+    <div class="controls">
+      <label><input type="checkbox" id="link" /> link mode</label>
+      <label>shadow blur
+        <input type="range" id="blur" min="0" max="8" step="0.5" value="2.5" />
+      </label>
+      <label>hue
+        <input type="range" id="hue" min="0" max="360" step="5" value="0" />
+      </label>
+      <label><input type="checkbox" id="wobble" /> wobble edges</label>
+      <label>wobble amount
+        <input type="range" id="scale" min="0" max="30" step="1" value="12" />
+      </label>
+    </div>
+    <div id="canvas"></div>
+    <script src="svg_graph.bc.js"></script>
+  </body>
+</html>
