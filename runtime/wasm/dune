@@ -22,6 +22,7 @@
   binaryen-version-check
   args
   zstd-impl.wasm
+  blake2-impl.wasm
   (glob_files *.wat))
  (action
   (run
@@ -32,6 +33,7 @@
    --allowed-imports=bindings,Math,js,wasm:js-string,wasm:text-encoder,wasm:text-decoder
    %{target}
    zstd:zstd-impl.wasm
+   blake2:blake2-impl.wasm
    %{read-lines:args})))
 
 (rule
@@ -40,6 +42,7 @@
   binaryen-version-check
   args
   zstd-impl.wasm
+  blake2-impl.wasm
   (glob_files *.wat))
  (action
   (run
@@ -50,6 +53,7 @@
    --allowed-imports=bindings,Math,js,wasm:js-string,wasm:text-encoder,wasm:text-decoder
    %{target}
    zstd:zstd-impl.wasm
+   blake2:blake2-impl.wasm
    %{read-lines:args})))
 
 (rule
@@ -105,3 +109,50 @@
  (alias recompile-zstd)
  (action
   (cmp zstd-impl.wasm zstd-impl.new.wasm)))
+
+(rule
+ (target blake2-impl.new.wasm)
+ (deps blake2b-ref.c blake2_wrap.c blake2.h blake2-impl.h)
+ (enabled_if
+  (not %{env:CI=false}))
+ (mode promote)
+ (action
+  (with-stdout-to
+   %{target}
+   (pipe-stdout
+    (run
+     docker
+     run
+     -v
+     .:/src
+     -w
+     /src
+     ghcr.io/webassembly/wasi-sdk
+     /opt/wasi-sdk/bin/clang
+     ;; -O2 yields a smaller binary than -Oz for the hash core.
+     -O2
+     -flto
+     -nodefaultlibs
+     -nostartfiles
+     -ffreestanding
+     -mbulk-memory
+     -fno-stack-protector
+     -DNDEBUG
+     ;; Strips the sole `volatile` in the sources — secure_zero_memory's
+     ;; anti-DSE trick (blake2-impl.h) — so its memset call inlines to a
+     ;; memory.fill. Safe here: that only scrubs local stack scratch after
+     ;; the digest is already copied out, so it cannot change the result,
+     ;; and Digest.BLAKE* uses no key, so nothing secret is left behind.
+     -Dvolatile=
+     -Wl,--no-entry
+     -Wl,--export-memory=blake2_memory
+     blake2b-ref.c
+     blake2_wrap.c
+     -o
+     -)
+    (run wasm-opt -Oz --strip-debug --strip-dwarf - -o -)))))
+
+(rule
+ (alias recompile-blake2)
+ (action
+  (cmp blake2-impl.wasm blake2-impl.new.wasm)))
