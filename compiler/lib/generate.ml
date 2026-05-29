@@ -2116,6 +2116,8 @@ and compile_block_no_loop st loc queue (pc : Addr.t) ~fall_through scope_stack =
       let sel = Code.Var.fresh () in
       let l = J.Label.fresh () in
       let used = ref false in
+      (* Set when some case breaks to the join, i.e. exits the loop. *)
+      let exit_branch_used = ref false in
       (* case 0 is the dispatch itself, the targets are cases 1..n *)
       let indexed = List.mapi new_scopes ~f:(fun i x -> succ i, x) in
       let scope_stack =
@@ -2124,7 +2126,7 @@ and compile_block_no_loop st loc queue (pc : Addr.t) ~fall_through scope_stack =
       in
       let scope_stack =
         match fall_through with
-        | Block fpc -> (fpc, (l, used, Exit_loop (ref false))) :: scope_stack
+        | Block fpc -> (fpc, (l, used, Exit_loop exit_branch_used)) :: scope_stack
         | Return -> scope_stack
       in
       (* Targets are emitted in reverse so that each one falls through to the
@@ -2145,31 +2147,50 @@ and compile_block_no_loop st loc queue (pc : Addr.t) ~fall_through scope_stack =
           block.branch
           scope_stack
       in
+      (* Returns the cases together with the [never] of the last case ([x_1]),
+         whose fall-through is the join: it is [false] exactly when control can
+         fall off the bottom of the [switch]. *)
       let rec scope_cases = function
-        | [] -> []
-        | (c, x) :: rest ->
+        | [] -> [], true
+        | (c, x) :: rest -> (
             let fall_through =
               match rest with
               | (_, x') :: _ -> Block x'
               | [] -> fall_through
             in
-            let _never, code = compile_block st loc Q.empty x scope_stack ~fall_through in
-            (int c, code) :: scope_cases rest
+            let never, code = compile_block st loc Q.empty x scope_stack ~fall_through in
+            let cases, last_never = scope_cases rest in
+            ( (int c, code) :: cases
+            , match rest with
+              | [] -> never
+              | _ :: _ -> last_never ))
       in
-      let cases = (int 0, dispatch_code) :: scope_cases ordered in
+      let scope_cases, last_case_never = scope_cases ordered in
+      let cases = (int 0, dispatch_code) :: scope_cases in
       let switch = J.Switch_statement (var sel, cases, None, []), loc in
+      (* The construct only falls through to the join in two ways: a case falls
+         off the bottom of the [switch] (governed by [last_case_never]), or a
+         case breaks out ([exit_branch_used]). *)
+      let never_after = (not !exit_branch_used) && last_case_never in
       (* A target that falls off its case lands on the next case; the dispatch
          and the join exit the loop. The trailing [break] (unlabelled: it sits
          in the loop body, after the [switch]) catches a case that falls through
-         to the join. It must not be labelled with [l], as [l] is only emitted
-         when a branch actually routes through the loop ([!used]). *)
-      let body = Js_simpl.block [ switch; J.Break_statement None, J.N ] in
+         to the join, and is also the loop exit reached by an unlabelled break
+         out of the [switch]. It is unreachable -- and nothing relies on it --
+         exactly when [never_after] holds, so it can then be dropped. It must
+         not be labelled with [l], as [l] is only emitted when a branch actually
+         routes through the loop ([!used]). *)
+      let body =
+        if never_after
+        then Js_simpl.block [ switch ]
+        else Js_simpl.block [ switch; J.Break_statement None, J.N ]
+      in
       let for_loop = J.For_statement (J.Left None, None, None, body), loc in
       let for_loop =
         if !used then J.Labelled_statement (l, for_loop), J.N else for_loop
       in
       let decl = J.variable_declaration [ J.V sel, (int 0, J.N) ], J.N in
-      false, [ decl; for_loop ]
+      never_after, [ decl; for_loop ]
     else loop ~scope_stack ~fall_through new_scopes
   in
   never_after, seq @ after
