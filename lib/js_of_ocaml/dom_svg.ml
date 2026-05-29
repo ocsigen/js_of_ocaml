@@ -1921,27 +1921,27 @@ let unsafeCreateElement doc name = Js.Unsafe.coerce (createElement doc name)
 
 let createA doc : aElement t = unsafeCreateElement doc "a"
 
-let createAltGlyph doc : altGlyphElement t = unsafeCreateElement doc "altglyph"
+let createAltGlyph doc : altGlyphElement t = unsafeCreateElement doc "altGlyph"
 
-let createAltGlyphDef doc : altGlyphDefElement t = unsafeCreateElement doc "altglyphdef"
+let createAltGlyphDef doc : altGlyphDefElement t = unsafeCreateElement doc "altGlyphDef"
 
 let createAltGlyphItem doc : altGlyphItemElement t =
-  unsafeCreateElement doc "altglyphitem"
+  unsafeCreateElement doc "altGlyphItem"
 
 let createAnimate doc : animateElement t = unsafeCreateElement doc "animate"
 
 let createAnimateColor doc : animateColorElement t =
-  unsafeCreateElement doc "animatecolor"
+  unsafeCreateElement doc "animateColor"
 
 let createAnimateMotion doc : animateMotionElement t =
-  unsafeCreateElement doc "animatemotion"
+  unsafeCreateElement doc "animateMotion"
 
 let createAnimateTransform doc : animateTransformElement t =
-  unsafeCreateElement doc "animatetransform"
+  unsafeCreateElement doc "animateTransform"
 
 let createCircle doc : circleElement t = unsafeCreateElement doc "circle"
 
-let createClipPath doc : clipPathElement t = unsafeCreateElement doc "clippath"
+let createClipPath doc : clipPathElement t = unsafeCreateElement doc "clipPath"
 
 (* let createColorProfile doc : colorProfile t = unsafeCreateElement doc "color-profile" *)
 let createCursor doc : cursorElement t = unsafeCreateElement doc "cursor"
@@ -1974,7 +1974,7 @@ let createG doc : gElement t = unsafeCreateElement doc "g"
 
 let createGlyph doc : glyphElement t = unsafeCreateElement doc "glyph"
 
-let createGlyphRef doc : glyphElement t = unsafeCreateElement doc "glyphref"
+let createGlyphRef doc : glyphElement t = unsafeCreateElement doc "glyphRef"
 
 let createhkern doc : element t = unsafeCreateElement doc "hkern"
 
@@ -1983,7 +1983,7 @@ let createImage doc : imageElement t = unsafeCreateElement doc "image"
 let createLineElement doc : lineElement t = unsafeCreateElement doc "line"
 
 let createLinearElement doc : linearGradientElement t =
-  unsafeCreateElement doc "lineargradient"
+  unsafeCreateElement doc "linearGradient"
 
 (* let createMarker doc : markerElement *)
 let createMask doc : maskElement t = unsafeCreateElement doc "mask"
@@ -2003,7 +2003,7 @@ let createPolygon doc : polygonElement t = unsafeCreateElement doc "polygon"
 let createPolyline doc : polyLineElement t = unsafeCreateElement doc "polyline"
 
 let createRadialgradient doc : radialGradientElement t =
-  unsafeCreateElement doc "radialgradient"
+  unsafeCreateElement doc "radialGradient"
 
 let createRect doc : rectElement t = unsafeCreateElement doc "rect"
 
@@ -2023,7 +2023,7 @@ let createSymbol doc : symbolElement t = unsafeCreateElement doc "symbol"
 
 let createTextElement doc : textElement t = unsafeCreateElement doc "text"
 
-let createTextpath doc : textPathElement t = unsafeCreateElement doc "textpath"
+let createTextpath doc : textPathElement t = unsafeCreateElement doc "textPath"
 
 let createTitle doc : titleElement t = unsafeCreateElement doc "title"
 
