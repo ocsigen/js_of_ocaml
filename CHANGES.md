@@ -47,7 +47,10 @@
   `getTransformToElement`; `nearestViewportElement`/`farthestViewportElement`
   are kept but typed `optdef` as they are deprecated and dropped by some engines.
   Also bind `markerElement` and the full `SVGFE*` filter-primitive family (with
-  `create*`/`CoerceTo.*` helpers).
+  `create*`/`CoerceTo.*` helpers), make every SVG element an event target so
+  `Dom_html`/`Lwt_js_events` handlers can be attached to them (#519), and fix
+  the `prop`/`readonly_prop` split (e.g. writable `SVGPoint`/`SVGMatrix`
+  coordinates).
 
 ## Bug fixes
 * Runtime/wasm: `caml_seek_in` validates the seek destination for
