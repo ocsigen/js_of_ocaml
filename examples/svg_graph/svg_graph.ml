@@ -170,14 +170,15 @@ let build_defs () =
 
 (* {2 Coordinate conversion}
 
-   [getScreenCTM] maps user space to client (screen) coordinates; its inverse
-   maps a mouse position back into the SVG user space. We apply the inverse
-   matrix components directly. *)
+   [getScreenCTM] maps user space to client (screen) coordinates, so a point
+   carrying the mouse position run through the inverse matrix lands back in the
+   SVG user space. *)
 let client_to_user (svg : Dom_svg.svgElement Js.t) ev =
-  let m = svg##getScreenCTM##inverse in
-  let x = to_f ev##.clientX and y = to_f ev##.clientY in
-  ( (to_f m##.a *. x) +. (to_f m##.c *. y) +. to_f m##.e
-  , (to_f m##.b *. x) +. (to_f m##.d *. y) +. to_f m##.f )
+  let pt = svg##createSVGPoint in
+  pt##.x := ev##.clientX;
+  pt##.y := ev##.clientY;
+  let p = pt##matrixTransform svg##getScreenCTM##inverse in
+  to_f p##.x, to_f p##.y
 
 (* {2 Edges} *)
 
