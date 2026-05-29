@@ -1113,7 +1113,7 @@ end
 and animatedPoints = object
   method points : pointList t readonly_prop
 
-  method animatedpoints : pointList t readonly_prop
+  method animatedPoints : pointList t readonly_prop
 end
 
 (* interface SVGPolylineElement *)
