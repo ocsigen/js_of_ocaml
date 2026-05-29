@@ -4388,13 +4388,13 @@ val scrollIntoView :
 val focus : ?preventScroll:bool t -> #element t -> unit
 (** Wrapper for [HTMLElement.focus(options)] taking labeled arguments. *)
 
-val showPopover : ?source:element t -> #element t -> unit
+val showPopover : ?source:#element t -> #element t -> unit
 (** Wrapper for [Element.showPopover(options)] taking labeled arguments. *)
 
 val hidePopover : #element t -> unit
 (** Wrapper for [Element.hidePopover()]. *)
 
-val togglePopover : ?force:bool t -> ?source:element t -> #element t -> bool t
+val togglePopover : ?force:bool t -> ?source:#element t -> #element t -> bool t
 (** Wrapper for [Element.togglePopover(options)] taking labeled arguments.
     Returns the new open state. *)
 

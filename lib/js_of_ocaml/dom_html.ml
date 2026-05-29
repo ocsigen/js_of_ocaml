@@ -1303,13 +1303,13 @@ and focusOptions = object
 end
 
 and showPopover_options = object
-  method source : #element t writeonly_prop
+  method source : element t writeonly_prop
 end
 
 and togglePopover_options = object
   method force : bool t writeonly_prop
 
-  method source : #element t writeonly_prop
+  method source : element t writeonly_prop
 end
 
 and element = object
@@ -4961,7 +4961,7 @@ let showPopover ?source (el : #element t) =
   | None -> el##showPopover
   | Some s ->
       let opts : showPopover_options t = Js.Unsafe.obj [||] in
-      opts##.source := s;
+      opts##.source := (s :> element t);
       el##showPopover_options opts
 
 let hidePopover (el : #element t) = el##hidePopover
@@ -4973,7 +4973,7 @@ let togglePopover ?force ?source (el : #element t) =
   | _, _ ->
       let opts : togglePopover_options t = Js.Unsafe.obj [||] in
       Option.iter (fun f -> opts##.force := f) force;
-      Option.iter (fun s -> opts##.source := s) source;
+      Option.iter (fun s -> opts##.source := (s :> element t)) source;
       el##togglePopover_options opts
 
 let postMessage ?transfer ?targetOrigin (w : window t) message =
