@@ -866,9 +866,9 @@ end
 
 (* interface SVGPoint *)
 and point = object
-  method x : number_t readonly_prop
+  method x : number_t prop
 
-  method y : number_t readonly_prop
+  method y : number_t prop
 
   method matrixTransform : matrix t -> point t meth
 end
@@ -878,17 +878,17 @@ and pointList = [point t] list
 
 (* interface SVGMatrix *)
 and matrix = object
-  method a : number_t readonly_prop
+  method a : number_t prop
 
-  method b : number_t readonly_prop
+  method b : number_t prop
 
-  method c : number_t readonly_prop
+  method c : number_t prop
 
-  method d : number_t readonly_prop
+  method d : number_t prop
 
-  method e : number_t readonly_prop
+  method e : number_t prop
 
-  method f : number_t readonly_prop
+  method f : number_t prop
 
   method multiply : matrix t -> matrix t meth
 
