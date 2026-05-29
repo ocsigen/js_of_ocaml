@@ -1,6 +1,9 @@
 # dev
 
 ## Features/Changes
+* Compiler: force a major GC collection after parsing the bytecode when
+  debug information was loaded, lowering peak memory by ~20% on
+  debug-enabled builds
 * Compiler: variable substitution (`Subst`) returns the original blocks,
   instructions and expressions when they are not affected, rather than
   rebuilding the whole program each time (#2447)
