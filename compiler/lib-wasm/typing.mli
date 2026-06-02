@@ -45,6 +45,16 @@ type typ =
 
 val constant_type : Code.constant -> typ
 
+val join : typ -> typ -> typ
+
+val conversion_prim : from:typ -> into:typ -> Code.prim option
+(** The wasm conversion primitive needed to coerce a value of type [from]
+    into representation [into], or [None] if no conversion is needed.
+    Single source of truth for the box/unbox/tag/untag lattice. *)
+
+val is_unboxed_repr : typ -> bool
+(** Whether [typ] is an unboxed-number or untagged-integer representation. *)
+
 val can_unbox_parameters : Call_graph_analysis.t -> Code.Var.t -> bool
 
 val bigarray_element_type : Optimization_hint.Bigarray.kind -> typ
@@ -53,11 +63,17 @@ type t
 
 val var_type : t -> Code.Var.t -> typ
 
+val set_var_type : t -> Code.Var.t -> typ -> unit
+
 val return_type : t -> Code.Var.t -> typ
+
+val set_return_type : t -> Code.Var.t -> typ -> unit
 
 val reset : unit -> unit
 
-val register_prim : string -> unbox:bool -> typ -> unit
+val register_prim : string -> ?args:typ list -> unbox:bool -> typ -> unit
+
+val prim_sig : string -> typ list option * typ
 
 val f :
      global_flow_state:Global_flow.state
