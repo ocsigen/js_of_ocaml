@@ -53,8 +53,7 @@ let iter_closures ~f instrs =
 let collect_free_vars program var_depth depth pc closures =
   let vars = ref Var.Set.empty in
   let add_if_free_variable x =
-    let idx = Var.idx x in
-    let d = var_depth.(idx) in
+    let d = var_depth.(Var.idx x) in
     assert (d >= 0);
     if d < depth then vars := Var.Set.add x !vars
   in
