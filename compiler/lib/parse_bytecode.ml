@@ -2963,6 +2963,8 @@ let from_exe
         body
     else body
   in
+  let debug = Debug.summarize debug_data in
+  if Debug.dbg_section_needed debug_data then Gc.full_major ();
   (* List interface files *)
   let is_module =
     let is_ident_char = function
@@ -3006,7 +3008,7 @@ let from_exe
   in
   let code = prepend p body in
   Code.invariant code;
-  { code; cmis; debug = Debug.summarize debug_data }
+  { code; cmis; debug }
 
 (* As input: list of primitives + size of global table *)
 let from_bytes ~prims ~debug (code : bytecode) =
@@ -3259,6 +3261,7 @@ let from_cmo ?(includes = []) ?(include_cmis = false) ?(debug = false) compunit 
   if times () then Format.eprintf "    read debug events: %a@." Timer.print t;
   let p = from_compilation_units ~includes ~include_cmis ~debug_data [ compunit, code ] in
   Code.invariant p.code;
+  if Debug.dbg_section_needed debug_data then Gc.full_major ();
   p
 
 let from_cma ?(includes = []) ?(include_cmis = false) ?(debug = false) lib ic =
@@ -3282,6 +3285,7 @@ let from_cma ?(includes = []) ?(include_cmis = false) ?(debug = false) lib ic =
   if times () then Format.eprintf "    read debug events: %.2f@." !t;
   let p = from_compilation_units ~includes ~include_cmis ~debug_data units in
   Code.invariant p.code;
+  if Debug.dbg_section_needed debug_data then Gc.full_major ();
   p
 
 let from_channel ic =

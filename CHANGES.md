@@ -27,6 +27,9 @@
   `AbortController`/`AbortSignal` primitive for cancellation (#596)
 * Wasm_of_ocaml: alternative effect implementation based on the Stack Switching proposal (#2189)
 * Lib: implement popover API (#1734)
+* Compiler: force a major GC collection after parsing the bytecode when
+  debug information was loaded, lowering peak memory by ~20% on
+  debug-enabled builds
 
 ## Bug fixes
 * Compiler: bound the statement-nesting depth of generated functions by
