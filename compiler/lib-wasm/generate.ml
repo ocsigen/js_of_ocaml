@@ -1939,6 +1939,38 @@ module Generate (Target : Target_sig.S) = struct
               | [], _ :: _ | _ :: _, [] -> assert false
             in
             loop [] arg_typ l |> box_number_if_needed ctx x
+        | Wasm_unbox_i32 -> (
+            match l with
+            | [ Pv v ] -> Memory.unbox_int32 (load v)
+            | _ -> assert false)
+        | Wasm_unbox_i64 -> (
+            match l with
+            | [ Pv v ] -> Memory.unbox_int64 (load v)
+            | _ -> assert false)
+        | Wasm_unbox_f64 -> (
+            match l with
+            | [ Pv v ] -> Memory.unbox_float (load v)
+            | _ -> assert false)
+        | Wasm_box_i32 -> (
+            match l with
+            | [ Pv v ] -> Memory.box_int32 (load v)
+            | _ -> assert false)
+        | Wasm_box_i64 -> (
+            match l with
+            | [ Pv v ] -> Memory.box_int64 (load v)
+            | _ -> assert false)
+        | Wasm_box_f64 -> (
+            match l with
+            | [ Pv v ] -> Memory.box_float (load v)
+            | _ -> assert false)
+        | Wasm_untag_int -> (
+            match l with
+            | [ Pv v ] -> Value.int_val (load v)
+            | _ -> assert false)
+        | Wasm_tag_int -> (
+            match l with
+            | [ Pv v ] -> Value.val_int (load v)
+            | _ -> assert false)
         | _ -> (
             let l = List.map ~f:(fun x -> transl_prim_arg ctx x) l in
             match p, l with
@@ -1966,8 +1998,24 @@ module Generate (Target : Target_sig.S) = struct
                     let* ift = Memory.float_array_length (load y) in
                     let* iff = Arith.const 0l in
                     return (W.IfExpr (I32, cond, ift, iff)))
-            | (Not | Lt | Le | Eq | Neq | Ult | Array_get | IsInt | Vectlength _), _ ->
-                assert false))
+            | ( ( Not
+                | Lt
+                | Le
+                | Eq
+                | Neq
+                | Ult
+                | Array_get
+                | IsInt
+                | Vectlength _
+                | Wasm_unbox_i32
+                | Wasm_unbox_i64
+                | Wasm_unbox_f64
+                | Wasm_box_i32
+                | Wasm_box_i64
+                | Wasm_box_f64
+                | Wasm_untag_int
+                | Wasm_tag_int )
+              , _ ) -> assert false))
 
   and translate_instr ctx context i =
     match i with
