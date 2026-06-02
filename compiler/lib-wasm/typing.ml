@@ -544,8 +544,15 @@ let propagate st approx x : Domain.t =
                 known
           | Top -> Top)
       | Prim (Array_get, _) -> Top
-      | Prim ((Vectlength _ | Not | IsInt | Eq | Neq | Lt | Le | Ult), _) ->
-          Int Small_normalized
+      | Prim ((Vectlength _ | Not | IsInt | Eq | Neq | Lt | Le | Ult | Wasm_untag_int), _)
+        -> Int Small_normalized
+      | Prim (Wasm_tag_int, _) -> Int Ref
+      | Prim (Wasm_unbox_i32, _) -> Number (Int32, Unboxed)
+      | Prim (Wasm_unbox_i64, _) -> Number (Int64, Unboxed)
+      | Prim (Wasm_unbox_f64, _) -> Number (Float, Unboxed)
+      | Prim (Wasm_box_i32, _) -> Number (Int32, Boxed)
+      | Prim (Wasm_box_i64, _) -> Number (Int64, Boxed)
+      | Prim (Wasm_box_f64, _) -> Number (Float, Boxed)
       | Prim (Extern (prim, hint), args) -> prim_type ~st ~approx prim hint args
       | Special _ -> Top
       | Apply { f; args; _ } -> (
@@ -722,7 +729,28 @@ let box_numbers p st types =
                           | Pv y -> box y
                           | Pc _ -> ())
                         args
-                  | Prim ((Vectlength _ | Array_get | Not | IsInt | Lt | Le | Ult), _)
+                  | Prim
+                      ( (Wasm_unbox_i32 | Wasm_unbox_i64 | Wasm_unbox_f64 | Wasm_untag_int)
+                      , args ) ->
+                      List.iter
+                        ~f:(fun a ->
+                          match a with
+                          | Pv y -> box y
+                          | Pc _ -> ())
+                        args
+                  | Prim
+                      ( ( Vectlength _
+                        | Array_get
+                        | Not
+                        | IsInt
+                        | Lt
+                        | Le
+                        | Ult
+                        | Wasm_box_i32
+                        | Wasm_box_i64
+                        | Wasm_box_f64
+                        | Wasm_tag_int )
+                      , _ )
                   | Field _ | Closure _ | Constant _ | Special _ -> ())
               | Set_field (_, _, Non_float, y) | Array_set (_, _, y) -> box y
               | Assign _ | Offset_ref _ | Set_field (_, _, Float, _) | Event _ -> ())
