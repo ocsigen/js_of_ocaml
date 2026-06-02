@@ -170,7 +170,8 @@ let%expect_test "test float" =
   [%expect
     {|
     "\132\149\166\190\000\000\000\017\000\000\000\004\000\000\000\012\000\000\000\011\160\160\012\031\133\235Q\184\030\t@\004\001\160\004\003@"
-    3.140000 3.140000 3.140000 3.140000 |}]
+    3.140000 3.140000 3.140000 3.140000
+    |}]
 
 let%expect_test "md5 digest via channel" =
   (* The MD5 buffer offset bug only triggers when MD5Update is called with

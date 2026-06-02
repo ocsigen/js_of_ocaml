@@ -1,0 +1,24 @@
+(tests
+ (names lcm_test)
+ (modes js wasm)
+ (js_of_ocaml
+  (flags :standard --disable optcall --no-inline))
+ (wasm_of_ocaml
+  (flags :standard --no-inline)))
+
+(tests
+ (names assign)
+ (modes js wasm)
+ ; Without -g, ocamlc turns local references into mutable variables,
+ ; which exercises Assign instructions
+ (ocamlc_flags ())
+ (js_of_ocaml
+  (flags
+   (:standard -w no-missing-debug-event))
+  (link_flags
+   (:standard -w no-missing-debug-event)))
+ (wasm_of_ocaml
+  (flags
+   (:standard --opt 2 -w no-missing-debug-event))
+  (link_flags
+   (:standard -w no-missing-debug-event))))
