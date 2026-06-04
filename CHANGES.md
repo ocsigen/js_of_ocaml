@@ -27,6 +27,7 @@
   `AbortController`/`AbortSignal` primitive for cancellation (#596)
 * Wasm_of_ocaml: alternative effect implementation based on the Stack Switching proposal (#2189)
 * Lib: implement popover API (#1734)
+* Lib: add Intl.RelativeTimeFormat (#2070)
 
 ## Bug fixes
 * Compiler: bound the statement-nesting depth of generated functions by
@@ -201,12 +202,11 @@
 * Ppx: allow "function" in object literals (#1897)
 * Lib: add Dom_html.window.matchMedia & Dom_html.mediaQueryList (#2017)
 * Lib: make the Wasm version of Json.output work with native ints and JavaScript objects (#1872)
-* Lib: add Intl.RelativeTimeFormat (#2070)
 
 ## Bug fixes
 * Compiler: fix stack overflow issues with double translation (#1869)
 * Compiler: minifier fix (#1867)
-* Compiler: fix shortvar with --enable es6 (AssignTarget was not properly handled)  
+* Compiler: fix shortvar with --enable es6 (AssignTarget was not properly handled)
 * Compiler: fix assert failure with double translation (#1870)
 * Compiler: fix path rewriting of Wasm source maps (#1882)
 * Compiler: fix global dead code in presence of dead tailcall (#2010)
