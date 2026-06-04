@@ -112,6 +112,10 @@ let build_runtime ~runtime_file =
   with
   | Some (_, contents) -> Fs.write_file ~name:runtime_file ~contents
   | None ->
+      (* Build the runtime from its sources: the [.wat] modules together with
+         the binary implementation modules they import from ([wasm_files]).
+         The latter are detected as binary and passed through the preprocessor
+         unchanged. *)
       let inputs =
         List.map
           ~f:(fun (module_name, contents) ->
@@ -119,7 +123,7 @@ let build_runtime ~runtime_file =
             ; file = module_name ^ ".wat"
             ; source = Contents contents
             })
-          Runtime_files.wat_files
+          (Runtime_files.wat_files @ Runtime_files.wasm_files)
       in
       Runtime.build
         ~link_options:[ "-g" ]

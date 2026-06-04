@@ -7,6 +7,10 @@
 * OxCaml support (#2105, #2225)
 * Runtime/wasm: faster copy between a Wasm string and an JavaScript array buffer (#2124)
 * Runtime/wasm: faster conversion of small JavaScript strings to Wasm (#2124)
+* Runtime/wasm: pure-Wasm zstd and BLAKE2b implementations; the runtime
+  no longer relies on the JavaScript zstd/BLAKE2 shims to unmarshal
+  compressed values or compute Digest.BLAKE512/256/128, unblocking
+  JS-less embedders (#2249)
 * Compiler: improved shape computation (#2198)
 * Add the --build-config and --apply-build-config flags (#2177)
 * Runtime/wasm: optimized some bigstring primitives (#2144)
