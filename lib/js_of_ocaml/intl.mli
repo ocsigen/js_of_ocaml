@@ -662,6 +662,8 @@ module RelativeTimeFormat : sig
   class type format_part = object
     method _type : Js.js_string Js.t Js.readonly_prop
 
+    method unit : Js.js_string Js.t Js.optdef Js.readonly_prop
+
     method _value : Js.js_string Js.t Js.readonly_prop
   end
 
