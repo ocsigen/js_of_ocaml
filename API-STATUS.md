@@ -137,7 +137,7 @@ This document lists standard JavaScript/Web APIs and their support status in js_
 
 | API | jsoo | Brr | jsoo Module / Notes |
 |-----|------|-----|---------------------|
-| Intl (Collator, DateTimeFormat, NumberFormat, PluralRules) | Yes | No | `Intl` |
+| Intl (Collator, DateTimeFormat, NumberFormat, PluralRules, RelativeTimeFormat) | Yes | No | `Intl` |
 
 ## Navigation
 
