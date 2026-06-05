@@ -39,7 +39,7 @@
       (func $caml_format_exception (param (ref eq)) (result (ref eq))))
    (import "sys" "ocaml_exit" (tag $ocaml_exit))
    (import "fail" "ocaml_exception" (tag $ocaml_exception (param (ref eq))))
-(@if wasi
+(@if $wasi
 (@then
    (import "wasi_snapshot_preview1" "proc_exit" (func $exit (param i32)))
    (import "wasi_snapshot_preview1" "fd_write"
@@ -462,7 +462,7 @@
 
    (global $uncaught_exception (mut externref) (ref.null extern))
 
-(@if (not wasi)
+(@if (not $wasi)
 (@then
    (func $reraise_exception (result (ref eq))
       (throw $javascript_exception (global.get $uncaught_exception))
@@ -481,13 +481,11 @@
    (func $caml_main (export "caml_main") (param $start (ref func))
       (local $exn (ref eq))
       (local $msg (ref eq))
-(@if wasi
-(@then
+      ;; wasi
       (local $buffer i32) (local $i i32) (local $len i32)
       (local $buf i32) (local $remaining i32)
       (local $iovs i32) (local $iovs_len i32) (local $nwritten i32)
       (local $res i32)
-))
       (try
          (do
             (block $fallback
@@ -525,7 +523,7 @@
                      (call $caml_string_concat
                         (call $caml_format_exception (local.get $exn))
                         (@string "\n"))))
-(@if wasi
+(@if $wasi
 (@then
                (local.set $len
                   (array.len (ref.cast (ref $bytes) (local.get $msg))))

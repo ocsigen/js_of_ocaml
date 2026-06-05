@@ -44,7 +44,7 @@
       (array.new_fixed $block 4 (ref.i31 (i32.const 0))
          (local.get $f) (local.get $f) (local.get $f)))
 
-(@if (>= ocaml_version (5 5 0))
+(@if (>= $ocaml_version (5 5 0))
 (@then
    (export "caml_gc_quick_stat" (func $caml_gc_stat))
    (func $caml_gc_stat (export "caml_gc_stat")

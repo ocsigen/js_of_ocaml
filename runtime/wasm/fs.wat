@@ -16,7 +16,7 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
-(@if wasi
+(@if $wasi
 (@then
    (import "libc" "memory" (memory 2))
    (import "libc" "free" (func $free (param i32)))
@@ -96,7 +96,7 @@
    (type $bytes (array (mut i8)))
    (type $block (array (mut (ref eq))))
 
-(@if wasi
+(@if $wasi
 (@then
    (type $preopen
       (struct
@@ -367,7 +367,7 @@
       (local.get $res))
 ))
 
-(@if wasi
+(@if $wasi
 (@then
    (func (export "caml_sys_getcwd")
       (export "unix_getcwd") (export "caml_unix_getcwd")
@@ -387,7 +387,7 @@
             (ref.i31 (i32.const 0)))))
 ))
 
-(@if wasi
+(@if $wasi
 (@then
    (func (export "caml_sys_chdir")
       (param $name (ref eq)) (result (ref eq))
@@ -425,7 +425,7 @@
       (ref.i31 (i32.const 0)))
 ))
 
-(@if wasi
+(@if $wasi
 (@then
    (func (export "caml_sys_mkdir")
       (param $name (ref eq)) (param $perm (ref eq)) (result (ref eq))
@@ -455,7 +455,7 @@
       (ref.i31 (i32.const 0)))
 ))
 
-(@if wasi
+(@if $wasi
 (@then
    (func (export "caml_sys_read_directory")
       (param $name (ref eq)) (result (ref eq))
@@ -591,7 +591,7 @@
             (return (ref.i31 (i32.const 0))))))
 ))
 
-(@if wasi
+(@if $wasi
 (@then
    (func (export "caml_sys_rmdir")
       (param $name (ref eq)) (result (ref eq))
@@ -620,7 +620,7 @@
       (ref.i31 (i32.const 0)))
 ))
 
-(@if wasi
+(@if $wasi
 (@then
    (func (export "caml_sys_remove")
       (param $name (ref eq)) (result (ref eq))
@@ -649,7 +649,7 @@
       (ref.i31 (i32.const 0)))
 ))
 
-(@if wasi
+(@if $wasi
 (@then
    (func (export "caml_sys_rename")
       (param $o (ref eq)) (param $n (ref eq)) (result (ref eq))
@@ -685,7 +685,7 @@
       (ref.i31 (i32.const 0)))
 ))
 
-(@if wasi
+(@if $wasi
 (@then
    (func (export "caml_sys_file_exists")
       (param $name (ref eq)) (result (ref eq))
@@ -719,7 +719,7 @@
          (call $caml_string_concat (local.get $name)
             (global.get $no_such_file))))
 
-(@if wasi
+(@if $wasi
 (@then
    (func (export "caml_read_file_content")
       (param $name (ref eq)) (result (ref eq))
@@ -741,7 +741,7 @@
          (call $wrap (local.get $res))))
 ))
 
-(@if wasi
+(@if $wasi
 (@then
    (func (export "caml_create_file")
       (param $name (ref eq)) (param $content (ref eq)) (result (ref eq))
@@ -759,7 +759,7 @@
    (func (export "caml_fs_init") (result (ref eq))
       (ref.i31 (i32.const 0)))
 
-(@if wasi
+(@if $wasi
 (@then
    (func $caml_sys_file_mode (param $name (ref eq)) (result i32)
       (local $p (tuple i32 i32 i32))
@@ -797,7 +797,7 @@
             (return (ref.i31 (i32.const 0))))))
 ))
 
-(@if wasi
+(@if $wasi
 (@then
    (func (export "caml_sys_is_regular_file")
       (param $name (ref eq)) (result (ref eq))
@@ -818,7 +818,7 @@
             (return (ref.i31 (i32.const 0))))))
 ))
 
-(@if wasi
+(@if $wasi
 (@then
    (func (export "caml_sys_temp_dir_name") (param (ref eq)) (result (ref eq))
       (@string "/tmp"))

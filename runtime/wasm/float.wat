@@ -16,7 +16,7 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
-(@if wasi
+(@if $wasi
 (@then
    (import "io" "IO_BUFFER_SIZE" (global $IO_BUFFER_SIZE i32))
    (import "libc" "memory" (memory 2))
@@ -274,7 +274,7 @@
    (global $inf (ref $chars)
       (array.new_fixed $chars 3 (@char "i") (@char "n") (@char "f")))
 
-(@if wasi
+(@if $wasi
 (@then
    (func (export "caml_format_float")
       (param $vfmt (ref eq)) (param $arg (ref eq)) (result (ref eq))
@@ -725,7 +725,7 @@
                                                 (f64.const inf)
                                                 (local.get $negative))))
                                        ))))))))))))))))))
-(@if wasi
+(@if $wasi
 (@then
          (local.set $buffer (call $get_buffer))
          (local.set $buf

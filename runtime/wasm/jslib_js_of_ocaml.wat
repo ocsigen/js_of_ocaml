@@ -16,7 +16,7 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
-(@if (not wasi)
+(@if (not $wasi)
 (@then
    (import "jslib" "wrap" (func $wrap (param anyref) (result (ref eq))))
    (import "jslib" "unwrap" (func $unwrap (param (ref eq)) (result anyref)))

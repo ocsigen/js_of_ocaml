@@ -122,9 +122,9 @@ Lonely @then or @else
 
 Undefined variable
 
-  $ echo '(@if a (@then))' | wasm_of_ocaml pp
-  File "-", line 1, characters 5-6:
-  Unknown variable 'a'.
+  $ echo '(@if $a (@then))' | wasm_of_ocaml pp
+  File "-", line 1, characters 5-7:
+  Unknown variable '$a'.
   [1]
 
 Wrong type

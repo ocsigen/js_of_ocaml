@@ -46,7 +46,7 @@
       (func $caml_find_custom_operations
          (param (ref $bytes)) (result (ref null $custom_operations))))
    (type $block (array (mut (ref eq))))
-(@if wasi
+(@if $wasi
 (@then
    (type $map
       (struct
@@ -864,7 +864,7 @@
 
    (@string $marshal_data_size "Marshal.data_size")
 
-(@if (>= ocaml_version (5 1 0))
+(@if (>= $ocaml_version (5 1 0))
 (@then
    (global $caml_marshal_header_size (export "caml_marshal_header_size") i32
       (i32.const 16))

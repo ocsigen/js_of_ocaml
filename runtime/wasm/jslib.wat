@@ -18,7 +18,7 @@
 (module
    (type $bytes (array (mut i8)))
 
-(@if (not wasi)
+(@if (not $wasi)
 (@then
    (import "bindings" "identity" (func $to_float (param anyref) (result f64)))
    (import "bindings" "identity" (func $from_float (param f64) (result anyref)))
@@ -696,11 +696,11 @@
 
    (func (export "caml_jsoo_flags_effects")
       (param (ref eq)) (result (ref eq))
-(@if (= effects "cps")
+(@if (= $effects "cps")
 (@then
       (@string "cps"))
 (@else
-(@if (= effects "jspi")
+(@if (= $effects "jspi")
 (@then
       (@string "jspi"))
 (@else

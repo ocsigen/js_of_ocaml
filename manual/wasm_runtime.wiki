@@ -62,10 +62,13 @@ wasm_of_ocaml pp test.wat
 The preprocessor allows optional compilation based on the OCaml version:
 
 {{{
-(@if (>= ocaml_version (5 2 0))
+(@if (>= $ocaml_version (5 2 0))
    (@then ...)
    (@else ...))
 }}}
+
+Variables are referenced with a {{{$}}} prefix (for instance
+{{{$ocaml_version}}}, {{{$wasi}}}, {{{$oxcaml}}}).
 
 Available operators:
 * Comparisons: {{{=}}}, {{{>}}}, {{{>=}}}, {{{<}}}, {{{<=}}}, {{{<>}}}

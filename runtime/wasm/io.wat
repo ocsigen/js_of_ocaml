@@ -25,7 +25,7 @@
       (func $caml_jsstring_of_string (param (ref eq)) (result (ref eq))))
    (import "jslib" "caml_list_of_js_array"
       (func $caml_list_of_js_array (param (ref eq)) (result (ref eq))))
-(@if wasi
+(@if $wasi
 (@then
    (import "wasi_snapshot_preview1" "fd_close"
       (func $fd_close (param i32) (result i32)))
@@ -118,7 +118,7 @@
    (import "bigarray" "caml_ba_get_data"
       (func $caml_ba_get_data (param (ref eq)) (result (ref extern))))
 
-(@if wasi
+(@if $wasi
 (@then
    (func $ta_new (param $sz i32) (result (ref extern))
       (extern.convert_any (array.new $bytes (i32.const 0) (local.get $sz))))
@@ -374,7 +374,7 @@
 
    (type $open_flags (array i16))
 
-(@if wasi
+(@if $wasi
 (@then
    ;;      1 O_RDONLY
    ;;      2 O_WRONLY
@@ -424,7 +424,7 @@
             (br $loop))))
       (local.get $flags))
 
-(@if wasi
+(@if $wasi
 (@then
    (func (export "caml_sys_open")
       (param $vpath (ref eq)) (param $vflags (ref eq)) (param $perm (ref eq))
@@ -496,7 +496,7 @@
       (ref.i31 (local.get $fd)))
 ))
 
-(@if wasi
+(@if $wasi
 (@then
    (func (export "caml_sys_close") (param (ref eq)) (result (ref eq))
       (local $fd i32) (local $res i32)
@@ -543,7 +543,7 @@
          (local.get $f))
       (ref.i31 (i32.const 0)))
 
-(@if wasi
+(@if $wasi
 (@then
    (func $push_channel (param $l (ref eq)) (param $ch (ref eq)) (result (ref eq))
       (local $c (ref $channel))
@@ -558,7 +558,7 @@
       (local.get $l))
 ))
 
-(@if wasi
+(@if $wasi
 (@then
    (func (export "caml_ml_out_channels_list")
       (param (ref eq)) (result (ref eq))
@@ -651,7 +651,7 @@
             (struct.set $channel $fd (local.get $ch) (i32.const -1))
             (call $unregister_channel (local.get $ch))
             (call $release_fd_offset (local.get $fd))
-(@if wasi
+(@if $wasi
 (@then
             (local.set $res (call $fd_close (local.get $fd)))
             (if (local.get $res)
@@ -670,7 +670,7 @@
       ))
       (ref.i31 (i32.const 0)))
 
-(@if wasi
+(@if $wasi
 (@then
    (func $read
       (param $fd i32) (param $buf (ref extern)) (param $pos i32) (param $n i32)
@@ -708,7 +708,7 @@
       (local $offset i64)
       (local $n i32)
       (local.set $fd (struct.get $channel $fd (local.get $ch)))
-(@if wasi
+(@if $wasi
 (@then
       (local.set $n
          (call $read
@@ -747,7 +747,7 @@
 ))
       (local.get $n))
 
-(@if wasi
+(@if $wasi
 (@then
    (func $caml_do_read_or_refill
       (param $ch (ref $channel)) (param $pos i32) (param $len i32) (result i32)
@@ -1010,7 +1010,7 @@
          (i64.add (call $caml_ml_get_channel_offset (local.get $ch))
             (i64.extend_i32_s (struct.get $channel $curr (local.get $ch))))))
 
-(@if wasi
+(@if $wasi
 (@then
    (func $caml_seek_in
       (param $ch (ref $channel)) (param $dest i64) (result (ref eq))
@@ -1082,7 +1082,7 @@
       (local $buffer i32) (local $res i32)
       (local.set $ch (ref.cast (ref $channel) (local.get $vch)))
       (call $caml_flush (local.get $ch))
-(@if wasi
+(@if $wasi
 (@then
       (local.set $buffer (call $get_buffer))
       (local.set $res
@@ -1118,7 +1118,7 @@
       (local $buffer i32) (local $res i32)
       (local.set $ch (ref.cast (ref $channel) (local.get $vch)))
       (call $caml_flush (local.get $ch))
-(@if wasi
+(@if $wasi
 (@then
       (local.set $buffer (call $get_buffer))
       (local.set $res
@@ -1219,7 +1219,7 @@
          (then (call $caml_flush (local.get $ch))))
       (ref.i31 (i32.const 0)))
 
-(@if wasi
+(@if $wasi
 (@then
    (func $write
       (param $fd i32) (param $buf (ref extern)) (param $pos i32) (param $n i32)
@@ -1249,7 +1249,7 @@
       (i32.load (local.get $nwritten)))
 ))
 
-(@if wasi
+(@if $wasi
 (@then
    (func $caml_flush_partial (param $ch (ref $channel)) (result i32)
       (local $towrite i32) (local $written i32) (local $fd i32)
@@ -1509,7 +1509,7 @@
       (struct.set $channel $fd
          (ref.cast (ref $channel) (local.get 0)) (local.get 1)))
 
-(@if wasi
+(@if $wasi
 (@then
    (func $caml_ml_get_channel_offset (export "caml_ml_get_channel_offset")
       (param $ch (ref eq)) (result i64)

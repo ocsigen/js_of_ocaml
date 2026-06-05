@@ -16,7 +16,7 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
-(@if (= effects "native")
+(@if (= $effects "native")
 (@then
    (import "fail" "caml_raise_constant"
       (func $caml_raise_constant (param (ref eq))))
@@ -152,7 +152,7 @@
                                (on $effect $handle_effect)
                                (local.get $f) (local.get $v)
                                (struct.get $fiber $cont (local.get $fiber))))
-(@if (not wasi)
+(@if (not $wasi)
 (@then
                         (catch $javascript_exception
                            (br $handle_exception
