@@ -23,7 +23,7 @@
       (func $caml_dup_custom (param (ref eq)) (result (ref eq))))
    (import "effect" "caml_is_continuation"
       (func $caml_is_continuation (param (ref eq)) (result i32)))
-(@if (= effects "cps")
+(@if (= $effects "cps")
 (@then
    (import "effect" "caml_cps_trampoline"
       (func $caml_cps_trampoline (param (ref eq) (ref eq)) (result (ref eq))))
@@ -564,7 +564,7 @@
    (func (export "caml_obj_reachable_words") (param (ref eq)) (result (ref eq))
       (ref.i31 (i32.const 0)))
 
-(@if (= effects "cps")
+(@if (= $effects "cps")
 (@then
    (func $caml_callback_1 (export "caml_callback_1")
       (param $f (ref eq)) (param $x (ref eq)) (result (ref eq))

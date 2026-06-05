@@ -305,7 +305,7 @@
                                           (local.get $v))))))))
                      (local.set $num (i32.sub (local.get $num) (i32.const 1)))
                      (br $loop)))
-(@if (not wasi)
+(@if (not $wasi)
 (@then
                   (drop (block $not_jsstring (result anyref)
                      (local.set $str

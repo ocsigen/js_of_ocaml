@@ -18,7 +18,7 @@
 (module
    (import "stdlib" "caml_global_data"
       (global $caml_global_data (mut (ref $block))))
-(@if wasi
+(@if $wasi
 (@then
    (tag $javascript_exception (param externref))
 )

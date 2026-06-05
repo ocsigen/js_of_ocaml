@@ -16,7 +16,7 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
-(@if (not wasi)
+(@if (not $wasi)
 (@then
    (import "stdlib" "caml_global_data"
       (global $caml_global_data (mut (ref $block))))
@@ -98,7 +98,7 @@
    ;; In OCaml < 5.2, code is a block (array) of bytes values that are
    ;; concatenated into a single string.
 
-(@if (>= ocaml_version (5 2 0))
+(@if (>= $ocaml_version (5 2 0))
 (@then
    (func (export "caml_reify_bytecode")
       (param $code (ref eq)) (param $debug (ref eq)) (param $digest (ref eq))
@@ -203,7 +203,7 @@
             (br $loop)))
       (local.get $acc))
 
-(@if (< ocaml_version (5 3 0))
+(@if (< $ocaml_version (5 3 0))
 (@then
    (func (export "caml_get_section_table")
       (param (ref eq)) (result (ref eq))

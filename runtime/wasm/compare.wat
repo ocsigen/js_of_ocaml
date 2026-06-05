@@ -485,7 +485,7 @@
                   (call $clear_compare_stack)
                   (call $caml_invalid_argument (global.get $abstract_value))
                   (ref.i31 (i32.const 0))))
-(@if (not wasi)
+(@if (not $wasi)
 (@then
                (drop (block $v1_not_js (result (ref eq))
                   (local.set $js1
