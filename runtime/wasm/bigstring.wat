@@ -41,7 +41,7 @@
    (import "bigarray" "caml_blit_bytes_to_dataview"
       (func $caml_blit_bytes_to_dataview
          (param (ref $bytes) i32 (ref extern) i32 i32)))
-(@if wasi
+(@if $wasi
 (@then
    (import "bigarray" "ta_subarray"
       (func $ta_subarray
@@ -118,7 +118,7 @@
          (local.set $h (call $caml_hash_mix_int (local.get $h) (local.get $w))))
       (i32.xor (local.get $h) (local.get $len)))
 
-(@if (not wasi)
+(@if (not $wasi)
 (@then
    (@string $buffer "buffer")
 

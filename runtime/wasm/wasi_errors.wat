@@ -1,5 +1,5 @@
 (module
-(@if wasi
+(@if $wasi
 (@then
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))

@@ -269,12 +269,6 @@ let parse_string loc s =
 
 let is_string s = String.length s > 0 && Char.equal s.[0] '"'
 
-let is_keyword s =
-  let lexbuf = Sedlexing.Utf8.from_string s in
-  match%sedlex lexbuf with
-  | keyword, eof -> true
-  | _ -> false
-
 let is_id s =
   let lexbuf = Sedlexing.Utf8.from_string s in
   match%sedlex lexbuf with
@@ -340,11 +334,12 @@ let rec eval ?typ st expr =
   | { desc = Atom s; loc } when is_string s ->
       check_type ?typ expr String;
       String (parse_string loc s)
-  | { desc = Atom s; loc } when is_keyword s ->
-      if not (StringMap.mem s st.variables)
+  | { desc = Atom s; loc } when is_id s ->
+      let name = String.sub s ~pos:1 ~len:(String.length s - 1) in
+      if not (StringMap.mem name st.variables)
       then
         raise (Error (position_of_loc loc, Printf.sprintf "Unknown variable '%s'.\n" s));
-      let res = StringMap.find s st.variables in
+      let res = StringMap.find name st.variables in
       check_type ?typ expr (value_type res);
       res
   | { desc =

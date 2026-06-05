@@ -66,7 +66,7 @@
    (import "marshal" "caml_deserialize_int_8"
       (func $caml_deserialize_int_8 (param (ref eq)) (result i64)))
 
-(@if wasi
+(@if $wasi
 (@then
    (type $i64_array (array (mut i64)))
    (type $i32_array (array (mut i32)))
@@ -1288,7 +1288,7 @@
    (@string $ta_unsupported_kind "Typed_array.to_genarray: unsupported kind")
    (@string $ta_too_large "Typed_array.to_genarray: too large")
 
-(@if (not wasi)
+(@if (not $wasi)
 (@then
    (func (export "caml_ba_from_typed_array") (param (ref eq)) (result (ref eq))
       (local $data (ref extern))
@@ -3042,7 +3042,7 @@
                (array.get_u $bytes (local.get $s)
                   (i32.add (local.get $i) (local.get $k)))))))
 
-(@if (not wasi)
+(@if (not $wasi)
 (@then
    (export "caml_bytes_of_uint8_array" (func $caml_string_of_uint8_array))
    (func $caml_string_of_uint8_array (export "caml_string_of_uint8_array")

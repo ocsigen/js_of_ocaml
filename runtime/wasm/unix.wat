@@ -16,7 +16,7 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
-(@if wasi
+(@if $wasi
 (@then
    (type $path_op (func (param i32 i32 i32) (result i32)))
    (import "wasi_snapshot_preview1" "clock_time_get"
@@ -218,7 +218,7 @@
 
    (@string $no_arg "")
 
-(@if wasi
+(@if $wasi
 (@then
    (func $unix_resolve_path (export "unix_resolve_path")
       (param $cmd (ref eq)) (param $path (ref eq)) (result i32 i32 i32)
@@ -426,7 +426,7 @@
          (call $wrap (call $caml_strerror (local.get $errno)))))
 ))
 
-(@if wasi
+(@if $wasi
 (@then
    (func (export "unix_gettimeofday") (export "caml_unix_gettimeofday")
       (param (ref eq)) (result (ref eq))
@@ -447,7 +447,7 @@
       (struct.new $float (call $gettimeofday)))
 ))
 
-(@if wasi
+(@if $wasi
 (@then
    (func (export "unix_times") (export "caml_unix_times")
       (param (ref eq)) (result (ref eq))
@@ -483,7 +483,7 @@
       (return_call $times))
 ))
 
-(@if wasi
+(@if $wasi
 (@then
   (func $alloc_tm (param $tm i32) (result (ref eq))
       (array.new_fixed $block 10 (ref.i31 (i32.const 0))
@@ -515,7 +515,7 @@
          (ref.i31 (local.get $isdst))))
 ))
 
-(@if wasi
+(@if $wasi
 (@then
    (func (export "caml_unix_gmtime") (export "unix_gmtime")
       (param $t (ref eq)) (result (ref eq))
@@ -538,7 +538,7 @@
          (struct.get $float 0 (ref.cast (ref $float) (local.get 0)))))
 ))
 
-(@if wasi
+(@if $wasi
 (@then
    (func (export "caml_unix_localtime") (export "unix_localtime")
       (param $t (ref eq)) (result (ref eq))
@@ -561,7 +561,7 @@
          (struct.get $float 0 (ref.cast (ref $float) (local.get 0)))))
 ))
 
-(@if wasi
+(@if $wasi
 (@then
    (func (export "caml_unix_time") (export "unix_time") (param (ref eq))
       (result (ref eq))
@@ -583,7 +583,7 @@
       (struct.new $float (f64.floor (call $gettimeofday))))
 ))
 
-(@if wasi
+(@if $wasi
 (@then
    (func (export "caml_unix_mktime") (export "unix_mktime")
       (param $v (ref eq)) (result (ref eq))
@@ -669,7 +669,7 @@
          (call $localtime (local.get $t))))
 ))
 
-(@if wasi
+(@if $wasi
 (@then
    (@string $utimes "utimes")
 
@@ -737,7 +737,7 @@
       (ref.i31 (i32.const 0)))
 ))
 
-(@if wasi
+(@if $wasi
 (@then
    (global $file_kinds (ref $constr_table)
       (array.new_fixed $constr_table 8
@@ -802,7 +802,7 @@
          (struct.new $float (local.get $mtime))
          (struct.new $float (local.get $ctime))))
 
-(@if wasi
+(@if $wasi
 (@then
    (func $stat
       (param $path (ref eq)) (param $large i32) (param $follow i32)
@@ -933,7 +933,7 @@
             (ref.i31 (i32.const 0)))))
 ))
 
-(@if wasi
+(@if $wasi
 (@then
    (func (export "unix_chmod") (export "caml_unix_chmod")
       (param (ref eq) (ref eq)) (result (ref eq))
@@ -953,7 +953,7 @@
       (ref.i31 (i32.const 0)))
 ))
 
-(@if wasi
+(@if $wasi
 (@then
    (func (export "unix_fchmod") (export "caml_unix_fchmod")
       (param (ref eq) (ref eq)) (result (ref eq))
@@ -971,7 +971,7 @@
       (ref.i31 (i32.const 0)))
 ))
 
-(@if wasi
+(@if $wasi
 (@then
    (@string $rename "rename")
 
@@ -1026,7 +1026,7 @@
       (ref.i31 (i32.const 0)))
 ))
 
-(@if wasi
+(@if $wasi
 (@then
    (@string $chdir "chdir")
 
@@ -1078,7 +1078,7 @@
       (ref.i31 (i32.const 0)))
 ))
 
-(@if wasi
+(@if $wasi
 (@then
    (@string $mkdir "mkdir")
 
@@ -1100,7 +1100,7 @@
       (ref.i31 (i32.const 0)))
 ))
 
-(@if wasi
+(@if $wasi
 (@then
    (type $directory
       (struct
@@ -1332,7 +1332,7 @@
          (call $win_find_next (local.get $dir))
          (local.get $dir)))
 
-(@if wasi
+(@if $wasi
 (@then
    (@string $unlink "unlink")
 
@@ -1353,7 +1353,7 @@
       (ref.i31 (i32.const 0)))
 ))
 
-(@if wasi
+(@if $wasi
 (@then
    (@string $rmdir "rmdir")
 
@@ -1374,7 +1374,7 @@
       (ref.i31 (i32.const 0)))
 ))
 
-(@if wasi
+(@if $wasi
 (@then
    (@string $link "link")
 
@@ -1454,7 +1454,7 @@
       (param (ref eq)) (result (ref eq))
       (ref.i31 (i32.const 1)))
 
-(@if wasi
+(@if $wasi
 (@then
    (@string $symlink "symlink")
 
@@ -1522,7 +1522,7 @@
       (ref.i31 (i32.const 0)))
 ))
 
-(@if wasi
+(@if $wasi
 (@then
    (@string $readlink "readlink")
 
@@ -1565,7 +1565,7 @@
       (ref.i31 (i32.const 0)))
 ))
 
-(@if wasi
+(@if $wasi
 (@then
    (@string $truncate "truncate")
 
@@ -1646,7 +1646,7 @@
       (ref.i31 (i32.const 0)))
 ))
 
-(@if wasi
+(@if $wasi
 (@then
    (func $ftruncate (param $vfd (ref eq)) (param $len i64) (result (ref eq))
       (local $fd i32) (local $res i32)
@@ -1696,7 +1696,7 @@
       (ref.i31 (i32.const 0)))
 ))
 
-(@if wasi
+(@if $wasi
 (@then
    (@string $access "access")
 
@@ -1745,7 +1745,7 @@
 
    (type $flags (array i16))
 
-(@if wasi
+(@if $wasi
 (@then
    ;;    0x1 O_RDONLY
    ;;    0x2 O_WRONLY
@@ -1863,7 +1863,7 @@
             (br_on_null $null (call $get_fd_offset_unchecked (local.get $fd)))))
       (struct.new $fd_offset (i64.const 0) (i32.const 0)))
 
-(@if wasi
+(@if $wasi
 (@then
    (func (export "unix_write") (export "caml_unix_write")
       (param $vfd (ref eq)) (param $vbuf (ref eq)) (param $vpos (ref eq))
@@ -2284,7 +2284,7 @@
       (ref.i31 (local.get $n)))
 ))
 
-(@if wasi
+(@if $wasi
 (@then
    (func $lseek
       (param $fd (ref eq)) (param $offset i64) (param $cmd (ref eq))
@@ -2359,7 +2359,7 @@
             (call $Int64_val (local.get $ofs))
             (local.get $cmd))))
 
-(@if wasi
+(@if $wasi
 (@then
    (func (export "unix_fsync") (export "caml_unix_fsync")
       (param $fd (ref eq)) (result (ref eq))
@@ -2390,7 +2390,7 @@
          (global.get $in_channel_of_descr)
          (local.get $out)))
 
-(@if wasi
+(@if $wasi
 (@then
    (func $caml_unix_check_stream_semantics (param $fd (ref eq)) (param $out i32)
       (local $s (ref $block)) (local $kind i32)
@@ -2455,7 +2455,7 @@
       (call $caml_unix_check_stream_semantics (local.get $fd) (i32.const 1))
       (return_call $caml_ml_open_descriptor_out (local.get $fd)))
 
-(@if wasi
+(@if $wasi
 (@then
    (func (export "unix_close") (export "caml_unix_close")
       (param $fd (ref eq)) (result (ref eq))
@@ -2478,7 +2478,7 @@
       (ref.i31 (i32.const 0)))
 ))
 
-(@if wasi
+(@if $wasi
 (@then
    (func (export "unix_isatty") (export "caml_unix_isatty")
       (param (ref eq)) (result (ref eq))

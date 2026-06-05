@@ -18,7 +18,7 @@
 (module
    (import "fail" "caml_invalid_argument"
       (func $caml_invalid_argument (param (ref eq))))
-(@if wasi
+(@if $wasi
 (@then
    (global $backtrace_status (mut (ref eq)) (ref.i31 (i32.const 0)))
    (func $backtrace_status (result (ref eq))

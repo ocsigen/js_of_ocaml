@@ -21,7 +21,7 @@
 
 (module
 
-(@if (not wasi)
+(@if (not $wasi)
 (@then
    (import "jslib" "wrap" (func $wrap (param anyref) (result (ref eq))))
    (import "jslib" "unwrap" (func $unwrap (param (ref eq)) (result anyref)))

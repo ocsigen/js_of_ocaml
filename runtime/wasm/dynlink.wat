@@ -37,7 +37,7 @@
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
 
-(@if (not wasi)
+(@if (not $wasi)
 (@then
    (func (export "caml_wasm_load_module")
       (param $str (ref eq)) (result (ref eq))
@@ -66,7 +66,7 @@
 
    ;; Standard OCaml dynlink primitives
 
-(@if (and (>= ocaml_version (5 1 0)) (not oxcaml))
+(@if (and (>= $ocaml_version (5 1 0)) (not $oxcaml))
 (@then
    (func (export "caml_dynlink_open_lib")
       (param (ref eq)) (result (ref eq))
@@ -103,7 +103,7 @@
       (param (ref eq)) (result (ref eq))
       (array.new_fixed $block 1 (ref.i31 (i32.const 0))))
 
-(@if (>= ocaml_version (5 5 0))
+(@if (>= $ocaml_version (5 5 0))
 (@then
    (func (export "caml_dynlink_parse_ld_conf")
       (param (ref eq)) (result (ref eq))

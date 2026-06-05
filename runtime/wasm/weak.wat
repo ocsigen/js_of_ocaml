@@ -22,7 +22,7 @@
    (import "fail" "caml_invalid_argument"
       (func $caml_invalid_argument (param $arg (ref eq))))
 
-(@if wasi
+(@if $wasi
 (@then
    (func $wrap (param (ref eq)) (result (ref eq))
       (local.get 0))
@@ -78,7 +78,7 @@
          (block $released
             (br_if $no_data
                (ref.eq (local.get $d) (global.get $caml_ephe_none)))
-(@if (not wasi)
+(@if (not $wasi)
 (@then
             (local.set $i (global.get $caml_ephe_key_offset))
             (local.set $len (array.len (local.get $x)))
@@ -139,7 +139,7 @@
       (local $m (ref any)) (local $m' (ref any))
       (local $i i32)
       (local.set $x (ref.cast (ref $block) (local.get $vx)))
-(@if (not wasi)
+(@if (not $wasi)
 (@then
       (local.set $i (array.len (local.get $x)))
       (local.set $m (local.get $data))
