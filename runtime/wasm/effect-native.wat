@@ -16,7 +16,7 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
-(@if (= effects "native")
+(@if (= $effects "native")
 (@then
    (import "fail" "caml_raise_constant"
       (func $caml_raise_constant (param (ref eq))))
@@ -34,7 +34,7 @@
    (import "stdlib" "caml_main_wrapper"
       (global $caml_main_wrapper (mut (ref null $wrapper_func))))
    (import "effect" "effect_allowed" (global $effect_allowed (mut i32)))
-(@if wasi
+(@if $wasi
 (@then
    ;; Never actually called since there is no JavaScript exception
    (func $caml_wrap_exception (param externref) (result (ref eq))

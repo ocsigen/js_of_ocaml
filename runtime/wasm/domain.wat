@@ -243,7 +243,7 @@
    (global $caml_domain_latest_id (export "caml_domain_latest_id") (mut i32)
       (i32.const 1))
 
-(@if (>= ocaml_version (5 2 0))
+(@if (>= $ocaml_version (5 2 0))
 (@then
    (func (export "caml_domain_spawn")
       (param $f (ref eq)) (param $term_sync_v (ref eq)) (result (ref eq))
@@ -270,7 +270,7 @@
             (local.set $result
                (array.new_fixed $block 2 (ref.i31 (i32.const 0))
                   (array.new_fixed $block 2 (ref.i31 (i32.const 1))
-                     (@if (>= ocaml_version (5 5 0))
+                     (@if (>= $ocaml_version (5 5 0))
                      (@then
                         (array.new_fixed $block 3 (ref.i31 (i32.const 0))
                            (local.get $exn)

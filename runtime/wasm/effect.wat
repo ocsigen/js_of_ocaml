@@ -33,7 +33,7 @@
    (import "fail" "ocaml_exception" (tag $ocaml_exception (param (ref eq))))
    (import "fail" "javascript_exception"
       (tag $javascript_exception (param externref)))
-(@if wasi
+(@if $wasi
 (@then
    (func $caml_wrap_exception (param externref) (result (ref eq))
       (unreachable))
@@ -161,7 +161,7 @@
                (ref.i31 (global.get $cont_tag))))))
       (i32.const 0))
 
-(@if (and (= effects "jspi") (not wasi))
+(@if (and (= $effects "jspi") (not $wasi))
 (@then
    ;; Apply a function f to a value v, both contained in a pair (f, v)
 
@@ -497,7 +497,7 @@
             (struct.new $pair (local.get $f) (local.get $v)))))
 ))
 
-(@if (= effects "cps")
+(@if (= $effects "cps")
 (@then
    (type $function_2
       (func (param (ref eq) (ref eq) (ref eq)) (result (ref eq))))
