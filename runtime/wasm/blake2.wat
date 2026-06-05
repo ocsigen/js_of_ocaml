@@ -48,10 +48,9 @@
                (local.get $buf) (local.get $ofs) (local.get $len))
             (local.set $buf (local.get $buf'))
             (local.set $ofs (i32.const 0))))
-      (tuple.make 3
-         (call $unwrap (call $caml_jsbytes_of_string (local.get $buf)))
-         (local.get $ofs)
-         (local.get $len)))
+      (call $unwrap (call $caml_jsbytes_of_string (local.get $buf)))
+      (local.get $ofs)
+      (local.get $len))
 
    (func (export "caml_blake2_update")
       (param $ctx (ref eq)) (param $buf (ref eq)) (param $ofs (ref eq))

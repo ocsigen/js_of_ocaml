@@ -115,7 +115,7 @@
          (if (i32.lt_u (local.get $i) (local.get $len))
             (then
                (local.set $c
-                  (array.get $bytes (local.get $prefix) (local.get $i)))
+                  (array.get_u $bytes (local.get $prefix) (local.get $i)))
                (if (i32.eq (local.get $c) (i32.const 47)) ;; '/'
                   (then
                      (local.set $i (i32.add (local.get $i) (i32.const 1)))
@@ -129,7 +129,7 @@
                            (br $loop))
                         (else
                            (local.set $c
-                              (array.get $bytes (local.get $prefix)
+                              (array.get_u $bytes (local.get $prefix)
                                  (i32.add (local.get $i) (i32.const 1))))
                            (if (i32.eq (local.get $c) (i32.const 47)) ;; '/'
                               (then
@@ -255,7 +255,7 @@
          (if (i32.ge_s (local.get $i) (i32.const 0))
             (then
                (if (i32.eq (i32.const 47) ;; '/'
-                      (array.get $bytes (local.get $abs_path) (local.get $i)))
+                      (array.get_u $bytes (local.get $abs_path) (local.get $i)))
                   (then
                      (local.set $i (i32.sub (local.get $i) (i32.const 1)))
                      (br $loop))))))
@@ -314,7 +314,7 @@
             (br $loop)))
       (if (i32.eq (local.get $i) (i32.const -1))
          (then ;; not found
-            (return (tuple.make 2 (i32.const -1) (@string "")))))
+            (return (i32.const -1) (@string ""))))
       ;; skip leading slashes
       (local.set $len (local.get $i))
       (loop $loop
@@ -333,38 +333,41 @@
                   (local.get $path) (local.get $i)
                   (i32.sub (array.len (local.get $path)) (local.get $i)))
                (return
-                  (tuple.make 2 (local.get $fd) (local.get $rel_path))))))
-      (return (tuple.make 2 (local.get $fd) (@string "."))))
+                  (local.get $fd) (local.get $rel_path)))))
+      (return (local.get $fd) (@string ".")))
 
-   (func (export "wasi_resolve_path")
+   (func $wasi_resolve_path (export "wasi_resolve_path")
       (param $vpath (ref eq))
       (result (;fd;) i32 (;address;) i32 (;length;) i32)
-      (local $res (tuple i32 (ref $bytes)))
+      (local $res_0 i32) (local $res_1 (ref $bytes))
       (local $p i32)
-      (local.set $res
-         (call $resolve_abs_path
-            (call $make_absolute
-               (ref.cast (ref $bytes) (local.get $vpath)))))
-      (if (i32.ge_u (tuple.extract 2 0 (local.get $res)) (i32.const 0))
+      (call $resolve_abs_path
+         (call $make_absolute
+            (ref.cast (ref $bytes) (local.get $vpath))))
+      (local.set $res_1)
+      (local.set $res_0)
+      (if (i32.ge_u (local.get $res_0) (i32.const 0))
          (then
             (local.set $p
                (call $write_string_to_memory
                   (i32.const 0) (i32.const 0)
-                  (tuple.extract 2 1 (local.get $res))))))
+                  (local.get $res_1)))))
       (return
-         (tuple.make 3
-            (tuple.extract 2 0 (local.get $res))
-            (local.get $p)
-            (array.len (tuple.extract 2 1 (local.get $res))))))
+         (local.get $res_0)
+         (local.get $p)
+         (array.len (local.get $res_1))))
 
    (func $caml_sys_resolve_path (export "caml_sys_resolve_path")
       (param $path (ref eq)) (result i32 i32 i32)
-      (local $res (tuple i32 i32 i32))
-      (local.set $res (call $wasi_resolve_path (local.get $path)))
-      (if (i32.lt_s (tuple.extract 3 0 (local.get $res)) (i32.const 0))
+      (local $res_0 i32) (local $res_1 i32) (local $res_2 i32)
+      (call $wasi_resolve_path (local.get $path))
+      (local.set $res_2)
+      (local.set $res_1)
+      (local.set $res_0)
+      (if (i32.lt_s (local.get $res_0) (i32.const 0))
          (then ;; ENOENT
             (call $caml_handle_sys_error (local.get $path) (i32.const 44))))
-      (local.get $res))
+      (local.get $res_0) (local.get $res_1) (local.get $res_2))
 ))
 
 (@if $wasi
@@ -391,18 +394,21 @@
 (@then
    (func (export "caml_sys_chdir")
       (param $name (ref eq)) (result (ref eq))
-      (local $p (tuple i32 i32 i32))
+      (local $p_0 i32) (local $p_1 i32) (local $p_2 i32)
       (local $buffer i32) (local $res i32) (local $kind i32)
-      (local.set $p (call $caml_sys_resolve_path (local.get $name)))
+      (call $caml_sys_resolve_path (local.get $name))
+      (local.set $p_2)
+      (local.set $p_1)
+      (local.set $p_0)
       (local.set $buffer (call $get_buffer))
       (local.set $res
          (call $path_filestat_get
-            (tuple.extract 3 0 (local.get $p))
+            (local.get $p_0)
             (i32.const 1)
-            (tuple.extract 3 1 (local.get $p))
-            (tuple.extract 3 2 (local.get $p))
+            (local.get $p_1)
+            (local.get $p_2)
             (local.get $buffer)))
-      (call $free (tuple.extract 3 1 (local.get $p)))
+      (call $free (local.get $p_1))
       (if (local.get $res)
          (then (call $caml_handle_sys_error (local.get $name) (local.get $res))))
       (local.set $kind (i32.load8_u offset=16 (local.get $buffer)))
@@ -429,15 +435,18 @@
 (@then
    (func (export "caml_sys_mkdir")
       (param $name (ref eq)) (param $perm (ref eq)) (result (ref eq))
-      (local $p (tuple i32 i32 i32))
+      (local $p_0 i32) (local $p_1 i32) (local $p_2 i32)
       (local $res i32)
-      (local.set $p (call $caml_sys_resolve_path (local.get $name)))
+      (call $caml_sys_resolve_path (local.get $name))
+      (local.set $p_2)
+      (local.set $p_1)
+      (local.set $p_0)
       (local.set $res
          (call $path_create_directory
-            (tuple.extract 3 0 (local.get $p))
-            (tuple.extract 3 1 (local.get $p))
-            (tuple.extract 3 2 (local.get $p))))
-      (call $free (tuple.extract 3 1 (local.get $p)))
+            (local.get $p_0)
+            (local.get $p_1)
+            (local.get $p_2)))
+      (call $free (local.get $p_1))
       (if (local.get $res)
          (then (call $caml_handle_sys_error (local.get $name) (local.get $res))))
       (ref.i31 (i32.const 0)))
@@ -459,7 +468,7 @@
 (@then
    (func (export "caml_sys_read_directory")
       (param $name (ref eq)) (result (ref eq))
-      (local $p (tuple i32 i32 i32))
+      (local $p_0 i32) (local $p_1 i32) (local $p_2 i32)
       (local $buffer i32) (local $res i32) (local $fd i32)
       (local $buf i32) (local $new_buf i32)
       (local $size i32) (local $pos i32) (local $available i32)
@@ -467,20 +476,23 @@
       (local $entry i32) (local $entry_size i32)
       (local $cookie i64) (local $tbl (ref $block)) (local $new_tbl (ref $block))
       (local $i i32) (local $s (ref $bytes))
-      (local.set $p (call $caml_sys_resolve_path (local.get $name)))
+      (call $caml_sys_resolve_path (local.get $name))
+      (local.set $p_2)
+      (local.set $p_1)
+      (local.set $p_0)
       (local.set $buffer (call $get_buffer))
       (local.set $res
          (call $path_open
-            (tuple.extract 3 0 (local.get $p))
+            (local.get $p_0)
             (i32.const 1) ;; symlink_follow
-            (tuple.extract 3 1 (local.get $p))
-            (tuple.extract 3 2 (local.get $p))
+            (local.get $p_1)
+            (local.get $p_2)
             (i32.const 2) ;; O_DIRECTORY
             (i64.const 0x4000) ;; allow fd_readdir
             (i64.const 0)
             (i32.const 0)
             (local.get $buffer)))
-      (call $free (tuple.extract 3 1 (local.get $p)))
+      (call $free (local.get $p_1))
       (if (local.get $res)
          (then
             (call $caml_handle_sys_error (local.get $name) (local.get $res))))
@@ -579,31 +591,33 @@
 (@else
    (func (export "caml_sys_read_directory")
       (param $name (ref eq)) (result (ref eq))
-      (try
+      (try (result (ref eq))
          (do
-            (return
-               (call $caml_js_to_string_array
-                  (call $read_dir
-                     (call $unwrap
-                        (call $caml_jsstring_of_string (local.get $name)))))))
+            (call $caml_js_to_string_array
+               (call $read_dir
+                  (call $unwrap
+                     (call $caml_jsstring_of_string (local.get $name))))))
          (catch $javascript_exception
             (call $caml_handle_sys_error (pop externref))
-            (return (ref.i31 (i32.const 0))))))
+            (ref.i31 (i32.const 0)))))
 ))
 
 (@if $wasi
 (@then
    (func (export "caml_sys_rmdir")
       (param $name (ref eq)) (result (ref eq))
-      (local $p (tuple i32 i32 i32))
+      (local $p_0 i32) (local $p_1 i32) (local $p_2 i32)
       (local $res i32)
-      (local.set $p (call $caml_sys_resolve_path (local.get $name)))
+      (call $caml_sys_resolve_path (local.get $name))
+      (local.set $p_2)
+      (local.set $p_1)
+      (local.set $p_0)
       (local.set $res
          (call $path_remove_directory
-            (tuple.extract 3 0 (local.get $p))
-            (tuple.extract 3 1 (local.get $p))
-            (tuple.extract 3 2 (local.get $p))))
-      (call $free (tuple.extract 3 1 (local.get $p)))
+            (local.get $p_0)
+            (local.get $p_1)
+            (local.get $p_2)))
+      (call $free (local.get $p_1))
       (if (local.get $res)
          (then (call $caml_handle_sys_error (local.get $name) (local.get $res))))
       (ref.i31 (i32.const 0)))
@@ -624,15 +638,18 @@
 (@then
    (func (export "caml_sys_remove")
       (param $name (ref eq)) (result (ref eq))
-      (local $p (tuple i32 i32 i32))
+      (local $p_0 i32) (local $p_1 i32) (local $p_2 i32)
       (local $res i32)
-      (local.set $p (call $caml_sys_resolve_path (local.get $name)))
+      (call $caml_sys_resolve_path (local.get $name))
+      (local.set $p_2)
+      (local.set $p_1)
+      (local.set $p_0)
       (local.set $res
          (call $path_unlink_file
-            (tuple.extract 3 0 (local.get $p))
-            (tuple.extract 3 1 (local.get $p))
-            (tuple.extract 3 2 (local.get $p))))
-      (call $free (tuple.extract 3 1 (local.get $p)))
+            (local.get $p_0)
+            (local.get $p_1)
+            (local.get $p_2)))
+      (call $free (local.get $p_1))
       (if (local.get $res)
          (then (call $caml_handle_sys_error (local.get $name) (local.get $res))))
       (ref.i31 (i32.const 0)))
@@ -653,21 +670,27 @@
 (@then
    (func (export "caml_sys_rename")
       (param $o (ref eq)) (param $n (ref eq)) (result (ref eq))
-      (local $op (tuple i32 i32 i32))
-      (local $np (tuple i32 i32 i32))
+      (local $op_0 i32) (local $op_1 i32) (local $op_2 i32)
+      (local $np_0 i32) (local $np_1 i32) (local $np_2 i32)
       (local $res i32)
-      (local.set $op (call $caml_sys_resolve_path (local.get $o)))
-      (local.set $np (call $caml_sys_resolve_path (local.get $n)))
+      (call $caml_sys_resolve_path (local.get $o))
+      (local.set $op_2)
+      (local.set $op_1)
+      (local.set $op_0)
+      (call $caml_sys_resolve_path (local.get $n))
+      (local.set $np_2)
+      (local.set $np_1)
+      (local.set $np_0)
       (local.set $res
          (call $path_rename
-            (tuple.extract 3 0 (local.get $op))
-            (tuple.extract 3 1 (local.get $op))
-            (tuple.extract 3 2 (local.get $op))
-            (tuple.extract 3 0 (local.get $np))
-            (tuple.extract 3 1 (local.get $np))
-            (tuple.extract 3 2 (local.get $np))))
-      (call $free (tuple.extract 3 1 (local.get $op)))
-      (call $free (tuple.extract 3 1 (local.get $np)))
+            (local.get $op_0)
+            (local.get $op_1)
+            (local.get $op_2)
+            (local.get $np_0)
+            (local.get $np_1)
+            (local.get $np_2)))
+      (call $free (local.get $op_1))
+      (call $free (local.get $np_1))
       (if (local.get $res)
          (then (call $caml_handle_sys_error (local.get $o) (local.get $res))))
       (ref.i31 (i32.const 0)))
@@ -689,20 +712,23 @@
 (@then
    (func (export "caml_sys_file_exists")
       (param $name (ref eq)) (result (ref eq))
-      (local $p (tuple i32 i32 i32))
+      (local $p_0 i32) (local $p_1 i32) (local $p_2 i32)
       (local $res i32) (local $buffer i32)
-      (local.set $p (call $wasi_resolve_path (local.get $name)))
-      (if (i32.lt_s (tuple.extract 3 0 (local.get $p)) (i32.const 0))
+      (call $wasi_resolve_path (local.get $name))
+      (local.set $p_2)
+      (local.set $p_1)
+      (local.set $p_0)
+      (if (i32.lt_s (local.get $p_0) (i32.const 0))
          (then (return (ref.i31 (i32.const 0)))))
       (local.set $buffer (call $get_buffer))
       (local.set $res
          (call $path_filestat_get
-            (tuple.extract 3 0 (local.get $p))
+            (local.get $p_0)
             (i32.const 1)
-            (tuple.extract 3 1 (local.get $p))
-            (tuple.extract 3 2 (local.get $p))
+            (local.get $p_1)
+            (local.get $p_2)
             (local.get $buffer)))
-      (call $free (tuple.extract 3 1 (local.get $p)))
+      (call $free (local.get $p_1))
       (ref.i31 (i32.eqz (local.get $res))))
 )
 (@else
@@ -762,18 +788,21 @@
 (@if $wasi
 (@then
    (func $caml_sys_file_mode (param $name (ref eq)) (result i32)
-      (local $p (tuple i32 i32 i32))
+      (local $p_0 i32) (local $p_1 i32) (local $p_2 i32)
       (local $res i32) (local $buffer i32)
-      (local.set $p (call $caml_sys_resolve_path (local.get $name)))
+      (call $caml_sys_resolve_path (local.get $name))
+      (local.set $p_2)
+      (local.set $p_1)
+      (local.set $p_0)
       (local.set $buffer (call $get_buffer))
       (local.set $res
          (call $path_filestat_get
-            (tuple.extract 3 0 (local.get $p))
+            (local.get $p_0)
             (i32.const 1)
-            (tuple.extract 3 1 (local.get $p))
-            (tuple.extract 3 2 (local.get $p))
+            (local.get $p_1)
+            (local.get $p_2)
             (local.get $buffer)))
-      (call $free (tuple.extract 3 1 (local.get $p)))
+      (call $free (local.get $p_1))
       (if (local.get $res)
          (then (call $caml_handle_sys_error (local.get $name) (local.get $res))))
       (i32.load8_u offset=16 (local.get $buffer)))
@@ -786,15 +815,14 @@
 (@else
    (func (export "caml_sys_is_directory")
       (param $name (ref eq)) (result (ref eq))
-      (try
+      (try (result (ref eq))
          (do
-            (return
-               (call $is_directory
-                  (call $unwrap
-                     (call $caml_jsstring_of_string (local.get $name))))))
+            (call $is_directory
+               (call $unwrap
+                  (call $caml_jsstring_of_string (local.get $name)))))
          (catch $javascript_exception
             (call $caml_handle_sys_error (pop externref))
-            (return (ref.i31 (i32.const 0))))))
+            (ref.i31 (i32.const 0)))))
 ))
 
 (@if $wasi
@@ -807,15 +835,14 @@
 (@else
    (func (export "caml_sys_is_regular_file")
       (param $name (ref eq)) (result (ref eq))
-      (try
+      (try (result (ref eq))
          (do
-            (return
-               (call $is_file
-                  (call $unwrap
-                     (call $caml_jsstring_of_string (local.get $name))))))
+            (call $is_file
+               (call $unwrap
+                  (call $caml_jsstring_of_string (local.get $name)))))
          (catch $javascript_exception
             (call $caml_handle_sys_error (pop externref))
-            (return (ref.i31 (i32.const 0))))))
+            (ref.i31 (i32.const 0)))))
 ))
 
 (@if $wasi

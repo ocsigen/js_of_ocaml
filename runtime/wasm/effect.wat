@@ -161,7 +161,7 @@
                (ref.i31 (global.get $cont_tag))))))
       (i32.const 0))
 
-(@if (= $effects "jspi")
+(@if (and (= $effects "jspi") (not $wasi))
 (@then
    ;; Apply a function f to a value v, both contained in a pair (f, v)
 

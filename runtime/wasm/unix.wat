@@ -221,14 +221,17 @@
 (@then
    (func $unix_resolve_path (export "unix_resolve_path")
       (param $cmd (ref eq)) (param $path (ref eq)) (result i32 i32 i32)
-      (local $res (tuple i32 i32 i32))
-      (local.set $res (call $wasi_resolve_path (local.get $path)))
-      (if (i32.lt_s (tuple.extract 3 0 (local.get $res)) (i32.const 0))
+      (local $res_0 i32) (local $res_1 i32) (local $res_2 i32)
+      (call $wasi_resolve_path (local.get $path))
+      (local.set $res_2)
+      (local.set $res_1)
+      (local.set $res_0)
+      (if (i32.lt_s (local.get $res_0) (i32.const 0))
          (then
             (call $caml_unix_error
                (i32.const 44) ;; ENOENT
                (local.get $cmd) (local.get $path))))
-      (local.get $res))
+      (local.get $res_0) (local.get $res_1) (local.get $res_2))
 
    (type $constr_table (array i8))
    (global $error_codes (ref $constr_table)
@@ -288,7 +291,7 @@
                       (array.len (global.get $error_codes)))
                   (then
                      (if (i32.ne (local.get $n)
-                            (array.get $constr_table (global.get $error_codes)
+                            (array.get_u $constr_table (global.get $error_codes)
                                (local.get $errcode)))
                         (then
                            (local.set $errcode
@@ -650,12 +653,14 @@
    (func (export "unix_utimes") (export "caml_unix_utimes")
       (param $path (ref eq)) (param $atime (ref eq)) (param $mtime (ref eq))
       (result (ref eq))
-      (local $p (tuple i32 i32 i32))
+      (local $p_0 i32) (local $p_1 i32) (local $p_2 i32)
       (local $atim i64) (local $mtim i64)
       (local $set_to_now i32) (local $res i32)
       (local $at f64) (local $mt f64)
-      (local.set $p
-         (call $unix_resolve_path (global.get $utimes) (local.get $path)))
+      (call $unix_resolve_path (global.get $utimes) (local.get $path))
+      (local.set $p_2)
+      (local.set $p_1)
+      (local.set $p_0)
       (local.set $at
          (struct.get $float 0 (ref.cast (ref $float) (local.get $atime))))
       (local.set $mt
@@ -673,14 +678,14 @@
                   (f64.mul (local.get $mt) (f64.const 1e9))))))
       (local.set $res
          (call $path_filestat_set_times
-            (tuple.extract 3 0 (local.get $p))
+            (local.get $p_0)
             (i32.const 0)
-            (tuple.extract 3 1 (local.get $p))
-            (tuple.extract 3 2 (local.get $p))
+            (local.get $p_1)
+            (local.get $p_2)
             (local.get $atim)
             (local.get $mtim)
             (i32.shl (i32.const 5) (local.get $set_to_now))))
-      (call $free (tuple.extract 3 1 (local.get $p)))
+      (call $free (local.get $p_1))
       (if (local.get $res)
          (then
             (call $caml_unix_error
@@ -729,7 +734,7 @@
          (ref.i31 (i32.wrap_i64 (i64.load (local.get $p))))
          (ref.i31 (i32.wrap_i64 (i64.load offset=8 (local.get $p))))
          (ref.i31
-            (array.get $constr_table
+            (array.get_u $constr_table
                (global.get $file_kinds) (i32.load8_u offset=16 (local.get $p))))
          (ref.i31 (i32.const 384 (;0600;)))
          (ref.i31 (i32.wrap_i64 (i64.load offset=24 (local.get $p))))
@@ -781,19 +786,21 @@
    (func $stat
       (param $path (ref eq)) (param $large i32) (param $follow i32)
       (param $name (ref eq)) (result (ref eq))
-      (local $p (tuple i32 i32 i32))
+      (local $p_0 i32) (local $p_1 i32) (local $p_2 i32)
       (local $buffer i32) (local $res i32)
-      (local.set $p
-         (call $unix_resolve_path (local.get $name) (local.get $path)))
+      (call $unix_resolve_path (local.get $name) (local.get $path))
+      (local.set $p_2)
+      (local.set $p_1)
+      (local.set $p_0)
       (local.set $buffer (call $get_buffer))
       (local.set $res
          (call $path_filestat_get
-            (tuple.extract 3 0 (local.get $p))
+            (local.get $p_0)
             (local.get $follow) ;; symlink_follow
-            (tuple.extract 3 1 (local.get $p))
-            (tuple.extract 3 2 (local.get $p))
+            (local.get $p_1)
+            (local.get $p_2)
             (local.get $buffer)))
-      (call $free (tuple.extract 3 1 (local.get $p)))
+      (call $free (local.get $p_1))
       (if (local.get $res)
          (then
             (call $caml_unix_error
@@ -953,23 +960,27 @@
 
    (func (export "unix_rename") (export "caml_unix_rename")
       (param $o (ref eq)) (param $n (ref eq)) (result (ref eq))
-      (local $op (tuple i32 i32 i32))
-      (local $np (tuple i32 i32 i32))
+      (local $op_0 i32) (local $op_1 i32) (local $op_2 i32)
+      (local $np_0 i32) (local $np_1 i32) (local $np_2 i32)
       (local $res i32)
-      (local.set $op
-         (call $unix_resolve_path (global.get $rename)  (local.get $o)))
-      (local.set $np
-         (call $unix_resolve_path (global.get $rename) (local.get $n)))
+      (call $unix_resolve_path (global.get $rename)  (local.get $o))
+      (local.set $op_2)
+      (local.set $op_1)
+      (local.set $op_0)
+      (call $unix_resolve_path (global.get $rename) (local.get $n))
+      (local.set $np_2)
+      (local.set $np_1)
+      (local.set $np_0)
       (local.set $res
          (call $path_rename
-            (tuple.extract 3 0 (local.get $op))
-            (tuple.extract 3 1 (local.get $op))
-            (tuple.extract 3 2 (local.get $op))
-            (tuple.extract 3 0 (local.get $np))
-            (tuple.extract 3 1 (local.get $np))
-            (tuple.extract 3 2 (local.get $np))))
-      (call $free (tuple.extract 3 1 (local.get $op)))
-      (call $free (tuple.extract 3 1 (local.get $np)))
+            (local.get $op_0)
+            (local.get $op_1)
+            (local.get $op_2)
+            (local.get $np_0)
+            (local.get $np_1)
+            (local.get $np_2)))
+      (call $free (local.get $op_1))
+      (call $free (local.get $np_1))
       (if (local.get $res)
          (then
             (call $caml_unix_error
@@ -995,19 +1006,21 @@
 
    (func (export "unix_chdir") (export "caml_unix_chdir")
       (param $name (ref eq)) (result (ref eq))
-      (local $p (tuple i32 i32 i32))
+      (local $p_0 i32) (local $p_1 i32) (local $p_2 i32)
       (local $buffer i32) (local $res i32) (local $kind i32)
-      (local.set $p
-         (call $unix_resolve_path (global.get $chdir) (local.get $name)))
+      (call $unix_resolve_path (global.get $chdir) (local.get $name))
+      (local.set $p_2)
+      (local.set $p_1)
+      (local.set $p_0)
       (local.set $buffer (call $get_buffer))
       (local.set $res
          (call $path_filestat_get
-            (tuple.extract 3 0 (local.get $p))
+            (local.get $p_0)
             (i32.const 1)
-            (tuple.extract 3 1 (local.get $p))
-            (tuple.extract 3 2 (local.get $p))
+            (local.get $p_1)
+            (local.get $p_2)
             (local.get $buffer)))
-      (call $free (tuple.extract 3 1 (local.get $p)))
+      (call $free (local.get $p_1))
       (if (local.get $res)
          (then
             (call $caml_unix_error
@@ -1047,16 +1060,18 @@
 
    (func (export "unix_mkdir") (export "caml_unix_mkdir")
       (param $path (ref eq)) (param $perm (ref eq)) (result (ref eq))
-      (local $p (tuple i32 i32 i32))
+      (local $p_0 i32) (local $p_1 i32) (local $p_2 i32)
       (local $res i32)
-      (local.set $p
-         (call $unix_resolve_path (global.get $mkdir) (local.get $path)))
+      (call $unix_resolve_path (global.get $mkdir) (local.get $path))
+      (local.set $p_2)
+      (local.set $p_1)
+      (local.set $p_0)
       (local.set $res
          (call $path_create_directory
-            (tuple.extract 3 0 (local.get $p))
-            (tuple.extract 3 1 (local.get $p))
-            (tuple.extract 3 2 (local.get $p))))
-      (call $free (tuple.extract 3 1 (local.get $p)))
+            (local.get $p_0)
+            (local.get $p_1)
+            (local.get $p_2)))
+      (call $free (local.get $p_1))
       (if (local.get $res)
          (then
             (call $caml_unix_error
@@ -1091,23 +1106,25 @@
 
    (func $unix_opendir (export "unix_opendir") (export "caml_unix_opendir")
       (param $name (ref eq)) (result (ref eq))
-      (local $p (tuple i32 i32 i32))
+      (local $p_0 i32) (local $p_1 i32) (local $p_2 i32)
       (local $buffer i32) (local $res i32)
-      (local.set $p
-         (call $unix_resolve_path (global.get $opendir) (local.get $name)))
+      (call $unix_resolve_path (global.get $opendir) (local.get $name))
+      (local.set $p_2)
+      (local.set $p_1)
+      (local.set $p_0)
       (local.set $buffer (call $get_buffer))
       (local.set $res
          (call $path_open
-            (tuple.extract 3 0 (local.get $p))
+            (local.get $p_0)
             (i32.const 1) ;; symlink_follow
-            (tuple.extract 3 1 (local.get $p))
-            (tuple.extract 3 2 (local.get $p))
+            (local.get $p_1)
+            (local.get $p_2)
             (i32.const 2) ;; O_DIRECTORY
             (i64.const 0x4000) ;; allow fd_readdir
             (i64.const 0)
             (i32.const 0)
             (local.get $buffer)))
-      (call $free (tuple.extract 3 1 (local.get $p)))
+      (call $free (local.get $p_1))
       (if (local.get $res)
          (then
             (call $caml_unix_error
@@ -1306,16 +1323,18 @@
 
    (func (export "unix_unlink") (export "caml_unix_unlink")
       (param $path (ref eq)) (result (ref eq))
-      (local $p (tuple i32 i32 i32))
+      (local $p_0 i32) (local $p_1 i32) (local $p_2 i32)
       (local $res i32)
-      (local.set $p
-         (call $unix_resolve_path (global.get $unlink) (local.get $path)))
+      (call $unix_resolve_path (global.get $unlink) (local.get $path))
+      (local.set $p_2)
+      (local.set $p_1)
+      (local.set $p_0)
       (local.set $res
          (call $path_unlink_file
-            (tuple.extract 3 0 (local.get $p))
-            (tuple.extract 3 1 (local.get $p))
-            (tuple.extract 3 2 (local.get $p))))
-      (call $free (tuple.extract 3 1 (local.get $p)))
+            (local.get $p_0)
+            (local.get $p_1)
+            (local.get $p_2)))
+      (call $free (local.get $p_1))
       (if (local.get $res)
          (then
             (call $caml_unix_error
@@ -1340,16 +1359,18 @@
 
    (func (export "unix_rmdir") (export "caml_unix_rmdir")
       (param $path (ref eq)) (result (ref eq))
-      (local $p (tuple i32 i32 i32))
+      (local $p_0 i32) (local $p_1 i32) (local $p_2 i32)
       (local $res i32)
-      (local.set $p
-         (call $unix_resolve_path (global.get $rmdir) (local.get $path)))
+      (call $unix_resolve_path (global.get $rmdir) (local.get $path))
+      (local.set $p_2)
+      (local.set $p_1)
+      (local.set $p_0)
       (local.set $res
          (call $path_remove_directory
-            (tuple.extract 3 0 (local.get $p))
-            (tuple.extract 3 1 (local.get $p))
-            (tuple.extract 3 2 (local.get $p))))
-      (call $free (tuple.extract 3 1 (local.get $p)))
+            (local.get $p_0)
+            (local.get $p_1)
+            (local.get $p_2)))
+      (call $free (local.get $p_1))
       (if (local.get $res)
          (then
             (call $caml_unix_error
@@ -1375,12 +1396,18 @@
    (func (export "unix_link") (export "caml_unix_link")
       (param $follow (ref eq)) (param $o (ref eq)) (param $n (ref eq))
       (result (ref eq))
-      (local $op (tuple i32 i32 i32))
-      (local $np (tuple i32 i32 i32))
+      (local $op_0 i32) (local $op_1 i32) (local $op_2 i32)
+      (local $np_0 i32) (local $np_1 i32) (local $np_2 i32)
       (local $flags i32)
       (local $res i32)
-      (local.set $op (call $unix_resolve_path (global.get $link) (local.get $o)))
-      (local.set $np (call $unix_resolve_path (global.get $link) (local.get $n)))
+      (call $unix_resolve_path (global.get $link) (local.get $o))
+      (local.set $op_2)
+      (local.set $op_1)
+      (local.set $op_0)
+      (call $unix_resolve_path (global.get $link) (local.get $n))
+      (local.set $np_2)
+      (local.set $np_1)
+      (local.set $np_0)
       (if (ref.test (ref $block) (local.get $follow))
          (then
             (local.set $flags
@@ -1391,15 +1418,15 @@
                         (i32.const 1)))))))
       (local.set $res
          (call $path_link
-            (tuple.extract 3 0 (local.get $op))
+            (local.get $op_0)
             (local.get $flags)
-            (tuple.extract 3 1 (local.get $op))
-            (tuple.extract 3 2 (local.get $op))
-            (tuple.extract 3 0 (local.get $np))
-            (tuple.extract 3 1 (local.get $np))
-            (tuple.extract 3 2 (local.get $np))))
-      (call $free (tuple.extract 3 1 (local.get $op)))
-      (call $free (tuple.extract 3 1 (local.get $np)))
+            (local.get $op_1)
+            (local.get $op_2)
+            (local.get $np_0)
+            (local.get $np_1)
+            (local.get $np_2)))
+      (call $free (local.get $op_1))
+      (call $free (local.get $np_1))
       (if (local.get $res)
          (then
             (call $caml_unix_error
@@ -1443,7 +1470,7 @@
       (local $path (ref $bytes))
       (local $len i32)
       (local $op i32)
-      (local $np (tuple i32 i32 i32))
+      (local $np_0 i32) (local $np_1 i32) (local $np_2 i32)
       (local $flags i32)
       (local $res i32)
       (local.set $path (ref.cast (ref $bytes) (local.get $o)))
@@ -1451,17 +1478,19 @@
       (local.set $op
          (call $write_string_to_memory
             (i32.const 0) (i32.const 0) (local.get $path)))
-      (local.set $np
-         (call $unix_resolve_path (global.get $symlink) (local.get $n)))
+      (call $unix_resolve_path (global.get $symlink) (local.get $n))
+      (local.set $np_2)
+      (local.set $np_1)
+      (local.set $np_0)
       (local.set $res
          (call $path_symlink
             (local.get $op)
             (local.get $len)
-            (tuple.extract 3 0 (local.get $np))
-            (tuple.extract 3 1 (local.get $np))
-            (tuple.extract 3 2 (local.get $np))))
+            (local.get $np_0)
+            (local.get $np_1)
+            (local.get $np_2)))
       (call $free (local.get $op))
-      (call $free (tuple.extract 3 1 (local.get $np)))
+      (call $free (local.get $np_1))
       (if (local.get $res)
          (then
             (call $caml_unix_error
@@ -1499,21 +1528,23 @@
 
    (func (export "unix_readlink") (export "caml_unix_readlink")
       (param $path (ref eq)) (result (ref eq))
-      (local $p (tuple i32 i32 i32))
+      (local $p_0 i32) (local $p_1 i32) (local $p_2 i32)
       (local $buffer i32) (local $buf i32) (local $res i32)
-      (local.set $p
-         (call $unix_resolve_path (global.get $readlink) (local.get $path)))
+      (call $unix_resolve_path (global.get $readlink) (local.get $path))
+      (local.set $p_2)
+      (local.set $p_1)
+      (local.set $p_0)
       (local.set $buffer (call $get_buffer))
       (local.set $buf (i32.add (local.get $buffer) (i32.const 4)))
       (local.set $res
          (call $path_readlink
-            (tuple.extract 3 0 (local.get $p))
-            (tuple.extract 3 1 (local.get $p))
-            (tuple.extract 3 2 (local.get $p))
+            (local.get $p_0)
+            (local.get $p_1)
+            (local.get $p_2)
             (local.get $buf)
             (global.get $IO_BUFFER_SIZE)
             (local.get $buffer)))
-      (call $free (tuple.extract 3 1 (local.get $p)))
+      (call $free (local.get $p_1))
       (if (local.get $res)
          (then
             (call $caml_unix_error
@@ -1541,24 +1572,26 @@
    (@string $truncate "truncate")
 
    (func $truncate (param $path (ref eq)) (param $len i64) (result (ref eq))
-      (local $p (tuple i32 i32 i32))
+      (local $p_0 i32) (local $p_1 i32) (local $p_2 i32)
       (local $fd i32) (local $res i32) (local $buffer i32)
       (block $error
-         (local.set $p
-            (call $unix_resolve_path (global.get $truncate) (local.get $path)))
+         (call $unix_resolve_path (global.get $truncate) (local.get $path))
+         (local.set $p_2)
+         (local.set $p_1)
+         (local.set $p_0)
          (local.set $buffer (call $get_buffer))
          (local.set $res
             (call $path_open
-               (tuple.extract 3 0 (local.get $p))
+               (local.get $p_0)
                (i32.const 1) ;; symlink_follow
-               (tuple.extract 3 1 (local.get $p))
-               (tuple.extract 3 2 (local.get $p))
+               (local.get $p_1)
+               (local.get $p_2)
                (i32.const 0)
                (i64.const 0x400040) ;; allow fd_filestat_set_size and fd_write
                (i64.const 0)
                (i32.const 0)
                (local.get $buffer)))
-         (call $free (tuple.extract 3 1 (local.get $p)))
+         (call $free (local.get $p_1))
          (br_if $error (local.get $res))
          (local.set $fd (i32.load (local.get $buffer)))
          (local.set $res
@@ -1697,19 +1730,21 @@
    ;; We can only check that the file exists
    (func (export "unix_access") (export "caml_unix_access")
       (param $path (ref eq)) (param $flags (ref eq)) (result (ref eq))
-      (local $p (tuple i32 i32 i32))
+      (local $p_0 i32) (local $p_1 i32) (local $p_2 i32)
       (local $res i32) (local $buffer i32)
-      (local.set $p
-         (call $unix_resolve_path (global.get $access) (local.get $path)))
+      (call $unix_resolve_path (global.get $access) (local.get $path))
+      (local.set $p_2)
+      (local.set $p_1)
+      (local.set $p_0)
       (local.set $buffer (call $get_buffer))
       (local.set $res
          (call $path_filestat_get
-            (tuple.extract 3 0 (local.get $p))
+            (local.get $p_0)
             (i32.const 1)
-            (tuple.extract 3 1 (local.get $p))
-            (tuple.extract 3 2 (local.get $p))
+            (local.get $p_1)
+            (local.get $p_2)
             (local.get $buffer)))
-      (call $free (tuple.extract 3 1 (local.get $p)))
+      (call $free (local.get $p_1))
       (if (local.get $res)
          (then
             (call $caml_unix_error
@@ -1766,20 +1801,22 @@
       (param $vpath (ref eq)) (param $vflags (ref eq)) (param $perm (ref eq))
       (result (ref eq))
       (local $flags i32) (local $offset i64)
-      (local $path (tuple i32 i32 i32))
+      (local $path_0 i32) (local $path_1 i32) (local $path_2 i32)
       (local $res i32) (local $buffer i32)
-      (local.set $path
-         (call $unix_resolve_path (global.get $open) (local.get $vpath)))
+      (call $unix_resolve_path (global.get $open) (local.get $vpath))
+      (local.set $path_2)
+      (local.set $path_1)
+      (local.set $path_0)
       (local.set $buffer (call $get_buffer))
       (local.set $flags
          (call $convert_flag_list
             (global.get $unix_open_flags) (local.get $vflags)))
       (local.set $res
          (call $path_open
-            (tuple.extract 3 0 (local.get $path))
+            (local.get $path_0)
             (i32.const 1) ;; symlink_follow
-            (tuple.extract 3 1 (local.get $path))
-            (tuple.extract 3 2 (local.get $path))
+            (local.get $path_1)
+            (local.get $path_2)
             (i32.and (i32.shr_u (local.get $flags) (i32.const 4))
               (i32.const 0xF))
             (select
@@ -1790,7 +1827,7 @@
             (i64.const 0)
             (i32.shr_u (local.get $flags) (i32.const 8))
             (local.get $buffer)))
-      (call $free (tuple.extract 3 1 (local.get $path)))
+      (call $free (local.get $path_1))
       (if (local.get $res)
          (then
             (call $caml_unix_error
@@ -2107,7 +2144,7 @@
                            (else
                               (call $write' (local.get $fd) (local.get $buf)
                                  (i32.const 0) (local.get $numbytes)
-                                 (ref.null extern))))))
+                                 (ref.null noextern))))))
                   (catch $javascript_exception
                      (call $caml_unix_error (pop externref) (ref.null eq))))
                (local.set $offset
@@ -2159,7 +2196,7 @@
                         (else
                            (call $write' (local.get $fd) (local.get $buf)
                               (i32.const 0) (local.get $numbytes)
-                              (ref.null extern))))))
+                              (ref.null noextern))))))
                (catch $javascript_exception
                   (call $caml_unix_error (pop externref) (ref.null eq))))
             (local.set $offset
@@ -2196,7 +2233,7 @@
                         (i32.const 0) (local.get $len) (local.get $offset)))
                   (else
                      (call $read' (local.get $fd) (local.get $buf)
-                        (i32.const 0) (local.get $len) (ref.null extern))))))
+                        (i32.const 0) (local.get $len) (ref.null noextern))))))
          (catch $javascript_exception
             (call $caml_unix_error (pop externref) (ref.null eq))))
       (local.set $offset
@@ -2239,7 +2276,7 @@
                            (else
                               (call $write' (local.get $fd) (local.get $buf)
                                  (local.get $pos) (local.get $len)
-                                 (ref.null extern))))))
+                                 (ref.null noextern))))))
                   (catch $javascript_exception
                      (call $caml_unix_error (pop externref) (ref.null eq))))
                (local.set $offset
@@ -2277,7 +2314,8 @@
                         (local.get $pos) (local.get $len) (local.get $offset)))
                   (else
                      (call $read' (local.get $fd) (local.get $buf)
-                        (local.get $pos) (local.get $len) (ref.null extern))))))
+                        (local.get $pos) (local.get $len)
+                        (ref.null noextern))))))
          (catch $javascript_exception
             (call $caml_unix_error (pop externref) (ref.null eq))))
       (local.set $offset

@@ -164,7 +164,7 @@
                               (br_if $next (i32.eqz (local.get $c)))
                               (br_if $next
                                   (i32.ne (local.get $c)
-                                     (array.get $bytes
+                                     (array.get_u $bytes
                                         (local.get $var) (local.get $j))))
                               (local.set $j
                                  (i32.add (local.get $j) (i32.const 1)))

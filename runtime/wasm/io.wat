@@ -152,7 +152,8 @@
          (local.get $i)
          (local.get $l)))
 
-   (func $dv_make)
+   (func $dv_make (param $b (ref extern)) (result (ref extern))
+      (local.get $b))
 
    (func $dv_get_ui8
       (param $a (ref extern)) (param $i i32) (result i32)
@@ -430,19 +431,22 @@
       (param $vpath (ref eq)) (param $vflags (ref eq)) (param $perm (ref eq))
       (result (ref eq))
       (local $fd i32) (local $flags i32) (local $offset i64)
-      (local $path (tuple i32 i32 i32))
+      (local $path_0 i32) (local $path_1 i32) (local $path_2 i32)
       (local $res i32) (local $buffer i32)
-      (local.set $path (call $caml_sys_resolve_path (local.get $vpath)))
+      (call $caml_sys_resolve_path (local.get $vpath))
+      (local.set $path_2)
+      (local.set $path_1)
+      (local.set $path_0)
       (local.set $buffer (call $get_buffer))
       (local.set $flags
          (call $convert_flag_list
             (global.get $sys_open_flags) (local.get $vflags)))
       (local.set $res
          (call $path_open
-            (tuple.extract 3 0 (local.get $path))
+            (local.get $path_0)
             (i32.const 1) ;; symlink_follow
-            (tuple.extract 3 1 (local.get $path))
-            (tuple.extract 3 2 (local.get $path))
+            (local.get $path_1)
+            (local.get $path_2)
             (i32.and (i32.shr_u (local.get $flags) (i32.const 4))
               (i32.const 0xF))
             (select (i64.const 0x860007c) (i64.const 0x820003e)
@@ -450,7 +454,7 @@
             (i64.const 0)
             (i32.shr_u (local.get $flags) (i32.const 8))
             (local.get $buffer)))
-      (call $free (tuple.extract 3 1 (local.get $path)))
+      (call $free (local.get $path_1))
       (if (local.get $res)
          (then
             (call $caml_handle_sys_error (local.get $vpath) (local.get $res))))
@@ -1198,7 +1202,8 @@
                         (i32.sub (local.get $p)
                            (struct.get $channel $curr (local.get $ch))))))))
          (local.set $p (i32.add (local.get $p) (i32.const 1)))
-         (br $loop)))
+         (br $loop))
+      (unreachable))
 
    (func $caml_flush (param $ch (ref $channel))
       (loop $loop

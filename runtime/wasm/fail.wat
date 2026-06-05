@@ -63,7 +63,7 @@
        (array.get $block (global.get $caml_global_data)
           (global.get $FAILURE_EXN)))
 
-   (func (export "caml_failwith") (param $arg (ref eq))
+   (func $caml_failwith (export "caml_failwith") (param $arg (ref eq))
        (return_call $caml_raise_with_arg
            (array.get $block (global.get $caml_global_data)
               (global.get $FAILURE_EXN))

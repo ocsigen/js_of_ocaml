@@ -107,7 +107,8 @@
       (block $tail (result (ref null $assoc))
          (loop $loop
             (local.set $a
-               (br_on_cast_fail $tail (ref null eq) (ref $assoc) (local.get $l)))
+               (br_on_cast_fail $tail (ref null $assoc) (ref $assoc)
+                  (local.get $l)))
             (if (i31.get_u
                    (ref.cast (ref i31)
                        (call $caml_string_equal
@@ -116,7 +117,8 @@
                (then
                   (return (local.get $a))))
             (local.set $l (struct.get $assoc 2 (local.get $a)))
-            (br $loop))))
+            (br $loop))
+         (unreachable)))
 
    (func $caml_named_value (export "caml_named_value")
       (param $s (ref eq)) (result (ref null eq))

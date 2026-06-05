@@ -9,7 +9,8 @@
 
    (type $bytes (array (mut i8)))
 
-   (func (export "checked_malloc") (param $size i32) (result i32)
+   (func $checked_malloc (export "checked_malloc")
+      (param $size i32) (result i32)
       (local $p i32)
       (local.set $p (call $malloc (local.get $size)))
       (if (i32.eqz (local.get $p))
@@ -23,7 +24,7 @@
          (if (i32.lt_u (local.get $i) (local.get $len))
             (then
                (i32.store8 (i32.add (local.get $buf) (local.get $i))
-                  (array.get $bytes (local.get $s)
+                  (array.get_u $bytes (local.get $s)
                      (i32.add (local.get $ofs) (local.get $i))))
                (local.set $i (i32.add (local.get $i) (i32.const 1)))
                (br $loop)))))
@@ -36,7 +37,7 @@
          (if (i32.lt_u (local.get $i) (local.get $len))
             (then
                (i32.store8 (i32.add (local.get $buf) (local.get $i))
-                  (array.get $bytes (local.get $s) (local.get $i)))
+                  (array.get_u $bytes (local.get $s) (local.get $i)))
                (local.set $i (i32.add (local.get $i) (i32.const 1)))
                (br $loop)))))
 
