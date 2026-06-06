@@ -1,0 +1,178 @@
+{0 JavaScript primitives}
+
+This page covers how to link JavaScript files with js_of_ocaml, including
+writing primitives and discovering runtime files.
+
+{1:overview Overview}
+
+The js_of_ocaml compiler accepts JavaScript files on the command-line.
+The main purpose is to provide (external) primitives needed by the bytecode program.
+
+Most primitives from the standard library are already implemented and loaded
+by default.
+
+{1:passing-js-files Passing JavaScript files}
+
+Pass JavaScript files (must have ".js" extension) directly:
+
+{v
+js_of_ocaml myruntime.js program.byte
+v}
+
+{1:finding-runtime Finding runtime files}
+
+OCaml libraries often require JavaScript runtime files. The js_of_ocaml compiler
+does not automatically locate these files - They must be passed explicitly on the command line.
+
+Runtime files are discovered using Findlib's [jsoo_runtime] variable.
+
+{2 List required runtime files}
+
+To list all JavaScript runtime files for a set of libraries:
+
+{v
+ocamlfind query -format "%+(jsoo_runtime)" -r LIB1 LIB2 ... | grep -v "^$"
+v}
+
+Example for {b base} and {b time_now}:
+
+{v
+$ ocamlfind query -format "%+(jsoo_runtime)" -r base time_now | grep -v "^$"
+~/.opam/4.14.0/lib/base/base_internalhash_types/runtime.js
+~/.opam/4.14.0/lib/base/runtime.js
+~/.opam/4.14.0/lib/time_now/runtime.js
+v}
+
+{2 Complete manual compilation example}
+
+{v
+$ export LIBS=base,time_now
+$ ocamlfind ocamlc -package $LIBS -linkpkg main.ml -o main.byte
+$ js_of_ocaml $(ocamlfind query -format "%+(jsoo_runtime)" -r $LIBS | grep -v "^$") main.byte
+v}
+
+With {b dune}, this is handled automatically.
+
+{1:writing-primitives Writing JavaScript primitives}
+
+User-defined primitives need to be implemented in a separate JavaScript file.
+See {{!page-"runtime-representation"}runtime representation} for how
+OCaml values are represented in JavaScript. Primitives should be annotated with
+additional information.
+
+{2 Annotation syntax}
+
+Annotations are single line comments with the following syntax
+{v
+//Provides: primitive_name [const|mutable]
+//Requires: other_primitive[,another_primitive]*
+//Version: version_constraint[,version_constraint]*
+
+function primitive_name(arg1, arg2) {
+  // JavaScript implementation
+}
+v}
+
+{2 Annotations explained}
+
+{b [//Provides: name [modifier]]} - Declares a primitive:
+- [const] - No side effects (pure function)
+- [mutable] - No side effects, but return value may be affected by other primitives
+- [mutator] (or empty) - May have side effects
+
+{b [//Requires: name1, name2]} - Lists primitives that must be loaded first
+
+{b [//Version: < 4.12.0]} - OCaml version constraint
+
+{b [//Alias: other_name]} - Makes this primitive an alias for another
+
+{b [//Weakdef]} - Allows this primitive to be overridden by another definition
+
+{b [//Always]} - Always include this code, even if not referenced
+
+{b [//If: flag]} - Only include if flag is enabled (e.g., [//If: effects])
+
+{b [//Ifnot: flag]} - Only include if flag is disabled
+
+{b [//Deprecated: message]} - Mark primitive as deprecated
+
+All JavaScript code after a [//Provides] annotation belongs to that
+primitive, until the next [//Provides].
+
+{2 Example: custom primitive}
+
+{v
+//Provides: my_log_primitive
+//Requires: caml_jsstring_of_string
+function my_log_primitive(msg) {
+  console.log(caml_jsstring_of_string(msg));
+  return 0;  // Return unit
+}
+v}
+
+OCaml side:
+{@ocaml[
+external my_log : string -> unit = "my_log_primitive"
+
+let () = my_log "Hello from OCaml!"
+]}
+
+{1:declaring-runtime Declaring runtime files in packages}
+
+{2 Using jsoo_runtime}
+
+In your package's META file, use the [jsoo_runtime] variable:
+
+{v
+# mypackage/META
+package "sublib" (
+  directory = "subdir"
+  jsoo_runtime = "runtime.js"
+)
+v}
+
+Files should be comma-separated and relative to the package directory.
+By convention, use {b runtime.js} for single files.
+
+{2 Dune integration}
+
+Dune automatically handles [jsoo_runtime] declarations. In your dune file:
+
+{v
+(library
+ (name mylib)
+ (js_of_ocaml
+  (javascript_files runtime.js)))
+v}
+
+{1:linkopts-deprecated Deprecated: linkopts(javascript)}
+
+Before dune's native js_of_ocaml support, the standard approach was to use
+[linkopts(javascript)] in META files:
+
+{v
+# Old approach - deprecated
+package "sublib" (
+  directory = "subdir"
+  linkopts(javascript) = "+mypackage/sublib/runtime.js"
+)
+v}
+
+To list linkopts for libraries:
+{v
+ocamlfind query -o-format -r -predicates javascript LIB1 LIB2 ...
+v}
+
+{2 Findlib path syntax (deprecated)}
+
+When using linkopts, special path syntax is supported:
+- [+package/file.js] - Resolves to [${LIBDIR}/package/file.js]
+- [+file.js] - Resolves to js_of_ocaml-compiler's lib directory
+
+{b Note}: Dune generates META files compatible with both approaches but only
+uses [jsoo_runtime] internally.
+
+{1 See also}
+
+- {{!page-"compilation-modes"}Compilation modes}
+- {{!page-"options"}Command-line options}

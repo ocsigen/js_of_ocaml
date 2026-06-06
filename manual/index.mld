@@ -1,0 +1,30 @@
+{0 Js_of_ocaml}
+
+Js_of_ocaml is a compiler from OCaml bytecode programs to JavaScript. It makes
+it possible to run pure OCaml programs in JavaScript environments like browsers
+and Node.js. A companion compiler, {e wasm_of_ocaml}, targets WebAssembly.
+
+{1 Manual}
+
+- {{!page-"overview"}Overview} — what Js_of_ocaml is and how to use it
+- {{!page-"install"}Installation}
+- {{!page-"quickstart"}Quick Start}
+- {{!page-"javascript-interop"}JavaScript interoperability}
+- {{!page-"ppx"}PPX syntax extension} and {{!page-"ppx-deriving"}JSON derivation}
+- {{!page-"rev-bindings"}Export OCaml code to JavaScript}
+- {{!page-"errors"}Error handling}
+- {{!page-"lwt"}Lwt support}
+- {{!page-"options"}Command-line options}, {{!page-"compilation-modes"}compilation modes},
+  {{!page-"linker"}JavaScript primitives}, {{!page-"tailcall"}tail-call optimization},
+  {{!page-"effects"}effect handlers}, {{!page-"runtime-representation"}runtime representation}
+- {{!page-"browser-compat"}Targeting older browsers}
+- {{!page-"wasm_overview"}wasm_of_ocaml overview} and {{!page-"wasm_runtime"}writing Wasm primitives}
+- {{!page-"build-toplevel"}Build a toplevel}, {{!page-"debug"}debug a program},
+  {{!page-"performances"}performance}, {{!page-"contribute"}contribute}
+- {{!page-"examples"}Examples and projects}
+
+{1 API reference}
+
+See the {{!page-"api"}API overview} for the full list of modules, or jump to the
+main libraries: {!Js_of_ocaml.Js}, {!Js_of_ocaml.Dom_html},
+{!Js_of_ocaml_lwt.Lwt_js_events}, {!Js_of_ocaml_tyxml.Tyxml_js}.

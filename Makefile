@@ -20,14 +20,12 @@ test-babel-downlevel:
 
 test runtest runtests: tests
 
+# Build the API + manual (odoc) and the interactive examples. @doc compiles the
+# manual/*.mld and the API into _build/default/_doc/_html/; @doc-manual builds the
+# examples into _build/default/manual/files/. The themed ocsigen.org site is then
+# produced by doc/build.sh (see doc/README.md), which the CI runs and deploys.
 doc:
-	rm -rf doc-dev
-	mkdir doc-dev
 	dune build @doc @doc-manual
-	rsync -av --delete _build/default/_doc/_html/ doc-dev/api
-	rsync -av --delete --exclude=".*" --exclude="dune*" --exclude="gen_dune_inc.*" _build/default/manual/ doc-dev/manual
-	find doc-dev/ -name dune -delete
-	find doc-dev/ -name "*.exe" -delete
 
 promote:
 	dune promote
@@ -45,11 +43,7 @@ lint-js:
 clean:
 	dune clean
 
-installdoc:
-	if [ -d _wikidoc ]; then git fetch origin wikidoc && git -C _wikidoc checkout origin/wikidoc; else git worktree add _wikidoc origin/wikidoc; fi
-	rsync -av doc-dev/ _wikidoc/doc/dev/
-
 bench:
 	$(MAKE) -C benchmarks bench
 
-.PHONY: all tests tests-wasm tests-quickjs test runtest runtests doc clean installdoc bench
+.PHONY: all tests tests-wasm tests-quickjs test runtest runtests doc clean bench

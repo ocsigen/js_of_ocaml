@@ -1,0 +1,126 @@
+{0 Wasm_of_ocaml}
+
+{1:overview Overview}
+
+Wasm_of_ocaml is a compiler from OCaml bytecode programs to WebAssembly.
+It provides an alternative way to run pure OCaml programs in JavaScript
+environments like browsers and Node.js.
+
+The compiler is provided by the [wasm_of_ocaml-compiler] package.
+The {{!page-"overview"}Js_of_ocaml libraries} are compatible
+with this compiler.
+
+{1:installation Installation}
+
+The easiest way to install wasm_of_ocaml is to use opam:
+
+{v
+opam install wasm_of_ocaml-compiler js_of_ocaml js_of_ocaml-ppx js_of_ocaml-lwt
+v}
+
+Binaryen version 119 or later is required. The opam command above will
+install it automatically if needed.
+
+{1:usage Usage}
+
+Your program must first be compiled using the OCaml bytecode compiler [ocamlc].
+JavaScript bindings are provided by the [js_of_ocaml] package and the
+syntax extension by the [js_of_ocaml-ppx] package:
+
+{v
+ocamlfind ocamlc -package js_of_ocaml -package js_of_ocaml-ppx \
+    -linkpkg -o cubes.byte cubes.ml
+v}
+
+Then, run the [wasm_of_ocaml] compiler to produce Wasm code:
+
+{v
+wasm_of_ocaml cubes.byte
+v}
+
+This produces a JavaScript loading script [cubes.js] and a directory
+[cubes.assets] containing the Wasm code.
+
+{2 With dune}
+
+Dune has native support for wasm_of_ocaml (starting with dune 3.17.0).
+It supports both standard and separate compilation.
+See https:{e dune.readthedocs.io/en/latest/wasmoo.html
+
+{1:supported-features Supported features}
+
+Most of the OCaml standard library is supported. However:
+- Most of the [Sys] module is not supported
+
+Extra libraries distributed with OCaml (such as Thread) are not
+supported in general. However:
+- [Bigarray] - supported using Typed Arrays
+- [Str] - supported
+- [Graphics] - partially supported using canvas (see also [js_of_ocaml-lwt.graphics])
+- [Unix] - time-related functions are supported
+
+{2 Differences from js_of_ocaml}
+
+Compared to js_of_ocaml:
+- The default effect handler mode is [jspi] (instead of [disabled])
+- The [--effects] flag accepts [jspi] instead of [double-translation]
+- There is no [build-fs] subcommand; use the [--file] flag instead
+
+{2 Effect handlers}
+
+OCaml 5.x code using effect handlers can be compiled in three ways:
+
+- {b [--effects=cps]} - Uses the CPS transformation from js_of_ocaml
+- {b [--effects=jspi]} (default) - Uses the {{:https://github.com/WebAssembly/js-promise-integration}JavaScript-Promise Integration extension}
+- {b [--effects=native]} - Uses the {{:https://github.com/WebAssembly/stack-switching}WebAssembly Stack Switching proposal}
+
+The CPS transformation is not the default since the generated code is slower,
+larger, and less readable. However, the JSPI extension is currently only
+available in Chrome 137 and Node.js 25 (or higher), and performing effects
+is slower when using it. Use [--effects=cps] for other browsers.
+
+The native implementation is based on the WebAssembly typed continuations
+proposal (stack switching). It provides the best performance but requires a
+runtime with support for the WasmFX extension (currently available, behind the
+[--experimental-wasm-wasmfx] flag, in Chrome 148 or higher, or in a recent
+Node.js canary release (V8 version 14.7.100 or higher)).
+
+{1:js-bindings Binding with JavaScript libraries}
+
+Js_of_ocaml lets you bind code with JavaScript libraries by linking [.js] files.
+Similarly, wasm_of_ocaml allows linking Wasm modules ([.wasm] or [.wat] files).
+See {{!page-"wasm_runtime"}Writing Wasm primitives}.
+
+If a js_of_ocaml project uses [external] primitives defined in companion
+[.js] files, you need to implement the same primitives in Wasm modules
+to build with wasm_of_ocaml.
+
+{1:toplevel Toplevel}
+
+Wasm_of_ocaml can compile an OCaml toplevel (REPL) to WebAssembly.
+The toplevel dynamically compiles OCaml bytecode to Wasm and instantiates
+it in the browser.
+
+See {{!page-"build-toplevel"}Toplevel and Dynlink} for build instructions.
+
+{1:dynlink Dynlink}
+
+OCaml's [Dynlink] module is supported. Plugin [.cmo] files are compiled
+on the fly to WebAssembly and instantiated at runtime.
+
+See {{!page-"build-toplevel"}Toplevel and Dynlink} for build instructions.
+
+{1:pseudo-fs Pseudo filesystem}
+
+The pseudo filesystem is supported. Use the [--file] flag to embed files,
+the same way as with js_of_ocaml:
+
+{v
+wasm_of_ocaml --file data.txt cubes.byte
+v}
+
+{1 See also}
+
+- {{!page-"build-toplevel"}Toplevel and Dynlink} — Build a toplevel or use dynamic linking
+- {{!page-"wasm_runtime"}Writing Wasm primitives} — Implement custom Wasm primitives
+- {{!page-"overview"}Js_of_ocaml overview} — JavaScript compilation alternative
