@@ -2,32 +2,16 @@
 # Ocsigen chrome (wodoc), and publish it on the project's gh-pages branch, served
 # at https://ocsigen.org/js_of_ocaml/.  See doc/README.md for the full picture.
 #
-# - push to master  -> rebuild and deploy the "dev" docs.
-# - manual dispatch  -> build any version (e.g. a release tag) and optionally make
-#                       it the "latest". For a tag cut BEFORE this migration (no
-#                       doc/ infra), the doc sources are overlaid from master.
-#
-# Historical version directories already on gh-pages are PRESERVED: each run only
-# replaces its own <label>/ directory (deploy clean is scoped to the target folder).
+# CI deploys ONLY the "dev" docs and ONLY from master. Stable versions are built
+# by hand and committed to gh-pages at release time, so there is no dispatch /
+# release path here. Each run replaces only the dev/ directory; the other version
+# directories already on gh-pages are PRESERVED.
 name: Documentation
 
 on:
   push:
     branches: [master]
-  workflow_dispatch:
-    inputs:
-      label:
-        description: "Version label / output directory (e.g. dev, 6.3.1)"
-        required: true
-        default: dev
-      ref:
-        description: "Git ref to build (branch or tag). Defaults to the label."
-        required: false
-        default: ""
-      set_latest:
-        description: "Also repoint 'latest' at this build"
-        type: boolean
-        default: false
+  workflow_dispatch: {}
 
 # Don't run on forks: deployment targets ocsigen/js_of_ocaml's gh-pages.
 jobs:
@@ -36,22 +20,9 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    env:
-      LABEL: ${{ github.event.inputs.label || 'dev' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.inputs.ref || github.event.inputs.label || github.sha }}
-          fetch-depth: 0
-
-      # A release tag cut before the migration has no doc/ infra nor manual/*.mld;
-      # the doc sources are version-independent, so overlay them from master.
-      - name: Overlay doc sources from master (pre-migration tags)
-        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.ref != '' && github.event.inputs.ref != 'master' }}
-        run: |
-          git fetch origin master
-          git checkout origin/master -- doc manual
 
       - name: Set up OCaml
         uses: ocaml/setup-ocaml@v3
@@ -68,31 +39,19 @@ jobs:
           opam pin add -n wodoc https://github.com/ocsigen/wodoc.git
           opam install wodoc
 
-      - name: Build documentation
+      - name: Build documentation (dev)
         # wodoc build runs `dune build @doc @doc-manual`, assembles the themed
         # site from doc/wodoc, and fetches the shared menu straight from its
         # canonical copy in ocsigen.github.io.
         run: >-
           opam exec -- wodoc build --config doc/wodoc
           --menu https://ocsigen.org/wodoc/menu.html
-          --out "$PWD/_doc-site/$LABEL" --label "$LABEL"
+          --out "$PWD/_doc-site/dev" --label dev
 
-      - name: Deploy to gh-pages (replace only this version, keep the rest)
+      - name: Deploy to gh-pages (replace only dev/, keep the rest)
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           branch: gh-pages
-          folder: _doc-site/${{ env.LABEL }}
-          target-folder: ${{ env.LABEL }}
+          folder: _doc-site/dev
+          target-folder: dev
           clean: true
-
-      - name: Repoint 'latest' (releases)
-        if: ${{ github.event.inputs.set_latest == 'true' }}
-        run: |
-          tmp="$(mktemp -d)"
-          git clone --depth 1 --branch gh-pages \
-            "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" "$tmp"
-          ln -sfn "$LABEL" "$tmp/latest"
-          git -C "$tmp" add latest
-          git -C "$tmp" -c user.email=ci@ocsigen.org -c user.name="Ocsigen CI" \
-            commit -m "doc: latest -> $LABEL" || true
-          git -C "$tmp" push
