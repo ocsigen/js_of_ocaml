@@ -74,7 +74,7 @@ jobs:
         # canonical copy in ocsigen.github.io.
         run: >-
           opam exec -- wodoc build --config doc/wodoc
-          --menu https://raw.githubusercontent.com/ocsigen/ocsigen.github.io/master/wodoc/menu.html
+          --menu https://ocsigen.org/wodoc/menu.html
           --out "$PWD/_doc-site/$LABEL" --label "$LABEL"
 
       - name: Deploy to gh-pages (replace only this version, keep the rest)

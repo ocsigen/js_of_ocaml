@@ -23,15 +23,24 @@ Python scripts; they are now declared in [`doc/wodoc`](wodoc) and produced by
 `wodoc build` (the page template, the version selector, the left navigation and
 the cross-package reference resolution are all built in).
 
+### Presentational markup (invisible on ocaml.org)
+
+In the `.mld` manual, wodoc lets you add **CSS classes and layout containers** to
+the documentation with `{%wodoc:…%}` markers (e.g. `{%wodoc:div class=…%}` … and
+`{%wodoc:@ class=…%}` to put a class on the next element). Stock odoc does not
+know the `wodoc` target and simply **drops it**, so the *same sources* render as
+plain, semantic documentation on ocaml.org and as the themed website here — no
+fork, nothing extra to maintain.
+
 ## Build
 
 ```
 wodoc build --config doc/wodoc --label dev --out _doc-site/dev \
-  --menu https://raw.githubusercontent.com/ocsigen/ocsigen.github.io/master/wodoc/menu.html
+  --menu https://ocsigen.org/wodoc/menu.html
 ```
 
 That single command (no wrapper script) does everything — `--menu` takes the
-shared top menu's canonical copy in `ocsigen.github.io` (fetched for you). It:
+shared top menu's canonical copy on `ocsigen.org` (fetched for you). It:
 
 1. runs `dune build @doc @doc-manual` — odoc HTML for the manual and the API of
    every `js_of_ocaml*` package in one run, plus the interactive examples
@@ -46,6 +55,18 @@ Output goes to `<outdir>/<label>/` (default `_doc-site/<label>/`), laid out to
 match `https://ocsigen.org/js_of_ocaml/<label>/`. Internal links are
 version-relative; only the version `<select>` is absolute (`/js_of_ocaml`). The
 themed stylesheet is served centrally at `/css/ocsigen-odoc.css` by ocsigen.org.
+
+### Preview locally
+
+The pages reference the shared site assets (`/css/…`, `/img/…`) by absolute path,
+so a bare build is unstyled offline. Add `--local` to also fetch them next to the
+output, then serve it:
+
+```
+wodoc build --config doc/wodoc --label dev --out _doc-site/dev \
+  --menu https://ocsigen.org/wodoc/menu.html --local
+cd _doc-site && python3 -m http.server   # open http://localhost:8000/dev/js_of_ocaml/
+```
 
 ## Deployment (CI)
 
