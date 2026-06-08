@@ -32,9 +32,9 @@ jobs:
       - name: Install dependencies
         run: |
           opam install . --deps-only --with-doc
-          # odoc + the example/manual dependencies (the interactive demos are built
-          # by `dune build @doc-manual`, exactly as before the migration).
-          opam install odoc lwt_log yojson graphics higlo
+          # The example/manual dependencies for the interactive demos (built by
+          # `dune build @doc-manual`). odoc itself is a with-doc dep, installed above.
+          opam install lwt_log yojson graphics higlo
           # wodoc: the odoc driver that themes the pages with the Ocsigen chrome.
           opam pin add -n wodoc https://github.com/ocsigen/wodoc.git
           opam install wodoc
