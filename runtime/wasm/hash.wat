@@ -289,7 +289,8 @@
                            (array.get $block (local.get $b) (local.get $i)))
                         (local.set $wr (i32.add (local.get $wr) (i32.const 1)))
                         (local.set $i (i32.add (local.get $i) (i32.const 1)))
-                        (br $block_iter))))
+                        (br $block_iter))
+                     (unreachable)))
                   (drop (block $not_float (result (ref eq))
                      (local.set $h
                         (call $caml_hash_mix_double (local.get $h)

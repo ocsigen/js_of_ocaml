@@ -588,16 +588,15 @@
 (@else
    (func (export "caml_sys_read_directory")
       (param $name (ref eq)) (result (ref eq))
-      (try
+      (try (result (ref eq))
          (do
-            (return
-               (call $caml_js_to_string_array
-                  (call $read_dir
-                     (call $unwrap
-                        (call $caml_jsstring_of_string (local.get $name)))))))
+            (call $caml_js_to_string_array
+               (call $read_dir
+                  (call $unwrap
+                     (call $caml_jsstring_of_string (local.get $name))))))
          (catch $javascript_exception
             (call $caml_handle_sys_error (pop externref))
-            (return (ref.i31 (i32.const 0))))))
+            (ref.i31 (i32.const 0)))))
 ))
 
 (@if wasi
@@ -786,15 +785,14 @@
 (@else
    (func (export "caml_sys_is_directory")
       (param $name (ref eq)) (result (ref eq))
-      (try
+      (try (result (ref eq))
          (do
-            (return
-               (call $is_directory
-                  (call $unwrap
-                     (call $caml_jsstring_of_string (local.get $name))))))
+            (call $is_directory
+               (call $unwrap
+                  (call $caml_jsstring_of_string (local.get $name)))))
          (catch $javascript_exception
             (call $caml_handle_sys_error (pop externref))
-            (return (ref.i31 (i32.const 0))))))
+            (ref.i31 (i32.const 0)))))
 ))
 
 (@if wasi
@@ -807,15 +805,14 @@
 (@else
    (func (export "caml_sys_is_regular_file")
       (param $name (ref eq)) (result (ref eq))
-      (try
+      (try (result (ref eq))
          (do
-            (return
-               (call $is_file
-                  (call $unwrap
-                     (call $caml_jsstring_of_string (local.get $name))))))
+            (call $is_file
+               (call $unwrap
+                  (call $caml_jsstring_of_string (local.get $name)))))
          (catch $javascript_exception
             (call $caml_handle_sys_error (pop externref))
-            (return (ref.i31 (i32.const 0))))))
+            (ref.i31 (i32.const 0)))))
 ))
 
 (@if wasi

@@ -762,9 +762,9 @@
       (if (f64.ne (local.get $y) (local.get $y)) (then (return (local.get $y))))
       (if (f64.eq (local.get $x) (local.get $y))
          (then (return (local.get $y))))
-      (if (f64.eq (local.get $x) (f64.const 0))
+      (if (result f64) (f64.eq (local.get $x) (f64.const 0))
          (then
-            (if (f64.ge (local.get $y) (f64.const 0))
+            (if (result f64) (f64.ge (local.get $y) (f64.const 0))
                (then (return (f64.const 0x1p-1074)))
                (else (return (f64.const -0x1p-1074)))))
          (else
