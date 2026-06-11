@@ -47,23 +47,68 @@ let prefix : string =
   in
   loop [ "" ] (Sys.getcwd ()) |> String.concat ~sep:"/"
 
-type enabled_if =
-  | GE5
-  | No_effects
-  | Not_quickjs
-  | Any
+type lang =
+  | NEQ of lang * lang
+  | GE of lang * lang
+  | Var of string
+  | Atom of string
+  | And of lang list
 
-let enabled_if = function
-  | "test_sys" -> GE5
-  | "test_fun_call" -> No_effects
-  | "test_fetch" -> Not_quickjs
-  | _ -> Any
+let ocaml_version = Var "ocaml_version"
 
+let profile = Var "profile"
+
+let ge v = GE (ocaml_version, Atom v)
+
+let neq_profile v = NEQ (profile, Atom v)
+
+let not_quickjs = neq_profile "quickjs"
+
+let not_with_effects = neq_profile "with-effects"
+
+(* These tests rely on features not yet available when targeting WASI. *)
+let not_wasi = [ neq_profile "wasi"; neq_profile "wasi-with-native-effects" ]
+
+let and_ = function
+  | [] -> assert false
+  | [ x ] -> x
+  | l -> And l
+
+let lib_enabled_if = function
+  | "test_sys" -> [ ge "5" ]
+  | "test_fun_call" -> [ not_with_effects ]
+  | "test_fetch" -> not_quickjs :: not_wasi
+  | _ -> not_wasi
+
+(* Some tests cannot run under wasm yet. *)
 let run_wasm = function
   | "test_fun_call" -> false
   | "test_poly_compare" -> false
   | "test_sys" -> false (* ZZZ /static not yet implemented *)
   | _ -> true
+
+let rec pp f = function
+  | NEQ (a, b) -> Format.fprintf f "(<> %a %a)" pp a pp b
+  | GE (a, b) -> Format.fprintf f "(>= %a %a)" pp a pp b
+  | Var x -> Format.fprintf f "%%{%s}" x
+  | Atom x -> Format.fprintf f "%s" x
+  | And [] -> assert false
+  | And l ->
+      Format.fprintf
+        f
+        "(and %a)"
+        (Format.pp_print_list ~pp_sep:(fun f () -> Format.fprintf f " ") pp)
+        l
+
+let enabled_if n fmt x =
+  match x with
+  | [] -> ()
+  | l ->
+      let x = and_ l in
+      Format.fprintf fmt "\n%s" (String.make n ' ');
+      Format.fprintf fmt "(enabled_if %a)" pp x
+
+let modes basename = if run_wasm basename then "js wasm" else "js"
 
 let () =
   Array.to_list (Sys.readdir ".")
@@ -71,11 +116,11 @@ let () =
   |> List.sort ~cmp:compare
   |> List.iter ~f:(fun f ->
       let basename = Filename.chop_extension f in
-      Printf.printf
+      Format.printf
         {|
 (library
  ;; %s%s.ml
- (name %s_%d)%s
+ (name %s_%d)%a
  (modules %s)
  (libraries js_of_ocaml unix)
  (inline_tests (modes %s))
@@ -86,18 +131,7 @@ let () =
         basename
         basename
         (Hashtbl.hash prefix mod 100)
-        (match enabled_if basename with
-        | Any ->
-            "\n\
-            \ (enabled_if (and (<> %{profile} wasi) (<> %{profile} \
-             wasi-with-native-effects)))"
-        | GE5 -> "\n (enabled_if (>= %{ocaml_version} 5))"
-        | No_effects -> "\n (enabled_if (<> %{profile} with-effects))"
-        | Not_quickjs ->
-            "\n\
-            \ (enabled_if (and (<> %{profile} quickjs) (<> %{profile} wasi) (<> \
-             %{profile} wasi-with-native-effects)))")
+        (enabled_if 1)
+        (lib_enabled_if basename)
         basename
-        (match run_wasm basename with
-        | true -> "js wasm"
-        | false -> "js"))
+        (modes basename))
