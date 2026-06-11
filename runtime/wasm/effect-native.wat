@@ -112,18 +112,19 @@
    (func $unhandled_effect_wrapper (param $start (ref $func))
       (local $cont (ref $cont))
       (local $f (ref eq)) (local $v (ref eq))
-      (local $resume_res (tuple (ref eq) (ref $cont)))
+      (local $resume_res_0 (ref eq)) (local $resume_res_1 (ref $cont))
       (local.set $cont (cont.new $cont (ref.func $wrapper_cont)))
       (local.set $f (struct.new $func_closure (local.get $start)))
       (local.set $v (ref.i31 (i32.const 0)))
       (loop $loop
-         (local.set $resume_res
-            (block $handle_effect (result (ref eq) (ref $cont))
-               (resume $cont (on $effect $handle_effect)
-                  (local.get $f) (local.get $v) (local.get $cont))
-               (return)))
-         (local.set $cont (tuple.extract 2 1 (local.get $resume_res)))
-         (local.set $v (tuple.extract 2 0 (local.get $resume_res)))
+         (block $handle_effect (result (ref eq) (ref $cont))
+            (resume $cont (on $effect $handle_effect)
+               (local.get $f) (local.get $v) (local.get $cont))
+            (return))
+         (local.set $resume_res_1)
+         (local.set $resume_res_0)
+         (local.set $cont (local.get $resume_res_1))
+         (local.set $v (local.get $resume_res_0))
          (local.set $f (global.get $raise_unhandled))
          (br $loop)))
 
@@ -142,7 +143,7 @@
       (local $fiber (ref $fiber))
       (local $res (ref eq))
       (local $exn (ref eq))
-      (local $resume_res (tuple (ref eq) (ref $cont)))
+      (local $resume_res_0 (ref eq)) (local $resume_res_1 (ref $cont))
       (if (ref.eq (local.get $vfiber) (ref.i31 (i32.const 0)))
          (then
             (call $caml_raise_constant
@@ -151,7 +152,6 @@
       (local.set $fiber (ref.cast (ref $fiber) (local.get $vfiber)))
       (local.set $exn
          (block $handle_exception (result (ref eq))
-            (local.set $resume_res
                (block $handle_effect (result (ref eq) (ref $cont))
                   (local.set $res
                      (try (result (ref eq))
@@ -170,12 +170,14 @@
                      (local.tee $f
                         (struct.get $fiber $value (local.get $fiber)))
                      (struct.get $closure 0
-                        (ref.cast (ref $closure) (local.get $f))))))
+                        (ref.cast (ref $closure) (local.get $f)))))
+            (local.set $resume_res_1)
+            (local.set $resume_res_0)
             ;; handle effect
             (struct.set $fiber $cont (local.get $fiber)
-               (tuple.extract 2 1 (local.get $resume_res)))
+               (local.get $resume_res_1))
             (return_call_ref $function_3
-               (tuple.extract 2 0 (local.get $resume_res))
+               (local.get $resume_res_0)
                (array.new_fixed $block 3 (ref.i31 (global.get $cont_tag))
                   (local.get $fiber)
                   (local.get $fiber))
@@ -198,28 +200,32 @@
    (func (export "%reperform")
       (param $eff (ref eq)) (param $cont (ref eq)) (param $tail (ref eq))
       (result (ref eq))
-      (local $res (tuple (ref eq) (ref eq)))
-      (local.set $res (suspend $effect (local.get $eff)))
+      (local $res_0 (ref eq)) (local $res_1 (ref eq))
+      (suspend $effect (local.get $eff))
+      (local.set $res_1)
+      (local.set $res_0)
       (return_call $resume
          (ref.as_non_null
             (array.get $block
                (ref.cast (ref $block) (local.get $cont))
                (i32.const 1)))
-         (tuple.extract 2 0 (local.get $res))
-         (tuple.extract 2 1 (local.get $res))
+         (local.get $res_0)
+         (local.get $res_1)
          (local.get $tail)))
 
    (func (export "%perform") (param $eff (ref eq)) (result (ref eq))
-      (local $res (tuple (ref eq) (ref eq)))
+      (local $res_0 (ref eq)) (local $res_1 (ref eq))
       (if (i32.eqz (global.get $effect_allowed))
          (then
             (return_call $raise_unhandled
                (local.get $eff) (ref.i31 (i32.const 0)))))
-      (local.set $res (suspend $effect (local.get $eff)))
-      (return_call_ref $function_1 (tuple.extract 2 1 (local.get $res))
-         (tuple.extract 2 0 (local.get $res))
+      (suspend $effect (local.get $eff))
+      (local.set $res_1)
+      (local.set $res_0)
+      (return_call_ref $function_1 (local.get $res_1)
+         (local.get $res_0)
          (struct.get $closure 0
-            (ref.cast (ref $closure) (tuple.extract 2 0 (local.get $res))))))
+            (ref.cast (ref $closure) (local.get $res_0)))))
 
    ;; Allocate a stack
 
