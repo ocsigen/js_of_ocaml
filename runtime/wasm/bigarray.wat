@@ -1061,9 +1061,8 @@
                    (call $dv_get_i8 (local.get $view) (local.get $i)))
                 (local.set $i (i32.add (local.get $i) (i32.const 1)))
                 (br $loop)))))
-      (tuple.make 2
-         (i32.mul (i32.add (i32.const 4) (local.get $num_dims)) (i32.const 4))
-         (i32.mul (i32.add (i32.const 4) (local.get $num_dims)) (i32.const 8))))
+      (i32.mul (i32.add (i32.const 4) (local.get $num_dims)) (i32.const 4))
+      (i32.mul (i32.add (i32.const 4) (local.get $num_dims)) (i32.const 8)))
 
    (@string $intern_overflow
       "input_value: cannot read bigarray with 64-bit OCaml ints")
@@ -1199,9 +1198,8 @@
                    (call $caml_deserialize_sint_1 (local.get $s)))
                 (local.set $i (i32.add (local.get $i) (i32.const 1)))
                 (br $loop)))))
-      (tuple.make 2
-         (local.get $b)
-         (i32.mul (i32.add (i32.const 4) (local.get $num_dims)) (i32.const 4))))
+      (local.get $b)
+      (i32.mul (i32.add (i32.const 4) (local.get $num_dims)) (i32.const 4)))
 
    (func $caml_ba_get_size (param $dim (ref $int_array)) (result i32)
       (local $i i32) (local $n i32) (local $sz i64)
