@@ -499,7 +499,7 @@
             (if (i32.and (local.get $flags) (i32.const 8)) ;; O_APPEND
                (then (local.set $offset (call $file_size (local.get $fd))))))
          (catch $javascript_exception
-            (call $caml_handle_sys_error (pop externref))))
+            (call $caml_handle_sys_error)))
       (call $initialize_fd_offset (local.get $fd) (local.get $offset))
       (ref.i31 (local.get $fd)))
 ))
@@ -524,7 +524,7 @@
          (do
             (call $close (local.get $fd)))
          (catch $javascript_exception
-            (call $caml_handle_sys_error (pop externref))))
+            (call $caml_handle_sys_error)))
       (ref.i31 (i32.const 0)))
 ))
 
@@ -689,7 +689,7 @@
                   (call $close (local.get $fd)))
                (catch $javascript_exception
                   ;; ignore exception
-                  (drop (pop externref))))
+                  (drop)))
 ))
       ))
       (ref.i31 (i32.const 0)))
@@ -762,7 +762,7 @@
                         (local.get $len)
                         (ref.null noextern))))))
          (catch $javascript_exception
-            (call $caml_handle_sys_error (pop externref))))
+            (call $caml_handle_sys_error)))
       (struct.set $fd_offset $offset
          (local.get $fd_offset)
          (i64.add (local.get $offset) (i64.extend_i32_u (local.get $n))))
@@ -1357,7 +1357,7 @@
                                     (local.get $towrite)
                                     (ref.null noextern))))))
                      (catch $javascript_exception
-                        (call $caml_handle_sys_error (pop externref))))
+                        (call $caml_handle_sys_error)))
                   (struct.set $fd_offset $offset
                      (local.get $fd_offset)
                      (i64.add
