@@ -733,7 +733,7 @@
                (call $unwrap (call $caml_jsstring_of_string (local.get $path)))
                (local.get $at) (local.get $mt)))
          (catch $javascript_exception
-            (call $caml_unix_error (pop externref) (ref.null eq))))
+            (call $caml_unix_error (ref.null eq))))
       (ref.i31 (i32.const 0)))
 ))
 
@@ -878,7 +878,7 @@
                (call $unwrap (call $caml_jsstring_of_string (local.get $path)))
                (i32.const 0)))
          (catch $javascript_exception
-            (call $caml_unix_error (pop externref) (ref.null eq))
+            (call $caml_unix_error (ref.null eq))
             (ref.i31 (i32.const 0)))))
 
    (func (export "unix_stat_64") (export "caml_unix_stat_64")
@@ -889,7 +889,7 @@
                (call $unwrap (call $caml_jsstring_of_string (local.get $path)))
                (i32.const 1)))
          (catch $javascript_exception
-            (call $caml_unix_error (pop externref) (ref.null eq))
+            (call $caml_unix_error (ref.null eq))
             (ref.i31 (i32.const 0)))))
 
    (func (export "unix_lstat") (export "caml_unix_lstat")
@@ -900,7 +900,7 @@
                (call $unwrap (call $caml_jsstring_of_string (local.get $path)))
                (i32.const 0)))
          (catch $javascript_exception
-            (call $caml_unix_error (pop externref) (ref.null eq))
+            (call $caml_unix_error (ref.null eq))
             (ref.i31 (i32.const 0)))))
 
    (func (export "unix_lstat_64") (export "caml_unix_lstat_64")
@@ -911,7 +911,7 @@
                (call $unwrap (call $caml_jsstring_of_string (local.get $path)))
                (i32.const 1)))
          (catch $javascript_exception
-            (call $caml_unix_error (pop externref) (ref.null eq))
+            (call $caml_unix_error (ref.null eq))
             (ref.i31 (i32.const 0)))))
 
    (func (export "unix_fstat") (export "caml_unix_fstat")
@@ -920,7 +920,7 @@
          (do
             (call $fstat (local.get $fd) (i32.const 0)))
          (catch $javascript_exception
-            (call $caml_unix_error (pop externref) (ref.null eq))
+            (call $caml_unix_error (ref.null eq))
             (ref.i31 (i32.const 0)))))
 
    (func (export "unix_fstat_64") (export "caml_unix_fstat_64")
@@ -929,7 +929,7 @@
          (do
             (call $fstat (local.get $fd) (i32.const 1)))
          (catch $javascript_exception
-            (call $caml_unix_error (pop externref) (ref.null eq))
+            (call $caml_unix_error (ref.null eq))
             (ref.i31 (i32.const 0)))))
 ))
 
@@ -949,7 +949,7 @@
                (call $unwrap (call $caml_jsstring_of_string (local.get $path)))
                (local.get $perms)))
          (catch $javascript_exception
-            (call $caml_unix_error (pop externref) (ref.null eq))))
+            (call $caml_unix_error (ref.null eq))))
       (ref.i31 (i32.const 0)))
 ))
 
@@ -967,7 +967,7 @@
          (do
             (call $fchmod (local.get $fd) (local.get $perms)))
          (catch $javascript_exception
-            (call $caml_unix_error (pop externref) (ref.null eq))))
+            (call $caml_unix_error (ref.null eq))))
       (ref.i31 (i32.const 0)))
 ))
 
@@ -1022,7 +1022,7 @@
                (call $unwrap (call $caml_jsstring_of_string (local.get $o)))
                (call $unwrap (call $caml_jsstring_of_string (local.get $n)))))
          (catch $javascript_exception
-            (call $caml_unix_error (pop externref) (ref.null eq))))
+            (call $caml_unix_error (ref.null eq))))
       (ref.i31 (i32.const 0)))
 ))
 
@@ -1064,7 +1064,7 @@
          (do
             (call $caml_string_of_jsstring (call $wrap (call $getcwd))))
          (catch $javascript_exception
-            (call $caml_unix_error (pop externref) (ref.null eq))
+            (call $caml_unix_error (ref.null eq))
             (ref.i31 (i32.const 0)))))
 
    (func (export "unix_chdir") (export "caml_unix_chdir")
@@ -1074,7 +1074,7 @@
             (call $chdir
                (call $unwrap (call $caml_jsstring_of_string (local.get $name)))))
          (catch $javascript_exception
-            (call $caml_unix_error (pop externref) (ref.null eq))))
+            (call $caml_unix_error (ref.null eq))))
       (ref.i31 (i32.const 0)))
 ))
 
@@ -1096,7 +1096,7 @@
                (call $unwrap (call $caml_jsstring_of_string (local.get $name)))
                (i31.get_u (ref.cast (ref i31) (local.get $perm)))))
          (catch $javascript_exception
-            (call $caml_unix_error (pop externref) (ref.null eq))))
+            (call $caml_unix_error (ref.null eq))))
       (ref.i31 (i32.const 0)))
 ))
 
@@ -1256,7 +1256,7 @@
                   (call $unwrap
                      (call $caml_jsstring_of_string (local.get $name))))))
          (catch $javascript_exception
-            (call $caml_unix_error (pop externref) (ref.null eq))
+            (call $caml_unix_error (ref.null eq))
             (ref.i31 (i32.const 0)))))
 
    (func $throw_ebadf (param $cmd (ref eq))
@@ -1278,7 +1278,7 @@
                        (br_on_null $end
                           (call $readdir (call $unwrap (local.get $dir)))))))
                (catch $javascript_exception
-                  (drop (pop externref))
+                  (drop)
                   (call $throw_ebadf (@string "readdir"))
                   (ref.i31 (i32.const 0))))))
       (call $caml_raise_end_of_file)
@@ -1291,7 +1291,7 @@
          (do
             (call $closedir (call $unwrap (local.get $dir))))
          (catch $javascript_exception
-            (drop (pop externref))
+            (drop)
             (call $throw_ebadf (@string "closedir"))))
       (ref.i31 (i32.const 0)))
 
@@ -1349,7 +1349,7 @@
             (call $unlink
                (call $unwrap (call $caml_jsstring_of_string (local.get $p)))))
          (catch $javascript_exception
-            (call $caml_unix_error (pop externref) (ref.null eq))))
+            (call $caml_unix_error (ref.null eq))))
       (ref.i31 (i32.const 0)))
 ))
 
@@ -1370,7 +1370,7 @@
             (call $rmdir
                (call $unwrap (call $caml_jsstring_of_string (local.get $p)))))
          (catch $javascript_exception
-            (call $caml_unix_error (pop externref) (ref.null eq))))
+            (call $caml_unix_error (ref.null eq))))
       (ref.i31 (i32.const 0)))
 ))
 
@@ -1446,7 +1446,7 @@
                (call $unwrap (call $caml_jsstring_of_string (local.get $d)))
                (call $unwrap (call $caml_jsstring_of_string (local.get $s)))))
          (catch $javascript_exception
-            (call $caml_unix_error (pop externref) (ref.null eq))))
+            (call $caml_unix_error (ref.null eq))))
       (ref.i31 (i32.const 0)))
 ))
 
@@ -1518,7 +1518,7 @@
                (call $unwrap (call $caml_jsstring_of_string (local.get $p)))
                (local.get $kind)))
          (catch $javascript_exception
-            (call $caml_unix_error (pop externref) (ref.null eq))))
+            (call $caml_unix_error (ref.null eq))))
       (ref.i31 (i32.const 0)))
 ))
 
@@ -1561,7 +1561,7 @@
                      (call $unwrap
                         (call $caml_jsstring_of_string (local.get $path)))))))
          (catch $javascript_exception
-            (call $caml_unix_error (pop externref) (ref.null eq))))
+            (call $caml_unix_error (ref.null eq))))
       (ref.i31 (i32.const 0)))
 ))
 
@@ -1628,7 +1628,7 @@
                (call $unwrap (call $caml_jsstring_of_string (local.get $path)))
                (local.get $len)))
          (catch $javascript_exception
-            (call $caml_unix_error (pop externref) (ref.null eq))))
+            (call $caml_unix_error (ref.null eq))))
       (ref.i31 (i32.const 0)))
 
    (func (export "unix_truncate_64") (export "caml_unix_truncate_64")
@@ -1642,7 +1642,7 @@
                (call $unwrap (call $caml_jsstring_of_string (local.get $path)))
                (f64.convert_i64_s (local.get $len))))
          (catch $javascript_exception
-            (call $caml_unix_error (pop externref) (ref.null eq))))
+            (call $caml_unix_error (ref.null eq))))
       (ref.i31 (i32.const 0)))
 ))
 
@@ -1678,7 +1678,7 @@
          (do
             (call $ftruncate (local.get $fd) (local.get $vlen)))
          (catch $javascript_exception
-            (call $caml_unix_error (pop externref) (ref.null eq))))
+            (call $caml_unix_error (ref.null eq))))
       (ref.i31 (i32.const 0)))
 
    (func (export "unix_ftruncate_64") (export "caml_unix_ftruncate_64")
@@ -1692,7 +1692,7 @@
                (local.get $fd)
                (f64.convert_i64_s (call $Int64_val (local.get $vlen)))))
          (catch $javascript_exception
-            (call $caml_unix_error (pop externref) (ref.null eq))))
+            (call $caml_unix_error (ref.null eq))))
       (ref.i31 (i32.const 0)))
 ))
 
@@ -1739,7 +1739,7 @@
                (call $unwrap (call $caml_jsstring_of_string (local.get $path)))
                (local.get $flags)))
          (catch $javascript_exception
-            (call $caml_unix_error (pop externref) (ref.null eq))))
+            (call $caml_unix_error (ref.null eq))))
       (ref.i31 (i32.const 0)))
 ))
 
@@ -1840,7 +1840,7 @@
             (if (i32.and (local.get $flags) (i32.const 4)) ;; O_APPEND
                (then (local.set $offset (call $file_size (local.get $fd))))))
          (catch $javascript_exception
-            (call $caml_unix_error (pop externref) (ref.null eq))))
+            (call $caml_unix_error (ref.null eq))))
       (call $initialize_fd_offset (local.get $fd) (local.get $offset))
       (ref.i31 (local.get $fd)))
 ))
@@ -2105,7 +2105,7 @@
                                  (i32.const 0) (local.get $numbytes)
                                  (ref.null noextern))))))
                   (catch $javascript_exception
-                     (call $caml_unix_error (pop externref) (ref.null eq))))
+                     (call $caml_unix_error (ref.null eq))))
                (local.set $offset
                   (i64.add (local.get $offset)
                      (i64.extend_i32_u (local.get $n))))
@@ -2157,7 +2157,7 @@
                               (i32.const 0) (local.get $numbytes)
                               (ref.null noextern))))))
                (catch $javascript_exception
-                  (call $caml_unix_error (pop externref) (ref.null eq))))
+                  (call $caml_unix_error (ref.null eq))))
             (local.set $offset
                (i64.add (local.get $offset) (i64.extend_i32_u (local.get $n))))
             (struct.set $fd_offset $offset
@@ -2194,7 +2194,7 @@
                      (call $read' (local.get $fd) (local.get $buf)
                         (i32.const 0) (local.get $len) (ref.null noextern))))))
          (catch $javascript_exception
-            (call $caml_unix_error (pop externref) (ref.null eq))))
+            (call $caml_unix_error (ref.null eq))))
       (local.set $offset
          (i64.add (local.get $offset) (i64.extend_i32_u (local.get $n))))
       (struct.set $fd_offset $offset
@@ -2237,7 +2237,7 @@
                                  (local.get $pos) (local.get $len)
                                  (ref.null noextern))))))
                   (catch $javascript_exception
-                     (call $caml_unix_error (pop externref) (ref.null eq))))
+                     (call $caml_unix_error (ref.null eq))))
                (local.set $offset
                   (i64.add (local.get $offset)
                      (i64.extend_i32_u (local.get $n))))
@@ -2276,7 +2276,7 @@
                         (local.get $pos) (local.get $len)
                         (ref.null noextern))))))
          (catch $javascript_exception
-            (call $caml_unix_error (pop externref) (ref.null eq))))
+            (call $caml_unix_error (ref.null eq))))
       (local.set $offset
          (i64.add (local.get $offset) (i64.extend_i32_u (local.get $n))))
       (struct.set $fd_offset $offset (local.get $fd_offset)
@@ -2377,7 +2377,7 @@
          (do
             (call $fsync (local.get $fd)))
          (catch $javascript_exception
-            (call $caml_unix_error (pop externref) (ref.null eq))))
+            (call $caml_unix_error (ref.null eq))))
       (ref.i31 (i32.const 0)))
 ))
 
@@ -2422,7 +2422,7 @@
                (do
                   (call $fstat (local.get $fd) (i32.const 0)))
                (catch $javascript_exception
-                  (call $caml_unix_error (pop externref)
+                  (call $caml_unix_error
                      (call $channel_of_descr_name (local.get $out)))
                   (ref.i31 (i32.const 0))))))
       (local.set $kind
@@ -2474,7 +2474,7 @@
          (do
             (call $close (local.get $fd)))
          (catch $javascript_exception
-            (call $caml_unix_error (pop externref) (ref.null eq))))
+            (call $caml_unix_error (ref.null eq))))
       (ref.i31 (i32.const 0)))
 ))
 

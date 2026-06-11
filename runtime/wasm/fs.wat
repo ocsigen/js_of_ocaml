@@ -408,7 +408,7 @@
          (do
             (call $caml_string_of_jsstring (call $wrap (call $getcwd))))
          (catch $javascript_exception
-            (call $caml_handle_sys_error (pop externref))
+            (call $caml_handle_sys_error)
             (ref.i31 (i32.const 0)))))
 ))
 
@@ -448,7 +448,7 @@
             (call $chdir
                (call $unwrap (call $caml_jsstring_of_string (local.get $name)))))
          (catch $javascript_exception
-            (call $caml_handle_sys_error (pop externref))))
+            (call $caml_handle_sys_error)))
       (ref.i31 (i32.const 0)))
 ))
 
@@ -468,7 +468,7 @@
                (call $unwrap (call $caml_jsstring_of_string (local.get $name)))
                (i31.get_u (ref.cast (ref i31) (local.get $perm)))))
          (catch $javascript_exception
-            (call $caml_handle_sys_error (pop externref))))
+            (call $caml_handle_sys_error)))
       (ref.i31 (i32.const 0)))
 ))
 
@@ -607,7 +607,7 @@
                   (call $unwrap
                      (call $caml_jsstring_of_string (local.get $name))))))
          (catch $javascript_exception
-            (call $caml_handle_sys_error (pop externref))
+            (call $caml_handle_sys_error)
             (ref.i31 (i32.const 0)))))
 ))
 
@@ -626,7 +626,7 @@
             (call $rmdir
                (call $unwrap (call $caml_jsstring_of_string (local.get $name)))))
          (catch $javascript_exception
-            (call $caml_handle_sys_error (pop externref))))
+            (call $caml_handle_sys_error)))
       (ref.i31 (i32.const 0)))
 ))
 
@@ -645,7 +645,7 @@
             (call $unlink
                (call $unwrap (call $caml_jsstring_of_string (local.get $name)))))
          (catch $javascript_exception
-            (call $caml_handle_sys_error (pop externref))))
+            (call $caml_handle_sys_error)))
       (ref.i31 (i32.const 0)))
 ))
 
@@ -697,7 +697,7 @@
                (call $unwrap (call $caml_jsstring_of_string (local.get $o)))
                (call $unwrap (call $caml_jsstring_of_string (local.get $n)))))
          (catch $javascript_exception
-            (call $caml_handle_sys_error (pop externref))))
+            (call $caml_handle_sys_error)))
       (ref.i31 (i32.const 0)))
 ))
 
@@ -815,7 +815,7 @@
                (call $unwrap
                   (call $caml_jsstring_of_string (local.get $name)))))
          (catch $javascript_exception
-            (call $caml_handle_sys_error (pop externref))
+            (call $caml_handle_sys_error)
             (ref.i31 (i32.const 0)))))
 ))
 
@@ -835,7 +835,7 @@
                (call $unwrap
                   (call $caml_jsstring_of_string (local.get $name)))))
          (catch $javascript_exception
-            (call $caml_handle_sys_error (pop externref))
+            (call $caml_handle_sys_error)
             (ref.i31 (i32.const 0)))))
 ))
 

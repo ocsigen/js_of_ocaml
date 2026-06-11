@@ -336,7 +336,7 @@
                (call $system
                   (call $unwrap (call $caml_jsstring_of_string (local.get 0))))))
          (catch $javascript_exception
-            (call $caml_handle_sys_error (pop externref))))
+            (call $caml_handle_sys_error)))
       (return (ref.i31 (i32.const 0))))
 ))
 
