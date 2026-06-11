@@ -192,7 +192,7 @@
          (then (return (local.get 1))))
       (if (result f32) (f32.eq (local.get $x) (f32.const 0))
          (then
-            (if (f32.ge (local.get $y) (f32.const 0))
+            (if (result f32) (f32.ge (local.get $y) (f32.const 0))
                (then (return (f32.const 0x1p-149)))
                (else (return (f32.const -0x1p-149)))))
          (else

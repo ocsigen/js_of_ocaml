@@ -182,7 +182,8 @@
                   (local.set $c1 (i32.and (local.get $w1) (i32.const 0xFF)))
                   (local.set $c2 (i32.and (local.get $w2) (i32.const 0xFF)))
                   (return
-                     (select (ref.i31 (i32.const -1)) (ref.i31 (i32.const 1))
+                     (select (result (ref eq))
+                        (ref.i31 (i32.const -1)) (ref.i31 (i32.const 1))
                         (i32.lt_u (local.get $c1) (local.get $c2))))))
             (if (i32.and (local.get $xored) (i32.const 0xFF00))
                (then
@@ -193,7 +194,8 @@
                      (i32.and (i32.shr_u (local.get $w2) (i32.const 8))
                         (i32.const 0xFF)))
                   (return
-                     (select (ref.i31 (i32.const -1)) (ref.i31 (i32.const 1))
+                     (select (result (ref eq))
+                        (ref.i31 (i32.const -1)) (ref.i31 (i32.const 1))
                         (i32.lt_u (local.get $c1) (local.get $c2))))))
             (if (i32.and (local.get $xored) (i32.const 0xFF0000))
                (then
@@ -204,13 +206,15 @@
                      (i32.and (i32.shr_u (local.get $w2) (i32.const 16))
                         (i32.const 0xFF)))
                   (return
-                     (select (ref.i31 (i32.const -1)) (ref.i31 (i32.const 1))
+                     (select (result (ref eq))
+                        (ref.i31 (i32.const -1)) (ref.i31 (i32.const 1))
                         (i32.lt_u (local.get $c1) (local.get $c2))))))
             ;; Must be byte 3
             (local.set $c1 (i32.shr_u (local.get $w1) (i32.const 24)))
             (local.set $c2 (i32.shr_u (local.get $w2) (i32.const 24)))
             (return
-               (select (ref.i31 (i32.const -1)) (ref.i31 (i32.const 1))
+               (select (result (ref eq))
+                  (ref.i31 (i32.const -1)) (ref.i31 (i32.const 1))
                   (i32.lt_u (local.get $c1) (local.get $c2))))))
       ;; Handle remaining 0-3 bytes
       (loop $loop
@@ -282,7 +286,8 @@
                   (local.set $c1 (i32.and (local.get $w1) (i32.const 0xFF)))
                   (local.set $c2 (i32.and (local.get $w2) (i32.const 0xFF)))
                   (return
-                     (select (ref.i31 (i32.const -1)) (ref.i31 (i32.const 1))
+                     (select (result (ref eq))
+                        (ref.i31 (i32.const -1)) (ref.i31 (i32.const 1))
                         (i32.lt_u (local.get $c1) (local.get $c2))))))
             (if (i32.and (local.get $xored) (i32.const 0xFF00))
                (then
@@ -293,7 +298,8 @@
                      (i32.and (i32.shr_u (local.get $w2) (i32.const 8))
                         (i32.const 0xFF)))
                   (return
-                     (select (ref.i31 (i32.const -1)) (ref.i31 (i32.const 1))
+                     (select (result (ref eq))
+                        (ref.i31 (i32.const -1)) (ref.i31 (i32.const 1))
                         (i32.lt_u (local.get $c1) (local.get $c2))))))
             (if (i32.and (local.get $xored) (i32.const 0xFF0000))
                (then
@@ -304,13 +310,15 @@
                      (i32.and (i32.shr_u (local.get $w2) (i32.const 16))
                         (i32.const 0xFF)))
                   (return
-                     (select (ref.i31 (i32.const -1)) (ref.i31 (i32.const 1))
+                     (select (result (ref eq))
+                        (ref.i31 (i32.const -1)) (ref.i31 (i32.const 1))
                         (i32.lt_u (local.get $c1) (local.get $c2))))))
             ;; Must be byte 3
             (local.set $c1 (i32.shr_u (local.get $w1) (i32.const 24)))
             (local.set $c2 (i32.shr_u (local.get $w2) (i32.const 24)))
             (return
-               (select (ref.i31 (i32.const -1)) (ref.i31 (i32.const 1))
+               (select (result (ref eq))
+                  (ref.i31 (i32.const -1)) (ref.i31 (i32.const 1))
                   (i32.lt_u (local.get $c1) (local.get $c2))))))
       ;; Handle remaining 0-3 bytes
       (loop $loop

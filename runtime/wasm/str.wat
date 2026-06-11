@@ -450,7 +450,7 @@
                (ref.cast (ref $undo)
                   (block $undo (result (ref $stack))
                      (local.set $p
-                        (br_on_cast_fail $undo (ref eq) (ref $pos)
+                        (br_on_cast_fail $undo (ref $stack) (ref $pos)
                            (br_on_null $reject (local.get $stack))))
                      (local.set $pc (struct.get $pos $pc (local.get $p)))
                      (local.set $pos (struct.get $pos $pos (local.get $p)))
