@@ -162,9 +162,9 @@
                                (struct.get $fiber $cont (local.get $fiber))))
                         (catch $javascript_exception
                            (br $handle_exception
-                              (call $caml_wrap_exception (pop externref))))
+                              (call $caml_wrap_exception)))
                         (catch $ocaml_exception
-                           (br $handle_exception (pop (ref eq))))))
+                           (br $handle_exception))))
                   ;; handle return
                   (return_call_ref $function_1 (local.get $res)
                      (local.tee $f
