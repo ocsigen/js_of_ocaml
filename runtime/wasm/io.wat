@@ -1208,7 +1208,8 @@
                         (i32.sub (local.get $p)
                            (struct.get $channel $curr (local.get $ch))))))))
          (local.set $p (i32.add (local.get $p) (i32.const 1)))
-         (br $loop)))
+         (br $loop))
+      (unreachable))
 
    (func $caml_flush (param $ch (ref $channel))
       (loop $loop

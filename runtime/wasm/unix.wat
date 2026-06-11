@@ -2089,7 +2089,7 @@
                            (else
                               (call $write' (local.get $fd) (local.get $buf)
                                  (i32.const 0) (local.get $numbytes)
-                                 (ref.null extern))))))
+                                 (ref.null noextern))))))
                   (catch $javascript_exception
                      (call $caml_unix_error (pop externref) (ref.null eq))))
                (local.set $offset
@@ -2141,7 +2141,7 @@
                         (else
                            (call $write' (local.get $fd) (local.get $buf)
                               (i32.const 0) (local.get $numbytes)
-                              (ref.null extern))))))
+                              (ref.null noextern))))))
                (catch $javascript_exception
                   (call $caml_unix_error (pop externref) (ref.null eq))))
             (local.set $offset
@@ -2178,7 +2178,7 @@
                         (i32.const 0) (local.get $len) (local.get $offset)))
                   (else
                      (call $read' (local.get $fd) (local.get $buf)
-                        (i32.const 0) (local.get $len) (ref.null extern))))))
+                        (i32.const 0) (local.get $len) (ref.null noextern))))))
          (catch $javascript_exception
             (call $caml_unix_error (pop externref) (ref.null eq))))
       (local.set $offset
@@ -2221,7 +2221,7 @@
                            (else
                               (call $write' (local.get $fd) (local.get $buf)
                                  (local.get $pos) (local.get $len)
-                                 (ref.null extern))))))
+                                 (ref.null noextern))))))
                   (catch $javascript_exception
                      (call $caml_unix_error (pop externref) (ref.null eq))))
                (local.set $offset
@@ -2259,7 +2259,8 @@
                         (local.get $pos) (local.get $len) (local.get $offset)))
                   (else
                      (call $read' (local.get $fd) (local.get $buf)
-                        (local.get $pos) (local.get $len) (ref.null extern))))))
+                        (local.get $pos) (local.get $len)
+                        (ref.null noextern))))))
          (catch $javascript_exception
             (call $caml_unix_error (pop externref) (ref.null eq))))
       (local.set $offset
