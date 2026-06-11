@@ -1791,7 +1791,7 @@
       (param (ref eq)) (param $i i32) (result f32)
       (local $ba (ref $bigarray))
       (local.set $ba (ref.cast (ref $bigarray) (local.get 0)))
-      (if (struct.get $bigarray $ba_layout (local.get $ba))
+      (if (struct.get_u $bigarray $ba_layout (local.get $ba))
          (then (local.set $i (i32.sub (local.get $i) (i32.const 1)))))
       (if (i32.ge_u (local.get $i)
              (array.get $int_array (struct.get $bigarray $ba_dim (local.get $ba))
@@ -1804,7 +1804,7 @@
       (param (ref eq)) (param $i i32) (param $v f32) (result (ref eq))
       (local $ba (ref $bigarray))
       (local.set $ba (ref.cast (ref $bigarray) (local.get 0)))
-      (if (struct.get $bigarray $ba_layout (local.get $ba))
+      (if (struct.get_u $bigarray $ba_layout (local.get $ba))
          (then (local.set $i (i32.sub (local.get $i) (i32.const 1)))))
       (if (i32.ge_u (local.get $i)
              (array.get $int_array (struct.get $bigarray $ba_dim (local.get $ba))
@@ -1821,7 +1821,7 @@
       (local $dim (ref $int_array))
       (local.set $ba (ref.cast (ref $bigarray) (local.get $vba)))
       (local.set $dim (struct.get $bigarray $ba_dim (local.get $ba)))
-      (if (struct.get $bigarray $ba_layout (local.get $ba))
+      (if (struct.get_u $bigarray $ba_layout (local.get $ba))
          (then
             (local.set $i (i32.sub (local.get $i) (i32.const 1)))
             (local.set $j (i32.sub (local.get $j) (i32.const 1)))
@@ -1854,7 +1854,7 @@
       (local $dim (ref $int_array))
       (local.set $ba (ref.cast (ref $bigarray) (local.get $vba)))
       (local.set $dim (struct.get $bigarray $ba_dim (local.get $ba)))
-      (if (struct.get $bigarray $ba_layout (local.get $ba))
+      (if (struct.get_u $bigarray $ba_layout (local.get $ba))
          (then
             (local.set $i (i32.sub (local.get $i) (i32.const 1)))
             (local.set $j (i32.sub (local.get $j) (i32.const 1)))
@@ -1888,7 +1888,7 @@
       (local $dim (ref $int_array))
       (local.set $ba (ref.cast (ref $bigarray) (local.get $vba)))
       (local.set $dim (struct.get $bigarray $ba_dim (local.get $ba)))
-      (if (struct.get $bigarray $ba_layout (local.get $ba))
+      (if (struct.get_u $bigarray $ba_layout (local.get $ba))
          (then
             (local.set $i (i32.sub (local.get $i) (i32.const 1)))
             (local.set $j (i32.sub (local.get $j) (i32.const 1)))
@@ -1936,7 +1936,7 @@
       (local $dim (ref $int_array))
       (local.set $ba (ref.cast (ref $bigarray) (local.get $vba)))
       (local.set $dim (struct.get $bigarray $ba_dim (local.get $ba)))
-      (if (struct.get $bigarray $ba_layout (local.get $ba))
+      (if (struct.get_u $bigarray $ba_layout (local.get $ba))
          (then
             (local.set $i (i32.sub (local.get $i) (i32.const 1)))
             (local.set $j (i32.sub (local.get $j) (i32.const 1)))
