@@ -155,4 +155,4 @@ let%expect_test "Sys.rename to itself" =
     Printf.printf "[%s]" (In_channel.input_all c);
     close_in c)
   else print_endline "gone";
-  [%expect {| gone |}]
+  [%expect {| [hello] |}]
