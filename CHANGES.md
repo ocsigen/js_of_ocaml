@@ -47,6 +47,8 @@
 * Runtime: fix caml_oo_cache_id (#2224)
 * Runtime: `Ephemeron.blit_key` no longer overwrites the destination's
   data with the source's data (#2263)
+* Runtime: the `#` flag no longer adds a base prefix to zero;
+  `Printf.printf "%#x" 0` printed `0x0` where native prints `0`
 * Runtime/wasm: fix Int64.of_string (#2223)
 * Compiler: don't rewrite `x = e + x` into `x += e` for the `Plus`
   operator; JavaScript `+` is not commutative for strings, which made

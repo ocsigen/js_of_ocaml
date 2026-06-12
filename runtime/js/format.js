@@ -120,7 +120,9 @@ function caml_finish_formatting(f, rawbuffer) {
   var len = rawbuffer.length;
   /* Adjust len to reflect additional chars (sign, etc) */
   if (f.signedconv && (f.sign < 0 || f.signstyle !== "-")) len++;
-  if (f.alternate) {
+  // Like C printf, the alternate flag only prefixes non-zero values
+  var alternate = f.alternate && rawbuffer !== "0";
+  if (alternate) {
     if (f.base === 8) len += 1;
     if (f.base === 16) len += 2;
   }
@@ -132,8 +134,8 @@ function caml_finish_formatting(f, rawbuffer) {
     if (f.sign < 0) buffer += "-";
     else if (f.signstyle !== "-") buffer += f.signstyle;
   }
-  if (f.alternate && f.base === 8) buffer += "0";
-  if (f.alternate && f.base === 16) buffer += f.uppercase ? "0X" : "0x";
+  if (alternate && f.base === 8) buffer += "0";
+  if (alternate && f.base === 16) buffer += f.uppercase ? "0X" : "0x";
   if (f.justify === "+" && f.filler === "0")
     for (var i = len; i < f.width; i++) buffer += "0";
   buffer += rawbuffer;
