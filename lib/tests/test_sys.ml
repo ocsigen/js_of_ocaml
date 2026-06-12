@@ -126,3 +126,17 @@ let%expect_test "open_out_gen Open_append" =
   Printf.printf "[%s]" (In_channel.input_all c);
   close_in c;
   [%expect {| [hello world] |}]
+
+(* [Open_append] implies write permission: the C runtime maps it to
+   O_WRONLY | O_APPEND. *)
+let%expect_test "Open_append implies write access" =
+  let name = "/static/append_wronly.txt" in
+  (try
+     let c = open_out_gen [ Open_append; Open_creat; Open_binary ] 0o666 name in
+     output_string c "hello";
+     close_out c;
+     let c = open_in_bin name in
+     Printf.printf "[%s]" (In_channel.input_all c);
+     close_in c
+   with Sys_error msg -> print_endline ("Sys_error: " ^ msg));
+  [%expect {| Sys_error: EBADF: bad file descriptor, write |}]
