@@ -111,3 +111,18 @@ let%expect_test _ =
   let content' = Sys_js.read_file ~name:"/static/temp0" in
   assert (content' = content);
   [%expect {||}]
+
+(* Opening a file with [Open_append] must position writes at the end of
+   the existing content, not overwrite it from the start. *)
+let%expect_test "open_out_gen Open_append" =
+  let name = "/static/append.txt" in
+  let c = open_out_bin name in
+  output_string c "hello";
+  close_out c;
+  let c = open_out_gen [ Open_wronly; Open_append; Open_binary ] 0o666 name in
+  output_string c " world";
+  close_out c;
+  let c = open_in_bin name in
+  Printf.printf "[%s]" (In_channel.input_all c);
+  close_in c;
+  [%expect {| [ world] |}]
