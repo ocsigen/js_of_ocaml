@@ -154,8 +154,8 @@ let%expect_test "truncate and stat" =
   Sys.remove f;
   [%expect
     {|
-    705032704
-    0
-    50
-    0o100644
+    5000000000
+    3000000000
+    100
+    0o644
     |}]
