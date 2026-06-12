@@ -563,12 +563,17 @@
       }
       return [...entries];
     },
-    opendir: (p) => fs.opendirSync(p),
+    // node's Dir.readSync does not report "." and ".."; native does
+    opendir: (p) => ({ dir: fs.opendirSync(p), dots: [".", ".."] }),
     readdir: (d) => {
-      var n = d.readSync()?.name;
+      if (d.dots.length > 0) return d.dots.shift();
+      var n = d.dir.readSync()?.name;
       return n === undefined ? null : n;
     },
-    closedir: (d) => d.closeSync(),
+    closedir: (d) => {
+      d.dots = []; // a read on the closed handle must fail, not return "." / ".."
+      d.dir.closeSync();
+    },
     stat: (p, l) => alloc_stat(fs.statSync(p), l),
     lstat: (p, l) => alloc_stat(fs.lstatSync(p), l),
     fstat: (fd, l) => alloc_stat(fs.fstatSync(fd), l),

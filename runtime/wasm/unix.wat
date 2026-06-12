@@ -1130,7 +1130,10 @@
          (field $size (mut i32))
          (field $pos (mut i32))
          (field $available (mut i32))
-         (field $cookie (mut i64))))
+         (field $cookie (mut i64))
+         ;; "." / ".." still to emit (2: both, 1: just "..", 0: none); the
+         ;; host directory stream may omit them, so they are synthesized
+         (field $dots (mut i32))))
 
    (@string $opendir "opendir")
 
@@ -1163,7 +1166,22 @@
          (i32.const 512)
          (i32.const 0)
          (i32.const 0)
-         (i64.const 0)))
+         (i64.const 0)
+         (i32.const 2)))
+
+   (func $is_dot_entry (param $addr i32) (param $len i32) (result i32)
+      ;; "." has length 1, ".." length 2, both made of '.' (0x2e)
+      (if (i32.eq (local.get $len) (i32.const 1))
+         (then
+            (return (i32.eq (i32.load8_u (local.get $addr)) (i32.const 0x2e)))))
+      (if (i32.eq (local.get $len) (i32.const 2))
+         (then
+            (return
+               (i32.and
+                  (i32.eq (i32.load8_u (local.get $addr)) (i32.const 0x2e))
+                  (i32.eq (i32.load8_u offset=1 (local.get $addr))
+                     (i32.const 0x2e))))))
+      (i32.const 0))
 
    (func $readdir_helper
       (param $vdir (ref eq)) (result (ref eq))
@@ -1171,6 +1189,19 @@
       (local $buffer i32) (local $available i32) (local $left i32)
       (local $namelen i32) (local $entry i32) (local $entry_size i32)
       (local.set $dir (ref.cast (ref $directory) (local.get $vdir)))
+      ;; Emit the synthesized "." / ".." before the host entries, like native
+      ;; readdir and the js backend. Host-provided "." / ".." are skipped below
+      ;; so they are never duplicated on hosts that do report them.
+      (block $no_dots
+         (br_if $no_dots
+            (i32.eqz (struct.get $directory $dots (local.get $dir))))
+         (if (i32.eq (struct.get $directory $dots (local.get $dir)) (i32.const 2))
+            (then
+               (struct.set $directory $dots (local.get $dir) (i32.const 1))
+               (return (@string ".")))
+            (else
+               (struct.set $directory $dots (local.get $dir) (i32.const 0))
+               (return (@string "..")))))
       (loop $loop
          (block $refill
             (local.set $left
@@ -1188,6 +1219,11 @@
                   (local.get $entry_size)))
             (struct.set $directory $cookie (local.get $dir)
                (i64.load (local.get $entry)))
+            ;; skip a host-provided "." / ".." (already synthesized above)
+            (br_if $loop
+               (call $is_dot_entry
+                  (i32.add (local.get $entry) (i32.const 24))
+                  (local.get $namelen)))
             (return_call $blit_memory_to_string
                 (i32.add (local.get $entry) (i32.const 24))
                 (local.get $namelen)))
@@ -1250,6 +1286,8 @@
          ;; fd_readdir on the closed fd and fails with EBADF.
          (struct.set $directory $pos (local.get $dir) (i32.const 0))
          (struct.set $directory $available (local.get $dir) (i32.const 0))
+         ;; drop the pending "." / ".." so a readdir on the closed handle fails
+         (struct.set $directory $dots (local.get $dir) (i32.const 0))
          (local.set $res
             (call $fd_close (struct.get $directory $fd (local.get $dir))))
          (br_if $error (local.get $res))
@@ -1265,6 +1303,7 @@
       (struct.set $directory $cookie (local.get $dir) (i64.const 0))
       (struct.set $directory $pos (local.get $dir) (i32.const 0))
       (struct.set $directory $available (local.get $dir) (i32.const 0))
+      (struct.set $directory $dots (local.get $dir) (i32.const 2))
       (ref.i31 (i32.const 0)))
 )
 (@else
