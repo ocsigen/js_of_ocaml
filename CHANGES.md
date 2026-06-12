@@ -47,6 +47,11 @@
 * Runtime: fix caml_oo_cache_id (#2224)
 * Runtime: `Ephemeron.blit_key` no longer overwrites the destination's
   data with the source's data (#2263)
+* Runtime: Unix fixes (#2270): `Unix.error_message` no longer crashes
+  for error codes absent from node's error map (or on node < 22);
+  `Unix.localtime` computes `tm_yday` correctly under DST; `chmod`
+  raises `Unix_error`; closed file descriptors are removed from the fd
+  table; `readdir` includes the "." and ".." entries like native
 * Runtime: many filesystem fixes (#2270): the fake device no longer
   destroys a directory renamed into its own subtree (EINVAL), refuses
   to unlink directories (EISDIR), accepts `access` on directories,

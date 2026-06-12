@@ -191,4 +191,8 @@ let%expect_test "readdir includes . and .." =
   Unix.closedir h;
   List.iter print_endline (List.sort compare !l);
   Unix.rmdir d;
-  [%expect {| |}]
+  [%expect
+    {|
+    .
+    ..
+    |}]
