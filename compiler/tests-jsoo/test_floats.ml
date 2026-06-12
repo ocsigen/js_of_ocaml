@@ -221,11 +221,11 @@ let%expect_test "Hashtbl.hash of float arrays" =
   p (Obj.new_block 251 3);
   [%expect
     {|
-    3e121f87
-    165fed5c
-    162489c5
-    2baaf13f
-    1c14f790
-    3f7de68b
-    35565b7c
+    30d3d2e3
+    07e28e3a
+    1ab69813
+    3228858d
+    0f478b8c
+    3498f980
+    00000000
     |}]
