@@ -210,3 +210,17 @@ let%expect_test "test input with offset" =
   in
   Printf.printf "%f" (Marshal.from_bytes b (String.length prefix));
   [%expect {| 3.140000 |}]
+
+let%expect_test "block with 2^21 fields" =
+  (* Blocks with 2^21..2^22-1 fields have bit 31 of their BLOCK32
+     header set; the reader must extract the size with an unsigned
+     shift. *)
+  let n = 1 lsl 21 in
+  let a = Array.make n 0 in
+  a.(0) <- 1;
+  a.(n - 1) <- 2;
+  (try
+     let a' : int array = Marshal.from_string (Marshal.to_string a []) 0 in
+     Printf.printf "%d %d %d\n" (Array.length a') a'.(0) a'.(Array.length a' - 1)
+   with e -> print_endline (Printexc.to_string e));
+  [%expect {| 1 1 1 |}]
