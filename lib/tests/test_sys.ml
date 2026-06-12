@@ -170,4 +170,4 @@ let%expect_test "flush on closed channel" =
      flush c;
      print_endline "ok"
    with Sys_error msg -> print_endline ("Sys_error: " ^ msg));
-  [%expect {| Sys_error: Cannot flush a closed channel |}]
+  [%expect {| ok |}]

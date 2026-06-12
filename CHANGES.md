@@ -56,6 +56,8 @@
   used to produce a channel that fails on write
 * Runtime: renaming a file to itself on the fake filesystem no longer
   deletes it
+* Runtime: `flush` on a closed out_channel no longer raises; the manual
+  specifies it does nothing in that case
 * Runtime/wasm: fix Int64.of_string (#2223)
 * Compiler: don't rewrite `x = e + x` into `x += e` for the `Plus`
   operator; JavaScript `+` is not commutative for strings, which made
