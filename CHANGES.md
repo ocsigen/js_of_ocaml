@@ -53,6 +53,10 @@
 * Runtime: unmarshalling now decodes BLOCK32 sizes with an unsigned
   shift; blocks with 2^21 or more fields were silently read as having
   a single field, corrupting the stream (#2270)
+* Runtime: unmarshalling registers big-endian double arrays
+  (CODE_DOUBLE_ARRAY32_BIG) in the object table like its sibling
+  codes; shared references read after one resolved to the wrong
+  object (#2270)
 * Runtime: the `#` flag no longer adds a base prefix to zero;
   `Printf.printf "%#x" 0` printed `0x0` where native prints `0`
 * Runtime: the fake filesystem no longer ignores `Open_append`; writes

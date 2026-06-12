@@ -245,4 +245,4 @@ let%expect_test "shared reference after a big-endian double array" =
   in
   let (a, d, b) : string * float array * string = Marshal.from_string buf 0 in
   Printf.printf "%s %g %b\n" a d.(0) (a == b);
-  [%expect {| hi 1.5 false |}]
+  [%expect {| hi 1.5 true |}]
