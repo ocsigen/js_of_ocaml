@@ -162,7 +162,9 @@ class MlInt64 {
     var sign = (this.hi << 16) >> 31;
     if (s < 48)
       return new MlInt64(
-        (this.mi >> (s - 24)) | (this.hi << (48 - s)),
+        // [h] is sign-extended: for s > 40 the sign bits reach
+        // into the low limb
+        (this.mi >> (s - 24)) | (h << (48 - s)),
         ((this.hi << 16) >> (s - 24)) >> 16,
         sign & 0xffff,
       );

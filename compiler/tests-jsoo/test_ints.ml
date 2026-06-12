@@ -96,9 +96,9 @@ let%expect_test "Int64.shift_right, shifts 40..48" =
   [%expect
     {|
     40: ffffffffffffffff ffffffffff800000 123456
-    41: ffffffffff7fffff ffffffffff400000 91a2b
-    44: ffffffffff0fffff ffffffffff080000 12345
-    47: ffffffffff01ffff ffffffffff010000 2468
+    41: ffffffffffffffff ffffffffffc00000 91a2b
+    44: ffffffffffffffff fffffffffff80000 12345
+    47: ffffffffffffffff ffffffffffff0000 2468
     48: ffffffffffffffff ffffffffffff8000 1234
     |}]
 

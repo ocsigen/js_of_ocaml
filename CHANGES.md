@@ -57,6 +57,8 @@
   (CODE_DOUBLE_ARRAY32_BIG) in the object table like its sibling
   codes; shared references read after one resolved to the wrong
   object (#2270)
+* Runtime: fix `Int64.shift_right` for negative values and shift
+  counts 41 to 47; the sign bits did not reach the low limb (#2270)
 * Runtime: the `#` flag no longer adds a base prefix to zero;
   `Printf.printf "%#x" 0` printed `0x0` where native prints `0`
 * Runtime: the fake filesystem no longer ignores `Open_append`; writes
