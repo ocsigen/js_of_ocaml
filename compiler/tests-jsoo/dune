@@ -128,6 +128,7 @@
    test_promise
    test_lwt_promise
    test_unix_perms
+   test_str
    calc_parser
    calc_lexer))
  (libraries unix compiler-libs.common js_of_ocaml-compiler)
@@ -151,6 +152,17 @@
   (<> %{profile} quickjs))
  (modules test_unix)
  (libraries unix compiler-libs.common js_of_ocaml-compiler)
+ (inline_tests
+  (deps
+   (sandbox preserve_file_kind))
+  (modes js wasm best))
+ (preprocess
+  (pps ppx_expect)))
+
+(library
+ (name jsoo_testsuite_str)
+ (modules test_str)
+ (libraries str)
  (inline_tests
   (deps
    (sandbox preserve_file_kind))
