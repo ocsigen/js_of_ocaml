@@ -279,3 +279,38 @@ let%expect_test "ldexp into subnormals" =
     0x0p+0
     infinity
     |}]
+
+(* Hex float literals must be parsed exactly: scaling the mantissa
+   with a single multiplication underflows for exponents below -1074
+   and double-rounds mantissas wider than 53 bits. *)
+let%expect_test "hex float literals" =
+  let p s =
+    match float_of_string s with
+    | x -> Printf.printf "%h\n" x
+    | exception Failure _ -> print_endline "failure"
+  in
+  p "0x1.123456789abcdp-1023";
+  p "0x10p-1078";
+  p "0x1.00000000000008p0";
+  p "0x1.000000000000080000000000001p0";
+  p "0x.8p1";
+  p "0x8.p0";
+  p "0x1.fffffffffffff8p1023";
+  p "0x1.fffffffffffff7p1023";
+  p "-0x0p0";
+  p "0xp1";
+  p "0x1p";
+  [%expect
+    {|
+    0x0p+0
+    0x0p+0
+    0x1p+0
+    0x1.0000000000001p+0
+    failure
+    0x1p+3
+    infinity
+    0x1.fffffffffffffp+1023
+    -0x0p+0
+    failure
+    failure
+    |}]
