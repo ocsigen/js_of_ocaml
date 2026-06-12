@@ -120,7 +120,8 @@ class MlNodeDevice {
 
   truncate(name, len, raise_unix) {
     try {
-      this.fs.truncateSync(this.nm(name), len | 0);
+      // do not truncate [len] to 32 bits; node accepts up to 2^53
+      this.fs.truncateSync(this.nm(name), len);
       return 0;
     } catch (err) {
       caml_raise_nodejs_error(err, raise_unix);
@@ -374,7 +375,7 @@ function ocaml_stats_from_node_stats(js_stats, large) {
     js_stats.dev,
     js_stats.ino | 0,
     file_kind,
-    js_stats.mode,
+    js_stats.mode & 0o7777,
     js_stats.nlink,
     js_stats.uid,
     js_stats.gid,
@@ -415,8 +416,9 @@ class MlNodeFd extends MlFile {
 
   truncate(len, raise_unix) {
     try {
-      this.fs.ftruncateSync(this.fd, len | 0);
-      if (this.offset > len) this.offset = len;
+      // do not truncate [len] to 32 bits, and do not move the fd
+      // offset: POSIX ftruncate leaves it unchanged
+      this.fs.ftruncateSync(this.fd, len);
     } catch (err) {
       caml_raise_nodejs_error(err, raise_unix);
     }
