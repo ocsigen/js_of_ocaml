@@ -139,4 +139,4 @@ let%expect_test "Open_append implies write access" =
      Printf.printf "[%s]" (In_channel.input_all c);
      close_in c
    with Sys_error msg -> print_endline ("Sys_error: " ^ msg));
-  [%expect {| Sys_error: EBADF: bad file descriptor, write |}]
+  [%expect {| [hello] |}]
