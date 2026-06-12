@@ -529,14 +529,36 @@ function caml_parse_float(s, err_msg) {
   res = +s;
   if ((!Number.isNaN(res) && r_float.test(s)) || /^ *[+-]?nan$/i.test(s))
     return res;
-  var m = /^ *([+-]?)0x([0-9a-f]+)\.?([0-9a-f]*)(p([+-]?[0-9]+))?$/i.exec(s);
-  //          1        2             3           5
-  if (m) {
-    var m3 = m[3].replace(/0+$/, "");
-    var mantissa = Number.parseInt(m[1] + m[2] + m3, 16);
-    var exponent = (+m[5] || 0) - 4 * m3.length;
-    res = mantissa * Math.pow(2, exponent);
-    return res;
+  var m = /^ *([+-]?)0x([0-9a-f]*)\.?([0-9a-f]*)(?:p([+-]?[0-9]+))?$/i.exec(s);
+  //          1        2             3               4
+  if (m && m[2].length + m[3].length > 0) {
+    var sign = m[1] === "-" ? -1 : 1;
+    var mant = BigInt("0x0" + m[2] + m[3]);
+    var e = (+m[4] || 0) - 4 * m[3].length;
+    if (mant === 0n) return sign * 0;
+    // Round [mant * 2^e] to the nearest representable double
+    // (round-to-nearest, ties-to-even), exactly
+    for (;;) {
+      var bl = mant.toString(2).length; // bit length
+      var be = bl - 1 + e; // exponent of the leading bit
+      if (be > 1023) return sign * Number.POSITIVE_INFINITY;
+      if (be < -1075) return sign * 0;
+      // number of mantissa bits a double can hold at this magnitude
+      var p = be >= -1022 ? 53 : 53 + 1022 + be;
+      var shift = bl - p;
+      if (shift <= 0)
+        // [mant * 2^e] is representable: both operations are exact
+        return sign * Number(mant) * Math.pow(2, e);
+      var keep = mant >> BigInt(shift);
+      var rem = mant & ((1n << BigInt(shift)) - 1n);
+      var half = 1n << BigInt(shift - 1);
+      if (rem > half || (rem === half && (keep & 1n))) keep += 1n;
+      if (keep < (p > 0 ? 1n << BigInt(p) : 1n))
+        return sign * Number(keep) * Math.pow(2, e + shift);
+      // the carry needs one more bit: renormalize and round again
+      mant = keep;
+      e += shift;
+    }
   }
   if (/^ *\+?inf(inity)?$/i.test(s)) return Number.POSITIVE_INFINITY;
   if (/^ *-inf(inity)?$/i.test(s)) return Number.NEGATIVE_INFINITY;

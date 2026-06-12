@@ -248,11 +248,11 @@ let%expect_test "hex float literals" =
   p "0x1p";
   [%expect
     {|
-    0x0p+0
-    0x0p+0
+    0x0.891a2b3c4d5e6p-1022
+    0x0.0000000000001p-1022
     0x1p+0
     0x1.0000000000001p+0
-    failure
+    0x1p+0
     0x1p+3
     infinity
     0x1.fffffffffffffp+1023
