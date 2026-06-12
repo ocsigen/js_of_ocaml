@@ -450,6 +450,7 @@ function caml_input_value_from_reader(reader) {
             var len = reader.read32u();
             var v = new Array(len + 1);
             v[0] = 254;
+            if (intern_obj_table) intern_obj_table[obj_counter++] = v;
             var t = new Array(8);
             for (var i = 1; i <= len; i++) {
               for (var j = 0; j < 8; j++) t[j] = reader.read8u();
