@@ -368,6 +368,11 @@
   runtime does; signed 8/16-bit bigarrays whose size is not a multiple
   of the hashed word size hashed differently from native (and the byte
   case trapped under WASI on the Wasm runtime)
+* Runtime: exact float formatting and parsing: precisions above 100 no
+  longer raise (`%.150e`), `%f` of values >= 1e21 prints the exact
+  decimal expansion, hex float literals are parsed with correct
+  rounding instead of underflowing to 0, and `ldexp` no longer rounds
+  twice on the way into the subnormal range (#2270)
 * Runtime: the `#` flag no longer adds a base prefix to zero;
   `Printf.printf "%#x" 0` printed `0x0` where native prints `0`
 * Runtime: the fake filesystem no longer ignores `Open_append`; writes

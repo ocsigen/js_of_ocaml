@@ -441,21 +441,63 @@ function caml_fma_float(x, y, z) {
 //Provides: caml_format_float const
 //Requires: caml_str_repeat, caml_parse_format, caml_finish_formatting
 function caml_format_float(fmt, x) {
-  function toFixed(x, dp) {
-    if (Math.abs(x) < 1.0) {
-      return x.toFixed(dp);
-    } else {
-      var e = Number.parseInt(x.toString().split("+")[1]);
-      if (e > 20) {
-        e -= 20;
-        x /= Math.pow(10, e);
-        x += caml_str_repeat(e, "0");
-        if (dp > 0) {
-          x = x + "." + caml_str_repeat(dp, "0");
-        }
-        return x;
-      } else return x.toFixed(dp);
+  // Exact decimal expansion through BigInt, for precisions beyond
+  // toFixed/toExponential's limit of 100 and for %f of values >= 1e21
+  function decompose(x) {
+    // x (finite, >= 0) is m * 2^e
+    var dv = new DataView(new ArrayBuffer(8));
+    dv.setFloat64(0, x);
+    var hi = dv.getUint32(0),
+      lo = dv.getUint32(4);
+    var eb = (hi >>> 20) & 0x7ff;
+    var m = (BigInt(hi & 0xfffff) << 32n) | BigInt(lo);
+    if (eb === 0) return [m, -1074];
+    return [m | (1n << 52n), eb - 1075];
+  }
+  function exact_scaled(x, k) {
+    // round_half_even(x * 10^k) as a BigInt
+    var d = decompose(x);
+    var num = d[0],
+      den = 1n;
+    if (k >= 0) num *= 10n ** BigInt(k);
+    else den = 10n ** BigInt(-k);
+    if (d[1] >= 0) num <<= BigInt(d[1]);
+    else den <<= BigInt(-d[1]);
+    var q = num / den,
+      r2 = (num % den) * 2n;
+    if (r2 > den || (r2 === den && q & 1n)) q += 1n;
+    return q;
+  }
+  function exact_fixed(x, prec) {
+    // toFixed, exactly
+    var q = exact_scaled(x, prec).toString();
+    if (prec === 0) return q;
+    if (q.length <= prec) q = caml_str_repeat(prec + 1 - q.length, "0") + q;
+    return q.slice(0, q.length - prec) + "." + q.slice(q.length - prec);
+  }
+  function exact_exponential(x, prec) {
+    // toExponential, exactly
+    if (x === 0)
+      return (prec > 0 ? "0." + caml_str_repeat(prec, "0") : "0") + "e+0";
+    var e10 = Math.floor(Math.log10(x));
+    for (;;) {
+      // we want round(x * 10^(prec - e10)) to have exactly prec + 1
+      // digits; the estimate of e10 is off by at most one (and
+      // rounding can add a digit), so adjust and retry
+      var s = exact_scaled(x, prec - e10).toString();
+      if (s.length === prec + 1) {
+        var m = prec > 0 ? s.charAt(0) + "." + s.slice(1) : s;
+        return m + "e" + (e10 < 0 ? "-" : "+") + Math.abs(e10);
+      }
+      e10 += s.length - (prec + 1);
     }
+  }
+  function toExponential(x, prec) {
+    return prec > 100 ? exact_exponential(x, prec) : x.toExponential(prec);
+  }
+  function toFixed(x, dp) {
+    if (dp > 100 || x >= 1e21) return exact_fixed(x, dp);
+    return x.toFixed(dp);
   }
   var s,
     f = caml_parse_format(fmt);
@@ -473,7 +515,7 @@ function caml_format_float(fmt, x) {
   } else
     switch (f.conv) {
       case "e":
-        var s = x.toExponential(prec);
+        var s = toExponential(x, prec);
         // exponent should be at least two digits
         var i = s.length;
         if (s.charAt(i - 3) === "e")
@@ -484,7 +526,7 @@ function caml_format_float(fmt, x) {
         break;
       case "g":
         prec = prec ? prec : 1;
-        s = x.toExponential(prec - 1);
+        s = toExponential(x, prec - 1);
         var j = s.indexOf("e");
         var exp = +s.slice(j + 1);
         if (exp < -4 || x >= 1e21 || x.toFixed(0).length > prec) {
@@ -501,8 +543,8 @@ function caml_format_float(fmt, x) {
           var p = prec;
           if (exp < 0) {
             p -= exp + 1;
-            s = x.toFixed(p);
-          } else while (((s = x.toFixed(p)), s.length > prec + 1)) p--;
+            s = toFixed(x, p);
+          } else while (((s = toFixed(x, p)), s.length > prec + 1)) p--;
           if (p) {
             // remove trailing zeroes
             var i = s.length - 1;
@@ -552,7 +594,7 @@ function caml_parse_float(s, err_msg) {
       var keep = mant >> BigInt(shift);
       var rem = mant & ((1n << BigInt(shift)) - 1n);
       var half = 1n << BigInt(shift - 1);
-      if (rem > half || (rem === half && (keep & 1n))) keep += 1n;
+      if (rem > half || (rem === half && keep & 1n)) keep += 1n;
       if (keep < (p > 0 ? 1n << BigInt(p) : 1n))
         return sign * Number(keep) * Math.pow(2, e + shift);
       // the carry needs one more bit: renormalize and round again
