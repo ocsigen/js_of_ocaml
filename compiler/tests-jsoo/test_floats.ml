@@ -207,3 +207,21 @@ let%expect_test "of_string" =
   let x = "3.14 " in
   print' (fun () -> float_of_string x);
   [%expect {| Failure("float_of_string") |}]
+
+(* [ldexp] must round once: scaling in several steps can round twice
+   on the way into the subnormal range. *)
+let%expect_test "ldexp into subnormals" =
+  let p x = Printf.printf "%h\n" x in
+  p (ldexp (1. +. epsilon_float) (-1075));
+  p (ldexp 1. (-1074));
+  p (ldexp max_float (-2098));
+  p (ldexp 1. (-1075));
+  p (ldexp 1. 1024);
+  [%expect
+    {|
+    0x0p+0
+    0x0.0000000000001p-1022
+    0x0p+0
+    0x0p+0
+    infinity
+    |}]
