@@ -109,17 +109,21 @@
 
    (func (export "caml_ephe_get_data_copy")
       (param $x (ref eq)) (result (ref eq))
-      (local $r (ref eq))
+      (local $r (ref eq)) (local $v (ref eq))
       (local.set $r (call $caml_ephe_get_data (local.get $x)))
       (drop (block $no_copy (result (ref eq))
-         (return
-            (array.new_fixed $block 2 (ref.i31 (i32.const 0))
-               (call $caml_obj_dup
-                  (br_on_cast_fail $no_copy (ref eq) (ref $block)
-                     (array.get $block
-                        (br_on_cast_fail $no_copy (ref eq) (ref $block)
-                           (local.get $r))
-                        (i32.const 1))))))))
+         (local.set $v
+            (array.get $block
+               (br_on_cast_fail $no_copy (ref eq) (ref $block) (local.get $r))
+               (i32.const 1)))
+         ;; copy blocks and bytes (caml_obj_dup handles both)
+         (if (i32.or (ref.test (ref $block) (local.get $v))
+                (ref.test (ref $bytes) (local.get $v)))
+            (then
+               (return
+                  (array.new_fixed $block 2 (ref.i31 (i32.const 0))
+                     (call $caml_obj_dup (local.get $v))))))
+         (ref.i31 (i32.const 0))))
       (local.get $r))
 
    (func $caml_ephe_set_data (export "caml_ephe_set_data")
@@ -215,17 +219,21 @@
    (export "caml_weak_get_copy" (func $caml_ephe_get_key_copy))
    (func $caml_ephe_get_key_copy (export "caml_ephe_get_key_copy")
       (param $x (ref eq)) (param $i (ref eq)) (result (ref eq))
-      (local $r (ref eq))
+      (local $r (ref eq)) (local $v (ref eq))
       (local.set $r (call $caml_ephe_get_key (local.get $x) (local.get $i)))
       (drop (block $no_copy (result (ref eq))
-         (return
-            (array.new_fixed $block 2 (ref.i31 (i32.const 0))
-               (call $caml_obj_dup
-                  (br_on_cast_fail $no_copy (ref eq) (ref $block)
-                     (array.get $block
-                        (br_on_cast_fail $no_copy (ref eq) (ref $block)
-                           (local.get $r))
-                        (i32.const 1))))))))
+         (local.set $v
+            (array.get $block
+               (br_on_cast_fail $no_copy (ref eq) (ref $block) (local.get $r))
+               (i32.const 1)))
+         ;; copy blocks and bytes (caml_obj_dup handles both)
+         (if (i32.or (ref.test (ref $block) (local.get $v))
+                (ref.test (ref $bytes) (local.get $v)))
+            (then
+               (return
+                  (array.new_fixed $block 2 (ref.i31 (i32.const 0))
+                     (call $caml_obj_dup (local.get $v))))))
+         (ref.i31 (i32.const 0))))
       (local.get $r))
 
    (export "caml_weak_check" (func $caml_ephe_check_key))
