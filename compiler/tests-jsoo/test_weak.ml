@@ -152,3 +152,34 @@ let%expect_test _ =
   E.unset_data e;
   bool (E.check_data e);
   [%expect {| false |}]
+
+(* Regression test for https://github.com/ocsigen/js_of_ocaml/issues/2263:
+   [blit_key] must only copy keys; it must not modify the destination's
+   data. *)
+let%expect_test "blit_key does not touch data" =
+  let module E = Obj.Ephemeron in
+  let print_data e =
+    match E.get_data e with
+    | None -> print_endline "no data"
+    | Some d -> print_endline (Obj.obj d : string)
+  in
+  let k1 = Some 1 and k2 = Some 2 and k3 = Some 3 and k4 = Some 4 in
+  let src = E.create 2 in
+  let dst = E.create 2 in
+  E.set_key src 0 (Obj.repr k1);
+  E.set_key src 1 (Obj.repr k2);
+  E.set_key dst 0 (Obj.repr k3);
+  E.set_key dst 1 (Obj.repr k4);
+  E.set_data src (Obj.repr "src data");
+  E.set_data dst (Obj.repr "dst data");
+  E.blit_key src 0 dst 0 2;
+  print_data dst;
+  [%expect {| src data |}];
+  (* blitting from a source without data must not clear the destination's
+     data either *)
+  E.unset_data src;
+  E.set_data dst (Obj.repr "dst data");
+  E.blit_key src 0 dst 0 2;
+  print_data dst;
+  [%expect {| no data |}];
+  ignore (Sys.opaque_identity (k1, k2, k3, k4))
