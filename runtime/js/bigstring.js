@@ -54,15 +54,15 @@ function caml_bigstring_blit_ba_to_ba(ba1, pos1, ba2, pos2, len) {
   if (12 !== ba2.kind)
     caml_invalid_argument("caml_bigstring_blit_ba_to_ba: kind mismatch");
   if (len === 0) return 0;
-  var ofs1 = ba1.offset(pos1);
-  var ofs2 = ba2.offset(pos2);
-  if (ofs1 + len > ba1.data.length) {
+  // Positions are raw offsets from the start of the data, ignoring the
+  // layout, as in the reference C implementation (and the Wasm runtime)
+  if (pos1 < 0 || pos1 + len > ba1.data.length) {
     caml_array_bound_error();
   }
-  if (ofs2 + len > ba2.data.length) {
+  if (pos2 < 0 || pos2 + len > ba2.data.length) {
     caml_array_bound_error();
   }
-  var slice = ba1.data.subarray(ofs1, ofs1 + len);
+  var slice = ba1.data.subarray(pos1, pos1 + len);
   ba2.data.set(slice, pos2);
   return 0;
 }
