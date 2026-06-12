@@ -229,3 +229,25 @@ let%expect_test "Array.make negative length" =
      Printf.printf "len=%d\n" (Array.length a)
    with Invalid_argument m -> print_endline m);
   [%expect {| Array.make |}]
+
+(* hash.c has a dedicated Double_array_tag case (elements mixed
+   directly, no header word) and skips Abstract_tag blocks. *)
+let%expect_test "Hashtbl.hash of float arrays" =
+  let p (x : Obj.t) = Printf.printf "%08x\n" (Hashtbl.hash x) in
+  p (Obj.repr [| 1.5 |]);
+  p (Obj.repr [| 1.5; 2.5 |]);
+  p (Obj.repr (Array.init 20 float_of_int));
+  p (Obj.repr [| nan |]);
+  p (Obj.repr [| -0. |]);
+  p (Obj.repr (1, [| 1.5 |], 2));
+  p (Obj.new_block 251 3);
+  [%expect
+    {|
+    3e121f87
+    165fed5c
+    162489c5
+    2baaf13f
+    1c14f790
+    3f7de68b
+    35565b7c
+    |}]
