@@ -112,8 +112,10 @@ class MlFakeDevice {
           this.nm(newname) + " : file already exists and is a directory",
         );
       }
-      this.content[newname] = this.content[oldname];
-      delete this.content[oldname];
+      if (newname !== oldname) {
+        this.content[newname] = this.content[oldname];
+        delete this.content[oldname];
+      }
     }
   }
 
