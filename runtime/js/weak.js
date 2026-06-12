@@ -174,7 +174,7 @@ function caml_ephe_get_data(x) {
         return 0;
       }
       if (globalThis.WeakMap) {
-        data = data.get(k);
+        data = data.get(d);
         if (data === undefined) {
           x[caml_ephe_data_offset] = caml_ephe_none;
           return 0;
@@ -209,7 +209,11 @@ function caml_ephe_set_data(x, data) {
         continue;
       }
       if (globalThis.WeakMap) {
-        data = new globalThis.WeakMap().set(k, data);
+        // Key the map on the key object itself (not the WeakRef
+        // wrapper, which the ephemeron strongly holds): the data must
+        // be reachable only while the key is, so that key <-> data
+        // cycles can be collected.
+        data = new globalThis.WeakMap().set(d, data);
       }
     }
   }
