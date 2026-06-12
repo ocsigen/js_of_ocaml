@@ -114,6 +114,10 @@
 * Runtime: ephemeron data is now weakly keyed on the key object itself
   rather than on its WeakRef wrapper, so key <-> data cycles can be
   garbage collected (#2274)
+* Runtime: `Gc.finalise_last` callbacks are invoked through
+  caml_callback; with `--effects=cps` they silently never ran, and
+  `Gc.counters` now returns an ordinary tuple instead of a float-array
+  block (#2279)
 * Runtime: the `#` flag no longer adds a base prefix to zero;
   `Printf.printf "%#x" 0` printed `0x0` where native prints `0`
 * Runtime: the fake filesystem no longer ignores `Open_append`; writes
