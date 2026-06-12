@@ -164,6 +164,10 @@
   like the C runtime; the QuickJS backend refuses `rmdir` on files and
   `unlink` on directories, honors an explicit file permission of 0,
   and no longer truncates file lengths to 32 bits
+* Runtime: Unix fixes (#2270): `Unix.error_message` no longer crashes
+  for error codes absent from node's error map (or on node < 22);
+  `chmod` raises `Unix_error`; `readdir` includes the "." and ".."
+  entries like native
 * Runtime: the Str engine's SIMPLEOPT/SIMPLESTAR/SIMPLEPLUS opcodes
   no longer read past the end of the string; matching a negated
   character class at the end of the input could loop forever (#2270)

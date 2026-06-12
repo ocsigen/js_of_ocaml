@@ -796,7 +796,8 @@ function caml_unix_opendir(path) {
     caml_failwith("caml_unix_opendir: not implemented");
   }
   var dir_handle = root.device.opendir(root.rest, /* raise Unix_error */ true);
-  return { pointer: dir_handle, path: path };
+  // node's Dir.readSync does not report "." and ".."; native readdir does
+  return { pointer: dir_handle, path: path, dots: [".", ".."] };
 }
 
 //Provides: caml_unix_readdir
@@ -806,6 +807,8 @@ function caml_unix_opendir(path) {
 //Alias: unix_readdir
 function caml_unix_readdir(dir_handle) {
   var entry;
+  if (dir_handle.dots && dir_handle.dots.length > 0)
+    return caml_string_of_jsstring(dir_handle.dots.shift());
   try {
     entry = dir_handle.pointer.readSync();
   } catch (e) {
@@ -822,6 +825,8 @@ function caml_unix_readdir(dir_handle) {
 //Requires: caml_raise_system_error
 //Alias: unix_closedir
 function caml_unix_closedir(dir_handle) {
+  // drop the synthesized "." / ".." so readdir on a closed handle fails
+  dir_handle.dots = null;
   try {
     dir_handle.pointer.closeSync();
   } catch (e) {
@@ -836,6 +841,7 @@ function caml_unix_rewinddir(dir_handle) {
   caml_unix_closedir(dir_handle);
   var new_dir_handle = caml_unix_opendir(dir_handle.path);
   dir_handle.pointer = new_dir_handle.pointer;
+  dir_handle.dots = new_dir_handle.dots;
   return 0;
 }
 

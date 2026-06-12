@@ -318,8 +318,12 @@ let f () =
     print_endline "got directory handle";
     read dh;
     read dh;
+    read dh;
+    read dh;
     fail Unix.readdir dh;
     Unix.rewinddir dh;
+    read dh;
+    read dh;
     read dh;
     read dh;
     fail Unix.readdir  dh;
@@ -346,9 +350,13 @@ let () = f (); Sys.chdir "/static"; f () |};
     got directory handle
     <file 1>
     <file 2>
+    <file 3>
+    <file 4>
     End_of_file
     <file 1>
     <file 2>
+    <file 3>
+    <file 4>
     End_of_file
     <file 1>
     <file 1>
@@ -361,9 +369,13 @@ let () = f (); Sys.chdir "/static"; f () |};
     got directory handle
     <file 1>
     <file 2>
+    <file 3>
+    <file 4>
     End_of_file
     <file 1>
     <file 2>
+    <file 3>
+    <file 4>
     End_of_file
     <file 1>
     <file 1>
@@ -406,8 +418,12 @@ let f () =
     print_endline "got directory handle";
     read dh;
     read dh;
+    read dh;
+    read dh;
     fail Unix.readdir dh;
     Unix.rewinddir dh;
+    read dh;
+    read dh;
     read dh;
     read dh;
     fail Unix.readdir  dh;
@@ -435,9 +451,13 @@ let () = f (); Sys.chdir "/static"; f () |};
     got directory handle
     <file 1>
     <file 2>
+    <file 3>
+    <file 4>
     End_of_file
     <file 1>
     <file 2>
+    <file 3>
+    <file 4>
     End_of_file
     <file 1>
     <file 1>
@@ -450,9 +470,13 @@ let () = f (); Sys.chdir "/static"; f () |};
     got directory handle
     <file 1>
     <file 2>
+    <file 3>
+    <file 4>
     End_of_file
     <file 1>
     <file 2>
+    <file 3>
+    <file 4>
     End_of_file
     <file 1>
     <file 1>
