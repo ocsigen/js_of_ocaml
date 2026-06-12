@@ -481,7 +481,7 @@ class MlFakeFd {
     this.file = file;
     this.name = name;
     this.flags = flags;
-    this.offset = 0;
+    this.offset = flags.append ? file.length() : 0;
     this.seeked = false;
   }
 

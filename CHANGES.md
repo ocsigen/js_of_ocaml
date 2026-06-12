@@ -49,6 +49,8 @@
   data with the source's data (#2263)
 * Runtime: the `#` flag no longer adds a base prefix to zero;
   `Printf.printf "%#x" 0` printed `0x0` where native prints `0`
+* Runtime: the fake filesystem no longer ignores `Open_append`; writes
+  on an append-mode channel used to overwrite the file from the start
 * Runtime/wasm: fix Int64.of_string (#2223)
 * Compiler: don't rewrite `x = e + x` into `x += e` for the `Plus`
   operator; JavaScript `+` is not commutative for strings, which made
