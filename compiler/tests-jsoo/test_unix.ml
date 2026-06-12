@@ -159,3 +159,36 @@ let%expect_test "truncate and stat" =
     100
     0o644
     |}]
+
+let%expect_test "chmod on a missing file" =
+  (try Unix.chmod "/jsoo_missing_for_chmod" 0o644 with
+  | Unix.Unix_error (Unix.ENOENT, cmd, _) -> Printf.printf "ENOENT %s\n" cmd
+  | Sys_error _ -> print_endline "Sys_error");
+  [%expect {| ENOENT chmod |}]
+
+let%expect_test "closed fds do not resolve" =
+  let f = Filename.temp_file "jsoo_close" ".dat" in
+  let fd = Unix.openfile f [ Unix.O_RDONLY ] 0 in
+  Unix.close fd;
+  (try
+     ignore (Unix.fstat fd);
+     print_endline "ok"
+   with Unix.Unix_error (Unix.EBADF, _, _) -> print_endline "EBADF");
+  Sys.remove f;
+  [%expect {| EBADF |}]
+
+let%expect_test "readdir includes . and .." =
+  let d = Filename.temp_file "jsoo_dir" "" in
+  Sys.remove d;
+  Unix.mkdir d 0o755;
+  let h = Unix.opendir d in
+  let l = ref [] in
+  (try
+     while true do
+       l := Unix.readdir h :: !l
+     done
+   with End_of_file -> ());
+  Unix.closedir h;
+  List.iter print_endline (List.sort compare !l);
+  Unix.rmdir d;
+  [%expect {| |}]
