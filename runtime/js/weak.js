@@ -134,7 +134,10 @@ function caml_ephe_check_key(x, i) {
 //Requires: caml_ephe_set_data_opt
 //Alias: caml_weak_blit
 function caml_ephe_blit_key(a1, i1, a2, i2, len) {
-  var old = caml_ephe_get_data(a1);
+  // The data is stored wrapped in WeakMaps keyed on the (live) keys, so
+  // fetch the destination's data before changing its keys and store it
+  // back afterwards.
+  var old = caml_ephe_get_data(a2);
   // minus one because caml_array_blit works on ocaml array
   caml_array_blit(
     a1,

@@ -174,12 +174,12 @@ let%expect_test "blit_key does not touch data" =
   E.set_data dst (Obj.repr "dst data");
   E.blit_key src 0 dst 0 2;
   print_data dst;
-  [%expect {| src data |}];
+  [%expect {| dst data |}];
   (* blitting from a source without data must not clear the destination's
      data either *)
   E.unset_data src;
   E.set_data dst (Obj.repr "dst data");
   E.blit_key src 0 dst 0 2;
   print_data dst;
-  [%expect {| no data |}];
+  [%expect {| dst data |}];
   ignore (Sys.opaque_identity (k1, k2, k3, k4))
