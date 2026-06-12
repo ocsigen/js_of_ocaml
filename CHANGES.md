@@ -47,6 +47,11 @@
 * Runtime: fix caml_oo_cache_id (#2224)
 * Runtime: `Ephemeron.blit_key` no longer overwrites the destination's
   data with the source's data (#2263)
+* Runtime: exact float formatting and parsing: precisions above 100 no
+  longer raise (`%.150e`), `%f` of values >= 1e21 prints the exact
+  decimal expansion, hex float literals are parsed with correct
+  rounding instead of underflowing to 0, and `ldexp` no longer rounds
+  twice on the way into the subnormal range (#2270)
 * Runtime: the `#` flag no longer adds a base prefix to zero;
   `Printf.printf "%#x" 0` printed `0x0` where native prints `0`
 * Runtime: the fake filesystem no longer ignores `Open_append`; writes

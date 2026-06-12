@@ -207,3 +207,83 @@ let%expect_test "of_string" =
   let x = "3.14 " in
   print' (fun () -> float_of_string x);
   [%expect {| Failure("float_of_string") |}]
+
+(* [ldexp] must round once: scaling in several steps can round twice
+   on the way into the subnormal range. *)
+let%expect_test "ldexp into subnormals" =
+  let p x = Printf.printf "%h\n" x in
+  p (ldexp (1. +. epsilon_float) (-1075));
+  p (ldexp 1. (-1074));
+  p (ldexp max_float (-2098));
+  p (ldexp 1. (-1075));
+  p (ldexp 1. 1024);
+  [%expect
+    {|
+    0x0.0000000000001p-1022
+    0x0.0000000000001p-1022
+    0x0.0000000000001p-1022
+    0x0p+0
+    infinity
+    |}]
+
+(* Hex float literals must be parsed exactly: scaling the mantissa
+   with a single multiplication underflows for exponents below -1074
+   and double-rounds mantissas wider than 53 bits. *)
+let%expect_test "hex float literals" =
+  let p s =
+    match float_of_string s with
+    | x -> Printf.printf "%h\n" x
+    | exception Failure _ -> print_endline "failure"
+  in
+  p "0x1.123456789abcdp-1023";
+  p "0x10p-1078";
+  p "0x1.00000000000008p0";
+  p "0x1.000000000000080000000000001p0";
+  p "0x.8p1";
+  p "0x8.p0";
+  p "0x1.fffffffffffff8p1023";
+  p "0x1.fffffffffffff7p1023";
+  p "-0x0p0";
+  p "0xp1";
+  p "0x1p";
+  [%expect
+    {|
+    0x0.891a2b3c4d5e6p-1022
+    0x0.0000000000001p-1022
+    0x1p+0
+    0x1.0000000000001p+0
+    0x1p+0
+    0x1p+3
+    infinity
+    0x1.fffffffffffffp+1023
+    -0x0p+0
+    failure
+    failure
+    |}]
+
+(* Formatting with precisions above 100 (toFixed/toExponential's
+   limit) and %f of values >= 1e21 must print the exact decimal
+   expansion like native. *)
+let%expect_test "format with large precision" =
+  let p (fmt : _ format) x =
+    match Printf.sprintf fmt x with
+    | s -> print_endline s
+    | exception Failure _ -> print_endline "failure"
+  in
+  p "%.150e" 0.1;
+  p "%.110f" 0.1;
+  p "%.0f" 1.2345678e22;
+  p "%.2f" 1.2345678e22;
+  p "%.150e" 2.;
+  p "%.110e" 0.;
+  p "%.105g" 0.1;
+  [%expect
+    {|
+    1.000000000000000055511151231257827021181583404541015625000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000e-01
+    0.10000000000000000555111512312578270211815834045410156250000000000000000000000000000000000000000000000000000000
+    12345678000000000327680
+    12345678000000000327680.00
+    2.000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000e+00
+    0.00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000e+00
+    0.1000000000000000055511151231257827021181583404541015625
+    |}]
