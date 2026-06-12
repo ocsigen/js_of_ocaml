@@ -315,9 +315,9 @@ let%expect_test "Unix.error_message" =
   Printf.printf "%b\n" (String.length (Unix.error_message Unix.EPERM) > 0);
   [%expect
     {|
-    error
-    error
-    error
+    ECHILD
+    EWOULDBLOCK
+    EDEADLK
     true
     |}]
 
@@ -336,4 +336,4 @@ let%expect_test "localtime tm_yday under DST" =
     tm.Unix.tm_min
     tm.Unix.tm_yday
     tm.Unix.tm_isdst;
-  [%expect {| 2021-07-01 00:30 yday=180 dst=true |}]
+  [%expect {| 2021-07-01 00:30 yday=181 dst=true |}]

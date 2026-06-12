@@ -50,9 +50,16 @@ function caml_unix_gmtime(t) {
 //Alias: unix_localtime
 function caml_unix_localtime(t) {
   var d = new Date(t * 1000);
-  var d_num = d.getTime();
-  var januaryfirst = new Date(d.getFullYear(), 0, 1).getTime();
-  var doy = Math.floor((d_num - januaryfirst) / 86400000);
+  var y = d.getFullYear();
+  // compute tm_yday from the date: the wall-clock distance to
+  // January 1 is off by one hour when DST is in effect
+  var cumul = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
+  var leap = (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
+  var doy =
+    cumul[d.getMonth()] +
+    d.getDate() -
+    1 +
+    (leap && d.getMonth() > 1 ? 1 : 0);
   var jan = new Date(d.getFullYear(), 0, 1);
   var jul = new Date(d.getFullYear(), 6, 1);
   var stdTimezoneOffset = Math.max(
@@ -220,10 +227,11 @@ function caml_strerror(errno) {
   const util = require("node:util");
   if (errno >= 0) {
     const code = unix_error[errno];
-    return util
-      .getSystemErrorMap()
-      .entries()
-      .find((x) => x[1][0] === code)[1][1];
+    // no Iterator.prototype.find: it requires node >= 22
+    for (const e of util.getSystemErrorMap())
+      if (e[1][0] === code) return e[1][1];
+    // not every code is in libuv's error map
+    return code || "Unknown error " + errno;
   } else {
     return util.getSystemErrorMessage(errno);
   }
@@ -320,7 +328,7 @@ function caml_unix_chmod(name, perms) {
   if (!root.device.chmod) {
     caml_failwith("caml_unix_chmod: not implemented");
   }
-  return root.device.chmod(root.rest, perms);
+  return root.device.chmod(root.rest, perms, /* raise Unix_error */ 1);
 }
 
 //Provides: caml_unix_rename
@@ -624,7 +632,6 @@ function caml_unix_single_write(fd, buf, pos, len) {
 }
 
 //Provides: caml_unix_write_bigarray
-//Alias: caml_unix_lookup_file
 //Requires: caml_ba_to_typed_array, caml_unix_lookup_file
 //Version: >= 5.2
 function caml_unix_write_bigarray(fd, buf, pos, len) {
@@ -705,10 +712,11 @@ function caml_unix_ftruncate_64(fd, len) {
 
 //Provides: caml_unix_close
 //Alias: unix_close
-//Requires: caml_unix_lookup_file
+//Requires: caml_unix_lookup_file, caml_sys_fds
 function caml_unix_close(fd) {
   var file = caml_unix_lookup_file(fd, "close");
   file.close(/* raise unix_error */ 1);
+  delete caml_sys_fds[fd];
   return 0;
 }
 
