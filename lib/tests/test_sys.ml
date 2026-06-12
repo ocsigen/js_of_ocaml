@@ -182,6 +182,7 @@ let unix_error = function
   | Unix.EPERM -> "EPERM"
   | Unix.EBADF -> "EBADF"
   | Unix.EINVAL -> "EINVAL"
+  | Unix.ENOTDIR -> "ENOTDIR"
   | Unix.EUNKNOWNERR n -> Printf.sprintf "EUNKNOWNERR %d" n
   | _ -> "other"
 
@@ -272,3 +273,32 @@ let%expect_test "cross-device rename" =
   | Sys_error _ -> print_endline "Sys_error"
   | Failure _ -> print_endline "Failure");
   [%expect {| Sys_error |}]
+
+(* On the real filesystem: rmdir must not delete files and unlink must
+   not delete directories (the QuickJS backend used os.remove, i.e.
+   remove(3), for both), and an explicit perm of 0 must not be
+   replaced by the 0o666 default. *)
+let%expect_test "rmdir a file, unlink a directory, perms 0" =
+  let f = "/tmp/jsoo_rm_file" in
+  let c = open_out f in
+  close_out c;
+  (try Unix.rmdir f with Unix.Unix_error (e, _, _) -> print_endline (unix_error e));
+  Printf.printf "%b\n" (Sys.file_exists f);
+  Sys.remove f;
+  let d = "/tmp/jsoo_rm_dir" in
+  Unix.mkdir d 0o777;
+  (try Unix.unlink d with Unix.Unix_error (e, _, _) -> print_endline (unix_error e));
+  Printf.printf "%b\n" (Sys.file_exists d);
+  Unix.rmdir d;
+  let p = "/tmp/jsoo_perm0" in
+  let fd = Unix.openfile p [ Unix.O_CREAT; Unix.O_WRONLY ] 0 in
+  Unix.close fd;
+  Printf.printf "0o%o\n" (Unix.stat p).Unix.st_perm;
+  Sys.remove p;
+  [%expect {|
+    ENOTDIR
+    true
+    EISDIR
+    true
+    0o0
+    |}]
