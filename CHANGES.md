@@ -152,6 +152,18 @@
   fresh channel per call like the C runtime; both channels used to
   share one record, making them physically equal and looping forever
   on reads; `is_binary_mode` reports true by default (#2270)
+* Runtime: many filesystem fixes (#2270): the fake device no longer
+  destroys a directory renamed into its own subtree (EINVAL), refuses
+  to unlink directories (EISDIR), accepts `access` on directories,
+  preserves binary content registered as bytes, and reports Unix
+  errors with the proper code, syscall and path; missing-file errors
+  use the native message format; mount points are no longer matched
+  as regexes; cross-device renames raise `Sys_error`; the node backend
+  no longer truncates file sizes to 32 bits in truncate/ftruncate,
+  leaves the fd offset unchanged on ftruncate, and masks `st_perm`
+  like the C runtime; the QuickJS backend refuses `rmdir` on files and
+  `unlink` on directories, honors an explicit file permission of 0,
+  and no longer truncates file lengths to 32 bits
 * Runtime: the Str engine's SIMPLEOPT/SIMPLESTAR/SIMPLEPLUS opcodes
   no longer read past the end of the string; matching a negated
   character class at the end of the input could loop forever (#2270)
