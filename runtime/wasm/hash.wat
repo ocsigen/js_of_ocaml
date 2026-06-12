@@ -18,6 +18,7 @@
 (module
    (import "obj" "object_tag" (global $object_tag i32))
    (import "obj" "forward_tag" (global $forward_tag i32))
+   (import "obj" "abstract_tag" (global $abstract_tag i32))
    (import "jsstring" "jsstring_test"
       (func $jsstring_test (param anyref) (result i32)))
    (import "jsstring" "jsstring_hash"
@@ -174,6 +175,8 @@
    (global $caml_hash_queue (ref $block)
       (array.new $block (ref.i31 (i32.const 0)) (global.get $HASH_QUEUE_SIZE)))
 
+   (type $float_array (array (mut f64)))
+
    (func (export "caml_hash") (export "caml_hash_exn")
       (param $count (ref eq)) (param $limit (ref eq)) (param $seed (ref eq))
       (param $obj (ref eq)) (result (ref eq))
@@ -181,6 +184,7 @@
       (local $rd i32) (local $wr i32)
       (local $v (ref eq))
       (local $b (ref $block))
+      (local $fa (ref $float_array))
       (local $i i32)
       (local $len i32)
       (local $tag i32)
@@ -266,6 +270,9 @@
                                        (array.get $block
                                           (local.get $b) (i32.const 2))))))
                            (br $loop)))
+                     ;; abstract tag: block contents unknown, do nothing
+                     (br_if $loop
+                        (i32.eq (local.get $tag) (global.get $abstract_tag)))
                      (local.set $len (array.len (local.get $b)))
                      (local.set $h
                         (call $caml_hash_mix_int (local.get $h)
@@ -290,6 +297,27 @@
                               (br_on_cast_fail $not_float (ref eq) (ref $float)
                                  (local.get $v)))))
                      (local.set $num (i32.sub (local.get $num) (i32.const 1)))
+                     (br $loop)))
+                  (drop (block $not_float_array (result (ref eq))
+                     (local.set $fa
+                        (br_on_cast_fail $not_float_array (ref eq)
+                           (ref $float_array) (local.get $v)))
+                     ;; mix the elements directly, no header
+                     (local.set $len (array.len (local.get $fa)))
+                     (local.set $i (i32.const 0))
+                     (loop $fa_iter
+                        (if (i32.lt_u (local.get $i) (local.get $len))
+                           (then
+                              (local.set $h
+                                 (call $caml_hash_mix_double (local.get $h)
+                                    (array.get $float_array (local.get $fa)
+                                       (local.get $i))))
+                              (local.set $num
+                                 (i32.sub (local.get $num) (i32.const 1)))
+                              (local.set $i
+                                 (i32.add (local.get $i) (i32.const 1)))
+                              (br_if $fa_iter
+                                 (i32.gt_s (local.get $num) (i32.const 0))))))
                      (br $loop)))
                   (drop (block $not_custom (result (ref eq))
                      (local.set $h
