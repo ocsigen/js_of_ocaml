@@ -380,7 +380,8 @@ function caml_input_value_from_reader(reader) {
           case 0x08: //cst.CODE_BLOCK32:
             var header = reader.read32u();
             var tag = header & 0xff;
-            var size = header >> 10;
+            // unsigned: bit 31 of the header is set for sizes >= 2^21
+            var size = header >>> 10;
             var v = [tag];
             if (size === 0) return v;
             if (intern_obj_table) intern_obj_table[obj_counter++] = v;
