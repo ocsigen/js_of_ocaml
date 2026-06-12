@@ -44,6 +44,8 @@
 * Compiler: fix missing conditional simplification (#2217)
 * Compiler: fix Js_assign.simpl (#2218)
 * Runtime: fix caml_oo_cache_id (#2224)
+* Runtime: `Ephemeron.blit_key` no longer overwrites the destination's
+  data with the source's data (#2263)
 * Runtime/wasm: fix Int64.of_string (#2223)
 * Compiler: don't rewrite `x = e + x` into `x += e` for the `Plus`
   operator; JavaScript `+` is not commutative for strings, which made
