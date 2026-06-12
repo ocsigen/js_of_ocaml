@@ -247,10 +247,10 @@ var re_match = (function () {
           }
           break;
         case opcodes.SIMPLEOPT:
-          if (in_bitset(cpool[uarg], c)) pos++;
+          if (pos < s.length && in_bitset(cpool[uarg], c)) pos++;
           break;
         case opcodes.SIMPLESTAR:
-          while (in_bitset(cpool[uarg], c)) c = s[++pos];
+          while (pos < s.length && in_bitset(cpool[uarg], c)) c = s[++pos];
           break;
         case opcodes.SIMPLEPLUS:
           if (pos === s.length) {
@@ -260,7 +260,7 @@ var re_match = (function () {
           if (in_bitset(cpool[uarg], c)) {
             do {
               c = s[++pos];
-            } while (in_bitset(cpool[uarg], c));
+            } while (pos < s.length && in_bitset(cpool[uarg], c));
           } else backtrack();
           break;
         case opcodes.ACCEPT:

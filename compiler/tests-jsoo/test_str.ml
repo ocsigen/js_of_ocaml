@@ -25,7 +25,23 @@
 let%expect_test "negated class at end of string" =
   let b = Str.string_partial_match (Str.regexp "[^;]?;") "" 0 in
   Printf.printf "%b\n" b;
-  [%expect {| false |}];
+  [%expect {| true |}];
   let b = Str.string_partial_match (Str.regexp "a[^;]?;") "a" 0 in
   Printf.printf "%b\n" b;
-  [%expect {| false |}]
+  [%expect {| true |}]
+
+(* These used to loop forever: the negated class kept matching the
+   out-of-bounds read at the end of the string. *)
+let%expect_test "simple star and plus at end of string" =
+  let b = Str.string_match (Str.regexp "[^;]*;") "no semicolon" 0 in
+  Printf.printf "%b\n" b;
+  [%expect {| false |}];
+  let b = Str.string_match (Str.regexp "[^;]+;") "no semicolon" 0 in
+  Printf.printf "%b\n" b;
+  [%expect {| false |}];
+  let b = Str.string_match (Str.regexp "[^;]*;") "stop; go" 0 in
+  Printf.printf "%b %s\n" b (Str.matched_string "stop; go");
+  [%expect {| true stop; |}];
+  let b = Str.string_match (Str.regexp "x[^;]+") "xabc" 0 in
+  Printf.printf "%b %s\n" b (Str.matched_string "xabc");
+  [%expect {| true xabc |}]
