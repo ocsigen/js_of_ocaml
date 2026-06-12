@@ -140,3 +140,19 @@ let%expect_test "Open_append implies write access" =
      close_in c
    with Sys_error msg -> print_endline ("Sys_error: " ^ msg));
   [%expect {| [hello] |}]
+
+(* Renaming a file to itself must succeed and leave the file intact
+   (POSIX rename is a no-op in that case). *)
+let%expect_test "Sys.rename to itself" =
+  let name = "/static/rename_self.txt" in
+  let c = open_out_bin name in
+  output_string c "hello";
+  close_out c;
+  Sys.rename name name;
+  if Sys.file_exists name
+  then (
+    let c = open_in_bin name in
+    Printf.printf "[%s]" (In_channel.input_all c);
+    close_in c)
+  else print_endline "gone";
+  [%expect {| gone |}]
