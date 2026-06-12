@@ -171,3 +171,104 @@ let%expect_test "flush on closed channel" =
      print_endline "ok"
    with Sys_error msg -> print_endline ("Sys_error: " ^ msg));
   [%expect {| ok |}]
+
+(* Regression tests for the fake filesystem and fs.js (issue #2270) *)
+
+external jsoo_create_file : string -> bytes -> unit = "jsoo_create_file"
+
+let unix_error = function
+  | Unix.ENOENT -> "ENOENT"
+  | Unix.EISDIR -> "EISDIR"
+  | Unix.EPERM -> "EPERM"
+  | Unix.EBADF -> "EBADF"
+  | Unix.EINVAL -> "EINVAL"
+  | Unix.EUNKNOWNERR n -> Printf.sprintf "EUNKNOWNERR %d" n
+  | _ -> "other"
+
+let%expect_test "rename a directory into its own subtree" =
+  Sys.mkdir "/static/rd" 0o777;
+  let c = open_out "/static/rd/f" in
+  close_out c;
+  (try
+     Sys.rename "/static/rd" "/static/rd/sub";
+     print_endline "ok"
+   with
+  | Sys_error msg -> print_endline ("Sys_error: " ^ msg)
+  | _ -> print_endline "unknown error");
+  Printf.printf "%b\n" (Sys.file_exists "/static/rd/f");
+  [%expect {|
+    unknown error
+    false
+    |}]
+
+let%expect_test "unlink a directory" =
+  Sys.mkdir "/static/ud" 0o777;
+  (try
+     Unix.unlink "/static/ud";
+     print_endline "ok"
+   with
+  | Unix.Unix_error (e, _, _) -> print_endline (unix_error e)
+  | Sys_error _ -> print_endline "Sys_error");
+  Printf.printf "%b\n" (Sys.file_exists "/static/ud");
+  [%expect {|
+    ok
+    true
+    |}]
+
+let%expect_test "access" =
+  Sys.mkdir "/static/ad" 0o777;
+  (try
+     Unix.access "/static/ad" [ Unix.F_OK ];
+     print_endline "ok"
+   with Unix.Unix_error (e, _, _) -> print_endline (unix_error e));
+  (try Unix.access "/static/admissing" [ Unix.F_OK ] with
+  | Unix.Unix_error (e, cmd, p) -> Printf.printf "%s %s %s\n" (unix_error e) cmd p);
+  [%expect {|
+    ENOENT
+    ENOENT no such file or directory
+    |}]
+
+let%expect_test "missing file errors" =
+  (try ignore (open_in "/static/missing") with Sys_error m -> print_endline m);
+  (try ignore (Sys.readdir "/static/missingdir") with
+  | Sys_error m -> print_endline m);
+  (try Unix.rename "/static/missingsrc" "/static/x" with
+  | Unix.Unix_error (e, cmd, p) -> Printf.printf "%s %s %s\n" (unix_error e) cmd p
+  | Sys_error m -> print_endline ("Sys_error: " ^ m));
+  [%expect {|
+    ENOENT: /static/missing, no such file or directory
+    missingdir: No such file or directory
+    Sys_error: /static/missingsrc : no such file or directory
+    |}]
+
+let%expect_test "double close" =
+  let fd = Unix.openfile "/static/temp0" [ Unix.O_RDONLY ] 0 in
+  Unix.close fd;
+  (try
+     Unix.close fd;
+     print_endline "ok"
+   with
+  | Unix.Unix_error (e, _, _) -> print_endline (unix_error e)
+  | Sys_error _ -> print_endline "Sys_error");
+  [%expect {| Sys_error |}]
+
+let%expect_test "register bytes content" =
+  jsoo_create_file "/static/bin.dat" (Bytes.of_string "\xff\x00\x80a");
+  let c = open_in_bin "/static/bin.dat" in
+  let s = In_channel.input_all c in
+  close_in c;
+  Printf.printf "%d:" (String.length s);
+  String.iter (fun c -> Printf.printf " %02x" (Char.code c)) s;
+  print_newline ();
+  [%expect {| 6: c3 bf 00 c2 80 61 |}]
+
+let%expect_test "mount points are not regexs" =
+  Sys_js.mount ~path:"/dyn.dir/" (fun ~prefix:_ ~path:_ -> Some "data");
+  Printf.printf "%b %b\n" (Sys.file_exists "/dyn.dir/x") (Sys.file_exists "/dynXdir/x");
+  [%expect {| true true |}]
+
+let%expect_test "cross-device rename" =
+  (try Sys.rename "/static/temp0" "/tmp/jsoo_test_rename" with
+  | Sys_error _ -> print_endline "Sys_error"
+  | Failure _ -> print_endline "Failure");
+  [%expect {| Failure |}]
