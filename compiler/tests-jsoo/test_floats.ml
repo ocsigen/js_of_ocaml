@@ -219,9 +219,9 @@ let%expect_test "ldexp into subnormals" =
   p (ldexp 1. 1024);
   [%expect
     {|
-    0x0p+0
     0x0.0000000000001p-1022
-    0x0p+0
+    0x0.0000000000001p-1022
+    0x0.0000000000001p-1022
     0x0p+0
     infinity
     |}]
