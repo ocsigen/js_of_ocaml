@@ -70,8 +70,10 @@ function caml_sys_open(name, flags, perms) {
         f.wronly = 1;
         break;
       case 2:
+        // Open_append implies write access (O_WRONLY | O_APPEND in the
+        // C runtime)
         f.append = 1;
-        f.writeonly = 1;
+        f.wronly = 1;
         break;
       case 3:
         f.create = 1;
