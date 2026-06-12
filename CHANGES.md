@@ -34,6 +34,10 @@
 * Runtime: the Str engine no longer masks instruction arguments to 8
   bits; regexps with more than 256 constant-pool entries (large
   alternations) indexed the wrong pool slot and mismatched (#2270)
+* Compiler: fix the dead require() guard in the share_constant pass: it
+  matched the identifier "requires" instead of "require", so string
+  literals passed to require could be replaced by a shared variable,
+  confusing bundlers (#2284)
 * Compiler: bound the statement-nesting depth of generated functions by
   emitting a flat dispatch loop instead of a deep tower of nested labelled
   blocks when a block has many sibling merge-node branch targets. Deep
