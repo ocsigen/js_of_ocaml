@@ -81,35 +81,58 @@ class MlFakeDevice {
     }
   }
 
-  rename_dir(oldname, newname) {
+  rename_dir(oldname, newname, raise_unix) {
+    var old_slash = this.slash(oldname);
+    var new_slash = this.slash(newname);
+    if (newname !== oldname && new_slash.startsWith(old_slash))
+      // renaming a directory into its own subtree would recurse forever
+      caml_raise_system_error(
+        raise_unix,
+        "EINVAL",
+        "rename",
+        "invalid argument",
+        this.nm(newname),
+      );
     if (this.exists(newname)) {
       if (!this.is_dir(newname)) {
-        caml_raise_sys_error(
-          this.nm(newname) + " : file already exists and is not a directory",
+        caml_raise_system_error(
+          raise_unix,
+          "ENOTDIR",
+          "rename",
+          "not a directory",
+          this.nm(newname),
         );
       }
       if (this.readdir(newname).length > 0) {
-        caml_raise_sys_error(this.nm(newname) + " : directory not empty");
+        caml_raise_system_error(
+          raise_unix,
+          "ENOTEMPTY",
+          "rename",
+          "directory not empty",
+          this.nm(newname),
+        );
       }
     }
-    var old_slash = this.slash(oldname);
-    var new_slash = this.slash(newname);
     this.create_dir_if_needed(new_slash);
     for (const f of this.readdir(oldname)) {
-      this.rename(old_slash + f, new_slash + f);
+      this.rename(old_slash + f, new_slash + f, raise_unix);
     }
     delete this.content[old_slash];
   }
 
-  rename(oldname, newname) {
+  rename(oldname, newname, raise_unix) {
     if (!this.exists(oldname))
-      caml_raise_sys_error(this.nm(oldname) + " : no such file or directory");
+      caml_raise_no_such_file(this.nm(oldname), raise_unix, "rename");
     if (this.is_dir(oldname)) {
-      this.rename_dir(oldname, newname);
+      this.rename_dir(oldname, newname, raise_unix);
     } else {
       if (this.exists(newname) && this.is_dir(newname)) {
-        caml_raise_sys_error(
-          this.nm(newname) + " : file already exists and is a directory",
+        caml_raise_system_error(
+          raise_unix,
+          "EISDIR",
+          "rename",
+          "is a directory",
+          this.nm(newname),
         );
       }
       if (newname !== oldname) {
@@ -180,13 +203,19 @@ class MlFakeDevice {
     delete this.content[name_slash];
   }
 
-  readdir(name) {
+  readdir(name, raise_unix) {
     var name_slash = name === "" ? "" : this.slash(name);
     if (!this.exists(name)) {
-      caml_raise_sys_error(name + ": No such file or directory");
+      caml_raise_no_such_file(this.nm(name), raise_unix, "readdir");
     }
     if (!this.is_dir(name)) {
-      caml_raise_sys_error(name + ": Not a directory");
+      caml_raise_system_error(
+        raise_unix,
+        "ENOTDIR",
+        "readdir",
+        "not a directory",
+        this.nm(name),
+      );
     }
     var seen = {};
     var a = [];
@@ -205,7 +234,7 @@ class MlFakeDevice {
   }
 
   opendir(name, raise_unix) {
-    var a = this.readdir(name);
+    var a = this.readdir(name, raise_unix);
     var c = false;
     var i = 0;
     return {
@@ -253,24 +282,22 @@ class MlFakeDevice {
         name,
       );
     }
+    if (this.is_dir(name))
+      caml_raise_system_error(
+        raise_unix,
+        "EISDIR",
+        "unlink",
+        "is a directory",
+        this.nm(name),
+      );
     delete this.content[name];
     return 0;
   }
 
   access(name, _flags, raise_unix) {
     this.lookup(name);
-    if (this.content[name]) {
-      if (this.is_dir(name))
-        caml_raise_system_error(
-          raise_unix,
-          "EACCESS",
-          "access",
-          "permission denied,",
-          this.nm(name),
-        );
-    } else {
-      caml_raise_no_such_file(this.nm(name), raise_unix);
-    }
+    if (!this.exists(name))
+      caml_raise_no_such_file(this.nm(name), raise_unix, "access");
     return 0;
   }
 
@@ -301,7 +328,7 @@ class MlFakeDevice {
       this.content[name] = new MlFakeFile(caml_create_bytes(0));
       file = this.content[name];
     } else {
-      caml_raise_no_such_file(this.nm(name), raise_unix);
+      caml_raise_no_such_file(this.nm(name), raise_unix, "open");
     }
     return new MlFakeFd(this.nm(name), file, f);
   }
@@ -321,7 +348,7 @@ class MlFakeDevice {
       file = this.content[name];
       file.truncate(len);
     } else {
-      caml_raise_no_such_file(this.nm(name), raise_unix);
+      caml_raise_no_such_file(this.nm(name), raise_unix, "truncate");
     }
   }
 
@@ -330,7 +357,7 @@ class MlFakeDevice {
     if (this.content[name])
       caml_raise_sys_error(this.nm(name) + " : file already exists");
     if (caml_is_ml_bytes(content)) file = new MlFakeFile(content);
-    if (caml_is_ml_string(content))
+    else if (caml_is_ml_string(content))
       file = new MlFakeFile(caml_bytes_of_string(content));
     else if (Array.isArray(content))
       file = new MlFakeFile(caml_bytes_of_array(content));
@@ -491,9 +518,9 @@ class MlFakeFd {
     caml_raise_system_error(raise_unix, "EBADF", cmd, "bad file descriptor");
   }
 
-  length() {
+  length(raise_unix) {
     if (this.file) return this.file.length();
-    this.err_closed("length");
+    this.err_closed("length", raise_unix);
   }
 
   truncate(len, raise_unix) {
@@ -557,8 +584,8 @@ class MlFakeFd {
     return this.offset;
   }
 
-  close() {
-    if (!this.file) this.err_closed("close");
+  close(raise_unix) {
+    if (!this.file) this.err_closed("close", raise_unix);
     this.file = undefined;
   }
 
