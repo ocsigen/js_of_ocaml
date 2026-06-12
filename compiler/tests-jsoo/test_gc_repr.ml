@@ -18,7 +18,9 @@
  *)
 
 let%expect_test "Gc.counters returns an ordinary tuple" =
+  (* the counter values themselves are nondeterministic on native;
+     only check the representation *)
   let c = Gc.counters () in
-  let mi, pr, ma = c in
-  Printf.printf "%d %g %g %g\n" (Obj.tag (Obj.repr c)) mi pr ma;
-  [%expect {| 254 0 0 0 |}]
+  let r = Obj.repr c in
+  Printf.printf "%d %d\n" (Obj.tag r) (Obj.size r);
+  [%expect {| 0 3 |}]
