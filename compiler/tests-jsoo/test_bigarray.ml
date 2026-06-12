@@ -319,3 +319,39 @@ let%expect_test "hash" =
     1c259f64 int64 300
     1e14ef2b nativeint 20
     314148ee nativeint 300 |}]
+
+let%expect_test "hash with tail elements" =
+  (* Sizes that are not multiples of the hashed word size exercise the
+     tail handling, which must zero-extend the elements as the C
+     runtime does (hash.c reads bytes as unsigned char and 16-bit
+     elements as uint16). High values at tail positions catch
+     sign-extension. *)
+  let test_hash nm kind conv sz =
+    let a = Array1.create kind c_layout sz in
+    for i = 0 to sz - 1 do
+      a.{i} <- conv (i - 10)
+    done;
+    Printf.printf "%08x %s %d\n" (Hashtbl.hash a) nm sz
+  in
+  List.iter
+    ~f:(fun sz ->
+      test_hash "int8_signed" int8_signed Fun.id sz;
+      test_hash "int8_unsigned" int8_unsigned Fun.id sz;
+      test_hash "char" char (fun i -> Char.chr (i land 0xff)) sz)
+    [ 5; 6; 7 ];
+  test_hash "int16_signed" int16_signed Fun.id 5;
+  test_hash "int16_unsigned" int16_unsigned Fun.id 5;
+  [%expect
+    {|
+    032d048f int8_signed 5
+    032d048f int8_unsigned 5
+    032d048f char 5
+    3c24ece4 int8_signed 6
+    3c24ece4 int8_unsigned 6
+    3c24ece4 char 6
+    292ac2a1 int8_signed 7
+    292ac2a1 int8_unsigned 7
+    292ac2a1 char 7
+    30682b2c int16_signed 5
+    30682b2c int16_unsigned 5
+    |}]

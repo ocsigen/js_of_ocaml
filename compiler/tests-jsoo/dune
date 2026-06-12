@@ -134,7 +134,24 @@
  (libraries unix compiler-libs.common js_of_ocaml-compiler)
  (foreign_stubs
   (language c)
-  (names bigarray_stubs jsoo_runtime_stubs))
+  (names jsoo_runtime_stubs))
+ (inline_tests
+  (deps
+   (sandbox preserve_file_kind))
+  (modes js wasm best))
+ (preprocess
+  (pps ppx_expect)))
+
+; test_bigarray uses the float16 kind, which requires OCaml 5.2.
+
+(library
+ (name jsoo_testsuite_bigarray)
+ (modules test_bigarray)
+ (enabled_if
+  (>= %{ocaml_version} 5.2))
+ (foreign_stubs
+  (language c)
+  (names bigarray_stubs))
  (inline_tests
   (deps
    (sandbox preserve_file_kind))
@@ -174,7 +191,7 @@
  (name test_float16)
  (build_if
   (>= %{ocaml_version} 5.2))
- (modules test_float16 test_bigarray)
+ (modules test_float16)
  (modes js wasm native))
 
 (test
