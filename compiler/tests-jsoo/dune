@@ -129,6 +129,7 @@
    test_lwt_promise
    test_unix_perms
    test_str
+   test_weak_gc
    calc_parser
    calc_lexer))
  (libraries unix compiler-libs.common js_of_ocaml-compiler)
@@ -190,6 +191,22 @@
  (wasm_of_ocaml
   (javascript_files custom.js custom.wat))
  (modes js wasm))
+
+; Forces a major GC through node's v8/vm modules to observe ephemeron
+; liveness, so it only runs in js mode under node.
+
+(test
+ (name test_weak_gc)
+ (modules test_weak_gc)
+ (enabled_if
+  (and
+   (<> %{profile} wasi)
+   (<> %{profile} wasi-with-native-effects)
+   (<> %{profile} quickjs)))
+ (libraries js_of_ocaml)
+ (modes js)
+ (preprocess
+  (pps ppx_js_internal)))
 
 (test
  (name test_promise)
