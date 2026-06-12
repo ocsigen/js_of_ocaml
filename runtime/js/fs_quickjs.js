@@ -119,6 +119,7 @@ function ocaml_stats_from_qjs_stats(s, large) {
 
 //Provides: MlQuickJSDevice
 //Requires: MlQuickJSFd, caml_raise_qjs_error, caml_raise_sys_error
+//Requires: caml_raise_system_error
 //Requires: caml_string_of_jsstring, caml_failwith
 //Requires: ocaml_stats_from_qjs_stats
 class MlQuickJSDevice {
@@ -155,8 +156,21 @@ class MlQuickJSDevice {
     return 0;
   }
 
-  // qjs has no rmdir; os.remove handles directories (fails if non-empty).
+  // qjs has no rmdir; os.remove handles directories (fails if non-empty),
+  // but it also removes files, so check the type first.
   rmdir(name, raise_unix) {
+    var r = this.os.stat(this.nm(name));
+    if (
+      r[1] === 0 &&
+      (r[0].mode & (this.os.S_IFMT || 0o170000)) !== this.os.S_IFDIR
+    )
+      caml_raise_system_error(
+        raise_unix,
+        "ENOTDIR",
+        "rmdir",
+        "not a directory",
+        this.nm(name),
+      );
     var err = this.os.remove(this.nm(name));
     if (err !== 0)
       caml_raise_qjs_error(err, "rmdir", this.nm(name), raise_unix);
@@ -173,7 +187,20 @@ class MlQuickJSDevice {
     });
   }
 
+  // os.remove also removes directories; refuse them like unlink(2)
   unlink(name, raise_unix) {
+    var r = this.os.stat(this.nm(name));
+    if (
+      r[1] === 0 &&
+      (r[0].mode & (this.os.S_IFMT || 0o170000)) === this.os.S_IFDIR
+    )
+      caml_raise_system_error(
+        raise_unix,
+        "EISDIR",
+        "unlink",
+        "is a directory",
+        this.nm(name),
+      );
     var err = this.os.remove(this.nm(name));
     if (err !== 0)
       caml_raise_qjs_error(err, "unlink", this.nm(name), raise_unix);
@@ -236,7 +263,7 @@ class MlQuickJSDevice {
         // binary/text/nonblock/noctty/dsync/sync: not in qjs, ignored.
       }
     }
-    var fd = os.open(this.nm(name), flags, perms || 0o666);
+    var fd = os.open(this.nm(name), flags, perms === undefined ? 0o666 : perms);
     if (fd < 0) caml_raise_qjs_error(fd, "open", this.nm(name), raise_unix);
     return new MlQuickJSFd(fd, f, this.nm(name));
   }
@@ -319,7 +346,7 @@ class MlQuickJSFd extends MlFile {
     var cur = this.offset;
     var end = this.os.seek(this.fd, 0, 2 /* SEEK_END */);
     this.os.seek(this.fd, cur, 0 /* SEEK_SET */);
-    return end | 0;
+    return end;
   }
 
   // qjs's os.read/os.write take an ArrayBuffer + byte offset.
