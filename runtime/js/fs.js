@@ -176,7 +176,7 @@ function resolve_fs_device(name) {
   for (var i = 0; i < jsoo_mount_point.length; i++) {
     var m = jsoo_mount_point[i];
     if (
-      name_slash.search(m.path) === 0 &&
+      name_slash.startsWith(m.path) &&
       (!res || res.path.length < m.path.length)
     )
       res = {
@@ -248,19 +248,23 @@ function caml_sys_chdir(dir, raise_unix) {
       caml_jsstring_of_string(dir),
     );
   } else {
-    caml_raise_no_such_file(caml_jsstring_of_string(dir), raise_unix);
+    caml_raise_no_such_file(caml_jsstring_of_string(dir), raise_unix, "chdir");
   }
 }
 
 //Provides: caml_raise_no_such_file
-//Requires: caml_raise_system_error
-function caml_raise_no_such_file(name, raise_unix) {
-  caml_raise_system_error(
-    raise_unix,
-    "ENOENT",
-    "no such file or directory",
-    name,
-  );
+//Requires: caml_raise_system_error, caml_raise_sys_error
+function caml_raise_no_such_file(name, raise_unix, cmd) {
+  if (raise_unix)
+    caml_raise_system_error(
+      raise_unix,
+      "ENOENT",
+      cmd || "open",
+      "no such file or directory",
+      name,
+    );
+  // match the native Sys_error message
+  caml_raise_sys_error(name + ": No such file or directory");
 }
 
 //Provides: caml_sys_file_exists
@@ -298,12 +302,13 @@ function caml_sys_is_directory(name) {
 }
 
 //Provides: caml_sys_rename
-//Requires: caml_failwith, resolve_fs_device
+//Requires: caml_failwith, resolve_fs_device, caml_raise_sys_error
 function caml_sys_rename(o, n) {
   var o_root = resolve_fs_device(o);
   var n_root = resolve_fs_device(n);
   if (o_root.device !== n_root.device)
-    caml_failwith("caml_sys_rename: cannot move file between two filesystem");
+    // native raises Sys_error (strerror of EXDEV)
+    caml_raise_sys_error("Invalid cross-device link");
   if (!o_root.device.rename) caml_failwith("caml_sys_rename: not implemented");
   o_root.device.rename(o_root.rest, n_root.rest);
 }
@@ -390,6 +395,7 @@ function caml_read_file_content(name) {
     var len = file.length();
     var buf = new Uint8Array(len);
     file.read(buf, 0, len, false);
+    file.close();
     return caml_string_of_uint8_array(buf);
   }
   caml_raise_no_such_file(caml_jsstring_of_string(name));
