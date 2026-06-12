@@ -875,7 +875,7 @@
                    (local.set $h
                       (call $caml_hash_mix_int
                          (local.get $h)
-                         (call $dv_get_i32
+                         (call $dv_get_i32_unaligned
                             (local.get $view) (local.get $i) (i32.const 1))))
                    (local.set $i (i32.add (local.get $i) (i32.const 4)))
                    (br $loop))))
@@ -897,7 +897,7 @@
                                (i32.const 8)))))
              (local.set $w
                 (i32.or (local.get $w)
-                   (call $dv_get_i8 (local.get $view) (local.get $i))))
+                   (call $dv_get_ui8 (local.get $view) (local.get $i))))
              (local.set $h
                 (call $caml_hash_mix_int (local.get $h) (local.get $w))))
           (return (local.get $h)))

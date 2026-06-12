@@ -396,15 +396,15 @@ let%expect_test "hash with tail elements" =
   test_hash "int16_unsigned" int16_unsigned Fun.id 5;
   [%expect
     {|
-    3219615e int8_signed 5
+    032d048f int8_signed 5
     032d048f int8_unsigned 5
     032d048f char 5
-    3219615e int8_signed 6
+    3c24ece4 int8_signed 6
     3c24ece4 int8_unsigned 6
     3c24ece4 char 6
-    3219615e int8_signed 7
+    292ac2a1 int8_signed 7
     292ac2a1 int8_unsigned 7
     292ac2a1 char 7
-    0f00e0d4 int16_signed 5
+    30682b2c int16_signed 5
     30682b2c int16_unsigned 5
     |}]
