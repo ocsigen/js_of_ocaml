@@ -111,6 +111,14 @@ let%expect_test "compare elt" =
   [%expect {| 0. < 1.: Bigarray compare the same |}];
   test float64 Float.to_string nan nan;
   [%expect {| nan = nan: Bigarray compare the same |}];
+  test float16 Float.to_string 1.0 2.0;
+  [%expect {| 1. < 2.: Bigarray compare the same |}];
+  test float16 Float.to_string nan nan;
+  [%expect {| nan = nan: Bigarray compare the same |}];
+  test float16 Float.to_string nan 1.0;
+  [%expect {| nan < 1. vs nan = 1.: Bigarray compare differently |}];
+  test float16 Float.to_string 1.0 nan;
+  [%expect {| 1. > nan vs 1. = nan: Bigarray compare differently |}];
   test int8_signed Int.to_string (-1) 1;
   [%expect {| -1 < 1: Bigarray compare the same |}];
   test int8_unsigned Int.to_string (-1) 1;
@@ -319,3 +327,11 @@ let%expect_test "hash" =
     1c259f64 int64 300
     1e14ef2b nativeint 20
     314148ee nativeint 300 |}]
+
+let%expect_test "float16 equality with nan" =
+  (* nan <> nan, so structural equality on a bigarray containing a nan
+     must be false (the comparison is unordered), while [compare] uses
+     the total order where nan equals nan. *)
+  let a = from_list float16 [ nan ] in
+  Printf.printf "%b %b\n" (a = a) (compare a a = 0);
+  [%expect {| true true |}]
