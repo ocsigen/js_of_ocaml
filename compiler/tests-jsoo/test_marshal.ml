@@ -223,4 +223,4 @@ let%expect_test "block with 2^21 fields" =
      let a' : int array = Marshal.from_string (Marshal.to_string a []) 0 in
      Printf.printf "%d %d %d\n" (Array.length a') a'.(0) a'.(Array.length a' - 1)
    with e -> print_endline (Printexc.to_string e));
-  [%expect {| 1 1 1 |}]
+  [%expect {| 2097152 1 2 |}]
