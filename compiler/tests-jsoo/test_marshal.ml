@@ -224,3 +224,25 @@ let%expect_test "block with 2^21 fields" =
      Printf.printf "%d %d %d\n" (Array.length a') a'.(0) a'.(Array.length a' - 1)
    with e -> print_endline (Printexc.to_string e));
   [%expect {| 2097152 1 2 |}]
+
+let%expect_test "shared reference after a big-endian double array" =
+  (* Hand-crafted stream (the jsoo writer only emits little-endian
+     codes; native writers on big-endian platforms emit
+     CODE_DOUBLE_ARRAY32_BIG): the value is (s, [| 1.5 |], s) with the
+     second occurrence of s shared. The double array must be registered
+     in the object table for the back-reference to resolve. *)
+  let buf =
+    "\x84\x95\xa6\xbe" (* magic *)
+    ^ "\x00\x00\x00\x13" (* data length: 19 *)
+    ^ "\x00\x00\x00\x03" (* number of shared objects *)
+    ^ "\x00\x00\x00\x09" (* size_32 *)
+    ^ "\x00\x00\x00\x08" (* size_64 *)
+    ^ "\xb0" (* small block, tag 0, size 3 *)
+    ^ "\x22hi" (* small string "hi" *)
+    ^ "\x0f\x00\x00\x00\x01" (* DOUBLE_ARRAY32_BIG, 1 element *)
+    ^ "\x3f\xf8\x00\x00\x00\x00\x00\x00" (* 1.5, big-endian *)
+    ^ "\x04\x02" (* SHARED8, offset 2 *)
+  in
+  let (a, d, b) : string * float array * string = Marshal.from_string buf 0 in
+  Printf.printf "%s %g %b\n" a d.(0) (a == b);
+  [%expect {| hi 1.5 false |}]
