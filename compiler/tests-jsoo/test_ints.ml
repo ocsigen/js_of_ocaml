@@ -81,6 +81,27 @@ let%expect_test _ =
   check_fail "-9223372036854775809";
   [%expect {| overflow |}]
 
+(* Arithmetic shifts must sign-extend into the low 24-bit limb for
+   shift counts 41..47. *)
+let%expect_test "Int64.shift_right, shifts 40..48" =
+  List.iter
+    (fun s ->
+      Printf.printf
+        "%d: %Lx %Lx %Lx\n"
+        s
+        (Int64.shift_right (-1L) s)
+        (Int64.shift_right Int64.min_int s)
+        (Int64.shift_right 0x123456789abcdef0L s))
+    [ 40; 41; 44; 47; 48 ];
+  [%expect
+    {|
+    40: ffffffffffffffff ffffffffff800000 123456
+    41: ffffffffff7fffff ffffffffff400000 91a2b
+    44: ffffffffff0fffff ffffffffff080000 12345
+    47: ffffffffff01ffff ffffffffff010000 2468
+    48: ffffffffffffffff ffffffffffff8000 1234
+    |}]
+
 (* The '#' (alternate) flag must not add a base prefix to zero: native
    prints "0" for %#x / %#X / %#o of 0, like C printf. *)
 let%expect_test "alternate flag with zero" =
