@@ -80,3 +80,24 @@ let%expect_test _ =
   [%expect {| overflow |}];
   check_fail "-9223372036854775809";
   [%expect {| overflow |}]
+
+(* The '#' (alternate) flag must not add a base prefix to zero: native
+   prints "0" for %#x / %#X / %#o of 0, like C printf. *)
+let%expect_test "alternate flag with zero" =
+  Printf.printf "[%#x]\n" 0;
+  [%expect {| [0x0] |}];
+  Printf.printf "[%#X]\n" 0;
+  [%expect {| [0X0] |}];
+  Printf.printf "[%#o]\n" 0;
+  [%expect {| [00] |}];
+  Printf.printf "[%#6x]\n" 0;
+  [%expect {| [   0x0] |}];
+  Printf.printf "[%#lx]\n" 0l;
+  [%expect {| [0x0] |}];
+  Printf.printf "[%#Lx]\n" 0L;
+  [%expect {| [0x0] |}];
+  (* non-zero values keep the prefix *)
+  Printf.printf "[%#x]\n" 255;
+  [%expect {| [0xff] |}];
+  Printf.printf "[%#o]\n" 8;
+  [%expect {| [010] |}]
