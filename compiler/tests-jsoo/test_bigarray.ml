@@ -350,10 +350,10 @@ let%expect_test "bigstring blit positions are raw offsets" =
   let dst = mk "------" in
   blit_ba_to_ba src 1 dst 2 3;
   print_endline (to_string dst);
-  [%expect {| --abc- |}];
+  [%expect {| --bcd- |}];
   let dst = mk "------" in
   (try
      blit_ba_to_ba src 0 dst 0 2;
      print_endline (to_string dst)
    with Invalid_argument msg -> print_endline ("Invalid_argument: " ^ msg));
-  [%expect {| Invalid_argument: index out of bounds |}]
+  [%expect {| ab---- |}]
