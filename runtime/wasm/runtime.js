@@ -443,9 +443,16 @@
     },
     localtime: (t) => {
       var d = new Date(t * 1000);
-      var d_num = d.getTime();
-      var januaryfirst = new Date(d.getFullYear(), 0, 1).getTime();
-      var doy = Math.floor((d_num - januaryfirst) / 86400000);
+      var y = d.getFullYear();
+      // compute tm_yday from the date: the wall-clock distance to
+      // January 1 is off by one hour when DST is in effect
+      var cumul = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
+      var leap = (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
+      var doy =
+        cumul[d.getMonth()] +
+        d.getDate() -
+        1 +
+        (leap && d.getMonth() > 1 ? 1 : 0);
       var jan = new Date(d.getFullYear(), 0, 1);
       var jul = new Date(d.getFullYear(), 6, 1);
       var stdTimezoneOffset = Math.max(
@@ -563,12 +570,14 @@
       }
       return [...entries];
     },
-    opendir: (p) => fs.opendirSync(p),
+    // node's Dir.readSync does not report "." and ".."; native does
+    opendir: (p) => ({ dir: fs.opendirSync(p), dots: [".", ".."] }),
     readdir: (d) => {
-      var n = d.readSync()?.name;
+      if (d.dots.length > 0) return d.dots.shift();
+      var n = d.dir.readSync()?.name;
       return n === undefined ? null : n;
     },
-    closedir: (d) => d.closeSync(),
+    closedir: (d) => d.dir.closeSync(),
     stat: (p, l) => alloc_stat(fs.statSync(p), l),
     lstat: (p, l) => alloc_stat(fs.lstatSync(p), l),
     fstat: (fd, l) => alloc_stat(fs.fstatSync(fd), l),
