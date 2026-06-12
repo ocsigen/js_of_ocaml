@@ -156,3 +156,18 @@ let%expect_test "Sys.rename to itself" =
     close_in c)
   else print_endline "gone";
   [%expect {| [hello] |}]
+
+(* From the manual (close_out): "Output functions raise a Sys_error
+   exception when they are applied to a closed output channel, except
+   close_out and flush, which do nothing when applied to an already
+   closed channel." *)
+let%expect_test "flush on closed channel" =
+  let name = "/static/flush_closed.txt" in
+  let c = open_out_bin name in
+  output_string c "hello";
+  close_out c;
+  (try
+     flush c;
+     print_endline "ok"
+   with Sys_error msg -> print_endline ("Sys_error: " ^ msg));
+  [%expect {| Sys_error: Cannot flush a closed channel |}]
