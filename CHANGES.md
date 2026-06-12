@@ -233,6 +233,10 @@
   translation; this fixes `ba_to_ba` (where the read position was
   translated but the write position was not) as well as `string_to_ba`,
   `bytes_to_ba` and `ba_to_bytes` for fortran_layout bigarrays
+* Runtime: bigarray hashing now zero-extends tail elements as the C
+  runtime does; signed 8/16-bit bigarrays whose size is not a multiple
+  of the hashed word size hashed differently from native (and the byte
+  case trapped under WASI on the Wasm runtime)
 * Runtime: the `#` flag no longer adds a base prefix to zero;
   `Printf.printf "%#x" 0` printed `0x0` where native prints `0`
 * Runtime: the fake filesystem no longer ignores `Open_append`; writes
