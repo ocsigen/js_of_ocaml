@@ -314,3 +314,30 @@ let%expect_test "hex float literals" =
     failure
     failure
     |}]
+
+(* Formatting with precisions above 100 (toFixed/toExponential's
+   limit) and %f of values >= 1e21 must print the exact decimal
+   expansion like native. *)
+let%expect_test "format with large precision" =
+  let p (fmt : _ format) x =
+    match Printf.sprintf fmt x with
+    | s -> print_endline s
+    | exception Failure _ -> print_endline "failure"
+  in
+  p "%.150e" 0.1;
+  p "%.110f" 0.1;
+  p "%.0f" 1.2345678e22;
+  p "%.2f" 1.2345678e22;
+  p "%.150e" 2.;
+  p "%.110e" 0.;
+  p "%.105g" 0.1;
+  [%expect
+    {|
+    failure
+    failure
+    12345678000000000000000
+    12345678000000000000000.00
+    failure
+    failure
+    failure
+    |}]
