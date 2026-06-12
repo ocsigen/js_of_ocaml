@@ -197,8 +197,8 @@ let%expect_test "rename a directory into its own subtree" =
   | _ -> print_endline "unknown error");
   Printf.printf "%b\n" (Sys.file_exists "/static/rd/f");
   [%expect {|
-    unknown error
-    false
+    Sys_error: EINVAL: invalid argument, rename '/static/rd/sub'
+    true
     |}]
 
 let%expect_test "unlink a directory" =
@@ -211,7 +211,7 @@ let%expect_test "unlink a directory" =
   | Sys_error _ -> print_endline "Sys_error");
   Printf.printf "%b\n" (Sys.file_exists "/static/ud");
   [%expect {|
-    ok
+    EISDIR
     true
     |}]
 
@@ -224,8 +224,8 @@ let%expect_test "access" =
   (try Unix.access "/static/admissing" [ Unix.F_OK ] with
   | Unix.Unix_error (e, cmd, p) -> Printf.printf "%s %s %s\n" (unix_error e) cmd p);
   [%expect {|
-    ENOENT
-    ENOENT no such file or directory
+    ok
+    ENOENT access /static/admissing
     |}]
 
 let%expect_test "missing file errors" =
@@ -236,9 +236,9 @@ let%expect_test "missing file errors" =
   | Unix.Unix_error (e, cmd, p) -> Printf.printf "%s %s %s\n" (unix_error e) cmd p
   | Sys_error m -> print_endline ("Sys_error: " ^ m));
   [%expect {|
-    ENOENT: /static/missing, no such file or directory
-    missingdir: No such file or directory
-    Sys_error: /static/missingsrc : no such file or directory
+    /static/missing: No such file or directory
+    /static/missingdir: No such file or directory
+    ENOENT rename /static/missingsrc
     |}]
 
 let%expect_test "double close" =
@@ -250,7 +250,7 @@ let%expect_test "double close" =
    with
   | Unix.Unix_error (e, _, _) -> print_endline (unix_error e)
   | Sys_error _ -> print_endline "Sys_error");
-  [%expect {| Sys_error |}]
+  [%expect {| EBADF |}]
 
 let%expect_test "register bytes content" =
   jsoo_create_file "/static/bin.dat" (Bytes.of_string "\xff\x00\x80a");
@@ -260,15 +260,15 @@ let%expect_test "register bytes content" =
   Printf.printf "%d:" (String.length s);
   String.iter (fun c -> Printf.printf " %02x" (Char.code c)) s;
   print_newline ();
-  [%expect {| 6: c3 bf 00 c2 80 61 |}]
+  [%expect {| 4: ff 00 80 61 |}]
 
 let%expect_test "mount points are not regexs" =
   Sys_js.mount ~path:"/dyn.dir/" (fun ~prefix:_ ~path:_ -> Some "data");
   Printf.printf "%b %b\n" (Sys.file_exists "/dyn.dir/x") (Sys.file_exists "/dynXdir/x");
-  [%expect {| true true |}]
+  [%expect {| true false |}]
 
 let%expect_test "cross-device rename" =
   (try Sys.rename "/static/temp0" "/tmp/jsoo_test_rename" with
   | Sys_error _ -> print_endline "Sys_error"
   | Failure _ -> print_endline "Failure");
-  [%expect {| Failure |}]
+  [%expect {| Sys_error |}]
