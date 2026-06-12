@@ -176,6 +176,9 @@ function caml_modf_float(x) {
 }
 //Provides: caml_ldexp_float const
 function caml_ldexp_float(x, exp) {
+  // musl's scalbn: scaling down goes through 2^-1022 * 2^53 so that
+  // the intermediate values stay normal; the only rounding happens in
+  // the final multiplication
   exp |= 0;
   if (exp > 1023) {
     exp -= 1023;
@@ -184,11 +187,16 @@ function caml_ldexp_float(x, exp) {
       // in case x is subnormal
       exp -= 1023;
       x *= Math.pow(2, 1023);
+      if (exp > 1023) exp = 1023;
     }
-  }
-  if (exp < -1023) {
-    exp += 1023;
-    x *= Math.pow(2, -1023);
+  } else if (exp < -1022) {
+    exp += 1022 - 53;
+    x *= Math.pow(2, -1022) * Math.pow(2, 53);
+    if (exp < -1022) {
+      exp += 1022 - 53;
+      x *= Math.pow(2, -1022) * Math.pow(2, 53);
+      if (exp < -1022) exp = -1022;
+    }
   }
   x *= Math.pow(2, exp);
   return x;
