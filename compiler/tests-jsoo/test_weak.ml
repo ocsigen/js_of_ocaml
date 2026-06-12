@@ -194,10 +194,10 @@ let%expect_test "get_copy copies bytes" =
   (match Weak.get_copy w 0 with
   | Some b' -> Printf.printf "%b %b\n" (b' == b) (Bytes.equal b' b)
   | None -> print_endline "none");
-  [%expect {| true true |}];
+  [%expect {| false true |}];
   let e = Obj.Ephemeron.create 1 in
   Obj.Ephemeron.set_data e (Obj.repr b);
   (match Obj.Ephemeron.get_data_copy e with
   | Some d -> Printf.printf "%b\n" (d == Obj.repr b)
   | None -> print_endline "none");
-  [%expect {| true |}]
+  [%expect {| false |}]
