@@ -125,4 +125,4 @@ let%expect_test "open_out_gen Open_append" =
   let c = open_in_bin name in
   Printf.printf "[%s]" (In_channel.input_all c);
   close_in c;
-  [%expect {| [ world] |}]
+  [%expect {| [hello world] |}]
