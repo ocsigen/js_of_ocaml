@@ -183,3 +183,21 @@ let%expect_test "blit_key does not touch data" =
   print_data dst;
   [%expect {| dst data |}];
   ignore (Sys.opaque_identity (k1, k2, k3, k4))
+
+(* [Weak.get_copy] / [Ephemeron.get_data_copy] must copy bytes too:
+   returning the value itself both lets mutations reach the weakly
+   held original and creates a strong reference to it. *)
+let%expect_test "get_copy copies bytes" =
+  let b = Bytes.of_string "hello" in
+  let w = Weak.create 1 in
+  Weak.set w 0 (Some b);
+  (match Weak.get_copy w 0 with
+  | Some b' -> Printf.printf "%b %b\n" (b' == b) (Bytes.equal b' b)
+  | None -> print_endline "none");
+  [%expect {| true true |}];
+  let e = Obj.Ephemeron.create 1 in
+  Obj.Ephemeron.set_data e (Obj.repr b);
+  (match Obj.Ephemeron.get_data_copy e with
+  | Some d -> Printf.printf "%b\n" (d == Obj.repr b)
+  | None -> print_endline "none");
+  [%expect {| true |}]
