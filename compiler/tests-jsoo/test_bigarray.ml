@@ -116,9 +116,9 @@ let%expect_test "compare elt" =
   test float16 Float.to_string nan nan;
   [%expect {| nan = nan: Bigarray compare the same |}];
   test float16 Float.to_string nan 1.0;
-  [%expect {| nan < 1. vs nan = 1.: Bigarray compare differently |}];
+  [%expect {| nan < 1.: Bigarray compare the same |}];
   test float16 Float.to_string 1.0 nan;
-  [%expect {| 1. > nan vs 1. = nan: Bigarray compare differently |}];
+  [%expect {| 1. > nan: Bigarray compare the same |}];
   test int8_signed Int.to_string (-1) 1;
   [%expect {| -1 < 1: Bigarray compare the same |}];
   test int8_unsigned Int.to_string (-1) 1;
@@ -334,4 +334,4 @@ let%expect_test "float16 equality with nan" =
      the total order where nan equals nan. *)
   let a = from_list float16 [ nan ] in
   Printf.printf "%b %b\n" (a = a) (compare a a = 0);
-  [%expect {| true true |}]
+  [%expect {| false true |}]

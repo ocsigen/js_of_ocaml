@@ -410,6 +410,11 @@ class Ml_Bigarray {
           var bb = caml_double_of_float16(b.data[i]);
           if (aa < bb) return -1;
           if (aa > bb) return 1;
+          if (aa !== bb) {
+            if (!total) return Number.NaN;
+            if (!Number.isNaN(aa)) return 1;
+            if (!Number.isNaN(bb)) return -1;
+          }
         }
         break;
       case 2:
