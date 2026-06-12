@@ -913,7 +913,7 @@ let share_constant js =
         (* Some js bundler get confused when the argument
          of 'require' is not a literal *)
         | ECall
-            ( EVar (S { var = None; name = Utf8 "requires"; _ })
+            ( EVar (S { var = None; name = Utf8 "require"; _ })
             , (ANormal | ANullish)
             , [ Arg (EStr _) ]
             , _ ) -> ()
@@ -978,7 +978,7 @@ let share_constant js =
           (* Some js bundler get confused when the argument
                    of 'require' is not a literal *)
           | ECall
-              ( EVar (S { var = None; name = Utf8 "requires"; _ })
+              ( EVar (S { var = None; name = Utf8 "require"; _ })
               , (ANormal | ANullish)
               , [ Arg (EStr _) ]
               , _ ) -> e
