@@ -184,6 +184,17 @@ function caml_hash(count, limit, seed, obj) {
           // Forward
           queue[--rd] = v[1];
           break;
+        case 251:
+          // Abstract: block contents unknown, do nothing
+          break;
+        case 254:
+          // Double_array_tag: mix the elements directly, no header
+          for (i = 1, len = v.length; i < len; i++) {
+            h = caml_hash_mix_float(h, v[i]);
+            num--;
+            if (num <= 0) break;
+          }
+          break;
         default:
           if (caml_is_continuation_tag(v[0])) {
             /* All continuations hash to the same value,

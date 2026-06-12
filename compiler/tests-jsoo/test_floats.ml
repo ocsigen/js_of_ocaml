@@ -236,18 +236,28 @@ let%expect_test "Hashtbl.hash of float arrays" =
   let p (x : Obj.t) = Printf.printf "%08x\n" (Hashtbl.hash x) in
   p (Obj.repr [| 1.5 |]);
   p (Obj.repr [| 1.5; 2.5 |]);
-  p (Obj.repr (Array.init 20 float_of_int));
+  (* A long float array exercises the per-element budget (only the first
+     elements are mixed before [num] runs out). Build it with
+     [create_float] so the runtime representation is a flat float array
+     (Double_array_tag) on every OCaml version: [Array.init]'s result is
+     only unboxed by some stdlib versions, leaving the array generic and
+     the hash version-dependent. *)
+  let long = Array.create_float 20 in
+  for i = 0 to Array.length long - 1 do
+    long.(i) <- float_of_int i
+  done;
+  p (Obj.repr long);
   p (Obj.repr [| nan |]);
   p (Obj.repr [| -0. |]);
   p (Obj.repr (1, [| 1.5 |], 2));
   p (Obj.new_block 251 3);
   [%expect
     {|
-    3e121f87
-    165fed5c
-    162489c5
-    2baaf13f
-    1c14f790
-    3f7de68b
-    35565b7c
+    30d3d2e3
+    07e28e3a
+    1ab69813
+    3228858d
+    0f478b8c
+    3498f980
+    00000000
     |}]
