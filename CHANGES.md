@@ -31,6 +31,10 @@
 * Lib: add Intl.RelativeTimeFormat (#2070)
 
 ## Bug fixes
+* Runtime: the QuickJS standard file descriptors raise on a write or
+  read error instead of returning 0; an error on stdout (e.g. EPIPE)
+  used to make the flush/write loop spin forever, and a read error was
+  silently turned into EOF (#2270)
 * Runtime: float arrays are marshalled as a `CODE_DOUBLE_ARRAY` block
   like the native runtime, instead of a generic tag-254 block with
   per-element double codes; jsoo-marshalled float arrays can now be
