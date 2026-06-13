@@ -64,21 +64,21 @@ function caml_ml_runtime_events_resume() {
   return 0;
 }
 
-//Provides: caml_runtime_events_create_cursor
+//Provides: caml_ml_runtime_events_create_cursor
 //Version: >= 5.0
-function caml_runtime_events_create_cursor(_target) {
+function caml_ml_runtime_events_create_cursor(_target) {
   return {};
 }
 
-//Provides: caml_runtime_events_free_cursor
+//Provides: caml_ml_runtime_events_free_cursor
 //Version: >= 5.0
-function caml_runtime_events_free_cursor(_cursor) {
+function caml_ml_runtime_events_free_cursor(_cursor) {
   return 0;
 }
 
-//Provides: caml_runtime_events_read_poll
+//Provides: caml_ml_runtime_events_read_poll
 //Version: >= 5.0
-function caml_runtime_events_read_poll(_cursor, _callbacks, _num) {
+function caml_ml_runtime_events_read_poll(_cursor, _callbacks, _num) {
   return 0;
 }
 

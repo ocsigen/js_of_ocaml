@@ -75,6 +75,13 @@
   tag-254 float array (their result had tag 0); `Array.make` of an
   invalid length raises `Invalid_argument "Array.make"` instead of
   `"index out of bounds"` (#2270)
+* Runtime: several small fixes from the runtime review (#2270): the
+  `Runtime_events` cursor primitives are named `caml_ml_runtime_events_*`
+  (they were dead code under the wrong name); `jsoo_effect_not_supported`
+  is provided only when effects are disabled (the `//!If:` annotation was
+  silently ignored); `Blake2.create` truncates an over-long key instead
+  of discarding the truncation; and `OCAMLRUNPARAM` backtrace parsing is
+  left-to-right last-wins (`b,b=0` now disables backtraces)
 * Compiler: fix reference unboxing (#2210)
 * Compiler/wasm: fix int division return type to Unnormalized (#2197)
 * Compiler/wasm: preserve physical identity of empty closures (#2207)

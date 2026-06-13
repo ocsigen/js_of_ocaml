@@ -309,7 +309,7 @@ var blake2b = (function () {
 function caml_blake2_create(hashlen, key) {
   key = caml_uint8_array_of_string(key);
   if (key.length > 64) {
-    key.subarray(0, 64);
+    key = key.subarray(0, 64);
   }
   return blake2b.Init(hashlen, key);
 }
