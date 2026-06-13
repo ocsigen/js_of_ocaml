@@ -203,3 +203,26 @@ let%expect_test "Unix.symlink to_dir" =
 let%expect_test "Unix.getenv" =
   Printf.printf "%s\n" (Sys.getenv "FOO");
   [%expect {| bar |}]
+
+let%expect_test "Sys.command exit code" =
+  Printf.printf "%d\n" (Sys.command "exit 42");
+  Printf.printf "%d\n" (Sys.command "exit 0");
+  [%expect
+    {|
+    1
+    0
+    |}]
+
+let%expect_test "Sys.getenv prototype" =
+  let get n =
+    match Sys.getenv n with
+    | v -> Printf.printf "found %b\n" (String.length v >= 0)
+    | exception Not_found -> print_endline "Not_found"
+  in
+  (try get "toString" with _ -> print_endline "exn");
+  (try get "hasOwnProperty" with _ -> print_endline "exn");
+  [%expect
+    {|
+    found true
+    exn
+    |}]
