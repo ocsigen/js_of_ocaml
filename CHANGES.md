@@ -27,6 +27,10 @@
   `AbortController`/`AbortSignal` primitive for cancellation (#596)
 
 ## Bug fixes
+* Runtime: the QuickJS standard file descriptors raise on a write or
+  read error instead of returning 0; an error on stdout (e.g. EPIPE)
+  used to make the flush/write loop spin forever, and a read error was
+  silently turned into EOF (#2270)
 * Compiler: fix reference unboxing (#2210)
 * Compiler/wasm: fix int division return type to Unnormalized (#2197)
 * Compiler/wasm: preserve physical identity of empty closures (#2207)
