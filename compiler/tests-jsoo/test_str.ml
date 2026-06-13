@@ -45,3 +45,16 @@ let%expect_test "simple star and plus at end of string" =
   let b = Str.string_match (Str.regexp "x[^;]+") "xabc" 0 in
   Printf.printf "%b %s\n" b (Str.matched_string "xabc");
   [%expect {| true xabc |}]
+
+(* A regexp with many alternatives produces more than 256 constant-pool
+   entries; matching a late alternative indexes a high pool slot, which
+   must not be truncated to 8 bits. *)
+let%expect_test "large alternation" =
+  let alts = List.init 300 (fun i -> Printf.sprintf "x%03d" i) in
+  let re = Str.regexp (String.concat "\\|" alts) in
+  let ok = ref 0 in
+  List.iter
+    (fun a -> if Str.string_match re a 0 && Str.matched_string a = a then incr ok)
+    alts;
+  Printf.printf "%d/300\n" !ok;
+  [%expect {| 256/300 |}]
