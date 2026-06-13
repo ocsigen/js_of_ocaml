@@ -85,19 +85,12 @@ compile check.
 
 ## Releasing a stable version
 
-The CI only ever (re)builds `dev/`. A stable version is a **frozen snapshot** of
-`dev/` plus the `latest` symlink, produced at release time on the `gh-pages`
-branch (no rebuild — the docs of a release are exactly the `dev` docs at that
-point):
-
-```
-git fetch origin gh-pages
-git worktree add gh-pages gh-pages && cd gh-pages
-cp -a dev <version>          # e.g. freeze the current dev docs as 1.2.3
-ln -sfn <version> latest     # point `latest` at the new release
-git add <version> latest && git commit -m "Release doc <version>" && git push
-```
-
-The project-root `index.html` redirects to `latest/`, so nothing else changes.
-Older version directories are preserved untouched. (This freeze step is a good
-candidate for a future `wodoc release` subcommand.)
+js_of_ocaml's `master` diverges substantially from the latest release, so a
+stable version is **not** a frozen copy of `dev/` (that would mislabel master's
+API). Run the **Documentation** workflow manually (GitHub → Actions →
+*Documentation* → "Run workflow") with the **version** input set to the release
+tag (e.g. `6.3.1`). The `release` job checks out that tag, overlays the current
+`doc/` config + manual, builds the docs labelled `<version>`, and publishes them
+as `/<version>/`, repointing `latest` and refreshing `versions.json` (it stages
+the build then runs `wodoc release --from <staging> --version <version>`).
+No `dev/` freeze is used for js_of_ocaml.
