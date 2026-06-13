@@ -212,7 +212,7 @@ function caml_gr_plot(x, y) {
   d[3] = 0xff; //a
   s.x = x;
   s.y = y;
-  s.context.putImageData(im, x, s.height - y);
+  s.context.putImageData(im, x, s.height - 1 - y);
   return 0;
 }
 
@@ -220,7 +220,7 @@ function caml_gr_plot(x, y) {
 //Requires: caml_gr_state_get
 function caml_gr_point_color(x, y) {
   var s = caml_gr_state_get();
-  var im = s.context.getImageData(x, s.height - y, 1, 1);
+  var im = s.context.getImageData(x, s.height - 1 - y, 1, 1);
   var d = im.data;
   return (d[0] << 16) + (d[1] << 8) + d[2];
 }
@@ -278,7 +278,9 @@ function caml_gr_arc_aux(ctx, cx, cy, ry, rx, a1, a2) {
   var space = 2;
   var num = (((a2 - a1) * Math.PI * ((rx + ry) / 2)) / space) | 0;
   var delta = ((a2 - a1) * Math.PI) / num;
-  var i = a1 * Math.PI;
+  // negate the angle: the canvas y axis is flipped, so the OCaml angle
+  // is the negative of the canvas angle
+  var i = -a1 * Math.PI;
   for (var j = 0; j <= num; j++) {
     xPos =
       cx -
@@ -457,15 +459,12 @@ function caml_gr_draw_image(im, x, y) {
     canvas.width = s.width;
     canvas.height = s.height;
     canvas.getContext("2d").putImageData(im, 0, 0);
-    var image = new globalThis.Image();
-    image.onload = function () {
-      s.context.drawImage(image, x, s.height - im.height - y);
-      im.image = image;
-    };
-    image.src = canvas.toDataURL("image/png");
-  } else {
-    s.context.drawImage(im.image, x, s.height - im.height - y);
+    // a canvas is a valid drawImage source immediately, so draw it
+    // directly instead of round-tripping through an Image + data URL
+    // (which made the first draw asynchronous)
+    im.image = canvas;
   }
+  s.context.drawImage(im.image, x, s.height - im.height - y);
   return 0;
 }
 //Provides: caml_gr_create_image
@@ -719,7 +718,7 @@ function gr_plot_for_wasm(x, y) {
   d[3] = 0xff;
   s.x = x;
   s.y = y;
-  s.context.putImageData(im, x, s.height - y);
+  s.context.putImageData(im, x, s.height - 1 - y);
 }
 
 //Provides: gr_point_color_for_wasm
@@ -727,7 +726,7 @@ function gr_plot_for_wasm(x, y) {
 //If: wasm
 function gr_point_color_for_wasm(x, y) {
   var s = caml_gr_state;
-  var im = s.context.getImageData(x, s.height - y, 1, 1);
+  var im = s.context.getImageData(x, s.height - 1 - y, 1, 1);
   var d = im.data;
   return (d[0] << 16) + (d[1] << 8) + d[2];
 }
@@ -887,15 +886,12 @@ function gr_draw_image_for_wasm(im, x, y) {
     canvas.width = s.width;
     canvas.height = s.height;
     canvas.getContext("2d").putImageData(im, 0, 0);
-    var image = new globalThis.Image();
-    image.onload = function () {
-      s.context.drawImage(image, x, s.height - im.height - y);
-      im.image = image;
-    };
-    image.src = canvas.toDataURL("image/png");
-  } else {
-    s.context.drawImage(im.image, x, s.height - im.height - y);
+    // a canvas is a valid drawImage source immediately, so draw it
+    // directly instead of round-tripping through an Image + data URL
+    // (which made the first draw asynchronous)
+    im.image = canvas;
   }
+  s.context.drawImage(im.image, x, s.height - im.height - y);
 }
 
 //Provides: gr_blit_image_for_wasm
