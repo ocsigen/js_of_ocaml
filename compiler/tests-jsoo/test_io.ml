@@ -101,3 +101,25 @@ let%expect_test _ =
   [%expect {| this is a test |}];
   Sys.remove fname;
   ()
+
+(* Each call to in_channel_of_descr / out_channel_of_descr must
+   allocate a fresh channel, like the C runtime. They used to share
+   one channel record per fd, so the two channels were physically
+   equal and reading after writing looped forever. *)
+let%expect_test "channel_of_descr channels are distinct" =
+  let f = Filename.temp_file "jsoo_chan" ".txt" in
+  let fd = Unix.openfile f [ Unix.O_RDWR; Unix.O_CREAT ] 0o644 in
+  let oc = Unix.out_channel_of_descr fd in
+  let ic = Unix.in_channel_of_descr fd in
+  Printf.printf "%b\n" (Obj.repr ic == Obj.repr oc);
+  close_out oc;
+  Sys.remove f;
+  [%expect {| true |}]
+
+let%expect_test "is_binary_mode" =
+  let f = Filename.temp_file "jsoo_bin" ".txt" in
+  let oc = open_out f in
+  Printf.printf "%b %b\n" (Out_channel.is_binary_mode oc) (Out_channel.is_binary_mode stdout);
+  close_out oc;
+  Sys.remove f;
+  [%expect {| false true |}]
