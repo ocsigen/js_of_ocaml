@@ -25,8 +25,8 @@ var caml_record_backtrace_env_flag = FLAG("with-js-error");
     var l = r.split(",");
     for (var i = 0; i < l.length; i++) {
       if (l[i] === "b") {
+        // left-to-right, last wins: do not stop at the first bare "b"
         caml_record_backtrace_env_flag = 1;
-        break;
       } else if (l[i].startsWith("b=")) {
         caml_record_backtrace_env_flag = +l[i].slice(2);
       } else continue;
