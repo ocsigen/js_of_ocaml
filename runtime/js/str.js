@@ -127,7 +127,10 @@ var re_match = (function () {
     while (!quit) {
       var op = prog[pc] & 0xff,
         sarg = prog[pc] >> 8,
-        uarg = sarg & 0xff,
+        // uarg is used as a constant-pool / group / register index and
+        // as a character code, all non-negative; it must not be masked
+        // to 8 bits or large pools index the wrong slot
+        uarg = sarg,
         c = s[pos],
         group;
 
