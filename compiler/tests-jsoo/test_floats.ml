@@ -217,9 +217,9 @@ let%expect_test "floatarray ops keep tag 254" =
   p "concat" (Float.Array.concat [ a; a ]);
   [%expect {|
     make=254
-    sub=0
-    append=0
-    concat=0
+    sub=254
+    append=254
+    concat=254
     |}]
 
 let%expect_test "Array.make negative length" =
@@ -228,4 +228,4 @@ let%expect_test "Array.make negative length" =
      let a = Array.make n 0 in
      Printf.printf "len=%d\n" (Array.length a)
    with Invalid_argument m -> print_endline m);
-  [%expect {| index out of bounds |}]
+  [%expect {| Array.make |}]

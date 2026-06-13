@@ -27,6 +27,10 @@
   `AbortController`/`AbortSignal` primitive for cancellation (#596)
 
 ## Bug fixes
+* Runtime: `Float.Array.sub`/`append`/`concat` return a proper
+  tag-254 float array (their result had tag 0); `Array.make` of an
+  invalid length raises `Invalid_argument "Array.make"` instead of
+  `"index out of bounds"` (#2270)
 * Compiler: fix reference unboxing (#2210)
 * Compiler/wasm: fix int division return type to Unnormalized (#2197)
 * Compiler/wasm: preserve physical identity of empty closures (#2207)
