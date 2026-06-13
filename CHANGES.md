@@ -67,6 +67,10 @@
   escaping `spawn` and leaving the domain id and termination mutex in
   a broken state; the Wasm runtime additionally now sets the spawned
   domain's id (#2263, #2270)
+* Runtime: `Float.Array.sub`/`append`/`concat` return a proper
+  tag-254 float array (their result had tag 0); `Array.make` of an
+  invalid length raises `Invalid_argument "Array.make"` instead of
+  `"index out of bounds"` (#2270)
 * Compiler: fix reference unboxing (#2210)
 * Compiler/wasm: fix int division return type to Unnormalized (#2197)
 * Compiler/wasm: preserve physical identity of empty closures (#2207)
