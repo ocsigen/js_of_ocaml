@@ -124,6 +124,10 @@
   corner, so they no longer sit half a pixel up and to the left of
   native; and line caps and joins are round, matching the X11 backend's
   thick lines
+* Runtime: comparing an immediate against a custom block (e.g.
+  `compare (Obj.repr 1) (Obj.repr 1L)`) no longer throws a `TypeError`
+  and orders the immediate before the block, like the native runtime
+  (#2270)
 * Compiler: fix reference unboxing (#2210)
 * Compiler/wasm: fix int division return type to Unnormalized (#2197)
 * Compiler/wasm: preserve physical identity of empty closures (#2207)
