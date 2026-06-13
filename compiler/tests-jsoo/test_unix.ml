@@ -141,7 +141,7 @@ let%expect_test "Sys.command exit code" =
   Printf.printf "%d\n" (Sys.command "exit 0");
   [%expect
     {|
-    1
+    42
     0
     |}]
 
@@ -155,6 +155,6 @@ let%expect_test "Sys.getenv prototype" =
   (try get "hasOwnProperty" with _ -> print_endline "exn");
   [%expect
     {|
-    found true
-    exn
+    Not_found
+    Not_found
     |}]

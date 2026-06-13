@@ -117,10 +117,10 @@ function caml_set_static_env(k, v) {
 //Provides: jsoo_sys_getenv (const)
 //Requires: jsoo_static_env
 function jsoo_sys_getenv(n) {
-  if (jsoo_static_env[n]) return jsoo_static_env[n];
+  if (Object.hasOwn(jsoo_static_env, n)) return jsoo_static_env[n];
   var process = globalThis.process;
   //nodejs env
-  if (process && process.env && process.env[n] !== undefined)
+  if (process && process.env && Object.hasOwn(process.env, n))
     return process.env[n];
   //QuickJS: no `process`, but the host environment is reachable via `std`.
   var std = globalThis.std;
@@ -241,7 +241,11 @@ function caml_sys_system_command(cmd) {
         child_process.execSync(cmd, { stdio: "inherit" });
         return 0;
       } catch (e) {
-        return 1;
+        // execSync throws on non-zero exit; e.status is the exit code,
+        // or e.signal is set when the child was killed by a signal
+        if (typeof e.status === "number") return e.status;
+        if (e.signal) return 1;
+        return 127;
       }
   }
   // QuickJS: spawn `sh -c <cmd>` via os.exec. With block:true the
@@ -349,7 +353,11 @@ function caml_sys_get_config() {
 }
 
 //Provides: caml_sys_isatty
-function caml_sys_isatty(_chan) {
+//Requires: caml_ml_channel_get
+function caml_sys_isatty(chan) {
+  var info = caml_ml_channel_get(chan);
+  if (info?.file && typeof info.file.isatty === "function")
+    return info.file.isatty();
   return 0;
 }
 
