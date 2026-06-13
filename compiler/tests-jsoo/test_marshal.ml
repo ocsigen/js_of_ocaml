@@ -220,6 +220,6 @@ let%expect_test "float array marshalling is interoperable" =
   let a : float array = Marshal.from_string (Marshal.to_string [| 1.5; 2.5; 3.5 |] []) 0 in
   Printf.printf "%g %g %g\n" a.(0) a.(1) a.(2);
   [%expect {|
-    8495a6be00000020000000040000000d0000000a0800000cfe0c000000000000f83f0c00000000000004400c0000000000000c40
+    8495a6be0000001a0000000100000007000000040e03000000000000f83f00000000000004400000000000000c40
     1.5 2.5 3.5
     |}]

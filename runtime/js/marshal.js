@@ -724,6 +724,26 @@ var caml_output_val = (function () {
         }
         writer.size_32 += 2 + ((sz_32_64[0] + 3) >> 2);
         writer.size_64 += 2 + ((sz_32_64[1] + 7) >> 3);
+      } else if (Array.isArray(v) && v[0] === 254) {
+        // float array (Double_array_tag): emit a CODE_DOUBLE_ARRAY
+        // block (raw doubles) like the native runtime, so other
+        // runtimes can read it
+        if (memo(v)) return;
+        var nfloats = v.length - 1;
+        if (nfloats < 0x100)
+          writer.write_code(8, 0x0e /*cst.CODE_DOUBLE_ARRAY8_LITTLE*/, nfloats);
+        else
+          writer.write_code(
+            32,
+            0x07 /*cst.CODE_DOUBLE_ARRAY32_LITTLE*/,
+            nfloats,
+          );
+        for (var i = 1; i <= nfloats; i++) {
+          var t = caml_int64_to_bytes(caml_int64_bits_of_float(v[i]));
+          for (var j = 0; j < 8; j++) writer.write(8, t[7 - j]);
+        }
+        writer.size_32 += 1 + nfloats * 2;
+        writer.size_64 += 1 + nfloats;
       } else if (Array.isArray(v) && v[0] === (v[0] | 0)) {
         if (v[0] === 251) {
           caml_failwith("output_value: abstract value (Abstract)");

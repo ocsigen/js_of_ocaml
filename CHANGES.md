@@ -27,6 +27,10 @@
   `AbortController`/`AbortSignal` primitive for cancellation (#596)
 
 ## Bug fixes
+* Runtime: float arrays are marshalled as a `CODE_DOUBLE_ARRAY` block
+  like the native runtime, instead of a generic tag-254 block with
+  per-element double codes; jsoo-marshalled float arrays can now be
+  read by the native and Wasm runtimes (#2270)
 * Compiler: fix reference unboxing (#2210)
 * Compiler/wasm: fix int division return type to Unnormalized (#2197)
 * Compiler/wasm: preserve physical identity of empty closures (#2207)
