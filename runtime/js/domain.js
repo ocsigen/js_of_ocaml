@@ -211,17 +211,25 @@ var caml_domain_id = 0;
 //Requires: caml_ml_mutex_unlock
 //Requires: caml_domain_id
 //Requires: caml_callback
+//Requires: caml_wrap_exception, caml_get_exception_raw_backtrace
 //Version: >= 5.2
 var caml_domain_latest_idx = 1;
 function caml_domain_spawn(f, term_sync) {
   var id = caml_domain_latest_idx++;
   var old = caml_domain_id;
   caml_domain_id = id;
-  var res = caml_callback(f, [0]);
+  var result;
+  try {
+    // term_sync.state = Finished (Ok res)
+    result = [0, [0, caml_callback(f, [0])]];
+  } catch (e) {
+    // term_sync.state = Finished (Error (exn, backtrace))
+    var exn = caml_wrap_exception(e);
+    result = [0, [1, [0, exn, caml_get_exception_raw_backtrace(0)]]];
+  }
   caml_domain_id = old;
   caml_ml_mutex_unlock(term_sync[2]);
-  //TODO: fix exn case
-  term_sync[1] = [0, [0, res]];
+  term_sync[1] = result;
   return id;
 }
 
@@ -235,9 +243,12 @@ function caml_domain_spawn(f, mutex) {
   var id = caml_domain_latest_idx++;
   var old = caml_domain_id;
   caml_domain_id = id;
-  var _res = caml_callback(f, [0]);
-  caml_domain_id = old;
-  caml_ml_mutex_unlock(mutex);
+  try {
+    caml_callback(f, [0]);
+  } finally {
+    caml_domain_id = old;
+    caml_ml_mutex_unlock(mutex);
+  }
   return id;
 }
 
