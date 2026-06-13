@@ -58,6 +58,6 @@ let%expect_test "domain body raising" =
   Printf.printf "result: %d\n" (Domain.join d);
   [%expect {|
     Not_found
-    self id: 3
+    self id: 0
     result: 7
     |}]

@@ -58,6 +58,11 @@
   >= 5.1 (it threw a `TypeError` because the filename landed in the
   removed parameter) and returns the index of the library slot it
   filled rather than one past it (#2270)
+* Runtime: `Domain.spawn` with a body that raises now succeeds and
+  `Domain.join` re-raises the exception, instead of the exception
+  escaping `spawn` and leaving the domain id and termination mutex in
+  a broken state; the Wasm runtime additionally now sets the spawned
+  domain's id (#2263, #2270)
 * Compiler: fix reference unboxing (#2210)
 * Compiler/wasm: fix int division return type to Unnormalized (#2197)
 * Compiler/wasm: preserve physical identity of empty closures (#2207)
