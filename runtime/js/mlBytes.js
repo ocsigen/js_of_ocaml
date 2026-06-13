@@ -805,7 +805,7 @@ var jsoo_text_decoder_buff = new ArrayBuffer(1024);
 function caml_jsstring_of_string(s) {
   if (jsoo_is_ascii(s)) return s;
   var a =
-    s.length <= jsoo_text_decoder_buff.length
+    s.length <= jsoo_text_decoder_buff.byteLength
       ? new Uint8Array(jsoo_text_decoder_buff, 0, s.length)
       : new Uint8Array(s.length);
   for (var i = 0; i < s.length; i++) {
