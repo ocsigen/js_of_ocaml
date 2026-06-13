@@ -38,6 +38,10 @@
   matched the identifier "requires" instead of "require", so string
   literals passed to require could be replaced by a shared variable,
   confusing bundlers (#2284)
+* Runtime: `compare_nat` (legacy `num` support) iterates over the
+  common significant digit length instead of the first operand's full
+  length, so it no longer reads outside the second operand's subrange
+  and mis-orders equal values when the lengths differ (#2270)
 * Compiler: bound the statement-nesting depth of generated functions by
   emitting a flat dispatch loop instead of a deep tower of nested labelled
   blocks when a block has many sibling merge-node branch targets. Deep
