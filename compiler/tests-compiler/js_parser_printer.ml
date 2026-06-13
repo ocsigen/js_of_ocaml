@@ -570,8 +570,8 @@ let%expect_test "in operator in conditional within for-loop arrow" =
      /*<<fake:2:4>>*/ for
     (let
       f =
-         /*<<fake:2:15>>*/ x=>
-            /*<<fake:2:22>>*/ cond ? x in obj : x /*<<fake:2:41>>*/ ;;)
+         /*<<fake:2:15>>*/ (x=>
+             /*<<fake:2:22>>*/ cond ? x in obj : x /*<<fake:2:41>>*/ );;)
      ;
     |}]
 
@@ -1281,9 +1281,28 @@ async function f() {
 |};
   [%expect
     {|
-    2: 0:async, 6:function, 15:f (identifier), 16:(, 17:), 19:{,
-    3: 2:for, 6:(, 7:await, 13:using, 19:of (identifier), 22:of, 25:[, 26:], 27:), 29:{, 31:},
-    4: 0:},
+    [stdin]:3
+      for (await using of of []) { }
+           ^^^^^^^^^^^
+
+    SyntaxError: Invalid left-hand side in for-loop
+        at wrapSafe (node:internal/modules/cjs/loader:1637:18)
+        at checkSyntax (node:internal/main/check_syntax:78:3)
+        at node:internal/main/check_syntax:45:5
+        at Socket.<anonymous> (node:internal/process/execution:201:5)
+        at Socket.emit (node:events:531:35)
+        at endReadableNT (node:internal/streams/readable:1698:12)
+        at process.processTicksAndRejections (node:internal/process/task_queues:89:21)
+
+    Node.js v22.22.1
+
+    process exited with error code 1
+     node --check
+
+
+     2: 0:async, 6:function, 15:f (identifier), 16:(, 17:), 19:{,
+     3: 2:for, 6:(, 7:await, 13:using, 19:of (identifier), 22:of, 25:[, 26:], 27:), 29:{, 31:},
+     4: 0:},
     |}]
 
 let%expect_test "html comments" =
@@ -1335,3 +1354,27 @@ var x = a --> b;
     a-->a
     |};
   [%expect {| a-- > a; |}]
+
+let%expect_test "in operator in for-init needs parentheses" =
+  (* ECond else-branch is an assignment containing `in` *)
+  print ~compact:true ~report:true "for (var x = (c ? d : y = \"a\" in o);;);";
+  [%expect {|
+    /*<<fake:1:0>>*/for(var
+    x=/*<<fake:1:11>>*/(c?d:y="a"in
+    o);;);
+    |}];
+  (* arrow concise body *)
+  print ~compact:true ~report:true "for (var f = (() => \"a\" in o);;);";
+  [%expect {|
+    /*<<fake:1:0>>*/for(var
+    f=/*<<fake:1:11>>*/(()=>/*<<fake:1:20>>*/"a"in
+    o/*<<fake:1:28>>*/);;);
+    |}];
+  (* yield payload inside a generator *)
+  print ~compact:true ~report:true
+    "function* g(o){ for (var x = (yield \"a\" in o);;); }";
+  [%expect {|
+    function*g(o){/*<<fake:1:16>>*/for(var
+    x=/*<<fake:1:27>>*/(yield"a"in
+    o);;);/*<<fake:1:0>>*/}
+    |}]

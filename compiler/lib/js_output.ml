@@ -469,10 +469,11 @@ struct
       | ESeq (e1, e2) ->
           Prec.(l <= Expression) && (traverse Expression e1 || traverse Expression e2)
       | ECond (e1, e2, e3) ->
+          (* the branches are printed at AssignementExpression *)
           Prec.(l <= ConditionalExpression)
           && (traverse ShortCircuitExpression e1
-             || traverse ShortCircuitExpression e2
-             || traverse ShortCircuitExpression e3)
+             || traverse AssignementExpression e2
+             || traverse AssignementExpression e3)
       | EAssignTarget (ObjectTarget _) -> false
       | EAssignTarget (ArrayTarget _) -> false
       | EBin (op, e1, e2) ->
@@ -494,7 +495,19 @@ struct
       | EAccess (e, _, _)
       | EDot (e, _, _)
       | EDotPrivate (e, _, _) -> traverse CallOrMemberExpression e
-      | EArrow _
+      | EArrow ((_, _, b, _), concise, _) -> (
+          (* a concise body is printed at AssignementExpression; a
+             braced body resets the [In] restriction *)
+          Prec.(l <= AssignementExpression)
+          &&
+          match b, concise with
+          | [ (Return_statement (Some e, _), _) ], true ->
+              traverse AssignementExpression e
+          | _ -> false)
+      | EYield { expr = Some e; _ } ->
+          (* the payload is printed at AssignementExpression *)
+          Prec.(l <= AssignementExpression) && traverse AssignementExpression e
+      | EYield { expr = None; _ } -> false
       | EVar _
       | EStr _
       | ETemplate _
@@ -503,7 +516,6 @@ struct
       | ENum _
       | ERegexp _
       | ENew _
-      | EYield _
       | EPrivName _ -> false
       | CoverCallExpressionAndAsyncArrowHead e
       | CoverParenthesizedExpressionAndArrowParameterList e -> early_error e
