@@ -23,16 +23,28 @@ function get_current_libs() {
   return current_libs;
 }
 
-//Provides: caml_dynlink_open_lib
-//Requires: get_current_libs, caml_failwith
-//Requires: caml_jsstring_of_string
-function caml_dynlink_open_lib(_mode, file) {
-  var name = caml_jsstring_of_string(file);
-  console.log("Dynlink: try to open ", name);
-  //caml_failwith("file not found: "+name)
+//Provides: caml_dynlink_open_lib_impl
+//Requires: get_current_libs
+function caml_dynlink_open_lib_impl(_file) {
   var current_libs = get_current_libs();
   current_libs.push({});
-  return current_libs.length;
+  // return the index of the slot just filled, used directly by
+  // lookup_symbol/close_lib
+  return current_libs.length - 1;
+}
+
+//Provides: caml_dynlink_open_lib
+//Requires: caml_dynlink_open_lib_impl
+//Version: < 5.1
+function caml_dynlink_open_lib(_mode, file) {
+  return caml_dynlink_open_lib_impl(file);
+}
+
+//Provides: caml_dynlink_open_lib
+//Requires: caml_dynlink_open_lib_impl
+//Version: >= 5.1
+function caml_dynlink_open_lib(file) {
+  return caml_dynlink_open_lib_impl(file);
 }
 
 //Provides: caml_dynlink_close_lib

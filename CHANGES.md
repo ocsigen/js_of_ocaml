@@ -38,6 +38,10 @@
   "too much recursion" at load time) (#2122)
 * Compiler: fix UGEINT bytecode lowering (returned wrong result on
   equal operands)
+* Runtime: `caml_dynlink_open_lib` drops the `mode` argument on OCaml
+  >= 5.1 (it threw a `TypeError` because the filename landed in the
+  removed parameter) and returns the index of the library slot it
+  filled rather than one past it (#2270)
 * Compiler: fix reference unboxing (#2210)
 * Compiler/wasm: fix int division return type to Unnormalized (#2197)
 * Compiler/wasm: preserve physical identity of empty closures (#2207)
