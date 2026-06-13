@@ -32,7 +32,9 @@ function caml_array_sub(a, i, len) {
 //Requires: caml_array_sub
 //Version: >= 5.3
 function caml_floatarray_sub(a, i, len) {
-  return caml_array_sub(a, i, len);
+  var r = caml_array_sub(a, i, len);
+  r[0] = 254;
+  return r;
 }
 
 //Provides: caml_uniform_array_sub mutable
@@ -61,7 +63,9 @@ function caml_array_append(a1, a2) {
 //Requires: caml_array_append
 //Version: >= 5.3
 function caml_floatarray_append(a1, a2) {
-  return caml_array_append(a1, a2);
+  var r = caml_array_append(a1, a2);
+  r[0] = 254;
+  return r;
 }
 
 //Provides: caml_uniform_array_append mutable
@@ -84,15 +88,12 @@ function caml_array_concat(l) {
 }
 
 //Provides: caml_floatarray_concat mutable
+//Requires: caml_array_concat
 //Version: >= 5.4
 function caml_floatarray_concat(l) {
-  var a = [0];
-  while (l !== 0) {
-    var b = l[1];
-    for (var i = 1; i < b.length; i++) a.push(b[i]);
-    l = l[2];
-  }
-  return a;
+  var r = caml_array_concat(l);
+  r[0] = 254;
+  return r;
 }
 
 //Provides: caml_uniform_array_concat mutable
@@ -191,9 +192,9 @@ function caml_check_bound(array, index) {
 }
 
 //Provides: caml_array_make const (const, mutable)
-//Requires: caml_array_bound_error
+//Requires: caml_invalid_argument
 function caml_array_make(len, init) {
-  if (len >>> 0 >= ((0x7fffffff / 4) | 0)) caml_array_bound_error();
+  if (len >>> 0 >= ((0x7fffffff / 4) | 0)) caml_invalid_argument("Array.make");
   var len = (len + 1) | 0;
   var b = new Array(len);
   b[0] = 0;
