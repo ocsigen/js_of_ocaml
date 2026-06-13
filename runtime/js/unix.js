@@ -490,7 +490,7 @@ function caml_unix_access(name, flags) {
 }
 
 //Provides: caml_unix_open
-//Requires: resolve_fs_device, caml_sys_fds, MlChanid
+//Requires: resolve_fs_device, caml_sys_fds
 //Alias: unix_open
 function caml_unix_open(name, flags, perms) {
   var f = {};
@@ -535,8 +535,7 @@ function caml_unix_open(name, flags, perms) {
   var root = resolve_fs_device(name);
   var file = root.device.open(root.rest, f, perms, /* raise Unix_error */ true);
   var idx = caml_sys_fds.length;
-  var chanid = new MlChanid(idx);
-  caml_sys_fds[idx] = { file: file, chanid: chanid };
+  caml_sys_fds[idx] = { file: file };
   return idx | 0;
 }
 
