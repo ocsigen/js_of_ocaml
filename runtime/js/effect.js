@@ -311,7 +311,7 @@ function caml_ml_condition_signal(_t) {
 
 //Provides: jsoo_effect_not_supported
 //Requires: caml_failwith
-//!If: effects
+//If: !effects
 //Version: >= 5.0
 function jsoo_effect_not_supported() {
   caml_failwith("Effect handlers are not supported");
