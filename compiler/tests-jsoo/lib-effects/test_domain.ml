@@ -42,3 +42,22 @@ let%expect_test _ =
   handle (fun () ->
       if Random.int 2 < 1 then print_int (1 + f ()) else print_int (f () + 1));
   [%expect {| 43 |}]
+
+let%expect_test "domain body raising" =
+  (match
+     let d = Domain.spawn (fun () -> raise Not_found) in
+     Domain.join d
+   with
+  | (_ : int) -> print_endline "no exn"
+  | exception Not_found -> print_endline "Not_found"
+  | exception e -> print_endline ("other: " ^ Printexc.to_string e));
+  (* the main domain id must be restored after a raising body *)
+  Printf.printf "self id: %d\n" (Domain.self () :> int);
+  (* spawning still works afterwards *)
+  let d = Domain.spawn (fun () -> 7) in
+  Printf.printf "result: %d\n" (Domain.join d);
+  [%expect {|
+    Not_found
+    self id: 3
+    result: 7
+    |}]
