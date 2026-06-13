@@ -31,6 +31,9 @@
 * Lib: add Intl.RelativeTimeFormat (#2070)
 
 ## Bug fixes
+* Runtime: the Str engine no longer masks instruction arguments to 8
+  bits; regexps with more than 256 constant-pool entries (large
+  alternations) indexed the wrong pool slot and mismatched (#2270)
 * Compiler: bound the statement-nesting depth of generated functions by
   emitting a flat dispatch loop instead of a deep tower of nested labelled
   blocks when a block has many sibling merge-node branch targets. Deep

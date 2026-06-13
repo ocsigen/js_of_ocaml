@@ -57,4 +57,4 @@ let%expect_test "large alternation" =
     (fun a -> if Str.string_match re a 0 && Str.matched_string a = a then incr ok)
     alts;
   Printf.printf "%d/300\n" !ok;
-  [%expect {| 256/300 |}]
+  [%expect {| 300/300 |}]
