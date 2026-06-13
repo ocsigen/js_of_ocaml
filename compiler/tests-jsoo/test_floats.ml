@@ -207,3 +207,25 @@ let%expect_test "of_string" =
   let x = "3.14 " in
   print' (fun () -> float_of_string x);
   [%expect {| Failure("float_of_string") |}]
+
+let%expect_test "floatarray ops keep tag 254" =
+  let a = Float.Array.make 3 1.5 in
+  let p label fa = Printf.printf "%s=%d\n" label (Obj.tag (Obj.repr fa)) in
+  p "make" a;
+  p "sub" (Float.Array.sub a 0 2);
+  p "append" (Float.Array.append a a);
+  p "concat" (Float.Array.concat [ a; a ]);
+  [%expect {|
+    make=254
+    sub=0
+    append=0
+    concat=0
+    |}]
+
+let%expect_test "Array.make negative length" =
+  let n = Sys.opaque_identity (-1) in
+  (try
+     let a = Array.make n 0 in
+     Printf.printf "len=%d\n" (Array.length a)
+   with Invalid_argument m -> print_endline m);
+  [%expect {| index out of bounds |}]
