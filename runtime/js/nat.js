@@ -417,7 +417,10 @@ function compare_nat(nat1, ofs1, len1, nat2, ofs2, len2) {
   var b = num_digits_nat(nat2, ofs2, len2);
   if (a > b) return 1;
   if (a < b) return -1;
-  for (var i = len1 - 1; i >= 0; i--) {
+  // iterate over the common significant length, not len1: the digits
+  // above it are zero, and reading them would go outside nat2's
+  // subrange when len1 !== len2
+  for (var i = a - 1; i >= 0; i--) {
     if (nat1.data[ofs1 + i] >>> 0 > nat2.data[ofs2 + i] >>> 0) return 1;
     if (nat1.data[ofs1 + i] >>> 0 < nat2.data[ofs2 + i] >>> 0) return -1;
   }
