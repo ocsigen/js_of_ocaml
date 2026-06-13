@@ -55,23 +55,9 @@ function caml_compare_val_get_custom(a) {
   );
 }
 
-//Provides: caml_compare_val_number_custom
-//Requires: caml_compare_val_get_custom
-function caml_compare_val_number_custom(num, custom, swap, total) {
-  var comp = caml_compare_val_get_custom(custom);
-  if (comp) {
-    var x = swap > 0 ? comp(custom, num, total) : comp(num, custom, total);
-    if (total && Number.isNaN(x)) return swap; // total && nan
-    if (Number.isNaN(+x)) return +x; // nan
-    if ((x | 0) !== 0) return x | 0; // !nan
-  }
-  return swap;
-}
-
 //Provides: caml_compare_val (const, const, const)
 //Requires: caml_int_compare, caml_string_compare, caml_bytes_compare
 //Requires: caml_invalid_argument, caml_compare_val_get_custom, caml_compare_val_tag
-//Requires: caml_compare_val_number_custom
 //Requires: caml_jsbytes_of_string
 //Requires: caml_is_continuation_tag
 function caml_compare_val(a, b, total) {
@@ -102,17 +88,13 @@ function caml_compare_val(a, b, total) {
           return 1;
         }
         if (tag_a === 1000) {
-          if (tag_b === 1255) {
-            //immediate can compare against custom
-            return caml_compare_val_number_custom(a, b, -1, total);
-          }
+          // An immediate is less than any block, including a custom block
+          // (e.g. int32/int64/nativeint/bigarray): the built-in custom
+          // blocks define no [compare_ext], so the C runtime orders the
+          // immediate strictly before the block regardless of values.
           return -1;
         }
         if (tag_b === 1000) {
-          if (tag_a === 1255) {
-            //immediate can compare against custom
-            return caml_compare_val_number_custom(b, a, 1, total);
-          }
           return 1;
         }
         return tag_a < tag_b ? -1 : 1;
