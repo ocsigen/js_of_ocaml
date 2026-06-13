@@ -82,3 +82,22 @@ symlink repointed, at release time. Each CI run replaces only the `dev/`
 directory; the other version directories already on `gh-pages` are preserved.
 The `js_of_ocaml.yml` CI also runs `dune build @doc @doc-manual` on PRs as a
 compile check.
+
+## Releasing a stable version
+
+The CI only ever (re)builds `dev/`. A stable version is a **frozen snapshot** of
+`dev/` plus the `latest` symlink, produced at release time on the `gh-pages`
+branch (no rebuild — the docs of a release are exactly the `dev` docs at that
+point):
+
+```
+git fetch origin gh-pages
+git worktree add gh-pages gh-pages && cd gh-pages
+cp -a dev <version>          # e.g. freeze the current dev docs as 1.2.3
+ln -sfn <version> latest     # point `latest` at the new release
+git add <version> latest && git commit -m "Release doc <version>" && git push
+```
+
+The project-root `index.html` redirects to `latest/`, so nothing else changes.
+Older version directories are preserved untouched. (This freeze step is a good
+candidate for a future `wodoc release` subcommand.)
