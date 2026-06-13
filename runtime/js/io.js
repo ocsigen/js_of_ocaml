@@ -47,16 +47,9 @@ function MlChanid(id) {
 //Requires: caml_sys_fds
 //Requires: caml_sys_open_for_node
 //Requires: caml_sys_open_for_quickjs
-//Requires: MlChanid
 function caml_sys_open_internal(file, idx) {
-  var chanid;
-  if (idx === undefined) {
-    idx = caml_sys_fds.length;
-    chanid = new MlChanid(idx);
-  } else if (caml_sys_fds[idx]) {
-    chanid = caml_sys_fds[idx].chanid;
-  } else chanid = new MlChanid(idx);
-  caml_sys_fds[idx] = { file: file, chanid: chanid };
+  if (idx === undefined) idx = caml_sys_fds.length;
+  caml_sys_fds[idx] = { file: file };
   return idx | 0;
 }
 function caml_sys_open(name, flags, perms) {
@@ -133,6 +126,11 @@ function caml_ml_set_channel_name(chanid, name) {
   return 0;
 }
 
+//Provides: caml_ml_std_channel_id
+// The channels created by the stdlib at startup for fds 0, 1 and 2
+// (the runtime itself writes through them, e.g. the parser trace)
+var caml_ml_std_channel_id = [];
+
 //Provides: caml_ml_channels
 //Requires: MlChanid
 class caml_ml_channels_state {
@@ -201,12 +199,14 @@ function caml_ml_out_channels_list() {
 //Requires: caml_raise_sys_error
 //Requires: caml_sys_open
 //Requires: caml_io_buffer_size
+//Requires: MlChanid, caml_ml_std_channel_id
 function caml_ml_open_descriptor_out(fd) {
   var fd_desc = caml_sys_fds[fd];
   if (fd_desc === undefined)
     caml_raise_sys_error("fd " + fd + " doesn't exist");
   var file = fd_desc.file;
-  var chanid = fd_desc.chanid;
+  // each call allocates a fresh channel, like the C runtime
+  var chanid = new MlChanid(fd);
   var buffered = file.flags.buffered !== undefined ? file.flags.buffered : 1;
   var channel = {
     file: file,
@@ -219,6 +219,8 @@ function caml_ml_open_descriptor_out(fd) {
     buffered: buffered,
   };
   caml_ml_channels.set(chanid, channel);
+  if (fd <= 2 && !caml_ml_std_channel_id[fd])
+    caml_ml_std_channel_id[fd] = chanid;
   return chanid;
 }
 
@@ -227,12 +229,14 @@ function caml_ml_open_descriptor_out(fd) {
 //Requires: caml_raise_sys_error
 //Requires: caml_sys_open
 //Requires: caml_io_buffer_size
+//Requires: MlChanid, caml_ml_std_channel_id
 function caml_ml_open_descriptor_in(fd) {
   var fd_desc = caml_sys_fds[fd];
   if (fd_desc === undefined)
     caml_raise_sys_error("fd " + fd + " doesn't exist");
   var file = fd_desc.file;
-  var chanid = fd_desc.chanid;
+  // each call allocates a fresh channel, like the C runtime
+  var chanid = new MlChanid(fd);
   var refill = null;
   var channel = {
     file: file,
@@ -246,6 +250,8 @@ function caml_ml_open_descriptor_in(fd) {
     refill: refill,
   };
   caml_ml_channels.set(chanid, channel);
+  if (fd <= 2 && !caml_ml_std_channel_id[fd])
+    caml_ml_std_channel_id[fd] = chanid;
   return chanid;
 }
 
@@ -281,11 +287,11 @@ function caml_ml_set_binary_mode(chanid, mode) {
 }
 
 //Provides: caml_ml_is_binary_mode
-//Requires: caml_ml_channel_get
 //Version: >= 5.2
-function caml_ml_is_binary_mode(chanid) {
-  var chan = caml_ml_channel_get(chanid);
-  return chan.file.flags.binary;
+function caml_ml_is_binary_mode(_chanid) {
+  // Like the C runtime on Unix, which always reports binary mode
+  // (set_binary_mode is a no-op there).
+  return 1;
 }
 
 //Input from in_channel

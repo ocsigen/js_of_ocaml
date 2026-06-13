@@ -144,6 +144,10 @@
   them as generic blocks and the Wasm runtime ignored them entirely,
   so all three runtimes disagreed. Abstract-tag blocks are now skipped
   like in the C runtime (#2263, #2270)
+* Runtime: `in_channel_of_descr` and `out_channel_of_descr` allocate a
+  fresh channel per call like the C runtime; both channels used to
+  share one record, making them physically equal and looping forever
+  on reads; `is_binary_mode` reports true by default (#2270)
 * Runtime: the Str engine's SIMPLEOPT/SIMPLESTAR/SIMPLEPLUS opcodes
   no longer read past the end of the string; matching a negated
   character class at the end of the input could loop forever (#2270)
