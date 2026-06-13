@@ -91,6 +91,11 @@
   silently ignored); `Blake2.create` truncates an over-long key instead
   of discarding the truncation; and `OCAMLRUNPARAM` backtrace parsing is
   left-to-right last-wins (`b,b=0` now disables backtraces)
+* Runtime: `Sys.command` returns the child's exit status instead of
+  `1` for any failure; `Sys.getenv` raises `Not_found` for names
+  inherited from `Object.prototype` (e.g. `"toString"`); and
+  `Sys.isatty` consults the channel's file instead of always
+  returning false (#2270)
 * Compiler: fix reference unboxing (#2210)
 * Compiler/wasm: fix int division return type to Unnormalized (#2197)
 * Compiler/wasm: preserve physical identity of empty closures (#2207)
