@@ -56,15 +56,10 @@ function caml_compare_val_get_custom(a) {
 }
 
 //Provides: caml_compare_val_number_custom
-//Requires: caml_compare_val_get_custom
-function caml_compare_val_number_custom(num, custom, swap, total) {
-  var comp = caml_compare_val_get_custom(custom);
-  if (comp) {
-    var x = swap > 0 ? comp(custom, num, total) : comp(num, custom, total);
-    if (total && Number.isNaN(x)) return swap; // total && nan
-    if (Number.isNaN(+x)) return +x; // nan
-    if ((x | 0) !== 0) return x | 0; // !nan
-  }
+function caml_compare_val_number_custom(_num, _custom, swap, _total) {
+  // The built-in custom blocks (int32/int64/nativeint/bigarray) define
+  // no [compare_ext], so the C runtime treats an immediate as strictly
+  // less than a custom block, regardless of values.
   return swap;
 }
 

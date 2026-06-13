@@ -27,6 +27,10 @@
   `AbortController`/`AbortSignal` primitive for cancellation (#596)
 
 ## Bug fixes
+* Runtime: comparing an immediate against a custom block (e.g.
+  `compare (Obj.repr 1) (Obj.repr 1L)`) no longer throws a `TypeError`
+  and orders the immediate before the block, like the native runtime
+  (#2270)
 * Compiler: fix reference unboxing (#2210)
 * Compiler/wasm: fix int division return type to Unnormalized (#2197)
 * Compiler/wasm: preserve physical identity of empty closures (#2207)

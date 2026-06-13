@@ -97,8 +97,8 @@ let%expect_test "compare immediate vs custom" =
   p "eq 1 1L" (fun () -> if a = b then 1 else 0);
   [%expect
     {|
-    cmp 1 1L raised Failure("TypeError: x.compare is not a function")
+    cmp 1 1L = -1
     cmp 1L 1 = 1
-    cmp 2 1L raised Failure("TypeError: x.compare is not a function")
+    cmp 2 1L = -1
     eq 1 1L = 0
     |}]
