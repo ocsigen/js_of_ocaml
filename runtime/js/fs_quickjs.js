@@ -410,7 +410,7 @@ class MlQuickJSFd {}
 // for the standard streams; opt-in like the rest of fs_quickjs.
 
 //Provides: MlQuickJSStdFd
-//Requires: MlFile, caml_raise_system_error
+//Requires: MlFile, caml_raise_system_error, caml_raise_qjs_error
 class MlQuickJSStdFd extends MlFile {
   constructor(fd, flags) {
     super();
@@ -439,7 +439,9 @@ class MlQuickJSStdFd extends MlFile {
     var ab = a.buffer || a;
     var base = a.byteOffset || 0;
     var n = this.os.read(this.fd, ab, base + buf_offset, len);
-    return n < 0 ? 0 : n;
+    // a negative return is an error, not EOF
+    if (n < 0) caml_raise_qjs_error(n, "read", "", raise_unix);
+    return n;
   }
 
   write(buf, buf_offset, len, raise_unix) {
@@ -453,7 +455,10 @@ class MlQuickJSStdFd extends MlFile {
     var ab = buf.buffer || buf;
     var base = buf.byteOffset || 0;
     var n = this.os.write(this.fd, ab, base + buf_offset, len);
-    return n < 0 ? 0 : n;
+    // a negative return is an error; returning 0 would make the
+    // flush/write loop spin forever
+    if (n < 0) caml_raise_qjs_error(n, "write", "", raise_unix);
+    return n;
   }
 
   seek(_offset, _whence, raise_unix) {
