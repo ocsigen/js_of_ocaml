@@ -47,6 +47,10 @@
 * Runtime: fix caml_oo_cache_id (#2224)
 * Runtime: `Ephemeron.blit_key` no longer overwrites the destination's
   data with the source's data (#2263)
+* Runtime: `in_channel_of_descr` and `out_channel_of_descr` allocate a
+  fresh channel per call like the C runtime; both channels used to
+  share one record, making them physically equal and looping forever
+  on reads; `is_binary_mode` reports true by default (#2270)
 * Runtime: the Str engine's SIMPLEOPT/SIMPLESTAR/SIMPLEPLUS opcodes
   no longer read past the end of the string; matching a negated
   character class at the end of the input could loop forever (#2270)

@@ -114,7 +114,7 @@ let%expect_test "channel_of_descr channels are distinct" =
   Printf.printf "%b\n" (Obj.repr ic == Obj.repr oc);
   close_out oc;
   Sys.remove f;
-  [%expect {| true |}]
+  [%expect {| false |}]
 
 let%expect_test "is_binary_mode" =
   let f = Filename.temp_file "jsoo_bin" ".txt" in
@@ -122,4 +122,4 @@ let%expect_test "is_binary_mode" =
   Printf.printf "%b %b\n" (Out_channel.is_binary_mode oc) (Out_channel.is_binary_mode stdout);
   close_out oc;
   Sys.remove f;
-  [%expect {| false true |}]
+  [%expect {| true true |}]
