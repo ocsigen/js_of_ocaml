@@ -31,6 +31,11 @@
 * Lib: add Intl.RelativeTimeFormat (#2070)
 
 ## Bug fixes
+* Runtime: `Digest`/MD5 computes the high word of the message bit
+  length without 32-bit truncation, so digests of inputs >= 2 GiB
+  (e.g. `Digest.file` on a large file) are correct; the
+  `caml_jsstring_of_string` shared-buffer fast path is reachable again
+  (it tested `ArrayBuffer.length` instead of `byteLength`) (#2270)
 * Compiler: bound the statement-nesting depth of generated functions by
   emitting a flat dispatch loop instead of a deep tower of nested labelled
   blocks when a block has many sibling merge-node branch targets. Deep

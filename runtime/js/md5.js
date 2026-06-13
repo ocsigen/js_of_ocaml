@@ -215,7 +215,9 @@ function caml_MD5Final(ctx) {
     }
   }
   ctx.b32[14] = ctx.len << 3;
-  ctx.b32[15] = (ctx.len >> 29) & 0x1fffffff;
+  // high word of the 64-bit bit length: compute by division so the
+  // length is not truncated to 32 bits (wrong for inputs >= 2 GiB)
+  ctx.b32[15] = (ctx.len / 0x20000000) | 0;
   caml_MD5Transform(ctx.w, ctx.b32);
   var t = new Uint8Array(16);
   for (var i = 0; i < 4; i++)
