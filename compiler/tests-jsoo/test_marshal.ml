@@ -210,3 +210,16 @@ let%expect_test "test input with offset" =
   in
   Printf.printf "%f" (Marshal.from_bytes b (String.length prefix));
   [%expect {| 3.140000 |}]
+
+let%expect_test "float array marshalling is interoperable" =
+  let hex s = String.iter (fun c -> Printf.printf "%02x" (Char.code c)) s; print_newline () in
+  (* the marshalled bytes must match the native format (a
+     CODE_DOUBLE_ARRAY block) so other runtimes can read them *)
+  hex (Marshal.to_string [| 1.5; 2.5; 3.5 |] []);
+  (* round-trip within jsoo still works *)
+  let a : float array = Marshal.from_string (Marshal.to_string [| 1.5; 2.5; 3.5 |] []) 0 in
+  Printf.printf "%g %g %g\n" a.(0) a.(1) a.(2);
+  [%expect {|
+    8495a6be00000020000000040000000d0000000a0800000cfe0c000000000000f83f0c00000000000004400c0000000000000c40
+    1.5 2.5 3.5
+    |}]
