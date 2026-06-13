@@ -45,7 +45,7 @@ jobs:
         # canonical copy in ocsigen.github.io.
         run: >-
           opam exec -- wodoc build --config doc/wodoc
-          --menu https://ocsigen.org/wodoc/menu.html
+          --menu https://ocsigen.org/doc/menu.html
           --out "$PWD/_doc-site/dev" --label dev
 
       - name: Deploy to gh-pages (replace only dev/, keep the rest)

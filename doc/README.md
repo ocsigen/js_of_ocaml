@@ -36,7 +36,7 @@ fork, nothing extra to maintain.
 
 ```
 wodoc build --config doc/wodoc --label dev --out _doc-site/dev \
-  --menu https://ocsigen.org/wodoc/menu.html
+  --menu https://ocsigen.org/doc/menu.html
 ```
 
 That single command (no wrapper script) does everything — `--menu` takes the
@@ -64,7 +64,7 @@ output, then serve it:
 
 ```
 wodoc build --config doc/wodoc --label dev --out _doc-site/dev \
-  --menu https://ocsigen.org/wodoc/menu.html --local
+  --menu https://ocsigen.org/doc/menu.html --local
 cd _doc-site && python3 -m http.server   # open http://localhost:8000/dev/js_of_ocaml/
 ```
 
