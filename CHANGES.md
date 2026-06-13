@@ -31,6 +31,10 @@
 * Lib: add Intl.RelativeTimeFormat (#2070)
 
 ## Bug fixes
+* Runtime: float arrays are marshalled as a `CODE_DOUBLE_ARRAY` block
+  like the native runtime, instead of a generic tag-254 block with
+  per-element double codes; jsoo-marshalled float arrays can now be
+  read by the native and Wasm runtimes (#2270)
 * Runtime: the Str engine no longer masks instruction arguments to 8
   bits; regexps with more than 256 constant-pool entries (large
   alternations) indexed the wrong pool slot and mismatched (#2270)
