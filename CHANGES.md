@@ -100,6 +100,12 @@
   inherited from `Object.prototype` (e.g. `"toString"`); and
   `Sys.isatty` consults the channel's file instead of always
   returning false (#2270)
+* Runtime: Graphics fixes (#2270): `plot`/`point_color` use the
+  bottom-left-origin pixel row `height - 1 - y` so they agree with
+  `fill_rect`/`draw_image`/text; `draw_arc` no longer renders the
+  wrong quadrant for a nonzero start angle (the canvas y-flip negates
+  the angle); and the first `draw_image` of an image is synchronous
+  (it drew through an asynchronous `Image`/data-URL round trip)
 * Compiler: fix reference unboxing (#2210)
 * Compiler/wasm: fix int division return type to Unnormalized (#2197)
 * Compiler/wasm: preserve physical identity of empty closures (#2207)
