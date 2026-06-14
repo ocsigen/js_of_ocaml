@@ -23,7 +23,7 @@ test runtest runtests: tests
 # Build the API + manual (odoc) and the interactive examples. @doc compiles the
 # manual/*.mld and the API into _build/default/_doc/_html/; @doc-manual builds the
 # examples into _build/default/manual/files/. The themed ocsigen.org site is then
-# produced by doc/build.sh (see doc/README.md), which the CI runs and deploys.
+# produced by `wodoc build` (see doc/README.md), which the CI runs and deploys.
 doc:
 	dune build @doc @doc-manual
 

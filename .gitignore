@@ -64,5 +64,5 @@ janestreet
 node_modules
 package-lock.json
 
-# Themed doc build output (doc/build.sh)
+# Themed doc build output (wodoc build)
 _doc-site/

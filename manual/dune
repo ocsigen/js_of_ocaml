@@ -1,6 +1,6 @@
 ; The manual is a set of odoc pages (manual/*.mld), built into the js_of_ocaml
 ; package documentation by `dune build @doc` alongside the API, and rendered with
-; the Ocsigen theme by doc/build.sh (see doc/README.md). It replaces the former
+; the Ocsigen theme by `wodoc build` (see doc/README.md). It replaces the former
 ; wikicreole manual (manual/*.wiki + the html_of_wiki/ohow pipeline).
 (documentation
  (package js_of_ocaml))

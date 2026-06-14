@@ -51,7 +51,7 @@ This generates [program.js] and [program.js.map].
 Open browser developer tools (F12), navigate to the Sources panel, and set
 breakpoints in your OCaml files (when using source maps) or JavaScript files.
 
-See https:{e developer.chrome.com/docs/devtools/javascript for details.
+See the {{:https://developer.chrome.com/docs/devtools/javascript}Chrome DevTools documentation} for details.
 
 {2 Programmatic breakpoints}
 

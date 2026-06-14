@@ -82,16 +82,18 @@ Test directories:
 
 {1:project-structure Project structure}
 
-- [compiler/] - Compiler implementation
-- [lib/] - Core compiler library
-- [lib-wasm/] - WebAssembly backend
-- [bin-js_of_ocaml/] - js_of_ocaml entry point
-- [bin-wasm_of_ocaml/] - wasm_of_ocaml entry point
-- [lib/] - Library packages (js_of_ocaml, lwt, tyxml bindings)
-- [ppx/] - PPX syntax extensions
-- [runtime/] - JavaScript and WebAssembly runtime files
-- [toplevel/] - Web-based OCaml toplevel
-- [examples/] - Example projects
+{ul
+{li [compiler/] - Compiler implementation
+ {ul
+ {li [lib/] - Core compiler library}
+ {li [lib-wasm/] - WebAssembly backend}
+ {li [bin-js_of_ocaml/] - js_of_ocaml entry point}
+ {li [bin-wasm_of_ocaml/] - wasm_of_ocaml entry point}}}
+{li [lib/] - Library packages (js_of_ocaml, lwt, tyxml bindings)}
+{li [ppx/] - PPX syntax extensions}
+{li [runtime/] - JavaScript and WebAssembly runtime files}
+{li [toplevel/] - Web-based OCaml toplevel}
+{li [examples/] - Example projects}}
 
 {1 See also}
 

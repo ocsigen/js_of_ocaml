@@ -10,7 +10,7 @@ where applicable.
  | Option | Description |
  | [--version] | Display the compiler version |
  | [-o <file>] | Set output filename |
- | [--opt {1,2,3]} | Set optimization profile (default: 1). See {{:#optimizations}Optimizations} |
+ | [--opt {1,2,3}] | Set optimization profile (default: 1). See {{:#optimizations}Optimizations} |
  | [--enable <opt>] | Enable option. See {{:#enable-disable}Enable/Disable options} |
  | [--disable <opt>] | Disable option. See {{:#enable-disable}Enable/Disable options} |
  | [-I <dir>] | Add directory to the list of include directories |
@@ -171,7 +171,7 @@ Use [--enable <opt>] or [--disable <opt>] to control these flags:
  | [es6] | false | Generate ES6 syntax |
 }
 
-{2 Optimizations}
+{2:optimization-flags Optimizations}
 
 {t
  | Option | Default | Description |

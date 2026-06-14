@@ -45,7 +45,7 @@ This produces a JavaScript loading script [cubes.js] and a directory
 
 Dune has native support for wasm_of_ocaml (starting with dune 3.17.0).
 It supports both standard and separate compilation.
-See https:{e dune.readthedocs.io/en/latest/wasmoo.html
+See the {{:https://dune.readthedocs.io/en/latest/wasmoo.html}dune documentation}.
 
 {1:supported-features Supported features}
 

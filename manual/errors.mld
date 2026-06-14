@@ -133,10 +133,12 @@ exception is raised. This is convenient but has a performance cost since creatin
 
 Automatic attachment is enabled when:
 
-+ [Printexc.backtrace_status() = true], {b and}
-+ Either:
-- The environment variable [OCAMLRUNPARAM] contains [b=1], or
-- The program was compiled with [--enable with-js-error]
+{ol
+{li [Printexc.backtrace_status() = true], {b and}}
+{li Either:
+ {ul
+ {li The environment variable [OCAMLRUNPARAM] contains [b=1], or}
+ {li The program was compiled with [--enable with-js-error]}}}}
 
 Example with environment variable:
 {v

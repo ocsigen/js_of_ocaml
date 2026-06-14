@@ -14,6 +14,9 @@
 (sibling Js_of_ocaml_lwt      js_of_ocaml-lwt/Js_of_ocaml_lwt)
 (sibling Js_of_ocaml_tyxml    js_of_ocaml-tyxml/Js_of_ocaml_tyxml)
 (sibling Js_of_ocaml_toplevel js_of_ocaml-toplevel/Js_of_ocaml_toplevel)
+;; wasm_of_ocaml-compiler is not a dependency of js_of_ocaml, so its refs
+;; (e.g. Wasm_of_ocaml_compiler_dynlink in build-toplevel.mld) need a sibling.
+(sibling Wasm_of_ocaml_compiler_dynlink wasm_of_ocaml-compiler/Wasm_of_ocaml_compiler_dynlink)
 (nav
   (section "Getting Started"
     (link "Overview"      js_of_ocaml/overview.html   overview)

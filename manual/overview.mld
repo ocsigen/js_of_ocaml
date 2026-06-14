@@ -62,7 +62,7 @@ v}
 {2 With dune}
 
 Dune has native support for js_of_ocaml. It supports both standard and
-separate compilation of JavaScript files. See https:{e dune.readthedocs.io/en/latest/jsoo.html
+separate compilation of JavaScript files. See the {{:https://dune.readthedocs.io/en/latest/jsoo.html}dune documentation}.
 
 {2 With ocamlbuild (legacy)}
 
