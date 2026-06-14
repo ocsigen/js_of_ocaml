@@ -50,6 +50,12 @@ jobs:
       - name: Install dependencies
         run: |
           opam install . --deps-only --with-doc
+          # wodoc builds the API with odoc_driver on the INSTALLED packages (the
+          # engine ocaml.org uses, so cross-project refs like {!Lwt} resolve), so
+          # install the packages the docs cover from the dev tree (auto-pinned by
+          # setup-ocaml). NOT wasm_of_ocaml-compiler — it needs binaryen, and its
+          # refs are remapped to ocaml.org by odoc_driver --remap.
+          opam install js_of_ocaml js_of_ocaml-lwt js_of_ocaml-tyxml js_of_ocaml-toplevel
           # The example/manual dependencies for the interactive demos (built by
           # `dune build @doc-manual`). odoc itself is a with-doc dep, installed above.
           opam install lwt_log yojson graphics higlo
@@ -58,7 +64,8 @@ jobs:
           opam install wodoc
 
       - name: Build documentation (dev)
-        # wodoc build runs `dune build @doc @doc-manual`, assembles the themed
+        # wodoc build runs `odoc_driver` on the installed packages (API) plus
+        # `dune build @doc-manual` (interactive examples), assembles the themed
         # site from doc/wodoc, and fetches the shared menu straight from its
         # canonical copy in ocsigen.github.io.
         run: >-

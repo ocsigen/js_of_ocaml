@@ -2,21 +2,23 @@
 ;; Replaces doc/build.sh, doc/menu.wiki, doc/template.html and doc/leftnav.html:
 ;;   wodoc build --config doc/wodoc --out <dir>/<label> --label <v> \
 ;;               --menu <shared menu.html> [--latest]
-;; (wodoc build runs `dune build @doc @doc-manual` itself when --src is omitted.)
 (project js_of_ocaml)
 (title Js_of_ocaml)
 (pub /js_of_ocaml)
 (landing js_of_ocaml/index.html)
 ;; no (highlight …): wodoc's default starter already colours js_of_ocaml/lwt/eliom syntax.
+;; Build the API with odoc_driver (the engine ocaml.org uses) on the INSTALLED
+;; packages, exactly like the other Ocsigen projects: it links against the whole
+;; installed universe and --remaps non-selected packages to ocaml.org, so
+;; cross-project refs (e.g. {!Lwt}) resolve instead of breaking `dune build @doc`
+;; in an include expansion. js_of_ocaml's API spans several packages, so list
+;; them all (js_of_ocaml-lwt etc. are NOT deps of js_of_ocaml — they need to be
+;; selected explicitly to be documented), and assemble their subtrees via
+;; (packages …). Wasm_of_ocaml refs are remapped to ocaml.org by --remap.
+(odoc-driver js_of_ocaml js_of_ocaml-lwt js_of_ocaml-tyxml js_of_ocaml-toplevel)
+(packages js_of_ocaml js_of_ocaml-lwt js_of_ocaml-tyxml js_of_ocaml-toplevel)
 (doc-manual true)              ; also build @doc-manual (the interactive examples)
 (manual-files js_of_ocaml)    ; copy _build/.../manual/files into js_of_ocaml/files
-;; sibling packages (not dependency edges) -> link their unresolved refs
-(sibling Js_of_ocaml_lwt      js_of_ocaml-lwt/Js_of_ocaml_lwt)
-(sibling Js_of_ocaml_tyxml    js_of_ocaml-tyxml/Js_of_ocaml_tyxml)
-(sibling Js_of_ocaml_toplevel js_of_ocaml-toplevel/Js_of_ocaml_toplevel)
-;; wasm_of_ocaml-compiler is not a dependency of js_of_ocaml, so its refs
-;; (e.g. Wasm_of_ocaml_compiler_dynlink in build-toplevel.mld) need a sibling.
-(sibling Wasm_of_ocaml_compiler_dynlink wasm_of_ocaml-compiler/Wasm_of_ocaml_compiler_dynlink)
 (nav
   (section "Getting Started"
     (link "Overview"      js_of_ocaml/overview.html   overview)
