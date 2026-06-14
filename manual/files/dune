@@ -8,4 +8,14 @@
    %{target}
    (run ../gen_dune_inc.exe))))
 
+; performances/ holds the static benchmark images referenced by
+; ../performances.mld. Unlike the interactive examples (copied by dune.inc),
+; these are committed source files, so depending on them under doc-manual is
+; enough to make dune materialize manual/files/performances/ in _build, from
+; where `wodoc build` ships it alongside the examples.
+(alias
+ (name doc-manual)
+ (deps
+  (source_tree performances)))
+
 (include dune.inc)
