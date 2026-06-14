@@ -214,17 +214,13 @@ jobs:
       - run: opam exec -- git diff --exit-code
         if: ${{ !matrix.skip-test }}
 
-      - name: build doc
-        if: ${{ !matrix.skip-doc && github.event_name == 'push' && github.ref_name == 'master'}}
+      # Documentation is built and deployed by a dedicated workflow (doc.yml):
+      # odoc (manual + API) + the interactive examples, themed with the Ocsigen
+      # chrome and published to gh-pages (ocsigen.org/js_of_ocaml/). Here we only
+      # check that it compiles. The old `make doc` -> wikidoc -> html_of_wiki
+      # pipeline has been retired.
+      - name: build doc (compile check)
+        if: ${{ !matrix.skip-doc }}
         run: |
           opam install odoc lwt_log yojson ocp-indent graphics higlo
           opam exec -- make doc
-
-      - name: synchronize doc
-        if: ${{ !matrix.skip-doc && github.event_name == 'push' && github.ref_name == 'master' }}
-        uses: JamesIves/github-pages-deploy-action@v4
-        with:
-          branch: wikidoc
-          folder: doc-dev
-          clean: true
-          target-folder: doc/dev/

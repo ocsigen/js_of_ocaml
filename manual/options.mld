@@ -1,0 +1,300 @@
+{0 Command-line options}
+
+This page documents the command-line options for the [js_of_ocaml] compiler.
+Most of these options also apply to [wasm_of_ocaml]. Differences are noted
+where applicable.
+
+{1:general General options}
+
+{t
+ | Option | Description |
+ | [--version] | Display the compiler version |
+ | [-o <file>] | Set output filename |
+ | [--opt {1,2,3}] | Set optimization profile (default: 1). See {{:#optimizations}Optimizations} |
+ | [--enable <opt>] | Enable option. See {{:#enable-disable}Enable/Disable options} |
+ | [--disable <opt>] | Disable option. See {{:#enable-disable}Enable/Disable options} |
+ | [-I <dir>] | Add directory to the list of include directories |
+}
+
+{1:debugging Debugging}
+
+{t
+ | Option | Description |
+ | [--pretty] | Pretty print JavaScript output, preserve OCaml variable names |
+ | [--no-inline] | Disable code inlining |
+ | [--debug-info] | Output debug information (source locations) |
+ | [--source-map] | Generate source map. See {{:#source-maps}Source maps} |
+}
+
+{1:target-env Target environment}
+
+{t
+ | Option | Description |
+ | [--target-env <env>] | Build for target environment (default: [isomorphic]) |
+}
+
+Possible values:
+- {b [isomorphic]} - Runs in both browser and Node.js (default)
+- {b [browser]} - Browser-specific, smaller output
+- {b [nodejs]} - Node.js-specific, smaller output
+
+{1:effects Effect handlers}
+
+{t
+ | Option | Description |
+ | [--effects <mode>] | Select effect handler implementation |
+}
+
+For {b js_of_ocaml} (default: [disabled]):
+- {b [disabled]} - No effect handler support (default)
+- {b [cps]} - CPS transformation for effect support
+- {b [double-translation]} - Keep both direct and CPS versions; choose at runtime
+
+For {b wasm_of_ocaml} (default: [jspi]):
+- {b [jspi]} - JavaScript-Promise Integration (default). Available in Chrome 137, Node.js 25, and higher. Use [cps] for other browsers. Performing effects is slower than with [cps].
+- {b [cps]} - CPS transformation for effect support
+- {b [native]} - WebAssembly stack switching (wasm_of_ocaml only). Available, behind the [--experimental-wasm-wasmfx] flag, in Chrome 148 or higher, or in a recent Node.js canary release (V8 version 14.7.100 or higher).
+- {b [disabled]} - No effect handler support
+
+See {{!page-"effects"}Effect handlers} for details.
+
+{1:source-maps Source maps}
+
+{t
+ | Option | Description |
+ | [--source-map] | Generate source map (separate file) |
+ | [--no-source-map] | Don't generate source map |
+ | [--source-map-inline] | Inline source map in the JavaScript output |
+ | [--source-map-no-source] | Don't embed source code in source map |
+ | [--source-map-root <dir>] | Set root directory for source map paths |
+}
+
+{1:pseudo-fs Pseudo filesystem}
+
+Js_of_ocaml provides a pseudo filesystem for programs that read files at runtime.
+The [--file] flag is also supported by wasm_of_ocaml.
+
+{t
+ | Option | Description |
+ | [--file <file>[:<target>]] | Register file to pseudo filesystem (default target: [/static/]) |
+ | [--ofs <file>] | Write filesystem data to separate file (js_of_ocaml only) |
+ | [--extern-fs] | Allow registering files from outside at runtime (default, js_of_ocaml only) |
+ | [--no-extern-fs] | Only allow files embedded at compile time (js_of_ocaml only) |
+}
+
+{1:env-vars Environment variables}
+
+{t
+ | Option | Description |
+ | [--setenv <VAR>=<value>] | Set environment variable at compile time |
+}
+
+{2 Resolution order}
+
+When OCaml code calls [Sys.getenv], js_of_ocaml resolves variables in this order:
+
++ If the variable was set at compile time with [--setenv VAR=value], return it
++ If running in Node.js, check [process.env]
++ Check [globalThis.jsoo_env] (useful for setting variables in browsers)
++ Raise [Not_found]
+
+{2 Browser example}
+
+{@javascript[
+// Set environment variables before loading the OCaml program
+globalThis.jsoo_env = {
+  DEBUG: "true",
+  API_URL: "https://api.example.com"
+};
+]}
+
+{1:toplevel Toplevel and dynamic linking}
+
+{t
+ | Option | Description |
+ | [--toplevel] | Compile an OCaml toplevel (embeds necessary .cmi files) |
+ | [--no-cmis] | Don't include .cmi files in toplevel |
+ | [--dynlink] | Enable dynamic linking of bytecode |
+ | [--export <file>] | File listing units to export for toplevel/dynlink |
+ | [--linkall] | Link all compilation units and primitives |
+}
+
+See {{!page-"build-toplevel"}Building a toplevel} for details.
+
+{1:compilation-modes Compilation modes}
+
+{t
+ | Option | Description |
+ | [--noruntime] | Don't include the standard runtime |
+ | [--include-runtime] | Include partial runtime when compiling .cmo/.cma |
+ | [--keep-unit-names] | Preserve unit names (for separate compilation) |
+ | [--wrap-with-fun[=<name>]] | Wrap output in a function (default: IIFE) |
+ | [--custom-header <text>] | Add custom header (e.g., [#!/usr/bin/env node]) |
+}
+
+See {{!page-"compilation-modes"}Compilation modes} for details.
+
+{1:optimizations Optimizations}
+
+{2 Optimization profiles}
+
+Use [--opt <level>] to select a profile:
+
+- {b [--opt 1]} - Basic optimizations (default)
+- {b [--opt 2]} - Standard optimizations
+- {b [--opt 3]} - Maximum optimizations (iterates until fix-point)
+
+{2 Recommended settings}
+
+For debugging:
+{v
+js_of_ocaml --pretty --no-inline program.byte
+v}
+
+For production:
+{v
+js_of_ocaml --opt 3 program.byte
+v}
+
+{1:enable-disable Enable/Disable options}
+
+Use [--enable <opt>] or [--disable <opt>] to control these flags:
+
+{2 Output formatting}
+
+{t
+ | Option | Default | Description |
+ | [pretty] | false | Pretty print JavaScript output |
+ | [shortvar] | true | Use short variable names |
+ | [strict] | true | Generate "use strict" |
+ | [header] | true | Include compiler version header |
+ | [es6] | false | Generate ES6 syntax |
+}
+
+{2:optimization-flags Optimizations}
+
+{t
+ | Option | Default | Description |
+ | [deadcode] | true | Dead code elimination |
+ | [globaldeadcode] | true | Global dead code elimination |
+ | [inline] | true | Function inlining |
+ | [staticeval] | true | Static evaluation of constants |
+ | [share] | true | Share string and number constants |
+ | [optcall] | true | JavaScript call optimizations |
+ | [constant-sinking] | true | Move constant declarations closer to usage sites |
+ | [var-coalescing] | true | Coalesce JavaScript variables with disjoint lifespans |
+}
+
+{2 Runtime behavior}
+
+{t
+ | Option | Default | Description |
+ | [effects] | false | Enable effect handlers |
+ | [excwrap] | true | Wrap JavaScript exceptions in OCaml exceptions |
+ | [with-js-error] | false | Attach JavaScript stack traces to OCaml exceptions |
+ | [debugger] | true | Keep [debugger] statements (stripped if false) |
+ | [genprim] | true | Generate dummy primitives when missing |
+ | [use-js-string] | true | Use JavaScript strings internally |
+}
+
+{2 Internal debugging}
+
+{t
+ | Option | Default | Description |
+ | [debuginfo] | false | Include source location comments |
+ | [stable_var] | false | Use stable (predictable) variable names |
+ | [auto-link] | true | link required compilation units only |
+}
+
+{1:parameters Compiler parameters}
+
+Use [--set <param>=<value>] to tune compiler behavior:
+
+{t
+ | Parameter | Default | Description |
+ | [switch_size] | 60 | Max cases before switch becomes if-else chain |
+ | [inlining-limit] | 150 | Size threshold for function inlining |
+ | [tc_depth] | 50 | Max tail-call depth before trampoline |
+ | [tc] | trampoline | Tail-call mode: [trampoline] or [none] |
+}
+
+{1:warnings Warnings}
+
+{t
+ | Option | Description |
+ | [--quiet] / [-q] | Suppress non-error messages |
+ | [--Werror] | Treat warnings as errors |
+ | [-w <warning>] | Enable warning |
+ | [-w no-<warning>] | Disable warning |
+}
+
+Available warnings:
+
+{t
+ | Warning | Default | Description |
+ | [missing-primitive] | on | Missing JavaScript primitive implementation |
+ | [missing-cmi] | on | Missing .cmi file |
+ | [missing-deps] | on | Missing dependencies |
+ | [missing-effects-backend] | on | Using effects, but not backend was selected |
+ | [integer-overflow] | on | Integer overflow in constant |
+ | [overriding-primitive] | on | Overriding an existing primitive |
+ | [deprecated-primitive] | on | Using deprecated primitive |
+ | [free-variables] | on | Free variables in primitive code |
+}
+
+{1:debug-output Debug output}
+
+Use [--debug <section>] to enable debug output for compiler internals:
+
+[times], [stats], [deadcode], [globaldeadcode], [inlining],
+[constant-sinking], [gen], [linker], [sourcemap], [flow], [parser], [var-coalescing]
+
+{1:subcommands Subcommands}
+
+The [js_of_ocaml] command has several subcommands:
+
+{t
+ | Command | Description |
+ | [js_of_ocaml compile] | Compile bytecode to JavaScript (default) |
+ | [js_of_ocaml link] | Link JavaScript files together |
+ | [js_of_ocaml build-runtime] | Build standalone runtime |
+ | [js_of_ocaml build-fs] | Build pseudo filesystem |
+}
+
+The [wasm_of_ocaml] command has similar subcommands:
+
+{t
+ | Command | Description |
+ | [wasm_of_ocaml compile] | Compile bytecode to WebAssembly (default) |
+ | [wasm_of_ocaml link] | Link files together |
+ | [wasm_of_ocaml build-runtime] | Build standalone runtime |
+}
+
+{2 Link command}
+
+{v
+js_of_ocaml link -o output.js runtime.js lib1.js lib2.js main.js
+v}
+
+Additional options:
+{t
+ | Option | Description |
+ | [-a] | Build a library (.cma.js) |
+ | [--resolve-sourcemap-url] | Resolve source map URLs |
+}
+
+{2 Build-runtime command}
+
+{v
+js_of_ocaml build-runtime -o runtime.js
+v}
+
+Accepts the same [--enable]/[--disable] options as the main command.
+
+{2 Build-fs command}
+
+{v
+js_of_ocaml build-fs -o fs.js file1.txt file2.dat
+v}
+
+Builds a JavaScript file containing filesystem data.

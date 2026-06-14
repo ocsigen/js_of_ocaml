@@ -1,0 +1,53 @@
+;; Declarative wodoc config for the Js_of_ocaml documentation.
+;; Replaces doc/build.sh, doc/menu.wiki, doc/template.html and doc/leftnav.html:
+;;   wodoc build --config doc/wodoc --out <dir>/<label> --label <v> \
+;;               --menu <shared menu.html> [--latest]
+;; (wodoc build runs `dune build @doc @doc-manual` itself when --src is omitted.)
+(project js_of_ocaml)
+(title Js_of_ocaml)
+(pub /js_of_ocaml)
+(landing js_of_ocaml/index.html)
+;; no (highlight …): wodoc's default starter already colours js_of_ocaml/lwt/eliom syntax.
+(doc-manual true)              ; also build @doc-manual (the interactive examples)
+(manual-files js_of_ocaml)    ; copy _build/.../manual/files into js_of_ocaml/files
+;; sibling packages (not dependency edges) -> link their unresolved refs
+(sibling Js_of_ocaml_lwt      js_of_ocaml-lwt/Js_of_ocaml_lwt)
+(sibling Js_of_ocaml_tyxml    js_of_ocaml-tyxml/Js_of_ocaml_tyxml)
+(sibling Js_of_ocaml_toplevel js_of_ocaml-toplevel/Js_of_ocaml_toplevel)
+;; wasm_of_ocaml-compiler is not a dependency of js_of_ocaml, so its refs
+;; (e.g. Wasm_of_ocaml_compiler_dynlink in build-toplevel.mld) need a sibling.
+(sibling Wasm_of_ocaml_compiler_dynlink wasm_of_ocaml-compiler/Wasm_of_ocaml_compiler_dynlink)
+(nav
+  (section "Getting Started"
+    (link "Overview"      js_of_ocaml/overview.html   overview)
+    (link "Installation"  js_of_ocaml/install.html    install)
+    (link "Quick Start"   js_of_ocaml/quickstart.html quickstart))
+  (section "Programming Guide"
+    (link "JavaScript interop"            js_of_ocaml/javascript-interop.html javascript-interop)
+    (link "PPX syntax extension"          js_of_ocaml/ppx.html                ppx)
+    (link "JSON derivation"               js_of_ocaml/ppx-deriving.html       ppx-deriving)
+    (link "Export OCaml code to JavaScript" js_of_ocaml/rev-bindings.html     rev-bindings)
+    (link "Error handling"                js_of_ocaml/errors.html             errors)
+    (link "API"                           js_of_ocaml/api.html))
+  (section "Lwt Support"
+    (link "Lwt support" js_of_ocaml/lwt.html lwt)
+    (link "API"         js_of_ocaml-lwt/Js_of_ocaml_lwt/index.html))
+  (section "Compiler"
+    (link "Command line options"     js_of_ocaml/options.html                options)
+    (link "Compilation modes"        js_of_ocaml/compilation-modes.html      compilation-modes)
+    (link "JavaScript primitives"    js_of_ocaml/linker.html                 linker)
+    (link "Tailcall optimization"    js_of_ocaml/tailcall.html               tailcall)
+    (link "Effect handlers"          js_of_ocaml/effects.html                effects)
+    (link "Runtime representation"   js_of_ocaml/runtime-representation.html runtime-representation)
+    (link "Targeting older browsers" js_of_ocaml/browser-compat.html         browser-compat))
+  (section "Wasm_of_ocaml"
+    (link "Overview"                js_of_ocaml/wasm_overview.html wasm_overview)
+    (link "Writing Wasm primitives" js_of_ocaml/wasm_runtime.html  wasm_runtime))
+  (section "How-to Guides"
+    (link "Build a toplevel or use Dynlink" js_of_ocaml/build-toplevel.html build-toplevel)
+    (link "Debug a program"                 js_of_ocaml/debug.html          debug)
+    (link "Performance"                     js_of_ocaml/performances.html   performances)
+    (link "Contribute"                      js_of_ocaml/contribute.html     contribute))
+  (section "Try it"
+    (link "OCaml toplevel"        js_of_ocaml/files/toplevel/index.html)
+    (link "Examples and projects" js_of_ocaml/examples.html examples)))

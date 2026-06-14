@@ -1,0 +1,76 @@
+{0 Effect handlers}
+
+Js_of_ocaml supports effect handlers with the [--effects=cps] flag.
+This is based on partially transforming the program to continuation-passing style.
+As a consequence, {{!page-"tailcall"}tail calls} can be fully optimized
+(when CPS transformed).
+
+This is not the default because the generated code can be slower, larger, and
+less readable. The transformation uses an analysis to detect parts of the code
+that cannot involve effects and keeps them in direct style. The analysis is
+especially effective on monomorphic code but less effective when higher-order
+functions are heavily used ([Lwt], [Async], [Incremental]).
+
+{1:double-translation Double translation mode}
+
+An alternative CPS transform is provided with [--effects=double-translation].
+It keeps a direct-style version of the transformed functions in addition to the
+CPS version. The choice of running the CPS version is delayed to run time.
+
+Since CPS code is usually slower, this can avoid performance degradations. You can
+also ensure that some code runs in direct style using
+{!Jsoo_runtime.Effect.assume_no_perform}.
+
+{1:wasm Wasm_of_ocaml}
+
+Wasm_of_ocaml provides three effect handler implementations:
+
+- {b [--effects=jspi]} (default) uses the JavaScript-Promise Integration extension.
+  It does not require any code transformation but requires a runtime that supports JSPI.
+- {b [--effects=cps]} uses the same CPS transformation as js_of_ocaml.
+- {b [--effects=native]} uses the
+  {{:https://github.com/WebAssembly/stack-switching}WebAssembly Stack Switching proposal}
+  (typed continuations). It provides the best performance but requires a runtime with
+  support for the WasmFX extension (currently available, behind the
+  [--experimental-wasm-wasmfx] flag, in Chrome 148 or higher, or in a recent
+  Node.js canary release (V8 version 14.7.100 or higher)).
+
+{1:dune Dune integration}
+
+Dune is aware of the [--effects] option. You can add it to the
+js_of_ocaml flags wherever you want to use it:
+
+{v
+(js_of_ocaml (flags ...))
+v}
+
+{2 Whole workspace setup}
+
+To enable effects for the entire workspace, add this to a [dune] or
+[dune-workspace] file at the root:
+
+{v
+(env
+ (_
+  (js_of_ocaml
+   (flags (:standard --effects=double-translation))
+   (build_runtime_flags (:standard --effects=double-translation)))))
+v}
+
+This setup supports both separate and whole program compilation.
+
+{2 Per-executable setup}
+
+To enable effect handlers for specific executables:
+
+{v
+(executable
+ (name main)
+ (js_of_ocaml
+  (flags (:standard --effects=double-translation))))
+v}
+
+{1 See also}
+
+- {{!page-"options".effects}Command line options} - Full list of [--effects] modes
+- {{!page-"tailcall"}Tailcall optimization} - How tail calls interact with effects
