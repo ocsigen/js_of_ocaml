@@ -23,6 +23,13 @@ on:
         required: false
         default: ""
 
+# Serialise gh-pages writes: a push (rebuilds dev/) and a release
+# workflow_dispatch (publishes <version>/ and repoints latest) must never push
+# to gh-pages at the same time, or the second push fails non-fast-forward.
+concurrency:
+  group: doc-deploy-${{ github.workflow }}
+  cancel-in-progress: false
+
 # Don't run on forks: deployment targets ocsigen/js_of_ocaml's gh-pages.
 jobs:
   build-deploy:
@@ -77,6 +84,10 @@ jobs:
     # compiling with the pinned toolchain; adjust ocaml-compiler / deps if needed.
     if: github.repository == 'ocsigen/js_of_ocaml' && github.event_name == 'workflow_dispatch' && github.event.inputs.version != ''
     runs-on: ubuntu-latest
+    # Pass the user-supplied version through the environment; never interpolate
+    # it directly into a run: shell (avoids command injection from the input).
+    env:
+      VERSION: ${{ github.event.inputs.version }}
     permissions:
       contents: write
     steps:
@@ -114,7 +125,7 @@ jobs:
         run: >-
           opam exec -- wodoc build --config doc/wodoc
           --menu https://ocsigen.org/doc/menu.html
-          --out "$PWD/_relbuild" --label "${{ github.event.inputs.version }}"
+          --out "$PWD/_relbuild" --label "$VERSION"
 
       - name: Checkout gh-pages
         uses: actions/checkout@v4
@@ -130,7 +141,7 @@ jobs:
         run: |
           cp -a relsrc/_relbuild site/_staging
           opam exec -- wodoc release --site site --from _staging \
-            --version "${{ github.event.inputs.version }}"
+            --version "$VERSION"
           rm -rf site/_staging
 
       - name: Commit and push gh-pages
@@ -140,5 +151,5 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add -A
           git diff --cached --quiet \
-            || git commit -m "Release doc ${{ github.event.inputs.version }} (built from tag)"
+            || git commit -m "Release doc $VERSION (built from tag)"
           git push
