@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+          "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>Boulder Dash</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<style type="text/css">
+#boulderdash {
+  background-color: #2b2b2b !important;
+  color: #ddd !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+  margin: 0 !important;
+  min-height: 100vh;
+  padding: 24px 16px !important;
+}
+#boulderdash h1 {
+  font-size: 1.6em;
+  font-weight: 300;
+  letter-spacing: 0.05em;
+  color: #eee;
+  margin: 0 0 16px;
+}
+#boulderdash > div {
+  color: #bbb;
+  font-size: 0.95em;
+}
+#boulderdash > div > div[style] {
+  background-color: #3a3a3a !important;
+  border: 1px solid #4a4a4a !important;
+  border-radius: 4px !important;
+  color: #ddd !important;
+  padding: 4px 10px !important;
+  font-variant-numeric: tabular-nums;
+}
+#boulderdash select {
+  background-color: #3a3a3a;
+  color: #ddd;
+  border: 1px solid #4a4a4a;
+  border-radius: 4px;
+  padding: 5px 10px;
+  font-size: 0.95em;
+  cursor: pointer;
+  margin-left: 4px;
+  transition: border-color 0.15s;
+}
+#boulderdash select:hover {
+  border-color: #666;
+}
+#boulderdash br {
+  display: none;
+}
+#boulderdash {
+  position: relative !important;
+}
+#boulderdash > div > div:last-child {
+  margin-top: 20px;
+  position: relative;
+}
+#boulderdash table {
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 0 32px rgba(0,0,0,0.6);
+  background-color: white;
+}
+#boulderdash td {
+  width: 20px !important;
+  height: 20px !important;
+}
+#boulderdash td img {
+  display: block;
+  width: 20px;
+  height: 20px;
+  image-rendering: pixelated;
+}
+.popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+.popup-box {
+  background-color: #2a2a2a;
+  border: 1px solid #444;
+  border-radius: 10px;
+  padding: 28px 40px;
+  text-align: center;
+  box-shadow: 0 4px 30px rgba(0,0,0,0.5);
+}
+.popup-box p {
+  color: #eee;
+  font-size: 1.4em;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  margin: 0 0 20px;
+}
+.popup-btns {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+.popup-btn {
+  background-color: #3a3a3a;
+  color: #ddd;
+  border: 1px solid #555;
+  border-radius: 5px;
+  padding: 8px 28px;
+  font-size: 1em;
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+.popup-btn:hover {
+  background-color: #4a4a4a;
+  border-color: #666;
+}
+.popup-btn:active {
+  background-color: #555;
+}
+.popup-btn-next {
+  background-color: #2a5a2a;
+  border-color: #4a8a4a;
+}
+.popup-btn-next:hover {
+  background-color: #3a6a3a;
+  border-color: #5a9a5a;
+}
+.popup-btn-next:active {
+  background-color: #4a7a4a;
+}
+#boulderdash div[style*="background-color: red"] {
+  background-color: rgba(0,0,0,0.75) !important;
+  border-radius: 6px !important;
+  padding: 10px 20px !important;
+  font-size: 0.95em !important;
+  color: #fff !important;
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  right: auto !important;
+  transform: translate(-50%, -50%);
+  letter-spacing: 0.1em;
+}
+</style>
+    <script type="text/javascript">
+      var s = (new URLSearchParams(location.search)).has('wasm') ? 'boulderdash.bc.wasm.js' : 'boulderdash.bc.js';
+      document.write('<script type="text/javascript" src="' + s + '" defer><\/script>');
+    </script>
+  </head>
+  <body id="boulderdash">
+  </body>
+</html>

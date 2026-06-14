@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Module Dom_events.Typ — Js_of_ocaml</title>
+  <link rel="stylesheet" href="/css/style.css"/>
+  <link rel="stylesheet" href="/css/ocsigen-odoc.css"/>
+  <script src="../../../../highlight.pack.js"></script>
+  <script src="../../../../wodoc-highlight.js"></script>
+</head>
+<body class="wodoc-page wodoc-doc">
+  <!-- Shared site menu — THE single source of truth for the header, top menu and
+     drawer of EVERY Ocsigen doc page (vitrine + all projects). Canonical copy
+     lives here in ocsigen.github.io; each project's build fetches it. Injected
+     by `wodoc assemble --menu`. Holes filled by the tool (braces omitted here so
+     this comment is not itself rewritten by the hole-filler):
+       subproject  the sub-project name shown next to the Ocsigen logo
+                   (empty on the vitrine), via --subproject
+       leftnav     the project's left navigation, expanded into BOTH the mobile
+                   drawer (below) and the left column (in the page template),
+                   via --leftnav
+     The current entry is highlighted by adding the `current` class to the
+     element carrying data-wodoc-page=<id>: --current on the vitrine (page id),
+     --menu-current in a project (the project id). Nothing is hardcoded here, so
+     this file is the ONLY place the menu is defined.
+
+     Links are the FINAL site paths (/<project>/, /<page>): the target layout
+     where each project is served at ocsigen.org/<project>/ — no transitional
+     /wodoc/ prefix. -->
+<div class="page-header">
+  <p class="logo-ocsigen"><a href="/"><img src="/img/ocsigen-white.svg" alt="Ocsigen"/></a></p>
+  <p class="logo-subproject">Js_of_ocaml</p>
+
+  <div class="mainmenu">
+    <p class="mainmenu-home" data-wodoc-page="githubio"><a href="/">Home</a></p>
+    <p class="mainmenu-doc" data-wodoc-page="tuto"><a href="/tuto/">Doc</a></p>
+    <p data-wodoc-page="eliom"><a href="/eliom/">Eliom</a></p>
+    <p data-wodoc-page="js_of_ocaml" class="current"><a href="/js_of_ocaml/">Js_of_ocaml</a></p>
+    <p data-wodoc-page="ocsigenserver"><a href="/ocsigenserver/">Server</a></p>
+    <p data-wodoc-page="lwt"><a href="/lwt/">Lwt</a></p>
+    <p data-wodoc-page="tyxml"><a href="/tyxml/">Tyxml</a></p>
+    <p data-wodoc-page="ocsigen-start"><a href="/ocsigen-start/">Start</a></p>
+  </div>
+
+  <form id="googlesearch" action="https://google.com/search">
+    <input name="q" id="gsearch-box" placeholder="Search using Google"/>
+    <label for="gsearch-box"><img src="/img/search.svg" alt="" id="gsearch-icon"/></label>
+    <input type="submit" id="gsearch-submit" onclick="document.getElementById('gsearch-box').value += ' site:ocsigen.org';"/>
+  </form>
+
+  <aside class="how-drawer">
+    <input id="how-drawer-toggle" type="checkbox"/>
+    <label for="how-drawer-toggle" id="how-drawer-label"><span class="how-drawer-icon"></span></label>
+    <nav class="how-drawer-content">
+      <ul class="drawermainmenu">
+        <li class="drawermainmenu-home" data-wodoc-page="githubio"><a href="/">Home</a></li>
+        <li class="drawermainmenu-doc" data-wodoc-page="tuto"><a href="/tuto/">Doc</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="eliom"><a href="/eliom/">Eliom</a></li>
+        <li class="drawermainmenu-project current" data-wodoc-page="js_of_ocaml"><a href="/js_of_ocaml/">Js_of_ocaml</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsigenserver"><a href="/ocsigenserver/">Server</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="lwt"><a href="/lwt/">Lwt</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="tyxml"><a href="/tyxml/">Tyxml</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsigen-toolkit"><a href="/ocsigen-toolkit/">Toolkit</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsigen-start"><a href="/ocsigen-start/">Start</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsipersist"><a href="/ocsipersist/">Ocsipersist</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="reactiveData"><a href="/reactiveData/">ReactiveData</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsigen-i18n"><a href="/ocsigen-i18n/">i18n</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="wodoc"><a href="/wodoc/">Wodoc</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="projects"><a href="/projects">Other projects</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="papers"><a href="/papers">Research papers</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="credits"><a href="/credits">Who does Ocsigen?</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="contributing"><a href="/contributing">Contributing</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="blog"><a href="/blog-archive/">Blog</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="install"><a href="/install">Installation</a></li>
+        <li class="drawermainmenu-page"><a href="https://github.com/ocsigen">Source code</a></li>
+      </ul>
+      <!-- On mobile the left column is hidden; its menu lives here in the burger
+           (.how-doctree, shown only on narrow screens), as the old site did.
+           Empty on the vitrine; the leftnav hole is filled (with the same
+           fragment as the left column) only on project pages. -->
+      <nav class="how-doctree"><div class="docversion">
+  <label>Version:
+    <select class="wodoc-version" onchange="wodocVersion(this.value)">
+      <option value="6.3.2">6.3.2</option>
+    </select>
+  </label>
+</div>
+<div class="page-toc">
+  <h3>On this page</h3>
+  
+</div>
+<nav class="api-nav manual-nav">
+<h3>Getting Started</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/overview.html"><a href="../../../../js_of_ocaml/overview.html">Overview</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/install.html"><a href="../../../../js_of_ocaml/install.html">Installation</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/quickstart.html"><a href="../../../../js_of_ocaml/quickstart.html">Quick Start</a></li>
+</ul>
+<h3>Programming Guide</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/javascript-interop.html"><a href="../../../../js_of_ocaml/javascript-interop.html">JavaScript interop</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/ppx.html"><a href="../../../../js_of_ocaml/ppx.html">PPX syntax extension</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/ppx-deriving.html"><a href="../../../../js_of_ocaml/ppx-deriving.html">JSON derivation</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/rev-bindings.html"><a href="../../../../js_of_ocaml/rev-bindings.html">Export OCaml code to JavaScript</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/errors.html"><a href="../../../../js_of_ocaml/errors.html">Error handling</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/api.html"><a href="../../../../js_of_ocaml/api.html">API</a></li>
+</ul>
+<h3>Lwt Support</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/lwt.html"><a href="../../../../js_of_ocaml/lwt.html">Lwt support</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml-lwt/Js_of_ocaml_lwt/index.html"><a href="../../../../js_of_ocaml-lwt/Js_of_ocaml_lwt/index.html">API</a></li>
+</ul>
+<h3>Compiler</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/options.html"><a href="../../../../js_of_ocaml/options.html">Command line options</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/compilation-modes.html"><a href="../../../../js_of_ocaml/compilation-modes.html">Compilation modes</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/linker.html"><a href="../../../../js_of_ocaml/linker.html">JavaScript primitives</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/tailcall.html"><a href="../../../../js_of_ocaml/tailcall.html">Tailcall optimization</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/effects.html"><a href="../../../../js_of_ocaml/effects.html">Effect handlers</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/runtime-representation.html"><a href="../../../../js_of_ocaml/runtime-representation.html">Runtime representation</a></li>
+</ul>
+<h3>Wasm_of_ocaml</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/wasm_overview.html"><a href="../../../../js_of_ocaml/wasm_overview.html">Overview</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/wasm_runtime.html"><a href="../../../../js_of_ocaml/wasm_runtime.html">Writing Wasm primitives</a></li>
+</ul>
+<h3>How-to Guides</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/build-toplevel.html"><a href="../../../../js_of_ocaml/build-toplevel.html">Build a toplevel or use Dynlink</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/debug.html"><a href="../../../../js_of_ocaml/debug.html">Debug a program</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/performances.html"><a href="../../../../js_of_ocaml/performances.html">Performance</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/contribute.html"><a href="../../../../js_of_ocaml/contribute.html">Contribute</a></li>
+</ul>
+<h3>Try it</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/files/toplevel/index.html"><a href="../../../../js_of_ocaml/files/toplevel/index.html">OCaml toplevel</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/examples.html"><a href="../../../../js_of_ocaml/examples.html">Examples and projects</a></li>
+</ul>
+</nav>
+</nav>
+    </nav>
+  </aside>
+</div>
+
+
+  <div class="project-page">
+    <div class="twocols">
+      <nav class="leftcol">
+        <div class="docversion">
+  <label>Version:
+    <select class="wodoc-version" onchange="wodocVersion(this.value)">
+      <option value="6.3.2">6.3.2</option>
+    </select>
+  </label>
+</div>
+<div class="page-toc">
+  <h3>On this page</h3>
+  
+</div>
+<nav class="api-nav manual-nav">
+<h3>Getting Started</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/overview.html"><a href="../../../../js_of_ocaml/overview.html">Overview</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/install.html"><a href="../../../../js_of_ocaml/install.html">Installation</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/quickstart.html"><a href="../../../../js_of_ocaml/quickstart.html">Quick Start</a></li>
+</ul>
+<h3>Programming Guide</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/javascript-interop.html"><a href="../../../../js_of_ocaml/javascript-interop.html">JavaScript interop</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/ppx.html"><a href="../../../../js_of_ocaml/ppx.html">PPX syntax extension</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/ppx-deriving.html"><a href="../../../../js_of_ocaml/ppx-deriving.html">JSON derivation</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/rev-bindings.html"><a href="../../../../js_of_ocaml/rev-bindings.html">Export OCaml code to JavaScript</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/errors.html"><a href="../../../../js_of_ocaml/errors.html">Error handling</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/api.html"><a href="../../../../js_of_ocaml/api.html">API</a></li>
+</ul>
+<h3>Lwt Support</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/lwt.html"><a href="../../../../js_of_ocaml/lwt.html">Lwt support</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml-lwt/Js_of_ocaml_lwt/index.html"><a href="../../../../js_of_ocaml-lwt/Js_of_ocaml_lwt/index.html">API</a></li>
+</ul>
+<h3>Compiler</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/options.html"><a href="../../../../js_of_ocaml/options.html">Command line options</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/compilation-modes.html"><a href="../../../../js_of_ocaml/compilation-modes.html">Compilation modes</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/linker.html"><a href="../../../../js_of_ocaml/linker.html">JavaScript primitives</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/tailcall.html"><a href="../../../../js_of_ocaml/tailcall.html">Tailcall optimization</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/effects.html"><a href="../../../../js_of_ocaml/effects.html">Effect handlers</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/runtime-representation.html"><a href="../../../../js_of_ocaml/runtime-representation.html">Runtime representation</a></li>
+</ul>
+<h3>Wasm_of_ocaml</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/wasm_overview.html"><a href="../../../../js_of_ocaml/wasm_overview.html">Overview</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/wasm_runtime.html"><a href="../../../../js_of_ocaml/wasm_runtime.html">Writing Wasm primitives</a></li>
+</ul>
+<h3>How-to Guides</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/build-toplevel.html"><a href="../../../../js_of_ocaml/build-toplevel.html">Build a toplevel or use Dynlink</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/debug.html"><a href="../../../../js_of_ocaml/debug.html">Debug a program</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/performances.html"><a href="../../../../js_of_ocaml/performances.html">Performance</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/contribute.html"><a href="../../../../js_of_ocaml/contribute.html">Contribute</a></li>
+</ul>
+<h3>Try it</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/files/toplevel/index.html"><a href="../../../../js_of_ocaml/files/toplevel/index.html">OCaml toplevel</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/examples.html"><a href="../../../../js_of_ocaml/examples.html">Examples and projects</a></li>
+</ul>
+</nav>
+
+      </nav>
+      <article class="rightcol">
+        <header class="odoc-preamble"><h1>Module <code><span>Dom_events.Typ</span></code></h1></header>
+        <div class="odoc-content"><div class="odoc-include"><details open="open"><summary class="spec include"><code><span><span class="keyword">include</span> <span class="keyword">module</span> <span class="keyword">type</span> <span class="keyword">of</span> <a href="../../Dom_html/Event/index.html">Dom_html.Event</a></span></code></summary><div class="odoc-spec"><div class="spec type anchored" id="type-typ"><code><span><span class="keyword">type</span> <span>'a typ</span></span><span> = <span><span class="type-var">'a</span> <a href="../../Dom/Event/index.html#type-typ">Dom.Event.typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-cancel"><code><span><span class="keyword">val</span> cancel : <span><span><a href="../../Dom_html/class-type-event/index.html">Dom_html.event</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-click"><code><span><span class="keyword">val</span> click : <span><span><a href="../../Dom_html/class-type-mouseEvent/index.html">Dom_html.mouseEvent</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-close"><code><span><span class="keyword">val</span> close : <span><span><a href="../../Dom_html/class-type-event/index.html">Dom_html.event</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-copy"><code><span><span class="keyword">val</span> copy : <span><span><a href="../../Dom_html/class-type-clipboardEvent/index.html">Dom_html.clipboardEvent</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-cut"><code><span><span class="keyword">val</span> cut : <span><span><a href="../../Dom_html/class-type-clipboardEvent/index.html">Dom_html.clipboardEvent</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-paste"><code><span><span class="keyword">val</span> paste : <span><span><a href="../../Dom_html/class-type-clipboardEvent/index.html">Dom_html.clipboardEvent</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-dblclick"><code><span><span class="keyword">val</span> dblclick : <span><span><a href="../../Dom_html/class-type-mouseEvent/index.html">Dom_html.mouseEvent</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-mousedown"><code><span><span class="keyword">val</span> mousedown : <span><span><a href="../../Dom_html/class-type-mouseEvent/index.html">Dom_html.mouseEvent</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-mouseup"><code><span><span class="keyword">val</span> mouseup : <span><span><a href="../../Dom_html/class-type-mouseEvent/index.html">Dom_html.mouseEvent</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-mouseover"><code><span><span class="keyword">val</span> mouseover : <span><span><a href="../../Dom_html/class-type-mouseEvent/index.html">Dom_html.mouseEvent</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-mousemove"><code><span><span class="keyword">val</span> mousemove : <span><span><a href="../../Dom_html/class-type-mouseEvent/index.html">Dom_html.mouseEvent</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-mouseout"><code><span><span class="keyword">val</span> mouseout : <span><span><a href="../../Dom_html/class-type-mouseEvent/index.html">Dom_html.mouseEvent</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-keypress"><code><span><span class="keyword">val</span> keypress : <span><span><a href="../../Dom_html/class-type-keyboardEvent/index.html">Dom_html.keyboardEvent</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-keydown"><code><span><span class="keyword">val</span> keydown : <span><span><a href="../../Dom_html/class-type-keyboardEvent/index.html">Dom_html.keyboardEvent</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-keyup"><code><span><span class="keyword">val</span> keyup : <span><span><a href="../../Dom_html/class-type-keyboardEvent/index.html">Dom_html.keyboardEvent</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-mousewheel"><code><span><span class="keyword">val</span> mousewheel : <span><span><a href="../../Dom_html/class-type-mousewheelEvent/index.html">Dom_html.mousewheelEvent</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-_DOMMouseScroll"><code><span><span class="keyword">val</span> _DOMMouseScroll : <span><span><a href="../../Dom_html/class-type-mouseScrollEvent/index.html">Dom_html.mouseScrollEvent</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-wheel"><code><span><span class="keyword">val</span> wheel : <span><span><a href="../../Dom_html/class-type-wheelEvent/index.html">Dom_html.wheelEvent</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-touchstart"><code><span><span class="keyword">val</span> touchstart : <span><span><a href="../../Dom_html/class-type-touchEvent/index.html">Dom_html.touchEvent</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-touchmove"><code><span><span class="keyword">val</span> touchmove : <span><span><a href="../../Dom_html/class-type-touchEvent/index.html">Dom_html.touchEvent</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-touchend"><code><span><span class="keyword">val</span> touchend : <span><span><a href="../../Dom_html/class-type-touchEvent/index.html">Dom_html.touchEvent</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-touchcancel"><code><span><span class="keyword">val</span> touchcancel : <span><span><a href="../../Dom_html/class-type-touchEvent/index.html">Dom_html.touchEvent</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-dragstart"><code><span><span class="keyword">val</span> dragstart : <span><span><a href="../../Dom_html/class-type-dragEvent/index.html">Dom_html.dragEvent</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-dragend"><code><span><span class="keyword">val</span> dragend : <span><span><a href="../../Dom_html/class-type-dragEvent/index.html">Dom_html.dragEvent</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-dragenter"><code><span><span class="keyword">val</span> dragenter : <span><span><a href="../../Dom_html/class-type-dragEvent/index.html">Dom_html.dragEvent</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-dragover"><code><span><span class="keyword">val</span> dragover : <span><span><a href="../../Dom_html/class-type-dragEvent/index.html">Dom_html.dragEvent</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-dragleave"><code><span><span class="keyword">val</span> dragleave : <span><span><a href="../../Dom_html/class-type-dragEvent/index.html">Dom_html.dragEvent</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-drag"><code><span><span class="keyword">val</span> drag : <span><span><a href="../../Dom_html/class-type-dragEvent/index.html">Dom_html.dragEvent</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-drop"><code><span><span class="keyword">val</span> drop : <span><span><a href="../../Dom_html/class-type-dragEvent/index.html">Dom_html.dragEvent</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-hashchange"><code><span><span class="keyword">val</span> hashchange : <span><span><a href="../../Dom_html/class-type-hashChangeEvent/index.html">Dom_html.hashChangeEvent</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-change"><code><span><span class="keyword">val</span> change : <span><span><a href="../../Dom_html/class-type-event/index.html">Dom_html.event</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-input"><code><span><span class="keyword">val</span> input : <span><span><a href="../../Dom_html/class-type-event/index.html">Dom_html.event</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-timeupdate"><code><span><span class="keyword">val</span> timeupdate : <span><span><a href="../../Dom_html/class-type-event/index.html">Dom_html.event</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-submit"><code><span><span class="keyword">val</span> submit : <span><span><a href="../../Dom_html/class-type-submitEvent/index.html">Dom_html.submitEvent</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-scroll"><code><span><span class="keyword">val</span> scroll : <span><span><a href="../../Dom_html/class-type-event/index.html">Dom_html.event</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-focus"><code><span><span class="keyword">val</span> focus : <span><span><a href="../../Dom_html/class-type-focusEvent/index.html">Dom_html.focusEvent</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-blur"><code><span><span class="keyword">val</span> blur : <span><span><a href="../../Dom_html/class-type-focusEvent/index.html">Dom_html.focusEvent</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-load"><code><span><span class="keyword">val</span> load : <span><span><a href="../../Dom_html/class-type-event/index.html">Dom_html.event</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-unload"><code><span><span class="keyword">val</span> unload : <span><span><a href="../../Dom_html/class-type-event/index.html">Dom_html.event</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-beforeunload"><code><span><span class="keyword">val</span> beforeunload : <span><span><a href="../../Dom_html/class-type-event/index.html">Dom_html.event</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-resize"><code><span><span class="keyword">val</span> resize : <span><span><a href="../../Dom_html/class-type-event/index.html">Dom_html.event</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-orientationchange"><code><span><span class="keyword">val</span> orientationchange : <span><span><a href="../../Dom_html/class-type-event/index.html">Dom_html.event</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-popstate"><code><span><span class="keyword">val</span> popstate : <span><span><a href="../../Dom_html/class-type-popStateEvent/index.html">Dom_html.popStateEvent</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-error"><code><span><span class="keyword">val</span> error : <span><span><a href="../../Dom_html/class-type-event/index.html">Dom_html.event</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-abort"><code><span><span class="keyword">val</span> abort : <span><span><a href="../../Dom_html/class-type-event/index.html">Dom_html.event</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-select"><code><span><span class="keyword">val</span> select : <span><span><a href="../../Dom_html/class-type-event/index.html">Dom_html.event</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-online"><code><span><span class="keyword">val</span> online : <span><span><a href="../../Dom_html/class-type-event/index.html">Dom_html.event</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-offline"><code><span><span class="keyword">val</span> offline : <span><span><a href="../../Dom_html/class-type-event/index.html">Dom_html.event</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-checking"><code><span><span class="keyword">val</span> checking : <span><span><a href="../../Dom_html/class-type-event/index.html">Dom_html.event</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-noupdate"><code><span><span class="keyword">val</span> noupdate : <span><span><a href="../../Dom_html/class-type-event/index.html">Dom_html.event</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-downloading"><code><span><span class="keyword">val</span> downloading : <span><span><a href="../../Dom_html/class-type-event/index.html">Dom_html.event</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-progress"><code><span><span class="keyword">val</span> progress : <span><span><a href="../../Dom_html/class-type-event/index.html">Dom_html.event</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-updateready"><code><span><span class="keyword">val</span> updateready : <span><span><a href="../../Dom_html/class-type-event/index.html">Dom_html.event</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-cached"><code><span><span class="keyword">val</span> cached : <span><span><a href="../../Dom_html/class-type-event/index.html">Dom_html.event</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-obsolete"><code><span><span class="keyword">val</span> obsolete : <span><span><a href="../../Dom_html/class-type-event/index.html">Dom_html.event</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-domContentLoaded"><code><span><span class="keyword">val</span> domContentLoaded : <span><span><a href="../../Dom_html/class-type-event/index.html">Dom_html.event</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-animationstart"><code><span><span class="keyword">val</span> animationstart : <span><span><a href="../../Dom_html/class-type-animationEvent/index.html">Dom_html.animationEvent</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-animationend"><code><span><span class="keyword">val</span> animationend : <span><span><a href="../../Dom_html/class-type-animationEvent/index.html">Dom_html.animationEvent</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-animationiteration"><code><span><span class="keyword">val</span> animationiteration : <span><span><a href="../../Dom_html/class-type-animationEvent/index.html">Dom_html.animationEvent</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-animationcancel"><code><span><span class="keyword">val</span> animationcancel : <span><span><a href="../../Dom_html/class-type-animationEvent/index.html">Dom_html.animationEvent</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-transitionrun"><code><span><span class="keyword">val</span> transitionrun : <span><span><a href="../../Dom_html/class-type-transitionEvent/index.html">Dom_html.transitionEvent</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-transitionstart"><code><span><span class="keyword">val</span> transitionstart : <span><span><a href="../../Dom_html/class-type-transitionEvent/index.html">Dom_html.transitionEvent</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-transitionend"><code><span><span class="keyword">val</span> transitionend : <span><span><a href="../../Dom_html/class-type-transitionEvent/index.html">Dom_html.transitionEvent</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-transitioncancel"><code><span><span class="keyword">val</span> transitioncancel : <span><span><a href="../../Dom_html/class-type-transitionEvent/index.html">Dom_html.transitionEvent</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-canplay"><code><span><span class="keyword">val</span> canplay : <span><span><a href="../../Dom_html/class-type-mediaEvent/index.html">Dom_html.mediaEvent</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-canplaythrough"><code><span><span class="keyword">val</span> canplaythrough : <span><span><a href="../../Dom_html/class-type-mediaEvent/index.html">Dom_html.mediaEvent</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-durationchange"><code><span><span class="keyword">val</span> durationchange : <span><span><a href="../../Dom_html/class-type-mediaEvent/index.html">Dom_html.mediaEvent</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-emptied"><code><span><span class="keyword">val</span> emptied : <span><span><a href="../../Dom_html/class-type-mediaEvent/index.html">Dom_html.mediaEvent</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-ended"><code><span><span class="keyword">val</span> ended : <span><span><a href="../../Dom_html/class-type-mediaEvent/index.html">Dom_html.mediaEvent</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-gotpointercapture"><code><span><span class="keyword">val</span> gotpointercapture : <span><span><a href="../../Dom_html/class-type-pointerEvent/index.html">Dom_html.pointerEvent</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-loadeddata"><code><span><span class="keyword">val</span> loadeddata : <span><span><a href="../../Dom_html/class-type-mediaEvent/index.html">Dom_html.mediaEvent</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-loadedmetadata"><code><span><span class="keyword">val</span> loadedmetadata : <span><span><a href="../../Dom_html/class-type-mediaEvent/index.html">Dom_html.mediaEvent</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-loadstart"><code><span><span class="keyword">val</span> loadstart : <span><span><a href="../../Dom_html/class-type-mediaEvent/index.html">Dom_html.mediaEvent</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-lostpointercapture"><code><span><span class="keyword">val</span> lostpointercapture : <span><span><a href="../../Dom_html/class-type-pointerEvent/index.html">Dom_html.pointerEvent</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-message"><code><span><span class="keyword">val</span> message : <span><span><a href="../../Dom_html/class-type-messageEvent/index.html">Dom_html.messageEvent</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-pause"><code><span><span class="keyword">val</span> pause : <span><span><a href="../../Dom_html/class-type-mediaEvent/index.html">Dom_html.mediaEvent</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-play"><code><span><span class="keyword">val</span> play : <span><span><a href="../../Dom_html/class-type-mediaEvent/index.html">Dom_html.mediaEvent</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-playing"><code><span><span class="keyword">val</span> playing : <span><span><a href="../../Dom_html/class-type-mediaEvent/index.html">Dom_html.mediaEvent</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-pointerenter"><code><span><span class="keyword">val</span> pointerenter : <span><span><a href="../../Dom_html/class-type-pointerEvent/index.html">Dom_html.pointerEvent</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-pointercancel"><code><span><span class="keyword">val</span> pointercancel : <span><span><a href="../../Dom_html/class-type-pointerEvent/index.html">Dom_html.pointerEvent</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-pointerdown"><code><span><span class="keyword">val</span> pointerdown : <span><span><a href="../../Dom_html/class-type-pointerEvent/index.html">Dom_html.pointerEvent</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-pointerleave"><code><span><span class="keyword">val</span> pointerleave : <span><span><a href="../../Dom_html/class-type-pointerEvent/index.html">Dom_html.pointerEvent</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-pointermove"><code><span><span class="keyword">val</span> pointermove : <span><span><a href="../../Dom_html/class-type-pointerEvent/index.html">Dom_html.pointerEvent</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-pointerout"><code><span><span class="keyword">val</span> pointerout : <span><span><a href="../../Dom_html/class-type-pointerEvent/index.html">Dom_html.pointerEvent</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-pointerover"><code><span><span class="keyword">val</span> pointerover : <span><span><a href="../../Dom_html/class-type-pointerEvent/index.html">Dom_html.pointerEvent</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-pointerup"><code><span><span class="keyword">val</span> pointerup : <span><span><a href="../../Dom_html/class-type-pointerEvent/index.html">Dom_html.pointerEvent</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-ratechange"><code><span><span class="keyword">val</span> ratechange : <span><span><a href="../../Dom_html/class-type-mediaEvent/index.html">Dom_html.mediaEvent</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-seeked"><code><span><span class="keyword">val</span> seeked : <span><span><a href="../../Dom_html/class-type-mediaEvent/index.html">Dom_html.mediaEvent</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-seeking"><code><span><span class="keyword">val</span> seeking : <span><span><a href="../../Dom_html/class-type-mediaEvent/index.html">Dom_html.mediaEvent</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-stalled"><code><span><span class="keyword">val</span> stalled : <span><span><a href="../../Dom_html/class-type-mediaEvent/index.html">Dom_html.mediaEvent</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-suspend"><code><span><span class="keyword">val</span> suspend : <span><span><a href="../../Dom_html/class-type-mediaEvent/index.html">Dom_html.mediaEvent</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-volumechange"><code><span><span class="keyword">val</span> volumechange : <span><span><a href="../../Dom_html/class-type-mediaEvent/index.html">Dom_html.mediaEvent</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-waiting"><code><span><span class="keyword">val</span> waiting : <span><span><a href="../../Dom_html/class-type-mediaEvent/index.html">Dom_html.mediaEvent</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-toggle"><code><span><span class="keyword">val</span> toggle : <span><span><a href="../../Dom_html/class-type-toggleEvent/index.html">Dom_html.toggleEvent</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <a href="#type-typ">typ</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-make"><code><span><span class="keyword">val</span> make : <span>string <span class="arrow">&#45;&gt;</span></span> <span><span class="type-var">'a</span> <a href="#type-typ">typ</a></span></span></code></div></div></details></div></div>
+      </article>
+    </div>
+  </div>
+
+  <script>
+    var wodocPub = "/js_of_ocaml";
+    // Switch version: keep the current page, swapping only the version segment.
+    function wodocVersion(v) {
+      if (!v) return;
+      var re = new RegExp('^(' + wodocPub + '/)[^/]+');
+      var p = location.pathname;
+      location.href =
+        re.test(p) ? p.replace(re, '$1' + v) : wodocPub + '/' + v + '/index.html';
+    }
+    // Build the version <select> from the project's versions.json (the single
+    // source of truth, refreshed on every build/release), so even older frozen
+    // pages list the current set. Falls back to the baked <option>s on failure.
+    (function () {
+      var seg = (location.pathname.match(
+        new RegExp('^' + wodocPub + '/([^/]+)')) || [])[1];
+      function select(sel) {
+        var i;
+        for (i = 0; i < sel.options.length; i++)
+          if (sel.options[i].value === seg) { sel.selectedIndex = i; return; }
+        if (seg) {
+          var o = document.createElement('option');
+          o.value = seg; o.textContent = seg; o.selected = true;
+          sel.insertBefore(o, sel.firstChild);
+        }
+      }
+      fetch(wodocPub + '/versions.json')
+        .then(function (r) { if (!r.ok) throw 0; return r.json(); })
+        .then(function (m) {
+          var list = m.list || [], latest = m.latest;
+          document.querySelectorAll('.wodoc-version').forEach(function (sel) {
+            sel.innerHTML = '';
+            list.forEach(function (v) {
+              var o = document.createElement('option');
+              if (v === latest) { o.value = 'latest'; o.textContent = v + ' (latest)'; }
+              else { o.value = v; o.textContent = v; }
+              sel.appendChild(o);
+            });
+            select(sel);
+          });
+        })
+        .catch(function () {
+          document.querySelectorAll('.wodoc-version').forEach(select);
+        });
+    })();
+  </script>
+</body>
+</html>

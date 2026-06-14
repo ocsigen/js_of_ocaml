@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+	  "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>Real-Time Wiki Editor</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<style type="text/css">
+* {
+  box-sizing: border-box;
+}
+body {
+  background-color: #1e1e1e;
+  color: #ddd;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 14px;
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 16px;
+}
+h1 {
+  font-size: 1.6em;
+  font-weight: 300;
+  letter-spacing: 0.05em;
+  color: #eee;
+  margin: 0 0 16px;
+}
+.editor-layout {
+  display: flex;
+  gap: 16px;
+  width: 100%;
+  max-width: 1100px;
+  flex: 1;
+  min-height: 0;
+}
+.pane {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.pane-label {
+  color: #777;
+  font-size: 0.8em;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 6px;
+}
+#wiki_demo textarea {
+  flex: 1;
+  background-color: #252525;
+  color: #ddd;
+  border: 1px solid #3a3a3a;
+  border-radius: 6px;
+  padding: 14px;
+  font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+  font-size: 0.9em;
+  line-height: 1.6;
+  resize: none;
+  transition: border-color 0.15s;
+}
+#wiki_demo textarea:focus {
+  border-color: #555;
+  outline: none;
+}
+#wiki_demo .preview {
+  flex: 1;
+  background-color: #252525;
+  border: 1px solid #3a3a3a;
+  border-radius: 6px;
+  padding: 14px;
+  overflow-y: auto;
+  line-height: 1.6;
+}
+#wiki_demo .preview a {
+  color: #6cb4ee;
+  text-decoration: none;
+}
+#wiki_demo .preview a:hover {
+  color: #8ccaff;
+  text-decoration: underline;
+}
+#wiki_demo .preview h1,
+#wiki_demo .preview h2,
+#wiki_demo .preview h3,
+#wiki_demo .preview h4,
+#wiki_demo .preview h5,
+#wiki_demo .preview h6 {
+  color: #eee;
+  margin: 0.8em 0 0.4em;
+  line-height: 1.3;
+}
+#wiki_demo .preview h1 {
+  font-size: 1.8em;
+  font-weight: 600;
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid #3a3a3a;
+}
+#wiki_demo .preview h2 {
+  font-size: 1.4em;
+  font-weight: 600;
+  padding-bottom: 0.2em;
+  border-bottom: 1px solid #333;
+}
+#wiki_demo .preview h3 {
+  font-size: 1.2em;
+  font-weight: 600;
+}
+#wiki_demo .preview h4 {
+  font-size: 1.05em;
+  font-weight: 600;
+  color: #ccc;
+}
+#wiki_demo .preview h5 {
+  font-size: 0.95em;
+  font-weight: 600;
+  color: #bbb;
+}
+#wiki_demo .preview h6 {
+  font-size: 0.9em;
+  font-weight: 600;
+  color: #aaa;
+}
+#wiki_demo .preview ul,
+#wiki_demo .preview ol {
+  padding-left: 1.5em;
+  margin: 0.4em 0;
+}
+#wiki_demo .preview pre {
+  background-color: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 4px;
+  padding: 10px;
+  overflow-x: auto;
+  font-size: 0.9em;
+}
+#wiki_demo .preview img {
+  max-width: 100%;
+  border-radius: 4px;
+  margin: 0.4em 0;
+}
+#wiki_demo .preview iframe {
+  max-width: 100%;
+  border-radius: 4px;
+  border: 1px solid #3a3a3a;
+  margin: 0.4em 0;
+}
+@media (max-width: 700px) {
+  .editor-layout {
+    flex-direction: column;
+  }
+}
+</style>
+    <script type="text/javascript">
+      var s = (new URLSearchParams(location.search)).has('wasm') ? 'main.bc.wasm.js' : 'main.bc.js';
+      document.write('<script type="text/javascript" src="' + s + '" defer><\/script>');
+    </script>
+  </head>
+  <body>
+    <h1>Real-Time Wiki Editor</h1>
+    <div class="editor-layout" id="wiki_demo"></div>
+  </body>
+</html>

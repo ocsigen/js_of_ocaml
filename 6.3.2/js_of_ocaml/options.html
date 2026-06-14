@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Command-line options — Js_of_ocaml</title>
+  <link rel="stylesheet" href="/css/style.css"/>
+  <link rel="stylesheet" href="/css/ocsigen-odoc.css"/>
+  <script src="../highlight.pack.js"></script>
+  <script src="../wodoc-highlight.js"></script>
+</head>
+<body class="wodoc-page wodoc-doc">
+  <!-- Shared site menu — THE single source of truth for the header, top menu and
+     drawer of EVERY Ocsigen doc page (vitrine + all projects). Canonical copy
+     lives here in ocsigen.github.io; each project's build fetches it. Injected
+     by `wodoc assemble --menu`. Holes filled by the tool (braces omitted here so
+     this comment is not itself rewritten by the hole-filler):
+       subproject  the sub-project name shown next to the Ocsigen logo
+                   (empty on the vitrine), via --subproject
+       leftnav     the project's left navigation, expanded into BOTH the mobile
+                   drawer (below) and the left column (in the page template),
+                   via --leftnav
+     The current entry is highlighted by adding the `current` class to the
+     element carrying data-wodoc-page=<id>: --current on the vitrine (page id),
+     --menu-current in a project (the project id). Nothing is hardcoded here, so
+     this file is the ONLY place the menu is defined.
+
+     Links are the FINAL site paths (/<project>/, /<page>): the target layout
+     where each project is served at ocsigen.org/<project>/ — no transitional
+     /wodoc/ prefix. -->
+<div class="page-header">
+  <p class="logo-ocsigen"><a href="/"><img src="/img/ocsigen-white.svg" alt="Ocsigen"/></a></p>
+  <p class="logo-subproject">Js_of_ocaml</p>
+
+  <div class="mainmenu">
+    <p class="mainmenu-home" data-wodoc-page="githubio"><a href="/">Home</a></p>
+    <p class="mainmenu-doc" data-wodoc-page="tuto"><a href="/tuto/">Doc</a></p>
+    <p data-wodoc-page="eliom"><a href="/eliom/">Eliom</a></p>
+    <p data-wodoc-page="js_of_ocaml" class="current"><a href="/js_of_ocaml/">Js_of_ocaml</a></p>
+    <p data-wodoc-page="ocsigenserver"><a href="/ocsigenserver/">Server</a></p>
+    <p data-wodoc-page="lwt"><a href="/lwt/">Lwt</a></p>
+    <p data-wodoc-page="tyxml"><a href="/tyxml/">Tyxml</a></p>
+    <p data-wodoc-page="ocsigen-start"><a href="/ocsigen-start/">Start</a></p>
+  </div>
+
+  <form id="googlesearch" action="https://google.com/search">
+    <input name="q" id="gsearch-box" placeholder="Search using Google"/>
+    <label for="gsearch-box"><img src="/img/search.svg" alt="" id="gsearch-icon"/></label>
+    <input type="submit" id="gsearch-submit" onclick="document.getElementById('gsearch-box').value += ' site:ocsigen.org';"/>
+  </form>
+
+  <aside class="how-drawer">
+    <input id="how-drawer-toggle" type="checkbox"/>
+    <label for="how-drawer-toggle" id="how-drawer-label"><span class="how-drawer-icon"></span></label>
+    <nav class="how-drawer-content">
+      <ul class="drawermainmenu">
+        <li class="drawermainmenu-home" data-wodoc-page="githubio"><a href="/">Home</a></li>
+        <li class="drawermainmenu-doc" data-wodoc-page="tuto"><a href="/tuto/">Doc</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="eliom"><a href="/eliom/">Eliom</a></li>
+        <li class="drawermainmenu-project current" data-wodoc-page="js_of_ocaml"><a href="/js_of_ocaml/">Js_of_ocaml</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsigenserver"><a href="/ocsigenserver/">Server</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="lwt"><a href="/lwt/">Lwt</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="tyxml"><a href="/tyxml/">Tyxml</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsigen-toolkit"><a href="/ocsigen-toolkit/">Toolkit</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsigen-start"><a href="/ocsigen-start/">Start</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsipersist"><a href="/ocsipersist/">Ocsipersist</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="reactiveData"><a href="/reactiveData/">ReactiveData</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsigen-i18n"><a href="/ocsigen-i18n/">i18n</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="wodoc"><a href="/wodoc/">Wodoc</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="projects"><a href="/projects">Other projects</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="papers"><a href="/papers">Research papers</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="credits"><a href="/credits">Who does Ocsigen?</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="contributing"><a href="/contributing">Contributing</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="blog"><a href="/blog-archive/">Blog</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="install"><a href="/install">Installation</a></li>
+        <li class="drawermainmenu-page"><a href="https://github.com/ocsigen">Source code</a></li>
+      </ul>
+      <!-- On mobile the left column is hidden; its menu lives here in the burger
+           (.how-doctree, shown only on narrow screens), as the old site did.
+           Empty on the vitrine; the leftnav hole is filled (with the same
+           fragment as the left column) only on project pages. -->
+      <nav class="how-doctree"><div class="docversion">
+  <label>Version:
+    <select class="wodoc-version" onchange="wodocVersion(this.value)">
+      <option value="6.3.2">6.3.2</option>
+    </select>
+  </label>
+</div>
+<div class="page-toc">
+  <h3>On this page</h3>
+  <nav class="odoc-toc odoc-local-toc"><ul><li><a href="#general">General options</a></li><li><a href="#debugging">Debugging</a></li><li><a href="#target-env">Target environment</a></li><li><a href="#effects">Effect handlers</a></li><li><a href="#source-maps">Source maps</a></li><li><a href="#pseudo-fs">Pseudo filesystem</a></li><li><a href="#env-vars">Environment variables</a><ul><li><a href="#resolution-order">Resolution order</a></li><li><a href="#browser-example">Browser example</a></li></ul></li><li><a href="#toplevel">Toplevel and dynamic linking</a></li><li><a href="#compilation-modes">Compilation modes</a></li><li><a href="#optimizations">Optimizations</a><ul><li><a href="#optimization-profiles">Optimization profiles</a></li><li><a href="#recommended-settings">Recommended settings</a></li></ul></li><li><a href="#enable-disable">Enable/Disable options</a><ul><li><a href="#output-formatting">Output formatting</a></li><li><a href="#optimization-flags">Optimizations</a></li><li><a href="#runtime-behavior">Runtime behavior</a></li><li><a href="#internal-debugging">Internal debugging</a></li></ul></li><li><a href="#parameters">Compiler parameters</a></li><li><a href="#warnings">Warnings</a></li><li><a href="#debug-output">Debug output</a></li><li><a href="#subcommands">Subcommands</a><ul><li><a href="#link-command">Link command</a></li><li><a href="#build-runtime-command">Build-runtime command</a></li><li><a href="#build-fs-command">Build-fs command</a></li></ul></li></ul></nav>
+</div>
+<nav class="api-nav manual-nav">
+<h3>Getting Started</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/overview.html"><a href="../js_of_ocaml/overview.html">Overview</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/install.html"><a href="../js_of_ocaml/install.html">Installation</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/quickstart.html"><a href="../js_of_ocaml/quickstart.html">Quick Start</a></li>
+</ul>
+<h3>Programming Guide</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/javascript-interop.html"><a href="../js_of_ocaml/javascript-interop.html">JavaScript interop</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/ppx.html"><a href="../js_of_ocaml/ppx.html">PPX syntax extension</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/ppx-deriving.html"><a href="../js_of_ocaml/ppx-deriving.html">JSON derivation</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/rev-bindings.html"><a href="../js_of_ocaml/rev-bindings.html">Export OCaml code to JavaScript</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/errors.html"><a href="../js_of_ocaml/errors.html">Error handling</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/api.html"><a href="../js_of_ocaml/api.html">API</a></li>
+</ul>
+<h3>Lwt Support</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/lwt.html"><a href="../js_of_ocaml/lwt.html">Lwt support</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml-lwt/Js_of_ocaml_lwt/index.html"><a href="../js_of_ocaml-lwt/Js_of_ocaml_lwt/index.html">API</a></li>
+</ul>
+<h3>Compiler</h3>
+<ul class="api-section">
+<li class="ml3 current" data-wodoc-page="js_of_ocaml/options.html"><a href="../js_of_ocaml/options.html">Command line options</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/compilation-modes.html"><a href="../js_of_ocaml/compilation-modes.html">Compilation modes</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/linker.html"><a href="../js_of_ocaml/linker.html">JavaScript primitives</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/tailcall.html"><a href="../js_of_ocaml/tailcall.html">Tailcall optimization</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/effects.html"><a href="../js_of_ocaml/effects.html">Effect handlers</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/runtime-representation.html"><a href="../js_of_ocaml/runtime-representation.html">Runtime representation</a></li>
+</ul>
+<h3>Wasm_of_ocaml</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/wasm_overview.html"><a href="../js_of_ocaml/wasm_overview.html">Overview</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/wasm_runtime.html"><a href="../js_of_ocaml/wasm_runtime.html">Writing Wasm primitives</a></li>
+</ul>
+<h3>How-to Guides</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/build-toplevel.html"><a href="../js_of_ocaml/build-toplevel.html">Build a toplevel or use Dynlink</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/debug.html"><a href="../js_of_ocaml/debug.html">Debug a program</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/performances.html"><a href="../js_of_ocaml/performances.html">Performance</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/contribute.html"><a href="../js_of_ocaml/contribute.html">Contribute</a></li>
+</ul>
+<h3>Try it</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/files/toplevel/index.html"><a href="../js_of_ocaml/files/toplevel/index.html">OCaml toplevel</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/examples.html"><a href="../js_of_ocaml/examples.html">Examples and projects</a></li>
+</ul>
+</nav>
+</nav>
+    </nav>
+  </aside>
+</div>
+
+
+  <div class="project-page">
+    <div class="twocols">
+      <nav class="leftcol">
+        <div class="docversion">
+  <label>Version:
+    <select class="wodoc-version" onchange="wodocVersion(this.value)">
+      <option value="6.3.2">6.3.2</option>
+    </select>
+  </label>
+</div>
+<div class="page-toc">
+  <h3>On this page</h3>
+  <nav class="odoc-toc odoc-local-toc"><ul><li><a href="#general">General options</a></li><li><a href="#debugging">Debugging</a></li><li><a href="#target-env">Target environment</a></li><li><a href="#effects">Effect handlers</a></li><li><a href="#source-maps">Source maps</a></li><li><a href="#pseudo-fs">Pseudo filesystem</a></li><li><a href="#env-vars">Environment variables</a><ul><li><a href="#resolution-order">Resolution order</a></li><li><a href="#browser-example">Browser example</a></li></ul></li><li><a href="#toplevel">Toplevel and dynamic linking</a></li><li><a href="#compilation-modes">Compilation modes</a></li><li><a href="#optimizations">Optimizations</a><ul><li><a href="#optimization-profiles">Optimization profiles</a></li><li><a href="#recommended-settings">Recommended settings</a></li></ul></li><li><a href="#enable-disable">Enable/Disable options</a><ul><li><a href="#output-formatting">Output formatting</a></li><li><a href="#optimization-flags">Optimizations</a></li><li><a href="#runtime-behavior">Runtime behavior</a></li><li><a href="#internal-debugging">Internal debugging</a></li></ul></li><li><a href="#parameters">Compiler parameters</a></li><li><a href="#warnings">Warnings</a></li><li><a href="#debug-output">Debug output</a></li><li><a href="#subcommands">Subcommands</a><ul><li><a href="#link-command">Link command</a></li><li><a href="#build-runtime-command">Build-runtime command</a></li><li><a href="#build-fs-command">Build-fs command</a></li></ul></li></ul></nav>
+</div>
+<nav class="api-nav manual-nav">
+<h3>Getting Started</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/overview.html"><a href="../js_of_ocaml/overview.html">Overview</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/install.html"><a href="../js_of_ocaml/install.html">Installation</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/quickstart.html"><a href="../js_of_ocaml/quickstart.html">Quick Start</a></li>
+</ul>
+<h3>Programming Guide</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/javascript-interop.html"><a href="../js_of_ocaml/javascript-interop.html">JavaScript interop</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/ppx.html"><a href="../js_of_ocaml/ppx.html">PPX syntax extension</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/ppx-deriving.html"><a href="../js_of_ocaml/ppx-deriving.html">JSON derivation</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/rev-bindings.html"><a href="../js_of_ocaml/rev-bindings.html">Export OCaml code to JavaScript</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/errors.html"><a href="../js_of_ocaml/errors.html">Error handling</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/api.html"><a href="../js_of_ocaml/api.html">API</a></li>
+</ul>
+<h3>Lwt Support</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/lwt.html"><a href="../js_of_ocaml/lwt.html">Lwt support</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml-lwt/Js_of_ocaml_lwt/index.html"><a href="../js_of_ocaml-lwt/Js_of_ocaml_lwt/index.html">API</a></li>
+</ul>
+<h3>Compiler</h3>
+<ul class="api-section">
+<li class="ml3 current" data-wodoc-page="js_of_ocaml/options.html"><a href="../js_of_ocaml/options.html">Command line options</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/compilation-modes.html"><a href="../js_of_ocaml/compilation-modes.html">Compilation modes</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/linker.html"><a href="../js_of_ocaml/linker.html">JavaScript primitives</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/tailcall.html"><a href="../js_of_ocaml/tailcall.html">Tailcall optimization</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/effects.html"><a href="../js_of_ocaml/effects.html">Effect handlers</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/runtime-representation.html"><a href="../js_of_ocaml/runtime-representation.html">Runtime representation</a></li>
+</ul>
+<h3>Wasm_of_ocaml</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/wasm_overview.html"><a href="../js_of_ocaml/wasm_overview.html">Overview</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/wasm_runtime.html"><a href="../js_of_ocaml/wasm_runtime.html">Writing Wasm primitives</a></li>
+</ul>
+<h3>How-to Guides</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/build-toplevel.html"><a href="../js_of_ocaml/build-toplevel.html">Build a toplevel or use Dynlink</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/debug.html"><a href="../js_of_ocaml/debug.html">Debug a program</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/performances.html"><a href="../js_of_ocaml/performances.html">Performance</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/contribute.html"><a href="../js_of_ocaml/contribute.html">Contribute</a></li>
+</ul>
+<h3>Try it</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/files/toplevel/index.html"><a href="../js_of_ocaml/files/toplevel/index.html">OCaml toplevel</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/examples.html"><a href="../js_of_ocaml/examples.html">Examples and projects</a></li>
+</ul>
+</nav>
+
+      </nav>
+      <article class="rightcol">
+        <header class="odoc-preamble"><h1 id="command-line-options">Command-line options</h1><p>This page documents the command-line options for the <code>js_of_ocaml</code> compiler.</p></header>
+        <div class="odoc-content"><h2 id="general">General options</h2><table class="odoc-table"><tr><td><p>Option</p></td><td><p>Description</p></td></tr><tr><td><p><code>--version</code></p></td><td><p>Display the compiler version</p></td></tr><tr><td><p><code>-o &lt;file&gt;</code></p></td><td><p>Set output filename</p></td></tr><tr><td><p><code>--opt {1,2,3}</code></p></td><td><p>Set optimization profile (default: 1). See <a href="#optimizations">Optimizations</a></p></td></tr><tr><td><p><code>--enable &lt;opt&gt;</code></p></td><td><p>Enable option. See <a href="#enable-disable">Enable/Disable options</a></p></td></tr><tr><td><p><code>--disable &lt;opt&gt;</code></p></td><td><p>Disable option. See <a href="#enable-disable">Enable/Disable options</a></p></td></tr><tr><td><p><code>-I &lt;dir&gt;</code></p></td><td><p>Add directory to the list of include directories</p></td></tr></table><h2 id="debugging">Debugging</h2><table class="odoc-table"><tr><td><p>Option</p></td><td><p>Description</p></td></tr><tr><td><p><code>--pretty</code></p></td><td><p>Pretty print JavaScript output, preserve OCaml variable names</p></td></tr><tr><td><p><code>--no-inline</code></p></td><td><p>Disable code inlining</p></td></tr><tr><td><p><code>--debug-info</code></p></td><td><p>Output debug information (source locations)</p></td></tr><tr><td><p><code>--source-map</code></p></td><td><p>Generate source map. See <a href="#source-maps">Source maps</a></p></td></tr></table><h2 id="target-env">Target environment</h2><table class="odoc-table"><tr><td><p>Option</p></td><td><p>Description</p></td></tr><tr><td><p><code>--target-env &lt;env&gt;</code></p></td><td><p>Build for target environment (default: <code>isomorphic</code>)</p></td></tr></table><p>Possible values:</p><ul><li><b><code>isomorphic</code></b> - Runs in both browser and Node.js (default)</li><li><b><code>browser</code></b> - Browser-specific, smaller output</li><li><b><code>nodejs</code></b> - Node.js-specific, smaller output</li></ul><h2 id="effects">Effect handlers</h2><table class="odoc-table"><tr><td><p>Option</p></td><td><p>Description</p></td></tr><tr><td><p><code>--effects &lt;mode&gt;</code></p></td><td><p>Select effect handler implementation (default: <code>disabled</code>)</p></td></tr></table><p>Possible values:</p><ul><li><b><code>disabled</code></b> - No effect handler support (default)</li><li><b><code>cps</code></b> - CPS transformation for effect support</li><li><b><code>double-translation</code></b> - Keep both direct and CPS versions; choose at runtime</li></ul><p>See <a href="effects.html" title="effects">Effect handlers</a> for details.</p><h2 id="source-maps">Source maps</h2><table class="odoc-table"><tr><td><p>Option</p></td><td><p>Description</p></td></tr><tr><td><p><code>--source-map</code></p></td><td><p>Generate source map (separate file)</p></td></tr><tr><td><p><code>--no-source-map</code></p></td><td><p>Don't generate source map</p></td></tr><tr><td><p><code>--source-map-inline</code></p></td><td><p>Inline source map in the JavaScript output</p></td></tr><tr><td><p><code>--source-map-no-source</code></p></td><td><p>Don't embed source code in source map</p></td></tr><tr><td><p><code>--source-map-root &lt;dir&gt;</code></p></td><td><p>Set root directory for source map paths</p></td></tr></table><h2 id="pseudo-fs">Pseudo filesystem</h2><p>Js_of_ocaml provides a pseudo filesystem for programs that read files at runtime.</p><table class="odoc-table"><tr><td><p>Option</p></td><td><p>Description</p></td></tr><tr><td><p><code>--file &lt;file&gt;[:&lt;target&gt;]</code></p></td><td><p>Register file to pseudo filesystem (default target: <code>/static/</code>)</p></td></tr><tr><td><p><code>--ofs &lt;file&gt;</code></p></td><td><p>Write filesystem data to separate file</p></td></tr><tr><td><p><code>--extern-fs</code></p></td><td><p>Allow registering files from outside at runtime (default)</p></td></tr><tr><td><p><code>--no-extern-fs</code></p></td><td><p>Only allow files embedded at compile time</p></td></tr></table><h2 id="env-vars">Environment variables</h2><table class="odoc-table"><tr><td><p>Option</p></td><td><p>Description</p></td></tr><tr><td><p><code>--setenv &lt;VAR&gt;=&lt;value&gt;</code></p></td><td><p>Set environment variable at compile time</p></td></tr></table><h3 id="resolution-order">Resolution order</h3><p>When OCaml code calls <code>Sys.getenv</code>, js_of_ocaml resolves variables in this order:</p><ol><li>If the variable was set at compile time with <code>--setenv VAR=value</code>, return it</li><li>If running in Node.js, check <code>process.env</code></li><li>Check <code>globalThis.jsoo_env</code> (useful for setting variables in browsers)</li><li>Raise <code>Not_found</code></li></ol><h3 id="browser-example">Browser example</h3><pre class="language-javascript"><code>// Set environment variables before loading the OCaml program
+globalThis.jsoo_env = {
+  DEBUG: &quot;true&quot;,
+  API_URL: &quot;https://api.example.com&quot;
+};</code></pre><h2 id="toplevel">Toplevel and dynamic linking</h2><table class="odoc-table"><tr><td><p>Option</p></td><td><p>Description</p></td></tr><tr><td><p><code>--toplevel</code></p></td><td><p>Compile an OCaml toplevel (embeds necessary .cmi files)</p></td></tr><tr><td><p><code>--no-cmis</code></p></td><td><p>Don't include .cmi files in toplevel</p></td></tr><tr><td><p><code>--dynlink</code></p></td><td><p>Enable dynamic linking of bytecode</p></td></tr><tr><td><p><code>--export &lt;file&gt;</code></p></td><td><p>File listing units to export for toplevel/dynlink</p></td></tr><tr><td><p><code>--linkall</code></p></td><td><p>Link all compilation units and primitives</p></td></tr></table><p>See <a href="build-toplevel.html" title="build-toplevel">Building a toplevel</a> for details.</p><h2 id="compilation-modes">Compilation modes</h2><table class="odoc-table"><tr><td><p>Option</p></td><td><p>Description</p></td></tr><tr><td><p><code>--noruntime</code></p></td><td><p>Don't include the standard runtime</p></td></tr><tr><td><p><code>--include-runtime</code></p></td><td><p>Include partial runtime when compiling .cmo/.cma</p></td></tr><tr><td><p><code>--keep-unit-names</code></p></td><td><p>Preserve unit names (for separate compilation)</p></td></tr><tr><td><p><code>--wrap-with-fun[=&lt;name&gt;]</code></p></td><td><p>Wrap output in a function (default: IIFE)</p></td></tr><tr><td><p><code>--custom-header &lt;text&gt;</code></p></td><td><p>Add custom header (e.g., <code>#!/usr/bin/env node</code>)</p></td></tr></table><p>See <a href="compilation-modes.html" title="compilation-modes">Compilation modes</a> for details.</p><h2 id="optimizations">Optimizations</h2><h3 id="optimization-profiles">Optimization profiles</h3><p>Use <code>--opt &lt;level&gt;</code> to select a profile:</p><ul><li><b><code>--opt 1</code></b> - Basic optimizations (default)</li><li><b><code>--opt 2</code></b> - Standard optimizations</li><li><b><code>--opt 3</code></b> - Maximum optimizations (iterates until fix-point)</li></ul><h3 id="recommended-settings">Recommended settings</h3><p>For debugging:</p><pre>js_of_ocaml --pretty --no-inline program.byte</pre><p>For production:</p><pre>js_of_ocaml --opt 3 program.byte</pre><h2 id="enable-disable">Enable/Disable options</h2><p>Use <code>--enable &lt;opt&gt;</code> or <code>--disable &lt;opt&gt;</code> to control these flags:</p><h3 id="output-formatting">Output formatting</h3><table class="odoc-table"><tr><td><p>Option</p></td><td><p>Default</p></td><td><p>Description</p></td></tr><tr><td><p><code>pretty</code></p></td><td><p>false</p></td><td><p>Pretty print JavaScript output</p></td></tr><tr><td><p><code>shortvar</code></p></td><td><p>true</p></td><td><p>Use short variable names</p></td></tr><tr><td><p><code>strict</code></p></td><td><p>true</p></td><td><p>Generate &quot;use strict&quot;</p></td></tr><tr><td><p><code>header</code></p></td><td><p>true</p></td><td><p>Include compiler version header</p></td></tr><tr><td><p><code>es6</code></p></td><td><p>false</p></td><td><p>Generate ES6 syntax</p></td></tr></table><h3 id="optimization-flags">Optimizations</h3><table class="odoc-table"><tr><td><p>Option</p></td><td><p>Default</p></td><td><p>Description</p></td></tr><tr><td><p><code>deadcode</code></p></td><td><p>true</p></td><td><p>Dead code elimination</p></td></tr><tr><td><p><code>globaldeadcode</code></p></td><td><p>true</p></td><td><p>Global dead code elimination</p></td></tr><tr><td><p><code>inline</code></p></td><td><p>true</p></td><td><p>Function inlining</p></td></tr><tr><td><p><code>staticeval</code></p></td><td><p>true</p></td><td><p>Static evaluation of constants</p></td></tr><tr><td><p><code>share</code></p></td><td><p>true</p></td><td><p>Share string and number constants</p></td></tr><tr><td><p><code>optcall</code></p></td><td><p>true</p></td><td><p>JavaScript call optimizations</p></td></tr><tr><td><p><code>constant-sinking</code></p></td><td><p>true</p></td><td><p>Move constant declarations closer to usage sites</p></td></tr></table><h3 id="runtime-behavior">Runtime behavior</h3><table class="odoc-table"><tr><td><p>Option</p></td><td><p>Default</p></td><td><p>Description</p></td></tr><tr><td><p><code>effects</code></p></td><td><p>false</p></td><td><p>Enable effect handlers</p></td></tr><tr><td><p><code>excwrap</code></p></td><td><p>true</p></td><td><p>Wrap JavaScript exceptions in OCaml exceptions</p></td></tr><tr><td><p><code>with-js-error</code></p></td><td><p>false</p></td><td><p>Attach JavaScript stack traces to OCaml exceptions</p></td></tr><tr><td><p><code>debugger</code></p></td><td><p>true</p></td><td><p>Keep <code>debugger</code> statements (stripped if false)</p></td></tr><tr><td><p><code>genprim</code></p></td><td><p>true</p></td><td><p>Generate dummy primitives when missing</p></td></tr><tr><td><p><code>use-js-string</code></p></td><td><p>true</p></td><td><p>Use JavaScript strings internally</p></td></tr></table><h3 id="internal-debugging">Internal debugging</h3><table class="odoc-table"><tr><td><p>Option</p></td><td><p>Default</p></td><td><p>Description</p></td></tr><tr><td><p><code>debuginfo</code></p></td><td><p>false</p></td><td><p>Include source location comments</p></td></tr><tr><td><p><code>stable_var</code></p></td><td><p>false</p></td><td><p>Use stable (predictable) variable names</p></td></tr><tr><td><p><code>auto-link</code></p></td><td><p>true</p></td><td><p>link required compilation units only</p></td></tr></table><h2 id="parameters">Compiler parameters</h2><p>Use <code>--set &lt;param&gt;=&lt;value&gt;</code> to tune compiler behavior:</p><table class="odoc-table"><tr><td><p>Parameter</p></td><td><p>Default</p></td><td><p>Description</p></td></tr><tr><td><p><code>switch_size</code></p></td><td><p>60</p></td><td><p>Max cases before switch becomes if-else chain</p></td></tr><tr><td><p><code>inlining-limit</code></p></td><td><p>150</p></td><td><p>Size threshold for function inlining</p></td></tr><tr><td><p><code>tc_depth</code></p></td><td><p>50</p></td><td><p>Max tail-call depth before trampoline</p></td></tr><tr><td><p><code>tc</code></p></td><td><p>trampoline</p></td><td><p>Tail-call mode: <code>trampoline</code> or <code>none</code></p></td></tr></table><h2 id="warnings">Warnings</h2><table class="odoc-table"><tr><td><p>Option</p></td><td><p>Description</p></td></tr><tr><td><p><code>--quiet</code> / <code>-q</code></p></td><td><p>Suppress non-error messages</p></td></tr><tr><td><p><code>--Werror</code></p></td><td><p>Treat warnings as errors</p></td></tr><tr><td><p><code>-w &lt;warning&gt;</code></p></td><td><p>Enable warning</p></td></tr><tr><td><p><code>-w no-&lt;warning&gt;</code></p></td><td><p>Disable warning</p></td></tr></table><p>Available warnings:</p><table class="odoc-table"><tr><td><p>Warning</p></td><td><p>Default</p></td><td><p>Description</p></td></tr><tr><td><p><code>missing-primitive</code></p></td><td><p>on</p></td><td><p>Missing JavaScript primitive implementation</p></td></tr><tr><td><p><code>missing-cmi</code></p></td><td><p>on</p></td><td><p>Missing .cmi file</p></td></tr><tr><td><p><code>missing-deps</code></p></td><td><p>on</p></td><td><p>Missing dependencies</p></td></tr><tr><td><p><code>missing-effects-backend</code></p></td><td><p>on</p></td><td><p>Using effects, but not backend was selected</p></td></tr><tr><td><p><code>integer-overflow</code></p></td><td><p>on</p></td><td><p>Integer overflow in constant</p></td></tr><tr><td><p><code>overriding-primitive</code></p></td><td><p>on</p></td><td><p>Overriding an existing primitive</p></td></tr><tr><td><p><code>deprecated-primitive</code></p></td><td><p>on</p></td><td><p>Using deprecated primitive</p></td></tr><tr><td><p><code>free-variables</code></p></td><td><p>on</p></td><td><p>Free variables in primitive code</p></td></tr></table><h2 id="debug-output">Debug output</h2><p>Use <code>--debug &lt;section&gt;</code> to enable debug output for compiler internals:</p><p><code>times</code>, <code>stats</code>, <code>deadcode</code>, <code>globaldeadcode</code>, <code>inlining</code>, <code>constant-sinking</code>, <code>gen</code>, <code>linker</code>, <code>sourcemap</code>, <code>flow</code>, <code>parser</code></p><h2 id="subcommands">Subcommands</h2><p>The <code>js_of_ocaml</code> command has several subcommands:</p><table class="odoc-table"><tr><td><p>Command</p></td><td><p>Description</p></td></tr><tr><td><p><code>js_of_ocaml compile</code></p></td><td><p>Compile bytecode to JavaScript (default)</p></td></tr><tr><td><p><code>js_of_ocaml link</code></p></td><td><p>Link JavaScript files together</p></td></tr><tr><td><p><code>js_of_ocaml build-runtime</code></p></td><td><p>Build standalone runtime</p></td></tr><tr><td><p><code>js_of_ocaml build-fs</code></p></td><td><p>Build pseudo filesystem</p></td></tr></table><h3 id="link-command">Link command</h3><pre>js_of_ocaml link -o output.js runtime.js lib1.js lib2.js main.js</pre><p>Additional options:</p><table class="odoc-table"><tr><td><p>Option</p></td><td><p>Description</p></td></tr><tr><td><p><code>-a</code></p></td><td><p>Build a library (.cma.js)</p></td></tr><tr><td><p><code>--resolve-sourcemap-url</code></p></td><td><p>Resolve source map URLs</p></td></tr></table><h3 id="build-runtime-command">Build-runtime command</h3><pre>js_of_ocaml build-runtime -o runtime.js</pre><p>Accepts the same <code>--enable</code>/<code>--disable</code> options as the main command.</p><h3 id="build-fs-command">Build-fs command</h3><pre>js_of_ocaml build-fs -o fs.js file1.txt file2.dat</pre><p>Builds a JavaScript file containing filesystem data.</p></div>
+      </article>
+    </div>
+  </div>
+
+  <script>
+    var wodocPub = "/js_of_ocaml";
+    // Switch version: keep the current page, swapping only the version segment.
+    function wodocVersion(v) {
+      if (!v) return;
+      var re = new RegExp('^(' + wodocPub + '/)[^/]+');
+      var p = location.pathname;
+      location.href =
+        re.test(p) ? p.replace(re, '$1' + v) : wodocPub + '/' + v + '/index.html';
+    }
+    // Build the version <select> from the project's versions.json (the single
+    // source of truth, refreshed on every build/release), so even older frozen
+    // pages list the current set. Falls back to the baked <option>s on failure.
+    (function () {
+      var seg = (location.pathname.match(
+        new RegExp('^' + wodocPub + '/([^/]+)')) || [])[1];
+      function select(sel) {
+        var i;
+        for (i = 0; i < sel.options.length; i++)
+          if (sel.options[i].value === seg) { sel.selectedIndex = i; return; }
+        if (seg) {
+          var o = document.createElement('option');
+          o.value = seg; o.textContent = seg; o.selected = true;
+          sel.insertBefore(o, sel.firstChild);
+        }
+      }
+      fetch(wodocPub + '/versions.json')
+        .then(function (r) { if (!r.ok) throw 0; return r.json(); })
+        .then(function (m) {
+          var list = m.list || [], latest = m.latest;
+          document.querySelectorAll('.wodoc-version').forEach(function (sel) {
+            sel.innerHTML = '';
+            list.forEach(function (v) {
+              var o = document.createElement('option');
+              if (v === latest) { o.value = 'latest'; o.textContent = v + ' (latest)'; }
+              else { o.value = v; o.textContent = v; }
+              sel.appendChild(o);
+            });
+            select(sel);
+          });
+        })
+        .catch(function () {
+          document.querySelectorAll('.wodoc-version').forEach(select);
+        });
+    })();
+  </script>
+</body>
+</html>

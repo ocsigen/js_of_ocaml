@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Module Js_of_ocaml.Dom — Js_of_ocaml</title>
+  <link rel="stylesheet" href="/css/style.css"/>
+  <link rel="stylesheet" href="/css/ocsigen-odoc.css"/>
+  <script src="../../../highlight.pack.js"></script>
+  <script src="../../../wodoc-highlight.js"></script>
+</head>
+<body class="wodoc-page wodoc-doc">
+  <!-- Shared site menu — THE single source of truth for the header, top menu and
+     drawer of EVERY Ocsigen doc page (vitrine + all projects). Canonical copy
+     lives here in ocsigen.github.io; each project's build fetches it. Injected
+     by `wodoc assemble --menu`. Holes filled by the tool (braces omitted here so
+     this comment is not itself rewritten by the hole-filler):
+       subproject  the sub-project name shown next to the Ocsigen logo
+                   (empty on the vitrine), via --subproject
+       leftnav     the project's left navigation, expanded into BOTH the mobile
+                   drawer (below) and the left column (in the page template),
+                   via --leftnav
+     The current entry is highlighted by adding the `current` class to the
+     element carrying data-wodoc-page=<id>: --current on the vitrine (page id),
+     --menu-current in a project (the project id). Nothing is hardcoded here, so
+     this file is the ONLY place the menu is defined.
+
+     Links are the FINAL site paths (/<project>/, /<page>): the target layout
+     where each project is served at ocsigen.org/<project>/ — no transitional
+     /wodoc/ prefix. -->
+<div class="page-header">
+  <p class="logo-ocsigen"><a href="/"><img src="/img/ocsigen-white.svg" alt="Ocsigen"/></a></p>
+  <p class="logo-subproject">Js_of_ocaml</p>
+
+  <div class="mainmenu">
+    <p class="mainmenu-home" data-wodoc-page="githubio"><a href="/">Home</a></p>
+    <p class="mainmenu-doc" data-wodoc-page="tuto"><a href="/tuto/">Doc</a></p>
+    <p data-wodoc-page="eliom"><a href="/eliom/">Eliom</a></p>
+    <p data-wodoc-page="js_of_ocaml" class="current"><a href="/js_of_ocaml/">Js_of_ocaml</a></p>
+    <p data-wodoc-page="ocsigenserver"><a href="/ocsigenserver/">Server</a></p>
+    <p data-wodoc-page="lwt"><a href="/lwt/">Lwt</a></p>
+    <p data-wodoc-page="tyxml"><a href="/tyxml/">Tyxml</a></p>
+    <p data-wodoc-page="ocsigen-start"><a href="/ocsigen-start/">Start</a></p>
+  </div>
+
+  <form id="googlesearch" action="https://google.com/search">
+    <input name="q" id="gsearch-box" placeholder="Search using Google"/>
+    <label for="gsearch-box"><img src="/img/search.svg" alt="" id="gsearch-icon"/></label>
+    <input type="submit" id="gsearch-submit" onclick="document.getElementById('gsearch-box').value += ' site:ocsigen.org';"/>
+  </form>
+
+  <aside class="how-drawer">
+    <input id="how-drawer-toggle" type="checkbox"/>
+    <label for="how-drawer-toggle" id="how-drawer-label"><span class="how-drawer-icon"></span></label>
+    <nav class="how-drawer-content">
+      <ul class="drawermainmenu">
+        <li class="drawermainmenu-home" data-wodoc-page="githubio"><a href="/">Home</a></li>
+        <li class="drawermainmenu-doc" data-wodoc-page="tuto"><a href="/tuto/">Doc</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="eliom"><a href="/eliom/">Eliom</a></li>
+        <li class="drawermainmenu-project current" data-wodoc-page="js_of_ocaml"><a href="/js_of_ocaml/">Js_of_ocaml</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsigenserver"><a href="/ocsigenserver/">Server</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="lwt"><a href="/lwt/">Lwt</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="tyxml"><a href="/tyxml/">Tyxml</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsigen-toolkit"><a href="/ocsigen-toolkit/">Toolkit</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsigen-start"><a href="/ocsigen-start/">Start</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsipersist"><a href="/ocsipersist/">Ocsipersist</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="reactiveData"><a href="/reactiveData/">ReactiveData</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsigen-i18n"><a href="/ocsigen-i18n/">i18n</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="wodoc"><a href="/wodoc/">Wodoc</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="projects"><a href="/projects">Other projects</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="papers"><a href="/papers">Research papers</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="credits"><a href="/credits">Who does Ocsigen?</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="contributing"><a href="/contributing">Contributing</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="blog"><a href="/blog-archive/">Blog</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="install"><a href="/install">Installation</a></li>
+        <li class="drawermainmenu-page"><a href="https://github.com/ocsigen">Source code</a></li>
+      </ul>
+      <!-- On mobile the left column is hidden; its menu lives here in the burger
+           (.how-doctree, shown only on narrow screens), as the old site did.
+           Empty on the vitrine; the leftnav hole is filled (with the same
+           fragment as the left column) only on project pages. -->
+      <nav class="how-doctree"><div class="docversion">
+  <label>Version:
+    <select class="wodoc-version" onchange="wodocVersion(this.value)">
+      <option value="6.3.2">6.3.2</option>
+    </select>
+  </label>
+</div>
+<div class="page-toc">
+  <h3>On this page</h3>
+  <nav class="odoc-toc odoc-local-toc"><ul><li><a href="#dom-objects">DOM objects</a></li><li><a href="#helper-functions">Helper functions</a></li><li><a href="#events">Events</a></li><li><a href="#event-handlers">Event handlers</a></li><li><a href="#other-dom-objects">Other DOM objects</a></li></ul></nav>
+</div>
+<nav class="api-nav manual-nav">
+<h3>Getting Started</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/overview.html"><a href="../../../js_of_ocaml/overview.html">Overview</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/install.html"><a href="../../../js_of_ocaml/install.html">Installation</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/quickstart.html"><a href="../../../js_of_ocaml/quickstart.html">Quick Start</a></li>
+</ul>
+<h3>Programming Guide</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/javascript-interop.html"><a href="../../../js_of_ocaml/javascript-interop.html">JavaScript interop</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/ppx.html"><a href="../../../js_of_ocaml/ppx.html">PPX syntax extension</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/ppx-deriving.html"><a href="../../../js_of_ocaml/ppx-deriving.html">JSON derivation</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/rev-bindings.html"><a href="../../../js_of_ocaml/rev-bindings.html">Export OCaml code to JavaScript</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/errors.html"><a href="../../../js_of_ocaml/errors.html">Error handling</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/api.html"><a href="../../../js_of_ocaml/api.html">API</a></li>
+</ul>
+<h3>Lwt Support</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/lwt.html"><a href="../../../js_of_ocaml/lwt.html">Lwt support</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml-lwt/Js_of_ocaml_lwt/index.html"><a href="../../../js_of_ocaml-lwt/Js_of_ocaml_lwt/index.html">API</a></li>
+</ul>
+<h3>Compiler</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/options.html"><a href="../../../js_of_ocaml/options.html">Command line options</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/compilation-modes.html"><a href="../../../js_of_ocaml/compilation-modes.html">Compilation modes</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/linker.html"><a href="../../../js_of_ocaml/linker.html">JavaScript primitives</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/tailcall.html"><a href="../../../js_of_ocaml/tailcall.html">Tailcall optimization</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/effects.html"><a href="../../../js_of_ocaml/effects.html">Effect handlers</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/runtime-representation.html"><a href="../../../js_of_ocaml/runtime-representation.html">Runtime representation</a></li>
+</ul>
+<h3>Wasm_of_ocaml</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/wasm_overview.html"><a href="../../../js_of_ocaml/wasm_overview.html">Overview</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/wasm_runtime.html"><a href="../../../js_of_ocaml/wasm_runtime.html">Writing Wasm primitives</a></li>
+</ul>
+<h3>How-to Guides</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/build-toplevel.html"><a href="../../../js_of_ocaml/build-toplevel.html">Build a toplevel or use Dynlink</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/debug.html"><a href="../../../js_of_ocaml/debug.html">Debug a program</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/performances.html"><a href="../../../js_of_ocaml/performances.html">Performance</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/contribute.html"><a href="../../../js_of_ocaml/contribute.html">Contribute</a></li>
+</ul>
+<h3>Try it</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/files/toplevel/index.html"><a href="../../../js_of_ocaml/files/toplevel/index.html">OCaml toplevel</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/examples.html"><a href="../../../js_of_ocaml/examples.html">Examples and projects</a></li>
+</ul>
+</nav>
+</nav>
+    </nav>
+  </aside>
+</div>
+
+
+  <div class="project-page">
+    <div class="twocols">
+      <nav class="leftcol">
+        <div class="docversion">
+  <label>Version:
+    <select class="wodoc-version" onchange="wodocVersion(this.value)">
+      <option value="6.3.2">6.3.2</option>
+    </select>
+  </label>
+</div>
+<div class="page-toc">
+  <h3>On this page</h3>
+  <nav class="odoc-toc odoc-local-toc"><ul><li><a href="#dom-objects">DOM objects</a></li><li><a href="#helper-functions">Helper functions</a></li><li><a href="#events">Events</a></li><li><a href="#event-handlers">Event handlers</a></li><li><a href="#other-dom-objects">Other DOM objects</a></li></ul></nav>
+</div>
+<nav class="api-nav manual-nav">
+<h3>Getting Started</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/overview.html"><a href="../../../js_of_ocaml/overview.html">Overview</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/install.html"><a href="../../../js_of_ocaml/install.html">Installation</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/quickstart.html"><a href="../../../js_of_ocaml/quickstart.html">Quick Start</a></li>
+</ul>
+<h3>Programming Guide</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/javascript-interop.html"><a href="../../../js_of_ocaml/javascript-interop.html">JavaScript interop</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/ppx.html"><a href="../../../js_of_ocaml/ppx.html">PPX syntax extension</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/ppx-deriving.html"><a href="../../../js_of_ocaml/ppx-deriving.html">JSON derivation</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/rev-bindings.html"><a href="../../../js_of_ocaml/rev-bindings.html">Export OCaml code to JavaScript</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/errors.html"><a href="../../../js_of_ocaml/errors.html">Error handling</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/api.html"><a href="../../../js_of_ocaml/api.html">API</a></li>
+</ul>
+<h3>Lwt Support</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/lwt.html"><a href="../../../js_of_ocaml/lwt.html">Lwt support</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml-lwt/Js_of_ocaml_lwt/index.html"><a href="../../../js_of_ocaml-lwt/Js_of_ocaml_lwt/index.html">API</a></li>
+</ul>
+<h3>Compiler</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/options.html"><a href="../../../js_of_ocaml/options.html">Command line options</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/compilation-modes.html"><a href="../../../js_of_ocaml/compilation-modes.html">Compilation modes</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/linker.html"><a href="../../../js_of_ocaml/linker.html">JavaScript primitives</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/tailcall.html"><a href="../../../js_of_ocaml/tailcall.html">Tailcall optimization</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/effects.html"><a href="../../../js_of_ocaml/effects.html">Effect handlers</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/runtime-representation.html"><a href="../../../js_of_ocaml/runtime-representation.html">Runtime representation</a></li>
+</ul>
+<h3>Wasm_of_ocaml</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/wasm_overview.html"><a href="../../../js_of_ocaml/wasm_overview.html">Overview</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/wasm_runtime.html"><a href="../../../js_of_ocaml/wasm_runtime.html">Writing Wasm primitives</a></li>
+</ul>
+<h3>How-to Guides</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/build-toplevel.html"><a href="../../../js_of_ocaml/build-toplevel.html">Build a toplevel or use Dynlink</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/debug.html"><a href="../../../js_of_ocaml/debug.html">Debug a program</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/performances.html"><a href="../../../js_of_ocaml/performances.html">Performance</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/contribute.html"><a href="../../../js_of_ocaml/contribute.html">Contribute</a></li>
+</ul>
+<h3>Try it</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/files/toplevel/index.html"><a href="../../../js_of_ocaml/files/toplevel/index.html">OCaml toplevel</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/examples.html"><a href="../../../js_of_ocaml/examples.html">Examples and projects</a></li>
+</ul>
+</nav>
+
+      </nav>
+      <article class="rightcol">
+        <header class="odoc-preamble"><h1>Module <code><span>Js_of_ocaml.Dom</span></code></h1><p>DOM binding</p><p>This is a partial binding to the DOM Core API.</p></header>
+        <div class="odoc-content"><h3 id="dom-objects">DOM objects</h3><div class="odoc-spec"><div class="spec class-type anchored" id="class-type-nodeList"><code><span><span class="keyword">class</span> <span class="keyword">type</span> 'node </span><span><a href="class-type-nodeList/index.html">nodeList</a></span><span> = <span class="keyword">object</span> ... <span class="keyword">end</span></span></code></div><div class="spec-doc"><p>Specification of <code>NodeList</code> objects.</p></div></div><div class="odoc-spec"><div class="spec type anchored" id="type-nodeType"><code><span><span class="keyword">type</span> nodeType</span><span> = </span></code><ol><li id="type-nodeType.OTHER" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">OTHER</span></span></code></li><li id="type-nodeType.ELEMENT" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">ELEMENT</span></span></code></li><li id="type-nodeType.ATTRIBUTE" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">ATTRIBUTE</span></span></code></li><li id="type-nodeType.TEXT" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">TEXT</span></span></code></li><li id="type-nodeType.CDATA_SECTION" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">CDATA_SECTION</span></span></code></li><li id="type-nodeType.ENTITY_REFERENCE" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">ENTITY_REFERENCE</span></span></code></li><li id="type-nodeType.ENTITY" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">ENTITY</span></span></code></li><li id="type-nodeType.PROCESSING_INSTRUCTION" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">PROCESSING_INSTRUCTION</span></span></code></li><li id="type-nodeType.COMMENT" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">COMMENT</span></span></code></li><li id="type-nodeType.DOCUMENT" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">DOCUMENT</span></span></code></li><li id="type-nodeType.DOCUMENT_TYPE" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">DOCUMENT_TYPE</span></span></code></li><li id="type-nodeType.DOCUMENT_FRAGMENT" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">DOCUMENT_FRAGMENT</span></span></code></li><li id="type-nodeType.NOTATION" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">NOTATION</span></span></code></li></ol></div></div><div class="odoc-spec"><div class="spec module anchored" id="module-DocumentPosition"><code><span><span class="keyword">module</span> <a href="DocumentPosition/index.html">DocumentPosition</a></span><span> : <span class="keyword">sig</span> ... <span class="keyword">end</span></span></code></div></div><div class="odoc-spec"><div class="spec class-type anchored" id="class-type-node"><code><span><span class="keyword">class</span> <span class="keyword">type</span>  </span><span><a href="class-type-node/index.html">node</a></span><span> = <span class="keyword">object</span> ... <span class="keyword">end</span></span></code></div><div class="spec-doc"><p>Specification of <code>Node</code> objects.</p></div></div><div class="odoc-spec"><div class="spec class-type anchored" id="class-type-attr"><code><span><span class="keyword">class</span> <span class="keyword">type</span>  </span><span><a href="class-type-attr/index.html">attr</a></span><span> = <span class="keyword">object</span> ... <span class="keyword">end</span></span></code></div><div class="spec-doc"><p>Specification of <code>Attr</code> objects.</p></div></div><div class="odoc-spec"><div class="spec class-type anchored" id="class-type-namedNodeMap"><code><span><span class="keyword">class</span> <span class="keyword">type</span> 'node </span><span><a href="class-type-namedNodeMap/index.html">namedNodeMap</a></span><span> = <span class="keyword">object</span> ... <span class="keyword">end</span></span></code></div><div class="spec-doc"><p>Specification of <code>NamedNodeMap</code> objects.</p></div></div><div class="odoc-spec"><div class="spec class-type anchored" id="class-type-element"><code><span><span class="keyword">class</span> <span class="keyword">type</span>  </span><span><a href="class-type-element/index.html">element</a></span><span> = <span class="keyword">object</span> ... <span class="keyword">end</span></span></code></div><div class="spec-doc"><p>Specification of <code>Element</code> objects.</p></div></div><div class="odoc-spec"><div class="spec class-type anchored" id="class-type-characterData"><code><span><span class="keyword">class</span> <span class="keyword">type</span>  </span><span><a href="class-type-characterData/index.html">characterData</a></span><span> = <span class="keyword">object</span> ... <span class="keyword">end</span></span></code></div><div class="spec-doc"><p>Specification of <code>CharacterData</code> objects.</p></div></div><div class="odoc-spec"><div class="spec class-type anchored" id="class-type-comment"><code><span><span class="keyword">class</span> <span class="keyword">type</span>  </span><span><a href="class-type-comment/index.html">comment</a></span><span> = <a href="class-type-characterData/index.html">characterData</a></span></code></div><div class="spec-doc"><p>Specification of <code>Comment</code> objects</p></div></div><div class="odoc-spec"><div class="spec class-type anchored" id="class-type-text"><code><span><span class="keyword">class</span> <span class="keyword">type</span>  </span><span><a href="class-type-text/index.html">text</a></span><span> = <a href="class-type-characterData/index.html">characterData</a></span></code></div><div class="spec-doc"><p>Specification of <code>Text</code> objects.</p></div></div><div class="odoc-spec"><div class="spec class-type anchored" id="class-type-documentFragment"><code><span><span class="keyword">class</span> <span class="keyword">type</span>  </span><span><a href="class-type-documentFragment/index.html">documentFragment</a></span><span> = <a href="class-type-node/index.html">node</a></span></code></div><div class="spec-doc"><p>Specification of <code>DocumentFragment</code> objects.</p></div></div><div class="odoc-spec"><div class="spec class-type anchored" id="class-type-document"><code><span><span class="keyword">class</span> <span class="keyword">type</span> 'element </span><span><a href="class-type-document/index.html">document</a></span><span> = <span class="keyword">object</span> ... <span class="keyword">end</span></span></code></div><div class="spec-doc"><p>Specification of <code>Document</code> objects.</p></div></div><h3 id="helper-functions">Helper functions</h3><div class="odoc-spec"><div class="spec value anchored" id="val-insertBefore"><code><span><span class="keyword">val</span> insertBefore : <span><span><a href="class-type-node/index.html">node</a> <a href="../Js/index.html#type-t">Js.t</a></span> <span class="arrow">&#45;&gt;</span></span> <span><span><a href="class-type-node/index.html">node</a> <a href="../Js/index.html#type-t">Js.t</a></span> <span class="arrow">&#45;&gt;</span></span> <span><span><span><a href="class-type-node/index.html">node</a> <a href="../Js/index.html#type-t">Js.t</a></span> <a href="../Js/index.html#type-opt">Js.opt</a></span> <span class="arrow">&#45;&gt;</span></span> unit</span></code></div><div class="spec-doc"><p><code>insertBefore p n c</code> inserts node <code>n</code> as child of node <code>p</code>, just before node <code>c</code>, or as last child if <code>p</code> is empty. The expression <code>insertBefore n c p</code> behave the same as <code>p##insertBefore n c</code> but avoid the need of coercing the different objects to <code>node t</code>.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-replaceChild"><code><span><span class="keyword">val</span> replaceChild : <span><span><a href="class-type-node/index.html">node</a> <a href="../Js/index.html#type-t">Js.t</a></span> <span class="arrow">&#45;&gt;</span></span> <span><span><a href="class-type-node/index.html">node</a> <a href="../Js/index.html#type-t">Js.t</a></span> <span class="arrow">&#45;&gt;</span></span> <span><span><a href="class-type-node/index.html">node</a> <a href="../Js/index.html#type-t">Js.t</a></span> <span class="arrow">&#45;&gt;</span></span> unit</span></code></div><div class="spec-doc"><p>The expression <code>replaceChild p n c</code> behave the same as <code>p##replaceChild n c</code> (replace <code>c</code> by <code>n</code> in <code>p</code>) but avoid the need of coercing the different objects to <code>node t</code>.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-removeChild"><code><span><span class="keyword">val</span> removeChild : <span><span><a href="class-type-node/index.html">node</a> <a href="../Js/index.html#type-t">Js.t</a></span> <span class="arrow">&#45;&gt;</span></span> <span><span><a href="class-type-node/index.html">node</a> <a href="../Js/index.html#type-t">Js.t</a></span> <span class="arrow">&#45;&gt;</span></span> unit</span></code></div><div class="spec-doc"><p>The expression <code>removeChild n c</code> behave the same as <code>n##removeChild c</code> (remove <code>c</code> from <code>n</code>) but avoid the need of coercing the different objects to <code>node t</code>.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-appendChild"><code><span><span class="keyword">val</span> appendChild : <span><span><a href="class-type-node/index.html">node</a> <a href="../Js/index.html#type-t">Js.t</a></span> <span class="arrow">&#45;&gt;</span></span> <span><span><a href="class-type-node/index.html">node</a> <a href="../Js/index.html#type-t">Js.t</a></span> <span class="arrow">&#45;&gt;</span></span> unit</span></code></div><div class="spec-doc"><p>The expression <code>appendChild n c</code> behave the same as <code>n##appendChild c</code> (appends <code>c</code> to <code>n</code>) but avoid the need of coercing the different objects to <code>node t</code>.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-list_of_nodeList"><code><span><span class="keyword">val</span> list_of_nodeList : <span><span><span><span class="type-var">'a</span> <a href="class-type-nodeList/index.html">nodeList</a></span> <a href="../Js/index.html#type-t">Js.t</a></span> <span class="arrow">&#45;&gt;</span></span> <span><span><span class="type-var">'a</span> <a href="../Js/index.html#type-t">Js.t</a></span> list</span></span></code></div></div><div class="odoc-spec"><div class="spec type anchored" id="type-node_type"><code><span><span class="keyword">type</span> node_type</span><span> = </span></code><ol><li id="type-node_type.Element" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Element</span> <span class="keyword">of</span> <span><a href="class-type-element/index.html">element</a> <a href="../Js/index.html#type-t">Js.t</a></span></span></code></li><li id="type-node_type.Attr" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Attr</span> <span class="keyword">of</span> <span><a href="class-type-attr/index.html">attr</a> <a href="../Js/index.html#type-t">Js.t</a></span></span></code></li><li id="type-node_type.Text" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Text</span> <span class="keyword">of</span> <span><a href="class-type-text/index.html">text</a> <a href="../Js/index.html#type-t">Js.t</a></span></span></code></li><li id="type-node_type.Other" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Other</span> <span class="keyword">of</span> <span><a href="class-type-node/index.html">node</a> <a href="../Js/index.html#type-t">Js.t</a></span></span></code></li></ol></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-nodeType"><code><span><span class="keyword">val</span> nodeType : <span><span><a href="class-type-node/index.html">node</a> <a href="../Js/index.html#type-t">Js.t</a></span> <span class="arrow">&#45;&gt;</span></span> <a href="#type-node_type">node_type</a></span></code></div></div><div class="odoc-spec"><div class="spec module anchored" id="module-CoerceTo"><code><span><span class="keyword">module</span> <a href="CoerceTo/index.html">CoerceTo</a></span><span> : <span class="keyword">sig</span> ... <span class="keyword">end</span></span></code></div></div><h3 id="events">Events</h3><div class="odoc-spec"><div class="spec type anchored" id="type-event_listener"><code><span><span class="keyword">type</span> <span>(-'a, -'b) event_listener</span></span></code></div><div class="spec-doc"><p>The type of event listener functions. The first type parameter <code>'a</code> is the type of the target object; the second parameter <code>'b</code> is the type of the event object.</p></div></div><div class="odoc-spec"><div class="spec class-type anchored" id="class-type-event"><code><span><span class="keyword">class</span> <span class="keyword">type</span> 'a </span><span><a href="class-type-event/index.html">event</a></span><span> = <span class="keyword">object</span> ... <span class="keyword">end</span></span></code></div></div><div class="odoc-spec"><div class="spec class-type anchored" id="class-type-customEvent"><code><span><span class="keyword">class</span> <span class="keyword">type</span> ['a, 'b] </span><span><a href="class-type-customEvent/index.html">customEvent</a></span><span> = <span class="keyword">object</span> ... <span class="keyword">end</span></span></code></div></div><h3 id="event-handlers">Event handlers</h3><div class="odoc-spec"><div class="spec value anchored" id="val-no_handler"><code><span><span class="keyword">val</span> no_handler : <span><span>(<span class="type-var">'a</span>, <span class="type-var">'b</span>)</span> <a href="#type-event_listener">event_listener</a></span></span></code></div><div class="spec-doc"><p>Void event handler (Javascript <code>null</code> value).</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-handler"><code><span><span class="keyword">val</span> handler : <span><span>(<span><span>(<span><span><span class="type-var">'e</span> <a href="class-type-event/index.html">event</a></span> <a href="../Js/index.html#type-t">Js.t</a></span> <span class="keyword">as</span> 'b)</span> <span class="arrow">&#45;&gt;</span></span> <span>bool <a href="../Js/index.html#type-t">Js.t</a></span>)</span> <span class="arrow">&#45;&gt;</span></span> <span><span>(<span class="type-var">'a</span>, <span class="type-var">'b</span>)</span> <a href="#type-event_listener">event_listener</a></span></span></code></div><div class="spec-doc"><p>Create an event handler that invokes the provided function. If the handler returns false, the default action is prevented.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-full_handler"><code><span><span class="keyword">val</span> full_handler : 
+  <span><span>(<span><span class="type-var">'a</span> <span class="arrow">&#45;&gt;</span></span> <span><span>(<span><span><span class="type-var">'e</span> <a href="class-type-event/index.html">event</a></span> <a href="../Js/index.html#type-t">Js.t</a></span> <span class="keyword">as</span> 'b)</span> <span class="arrow">&#45;&gt;</span></span> <span>bool <a href="../Js/index.html#type-t">Js.t</a></span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span class="type-var">'a</span>, <span class="type-var">'b</span>)</span> <a href="#type-event_listener">event_listener</a></span></span></code></div><div class="spec-doc"><p>Create an event handler that invokes the provided function. The event target (implicit parameter <code>this</code>) is also passed as argument to the function.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-invoke_handler"><code><span><span class="keyword">val</span> invoke_handler : <span><span><span>(<span class="type-var">'a</span>, <span class="type-var">'b</span>)</span> <a href="#type-event_listener">event_listener</a></span> <span class="arrow">&#45;&gt;</span></span> <span><span class="type-var">'a</span> <span class="arrow">&#45;&gt;</span></span> <span><span class="type-var">'b</span> <span class="arrow">&#45;&gt;</span></span> <span>bool <a href="../Js/index.html#type-t">Js.t</a></span></span></code></div><div class="spec-doc"><p>Invoke an existing handler. Useful to chain event handlers.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-eventTarget"><code><span><span class="keyword">val</span> eventTarget : <span><span><span><span>(<span>&lt; .. &gt;</span> <span class="keyword">as</span> 'a)</span> <a href="class-type-event/index.html">event</a></span> <a href="../Js/index.html#type-t">Js.t</a></span> <span class="arrow">&#45;&gt;</span></span> <span><span class="type-var">'a</span> <a href="../Js/index.html#type-t">Js.t</a></span></span></code></div><div class="spec-doc"><p>Returns which object is the target of this event. It raises <code>Not_found</code> in case there is no target (if the event has not been triggered yet)</p></div></div><div class="odoc-spec"><div class="spec type anchored" id="type-event_listener_id"><code><span><span class="keyword">type</span> event_listener_id</span></code></div></div><div class="odoc-spec"><div class="spec module anchored" id="module-Event"><code><span><span class="keyword">module</span> <a href="Event/index.html">Event</a></span><span> : <span class="keyword">sig</span> ... <span class="keyword">end</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-addEventListenerWithOptions"><code><span><span class="keyword">val</span> addEventListenerWithOptions : 
+  <span><span>(<span><span>&lt; .. &gt;</span> <a href="../Js/index.html#type-t">Js.t</a></span> <span class="keyword">as</span> 'a)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><span class="type-var">'b</span> <a href="Event/index.html#type-typ">Event.typ</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?capture</span>:<span>bool <a href="../Js/index.html#type-t">Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?once</span>:<span>bool <a href="../Js/index.html#type-t">Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:<span>bool <a href="../Js/index.html#type-t">Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><span>(<span class="type-var">'a</span>, <span class="type-var">'b</span>)</span> <a href="#type-event_listener">event_listener</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <a href="#type-event_listener_id">event_listener_id</a></span></code></div><div class="spec-doc"><p>Add an event listener. This function matches the option-object variant of the <code>addEventListener</code> DOM method, except that it returns an id for removing the listener.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-addEventListener"><code><span><span class="keyword">val</span> addEventListener : 
+  <span><span>(<span><span>&lt; .. &gt;</span> <a href="../Js/index.html#type-t">Js.t</a></span> <span class="keyword">as</span> 'a)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><span class="type-var">'b</span> <a href="Event/index.html#type-typ">Event.typ</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><span>(<span class="type-var">'a</span>, <span class="type-var">'b</span>)</span> <a href="#type-event_listener">event_listener</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>bool <a href="../Js/index.html#type-t">Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <a href="#type-event_listener_id">event_listener_id</a></span></code></div><div class="spec-doc"><p>Add an event listener. This function matches the useCapture boolean variant of the <code>addEventListener</code> DOM method, except that it returns an id for removing the listener.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-removeEventListener"><code><span><span class="keyword">val</span> removeEventListener : <span><a href="#type-event_listener_id">event_listener_id</a> <span class="arrow">&#45;&gt;</span></span> unit</span></code></div><div class="spec-doc"><p>Remove the given event listener.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-preventDefault"><code><span><span class="keyword">val</span> preventDefault : <span><span><span><span class="type-var">'a</span> <a href="class-type-event/index.html">event</a></span> <a href="../Js/index.html#type-t">Js.t</a></span> <span class="arrow">&#45;&gt;</span></span> unit</span></code></div><div class="spec-doc"><p>Call this to prevent the default handler for the event. To stop propagation of the event, call <a href="../Dom_html/index.html#val-stopPropagation"><code>Dom_html.stopPropagation</code></a>.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-createCustomEvent"><code><span><span class="keyword">val</span> createCustomEvent : 
+  <span><span class="optlabel">?bubbles</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?cancelable</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?detail</span>:<span class="type-var">'b</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><span><span><span>[<span class="type-var">'a</span>, <span class="type-var">'b</span>]</span> <a href="class-type-customEvent/index.html">customEvent</a></span> <a href="../Js/index.html#type-t">Js.t</a></span> <a href="Event/index.html#type-typ">Event.typ</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><span>(<span class="type-var">'a</span>, <span class="type-var">'b</span>)</span> <a href="class-type-customEvent/index.html">customEvent</a></span> <a href="../Js/index.html#type-t">Js.t</a></span></span></code></div><div class="spec-doc"><p>Create a custom event of given type.</p></div></div><h3 id="other-dom-objects">Other DOM objects</h3><div class="odoc-spec"><div class="spec class-type anchored" id="class-type-stringList"><code><span><span class="keyword">class</span> <span class="keyword">type</span>  </span><span><a href="class-type-stringList/index.html">stringList</a></span><span> = <span class="keyword">object</span> ... <span class="keyword">end</span></span></code></div></div></div>
+      </article>
+    </div>
+  </div>
+
+  <script>
+    var wodocPub = "/js_of_ocaml";
+    // Switch version: keep the current page, swapping only the version segment.
+    function wodocVersion(v) {
+      if (!v) return;
+      var re = new RegExp('^(' + wodocPub + '/)[^/]+');
+      var p = location.pathname;
+      location.href =
+        re.test(p) ? p.replace(re, '$1' + v) : wodocPub + '/' + v + '/index.html';
+    }
+    // Build the version <select> from the project's versions.json (the single
+    // source of truth, refreshed on every build/release), so even older frozen
+    // pages list the current set. Falls back to the baked <option>s on failure.
+    (function () {
+      var seg = (location.pathname.match(
+        new RegExp('^' + wodocPub + '/([^/]+)')) || [])[1];
+      function select(sel) {
+        var i;
+        for (i = 0; i < sel.options.length; i++)
+          if (sel.options[i].value === seg) { sel.selectedIndex = i; return; }
+        if (seg) {
+          var o = document.createElement('option');
+          o.value = seg; o.textContent = seg; o.selected = true;
+          sel.insertBefore(o, sel.firstChild);
+        }
+      }
+      fetch(wodocPub + '/versions.json')
+        .then(function (r) { if (!r.ok) throw 0; return r.json(); })
+        .then(function (m) {
+          var list = m.list || [], latest = m.latest;
+          document.querySelectorAll('.wodoc-version').forEach(function (sel) {
+            sel.innerHTML = '';
+            list.forEach(function (v) {
+              var o = document.createElement('option');
+              if (v === latest) { o.value = 'latest'; o.textContent = v + ' (latest)'; }
+              else { o.value = v; o.textContent = v; }
+              sel.appendChild(o);
+            });
+            select(sel);
+          });
+        })
+        .catch(function () {
+          document.querySelectorAll('.wodoc-version').forEach(select);
+        });
+    })();
+  </script>
+</body>
+</html>

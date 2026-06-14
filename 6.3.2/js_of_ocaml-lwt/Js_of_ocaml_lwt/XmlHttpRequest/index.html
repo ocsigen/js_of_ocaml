@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Module Js_of_ocaml_lwt.XmlHttpRequest — Js_of_ocaml</title>
+  <link rel="stylesheet" href="/css/style.css"/>
+  <link rel="stylesheet" href="/css/ocsigen-odoc.css"/>
+  <script src="../../../highlight.pack.js"></script>
+  <script src="../../../wodoc-highlight.js"></script>
+</head>
+<body class="wodoc-page wodoc-doc">
+  <!-- Shared site menu — THE single source of truth for the header, top menu and
+     drawer of EVERY Ocsigen doc page (vitrine + all projects). Canonical copy
+     lives here in ocsigen.github.io; each project's build fetches it. Injected
+     by `wodoc assemble --menu`. Holes filled by the tool (braces omitted here so
+     this comment is not itself rewritten by the hole-filler):
+       subproject  the sub-project name shown next to the Ocsigen logo
+                   (empty on the vitrine), via --subproject
+       leftnav     the project's left navigation, expanded into BOTH the mobile
+                   drawer (below) and the left column (in the page template),
+                   via --leftnav
+     The current entry is highlighted by adding the `current` class to the
+     element carrying data-wodoc-page=<id>: --current on the vitrine (page id),
+     --menu-current in a project (the project id). Nothing is hardcoded here, so
+     this file is the ONLY place the menu is defined.
+
+     Links are the FINAL site paths (/<project>/, /<page>): the target layout
+     where each project is served at ocsigen.org/<project>/ — no transitional
+     /wodoc/ prefix. -->
+<div class="page-header">
+  <p class="logo-ocsigen"><a href="/"><img src="/img/ocsigen-white.svg" alt="Ocsigen"/></a></p>
+  <p class="logo-subproject">Js_of_ocaml</p>
+
+  <div class="mainmenu">
+    <p class="mainmenu-home" data-wodoc-page="githubio"><a href="/">Home</a></p>
+    <p class="mainmenu-doc" data-wodoc-page="tuto"><a href="/tuto/">Doc</a></p>
+    <p data-wodoc-page="eliom"><a href="/eliom/">Eliom</a></p>
+    <p data-wodoc-page="js_of_ocaml" class="current"><a href="/js_of_ocaml/">Js_of_ocaml</a></p>
+    <p data-wodoc-page="ocsigenserver"><a href="/ocsigenserver/">Server</a></p>
+    <p data-wodoc-page="lwt"><a href="/lwt/">Lwt</a></p>
+    <p data-wodoc-page="tyxml"><a href="/tyxml/">Tyxml</a></p>
+    <p data-wodoc-page="ocsigen-start"><a href="/ocsigen-start/">Start</a></p>
+  </div>
+
+  <form id="googlesearch" action="https://google.com/search">
+    <input name="q" id="gsearch-box" placeholder="Search using Google"/>
+    <label for="gsearch-box"><img src="/img/search.svg" alt="" id="gsearch-icon"/></label>
+    <input type="submit" id="gsearch-submit" onclick="document.getElementById('gsearch-box').value += ' site:ocsigen.org';"/>
+  </form>
+
+  <aside class="how-drawer">
+    <input id="how-drawer-toggle" type="checkbox"/>
+    <label for="how-drawer-toggle" id="how-drawer-label"><span class="how-drawer-icon"></span></label>
+    <nav class="how-drawer-content">
+      <ul class="drawermainmenu">
+        <li class="drawermainmenu-home" data-wodoc-page="githubio"><a href="/">Home</a></li>
+        <li class="drawermainmenu-doc" data-wodoc-page="tuto"><a href="/tuto/">Doc</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="eliom"><a href="/eliom/">Eliom</a></li>
+        <li class="drawermainmenu-project current" data-wodoc-page="js_of_ocaml"><a href="/js_of_ocaml/">Js_of_ocaml</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsigenserver"><a href="/ocsigenserver/">Server</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="lwt"><a href="/lwt/">Lwt</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="tyxml"><a href="/tyxml/">Tyxml</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsigen-toolkit"><a href="/ocsigen-toolkit/">Toolkit</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsigen-start"><a href="/ocsigen-start/">Start</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsipersist"><a href="/ocsipersist/">Ocsipersist</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="reactiveData"><a href="/reactiveData/">ReactiveData</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsigen-i18n"><a href="/ocsigen-i18n/">i18n</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="wodoc"><a href="/wodoc/">Wodoc</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="projects"><a href="/projects">Other projects</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="papers"><a href="/papers">Research papers</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="credits"><a href="/credits">Who does Ocsigen?</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="contributing"><a href="/contributing">Contributing</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="blog"><a href="/blog-archive/">Blog</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="install"><a href="/install">Installation</a></li>
+        <li class="drawermainmenu-page"><a href="https://github.com/ocsigen">Source code</a></li>
+      </ul>
+      <!-- On mobile the left column is hidden; its menu lives here in the burger
+           (.how-doctree, shown only on narrow screens), as the old site did.
+           Empty on the vitrine; the leftnav hole is filled (with the same
+           fragment as the left column) only on project pages. -->
+      <nav class="how-doctree"><div class="docversion">
+  <label>Version:
+    <select class="wodoc-version" onchange="wodocVersion(this.value)">
+      <option value="6.3.2">6.3.2</option>
+    </select>
+  </label>
+</div>
+<div class="page-toc">
+  <h3>On this page</h3>
+  
+</div>
+<nav class="api-nav manual-nav">
+<h3>Getting Started</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/overview.html"><a href="../../../js_of_ocaml/overview.html">Overview</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/install.html"><a href="../../../js_of_ocaml/install.html">Installation</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/quickstart.html"><a href="../../../js_of_ocaml/quickstart.html">Quick Start</a></li>
+</ul>
+<h3>Programming Guide</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/javascript-interop.html"><a href="../../../js_of_ocaml/javascript-interop.html">JavaScript interop</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/ppx.html"><a href="../../../js_of_ocaml/ppx.html">PPX syntax extension</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/ppx-deriving.html"><a href="../../../js_of_ocaml/ppx-deriving.html">JSON derivation</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/rev-bindings.html"><a href="../../../js_of_ocaml/rev-bindings.html">Export OCaml code to JavaScript</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/errors.html"><a href="../../../js_of_ocaml/errors.html">Error handling</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/api.html"><a href="../../../js_of_ocaml/api.html">API</a></li>
+</ul>
+<h3>Lwt Support</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/lwt.html"><a href="../../../js_of_ocaml/lwt.html">Lwt support</a></li>
+<li class="ml3 current" data-wodoc-page="js_of_ocaml-lwt/Js_of_ocaml_lwt/index.html"><a href="../../../js_of_ocaml-lwt/Js_of_ocaml_lwt/index.html">API</a></li>
+</ul>
+<h3>Compiler</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/options.html"><a href="../../../js_of_ocaml/options.html">Command line options</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/compilation-modes.html"><a href="../../../js_of_ocaml/compilation-modes.html">Compilation modes</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/linker.html"><a href="../../../js_of_ocaml/linker.html">JavaScript primitives</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/tailcall.html"><a href="../../../js_of_ocaml/tailcall.html">Tailcall optimization</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/effects.html"><a href="../../../js_of_ocaml/effects.html">Effect handlers</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/runtime-representation.html"><a href="../../../js_of_ocaml/runtime-representation.html">Runtime representation</a></li>
+</ul>
+<h3>Wasm_of_ocaml</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/wasm_overview.html"><a href="../../../js_of_ocaml/wasm_overview.html">Overview</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/wasm_runtime.html"><a href="../../../js_of_ocaml/wasm_runtime.html">Writing Wasm primitives</a></li>
+</ul>
+<h3>How-to Guides</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/build-toplevel.html"><a href="../../../js_of_ocaml/build-toplevel.html">Build a toplevel or use Dynlink</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/debug.html"><a href="../../../js_of_ocaml/debug.html">Debug a program</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/performances.html"><a href="../../../js_of_ocaml/performances.html">Performance</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/contribute.html"><a href="../../../js_of_ocaml/contribute.html">Contribute</a></li>
+</ul>
+<h3>Try it</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/files/toplevel/index.html"><a href="../../../js_of_ocaml/files/toplevel/index.html">OCaml toplevel</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/examples.html"><a href="../../../js_of_ocaml/examples.html">Examples and projects</a></li>
+</ul>
+</nav>
+</nav>
+    </nav>
+  </aside>
+</div>
+
+
+  <div class="project-page">
+    <div class="twocols">
+      <nav class="leftcol">
+        <div class="docversion">
+  <label>Version:
+    <select class="wodoc-version" onchange="wodocVersion(this.value)">
+      <option value="6.3.2">6.3.2</option>
+    </select>
+  </label>
+</div>
+<div class="page-toc">
+  <h3>On this page</h3>
+  
+</div>
+<nav class="api-nav manual-nav">
+<h3>Getting Started</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/overview.html"><a href="../../../js_of_ocaml/overview.html">Overview</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/install.html"><a href="../../../js_of_ocaml/install.html">Installation</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/quickstart.html"><a href="../../../js_of_ocaml/quickstart.html">Quick Start</a></li>
+</ul>
+<h3>Programming Guide</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/javascript-interop.html"><a href="../../../js_of_ocaml/javascript-interop.html">JavaScript interop</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/ppx.html"><a href="../../../js_of_ocaml/ppx.html">PPX syntax extension</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/ppx-deriving.html"><a href="../../../js_of_ocaml/ppx-deriving.html">JSON derivation</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/rev-bindings.html"><a href="../../../js_of_ocaml/rev-bindings.html">Export OCaml code to JavaScript</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/errors.html"><a href="../../../js_of_ocaml/errors.html">Error handling</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/api.html"><a href="../../../js_of_ocaml/api.html">API</a></li>
+</ul>
+<h3>Lwt Support</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/lwt.html"><a href="../../../js_of_ocaml/lwt.html">Lwt support</a></li>
+<li class="ml3 current" data-wodoc-page="js_of_ocaml-lwt/Js_of_ocaml_lwt/index.html"><a href="../../../js_of_ocaml-lwt/Js_of_ocaml_lwt/index.html">API</a></li>
+</ul>
+<h3>Compiler</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/options.html"><a href="../../../js_of_ocaml/options.html">Command line options</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/compilation-modes.html"><a href="../../../js_of_ocaml/compilation-modes.html">Compilation modes</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/linker.html"><a href="../../../js_of_ocaml/linker.html">JavaScript primitives</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/tailcall.html"><a href="../../../js_of_ocaml/tailcall.html">Tailcall optimization</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/effects.html"><a href="../../../js_of_ocaml/effects.html">Effect handlers</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/runtime-representation.html"><a href="../../../js_of_ocaml/runtime-representation.html">Runtime representation</a></li>
+</ul>
+<h3>Wasm_of_ocaml</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/wasm_overview.html"><a href="../../../js_of_ocaml/wasm_overview.html">Overview</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/wasm_runtime.html"><a href="../../../js_of_ocaml/wasm_runtime.html">Writing Wasm primitives</a></li>
+</ul>
+<h3>How-to Guides</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/build-toplevel.html"><a href="../../../js_of_ocaml/build-toplevel.html">Build a toplevel or use Dynlink</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/debug.html"><a href="../../../js_of_ocaml/debug.html">Debug a program</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/performances.html"><a href="../../../js_of_ocaml/performances.html">Performance</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/contribute.html"><a href="../../../js_of_ocaml/contribute.html">Contribute</a></li>
+</ul>
+<h3>Try it</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/files/toplevel/index.html"><a href="../../../js_of_ocaml/files/toplevel/index.html">OCaml toplevel</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/examples.html"><a href="../../../js_of_ocaml/examples.html">Examples and projects</a></li>
+</ul>
+</nav>
+
+      </nav>
+      <article class="rightcol">
+        <header class="odoc-preamble"><h1>Module <code><span>Js_of_ocaml_lwt.XmlHttpRequest</span></code></h1></header>
+        <div class="odoc-content"><div class="odoc-include"><details open="open"><summary class="spec include"><code><span><span class="keyword">include</span> <span class="keyword">module</span> <span class="keyword">type</span> <span class="keyword">of</span> <span class="keyword">struct</span> <span class="keyword">include</span> <a href="../../../js_of_ocaml/Js_of_ocaml/XmlHttpRequest/index.html">Js_of_ocaml.XmlHttpRequest</a> <span class="keyword">end</span></span></code></summary><div class="odoc-spec"><div class="spec type anchored" id="type-readyState"><code><span><span class="keyword">type</span> readyState</span><span> = <a href="../../../js_of_ocaml/Js_of_ocaml/XmlHttpRequest/index.html#type-readyState">Js_of_ocaml.XmlHttpRequest.readyState</a></span><span> = </span></code><ol><li id="type-readyState.UNSENT" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">UNSENT</span></span></code></li><li id="type-readyState.OPENED" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">OPENED</span></span></code></li><li id="type-readyState.HEADERS_RECEIVED" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">HEADERS_RECEIVED</span></span></code></li><li id="type-readyState.LOADING" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">LOADING</span></span></code></li><li id="type-readyState.DONE" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">DONE</span></span></code></li></ol></div></div><div class="odoc-spec"><div class="spec type anchored" id="type-response"><code><span><span class="keyword">type</span> <span>_ response</span></span><span> = <span><span class="type-var">_</span> <a href="../../../js_of_ocaml/Js_of_ocaml/XmlHttpRequest/index.html#type-response">Js_of_ocaml.XmlHttpRequest.response</a></span></span><span> = </span></code><ol><li id="type-response.ArrayBuffer" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">ArrayBuffer</span> : <span><span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Typed_array/class-type-arrayBuffer/index.html">Js_of_ocaml.Typed_array.arrayBuffer</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span>
+                <a href="../../../js_of_ocaml/Js_of_ocaml/Js/Opt/index.html#type-t">Js_of_ocaml.Js.Opt.t</a></span>
+                <a href="#type-response">response</a></span></span></code></li><li id="type-response.Blob" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Blob</span> : <span><span><span><a href="../../../js_of_ocaml/Js_of_ocaml/File/class-type-blob/index.html">Js_of_ocaml.File.blob</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/Opt/index.html#type-t">Js_of_ocaml.Js.Opt.t</a></span> <a href="#type-response">response</a></span></span></code></li><li id="type-response.Document" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Document</span> : <span><span><span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom/class-type-element/index.html">Js_of_ocaml.Dom.element</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Dom/class-type-document/index.html">Js_of_ocaml.Dom.document</a></span> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span>
+             <a href="../../../js_of_ocaml/Js_of_ocaml/Js/Opt/index.html#type-t">Js_of_ocaml.Js.Opt.t</a></span>
+             <a href="#type-response">response</a></span></span></code></li><li id="type-response.JSON" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">JSON</span> : <span><span><span class="type-var">'a</span> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/Opt/index.html#type-t">Js_of_ocaml.Js.Opt.t</a></span> <a href="#type-response">response</a></span></span></code></li><li id="type-response.Text" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Text</span> : <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Js/class-type-js_string/index.html">Js_of_ocaml.Js.js_string</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <a href="#type-response">response</a></span></span></code></li><li id="type-response.Default" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Default</span> : <span>string <a href="#type-response">response</a></span></span></code></li></ol></div></div><div class="odoc-spec"><div class="spec class-type anchored" id="class-type-xmlHttpRequest"><code><span><span class="keyword">class</span> <span class="keyword">type</span>  </span><span><a href="class-type-xmlHttpRequest/index.html">xmlHttpRequest</a></span><span> = <span class="keyword">object</span> ... <span class="keyword">end</span></span></code></div></div><div class="odoc-spec"><div class="spec class-type anchored" id="class-type-xmlHttpRequestUpload"><code><span><span class="keyword">class</span> <span class="keyword">type</span>  </span><span><a href="class-type-xmlHttpRequestUpload/index.html">xmlHttpRequestUpload</a></span><span> = <span class="keyword">object</span> ... <span class="keyword">end</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-create"><code><span><span class="keyword">val</span> create : <span>unit <span class="arrow">&#45;&gt;</span></span> <span><a href="class-type-xmlHttpRequest/index.html">xmlHttpRequest</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span></span></code></div></div><p>The next part of this module allow one to use Ocaml with no need for Javascript documentation.</p><div class="odoc-spec"><div class="spec module anchored" id="module-Event"><code><span><span class="keyword">module</span> Event</span><span> = <a href="../../../js_of_ocaml/Js_of_ocaml/XmlHttpRequest/Event/index.html">Js_of_ocaml.XmlHttpRequest.Event</a></span></code></div></div></details></div><div class="odoc-spec"><div class="spec type anchored" id="type-generic_http_frame"><code><span><span class="keyword">type</span> <span>'response generic_http_frame</span></span><span> = </span><span>{</span></code><ol><li id="type-generic_http_frame.url" class="def record field anchored"><code><span>url : string;</span></code></li><li id="type-generic_http_frame.code" class="def record field anchored"><code><span>code : int;</span></code></li><li id="type-generic_http_frame.headers" class="def record field anchored"><code><span>headers : <span>string <span class="arrow">&#45;&gt;</span></span> <span>string option</span>;</span></code></li><li id="type-generic_http_frame.content" class="def record field anchored"><code><span>content : <span class="type-var">'response</span>;</span></code></li><li id="type-generic_http_frame.content_xml" class="def record field anchored"><code><span>content_xml : <span>unit <span class="arrow">&#45;&gt;</span></span>
+  <span><span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom/class-type-element/index.html">Js_of_ocaml.Dom.element</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Dom/class-type-document/index.html">Js_of_ocaml.Dom.document</a></span> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> option</span>;</span></code></li></ol><code><span>}</span></code></div><div class="spec-doc"><p>The type for XHR results. The code field is the http status code of the answer. The headers field is a function associating values to any header name.</p></div></div><div class="odoc-spec"><div class="spec type anchored" id="type-http_frame"><code><span><span class="keyword">type</span> http_frame</span><span> = <span>string <a href="#type-generic_http_frame">generic_http_frame</a></span></span></code></div></div><div class="odoc-spec"><div class="spec exception anchored" id="exception-Wrong_headers"><code><span><span class="keyword">exception</span> </span><span><span class="exception">Wrong_headers</span> <span class="keyword">of</span> int * <span>(<span>string <span class="arrow">&#45;&gt;</span></span> <span>string option</span>)</span></span></code></div><div class="spec-doc"><p>The exception raise by perform functions when the check_headers parameter returned false. The parameter of the exception is a function is like the <code>headers</code> function of <code>http_frame</code></p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-perform_raw"><code><span><span class="keyword">val</span> perform_raw : 
+  <span><span class="optlabel">?headers</span>:<span><span>(string * string)</span> list</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?content_type</span>:string <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?get_args</span>:<span><span>(string * string)</span> list</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?check_headers</span>:<span>(<span>int <span class="arrow">&#45;&gt;</span></span> <span><span>(<span>string <span class="arrow">&#45;&gt;</span></span> <span>string option</span>)</span> <span class="arrow">&#45;&gt;</span></span> bool)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?progress</span>:<span>(<span>int <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> unit)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?upload_progress</span>:<span>(<span>int <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> unit)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?contents</span>:
+    <span>[&lt; <span>`POST_form of <span><span>(string * <a href="../../../js_of_ocaml/Js_of_ocaml/Form/index.html#type-form_elt">Js_of_ocaml.Form.form_elt</a>)</span> list</span></span>
+    <span><span>| `Form_contents</span> of <a href="../../../js_of_ocaml/Js_of_ocaml/Form/index.html#type-form_contents">Js_of_ocaml.Form.form_contents</a></span>
+    <span><span>| `String</span> of string</span>
+    <span><span>| `Blob</span> of <span><a href="../../../js_of_ocaml/Js_of_ocaml/File/class-type-blob/index.html">Js_of_ocaml.File.blob</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span></span> ]</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?override_mime_type</span>:string <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?override_method</span>:
+    <span>[&lt; `GET <span>| `POST</span> <span>| `HEAD</span> <span>| `PUT</span> <span>| `DELETE</span> <span>| `OPTIONS</span> <span>| `PATCH</span> ]</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?with_credentials</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="label">response_type</span>:<span><span class="type-var">'a</span> <a href="../../../js_of_ocaml/Js_of_ocaml/XmlHttpRequest/index.html#type-response">Js_of_ocaml.XmlHttpRequest.response</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span>string <span class="arrow">&#45;&gt;</span></span>
+  <span><span><span class="type-var">'a</span> <a href="#type-generic_http_frame">generic_http_frame</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div><div class="spec-doc"><p><code>perform_raw</code> is the same as <a href="#val-perform_raw_url"><code>perform_raw_url</code></a> except that an additional response_type argument can be given to set the XMLHttpRequest responseType, and hence return different types of data for GET requests.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-perform_raw_url"><code><span><span class="keyword">val</span> perform_raw_url : 
+  <span><span class="optlabel">?headers</span>:<span><span>(string * string)</span> list</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?content_type</span>:string <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?get_args</span>:<span><span>(string * string)</span> list</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?check_headers</span>:<span>(<span>int <span class="arrow">&#45;&gt;</span></span> <span><span>(<span>string <span class="arrow">&#45;&gt;</span></span> <span>string option</span>)</span> <span class="arrow">&#45;&gt;</span></span> bool)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?progress</span>:<span>(<span>int <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> unit)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?upload_progress</span>:<span>(<span>int <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> unit)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?contents</span>:
+    <span>[&lt; <span>`POST_form of <span><span>(string * <a href="../../../js_of_ocaml/Js_of_ocaml/Form/index.html#type-form_elt">Js_of_ocaml.Form.form_elt</a>)</span> list</span></span>
+    <span><span>| `Form_contents</span> of <a href="../../../js_of_ocaml/Js_of_ocaml/Form/index.html#type-form_contents">Js_of_ocaml.Form.form_contents</a></span>
+    <span><span>| `String</span> of string</span>
+    <span><span>| `Blob</span> of <span><a href="../../../js_of_ocaml/Js_of_ocaml/File/class-type-blob/index.html">Js_of_ocaml.File.blob</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span></span> ]</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?override_mime_type</span>:string <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?override_method</span>:
+    <span>[&lt; `GET <span>| `POST</span> <span>| `HEAD</span> <span>| `PUT</span> <span>| `DELETE</span> <span>| `OPTIONS</span> <span>| `PATCH</span> ]</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?with_credentials</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span>string <span class="arrow">&#45;&gt;</span></span>
+  <span><a href="#type-http_frame">http_frame</a> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div><div class="spec-doc"><p><code>perform_raw_url</code> makes an asynchronous request to the specified <code>url</code> with specified options. The result is a cancelable thread returning an HTTP frame. By default, if <code>post_args</code> and <code>form_arg</code> are <code>None</code>, a GET request is used. If <code>post_args</code> or <code>form_arg</code> is <code>Some _</code> (even <code>Some []</code>) then a POST request is made. But if <code>override_method</code> is set, the request method is forced, no matter the <code>post_args</code> or <code>form_arg</code> value. For example, with <code>override_method</code> set to <code>`PUT</code> and <code>form_arg</code> set to <code>Some _</code> a PUT request including the form data will be made. The <code>check_headers</code> argument is run as soon as the answer code and headers are available. If it returns false, the request is canceled and the functions raise the <code>Wrong_headers</code> exception</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-perform"><code><span><span class="keyword">val</span> perform : 
+  <span><span class="optlabel">?headers</span>:<span><span>(string * string)</span> list</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?content_type</span>:string <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?get_args</span>:<span><span>(string * string)</span> list</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?check_headers</span>:<span>(<span>int <span class="arrow">&#45;&gt;</span></span> <span><span>(<span>string <span class="arrow">&#45;&gt;</span></span> <span>string option</span>)</span> <span class="arrow">&#45;&gt;</span></span> bool)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?progress</span>:<span>(<span>int <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> unit)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?upload_progress</span>:<span>(<span>int <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> unit)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?contents</span>:
+    <span>[&lt; <span>`POST_form of <span><span>(string * <a href="../../../js_of_ocaml/Js_of_ocaml/Form/index.html#type-form_elt">Js_of_ocaml.Form.form_elt</a>)</span> list</span></span>
+    <span><span>| `Form_contents</span> of <a href="../../../js_of_ocaml/Js_of_ocaml/Form/index.html#type-form_contents">Js_of_ocaml.Form.form_contents</a></span>
+    <span><span>| `String</span> of string</span>
+    <span><span>| `Blob</span> of <span><a href="../../../js_of_ocaml/Js_of_ocaml/File/class-type-blob/index.html">Js_of_ocaml.File.blob</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span></span> ]</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?override_mime_type</span>:string <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?override_method</span>:
+    <span>[&lt; `GET <span>| `POST</span> <span>| `HEAD</span> <span>| `PUT</span> <span>| `DELETE</span> <span>| `OPTIONS</span> <span>| `PATCH</span> ]</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?with_credentials</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><a href="../../../js_of_ocaml/Js_of_ocaml/Url/index.html#type-url">Js_of_ocaml.Url.url</a> <span class="arrow">&#45;&gt;</span></span>
+  <span><a href="#type-http_frame">http_frame</a> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div><div class="spec-doc"><p><code>perform</code> is the same as <a href="#val-perform_raw_url"><code>perform_raw_url</code></a> except that the Url argument has type <a href="../../../js_of_ocaml/Js_of_ocaml/Url/index.html#type-url"><code>Js_of_ocaml.Url.url</code></a>.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-get"><code><span><span class="keyword">val</span> get : <span>string <span class="arrow">&#45;&gt;</span></span> <span><a href="#type-http_frame">http_frame</a> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div><div class="spec-doc"><p><code>get url</code> makes an asynchronous request to the specified <code>url</code></p></div></div></div>
+      </article>
+    </div>
+  </div>
+
+  <script>
+    var wodocPub = "/js_of_ocaml";
+    // Switch version: keep the current page, swapping only the version segment.
+    function wodocVersion(v) {
+      if (!v) return;
+      var re = new RegExp('^(' + wodocPub + '/)[^/]+');
+      var p = location.pathname;
+      location.href =
+        re.test(p) ? p.replace(re, '$1' + v) : wodocPub + '/' + v + '/index.html';
+    }
+    // Build the version <select> from the project's versions.json (the single
+    // source of truth, refreshed on every build/release), so even older frozen
+    // pages list the current set. Falls back to the baked <option>s on failure.
+    (function () {
+      var seg = (location.pathname.match(
+        new RegExp('^' + wodocPub + '/([^/]+)')) || [])[1];
+      function select(sel) {
+        var i;
+        for (i = 0; i < sel.options.length; i++)
+          if (sel.options[i].value === seg) { sel.selectedIndex = i; return; }
+        if (seg) {
+          var o = document.createElement('option');
+          o.value = seg; o.textContent = seg; o.selected = true;
+          sel.insertBefore(o, sel.firstChild);
+        }
+      }
+      fetch(wodocPub + '/versions.json')
+        .then(function (r) { if (!r.ok) throw 0; return r.json(); })
+        .then(function (m) {
+          var list = m.list || [], latest = m.latest;
+          document.querySelectorAll('.wodoc-version').forEach(function (sel) {
+            sel.innerHTML = '';
+            list.forEach(function (v) {
+              var o = document.createElement('option');
+              if (v === latest) { o.value = 'latest'; o.textContent = v + ' (latest)'; }
+              else { o.value = v; o.textContent = v; }
+              sel.appendChild(o);
+            });
+            select(sel);
+          });
+        })
+        .catch(function () {
+          document.querySelectorAll('.wodoc-version').forEach(select);
+        });
+    })();
+  </script>
+</body>
+</html>

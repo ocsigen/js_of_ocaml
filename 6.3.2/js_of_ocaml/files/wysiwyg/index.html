@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+	  "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>WYSIWYG Wiki Editor</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<style type="text/css">
+* {
+  box-sizing: border-box;
+}
+body {
+  background-color: #1e1e1e;
+  color: #ddd;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 14px;
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 16px;
+}
+h1 {
+  font-size: 1.6em;
+  font-weight: 300;
+  letter-spacing: 0.05em;
+  color: #eee;
+  margin: 0 0 16px;
+}
+#wiki_demo {
+  width: 100%;
+  max-width: 900px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+#wiki_demo br {
+  display: none;
+}
+.toolbar {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.toolbar-group {
+  display: flex;
+  gap: 2px;
+  background: #2a2a2a;
+  border-radius: 6px;
+  padding: 3px;
+}
+.toolbar-group + .toolbar-group {
+  margin-left: 4px;
+}
+#wiki_demo button {
+  background: #333;
+  color: #ddd;
+  border: 1px solid #444;
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-family: inherit;
+  font-size: 0.85em;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+}
+#wiki_demo button:hover {
+  background: #444;
+  border-color: #555;
+}
+#wiki_demo button:active {
+  background: #555;
+}
+#wiki_demo button svg {
+  display: block;
+}
+#wiki_demo iframe {
+  width: 100%;
+  height: 300px;
+  background: #c8c8c8;
+  border: 1px solid #3a3a3a;
+  border-radius: 6px;
+}
+.output-panels {
+  display: flex;
+  gap: 12px;
+}
+.output-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.panel-label {
+  color: #777;
+  font-size: 0.8em;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 6px;
+}
+#wiki_demo textarea {
+  flex: 1;
+  min-height: 140px;
+  background-color: #252525;
+  color: #ddd;
+  border: 1px solid #3a3a3a;
+  border-radius: 6px;
+  padding: 12px;
+  font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+  font-size: 0.85em;
+  line-height: 1.5;
+  resize: vertical;
+}
+@media (max-width: 600px) {
+  .output-panels {
+    flex-direction: column;
+  }
+}
+</style>
+    <script type="text/javascript">
+      var s = (new URLSearchParams(location.search)).has('wasm') ? 'main.bc.wasm.js' : 'main.bc.js';
+      document.write('<script type="text/javascript" src="' + s + '" defer><\/script>');
+    </script>
+  </head>
+  <body>
+    <h1>WYSIWYG Wiki Editor</h1>
+    <div id="wiki_demo"></div>
+  </body>
+</html>
