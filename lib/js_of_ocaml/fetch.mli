@@ -62,7 +62,7 @@ class type body = object
   method formData : Form.formData t Promise.t meth
 end
 
-(** Initializer for {!request} (and {!fetch_with_init}). All fields are
+(** Initializer for {!class-type:request} (and {!fetch_with_init}). All fields are
     optional; create an empty record with {!empty_request_init} and
     populate the ones you need. *)
 class type requestInit = object
