@@ -13,6 +13,7 @@
 ; these are committed source files, so depending on them under doc-manual is
 ; enough to make dune materialize manual/files/performances/ in _build, from
 ; where `wodoc build` ships it alongside the examples.
+
 (alias
  (name doc-manual)
  (deps
