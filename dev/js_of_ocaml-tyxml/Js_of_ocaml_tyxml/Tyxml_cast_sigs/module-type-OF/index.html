@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Module type Tyxml_cast_sigs.OF — Js_of_ocaml</title>
+  <link rel="stylesheet" href="/css/style.css"/>
+  <link rel="stylesheet" href="/css/ocsigen-odoc.css"/>
+  <script src="../../../../highlight.pack.js"></script>
+  <script src="../../../../wodoc-highlight.js"></script>
+</head>
+<body class="wodoc-page wodoc-doc">
+  <!-- Shared site menu — THE single source of truth for the header, top menu and
+     drawer of EVERY Ocsigen doc page (vitrine + all projects). Canonical copy
+     lives here in ocsigen.github.io; each project's build fetches it. Injected
+     by `wodoc assemble --menu`. Holes filled by the tool (braces omitted here so
+     this comment is not itself rewritten by the hole-filler):
+       subproject  the sub-project name shown next to the Ocsigen logo
+                   (empty on the vitrine), via --subproject
+       leftnav     the project's left navigation, expanded into BOTH the mobile
+                   drawer (below) and the left column (in the page template),
+                   via --leftnav
+     The current entry is highlighted by adding the `current` class to the
+     element carrying data-wodoc-page=<id>: --current on the vitrine (page id),
+     --menu-current in a project (the project id). Nothing is hardcoded here, so
+     this file is the ONLY place the menu is defined.
+
+     Links are the FINAL site paths (/<project>/, /<page>): the target layout
+     where each project is served at ocsigen.org/<project>/ — no transitional
+     /wodoc/ prefix. -->
+<div class="page-header">
+  <p class="logo-ocsigen"><a href="/"><img src="/img/ocsigen-white.svg" alt="Ocsigen"/></a></p>
+  <p class="logo-subproject">Js_of_ocaml</p>
+
+  <div class="mainmenu">
+    <p class="mainmenu-home" data-wodoc-page="githubio"><a href="/">Home</a></p>
+    <p class="mainmenu-doc" data-wodoc-page="tuto"><a href="/tuto/">Doc</a></p>
+    <p data-wodoc-page="eliom"><a href="/eliom/">Eliom</a></p>
+    <p data-wodoc-page="js_of_ocaml" class="current"><a href="/js_of_ocaml/">Js_of_ocaml</a></p>
+    <p data-wodoc-page="ocsigenserver"><a href="/ocsigenserver/">Server</a></p>
+    <p data-wodoc-page="lwt"><a href="/lwt/">Lwt</a></p>
+    <p data-wodoc-page="tyxml"><a href="/tyxml/">Tyxml</a></p>
+    <p data-wodoc-page="ocsigen-start"><a href="/ocsigen-start/">Start</a></p>
+  </div>
+
+  <form id="googlesearch" action="https://google.com/search">
+    <input name="q" id="gsearch-box" placeholder="Search using Google"/>
+    <label for="gsearch-box"><img src="/img/search.svg" alt="" id="gsearch-icon"/></label>
+    <input type="submit" id="gsearch-submit" onclick="document.getElementById('gsearch-box').value += ' site:ocsigen.org';"/>
+  </form>
+
+  <aside class="how-drawer">
+    <input id="how-drawer-toggle" type="checkbox"/>
+    <label for="how-drawer-toggle" id="how-drawer-label"><span class="how-drawer-icon"></span></label>
+    <nav class="how-drawer-content">
+      <ul class="drawermainmenu">
+        <li class="drawermainmenu-home" data-wodoc-page="githubio"><a href="/">Home</a></li>
+        <li class="drawermainmenu-doc" data-wodoc-page="tuto"><a href="/tuto/">Doc</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="eliom"><a href="/eliom/">Eliom</a></li>
+        <li class="drawermainmenu-project current" data-wodoc-page="js_of_ocaml"><a href="/js_of_ocaml/">Js_of_ocaml</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsigenserver"><a href="/ocsigenserver/">Server</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="lwt"><a href="/lwt/">Lwt</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="tyxml"><a href="/tyxml/">Tyxml</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsigen-toolkit"><a href="/ocsigen-toolkit/">Toolkit</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsigen-start"><a href="/ocsigen-start/">Start</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsipersist"><a href="/ocsipersist/">Ocsipersist</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="reactiveData"><a href="/reactiveData/">ReactiveData</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsigen-i18n"><a href="/ocsigen-i18n/">i18n</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="wodoc"><a href="/wodoc/">Wodoc</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="projects"><a href="/projects">Other projects</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="papers"><a href="/papers">Research papers</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="credits"><a href="/credits">Who does Ocsigen?</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="contributing"><a href="/contributing">Contributing</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="blog"><a href="/blog">Blog</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="install"><a href="/install">Installation</a></li>
+        <li class="drawermainmenu-page"><a href="https://github.com/ocsigen">Source code</a></li>
+      </ul>
+      <!-- On mobile the left column is hidden; its menu lives here in the burger
+           (.how-doctree, shown only on narrow screens), as the old site did.
+           Empty on the vitrine; the leftnav hole is filled (with the same
+           fragment as the left column) only on project pages. -->
+      <nav class="how-doctree"><div class="docversion">
+  <label>Version:
+    <select class="wodoc-version" onchange="wodocVersion(this.value)">
+      <option value="dev">dev</option>
+    </select>
+  </label>
+</div>
+<div class="page-toc">
+  <h3>On this page</h3>
+  
+</div>
+<nav class="api-nav manual-nav">
+<h3>Getting Started</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/overview.html"><a href="../../../../js_of_ocaml/overview.html">Overview</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/install.html"><a href="../../../../js_of_ocaml/install.html">Installation</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/quickstart.html"><a href="../../../../js_of_ocaml/quickstart.html">Quick Start</a></li>
+</ul>
+<h3>Programming Guide</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/javascript-interop.html"><a href="../../../../js_of_ocaml/javascript-interop.html">JavaScript interop</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/ppx.html"><a href="../../../../js_of_ocaml/ppx.html">PPX syntax extension</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/ppx-deriving.html"><a href="../../../../js_of_ocaml/ppx-deriving.html">JSON derivation</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/rev-bindings.html"><a href="../../../../js_of_ocaml/rev-bindings.html">Export OCaml code to JavaScript</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/errors.html"><a href="../../../../js_of_ocaml/errors.html">Error handling</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/api.html"><a href="../../../../js_of_ocaml/api.html">API</a></li>
+</ul>
+<h3>Lwt Support</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/lwt.html"><a href="../../../../js_of_ocaml/lwt.html">Lwt support</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml-lwt/Js_of_ocaml_lwt/index.html"><a href="../../../../js_of_ocaml-lwt/Js_of_ocaml_lwt/index.html">API</a></li>
+</ul>
+<h3>Compiler</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/options.html"><a href="../../../../js_of_ocaml/options.html">Command line options</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/compilation-modes.html"><a href="../../../../js_of_ocaml/compilation-modes.html">Compilation modes</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/linker.html"><a href="../../../../js_of_ocaml/linker.html">JavaScript primitives</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/tailcall.html"><a href="../../../../js_of_ocaml/tailcall.html">Tailcall optimization</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/effects.html"><a href="../../../../js_of_ocaml/effects.html">Effect handlers</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/runtime-representation.html"><a href="../../../../js_of_ocaml/runtime-representation.html">Runtime representation</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/browser-compat.html"><a href="../../../../js_of_ocaml/browser-compat.html">Targeting older browsers</a></li>
+</ul>
+<h3>Wasm_of_ocaml</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/wasm_overview.html"><a href="../../../../js_of_ocaml/wasm_overview.html">Overview</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/wasm_runtime.html"><a href="../../../../js_of_ocaml/wasm_runtime.html">Writing Wasm primitives</a></li>
+</ul>
+<h3>How-to Guides</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/build-toplevel.html"><a href="../../../../js_of_ocaml/build-toplevel.html">Build a toplevel or use Dynlink</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/debug.html"><a href="../../../../js_of_ocaml/debug.html">Debug a program</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/performances.html"><a href="../../../../js_of_ocaml/performances.html">Performance</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/contribute.html"><a href="../../../../js_of_ocaml/contribute.html">Contribute</a></li>
+</ul>
+<h3>Try it</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/files/toplevel/index.html"><a href="../../../../js_of_ocaml/files/toplevel/index.html">OCaml toplevel</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/examples.html"><a href="../../../../js_of_ocaml/examples.html">Examples and projects</a></li>
+</ul>
+</nav>
+</nav>
+    </nav>
+  </aside>
+</div>
+
+
+  <div class="project-page">
+    <div class="twocols">
+      <nav class="leftcol">
+        <div class="docversion">
+  <label>Version:
+    <select class="wodoc-version" onchange="wodocVersion(this.value)">
+      <option value="dev">dev</option>
+    </select>
+  </label>
+</div>
+<div class="page-toc">
+  <h3>On this page</h3>
+  
+</div>
+<nav class="api-nav manual-nav">
+<h3>Getting Started</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/overview.html"><a href="../../../../js_of_ocaml/overview.html">Overview</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/install.html"><a href="../../../../js_of_ocaml/install.html">Installation</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/quickstart.html"><a href="../../../../js_of_ocaml/quickstart.html">Quick Start</a></li>
+</ul>
+<h3>Programming Guide</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/javascript-interop.html"><a href="../../../../js_of_ocaml/javascript-interop.html">JavaScript interop</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/ppx.html"><a href="../../../../js_of_ocaml/ppx.html">PPX syntax extension</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/ppx-deriving.html"><a href="../../../../js_of_ocaml/ppx-deriving.html">JSON derivation</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/rev-bindings.html"><a href="../../../../js_of_ocaml/rev-bindings.html">Export OCaml code to JavaScript</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/errors.html"><a href="../../../../js_of_ocaml/errors.html">Error handling</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/api.html"><a href="../../../../js_of_ocaml/api.html">API</a></li>
+</ul>
+<h3>Lwt Support</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/lwt.html"><a href="../../../../js_of_ocaml/lwt.html">Lwt support</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml-lwt/Js_of_ocaml_lwt/index.html"><a href="../../../../js_of_ocaml-lwt/Js_of_ocaml_lwt/index.html">API</a></li>
+</ul>
+<h3>Compiler</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/options.html"><a href="../../../../js_of_ocaml/options.html">Command line options</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/compilation-modes.html"><a href="../../../../js_of_ocaml/compilation-modes.html">Compilation modes</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/linker.html"><a href="../../../../js_of_ocaml/linker.html">JavaScript primitives</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/tailcall.html"><a href="../../../../js_of_ocaml/tailcall.html">Tailcall optimization</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/effects.html"><a href="../../../../js_of_ocaml/effects.html">Effect handlers</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/runtime-representation.html"><a href="../../../../js_of_ocaml/runtime-representation.html">Runtime representation</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/browser-compat.html"><a href="../../../../js_of_ocaml/browser-compat.html">Targeting older browsers</a></li>
+</ul>
+<h3>Wasm_of_ocaml</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/wasm_overview.html"><a href="../../../../js_of_ocaml/wasm_overview.html">Overview</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/wasm_runtime.html"><a href="../../../../js_of_ocaml/wasm_runtime.html">Writing Wasm primitives</a></li>
+</ul>
+<h3>How-to Guides</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/build-toplevel.html"><a href="../../../../js_of_ocaml/build-toplevel.html">Build a toplevel or use Dynlink</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/debug.html"><a href="../../../../js_of_ocaml/debug.html">Debug a program</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/performances.html"><a href="../../../../js_of_ocaml/performances.html">Performance</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/contribute.html"><a href="../../../../js_of_ocaml/contribute.html">Contribute</a></li>
+</ul>
+<h3>Try it</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/files/toplevel/index.html"><a href="../../../../js_of_ocaml/files/toplevel/index.html">OCaml toplevel</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/examples.html"><a href="../../../../js_of_ocaml/examples.html">Examples and projects</a></li>
+</ul>
+</nav>
+
+      </nav>
+      <article class="rightcol">
+        <header class="odoc-preamble"><h1>Module type <code><span>Tyxml_cast_sigs.OF</span></code></h1></header>
+        <div class="odoc-content"><div class="odoc-spec"><div class="spec type anchored" id="type-elt"><code><span><span class="keyword">type</span> <span>'a elt</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-of_element"><code><span><span class="keyword">val</span> of_element : <span><span><a href="../../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-element/index.html">Js_of_ocaml.Dom_html.element</a> <a href="../../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span> <span><span class="type-var">'a</span> <a href="#type-elt">elt</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-of_html"><code><span><span class="keyword">val</span> of_html : 
+  <span><span><a href="../../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-htmlElement/index.html">Js_of_ocaml.Dom_html.htmlElement</a> <a href="../../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>[&gt; <span class="xref-unresolved">Html_types</span>.html ]</span> <a href="#type-elt">elt</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-of_head"><code><span><span class="keyword">val</span> of_head : 
+  <span><span><a href="../../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-headElement/index.html">Js_of_ocaml.Dom_html.headElement</a> <a href="../../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>[&gt; <span class="xref-unresolved">Html_types</span>.head ]</span> <a href="#type-elt">elt</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-of_link"><code><span><span class="keyword">val</span> of_link : 
+  <span><span><a href="../../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-linkElement/index.html">Js_of_ocaml.Dom_html.linkElement</a> <a href="../../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>[&gt; <span class="xref-unresolved">Html_types</span>.link ]</span> <a href="#type-elt">elt</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-of_title"><code><span><span class="keyword">val</span> of_title : 
+  <span><span><a href="../../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-titleElement/index.html">Js_of_ocaml.Dom_html.titleElement</a> <a href="../../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>[&gt; <span class="xref-unresolved">Html_types</span>.title ]</span> <a href="#type-elt">elt</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-of_meta"><code><span><span class="keyword">val</span> of_meta : 
+  <span><span><a href="../../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-metaElement/index.html">Js_of_ocaml.Dom_html.metaElement</a> <a href="../../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>[&gt; <span class="xref-unresolved">Html_types</span>.meta ]</span> <a href="#type-elt">elt</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-of_base"><code><span><span class="keyword">val</span> of_base : 
+  <span><span><a href="../../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-baseElement/index.html">Js_of_ocaml.Dom_html.baseElement</a> <a href="../../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>[&gt; <span class="xref-unresolved">Html_types</span>.base ]</span> <a href="#type-elt">elt</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-of_style"><code><span><span class="keyword">val</span> of_style : 
+  <span><span><a href="../../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-styleElement/index.html">Js_of_ocaml.Dom_html.styleElement</a> <a href="../../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>[&gt; <span class="xref-unresolved">Html_types</span>.style ]</span> <a href="#type-elt">elt</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-of_body"><code><span><span class="keyword">val</span> of_body : 
+  <span><span><a href="../../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-bodyElement/index.html">Js_of_ocaml.Dom_html.bodyElement</a> <a href="../../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>[&gt; <span class="xref-unresolved">Html_types</span>.body ]</span> <a href="#type-elt">elt</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-of_form"><code><span><span class="keyword">val</span> of_form : 
+  <span><span><a href="../../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-formElement/index.html">Js_of_ocaml.Dom_html.formElement</a> <a href="../../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>[&gt; <span class="xref-unresolved">Html_types</span>.form ]</span> <a href="#type-elt">elt</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-of_optGroup"><code><span><span class="keyword">val</span> of_optGroup : 
+  <span><span><a href="../../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-optGroupElement/index.html">Js_of_ocaml.Dom_html.optGroupElement</a> <a href="../../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>[&gt; <span class="xref-unresolved">Html_types</span>.optgroup ]</span> <a href="#type-elt">elt</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-of_option"><code><span><span class="keyword">val</span> of_option : 
+  <span><span><a href="../../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-optionElement/index.html">Js_of_ocaml.Dom_html.optionElement</a> <a href="../../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>[&gt; <span class="xref-unresolved">Html_types</span>.selectoption ]</span> <a href="#type-elt">elt</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-of_select"><code><span><span class="keyword">val</span> of_select : 
+  <span><span><a href="../../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-selectElement/index.html">Js_of_ocaml.Dom_html.selectElement</a> <a href="../../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>[&gt; <span class="xref-unresolved">Html_types</span>.select ]</span> <a href="#type-elt">elt</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-of_input"><code><span><span class="keyword">val</span> of_input : 
+  <span><span><a href="../../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-inputElement/index.html">Js_of_ocaml.Dom_html.inputElement</a> <a href="../../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>[&gt; <span class="xref-unresolved">Html_types</span>.input ]</span> <a href="#type-elt">elt</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-of_textArea"><code><span><span class="keyword">val</span> of_textArea : 
+  <span><span><a href="../../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-textAreaElement/index.html">Js_of_ocaml.Dom_html.textAreaElement</a> <a href="../../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>[&gt; <span class="xref-unresolved">Html_types</span>.textarea ]</span> <a href="#type-elt">elt</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-of_button"><code><span><span class="keyword">val</span> of_button : 
+  <span><span><a href="../../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-buttonElement/index.html">Js_of_ocaml.Dom_html.buttonElement</a> <a href="../../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>[&gt; <span class="xref-unresolved">Html_types</span>.button ]</span> <a href="#type-elt">elt</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-of_label"><code><span><span class="keyword">val</span> of_label : 
+  <span><span><a href="../../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-labelElement/index.html">Js_of_ocaml.Dom_html.labelElement</a> <a href="../../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>[&gt; <span class="xref-unresolved">Html_types</span>.label ]</span> <a href="#type-elt">elt</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-of_fieldSet"><code><span><span class="keyword">val</span> of_fieldSet : 
+  <span><span><a href="../../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-fieldSetElement/index.html">Js_of_ocaml.Dom_html.fieldSetElement</a> <a href="../../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>[&gt; <span class="xref-unresolved">Html_types</span>.fieldset ]</span> <a href="#type-elt">elt</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-of_legend"><code><span><span class="keyword">val</span> of_legend : 
+  <span><span><a href="../../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-legendElement/index.html">Js_of_ocaml.Dom_html.legendElement</a> <a href="../../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>[&gt; <span class="xref-unresolved">Html_types</span>.legend ]</span> <a href="#type-elt">elt</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-of_uList"><code><span><span class="keyword">val</span> of_uList : 
+  <span><span><a href="../../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-uListElement/index.html">Js_of_ocaml.Dom_html.uListElement</a> <a href="../../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>[&gt; <span class="xref-unresolved">Html_types</span>.ul ]</span> <a href="#type-elt">elt</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-of_oList"><code><span><span class="keyword">val</span> of_oList : 
+  <span><span><a href="../../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-oListElement/index.html">Js_of_ocaml.Dom_html.oListElement</a> <a href="../../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>[&gt; <span class="xref-unresolved">Html_types</span>.ol ]</span> <a href="#type-elt">elt</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-of_dList"><code><span><span class="keyword">val</span> of_dList : 
+  <span><span><a href="../../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-dListElement/index.html">Js_of_ocaml.Dom_html.dListElement</a> <a href="../../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>[&gt; <span class="xref-unresolved">Html_types</span>.dl ]</span> <a href="#type-elt">elt</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-of_li"><code><span><span class="keyword">val</span> of_li : 
+  <span><span><a href="../../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-liElement/index.html">Js_of_ocaml.Dom_html.liElement</a> <a href="../../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>[&gt; <span class="xref-unresolved">Html_types</span>.li ]</span> <a href="#type-elt">elt</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-of_details"><code><span><span class="keyword">val</span> of_details : 
+  <span><span><a href="../../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-detailsElement/index.html">Js_of_ocaml.Dom_html.detailsElement</a> <a href="../../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>[&gt; <span class="xref-unresolved">Html_types</span>.details ]</span> <a href="#type-elt">elt</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-of_dialog"><code><span><span class="keyword">val</span> of_dialog : 
+  <span><span><a href="../../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-dialogElement/index.html">Js_of_ocaml.Dom_html.dialogElement</a> <a href="../../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>[&gt; <span class="xref-unresolved">Html_types</span>.dialog ]</span> <a href="#type-elt">elt</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-of_div"><code><span><span class="keyword">val</span> of_div : 
+  <span><span><a href="../../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-divElement/index.html">Js_of_ocaml.Dom_html.divElement</a> <a href="../../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>[&gt; <span class="xref-unresolved">Html_types</span>.div ]</span> <a href="#type-elt">elt</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-of_paragraph"><code><span><span class="keyword">val</span> of_paragraph : 
+  <span><span><a href="../../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-paragraphElement/index.html">Js_of_ocaml.Dom_html.paragraphElement</a> <a href="../../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>[&gt; <span class="xref-unresolved">Html_types</span>.p ]</span> <a href="#type-elt">elt</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-of_heading"><code><span><span class="keyword">val</span> of_heading : 
+  <span><span><a href="../../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-headingElement/index.html">Js_of_ocaml.Dom_html.headingElement</a> <a href="../../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>[&gt; <span class="xref-unresolved">Html_types</span>.heading ]</span> <a href="#type-elt">elt</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-of_quote"><code><span><span class="keyword">val</span> of_quote : 
+  <span><span><a href="../../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-quoteElement/index.html">Js_of_ocaml.Dom_html.quoteElement</a> <a href="../../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>[&gt; <span class="xref-unresolved">Html_types</span>.blockquote ]</span> <a href="#type-elt">elt</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-of_pre"><code><span><span class="keyword">val</span> of_pre : 
+  <span><span><a href="../../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-preElement/index.html">Js_of_ocaml.Dom_html.preElement</a> <a href="../../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>[&gt; <span class="xref-unresolved">Html_types</span>.pre ]</span> <a href="#type-elt">elt</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-of_br"><code><span><span class="keyword">val</span> of_br : 
+  <span><span><a href="../../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-brElement/index.html">Js_of_ocaml.Dom_html.brElement</a> <a href="../../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>[&gt; <span class="xref-unresolved">Html_types</span>.br ]</span> <a href="#type-elt">elt</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-of_hr"><code><span><span class="keyword">val</span> of_hr : 
+  <span><span><a href="../../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-hrElement/index.html">Js_of_ocaml.Dom_html.hrElement</a> <a href="../../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>[&gt; <span class="xref-unresolved">Html_types</span>.hr ]</span> <a href="#type-elt">elt</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-of_mod"><code><span><span class="keyword">val</span> of_mod : 
+  <span><span><a href="../../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-modElement/index.html">Js_of_ocaml.Dom_html.modElement</a> <a href="../../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>[&gt; <span><span class="type-var">'a</span> <span class="xref-unresolved">Html_types</span>.del</span> <span>| <span><span class="type-var">'a</span> <span class="xref-unresolved">Html_types</span>.ins</span></span> ]</span> <a href="#type-elt">elt</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-of_anchor"><code><span><span class="keyword">val</span> of_anchor : 
+  <span><span><a href="../../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-anchorElement/index.html">Js_of_ocaml.Dom_html.anchorElement</a> <a href="../../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>[&gt; <span><span class="type-var">'a</span> <span class="xref-unresolved">Html_types</span>.a</span> ]</span> <a href="#type-elt">elt</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-of_image"><code><span><span class="keyword">val</span> of_image : 
+  <span><span><a href="../../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-imageElement/index.html">Js_of_ocaml.Dom_html.imageElement</a> <a href="../../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>[&gt; <span class="xref-unresolved">Html_types</span>.img ]</span> <a href="#type-elt">elt</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-of_object"><code><span><span class="keyword">val</span> of_object : 
+  <span><span><a href="../../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-objectElement/index.html">Js_of_ocaml.Dom_html.objectElement</a> <a href="../../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>[&gt; <span><span class="type-var">'a</span> <span class="xref-unresolved">Html_types</span>.object_</span> ]</span> <a href="#type-elt">elt</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-of_param"><code><span><span class="keyword">val</span> of_param : 
+  <span><span><a href="../../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-paramElement/index.html">Js_of_ocaml.Dom_html.paramElement</a> <a href="../../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>[&gt; <span class="xref-unresolved">Html_types</span>.param ]</span> <a href="#type-elt">elt</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-of_area"><code><span><span class="keyword">val</span> of_area : 
+  <span><span><a href="../../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-areaElement/index.html">Js_of_ocaml.Dom_html.areaElement</a> <a href="../../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>[&gt; <span class="xref-unresolved">Html_types</span>.area ]</span> <a href="#type-elt">elt</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-of_map"><code><span><span class="keyword">val</span> of_map : 
+  <span><span><a href="../../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-mapElement/index.html">Js_of_ocaml.Dom_html.mapElement</a> <a href="../../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>[&gt; <span><span class="type-var">'a</span> <span class="xref-unresolved">Html_types</span>.map</span> ]</span> <a href="#type-elt">elt</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-of_script"><code><span><span class="keyword">val</span> of_script : 
+  <span><span><a href="../../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-scriptElement/index.html">Js_of_ocaml.Dom_html.scriptElement</a> <a href="../../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>[&gt; <span class="xref-unresolved">Html_types</span>.script ]</span> <a href="#type-elt">elt</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-of_embed"><code><span><span class="keyword">val</span> of_embed : 
+  <span><span><a href="../../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-embedElement/index.html">Js_of_ocaml.Dom_html.embedElement</a> <a href="../../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>[&gt; <span class="xref-unresolved">Html_types</span>.embed ]</span> <a href="#type-elt">elt</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-of_tableCell"><code><span><span class="keyword">val</span> of_tableCell : 
+  <span><span><a href="../../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-tableCellElement/index.html">Js_of_ocaml.Dom_html.tableCellElement</a> <a href="../../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>[&gt; <span class="xref-unresolved">Html_types</span>.td <span>| <span class="xref-unresolved">Html_types</span>.th</span> ]</span> <a href="#type-elt">elt</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-of_tableRow"><code><span><span class="keyword">val</span> of_tableRow : 
+  <span><span><a href="../../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-tableRowElement/index.html">Js_of_ocaml.Dom_html.tableRowElement</a> <a href="../../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>[&gt; <span class="xref-unresolved">Html_types</span>.tr ]</span> <a href="#type-elt">elt</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-of_tableCol"><code><span><span class="keyword">val</span> of_tableCol : 
+  <span><span><a href="../../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-tableColElement/index.html">Js_of_ocaml.Dom_html.tableColElement</a> <a href="../../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>[&gt; <span class="xref-unresolved">Html_types</span>.col ]</span> <a href="#type-elt">elt</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-of_tableSection"><code><span><span class="keyword">val</span> of_tableSection : 
+  <span><span><a href="../../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-tableSectionElement/index.html">Js_of_ocaml.Dom_html.tableSectionElement</a> <a href="../../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>[&gt; <span class="xref-unresolved">Html_types</span>.tfoot <span>| <span class="xref-unresolved">Html_types</span>.thead</span> <span>| <span class="xref-unresolved">Html_types</span>.tbody</span> ]</span> <a href="#type-elt">elt</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-of_tableCaption"><code><span><span class="keyword">val</span> of_tableCaption : 
+  <span><span><a href="../../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-tableCaptionElement/index.html">Js_of_ocaml.Dom_html.tableCaptionElement</a> <a href="../../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>[&gt; <span class="xref-unresolved">Html_types</span>.caption ]</span> <a href="#type-elt">elt</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-of_table"><code><span><span class="keyword">val</span> of_table : 
+  <span><span><a href="../../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-tableElement/index.html">Js_of_ocaml.Dom_html.tableElement</a> <a href="../../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>[&gt; <span class="xref-unresolved">Html_types</span>.table ]</span> <a href="#type-elt">elt</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-of_canvas"><code><span><span class="keyword">val</span> of_canvas : 
+  <span><span><a href="../../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-canvasElement/index.html">Js_of_ocaml.Dom_html.canvasElement</a> <a href="../../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>[&gt; <span><span class="type-var">'a</span> <span class="xref-unresolved">Html_types</span>.canvas</span> ]</span> <a href="#type-elt">elt</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-of_iFrame"><code><span><span class="keyword">val</span> of_iFrame : 
+  <span><span><a href="../../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-iFrameElement/index.html">Js_of_ocaml.Dom_html.iFrameElement</a> <a href="../../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>[&gt; <span class="xref-unresolved">Html_types</span>.iframe ]</span> <a href="#type-elt">elt</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-of_audio"><code><span><span class="keyword">val</span> of_audio : 
+  <span><span><a href="../../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-audioElement/index.html">Js_of_ocaml.Dom_html.audioElement</a> <a href="../../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>[&gt; <span><span class="type-var">'a</span> <span class="xref-unresolved">Html_types</span>.audio</span> ]</span> <a href="#type-elt">elt</a></span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-of_video"><code><span><span class="keyword">val</span> of_video : 
+  <span><span><a href="../../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-videoElement/index.html">Js_of_ocaml.Dom_html.videoElement</a> <a href="../../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>[&gt; <span><span class="type-var">'a</span> <span class="xref-unresolved">Html_types</span>.video</span> ]</span> <a href="#type-elt">elt</a></span></span></code></div></div></div>
+      </article>
+    </div>
+  </div>
+
+  <script>
+    var wodocPub = "/js_of_ocaml";
+    // Switch version: keep the current page, swapping only the version segment.
+    function wodocVersion(v) {
+      if (!v) return;
+      var re = new RegExp('^(' + wodocPub + '/)[^/]+');
+      var p = location.pathname;
+      location.href =
+        re.test(p) ? p.replace(re, '$1' + v) : wodocPub + '/' + v + '/index.html';
+    }
+    // Build the version <select> from the project's versions.json (the single
+    // source of truth, refreshed on every build/release), so even older frozen
+    // pages list the current set. Falls back to the baked <option>s on failure.
+    (function () {
+      var seg = (location.pathname.match(
+        new RegExp('^' + wodocPub + '/([^/]+)')) || [])[1];
+      function select(sel) {
+        var i;
+        for (i = 0; i < sel.options.length; i++)
+          if (sel.options[i].value === seg) { sel.selectedIndex = i; return; }
+        if (seg) {
+          var o = document.createElement('option');
+          o.value = seg; o.textContent = seg; o.selected = true;
+          sel.insertBefore(o, sel.firstChild);
+        }
+      }
+      fetch(wodocPub + '/versions.json')
+        .then(function (r) { if (!r.ok) throw 0; return r.json(); })
+        .then(function (m) {
+          var list = m.list || [], latest = m.latest;
+          document.querySelectorAll('.wodoc-version').forEach(function (sel) {
+            sel.innerHTML = '';
+            list.forEach(function (v) {
+              var o = document.createElement('option');
+              if (v === latest) { o.value = 'latest'; o.textContent = v + ' (latest)'; }
+              else { o.value = v; o.textContent = v; }
+              sel.appendChild(o);
+            });
+            select(sel);
+          });
+        })
+        .catch(function () {
+          document.querySelectorAll('.wodoc-version').forEach(select);
+        });
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Module CSS.Color — Js_of_ocaml</title>
+  <link rel="stylesheet" href="/css/style.css"/>
+  <link rel="stylesheet" href="/css/ocsigen-odoc.css"/>
+  <script src="../../../../highlight.pack.js"></script>
+  <script src="../../../../wodoc-highlight.js"></script>
+</head>
+<body class="wodoc-page wodoc-doc">
+  <!-- Shared site menu — THE single source of truth for the header, top menu and
+     drawer of EVERY Ocsigen doc page (vitrine + all projects). Canonical copy
+     lives here in ocsigen.github.io; each project's build fetches it. Injected
+     by `wodoc assemble --menu`. Holes filled by the tool (braces omitted here so
+     this comment is not itself rewritten by the hole-filler):
+       subproject  the sub-project name shown next to the Ocsigen logo
+                   (empty on the vitrine), via --subproject
+       leftnav     the project's left navigation, expanded into BOTH the mobile
+                   drawer (below) and the left column (in the page template),
+                   via --leftnav
+     The current entry is highlighted by adding the `current` class to the
+     element carrying data-wodoc-page=<id>: --current on the vitrine (page id),
+     --menu-current in a project (the project id). Nothing is hardcoded here, so
+     this file is the ONLY place the menu is defined.
+
+     Links are the FINAL site paths (/<project>/, /<page>): the target layout
+     where each project is served at ocsigen.org/<project>/ — no transitional
+     /wodoc/ prefix. -->
+<div class="page-header">
+  <p class="logo-ocsigen"><a href="/"><img src="/img/ocsigen-white.svg" alt="Ocsigen"/></a></p>
+  <p class="logo-subproject">Js_of_ocaml</p>
+
+  <div class="mainmenu">
+    <p class="mainmenu-home" data-wodoc-page="githubio"><a href="/">Home</a></p>
+    <p class="mainmenu-doc" data-wodoc-page="tuto"><a href="/tuto/">Doc</a></p>
+    <p data-wodoc-page="eliom"><a href="/eliom/">Eliom</a></p>
+    <p data-wodoc-page="js_of_ocaml" class="current"><a href="/js_of_ocaml/">Js_of_ocaml</a></p>
+    <p data-wodoc-page="ocsigenserver"><a href="/ocsigenserver/">Server</a></p>
+    <p data-wodoc-page="lwt"><a href="/lwt/">Lwt</a></p>
+    <p data-wodoc-page="tyxml"><a href="/tyxml/">Tyxml</a></p>
+    <p data-wodoc-page="ocsigen-start"><a href="/ocsigen-start/">Start</a></p>
+  </div>
+
+  <form id="googlesearch" action="https://google.com/search">
+    <input name="q" id="gsearch-box" placeholder="Search using Google"/>
+    <label for="gsearch-box"><img src="/img/search.svg" alt="" id="gsearch-icon"/></label>
+    <input type="submit" id="gsearch-submit" onclick="document.getElementById('gsearch-box').value += ' site:ocsigen.org';"/>
+  </form>
+
+  <aside class="how-drawer">
+    <input id="how-drawer-toggle" type="checkbox"/>
+    <label for="how-drawer-toggle" id="how-drawer-label"><span class="how-drawer-icon"></span></label>
+    <nav class="how-drawer-content">
+      <ul class="drawermainmenu">
+        <li class="drawermainmenu-home" data-wodoc-page="githubio"><a href="/">Home</a></li>
+        <li class="drawermainmenu-doc" data-wodoc-page="tuto"><a href="/tuto/">Doc</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="eliom"><a href="/eliom/">Eliom</a></li>
+        <li class="drawermainmenu-project current" data-wodoc-page="js_of_ocaml"><a href="/js_of_ocaml/">Js_of_ocaml</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsigenserver"><a href="/ocsigenserver/">Server</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="lwt"><a href="/lwt/">Lwt</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="tyxml"><a href="/tyxml/">Tyxml</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsigen-toolkit"><a href="/ocsigen-toolkit/">Toolkit</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsigen-start"><a href="/ocsigen-start/">Start</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsipersist"><a href="/ocsipersist/">Ocsipersist</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="reactiveData"><a href="/reactiveData/">ReactiveData</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsigen-i18n"><a href="/ocsigen-i18n/">i18n</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="wodoc"><a href="/wodoc/">Wodoc</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="projects"><a href="/projects">Other projects</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="papers"><a href="/papers">Research papers</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="credits"><a href="/credits">Who does Ocsigen?</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="contributing"><a href="/contributing">Contributing</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="blog"><a href="/blog">Blog</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="install"><a href="/install">Installation</a></li>
+        <li class="drawermainmenu-page"><a href="https://github.com/ocsigen">Source code</a></li>
+      </ul>
+      <!-- On mobile the left column is hidden; its menu lives here in the burger
+           (.how-doctree, shown only on narrow screens), as the old site did.
+           Empty on the vitrine; the leftnav hole is filled (with the same
+           fragment as the left column) only on project pages. -->
+      <nav class="how-doctree"><div class="docversion">
+  <label>Version:
+    <select class="wodoc-version" onchange="wodocVersion(this.value)">
+      <option value="dev">dev</option>
+    </select>
+  </label>
+</div>
+<div class="page-toc">
+  <h3>On this page</h3>
+  
+</div>
+<nav class="api-nav manual-nav">
+<h3>Getting Started</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/overview.html"><a href="../../../../js_of_ocaml/overview.html">Overview</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/install.html"><a href="../../../../js_of_ocaml/install.html">Installation</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/quickstart.html"><a href="../../../../js_of_ocaml/quickstart.html">Quick Start</a></li>
+</ul>
+<h3>Programming Guide</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/javascript-interop.html"><a href="../../../../js_of_ocaml/javascript-interop.html">JavaScript interop</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/ppx.html"><a href="../../../../js_of_ocaml/ppx.html">PPX syntax extension</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/ppx-deriving.html"><a href="../../../../js_of_ocaml/ppx-deriving.html">JSON derivation</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/rev-bindings.html"><a href="../../../../js_of_ocaml/rev-bindings.html">Export OCaml code to JavaScript</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/errors.html"><a href="../../../../js_of_ocaml/errors.html">Error handling</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/api.html"><a href="../../../../js_of_ocaml/api.html">API</a></li>
+</ul>
+<h3>Lwt Support</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/lwt.html"><a href="../../../../js_of_ocaml/lwt.html">Lwt support</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml-lwt/Js_of_ocaml_lwt/index.html"><a href="../../../../js_of_ocaml-lwt/Js_of_ocaml_lwt/index.html">API</a></li>
+</ul>
+<h3>Compiler</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/options.html"><a href="../../../../js_of_ocaml/options.html">Command line options</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/compilation-modes.html"><a href="../../../../js_of_ocaml/compilation-modes.html">Compilation modes</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/linker.html"><a href="../../../../js_of_ocaml/linker.html">JavaScript primitives</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/tailcall.html"><a href="../../../../js_of_ocaml/tailcall.html">Tailcall optimization</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/effects.html"><a href="../../../../js_of_ocaml/effects.html">Effect handlers</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/runtime-representation.html"><a href="../../../../js_of_ocaml/runtime-representation.html">Runtime representation</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/browser-compat.html"><a href="../../../../js_of_ocaml/browser-compat.html">Targeting older browsers</a></li>
+</ul>
+<h3>Wasm_of_ocaml</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/wasm_overview.html"><a href="../../../../js_of_ocaml/wasm_overview.html">Overview</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/wasm_runtime.html"><a href="../../../../js_of_ocaml/wasm_runtime.html">Writing Wasm primitives</a></li>
+</ul>
+<h3>How-to Guides</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/build-toplevel.html"><a href="../../../../js_of_ocaml/build-toplevel.html">Build a toplevel or use Dynlink</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/debug.html"><a href="../../../../js_of_ocaml/debug.html">Debug a program</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/performances.html"><a href="../../../../js_of_ocaml/performances.html">Performance</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/contribute.html"><a href="../../../../js_of_ocaml/contribute.html">Contribute</a></li>
+</ul>
+<h3>Try it</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/files/toplevel/index.html"><a href="../../../../js_of_ocaml/files/toplevel/index.html">OCaml toplevel</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/examples.html"><a href="../../../../js_of_ocaml/examples.html">Examples and projects</a></li>
+</ul>
+</nav>
+</nav>
+    </nav>
+  </aside>
+</div>
+
+
+  <div class="project-page">
+    <div class="twocols">
+      <nav class="leftcol">
+        <div class="docversion">
+  <label>Version:
+    <select class="wodoc-version" onchange="wodocVersion(this.value)">
+      <option value="dev">dev</option>
+    </select>
+  </label>
+</div>
+<div class="page-toc">
+  <h3>On this page</h3>
+  
+</div>
+<nav class="api-nav manual-nav">
+<h3>Getting Started</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/overview.html"><a href="../../../../js_of_ocaml/overview.html">Overview</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/install.html"><a href="../../../../js_of_ocaml/install.html">Installation</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/quickstart.html"><a href="../../../../js_of_ocaml/quickstart.html">Quick Start</a></li>
+</ul>
+<h3>Programming Guide</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/javascript-interop.html"><a href="../../../../js_of_ocaml/javascript-interop.html">JavaScript interop</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/ppx.html"><a href="../../../../js_of_ocaml/ppx.html">PPX syntax extension</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/ppx-deriving.html"><a href="../../../../js_of_ocaml/ppx-deriving.html">JSON derivation</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/rev-bindings.html"><a href="../../../../js_of_ocaml/rev-bindings.html">Export OCaml code to JavaScript</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/errors.html"><a href="../../../../js_of_ocaml/errors.html">Error handling</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/api.html"><a href="../../../../js_of_ocaml/api.html">API</a></li>
+</ul>
+<h3>Lwt Support</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/lwt.html"><a href="../../../../js_of_ocaml/lwt.html">Lwt support</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml-lwt/Js_of_ocaml_lwt/index.html"><a href="../../../../js_of_ocaml-lwt/Js_of_ocaml_lwt/index.html">API</a></li>
+</ul>
+<h3>Compiler</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/options.html"><a href="../../../../js_of_ocaml/options.html">Command line options</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/compilation-modes.html"><a href="../../../../js_of_ocaml/compilation-modes.html">Compilation modes</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/linker.html"><a href="../../../../js_of_ocaml/linker.html">JavaScript primitives</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/tailcall.html"><a href="../../../../js_of_ocaml/tailcall.html">Tailcall optimization</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/effects.html"><a href="../../../../js_of_ocaml/effects.html">Effect handlers</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/runtime-representation.html"><a href="../../../../js_of_ocaml/runtime-representation.html">Runtime representation</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/browser-compat.html"><a href="../../../../js_of_ocaml/browser-compat.html">Targeting older browsers</a></li>
+</ul>
+<h3>Wasm_of_ocaml</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/wasm_overview.html"><a href="../../../../js_of_ocaml/wasm_overview.html">Overview</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/wasm_runtime.html"><a href="../../../../js_of_ocaml/wasm_runtime.html">Writing Wasm primitives</a></li>
+</ul>
+<h3>How-to Guides</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/build-toplevel.html"><a href="../../../../js_of_ocaml/build-toplevel.html">Build a toplevel or use Dynlink</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/debug.html"><a href="../../../../js_of_ocaml/debug.html">Debug a program</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/performances.html"><a href="../../../../js_of_ocaml/performances.html">Performance</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/contribute.html"><a href="../../../../js_of_ocaml/contribute.html">Contribute</a></li>
+</ul>
+<h3>Try it</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/files/toplevel/index.html"><a href="../../../../js_of_ocaml/files/toplevel/index.html">OCaml toplevel</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/examples.html"><a href="../../../../js_of_ocaml/examples.html">Examples and projects</a></li>
+</ul>
+</nav>
+
+      </nav>
+      <article class="rightcol">
+        <header class="odoc-preamble"><h1>Module <code><span>CSS.Color</span></code></h1><p>All about CSS colors. MDC documentation here: https://developer.mozilla.org/en/CSS/color_value . Specifications here: http://www.w3.org/TR/css3-color/#svg-color .</p></header>
+        <div class="odoc-content"><div class="odoc-spec"><div class="spec type anchored" id="type-name"><code><span><span class="keyword">type</span> name</span><span> = </span></code><ol><li id="type-name.Aliceblue" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Aliceblue</span></span></code></li><li id="type-name.Antiquewhite" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Antiquewhite</span></span></code></li><li id="type-name.Aqua" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Aqua</span></span></code></li><li id="type-name.Aquamarine" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Aquamarine</span></span></code></li><li id="type-name.Azure" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Azure</span></span></code></li><li id="type-name.Beige" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Beige</span></span></code></li><li id="type-name.Bisque" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Bisque</span></span></code></li><li id="type-name.Black" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Black</span></span></code></li><li id="type-name.Blanchedalmond" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Blanchedalmond</span></span></code></li><li id="type-name.Blue" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Blue</span></span></code></li><li id="type-name.Blueviolet" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Blueviolet</span></span></code></li><li id="type-name.Brown" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Brown</span></span></code></li><li id="type-name.Burlywood" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Burlywood</span></span></code></li><li id="type-name.Cadetblue" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Cadetblue</span></span></code></li><li id="type-name.Chartreuse" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Chartreuse</span></span></code></li><li id="type-name.Chocolate" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Chocolate</span></span></code></li><li id="type-name.Coral" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Coral</span></span></code></li><li id="type-name.Cornflowerblue" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Cornflowerblue</span></span></code></li><li id="type-name.Cornsilk" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Cornsilk</span></span></code></li><li id="type-name.Crimson" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Crimson</span></span></code></li><li id="type-name.Cyan" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Cyan</span></span></code></li><li id="type-name.Darkblue" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Darkblue</span></span></code></li><li id="type-name.Darkcyan" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Darkcyan</span></span></code></li><li id="type-name.Darkgoldenrod" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Darkgoldenrod</span></span></code></li><li id="type-name.Darkgray" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Darkgray</span></span></code></li><li id="type-name.Darkgreen" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Darkgreen</span></span></code></li><li id="type-name.Darkgrey" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Darkgrey</span></span></code></li><li id="type-name.Darkkhaki" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Darkkhaki</span></span></code></li><li id="type-name.Darkmagenta" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Darkmagenta</span></span></code></li><li id="type-name.Darkolivegreen" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Darkolivegreen</span></span></code></li><li id="type-name.Darkorange" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Darkorange</span></span></code></li><li id="type-name.Darkorchid" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Darkorchid</span></span></code></li><li id="type-name.Darkred" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Darkred</span></span></code></li><li id="type-name.Darksalmon" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Darksalmon</span></span></code></li><li id="type-name.Darkseagreen" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Darkseagreen</span></span></code></li><li id="type-name.Darkslateblue" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Darkslateblue</span></span></code></li><li id="type-name.Darkslategray" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Darkslategray</span></span></code></li><li id="type-name.Darkslategrey" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Darkslategrey</span></span></code></li><li id="type-name.Darkturquoise" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Darkturquoise</span></span></code></li><li id="type-name.Darkviolet" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Darkviolet</span></span></code></li><li id="type-name.Deeppink" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Deeppink</span></span></code></li><li id="type-name.Deepskyblue" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Deepskyblue</span></span></code></li><li id="type-name.Dimgray" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Dimgray</span></span></code></li><li id="type-name.Dimgrey" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Dimgrey</span></span></code></li><li id="type-name.Dodgerblue" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Dodgerblue</span></span></code></li><li id="type-name.Firebrick" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Firebrick</span></span></code></li><li id="type-name.Floralwhite" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Floralwhite</span></span></code></li><li id="type-name.Forestgreen" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Forestgreen</span></span></code></li><li id="type-name.Fuchsia" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Fuchsia</span></span></code></li><li id="type-name.Gainsboro" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Gainsboro</span></span></code></li><li id="type-name.Ghostwhite" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Ghostwhite</span></span></code></li><li id="type-name.Gold" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Gold</span></span></code></li><li id="type-name.Goldenrod" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Goldenrod</span></span></code></li><li id="type-name.Gray" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Gray</span></span></code></li><li id="type-name.Grey" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Grey</span></span></code></li><li id="type-name.Green" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Green</span></span></code></li><li id="type-name.Greenyellow" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Greenyellow</span></span></code></li><li id="type-name.Honeydew" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Honeydew</span></span></code></li><li id="type-name.Hotpink" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Hotpink</span></span></code></li><li id="type-name.Indianred" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Indianred</span></span></code></li><li id="type-name.Indigo" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Indigo</span></span></code></li><li id="type-name.Ivory" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Ivory</span></span></code></li><li id="type-name.Khaki" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Khaki</span></span></code></li><li id="type-name.Lavender" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Lavender</span></span></code></li><li id="type-name.Lavenderblush" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Lavenderblush</span></span></code></li><li id="type-name.Lawngreen" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Lawngreen</span></span></code></li><li id="type-name.Lemonchiffon" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Lemonchiffon</span></span></code></li><li id="type-name.Lightblue" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Lightblue</span></span></code></li><li id="type-name.Lightcoral" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Lightcoral</span></span></code></li><li id="type-name.Lightcyan" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Lightcyan</span></span></code></li><li id="type-name.Lightgoldenrodyellow" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Lightgoldenrodyellow</span></span></code></li><li id="type-name.Lightgray" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Lightgray</span></span></code></li><li id="type-name.Lightgreen" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Lightgreen</span></span></code></li><li id="type-name.Lightgrey" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Lightgrey</span></span></code></li><li id="type-name.Lightpink" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Lightpink</span></span></code></li><li id="type-name.Lightsalmon" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Lightsalmon</span></span></code></li><li id="type-name.Lightseagreen" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Lightseagreen</span></span></code></li><li id="type-name.Lightskyblue" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Lightskyblue</span></span></code></li><li id="type-name.Lightslategray" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Lightslategray</span></span></code></li><li id="type-name.Lightslategrey" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Lightslategrey</span></span></code></li><li id="type-name.Lightsteelblue" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Lightsteelblue</span></span></code></li><li id="type-name.Lightyellow" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Lightyellow</span></span></code></li><li id="type-name.Lime" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Lime</span></span></code></li><li id="type-name.Limegreen" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Limegreen</span></span></code></li><li id="type-name.Linen" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Linen</span></span></code></li><li id="type-name.Magenta" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Magenta</span></span></code></li><li id="type-name.Maroon" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Maroon</span></span></code></li><li id="type-name.Mediumaquamarine" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Mediumaquamarine</span></span></code></li><li id="type-name.Mediumblue" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Mediumblue</span></span></code></li><li id="type-name.Mediumorchid" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Mediumorchid</span></span></code></li><li id="type-name.Mediumpurple" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Mediumpurple</span></span></code></li><li id="type-name.Mediumseagreen" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Mediumseagreen</span></span></code></li><li id="type-name.Mediumslateblue" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Mediumslateblue</span></span></code></li><li id="type-name.Mediumspringgreen" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Mediumspringgreen</span></span></code></li><li id="type-name.Mediumturquoise" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Mediumturquoise</span></span></code></li><li id="type-name.Mediumvioletred" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Mediumvioletred</span></span></code></li><li id="type-name.Midnightblue" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Midnightblue</span></span></code></li><li id="type-name.Mintcream" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Mintcream</span></span></code></li><li id="type-name.Mistyrose" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Mistyrose</span></span></code></li><li id="type-name.Moccasin" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Moccasin</span></span></code></li><li id="type-name.Navajowhite" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Navajowhite</span></span></code></li><li id="type-name.Navy" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Navy</span></span></code></li><li id="type-name.Oldlace" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Oldlace</span></span></code></li><li id="type-name.Olive" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Olive</span></span></code></li><li id="type-name.Olivedrab" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Olivedrab</span></span></code></li><li id="type-name.Orange" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Orange</span></span></code></li><li id="type-name.Orangered" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Orangered</span></span></code></li><li id="type-name.Orchid" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Orchid</span></span></code></li><li id="type-name.Palegoldenrod" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Palegoldenrod</span></span></code></li><li id="type-name.Palegreen" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Palegreen</span></span></code></li><li id="type-name.Paleturquoise" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Paleturquoise</span></span></code></li><li id="type-name.Palevioletred" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Palevioletred</span></span></code></li><li id="type-name.Papayawhip" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Papayawhip</span></span></code></li><li id="type-name.Peachpuff" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Peachpuff</span></span></code></li><li id="type-name.Peru" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Peru</span></span></code></li><li id="type-name.Pink" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Pink</span></span></code></li><li id="type-name.Plum" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Plum</span></span></code></li><li id="type-name.Powderblue" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Powderblue</span></span></code></li><li id="type-name.Purple" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Purple</span></span></code></li><li id="type-name.Red" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Red</span></span></code></li><li id="type-name.Rosybrown" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Rosybrown</span></span></code></li><li id="type-name.Royalblue" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Royalblue</span></span></code></li><li id="type-name.Saddlebrown" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Saddlebrown</span></span></code></li><li id="type-name.Salmon" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Salmon</span></span></code></li><li id="type-name.Sandybrown" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Sandybrown</span></span></code></li><li id="type-name.Seagreen" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Seagreen</span></span></code></li><li id="type-name.Seashell" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Seashell</span></span></code></li><li id="type-name.Sienna" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Sienna</span></span></code></li><li id="type-name.Silver" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Silver</span></span></code></li><li id="type-name.Skyblue" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Skyblue</span></span></code></li><li id="type-name.Slateblue" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Slateblue</span></span></code></li><li id="type-name.Slategray" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Slategray</span></span></code></li><li id="type-name.Slategrey" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Slategrey</span></span></code></li><li id="type-name.Snow" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Snow</span></span></code></li><li id="type-name.Springgreen" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Springgreen</span></span></code></li><li id="type-name.Steelblue" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Steelblue</span></span></code></li><li id="type-name.Tan" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Tan</span></span></code></li><li id="type-name.Teal" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Teal</span></span></code></li><li id="type-name.Thistle" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Thistle</span></span></code></li><li id="type-name.Tomato" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Tomato</span></span></code></li><li id="type-name.Turquoise" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Turquoise</span></span></code></li><li id="type-name.Violet" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Violet</span></span></code></li><li id="type-name.Wheat" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Wheat</span></span></code></li><li id="type-name.White" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">White</span></span></code></li><li id="type-name.Whitesmoke" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Whitesmoke</span></span></code></li><li id="type-name.Yellow" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Yellow</span></span></code></li><li id="type-name.Yellowgreen" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Yellowgreen</span></span></code></li></ol></div><div class="spec-doc"><p>The colors by name.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-string_of_name"><code><span><span class="keyword">val</span> string_of_name : <span><a href="#type-name">name</a> <span class="arrow">&#45;&gt;</span></span> string</span></code></div><div class="spec-doc"><p>Gives the string equivalent of the argument.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-rgb_of_name"><code><span><span class="keyword">val</span> rgb_of_name : <span><a href="#type-name">name</a> <span class="arrow">&#45;&gt;</span></span> int * int * int</span></code></div><div class="spec-doc"><p>Converts a color name into three integers representing the Red, Green and Blue channels. Channel values are in between <code>0</code> and <code>255</code>.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-hex_of_rgb"><code><span><span class="keyword">val</span> hex_of_rgb : <span><span>(int * int * int)</span> <span class="arrow">&#45;&gt;</span></span> string</span></code></div><div class="spec-doc"><p>Convert a tuple of three integers between <code>0</code> and <code>255</code> into a hex string</p></div></div><div class="odoc-spec"><div class="spec type anchored" id="type-t"><code><span><span class="keyword">type</span> t</span><span> = </span></code><ol><li id="type-t.Name" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Name</span> <span class="keyword">of</span> <a href="#type-name">name</a></span></code><div class="def-doc"><span class="comment-delim">(*</span><p>A color by name</p><span class="comment-delim">*)</span></div></li><li id="type-t.RGB" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">RGB</span> <span class="keyword">of</span> int * int * int</span></code><div class="def-doc"><span class="comment-delim">(*</span><p>Red, Green and Blue values. Clipped to <code>0..255</code> by most (All?) browsers.</p><span class="comment-delim">*)</span></div></li><li id="type-t.RGB_percent" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">RGB_percent</span> <span class="keyword">of</span> int * int * int</span></code><div class="def-doc"><span class="comment-delim">(*</span><p>RBG channels are specified as a percentage of their maximal value.</p><span class="comment-delim">*)</span></div></li><li id="type-t.RGBA" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">RGBA</span> <span class="keyword">of</span> int * int * int * float</span></code><div class="def-doc"><span class="comment-delim">(*</span><p>Same as RGB with additional transparency argument. Opacity should be between <code>0.</code> (completely transparent) and <code>1.</code> (completely opaque).</p><span class="comment-delim">*)</span></div></li><li id="type-t.RGBA_percent" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">RGBA_percent</span> <span class="keyword">of</span> int * int * int * float</span></code><div class="def-doc"><span class="comment-delim">(*</span><p>RGB channels specified as percentage of their maximal value. Alpha channel (opacity) is still a <code>0.</code> to <code>1.</code> float.</p><span class="comment-delim">*)</span></div></li><li id="type-t.HSL" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">HSL</span> <span class="keyword">of</span> int * int * int</span></code><div class="def-doc"><span class="comment-delim">(*</span><p>Hue, Saturation and Lightness values. Hue is an angle in degree (in interval <code>0..360</code>). Saturation is a percentage (<code>0..100</code>) with <code>0</code> being colorless. Lightness is also a percentage (<code>0..100</code>) with <code>0</code> being black.</p><span class="comment-delim">*)</span></div></li><li id="type-t.HSLA" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">HSLA</span> <span class="keyword">of</span> int * int * int * float</span></code><div class="def-doc"><span class="comment-delim">(*</span><p>Same as HSL with an opacity argument between <code>0.</code> and <code>1.</code>.</p><span class="comment-delim">*)</span></div></li></ol></div><div class="spec-doc"><p>The type of colors, either by name, by Red-Green-Blue constructor or by Hue-Saturation-Lightness constructors.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-rgb"><code><span><span class="keyword">val</span> rgb : <span><span class="optlabel">?a</span>:float <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> <a href="#type-t">t</a></span></code></div><div class="spec-doc"><p>build a color from the values of red, green, and blue channels. optional <code>a</code> argument can be used to specify alpha channel (aka opacity).</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-hsl"><code><span><span class="keyword">val</span> hsl : <span><span class="optlabel">?a</span>:float <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> <a href="#type-t">t</a></span></code></div><div class="spec-doc"><p>build a color from the values of hue, saturation, and lightness channels. optional <code>a</code> argument can be used to specify alpha channel (aka opacity).</p></div></div><div class="odoc-spec"><div class="spec type anchored" id="type-js_t"><code><span><span class="keyword">type</span> js_t</span><span> = <span class="keyword">private</span> <span><a href="../../Js/class-type-js_string/index.html">Js.js_string</a> <a href="../../Js/index.html#type-t">Js.t</a></span></span></code></div><div class="spec-doc"><p>A <code>js_t</code> is a valid string representation of a CSS color</p></div></div><p>A few conversion functions</p><div class="odoc-spec"><div class="spec value anchored" id="val-string_of_t"><code><span><span class="keyword">val</span> string_of_t : <span><a href="#type-t">t</a> <span class="arrow">&#45;&gt;</span></span> string</span></code></div><div class="spec-doc"><p>Convert to a string representation (for debugging purpose mainly).</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-js"><code><span><span class="keyword">val</span> js : <span><a href="#type-t">t</a> <span class="arrow">&#45;&gt;</span></span> <a href="#type-js_t">js_t</a></span></code></div><div class="spec-doc"><p>Projection from OCaml to Js. <code>js c</code> is equivalent to <code>Js.string (string_of_t c)</code> but with a <code>js_t</code> return type.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-ml"><code><span><span class="keyword">val</span> ml : <span><a href="#type-js_t">js_t</a> <span class="arrow">&#45;&gt;</span></span> <a href="#type-t">t</a></span></code></div><div class="spec-doc"><p>Projection from Js to OCaml. The function is the dual of <code>js</code>.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-js_t_of_js_string"><code><span><span class="keyword">val</span> js_t_of_js_string : <span><span><a href="../../Js/class-type-js_string/index.html">Js.js_string</a> <a href="../../Js/index.html#type-t">Js.t</a></span> <span class="arrow">&#45;&gt;</span></span> <a href="#type-js_t">js_t</a></span></code></div><div class="spec-doc"><p>Checks the well-formedness of a string or fails with <code>Invalid_argument</code></p></div></div></div>
+      </article>
+    </div>
+  </div>
+
+  <script>
+    var wodocPub = "/js_of_ocaml";
+    // Switch version: keep the current page, swapping only the version segment.
+    function wodocVersion(v) {
+      if (!v) return;
+      var re = new RegExp('^(' + wodocPub + '/)[^/]+');
+      var p = location.pathname;
+      location.href =
+        re.test(p) ? p.replace(re, '$1' + v) : wodocPub + '/' + v + '/index.html';
+    }
+    // Build the version <select> from the project's versions.json (the single
+    // source of truth, refreshed on every build/release), so even older frozen
+    // pages list the current set. Falls back to the baked <option>s on failure.
+    (function () {
+      var seg = (location.pathname.match(
+        new RegExp('^' + wodocPub + '/([^/]+)')) || [])[1];
+      function select(sel) {
+        var i;
+        for (i = 0; i < sel.options.length; i++)
+          if (sel.options[i].value === seg) { sel.selectedIndex = i; return; }
+        if (seg) {
+          var o = document.createElement('option');
+          o.value = seg; o.textContent = seg; o.selected = true;
+          sel.insertBefore(o, sel.firstChild);
+        }
+      }
+      fetch(wodocPub + '/versions.json')
+        .then(function (r) { if (!r.ok) throw 0; return r.json(); })
+        .then(function (m) {
+          var list = m.list || [], latest = m.latest;
+          document.querySelectorAll('.wodoc-version').forEach(function (sel) {
+            sel.innerHTML = '';
+            list.forEach(function (v) {
+              var o = document.createElement('option');
+              if (v === latest) { o.value = 'latest'; o.textContent = v + ' (latest)'; }
+              else { o.value = v; o.textContent = v; }
+              sel.appendChild(o);
+            });
+            select(sel);
+          });
+        })
+        .catch(function () {
+          document.querySelectorAll('.wodoc-version').forEach(select);
+        });
+    })();
+  </script>
+</body>
+</html>
