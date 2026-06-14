@@ -18,7 +18,7 @@
 (module
    (import "bigarray" "caml_ba_get_view"
       (func $caml_ba_get_view (param (ref eq)) (result (ref extern))))
-(@if wasi
+(@if $wasi
 (@then
    (import "bigarray" "dv_get_i64"
       (func $dv_get_i64 (param (ref extern) i32 i32) (result i64)))

@@ -39,7 +39,7 @@
       (func $caml_format_exception (param (ref eq)) (result (ref eq))))
    (import "sys" "ocaml_exit" (tag $ocaml_exit))
    (import "fail" "ocaml_exception" (tag $ocaml_exception (param (ref eq))))
-(@if wasi
+(@if $wasi
 (@then
    (import "wasi_snapshot_preview1" "proc_exit" (func $exit (param i32)))
    (import "io" "write_all_to_fd"
@@ -100,7 +100,8 @@
       (block $tail (result (ref null $assoc))
          (loop $loop
             (local.set $a
-               (br_on_cast_fail $tail (ref null eq) (ref $assoc) (local.get $l)))
+               (br_on_cast_fail $tail (ref null $assoc) (ref $assoc)
+                  (local.get $l)))
             (if (i31.get_u
                    (ref.cast (ref i31)
                        (call $caml_string_equal
@@ -109,7 +110,8 @@
                (then
                   (return (local.get $a))))
             (local.set $l (struct.get $assoc 2 (local.get $a)))
-            (br $loop))))
+            (br $loop))
+         (unreachable)))
 
    (func $caml_named_value (export "caml_named_value")
       (param $s (ref eq)) (result (ref null eq))
@@ -455,7 +457,7 @@
 
    (global $uncaught_exception (mut externref) (ref.null extern))
 
-(@if (not wasi)
+(@if (not $wasi)
 (@then
    (func $reraise_exception (result (ref eq))
       (throw $javascript_exception (global.get $uncaught_exception))
@@ -484,7 +486,7 @@
             (drop (call_ref $func (ref.cast (ref $func) (local.get $start)))))
          (catch $ocaml_exit)
          (catch $ocaml_exception
-            (local.set $exn (pop (ref eq)))
+            (local.set $exn)
             (block $exit
                (block $not_registered
                   (try
@@ -511,7 +513,7 @@
                      (call $caml_string_concat
                         (call $caml_format_exception (local.get $exn))
                         (@string "\n"))))
-(@if wasi
+(@if $wasi
 (@then
                (call $write_all_to_fd (i32.const 2) (local.get $msg))
 )

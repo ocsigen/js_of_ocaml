@@ -33,7 +33,7 @@
          (local.get $evtag)
          (local.get $evtype)))
 
-(@if (>= ocaml_version (5 2 0))
+(@if (>= $ocaml_version (5 2 0))
 (@then
    (func (export "caml_runtime_events_user_write")
       (param (ref eq)) (param (ref eq)) (param (ref eq)) (result (ref eq))

@@ -23,7 +23,7 @@
       (func $caml_dup_custom (param (ref eq)) (result (ref eq))))
    (import "effect" "caml_is_continuation"
       (func $caml_is_continuation (param (ref eq)) (result i32)))
-(@if (= effects "cps")
+(@if (= $effects "cps")
 (@then
    (import "effect" "caml_cps_trampoline"
       (func $caml_cps_trampoline (param (ref eq) (ref eq)) (result (ref eq))))
@@ -141,7 +141,7 @@
                  (i32.add (i31.get_u (ref.cast (ref i31) (local.get $size)))
                           (i32.const 1))))
 
-   (func (export "caml_update_dummy")
+   (func $caml_update_dummy (export "caml_update_dummy")
       (param $dummy (ref eq)) (param $newval (ref eq)) (result (ref eq))
       (local $i i32)
       (local $dst (ref $block)) (local $fdst (ref $float_array))
@@ -288,7 +288,8 @@
       (array.set $block (local.get $res) (i32.const 0) (local.get $tag))
       (local.get $res))
 
-   (func (export "caml_obj_tag") (param $v (ref eq)) (result (ref eq))
+   (func $caml_obj_tag (export "caml_obj_tag")
+      (param $v (ref eq)) (result (ref eq))
       (if (ref.eq (local.get $v) (global.get $null))
          (then (return (ref.i31 (i32.const 1010)))))
       (if (ref.test (ref i31) (local.get $v))
@@ -563,7 +564,7 @@
    (func (export "caml_obj_reachable_words") (param (ref eq)) (result (ref eq))
       (ref.i31 (i32.const 0)))
 
-(@if (= effects "cps")
+(@if (= $effects "cps")
 (@then
    (func $caml_callback_1 (export "caml_callback_1")
       (param $f (ref eq)) (param $x (ref eq)) (result (ref eq))

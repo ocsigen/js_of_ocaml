@@ -1,5 +1,5 @@
 (module
-(@if wasi
+(@if $wasi
 (@then
    (import "libc" "memory" (memory 2))
    (import "libc" "malloc" (func $malloc (param i32) (result i32)))

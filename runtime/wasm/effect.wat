@@ -33,7 +33,7 @@
    (import "fail" "ocaml_exception" (tag $ocaml_exception (param (ref eq))))
    (import "fail" "javascript_exception"
       (tag $javascript_exception (param externref)))
-(@if wasi
+(@if $wasi
 (@then
    (func $caml_wrap_exception (param externref) (result (ref eq))
       (unreachable))
@@ -161,7 +161,7 @@
                (ref.i31 (global.get $cont_tag))))))
       (i32.const 0))
 
-(@if (and (= effects "jspi") (not wasi))
+(@if (and (= $effects "jspi") (not $wasi))
 (@then
    ;; Apply a function f to a value v, both contained in a pair (f, v)
 
@@ -445,9 +445,9 @@
                      (call $apply_pair (ref.cast (ref $pair) (local.get $p))))
                   (catch $javascript_exception
                      (throw $ocaml_exception
-                        (call $caml_wrap_exception (pop externref))))))
+                        (call $caml_wrap_exception)))))
             (catch $ocaml_exception
-               (local.set $exn (pop (ref eq)))
+               (local.set $exn)
                (return_call $call_handler
                   (struct.get $fiber $exn (global.get $stack))
                   (local.get $exn)))))
@@ -497,7 +497,7 @@
             (struct.new $pair (local.get $f) (local.get $v)))))
 ))
 
-(@if (= effects "cps")
+(@if (= $effects "cps")
 (@then
    (type $function_2
       (func (param (ref eq) (ref eq) (ref eq)) (result (ref eq))))
@@ -671,10 +671,9 @@
                               (ref.cast (ref $cps_closure) (local.get $f)))))))
                (global.set $cps_fiber_stack (local.get $saved_fiber_stack))
                (return (local.get $res)))
-            (catch $ocaml_exception
-               (pop (ref eq)))
+            (catch $ocaml_exception)
             (catch $javascript_exception
-               (call $caml_wrap_exception (pop externref)))))
+               (call $caml_wrap_exception))))
       (loop $loop
          (block $empty
             (local.set $top
@@ -696,10 +695,10 @@
                   (global.set $cps_fiber_stack (local.get $saved_fiber_stack))
                   (return (local.get $res)))
                (catch $ocaml_exception
-                  (local.set $exn (pop (ref eq)))
+                  (local.set $exn)
                   (br $loop))
                (catch $javascript_exception
-                  (local.set $exn (call $caml_wrap_exception (pop externref)))
+                  (local.set $exn (call $caml_wrap_exception))
                   (br $loop)))))
       (global.set $cps_fiber_stack (local.get $saved_fiber_stack))
       (throw $ocaml_exception (local.get $exn)))
@@ -848,11 +847,11 @@
             (do
                (call $caml_callback_1 (local.get $f) (ref.i31 (i32.const 0))))
             (catch $ocaml_exception
-               (local.set $exn (pop (ref eq)))
+               (local.set $exn)
                (global.set $effect_allowed (local.get $saved_effect_allowed))
                (throw $ocaml_exception (local.get $exn)))
             (catch $javascript_exception
-               (local.set $exn (call $caml_wrap_exception (pop externref)))
+               (local.set $exn (call $caml_wrap_exception))
                (global.set $effect_allowed (local.get $saved_effect_allowed))
                (throw $ocaml_exception (local.get $exn)))))
       (global.set $effect_allowed (local.get $saved_effect_allowed))

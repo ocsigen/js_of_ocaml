@@ -25,7 +25,7 @@
       (func $caml_jsstring_of_string (param (ref eq)) (result (ref eq))))
    (import "jslib" "caml_list_of_js_array"
       (func $caml_list_of_js_array (param (ref eq)) (result (ref eq))))
-(@if wasi
+(@if $wasi
 (@then
    (import "wasi_snapshot_preview1" "fd_close"
       (func $fd_close (param i32) (result i32)))
@@ -126,7 +126,7 @@
    (import "bigarray" "caml_ba_get_data"
       (func $caml_ba_get_data (param (ref eq)) (result (ref extern))))
 
-(@if wasi
+(@if $wasi
 (@then
    (func $ta_new (param $sz i32) (result (ref extern))
       (extern.convert_any (array.new $bytes (i32.const 0) (local.get $sz))))
@@ -383,7 +383,7 @@
 
    (type $open_flags (array i16))
 
-(@if wasi
+(@if $wasi
 (@then
    ;;      1 O_RDONLY
    ;;      2 O_WRONLY
@@ -433,25 +433,28 @@
             (br $loop))))
       (local.get $flags))
 
-(@if wasi
+(@if $wasi
 (@then
    (func (export "caml_sys_open")
       (param $vpath (ref eq)) (param $vflags (ref eq)) (param $perm (ref eq))
       (result (ref eq))
       (local $fd i32) (local $flags i32) (local $offset i64)
-      (local $path (tuple i32 i32 i32))
+      (local $path_0 i32) (local $path_1 i32) (local $path_2 i32)
       (local $res i32) (local $buffer i32)
-      (local.set $path (call $caml_sys_resolve_path (local.get $vpath)))
+      (call $caml_sys_resolve_path (local.get $vpath))
+      (local.set $path_2)
+      (local.set $path_1)
+      (local.set $path_0)
       (local.set $buffer (call $get_buffer))
       (local.set $flags
          (call $convert_flag_list
             (global.get $sys_open_flags) (local.get $vflags)))
       (local.set $res
          (call $path_open
-            (tuple.extract 3 0 (local.get $path))
+            (local.get $path_0)
             (i32.const 1) ;; symlink_follow
-            (tuple.extract 3 1 (local.get $path))
-            (tuple.extract 3 2 (local.get $path))
+            (local.get $path_1)
+            (local.get $path_2)
             (i32.and (i32.shr_u (local.get $flags) (i32.const 4))
               (i32.const 0xF))
             (select (i64.const 0x860007c) (i64.const 0x820003e)
@@ -459,7 +462,7 @@
             (i64.const 0)
             (i32.shr_u (local.get $flags) (i32.const 8))
             (local.get $buffer)))
-      (call $free (tuple.extract 3 1 (local.get $path)))
+      (call $free (local.get $path_1))
       (call $caml_handle_sys_error_if (local.get $vpath) (local.get $res))
       (local.set $fd (i32.load (local.get $buffer)))
       (if (i32.and (local.get $flags) (i32.const 0x100)) ;; O_APPEND
@@ -496,12 +499,12 @@
             (if (i32.and (local.get $flags) (i32.const 8)) ;; O_APPEND
                (then (local.set $offset (call $file_size (local.get $fd))))))
          (catch $javascript_exception
-            (call $caml_handle_sys_error (pop externref))))
+            (call $caml_handle_sys_error)))
       (call $initialize_fd_offset (local.get $fd) (local.get $offset))
       (ref.i31 (local.get $fd)))
 ))
 
-(@if wasi
+(@if $wasi
 (@then
    (func (export "caml_sys_close") (param (ref eq)) (result (ref eq))
       (local $fd i32) (local $res i32)
@@ -521,7 +524,7 @@
          (do
             (call $close (local.get $fd)))
          (catch $javascript_exception
-            (call $caml_handle_sys_error (pop externref))))
+            (call $caml_handle_sys_error)))
       (ref.i31 (i32.const 0)))
 ))
 
@@ -532,7 +535,7 @@
       (param (ref eq)) (param (ref eq)) (result (ref eq))
       (ref.i31 (i32.const 0)))
 
-(@if wasi
+(@if $wasi
 (@then
    ;; Channel output/refill hooks redirect I/O to a JavaScript callback.
    ;; The WASI runtime reads and writes through real file descriptors and
@@ -566,7 +569,7 @@
       (ref.i31 (i32.const 0)))
 ))
 
-(@if wasi
+(@if $wasi
 (@then
    (func $push_channel (param $l (ref eq)) (param $ch (ref eq)) (result (ref eq))
       (local $c (ref $channel))
@@ -581,7 +584,7 @@
       (local.get $l))
 ))
 
-(@if wasi
+(@if $wasi
 (@then
    (func (export "caml_ml_out_channels_list")
       (param (ref eq)) (result (ref eq))
@@ -674,7 +677,7 @@
             (struct.set $channel $fd (local.get $ch) (i32.const -1))
             (call $unregister_channel (local.get $ch))
             (call $release_fd_offset (local.get $fd))
-(@if wasi
+(@if $wasi
 (@then
             (local.set $res (call $fd_close (local.get $fd)))
             (call $caml_handle_sys_error_if
@@ -686,12 +689,12 @@
                   (call $close (local.get $fd)))
                (catch $javascript_exception
                   ;; ignore exception
-                  (drop (pop externref))))
+                  (drop)))
 ))
       ))
       (ref.i31 (i32.const 0)))
 
-(@if wasi
+(@if $wasi
 (@then
    (func $read
       (param $fd i32) (param $buf (ref extern)) (param $pos i32) (param $n i32)
@@ -727,7 +730,7 @@
       (local $offset i64)
       (local $n i32)
       (local.set $fd (struct.get $channel $fd (local.get $ch)))
-(@if wasi
+(@if $wasi
 (@then
       (local.set $n
          (call $read
@@ -759,14 +762,14 @@
                         (local.get $len)
                         (ref.null noextern))))))
          (catch $javascript_exception
-            (call $caml_handle_sys_error (pop externref))))
+            (call $caml_handle_sys_error)))
       (struct.set $fd_offset $offset
          (local.get $fd_offset)
          (i64.add (local.get $offset) (i64.extend_i32_u (local.get $n))))
 ))
       (local.get $n))
 
-(@if wasi
+(@if $wasi
 (@then
    ;; The refill hook is not supported with WASI (see
    ;; caml_ml_set_channel_refill), so this always reads from the fd.
@@ -1026,7 +1029,7 @@
          (i64.add (call $caml_ml_get_channel_offset (local.get $ch))
             (i64.extend_i32_s (struct.get $channel $curr (local.get $ch))))))
 
-(@if wasi
+(@if $wasi
 (@then
    (func $caml_seek_in
       (param $ch (ref $channel)) (param $dest i64) (result (ref eq))
@@ -1096,7 +1099,7 @@
       (local $buffer i32) (local $res i32)
       (local.set $ch (ref.cast (ref $channel) (local.get $vch)))
       (call $caml_flush (local.get $ch))
-(@if wasi
+(@if $wasi
 (@then
       (local.set $buffer (call $get_buffer))
       (local.set $res
@@ -1130,7 +1133,7 @@
       (local $buffer i32) (local $res i32)
       (local.set $ch (ref.cast (ref $channel) (local.get $vch)))
       (call $caml_flush (local.get $ch))
-(@if wasi
+(@if $wasi
 (@then
       (local.set $buffer (call $get_buffer))
       (local.set $res
@@ -1208,7 +1211,8 @@
                         (i32.sub (local.get $p)
                            (struct.get $channel $curr (local.get $ch))))))))
          (local.set $p (i32.add (local.get $p) (i32.const 1)))
-         (br $loop)))
+         (br $loop))
+      (unreachable))
 
    (func $caml_flush (param $ch (ref $channel))
       (loop $loop
@@ -1229,7 +1233,7 @@
          (then (call $caml_flush (local.get $ch))))
       (ref.i31 (i32.const 0)))
 
-(@if wasi
+(@if $wasi
 (@then
    (func $write
       (param $fd i32) (param $buf (ref extern)) (param $pos i32) (param $n i32)
@@ -1257,7 +1261,7 @@
       (i32.load (local.get $nwritten)))
 ))
 
-(@if wasi
+(@if $wasi
 (@then
    (func $write_all_to_fd (export "write_all_to_fd")
       (param $fd i32) (param $v (ref eq))
@@ -1353,7 +1357,7 @@
                                     (local.get $towrite)
                                     (ref.null noextern))))))
                      (catch $javascript_exception
-                        (call $caml_handle_sys_error (pop externref))))
+                        (call $caml_handle_sys_error)))
                   (struct.set $fd_offset $offset
                      (local.get $fd_offset)
                      (i64.add
@@ -1547,7 +1551,7 @@
       (struct.set $channel $fd
          (ref.cast (ref $channel) (local.get 0)) (local.get 1)))
 
-(@if wasi
+(@if $wasi
 (@then
    (func $caml_ml_get_channel_offset (export "caml_ml_get_channel_offset")
       (param $ch (ref eq)) (result i64)

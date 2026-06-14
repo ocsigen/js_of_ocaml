@@ -66,7 +66,7 @@
    (import "marshal" "caml_deserialize_int_8"
       (func $caml_deserialize_int_8 (param (ref eq)) (result i64)))
 
-(@if wasi
+(@if $wasi
 (@then
    (type $i64_array (array (mut i64)))
    (type $i32_array (array (mut i32)))
@@ -1061,9 +1061,8 @@
                    (call $dv_get_i8 (local.get $view) (local.get $i)))
                 (local.set $i (i32.add (local.get $i) (i32.const 1)))
                 (br $loop)))))
-      (tuple.make 2
-         (i32.mul (i32.add (i32.const 4) (local.get $num_dims)) (i32.const 4))
-         (i32.mul (i32.add (i32.const 4) (local.get $num_dims)) (i32.const 8))))
+      (i32.mul (i32.add (i32.const 4) (local.get $num_dims)) (i32.const 4))
+      (i32.mul (i32.add (i32.const 4) (local.get $num_dims)) (i32.const 8)))
 
    (@string $intern_overflow
       "input_value: cannot read bigarray with 64-bit OCaml ints")
@@ -1199,9 +1198,8 @@
                    (call $caml_deserialize_sint_1 (local.get $s)))
                 (local.set $i (i32.add (local.get $i) (i32.const 1)))
                 (br $loop)))))
-      (tuple.make 2
-         (local.get $b)
-         (i32.mul (i32.add (i32.const 4) (local.get $num_dims)) (i32.const 4))))
+      (local.get $b)
+      (i32.mul (i32.add (i32.const 4) (local.get $num_dims)) (i32.const 4)))
 
    (func $caml_ba_get_size (param $dim (ref $int_array)) (result i32)
       (local $i i32) (local $n i32) (local $sz i64)
@@ -1290,7 +1288,7 @@
    (@string $ta_unsupported_kind "Typed_array.to_genarray: unsupported kind")
    (@string $ta_too_large "Typed_array.to_genarray: too large")
 
-(@if (not wasi)
+(@if (not $wasi)
 (@then
    (func (export "caml_ba_from_typed_array") (param (ref eq)) (result (ref eq))
       (local $data (ref extern))
@@ -1791,7 +1789,7 @@
       (param (ref eq)) (param $i i32) (result f32)
       (local $ba (ref $bigarray))
       (local.set $ba (ref.cast (ref $bigarray) (local.get 0)))
-      (if (struct.get $bigarray $ba_layout (local.get $ba))
+      (if (struct.get_u $bigarray $ba_layout (local.get $ba))
          (then (local.set $i (i32.sub (local.get $i) (i32.const 1)))))
       (if (i32.ge_u (local.get $i)
              (array.get $int_array (struct.get $bigarray $ba_dim (local.get $ba))
@@ -1804,7 +1802,7 @@
       (param (ref eq)) (param $i i32) (param $v f32) (result (ref eq))
       (local $ba (ref $bigarray))
       (local.set $ba (ref.cast (ref $bigarray) (local.get 0)))
-      (if (struct.get $bigarray $ba_layout (local.get $ba))
+      (if (struct.get_u $bigarray $ba_layout (local.get $ba))
          (then (local.set $i (i32.sub (local.get $i) (i32.const 1)))))
       (if (i32.ge_u (local.get $i)
              (array.get $int_array (struct.get $bigarray $ba_dim (local.get $ba))
@@ -1821,7 +1819,7 @@
       (local $dim (ref $int_array))
       (local.set $ba (ref.cast (ref $bigarray) (local.get $vba)))
       (local.set $dim (struct.get $bigarray $ba_dim (local.get $ba)))
-      (if (struct.get $bigarray $ba_layout (local.get $ba))
+      (if (struct.get_u $bigarray $ba_layout (local.get $ba))
          (then
             (local.set $i (i32.sub (local.get $i) (i32.const 1)))
             (local.set $j (i32.sub (local.get $j) (i32.const 1)))
@@ -1854,7 +1852,7 @@
       (local $dim (ref $int_array))
       (local.set $ba (ref.cast (ref $bigarray) (local.get $vba)))
       (local.set $dim (struct.get $bigarray $ba_dim (local.get $ba)))
-      (if (struct.get $bigarray $ba_layout (local.get $ba))
+      (if (struct.get_u $bigarray $ba_layout (local.get $ba))
          (then
             (local.set $i (i32.sub (local.get $i) (i32.const 1)))
             (local.set $j (i32.sub (local.get $j) (i32.const 1)))
@@ -1888,7 +1886,7 @@
       (local $dim (ref $int_array))
       (local.set $ba (ref.cast (ref $bigarray) (local.get $vba)))
       (local.set $dim (struct.get $bigarray $ba_dim (local.get $ba)))
-      (if (struct.get $bigarray $ba_layout (local.get $ba))
+      (if (struct.get_u $bigarray $ba_layout (local.get $ba))
          (then
             (local.set $i (i32.sub (local.get $i) (i32.const 1)))
             (local.set $j (i32.sub (local.get $j) (i32.const 1)))
@@ -1936,7 +1934,7 @@
       (local $dim (ref $int_array))
       (local.set $ba (ref.cast (ref $bigarray) (local.get $vba)))
       (local.set $dim (struct.get $bigarray $ba_dim (local.get $ba)))
-      (if (struct.get $bigarray $ba_layout (local.get $ba))
+      (if (struct.get_u $bigarray $ba_layout (local.get $ba))
          (then
             (local.set $i (i32.sub (local.get $i) (i32.const 1)))
             (local.set $j (i32.sub (local.get $j) (i32.const 1)))
@@ -3044,7 +3042,7 @@
                (array.get_u $bytes (local.get $s)
                   (i32.add (local.get $i) (local.get $k)))))))
 
-(@if (not wasi)
+(@if (not $wasi)
 (@then
    (export "caml_bytes_of_uint8_array" (func $caml_string_of_uint8_array))
    (func $caml_string_of_uint8_array (export "caml_string_of_uint8_array")

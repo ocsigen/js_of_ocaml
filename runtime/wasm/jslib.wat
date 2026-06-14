@@ -18,7 +18,7 @@
 (module
    (type $bytes (array (mut i8)))
 
-(@if (not wasi)
+(@if (not $wasi)
 (@then
    (import "bindings" "identity" (func $to_float (param anyref) (result f64)))
    (import "bindings" "identity" (func $from_float (param f64) (result anyref)))
@@ -589,7 +589,8 @@
                   (br_on_cast_fail $done (ref eq) (ref $block) (local.get $l))
                   (i32.const 2)))
             (local.set $i (i32.add (local.get $i) (i32.const 1)))
-            (br $compute_length))))
+            (br $compute_length))
+         (unreachable)))
       (local.set $a (call $new_array (local.get $i)))
       (local.set $i (i32.const 0))
       (local.set $l (local.get 0))
@@ -601,7 +602,8 @@
                (call $unwrap (array.get $block (local.get $b) (i32.const 1))))
             (local.set $l (array.get $block (local.get $b) (i32.const 2)))
             (local.set $i (i32.add (local.get $i) (i32.const 1)))
-            (br $loop))))
+            (br $loop))
+         (unreachable)))
       (struct.new $js (any.convert_extern (local.get $a))))
 
    (func (export "caml_list_of_js_array")
@@ -696,11 +698,11 @@
 
    (func (export "caml_jsoo_flags_effects")
       (param (ref eq)) (result (ref eq))
-(@if (= effects "cps")
+(@if (= $effects "cps")
 (@then
       (@string "cps"))
 (@else
-(@if (= effects "jspi")
+(@if (= $effects "jspi")
 (@then
       (@string "jspi"))
 (@else

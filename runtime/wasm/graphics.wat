@@ -17,7 +17,7 @@
 
 (module
 
-(@if (not wasi)
+(@if (not $wasi)
 (@then
 
    ;; Imports from other wasm modules

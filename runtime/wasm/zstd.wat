@@ -16,7 +16,7 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
-(@if (and (>= ocaml_version (5 1 0)) (not wasi))
+(@if (and (>= $ocaml_version (5 1 0)) (not $wasi))
 (@then
    (import "bindings" "ta_new" (func $ta_new (param i32) (result (ref extern))))
    (import "bindings" "dv_make"

@@ -102,13 +102,12 @@
        (param $s (ref eq)) (param $v (ref eq)) (result i32) (result i32)
        (call $caml_serialize_int_4 (local.get $s)
            (i32.reinterpret_f32 (call $unbox_float32 (local.get $v))))
-       (tuple.make 2 (i32.const 4) (i32.const 4)))
+       (i32.const 4) (i32.const 4))
 
    (func $float32_deserialize (param $s (ref eq)) (result (ref eq) i32)
-      (tuple.make 2
-         (call $box_float32
-            (f32.reinterpret_i32 (call $caml_deserialize_int_4 (local.get $s))))
-         (i32.const 4)))
+      (call $box_float32
+         (f32.reinterpret_i32 (call $caml_deserialize_int_4 (local.get $s))))
+      (i32.const 4))
 
    (func $float32_dup
       (param $v (ref eq)) (result (ref eq))
@@ -192,7 +191,7 @@
          (then (return (local.get 1))))
       (if (result f32) (f32.eq (local.get $x) (f32.const 0))
          (then
-            (if (f32.ge (local.get $y) (f32.const 0))
+            (if (result f32) (f32.ge (local.get $y) (f32.const 0))
                (then (return (f32.const 0x1p-149)))
                (else (return (f32.const -0x1p-149)))))
          (else

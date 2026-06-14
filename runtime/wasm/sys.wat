@@ -19,7 +19,7 @@
    (import "fail" "caml_raise_sys_error"
       (func $caml_raise_sys_error (param (ref eq))))
    (import "fail" "caml_raise_not_found" (func $caml_raise_not_found))
-(@if wasi
+(@if $wasi
 (@then
    (import "wasi_snapshot_preview1" "random_get"
       (func $random_get (param i32 i32) (result i32)))
@@ -95,7 +95,7 @@
       ;; Fallback: try to exit through an exception
       (throw $ocaml_exit))
 
-(@if wasi
+(@if $wasi
 (@then
    (global $environment (mut i32) (i32.const 0))
    (global $environment_count (mut i32) (i32.const 0))
@@ -215,7 +215,7 @@
       (array.new_fixed $block 2 (ref.i31 (i32.const 0))
          (ref.as_non_null (local.get $res))))
 
-(@if wasi
+(@if $wasi
 (@then
    (global $argv (mut (ref null $block)) (ref.null $block))
 
@@ -291,7 +291,7 @@
       (param (ref eq)) (result (ref eq))
       (ref.i31 (i32.const 0)))
 
-(@if wasi
+(@if $wasi
 (@then
    (func (export "caml_sys_time") (export "caml_sys_time_include_children")
       (param (ref eq)) (result (ref eq))
@@ -320,7 +320,7 @@
       (struct.new $float (f64.mul (call $time) (f64.const 0.001))))
 ))
 
-(@if wasi
+(@if $wasi
 (@then
    (func (export "caml_sys_system_command")
       (param (ref eq)) (result (ref eq))
@@ -336,11 +336,11 @@
                (call $system
                   (call $unwrap (call $caml_jsstring_of_string (local.get 0))))))
          (catch $javascript_exception
-            (call $caml_handle_sys_error (pop externref))))
+            (call $caml_handle_sys_error)))
       (return (ref.i31 (i32.const 0))))
 ))
 
-(@if wasi
+(@if $wasi
 (@then
    (func (export "caml_sys_random_seed")
       (param (ref eq)) (result (ref eq))
@@ -411,7 +411,7 @@
       (param (ref eq)) (result (ref eq))
       (ref.i31 (i32.const 0xfffffff)))
 
-(@if wasi
+(@if $wasi
 (@then
    (global $on_windows i32 (i32.const 0))
    (global $on_arm64 i32 (i32.const 0))
@@ -462,7 +462,7 @@
          (ref.i31 (i32.const 32))
          (ref.i31 (i32.const 0))))
 
-(@if wasi
+(@if $wasi
 (@then
    (func (export "caml_sys_isatty")
       (param $ch (ref eq)) (result (ref eq))
@@ -514,7 +514,7 @@
 
    (@string $toString "toString")
 
-(@if wasi
+(@if $wasi
 (@then
    (func $caml_handle_sys_error (export "caml_handle_sys_error")
       (param $arg (ref eq)) (param $errno i32)
