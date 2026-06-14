@@ -1,0 +1,60 @@
+{0 Examples}
+
+This page showcases js_of_ocaml projects, from simple demos to real-world applications.
+
+{1:demos Demos}
+
+These demos are included in the js_of_ocaml repository:
+
+{2 Graphics & Visualization}
+
+- {{:files/planet/index.html}Rotating planet} — Animated 3D view of the Earth
+- {{:files/cubes/index.html}Lozenge tilings} — Random walk on lozenge tilings
+- {{:files/webgl/index.html}WebGL demo} — WebGL graphics demo
+- {{:files/hyperbolic/index.html}Hyperbolic tree} — Hyperbolic geometry visualization
+- {{:files/graph_viewer/index.html}Graph viewer} — Interactive graph visualization
+- {{:files/graphics/index.html}OCaml Graphics library} — OCaml Graphics library in the browser
+
+{2 Games}
+
+- {{:files/boulderdash/index.html}Boulder Dash} — Classic game remake
+- {{:files/minesweeper/index.html}Minesweeper} — Classic puzzle game
+
+{2 Editors}
+
+- {{:files/wiki/index.html}Real-time wiki editor} — Real-time collaborative wiki
+- {{:files/wysiwyg/index.html}WYSIWYG wiki editor} — WYSIWYG wiki editor
+
+{2 Toplevel}
+
+- {{:files/toplevel/index.html}OCaml toplevel} — Interactive OCaml REPL in the browser
+
+{1:in-the-wild In the wild}
+
+Real-world projects built with js_of_ocaml:
+
+{2 Emulators and games}
+
+- {{:https://github.com/linoscope/CAMLBOY}Camlboy} — Game Boy emulator written in OCaml
+- {{:https://ocsigen.org/graffiti/}Graffiti} — Multi-user drawing application
+
+{2 Development tools}
+
+- {{:https://try.ocaml.pro/}Try OCaml} — Online OCaml REPL
+- {{:https://sketch.sh/}Sketch.sh} — Interactive OCaml notebook
+- {{:https://github.com/jbdoderlein/BetterOCaml}BetterOCaml} — Online OCaml editor with toplevel
+- {{:https://github.com/hazelgrove/hazel}Hazel} — Live functional programming environment
+
+{2 Languages and compilers}
+
+- {{:https://flow.org/}Flow} — Static type checker for JavaScript
+- {{:https://grain-lang.org/}Grain} — Functional programming language compiling to WebAssembly
+
+{1:tutorials Tutorials and learning resources}
+
+- {{:https://ocsigen.org/tuto/latest/manual/intro}Ocsigen tutorial} — Build a web app with Eliom and js_of_ocaml
+- {{:https://ocaml.org/docs/first-hour}OCaml.org} — Getting started with OCaml
+
+{1:submit Submit your project}
+
+Using js_of_ocaml in a project? Open a {{:https://github.com/ocsigen/js_of_ocaml/issues}GitHub issue} to have it listed here.

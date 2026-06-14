@@ -1,3 +1,0 @@
-= Runtime files
-
-This page has been moved to <<a_manual chapter="linker"|Linking JavaScript code>>.

@@ -1,39 +1,39 @@
-= Writing Wasm primitives
+{0 Writing Wasm primitives}
 
 User-defined primitives can be implemented by writing Wasm modules.
-These modules ({{{.wat}}} for text modules and {{{.wasm}}} for binary modules)
+These modules ([.wat] for text modules and [.wasm] for binary modules)
 can be passed on the command-line.
 
-With dune, use the option {{{(wasm_of_ocaml (wasm_files ...))}}} to specify
+With dune, use the option [(wasm_of_ocaml (wasm_files ...))] to specify
 these runtime files.
 
 It still makes sense to link JavaScript files to specify the possible
-side-effects of some primitives (see <<a_manual chapter="linker"|JavaScript primitives>>),
+side-effects of some primitives (see {{!page-"linker"}JavaScript primitives}),
 or to implement some functionalities in JavaScript.
-With dune, use {{{(wasm_of_ocaml (javascript_files ...))}}} to specify these files.
+With dune, use [(wasm_of_ocaml (javascript_files ...))] to specify these files.
 
-==@@id="data-representation"@@ Data representation
+{1:data-representation Data representation}
 
-The type {{{(ref eq)}}} is used for all OCaml values.
-Integers, chars, booleans, and constant constructors are mapped to {{{(ref i31)}}}.
+The type [(ref eq)] is used for all OCaml values.
+Integers, chars, booleans, and constant constructors are mapped to [(ref i31)].
 
 The following types are used for blocks, strings (and bytes), floats,
 float arrays, and JavaScript values. The first field of a block is its
-tag, of type {{{(ref i31)}}}.
+tag, of type [(ref i31)].
 
-{{{
+{v
 (type $block (array (mut (ref eq))))
 (type $bytes (array (mut i8)))
 (type $float (struct (field f64)))
 (type $float_array (array (mut f64)))
 (type $js (struct (ref null any)))
-}}}
+v}
 
-=== Int32, Int64, and Nativeint
+{2 Int32, Int64, and Nativeint}
 
 Import these functions to access or allocate integers:
 
-{{{
+{v
 (import "env" "Int32_val"
    (func $Int32_val (param (ref eq)) (result i32)))
 (import "env" "caml_copy_int32"
@@ -46,44 +46,44 @@ Import these functions to access or allocate integers:
    (func $Int64_val (param (ref eq)) (result i64)))
 (import "env" "caml_copy_int64"
    (func $caml_copy_int64 (param i64) (result (ref eq))))
-}}}
+v}
 
-==@@id="preprocessor"@@ Preprocessor
+{1:preprocessor Preprocessor}
 
 Wasm text files are passed through a preprocessor. You can run the
 preprocessor manually:
 
-{{{
+{v
 wasm_of_ocaml pp test.wat
-}}}
+v}
 
-=== Conditional compilation
+{2 Conditional compilation}
 
 The preprocessor allows optional compilation based on the OCaml version:
 
-{{{
+{v
 (@if (>= ocaml_version (5 2 0))
    (@then ...)
    (@else ...))
-}}}
+v}
 
 Available operators:
-* Comparisons: {{{=}}}, {{{>}}}, {{{>=}}}, {{{<}}}, {{{<=}}}, {{{<>}}}
-* Boolean: {{{and}}}, {{{or}}}, {{{not}}}
+- Comparisons: [=], [>], [>=], [<], [<=], [<>]
+- Boolean: [and], [or], [not]
 
-=== Syntactic sugar
+{2 Syntactic sugar}
 
-* **Strings**: {{{(@string "ab")}}} expands to {{{(array.new_fixed $bytes 2 (i32.const 97) (i32.const 98))}}}
-* **String globals**: {{{(@string $s "ab")}}} is short for {{{(global $s (ref eq) (@string "ab"))}}}
-* **Characters**: {{{(@char "a")}}} expands to {{{(i32.const 97)}}}
-* **Function naming**: {{{(func (export "foo") ...)}}} expands to {{{(func $foo (export "foo") ...)}}} for better debugging
+- {b Strings}: [(@string "ab")] expands to [(array.new_fixed $bytes 2 (i32.const 97) (i32.const 98))]
+- {b String globals}: [(@string $s "ab")] is short for [(global $s (ref eq) (@string "ab"))]
+- {b Characters}: [(@char "a")] expands to [(i32.const 97)]
+- {b Function naming}: [(func (export "foo") ...)] expands to [(func $foo (export "foo") ...)] for better debugging
 
-==@@id="implementing-primitives"@@ Implementing primitives
+{1:implementing-primitives Implementing primitives}
 
 Define a primitive by exporting a Wasm function with parameters and return
-value of type {{{(ref eq)}}}:
+value of type [(ref eq)]:
 
-{{{
+{v
 (func (export "input")
   (param $channel (ref eq))
   (param $buffer (ref eq))
@@ -92,34 +92,34 @@ value of type {{{(ref eq)}}}:
   (result (ref eq))
   ...
 )
-}}}
+v}
 
-==@@id="linking-js"@@ Linking with JavaScript code
+{1:linking-js Linking with JavaScript code}
 
 To use JavaScript functions in your Wasm primitives, import them using
-the {{{js}}} namespace:
+the [js] namespace:
 
-{{{
+{v
 (import "js" "add" (func $add (param f64) (param f64) (result f64)))
-}}}
+v}
 
-The <<a_manual chapter="linker"|js_of_ocaml linker>> is used to include
+The {{!page-"linker"}js_of_ocaml linker} is used to include
 them in the generated code.
 
-==@@id="interfacing-js"@@ Interfacing with JavaScript
+{1:interfacing-js Interfacing with JavaScript}
 
-Functions defined in {{{runtime/wasm/jslib.wat}}} provide conversions
+Functions defined in [runtime/wasm/jslib.wat] provide conversions
 between JavaScript and OCaml values, as well as JavaScript operations
 like property access and function calls:
 
-{{{
+{v
 (import "env" "caml_js_to_float"
    (func $caml_js_to_float (param (ref eq)) (result (ref eq))))
 (import "env" "caml_js_get"
    (func $caml_js_get (param (ref eq)) (param (ref eq)) (result (ref eq))))
-}}}
+v}
 
-== See also
+{1 See also}
 
-* <<a_manual chapter="wasm_overview"|Wasm_of_ocaml overview>> — General usage and features
-* <<a_manual chapter="linker"|JavaScript primitives>> — Writing JavaScript primitives for js_of_ocaml
+- {{!page-"wasm_overview"}Wasm_of_ocaml overview} — General usage and features
+- {{!page-"linker"}JavaScript primitives} — Writing JavaScript primitives for js_of_ocaml

@@ -1,8 +1,15 @@
+; The manual is a set of odoc pages (manual/*.mld), built into the js_of_ocaml
+; package documentation by `dune build @doc` alongside the API, and rendered with
+; the Ocsigen theme by `wodoc build` (see doc/README.md). It replaces the former
+; wikicreole manual (manual/*.wiki + the html_of_wiki/ohow pipeline).
+
+(documentation
+ (package js_of_ocaml))
+
+; The interactive "Try it" examples (toplevel, boulderdash, …) are still built by
+; dune, exactly as before: gen_dune_inc generates files/dune.inc with one copy
+; rule per example under the `doc-manual` alias, so `dune build @doc-manual`
+; populates manual/files/<example>/.
+
 (executable
  (name gen_dune_inc))
-
-(alias
- (name doc-manual)
- (deps
-  (glob_files *wiki)
-  (source_tree files)))

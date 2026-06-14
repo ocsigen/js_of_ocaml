@@ -30,6 +30,9 @@
 *.tmpjs
 *.map
 
+# Wasm runtime: intermediate output of recompile-* aliases
+runtime/wasm/*.new.wasm
+
 ocamltests
 
 gh-pages
@@ -56,3 +59,10 @@ toplevel/examples/lwt_toplevel_bin/toplevel.js
 toplevel/examples/lwt_toplevel_bin/eval.js
 
 janestreet
+
+# npm (for the Babel downleveling test)
+node_modules
+package-lock.json
+
+# Themed doc build output (wodoc build)
+_doc-site/

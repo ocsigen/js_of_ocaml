@@ -1,64 +1,64 @@
-= Quick Start
+{0 Quick Start}
 
 This guide walks you through creating your first js_of_ocaml application.
 
-==@@id="installation"@@ Installation
+{1:installation Installation}
 
-{{{
+{v
 opam install js_of_ocaml js_of_ocaml-ppx
-}}}
+v}
 
-==@@id="project-setup"@@ Project setup
+{1:project-setup Project setup}
 
 Create a new directory and initialize a dune project:
 
-{{{
+{v
 mkdir hello_jsoo && cd hello_jsoo
-}}}
+v}
 
 Create the following files:
 
-=== dune-project
+{2 dune-project}
 
-{{{
+{v
 (lang dune 3.0)
-}}}
+v}
 
-=== dune
+{2 dune}
 
-{{{
+{v
 (executable
  (name main)
  (modes js)
  (libraries js_of_ocaml)
  (preprocess (pps js_of_ocaml-ppx)))
-}}}
+v}
 
-=== main.ml
+{2 main.ml}
 
-<<code language="ocaml"|
+{@ocaml[
 open Js_of_ocaml
 
 let () =
   let message = Js.string "Hello from OCaml!" in
   Dom_html.window##alert message
->>
+]}
 
-==@@id="build"@@ Build
+{1:build Build}
 
-{{{
+{v
 dune build
-}}}
+v}
 
-This produces {{{_build/default/main.bc.js}}}.
+This produces [_build/default/main.bc.js].
 
-==@@id="run-browser"@@ Run in browser
+{1:run-browser Run in browser}
 
 Create an HTML file to load the JavaScript:
 
-=== index.html
+{2 index.html}
 
-{{{
+{v
 <!DOCTYPE html>
 <html>
 <head>
@@ -68,29 +68,29 @@ Create an HTML file to load the JavaScript:
   <script src="_build/default/main.bc.js"></script>
 </body>
 </html>
-}}}
+v}
 
-Open {{{index.html}}} in a browser. You should see an alert with "Hello from OCaml!".
+Open [index.html] in a browser. You should see an alert with "Hello from OCaml!".
 
-==@@id="run-nodejs"@@ Run in Node.js
+{1:run-nodejs Run in Node.js}
 
-{{{
+{v
 node _build/default/main.bc.js
-}}}
+v}
 
-Note: {{{alert}}} is not available in Node.js. For Node.js, use:
+Note: [alert] is not available in Node.js. For Node.js, use:
 
-<<code language="ocaml"|
+{@ocaml[
 let () = print_endline "Hello from OCaml!"
->>
+]}
 
-==@@id="dom-example"@@ DOM manipulation example
+{1:dom-example DOM manipulation example}
 
 Here's a more complete example that manipulates the DOM:
 
-=== main.ml
+{2 main.ml}
 
-<<code language="ocaml"|
+{@ocaml[
 open Js_of_ocaml
 
 let create_button text onclick =
@@ -128,11 +128,11 @@ let () =
   Dom.appendChild body decr_btn;
   Dom.appendChild body display;
   Dom.appendChild body incr_btn
->>
+]}
 
-=== index.html
+{2 index.html}
 
-{{{
+{v
 <!DOCTYPE html>
 <html>
 <head>
@@ -146,20 +146,20 @@ let () =
   <script src="_build/default/main.bc.js"></script>
 </body>
 </html>
-}}}
+v}
 
-==@@id="dev-workflow"@@ Development workflow
+{1:dev-workflow Development workflow}
 
 For faster iteration during development, use:
 
-{{{
+{v
 dune build -w
-}}}
+v}
 
 This watches for file changes and rebuilds automatically.
 
-==@@id="next-steps"@@ Next steps
+{1:next-steps Next steps}
 
-* <<a_manual chapter="ppx"|PPX syntax>> - Learn the syntax for JavaScript interop
-* <<a_manual chapter="javascript-interop"|JavaScript interop>> - Use existing JavaScript libraries
-* <<a_manual chapter="rev-bindings"|Exporting to JS>> - Make OCaml code callable from JavaScript
+- {{!page-"ppx"}PPX syntax} - Learn the syntax for JavaScript interop
+- {{!page-"javascript-interop"}JavaScript interop} - Use existing JavaScript libraries
+- {{!page-"rev-bindings"}Exporting to JS} - Make OCaml code callable from JavaScript

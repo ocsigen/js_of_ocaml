@@ -1,0 +1,162 @@
+# Build the documentation (manual + API + examples) with odoc, theme it with the
+# Ocsigen chrome (wodoc), and publish it on the project's gh-pages branch, served
+# at https://ocsigen.org/js_of_ocaml/.  See doc/README.md for the full picture.
+#
+# Two entry points:
+#  - push to master (or "Run workflow" with no version) -> rebuild & deploy the
+#    "dev" docs only. Each run replaces only dev/; other version directories on
+#    gh-pages are PRESERVED.
+#  - "Run workflow" with a version -> the `release` job publishes a stable version.
+#    Unlike most Ocsigen projects (where master ~= the latest release, so a release
+#    is just a frozen copy of dev/), js_of_ocaml's master diverges substantially
+#    from the latest tag, so a release is BUILT FROM THE TAG (the API must match the
+#    released version) and only the doc/ config + manual are overlaid from this branch.
+name: Documentation
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Publish a stable version, built from the matching git tag (e.g. 6.3.1), as /<version>/ and repoint `latest`. Leave empty to just rebuild dev."
+        required: false
+        default: ""
+
+# Serialise gh-pages writes: a push (rebuilds dev/) and a release
+# workflow_dispatch (publishes <version>/ and repoints latest) must never push
+# to gh-pages at the same time, or the second push fails non-fast-forward.
+concurrency:
+  group: doc-deploy-${{ github.workflow }}
+  cancel-in-progress: false
+
+# Don't run on forks: deployment targets ocsigen/js_of_ocaml's gh-pages.
+jobs:
+  build-deploy:
+    # push, or a manual run with no version (just rebuild dev). NOT a release run.
+    if: github.repository == 'ocsigen/js_of_ocaml' && (github.event_name != 'workflow_dispatch' || github.event.inputs.version == '')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up OCaml
+        uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: "5.4.0"
+
+      - name: Install dependencies
+        run: |
+          opam install . --deps-only --with-doc
+          # wodoc builds the API with odoc_driver on the INSTALLED packages (the
+          # engine ocaml.org uses, so cross-project refs like {!Lwt} resolve), so
+          # install the packages the docs cover from the dev tree (auto-pinned by
+          # setup-ocaml). NOT wasm_of_ocaml-compiler — it needs binaryen, and its
+          # refs are remapped to ocaml.org by odoc_driver --remap.
+          opam install js_of_ocaml js_of_ocaml-lwt js_of_ocaml-tyxml js_of_ocaml-toplevel
+          # The example/manual dependencies for the interactive demos (built by
+          # `dune build @doc-manual`). odoc itself is a with-doc dep, installed above.
+          opam install lwt_log yojson graphics higlo
+          # wodoc: the odoc driver that themes the pages with the Ocsigen chrome.
+          opam pin add -n wodoc https://github.com/ocsigen/wodoc.git
+          opam install wodoc
+
+      - name: Build documentation (dev)
+        # wodoc build runs `odoc_driver` on the installed packages (API) plus
+        # `dune build @doc-manual` (interactive examples), assembles the themed
+        # site from doc/wodoc, and fetches the shared menu straight from its
+        # canonical copy in ocsigen.github.io.
+        run: >-
+          opam exec -- wodoc build --config doc/wodoc
+          --menu https://ocsigen.org/doc/menu.html
+          --out "$PWD/_doc-site/dev" --label dev
+
+      - name: Deploy to gh-pages (replace only dev/, keep the rest)
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          branch: gh-pages
+          folder: _doc-site/dev
+          target-folder: dev
+          clean: true
+
+  release:
+    # Manual run with a version: build the docs FROM THE MATCHING TAG (so the API
+    # matches the released version, even though master has diverged) and publish
+    # them as the stable /<version>/, repointing `latest` + refreshing versions.json.
+    # The release sources come from the tag; the doc/ config + manual are overlaid
+    # from this branch (only `dev` is rebuilt from master, so this branch carries
+    # the current wodoc config). NOTE: building an old tag relies on it still
+    # compiling with the pinned toolchain; adjust ocaml-compiler / deps if needed.
+    if: github.repository == 'ocsigen/js_of_ocaml' && github.event_name == 'workflow_dispatch' && github.event.inputs.version != ''
+    runs-on: ubuntu-latest
+    # Pass the user-supplied version through the environment; never interpolate
+    # it directly into a run: shell (avoids command injection from the input).
+    env:
+      VERSION: ${{ github.event.inputs.version }}
+    permissions:
+      contents: write
+    steps:
+      - name: Check out this branch (wodoc config + manual)
+        uses: actions/checkout@v4
+        with:
+          path: docsrc
+
+      - name: Check out the release sources (the tag)
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.version }}
+          path: relsrc
+
+      - name: Set up OCaml
+        uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: "5.4.0"
+
+      - name: Overlay the current doc config + manual onto the release sources
+        run: |
+          rm -rf relsrc/doc
+          cp -a docsrc/doc relsrc/doc
+
+      - name: Install dependencies (in the release tree)
+        working-directory: relsrc
+        run: |
+          opam install . --deps-only --with-doc
+          opam install lwt_log yojson graphics higlo
+          opam pin add -n wodoc https://github.com/ocsigen/wodoc.git
+          opam install wodoc
+
+      - name: Build the release documentation (labelled <version>)
+        working-directory: relsrc
+        run: >-
+          opam exec -- wodoc build --config doc/wodoc
+          --menu https://ocsigen.org/doc/menu.html
+          --out "$PWD/_relbuild" --label "$VERSION"
+
+      - name: Checkout gh-pages
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          path: site
+          fetch-depth: 0
+
+      - name: Publish as the stable version and repoint latest
+        # Stage the freshly built version dir, then let `wodoc release` move it into
+        # place (site/<version>), repoint `latest`, write the root redirect and
+        # refresh versions.json (--from a temp dir avoids the from==version no-op).
+        run: |
+          cp -a relsrc/_relbuild site/_staging
+          opam exec -- wodoc release --site site --from _staging \
+            --version "$VERSION"
+          rm -rf site/_staging
+
+      - name: Commit and push gh-pages
+        run: |
+          cd site
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet \
+            || git commit -m "Release doc $VERSION (built from tag)"
+          git push

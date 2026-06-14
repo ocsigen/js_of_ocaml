@@ -1,0 +1,64 @@
+{0 Installation}
+
+{1:requirements Requirements}
+
+{b OCaml}: 4.13 to 5.4
+
+{b Build tools}:
+- dune >= 3.19
+- menhir
+
+{b Libraries}:
+- cmdliner >= 2.0
+- ppxlib >= 0.35
+- sedlex >= 3.3
+- yojson >= 2.1
+
+{1:supported-environments Supported environments}
+
+The generated JavaScript works with:
+- Node.js 16 or later
+- Any modern browser supporting ECMAScript 2020 (ES2020) — Chrome 80+, Firefox 74+, Safari 13.4+, Edge 80+
+
+{b Note}: [Stdlib.Weak] and [Stdlib.Ephemeron] require [WeakRef] support (ECMAScript 2021), available in all modern browsers and Node.js 14.6+.
+
+{1:opam Install from opam}
+
+{2 Basic installation}
+
+For most users, install the compiler and ppx:
+{v
+opam install js_of_ocaml js_of_ocaml-compiler js_of_ocaml-ppx
+v}
+
+{2 With Lwt support}
+
+For asynchronous programming with Lwt:
+{v
+opam install js_of_ocaml js_of_ocaml-compiler js_of_ocaml-ppx js_of_ocaml-lwt
+v}
+
+{2 All packages}
+
+To install all available packages:
+{v
+opam install js_of_ocaml js_of_ocaml-compiler js_of_ocaml-ppx \
+  js_of_ocaml-lwt js_of_ocaml-tyxml js_of_ocaml-toplevel \
+  js_of_ocaml-ppx_deriving_json
+v}
+
+{2 WebAssembly compiler}
+
+To compile to WebAssembly instead of JavaScript:
+{v
+opam install wasm_of_ocaml-compiler
+v}
+
+{b Additional requirement}: Binaryen 119 or later must be installed on your system. See {{:https://github.com/WebAssembly/binaryen}Binaryen installation}.
+
+See {{!page-"wasm_overview"}wasm_of_ocaml} for usage.
+
+{1 See also}
+
+- {{!page-"quickstart"}Quick start} — Get started with a simple example
+- {{!page-"overview"}Overview} — Learn what js_of_ocaml can do
