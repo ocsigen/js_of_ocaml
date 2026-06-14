@@ -84,11 +84,10 @@ Test directories:
 
 {ul
 {li [compiler/] - Compiler implementation
- {ul
- {li [lib/] - Core compiler library}
- {li [lib-wasm/] - WebAssembly backend}
- {li [bin-js_of_ocaml/] - js_of_ocaml entry point}
- {li [bin-wasm_of_ocaml/] - wasm_of_ocaml entry point}}}
+ {ul {li [lib/] - Core compiler library}
+     {li [lib-wasm/] - WebAssembly backend}
+     {li [bin-js_of_ocaml/] - js_of_ocaml entry point}
+     {li [bin-wasm_of_ocaml/] - wasm_of_ocaml entry point}}}
 {li [lib/] - Library packages (js_of_ocaml, lwt, tyxml bindings)}
 {li [ppx/] - PPX syntax extensions}
 {li [runtime/] - JavaScript and WebAssembly runtime files}
