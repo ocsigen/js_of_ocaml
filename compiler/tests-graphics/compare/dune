@@ -1,0 +1,20 @@
+; Pixel comparison of Graphics_js against the native X11 Graphics backend.
+; Manual / diagnostic only (needs X11 for the native renderer and a browser
+; for the web one); not attached to the runtest aliases. See ../README.md.
+
+(executable
+ (name native)
+ (modules native)
+ (libraries graphics gscene))
+
+(executable
+ (name web)
+ (modes js)
+ (modules web)
+ (libraries js_of_ocaml-lwt.graphics gscene)
+ (preprocess
+  (pps js_of_ocaml-ppx)))
+
+(alias
+ (name default)
+ (deps web.bc.js))

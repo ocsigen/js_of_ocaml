@@ -1,0 +1,16 @@
+; Graphics_js tests. These are NOT run by `make tests`: they need a real
+; canvas (getImageData), which Node does not provide, so they are driven
+; manually in a browser. See README.md. The executables still build under
+; `dune build @all` (so they are kept compiling), but nothing here is
+; attached to the runtest aliases.
+
+(executable
+ (name test)
+ (modes js)
+ (libraries js_of_ocaml-lwt.graphics)
+ (preprocess
+  (pps js_of_ocaml-ppx)))
+
+(alias
+ (name default)
+ (deps test.bc.js index.html))
