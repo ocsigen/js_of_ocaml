@@ -214,6 +214,10 @@
   float array with the dedicated representation, so float-array
   primitives on the result work instead of trapping (it previously
   always built a generic block) (#2263)
+* Runtime/wasm: `Unix.openfile` with `O_APPEND` now positions the file
+  descriptor at the end of the file; the offset check tested the
+  `O_RDWR` flag bit instead of `O_APPEND`, so appends started at the
+  beginning and `O_RDWR` files wrongly started at the end (#2263)
 * Runtime: the QuickJS standard file descriptors raise on a write or
   read error instead of returning 0; an error on stdout (e.g. EPIPE)
   used to make the flush/write loop spin forever, and a read error was
