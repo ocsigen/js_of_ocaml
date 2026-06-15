@@ -1,0 +1,9 @@
+
+# Module `Tyxml_js.Util`
+
+```ocaml
+val update_children : 
+  Js_of_ocaml.Dom.node Js_of_ocaml.Js.t ->
+  Js_of_ocaml.Dom.node Js_of_ocaml.Js.t ReactiveData.RList.t ->
+  unit
+```

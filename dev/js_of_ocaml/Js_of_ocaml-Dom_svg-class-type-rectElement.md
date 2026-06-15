@@ -1,0 +1,40 @@
+
+# Class type `Dom_svg.rectElement`
+
+```ocaml
+inherit element
+```
+```ocaml
+inherit tests
+```
+```ocaml
+inherit langSpace
+```
+```ocaml
+inherit externalResourcesRequired
+```
+```ocaml
+inherit stylable
+```
+```ocaml
+inherit transformable
+```
+```ocaml
+method x : animatedLength Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method y : animatedLength Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method width : animatedLength Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method height : animatedLength Js_of_ocaml__.Js.t
+                  Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method rx : animatedLength Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method ry : animatedLength Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+```
