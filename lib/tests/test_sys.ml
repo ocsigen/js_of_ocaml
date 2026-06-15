@@ -333,8 +333,8 @@ let%expect_test "Unix.error_message" =
   Printf.printf "%b\n" (String.length (Unix.error_message Unix.EPERM) > 0);
   [%expect
     {|
-    error
-    error
-    error
+    ECHILD
+    EWOULDBLOCK
+    EDEADLK
     true
     |}]
