@@ -644,7 +644,7 @@
                      (local.set $len (i32.add (local.get $len) (i32.const 2)))
                      (br $loop)))
                (local.set $c (i32.shl (local.get $c) (i32.const 1)))
-               (if (i32.gt_u (i32.add (local.get $c) (i32.const 1))
+               (if (i32.ge_u (i32.add (local.get $c) (i32.const 1))
                       (array.len (local.get $groups)))
                   (then (call $caml_failwith (global.get $unmatched_group))))
                (local.set $start
@@ -697,7 +697,7 @@
                      (local.set $j (i32.add (local.get $j) (i32.const 2)))
                      (br $loop)))
                (local.set $c (i32.shl (local.get $c) (i32.const 1)))
-               (if (i32.gt_u (i32.add (local.get $c) (i32.const 1))
+               (if (i32.ge_u (i32.add (local.get $c) (i32.const 1))
                       (array.len (local.get $groups)))
                   (then (call $caml_failwith (global.get $unmatched_group))))
                (local.set $start
