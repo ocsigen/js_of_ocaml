@@ -24,6 +24,13 @@
  (libraries unix))
 
 (tests
+ (names channel_refill)
+ (modes js wasm)
+ (enabled_if
+  (<> %{profile} wasi))
+ (libraries js_of_ocaml))
+
+(tests
  (names gh2093)
  (modes wasm)
  (enabled_if
