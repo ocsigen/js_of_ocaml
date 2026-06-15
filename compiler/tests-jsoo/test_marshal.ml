@@ -248,14 +248,20 @@ let%expect_test "shared reference after a big-endian double array" =
   [%expect {| hi 1.5 true |}]
 
 let%expect_test "float array marshalling is interoperable" =
-  let hex s = String.iter (fun c -> Printf.printf "%02x" (Char.code c)) s; print_newline () in
+  let hex s =
+    String.iter (fun c -> Printf.printf "%02x" (Char.code c)) s;
+    print_newline ()
+  in
   (* the marshalled bytes must match the native format (a
      CODE_DOUBLE_ARRAY block) so other runtimes can read them *)
   hex (Marshal.to_string [| 1.5; 2.5; 3.5 |] []);
   (* round-trip within jsoo still works *)
-  let a : float array = Marshal.from_string (Marshal.to_string [| 1.5; 2.5; 3.5 |] []) 0 in
+  let a : float array =
+    Marshal.from_string (Marshal.to_string [| 1.5; 2.5; 3.5 |] []) 0
+  in
   Printf.printf "%g %g %g\n" a.(0) a.(1) a.(2);
-  [%expect {|
+  [%expect
+    {|
     8495a6be0000001a0000000100000007000000040e03000000000000f83f00000000000004400000000000000c40
     1.5 2.5 3.5
     |}]
