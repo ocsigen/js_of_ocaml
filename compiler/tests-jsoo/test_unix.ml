@@ -135,3 +135,27 @@ let%expect_test "Unix.symlink to_dir" =
 let%expect_test "Unix.getenv" =
   Printf.printf "%s\n" (Sys.getenv "FOO");
   [%expect {| bar |}]
+
+(* Sizes must not be truncated to 32 bits, ftruncate must not move the
+   tracked fd offset, and st_perm must not include the file-type bits. *)
+let%expect_test "truncate and stat" =
+  let f = Filename.temp_file "jsoo_trunc" ".dat" in
+  Unix.LargeFile.truncate f 5_000_000_000L;
+  Printf.printf "%Ld\n" (Unix.LargeFile.stat f).Unix.LargeFile.st_size;
+  let fd = Unix.openfile f [ Unix.O_RDWR ] 0o644 in
+  Unix.LargeFile.ftruncate fd 3_000_000_000L;
+  Printf.printf "%Ld\n" (Unix.LargeFile.fstat fd).Unix.LargeFile.st_size;
+  ignore (Unix.lseek fd 100 Unix.SEEK_SET);
+  Unix.ftruncate fd 50;
+  Printf.printf "%d\n" (Unix.lseek fd 0 Unix.SEEK_CUR);
+  Unix.close fd;
+  Unix.chmod f 0o644;
+  Printf.printf "0o%o\n" (Unix.stat f).Unix.st_perm;
+  Sys.remove f;
+  [%expect
+    {|
+    5000000000
+    3000000000
+    100
+    0o644
+    |}]

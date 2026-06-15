@@ -206,7 +206,7 @@
       s.dev,
       s.ino | 0,
       kind,
-      s.mode,
+      s.mode & 0o7777,
       s.nlink,
       s.uid,
       s.gid,
