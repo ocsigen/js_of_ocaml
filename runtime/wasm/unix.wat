@@ -935,9 +935,30 @@
 
 (@if $wasi
 (@then
+   (@string $chmod "chmod")
+
    (func (export "unix_chmod") (export "caml_unix_chmod")
-      (param (ref eq) (ref eq)) (result (ref eq))
-      ;; no notion of permissions in WASI
+      (param $path (ref eq)) (param $perms (ref eq)) (result (ref eq))
+      (local $p_fd i32) (local $p_addr i32) (local $p_len i32)
+      (local $res i32) (local $buffer i32)
+      ;; WASI has no notion of permissions, so the mode change is a no-op; but
+      ;; still report a missing path like native (which raises ENOENT) instead
+      ;; of silently succeeding. We can only check that the path exists.
+      (call $unix_resolve_path (global.get $chmod) (local.get $path))
+      (local.set $p_len)
+      (local.set $p_addr)
+      (local.set $p_fd)
+      (local.set $buffer (call $get_buffer))
+      (local.set $res
+         (call $path_filestat_get
+            (local.get $p_fd)
+            (i32.const 1)
+            (local.get $p_addr)
+            (local.get $p_len)
+            (local.get $buffer)))
+      (call $free (local.get $p_addr))
+      (call $caml_unix_error_if
+         (local.get $res) (global.get $chmod) (local.get $path))
       (ref.i31 (i32.const 0)))
 )
 (@else

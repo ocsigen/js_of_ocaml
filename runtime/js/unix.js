@@ -220,10 +220,11 @@ function caml_strerror(errno) {
   const util = require("node:util");
   if (errno >= 0) {
     const code = unix_error[errno];
-    return util
-      .getSystemErrorMap()
-      .entries()
-      .find((x) => x[1][0] === code)[1][1];
+    // no Iterator.prototype.find: it requires node >= 22
+    for (const e of util.getSystemErrorMap())
+      if (e[1][0] === code) return e[1][1];
+    // not every code is in libuv's error map
+    return code || "Unknown error " + errno;
   } else {
     return util.getSystemErrorMessage(errno);
   }
@@ -320,7 +321,7 @@ function caml_unix_chmod(name, perms) {
   if (!root.device.chmod) {
     caml_failwith("caml_unix_chmod: not implemented");
   }
-  return root.device.chmod(root.rest, perms);
+  return root.device.chmod(root.rest, perms, /* raise Unix_error */ 1);
 }
 
 //Provides: caml_unix_rename
@@ -623,7 +624,6 @@ function caml_unix_single_write(fd, buf, pos, len) {
 }
 
 //Provides: caml_unix_write_bigarray
-//Alias: caml_unix_lookup_file
 //Requires: caml_ba_to_typed_array, caml_unix_lookup_file
 //Version: >= 5.2
 function caml_unix_write_bigarray(fd, buf, pos, len) {
