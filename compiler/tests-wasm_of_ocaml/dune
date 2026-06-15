@@ -15,6 +15,10 @@
  (modes wasm))
 
 (tests
+ (names marshal_fixes)
+ (modes js wasm))
+
+(tests
  (names readdir_after_closedir unix_ids)
  (modes wasm)
  (libraries unix))
