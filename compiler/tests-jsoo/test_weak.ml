@@ -201,3 +201,22 @@ let%expect_test "get_copy copies bytes" =
   | Some d -> Printf.printf "%b\n" (d == Obj.repr b)
   | None -> print_endline "none");
   [%expect {| false |}]
+
+(* Custom blocks (Int64, bigarrays, ...) are deliberately NOT copied:
+   the native runtime returns the value itself rather than risk an
+   unsafe raw copy (finalizers, the bigarray data proxy, ...). *)
+let%expect_test "get_copy does not copy custom blocks" =
+  let n = Int64.add 1L 2L in
+  let w = Weak.create 1 in
+  Weak.set w 0 (Some n);
+  (match Weak.get_copy w 0 with
+  | Some n' -> Printf.printf "%b %b\n" (n' == n) (Int64.equal n' n)
+  | None -> print_endline "none");
+  [%expect {| true true |}];
+  let a = Bigarray.Array1.create Bigarray.int Bigarray.c_layout 1 in
+  let w = Weak.create 1 in
+  Weak.set w 0 (Some a);
+  (match Weak.get_copy w 0 with
+  | Some a' -> Printf.printf "%b\n" (a' == a)
+  | None -> print_endline "none");
+  [%expect {| true |}]
