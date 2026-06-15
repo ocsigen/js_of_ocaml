@@ -96,7 +96,19 @@
                   (f32.eq (local.get $y) (local.get $y)))))
 
    (func $float32_hash (param $v (ref eq)) (result i32)
-      (i32.reinterpret_f32 (call $unbox_float32 (local.get $v))))
+      (local $i i32)
+      (local.set $i (i32.reinterpret_f32 (call $unbox_float32 (local.get $v))))
+      ;; Normalize NaNs and negative zero so that equal float32 values hash
+      ;; identically, like caml_hash_mix_float.
+      (if (i32.eq (i32.and (local.get $i) (i32.const 0x7F800000))
+                  (i32.const 0x7F800000))
+         (then
+            (if (i32.ne (i32.and (local.get $i) (i32.const 0x7FFFFF))
+                        (i32.const 0))
+               (then (local.set $i (i32.const 0x7F800001))))))
+      (if (i32.eq (local.get $i) (i32.const 0x80000000))
+         (then (local.set $i (i32.const 0))))
+      (local.get $i))
 
    (func $float32_serialize
        (param $s (ref eq)) (param $v (ref eq)) (result i32) (result i32)
