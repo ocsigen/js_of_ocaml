@@ -18,6 +18,12 @@ tests-quickjs:
 test-babel-downlevel:
 	JSOO_ROOT=$(CURDIR) dune build @runtest-babel-downlevel
 
+# Regression test for #2300: MD5 of a >2 GiB input. Off by default because it
+# digests a 2 GiB sparse file (~40s in JS), so it is not part of `make tests`.
+test-md5-large:
+	JSOO_TEST_MD5_LARGE=true dune build @runtest @runtest-js
+	JSOO_TEST_MD5_LARGE=true WASM_OF_OCAML=true dune build @runtest-wasm
+
 test runtest runtests: tests
 
 # Build the API + manual (odoc) and the interactive examples. @doc compiles the
