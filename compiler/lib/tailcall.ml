@@ -147,9 +147,21 @@ let f p =
       in
       if !rewrite_body then blocks := Addr.Map.add pc { block with body } !blocks)
     p.blocks;
-  let p = { p with blocks = !blocks; free_pc = !free_pc } in
+  let p =
+    if !update_count = 0
+    then (
+      Code.assert_program_equal
+        ~name:"tailcall"
+        p
+        { p with blocks = !blocks; free_pc = !free_pc };
+      p)
+    else { p with blocks = !blocks; free_pc = !free_pc }
+  in
   if times () then Format.eprintf "  tail calls: %a@." Timer.print t;
-  if stats () then Format.eprintf "Stats - tail calls: %d optimizations@." !update_count;
+  if stats ()
+  then (
+    Format.eprintf "Stats - tail calls: %d optimizations@." !update_count;
+    Code.print_block_sharing ~name:"tailcall" previous_p p);
   if debug_stats ()
   then Code.check_updates ~name:"tailcall" previous_p p ~updates:!update_count;
   Code.invariant p;
