@@ -19,6 +19,7 @@
    (import "obj" "caml_callback_1"
       (func $caml_callback_1
          (param (ref eq)) (param (ref eq)) (result (ref eq))))
+   (import "fail" "ocaml_exception" (tag $ocaml_exception (param (ref eq))))
    (import "sync" "caml_ml_mutex_unlock"
       (func $caml_ml_mutex_unlock (param (ref eq)) (result (ref eq))))
 
@@ -246,37 +247,55 @@
 (@then
    (func (export "caml_domain_spawn")
       (param $f (ref eq)) (param $term_sync_v (ref eq)) (result (ref eq))
-      (local $id i32) (local $old i32) (local $ts (ref $block)) (local $res (ref eq))
+      (local $id i32) (local $old i32) (local $ts (ref $block))
+      (local $result (ref null eq)) (local $exn (ref eq))
       (local.set $id (global.get $caml_domain_latest_id))
       (global.set $caml_domain_latest_id
          (i32.add (local.get $id) (i32.const 1)))
       (local.set $old (global.get $caml_domain_id))
-      (local.set $res
-         (call $caml_callback_1 (local.get $f) (ref.i31 (i32.const 0))))
-      (global.set $caml_domain_id (local.get $old))
+      (global.set $caml_domain_id (local.get $id))
       (local.set $ts (ref.cast (ref $block) (local.get $term_sync_v)))
+      (try
+         (do
+            ;; state = Finished (Ok res)
+            (local.set $result
+               (array.new_fixed $block 2 (ref.i31 (i32.const 0))
+                  (array.new_fixed $block 2 (ref.i31 (i32.const 0))
+                     (call $caml_callback_1
+                        (local.get $f) (ref.i31 (i32.const 0)))))))
+         (catch $ocaml_exception
+            (local.set $exn (pop (ref eq)))
+            ;; state = Finished (Error (exn, backtrace))
+            (local.set $result
+               (array.new_fixed $block 2 (ref.i31 (i32.const 0))
+                  (array.new_fixed $block 2 (ref.i31 (i32.const 1))
+                     (array.new_fixed $block 3 (ref.i31 (i32.const 0))
+                        (local.get $exn)
+                        (array.new_fixed $block 1 (ref.i31 (i32.const 0)))))))))
+      (global.set $caml_domain_id (local.get $old))
       (drop (call $caml_ml_mutex_unlock (array.get $block (local.get $ts) (i32.const 2))))
-      ;; TODO: fix exn case
-      (array.set
-         $block
-         (local.get $ts)
-         (i32.const 1)
-         (array.new_fixed
-            $block
-            2
-            (ref.i31 (i32.const 0))
-            (array.new_fixed $block 2 (ref.i31 (i32.const 0)) (local.get $res))))
+      (array.set $block (local.get $ts) (i32.const 1)
+         (ref.as_non_null (local.get $result)))
       (ref.i31 (local.get $id)))
 )
 (@else
    (func (export "caml_domain_spawn")
       (param $f (ref eq)) (param $mutex (ref eq)) (result (ref eq))
-      (local $id i32) (local $old i32)
+      (local $id i32) (local $old i32) (local $exn (ref eq))
       (local.set $id (global.get $caml_domain_latest_id))
       (global.set $caml_domain_latest_id
          (i32.add (local.get $id) (i32.const 1)))
       (local.set $old (global.get $caml_domain_id))
-      (drop (call $caml_callback_1 (local.get $f) (ref.i31 (i32.const 0))))
+      (global.set $caml_domain_id (local.get $id))
+      (try
+         (do
+            (drop (call $caml_callback_1
+               (local.get $f) (ref.i31 (i32.const 0)))))
+         (catch $ocaml_exception
+            (local.set $exn (pop (ref eq)))
+            (global.set $caml_domain_id (local.get $old))
+            (drop (call $caml_ml_mutex_unlock (local.get $mutex)))
+            (throw $ocaml_exception (local.get $exn))))
       (global.set $caml_domain_id (local.get $old))
       (drop (call $caml_ml_mutex_unlock (local.get $mutex)))
       (ref.i31 (local.get $id)))
