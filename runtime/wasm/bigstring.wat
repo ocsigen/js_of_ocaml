@@ -24,6 +24,8 @@
      (func $caml_ba_to_typed_array (param (ref eq)) (result (ref eq))))
    (import "bigarray" "caml_ba_from_typed_array"
       (func $caml_ba_from_typed_array (param (ref eq)) (result (ref eq))))
+   (import "bigarray" "caml_ba_char_of_typed_array"
+      (func $caml_ba_char_of_typed_array (param (ref eq)) (result (ref eq))))
    (import "bigarray" "caml_ba_sub"
       (func $caml_ba_sub
          (param (ref eq)) (param (ref eq)) (param (ref eq)) (result (ref eq))))
@@ -131,12 +133,12 @@
    (export "bigstring_to_typed_array" (func $caml_ba_to_typed_array))
 
    (func (export "bigstring_of_array_buffer") (param (ref eq)) (result (ref eq))
-       (return_call $caml_ba_from_typed_array
+       (return_call $caml_ba_char_of_typed_array
           (call $wrap
              (call $ta_create (i32.const 12) (call $unwrap (local.get 0))))))
 
    (func (export "bigstring_of_typed_array") (param (ref eq)) (result (ref eq))
-       (return_call $caml_ba_from_typed_array
+       (return_call $caml_ba_char_of_typed_array
           (call $wrap (call $ta_bytes (call $unwrap (local.get 0))))))
 ))
 

@@ -64,6 +64,10 @@
 * Runtime/wasm: channels with a refill hook (`Sys_js.set_channel_filler`)
   grow their buffer instead of dropping data that exceeds it, and advance
   the channel offset so `pos_in`/`pos_out` stay correct (#2330)
+* Runtime/wasm: `Typed_array.Bigstring.of_arrayBuffer`/`of_uint8Array`
+  produce a `char` (kind 12) bigarray instead of `int8_unsigned` (kind 3),
+  matching the JS runtime (affects polymorphic compare and marshalling)
+  (#2329)
 * Runtime/wasm: `Str.replace`/`Str.global_replace` raise `Failure` on a
   backreference to a group one past the last (e.g. `"\1"` against a
   group-less regexp) instead of trapping with an out-of-bounds access;
