@@ -721,10 +721,11 @@ function caml_unix_ftruncate_64(fd, len) {
 
 //Provides: caml_unix_close
 //Alias: unix_close
-//Requires: caml_unix_lookup_file
+//Requires: caml_unix_lookup_file, caml_sys_fds
 function caml_unix_close(fd) {
   var file = caml_unix_lookup_file(fd, "close");
   file.close(/* raise unix_error */ 1);
+  delete caml_sys_fds[fd];
   return 0;
 }
 

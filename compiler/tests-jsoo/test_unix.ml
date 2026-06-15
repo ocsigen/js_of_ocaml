@@ -217,4 +217,4 @@ let%expect_test "closed fds do not resolve" =
      print_endline "ok"
    with Unix.Unix_error (Unix.EBADF, _, _) -> print_endline "EBADF");
   Sys.remove f;
-  [%expect {| ok |}]
+  [%expect {| EBADF |}]
