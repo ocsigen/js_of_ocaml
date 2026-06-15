@@ -185,6 +185,7 @@
    test_sys_command
    test_str
    test_weak_gc
+   toplevel_sections
    calc_parser
    calc_lexer))
  (libraries unix compiler-libs.common js_of_ocaml-compiler)
@@ -266,6 +267,25 @@
    (<> %{profile} wasi)
    (<> %{profile} wasi-with-native-effects)))
  (modes js wasm))
+
+; The js accessor lives in the optional +toplevel.js runtime fragment, so it
+; is linked explicitly; --toplevel is deliberately NOT passed, so the bytecode
+; sections stay absent and the accessor raises like in a non-toplevel program.
+
+(test
+ (name toplevel_sections)
+ (modules toplevel_sections)
+ (enabled_if
+  (and
+   (<> %{profile} wasi)
+   (<> %{profile} wasi-with-native-effects)))
+ (modes js wasm)
+ (js_of_ocaml
+  (compilation_mode whole_program)
+  (flags
+   (:standard +toplevel.js)))
+ (wasm_of_ocaml
+  (compilation_mode whole_program)))
 
 ; Forces a major GC through node's v8/vm modules to observe ephemeron
 ; liveness, so it only runs in js mode under node.
