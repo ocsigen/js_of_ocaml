@@ -337,9 +337,10 @@ let%expect_test "float16 equality with nan" =
   [%expect {| false true |}]
 
 let%expect_test "bigstring blit positions are raw offsets" =
-  (* The reference C implementation of caml_bigstring_blit_ba_to_ba is
-     layout-blind: positions are offsets from the start of the data,
-     even for fortran_layout bigarrays. *)
+  (* These primitives back base_bigstring's bigstring_blit_* stubs,
+     whose C code is layout-blind: positions are offsets from the start
+     of the data, even for fortran_layout bigarrays. The bigarray_stubs.c
+     in this directory mirrors that for the native build of this test. *)
   let mk l =
     let a = Array1.create char fortran_layout (String.length l) in
     String.iteri ~f:(fun i c -> a.{i + 1} <- c) l;
@@ -356,4 +357,18 @@ let%expect_test "bigstring blit positions are raw offsets" =
      blit_ba_to_ba src 0 dst 0 2;
      print_endline (to_string dst)
    with Invalid_argument msg -> print_endline ("Invalid_argument: " ^ msg));
-  [%expect {| ab---- |}]
+  [%expect {| ab---- |}];
+  (* The string/bytes variants are layout-blind in the same way: a
+     fortran_layout destination is still indexed from raw offset 0. *)
+  let dst = mk "------" in
+  blit_string_to_ba "XY" 0 dst 2 2;
+  print_endline (to_string dst);
+  [%expect {| --XY-- |}];
+  let dst = mk "------" in
+  blit_bytes_to_ba (Bytes.of_string "XY") 0 dst 2 2;
+  print_endline (to_string dst);
+  [%expect {| --XY-- |}];
+  let buf = Bytes.make 6 '-' in
+  blit_ba_to_bytes src 1 buf 0 3;
+  print_endline (Bytes.to_string buf);
+  [%expect {| bcd--- |}]
