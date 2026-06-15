@@ -796,9 +796,20 @@
   start_fiber = make_promising(caml_start_fiber);
   var _initialize = make_promising(_initialize);
   if (globalThis.process?.on) {
-    globalThis.process.on("uncaughtException", (err, _origin) =>
-      caml_handle_uncaught_exception(err),
-    );
+    // Only install the handler when run directly (`node a.js`), not when
+    // loaded as a library or in the REPL, where hijacking "uncaughtException"
+    // would override the host's error handling. See ocsigen/js_of_ocaml#1277.
+    if (
+      !(
+        typeof module !== "undefined" &&
+        typeof require !== "undefined" &&
+        require.main !== module
+      )
+    ) {
+      globalThis.process.on("uncaughtException", (err, _origin) =>
+        caml_handle_uncaught_exception(err),
+      );
+    }
   } else if (globalThis.addEventListener) {
     globalThis.addEventListener(
       "error",

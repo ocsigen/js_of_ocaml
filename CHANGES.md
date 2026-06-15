@@ -96,6 +96,11 @@
   whole-program builds emit reversed `Filename.concat` operands and
   silently broke `Filename.temp_file`
 * Runtime/wasm: fix string conversion from JS to OCaml (#2230)
+* Runtime: only install the process-wide "uncaughtException" handler when
+  the program is run directly (`node a.js`), not when it is loaded as a
+  library (`require("./a.js")`) or in the Node REPL, where it used to
+  override the host's error handling and abort the process on unrelated
+  errors (#1277)
 * Lib: fix several `Dom_html` bindings (#2221)
 * Lib: defer `Intl.{Collator,DateTimeFormat,...}` member lookups so the
   `Intl` module no longer throws at load time on hosts where
