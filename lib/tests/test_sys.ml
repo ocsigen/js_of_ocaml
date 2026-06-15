@@ -197,7 +197,8 @@ let%expect_test "rename a directory into its own subtree" =
   | Sys_error msg -> print_endline ("Sys_error: " ^ msg)
   | _ -> print_endline "unknown error");
   Printf.printf "%b\n" (Sys.file_exists "/static/rd/f");
-  [%expect {|
+  [%expect
+    {|
     Sys_error: EINVAL: invalid argument, rename '/static/rd/sub'
     true
     |}]
@@ -222,8 +223,8 @@ let%expect_test "access" =
      Unix.access "/static/ad" [ Unix.F_OK ];
      print_endline "ok"
    with Unix.Unix_error (e, _, _) -> print_endline (unix_error e));
-  (try Unix.access "/static/admissing" [ Unix.F_OK ] with
-  | Unix.Unix_error (e, cmd, p) -> Printf.printf "%s %s %s\n" (unix_error e) cmd p);
+  (try Unix.access "/static/admissing" [ Unix.F_OK ]
+   with Unix.Unix_error (e, cmd, p) -> Printf.printf "%s %s %s\n" (unix_error e) cmd p);
   [%expect {|
     ok
     ENOENT access /static/admissing
@@ -231,12 +232,12 @@ let%expect_test "access" =
 
 let%expect_test "missing file errors" =
   (try ignore (open_in "/static/missing") with Sys_error m -> print_endline m);
-  (try ignore (Sys.readdir "/static/missingdir") with
-  | Sys_error m -> print_endline m);
+  (try ignore (Sys.readdir "/static/missingdir") with Sys_error m -> print_endline m);
   (try Unix.rename "/static/missingsrc" "/static/x" with
   | Unix.Unix_error (e, cmd, p) -> Printf.printf "%s %s %s\n" (unix_error e) cmd p
   | Sys_error m -> print_endline ("Sys_error: " ^ m));
-  [%expect {|
+  [%expect
+    {|
     /static/missing: No such file or directory
     /static/missingdir: No such file or directory
     ENOENT rename /static/missingsrc

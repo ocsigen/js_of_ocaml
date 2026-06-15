@@ -165,8 +165,7 @@ let%expect_test "truncate and stat" =
   Unix.chmod f 0o644;
   Printf.printf "0o%o\n" (Unix.stat f).Unix.st_perm;
   Sys.remove f;
-  [%expect
-    {|
+  [%expect {|
     5000000000
     3000000000
     100
