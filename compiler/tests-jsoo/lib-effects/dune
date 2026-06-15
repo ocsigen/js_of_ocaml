@@ -27,7 +27,8 @@
    assume_no_perform_unhandled
    assume_no_perform_nested_handler
    deep_state
-   effects))
+   effects
+   test_finalise))
  (preprocess
   (pps ppx_expect)))
 
@@ -67,3 +68,21 @@
  (wasm_of_ocaml
   (compilation_mode whole_program))
  (modes js wasm))
+
+; Forces a major GC through node's v8/vm modules to observe
+; Gc.finalise_last under the CPS calling convention.
+
+(test
+ (name test_finalise)
+ (build_if
+  (>= %{ocaml_version} 5))
+ (enabled_if
+  (and
+   (<> %{profile} wasi)
+   (<> %{profile} wasi-with-native-effects)
+   (<> %{profile} quickjs)))
+ (modules test_finalise)
+ (libraries js_of_ocaml)
+ (modes js)
+ (preprocess
+  (pps ppx_js_internal)))

@@ -22,7 +22,7 @@ function caml_gc_compaction(_unit) {
 }
 //Provides: caml_gc_counters
 function caml_gc_counters(_unit) {
-  return [254, 0, 0, 0];
+  return [0, 0, 0, 0];
 }
 //Provides: caml_gc_quick_stat
 //Version: < 5.5
@@ -58,12 +58,15 @@ function caml_final_register(_f, _x) {
 }
 
 //Provides: caml_final_register_called_without_value
+//Requires: caml_callback
 var all_finalizers = new globalThis.Set();
 function caml_final_register_called_without_value(cb, a) {
   if (globalThis.FinalizationRegistry && a instanceof Object) {
     var x = new globalThis.FinalizationRegistry(function (x) {
       all_finalizers.delete(x);
-      cb(0);
+      // Go through caml_callback so that the CPS calling convention
+      // is respected and exceptions are handled
+      caml_callback(cb, [0]);
       return;
     });
     x.register(a, x);
