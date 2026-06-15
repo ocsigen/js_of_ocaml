@@ -207,3 +207,14 @@ let%expect_test "readdir includes . and .." =
     .
     ..
     |}]
+
+let%expect_test "closed fds do not resolve" =
+  let f = Filename.temp_file "jsoo_close" ".dat" in
+  let fd = Unix.openfile f [ Unix.O_RDONLY ] 0 in
+  Unix.close fd;
+  (try
+     ignore (Unix.fstat fd);
+     print_endline "ok"
+   with Unix.Unix_error (Unix.EBADF, _, _) -> print_endline "EBADF");
+  Sys.remove f;
+  [%expect {| ok |}]
