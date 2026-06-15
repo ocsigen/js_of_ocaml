@@ -15,7 +15,7 @@
  (modes wasm))
 
 (tests
- (names readdir_after_closedir)
+ (names readdir_after_closedir unix_ids)
  (modes wasm)
  (libraries unix))
 
