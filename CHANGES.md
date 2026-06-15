@@ -29,6 +29,8 @@
 * Compiler/wasm: WASI 0.1 support (#1831)
 * Lib: implement popover API (#1734)
 * Lib: add Intl.RelativeTimeFormat (#2070)
+* Lib: add `Css_font_loading` module — partial binding to the CSS Font Loading
+  API, plus a `fonts` property on `Dom_html.document` (#1833)
 
 ## Bug fixes
 * Runtime: the Str engine no longer masks instruction arguments to 8

@@ -20,6 +20,7 @@
 module Abort = Abort
 module CSS = CSS
 module Console = Console
+module Css_font_loading = Css_font_loading
 module Dom = Dom
 module Dom_events = Dom_events
 module Dom_html = Dom_html
