@@ -212,7 +212,7 @@ var caml_domain_id = 0;
 //Requires: caml_domain_id
 //Requires: caml_callback
 //Requires: caml_wrap_exception, caml_get_exception_raw_backtrace
-//Version: >= 5.2
+//Version: >= 5.5
 var caml_domain_latest_idx = 1;
 function caml_domain_spawn(f, term_sync) {
   var id = caml_domain_latest_idx++;
@@ -226,6 +226,32 @@ function caml_domain_spawn(f, term_sync) {
     // term_sync.state = Finished (Error (exn, backtrace))
     var exn = caml_wrap_exception(e);
     result = [0, [1, [0, exn, caml_get_exception_raw_backtrace(0)]]];
+  }
+  caml_domain_id = old;
+  caml_ml_mutex_unlock(term_sync[2]);
+  term_sync[1] = result;
+  return id;
+}
+
+//Provides: caml_domain_spawn
+//Requires: caml_ml_mutex_unlock
+//Requires: caml_domain_id
+//Requires: caml_callback
+//Requires: caml_wrap_exception
+//Version: >= 5.2, < 5.5
+var caml_domain_latest_idx = 1;
+function caml_domain_spawn(f, term_sync) {
+  var id = caml_domain_latest_idx++;
+  var old = caml_domain_id;
+  caml_domain_id = id;
+  var result;
+  try {
+    // term_sync.state = Finished (Ok res)
+    result = [0, [0, caml_callback(f, [0])]];
+  } catch (e) {
+    // term_sync.state = Finished (Error exn)
+    var exn = caml_wrap_exception(e);
+    result = [0, [1, exn]];
   }
   caml_domain_id = old;
   caml_ml_mutex_unlock(term_sync[2]);
