@@ -132,6 +132,32 @@ for i = 1 to 20 do
 done
 ;;
 
+testing_function "compare_nat";;
+
+(* Regression test for GPR #2299: compare_nat must not read nat2
+   outside its [ofs2, ofs2 + len2) subrange when len1 <> len2.
+   Both operands below represent the same value, but nat1 spans two
+   digits while only the first digit of nat2 is in range; the digit
+   past len2 holds an unrelated value that must be ignored. *)
+
+(* [1; 0] (value 1, length 2) vs [1; _] (value 1, length 1) *)
+let nat1 = make_nat 2 in
+set_digit_nat nat1 0 1;
+let nat2 = make_nat 2 in
+set_digit_nat nat2 0 1;
+set_digit_nat nat2 1 5;
+test 1 eq_int (compare_nat nat1 0 2 nat2 0 1, 0) &&
+test 2 eq_int (compare_nat nat2 0 1 nat1 0 2, 0);;
+
+(* genuine inequality with mismatched lengths: 3 (length 2) > 1 (length 1) *)
+let nat1 = make_nat 2 in
+set_digit_nat nat1 0 3;
+let nat2 = make_nat 2 in
+set_digit_nat nat2 0 1;
+set_digit_nat nat2 1 5;
+test 3 eq_int (compare_nat nat1 0 2 nat2 0 1, 1) &&
+test 4 eq_int (compare_nat nat2 0 1 nat1 0 2, -1);;
+
 testing_function "sqrt_nat";;
 
 test 1 equal_nat (sqrt_nat (nat_of_int 1) 0 1, nat_of_int 1);;
