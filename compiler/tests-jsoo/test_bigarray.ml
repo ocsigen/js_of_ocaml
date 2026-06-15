@@ -335,3 +335,25 @@ let%expect_test "float16 equality with nan" =
   let a = from_list float16 [ nan ] in
   Printf.printf "%b %b\n" (a = a) (compare a a = 0);
   [%expect {| false true |}]
+
+let%expect_test "bigstring blit positions are raw offsets" =
+  (* The reference C implementation of caml_bigstring_blit_ba_to_ba is
+     layout-blind: positions are offsets from the start of the data,
+     even for fortran_layout bigarrays. *)
+  let mk l =
+    let a = Array1.create char fortran_layout (String.length l) in
+    String.iteri ~f:(fun i c -> a.{i + 1} <- c) l;
+    a
+  in
+  let to_string a = String.init (Array1.dim a) ~f:(fun i -> a.{i + 1}) in
+  let src = mk "abcdef" in
+  let dst = mk "------" in
+  blit_ba_to_ba src 1 dst 2 3;
+  print_endline (to_string dst);
+  [%expect {| --bcd- |}];
+  let dst = mk "------" in
+  (try
+     blit_ba_to_ba src 0 dst 0 2;
+     print_endline (to_string dst)
+   with Invalid_argument msg -> print_endline ("Invalid_argument: " ^ msg));
+  [%expect {| ab---- |}]
