@@ -1077,6 +1077,12 @@
       (local $i i32) (local $len i32)
       (local $l i64)
       (local.set $num_dims (call $caml_deserialize_int_4 (local.get $s)))
+      ;; CAML_BA_MAX_NUM_DIMS is 16; the unsigned test also rejects a
+      ;; negative (hostile) count.
+      (if (i32.gt_u (local.get $num_dims) (i32.const 16))
+         (then
+            (call $caml_failwith
+               (@string "input_value: wrong number of bigarray dimensions"))))
       (local.set $flags (call $caml_deserialize_int_4 (local.get $s)))
       (local.set $kind (i32.and (local.get $flags) (i32.const 0xff)))
       (local.set $dim (array.new $int_array (i32.const 0) (local.get $num_dims)))
@@ -1087,10 +1093,14 @@
                   (call $caml_deserialize_uint_2 (local.get $s)))
                (if (i32.eq (local.get $len) (i32.const 0xffff))
                   (then
-                     ;; ZZZ overflows?
-                     (local.set $len
-                        (i32.wrap_i64
-                           (call $caml_deserialize_int_8 (local.get $s))))))
+                     ;; A dimension that does not fit in a 32-bit machine
+                     ;; integer would be silently truncated; fail instead.
+                     (local.set $l (call $caml_deserialize_int_8 (local.get $s)))
+                     (if (i64.gt_u (local.get $l) (i64.const 0x7fffffff))
+                        (then
+                           (call $caml_failwith
+                              (@string "input_value: size overflow for bigarray"))))
+                     (local.set $len (i32.wrap_i64 (local.get $l)))))
                (array.set $int_array (local.get $dim) (local.get $i)
                   (local.get $len))
                (local.set $i (i32.add (local.get $i) (i32.const 1)))

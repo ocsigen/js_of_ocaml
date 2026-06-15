@@ -853,5 +853,6 @@ function caml_output_value_to_buffer(s, ofs, len, v, flags) {
   var t = caml_output_val(v, flags);
   if (t.length > len) caml_failwith("Marshal.to_buffer: buffer overflow");
   caml_blit_bytes(caml_bytes_of_uint8_array(t), 0, s, ofs, t.length);
-  return 0;
+  // Return the number of bytes written, like the native runtime.
+  return t.length;
 }

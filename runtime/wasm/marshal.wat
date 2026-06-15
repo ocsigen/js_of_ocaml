@@ -172,10 +172,10 @@
             (local.set $len
                (i32.and (call $read8u (local.get $s)) (i32.const 0x3F)))
             (if (i32.lt_u (local.get $len) (i32.const 5))
-               (then (call $bad_object (global.get $marshal_data_size))))
+               (then (call $bad_object (global.get $input_value))))
             (local.set $len (i32.sub (local.get $len) (i32.const 5)))))
       (if (i32.eqz (local.get $len))
-         (then (call $bad_object (global.get $marshal_data_size))))
+         (then (call $bad_object (global.get $input_value))))
       (if (i32.lt_u
              (call $caml_really_getblock (local.get $ch)
                 (local.get $header) (i32.const 5) (local.get $len))
@@ -1552,7 +1552,8 @@
       (array.copy $bytes $bytes
          (local.get $buf) (local.get $pos)
          (local.get $r_1) (i32.const 0) (i32.const 20))
-      (ref.i31 (i32.const 0)))
+      ;; Return the number of bytes written: 20-byte header + data.
+      (ref.i31 (i32.add (local.get $r_0) (i32.const 20))))
 
    (func (export "caml_output_value")
       (param $ch (ref eq)) (param $v (ref eq)) (param $flags (ref eq))

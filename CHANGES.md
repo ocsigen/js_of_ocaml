@@ -46,6 +46,13 @@
 * Runtime/wasm: add the missing `Unix.getegid` stub and fix the
   `Unix.getgrgid` export (it was registered under the typo
   `caml_unix_getgruid`); both were missing primitives (#2263)
+* Runtime: `Marshal.to_buffer` returns the number of bytes written
+  instead of 0, in both the JavaScript and Wasm runtimes (#2263)
+* Runtime/wasm: more marshalling fixes — `input_value` on a bad object
+  raises `Failure "input_value: bad object"` instead of using the
+  `Marshal.data_size` prefix; and bigarray deserialization rejects an
+  out-of-range dimension count or an oversized dimension instead of
+  truncating it (#2263)
 * Runtime: the QuickJS standard file descriptors raise on a write or
   read error instead of returning 0; an error on stdout (e.g. EPIPE)
   used to make the flush/write loop spin forever, and a read error was
