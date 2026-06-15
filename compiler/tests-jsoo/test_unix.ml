@@ -179,3 +179,28 @@ let%expect_test "truncate and stat" =
     offset preserved: true
     type bits: 0o0
     |}]
+
+let%expect_test "chmod on a missing file" =
+  (* #2287: chmod of a missing path raises Unix_error(ENOENT, "chmod", _) on
+     every backend the Unix tests run on (native, the js backend including
+     Windows, wasm-on-node, and WASI -- which has no chmod but still reports
+     the missing path). *)
+  (try Unix.chmod "/jsoo_missing_for_chmod" 0o644
+   with Unix.Unix_error (Unix.ENOENT, "chmod", _) -> print_endline "ENOENT chmod");
+  [%expect {| ENOENT chmod |}]
+
+let%expect_test "readdir includes . and .." =
+  let d = Filename.temp_file "jsoo_dir" "" in
+  Sys.remove d;
+  Unix.mkdir d 0o755;
+  let h = Unix.opendir d in
+  let l = ref [] in
+  (try
+     while true do
+       l := Unix.readdir h :: !l
+     done
+   with End_of_file -> ());
+  Unix.closedir h;
+  List.iter print_endline (List.sort compare !l);
+  Unix.rmdir d;
+  [%expect {| |}]
