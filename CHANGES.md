@@ -104,8 +104,23 @@
   bottom-left-origin pixel row `height - 1 - y` so they agree with
   `fill_rect`/`draw_image`/text; `draw_arc` no longer renders the
   wrong quadrant for a nonzero start angle (the canvas y-flip negates
-  the angle); and the first `draw_image` of an image is synchronous
-  (it drew through an asynchronous `Image`/data-URL round trip)
+  the angle); the first `draw_image` of an image is synchronous
+  (it drew through an asynchronous `Image`/data-URL round trip); and
+  `fill_rect` now paints `(w+1)x(h+1)` pixels (including the far edge
+  column `x+w` and row `y+h`) to match the native X11 backend; the
+  `lineto`, `draw_rect`, `draw_arc`, `fill_arc` and `fill_poly` use the
+  same `height - 1 - y` row as `plot`/`fill_rect` instead of `height - y`,
+  so they are no longer shifted one pixel down relative to the other
+  primitives and to native; `fill_arc` closes a partial arc through the
+  centre, filling
+  a pie slice like native instead of the circular segment a bare path
+  fill produced; stroked lines, rectangles and arcs are centred on the
+  pixel grid (a half-pixel offset) so a 1px stroke stays crisp like the
+  native backend instead of blurring across two rows; filled arcs,
+  circles and ellipses are centred on the pixel rather than the pixel
+  corner, so they no longer sit half a pixel up and to the left of
+  native; and line caps and joins are round, matching the X11 backend's
+  thick lines
 * Compiler: fix reference unboxing (#2210)
 * Compiler/wasm: fix int division return type to Unnormalized (#2197)
 * Compiler/wasm: preserve physical identity of empty closures (#2207)

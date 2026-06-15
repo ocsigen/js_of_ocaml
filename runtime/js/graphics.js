@@ -107,6 +107,9 @@ function caml_gr_state_init() {
 //Requires: caml_string_of_jsbytes
 function caml_gr_state_create(canvas, w, h) {
   var context = canvas.getContext("2d");
+  // the native X11 backend draws thick lines with round caps and joins
+  context.lineCap = "round";
+  context.lineJoin = "round";
   return {
     context: context,
     canvas: canvas,
@@ -197,8 +200,34 @@ function caml_gr_set_color(color) {
   s.context.strokeStyle = c_str;
   return 0;
 }
+// Coordinate helpers. Graphics uses a bottom-left origin; the canvas uses a
+// top-left origin, so the row of the bottom-left-origin coordinate y is
+// height-1-y. Two conventions are used, shared by the JS and the wasm paths:
+//   - caml_gr_y: the pixel row itself. plot, point_color, fill_rect and
+//     fill_poly address whole pixels, so they use this.
+//   - caml_gr_xc / caml_gr_yc: the centre of the pixel (x+0.5, row+0.5).
+//     Strokes use it so a 1px line lands crisply on the pixel grid, and
+//     curved fills use it so a disc/ellipse is centred on the pixel rather
+//     than on the pixel corner (which would shift it half a pixel).
+
+//Provides: caml_gr_y
+function caml_gr_y(s, y) {
+  return s.height - 1 - y;
+}
+
+//Provides: caml_gr_xc
+function caml_gr_xc(x) {
+  return x + 0.5;
+}
+
+//Provides: caml_gr_yc
+//Requires: caml_gr_y
+function caml_gr_yc(s, y) {
+  return caml_gr_y(s, y) + 0.5;
+}
+
 //Provides: caml_gr_plot
-//Requires: caml_gr_state_get
+//Requires: caml_gr_state_get, caml_gr_y
 function caml_gr_plot(x, y) {
   var s = caml_gr_state_get();
   var im = s.context.createImageData(1, 1);
@@ -212,15 +241,15 @@ function caml_gr_plot(x, y) {
   d[3] = 0xff; //a
   s.x = x;
   s.y = y;
-  s.context.putImageData(im, x, s.height - 1 - y);
+  s.context.putImageData(im, x, caml_gr_y(s, y));
   return 0;
 }
 
 //Provides: caml_gr_point_color
-//Requires: caml_gr_state_get
+//Requires: caml_gr_state_get, caml_gr_y
 function caml_gr_point_color(x, y) {
   var s = caml_gr_state_get();
-  var im = s.context.getImageData(x, s.height - 1 - y, 1, 1);
+  var im = s.context.getImageData(x, caml_gr_y(s, y), 1, 1);
   var d = im.data;
   return (d[0] << 16) + (d[1] << 8) + d[2];
 }
@@ -246,22 +275,36 @@ function caml_gr_current_y() {
   return s.y;
 }
 //Provides: caml_gr_lineto
-//Requires: caml_gr_state_get
+//Requires: caml_gr_state_get, caml_gr_xc, caml_gr_yc
 function caml_gr_lineto(x, y) {
   var s = caml_gr_state_get();
   s.context.beginPath();
-  s.context.moveTo(s.x, s.height - s.y);
-  s.context.lineTo(x, s.height - y);
+  s.context.moveTo(caml_gr_xc(s.x), caml_gr_yc(s, s.y));
+  s.context.lineTo(caml_gr_xc(x), caml_gr_yc(s, y));
   s.context.stroke();
   s.x = x;
   s.y = y;
   return 0;
 }
 //Provides: caml_gr_draw_rect
-//Requires: caml_gr_state_get
+//Requires: caml_gr_state_get, caml_gr_xc, caml_gr_yc
 function caml_gr_draw_rect(x, y, w, h) {
   var s = caml_gr_state_get();
-  s.context.strokeRect(x, s.height - y, w, -h);
+  // explicit path rather than strokeRect: strokeRect renders its left edge
+  // half a pixel off from its right edge in some browsers
+  var x0 = caml_gr_xc(x);
+  var y0 = caml_gr_yc(s, y);
+  var x1 = caml_gr_xc(x + w);
+  var y1 = caml_gr_yc(s, y + h);
+  s.context.beginPath();
+  s.context.moveTo(x0, y0);
+  s.context.lineTo(x1, y0);
+  s.context.lineTo(x1, y1);
+  s.context.lineTo(x0, y1);
+  // close with an explicit lineTo, not closePath(): the closePath segment is
+  // anti-aliased half a pixel off, while an explicit edge stays crisp
+  s.context.lineTo(x0, y0);
+  s.context.stroke();
   return 0;
 }
 
@@ -305,11 +348,11 @@ function caml_gr_arc_aux(ctx, cx, cy, ry, rx, a1, a2) {
 }
 
 //Provides: caml_gr_draw_arc
-//Requires: caml_gr_state_get, caml_gr_arc_aux
+//Requires: caml_gr_state_get, caml_gr_arc_aux, caml_gr_xc, caml_gr_yc
 function caml_gr_draw_arc(x, y, rx, ry, a1, a2) {
   var s = caml_gr_state_get();
   s.context.beginPath();
-  caml_gr_arc_aux(s.context, x, s.height - y, rx, ry, a1, a2);
+  caml_gr_arc_aux(s.context, caml_gr_xc(x), caml_gr_yc(s, y), rx, ry, a1, a2);
   s.context.stroke();
   return 0;
 }
@@ -320,46 +363,62 @@ function caml_gr_set_line_width(w) {
   var s = caml_gr_state_get();
   s.line_width = w;
   s.context.lineWidth = w;
+  // resizing the canvas resets these to their defaults; restore them
+  s.context.lineCap = "round";
+  s.context.lineJoin = "round";
   return 0;
 }
 
 //Provides: caml_gr_fill_rect
-//Requires: caml_gr_state_get
+//Requires: caml_gr_state_get, caml_gr_y
 function caml_gr_fill_rect(x, y, w, h) {
   var s = caml_gr_state_get();
-  s.context.fillRect(x, s.height - y, w, -h);
+  // match the native X11 backend, which fills (w+1)x(h+1) pixels: the far
+  // edges (column x+w and row y+h) are included. The bottom-left pixel is
+  // (x, caml_gr_y(s, y)); fill up and to the right from there.
+  s.context.fillRect(x, caml_gr_y(s, y) - h, w + 1, h + 1);
   return 0;
 }
 //Provides: caml_gr_fill_poly
-//Requires: caml_gr_state_get
+//Requires: caml_gr_state_get, caml_gr_y
 function caml_gr_fill_poly(ar) {
   var s = caml_gr_state_get();
   s.context.beginPath();
-  s.context.moveTo(ar[1][1], s.height - ar[1][2]);
+  s.context.moveTo(ar[1][1], caml_gr_y(s, ar[1][2]));
   for (var i = 2; i < ar.length; i++)
-    s.context.lineTo(ar[i][1], s.height - ar[i][2]);
-  s.context.lineTo(ar[1][1], s.height - ar[1][2]);
+    s.context.lineTo(ar[i][1], caml_gr_y(s, ar[i][2]));
+  s.context.lineTo(ar[1][1], caml_gr_y(s, ar[1][2]));
   s.context.fill();
   return 0;
 }
 
 //Provides: caml_gr_fill_arc
-//Requires: caml_gr_state_get, caml_gr_arc_aux
+//Requires: caml_gr_state_get, caml_gr_arc_aux, caml_gr_xc, caml_gr_yc
 function caml_gr_fill_arc(x, y, rx, ry, a1, a2) {
   var s = caml_gr_state_get();
+  // centre the arc on the pixel (x, height-1-y), as native does, instead of
+  // on the pixel corner (which shifts a filled ellipse/disc half a pixel)
+  var cx = caml_gr_xc(x);
+  var cy = caml_gr_yc(s, y);
   s.context.beginPath();
-  caml_gr_arc_aux(s.context, x, s.height - y, rx, ry, a1, a2);
+  caml_gr_arc_aux(s.context, cx, cy, rx, ry, a1, a2);
+  // close through the centre so a partial arc fills a pie slice (like the
+  // native X11 backend), not the circular segment a bare fill() would give
+  s.context.lineTo(cx, cy);
   s.context.fill();
   return 0;
 }
 
 //Provides: caml_gr_draw_str
-//Requires: caml_gr_state_get
+//Requires: caml_gr_state_get, caml_gr_y
 function caml_gr_draw_str(str) {
   var s = caml_gr_state_get();
   var m = s.context.measureText(str);
   var dx = m.width;
-  s.context.fillText(str, s.x, s.height - s.y);
+  // the text baseline sits at the current point; it is placed one row below
+  // the pixel row (the continuous bottom-left-origin coordinate), which is
+  // caml_gr_y(s, s.y) + 1
+  s.context.fillText(str, s.x, caml_gr_y(s, s.y) + 1);
   s.x += dx | 0;
   return 0;
 }
@@ -451,7 +510,7 @@ function caml_gr_dump_image(im) {
   return data;
 }
 //Provides: caml_gr_draw_image
-//Requires: caml_gr_state_get
+//Requires: caml_gr_state_get, caml_gr_y
 function caml_gr_draw_image(im, x, y) {
   var s = caml_gr_state_get();
   if (!im.image) {
@@ -464,7 +523,8 @@ function caml_gr_draw_image(im, x, y) {
     // (which made the first draw asynchronous)
     im.image = canvas;
   }
-  s.context.drawImage(im.image, x, s.height - im.height - y);
+  // the image's bottom row is caml_gr_y(s, y); drawImage takes the top-left
+  s.context.drawImage(im.image, x, caml_gr_y(s, y) - im.height + 1);
   return 0;
 }
 //Provides: caml_gr_create_image
@@ -474,12 +534,13 @@ function caml_gr_create_image(x, y) {
   return s.context.createImageData(x, y);
 }
 //Provides: caml_gr_blit_image
-//Requires: caml_gr_state_get
+//Requires: caml_gr_state_get, caml_gr_y
 function caml_gr_blit_image(im, x, y) {
   var s = caml_gr_state_get();
+  // the image's bottom row is caml_gr_y(s, y); getImageData takes the top-left
   var im2 = s.context.getImageData(
     x,
-    s.height - im.height - y,
+    caml_gr_y(s, y) - im.height + 1,
     im.width,
     im.height,
   );
@@ -555,6 +616,8 @@ function gr_state_for_wasm() {
 //If: wasm
 function gr_state_create_for_wasm(canvas, w, h) {
   var context = canvas.getContext("2d");
+  context.lineCap = "round";
+  context.lineJoin = "round";
   return {
     context: context,
     canvas: canvas,
@@ -705,7 +768,7 @@ function gr_set_color_for_wasm(color) {
 }
 
 //Provides: gr_plot_for_wasm
-//Requires: caml_gr_state
+//Requires: caml_gr_state, caml_gr_y
 //If: wasm
 function gr_plot_for_wasm(x, y) {
   var s = caml_gr_state;
@@ -718,63 +781,82 @@ function gr_plot_for_wasm(x, y) {
   d[3] = 0xff;
   s.x = x;
   s.y = y;
-  s.context.putImageData(im, x, s.height - 1 - y);
+  s.context.putImageData(im, x, caml_gr_y(s, y));
 }
 
 //Provides: gr_point_color_for_wasm
-//Requires: caml_gr_state
+//Requires: caml_gr_state, caml_gr_y
 //If: wasm
 function gr_point_color_for_wasm(x, y) {
   var s = caml_gr_state;
-  var im = s.context.getImageData(x, s.height - 1 - y, 1, 1);
+  var im = s.context.getImageData(x, caml_gr_y(s, y), 1, 1);
   var d = im.data;
   return (d[0] << 16) + (d[1] << 8) + d[2];
 }
 
 //Provides: gr_lineto_for_wasm
-//Requires: caml_gr_state
+//Requires: caml_gr_state, caml_gr_xc, caml_gr_yc
 //If: wasm
 function gr_lineto_for_wasm(x, y) {
   var s = caml_gr_state;
   s.context.beginPath();
-  s.context.moveTo(s.x, s.height - s.y);
-  s.context.lineTo(x, s.height - y);
+  s.context.moveTo(caml_gr_xc(s.x), caml_gr_yc(s, s.y));
+  s.context.lineTo(caml_gr_xc(x), caml_gr_yc(s, y));
   s.context.stroke();
   s.x = x;
   s.y = y;
 }
 
 //Provides: gr_draw_rect_for_wasm
-//Requires: caml_gr_state
+//Requires: caml_gr_state, caml_gr_xc, caml_gr_yc
 //If: wasm
 function gr_draw_rect_for_wasm(x, y, w, h) {
-  caml_gr_state.context.strokeRect(x, caml_gr_state.height - y, w, -h);
+  var s = caml_gr_state;
+  // explicit path (see caml_gr_draw_rect): strokeRect can render its left
+  // edge half a pixel off from its right edge
+  var x0 = caml_gr_xc(x);
+  var y0 = caml_gr_yc(s, y);
+  var x1 = caml_gr_xc(x + w);
+  var y1 = caml_gr_yc(s, y + h);
+  s.context.beginPath();
+  s.context.moveTo(x0, y0);
+  s.context.lineTo(x1, y0);
+  s.context.lineTo(x1, y1);
+  s.context.lineTo(x0, y1);
+  s.context.lineTo(x0, y0);
+  s.context.stroke();
 }
 
 //Provides: gr_fill_rect_for_wasm
-//Requires: caml_gr_state
+//Requires: caml_gr_state, caml_gr_y
 //If: wasm
 function gr_fill_rect_for_wasm(x, y, w, h) {
-  caml_gr_state.context.fillRect(x, caml_gr_state.height - y, w, -h);
+  // match the native X11 backend: fill (w+1)x(h+1) pixels (see caml_gr_fill_rect)
+  var s = caml_gr_state;
+  s.context.fillRect(x, caml_gr_y(s, y) - h, w + 1, h + 1);
 }
 
 //Provides: gr_draw_arc_for_wasm
-//Requires: caml_gr_state, caml_gr_arc_aux
+//Requires: caml_gr_state, caml_gr_arc_aux, caml_gr_xc, caml_gr_yc
 //If: wasm
 function gr_draw_arc_for_wasm(x, y, rx, ry, a1, a2) {
   var s = caml_gr_state;
   s.context.beginPath();
-  caml_gr_arc_aux(s.context, x, s.height - y, rx, ry, a1, a2);
+  caml_gr_arc_aux(s.context, caml_gr_xc(x), caml_gr_yc(s, y), rx, ry, a1, a2);
   s.context.stroke();
 }
 
 //Provides: gr_fill_arc_for_wasm
-//Requires: caml_gr_state, caml_gr_arc_aux
+//Requires: caml_gr_state, caml_gr_arc_aux, caml_gr_xc, caml_gr_yc
 //If: wasm
 function gr_fill_arc_for_wasm(x, y, rx, ry, a1, a2) {
   var s = caml_gr_state;
+  var cx = caml_gr_xc(x);
+  var cy = caml_gr_yc(s, y);
   s.context.beginPath();
-  caml_gr_arc_aux(s.context, x, s.height - y, rx, ry, a1, a2);
+  caml_gr_arc_aux(s.context, cx, cy, rx, ry, a1, a2);
+  // pie slice (close through the centre), matching native fill_arc
+  s.context.lineTo(cx, cy);
   s.context.fill();
 }
 
@@ -784,6 +866,8 @@ function gr_fill_arc_for_wasm(x, y, rx, ry, a1, a2) {
 function gr_set_line_width_for_wasm(w) {
   caml_gr_state.line_width = w;
   caml_gr_state.context.lineWidth = w;
+  caml_gr_state.context.lineCap = "round";
+  caml_gr_state.context.lineJoin = "round";
 }
 
 //Provides: gr_resize_window_for_wasm
@@ -805,13 +889,14 @@ function gr_draw_char_for_wasm(c) {
 }
 
 //Provides: gr_draw_str_for_wasm
-//Requires: caml_gr_state
+//Requires: caml_gr_state, caml_gr_y
 //If: wasm
 function gr_draw_str_for_wasm(str) {
   var s = caml_gr_state;
   var m = s.context.measureText(str);
   var dx = m.width;
-  s.context.fillText(str, s.x, s.height - s.y);
+  // text baseline = current point, one row below the pixel (see caml_gr_draw_str)
+  s.context.fillText(str, s.x, caml_gr_y(s, s.y) + 1);
   s.x += dx | 0;
 }
 
@@ -857,15 +942,15 @@ function gr_text_size_h_for_wasm() {
 }
 
 //Provides: gr_fill_poly_for_wasm
-//Requires: caml_gr_state
+//Requires: caml_gr_state, caml_gr_y
 //If: wasm
 function gr_fill_poly_for_wasm(ar, n) {
   var s = caml_gr_state;
   s.context.beginPath();
-  s.context.moveTo(ar[0], s.height - ar[1]);
+  s.context.moveTo(ar[0], caml_gr_y(s, ar[1]));
   for (var i = 1; i < n; i++)
-    s.context.lineTo(ar[i * 2], s.height - ar[i * 2 + 1]);
-  s.context.lineTo(ar[0], s.height - ar[1]);
+    s.context.lineTo(ar[i * 2], caml_gr_y(s, ar[i * 2 + 1]));
+  s.context.lineTo(ar[0], caml_gr_y(s, ar[1]));
   s.context.fill();
 }
 
@@ -877,7 +962,7 @@ function gr_create_image_for_wasm(x, y) {
 }
 
 //Provides: gr_draw_image_for_wasm
-//Requires: caml_gr_state
+//Requires: caml_gr_state, caml_gr_y
 //If: wasm
 function gr_draw_image_for_wasm(im, x, y) {
   var s = caml_gr_state;
@@ -891,17 +976,19 @@ function gr_draw_image_for_wasm(im, x, y) {
     // (which made the first draw asynchronous)
     im.image = canvas;
   }
-  s.context.drawImage(im.image, x, s.height - im.height - y);
+  // the image's bottom row is caml_gr_y(s, y); drawImage takes the top-left
+  s.context.drawImage(im.image, x, caml_gr_y(s, y) - im.height + 1);
 }
 
 //Provides: gr_blit_image_for_wasm
-//Requires: caml_gr_state
+//Requires: caml_gr_state, caml_gr_y
 //If: wasm
 function gr_blit_image_for_wasm(im, x, y) {
   var s = caml_gr_state;
+  // the image's bottom row is caml_gr_y(s, y); getImageData takes the top-left
   var im2 = s.context.getImageData(
     x,
-    s.height - im.height - y,
+    caml_gr_y(s, y) - im.height + 1,
     im.width,
     im.height,
   );
