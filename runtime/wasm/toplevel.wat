@@ -203,6 +203,21 @@
             (br $loop)))
       (local.get $acc))
 
+   ;; Return the bytecode sections record, or fail like the JS runtime
+   ;; when the program was not compiled with --toplevel (the field is
+   ;; left as the integer 0 instead of a record block).
+   (func $get_sections (result (ref $block))
+      (local $s (ref eq))
+      (local.set $s
+         (array.get $block (global.get $link_info)
+            (global.get $LINK_INFO_SECTIONS)))
+      (if (ref.test (ref i31) (local.get $s))
+         (then
+            (call $caml_failwith
+               (@string "Program not compiled with --toplevel"))
+            (unreachable)))
+      (ref.cast (ref $block) (local.get $s)))
+
 (@if (< $ocaml_version (5 3 0))
 (@then
    (func (export "caml_get_section_table")
@@ -212,8 +227,7 @@
       (local $crcs (ref eq))
       (local $prim (ref eq))
       (local $dlpt (ref eq))
-      (local.set $sections
-         (ref.cast (ref $block) (array.get $block (global.get $link_info) (global.get $LINK_INFO_SECTIONS))))
+      (local.set $sections (call $get_sections))
       (local.set $symb (array.get $block (local.get $sections) (i32.const 1)))
       (local.set $crcs  (array.get $block (local.get $sections) (i32.const 2)))
       (local.set $prim
@@ -255,11 +269,11 @@
    ;; { symb: GlobalMap.t; crcs: ...; prim: string list; dlpt: string list }
    (func (export "caml_dynlink_get_bytecode_sections")
       (param (ref eq)) (result (ref eq))
-      (array.get $block (global.get $link_info) (global.get $LINK_INFO_SECTIONS)))
+      (call $get_sections))
 
    (func (export "wasm_get_bytecode_sections")
       (param (ref eq)) (result (ref eq))
-      (array.get $block (global.get $link_info) (global.get $LINK_INFO_SECTIONS)))
+      (call $get_sections))
 
    (func (export "wasm_get_runtime_aliases")
       (param (ref eq)) (result (ref eq))

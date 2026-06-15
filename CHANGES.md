@@ -65,6 +65,11 @@
   transitions that have a memory action (`pc_off > 0`), matching the C
   and JS runtimes; previously a redundant no-op call was made on
   memoryless transitions (#2263)
+* Runtime/wasm: the bytecode-section accessors
+  (`caml_get_section_table`, `caml_dynlink_get_bytecode_sections`) raise
+  `Failure "Program not compiled with --toplevel"` when the sections are
+  absent, like the JS runtime, instead of trapping with an
+  uncatchable "illegal cast" or silently returning 0 (#2263)
 * Runtime: the QuickJS standard file descriptors raise on a write or
   read error instead of returning 0; an error on stdout (e.g. EPIPE)
   used to make the flush/write loop spin forever, and a read error was
