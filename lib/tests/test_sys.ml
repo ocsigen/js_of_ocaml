@@ -320,3 +320,21 @@ let%expect_test "rmdir a file, unlink a directory, perms 0" =
     true
     0o0
     |}]
+
+let%expect_test "Unix.error_message" =
+  let p e =
+    match Unix.error_message e with
+    | m -> print_endline m
+    | exception _ -> print_endline "error"
+  in
+  p Unix.ECHILD;
+  p Unix.EWOULDBLOCK;
+  p Unix.EDEADLK;
+  Printf.printf "%b\n" (String.length (Unix.error_message Unix.EPERM) > 0);
+  [%expect
+    {|
+    error
+    error
+    error
+    true
+    |}]
