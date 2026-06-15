@@ -183,3 +183,54 @@ let%expect_test "blit_key does not touch data" =
   print_data dst;
   [%expect {| dst data |}];
   ignore (Sys.opaque_identity (k1, k2, k3, k4))
+
+(* [Weak.get_copy] / [Ephemeron.get_data_copy] must copy bytes too:
+   returning the value itself both lets mutations reach the weakly
+   held original and creates a strong reference to it. *)
+let%expect_test "get_copy copies bytes" =
+  let b = Bytes.of_string "hello" in
+  let w = Weak.create 1 in
+  Weak.set w 0 (Some b);
+  (match Weak.get_copy w 0 with
+  | Some b' -> Printf.printf "%b %b\n" (b' == b) (Bytes.equal b' b)
+  | None -> print_endline "none");
+  [%expect {| false true |}];
+  let e = Obj.Ephemeron.create 1 in
+  Obj.Ephemeron.set_data e (Obj.repr b);
+  (match Obj.Ephemeron.get_data_copy e with
+  | Some d -> Printf.printf "%b\n" (d == Obj.repr b)
+  | None -> print_endline "none");
+  [%expect {| false |}]
+
+(* A float array is a mutable no-scan block, so like ordinary blocks
+   and bytes it must be copied. In the Wasm runtime it is its own type
+   (not an ordinary block), so it needs its own case. *)
+let%expect_test "get_copy copies float arrays" =
+  let fa = [| 1.0; 2.0; 3.0 |] in
+  let w = Weak.create 1 in
+  Weak.set w 0 (Some fa);
+  (match Weak.get_copy w 0 with
+  | Some fa' ->
+      fa'.(0) <- 99.0;
+      Printf.printf "shares=%b orig_mutated=%b\n" (fa' == fa) (fa.(0) = 99.0)
+  | None -> print_endline "none");
+  [%expect {| shares=false orig_mutated=false |}]
+
+(* Custom blocks (Int64, bigarrays, ...) are deliberately NOT copied:
+   the native runtime returns the value itself rather than risk an
+   unsafe raw copy (finalizers, the bigarray data proxy, ...). *)
+let%expect_test "get_copy does not copy custom blocks" =
+  let n = Int64.add 1L 2L in
+  let w = Weak.create 1 in
+  Weak.set w 0 (Some n);
+  (match Weak.get_copy w 0 with
+  | Some n' -> Printf.printf "%b %b\n" (n' == n) (Int64.equal n' n)
+  | None -> print_endline "none");
+  [%expect {| true true |}];
+  let a = Bigarray.Array1.create Bigarray.int Bigarray.c_layout 1 in
+  let w = Weak.create 1 in
+  Weak.set w 0 (Some a);
+  (match Weak.get_copy w 0 with
+  | Some a' -> Printf.printf "%b\n" (a' == a)
+  | None -> print_endline "none");
+  [%expect {| true |}]
