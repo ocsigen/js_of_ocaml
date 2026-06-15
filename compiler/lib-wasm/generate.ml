@@ -2532,6 +2532,16 @@ module Generate (Target : Target_sig.S) = struct
     Typing.reset ();
     Primitive.register "caml_make_array" `Mutable None None;
     Primitive.register "caml_array_of_uniform_array" `Mutable None None;
+    Primitive.register "caml_array_unsafe_get" `Mutable None None;
+    Primitive.register "caml_alloc_dummy" `Pure None None;
+    Primitive.register "caml_alloc_dummy_float" `Pure None None;
+    Primitive.register "caml_alloc_dummy_mixed" `Pure None None;
+    Primitive.register "caml_js_to_int32" `Pure None None;
+    Primitive.register "caml_js_to_nativeint" `Pure None None;
+    Primitive.register "caml_js_from_bool" `Pure None None;
+    Primitive.register "caml_js_to_bool" `Pure None None;
+    Primitive.register "caml_js_equals" `Mutable None None;
+    Primitive.register "caml_js_strict_equals" `Mutable None None;
     (* These primitives are rewritten by [Specialize_js] before code
        generation, but need to be registered so that
        [Primitive.get_external] reports them as available for the
