@@ -29,6 +29,11 @@
 * Compiler/wasm: WASI 0.1 support (#1831)
 * Lib: implement popover API (#1734)
 * Lib: add Intl.RelativeTimeFormat (#2070)
+* Compiler: cosmetic minification of generated JavaScript
+  in compact mode: emit `!0`/`!1` for booleans, drop the leading zero
+  from `0.x` fractions, normalise exponent forms (`1e+05` → `1e5`), and
+  pick backticks for string literals when they reduce escape count.
+  Pretty-printed output (`--pretty`) is unchanged. (#1117)
 
 ## Bug fixes
 * Runtime: the Str engine no longer masks instruction arguments to 8
