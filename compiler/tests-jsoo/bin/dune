@@ -1,5 +1,5 @@
 (tests
- (names error1 error2)
+ (names error1 error2 error3)
  (modes js wasm)
  (foreign_stubs
   (language c)
