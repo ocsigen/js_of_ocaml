@@ -1,1 +1,3 @@
 /dev/tty = true
+In_channel.isatty = true
+Out_channel.isatty = true
