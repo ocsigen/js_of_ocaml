@@ -106,6 +106,27 @@
   (pps ppx_expect)))
 
 (library
+ ; The #2300 regression has to digest a >2 GiB input, which takes far longer
+ ; than a normal inline test (~40s in JS). It is therefore isolated in its
+ ; own library and OFF BY DEFAULT: opt in with JSOO_TEST_MD5_LARGE=true, e.g.
+ ; via `make test-md5-large`.
+ (name jsoo_testsuite_md5_large)
+ (modules test_md5_large)
+ (enabled_if
+  (and
+   %{env:JSOO_TEST_MD5_LARGE=false}
+   ;; The sparse-file trick is not portable to the quickjs / wasi fs shims.
+   (<> %{profile} wasi)
+   (<> %{profile} wasi-with-native-effects)
+   (<> %{profile} quickjs)))
+ (inline_tests
+  (deps
+   (sandbox preserve_file_kind))
+  (modes js wasm best))
+ (preprocess
+  (pps ppx_expect)))
+
+(library
  (name jsoo_testsuite)
  (modules
   (:standard
@@ -118,6 +139,7 @@
    test_marshal_compressed
    test_marshal_float32
    test_marshal_float32_js
+   test_md5_large
    test_parsing
    test_ugeint
    ugeint_bytecode_probe
