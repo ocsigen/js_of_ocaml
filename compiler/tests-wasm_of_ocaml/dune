@@ -11,7 +11,7 @@
  (modes js wasm))
 
 (tests
- (names marshal_regressions)
+ (names marshal_regressions parse_float)
  (modes wasm))
 
 (tests

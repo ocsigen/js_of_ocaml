@@ -36,6 +36,10 @@
   Pretty-printed output (`--pretty`) is unchanged. (#1117)
 
 ## Bug fixes
+* Runtime/wasm: `float_of_string` no longer traps on inputs like `"nin"`
+  (the `nan`/`inf` detection read past the end of the string) and no
+  longer accepts JavaScript binary/octal literals such as `"0b101"` or
+  `"0o17"`; both now raise `Failure` like the native runtime (#2263)
 * Runtime: the QuickJS standard file descriptors raise on a write or
   read error instead of returning 0; an error on stdout (e.g. EPIPE)
   used to make the flush/write loop spin forever, and a read error was
