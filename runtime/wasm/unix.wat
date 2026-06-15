@@ -1639,50 +1639,27 @@
    (func (export "unix_ftruncate") (export "caml_unix_ftruncate")
       (param $fd (ref eq)) (param $vlen (ref eq))
       (result (ref eq))
-      (local $fd_offset (ref $fd_offset))
-      (local $len i64)
+      ;; POSIX ftruncate leaves the seek pointer unchanged, even when it
+      ;; ends up past the (now shorter) end of the file.
       (try
          (do
             (call $ftruncate (local.get $fd) (local.get $vlen)))
          (catch $javascript_exception
             (call $caml_unix_error (pop externref) (ref.null eq))))
-      (local.set $len
-         (i64.extend_i32_s
-            (i31.get_s (ref.cast (ref i31) (local.get $vlen)))))
-      ;; node truncates to 0 without failure when $len < 0
-      (if (i64.lt_s (local.get $len) (i64.const 0))
-         (then (local.set $len (i64.const 0))))
-      (local.set $fd_offset
-         (call $get_fd_offset (i31.get_u (ref.cast (ref i31) (local.get $fd)))))
-      (if (i64.gt_s (struct.get $fd_offset $offset (local.get $fd_offset))
-             (local.get $len))
-          (then
-             (struct.set $fd_offset $offset (local.get $fd_offset)
-                (local.get $len))))
       (ref.i31 (i32.const 0)))
 
    (func (export "unix_ftruncate_64") (export "caml_unix_ftruncate_64")
       (param $fd (ref eq)) (param $vlen (ref eq))
       (result (ref eq))
-      (local $fd_offset (ref $fd_offset))
-      (local $len i64)
-      (local.set $len (call $Int64_val (local.get $vlen)))
+      ;; POSIX ftruncate leaves the seek pointer unchanged, even when it
+      ;; ends up past the (now shorter) end of the file.
       (try
          (do
             (call $ftruncate_64
-               (local.get $fd) (f64.convert_i64_s (local.get $len))))
+               (local.get $fd)
+               (f64.convert_i64_s (call $Int64_val (local.get $vlen)))))
          (catch $javascript_exception
             (call $caml_unix_error (pop externref) (ref.null eq))))
-      ;; node truncates to 0 without failure when $len < 0
-      (if (i64.lt_s (local.get $len) (i64.const 0))
-         (then (local.set $len (i64.const 0))))
-      (local.set $fd_offset
-         (call $get_fd_offset (i31.get_u (ref.cast (ref i31) (local.get $fd)))))
-      (if (i64.gt_s (struct.get $fd_offset $offset (local.get $fd_offset))
-             (local.get $len))
-          (then
-             (struct.set $fd_offset $offset (local.get $fd_offset)
-                (local.get $len))))
       (ref.i31 (i32.const 0)))
 ))
 
