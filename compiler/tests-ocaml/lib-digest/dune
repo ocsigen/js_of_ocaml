@@ -14,3 +14,11 @@
    (<> %{profile} wasi-with-native-effects)))
  (modules digests)
  (modes js wasm))
+
+(tests
+ (names blake2_long_key)
+ (libraries)
+ (build_if
+  (>= %{ocaml_version} 5.2))
+ (modules blake2_long_key)
+ (modes js wasm))
