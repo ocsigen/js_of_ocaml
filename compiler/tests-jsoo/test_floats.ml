@@ -207,3 +207,25 @@ let%expect_test "of_string" =
   let x = "3.14 " in
   print' (fun () -> float_of_string x);
   [%expect {| Failure("float_of_string") |}]
+
+(* hash.c has a dedicated Double_array_tag case (elements mixed
+   directly, no header word) and skips Abstract_tag blocks. *)
+let%expect_test "Hashtbl.hash of float arrays" =
+  let p (x : Obj.t) = Printf.printf "%08x\n" (Hashtbl.hash x) in
+  p (Obj.repr [| 1.5 |]);
+  p (Obj.repr [| 1.5; 2.5 |]);
+  p (Obj.repr (Array.init 20 float_of_int));
+  p (Obj.repr [| nan |]);
+  p (Obj.repr [| -0. |]);
+  p (Obj.repr (1, [| 1.5 |], 2));
+  p (Obj.new_block 251 3);
+  [%expect
+    {|
+    30d3d2e3
+    07e28e3a
+    1ab69813
+    3228858d
+    0f478b8c
+    3498f980
+    00000000
+    |}]

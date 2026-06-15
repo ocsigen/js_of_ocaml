@@ -62,6 +62,11 @@
 * Runtime: fix caml_oo_cache_id (#2224)
 * Runtime: `Ephemeron.blit_key` no longer overwrites the destination's
   data with the source's data (#2263)
+* Runtime: `Hashtbl.hash` now hashes float arrays like native (a
+  dedicated tag-254 case mixing the elements); the JS runtime hashed
+  them as generic blocks and the Wasm runtime ignored them entirely,
+  so all three runtimes disagreed. Abstract-tag blocks are now skipped
+  like in the C runtime (#2263, #2270)
 * Runtime: the Str engine's SIMPLEOPT/SIMPLESTAR/SIMPLEPLUS opcodes
   no longer read past the end of the string; matching a negated
   character class at the end of the input could loop forever (#2270)
