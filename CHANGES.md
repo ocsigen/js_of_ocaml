@@ -40,6 +40,9 @@
   backreference to a group one past the last (e.g. `"\1"` against a
   group-less regexp) instead of trapping with an out-of-bounds access;
   the group bound check was off by one (#2263)
+* Runtime/wasm: `Runtime_events.User.register` builds the event record
+  with the `typ` and `tag` fields in the right order; they were swapped,
+  so `Runtime_events.User.tag` returned the event type (#2263)
 * Runtime: the QuickJS standard file descriptors raise on a write or
   read error instead of returning 0; an error on stdout (e.g. EPIPE)
   used to make the flush/write loop spin forever, and a read error was

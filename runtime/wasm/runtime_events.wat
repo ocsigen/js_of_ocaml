@@ -26,12 +26,13 @@
       (result (ref eq))
       (global.set $caml_custom_event_index
          (i32.add (global.get $caml_custom_event_index) (i32.const 1)))
+      ;; The record is { id; name; typ; tag } -- typ comes before tag.
       (array.new_fixed $block 5
          (ref.i31 (i32.const 0))
          (ref.i31 (global.get $caml_custom_event_index))
          (local.get $evname)
-         (local.get $evtag)
-         (local.get $evtype)))
+         (local.get $evtype)
+         (local.get $evtag)))
 
 (@if (>= ocaml_version (5 2 0))
 (@then
