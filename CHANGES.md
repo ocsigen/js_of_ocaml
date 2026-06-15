@@ -74,6 +74,10 @@
   `Failure "Program not compiled with --toplevel"` when the sections are
   absent, like the JS runtime, instead of trapping with an
   uncatchable "illegal cast" or silently returning 0 (#2263)
+* Runtime/wasm: `Obj.new_block` with the double-array tag now builds a
+  float array with the dedicated representation, so float-array
+  primitives on the result work instead of trapping (it previously
+  always built a generic block) (#2263)
 * Runtime: the QuickJS standard file descriptors raise on a write or
   read error instead of returning 0; an error on stdout (e.g. EPIPE)
   used to make the flush/write loop spin forever, and a read error was

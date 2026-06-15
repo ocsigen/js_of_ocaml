@@ -186,6 +186,7 @@
    test_str
    test_weak_gc
    toplevel_sections
+   obj_block_float
    calc_parser
    calc_lexer))
  (libraries unix compiler-libs.common js_of_ocaml-compiler)
@@ -240,6 +241,11 @@
   (>= %{ocaml_version} 5.1))
  (modules runtime_events_register)
  (libraries runtime_events)
+ (modes js wasm native))
+
+(test
+ (name obj_block_float)
+ (modules obj_block_float)
  (modes js wasm native))
 
 (test

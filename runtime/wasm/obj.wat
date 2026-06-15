@@ -278,13 +278,19 @@
    (func (export "caml_obj_block")
       (param $tag (ref eq)) (param $size (ref eq)) (result (ref eq))
       (local $res (ref $block))
-      ;; ZZZ float array / specific types?
-      ;; TODO: fail for value that are not represented as an array
+      (local $n i32)
+      ;; TODO: fail for values that are not represented as an array
+      (local.set $n (i31.get_s (ref.cast (ref i31) (local.get $size))))
+      ;; Float arrays have a dedicated representation; a generic block
+      ;; would trap on the first float-array primitive.
+      (if (i32.eq (i31.get_s (ref.cast (ref i31) (local.get $tag)))
+                  (global.get $double_array_tag))
+         (then
+            (return (array.new $float_array (f64.const 0) (local.get $n)))))
       (local.set $res
          (array.new $block
             (ref.i31 (i32.const 0))
-            (i32.add (i31.get_s (ref.cast (ref i31) (local.get $size)))
-                     (i32.const 1))))
+            (i32.add (local.get $n) (i32.const 1))))
       (array.set $block (local.get $res) (i32.const 0) (local.get $tag))
       (local.get $res))
 
