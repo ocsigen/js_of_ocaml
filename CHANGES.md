@@ -204,10 +204,12 @@
   caml_callback; with `--effects=cps` they silently never ran, and
   `Gc.counters` now returns an ordinary tuple instead of a float-array
   block (#2279)
-* Runtime: `caml_bigstring_blit_ba_to_ba` now treats positions as raw
-  offsets on both sides, like the C and Wasm implementations; the read
-  position went through the layout-aware index translation while the
-  write position did not
+* Runtime: the `caml_bigstring_blit_*` primitives now treat bigarray
+  positions as raw offsets, like base_bigstring's native stubs and the
+  Wasm runtime, instead of running them through the layout-aware index
+  translation; this fixes `ba_to_ba` (where the read position was
+  translated but the write position was not) as well as `string_to_ba`,
+  `bytes_to_ba` and `ba_to_bytes` for fortran_layout bigarrays
 * Runtime: the `#` flag no longer adds a base prefix to zero;
   `Printf.printf "%#x" 0` printed `0x0` where native prints `0`
 * Runtime: the fake filesystem no longer ignores `Open_append`; writes

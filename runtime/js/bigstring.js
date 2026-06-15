@@ -55,7 +55,9 @@ function caml_bigstring_blit_ba_to_ba(ba1, pos1, ba2, pos2, len) {
     caml_invalid_argument("caml_bigstring_blit_ba_to_ba: kind mismatch");
   if (len === 0) return 0;
   // Positions are raw offsets from the start of the data, ignoring the
-  // layout, as in the reference C implementation (and the Wasm runtime)
+  // layout: these primitives back base_bigstring's bigstring_blit_*
+  // stubs, whose C code indexes from `data + pos` (and so does the Wasm
+  // runtime here)
   if (pos1 < 0 || pos1 + len > ba1.data.length) {
     caml_array_bound_error();
   }
@@ -74,15 +76,18 @@ function caml_bigstring_blit_string_to_ba(str1, pos1, ba2, pos2, len) {
   if (12 !== ba2.kind)
     caml_invalid_argument("caml_bigstring_blit_string_to_ba: kind mismatch");
   if (len === 0) return 0;
-  var ofs2 = ba2.offset(pos2);
-  if (pos1 + len > caml_ml_string_length(str1)) {
+  // Positions are raw offsets from the start of the data, ignoring the
+  // layout: these primitives back base_bigstring's bigstring_blit_*
+  // stubs, whose C code indexes from `data + pos` (and so does the Wasm
+  // runtime here)
+  if (pos1 < 0 || pos1 + len > caml_ml_string_length(str1)) {
     caml_array_bound_error();
   }
-  if (ofs2 + len > ba2.data.length) {
+  if (pos2 < 0 || pos2 + len > ba2.data.length) {
     caml_array_bound_error();
   }
   var slice = caml_uint8_array_of_string(str1).subarray(pos1, pos1 + len);
-  ba2.data.set(slice, ofs2);
+  ba2.data.set(slice, pos2);
   return 0;
 }
 
@@ -91,17 +96,20 @@ function caml_bigstring_blit_string_to_ba(str1, pos1, ba2, pos2, len) {
 //Requires: caml_ml_bytes_length
 function caml_bigstring_blit_bytes_to_ba(str1, pos1, ba2, pos2, len) {
   if (12 !== ba2.kind)
-    caml_invalid_argument("caml_bigstring_blit_string_to_ba: kind mismatch");
+    caml_invalid_argument("caml_bigstring_blit_bytes_to_ba: kind mismatch");
   if (len === 0) return 0;
-  var ofs2 = ba2.offset(pos2);
-  if (pos1 + len > caml_ml_bytes_length(str1)) {
+  // Positions are raw offsets from the start of the data, ignoring the
+  // layout: these primitives back base_bigstring's bigstring_blit_*
+  // stubs, whose C code indexes from `data + pos` (and so does the Wasm
+  // runtime here)
+  if (pos1 < 0 || pos1 + len > caml_ml_bytes_length(str1)) {
     caml_array_bound_error();
   }
-  if (ofs2 + len > ba2.data.length) {
+  if (pos2 < 0 || pos2 + len > ba2.data.length) {
     caml_array_bound_error();
   }
   var slice = caml_uint8_array_of_bytes(str1).subarray(pos1, pos1 + len);
-  ba2.data.set(slice, ofs2);
+  ba2.data.set(slice, pos2);
   return 0;
 }
 
@@ -111,16 +119,19 @@ function caml_bigstring_blit_bytes_to_ba(str1, pos1, ba2, pos2, len) {
 //Requires: caml_ml_bytes_length
 function caml_bigstring_blit_ba_to_bytes(ba1, pos1, bytes2, pos2, len) {
   if (12 !== ba1.kind)
-    caml_invalid_argument("caml_bigstring_blit_string_to_ba: kind mismatch");
+    caml_invalid_argument("caml_bigstring_blit_ba_to_bytes: kind mismatch");
   if (len === 0) return 0;
-  var ofs1 = ba1.offset(pos1);
-  if (ofs1 + len > ba1.data.length) {
+  // Positions are raw offsets from the start of the data, ignoring the
+  // layout: these primitives back base_bigstring's bigstring_blit_*
+  // stubs, whose C code indexes from `data + pos` (and so does the Wasm
+  // runtime here)
+  if (pos1 < 0 || pos1 + len > ba1.data.length) {
     caml_array_bound_error();
   }
-  if (pos2 + len > caml_ml_bytes_length(bytes2)) {
+  if (pos2 < 0 || pos2 + len > caml_ml_bytes_length(bytes2)) {
     caml_array_bound_error();
   }
-  var slice = ba1.data.subarray(ofs1, ofs1 + len);
+  var slice = ba1.data.subarray(pos1, pos1 + len);
   caml_blit_bytes(caml_bytes_of_uint8_array(slice), 0, bytes2, pos2, len);
   return 0;
 }
