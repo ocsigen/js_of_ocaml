@@ -49,6 +49,7 @@
 
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
+   (type $float_array (array (mut f64)))
    (type $js (struct (field anyref)))
 
    ;; A weak array is a an abstract value composed of possibly some
@@ -116,9 +117,14 @@
             (array.get $block
                (br_on_cast_fail $no_copy (ref eq) (ref $block) (local.get $r))
                (i32.const 1)))
-         ;; copy blocks and bytes (caml_obj_dup handles both)
-         (if (i32.or (ref.test (ref $block) (local.get $v))
-                (ref.test (ref $bytes) (local.get $v)))
+         ;; Copy the mutable heap blocks that can alias the original:
+         ;; ordinary blocks, bytes and float arrays. Float arrays are
+         ;; their own Wasm type, so they need an explicit test. Custom
+         ;; blocks are returned as is, like the native runtime.
+         (if (i32.or
+                (i32.or (ref.test (ref $block) (local.get $v))
+                   (ref.test (ref $bytes) (local.get $v)))
+                (ref.test (ref $float_array) (local.get $v)))
             (then
                (return
                   (array.new_fixed $block 2 (ref.i31 (i32.const 0))
@@ -226,9 +232,14 @@
             (array.get $block
                (br_on_cast_fail $no_copy (ref eq) (ref $block) (local.get $r))
                (i32.const 1)))
-         ;; copy blocks and bytes (caml_obj_dup handles both)
-         (if (i32.or (ref.test (ref $block) (local.get $v))
-                (ref.test (ref $bytes) (local.get $v)))
+         ;; Copy the mutable heap blocks that can alias the original:
+         ;; ordinary blocks, bytes and float arrays. Float arrays are
+         ;; their own Wasm type, so they need an explicit test. Custom
+         ;; blocks are returned as is, like the native runtime.
+         (if (i32.or
+                (i32.or (ref.test (ref $block) (local.get $v))
+                   (ref.test (ref $bytes) (local.get $v)))
+                (ref.test (ref $float_array) (local.get $v)))
             (then
                (return
                   (array.new_fixed $block 2 (ref.i31 (i32.const 0))
