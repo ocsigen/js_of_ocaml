@@ -1335,3 +1335,33 @@ var x = a --> b;
     a-->a
     |};
   [%expect {| a-- > a; |}]
+
+let%expect_test "in operator in for-init needs parentheses" =
+  (* ECond else-branch is an assignment containing `in` *)
+  print ~compact:true ~report:true "for (var x = (c ? d : y = \"a\" in o);;);";
+  [%expect {|
+    /*<<fake:1:0>>*/for(var
+    x=/*<<fake:1:11>>*/c?d:y="a"in
+    o;;);
+
+    cannot parse js (from l:2, c:28)@.
+    |}];
+  (* arrow concise body *)
+  print ~compact:true ~report:true "for (var f = (() => \"a\" in o);;);";
+  [%expect {|
+    /*<<fake:1:0>>*/for(var
+    f=/*<<fake:1:11>>*/()=>/*<<fake:1:20>>*/"a"in
+    o/*<<fake:1:28>>*/;;);
+
+    cannot parse js (from l:2, c:43)@.
+    |}];
+  (* yield payload inside a generator *)
+  print ~compact:true ~report:true
+    "function* g(o){ for (var x = (yield \"a\" in o);;); }";
+  [%expect {|
+    function*g(o){/*<<fake:1:16>>*/for(var
+    x=/*<<fake:1:27>>*/yield"a"in
+    o;;);/*<<fake:1:0>>*/}
+
+    cannot parse js (from l:2, c:27)@.
+    |}]
