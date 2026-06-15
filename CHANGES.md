@@ -36,6 +36,9 @@
   Pretty-printed output (`--pretty`) is unchanged. (#1117)
 
 ## Bug fixes
+* Runtime: `Unix.localtime` computes `tm_yday` from the calendar date
+  instead of the wall-clock distance to January 1, which was off by one
+  during DST; the js and wasm-on-node backends share the fix (#2304)
 * Runtime/wasm: `Str.replace`/`Str.global_replace` raise `Failure` on a
   backreference to a group one past the last (e.g. `"\1"` against a
   group-less regexp) instead of trapping with an out-of-bounds access;
