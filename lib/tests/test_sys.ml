@@ -337,3 +337,20 @@ let%expect_test "Unix.error_message" =
     EDEADLK
     true
     |}]
+
+let%expect_test "localtime tm_yday under DST" =
+  ignore (Js.Unsafe.js_expr {|(process.env.TZ = "America/New_York")|});
+  (* 2021-07-01T04:30:00Z is 2021-07-01 00:30 in New York, with DST in
+     effect; tm_yday must not be computed from the wall-clock distance
+     to January 1 *)
+  let tm = Unix.localtime 1625113800. in
+  Printf.printf
+    "%d-%02d-%02d %02d:%02d yday=%d dst=%b\n"
+    (tm.Unix.tm_year + 1900)
+    (tm.Unix.tm_mon + 1)
+    tm.Unix.tm_mday
+    tm.Unix.tm_hour
+    tm.Unix.tm_min
+    tm.Unix.tm_yday
+    tm.Unix.tm_isdst;
+  [%expect {| 2021-07-01 00:30 yday=180 dst=true |}]
