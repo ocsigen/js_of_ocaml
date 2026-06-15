@@ -69,8 +69,8 @@
       (param $vx (ref eq)) (result (ref eq))
       (local $x (ref $block))
       (local $d (ref eq)) (local $v (ref eq))
-      (local $m (ref any))
-      (local $i i32) (local $len i32)
+      (local $m (ref null any))
+      (local $i i32) (local $len i32) (local $traversed i32)
       (local.set $x (ref.cast (ref $block) (local.get $vx)))
       (local.set $d
          (array.get $block (local.get $x) (global.get $caml_ephe_data_offset)))
@@ -82,7 +82,6 @@
 (@then
             (local.set $i (global.get $caml_ephe_key_offset))
             (local.set $len (array.len (local.get $x)))
-            (local.set $m (ref.as_non_null (call $unwrap (local.get $d))))
             (loop $loop
                (if (i32.lt_u (local.get $i) (local.get $len))
                   (then
@@ -95,11 +94,23 @@
                      (local.set $v
                         (br_on_null $released
                            (call $weak_deref (call $unwrap (local.get $v)))))
+                     ;; The data is wrapped in weak maps only when a live
+                     ;; key threads it; unwrap lazily so that JS-valued
+                     ;; data with no such key (e.g. a string with an int
+                     ;; key) is returned as is rather than unwrapped and
+                     ;; recast -- which traps.
+                     (if (i32.eqz (local.get $traversed))
+                        (then
+                           (local.set $traversed (i32.const 1))
+                           (local.set $m
+                              (ref.as_non_null (call $unwrap (local.get $d))))))
                      (local.set $m
                         (br_on_null $released
-                           (call $map_get (local.get $m) (local.get $v))))
+                           (call $map_get (ref.as_non_null (local.get $m))
+                              (local.get $v))))
                      (br $loop))))
-            (local.set $d (ref.cast (ref eq) (local.get $m)))
+            (if (local.get $traversed)
+               (then (local.set $d (ref.cast (ref eq) (local.get $m)))))
 ))
             (return
               (array.new_fixed $block 2 (ref.i31 (i32.const 0))
@@ -170,7 +181,7 @@
          (local.get $data))
       (ref.i31 (i32.const 0)))
 
-   (func (export "caml_ephe_unset_data")
+   (func $caml_ephe_unset_data (export "caml_ephe_unset_data")
       (param $vx (ref eq)) (result (ref eq))
       (local $x (ref $block))
       (local.set $x (ref.cast (ref $block) (local.get $vx)))
@@ -336,8 +347,14 @@
 
    (func (export "caml_ephe_blit_data")
       (param $x (ref eq)) (param $y (ref eq)) (result (ref eq))
-      (call $caml_ephe_set_data_opt
-         (local.get $y) (call $caml_ephe_get_data (local.get $x)))
+      (local $d (ref eq))
+      (local.set $d (call $caml_ephe_get_data (local.get $x)))
+      ;; [get_data] returns [Some data] (a block) or [None] (an int).
+      ;; An empty source must clear the destination, not leave its old
+      ;; data in place.
+      (if (ref.test (ref $block) (local.get $d))
+         (then (call $caml_ephe_set_data_opt (local.get $y) (local.get $d)))
+         (else (drop (call $caml_ephe_unset_data (local.get $y)))))
       (ref.i31 (i32.const 0)))
 
    (export "caml_weak_blit" (func $caml_ephe_blit_key))

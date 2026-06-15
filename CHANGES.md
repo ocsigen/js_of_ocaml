@@ -53,6 +53,11 @@
   `Marshal.data_size` prefix; and bigarray deserialization rejects an
   out-of-range dimension count or an oversized dimension instead of
   truncating it (#2263)
+* Runtime/wasm: ephemeron data fixes — `Ephemeron.get_data` no longer
+  traps when the data is a JS value reached through an integer key (it
+  unwrapped and recast the value unconditionally), and `blit_data` from
+  an empty source now clears the destination instead of leaving its old
+  data in place (#2263)
 * Runtime: the QuickJS standard file descriptors raise on a write or
   read error instead of returning 0; an error on stdout (e.g. EPIPE)
   used to make the flush/write loop spin forever, and a read error was
