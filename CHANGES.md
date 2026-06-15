@@ -43,6 +43,9 @@
 * Runtime/wasm: `Runtime_events.User.register` builds the event record
   with the `typ` and `tag` fields in the right order; they were swapped,
   so `Runtime_events.User.tag` returned the event type (#2263)
+* Runtime/wasm: add the missing `Unix.getegid` stub and fix the
+  `Unix.getgrgid` export (it was registered under the typo
+  `caml_unix_getgruid`); both were missing primitives (#2263)
 * Runtime: the QuickJS standard file descriptors raise on a write or
   read error instead of returning 0; an error on stdout (e.g. EPIPE)
   used to make the flush/write loop spin forever, and a read error was
