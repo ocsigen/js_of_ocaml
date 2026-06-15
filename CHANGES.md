@@ -66,7 +66,11 @@
   `Domain.join` re-raises the exception, instead of the exception
   escaping `spawn` and leaving the domain id and termination mutex in
   a broken state; the Wasm runtime additionally now sets the spawned
-  domain's id (#2263, #2270)
+  domain's id. The `Finished (Error _)` termination payload also uses
+  the layout expected by the running OCaml version — the bare `exn`
+  before 5.5 and `exn * raw_backtrace` from 5.5 — so `Domain.join` no
+  longer re-raises a malformed exception on OCaml 5.2–5.4 (#2263,
+  #2270, #2302)
 * Runtime: `Float.Array.sub`/`append`/`concat` return a proper
   tag-254 float array (their result had tag 0); `Array.make` of an
   invalid length raises `Invalid_argument "Array.make"` instead of
