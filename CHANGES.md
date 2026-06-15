@@ -72,6 +72,8 @@
   produce a `char` (kind 12) bigarray instead of `int8_unsigned` (kind 3),
   matching the JS runtime (affects polymorphic compare and marshalling)
   (#2329)
+* Runtime/wasm: `caml_unregister_named_value` can remove entries that are
+  not the head of their hash bucket (#2331)
 * Runtime/wasm: `Str.replace`/`Str.global_replace` raise `Failure` on a
   backreference to a group one past the last (e.g. `"\1"` against a
   group-less regexp) instead of trapping with an out-of-bounds access;
