@@ -20,6 +20,13 @@
  (libraries unix))
 
 (tests
+ (names runtime_events_register)
+ (modes wasm)
+ (enabled_if
+  (>= %{ocaml_version} 5.1))
+ (libraries runtime_events))
+
+(tests
  (names gh2093)
  (modes wasm)
  (enabled_if
