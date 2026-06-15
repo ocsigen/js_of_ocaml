@@ -208,6 +208,41 @@ let%expect_test "of_string" =
   print' (fun () -> float_of_string x);
   [%expect {| Failure("float_of_string") |}]
 
+(* [caml_parse_float] used to trap on "nin" (the nan/inf detection read
+   past the end of the string) and to accept JavaScript binary/octal
+   literals like "0b101"/"0o17"; native raises [Failure]. *)
+let%expect_test "float_of_string rejects bad input" =
+  let p s = print' (fun () -> float_of_string s) in
+  p "nin";
+  [%expect {| Failure("float_of_string") |}];
+  p "nif";
+  [%expect {| Failure("float_of_string") |}];
+  p "ina";
+  [%expect {| Failure("float_of_string") |}];
+  p "0b101";
+  [%expect {| Failure("float_of_string") |}];
+  p "0o17";
+  [%expect {| Failure("float_of_string") |}];
+  p "1d0";
+  [%expect {| Failure("float_of_string") |}];
+  p "";
+  [%expect {| Failure("float_of_string") |}];
+  (* Valid values must still parse. *)
+  p "1.5";
+  [%expect {| 1.500000 |}];
+  p "1e3";
+  [%expect {| 1000.000000 |}];
+  p ".5";
+  [%expect {| 0.500000 |}];
+  p "1_000.5";
+  [%expect {| 1000.500000 |}];
+  p "nan";
+  [%expect {| nan |}];
+  p "-inf";
+  [%expect {| -inf |}];
+  p "0x1p4";
+  [%expect {| 16.000000 |}]
+
 let%expect_test "floatarray ops keep tag 254" =
   let a = Float.Array.make 3 1.5 in
   let p label fa = Printf.printf "%s=%d\n" label (Obj.tag (Obj.repr fa)) in

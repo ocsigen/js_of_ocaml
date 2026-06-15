@@ -560,7 +560,7 @@
       (local $s' (ref $bytes))
       (local $negative i32) (local $c i32)
       (local $f f64)
-      (local $buffer i32) (local $buf i32)
+      (local $buffer i32) (local $buf i32) (local $start i32)
       (local.set $s (ref.cast (ref $bytes) (local.get 1)))
       (local.set $len (array.len (local.get $s)))
       (loop $count
@@ -602,6 +602,7 @@
                   (then
                      (local.set $i (i32.add (local.get $i) (i32.const 1)))
                      (br $skip_spaces))))))
+      (local.set $start (local.get $i))
       (block $error
          (br_if $error (i32.eq (local.get $i) (local.get $len)))
          (br_if $error
@@ -650,7 +651,8 @@
                                  (@char "N"))
                         (then
                            (return
-                              (struct.new $float (f64.const nan)))))))))
+                              (struct.new $float (f64.const nan))))))))
+               (else
                (if (i32.eq (i32.and (local.get $c) (i32.const 0xdf))
                            (@char "I")) (then
                   (local.set $i (i32.add (local.get $i) (i32.const 1)))
@@ -669,7 +671,7 @@
                                  (select
                                     (f64.const -inf)
                                     (f64.const inf)
-                                    (local.get $negative))))))))))))
+                                    (local.get $negative))))))))))))))
          (if (i32.eq (i32.add (local.get $i) (i32.const 8)) (local.get $len))
             (then
                (local.set $c (array.get_u $bytes (local.get $s) (local.get $i)))
@@ -744,6 +746,34 @@
               (i32.add (local.get $buf) (local.get $len))))
 )
 (@else
+         ;; The JS number coercion below accepts things OCaml does not,
+         ;; e.g. binary/octal literals ("0b101", "0o17"); only a plain
+         ;; decimal float can reach this point, so reject any character
+         ;; that cannot appear in one. Start after the leading spaces already
+         ;; skipped above.
+         (local.set $i (local.get $start))
+         (loop $check_decimal
+            (if (i32.lt_u (local.get $i) (local.get $len))
+               (then
+                  (local.set $c
+                     (array.get_u $bytes (local.get $s) (local.get $i)))
+                  (br_if $error
+                     (i32.eqz
+                        (i32.or
+                           (i32.and
+                              (i32.ge_u (local.get $c) (@char "0"))
+                              (i32.le_u (local.get $c) (@char "9")))
+                           (i32.or
+                              (i32.eq (local.get $c) (@char "."))
+                              (i32.or
+                                 (i32.eq
+                                    (i32.and (local.get $c) (i32.const 0xdf))
+                                    (@char "E"))
+                                 (i32.or
+                                    (i32.eq (local.get $c) (@char "+"))
+                                    (i32.eq (local.get $c) (@char "-"))))))))
+                  (local.set $i (i32.add (local.get $i) (i32.const 1)))
+                  (br $check_decimal))))
          (local.set $f
             (call $parse_float (call $jsstring_of_bytes (local.get $s))))
          (br_if $error (f64.ne (local.get $f) (local.get $f)))
