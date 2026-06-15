@@ -784,7 +784,9 @@
       (local $f (ref null eq))
       (local $str (ref $bytes))
       (local $str_len i32)
-      (local $n i32)
+      (local $new_size i32)
+      (local $new_buffer (ref extern))
+      (local $fd_offset (ref $fd_offset))
       (local.set $f (struct.get $channel $refill (local.get $ch)))
       (if (ref.is_null (local.get $f))
          (then
@@ -800,14 +802,31 @@
          (then
             (struct.set $channel $refill (local.get $ch) (ref.null eq))
             (return (i32.const 0))))
-      (local.set $n (local.get $len))
-      (if (i32.gt_u (local.get $n) (local.get $str_len))
-         (then (local.set $n (local.get $str_len))))
+      ;; Grow the channel buffer if the refilled data does not fit, so that
+      ;; no bytes are dropped (the JS runtime does the same), preserving the
+      ;; bytes already buffered before $pos.
+      (if (i32.gt_u (i32.add (local.get $pos) (local.get $str_len))
+             (struct.get $channel $size (local.get $ch)))
+         (then
+            (local.set $new_size (i32.add (local.get $pos) (local.get $str_len)))
+            (local.set $new_buffer (call $ta_new (local.get $new_size)))
+            (call $ta_set (local.get $new_buffer)
+               (struct.get $channel $buffer (local.get $ch)) (i32.const 0))
+            (struct.set $channel $buffer (local.get $ch) (local.get $new_buffer))
+            (struct.set $channel $buffer_view (local.get $ch)
+               (call $dv_make (local.get $new_buffer)))
+            (struct.set $channel $size (local.get $ch) (local.get $new_size))))
       (call $caml_blit_bytes_to_dataview
          (local.get $str) (i32.const 0)
          (struct.get $channel $buffer_view (local.get $ch)) (local.get $pos)
-         (local.get $n))
-      (local.get $n))
+         (local.get $str_len))
+      ;; Advance the channel offset so that pos_in/pos_out stay consistent.
+      (local.set $fd_offset
+         (call $get_fd_offset (struct.get $channel $fd (local.get $ch))))
+      (struct.set $fd_offset $offset (local.get $fd_offset)
+         (i64.add (struct.get $fd_offset $offset (local.get $fd_offset))
+            (i64.extend_i32_u (local.get $str_len))))
+      (local.get $str_len))
 ))
 
    (func $caml_refill (param $ch (ref $channel)) (result i32)
@@ -953,6 +972,8 @@
                   (local.set $curr (i32.const 0))
                   (if (i32.gt_u (local.get $len) (local.get $nread))
                      (then (local.set $len (local.get $nread))))))))
+      ;; Re-read the buffer view: a refill may have grown (reallocated) it.
+      (local.set $buf (struct.get $channel $buffer_view (local.get $ch)))
       (call $caml_blit_dataview_to_bytes
          (local.get $buf) (local.get $curr)
          (local.get $s) (local.get $pos) (local.get $len))
