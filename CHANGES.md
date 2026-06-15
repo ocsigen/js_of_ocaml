@@ -163,6 +163,9 @@
 * Lib: `Regexp.replace_first` now preserves all flags of the regexp
   except `g` (it previously kept only `i`/`m`, silently dropping `u`,
   `s`, `y`); a `flags` accessor was added to `Js.regExp` (#2350)
+* Runtime/wasm: `float32_hash` normalizes negative zero and NaNs like
+  `caml_hash_mix_float`, so equal `float32` values hash identically
+  (#2332)
 * Runtime/wasm: `Str.replace`/`Str.global_replace` raise `Failure` on a
   backreference to a group one past the last (e.g. `"\1"` against a
   group-less regexp) instead of trapping with an out-of-bounds access;
