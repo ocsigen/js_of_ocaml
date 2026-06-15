@@ -50,6 +50,9 @@
 * Runtime: `Weak.get_copy` and `Ephemeron.get_data_copy` now copy
   bytes values too; they used to return the weakly held value itself
   (#2270)
+* Runtime (wasm): `Weak.get_copy` and `Ephemeron.get_data_copy` now
+  copy float arrays, matching the native and JavaScript runtimes
+  (#2270)
 * Runtime: the Str engine's SIMPLEOPT/SIMPLESTAR/SIMPLEPLUS opcodes
   no longer read past the end of the string; matching a negated
   character class at the end of the input could loop forever (#2270)

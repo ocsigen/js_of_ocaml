@@ -202,6 +202,20 @@ let%expect_test "get_copy copies bytes" =
   | None -> print_endline "none");
   [%expect {| false |}]
 
+(* A float array is a mutable no-scan block, so like ordinary blocks
+   and bytes it must be copied. In the Wasm runtime it is its own type
+   (not an ordinary block), so it needs its own case. *)
+let%expect_test "get_copy copies float arrays" =
+  let fa = [| 1.0; 2.0; 3.0 |] in
+  let w = Weak.create 1 in
+  Weak.set w 0 (Some fa);
+  (match Weak.get_copy w 0 with
+  | Some fa' ->
+      fa'.(0) <- 99.0;
+      Printf.printf "shares=%b orig_mutated=%b\n" (fa' == fa) (fa.(0) = 99.0)
+  | None -> print_endline "none");
+  [%expect {| shares=false orig_mutated=false |}]
+
 (* Custom blocks (Int64, bigarrays, ...) are deliberately NOT copied:
    the native runtime returns the value itself rather than risk an
    unsafe raw copy (finalizers, the bigarray data proxy, ...). *)
