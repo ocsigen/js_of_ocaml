@@ -109,6 +109,10 @@
   (e.g. `Digest.file` on a large file) are correct; the
   `caml_jsstring_of_string` shared-buffer fast path is reachable again
   (it tested `ArrayBuffer.length` instead of `byteLength`) (#2270)
+* Compiler: when re-printing parsed JavaScript, an `in` operator inside
+  a conditional's else-branch, an arrow concise body, or a yield payload
+  in a `for`-initializer is now parenthesized; the printer used to emit
+  output that did not parse (#2282)
 * Compiler: bound the statement-nesting depth of generated functions by
   emitting a flat dispatch loop instead of a deep tower of nested labelled
   blocks when a block has many sibling merge-node branch targets. Deep
