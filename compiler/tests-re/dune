@@ -5,5 +5,15 @@
 
 (tests
  (names test_str)
+ (modules test_str)
  (libraries str re)
  (modes js wasm))
+
+(library
+ (name tests_re_replace)
+ (modules str_replace)
+ (libraries str)
+ (inline_tests
+  (modes js wasm best))
+ (preprocess
+  (pps ppx_expect)))
