@@ -1324,6 +1324,27 @@
          (local.get $kind)
          (i32.const 0)))
 
+   ;; Like caml_ba_from_typed_array but forces the char kind (12) instead
+   ;; of re-inferring it (a Uint8Array would otherwise yield int8_unsigned,
+   ;; kind 3). Used for bigstrings, which are char bigarrays.
+   (func (export "caml_ba_char_of_typed_array") (param (ref eq)) (result (ref eq))
+      (local $data (ref extern))
+      (local $len i32)
+      (local.set $data
+         (call $ta_normalize
+            (ref.as_non_null (extern.convert_any (call $unwrap (local.get 0))))))
+      (local.set $len (call $ta_length (local.get $data)))
+      (if (i32.lt_s (local.get $len) (i32.const 0))
+         (then (call $caml_invalid_argument (global.get $ta_too_large))))
+      (struct.new $bigarray
+         (global.get $bigarray_ops)
+         (local.get $data)
+         (call $dv_make (local.get $data))
+         (array.new_fixed $int_array 1 (local.get $len))
+         (i32.const 1)
+         (i32.const 12) ;; char
+         (i32.const 0)))
+
    (func (export "caml_ba_to_typed_array") (param (ref eq)) (result (ref eq))
       (call $wrap
          (any.convert_extern
