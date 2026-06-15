@@ -55,6 +55,9 @@
   (with an optional call on `DateTimeFormat?.()`) so the runtime
   free-variable check passes and hosts without `Intl` fall back to the
   offset heuristic instead of throwing (#2324)
+* Runtime/wasm: channels with a refill hook (`Sys_js.set_channel_filler`)
+  grow their buffer instead of dropping data that exceeds it, and advance
+  the channel offset so `pos_in`/`pos_out` stay correct (#2330)
 * Runtime/wasm: `Str.replace`/`Str.global_replace` raise `Failure` on a
   backreference to a group one past the last (e.g. `"\1"` against a
   group-less regexp) instead of trapping with an out-of-bounds access;
