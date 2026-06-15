@@ -16,8 +16,10 @@ val of_targetint : Targetint.t -> t
 val of_float : float -> t
 ```
 ```ocaml
-val to_string : t -> string
+val to_string : ?minify:bool -> t -> string
 ```
+`to_string ~minify:true` applies cosmetic compaction (strips the leading zero of `0.D…`/`-0.D…` literals and normalizes exponents); `~minify:false` (the default) returns the literal verbatim, preserving `--pretty` output.
+
 ```ocaml
 val to_targetint : t -> Targetint.t
 ```
