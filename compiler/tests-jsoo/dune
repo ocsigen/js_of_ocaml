@@ -161,6 +161,7 @@
    test_ugeint
    ugeint_bytecode_probe
    test_runtime_value
+   runtime_events_register
    test_custom_name
    test_text_codec_fallback
    test_unix
@@ -216,6 +217,14 @@
  (build_if
   (>= %{ocaml_version} 5.2))
  (modules test_float16 test_bigarray)
+ (modes js wasm native))
+
+(test
+ (name runtime_events_register)
+ (build_if
+  (>= %{ocaml_version} 5.1))
+ (modules runtime_events_register)
+ (libraries runtime_events)
  (modes js wasm native))
 
 (test
