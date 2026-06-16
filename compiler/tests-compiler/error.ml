@@ -120,3 +120,29 @@ let _ = null 1 2
   (try ignore (Str.search_forward (Str.regexp "TypeError: Cannot read") s 0)
    with Not_found -> print_endline s);
   [%expect {||}]
+
+let%expect_test "uncaught handler is not installed when loaded as a library (#1277)" =
+  (* When jsoo output is loaded with [require] (e.g. in the Node REPL or as a
+     library) rather than run directly, it must not register a process-wide
+     "uncaughtException" handler: doing so used to override the host's error
+     handling and abort the whole process on unrelated errors. *)
+  with_temp_dir ~f:(fun () ->
+      let _js_file =
+        {| let () = ignore (Sys.opaque_identity 0) |}
+        |> Filetype.ocaml_text_of_string
+        |> Filetype.write_ocaml ~name:"test.ml"
+        |> compile_ocaml_to_bc
+        |> compile_bc_to_javascript
+      in
+      let driver =
+        {|
+require("./test.js");
+console.log(
+  "uncaughtException listeners: " +
+    process.listenerCount("uncaughtException"));
+|}
+        |> Filetype.js_text_of_string
+        |> Filetype.write_js ~name:"driver.js"
+      in
+      print_string (run_javascript driver));
+  [%expect {| uncaughtException listeners: 0 |}]
