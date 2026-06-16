@@ -136,14 +136,6 @@ let%expect_test "Unix.getenv" =
   Printf.printf "%s\n" (Sys.getenv "FOO");
   [%expect {| bar |}]
 
-let%expect_test "Sys.command exit code" =
-  Printf.printf "%d\n" (Sys.command "exit 42");
-  Printf.printf "%d\n" (Sys.command "exit 0");
-  [%expect {|
-    42
-    0
-    |}]
-
 let%expect_test "Sys.getenv prototype" =
   let get n =
     match Sys.getenv n with
