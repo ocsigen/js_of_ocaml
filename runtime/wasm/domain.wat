@@ -264,19 +264,19 @@
                      (call $caml_callback_1
                         (local.get $f) (ref.i31 (i32.const 0)))))))
          (catch $ocaml_exception
-            (local.set $exn (pop (ref eq)))
+            (local.set $exn)
             ;; state = Finished (Error exn) for OCaml < 5.5
             ;; state = Finished (Error (exn, backtrace)) for OCaml >= 5.5
+            (@if (>= $ocaml_version (5 5 0))
+            (@then
+               (local.set $exn
+                  (array.new_fixed $block 3 (ref.i31 (i32.const 0))
+                     (local.get $exn)
+                     (array.new_fixed $block 1 (ref.i31 (i32.const 0)))))))
             (local.set $result
                (array.new_fixed $block 2 (ref.i31 (i32.const 0))
                   (array.new_fixed $block 2 (ref.i31 (i32.const 1))
-                     (@if (>= $ocaml_version (5 5 0))
-                     (@then
-                        (array.new_fixed $block 3 (ref.i31 (i32.const 0))
-                           (local.get $exn)
-                           (array.new_fixed $block 1 (ref.i31 (i32.const 0)))))
-                     (@else
-                        (local.get $exn))))))))
+                     (local.get $exn))))))
       (global.set $caml_domain_id (local.get $old))
       (drop (call $caml_ml_mutex_unlock (array.get $block (local.get $ts) (i32.const 2))))
       (array.set $block (local.get $ts) (i32.const 1)
@@ -297,7 +297,7 @@
             (drop (call $caml_callback_1
                (local.get $f) (ref.i31 (i32.const 0)))))
          (catch $ocaml_exception
-            (local.set $exn (pop (ref eq)))
+            (local.set $exn)
             (global.set $caml_domain_id (local.get $old))
             (drop (call $caml_ml_mutex_unlock (local.get $mutex)))
             (throw $ocaml_exception (local.get $exn))))
