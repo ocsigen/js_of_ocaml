@@ -58,6 +58,10 @@
   unwrapped and recast the value unconditionally), and `blit_data` from
   an empty source now clears the destination instead of leaving its old
   data in place (#2263)
+* Runtime/wasm: the lexer engine only runs the position-memory moves on
+  transitions that have a memory action (`pc_off > 0`), matching the C
+  and JS runtimes; previously a redundant no-op call was made on
+  memoryless transitions (#2263)
 * Runtime: the QuickJS standard file descriptors raise on a write or
   read error instead of returning 0; an error on stdout (e.g. EPIPE)
   used to make the flush/write loop spin forever, and a read error was

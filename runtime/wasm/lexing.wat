@@ -378,9 +378,17 @@
                (else
                   (call $get (local.get $lex_default_code)
                      (local.get $pstate)))))
-         (call $run_mem (local.get $lex_code) (local.get $pc_off)
-            (local.get $lexbuf)
-            (array.get $block (local.get $lexbuf) (global.get $lex_curr_pos)))
+         ;; Only perform memory moves when the transition has a memory
+         ;; action, like the C and JS runtimes. (ocamllex reserves code
+         ;; address 0 for the empty action, so an unguarded call would just
+         ;; read the 0xff terminator and return; this keeps us aligned with
+         ;; the reference and skips a redundant call.)
+         (if (i32.gt_s (local.get $pc_off) (i32.const 0))
+            (then
+               (call $run_mem (local.get $lex_code) (local.get $pc_off)
+                  (local.get $lexbuf)
+                  (array.get $block (local.get $lexbuf)
+                     (global.get $lex_curr_pos)))))
          (if (i32.eq (local.get $c) (i32.const 256))
             (then
                (array.set $block (local.get $lexbuf)
