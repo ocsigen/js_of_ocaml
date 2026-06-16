@@ -64,6 +64,23 @@
   (pps ppx_expect)))
 
 (library
+ (name jsoo_testsuite_sys_command)
+ (modules test_sys_command)
+ ;; [Sys.command] needs process execution, which WASI does not provide
+ ;; (and the test is not run under quickjs, like the other Unix tests).
+ (enabled_if
+  (and
+   (<> %{profile} wasi)
+   (<> %{profile} wasi-with-native-effects)
+   (<> %{profile} quickjs)))
+ (inline_tests
+  (deps
+   (sandbox preserve_file_kind))
+  (modes js wasm best))
+ (preprocess
+  (pps ppx_expect)))
+
+(library
  (name jsoo_testsuite_float32_js)
  (modules test_marshal_float32_js)
  (libraries unix compiler-libs.common js_of_ocaml-compiler)
@@ -150,6 +167,7 @@
    test_promise
    test_lwt_promise
    test_unix_perms
+   test_sys_command
    test_str
    test_weak_gc
    calc_parser
