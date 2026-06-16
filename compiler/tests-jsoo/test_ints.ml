@@ -129,7 +129,8 @@ let%expect_test "alternate flag with zero" =
 let%expect_test "compare immediate vs custom" =
   let a : Obj.t = Obj.repr 1 in
   let b : Obj.t = Obj.repr 1L in
-  let p label f = match f () with
+  let p label f =
+    match f () with
     | v -> Printf.printf "%s = %d\n" label v
     | exception e -> Printf.printf "%s raised %s\n" label (Printexc.to_string e)
   in
@@ -137,8 +138,7 @@ let%expect_test "compare immediate vs custom" =
   p "cmp 1L 1" (fun () -> compare b a);
   p "cmp 2 1L" (fun () -> compare (Obj.repr 2) b);
   p "eq 1 1L" (fun () -> if a = b then 1 else 0);
-  [%expect
-    {|
+  [%expect {|
     cmp 1 1L = -1
     cmp 1L 1 = 1
     cmp 2 1L = -1
