@@ -331,8 +331,7 @@ let%expect_test "Unix.error_message" =
   p Unix.EWOULDBLOCK;
   p Unix.EDEADLK;
   Printf.printf "%b\n" (String.length (Unix.error_message Unix.EPERM) > 0);
-  [%expect
-    {|
+  [%expect {|
     ECHILD
     EWOULDBLOCK
     EDEADLK
