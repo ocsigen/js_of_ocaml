@@ -336,7 +336,6 @@ From +jslib.js:
 caml_is_js
 caml_trampoline
 caml_trampoline_return
-caml_wrap_exception
 
 From +marshal.js:
 caml_marshal_constants
@@ -350,9 +349,9 @@ caml_string_concat
 caml_to_js_string (deprecated)
 
 From +runtime_events.js:
-caml_runtime_events_create_cursor
-caml_runtime_events_free_cursor
-caml_runtime_events_read_poll
+caml_ml_runtime_events_create_cursor
+caml_ml_runtime_events_free_cursor
+caml_ml_runtime_events_read_poll
 caml_runtime_events_user_resolve
 
 From +stdlib.js:
