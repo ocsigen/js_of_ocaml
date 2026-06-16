@@ -1,0 +1,33 @@
+name: wax
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+  schedule:
+    # Prime the caches every Monday
+    - cron: 0 1 * * MON
+
+jobs:
+  wax:
+    name: Wax / Ubuntu / Convert runtime
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Update apt cache
+        run: sudo apt-get update
+
+      - name: Checkout tree
+        uses: actions/checkout@v6
+
+      - name: Set-up OCaml
+        uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: "5.4.0"
+
+      - name: Install wax
+        run: opam pin add --yes wax https://github.com/vouillon/wax.git
+
+      - name: Convert Wasm runtime files to wax
+        run: opam exec -- ./tools/wat2wax.sh
