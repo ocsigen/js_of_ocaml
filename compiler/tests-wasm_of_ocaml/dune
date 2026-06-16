@@ -19,8 +19,13 @@
  (modes js wasm))
 
 (tests
- (names readdir_after_closedir unix_ids unix_open_append)
+ (names readdir_after_closedir unix_ids)
  (modes wasm)
+ (libraries unix))
+
+(tests
+ (names unix_open_append)
+ (modes js wasm)
  (libraries unix))
 
 (tests

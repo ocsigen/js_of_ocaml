@@ -252,7 +252,7 @@
    (func $map_new (result (ref extern))
       (extern.convert_any (ref.i31 (i32.const 0))))
    (func $map_get (param (ref extern)) (param i32) (result (ref $fd_offset))
-      (struct.new $fd_offset (i64.const 0) (i32.const 0)))
+      (struct.new $fd_offset (i64.const 0) (i32.const 0) (i32.const 0)))
    (func $map_set (param (ref extern)) (param i32) (param (ref $fd_offset)))
    (func $map_delete (param (ref extern)) (param i32))
 
@@ -367,7 +367,9 @@
             (field $refill (mut (ref null eq))))))
 
    (type $fd_offset
-      (struct (field $offset (mut i64)) (field $seeked (mut i32))))
+      (struct
+         (field $offset (mut i64)) (field $seeked (mut i32))
+         (field $append (mut i32))))
 
    (global $fd_offsets (mut externref) (ref.null extern))
 
@@ -377,19 +379,20 @@
          (then
             (local.set $m (call $map_new))
             (call $map_set (local.get $m) (i32.const 0)
-               (struct.new $fd_offset (i64.const 0) (i32.const 0)))
+               (struct.new $fd_offset (i64.const 0) (i32.const 0) (i32.const 0)))
             (call $map_set (local.get $m) (i32.const 1)
-               (struct.new $fd_offset (i64.const 0) (i32.const 0)))
+               (struct.new $fd_offset (i64.const 0) (i32.const 0) (i32.const 0)))
             (call $map_set (local.get $m) (i32.const 2)
-               (struct.new $fd_offset (i64.const 0) (i32.const 0)))
+               (struct.new $fd_offset (i64.const 0) (i32.const 0) (i32.const 0)))
             (global.set $fd_offsets (local.get $m))))
       (ref.as_non_null (global.get $fd_offsets)))
 
    (func $initialize_fd_offset (export "initialize_fd_offset")
-      (param $fd i32) (param $offset i64)
+      (param $fd i32) (param $offset i64) (param $append i32)
       (call $map_set (call $get_fd_offsets)
          (local.get $fd)
-         (struct.new $fd_offset (local.get $offset) (i32.const 0))))
+         (struct.new $fd_offset
+            (local.get $offset) (i32.const 0) (local.get $append))))
 
    (func $release_fd_offset (export "release_fd_offset") (param $fd i32)
       (call $map_delete (call $get_fd_offsets) (local.get $fd)))
@@ -493,19 +496,11 @@
       (call $free (local.get $path_1))
       (call $caml_handle_sys_error_if (local.get $vpath) (local.get $res))
       (local.set $fd (i32.load (local.get $buffer)))
-      (if (i32.and (local.get $flags) (i32.const 0x100)) ;; O_APPEND
-         (then
-            ;; WASI's O_APPEND only affects writes; the fd position itself
-            ;; stays at 0, so [caml_ml_get_channel_offset] (which calls
-            ;; fd_seek/CUR) would return 0. Seek to EOF so [pos_out] is
-            ;; consistent with the bytes already in the file.
-            (local.set $res
-               (call $fd_seek
-                  (local.get $fd) (i64.const 0) (i32.const 2)
-                  (local.get $buffer)))
-            (call $caml_handle_sys_error_if
-               (local.get $vpath) (local.get $res))))
-      (call $initialize_fd_offset (local.get $fd) (local.get $offset))
+      ;; Like native [O_APPEND], the fd position starts at 0 (WASI's O_APPEND
+      ;; fdflag makes each write go to EOF regardless), so [pos_out] reports 0
+      ;; right after opening, matching native.
+      (call $initialize_fd_offset (local.get $fd) (local.get $offset)
+         (i32.and (local.get $flags) (i32.const 0x100))) ;; O_APPEND
       (ref.i31 (local.get $fd)))
 )
 (@else
@@ -523,12 +518,13 @@
                   (call $unwrap
                      (call $caml_jsstring_of_string (local.get $path)))
                   (local.get $flags)
-                  (i31.get_u (ref.cast (ref i31) (local.get $perm)))))
-            (if (i32.and (local.get $flags) (i32.const 8)) ;; O_APPEND
-               (then (local.set $offset (call $file_size (local.get $fd))))))
+                  (i31.get_u (ref.cast (ref i31) (local.get $perm))))))
          (catch $javascript_exception
             (call $caml_handle_sys_error)))
-      (call $initialize_fd_offset (local.get $fd) (local.get $offset))
+      ;; Like native [O_APPEND], the offset starts at 0; writes reposition to
+      ;; EOF (see [caml_flush_partial]).
+      (call $initialize_fd_offset (local.get $fd) (local.get $offset)
+         (i32.and (local.get $flags) (i32.const 8))) ;; O_APPEND
       (ref.i31 (local.get $fd)))
 ))
 

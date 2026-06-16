@@ -328,12 +328,9 @@ class MlQuickJSFd extends MlFile {
     this.fd = fd;
     this.flags = flags;
     this.path = path;
-    if (flags.append) {
-      var r = this.os.stat(path);
-      this.offset = r[1] === 0 ? r[0].size : 0;
-    } else {
-      this.offset = 0;
-    }
+    // Like native [O_APPEND], the offset starts at the beginning of the file;
+    // each [write] repositions to the end (see [write] below).
+    this.offset = 0;
     this.seeked = false;
     flags.noSeek = false;
   }
@@ -363,6 +360,10 @@ class MlQuickJSFd extends MlFile {
   }
 
   write(buf, buf_offset, len, raise_unix) {
+    // [O_APPEND]: every write goes to the end of the file. The OS already
+    // enforces this for the bytes (the fd was opened with O_APPEND); we
+    // refresh the tracked offset so [pos]/[lseek] report the native value.
+    if (this.flags.append) this.offset = this.length();
     if (this.seeked) this.os.seek(this.fd, this.offset, 0);
     var ab = buf.buffer || buf;
     var base = buf.byteOffset || 0;

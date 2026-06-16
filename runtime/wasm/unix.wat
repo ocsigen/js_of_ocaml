@@ -166,7 +166,7 @@
       (func $convert_flag_list (param (ref $flags) (ref eq)) (result i32)))
    (import "io" "IO_BUFFER_SIZE" (global $IO_BUFFER_SIZE i32))
    (import "io" "initialize_fd_offset"
-      (func $initialize_fd_offset (param i32 i64)))
+      (func $initialize_fd_offset (param i32 i64 i32)))
    (import "io" "get_fd_offset_unchecked"
       (func $get_fd_offset_unchecked (param i32) (result (ref null $fd_offset))))
    (import "io" "release_fd_offset" (func $release_fd_offset (param i32)))
@@ -197,7 +197,9 @@
    (type $js (struct (field anyref)))
 
    (type $fd_offset
-      (struct (field $offset (mut i64)) (field $seeked (mut i32))))
+      (struct
+         (field $offset (mut i64)) (field $seeked (mut i32))
+         (field $append (mut i32))))
 
    (global $unix_error_exn (mut (ref eq)) (ref.i31 (i32.const 0)))
 
@@ -1943,12 +1945,13 @@
                   (call $unwrap
                      (call $caml_jsstring_of_string (local.get $path)))
                   (local.get $flags)
-                  (i31.get_u (ref.cast (ref i31) (local.get $perm)))))
-            (if (i32.and (local.get $flags) (i32.const 8)) ;; O_APPEND
-               (then (local.set $offset (call $file_size (local.get $fd))))))
+                  (i31.get_u (ref.cast (ref i31) (local.get $perm))))))
          (catch $javascript_exception
             (call $caml_unix_error (ref.null eq))))
-      (call $initialize_fd_offset (local.get $fd) (local.get $offset))
+      ;; Like native [O_APPEND], the offset starts at 0; writes reposition to
+      ;; EOF (see [unix_write]).
+      (call $initialize_fd_offset (local.get $fd) (local.get $offset)
+         (i32.and (local.get $flags) (i32.const 8))) ;; O_APPEND
       (ref.i31 (local.get $fd)))
 ))
 
@@ -1968,7 +1971,7 @@
       (block $null
          (return
             (br_on_null $null (call $get_fd_offset_unchecked (local.get $fd)))))
-      (struct.new $fd_offset (i64.const 0) (i32.const 0)))
+      (struct.new $fd_offset (i64.const 0) (i32.const 0) (i32.const 0)))
 
 (@if $wasi
 (@then
@@ -2189,6 +2192,10 @@
       (local.set $fd_offset (call $get_fd_offset (local.get $fd)))
       (local.set $offset
          (struct.get $fd_offset $offset (local.get $fd_offset)))
+      ;; [O_APPEND]: every write goes to the end of the file, regardless of the
+      ;; current offset.
+      (if (struct.get $fd_offset $append (local.get $fd_offset))
+         (then (local.set $offset (call $file_size (local.get $fd)))))
       (loop $loop
          (if (i32.gt_u (local.get $len) (i32.const 0))
             (then
@@ -2242,6 +2249,10 @@
       (local.set $fd_offset (call $get_fd_offset (local.get $fd)))
       (local.set $offset
          (struct.get $fd_offset $offset (local.get $fd_offset)))
+      ;; [O_APPEND]: every write goes to the end of the file, regardless of the
+      ;; current offset.
+      (if (struct.get $fd_offset $append (local.get $fd_offset))
+         (then (local.set $offset (call $file_size (local.get $fd)))))
       (if (i32.gt_u (local.get $len) (i32.const 0))
          (then
             (local.set $numbytes
@@ -2326,6 +2337,10 @@
       (local.set $fd_offset (call $get_fd_offset (local.get $fd)))
       (local.set $offset
          (struct.get $fd_offset $offset (local.get $fd_offset)))
+      ;; [O_APPEND]: every write goes to the end of the file, regardless of the
+      ;; current offset.
+      (if (struct.get $fd_offset $append (local.get $fd_offset))
+         (then (local.set $offset (call $file_size (local.get $fd)))))
       (loop $loop
          (if (i32.gt_u (local.get $len) (i32.const 0))
             (then

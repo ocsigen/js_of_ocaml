@@ -404,7 +404,9 @@ class MlNodeFd extends MlFile {
       var stats = this.fs.fstatSync(fd);
       flags.noSeek =
         stats.isCharacterDevice() || stats.isFIFO() || stats.isSocket();
-      this.offset = this.flags.append ? stats.size : 0;
+      // Like native [O_APPEND], the offset starts at the beginning of the
+      // file; each [write] repositions to the end (see [write] below).
+      this.offset = 0;
     } catch (err) {
       // The fstat will fail on standard streams under Windows with node
       // 18 (and lower). See https://github.com/libuv/libuv/pull/3811.
@@ -439,6 +441,10 @@ class MlNodeFd extends MlFile {
 
   write(buf, buf_offset, len, raise_unix) {
     try {
+      // [O_APPEND]: every write goes to the end of the file. The OS already
+      // enforces this for the bytes (the fd was opened with O_APPEND); we
+      // refresh the tracked offset so [pos]/[lseek] report the native value.
+      if (this.flags.append && !this.flags.noSeek) this.offset = this.length();
       if (this.flags.noSeek || !this.seeked) {
         var written = this.fs.writeSync(this.fd, buf, buf_offset, len);
       } else {

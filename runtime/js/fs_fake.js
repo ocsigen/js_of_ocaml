@@ -510,7 +510,9 @@ class MlFakeFd {
     this.file = file;
     this.name = name;
     this.flags = flags;
-    this.offset = flags.append ? file.length() : 0;
+    // Like native [O_APPEND], the offset starts at the beginning of the file;
+    // it is each [write] that repositions to the end (see [write] below).
+    this.offset = 0;
     this.seeked = false;
   }
 
@@ -539,6 +541,9 @@ class MlFakeFd {
 
   write(buf, pos, len, raise_unix) {
     if (this.file && (this.flags.wronly || this.flags.rdwr)) {
+      // [O_APPEND]: every write goes to the end of the file, regardless of the
+      // current offset (which may have been moved by [seek]).
+      if (this.flags.append) this.offset = this.file.length();
       var offset = this.offset;
       len = this.file.write(offset, buf, pos, len);
       this.offset += len;
