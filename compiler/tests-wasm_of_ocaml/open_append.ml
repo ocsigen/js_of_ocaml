@@ -1,8 +1,8 @@
-(* Regression test for the O_APPEND mask fix in [caml_sys_open] (wasm
-   runtime).  The post-open seek used bit 4, which is never set by any flag in
-   the table, so the wasm runtime never updated its tracked file offset to
-   EOF and [pos_out] returned 0 after opening an existing file in append
-   mode. *)
+(* [Open_append] must match native channel semantics:
+   - the channel position starts at 0 right after opening (it is *not* moved to
+     EOF at open time), and
+   - every write goes to the end of the file, even after [seek_out] moves the
+     position backwards, while [pos_out] keeps tracking the logical position. *)
 
 let path = "open_append_test.dat"
 
@@ -12,12 +12,18 @@ let () =
   output_string oc "abc";
   close_out oc;
   let oc = open_out_gen [ Open_wronly; Open_append; Open_binary ] 0o644 path in
-  assert (pos_out oc = 3);
+  (* Native: the position starts at the beginning, not at EOF. *)
+  assert (pos_out oc = 0);
   output_string oc "def";
-  assert (pos_out oc = 6);
+  assert (pos_out oc = 3);
+  (* Seeking backwards does not stop writes from appending. *)
+  seek_out oc 0;
+  assert (pos_out oc = 0);
+  output_string oc "Z";
+  assert (pos_out oc = 1);
   close_out oc;
   let ic = open_in_bin path in
   let s = really_input_string ic (in_channel_length ic) in
   close_in ic;
   Sys.remove path;
-  assert (s = "abcdef")
+  assert (s = "abcdefZ")
