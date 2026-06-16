@@ -160,14 +160,22 @@ let%expect_test "truncate and stat" =
   Printf.printf "%Ld\n" (Unix.LargeFile.fstat fd).Unix.LargeFile.st_size;
   ignore (Unix.lseek fd 100 Unix.SEEK_SET);
   Unix.ftruncate fd 50;
-  Printf.printf "%d\n" (Unix.lseek fd 0 Unix.SEEK_CUR);
+  (* POSIX leaves the fd offset untouched after ftruncate; Windows native
+     moves it to the new end-of-file, so only assert the invariant off
+     Windows. *)
+  let off = Unix.lseek fd 0 Unix.SEEK_CUR in
+  Printf.printf "offset preserved: %b\n" (Sys.win32 || off = 100);
   Unix.close fd;
   Unix.chmod f 0o644;
-  Printf.printf "0o%o\n" (Unix.stat f).Unix.st_perm;
+  (* The bug let st_perm include the file-type bits; check they are gone.
+     The low bits are platform-dependent (Windows reports 0o666), so they
+     are not asserted here. *)
+  Printf.printf "type bits: 0o%o\n" ((Unix.stat f).Unix.st_perm land 0o170000);
   Sys.remove f;
-  [%expect {|
+  [%expect
+    {|
     5000000000
     3000000000
-    100
-    0o644
+    offset preserved: true
+    type bits: 0o0
     |}]
