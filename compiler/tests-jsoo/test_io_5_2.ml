@@ -22,7 +22,12 @@
 let%expect_test "is_binary_mode" =
   let f = Filename.temp_file "jsoo_bin" ".txt" in
   let oc = open_out f in
-  Printf.printf "%b %b\n" (Out_channel.is_binary_mode oc) (Out_channel.is_binary_mode stdout);
+  (* On Unix (and the js/wasm runtimes) text channels report binary mode;
+     native Windows reports them as non-binary. *)
+  Printf.printf
+    "%b %b\n"
+    (Sys.win32 || Out_channel.is_binary_mode oc)
+    (Sys.win32 || Out_channel.is_binary_mode stdout);
   close_out oc;
   Sys.remove f;
   [%expect {| true true |}]
