@@ -129,7 +129,7 @@ $ ocamlfind ocamlc -package js_of_ocaml,js_of_ocaml-ppx \
     -linkpkg math.ml -o math.byte
 $ js_of_ocaml math.byte -o math.js
 $ node
-> var math = require("./math.js");
+> const math = require("./math.js");
 > math.add(2, 3)
 5
 > math.mul(4, 5)

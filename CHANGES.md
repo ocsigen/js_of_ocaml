@@ -34,6 +34,9 @@
   from `0.x` fractions, normalise exponent forms (`1e+05` → `1e5`), and
   pick backticks for string literals when they reduce escape count.
   Pretty-printed output (`--pretty`) is unchanged. (#1117)
+* Doc: use the more conventional spaced form `// Provides:` (instead of
+  `//Provides:`) for runtime annotations and `const` (instead of `var`)
+  in the manual's JavaScript examples (#NNNN)
 
 ## Bug fixes
 * Runtime/wasm: `Str.replace`/`Str.global_replace` raise `Failure` on a
