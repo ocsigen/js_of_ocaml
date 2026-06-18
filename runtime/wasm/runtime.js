@@ -286,6 +286,8 @@
     set: (x, y, z) => (x[y] = z),
     delete: (x, y) => delete x[y],
     instanceof: (x, y) => x instanceof y,
+    is_js_error: (x) => x instanceof Error,
+    to_js_string: (x) => String(x),
     typeof: (x) => typeof x,
     // biome-ignore lint/suspicious/noDoubleEquals: ..
     equals: (x, y) => x == y,
