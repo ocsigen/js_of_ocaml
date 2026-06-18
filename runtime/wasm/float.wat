@@ -465,6 +465,12 @@
                                     (local.get $d)))
                               (br_if $overflow
                                  (i32.lt_u (local.get $exp) (local.get $d)))
+                              ;; Any exponent this large saturates the double
+                              ;; to inf/0; stop accumulating before [exp * 10]
+                              ;; can wrap around 2^32 and slip back into range.
+                              (br_if $overflow
+                                 (i32.ge_u (local.get $exp)
+                                    (i32.const 0x10000000)))
                               (if (i32.ne (local.get $i) (local.get $len))
                                  (then
                                     (local.set $c

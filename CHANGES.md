@@ -240,6 +240,10 @@
   (the `nan`/`inf` detection read past the end of the string) and no
   longer accepts JavaScript binary/octal literals such as `"0b101"` or
   `"0o17"`; both now raise `Failure` like the native runtime (#2263)
+* Runtime/wasm: `float_of_string` of a hex literal with a huge exponent
+  (e.g. `"0x1p12884901890"`) saturates to infinity/0 instead of wrapping
+  the exponent modulo 2^32 and returning a wrong finite value such as
+  `4.0` (#2263)
 * Compiler: bound the statement-nesting depth of generated functions by
   emitting a flat dispatch loop instead of a deep tower of nested labelled
   blocks when a block has many sibling merge-node branch targets. Deep
