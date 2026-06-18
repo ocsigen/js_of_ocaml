@@ -6,6 +6,7 @@
   work on the Wasm runtime as on the JavaScript one (#2263)
 * Compiler: initial support for OCaml 5.5.0 (#2197, #2220)
 * Compiler: added a variable coalescing pass (#2166)
+* Compiler: faster variable naming and free-variable passes (#2321)
 * Wasm dynlink/toplevel support (#2186)
 * OxCaml support (#2105, #2225)
 * Runtime/wasm: faster copy between a Wasm string and an JavaScript array buffer (#2124)

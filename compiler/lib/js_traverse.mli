@@ -133,7 +133,14 @@ type t =
 type block =
   | Catch of formal_parameter
   | Params of formal_parameter_list
-  | Normal
+  | Var_scope
+      (** A scope that anchors [var] declarations but has no parameters: the
+          program top level and class static initialization blocks. Its [var]s
+          do not propagate to an enclosing scope. *)
+  | Let_scope
+      (** A lexical block: it anchors block-scoped ([let]/[const]/[using])
+          bindings. Its [var]s hoist to the nearest enclosing
+          [Params]/[Var_scope] scope. *)
 
 class type freevar = object ('a)
   inherit mapper
