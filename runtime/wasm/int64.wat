@@ -303,7 +303,12 @@
                      (else
                         (array.set $bytes (local.get $s) (i32.const 0)
                            (@char " "))))))))
-      (if (local.get $alternate)
+      ;; The "#" flag only prefixes octal/hex; for base 10 it is ignored (as
+      ;; in C). Guarding on base here also stops the "0" from overwriting the
+      ;; sign, since the digit-count phase above only reserves prefix room for
+      ;; base 8/16.
+      (if (i32.and (local.get $alternate)
+                   (i64.ne (local.get $base) (i64.const 10)))
          (then
             (if (local.get $i)
                (then

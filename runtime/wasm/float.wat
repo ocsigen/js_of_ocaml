@@ -257,6 +257,11 @@
                                  (i32.sub (local.get $c) (@char "0"))))
                            (br $precision)))))
                (else
+                  ;; No precision: [$c] still holds the char read for the "."
+                  ;; test (a sign flag like "+"/" " when one was consumed), not
+                  ;; the conversion letter. Load it so the checks below see the
+                  ;; real conversion, otherwise "%+f"/"% f" wrongly raise.
+                  (local.set $c (array.get_u $bytes (local.get $s) (local.get $i)))
                   (local.set $precision (i32.const 6))))
             (br_if $bad_format
               (i32.ne (i32.add (local.get $i) (i32.const 1)) (local.get $len)))
