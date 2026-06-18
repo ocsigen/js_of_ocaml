@@ -77,6 +77,8 @@ let and_ = function
 let lib_enabled_if = function
   | "test_sys" -> [ ge "5" ]
   | "test_fun_call" -> [ not_with_effects ]
+  (* [test_localtime] mutates process.env.TZ, which is Node-specific. *)
+  | "test_localtime" -> not_quickjs :: not_wasi
   | "test_fetch" -> not_quickjs :: not_wasi
   | _ -> not_wasi
 
@@ -85,6 +87,7 @@ let run_wasm = function
   | "test_fun_call" -> false
   | "test_poly_compare" -> false
   | "test_sys" -> false (* ZZZ /static not yet implemented *)
+  | "test_localtime" -> false (* relies on Node's process.env.TZ *)
   | _ -> true
 
 let rec pp f = function
