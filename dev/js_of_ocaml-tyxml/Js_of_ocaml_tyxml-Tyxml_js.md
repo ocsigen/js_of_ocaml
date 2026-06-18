@@ -18,7 +18,7 @@ Tyxml interface. Example of use for HTML:
  )
 ```
 see [https://ocsigen.org/tyxml/](https://ocsigen.org/tyxml/) the Tyxml project website.
-see [https://ocsigen.org/tyxml/dev/api/Html\_sigs.T](https://ocsigen.org/tyxml/dev/api/Html_sigs.T) Html\_sigs.T to have a list of available functions to build HTML.
+see [https://ocsigen.org/tyxml/latest/tyxml/Html\_sigs/module-type-T/index.html](https://ocsigen.org/tyxml/latest/tyxml/Html_sigs/module-type-T/index.html) Html\_sigs.T to have a list of available functions to build HTML.
 ```ocaml
 module type XML =
   Xml_sigs.T
