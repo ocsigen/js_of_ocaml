@@ -41,6 +41,11 @@
             (struct.get $float 0
                (br_on_cast_fail $not_float (ref eq) (ref $float)
                   (local.get $v))))
+         ;; A float init builds an unboxed float array, which has the tighter
+         ;; size limit of the dedicated floatarray primitives, not the generic
+         ;; one checked above.
+         (if (i32.ge_u (local.get $sz) (i32.const 0x7ffffff))
+            (then (call $caml_invalid_argument (global.get $Array_make))))
          (return (array.new $float_array (local.get $f) (local.get $sz)))))
       (local.set $b
          (array.new $block (local.get $v)
