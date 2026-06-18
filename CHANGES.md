@@ -48,6 +48,12 @@
   `Failure "output_value: array cannot be read back on 32-bit platform"`
   instead of silently truncating the size in the `CODE_BLOCK32` header
   (`tag | sz << 10`); the js and wasm runtimes share the fix (#2328)
+* Runtime: hashing a JavaScript string with code points above U+00FF now
+  mixes two 16-bit code units per word, instead of packing the raw code units
+  four per word as for a byte string (which overlapped their high bits and
+  lost information); ASCII and Latin-1 strings hash exactly as before. The
+  wasm runtime, which used to mix one code unit at a time, is brought in line
+  so a `Js.string` hashes to the same value on both backends (#2263)
 * Runtime: `Unix.localtime` computes `tm_yday` from the calendar date
   instead of the wall-clock distance to January 1, which was off by one
   during DST; the js and wasm-on-node backends share the fix (#2304)

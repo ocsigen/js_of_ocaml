@@ -166,9 +166,57 @@
     h = (h << 13) | (h >>> 19); //ROTL32(h, 13);
     return (((h + (h << 2)) | 0) + (0xe6546b64 | 0)) | 0;
   }
+  function jsstring_is_bytes(s) {
+    // Whether every code unit fits in a byte, i.e. no code point above U+00FF.
+    for (var i = 0; i < s.length; i++) if (s.charCodeAt(i) > 0xff) return false;
+    return true;
+  }
+  function caml_hash_mix_jsbytes(h, s) {
+    // Mix a byte string four code units per word, like the JS runtime.
+    var len = s.length,
+      i,
+      w;
+    for (i = 0; i + 4 <= len; i += 4) {
+      w =
+        s.charCodeAt(i) |
+        (s.charCodeAt(i + 1) << 8) |
+        (s.charCodeAt(i + 2) << 16) |
+        (s.charCodeAt(i + 3) << 24);
+      h = hash_int(h, w);
+    }
+    w = 0;
+    switch (len & 3) {
+      // biome-ignore lint/suspicious/noFallthroughSwitchClause: falls through
+      case 3:
+        w = s.charCodeAt(i + 2) << 16;
+      // falls through
+      // biome-ignore lint/suspicious/noFallthroughSwitchClause: falls through
+      case 2:
+        w |= s.charCodeAt(i + 1) << 8;
+      // falls through
+      case 1:
+        w |= s.charCodeAt(i);
+        h = hash_int(h, w);
+    }
+    return h ^ len;
+  }
   function hash_string(h, s) {
-    for (var i = 0; i < s.length; i++) h = hash_int(h, s.charCodeAt(i));
-    return h ^ s.length;
+    // A string whose code units all fit in a byte (every ASCII string, all of
+    // Latin-1) is mixed as bytes, leaving its hash unchanged and matching the
+    // JS runtime.
+    if (jsstring_is_bytes(s)) return caml_hash_mix_jsbytes(h, s);
+    // Genuine Unicode text: mix two 16-bit code units per word, so no
+    // information is lost (packing them four per word at byte offsets would
+    // overlap their high bits).
+    var len = s.length,
+      i,
+      w;
+    for (i = 0; i + 2 <= len; i += 2) {
+      w = s.charCodeAt(i) | (s.charCodeAt(i + 1) << 16);
+      h = hash_int(h, w);
+    }
+    if (len & 1) h = hash_int(h, s.charCodeAt(i));
+    return h ^ len;
   }
 
   function getenv(n) {
