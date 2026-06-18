@@ -120,8 +120,7 @@ function jsoo_sys_getenv(n) {
   if (Object.hasOwn(jsoo_static_env, n)) return jsoo_static_env[n];
   var process = globalThis.process;
   //nodejs env
-  if (process && process.env && Object.hasOwn(process.env, n))
-    return process.env[n];
+  if (process?.env && Object.hasOwn(process.env, n)) return process.env[n];
   //QuickJS: no `process`, but the host environment is reachable via `std`.
   var std = globalThis.std;
   if (std && typeof std.getenviron === "function") {
