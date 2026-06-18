@@ -80,6 +80,16 @@
   (pps ppx_js_internal ppx_expect)))
 
 (library
+ ;; lib/tests/test_localtime.ml
+ (name test_localtime_75)
+ (enabled_if (and (<> %{profile} quickjs) (<> %{profile} wasi) (<> %{profile} wasi-with-native-effects)))
+ (modules test_localtime)
+ (libraries js_of_ocaml unix)
+ (inline_tests (modes js))
+ (preprocess
+  (pps ppx_js_internal ppx_expect)))
+
+(library
  ;; lib/tests/test_misc.ml
  (name test_misc_75)
  (enabled_if (and (<> %{profile} wasi) (<> %{profile} wasi-with-native-effects)))
