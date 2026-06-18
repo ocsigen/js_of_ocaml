@@ -27,14 +27,14 @@ function caml_domain_dls_get(_unit) {
 }
 
 //Provides: caml_domain_tls
-//Version: >= 5.2, < 5.3
-//OxCaml
+//Version: >= 5.2
+//If: oxcaml
 var caml_domain_tls = [0];
 
 //Provides: caml_domain_tls_set
 //Requires: caml_domain_tls
-//Version: >= 5.2, < 5.3
-//OxCaml
+//Version: >= 5.2
+//If: oxcaml
 function caml_domain_tls_set(a) {
   caml_domain_tls = a;
   return 0;
@@ -42,8 +42,8 @@ function caml_domain_tls_set(a) {
 
 //Provides: caml_domain_tls_get
 //Requires: caml_domain_tls
-//Version: >= 5.2, < 5.3
-//OxCaml
+//Version: >= 5.2
+//If: oxcaml
 function caml_domain_tls_get(_unit) {
   return caml_domain_tls;
 }
@@ -81,8 +81,8 @@ function caml_atomic_cas_field(b, i, o, n) {
 }
 
 //Provides: caml_atomic_compare_exchange
-//Version: >= 5.2, < 5.3
-//OxCaml
+//Version: >= 5.2
+//If: oxcaml
 function caml_atomic_compare_exchange(ref, o, n) {
   var old = ref[1];
   if (old === o) ref[1] = n;
@@ -106,40 +106,40 @@ function caml_atomic_fetch_add_field(b, i, n) {
 }
 
 //Provides: caml_atomic_add
-//Version: >= 5.2, < 5.3
-//OxCaml
+//Version: >= 5.2
+//If: oxcaml
 function caml_atomic_add(ref, i) {
   ref[1] += i;
   return 0;
 }
 
 //Provides: caml_atomic_sub
-//Version: >= 5.2, < 5.3
-//OxCaml
+//Version: >= 5.2
+//If: oxcaml
 function caml_atomic_sub(ref, i) {
   ref[1] -= i;
   return 0;
 }
 
 //Provides: caml_atomic_land
-//Version: >= 5.2, < 5.3
-//OxCaml
+//Version: >= 5.2
+//If: oxcaml
 function caml_atomic_land(ref, i) {
   ref[1] &= i;
   return 0;
 }
 
 //Provides: caml_atomic_lor
-//Version: >= 5.2, < 5.3
-//OxCaml
+//Version: >= 5.2
+//If: oxcaml
 function caml_atomic_lor(ref, i) {
   ref[1] |= i;
   return 0;
 }
 
 //Provides: caml_atomic_lxor
-//Version: >= 5.2, < 5.3
-//OxCaml
+//Version: >= 5.2
+//If: oxcaml
 function caml_atomic_lxor(ref, i) {
   ref[1] ^= i;
   return 0;
@@ -162,8 +162,8 @@ function caml_atomic_exchange_field(b, i, v) {
 }
 
 //Provides: caml_atomic_set
-//Version: >= 5.2, < 5.3
-//OxCaml
+//Version: >= 5.2
+//If: oxcaml
 function caml_atomic_set(ref, v) {
   ref[1] = v;
   return 0;
@@ -189,8 +189,8 @@ function caml_recommended_domain_count(_unit) {
 }
 
 //Provides: caml_max_domain_count
-//Version: >= 5.2, < 5.3
-//OxCaml
+//Version: >= 5.2
+//If: oxcaml
 function caml_max_domain_count(_unit) {
   return 1;
 }
@@ -205,7 +205,7 @@ function caml_ml_domain_index(_unit) {
 //Provides: caml_ml_domain_index
 //Requires: caml_domain_id
 //Version: >= 5.2, < 5.3
-//OxCaml
+//If: oxcaml
 function caml_ml_domain_index(_unit) {
   return caml_domain_id;
 }
@@ -305,23 +305,23 @@ function caml_domain_count(_unit) {
 }
 
 //Provides: caml_atomic_load_field
-//Version: >= 5.2, < 5.3
-//OxCaml
+//Version: >= 5.2, < 5.4
+//If: oxcaml
 function caml_atomic_load_field(ref, field) {
   return ref[field + 1];
 }
 
 //Provides: caml_atomic_add_field
-//Version: >= 5.2, < 5.3
-//OxCaml
+//Version: >= 5.2
+//If: oxcaml
 function caml_atomic_add_field(ref, field, i) {
   ref[field + 1] += i;
   return 0;
 }
 
 //Provides: caml_atomic_fetch_add_field
-//Version: >= 5.2, < 5.3
-//OxCaml
+//Version: >= 5.2, < 5.4
+//If: oxcaml
 function caml_atomic_fetch_add_field(ref, field, i) {
   var old = ref[field + 1];
   ref[field + 1] += i;
@@ -329,8 +329,8 @@ function caml_atomic_fetch_add_field(ref, field, i) {
 }
 
 //Provides: caml_atomic_cas_field
-//Version: >= 5.2, < 5.3
-//OxCaml
+//Version: >= 5.2, < 5.4
+//If: oxcaml
 function caml_atomic_cas_field(ref, field, o, n) {
   if (ref[field + 1] === o) {
     ref[field + 1] = n;
@@ -340,8 +340,8 @@ function caml_atomic_cas_field(ref, field, o, n) {
 }
 
 //Provides: caml_atomic_compare_exchange_field
-//Version: >= 5.2, < 5.3
-//OxCaml
+//Version: >= 5.2
+//If: oxcaml
 function caml_atomic_compare_exchange_field(ref, field, o, n) {
   var old = ref[field + 1];
   if (old === o) {
@@ -351,16 +351,16 @@ function caml_atomic_compare_exchange_field(ref, field, o, n) {
 }
 
 //Provides: caml_atomic_set_field
-//Version: >= 5.2, < 5.3
-//OxCaml
+//Version: >= 5.2
+//If: oxcaml
 function caml_atomic_set_field(ref, field, v) {
   ref[field + 1] = v;
   return 0;
 }
 
 //Provides: caml_atomic_exchange_field
-//Version: >= 5.2, < 5.3
-//OxCaml
+//Version: >= 5.2, < 5.4
+//If: oxcaml
 function caml_atomic_exchange_field(ref, field, v) {
   var old = ref[field + 1];
   ref[field + 1] = v;
@@ -368,32 +368,32 @@ function caml_atomic_exchange_field(ref, field, v) {
 }
 
 //Provides: caml_atomic_sub_field
-//Version: >= 5.2, < 5.3
-//OxCaml
+//Version: >= 5.2
+//If: oxcaml
 function caml_atomic_sub_field(ref, field, i) {
   ref[field + 1] -= i;
   return 0;
 }
 
 //Provides: caml_atomic_land_field
-//Version: >= 5.2, < 5.3
-//OxCaml
+//Version: >= 5.2
+//If: oxcaml
 function caml_atomic_land_field(ref, field, i) {
   ref[field + 1] &= i;
   return 0;
 }
 
 //Provides: caml_atomic_lor_field
-//Version: >= 5.2, < 5.3
-//OxCaml
+//Version: >= 5.2
+//If: oxcaml
 function caml_atomic_lor_field(ref, field, i) {
   ref[field + 1] |= i;
   return 0;
 }
 
 //Provides: caml_atomic_lxor_field
-//Version: >= 5.2, < 5.3
-//OxCaml
+//Version: >= 5.2
+//If: oxcaml
 function caml_atomic_lxor_field(ref, field, i) {
   ref[field + 1] ^= i;
   return 0;

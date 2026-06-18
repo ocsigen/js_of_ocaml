@@ -262,8 +262,8 @@ function caml_hash(count, limit, seed, obj) {
 
 //Provides: caml_hash_exn
 //Requires: caml_hash
-//Version: >= 5.2, < 5.3
-//OxCaml
+//Version: >= 5.2
+//If: oxcaml
 var caml_hash_exn = caml_hash;
 
 //Provides: caml_string_hash

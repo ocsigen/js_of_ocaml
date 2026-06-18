@@ -35,8 +35,8 @@
 
 //Provides: caml_get_idx_bytecode mutable (mutable, const)
 //Requires: caml_invalid_argument
-//Version: >= 5.2, < 5.3
-//OxCaml
+//Version: >= 5.2
+//If: oxcaml
 function caml_get_idx_bytecode(base, idx) {
   if (idx[0] !== 0) {
     caml_invalid_argument(
@@ -53,8 +53,8 @@ function caml_get_idx_bytecode(base, idx) {
 
 //Provides: caml_set_idx_bytecode (mutable, const, mutable)
 //Requires: caml_invalid_argument
-//Version: >= 5.2, < 5.3
-//OxCaml
+//Version: >= 5.2
+//If: oxcaml
 function caml_set_idx_bytecode(base, idx, v) {
   if (idx[0] !== 0) {
     caml_invalid_argument(
@@ -71,8 +71,8 @@ function caml_set_idx_bytecode(base, idx, v) {
 }
 
 //Provides: caml_deepen_idx_bytecode const (const, const)
-//Version: >= 5.2, < 5.3
-//OxCaml
+//Version: >= 5.2
+//If: oxcaml
 function caml_deepen_idx_bytecode(idx_prefix, idx_suffix) {
   var prefix_depth = idx_prefix.length - 1;
   var suffix_depth = idx_suffix.length - 1;
