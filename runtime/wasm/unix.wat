@@ -279,6 +279,36 @@
          (i32.const 33) (i32.const 34) (i32.const 35) (i32.const -1)
          (i32.const 62) (i32.const -1) (i32.const 36) (i32.const -1)))
 
+   ;; Names of the Unix.error variants, in declaration order. Used as the
+   ;; message for variants that have no WASI errno equivalent (EWOULDBLOCK,
+   ;; ESHUTDOWN, ...), matching the JS runtime's "unix_error[errno]" fallback
+   ;; instead of reporting "Unknown error -1".
+   (global $error_names (ref $block)
+      (array.new_fixed $block 68
+         (@string "E2BIG") (@string "EACCES") (@string "EAGAIN")
+         (@string "EBADF") (@string "EBUSY") (@string "ECHILD")
+         (@string "EDEADLK") (@string "EDOM") (@string "EEXIST")
+         (@string "EFAULT") (@string "EFBIG") (@string "EINTR")
+         (@string "EINVAL") (@string "EIO") (@string "EISDIR")
+         (@string "EMFILE") (@string "EMLINK") (@string "ENAMETOOLONG")
+         (@string "ENFILE") (@string "ENODEV") (@string "ENOENT")
+         (@string "ENOEXEC") (@string "ENOLCK") (@string "ENOMEM")
+         (@string "ENOSPC") (@string "ENOSYS") (@string "ENOTDIR")
+         (@string "ENOTEMPTY") (@string "ENOTTY") (@string "ENXIO")
+         (@string "EPERM") (@string "EPIPE") (@string "ERANGE")
+         (@string "EROFS") (@string "ESPIPE") (@string "ESRCH")
+         (@string "EXDEV") (@string "EWOULDBLOCK") (@string "EINPROGRESS")
+         (@string "EALREADY") (@string "ENOTSOCK") (@string "EDESTADDRREQ")
+         (@string "EMSGSIZE") (@string "EPROTOTYPE") (@string "ENOPROTOOPT")
+         (@string "EPROTONOSUPPORT") (@string "ESOCKTNOSUPPORT")
+         (@string "EOPNOTSUPP") (@string "EPFNOSUPPORT") (@string "EAFNOSUPPORT")
+         (@string "EADDRINUSE") (@string "EADDRNOTAVAIL") (@string "ENETDOWN")
+         (@string "ENETUNREACH") (@string "ENETRESET") (@string "ECONNABORTED")
+         (@string "ECONNRESET") (@string "ENOBUFS") (@string "EISCONN")
+         (@string "ENOTCONN") (@string "ESHUTDOWN") (@string "ETOOMANYREFS")
+         (@string "ETIMEDOUT") (@string "ECONNREFUSED") (@string "EHOSTDOWN")
+         (@string "EHOSTUNREACH") (@string "ELOOP") (@string "EOVERFLOW")))
+
    (func $caml_unix_error_of_code (param $errcode i32) (result (ref eq))
       (local $err i32)
       (if (i32.le_u (local.get $errcode) (i32.const 76))
@@ -338,6 +368,16 @@
       (if (i32.ge_u (local.get $errcode)
              (array.len (global.get $error_messages)))
          (then
+            ;; A known variant with no WASI errno equivalent (EWOULDBLOCK, ...)
+            ;; is reported by its name, like the JS runtime, rather than as
+            ;; "Unknown error -1". EUNKNOWNERR(n) (a block) still falls through.
+            (if (i32.and (ref.test (ref i31) (local.get $err))
+                         (i32.lt_u (local.get $n)
+                            (array.len (global.get $error_names))))
+               (then
+                  (return
+                     (array.get $block (global.get $error_names)
+                        (local.get $n)))))
             (return_call $caml_string_concat
                (@string "Unknown error ")
                (call $caml_format_int (@string "%d")

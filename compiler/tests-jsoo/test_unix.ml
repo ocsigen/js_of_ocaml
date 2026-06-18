@@ -245,3 +245,15 @@ let%expect_test "is_directory follows symlinks" =
     symlink->dir: true
     symlink->file: false
     |}]
+
+(* An error variant with no WASI errno equivalent (e.g. EWOULDBLOCK) must
+   still produce a real message, not "Unknown error -1". The exact text is
+   backend-specific (a descriptive string natively / under node, the error
+   name under WASI), so only the invariant is checked. *)
+let%expect_test "error_message of a non-WASI error code" =
+  let m = Unix.error_message Unix.EWOULDBLOCK in
+  Printf.printf
+    "%b %b\n"
+    (String.length m > 0)
+    (not (String.starts_with ~prefix:"Unknown error" m));
+  [%expect {| true true |}]
