@@ -354,3 +354,26 @@ let%expect_test "localtime tm_yday under DST" =
     tm.Unix.tm_yday
     tm.Unix.tm_isdst;
   [%expect {| 2021-07-01 00:30 yday=181 dst=true |}]
+
+let%expect_test "localtime tm_isdst for Europe/Dublin (negative DST)" =
+  ignore (Js.Unsafe.js_expr {|(process.env.TZ = "Europe/Dublin")|});
+  (* Dublin uses "negative DST": winter (GMT) is the daylight deviation
+     from its summer standard (IST), so tm_isdst must match the native
+     runtime, which reports it inverted from the usual offset heuristic *)
+  let show t =
+    let tm = Unix.localtime t in
+    Printf.printf
+      "%d-%02d-%02d %02d:%02d dst=%b\n"
+      (tm.Unix.tm_year + 1900)
+      (tm.Unix.tm_mon + 1)
+      tm.Unix.tm_mday
+      tm.Unix.tm_hour
+      tm.Unix.tm_min
+      tm.Unix.tm_isdst
+  in
+  show 1610712000. (* 2021-01-15 12:00 GMT, winter *);
+  show 1625137200. (* 2021-07-01 12:00 IST, summer *);
+  [%expect {|
+    2021-01-15 12:00 dst=true
+    2021-07-01 12:00 dst=false
+    |}]
