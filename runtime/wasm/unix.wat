@@ -742,7 +742,7 @@
       (local.set $res
          (call $path_filestat_set_times
             (local.get $p_fd)
-            (i32.const 0)
+            (i32.const 1) ;; symlink_follow, like every other path op and native
             (local.get $p_addr)
             (local.get $p_len)
             (local.get $atim)
