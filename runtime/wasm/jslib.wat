@@ -189,9 +189,12 @@
    (func (export "caml_js_meth_call")
       (param $o (ref eq)) (param $f (ref eq)) (param $args (ref eq))
       (result (ref eq))
+      ;; Decode the method name as UTF-8, like the JS runtime
+      ;; (caml_js_meth_call uses caml_jsstring_of_string); a non-ASCII method
+      ;; name otherwise resolved differently than on the JS backend.
       (if (ref.test (ref $bytes) (local.get $f))
          (then
-            (local.set $f (call $caml_jsbytes_of_bytes (local.get $f)))))
+            (local.set $f (call $caml_jsstring_of_bytes (local.get $f)))))
       (return_call $wrap
          (call $meth_call (call $unwrap (local.get $o))
             (call $unwrap (local.get $f))
