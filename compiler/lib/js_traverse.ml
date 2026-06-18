@@ -1019,7 +1019,16 @@ let empty = { use = IdentSet.empty; def_var = IdentSet.empty; def_local = IdentS
 type block =
   | Catch of formal_parameter
   | Params of formal_parameter_list
-  | Normal
+  | Var_scope
+    (* A scope that anchors [var] declarations but has no parameters: the
+         program top level and class static initialization blocks. Like
+         [Params], its [var]s do not propagate to an enclosing scope, so it
+         must always be recorded. *)
+  | Let_scope
+(* A lexical block: it anchors block-scoped ([let]/[const]/[using])
+         bindings. Its [var]s hoist to the nearest [Params]/[Var_scope]
+         ancestor and its uses propagate up via [merge_block_info], so it only
+         constrains naming when it binds something block-scoped. *)
 
 class type freevar = object ('a)
   inherit mapper
@@ -1130,7 +1139,7 @@ class free =
               ident_o
           in
           let cl_decl = cbody#class_decl cl_decl in
-          cbody#record_block Normal;
+          cbody#record_block Let_scope;
           m#merge_block_info cbody;
           EClass (ident_o, cl_decl)
       | EAssignTarget (ArrayTarget l) ->
@@ -1162,7 +1171,7 @@ class free =
       let same_level = level in
       let tbody = {<state_ = empty; level = same_level>} in
       let b = tbody#statements b in
-      tbody#record_block Normal;
+      tbody#record_block Let_scope;
       m#merge_block_info tbody;
       b
 
@@ -1171,7 +1180,9 @@ class free =
       | CEStaticBLock l ->
           let tbody = {<state_ = empty; level = level + 1>} in
           let l = tbody#statements l in
-          tbody#record_block Normal;
+          (* A static block anchors its own [var]s (merged with [merge_info],
+             so they do not propagate up): it must always be recorded. *)
+          tbody#record_block Var_scope;
           m#merge_info tbody;
           CEStaticBLock l
       | _ -> super#class_element x
@@ -1192,7 +1203,7 @@ class free =
           let same_level = level in
           let cbody = {<state_ = empty; level = same_level>} in
           let cl_decl = cbody#class_decl cl_decl in
-          cbody#record_block Normal;
+          cbody#record_block Let_scope;
           m#merge_block_info cbody;
           m#def_local id;
           Class_declaration (id, cl_decl)
@@ -1204,7 +1215,7 @@ class free =
           let e1 = Option.map ~f:m'#expression e1 in
           let e2 = Option.map ~f:m'#expression e2 in
           let st = m'#statement st in
-          m'#record_block Normal;
+          m'#record_block Let_scope;
           m#merge_block_info m';
           For_statement (Right (k, l), e1, e2, (st, m#loc loc))
       | ForIn_statement (Right (((Const | Let) as k), l), e2, (st, loc)) ->
@@ -1213,7 +1224,7 @@ class free =
           let l = m'#for_binding k l in
           let e2 = m'#expression e2 in
           let st = m'#statement st in
-          m'#record_block Normal;
+          m'#record_block Let_scope;
           m#merge_block_info m';
           ForIn_statement (Right (k, l), e2, (st, m#loc loc))
       | ForOf_statement (Right (((Const | Let) as k), l), e2, (st, loc)) ->
@@ -1222,7 +1233,7 @@ class free =
           let l = m'#for_binding k l in
           let e2 = m'#expression e2 in
           let st = m'#statement st in
-          m'#record_block Normal;
+          m'#record_block Let_scope;
           m#merge_block_info m';
           ForOf_statement (Right (k, l), e2, (st, m#loc loc))
       | ForAwaitOf_statement (Right (((Const | Let) as k), l), e2, (st, loc)) ->
@@ -1231,7 +1242,7 @@ class free =
           let l = m'#for_binding k l in
           let e2 = m'#expression e2 in
           let st = m'#statement st in
-          m'#record_block Normal;
+          m'#record_block Let_scope;
           m#merge_block_info m';
           ForAwaitOf_statement (Right (k, l), e2, (st, m#loc loc))
       | Switch_statement (e, l, def, l') ->
@@ -1245,7 +1256,7 @@ class free =
             | Some l -> Some (m'#statements l)
           in
           let e = m#expression e in
-          m'#record_block Normal;
+          m'#record_block Let_scope;
           m#merge_block_info m';
           Switch_statement (e, l, def, l')
       | Try_statement (b, w, f) ->
@@ -1330,8 +1341,24 @@ let declared scope params body =
   | Fun_block None -> ()
   | Fun_block (Some x) -> decl_var x);
   List.iter params ~f:(fun x -> decl_var x);
+  (* Scopes that hoist [var] declarations ([Fun_block]/[Module]) must be
+     scanned recursively to collect vars nested at any depth. Lexical scopes
+     ([Lexical_block]/[Script]) only ever declare names at their own top level
+     (they never hoist [var], and block-scoped declarations below the top level
+     belong to the inner scope), so descending into nested block/loop/switch
+     scopes would be wasted work that re-scans the same statements once per
+     enclosing scope (quadratic in nesting depth). *)
+  let descend_into_nested_scopes =
+    match scope with
+    | Fun_block _ | Module -> true
+    | Lexical_block | Script -> false
+  in
   (object (self)
-     val depth = 0
+     (* [nested] becomes [true] once we descend into an inner block/loop/switch
+        scope (only done when [descend_into_nested_scopes]). Below the top level
+        we collect only hoisted [var]s; block-scoped [let]/[const] and
+        function/class declarations belong to the inner scope. *)
+     val nested = false
 
      inherit iter as super
 
@@ -1344,7 +1371,7 @@ let declared scope params body =
      method statement x =
        match scope, x with
        | (Lexical_block | Fun_block _ | Module), Function_declaration (id, fd) ->
-           if depth = 0 then decl_var id;
+           if not nested then decl_var id;
            self#fun_decl fd
        | Script, Function_declaration (_, fd) ->
            (* ECMAScript 8.2.10: At the top level of a function or
@@ -1353,29 +1380,27 @@ let declared scope params body =
            self#fun_decl fd
        | (Lexical_block | Fun_block _ | Module | Script), Class_declaration (id, cl_decl)
          ->
-           if depth = 0 then decl_var id;
+           if not nested then decl_var id;
            self#class_decl cl_decl
-       | _, For_statement (Right (((Const | Let) as k), l), _e1, _e2, (st, _loc)) ->
-           let m = {<depth = depth + 1>} in
-           List.iter ~f:(m#variable_declaration k) l;
-           m#statement st
-       | _, ForOf_statement (Right (((Const | Let) as k), l), _e2, (st, _loc)) ->
-           let m = {<depth = depth + 1>} in
-           m#for_binding k l;
-           m#statement st
-       | _, ForAwaitOf_statement (Right (((Const | Let) as k), l), _e2, (st, _loc)) ->
-           let m = {<depth = depth + 1>} in
-           m#for_binding k l;
-           m#statement st
-       | _, ForIn_statement (Right (((Const | Let) as k), l), _e2, (st, _loc)) ->
-           let m = {<depth = depth + 1>} in
-           m#for_binding k l;
-           m#statement st
+       | _, For_statement (Right ((Const | Let), _), _, _, (st, _))
+       | _, ForOf_statement (Right ((Const | Let), _), _, (st, _))
+       | _, ForAwaitOf_statement (Right ((Const | Let), _), _, (st, _))
+       | _, ForIn_statement (Right ((Const | Let), _), _, (st, _)) ->
+           (* A [let]/[const] for-binding is block-scoped: it belongs to the
+              loop, not the enclosing scope. Since we reach here with
+              [nested = true], the binding would not be collected anyway, so we
+              only need to look for hoisted vars in the body. *)
+           if descend_into_nested_scopes
+           then
+             let m = {<nested = true>} in
+             m#statement st
        | _, Switch_statement (_, l, def, l') ->
-           let m = {<depth = depth + 1>} in
-           List.iter l ~f:(fun (_, s) -> m#statements s);
-           Option.iter def ~f:(fun l -> m#statements l);
-           List.iter l' ~f:(fun (_, s) -> m#statements s)
+           if descend_into_nested_scopes
+           then (
+             let m = {<nested = true>} in
+             List.iter l ~f:(fun (_, s) -> m#statements s);
+             Option.iter def ~f:(fun l -> m#statements l);
+             List.iter l' ~f:(fun (_, s) -> m#statements s))
        | _, Import ({ kind; from = _; withClause = _ }, _loc) -> (
            match kind with
            | DeferNamespace i -> decl_var i
@@ -1396,10 +1421,10 @@ let declared scope params body =
        | ExportClass (_id, _f) -> ()
        | ExportNames l -> List.iter ~f:(fun (id, _) -> self#ident id) l
        | ExportDefaultFun (Some id, decl) ->
-           if depth = 0 then decl_var id;
+           if not nested then decl_var id;
            self#fun_decl decl
        | ExportDefaultClass (Some id, decl) ->
-           if depth = 0 then decl_var id;
+           if not nested then decl_var id;
            self#class_decl decl
        | ExportDefaultFun (None, decl) -> self#fun_decl decl
        | ExportDefaultClass (None, decl) -> self#class_decl decl
@@ -1409,26 +1434,24 @@ let declared scope params body =
 
      method variable_declaration k l =
        if
-         match scope, k with
-         | ( (Lexical_block | Fun_block _ | Module | Script)
-           , (Let | Const | Using | AwaitUsing) ) -> depth = 0
-         | (Lexical_block | Script), Var -> false
-         | (Fun_block _ | Module), Var -> true
+         match k with
+         | Let | Const | Using | AwaitUsing -> not nested
+         | Var -> descend_into_nested_scopes
        then
          let ids = bound_idents_of_variable_declaration l in
          List.iter ids ~f:decl_var
 
      method block l =
-       let m = {<depth = depth + 1>} in
-       m#statements l
+       if descend_into_nested_scopes
+       then
+         let m = {<nested = true>} in
+         m#statements l
 
      method for_binding k p =
        if
-         match scope, k with
-         | ( (Lexical_block | Fun_block _ | Module | Script)
-           , (Let | Const | Using | AwaitUsing) ) -> depth = 0
-         | (Lexical_block | Script), Var -> false
-         | (Fun_block _ | Module), Var -> true
+         match k with
+         | Let | Const | Using | AwaitUsing -> not nested
+         | Var -> descend_into_nested_scopes
        then
          match p with
          | BindingIdent i -> decl_var i

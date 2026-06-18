@@ -237,14 +237,14 @@ while compiling the OCaml toplevel:
     in
     let all =
       match block with
-      | Normal -> all
+      | Let_scope | Var_scope -> all
       | Params _ -> all
       | Catch (p, _) ->
           let ids = bound_idents_of_binding p in
           List.fold_left ids ~init:all ~f:(fun all i -> Javascript.IdentSet.add i all)
     in
     match block with
-    | Normal -> add_constraints state all ~offset:0 []
+    | Let_scope | Var_scope -> add_constraints state all ~offset:0 []
     | Catch (v, _) -> add_constraints state all ~offset:5 (bound_idents_of_binding v)
     | Params p -> add_constraints state all ~offset:0 (bound_idents_of_params p)
 end
@@ -271,7 +271,7 @@ module Preserve : Strategy = struct
       | Catch (p, _) ->
           bound_idents_of_binding p
           @ Javascript.IdentSet.elements scope.Js_traverse.def_local
-      | Normal -> Javascript.IdentSet.elements scope.Js_traverse.def_local
+      | Let_scope | Var_scope -> Javascript.IdentSet.elements scope.Js_traverse.def_local
       | Params _ ->
           Javascript.IdentSet.elements
             (IdentSet.union scope.Js_traverse.def_var scope.Js_traverse.def_local)
@@ -379,7 +379,16 @@ class traverse record_block =
     inherit Js_traverse.free as super
 
     method! record_block b =
-      record_block m#state b;
+      (* A [Let_scope] (lexical) block that binds nothing block-scoped only
+         constrains naming through identifiers that its enclosing scope also
+         records (its [var]s hoist and its uses propagate up via
+         [merge_block_info]). Recording it would add a redundant constraint
+         table, so skip it. [Var_scope]/[Params]/[Catch] anchor their own
+         bindings and are always recorded. *)
+      (match b with
+      | Js_traverse.Let_scope
+        when Javascript.IdentSet.is_empty m#state.Js_traverse.def_local -> ()
+      | Let_scope | Var_scope | Params _ | Catch _ -> record_block m#state b);
       super#record_block b
   end
 
@@ -435,7 +444,9 @@ let program' (module Strategy : Strategy) p =
     let o = new traverse_idents_and_labels ~idents:count ~labels in
     o#program p
   in
-  mapper#record_block Normal;
+  (* The program top level anchors its own [var]s and has no enclosing scope
+     to record them, so it is a [Var_scope] (never skipped). *)
+  mapper#record_block Var_scope;
   let freevar =
     IdentSet.fold
       (fun ident acc ->
