@@ -17,8 +17,9 @@
 {1:supported-environments Supported environments}
 
 The generated JavaScript works with:
-- Node.js 16 or later
+- Node.js 18 or later
 - Any modern browser supporting ECMAScript 2020 (ES2020) — Chrome 80+, Firefox 74+, Safari 13.4+, Edge 80+
+- QuickJS-NG
 
 {b Note}: [Stdlib.Weak] and [Stdlib.Ephemeron] require [WeakRef] support (ECMAScript 2021), available in all modern browsers and Node.js 14.6+.
 
