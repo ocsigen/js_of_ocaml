@@ -158,8 +158,8 @@ function caml_sys_getenv_opt(name) {
 //Requires: caml_string_of_jsstring
 //Requires: caml_jsstring_of_string
 //Requires: jsoo_sys_getenv
-//Version: >= 5.2, < 5.3
-//OxCaml
+//Version: >= 5.2, < 5.4
+//If: oxcaml
 function caml_sys_getenv_opt(name) {
   var r = jsoo_sys_getenv(caml_jsstring_of_string(name));
   if (r === undefined) return 0;
@@ -361,36 +361,36 @@ function caml_sys_isatty(chan) {
 }
 
 //Provides: caml_sys_const_runtime5 const
-//Version: >= 5.2, < 5.3
-//OxCaml
+//Version: >= 5.2
+//If: oxcaml
 function caml_sys_const_runtime5(_unit) {
   return 1;
 }
 
 //Provides: arch
-//Version: >= 5.2, < 5.3
-//OxCaml
+//Version: >= 5.2
+//If: oxcaml
 var arch = globalThis.process?.arch === "arm64" ? "arm64" : "amd64";
 
 //Provides: caml_sys_const_arch_amd64 const
 //Requires: arch
-//Version: >= 5.2, < 5.3
-//OxCaml
+//Version: >= 5.2
+//If: oxcaml
 function caml_sys_const_arch_amd64(_unit) {
   return arch === "amd64" ? 1 : 0;
 }
 
 //Provides: caml_sys_const_arch_arm64 const
 //Requires: arch
-//Version: >= 5.2, < 5.3
-//OxCaml
+//Version: >= 5.2
+//If: oxcaml
 function caml_sys_const_arch_arm64(_unit) {
   return arch === "arm64" ? 1 : 0;
 }
 
 //Provides: caml_is_boot_compiler
-//Version: >= 5.2, < 5.3
-//OxCaml
+//Version: >= 5.2
+//If: oxcaml
 function caml_is_boot_compiler(_unit) {
   return 0;
 }
@@ -458,8 +458,8 @@ function caml_sys_io_buffer_size(_unit) {
 
 //Provides: caml_sys_io_buffer_size
 //Requires: caml_io_buffer_size
-//Version: >= 5.2, < 5.3
-//OxCaml
+//Version: >= 5.2, < 5.4
+//If: oxcaml
 function caml_sys_io_buffer_size(_unit) {
   return caml_io_buffer_size;
 }

@@ -84,8 +84,8 @@ function caml_array_bound_error() {
 
 //Provides: caml_no_bytecode_impl
 //Requires: caml_failwith
-//Version: >= 5.2, < 5.3
-//OxCaml
+//Version: >= 5.2
+//If: oxcaml
 function caml_no_bytecode_impl() {
   caml_failwith("No bytecode implementation provided for this external");
 }
