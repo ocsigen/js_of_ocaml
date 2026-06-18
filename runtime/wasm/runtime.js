@@ -465,15 +465,11 @@
       // to avoid the Intl lookup for every other zone).
       if (
         stdTimezoneOffset === 0 &&
-        jan.getTimezoneOffset() !== jul.getTimezoneOffset()
-      ) {
-        try {
-          if (
-            Intl.DateTimeFormat().resolvedOptions().timeZone === "Europe/Dublin"
-          )
-            isdst = !isdst;
-        } catch (e) {}
-      }
+        jan.getTimezoneOffset() !== jul.getTimezoneOffset() &&
+        globalThis.Intl?.DateTimeFormat?.().resolvedOptions().timeZone ===
+          "Europe/Dublin"
+      )
+        isdst = !isdst;
       return caml_alloc_tm(
         d.getSeconds(),
         d.getMinutes(),

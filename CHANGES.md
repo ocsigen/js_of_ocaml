@@ -39,6 +39,10 @@
 * Runtime: `Unix.localtime` computes `tm_yday` from the calendar date
   instead of the wall-clock distance to January 1, which was off by one
   during DST; the js and wasm-on-node backends share the fix (#2304)
+* Runtime: `Unix.localtime` reaches `Intl` through `globalThis.Intl?.`
+  (with an optional call on `DateTimeFormat?.()`) so the runtime
+  free-variable check passes and hosts without `Intl` fall back to the
+  offset heuristic instead of throwing (#2324)
 * Runtime/wasm: `Str.replace`/`Str.global_replace` raise `Failure` on a
   backreference to a group one past the last (e.g. `"\1"` against a
   group-less regexp) instead of trapping with an out-of-bounds access;
