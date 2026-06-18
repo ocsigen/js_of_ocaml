@@ -19,6 +19,15 @@
 (packages js_of_ocaml js_of_ocaml-lwt js_of_ocaml-tyxml js_of_ocaml-toplevel)
 (doc-manual true)              ; also build @doc-manual (the interactive examples)
 (manual-files js_of_ocaml)    ; copy _build/.../manual/files into js_of_ocaml/files
+;; Sibling Ocsigen projects whose ocaml.org xrefs (produced by odoc_driver
+;; --remap) are rewritten to relative links into their own wodoc docs:
+;;   (pkg deploy-dir layout wrapper-module)
+;; layout = subdir (each opam package under its own <pkg>/, whole family) |
+;; root (modules at the version root). Non-Ocsigen deps (react) stay on
+;; ocaml.org; lwt is added once its docs are rebuilt with wodoc (ocsigen/lwt#1109).
+(hosted
+  (tyxml        tyxml        subdir)
+  (reactiveData reactiveData root))
 (nav
   (section "Getting Started"
     (link "Overview"      js_of_ocaml/overview.html   overview)
