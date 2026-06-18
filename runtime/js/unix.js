@@ -50,13 +50,13 @@ function caml_unix_gmtime(t) {
 //Alias: unix_localtime
 function caml_unix_localtime(t) {
   var d = new Date(t * 1000);
-  var y = d.getFullYear();
-  // compute tm_yday from the date: the wall-clock distance to
-  // January 1 is off by one hour when DST is in effect
-  var cumul = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
-  var leap = (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
-  var doy =
-    cumul[d.getMonth()] + d.getDate() - 1 + (leap && d.getMonth() > 1 ? 1 : 0);
+  // tm_yday is the distance in days to January 1; compute it in UTC so
+  // that the one-hour DST shift of wall-clock arithmetic does not apply
+  var doy = Math.floor(
+    (Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) -
+      Date.UTC(d.getFullYear(), 0, 1)) /
+      86400000,
+  );
   var jan = new Date(d.getFullYear(), 0, 1);
   var jul = new Date(d.getFullYear(), 6, 1);
   var stdTimezoneOffset = Math.max(
