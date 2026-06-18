@@ -123,6 +123,9 @@
   comparison required an exact length and never matched. The empty path is
   no longer treated as the current directory but fails with `ENOENT` like
   native (#2263)
+* Runtime/wasm (WASI): `Unix.utimes` follows symlinks like native and the
+  other path operations; it passed `lookupflags = 0`, so it set the times
+  on the symlink itself instead of its target (#2263)
 * Runtime: `Unix.localtime` computes `tm_yday` from the calendar date
   instead of the wall-clock distance to January 1, which was off by one
   during DST; the js and wasm-on-node backends share the fix (#2304)

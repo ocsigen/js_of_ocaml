@@ -267,3 +267,16 @@ let%expect_test "empty path is ENOENT" =
    | exception Unix.Unix_error (e, _, _) ->
        print_endline (String.lowercase_ascii (Unix.error_message e)));
   [%expect {| ENOENT |}]
+
+(* Unix.utimes follows symlinks (it is utimes, not lutimes): setting the
+   times through a symlink updates the target. *)
+let%expect_test "utimes follows symlinks" =
+  let f = Filename.temp_file "jsoo_utf" ".dat" in
+  let l = Filename.temp_file "jsoo_utl" "" in
+  Sys.remove l;
+  Unix.symlink f l;
+  Unix.utimes l 12345.0 12345.0;
+  Printf.printf "%b\n" ((Unix.stat f).Unix.st_mtime = 12345.0);
+  Sys.remove l;
+  Sys.remove f;
+  [%expect {| true |}]
