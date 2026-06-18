@@ -350,6 +350,31 @@ let%expect_test "hex float literals" =
     failure
     |}]
 
+(* A hex-float exponent that overflows the accumulator must saturate to
+   infinity / 0, not wrap around modulo 2^32. "0x1p12884901890" used to
+   return 4.0 on the Wasm runtime (the exponent wrapped to 2). *)
+let%expect_test "hex float exponent overflow" =
+  let p s =
+    match float_of_string s with
+    | x -> Printf.printf "%h\n" x
+    | exception Failure _ -> print_endline "failure"
+  in
+  p "0x1p12884901890";
+  p "0x1p-12884901890";
+  p "0x1p99999999999";
+  p "0x1p-99999999999";
+  p "0x1p1024";
+  p "0x1p-1075";
+  [%expect
+    {|
+    infinity
+    0x0p+0
+    infinity
+    0x0p+0
+    infinity
+    0x0p+0
+    |}]
+
 (* Formatting with precisions above 100 (toFixed/toExponential's
    limit) and %f of values >= 1e21 must print the exact decimal
    expansion like native. *)
