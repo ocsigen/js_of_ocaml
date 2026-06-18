@@ -456,6 +456,24 @@
         jan.getTimezoneOffset(),
         jul.getTimezoneOffset(),
       );
+      var isdst = d.getTimezoneOffset() < stdTimezoneOffset;
+      // Europe/Dublin uses "negative DST": the IANA database marks winter
+      // (GMT) as the daylight deviation from its summer standard (IST), so
+      // the native runtime reports tm_isdst inverted from the offset
+      // heuristic. The offsets alone cannot distinguish it from
+      // Europe/London, so match it by name (guarded to the GMT/+1 signature
+      // to avoid the Intl lookup for every other zone).
+      if (
+        stdTimezoneOffset === 0 &&
+        jan.getTimezoneOffset() !== jul.getTimezoneOffset()
+      ) {
+        try {
+          if (
+            Intl.DateTimeFormat().resolvedOptions().timeZone === "Europe/Dublin"
+          )
+            isdst = !isdst;
+        } catch (e) {}
+      }
       return caml_alloc_tm(
         d.getSeconds(),
         d.getMinutes(),
@@ -465,7 +483,7 @@
         d.getFullYear() - 1900,
         d.getDay(),
         doy,
-        d.getTimezoneOffset() < stdTimezoneOffset,
+        isdst,
       );
     },
     mktime: (year, month, day, h, m, s) =>
