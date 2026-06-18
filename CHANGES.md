@@ -62,6 +62,10 @@
   `Js.Error` only when it is an actual `Error`, like the JS runtime; other
   values become `Failure (String value)`, and a thrown `null`/`undefined`
   no longer crashes the wrapper (it used `value.toString()`) (#2263)
+* Runtime/wasm: `caml_js_meth_call` decodes the method name as UTF-8 like
+  the JS runtime (`caml_jsstring_of_string`) instead of as raw bytes, so a
+  method whose name contains non-ASCII characters resolves to the same
+  property on both backends (#2263)
 * Runtime: `Unix.localtime` computes `tm_yday` from the calendar date
   instead of the wall-clock distance to January 1, which was off by one
   during DST; the js and wasm-on-node backends share the fix (#2304)

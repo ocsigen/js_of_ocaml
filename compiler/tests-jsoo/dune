@@ -178,6 +178,7 @@
    hash_jsstring
    bigstring_kind
    wrap_exception
+   meth_call_utf8
    runtime_events_register
    test_custom_name
    test_text_codec_fallback
@@ -344,6 +345,19 @@
 (test
  (name wrap_exception)
  (modules wrap_exception)
+ (libraries js_of_ocaml)
+ (enabled_if
+  (and
+   (<> %{profile} wasi)
+   (<> %{profile} wasi-with-native-effects)))
+ (modes js wasm))
+
+; UTF-8 method-name resolution in caml_js_meth_call; uses Js values, so it
+; runs on the JavaScript and wasm runtimes only.
+
+(test
+ (name meth_call_utf8)
+ (modules meth_call_utf8)
  (libraries js_of_ocaml)
  (enabled_if
   (and
