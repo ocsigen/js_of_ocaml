@@ -283,6 +283,13 @@
       (param $prefix (ref $bytes)) (param $path (ref $bytes)) (result i32)
       (local $i i32) (local $len i32)
       (local.set $len (array.len (local.get $prefix)))
+      ;; A preopen prefix may carry a trailing slash (e.g. "--dir=tmp/");
+      ;; ignore it so it still matches "<prefix>/<rest>".
+      (if (i32.and (i32.gt_u (local.get $len) (i32.const 0))
+                   (i32.eq (array.get_u $bytes (local.get $prefix)
+                              (i32.sub (local.get $len) (i32.const 1)))
+                           (i32.const 47))) ;; '/'
+         (then (local.set $len (i32.sub (local.get $len) (i32.const 1)))))
       (if (i32.lt_u (array.len (local.get $path)) (local.get $len))
          (then (return (i32.const 0))))
       (if (i32.gt_u (array.len (local.get $path)) (local.get $len))

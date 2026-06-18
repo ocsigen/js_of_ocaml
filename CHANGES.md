@@ -118,6 +118,9 @@
   prefix name underflowed to a huge unsigned value and the following
   `array.copy` trapped with an out-of-bounds access on the first
   filesystem operation (#2263)
+* Runtime/wasm (WASI): a preopen whose prefix carries a trailing slash
+  (e.g. `wasmtime --dir=tmp/`) now matches paths underneath it; the prefix
+  comparison required an exact length and never matched (#2263)
 * Runtime: `Unix.localtime` computes `tm_yday` from the calendar date
   instead of the wall-clock distance to January 1, which was off by one
   during DST; the js and wasm-on-node backends share the fix (#2304)
