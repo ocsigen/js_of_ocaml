@@ -113,6 +113,11 @@
   WASI errno equivalent (`EWOULDBLOCK`, `ESHUTDOWN`, ...) reports the error
   name instead of `"Unknown error -1"`, matching the JS runtime's fallback
   (#2263)
+* Runtime/wasm: WASI `normalize_prefix` no longer traps on a relative
+  preopen prefix (e.g. `wasmtime --dir=tmp`); the offset for a plain
+  prefix name underflowed to a huge unsigned value and the following
+  `array.copy` trapped with an out-of-bounds access on the first
+  filesystem operation (#2263)
 * Runtime: `Unix.localtime` computes `tm_yday` from the calendar date
   instead of the wall-clock distance to January 1, which was off by one
   during DST; the js and wasm-on-node backends share the fix (#2304)

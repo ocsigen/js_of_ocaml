@@ -141,9 +141,15 @@
                                  (br $loop))))))))))
       (if (i32.eq (local.get $i) (local.get $len))
          (then (return (@string ""))))
-      (local.set $i (i32.sub (local.get $i) (i32.const 1)))
-      (if (i32.gt_u (local.get $i) (i32.const 0))
+      ;; [$i] points at the first non-prefix character. When some leading
+      ;; component was stripped ([$i] > 1, e.g. "./x" or "//x") keep one
+      ;; leading slash by copying from [$i - 1]. For a plain relative prefix
+      ;; ([$i] = 0, e.g. "x") or a single leading slash ([$i] = 1) the prefix
+      ;; is already normalized, so return it unchanged. Subtracting from
+      ;; [$i = 0] would wrap to a huge unsigned index and trap the copy.
+      (if (i32.gt_u (local.get $i) (i32.const 1))
          (then
+            (local.set $i (i32.sub (local.get $i) (i32.const 1)))
             (local.set $res
                (array.new $bytes (i32.const 0)
                   (i32.sub (local.get $len) (local.get $i))))
