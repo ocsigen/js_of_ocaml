@@ -185,9 +185,7 @@
    (func (export "caml_atomic_set")
       (param $ref (ref eq)) (param $v (ref eq)) (result (ref eq))
       (local $b (ref $block))
-      (local $r (ref eq))
       (local.set $b (ref.cast (ref $block) (local.get $ref)))
-      (local.set $r (array.get $block (local.get $b) (i32.const 1)))
       (array.set $block (local.get $b) (i32.const 1) (local.get $v))
       (ref.i31 (i32.const 0)))
 

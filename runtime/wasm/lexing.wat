@@ -68,7 +68,6 @@
       (local $lex_base (ref $bytes))
       (local $lex_backtrk (ref $bytes))
       (local $lex_check (ref $bytes))
-      (local $lex_check_code (ref $bytes))
       (local $lex_trans (ref $bytes))
       (local $lex_default (ref $bytes))
       (local.set $tbl (ref.cast (ref $block) (local.get $vtbl)))
@@ -99,9 +98,6 @@
       (local.set $lex_check
          (ref.cast (ref $bytes)
             (array.get $block (local.get $tbl) (global.get $lex_check))))
-      (local.set $lex_check_code
-         (ref.cast (ref $bytes)
-            (array.get $block (local.get $tbl) (global.get $lex_check_code))))
       (local.set $lex_trans
          (ref.cast (ref $bytes)
             (array.get $block (local.get $tbl) (global.get $lex_trans))))

@@ -382,10 +382,9 @@
 
    (func $readfloat
       (param $s (ref $intern_state)) (param $code i32) (result f64)
-      (local $src (ref $bytes)) (local $pos i32) (local $res i32)
+      (local $src (ref $bytes)) (local $pos i32)
       (local $d i64)
       (local $i i32)
-      (local $v (ref eq))
       (local.set $src (struct.get $intern_state $src (local.get $s)))
       (local.set $pos (struct.get $intern_state $pos (local.get $s)))
       (struct.set $intern_state $pos (local.get $s)
@@ -829,7 +828,7 @@
       (result (ref $marshal_header))
       (local $magic i32) (local $header_len i32)
       (local $data_len i32) (local $uncompressed_data_len i32)
-      (local $num_objects i32) (local $whsize i32) (local $compressed i32)
+      (local $num_objects i32) (local $compressed i32)
       (local.set $magic (call $read32 (local.get $s)))
       (if (i32.eq (local.get $magic) (global.get $Intext_magic_number_big))
          (then
@@ -1307,7 +1306,7 @@
       (local $item (ref $stack_item))
       (local $b (ref $block)) (local $str (ref $bytes))
       (local $fa (ref $float_array))
-      (local $hd i32) (local $tag i32) (local $sz i32)
+      (local $tag i32) (local $sz i32)
       (local $pos i32)
       (local $r_0 i32)
       (local $r_1 i32)
@@ -1492,7 +1491,6 @@
       (param $v (ref eq)) (param $flags (ref eq)) (result (ref eq))
       (local $r_0 i32)
       (local $r_1 (ref $bytes))
-      (local $r_2 (ref $extern_state))
       (local $blk (ref $output_block)) (local $pos i32) (local $len i32)
       (local $res (ref $bytes))
       (local.set $blk
@@ -1504,7 +1502,7 @@
       (call $extern_value
          (local.get $flags) (local.get $blk)
          (i32.const 0) (i32.const 0) (local.get $v))
-      (local.set $r_2)
+      (drop)
       (local.set $r_1)
       (local.set $r_0)
       (local.set $res
@@ -1534,7 +1532,6 @@
       (local $buf (ref $bytes)) (local $pos i32) (local $len i32)
       (local $r_0 i32)
       (local $r_1 (ref $bytes))
-      (local $r_2 (ref $extern_state))
       (local $blk (ref $output_block))
       (local.set $buf (ref.cast (ref $bytes) (local.get $vbuf)))
       (local.set $pos (i31.get_u (ref.cast (ref i31) (local.get $vpos))))
@@ -1550,7 +1547,7 @@
          (i32.add (local.get $pos) (i32.const 20))
          (i32.const 1)
          (local.get $v))
-      (local.set $r_2)
+      (drop)
       (local.set $r_1)
       (local.set $r_0)
       (array.copy $bytes $bytes
@@ -1562,11 +1559,8 @@
    (func (export "caml_output_value")
       (param $ch (ref eq)) (param $v (ref eq)) (param $flags (ref eq))
       (result (ref eq))
-      (local $r_0 i32)
       (local $r_1 (ref $bytes))
-      (local $r_2 (ref $extern_state))
-      (local $blk (ref $output_block)) (local $len i32)
-      (local $res (ref $bytes))
+      (local $blk (ref $output_block))
       ;; ZZZ check if binary channel?
       (local.set $blk
          (struct.new $output_block
@@ -1577,14 +1571,13 @@
       (call $extern_value
          (local.get $flags) (local.get $blk)
          (i32.const 0) (i32.const 0) (local.get $v))
-      (local.set $r_2)
+      (drop)
       (local.set $r_1)
-      (local.set $r_0)
+      (drop)
       (call $caml_really_putblock (local.get $ch)
          (local.get $r_1) (i32.const 0) (i32.const 20))
       (loop $loop
          (block $done
-            (local.set $len (struct.get $output_block $end (local.get $blk)))
             (call $caml_really_putblock (local.get $ch)
                (struct.get $output_block $data (local.get $blk))
                (i32.const 0)

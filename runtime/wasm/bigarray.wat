@@ -766,10 +766,8 @@
    (func $bigarray_hash (param (ref eq)) (result i32)
       (local $b (ref $bigarray))
       (local $h i32) (local $len i32) (local $i i32) (local $w i32)
-      (local $data (ref extern))
       (local $view (ref extern))
       (local.set $b (ref.cast (ref $bigarray) (local.get 0)))
-      (local.set $data (struct.get $bigarray $ba_data (local.get $b)))
       (local.set $view (struct.get $bigarray $ba_view (local.get $b)))
       (local.set $len (call $caml_ba_num_elts (local.get $b)))
       (block $float64
@@ -940,7 +938,6 @@
       (param $s (ref eq)) (param $v (ref eq)) (result i32) (result i32)
       (local $b (ref $bigarray))
       (local $num_dims i32) (local $dim (ref $int_array))
-      (local $data (ref extern))
       (local $view (ref extern))
       (local $i i32) (local $len i32)
       (local.set $b (ref.cast (ref $bigarray) (local.get $v)))
@@ -968,7 +965,6 @@
                (local.set $i (i32.add (local.get $i) (i32.const 1)))
                (br $loop))))
       (block $done
-       (local.set $data (struct.get $bigarray $ba_data (local.get $b)))
        (local.set $view (struct.get $bigarray $ba_view (local.get $b)))
        (local.set $len (call $caml_ba_num_elts (local.get $b)))
        (local.set $i (i32.const 0))
@@ -1474,7 +1470,7 @@
    (func $caml_ba_set_at_offset
       (param $ba (ref $bigarray)) (param $i i32) (param $v (ref eq))
       (local $view (ref extern))
-      (local $b (ref $float_array)) (local $l i64)
+      (local $b (ref $float_array))
       (local.set $view (struct.get $bigarray $ba_view (local.get $ba)))
       (block $float32
        (block $float64
@@ -1535,7 +1531,6 @@
               (global.get $littleEndian))
            (return))
           ;; int64
-          (local.set $l (call $Int64_val (local.get $v)))
           (call $dv_set_i64
              (local.get $view) (i32.shl (local.get $i) (i32.const 3))
              (call $Int64_val (local.get $v))
@@ -1810,7 +1805,6 @@
    (func $caml_ba_float32_set_at_offset
       (param $ba (ref $bigarray)) (param $i i32) (param $v f32)
       (local $view (ref extern))
-      (local $b (ref $float_array)) (local $l i64)
       (local.set $view (struct.get $bigarray $ba_view (local.get $ba)))
       (call $dv_set_f32
          (local.get $view) (i32.shl (local.get $i) (i32.const 2)) (local.get $v)
@@ -2135,7 +2129,7 @@
       (local $ind (ref $block))
       (local $index (ref $int_array)) (local $sub_dim (ref $int_array))
       (local $num_inds i32) (local $num_dims i32) (local $i i32)
-      (local $idx i32) (local $mul i32) (local $offset i32) (local $size i32)
+      (local $mul i32) (local $offset i32) (local $size i32)
       (local $sub_data (ref extern))
       (local.set $b (ref.cast (ref $bigarray) (local.get $vb)))
       (local.set $ind (ref.cast (ref $block) (local.get $vind)))
@@ -2290,7 +2284,7 @@
       (local $data (ref extern))
       (local $view (ref extern))
       (local $l i64)
-      (local $i i32) (local $len i32) (local $i1 i32) (local $i2 i32)
+      (local $i i32) (local $len i32)
       (local $f1 f64) (local $f2 f64) (local $f1' f32) (local $f2' f32)
       (local $b (ref $float_array))
       (local.set $ba (ref.cast (ref $bigarray) (local.get $vba)))
@@ -2524,7 +2518,6 @@
       (local $i1 i32) (local $i2 i32) (local $i i32) (local $len i32)
       (local $l1 i64) (local $l2 i64)
       (local $f1 f64) (local $f2 f64) (local $f1' f32) (local $f2' f32)
-      (local $d1 (ref extern)) (local $d2 (ref extern))
       (local $view1 (ref extern)) (local $view2 (ref extern))
       (local.set $b1 (ref.cast (ref $bigarray) (local.get $v1)))
       (local.set $b2 (ref.cast (ref $bigarray) (local.get $v2)))
@@ -2565,9 +2558,7 @@
                             (i32.lt_u (local.get $i1) (local.get $i2))))))
                 (local.set $i (i32.add (local.get $i) (i32.const 1)))
                 (br $loop))))
-      (local.set $d1 (struct.get $bigarray $ba_data (local.get $b1)))
       (local.set $view1 (struct.get $bigarray $ba_view (local.get $b1)))
-      (local.set $d2 (struct.get $bigarray $ba_data (local.get $b2)))
       (local.set $view2 (struct.get $bigarray $ba_view (local.get $b2)))
       (local.set $len (call $caml_ba_num_elts (local.get $b1)))
       (local.set $i (i32.const 0))

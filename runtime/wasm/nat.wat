@@ -745,7 +745,7 @@
       (local $d1 (ref $digits)) (local $o1 i32) (local $l1 i32)
       (local $d2 (ref $digits)) (local $o2 i32) (local $l2 i32)
       (local $s i32) (local $d i64) (local $a (ref $digits)) (local $i i32)
-      (local $quo i32) (local $zero (ref $digits)) (local $rtmp i32)
+      (local $quo i32) (local $zero (ref $digits))
       (local.set $d1 (call $data (local.get $nat1)))
       (local.set $o1 (call $int (local.get $ofs1)))
       (local.set $l1 (call $int (local.get $len1)))
@@ -794,7 +794,7 @@
                         (array.get $digits (local.get $d1)
                            (i32.sub (i32.add (local.get $o1) (local.get $i)) (i32.const 1)))
                         (i32.wrap_i64 (local.get $d)))
-                     (local.set $rtmp)
+                     (drop)
                      (local.set $quo)))
                ;; a := nat2 * quo
                (call $set_zero (local.get $a) (i32.const 0)
