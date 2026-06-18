@@ -103,7 +103,7 @@
    ;; Types
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
-   (type $js (struct (field anyref)))
+   (type $js (struct (field $js anyref)))
 
    ;; String constants
    (@string $graphic_failure "Graphics.Graphic_failure")

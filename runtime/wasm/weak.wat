@@ -50,7 +50,7 @@
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
    (type $float_array (array (mut f64)))
-   (type $js (struct (field anyref)))
+   (type $js (struct (field $js anyref)))
 
    ;; A weak array is a an abstract value composed of possibly some
    ;; data and an array of keys.

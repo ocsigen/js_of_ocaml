@@ -44,7 +44,7 @@
          (field $serialize (ref null $serialize))
          (field $deserialize (ref null $deserialize))
          (field $dup (ref null $dup))))
-   (type $custom (sub (struct (field (ref $custom_operations)))))
+   (type $custom (sub (struct (field $ops (ref $custom_operations)))))
    (type $custom_with_id
       (sub $custom
          (struct
@@ -66,7 +66,7 @@
       (sub final $custom_with_id
          (struct
             (field (ref $custom_operations))
-            (field i64)
+            (field $id i64)
             (field $state (mut i32)))))
 
    (func (export "caml_ml_mutex_new") (param (ref eq)) (result (ref eq))

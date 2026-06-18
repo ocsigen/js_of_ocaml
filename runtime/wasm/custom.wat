@@ -48,7 +48,7 @@
          (field $serialize (ref null $serialize))
          (field $deserialize (ref null $deserialize))
          (field $dup (ref null $dup))))
-   (type $custom (sub (struct (field (ref $custom_operations)))))
+   (type $custom (sub (struct (field $ops (ref $custom_operations)))))
 
    (type $custom_with_id
       (sub $custom

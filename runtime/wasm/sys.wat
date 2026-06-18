@@ -85,7 +85,7 @@
 
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
-   (type $float (struct (field f64)))
+   (type $float (struct (field $f f64)))
 
    (tag $ocaml_exit (export "ocaml_exit"))
 

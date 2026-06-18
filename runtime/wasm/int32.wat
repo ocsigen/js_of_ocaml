@@ -52,7 +52,7 @@
          (field $serialize (ref null $serialize))
          (field $deserialize (ref null $deserialize))
          (field $dup (ref null $dup))))
-   (type $custom (sub (struct (field (ref $custom_operations)))))
+   (type $custom (sub (struct (field $ops (ref $custom_operations)))))
 
    (global $int32_ops (export "int32_ops") (ref $custom_operations)
       (struct.new $custom_operations
@@ -66,7 +66,7 @@
          (ref.func $int32_dup)))
 
    (type $int32
-      (sub final $custom (struct (field (ref $custom_operations)) (field i32))))
+      (sub final $custom (struct (field (ref $custom_operations)) (field $i32 i32))))
 
    (func $int32_cmp
       (param $v1 (ref eq)) (param $v2 (ref eq)) (param i32) (result i32)

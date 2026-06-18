@@ -26,8 +26,8 @@
 
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
-   (type $float (struct (field f64)))
-   (type $js (struct (field anyref)))
+   (type $float (struct (field $f f64)))
+   (type $js (struct (field $js anyref)))
 
    (type $compare
       (func (param (ref eq)) (param (ref eq)) (param i32) (result i32)))
@@ -48,7 +48,7 @@
          (field $serialize (ref null $serialize))
          (field $deserialize (ref null $deserialize))
          (field $dup (ref null $dup))))
-   (type $custom (sub (struct (field (ref $custom_operations)))))
+   (type $custom (sub (struct (field $ops (ref $custom_operations)))))
 
    (func $caml_hash_mix_int (export "caml_hash_mix_int")
       (param $h i32) (param $d i32) (result i32)

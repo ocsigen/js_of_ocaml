@@ -21,7 +21,7 @@
 
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
-   (type $float (struct (field f64)))
+   (type $float (struct (field $f f64)))
    (type $float_array (array (mut f64)))
 
    (@string $Array_make "Array.make")

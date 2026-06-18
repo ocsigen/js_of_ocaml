@@ -30,7 +30,7 @@
       (func $caml_format_float
          (param (ref eq)) (param (ref eq)) (result (ref eq))))
 
-   (type $float (struct (field f64)))
+   (type $float (struct (field $f f64)))
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
 

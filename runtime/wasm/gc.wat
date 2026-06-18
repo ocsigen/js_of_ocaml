@@ -22,7 +22,7 @@
    (import "fail" "caml_invalid_argument"
       (func $caml_invalid_argument (param (ref eq))))
 
-   (type $float (struct (field f64)))
+   (type $float (struct (field $f f64)))
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
 

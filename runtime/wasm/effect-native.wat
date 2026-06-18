@@ -48,12 +48,12 @@
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
    (type $function_1 (func (param (ref eq) (ref eq)) (result (ref eq))))
-   (type $closure (sub (struct (;(field i32);) (field (ref $function_1)))))
+   (type $closure (sub (struct (;(field i32);) (field $func (ref $function_1)))))
    (type $function_3
       (func (param (ref eq) (ref eq) (ref eq) (ref eq)) (result (ref eq))))
    (type $closure_3
       (sub $closure
-         (struct (field (ref $function_1)) (field (ref $function_3)))))
+         (struct (field $func (ref $function_1)) (field $direct (ref $function_3)))))
 
    ;; Effect types
 
@@ -100,7 +100,7 @@
 
    (type $func (func (result (ref eq))))
    (type $wrapper_func (func (param (ref $func))))
-   (type $func_closure (struct (field (ref $func))))
+   (type $func_closure (struct (field $func (ref $func))))
 
    (func $wrapper_cont
       (param $f (ref eq)) (param (ref eq)) (result (ref eq))
