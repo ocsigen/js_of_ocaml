@@ -221,3 +221,27 @@ let%expect_test "closed fds do not resolve" =
    with Unix.Unix_error (Unix.EBADF, _, _) -> print_endline "EBADF");
   Sys.remove f;
   [%expect {| EBADF |}]
+
+(* Sys.is_directory follows symlinks (uses stat, not lstat), like native:
+   a symlink to a directory is a directory, a symlink to a file is not. *)
+let%expect_test "is_directory follows symlinks" =
+  let d = Filename.temp_file "jsoo_symdir" "" in
+  Sys.remove d;
+  Unix.mkdir d 0o755;
+  let f = Filename.temp_file "jsoo_symfile" ".dat" in
+  let ld = Filename.temp_file "jsoo_lnd" "" in
+  Sys.remove ld;
+  let lf = Filename.temp_file "jsoo_lnf" "" in
+  Sys.remove lf;
+  Unix.symlink d ld;
+  Unix.symlink f lf;
+  Printf.printf "symlink->dir: %b\n" (Sys.is_directory ld);
+  Printf.printf "symlink->file: %b\n" (Sys.is_directory lf);
+  Sys.remove ld;
+  Sys.remove lf;
+  Sys.remove f;
+  Unix.rmdir d;
+  [%expect {|
+    symlink->dir: true
+    symlink->file: false
+    |}]

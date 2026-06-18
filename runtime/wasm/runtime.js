@@ -602,7 +602,9 @@
       if (res.error) throw res.error;
       return res.signal ? 255 : res.status;
     },
-    isatty: (fd) => +require("node:tty").isatty(fd),
+    // In a browser there is no tty and no [require]; report false instead of
+    // throwing on the undefined [require].
+    isatty: (fd) => (isNode ? +require("node:tty").isatty(fd) : 0),
     time: () => performance.now(),
     getcwd: () => (isNode ? globalThis.process.cwd() : "/static"),
     chdir: (x) => globalThis.process.chdir(x),
@@ -654,12 +656,14 @@
     is_directory: (p) => {
       if (virtual_dirs.has(p)) return 1;
       if (virtual_files.has(p)) return 0;
-      return +fs.lstatSync(p).isDirectory();
+      // Follow symlinks, like native and the JS runtime (statSync, not lstat).
+      return +fs.statSync(p).isDirectory();
     },
     is_file: (p) => {
       if (virtual_files.has(p)) return 1;
       if (virtual_dirs.has(p)) return 0;
-      return +fs.lstatSync(p).isFile();
+      // Follow symlinks, like native and the JS runtime (statSync, not lstat).
+      return +fs.statSync(p).isFile();
     },
     utimes: (p, a, m) => fs.utimesSync(p, a, m),
     truncate: (p, l) => fs.truncateSync(p, l),
