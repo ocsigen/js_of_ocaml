@@ -23,6 +23,7 @@
    (import "int64" "int64_ops" (global $int64_ops (ref $custom_operations)))
    (import "bigarray" "bigarray_ops"
       (global $bigarray_ops (ref $custom_operations)))
+   (import "nat" "nat_ops" (global $nat_ops (ref $custom_operations)))
    (import "string" "caml_bytes_equal"
       (func $caml_bytes_equal
          (param (ref eq)) (param (ref eq)) (result (ref eq))))
@@ -139,6 +140,7 @@
       (call $caml_register_custom_operations (global.get $int64_ops))
       (call $caml_register_custom_operations (global.get $bigarray_ops))
       (call $caml_register_custom_operations (global.get $float32_ops))
+      (call $caml_register_custom_operations (global.get $nat_ops))
       (global.set $initialized (i32.const 1)))
 
   (@string $empty_custom "")
