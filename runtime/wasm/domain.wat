@@ -71,8 +71,8 @@
          (else
             (local.get $old))))
 
-   (func (export "caml_atomic_load") (param (ref eq)) (result (ref eq))
-      (array.get $block (ref.cast (ref $block) (local.get 0)) (i32.const 1)))
+   (func (export "caml_atomic_load") (param $b (ref eq)) (result (ref eq))
+      (array.get $block (ref.cast (ref $block) (local.get $b)) (i32.const 1)))
 
    (func (export "caml_atomic_load_field")
       (param $b (ref eq)) (param $i (ref eq)) (result (ref eq))

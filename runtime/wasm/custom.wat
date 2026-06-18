@@ -56,8 +56,8 @@
             (field (ref $custom_operations))
             (field $id i64))))
 
-   (func (export "caml_is_custom") (param (ref eq)) (result i32)
-      (ref.test (ref $custom) (local.get 0)))
+   (func (export "caml_is_custom") (param $v (ref eq)) (result i32)
+      (ref.test (ref $custom) (local.get $v)))
 
    (func (export "caml_dup_custom") (param $v (ref eq)) (result (ref eq))
       (call_ref $dup (local.get $v)
@@ -70,21 +70,21 @@
                      (unreachable)))))))
 
    (func (export "custom_compare_id")
-      (param (ref eq)) (param (ref eq)) (param i32) (result i32)
+      (param $v1 (ref eq)) (param $v2 (ref eq)) (param i32) (result i32)
       (local $i1 i64) (local $i2 i64)
       (local.set $i1
          (struct.get $custom_with_id $id
-            (ref.cast (ref $custom_with_id) (local.get 0))))
+            (ref.cast (ref $custom_with_id) (local.get $v1))))
       (local.set $i2
          (struct.get $custom_with_id $id
-            (ref.cast (ref $custom_with_id) (local.get 1))))
+            (ref.cast (ref $custom_with_id) (local.get $v2))))
       (i32.sub (i64.gt_s (local.get $i1) (local.get $i2))
                (i64.lt_s (local.get $i1) (local.get $i2))))
 
-   (func (export "custom_hash_id") (param (ref eq)) (result i32)
+   (func (export "custom_hash_id") (param $v (ref eq)) (result i32)
       (i32.wrap_i64
          (struct.get $custom_with_id $id
-           (ref.cast (ref $custom_with_id) (local.get 0)))))
+           (ref.cast (ref $custom_with_id) (local.get $v)))))
 
    (global $next_id (mut i64) (i64.const 0))
 

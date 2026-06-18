@@ -173,9 +173,9 @@
          (i32.sub (f32.eq (local.get $x) (local.get $x))
                   (f32.eq (local.get $y) (local.get $y)))))
 
-   (func (export "caml_modf_float32") (param (ref eq)) (result (ref eq))
+   (func (export "caml_modf_float32") (param $vx (ref eq)) (result (ref eq))
       (local $x f32) (local $a f32) (local $i f32) (local $f f32)
-      (local.set $x (call $unbox_float32 (local.get 0)))
+      (local.set $x (call $unbox_float32 (local.get $vx)))
       (local.set $a (f32.abs (local.get $x)))
       (if (f32.ge (local.get $a) (f32.const 0))
          (then
@@ -200,7 +200,7 @@
       (if (f32.ne (local.get $x) (local.get $x)) (then (return (local.get $x))))
       (if (f32.ne (local.get $y) (local.get $y)) (then (return (local.get $y))))
       (if (f32.eq (local.get $x) (local.get $y))
-         (then (return (local.get 1))))
+         (then (return (local.get $y))))
       (if (result f32) (f32.eq (local.get $x) (f32.const 0))
          (then
             (if (result f32) (f32.ge (local.get $y) (f32.const 0))
@@ -238,10 +238,10 @@
             (f64.promote_f32 (local.get $x)) (local.get $n))))
 
    (func (export "caml_frexp_float32")
-      (param (ref eq)) (result (ref eq))
+      (param $v (ref eq)) (result (ref eq))
       (local $frexp (ref $block))
       (local.set $frexp (ref.cast (ref $block)
-         (call $caml_frexp_float (call $caml_float_of_float32 (local.get 0)))))
+         (call $caml_frexp_float (call $caml_float_of_float32 (local.get $v)))))
       (array.new_fixed $block 3 (ref.i31 (i32.const 0))
          (call $caml_float32_of_float
             (array.get $block (local.get $frexp) (i32.const 1)))

@@ -23,10 +23,10 @@
    (type $bytes (array (mut i8)))
 
    (func (export "caml_format_int")
-      (param (ref eq)) (param (ref eq)) (result (ref eq))
+      (param $v (ref eq)) (param $n (ref eq)) (result (ref eq))
       (return_call $format_int
-         (local.get 0)
-         (i31.get_s (ref.cast (ref i31) (local.get 1))) (i32.const 1)))
+         (local.get $v)
+         (i31.get_s (ref.cast (ref i31) (local.get $n))) (i32.const 1)))
 
    (func $parse_sign_and_base (export "parse_sign_and_base")
       (param $s (ref $bytes)) (result i32 i32 i32 i32)
@@ -181,9 +181,9 @@
             (call $parse_int
                (local.get $v) (i32.const 16) (global.get $INT16_ERRMSG)))))
 
-   (func (export "caml_bswap16") (param (ref eq)) (result (ref eq))
+   (func (export "caml_bswap16") (param $vx (ref eq)) (result (ref eq))
       (local $x i32)
-      (local.set $x (i31.get_s (ref.cast (ref i31) (local.get 0))))
+      (local.set $x (i31.get_s (ref.cast (ref i31) (local.get $vx))))
       (ref.i31
          (i32.or
             (i32.shl (i32.and (local.get $x) (i32.const 0xFF)) (i32.const 8))
@@ -300,7 +300,7 @@
       (local.get $uppercase))
 
    (func $format_int (export "format_int")
-      (param (ref eq)) (param $d i32) (param $small i32) (result (ref eq))
+      (param $vs (ref eq)) (param $d i32) (param $small i32) (result (ref eq))
       (local $s (ref $bytes))
       (local $sign_style i32) (local $alternate i32) (local $signed i32)
       (local $base i32) (local $uppercase i32)
@@ -308,7 +308,7 @@
       (local $i i32)
       (local $n i32)
       (local $chars (ref $chars))
-      (local.set $s (ref.cast (ref $bytes) (local.get 0)))
+      (local.set $s (ref.cast (ref $bytes) (local.get $vs)))
       (if (i32.eq (array.len (local.get $s)) (i32.const 2))
          (then
             (if (i32.eq (array.get_u $bytes (local.get $s) (i32.const 1))

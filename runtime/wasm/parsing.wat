@@ -136,9 +136,9 @@
          (local.get $names) (local.get $i) (local.get $len))
       (local.get $name))
 
-   (func $output (param (ref eq))
+   (func $output (param $vs (ref eq))
       (local $s (ref $bytes))
-      (local.set $s (ref.cast (ref $bytes) (local.get 0)))
+      (local.set $s (ref.cast (ref $bytes) (local.get $vs)))
       (drop
          (call $caml_ml_output (global.get $caml_stderr)
             (local.get $s) (ref.i31 (i32.const 0))
@@ -151,9 +151,9 @@
             (ref.i31 (i32.const 0)) (ref.i31 (i32.const 1))))
       (drop (call $caml_ml_flush (global.get $caml_stderr))))
 
-   (func $output_int (param i32)
+   (func $output_int (param $n i32)
       (call $output
-         (call $caml_format_int (@string "%d") (ref.i31 (local.get 0)))))
+         (call $caml_format_int (@string "%d") (ref.i31 (local.get $n)))))
 
    (@string $State "State ")
    (@string $read_token ": read token ")
@@ -656,10 +656,10 @@
          (ref.i31 (local.get $errflag)))
       (ref.i31 (local.get $res)))
 
-   (func (export "caml_set_parser_trace") (param (ref eq)) (result (ref eq))
+   (func (export "caml_set_parser_trace") (param $v (ref eq)) (result (ref eq))
       (local $oldflag i32)
       (local.set $oldflag (global.get $caml_parser_trace))
       (global.set $caml_parser_trace
-         (i31.get_s (ref.cast (ref i31) (local.get 0))))
+         (i31.get_s (ref.cast (ref i31) (local.get $v))))
       (ref.i31 (local.get $oldflag)))
 )

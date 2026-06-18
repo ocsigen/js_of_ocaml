@@ -186,11 +186,11 @@
 )
 (@else
    (func $caml_getenv
-      (param (ref eq)) (result eqref)
+      (param $name (ref eq)) (result eqref)
       (local $res anyref)
       (local.set $res
          (call $getenv
-            (call $unwrap (call $caml_jsstring_of_string (local.get 0)))))
+            (call $unwrap (call $caml_jsstring_of_string (local.get $name)))))
       (if (i32.eqz (call $jsstring_test (local.get $res)))
          (then (return (ref.null eq))))
       (return_call $caml_string_of_jsstring (call $wrap (local.get $res))))
@@ -329,12 +329,12 @@
 )
 (@else
    (func (export "caml_sys_system_command")
-      (param (ref eq)) (result (ref eq))
+      (param $cmd (ref eq)) (result (ref eq))
       (try
          (do
             (return
                (call $system
-                  (call $unwrap (call $caml_jsstring_of_string (local.get 0))))))
+                  (call $unwrap (call $caml_jsstring_of_string (local.get $cmd))))))
          (catch $javascript_exception
             (call $caml_handle_sys_error)))
       (return (ref.i31 (i32.const 0))))
@@ -499,9 +499,9 @@
    (global $caml_runtime_warnings (mut i32) (i32.const 0))
 
    (func (export "caml_ml_enable_runtime_warnings")
-      (param (ref eq)) (result (ref eq))
+      (param $v (ref eq)) (result (ref eq))
       (global.set $caml_runtime_warnings
-         (i31.get_u (ref.cast (ref i31) (local.get 0))))
+         (i31.get_u (ref.cast (ref i31) (local.get $v))))
       (ref.i31 (i32.const 0)))
 
    (func (export "caml_ml_runtime_warnings_enabled")

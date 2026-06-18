@@ -75,17 +75,17 @@
 
    (@string $lock_failure "Mutex.lock: mutex already locked. Cannot wait.")
 
-   (func (export "caml_ml_mutex_lock") (param (ref eq)) (result (ref eq))
+   (func (export "caml_ml_mutex_lock") (param $vt (ref eq)) (result (ref eq))
       (local $t (ref $mutex))
-      (local.set $t (ref.cast (ref $mutex) (local.get 0)))
+      (local.set $t (ref.cast (ref $mutex) (local.get $vt)))
       (if (struct.get $mutex $state (local.get $t))
          (then (call $caml_failwith (global.get $lock_failure))))
       (struct.set $mutex $state (local.get $t) (i32.const 1))
       (ref.i31 (i32.const 0)))
 
-   (func (export "caml_ml_mutex_try_lock") (param (ref eq)) (result (ref eq))
+   (func (export "caml_ml_mutex_try_lock") (param $vt (ref eq)) (result (ref eq))
       (local $t (ref $mutex))
-      (local.set $t (ref.cast (ref $mutex) (local.get 0)))
+      (local.set $t (ref.cast (ref $mutex) (local.get $vt)))
       (if (result (ref eq)) (struct.get $mutex $state (local.get $t))
          (then
             (ref.i31 (i32.const 0)))
@@ -93,9 +93,9 @@
             (struct.set $mutex $state (local.get $t) (i32.const 1))
             (ref.i31 (i32.const 1)))))
 
-   (func (export "caml_ml_mutex_unlock") (param (ref eq)) (result (ref eq))
+   (func (export "caml_ml_mutex_unlock") (param $vt (ref eq)) (result (ref eq))
       (struct.set $mutex $state
-         (ref.cast (ref $mutex) (local.get 0)) (i32.const 0))
+         (ref.cast (ref $mutex) (local.get $vt)) (i32.const 0))
       (ref.i31 (i32.const 0)))
 
    (global $condition_ops (ref $custom_operations)

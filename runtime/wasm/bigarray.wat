@@ -763,11 +763,11 @@
                (br $loop))))
       (local.get $num_elts))
 
-   (func $bigarray_hash (param (ref eq)) (result i32)
+   (func $bigarray_hash (param $vba (ref eq)) (result i32)
       (local $b (ref $bigarray))
       (local $h i32) (local $len i32) (local $i i32) (local $w i32)
       (local $view (ref extern))
-      (local.set $b (ref.cast (ref $bigarray) (local.get 0)))
+      (local.set $b (ref.cast (ref $bigarray) (local.get $vba)))
       (local.set $view (struct.get $bigarray $ba_view (local.get $b)))
       (local.set $len (call $caml_ba_num_elts (local.get $b)))
       (block $float64
@@ -1296,13 +1296,13 @@
 
 (@if (not $wasi)
 (@then
-   (func (export "caml_ba_from_typed_array") (param (ref eq)) (result (ref eq))
+   (func (export "caml_ba_from_typed_array") (param $v (ref eq)) (result (ref eq))
       (local $data (ref extern))
       (local $kind i32)
       (local $len i32)
       (local.set $data
          (call $ta_normalize
-            (ref.as_non_null (extern.convert_any (call $unwrap (local.get 0))))))
+            (ref.as_non_null (extern.convert_any (call $unwrap (local.get $v))))))
       (local.set $kind (call $ta_kind (local.get $data)))
       (if (i32.lt_s (local.get $kind) (i32.const 0))
          (then (call $caml_invalid_argument (global.get $ta_unsupported_kind))))
@@ -1323,12 +1323,12 @@
    ;; Like caml_ba_from_typed_array but forces the char kind (12) instead
    ;; of re-inferring it (a Uint8Array would otherwise yield int8_unsigned,
    ;; kind 3). Used for bigstrings, which are char bigarrays.
-   (func (export "caml_ba_char_of_typed_array") (param (ref eq)) (result (ref eq))
+   (func (export "caml_ba_char_of_typed_array") (param $v (ref eq)) (result (ref eq))
       (local $data (ref extern))
       (local $len i32)
       (local.set $data
          (call $ta_normalize
-            (ref.as_non_null (extern.convert_any (call $unwrap (local.get 0))))))
+            (ref.as_non_null (extern.convert_any (call $unwrap (local.get $v))))))
       (local.set $len (call $ta_length (local.get $data)))
       (if (i32.lt_s (local.get $len) (i32.const 0))
          (then (call $caml_invalid_argument (global.get $ta_too_large))))
@@ -1341,11 +1341,11 @@
          (i32.const 12) ;; char
          (i32.const 0)))
 
-   (func (export "caml_ba_to_typed_array") (param (ref eq)) (result (ref eq))
+   (func (export "caml_ba_to_typed_array") (param $vba (ref eq)) (result (ref eq))
       (call $wrap
          (any.convert_extern
             (struct.get $bigarray $ba_data
-               (ref.cast (ref $bigarray) (local.get 0))))))
+               (ref.cast (ref $bigarray) (local.get $vba))))))
 
    (@string $ba_kind_unsupported
       "caml_ba_kind_of_typed_array: unsupported kind")
@@ -1561,26 +1561,26 @@
    (@string $Bigarray_dim "Bigarray.dim")
 
    (func $caml_ba_dim (export "caml_ba_dim")
-      (param (ref eq)) (param (ref eq)) (result (ref eq))
+      (param $vba (ref eq)) (param $vi (ref eq)) (result (ref eq))
       (local $dim (ref $int_array))
       (local $i i32)
       (local.set $dim
          (struct.get $bigarray $ba_dim
-            (ref.cast (ref $bigarray) (local.get 0))))
-      (local.set $i (i31.get_s (ref.cast (ref i31) (local.get 1))))
+            (ref.cast (ref $bigarray) (local.get $vba))))
+      (local.set $i (i31.get_s (ref.cast (ref i31) (local.get $vi))))
       (if (i32.ge_u (local.get $i) (array.len (local.get $dim)))
          (then (call $caml_invalid_argument (global.get $Bigarray_dim))))
       (ref.i31 (array.get $int_array (local.get $dim) (local.get $i))))
 
-   (func (export "caml_ba_dim_1") (param (ref eq)) (result (ref eq))
-      (return_call $caml_ba_dim (local.get 0) (ref.i31 (i32.const 0))))
+   (func (export "caml_ba_dim_1") (param $vba (ref eq)) (result (ref eq))
+      (return_call $caml_ba_dim (local.get $vba) (ref.i31 (i32.const 0))))
 
    (func (export "caml_ba_get_1")
-      (param (ref eq)) (param (ref eq)) (result (ref eq))
+      (param $vba (ref eq)) (param $vi (ref eq)) (result (ref eq))
       (local $ba (ref $bigarray))
       (local $i i32)
-      (local.set $ba (ref.cast (ref $bigarray) (local.get 0)))
-      (local.set $i (i31.get_u (ref.cast (ref i31) (local.get 1))))
+      (local.set $ba (ref.cast (ref $bigarray) (local.get $vba)))
+      (local.set $i (i31.get_u (ref.cast (ref i31) (local.get $vi))))
       (if (struct.get_u $bigarray $ba_layout (local.get $ba))
          (then (local.set $i (i32.sub (local.get $i) (i32.const 1)))))
       (if (i32.ge_u (local.get $i)
@@ -1590,11 +1590,11 @@
       (return_call $caml_ba_get_at_offset (local.get $ba) (local.get $i)))
 
    (func (export "caml_ba_set_1")
-      (param (ref eq)) (param (ref eq)) (param $v (ref eq)) (result (ref eq))
+      (param $vba (ref eq)) (param $vi (ref eq)) (param $v (ref eq)) (result (ref eq))
       (local $ba (ref $bigarray))
       (local $i i32)
-      (local.set $ba (ref.cast (ref $bigarray) (local.get 0)))
-      (local.set $i (i31.get_u (ref.cast (ref i31) (local.get 1))))
+      (local.set $ba (ref.cast (ref $bigarray) (local.get $vba)))
+      (local.set $i (i31.get_u (ref.cast (ref i31) (local.get $vi))))
       (if (struct.get_u $bigarray $ba_layout (local.get $ba))
          (then (local.set $i (i32.sub (local.get $i) (i32.const 1)))))
       (if (i32.ge_u (local.get $i)
@@ -1679,8 +1679,8 @@
          (local.get $ba) (local.get $offset) (local.get $v))
       (ref.i31 (i32.const 0)))
 
-   (func (export "caml_ba_dim_2") (param (ref eq)) (result (ref eq))
-      (return_call $caml_ba_dim (local.get 0) (ref.i31 (i32.const 1))))
+   (func (export "caml_ba_dim_2") (param $vba (ref eq)) (result (ref eq))
+      (return_call $caml_ba_dim (local.get $vba) (ref.i31 (i32.const 1))))
 
    (func (export "caml_ba_get_3")
       (param $vba (ref eq)) (param $vi (ref eq)) (param $vj (ref eq))
@@ -1790,8 +1790,8 @@
          (local.get $ba) (local.get $offset) (local.get $v))
       (ref.i31 (i32.const 0)))
 
-   (func (export "caml_ba_dim_3") (param (ref eq)) (result (ref eq))
-      (return_call $caml_ba_dim (local.get 0) (ref.i31 (i32.const 2))))
+   (func (export "caml_ba_dim_3") (param $vba (ref eq)) (result (ref eq))
+      (return_call $caml_ba_dim (local.get $vba) (ref.i31 (i32.const 2))))
 
    (func $caml_ba_float32_get_at_offset
       (param $ba (ref $bigarray)) (param $i i32) (result f32)
@@ -1811,9 +1811,9 @@
          (global.get $littleEndian)))
 
    (func (export "caml_ba_float32_get_1")
-      (param (ref eq)) (param $i i32) (result f32)
+      (param $vba (ref eq)) (param $i i32) (result f32)
       (local $ba (ref $bigarray))
-      (local.set $ba (ref.cast (ref $bigarray) (local.get 0)))
+      (local.set $ba (ref.cast (ref $bigarray) (local.get $vba)))
       (if (struct.get_u $bigarray $ba_layout (local.get $ba))
          (then (local.set $i (i32.sub (local.get $i) (i32.const 1)))))
       (if (i32.ge_u (local.get $i)
@@ -1824,9 +1824,9 @@
          (local.get $ba) (local.get $i)))
 
    (func (export "caml_ba_float32_set_1")
-      (param (ref eq)) (param $i i32) (param $v f32) (result (ref eq))
+      (param $vba (ref eq)) (param $i i32) (param $v f32) (result (ref eq))
       (local $ba (ref $bigarray))
-      (local.set $ba (ref.cast (ref $bigarray) (local.get 0)))
+      (local.set $ba (ref.cast (ref $bigarray) (local.get $vba)))
       (if (struct.get_u $bigarray $ba_layout (local.get $ba))
          (then (local.set $i (i32.sub (local.get $i) (i32.const 1)))))
       (if (i32.ge_u (local.get $i)
@@ -2497,20 +2497,20 @@
          (else
             (local.get $vb))))
 
-   (func (export "caml_ba_num_dims") (param (ref eq)) (result (ref eq))
+   (func (export "caml_ba_num_dims") (param $vba (ref eq)) (result (ref eq))
       (ref.i31
          (struct.get_u $bigarray $ba_num_dims
-            (ref.cast (ref $bigarray) (local.get 0)))))
+            (ref.cast (ref $bigarray) (local.get $vba)))))
 
-   (func (export "caml_ba_kind") (param (ref eq)) (result (ref eq))
+   (func (export "caml_ba_kind") (param $vba (ref eq)) (result (ref eq))
       (ref.i31
          (struct.get_u $bigarray $ba_kind
-            (ref.cast (ref $bigarray) (local.get 0)))))
+            (ref.cast (ref $bigarray) (local.get $vba)))))
 
-   (func (export "caml_ba_layout") (param (ref eq)) (result (ref eq))
+   (func (export "caml_ba_layout") (param $vba (ref eq)) (result (ref eq))
       (ref.i31
          (struct.get_u $bigarray $ba_layout
-            (ref.cast (ref $bigarray) (local.get 0)))))
+            (ref.cast (ref $bigarray) (local.get $vba)))))
 
    (func $caml_ba_compare
       (param $v1 (ref eq)) (param $v2 (ref eq)) (param $total i32) (result i32)
@@ -3068,12 +3068,12 @@
 (@then
    (export "caml_bytes_of_uint8_array" (func $caml_string_of_uint8_array))
    (func $caml_string_of_uint8_array (export "caml_string_of_uint8_array")
-      (param (ref eq)) (result (ref eq))
+      (param $v (ref eq)) (result (ref eq))
       ;; used to convert a typed array to a string
       (local $a (ref extern)) (local $len i32)
       (local $s (ref $bytes))
       (local.set $a
-         (ref.as_non_null (extern.convert_any (call $unwrap (local.get 0)))))
+         (ref.as_non_null (extern.convert_any (call $unwrap (local.get $v)))))
       (local.set $len (call $ta_length (local.get $a)))
       (local.set $s (array.new $bytes (i32.const 0) (local.get $len)))
       (call $caml_blit_dataview_to_bytes
@@ -3084,11 +3084,11 @@
 
    (export "caml_uint8_array_of_bytes" (func $caml_uint8_array_of_string))
    (func $caml_uint8_array_of_string (export "caml_uint8_array_of_string")
-      (param (ref eq)) (result (ref eq))
+      (param $vs (ref eq)) (result (ref eq))
       ;; Convert bytes to a typed array
       (local $ta (ref extern)) (local $len i32)
       (local $s (ref $bytes))
-      (local.set $s (ref.cast (ref $bytes) (local.get 0)))
+      (local.set $s (ref.cast (ref $bytes) (local.get $vs)))
       (local.set $len (array.len (local.get $s)))
       (local.set $ta
          (call $ta_create
@@ -3101,25 +3101,25 @@
       (call $wrap (any.convert_extern (local.get $ta))))
 ))
 
-   (func (export "caml_ba_get_kind") (param (ref eq)) (result i32)
-      (struct.get_u $bigarray $ba_kind (ref.cast (ref $bigarray) (local.get 0))))
+   (func (export "caml_ba_get_kind") (param $vba (ref eq)) (result i32)
+      (struct.get_u $bigarray $ba_kind (ref.cast (ref $bigarray) (local.get $vba))))
 
-   (func (export "caml_ba_get_layout") (param (ref eq)) (result i32)
+   (func (export "caml_ba_get_layout") (param $vba (ref eq)) (result i32)
       (struct.get_u $bigarray $ba_layout
-         (ref.cast (ref $bigarray) (local.get 0))))
+         (ref.cast (ref $bigarray) (local.get $vba))))
 
-   (func (export "caml_ba_get_data") (param (ref eq)) (result (ref extern))
-      (struct.get $bigarray $ba_data (ref.cast (ref $bigarray) (local.get 0))))
+   (func (export "caml_ba_get_data") (param $vba (ref eq)) (result (ref extern))
+      (struct.get $bigarray $ba_data (ref.cast (ref $bigarray) (local.get $vba))))
 
-   (func (export "caml_ba_get_view") (param (ref eq)) (result (ref extern))
-      (struct.get $bigarray $ba_view (ref.cast (ref $bigarray) (local.get 0))))
+   (func (export "caml_ba_get_view") (param $vba (ref eq)) (result (ref extern))
+      (struct.get $bigarray $ba_view (ref.cast (ref $bigarray) (local.get $vba))))
 
-   (func (export "caml_ba_set_data") (param (ref eq)) (param (ref extern))
-      (struct.set $bigarray $ba_data (ref.cast (ref $bigarray) (local.get 0))
-         (local.get 1)))
+   (func (export "caml_ba_set_data") (param $vba (ref eq)) (param $data (ref extern))
+      (struct.set $bigarray $ba_data (ref.cast (ref $bigarray) (local.get $vba))
+         (local.get $data)))
 
-   (func (export "caml_ba_get_dim") (param (ref eq)) (result (ref $int_array))
-      (struct.get $bigarray $ba_dim (ref.cast (ref $bigarray) (local.get 0))))
+   (func (export "caml_ba_get_dim") (param $vba (ref eq)) (result (ref $int_array))
+      (struct.get $bigarray $ba_dim (ref.cast (ref $bigarray) (local.get $vba))))
 
    (func (export "caml_ba_alloc")
       (param $kind i32) (param $layout i32) (param $num_dims i32)

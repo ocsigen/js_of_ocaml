@@ -114,59 +114,59 @@
    (type $float_array (array (mut f64)))
    (type $js (struct (field anyref)))
 
-   (func $wrap (export "wrap") (param anyref) (result (ref eq))
+   (func $wrap (export "wrap") (param $v anyref) (result (ref eq))
       (block $is_eq (result (ref eq))
          (return
-            (struct.new $js (br_on_cast $is_eq anyref (ref eq) (local.get 0))))))
+            (struct.new $js (br_on_cast $is_eq anyref (ref eq) (local.get $v))))))
 
-   (func $unwrap (export "unwrap") (param (ref eq)) (result anyref)
+   (func $unwrap (export "unwrap") (param $v (ref eq)) (result anyref)
       (block $not_js (result anyref)
          (return
             (struct.get $js 0
-               (br_on_cast_fail $not_js (ref eq) (ref $js) (local.get 0))))))
+               (br_on_cast_fail $not_js (ref eq) (ref $js) (local.get $v))))))
 
    (func (export "caml_js_equals")
-      (param (ref eq)) (param (ref eq)) (result (ref eq))
+      (param $v1 (ref eq)) (param $v2 (ref eq)) (result (ref eq))
       (ref.i31 (call $equals
-                  (call $unwrap (local.get 0)) (call $unwrap (local.get 1)))))
+                  (call $unwrap (local.get $v1)) (call $unwrap (local.get $v2)))))
 
    (func (export "caml_js_strict_equals")
-      (param (ref eq)) (param (ref eq)) (result (ref eq))
+      (param $v1 (ref eq)) (param $v2 (ref eq)) (result (ref eq))
       (ref.i31 (call $strict_equals
-                  (call $unwrap (local.get 0)) (call $unwrap (local.get 1)))))
+                  (call $unwrap (local.get $v1)) (call $unwrap (local.get $v2)))))
 
    (func (export "caml_js_global") (param (ref eq)) (result (ref eq))
       (call $wrap (global.get $global_this)))
 
-   (func (export "caml_js_to_float") (param (ref eq)) (result (ref eq))
-      (struct.new $float (call $to_float (call $unwrap (local.get 0)))))
+   (func (export "caml_js_to_float") (param $v (ref eq)) (result (ref eq))
+      (struct.new $float (call $to_float (call $unwrap (local.get $v)))))
 
-   (func (export "caml_js_from_float") (param (ref eq)) (result (ref eq))
+   (func (export "caml_js_from_float") (param $v (ref eq)) (result (ref eq))
       (return_call $wrap
          (call $from_float
-            (struct.get $float 0 (ref.cast (ref $float) (local.get 0))))))
+            (struct.get $float 0 (ref.cast (ref $float) (local.get $v))))))
 
-   (func (export "caml_js_to_bool") (param (ref eq)) (result (ref eq))
+   (func (export "caml_js_to_bool") (param $v (ref eq)) (result (ref eq))
       (ref.i31
-         (call $to_bool (call $unwrap (local.get 0)))))
+         (call $to_bool (call $unwrap (local.get $v)))))
 
-   (func (export "caml_js_from_bool") (param (ref eq)) (result (ref eq))
+   (func (export "caml_js_from_bool") (param $v (ref eq)) (result (ref eq))
       (struct.new $js
-         (call $from_bool (i31.get_s (ref.cast (ref i31) (local.get 0))))))
+         (call $from_bool (i31.get_s (ref.cast (ref i31) (local.get $v))))))
 
-   (func (export "caml_js_to_int32") (param (ref eq)) (result (ref eq))
+   (func (export "caml_js_to_int32") (param $v (ref eq)) (result (ref eq))
       (return_call $caml_copy_int32
-         (call $to_int32 (call $unwrap (local.get 0)))))
+         (call $to_int32 (call $unwrap (local.get $v)))))
 
-   (func (export "caml_js_from_int32") (param (ref eq)) (result (ref eq))
-      (return_call $wrap (call $from_int32 (call $Int32_val (local.get 0)))))
+   (func (export "caml_js_from_int32") (param $v (ref eq)) (result (ref eq))
+      (return_call $wrap (call $from_int32 (call $Int32_val (local.get $v)))))
 
-   (func (export "caml_js_to_nativeint") (param (ref eq)) (result (ref eq))
+   (func (export "caml_js_to_nativeint") (param $v (ref eq)) (result (ref eq))
       (return_call $caml_copy_nativeint
-         (call $to_int32 (call $unwrap (local.get 0)))))
+         (call $to_int32 (call $unwrap (local.get $v)))))
 
-   (func (export "caml_js_from_nativeint") (param (ref eq)) (result (ref eq))
-      (return_call $wrap (call $from_int32 (call $Nativeint_val (local.get 0)))))
+   (func (export "caml_js_from_nativeint") (param $v (ref eq)) (result (ref eq))
+      (return_call $wrap (call $from_int32 (call $Nativeint_val (local.get $v)))))
 
   (func (export "caml_js_pure_expr")
      (param $f (ref eq)) (result (ref eq))
@@ -201,40 +201,40 @@
             (call $unwrap (call $caml_js_from_array (local.get $args))))))
 
    (func (export "caml_js_get")
-      (param (ref eq)) (param (ref eq)) (result (ref eq))
-      (if (ref.test (ref $bytes) (local.get 1))
+      (param $o (ref eq)) (param $f (ref eq)) (result (ref eq))
+      (if (ref.test (ref $bytes) (local.get $f))
          (then
-            (local.set 1 (call $caml_jsbytes_of_bytes (local.get 1)))))
+            (local.set $f (call $caml_jsbytes_of_bytes (local.get $f)))))
       (return_call $wrap
          (call $get
-            (ref.as_non_null (extern.convert_any (call $unwrap (local.get 0))))
-            (call $unwrap (local.get 1)))))
+            (ref.as_non_null (extern.convert_any (call $unwrap (local.get $o))))
+            (call $unwrap (local.get $f)))))
 
    (func (export "caml_js_set")
-      (param (ref eq)) (param (ref eq)) (param (ref eq)) (result (ref eq))
-      (if (ref.test (ref $bytes) (local.get 1))
+      (param $o (ref eq)) (param $f (ref eq)) (param $v (ref eq)) (result (ref eq))
+      (if (ref.test (ref $bytes) (local.get $f))
          (then
-            (local.set 1 (call $caml_jsbytes_of_bytes (local.get 1)))))
-      (call $set (call $unwrap (local.get 0)) (call $unwrap (local.get 1))
-         (call $unwrap (local.get 2)))
+            (local.set $f (call $caml_jsbytes_of_bytes (local.get $f)))))
+      (call $set (call $unwrap (local.get $o)) (call $unwrap (local.get $f))
+         (call $unwrap (local.get $v)))
       (ref.i31 (i32.const 0)))
 
    (func (export "caml_js_delete")
-      (param (ref eq)) (param (ref eq)) (result (ref eq))
-      (if (ref.test (ref $bytes) (local.get 1))
+      (param $o (ref eq)) (param $f (ref eq)) (result (ref eq))
+      (if (ref.test (ref $bytes) (local.get $f))
          (then
-            (local.set 1 (call $caml_jsbytes_of_bytes (local.get 1)))))
-      (call $delete (call $unwrap (local.get 0)) (call $unwrap (local.get 1)))
+            (local.set $f (call $caml_jsbytes_of_bytes (local.get $f)))))
+      (call $delete (call $unwrap (local.get $o)) (call $unwrap (local.get $f)))
       (ref.i31 (i32.const 0)))
 
    (func (export "caml_js_instanceof")
-      (param (ref eq)) (param (ref eq)) (result (ref eq))
+      (param $v1 (ref eq)) (param $v2 (ref eq)) (result (ref eq))
       (ref.i31 (call $instanceof
-                  (call $unwrap (local.get 0)) (call $unwrap (local.get 1)))))
+                  (call $unwrap (local.get $v1)) (call $unwrap (local.get $v2)))))
 
    (func (export "caml_js_typeof")
-      (param (ref eq)) (result (ref eq))
-      (struct.new $js (call $typeof (call $unwrap (local.get 0)))))
+      (param $v (ref eq)) (result (ref eq))
+      (struct.new $js (call $typeof (call $unwrap (local.get $v)))))
 
    (func (export "caml_js_new")
       (param $c (ref eq)) (param $args (ref eq)) (result (ref eq))
@@ -255,11 +255,11 @@
       (ref.i31 (i32.const 0)))
 
    (func (export "caml_js_object")
-      (param (ref eq)) (result (ref eq))
+      (param $va (ref eq)) (result (ref eq))
       (local $a (ref $block)) (local $p (ref $block))
       (local $i i32) (local $l i32)
       (local $o anyref)
-      (local.set $a (ref.cast (ref $block) (local.get 0)))
+      (local.set $a (ref.cast (ref $block) (local.get $va)))
       (local.set $l (array.len (local.get $a)))
       (local.set $i (i32.const 1))
       (local.set $o (call $new_obj))
@@ -315,13 +315,13 @@
      (struct.new $js (any.convert_extern (local.get $a'))))
 
    (func (export "caml_js_to_array")
-      (param (ref eq)) (result (ref eq))
+      (param $v (ref eq)) (result (ref eq))
       (local $a (ref extern))
       (local $a' (ref $block))
       (local $fa (ref $float_array))
       (local $i i32) (local $l i32)
       (local.set $a
-         (ref.as_non_null (extern.convert_any (call $unwrap (local.get 0)))))
+         (ref.as_non_null (extern.convert_any (call $unwrap (local.get $v)))))
       (local.set $l (call $array_length (local.get $a)))
       (if (local.get $l)
          (then
@@ -378,46 +378,46 @@
       (local.get $a'))
 
    (func $caml_js_wrap_callback (export "caml_js_wrap_callback")
-      (param (ref eq)) (result (ref eq))
-      (return_call $wrap (call $wrap_callback (local.get 0))))
+      (param $f (ref eq)) (result (ref eq))
+      (return_call $wrap (call $wrap_callback (local.get $f))))
 
    (func (export "caml_js_wrap_callback_arguments")
-      (param (ref eq)) (result (ref eq))
-      (return_call $wrap (call $wrap_callback_args (local.get 0))))
+      (param $f (ref eq)) (result (ref eq))
+      (return_call $wrap (call $wrap_callback_args (local.get $f))))
 
    (func (export "caml_js_wrap_callback_strict")
-      (param (ref eq)) (param (ref eq)) (result (ref eq))
+      (param $n (ref eq)) (param $f (ref eq)) (result (ref eq))
       (return_call $wrap
          (call $wrap_callback_strict
-            (i31.get_u (ref.cast (ref i31) (local.get 0))) (local.get 1))))
+            (i31.get_u (ref.cast (ref i31) (local.get $n))) (local.get $f))))
 
    (func (export "caml_js_wrap_callback_unsafe")
-      (param (ref eq)) (result (ref eq))
-      (return_call $wrap (call $wrap_callback_unsafe (local.get 0))))
+      (param $f (ref eq)) (result (ref eq))
+      (return_call $wrap (call $wrap_callback_unsafe (local.get $f))))
 
    (func (export "caml_js_wrap_meth_callback")
-      (param (ref eq)) (result (ref eq))
-      (return_call $wrap (call $wrap_meth_callback (local.get 0))))
+      (param $f (ref eq)) (result (ref eq))
+      (return_call $wrap (call $wrap_meth_callback (local.get $f))))
 
    (func (export "caml_js_wrap_meth_callback_arguments")
-      (param (ref eq)) (result (ref eq))
-      (return_call $wrap (call $wrap_meth_callback_args (local.get 0))))
+      (param $f (ref eq)) (result (ref eq))
+      (return_call $wrap (call $wrap_meth_callback_args (local.get $f))))
 
    (func (export "caml_js_wrap_meth_callback_strict")
-      (param (ref eq)) (param (ref eq)) (result (ref eq))
+      (param $n (ref eq)) (param $f (ref eq)) (result (ref eq))
       (return_call $wrap
          (call $wrap_meth_callback_strict
-            (i31.get_u (ref.cast (ref i31) (local.get 0))) (local.get 1))))
+            (i31.get_u (ref.cast (ref i31) (local.get $n))) (local.get $f))))
 
    (func (export "caml_js_wrap_meth_callback_unsafe")
-      (param (ref eq)) (result (ref eq))
-      (return_call $wrap (call $wrap_meth_callback_unsafe (local.get 0))))
+      (param $f (ref eq)) (result (ref eq))
+      (return_call $wrap (call $wrap_meth_callback_unsafe (local.get $f))))
 
    (func (export "caml_ojs_wrap_fun_arguments")
-      (param (ref eq)) (result (ref eq))
+      (param $f (ref eq)) (result (ref eq))
       (return_call $wrap
          (call $wrap_fun_arguments
-            (call $wrap_callback_strict (i32.const 1) (local.get 0)))))
+            (call $wrap_callback_strict (i32.const 1) (local.get $f)))))
 
    (func (export "caml_callback")
       (param $f (ref eq)) (param $count i32) (param $args (ref extern))
@@ -462,9 +462,9 @@
 
    (export "caml_js_from_string" (func $caml_jsstring_of_bytes))
    (func $caml_jsstring_of_bytes (export "caml_jsstring_of_string")
-      (param (ref eq)) (result (ref eq))
+      (param $vs (ref eq)) (result (ref eq))
       (local $s (ref $bytes))
-      (local.set $s (ref.cast (ref $bytes) (local.get 0)))
+      (local.set $s (ref.cast (ref $bytes) (local.get $vs)))
       (return (struct.new $js (call $jsstring_of_bytes (local.get $s)))))
 
    (func (export "caml_jsstring_of_substring")
@@ -478,11 +478,11 @@
                (i31.get_u (ref.cast (ref i31) (local.get $l)))))))
 
    (func $caml_jsbytes_of_bytes (export "caml_jsbytes_of_string")
-      (param (ref eq)) (result (ref eq))
+      (param $vs (ref eq)) (result (ref eq))
       (local $s (ref $bytes))
       (local $s' (ref $bytes))
       (local $l i32) (local $i i32) (local $n i32) (local $c i32)
-      (local.set $s (ref.cast (ref $bytes) (local.get 0)))
+      (local.set $s (ref.cast (ref $bytes) (local.get $vs)))
       (local.set $l (array.len (local.get $s)))
       (local.set $i (i32.const 0))
       (local.set $n (i32.const 0))
@@ -582,13 +582,13 @@
       (local.get $s''))
 
    (func (export "caml_list_to_js_array")
-      (param (ref eq)) (result (ref eq))
+      (param $v (ref eq)) (result (ref eq))
       (local $i i32)
       (local $a (ref extern))
       (local $l (ref eq))
       (local $b (ref $block))
       (local.set $i (i32.const 0))
-      (local.set $l (local.get 0))
+      (local.set $l (local.get $v))
       (drop (block $done (result (ref eq))
          (loop $compute_length
             (local.set $l
@@ -600,7 +600,7 @@
          (unreachable)))
       (local.set $a (call $new_array (local.get $i)))
       (local.set $i (i32.const 0))
-      (local.set $l (local.get 0))
+      (local.set $l (local.get $v))
       (drop (block $exit (result (ref eq))
          (loop $loop
             (local.set $b
@@ -614,13 +614,13 @@
       (struct.new $js (any.convert_extern (local.get $a))))
 
    (func (export "caml_list_of_js_array")
-      (param (ref eq)) (result (ref eq))
+      (param $v (ref eq)) (result (ref eq))
       (local $l (ref eq))
       (local $i i32)
       (local $len i32)
       (local $a (ref extern))
       (local.set $a
-         (ref.as_non_null (extern.convert_any (call $unwrap (local.get 0)))))
+         (ref.as_non_null (extern.convert_any (call $unwrap (local.get $v)))))
       (local.set $len (call $array_length (local.get $a)))
       (local.set $i (local.get $len))
       (local.set $l (ref.i31 (i32.const 0)))
@@ -640,9 +640,9 @@
 
    (@string $toString "toString")
 
-   (func (export "caml_wrap_exception") (param externref) (result (ref eq))
+   (func (export "caml_wrap_exception") (param $vexn externref) (result (ref eq))
       (local $exn anyref)
-      (local.set $exn (any.convert_extern (local.get 0)))
+      (local.set $exn (any.convert_extern (local.get $vexn)))
       ;; ZZZ special case for stack overflows?
       ;; Wrap in Js.Error only an actual JS Error, like the JS runtime; other
       ;; thrown values fall through to Failure below.
@@ -661,9 +661,9 @@
             (call $wrap (call $to_js_string (local.get $exn))))))
 
    (func (export "caml_js_error_option_of_exception")
-      (param (ref eq)) (result (ref eq))
+      (param $vexn (ref eq)) (result (ref eq))
       (local $exn (ref $block))
-      (local.set $exn (ref.cast (ref $block) (local.get 0)))
+      (local.set $exn (ref.cast (ref $block) (local.get $vexn)))
       (if (ref.eq (array.get $block (local.get $exn) (i32.const 0))
                   (ref.i31 (i32.const 0)))
          (then
@@ -681,9 +681,9 @@
          (extern.convert_any (call $unwrap (local.get $exn)))))
 
    (func (export "caml_js_error_of_exception")
-      (param (ref eq)) (result (ref eq))
+      (param $vexn (ref eq)) (result (ref eq))
       (local $exn (ref $block))
-      (local.set $exn (ref.cast (ref $block) (local.get 0)))
+      (local.set $exn (ref.cast (ref $block) (local.get $vexn)))
       (if (ref.eq (array.get $block (local.get $exn) (i32.const 0))
                   (ref.i31 (i32.const 0)))
          (then

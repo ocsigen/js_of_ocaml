@@ -133,9 +133,9 @@
    ;; --- Open / Close / Clear ---
 
    (func (export "caml_gr_open_graph")
-      (param (ref eq)) (result (ref eq))
+      (param $s (ref eq)) (result (ref eq))
       (if (call $gr_open
-             (call $unwrap (call $caml_jsstring_of_string (local.get 0))))
+             (call $unwrap (call $caml_jsstring_of_string (local.get $s))))
          (then (call $caml_failwith (global.get $open_failed))))
       (ref.i31 (i32.const 0)))
 
@@ -176,154 +176,154 @@
    ;; --- Drawing with ints ---
 
    (func (export "caml_gr_set_color")
-      (param (ref eq)) (result (ref eq))
+      (param $c (ref eq)) (result (ref eq))
       (call $check_state)
       (call $gr_set_color
-         (i31.get_s (ref.cast (ref i31) (local.get 0))))
+         (i31.get_s (ref.cast (ref i31) (local.get $c))))
       (ref.i31 (i32.const 0)))
 
    (func (export "caml_gr_plot")
-      (param (ref eq)) (param (ref eq)) (result (ref eq))
+      (param $x (ref eq)) (param $y (ref eq)) (result (ref eq))
       (call $check_state)
       (call $gr_plot
-         (i31.get_s (ref.cast (ref i31) (local.get 0)))
-         (i31.get_s (ref.cast (ref i31) (local.get 1))))
+         (i31.get_s (ref.cast (ref i31) (local.get $x)))
+         (i31.get_s (ref.cast (ref i31) (local.get $y))))
       (ref.i31 (i32.const 0)))
 
    (func (export "caml_gr_point_color")
-      (param (ref eq)) (param (ref eq)) (result (ref eq))
+      (param $x (ref eq)) (param $y (ref eq)) (result (ref eq))
       (call $check_state)
       (ref.i31
          (call $gr_point_color
-            (i31.get_s (ref.cast (ref i31) (local.get 0)))
-            (i31.get_s (ref.cast (ref i31) (local.get 1))))))
+            (i31.get_s (ref.cast (ref i31) (local.get $x)))
+            (i31.get_s (ref.cast (ref i31) (local.get $y))))))
 
    (func (export "caml_gr_moveto")
-      (param (ref eq)) (param (ref eq)) (result (ref eq))
+      (param $x (ref eq)) (param $y (ref eq)) (result (ref eq))
       (call $check_state)
       (call $gr_moveto
-         (i31.get_s (ref.cast (ref i31) (local.get 0)))
-         (i31.get_s (ref.cast (ref i31) (local.get 1))))
+         (i31.get_s (ref.cast (ref i31) (local.get $x)))
+         (i31.get_s (ref.cast (ref i31) (local.get $y))))
       (ref.i31 (i32.const 0)))
 
    (func (export "caml_gr_lineto")
-      (param (ref eq)) (param (ref eq)) (result (ref eq))
+      (param $x (ref eq)) (param $y (ref eq)) (result (ref eq))
       (call $check_state)
       (call $gr_lineto
-         (i31.get_s (ref.cast (ref i31) (local.get 0)))
-         (i31.get_s (ref.cast (ref i31) (local.get 1))))
+         (i31.get_s (ref.cast (ref i31) (local.get $x)))
+         (i31.get_s (ref.cast (ref i31) (local.get $y))))
       (ref.i31 (i32.const 0)))
 
    (func (export "caml_gr_draw_rect")
-      (param (ref eq)) (param (ref eq)) (param (ref eq)) (param (ref eq))
+      (param $x (ref eq)) (param $y (ref eq)) (param $w (ref eq)) (param $h (ref eq))
       (result (ref eq))
       (call $check_state)
       (call $gr_draw_rect
-         (i31.get_s (ref.cast (ref i31) (local.get 0)))
-         (i31.get_s (ref.cast (ref i31) (local.get 1)))
-         (i31.get_s (ref.cast (ref i31) (local.get 2)))
-         (i31.get_s (ref.cast (ref i31) (local.get 3))))
+         (i31.get_s (ref.cast (ref i31) (local.get $x)))
+         (i31.get_s (ref.cast (ref i31) (local.get $y)))
+         (i31.get_s (ref.cast (ref i31) (local.get $w)))
+         (i31.get_s (ref.cast (ref i31) (local.get $h))))
       (ref.i31 (i32.const 0)))
 
    (func (export "caml_gr_fill_rect")
-      (param (ref eq)) (param (ref eq)) (param (ref eq)) (param (ref eq))
+      (param $x (ref eq)) (param $y (ref eq)) (param $w (ref eq)) (param $h (ref eq))
       (result (ref eq))
       (call $check_state)
       (call $gr_fill_rect
-         (i31.get_s (ref.cast (ref i31) (local.get 0)))
-         (i31.get_s (ref.cast (ref i31) (local.get 1)))
-         (i31.get_s (ref.cast (ref i31) (local.get 2)))
-         (i31.get_s (ref.cast (ref i31) (local.get 3))))
+         (i31.get_s (ref.cast (ref i31) (local.get $x)))
+         (i31.get_s (ref.cast (ref i31) (local.get $y)))
+         (i31.get_s (ref.cast (ref i31) (local.get $w)))
+         (i31.get_s (ref.cast (ref i31) (local.get $h))))
       (ref.i31 (i32.const 0)))
 
    (func (export "caml_gr_draw_arc")
-      (param (ref eq)) (param (ref eq)) (param (ref eq))
-      (param (ref eq)) (param (ref eq)) (param (ref eq))
+      (param $x (ref eq)) (param $y (ref eq)) (param $rx (ref eq))
+      (param $ry (ref eq)) (param $a1 (ref eq)) (param $a2 (ref eq))
       (result (ref eq))
       (call $check_state)
       (call $gr_draw_arc
-         (i31.get_s (ref.cast (ref i31) (local.get 0)))
-         (i31.get_s (ref.cast (ref i31) (local.get 1)))
-         (i31.get_s (ref.cast (ref i31) (local.get 2)))
-         (i31.get_s (ref.cast (ref i31) (local.get 3)))
-         (i31.get_s (ref.cast (ref i31) (local.get 4)))
-         (i31.get_s (ref.cast (ref i31) (local.get 5))))
+         (i31.get_s (ref.cast (ref i31) (local.get $x)))
+         (i31.get_s (ref.cast (ref i31) (local.get $y)))
+         (i31.get_s (ref.cast (ref i31) (local.get $rx)))
+         (i31.get_s (ref.cast (ref i31) (local.get $ry)))
+         (i31.get_s (ref.cast (ref i31) (local.get $a1)))
+         (i31.get_s (ref.cast (ref i31) (local.get $a2))))
       (ref.i31 (i32.const 0)))
 
    (func (export "caml_gr_fill_arc")
-      (param (ref eq)) (param (ref eq)) (param (ref eq))
-      (param (ref eq)) (param (ref eq)) (param (ref eq))
+      (param $x (ref eq)) (param $y (ref eq)) (param $rx (ref eq))
+      (param $ry (ref eq)) (param $a1 (ref eq)) (param $a2 (ref eq))
       (result (ref eq))
       (call $check_state)
       (call $gr_fill_arc
-         (i31.get_s (ref.cast (ref i31) (local.get 0)))
-         (i31.get_s (ref.cast (ref i31) (local.get 1)))
-         (i31.get_s (ref.cast (ref i31) (local.get 2)))
-         (i31.get_s (ref.cast (ref i31) (local.get 3)))
-         (i31.get_s (ref.cast (ref i31) (local.get 4)))
-         (i31.get_s (ref.cast (ref i31) (local.get 5))))
+         (i31.get_s (ref.cast (ref i31) (local.get $x)))
+         (i31.get_s (ref.cast (ref i31) (local.get $y)))
+         (i31.get_s (ref.cast (ref i31) (local.get $rx)))
+         (i31.get_s (ref.cast (ref i31) (local.get $ry)))
+         (i31.get_s (ref.cast (ref i31) (local.get $a1)))
+         (i31.get_s (ref.cast (ref i31) (local.get $a2))))
       (ref.i31 (i32.const 0)))
 
    (func (export "caml_gr_set_line_width")
-      (param (ref eq)) (result (ref eq))
+      (param $w (ref eq)) (result (ref eq))
       (call $check_state)
       (call $gr_set_line_width
-         (i31.get_s (ref.cast (ref i31) (local.get 0))))
+         (i31.get_s (ref.cast (ref i31) (local.get $w))))
       (ref.i31 (i32.const 0)))
 
    (func (export "caml_gr_resize_window")
-      (param (ref eq)) (param (ref eq)) (result (ref eq))
+      (param $w (ref eq)) (param $h (ref eq)) (result (ref eq))
       (call $check_state)
       (call $gr_resize_window
-         (i31.get_s (ref.cast (ref i31) (local.get 0)))
-         (i31.get_s (ref.cast (ref i31) (local.get 1))))
+         (i31.get_s (ref.cast (ref i31) (local.get $w)))
+         (i31.get_s (ref.cast (ref i31) (local.get $h))))
       (ref.i31 (i32.const 0)))
 
    ;; --- Text / String operations ---
 
    (func (export "caml_gr_draw_char")
-      (param (ref eq)) (result (ref eq))
+      (param $c (ref eq)) (result (ref eq))
       (call $check_state)
       (call $gr_draw_char
-         (i31.get_s (ref.cast (ref i31) (local.get 0))))
+         (i31.get_s (ref.cast (ref i31) (local.get $c))))
       (ref.i31 (i32.const 0)))
 
    (func (export "caml_gr_draw_string")
-      (param (ref eq)) (result (ref eq))
+      (param $s (ref eq)) (result (ref eq))
       (call $check_state)
       (call $gr_draw_str
-         (call $unwrap (call $caml_jsstring_of_string (local.get 0))))
+         (call $unwrap (call $caml_jsstring_of_string (local.get $s))))
       (ref.i31 (i32.const 0)))
 
    (func (export "caml_gr_set_font")
-      (param (ref eq)) (result (ref eq))
+      (param $s (ref eq)) (result (ref eq))
       (call $check_state)
       (call $gr_set_font
-         (call $unwrap (call $caml_jsstring_of_string (local.get 0))))
+         (call $unwrap (call $caml_jsstring_of_string (local.get $s))))
       (ref.i31 (i32.const 0)))
 
    (func (export "caml_gr_set_text_size")
-      (param (ref eq)) (result (ref eq))
+      (param $s (ref eq)) (result (ref eq))
       (call $check_state)
       (call $gr_set_text_size
-         (i31.get_s (ref.cast (ref i31) (local.get 0))))
+         (i31.get_s (ref.cast (ref i31) (local.get $s))))
       (ref.i31 (i32.const 0)))
 
    (func (export "caml_gr_set_window_title")
-      (param (ref eq)) (result (ref eq))
+      (param $s (ref eq)) (result (ref eq))
       (call $check_state)
       (call $gr_set_window_title
-         (call $unwrap (call $caml_jsstring_of_string (local.get 0))))
+         (call $unwrap (call $caml_jsstring_of_string (local.get $s))))
       (ref.i31 (i32.const 0)))
 
    (func (export "caml_gr_text_size")
-      (param (ref eq)) (result (ref eq))
+      (param $s (ref eq)) (result (ref eq))
       (call $check_state)
       (array.new_fixed $block 3
          (ref.i31 (i32.const 0))
          (ref.i31
             (call $gr_text_size_w
-               (call $unwrap (call $caml_jsstring_of_string (local.get 0)))))
+               (call $unwrap (call $caml_jsstring_of_string (local.get $s)))))
          (ref.i31 (call $gr_text_size_h))))
 
    ;; --- Polygon ---
@@ -367,29 +367,29 @@
    ;; --- Image operations ---
 
    (func (export "caml_gr_create_image")
-      (param (ref eq)) (param (ref eq)) (result (ref eq))
+      (param $w (ref eq)) (param $h (ref eq)) (result (ref eq))
       (call $check_state)
       (struct.new $js
          (call $gr_create_image
-            (i31.get_s (ref.cast (ref i31) (local.get 0)))
-            (i31.get_s (ref.cast (ref i31) (local.get 1))))))
+            (i31.get_s (ref.cast (ref i31) (local.get $w)))
+            (i31.get_s (ref.cast (ref i31) (local.get $h))))))
 
    (func (export "caml_gr_draw_image")
-      (param (ref eq)) (param (ref eq)) (param (ref eq)) (result (ref eq))
+      (param $im (ref eq)) (param $x (ref eq)) (param $y (ref eq)) (result (ref eq))
       (call $check_state)
       (call $gr_draw_image
-         (call $unwrap (local.get 0))
-         (i31.get_s (ref.cast (ref i31) (local.get 1)))
-         (i31.get_s (ref.cast (ref i31) (local.get 2))))
+         (call $unwrap (local.get $im))
+         (i31.get_s (ref.cast (ref i31) (local.get $x)))
+         (i31.get_s (ref.cast (ref i31) (local.get $y))))
       (ref.i31 (i32.const 0)))
 
    (func (export "caml_gr_blit_image")
-      (param (ref eq)) (param (ref eq)) (param (ref eq)) (result (ref eq))
+      (param $im (ref eq)) (param $x (ref eq)) (param $y (ref eq)) (result (ref eq))
       (call $check_state)
       (call $gr_blit_image
-         (call $unwrap (local.get 0))
-         (i31.get_s (ref.cast (ref i31) (local.get 1)))
-         (i31.get_s (ref.cast (ref i31) (local.get 2))))
+         (call $unwrap (local.get $im))
+         (i31.get_s (ref.cast (ref i31) (local.get $x)))
+         (i31.get_s (ref.cast (ref i31) (local.get $y))))
       (ref.i31 (i32.const 0)))
 
    (func (export "caml_gr_make_image")
@@ -487,21 +487,21 @@
       (call $wrap (call $gr_state)))
 
    (func (export "caml_gr_state_set")
-      (param (ref eq)) (result (ref eq))
-      (call $gr_state_set (call $unwrap (local.get 0)))
+      (param $s (ref eq)) (result (ref eq))
+      (call $gr_state_set (call $unwrap (local.get $s)))
       (ref.i31 (i32.const 0)))
 
    (func (export "caml_gr_state_create")
-      (param (ref eq)) (param (ref eq)) (param (ref eq)) (result (ref eq))
+      (param $s (ref eq)) (param $w (ref eq)) (param $h (ref eq)) (result (ref eq))
       (call $wrap
          (call $gr_state_create
-            (call $unwrap (local.get 0))
-            (i31.get_s (ref.cast (ref i31) (local.get 1)))
-            (i31.get_s (ref.cast (ref i31) (local.get 2))))))
+            (call $unwrap (local.get $s))
+            (i31.get_s (ref.cast (ref i31) (local.get $w)))
+            (i31.get_s (ref.cast (ref i31) (local.get $h))))))
 
    (func (export "caml_gr_doc_of_state")
-      (param (ref eq)) (result (ref eq))
-      (call $wrap (call $gr_doc_of_state (call $unwrap (local.get 0)))))
+      (param $s (ref eq)) (result (ref eq))
+      (call $wrap (call $gr_doc_of_state (call $unwrap (local.get $s)))))
 
    ;; --- Stubs returning unit ---
 
