@@ -66,6 +66,10 @@
   the JS runtime (`caml_jsstring_of_string`) instead of as raw bytes, so a
   method whose name contains non-ASCII characters resolves to the same
   property on both backends (#2263)
+* Runtime/wasm: the uncaught-exception formatter (`caml_format_exception`)
+  grows its buffer instead of truncating at a fixed 256 bytes, so a long
+  `Failure`/`Sys_error` payload is printed in full in the `Fatal error:
+  exception ...` message, like the JS runtime (#2263)
 * Runtime: `Unix.localtime` computes `tm_yday` from the calendar date
   instead of the wall-clock distance to January 1, which was off by one
   during DST; the js and wasm-on-node backends share the fix (#2304)

@@ -28,34 +28,49 @@
    (type $buffer
       (struct
          (field (mut i32))
-         (field (ref $bytes))))
+         (field (mut (ref $bytes)))))
+
+   ;; Ensure the buffer has room for [$extra] more bytes, growing (and
+   ;; copying) its backing array if needed -- so the formatted message is not
+   ;; truncated at a fixed size, matching the unbounded JS runtime.
+   (func $ensure_capacity (param $buf (ref $buffer)) (param $extra i32)
+      (local $pos i32) (local $cap i32) (local $need i32) (local $newcap i32)
+      (local $data (ref $bytes)) (local $new (ref $bytes))
+      (local.set $pos (struct.get $buffer 0 (local.get $buf)))
+      (local.set $data (struct.get $buffer 1 (local.get $buf)))
+      (local.set $cap (array.len (local.get $data)))
+      (local.set $need (i32.add (local.get $pos) (local.get $extra)))
+      (if (i32.gt_u (local.get $need) (local.get $cap))
+         (then
+            (local.set $newcap (i32.shl (local.get $cap) (i32.const 1)))
+            (if (i32.lt_u (local.get $newcap) (local.get $need))
+               (then (local.set $newcap (local.get $need))))
+            (local.set $new
+               (array.new $bytes (i32.const 0) (local.get $newcap)))
+            (array.copy $bytes $bytes
+               (local.get $new) (i32.const 0)
+               (local.get $data) (i32.const 0)
+               (local.get $pos))
+            (struct.set $buffer 1 (local.get $buf) (local.get $new)))))
 
    (func $add_char (param $buf (ref $buffer)) (param $c i32)
       (local $pos i32)
-      (local $data (ref $bytes))
+      (call $ensure_capacity (local.get $buf) (i32.const 1))
       (local.set $pos (struct.get $buffer 0 (local.get $buf)))
-      (local.set $data (struct.get $buffer 1 (local.get $buf)))
-      (if (i32.lt_u (local.get $pos) (array.len (local.get $data)))
-         (then
-            (array.set $bytes (local.get $data) (local.get $pos) (local.get $c))
-            (struct.set $buffer 0 (local.get $buf)
-               (i32.add (local.get $pos) (i32.const 1))))))
+      (array.set $bytes (struct.get $buffer 1 (local.get $buf))
+         (local.get $pos) (local.get $c))
+      (struct.set $buffer 0 (local.get $buf)
+         (i32.add (local.get $pos) (i32.const 1))))
 
    (func $add_string (param $buf (ref $buffer)) (param $v (ref eq))
       (local $pos i32) (local $len i32)
-      (local $data (ref $bytes))
       (local $s (ref $bytes))
-      (local.set $pos (struct.get $buffer 0 (local.get $buf)))
-      (local.set $data (struct.get $buffer 1 (local.get $buf)))
       (local.set $s (ref.cast (ref $bytes) (local.get $v)))
       (local.set $len (array.len (local.get $s)))
-      (if (i32.gt_u (i32.add (local.get $pos) (local.get $len))
-                    (array.len (local.get $data)))
-         (then
-            (local.set $len
-                (i32.sub (array.len (local.get $data)) (local.get $pos)))))
+      (call $ensure_capacity (local.get $buf) (local.get $len))
+      (local.set $pos (struct.get $buffer 0 (local.get $buf)))
       (array.copy $bytes $bytes
-         (local.get $data) (local.get $pos)
+         (struct.get $buffer 1 (local.get $buf)) (local.get $pos)
          (local.get $s) (i32.const 0)
          (local.get $len))
       (struct.set $buffer 0 (local.get $buf)
