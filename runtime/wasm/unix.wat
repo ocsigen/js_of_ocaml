@@ -579,9 +579,9 @@
 )
 (@else
    (func (export "caml_unix_gmtime") (export "unix_gmtime")
-      (param (ref eq)) (result (ref eq))
+      (param $t (ref eq)) (result (ref eq))
       (call $gmtime
-         (struct.get $float 0 (ref.cast (ref $float) (local.get 0)))))
+         (struct.get $float 0 (ref.cast (ref $float) (local.get $t)))))
 ))
 
 (@if $wasi
@@ -602,9 +602,9 @@
 )
 (@else
    (func (export "caml_unix_localtime") (export "unix_localtime")
-      (param (ref eq)) (result (ref eq))
+      (param $t (ref eq)) (result (ref eq))
       (call $localtime
-         (struct.get $float 0 (ref.cast (ref $float) (local.get 0)))))
+         (struct.get $float 0 (ref.cast (ref $float) (local.get $t)))))
 ))
 
 (@if $wasi
@@ -683,9 +683,9 @@
 )
 (@else
    (func (export "caml_unix_mktime") (export "unix_mktime")
-      (param (ref eq)) (result (ref eq))
+      (param $v (ref eq)) (result (ref eq))
       (local $tm (ref $block)) (local $t f64)
-      (local.set $tm (ref.cast (ref $block) (local.get 0)))
+      (local.set $tm (ref.cast (ref $block) (local.get $v)))
       (local.set $t
          (f64.div
             (call $mktime
@@ -2659,8 +2659,8 @@
       (ref.i31 (i32.const 0)))
 
    (func (export "win_handle_fd") (export "caml_unix_filedescr_of_fd")
-      (param (ref eq)) (result (ref eq))
-      (local.get 0))
+      (param $v (ref eq)) (result (ref eq))
+      (local.get $v))
 
    (func (export "win_cleanup") (export "caml_unix_cleanup")
       (param (ref eq)) (result (ref eq))

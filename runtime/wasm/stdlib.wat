@@ -131,7 +131,7 @@
       (return (ref.null eq)))
 
    (func (export "caml_register_named_value")
-      (param (ref eq)) (param (ref eq)) (result (ref eq))
+      (param $name (ref eq)) (param $v (ref eq)) (result (ref eq))
       (local $h i32)
       (local $r (ref null $assoc))
       (local.set $h
@@ -139,7 +139,7 @@
             (i31.get_s
                (ref.cast (ref i31)
                   (call $caml_string_hash
-                     (ref.i31 (i32.const 0)) (local.get 0))))
+                     (ref.i31 (i32.const 0)) (local.get $name))))
             (global.get $Named_value_size)))
       (local.set $r
          (array.get $assoc_array
@@ -147,14 +147,14 @@
       (block $not_found
          (struct.set $assoc 1
             (br_on_null $not_found
-               (call $assoc_find (local.get 0) (local.get $r)))
-            (local.get 1))
+               (call $assoc_find (local.get $name) (local.get $r)))
+            (local.get $v))
          (return (ref.i31 (i32.const 0))))
       (array.set $assoc_array
          (global.get $named_value_table) (local.get $h)
          (struct.new $assoc
-            (ref.cast (ref $bytes) (local.get 0))
-            (local.get 1) (local.get $r)))
+            (ref.cast (ref $bytes) (local.get $name))
+            (local.get $v) (local.get $r)))
       (ref.i31 (i32.const 0)))
 
    ;; Used only for testing (tests-jsoo/bin), but inconvenient to pull out

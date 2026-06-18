@@ -34,9 +34,9 @@
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
 
-   (func (export "caml_js_html_entities") (param (ref eq)) (result (ref eq))
+   (func (export "caml_js_html_entities") (param $v (ref eq)) (result (ref eq))
       (return_call $wrap
-         (call $caml_js_html_entities_js (call $unwrap (local.get 0)))))
+         (call $caml_js_html_entities_js (call $unwrap (local.get $v)))))
 
    (@string $console "console")
 

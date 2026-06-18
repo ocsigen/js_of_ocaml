@@ -106,8 +106,8 @@
       (param $i i64) (result (ref eq))
       (struct.new $int64 (global.get $int64_ops) (local.get $i)))
 
-   (func (export "Int64_val") (param (ref eq)) (result i64)
-      (struct.get $int64 1 (ref.cast (ref $int64) (local.get 0))))
+   (func (export "Int64_val") (param $v (ref eq)) (result i64)
+      (struct.get $int64 1 (ref.cast (ref $int64) (local.get $v))))
 
    (func (export "caml_int64_bswap") (param $i i64) (result i64)
       (i64.or
@@ -230,7 +230,7 @@
    (type $chars (array i8))
 
    (func (export "caml_int64_format")
-      (param (ref eq)) (param (ref eq)) (result (ref eq))
+      (param $vs (ref eq)) (param $vd (ref eq)) (result (ref eq))
       (local $d i64)
       (local $s (ref $bytes))
       (local $sign_style i32) (local $alternate i32) (local $signed i32)
@@ -240,8 +240,8 @@
       (local $i i32)
       (local $n i64)
       (local $chars (ref $chars))
-      (local.set $s (ref.cast (ref $bytes) (local.get 0)))
-      (local.set $d (struct.get $int64 1 (ref.cast (ref $int64) (local.get 1))))
+      (local.set $s (ref.cast (ref $bytes) (local.get $vs)))
+      (local.set $d (struct.get $int64 1 (ref.cast (ref $int64) (local.get $vd))))
       (if (i32.eq (array.len (local.get $s)) (i32.const 2))
          (then
             (if (i32.eq (array.get_u $bytes (local.get $s) (i32.const 1))

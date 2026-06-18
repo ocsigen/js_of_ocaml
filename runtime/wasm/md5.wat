@@ -33,12 +33,12 @@
          (field (ref $bytes))))  ;; intermediate buffer
 
    (func (export "caml_md5_string") (export "caml_md5_bytes")
-      (param (ref eq)) (param (ref eq)) (param (ref eq)) (result (ref eq))
+      (param $vs (ref eq)) (param $vofs (ref eq)) (param $vlen (ref eq)) (result (ref eq))
       (local $ctx (ref $context))
       (local.set $ctx (call $MD5Init))
-      (call $MD5Update (local.get $ctx) (ref.cast (ref $bytes) (local.get 0))
-         (i31.get_u (ref.cast (ref i31) (local.get 1)))
-         (i31.get_u (ref.cast (ref i31) (local.get 2))))
+      (call $MD5Update (local.get $ctx) (ref.cast (ref $bytes) (local.get $vs))
+         (i31.get_u (ref.cast (ref i31) (local.get $vofs)))
+         (i31.get_u (ref.cast (ref i31) (local.get $vlen))))
       (return_call $MD5Final (local.get $ctx)))
 
    (func (export "caml_md5_chan")

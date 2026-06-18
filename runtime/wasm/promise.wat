@@ -30,13 +30,13 @@
    (import "js" "caml_jsoo_promise_unwrap"
       (func $caml_jsoo_promise_unwrap_js (param anyref) (result anyref)))
 
-   (func (export "caml_jsoo_promise_wrap") (param (ref eq)) (result (ref eq))
+   (func (export "caml_jsoo_promise_wrap") (param $v (ref eq)) (result (ref eq))
       (return_call $wrap
-         (call $caml_jsoo_promise_wrap_js (call $unwrap (local.get 0)))))
+         (call $caml_jsoo_promise_wrap_js (call $unwrap (local.get $v)))))
 
-   (func (export "caml_jsoo_promise_unwrap") (param (ref eq)) (result (ref eq))
+   (func (export "caml_jsoo_promise_unwrap") (param $v (ref eq)) (result (ref eq))
       (return_call $wrap
-         (call $caml_jsoo_promise_unwrap_js (call $unwrap (local.get 0)))))
+         (call $caml_jsoo_promise_unwrap_js (call $unwrap (local.get $v)))))
 ))
 
 )

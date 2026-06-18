@@ -24,10 +24,10 @@
 
 (@if $wasi
 (@then
-   (func $wrap (param (ref eq)) (result (ref eq))
-      (local.get 0))
-   (func $unwrap (param (ref eq)) (result (ref eq))
-      (local.get 0))
+   (func $wrap (param $v (ref eq)) (result (ref eq))
+      (local.get $v))
+   (func $unwrap (param $v (ref eq)) (result (ref eq))
+      (local.get $v))
    (func $weak_new (param $v (ref eq)) (result (ref eq))
       (local.get $v))
    (func $weak_deref (param $r (ref eq)) (result (ref eq))

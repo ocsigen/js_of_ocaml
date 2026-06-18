@@ -104,8 +104,8 @@
       (struct.new $int32 (global.get $int32_ops) (local.get $i)))
 
    (export "Nativeint_val" (func $Int32_val))
-   (func $Int32_val (export "Int32_val") (param (ref eq)) (result i32)
-      (struct.get $int32 1 (ref.cast (ref $int32) (local.get 0))))
+   (func $Int32_val (export "Int32_val") (param $v (ref eq)) (result i32)
+      (struct.get $int32 1 (ref.cast (ref $int32) (local.get $v))))
 
    (export "caml_nativeint_bswap" (func $caml_int32_bswap))
    (func $caml_int32_bswap (export "caml_int32_bswap")
@@ -171,8 +171,8 @@
 
    (export "caml_nativeint_format" (func $caml_int32_format))
    (func $caml_int32_format (export "caml_int32_format")
-      (param (ref eq)) (param (ref eq)) (result (ref eq))
-      (return_call $format_int (local.get 0)
+      (param $v (ref eq)) (param $vi (ref eq)) (result (ref eq))
+      (return_call $format_int (local.get $v)
          (struct.get $int32 1
-            (ref.cast (ref $int32) (local.get 1))) (i32.const 0)))
+            (ref.cast (ref $int32) (local.get $vi))) (i32.const 0)))
 )

@@ -359,12 +359,12 @@
                         (i32.const 0x3FFFFFFF))))
 
    (func (export "caml_string_hash")
-      (param (ref eq)) (param (ref eq)) (result (ref eq))
+      (param $vh (ref eq)) (param $vs (ref eq)) (result (ref eq))
       (ref.i31
          (i32.and
             (call $caml_hash_mix_final
                (call $caml_hash_mix_string
-                  (i31.get_s (ref.cast (ref i31) (local.get 0)))
-                  (ref.cast (ref $bytes) (local.get 1))))
+                  (i31.get_s (ref.cast (ref i31) (local.get $vh)))
+                  (ref.cast (ref $bytes) (local.get $vs))))
             (i32.const 0x3FFFFFFF))))
 )

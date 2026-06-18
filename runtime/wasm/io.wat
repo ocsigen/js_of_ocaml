@@ -530,9 +530,9 @@
 
 (@if $wasi
 (@then
-   (func (export "caml_sys_close") (param (ref eq)) (result (ref eq))
+   (func (export "caml_sys_close") (param $vfd (ref eq)) (result (ref eq))
       (local $fd i32) (local $res i32)
-      (local.set $fd (i31.get_u (ref.cast (ref i31) (local.get 0))))
+      (local.set $fd (i31.get_u (ref.cast (ref i31) (local.get $vfd))))
       (call $release_fd_offset (local.get $fd))
       (local.set $res (call $fd_close (local.get $fd)))
       (call $caml_handle_sys_error_if
@@ -540,9 +540,9 @@
       (ref.i31 (i32.const 0)))
 )
 (@else
-   (func (export "caml_sys_close") (param (ref eq)) (result (ref eq))
+   (func (export "caml_sys_close") (param $vfd (ref eq)) (result (ref eq))
       (local $fd i32) (local $res i32)
-      (local.set $fd (i31.get_u (ref.cast (ref i31) (local.get 0))))
+      (local.set $fd (i31.get_u (ref.cast (ref i31) (local.get $vfd))))
       (call $release_fd_offset (local.get $fd))
       (try
          (do
@@ -682,10 +682,10 @@
       (ref.i31 (local.get $fd)))
 
    (func (export "caml_ml_close_channel")
-      (param (ref eq)) (result (ref eq))
+      (param $vch (ref eq)) (result (ref eq))
       (local $ch (ref $channel))
       (local $fd i32) (local $res i32)
-      (local.set $ch (ref.cast (ref $channel) (local.get 0)))
+      (local.set $ch (ref.cast (ref $channel) (local.get $vch)))
       ;; output channels: any output will trigger a flush since the
       ;; buffer is non-empty (curr > 0) and full (curr = size)
       ;; input channels: any input will trigger a read since the buffer
@@ -1546,7 +1546,7 @@
    (func (export "caml_ml_output_char")
       (param $ch (ref eq)) (param $c (ref eq)) (result (ref eq))
       (call $caml_putch (ref.cast (ref $channel) (local.get $ch))
-         (i31.get_u (ref.cast (ref i31) (local.get 1))))
+         (i31.get_u (ref.cast (ref i31) (local.get $c))))
       (call $caml_flush_if_unbuffered (local.get $ch))
       (ref.i31 (i32.const 0)))
 
@@ -1554,7 +1554,7 @@
       (param $vch (ref eq)) (param $vn (ref eq)) (result (ref eq))
       (local $ch (ref $channel)) (local $n i32)
       (local.set $ch (ref.cast (ref $channel) (local.get $vch)))
-      (local.set $n (i31.get_u (ref.cast (ref i31) (local.get 1))))
+      (local.set $n (i31.get_u (ref.cast (ref i31) (local.get $vn))))
       (call $caml_putch (local.get $ch)
          (i32.shr_u (local.get $n) (i32.const 24)))
       (call $caml_putch (local.get $ch)
@@ -1584,23 +1584,23 @@
                (then (call $caml_flush (local.get $ch))))))
       (ref.i31 (i32.const 0)))
 
-   (func (export "caml_ml_channel_size") (param (ref eq)) (result (ref eq))
+   (func (export "caml_ml_channel_size") (param $vch (ref eq)) (result (ref eq))
       ;; ZZZ check for overflow
       (ref.i31
          (i32.wrap_i64
-            (call $file_size (call $caml_ml_get_channel_fd (local.get 0))))))
+            (call $file_size (call $caml_ml_get_channel_fd (local.get $vch))))))
 
-   (func (export "caml_ml_channel_size_64") (param (ref eq)) (result (ref eq))
+   (func (export "caml_ml_channel_size_64") (param $vch (ref eq)) (result (ref eq))
       (call $caml_copy_int64
-         (call $file_size (call $caml_ml_get_channel_fd (local.get 0)))))
+         (call $file_size (call $caml_ml_get_channel_fd (local.get $vch)))))
 
    (func $caml_ml_get_channel_fd (export "caml_ml_get_channel_fd")
-      (param (ref eq)) (result i32)
-      (struct.get $channel $fd (ref.cast (ref $channel) (local.get 0))))
+      (param $vch (ref eq)) (result i32)
+      (struct.get $channel $fd (ref.cast (ref $channel) (local.get $vch))))
 
-   (func (export "caml_ml_set_channel_fd") (param (ref eq)) (param i32)
+   (func (export "caml_ml_set_channel_fd") (param $vch (ref eq)) (param $fd i32)
       (struct.set $channel $fd
-         (ref.cast (ref $channel) (local.get 0)) (local.get 1)))
+         (ref.cast (ref $channel) (local.get $vch)) (local.get $fd)))
 
 (@if $wasi
 (@then

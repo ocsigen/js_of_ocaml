@@ -91,11 +91,11 @@
    (global $effect_allowed (export "effect_allowed") (mut i32) (i32.const 1))
 
    (func $caml_continuation_use_noexc (export "caml_continuation_use_noexc")
-      (param (ref eq)) (result (ref eq))
+      (param $vcont (ref eq)) (result (ref eq))
       (local $cont (ref $block))
       (local $stack (ref eq))
       (drop (block $used (result (ref eq))
-         (local.set $cont (ref.cast (ref $block) (local.get 0)))
+         (local.set $cont (ref.cast (ref $block) (local.get $vcont)))
          (local.set $stack
             (br_on_cast_fail $used (ref eq) (ref $generic_fiber)
                (array.get $block (local.get $cont) (i32.const 1))))
@@ -150,13 +150,13 @@
       (param (ref eq) (ref eq)) (result (ref eq))
       (array.new_fixed $block 1 (ref.i31 (i32.const 0))))
 
-   (func (export "caml_is_continuation") (param (ref eq)) (result i32)
+   (func (export "caml_is_continuation") (param $v (ref eq)) (result i32)
       (drop (block $not_continuation (result (ref eq))
          (return
             (ref.eq
                (array.get $block
                   (br_on_cast_fail $not_continuation (ref eq) (ref $block)
-                     (local.get 0))
+                     (local.get $v))
                   (i32.const 0))
                (ref.i31 (global.get $cont_tag))))))
       (i32.const 0))
@@ -192,10 +192,10 @@
             (field $cont_func (ref $cont_func))
             (field $cont_resolver externref))))
 
-   (func $invoke_promise_resolver (param $p (ref $pair)) (param (ref eq))
+   (func $invoke_promise_resolver (param $p (ref $pair)) (param $k (ref eq))
       (return_call $resume_fiber
          (struct.get $cont_resume $cont_resolver
-            (ref.cast (ref $cont_resume) (local.get 1)))
+            (ref.cast (ref $cont_resume) (local.get $k)))
          (local.get $p)))
 
    (func $apply_continuation (param $resolver (ref extern)) (param $v (ref eq))
@@ -568,8 +568,8 @@
       (param $exn (ref eq)) (param (ref eq)) (result (ref eq))
       (local.get $exn))
 
-   (func $identity (param (ref eq)) (param (ref eq)) (result (ref eq))
-      (local.get 0))
+   (func $identity (param $v (ref eq)) (param (ref eq)) (result (ref eq))
+      (local.get $v))
 
    (global $identity (ref $closure) (struct.new $closure (ref.func $identity)))
 
