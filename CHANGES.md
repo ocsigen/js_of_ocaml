@@ -139,6 +139,10 @@
   the JavaScript backend but fails with `ENOENT` like native (and the Wasm
   runtime), so `Unix.stat ""`, `Unix.opendir ""`, etc. raise instead of
   silently operating on the cwd; `Sys.file_exists ""` returns false (#2354)
+* Runtime/wasm: `Condition.wait` is a no-op like the JS runtime instead of
+  raising `Failure`, and each `Condition.t` has a distinct identity (it was
+  the immediate `0`, so all condition variables were physically equal)
+  (#2263)
 * Runtime: `Unix.localtime` computes `tm_yday` from the calendar date
   instead of the wall-clock distance to January 1, which was off by one
   during DST; the js and wasm-on-node backends share the fix (#2304)

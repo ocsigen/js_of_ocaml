@@ -200,6 +200,7 @@
    bigstring_kind
    wrap_exception
    meth_call_utf8
+   condition
    runtime_events_register
    test_custom_name
    test_text_codec_fallback
@@ -426,6 +427,19 @@
   (and
    (<> %{profile} wasi)
    (<> %{profile} wasi-with-native-effects)))
+ (modes js wasm))
+
+; Condition variables agree between js and wasm. Not run natively: it calls
+; Condition.wait, which blocks forever there.
+
+(test
+ (name condition)
+ ; build_if, not enabled_if: Condition/Mutex are in the threads library on
+ ; OCaml < 5, so enabled_if would still compile (and fail) the module under
+ ; `make all`.
+ (modules condition)
+ (build_if
+  (>= %{ocaml_version} 5))
  (modes js wasm))
 
 ; The js accessor lives in the optional +toplevel.js runtime fragment, so it
