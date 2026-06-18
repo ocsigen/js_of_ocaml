@@ -65,23 +65,23 @@ function caml_update_dummy_lazy(dummy, newval) {
 }
 
 //Provides: caml_obj_is_stack
-//Version: >= 5.2, < 5.3
-//OxCaml
+//Version: >= 5.2
+//If: oxcaml
 function caml_obj_is_stack(_x) {
   return 0;
 }
 
 //Provides: caml_succ_scannable_prefix_len
-//Version: >= 5.2, < 5.3
-//OxCaml
+//Version: >= 5.2
+//If: oxcaml
 function caml_succ_scannable_prefix_len(_x) {
   return 0;
 }
 
 //Provides: caml_obj_uniquely_reachable_words
 //Requires: caml_failwith
-//Version: >= 5.2, < 5.3
-//OxCaml
+//Version: >= 5.2
+//If: oxcaml
 function caml_obj_uniquely_reachable_words(_x) {
   caml_failwith("Obj.uniquely_reachable_words is not available in javascript.");
 }
@@ -333,8 +333,8 @@ function caml_ml_gc_ramp_down(_suspended_collection_work) {
 
 //Provides: caml_int_as_pointer
 //Requires: caml_failwith
-//Version: >= 5.2, < 5.3
-//OxCaml
+//Version: >= 5.2
+//If: oxcaml
 function caml_int_as_pointer(i) {
   // Special-case null pointers for [or_null].
   if (i === 0) return null;
