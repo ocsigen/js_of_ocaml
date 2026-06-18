@@ -345,6 +345,9 @@
                         (i32.eqz (call $jsstring_test (local.get $str)))))
                      (local.set $h
                         (call $jsstring_hash (local.get $h) (local.get $str)))
+                     ;; count the string against the budget, like every other
+                     ;; hashed leaf (and like the JS runtime)
+                     (local.set $num (i32.sub (local.get $num) (i32.const 1)))
                      (ref.i31 (i32.const 0))))
 ))
                   ;; closures and continuations and other js values are ignored

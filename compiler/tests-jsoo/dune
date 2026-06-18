@@ -175,6 +175,7 @@
    ugeint_bytecode_probe
    test_runtime_value
    ephemeron_data
+   hash_jsstring
    runtime_events_register
    test_custom_name
    test_text_codec_fallback
@@ -305,6 +306,21 @@
    (<> %{profile} wasi)
    (<> %{profile} wasi-with-native-effects)))
  (modes js wasm))
+
+; JS-string hashing matches the JS runtime; uses Js values, js and wasm only.
+
+(library
+ (name hash_jsstring)
+ (modules hash_jsstring)
+ (enabled_if
+  (and
+   (<> %{profile} wasi)
+   (<> %{profile} wasi-with-native-effects)))
+ (inline_tests
+  (modes js wasm))
+ (libraries js_of_ocaml)
+ (preprocess
+  (pps ppx_expect)))
 
 ; The js accessor lives in the optional +toplevel.js runtime fragment, so it
 ; is linked explicitly; --toplevel is deliberately NOT passed, so the bytecode
