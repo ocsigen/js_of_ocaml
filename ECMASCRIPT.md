@@ -3,6 +3,18 @@
 The goal of the document is to list features we rely on for the runtime and the generated code.
 Features are grouped by ECMAScript version.
 
+## Supported engines
+
+The generated code and runtime target **ECMAScript 2020 (ES2020)**. They run on:
+
+- Node.js 18 or later
+- Any evergreen browser released since early 2020 (Chrome 80+, Firefox 74+, Safari 13.4+, Edge 80+)
+- [QuickJS-NG](https://github.com/quickjs-ng/quickjs)
+
+The ES2021 features below (`WeakRef`, `FinalizationRegistry`) are optional: they
+are used when available and degrade gracefully otherwise. To target an older
+engine, transpile the output down to ES5 (see `manual/browser-compat.mld`).
+
 ## ECMAScript 2015
 
 ### Arrow function expressions
