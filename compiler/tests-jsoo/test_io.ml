@@ -115,3 +115,18 @@ let%expect_test "channel_of_descr channels are distinct" =
   close_out oc;
   Sys.remove f;
   [%expect {| false |}]
+
+(* flush_all must reach every open output channel, not just stdout/stderr;
+   a buffered user channel is flushed to disk by flush_all alone. *)
+let%expect_test "flush_all flushes user channels" =
+  let f = Filename.temp_file "jsoo_flushall" ".txt" in
+  let oc = open_out f in
+  output_string oc "hello";
+  flush_all ();
+  let ic = open_in f in
+  let s = really_input_string ic (in_channel_length ic) in
+  close_in ic;
+  close_out oc;
+  Sys.remove f;
+  print_endline s;
+  [%expect {| hello |}]
