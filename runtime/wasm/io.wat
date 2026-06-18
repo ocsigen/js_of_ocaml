@@ -1070,7 +1070,7 @@
                   (i32.wrap_i64
                      (i64.sub (local.get $offset) (local.get $dest))))))
          (else
-            (if (i64.lt_s (local.get $offset) (i64.const 0))
+            (if (i64.lt_s (local.get $dest) (i64.const 0))
                (then (call $caml_raise_sys_error (@string "Invalid argument"))))
             (struct.set $fd_offset $offset (local.get $fd_offset)
                (local.get $dest))

@@ -36,6 +36,10 @@
   Pretty-printed output (`--pretty`) is unchanged. (#1117)
 
 ## Bug fixes
+* Runtime/wasm: `caml_seek_in` validates the seek destination for
+  negativity instead of the current offset, so `seek_in ch (-5)` raises
+  `Sys_error "Invalid argument"` instead of silently corrupting the file
+  descriptor offset (#2325)
 * Runtime: `Unix.localtime` computes `tm_yday` from the calendar date
   instead of the wall-clock distance to January 1, which was off by one
   during DST; the js and wasm-on-node backends share the fix (#2304)
