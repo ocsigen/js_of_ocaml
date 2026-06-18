@@ -758,12 +758,17 @@ var caml_output_val = (function () {
             8,
             0x80 /*cst.PREFIX_SMALL_BLOCK*/ + v[0] + ((v.length - 1) << 4),
           );
-        else
+        else {
+          if (v.length - 1 >= 0x400000 /* 2^22 */)
+            caml_failwith(
+              "output_value: array cannot be read back on 32-bit platform",
+            );
           writer.write_code(
             32,
             0x08 /*cst.CODE_BLOCK32*/,
             ((v.length - 1) << 10) | v[0],
           );
+        }
         writer.size_32 += v.length;
         writer.size_64 += v.length;
         if (v.length > 1) stack.push(v, 1);

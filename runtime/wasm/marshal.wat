@@ -1193,6 +1193,8 @@
                    (i32.or (local.get $tag)
                       (i32.shl (local.get $sz) (i32.const 4))))))
          (else
+            (if (i32.ge_u (local.get $sz) (i32.const 0x400000))
+               (then (call $caml_failwith (global.get $array_too_large))))
             (call $writecode32 (local.get $s) (global.get $CODE_BLOCK32)
                (i32.or (local.get $tag)
                   (i32.shl (local.get $sz) (i32.const 10)))))))
@@ -1292,6 +1294,8 @@
       (call $caml_invalid_argument (global.get $cust_value))
       (return (i32.const 0) (i32.const 0)))
 
+   (@string $array_too_large
+      "output_value: array cannot be read back on 32-bit platform")
    (@string $func_value "output_value: functional value")
    (@string $cont_value "output_value: continuation value")
    (@string $js_value "output_value: abstract value (JavaScript value)")
