@@ -468,12 +468,13 @@ struct
       | EVar (S { name = Utf8 "in"; _ }) -> true
       | ESeq (e1, e2) ->
           Prec.(l <= Expression) && (traverse Expression e1 || traverse Expression e2)
-      | ECond (e1, e2, e3) ->
-          (* the branches are printed at AssignementExpression *)
+      | ECond (e1, _, e3) ->
+          (* the then-branch is parsed at [+In] (it is delimited by `?` and
+             `:`), so an `in` there never needs parentheses; only the
+             condition and the else-branch propagate the [In] restriction.
+             Both are printed at most at AssignementExpression. *)
           Prec.(l <= ConditionalExpression)
-          && (traverse ShortCircuitExpression e1
-             || traverse AssignementExpression e2
-             || traverse AssignementExpression e3)
+          && (traverse ShortCircuitExpression e1 || traverse AssignementExpression e3)
       | EAssignTarget (ObjectTarget _) -> false
       | EAssignTarget (ArrayTarget _) -> false
       | EBin (op, e1, e2) ->
@@ -1275,7 +1276,10 @@ struct
         PP.start_group f 1;
         PP.space f;
         output_debug_info f loc;
-        let p = (not in_) && contains ~in_:true Expression e in
+        (* the initializer is printed at [AssignementExpression]; matching
+           that level avoids redundant parentheses around a comma sequence,
+           which the printer already parenthesizes here *)
+        let p = (not in_) && contains ~in_:true AssignementExpression e in
         if p
         then (
           PP.start_group f 1;
@@ -1297,7 +1301,10 @@ struct
         output_debug_info f loc;
         PP.start_group f 1;
         PP.space f;
-        let p = (not in_) && contains ~in_:true Expression e in
+        (* the initializer is printed at [AssignementExpression]; matching
+           that level avoids redundant parentheses around a comma sequence,
+           which the printer already parenthesizes here *)
+        let p = (not in_) && contains ~in_:true AssignementExpression e in
         if p
         then (
           PP.start_group f 1;

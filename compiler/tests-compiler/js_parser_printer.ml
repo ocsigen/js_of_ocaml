@@ -570,8 +570,8 @@ let%expect_test "in operator in conditional within for-loop arrow" =
      /*<<fake:2:4>>*/ for
     (let
       f =
-         /*<<fake:2:15>>*/ (x=>
-             /*<<fake:2:22>>*/ cond ? x in obj : x /*<<fake:2:41>>*/ );;)
+         /*<<fake:2:15>>*/ x=>
+            /*<<fake:2:22>>*/ cond ? x in obj : x /*<<fake:2:41>>*/ ;;)
      ;
     |}]
 
@@ -1339,23 +1339,46 @@ var x = a --> b;
 let%expect_test "in operator in for-init needs parentheses" =
   (* ECond else-branch is an assignment containing `in` *)
   print ~compact:true ~report:true "for (var x = (c ? d : y = \"a\" in o);;);";
-  [%expect {|
+  [%expect
+    {|
     /*<<fake:1:0>>*/for(var
     x=/*<<fake:1:11>>*/(c?d:y="a"in
     o);;);
     |}];
   (* arrow concise body *)
   print ~compact:true ~report:true "for (var f = (() => \"a\" in o);;);";
-  [%expect {|
+  [%expect
+    {|
     /*<<fake:1:0>>*/for(var
     f=/*<<fake:1:11>>*/(()=>/*<<fake:1:20>>*/"a"in
     o/*<<fake:1:28>>*/);;);
     |}];
   (* yield payload inside a generator *)
-  print ~compact:true ~report:true
-    "function* g(o){ for (var x = (yield \"a\" in o);;); }";
-  [%expect {|
+  print ~compact:true ~report:true "function* g(o){ for (var x = (yield \"a\" in o);;); }";
+  [%expect
+    {|
     function*g(o){/*<<fake:1:16>>*/for(var
     x=/*<<fake:1:27>>*/(yield"a"in
     o);;);/*<<fake:1:0>>*/}
+    |}];
+  (* comma sequence: the printer already parenthesizes it, so no extra
+     pair of parentheses should be added around the initializer *)
+  print ~compact:true ~report:true "for (var x = (a, \"b\" in o);;);";
+  [%expect
+    {|
+    /*<<fake:1:0>>*/for(var
+    x=/*<<fake:1:11>>*/(a,"b"in
+    o);;);
+    |}]
+
+let%expect_test "in operator in conditional then-branch needs no parentheses" =
+  (* The then-branch of a conditional is parsed at [+In] (delimited by `?`
+     and `:`), so an `in` there is unambiguous and needs no parentheses,
+     even when it sits inside an assignment. *)
+  print ~compact:true ~report:true "for (var x = (c ? z = \"a\" in b : d);;);";
+  [%expect
+    {|
+    /*<<fake:1:0>>*/for(var
+    x=/*<<fake:1:11>>*/c?z="a"in
+    b:d;;);
     |}]
