@@ -43,6 +43,10 @@
   negativity instead of the current offset, so `seek_in ch (-5)` raises
   `Sys_error "Invalid argument"` instead of silently corrupting the file
   descriptor offset (#2325)
+* Runtime: marshalling a block with 2^22 or more fields raises
+  `Failure "output_value: array cannot be read back on 32-bit platform"`
+  instead of silently truncating the size in the `CODE_BLOCK32` header
+  (`tag | sz << 10`); the js and wasm runtimes share the fix (#2328)
 * Runtime: `Unix.localtime` computes `tm_yday` from the calendar date
   instead of the wall-clock distance to January 1, which was off by one
   during DST; the js and wasm-on-node backends share the fix (#2304)
