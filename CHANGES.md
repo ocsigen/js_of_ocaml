@@ -93,6 +93,10 @@
   (not produced by `Printf`): the `#` flag no longer overwrites the sign
   of a negative base-10 integer (`"%#d" (-5)` gave `"05"`), and `"%+f"` /
   `"% f"` without a precision no longer raise `Invalid_argument` (#2263)
+* Runtime/wasm (WASI): `flush_all` (and the at-exit flush) reaches every
+  open output channel, not only stdout/stderr; the WASI runtime now tracks
+  all output channels like the C runtime, so buffered data on user file
+  channels is no longer lost (#2263)
 * Runtime: `Unix.localtime` computes `tm_yday` from the calendar date
   instead of the wall-clock distance to January 1, which was off by one
   during DST; the js and wasm-on-node backends share the fix (#2304)

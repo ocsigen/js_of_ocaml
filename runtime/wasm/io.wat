@@ -213,14 +213,42 @@
    (global $caml_stdout
       (mut (ref eq)) (ref.i31 (i32.const 0)))
 
+   ;; List of all open output channels, like the C runtime's
+   ;; caml_all_opened_channels, so flush_all / at-exit reaches every channel
+   ;; (the registry hooks are invoked from open_descriptor_out / close_channel).
+   ;; Kept functional (cons cells are never mutated) so a list previously
+   ;; returned by caml_ml_out_channels_list stays valid across register/close.
+   (global $out_channels (mut (ref eq)) (ref.i31 (i32.const 0)))
+
    (func $register_channel (param $ch (ref eq))
       (if (i32.eq
              (struct.get $channel $fd (ref.cast (ref $channel) (local.get $ch)))
              (i32.const 1))
          (then
-            (global.set $caml_stdout (local.get $ch)))))
+            (global.set $caml_stdout (local.get $ch))))
+      (global.set $out_channels
+         (array.new_fixed $block 3 (ref.i31 (i32.const 0))
+            (local.get $ch) (global.get $out_channels))))
 
-   (func $unregister_channel (param (ref eq)))
+   (func $unregister_channel (param $ch (ref eq))
+      (local $cur (ref eq)) (local $new (ref eq)) (local $cell (ref $block))
+      (local.set $cur (global.get $out_channels))
+      (local.set $new (ref.i31 (i32.const 0)))
+      (block $done
+         (loop $loop
+            (br_if $done (ref.test (ref i31) (local.get $cur)))
+            (local.set $cell (ref.cast (ref $block) (local.get $cur)))
+            (if (i32.eqz
+                   (ref.eq (array.get $block (local.get $cell) (i32.const 1))
+                      (local.get $ch)))
+               (then
+                  (local.set $new
+                     (array.new_fixed $block 3 (ref.i31 (i32.const 0))
+                        (array.get $block (local.get $cell) (i32.const 1))
+                        (local.get $new)))))
+            (local.set $cur (array.get $block (local.get $cell) (i32.const 2)))
+            (br $loop)))
+      (global.set $out_channels (local.get $new)))
    (func $map_new (result (ref extern))
       (extern.convert_any (ref.i31 (i32.const 0))))
    (func $map_get (param (ref extern)) (param i32) (result (ref $fd_offset))
@@ -588,9 +616,7 @@
 (@then
    (func (export "caml_ml_out_channels_list")
       (param (ref eq)) (result (ref eq))
-      (call $push_channel
-         (call $push_channel (ref.i31 (i32.const 0)) (global.get $caml_stdout))
-         (global.get $caml_stderr)))
+      (global.get $out_channels))
 )
 (@else
    (func (export "caml_ml_out_channels_list")
