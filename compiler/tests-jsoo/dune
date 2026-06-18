@@ -206,6 +206,7 @@
    test_unix
    test_unix_symlink
    channel_refill
+   unix_open_append
    test_promise
    test_lwt_promise
    test_unix_perms
@@ -276,6 +277,17 @@
    (<> %{profile} wasi-with-native-effects)
    (<> %{os_type} Win32)))
  (modules test_unix_symlink)
+ (libraries unix)
+ (inline_tests
+  (deps
+   (sandbox preserve_file_kind))
+  (modes js wasm best))
+ (preprocess
+  (pps ppx_expect)))
+
+(library
+ (name jsoo_testsuite_unix_open_append)
+ (modules unix_open_append)
  (libraries unix)
  (inline_tests
   (deps
