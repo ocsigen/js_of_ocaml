@@ -55,7 +55,7 @@
    (import "jsstring" "bytes_of_jsstring"
       (func $bytes_of_jsstring (param anyref) (result (ref $bytes))))
 
-   (type $float (struct (field f64)))
+   (type $float (struct (field $f f64)))
    (type $bytes (array (mut i8)))
    (type $block (array (mut (ref eq))))
 

@@ -641,7 +641,7 @@
 
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
-   (type $float (struct (field f64)))
+   (type $float (struct (field $f f64)))
    (type $float_array (array (mut f64)))
 
    (type $compare
@@ -663,7 +663,7 @@
          (field $serialize (ref null $serialize))
          (field $deserialize (ref null $deserialize))
          (field $dup (ref null $dup))))
-   (type $custom (sub (struct (field (ref $custom_operations)))))
+   (type $custom (sub (struct (field $ops (ref $custom_operations)))))
 
    (global $bigarray_ops (export "bigarray_ops") (ref $custom_operations)
       (struct.new $custom_operations

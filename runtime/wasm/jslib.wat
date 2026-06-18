@@ -110,9 +110,9 @@
       (func $Nativeint_val (param (ref eq)) (result i32)))
 
    (type $block (array (mut (ref eq))))
-   (type $float (struct (field f64)))
+   (type $float (struct (field $f f64)))
    (type $float_array (array (mut f64)))
-   (type $js (struct (field anyref)))
+   (type $js (struct (field $js anyref)))
 
    (func $wrap (export "wrap") (param $v anyref) (result (ref eq))
       (block $is_eq (result (ref eq))

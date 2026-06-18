@@ -31,42 +31,42 @@
 
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
-   (type $float (struct (field f64)))
+   (type $float (struct (field $f f64)))
    (type $float_array (array (mut f64)))
    (type $function_1 (func (param (ref eq) (ref eq)) (result (ref eq))))
-   (type $closure (sub (struct (field (ref $function_1)))))
-   (type $closure_last_arg (sub $closure (struct (field (ref $function_1)))))
+   (type $closure (sub (struct (field $func (ref $function_1)))))
+   (type $closure_last_arg (sub $closure (struct (field $func (ref $function_1)))))
    (type $function_2 (func (param (ref eq) (ref eq) (ref eq)) (result (ref eq))))
-   (type $cps_closure (sub (struct (field (ref $function_2)))))
+   (type $cps_closure (sub (struct (field $func (ref $function_2)))))
    (type $cps_closure_last_arg
-      (sub $cps_closure (struct (field (ref $function_2)))))
+      (sub $cps_closure (struct (field $func (ref $function_2)))))
 
    (type $int_array (array (mut i32)))
 
    (type $dummy_closure_1
       (sub final $closure_last_arg
-         (struct (field (ref $function_1)) (field (mut (ref null $closure))))))
+         (struct (field $func (ref $function_1)) (field $closure (mut (ref null $closure))))))
 
    (type $closure_2
       (sub $closure
-         (struct (field (ref $function_1)) (field (ref $function_2)))))
+         (struct (field $func (ref $function_1)) (field $direct (ref $function_2)))))
 
    (type $dummy_closure_2
       (sub final $closure_2
-         (struct (field (ref $function_1)) (field (ref $function_2))
-            (field (mut (ref null $closure_2))))))
+         (struct (field $func (ref $function_1)) (field $direct (ref $function_2))
+            (field $closure (mut (ref null $closure_2))))))
 
    (type $function_3
       (func (param (ref eq) (ref eq) (ref eq) (ref eq)) (result (ref eq))))
 
    (type $closure_3
       (sub $closure
-         (struct (field (ref $function_1)) (field (ref $function_3)))))
+         (struct (field $func (ref $function_1)) (field $direct (ref $function_3)))))
 
    (type $dummy_closure_3
       (sub final $closure_3
-         (struct (field (ref $function_1)) (field (ref $function_3))
-            (field (mut (ref null $closure_3))))))
+         (struct (field $func (ref $function_1)) (field $direct (ref $function_3))
+            (field $closure (mut (ref null $closure_3))))))
 
    (type $function_4
       (func (param (ref eq) (ref eq) (ref eq) (ref eq) (ref eq))
@@ -74,18 +74,18 @@
 
    (type $closure_4
       (sub $closure
-         (struct (field (ref $function_1)) (field (ref $function_4)))))
+         (struct (field $func (ref $function_1)) (field $direct (ref $function_4)))))
 
    (type $dummy_closure_4
       (sub final $closure_4
-         (struct (field (ref $function_1)) (field (ref $function_4))
-            (field (mut (ref null $closure_4))))))
+         (struct (field $func (ref $function_1)) (field $direct (ref $function_4))
+            (field $closure (mut (ref null $closure_4))))))
 
    (type $cps_dummy_closure
       (sub final $cps_closure_last_arg
          (struct
-            (field (ref $function_2))
-            (field (mut (ref null $cps_closure))))))
+            (field $func (ref $function_2))
+            (field $closure (mut (ref null $cps_closure))))))
 
    (global $forcing_tag i32 (i32.const 244))
    (global $cont_tag (export "cont_tag") i32 (i32.const 245))

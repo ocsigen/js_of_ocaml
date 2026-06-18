@@ -40,17 +40,17 @@
 
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
-   (type $float (struct (field f64)))
+   (type $float (struct (field $f f64)))
    (type $float_array (array (mut f64)))
-   (type $js (struct (field anyref)))
+   (type $js (struct (field $js anyref)))
 
    (type $int_array (array (mut i32)))
    (type $block_array (array (mut (ref $block))))
    (type $compare_stack
-      (struct (field (mut i32))          ;; position in stack
-              (field (ref $block_array)) ;; first value
-              (field (ref $block_array)) ;; second value
-              (field (ref $int_array)))) ;; position in value
+      (struct (field $pos (mut i32))          ;; position in stack
+              (field $v1 (ref $block_array)) ;; first value
+              (field $v2 (ref $block_array)) ;; second value
+              (field $vpos (ref $int_array)))) ;; position in value
 
    (type $compare
       (func (param (ref eq)) (param (ref eq)) (param i32) (result i32)))
@@ -71,7 +71,7 @@
          (field $serialize (ref null $serialize))
          (field $deserialize (ref null $deserialize))
          (field $dup (ref null $dup))))
-   (type $custom (sub (struct (field (ref $custom_operations)))))
+   (type $custom (sub (struct (field $ops (ref $custom_operations)))))
 
    (global $dummy_block (ref $block)
       (array.new $block (ref.i31 (i32.const 0)) (i32.const 0)))

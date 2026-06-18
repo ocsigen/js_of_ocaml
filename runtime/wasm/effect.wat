@@ -52,12 +52,12 @@
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
    (type $function_1 (func (param (ref eq) (ref eq)) (result (ref eq))))
-   (type $closure (sub (struct (field (ref $function_1)))))
+   (type $closure (sub (struct (field $func (ref $function_1)))))
    (type $function_3
       (func (param (ref eq) (ref eq) (ref eq) (ref eq)) (result (ref eq))))
    (type $closure_3
       (sub $closure
-         (struct (field (ref $function_1)) (field (ref $function_3)))))
+         (struct (field $func (ref $function_1)) (field $direct (ref $function_3)))))
 
    ;; Generic fibers
 
@@ -165,7 +165,7 @@
 (@then
    ;; Apply a function f to a value v, both contained in a pair (f, v)
 
-   (type $pair (struct (field (ref eq)) (field (ref eq))))
+   (type $pair (struct (field $f (ref eq)) (field $v (ref eq))))
 
    (func $apply_pair (param $p (ref $pair)) (result (ref eq))
       (local $f (ref eq))
@@ -184,7 +184,7 @@
       (func (param (ref $cont)) (param (ref eq))))
 
    (type $thunk
-      (struct (field (ref $called_with_continuation)) (field (ref eq))))
+      (struct (field $func (ref $called_with_continuation)) (field $v (ref eq))))
 
    (type $cont_resume
       (sub final $cont
@@ -321,7 +321,7 @@
    (type $call_handler_env
       (sub final $closure
          (struct
-            (field (ref $function_1))
+            (field $func (ref $function_1))
             (field $handler (ref eq))
             (field $eff (ref eq))
             (field $cont (ref eq)))))
@@ -504,16 +504,16 @@
    (type $function_4
       (func (param (ref eq) (ref eq) (ref eq) (ref eq) (ref eq))
          (result (ref eq))))
-   (type $cps_closure (sub (struct (field (ref $function_2)))))
-   (type $cps_closure_0 (sub (struct (field (ref $function_1)))))
+   (type $cps_closure (sub (struct (field $func (ref $function_2)))))
+   (type $cps_closure_0 (sub (struct (field $func (ref $function_1)))))
    (type $cps_closure_3
       (sub $cps_closure
-         (struct (field (ref $function_2)) (field (ref $function_4)))))
+         (struct (field $func (ref $function_2)) (field $direct (ref $function_4)))))
 
    (type $iterator
      (sub final $closure
        (struct
-          (field (ref $function_1))
+          (field $func (ref $function_1))
           (field $i (mut i32))
           (field $args (ref $block)))))
 

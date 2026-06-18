@@ -27,8 +27,8 @@
 
    (type $buffer
       (struct
-         (field (mut i32))
-         (field (mut (ref $bytes)))))
+         (field $pos (mut i32))
+         (field $data (mut (ref $bytes)))))
 
    ;; Ensure the buffer has room for [$extra] more bytes, growing (and
    ;; copying) its backing array if needed -- so the formatted message is not

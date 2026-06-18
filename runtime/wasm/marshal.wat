@@ -198,9 +198,9 @@
       (return_call $intern_rec (local.get $s) (local.get $h)))
 
    (type $bytes (array (mut i8)))
-   (type $float (struct (field f64)))
+   (type $float (struct (field $f f64)))
    (type $float_array (array (mut f64)))
-   (type $js (struct (field anyref)))
+   (type $js (struct (field $js anyref)))
 
    (type $decompress
       (func (param (ref $bytes) i32 i32 i32) (result (ref $bytes))))
@@ -224,7 +224,7 @@
          (field $serialize (ref null $serialize))
          (field $deserialize (ref null $deserialize))
          (field $dup (ref null $dup))))
-   (type $custom (sub (struct (field (ref $custom_operations)))))
+   (type $custom (sub (struct (field $ops (ref $custom_operations)))))
 
    (global $Intext_magic_number_small i32 (i32.const 0x8495A6BE))
    (global $Intext_magic_number_big i32 (i32.const 0x8495A6BF))

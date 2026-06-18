@@ -53,7 +53,7 @@
          (field $serialize (ref null $serialize))
          (field $deserialize (ref null $deserialize))
          (field $dup (ref null $dup))))
-   (type $custom (sub (struct (field (ref $custom_operations)))))
+   (type $custom (sub (struct (field $ops (ref $custom_operations)))))
 
    (global $int64_ops (export "int64_ops") (ref $custom_operations)
       (struct.new $custom_operations
@@ -67,7 +67,7 @@
          (ref.func $int64_dup)))
 
    (type $int64
-      (sub final $custom (struct (field (ref $custom_operations)) (field i64))))
+      (sub final $custom (struct (field (ref $custom_operations)) (field $i64 i64))))
 
    (func $int64_cmp
       (param $v1 (ref eq)) (param $v2 (ref eq)) (param i32) (result i32)

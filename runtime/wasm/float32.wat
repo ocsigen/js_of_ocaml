@@ -33,7 +33,7 @@
    (import "array" "caml_make_vect"
       (func $caml_make_vect (param (ref eq)) (param (ref eq)) (result (ref eq))))
 
-   (type $float (struct (field f64)))
+   (type $float (struct (field $f f64)))
 
    (func $box_float (param $f f64) (result (ref eq))
       (struct.new $float (local.get $f)))
@@ -62,7 +62,7 @@
          (field $serialize (ref null $serialize))
          (field $deserialize (ref null $deserialize))
          (field $dup (ref null $dup))))
-   (type $custom (sub (struct (field (ref $custom_operations)))))
+   (type $custom (sub (struct (field $ops (ref $custom_operations)))))
 
    (global $float32_ops (export "float32_ops") (ref $custom_operations)
       (struct.new $custom_operations
@@ -76,7 +76,7 @@
          (ref.func $float32_dup)))
 
    (type $float32
-      (sub final $custom (struct (field (ref $custom_operations)) (field f32))))
+      (sub final $custom (struct (field (ref $custom_operations)) (field $f32 f32))))
 
    (func $box_float32 (param $f f32) (result (ref eq))
       (struct.new $float32 (global.get $float32_ops) (local.get $f)))

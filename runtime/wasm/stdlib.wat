@@ -57,9 +57,9 @@
 
    (type $assoc
       (struct
-         (field (ref $bytes))
-         (field (mut (ref eq)))
-         (field (mut (ref null $assoc)))))
+         (field $name (ref $bytes))
+         (field $value (mut (ref eq)))
+         (field $next (mut (ref null $assoc)))))
 
    (type $assoc_array (array (mut (ref null $assoc))))
 
