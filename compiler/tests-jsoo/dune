@@ -177,6 +177,7 @@
    ephemeron_data
    hash_jsstring
    bigstring_kind
+   wrap_exception
    runtime_events_register
    test_custom_name
    test_text_codec_fallback
@@ -337,6 +338,18 @@
  (libraries js_of_ocaml)
  (preprocess
   (pps js_of_ocaml-ppx ppx_expect)))
+
+; caml_wrap_exception wrapping of thrown JS values; uses Js, js and wasm only.
+
+(test
+ (name wrap_exception)
+ (modules wrap_exception)
+ (libraries js_of_ocaml)
+ (enabled_if
+  (and
+   (<> %{profile} wasi)
+   (<> %{profile} wasi-with-native-effects)))
+ (modes js wasm))
 
 ; The js accessor lives in the optional +toplevel.js runtime fragment, so it
 ; is linked explicitly; --toplevel is deliberately NOT passed, so the bytecode

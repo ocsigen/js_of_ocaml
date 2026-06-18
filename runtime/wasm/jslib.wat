@@ -33,6 +33,10 @@
    (import "bindings" "delete" (func $delete (param anyref) (param anyref)))
    (import "bindings" "instanceof"
       (func $instanceof (param anyref) (param anyref) (result i32)))
+   (import "bindings" "is_js_error"
+      (func $is_js_error (param anyref) (result i32)))
+   (import "bindings" "to_js_string"
+      (func $to_js_string (param anyref) (result anyref)))
    (import "bindings" "typeof" (func $typeof (param anyref) (result anyref)))
    (import "bindings" "equals"
       (func $equals (param anyref) (param anyref) (result i32)))
@@ -637,21 +641,21 @@
       (local $exn anyref)
       (local.set $exn (any.convert_extern (local.get 0)))
       ;; ZZZ special case for stack overflows?
-      (block $undef
+      ;; Wrap in Js.Error only an actual JS Error, like the JS runtime; other
+      ;; thrown values fall through to Failure below.
+      (block $fallback
+         (br_if $fallback (i32.eqz (call $is_js_error (local.get $exn))))
          (return
             (array.new_fixed $block 3 (ref.i31 (i32.const 0))
-               (br_on_null $undef
+               (br_on_null $fallback
                   (call $caml_named_value (global.get $jsError)))
                (call $wrap (local.get $exn)))))
+      ;; Failure(String(exn)). String() is null/undefined-safe, unlike calling
+      ;; exn.toString() which throws on a thrown null/undefined.
       (array.new_fixed $block 3 (ref.i31 (i32.const 0))
          (call $caml_failwith_tag)
          (call $caml_string_of_jsstring
-            (call $wrap
-               (call $meth_call
-                  (local.get $exn)
-                  (call $unwrap
-                     (call $caml_jsstring_of_bytes (global.get $toString)))
-                  (any.convert_extern (call $new_array (i32.const 0))))))))
+            (call $wrap (call $to_js_string (local.get $exn))))))
 
    (func (export "caml_js_error_option_of_exception")
       (param (ref eq)) (result (ref eq))
