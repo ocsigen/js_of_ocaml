@@ -1,6 +1,9 @@
 # dev
 
 ## Features/Changes
+* Runtime/wasm: implement the legacy `num` library `nat` primitives, which
+  were dummy no-op stubs; arbitrary-precision integers and rationals now
+  work on the Wasm runtime as on the JavaScript one (#2263)
 * Compiler: initial support for OCaml 5.5.0 (#2197, #2220)
 * Compiler: added a variable coalescing pass (#2166)
 * Wasm dynlink/toplevel support (#2186)
