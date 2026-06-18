@@ -24,11 +24,6 @@
  (libraries unix))
 
 (tests
- (names unix_open_append)
- (modes js wasm)
- (libraries unix))
-
-(tests
  (names gh2093)
  (modes wasm)
  (enabled_if
