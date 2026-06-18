@@ -2237,7 +2237,7 @@
       (local $fd i32) (local $s (ref $bytes))
       (local $buf (ref extern)) (local $buf_view (ref extern))
       (local $pos i32) (local $len i32) (local $numbytes i32)
-      (local $written i32) (local $n i32)
+      (local $n i32)
       (local $fd_offset (ref $fd_offset))
       (local $offset i64)
       (local.set $fd (i31.get_u (ref.cast (ref i31) (local.get $vfd))))

@@ -81,10 +81,8 @@
 
    (func (export "caml_hash_mix_bigstring")
       (param $h i32) (param $b (ref eq)) (result i32)
-      (local $data (ref extern))
       (local $view (ref extern))
       (local $len i32) (local $i i32) (local $w i32)
-      (local.set $data (call $caml_ba_get_data (local.get $b)))
       (local.set $view (call $caml_ba_get_view (local.get $b)))
       (local.set $len (call $caml_ba_num_elts (local.get $b)))
       (loop $loop

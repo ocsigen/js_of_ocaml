@@ -360,7 +360,6 @@
 
    (func (export "caml_string_hash")
       (param (ref eq)) (param (ref eq)) (result (ref eq))
-      (local $h i32)
       (ref.i31
          (i32.and
             (call $caml_hash_mix_final

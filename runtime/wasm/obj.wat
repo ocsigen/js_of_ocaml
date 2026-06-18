@@ -143,7 +143,6 @@
 
    (func $caml_update_dummy (export "caml_update_dummy")
       (param $dummy (ref eq)) (param $newval (ref eq)) (result (ref eq))
-      (local $i i32)
       (local $dst (ref $block)) (local $fdst (ref $float_array))
       (local $src (ref $block))
       (drop (block $not_block (result (ref eq))
@@ -507,7 +506,7 @@
       (param $obj (ref eq)) (param $vtag (ref eq))
       (result (ref eq))
       (local $meths (ref $block))
-      (local $tag i32) (local $ofs i32)
+      (local $tag i32)
       (local $li i32) (local $mi i32) (local $hi i32)
       (local.set $meths
          (ref.cast (ref $block)

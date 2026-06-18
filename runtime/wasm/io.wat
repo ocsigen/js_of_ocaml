@@ -970,7 +970,7 @@
       (param $vlen (ref eq)) (result (ref eq))
       (local $ch (ref $channel)) (local $s (ref $bytes))
       (local $pos i32) (local $len i32) (local $curr i32)
-      (local $i i32) (local $avail i32) (local $nread i32)
+      (local $avail i32) (local $nread i32)
       (local $buf (ref extern))
       (local.set $ch (ref.cast (ref $channel) (local.get $vch)))
       (local.set $s (ref.cast (ref $bytes) (local.get $vs)))
