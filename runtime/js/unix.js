@@ -72,13 +72,11 @@ function caml_unix_localtime(t) {
   // for every other zone).
   if (
     stdTimezoneOffset === 0 &&
-    jan.getTimezoneOffset() !== jul.getTimezoneOffset()
-  ) {
-    try {
-      if (Intl.DateTimeFormat().resolvedOptions().timeZone === "Europe/Dublin")
-        isdst = !isdst;
-    } catch (e) {}
-  }
+    jan.getTimezoneOffset() !== jul.getTimezoneOffset() &&
+    globalThis.Intl?.DateTimeFormat?.().resolvedOptions().timeZone ===
+      "Europe/Dublin"
+  )
+    isdst = !isdst;
   return BLOCK(
     0,
     d.getSeconds(),
