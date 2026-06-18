@@ -1370,9 +1370,12 @@
 
    (func $win_find_next (export "win_findnext") (export "caml_unix_findnext")
       (param $dir (ref eq)) (result (ref eq))
+      ;; Like native [win_findnext] and the JS runtime, raise End_of_file at
+      ;; the end without closing the handle -- the caller closes it through
+      ;; [findclose]. [readdir_helper] already raises End_of_file (it never
+      ;; returns null), so the final raise here is just the type-level tail.
       (block $return (result (ref eq))
          (br_on_non_null $return (call $readdir_helper (local.get $dir)))
-         (drop (call $unix_closedir (local.get $dir)))
          (call $caml_raise_end_of_file)
          (ref.i31 (i32.const 0))))
 
