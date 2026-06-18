@@ -88,6 +88,11 @@
   a symlink to a directory is reported as a directory; and `isatty` returns
   `false` in a browser instead of throwing on the undefined `require`
   (#2263)
+* Runtime/wasm: format-string corner cases reachable through the
+  `caml_format_int`/`caml_int64_format`/`caml_format_float` primitives
+  (not produced by `Printf`): the `#` flag no longer overwrites the sign
+  of a negative base-10 integer (`"%#d" (-5)` gave `"05"`), and `"%+f"` /
+  `"% f"` without a precision no longer raise `Invalid_argument` (#2263)
 * Runtime: `Unix.localtime` computes `tm_yday` from the calendar date
   instead of the wall-clock distance to January 1, which was off by one
   during DST; the js and wasm-on-node backends share the fix (#2304)
