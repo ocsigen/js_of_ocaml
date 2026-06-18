@@ -184,8 +184,11 @@ let%expect_test "chmod on a missing file" =
   (* #2287: chmod of a missing path raises Unix_error(ENOENT, "chmod", _) on
      every backend the Unix tests run on (native, the js backend including
      Windows, wasm-on-node, and WASI -- which has no chmod but still reports
-     the missing path). *)
-  (try Unix.chmod "/jsoo_missing_for_chmod" 0o644
+     the missing path). Use a relative name so the path resolves under the
+     current directory's device on every backend: a rootless "/foo" resolves
+     to no device on the js Windows backend (Sys_error) instead of to the
+     current drive, so it never reaches the missing-file ENOENT path. *)
+  (try Unix.chmod "jsoo_missing_for_chmod" 0o644
    with Unix.Unix_error (Unix.ENOENT, "chmod", _) -> print_endline "ENOENT chmod");
   [%expect {| ENOENT chmod |}]
 
