@@ -200,8 +200,10 @@
       (param $path (ref $bytes)) (result (ref $bytes))
       (local $need_slash i32) (local $i i32) (local $abs_path (ref $bytes))
       (if (i32.eqz (array.len (local.get $path)))
-         (then ;; empty path
-            (return (global.get $current_dir))))
+         (then ;; empty path: leave it empty so it matches no preopen and the
+               ;; operation fails with ENOENT, like native (open "" etc.),
+               ;; rather than silently resolving to the current directory
+            (return (local.get $path))))
       (if (i32.eq (i32.const 47) ;; '/'
              (array.get_u $bytes (local.get $path) (i32.const 0)))
          (then ;; absolute path
