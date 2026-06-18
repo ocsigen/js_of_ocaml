@@ -34,7 +34,7 @@
      )
    ]}
    @see <https://ocsigen.org/tyxml/> the Tyxml project website.
-   @see <https://ocsigen.org/tyxml/dev/api/Html_sigs.T> Html_sigs.T to have a list of available functions to build HTML.
+   @see <https://ocsigen.org/tyxml/latest/tyxml/Html_sigs/module-type-T/index.html> Html_sigs.T to have a list of available functions to build HTML.
 *)
 
 open Js_of_ocaml
