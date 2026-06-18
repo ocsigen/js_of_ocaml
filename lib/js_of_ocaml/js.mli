@@ -966,7 +966,7 @@ module Unsafe : sig
 
   external runtime_value : string -> 'a = "caml_jsoo_runtime_value"
   (** [runtime_value "FOO"] returns the JavaScript value FOO provided
-      by the JavaScript runtime (with '//Provides: FOO'). The string
+      by the JavaScript runtime (with '// Provides: FOO'). The string
       argument must be a string literal. *)
 
   val global : < .. > t

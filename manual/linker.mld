@@ -64,9 +64,9 @@ additional information.
 
 Annotations are single line comments with the following syntax
 {v
-//Provides: primitive_name [const|mutable]
-//Requires: other_primitive[,another_primitive]*
-//Version: version_constraint[,version_constraint]*
+// Provides: primitive_name [const|mutable]
+// Requires: other_primitive[,another_primitive]*
+// Version: version_constraint[,version_constraint]*
 
 function primitive_name(arg1, arg2) {
   // JavaScript implementation
@@ -75,35 +75,35 @@ v}
 
 {2 Annotations explained}
 
-{b [//Provides: name [modifier]]} - Declares a primitive:
+{b [// Provides: name [modifier]]} - Declares a primitive:
 - [const] - No side effects (pure function)
 - [mutable] - No side effects, but return value may be affected by other primitives
 - [mutator] (or empty) - May have side effects
 
-{b [//Requires: name1, name2]} - Lists primitives that must be loaded first
+{b [// Requires: name1, name2]} - Lists primitives that must be loaded first
 
-{b [//Version: < 4.12.0]} - OCaml version constraint
+{b [// Version: < 4.12.0]} - OCaml version constraint
 
-{b [//Alias: other_name]} - Makes this primitive an alias for another
+{b [// Alias: other_name]} - Makes this primitive an alias for another
 
-{b [//Weakdef]} - Allows this primitive to be overridden by another definition
+{b [// Weakdef]} - Allows this primitive to be overridden by another definition
 
-{b [//Always]} - Always include this code, even if not referenced
+{b [// Always]} - Always include this code, even if not referenced
 
-{b [//If: flag]} - Only include if flag is enabled (e.g., [//If: effects])
+{b [// If: flag]} - Only include if flag is enabled (e.g., [// If: effects])
 
-{b [//Ifnot: flag]} - Only include if flag is disabled
+{b [// Ifnot: flag]} - Only include if flag is disabled
 
-{b [//Deprecated: message]} - Mark primitive as deprecated
+{b [// Deprecated: message]} - Mark primitive as deprecated
 
-All JavaScript code after a [//Provides] annotation belongs to that
-primitive, until the next [//Provides].
+All JavaScript code after a [// Provides] annotation belongs to that
+primitive, until the next [// Provides].
 
 {2 Example: custom primitive}
 
 {v
-//Provides: my_log_primitive
-//Requires: caml_jsstring_of_string
+// Provides: my_log_primitive
+// Requires: caml_jsstring_of_string
 function my_log_primitive(msg) {
   console.log(caml_jsstring_of_string(msg));
   return 0;  // Return unit

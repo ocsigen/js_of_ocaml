@@ -404,7 +404,7 @@ let result =
 
 {2 Calling runtime primitives}
 
-For JavaScript functions declared in runtime files (with [//Provides:]),
+For JavaScript functions declared in runtime files (with [// Provides:]),
 you can use OCaml [external] declarations:
 
 {@ocaml[
@@ -582,19 +582,19 @@ For type-safe JSON handling, use {{!page-"ppx-deriving"}ppx_deriving_json}.
 
 {1:runtime-values Accessing runtime values}
 
-JavaScript values declared with [//Provides:] in runtime files can be
+JavaScript values declared with [// Provides:] in runtime files can be
 accessed from OCaml. There are two approaches depending on whether you're
 accessing a function or a non-function value.
 
 See {{!page-"linker".writing-primitives}writing JavaScript primitives}
-for more about the [//Provides:] syntax.
+for more about the [// Provides:] syntax.
 
 {2 Functions: use [external]}
 
 For JavaScript {b functions}, use OCaml's [external] declaration:
 
 {@javascript[
-//Provides: my_add
+// Provides: my_add
 function my_add(x, y) { return x + y; }
 ]}
 
@@ -612,8 +612,8 @@ For JavaScript {b objects, constants, or other non-function values}, use
 {{!Js_of_ocaml.Js.Unsafe.runtime_value}Js.runtime_value}:
 
 {@javascript[
-//Provides: myConfig
-var myConfig = { debug: true, version: 42 };
+// Provides: myConfig
+const myConfig = { debug: true, version: 42 };
 ]}
 
 {@ocaml[
