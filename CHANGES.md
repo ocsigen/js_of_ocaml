@@ -70,6 +70,11 @@
   grows its buffer instead of truncating at a fixed 256 bytes, so a long
   `Failure`/`Sys_error` payload is printed in full in the `Fatal error:
   exception ...` message, like the JS runtime (#2263)
+* Runtime/wasm: `Sys.is_directory`/`Sys.file_exists`-style checks now
+  follow symlinks (`stat`, not `lstat`) like native and the JS runtime, so
+  a symlink to a directory is reported as a directory; and `isatty` returns
+  `false` in a browser instead of throwing on the undefined `require`
+  (#2263)
 * Runtime: `Unix.localtime` computes `tm_yday` from the calendar date
   instead of the wall-clock distance to January 1, which was off by one
   during DST; the js and wasm-on-node backends share the fix (#2304)
