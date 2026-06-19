@@ -2376,7 +2376,8 @@ let f ?(filter_export = fun _ -> true) files ~output_file =
   (* 11: data *)
   ignore
     (write_section_with_scan ~files ~out_ch ~buf ~id:11 ~scan:(fun i maps ->
-         Scan.data_section { maps with global = global_mappings.(i) }));
+         Scan.data_section
+           { maps with mem = mem_mappings.(i); global = global_mappings.(i) }));
 
   (* Custom section: name *)
   let name_sections =
