@@ -176,6 +176,7 @@
    test_runtime_value
    ephemeron_data
    hash_jsstring
+   bigstring_kind
    runtime_events_register
    test_custom_name
    test_text_codec_fallback
@@ -321,6 +322,21 @@
  (libraries js_of_ocaml)
  (preprocess
   (pps ppx_expect)))
+
+; Bigstring.of_arrayBuffer produces a char bigarray; uses Js, js and wasm only.
+
+(library
+ (name bigstring_kind)
+ (modules bigstring_kind)
+ (enabled_if
+  (and
+   (<> %{profile} wasi)
+   (<> %{profile} wasi-with-native-effects)))
+ (inline_tests
+  (modes js wasm))
+ (libraries js_of_ocaml)
+ (preprocess
+  (pps js_of_ocaml-ppx ppx_expect)))
 
 ; The js accessor lives in the optional +toplevel.js runtime fragment, so it
 ; is linked explicitly; --toplevel is deliberately NOT passed, so the bytecode
