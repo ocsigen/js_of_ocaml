@@ -1,448 +1,184 @@
 # dev
 
 ## Features/Changes
-* Runtime/wasm: implement the legacy `num` library `nat` primitives, which
-  were dummy no-op stubs; arbitrary-precision integers and rationals now
-  work on the Wasm runtime as on the JavaScript one (#2263)
 * Compiler: initial support for OCaml 5.5.0 (#2197, #2220)
-* Compiler: added a variable coalescing pass (#2166)
-* Compiler: faster variable naming and free-variable passes (#2321)
-* Wasm dynlink/toplevel support (#2186)
-* OxCaml support (#2105, #2225)
-* Runtime/wasm: faster copy between a Wasm string and an JavaScript array buffer (#2124)
-* Runtime/wasm: faster conversion of small JavaScript strings to Wasm (#2124)
-* Compiler: improved shape computation (#2198)
-* Add the --build-config and --apply-build-config flags (#2177)
-* Runtime/wasm: optimized some bigstring primitives (#2144)
-* Lib: many additional `Dom_html` bindings (#2221, #2248)
-* Lib: add `Performance` module (#2221)
-* Put more values into global variables (#2211)
-* Runtime: intial support for quickjs-ng
-* Lib: add `Promise` module — bindings to JavaScript promises that
-  preserve type safety in the presence of `'a Promise.t Promise.t` (#2031)
-* Lib: add Lwt interop for `Promise` in `Js_of_ocaml_lwt.Promise`
-  (`to_lwt` / `of_lwt`)
-* Lib: add Promise-typed `Dom_html` bindings — `requestFullscreen`,
-  `requestPointerLock`, `exitFullscreen`, `mediaElement.play`,
-  `imageElement.decode`, and `Animation.{finished,ready}`.
-  `mediaElement.play` now returns `unit Promise.t` instead of `unit`
-  (breaking change)
-* Lib: add `Fetch` and `Abort` modules — Fetch API binding with a typed
-  `AbortController`/`AbortSignal` primitive for cancellation (#596)
-* Wasm_of_ocaml: alternative effect implementation based on the Stack Switching proposal (#2189)
+* Compiler: OxCaml support (#2105, #2225)
+* Compiler: new variable coalescing pass, plus faster variable-naming,
+  free-variable and shape-computation passes (#2166, #2321, #2198)
+* Compiler: add the `--build-config` and `--apply-build-config` flags (#2177)
+* Compiler: put more values into global variables (#2211)
+* Compiler: cosmetic minification in compact mode — `!0`/`!1` booleans,
+  drop the leading `0` in `0.x` fractions, normalise exponents
+  (`1e+05` → `1e5`), and pick backtick strings when they reduce escapes;
+  `--pretty` output is unchanged (#1117)
+* Wasm: dynlink and toplevel support (#2186)
 * Compiler/wasm: WASI 0.1 support (#1831)
-* Lib: implement popover API (#1734)
-* Lib: add Intl.RelativeTimeFormat (#2070)
-* Compiler: cosmetic minification of generated JavaScript
-  in compact mode: emit `!0`/`!1` for booleans, drop the leading zero
-  from `0.x` fractions, normalise exponent forms (`1e+05` → `1e5`), and
-  pick backticks for string literals when they reduce escape count.
-  Pretty-printed output (`--pretty`) is unchanged. (#1117)
-* Lib: align `Dom_svg` with SVG 2 — introduce `graphicsElement`
-  (`SVGGraphicsElement`) and `geometryElement` (`SVGGeometryElement`) and
-  reparent the graphics/geometry elements onto them; merge `style`/`className`
-  (+ `dataset`) into `element`; add SVG 2 members (`a` hyperlink attributes,
-  `crossOrigin`, `*Units` enums, `style.disabled`, …) and mark removed/deprecated
-  SVG 1.1 API. Breaking: graphics elements no longer expose the SVG 1.1-only
-  `getTransformToElement`; `nearestViewportElement`/`farthestViewportElement`
-  are kept but typed `optdef` as they are deprecated and dropped by some engines.
-  Also bind `markerElement` and the full `SVGFE*` filter-primitive family (with
-  `create*`/`CoerceTo.*` helpers), make every SVG element an event target so
-  `Dom_html`/`Lwt_js_events` handlers can be attached to them (#519), and fix
-  the `prop`/`readonly_prop` split (e.g. writable `SVGPoint`/`SVGMatrix`
-  coordinates).
+* Wasm_of_ocaml: alternative effect implementation based on the Stack
+  Switching proposal (#2189)
+* Runtime/wasm: implement the legacy `num` library `nat` primitives
+  (previously no-op stubs), so arbitrary-precision integers and rationals
+  now work as on the JavaScript runtime (#2263)
+* Runtime/wasm: faster string↔ArrayBuffer copies, faster small-string
+  conversions, and optimized bigstring primitives (#2124, #2144)
+* Runtime: initial support for quickjs-ng
+* Lib: add `Promise` — type-safe bindings to JavaScript promises (even for
+  `'a Promise.t Promise.t`), with Lwt interop in `Js_of_ocaml_lwt.Promise`
+  (`to_lwt`/`of_lwt`) and Promise-typed `Dom_html` bindings
+  (`requestFullscreen`, `requestPointerLock`, `exitFullscreen`,
+  `mediaElement.play`, `imageElement.decode`, `Animation.{finished,ready}`).
+  Breaking: `mediaElement.play` now returns `unit Promise.t` (#2031)
+* Lib: add `Fetch` and `Abort` — Fetch API binding with a typed
+  `AbortController`/`AbortSignal` primitive for cancellation (#596)
+* Lib: many additional `Dom_html` bindings and a new `Performance` module
+  (#2221, #2248)
 * Lib: add `Console` bindings for `table`, `count`, `countReset` and
   `timeLog` (#2350)
-* Lib: remove dead legacy-browser code from the DOM bindings: the
-  IE `attachEvent`/`detachEvent` fallback in
-  `Dom.addEventListenerWithOptions`, the IE `createElement` HTML-string
-  hack, the `cancelBubble` fallback in `Dom_html.stopPropagation`, and
-  the prefixed `requestAnimationFrame` probes. Removes the obsolete
-  Gecko `MouseScrollEvent`/`_DOMMouseScroll` bindings (breaking: drops
-  the `mouseScrollEvent` type, the `MouseScrollEvent` `taggedEvent`
-  variant, `Dom_html.CoerceTo.mouseScrollEvent` and
-  `Dom_html.Event._DOMMouseScroll`). `File.filename` no longer consults
-  the nonstandard Firefox 3.x `fileName` property. (#2350)
+* Lib: align `Dom_svg` with SVG 2 — new `graphicsElement`/`geometryElement`
+  parents, `style`/`className`/`dataset` merged into `element`, SVG 2
+  members, `markerElement` and the full `SVGFE*` filter-primitive family,
+  every SVG element is now an event target (#519), and `prop`/`readonly_prop`
+  fixes. Breaking: drops the SVG 1.1-only `getTransformToElement`;
+  `nearestViewportElement`/`farthestViewportElement` are now typed `optdef`
+* Lib: implement the popover API (#1734)
+* Lib: add `Intl.RelativeTimeFormat` (#2070)
+* Lib: remove dead legacy-browser code from the DOM bindings (IE
+  `attachEvent`/`createElement`/`cancelBubble` fallbacks, prefixed
+  `requestAnimationFrame`, the Firefox 3.x `File.fileName` property).
+  Breaking: drops the obsolete Gecko `MouseScrollEvent`/`_DOMMouseScroll`
+  bindings — the `mouseScrollEvent` type, the `MouseScrollEvent`
+  `taggedEvent` variant, `CoerceTo.mouseScrollEvent` and
+  `Event._DOMMouseScroll` (#2350)
 
 ## Bug fixes
-* Runtime: `caml_float16_of_double` (the JS runtime) rounds a double to
-  `float16` by first casting it to `float32` like native, instead of
-  rounding straight onto the `float16` grid; tie values then round
-  consistently across the js, wasm and native backends (e.g.
-  `65519.99999958789` overflows to infinity, not `65504`) (#2280)
-* Runtime/wasm: `Unix.getuid`/`geteuid`/`getgid`/`getegid` return the real
-  ids on Node (`process.getuid()`, ...) like the JS runtime, instead of
-  always returning `1`; the WASI build keeps `1`, which has no user ids
-  (#2280)
-* Runtime/wasm: `caml_seek_in` validates the seek destination for
-  negativity instead of the current offset, so `seek_in ch (-5)` raises
-  `Sys_error "Invalid argument"` instead of silently corrupting the file
-  descriptor offset (#2325)
-* Runtime: marshalling a block with 2^22 or more fields raises
-  `Failure "output_value: array cannot be read back on 32-bit platform"`
-  instead of silently truncating the size in the `CODE_BLOCK32` header
-  (`tag | sz << 10`); the js and wasm runtimes share the fix (#2328)
-* Runtime: hashing a JavaScript string with code points above U+00FF now
-  mixes two 16-bit code units per word, instead of packing the raw code units
-  four per word as for a byte string (which overlapped their high bits and
-  lost information); ASCII and Latin-1 strings hash exactly as before. The
-  wasm runtime, which used to mix one code unit at a time, is brought in line
-  so a `Js.string` hashes to the same value on both backends (#2263)
-* Runtime/wasm: `Array.make`/`caml_make_vect` with a float initial value
-  applies the dedicated float-array size limit (`0x7ffffff`) like the other
-  floatarray primitives, instead of the larger generic limit, since it
-  builds an unboxed float array (#2263)
-* Runtime/wasm: `caml_wrap_exception` wraps a thrown JavaScript value in
-  `Js.Error` only when it is an actual `Error`, like the JS runtime; other
-  values become `Failure (String value)`, and a thrown `null`/`undefined`
-  no longer crashes the wrapper (it used `value.toString()`) (#2263)
-* Runtime/wasm: `caml_js_meth_call` decodes the method name as UTF-8 like
-  the JS runtime (`caml_jsstring_of_string`) instead of as raw bytes, so a
-  method whose name contains non-ASCII characters resolves to the same
-  property on both backends (#2263)
-* Runtime/wasm: the uncaught-exception formatter (`caml_format_exception`)
-  grows its buffer instead of truncating at a fixed 256 bytes, so a long
-  `Failure`/`Sys_error` payload is printed in full in the `Fatal error:
-  exception ...` message, like the JS runtime (#2263)
-* Runtime/wasm: `Sys.is_directory`/`Sys.file_exists`-style checks now
-  follow symlinks (`stat`, not `lstat`) like native and the JS runtime, so
-  a symlink to a directory is reported as a directory; and `isatty` returns
-  `false` in a browser instead of throwing on the undefined `require`
-  (#2263)
-* Runtime/wasm: format-string corner cases reachable through the
-  `caml_format_int`/`caml_int64_format`/`caml_format_float` primitives
-  (not produced by `Printf`): the `#` flag no longer overwrites the sign
-  of a negative base-10 integer (`"%#d" (-5)` gave `"05"`), and `"%+f"` /
-  `"% f"` without a precision no longer raise `Invalid_argument` (#2263)
-* Runtime/wasm (WASI): `flush_all` (and the at-exit flush) reaches every
-  open output channel, not only stdout/stderr; the WASI runtime now tracks
-  all output channels like the C runtime, so buffered data on user file
-  channels is no longer lost (#2263)
-* Runtime/wasm (WASI): `Unix.error_message` of an error variant with no
-  WASI errno equivalent (`EWOULDBLOCK`, `ESHUTDOWN`, ...) reports the error
-  name instead of `"Unknown error -1"`, matching the JS runtime's fallback
-  (#2263)
-* Runtime/wasm: WASI `normalize_prefix` no longer traps on a relative
-  preopen prefix (e.g. `wasmtime --dir=tmp`); the offset for a plain
-  prefix name underflowed to a huge unsigned value and the following
-  `array.copy` trapped with an out-of-bounds access on the first
-  filesystem operation (#2263)
-* Runtime/wasm (WASI): a preopen whose prefix carries a trailing slash
-  (e.g. `wasmtime --dir=tmp/`) now matches paths underneath it; the prefix
-  comparison required an exact length and never matched. The empty path is
-  no longer treated as the current directory but fails with `ENOENT` like
-  native (#2263)
-* Runtime/wasm (WASI): `Unix.utimes` follows symlinks like native and the
-  other path operations; it passed `lookupflags = 0`, so it set the times
-  on the symlink itself instead of its target (#2263)
-* Runtime: an empty path is no longer resolved to the current directory on
-  the JavaScript backend but fails with `ENOENT` like native (and the Wasm
-  runtime), so `Unix.stat ""`, `Unix.opendir ""`, etc. raise instead of
-  silently operating on the cwd; `Sys.file_exists ""` returns false (#2354)
-* Runtime/wasm: `Condition.wait` is a no-op like the JS runtime instead of
-  raising `Failure`, and each `Condition.t` has a distinct identity (it was
-  the immediate `0`, so all condition variables were physically equal)
-  (#2263)
-* Runtime: `Unix.localtime` computes `tm_yday` from the calendar date
-  instead of the wall-clock distance to January 1, which was off by one
-  during DST; the js and wasm-on-node backends share the fix (#2304)
-* Runtime: `Unix.localtime` reaches `Intl` through `globalThis.Intl?.`
-  (with an optional call on `DateTimeFormat?.()`) so the runtime
-  free-variable check passes and hosts without `Intl` fall back to the
-  offset heuristic instead of throwing (#2324)
-* Runtime/wasm: channels with a refill hook (`Sys_js.set_channel_filler`)
-  grow their buffer instead of dropping data that exceeds it, and advance
-  the channel offset so `pos_in`/`pos_out` stay correct (#2330)
-* Runtime/wasm: `Typed_array.Bigstring.of_arrayBuffer`/`of_uint8Array`
-  produce a `char` (kind 12) bigarray instead of `int8_unsigned` (kind 3),
-  matching the JS runtime (affects polymorphic compare and marshalling)
-  (#2329)
-* Runtime/wasm: `caml_unregister_named_value` can remove entries that are
-  not the head of their hash bucket (#2331)
-* Lib: `CSS.Angle.ml` now parses integer-valued angles such as `"45deg"`;
-  the parser previously required a decimal point and raised
-  `Invalid_argument` otherwise (#2350)
-* Lib: fix the return type of `IntersectionObserver`'s `takeRecords`
-  method, which was missing a `Js.t` wrapper around the result array
-  (#2350)
-* Lib: `EventSource`'s `onopen`/`onerror` handlers now receive a plain
-  `Dom.event` instead of a `messageEvent`; these events carry no
-  `data`/`origin`/`lastEventId` (only `onmessage` does) (#2350)
-* Lib: `CSS.Color.js_t_of_js_string` now rejects malformed colors with
-  empty channels such as `"rgb(,,)"` and `"rgba(1,2,3,)"`, which were
-  previously accepted (#2350)
-* Lib: `Intl.Collator`'s `compare` method now returns a `Js.number_t`
-  instead of an `int`, faithfully reflecting that it returns a JS number
-  (use `Js.float_of_number` to inspect the sign) (#2350)
-* Lib: `Dom.attr`'s `ownerElement` is now typed `element t opt
-  readonly_prop` (per spec it is read-only and null for a detached
-  attribute) (#2350)
-* Lib: `Regexp.replace_first` now preserves all flags of the regexp
-  except `g` (it previously kept only `i`/`m`, silently dropping `u`,
-  `s`, `y`); a `flags` accessor was added to `Js.regExp` (#2350)
-* Runtime/wasm: `float32_hash` normalizes negative zero and NaNs like
-  `caml_hash_mix_float`, so equal `float32` values hash identically
-  (#2332)
-* Runtime/wasm: `Str.replace`/`Str.global_replace` raise `Failure` on a
-  backreference to a group one past the last (e.g. `"\1"` against a
-  group-less regexp) instead of trapping with an out-of-bounds access;
-  the group bound check was off by one (#2263)
-* Runtime/wasm: `Runtime_events.User.register` builds the event record
-  with the `typ` and `tag` fields in the right order; they were swapped,
-  so `Runtime_events.User.tag` returned the event type (#2263)
-* Runtime/wasm: add the missing `Unix.getegid` stub and fix the
-  `Unix.getgrgid` export (it was registered under the typo
-  `caml_unix_getgruid`); both were missing primitives (#2263)
-* Runtime: `Marshal.to_buffer` returns the number of bytes written
-  instead of 0, in both the JavaScript and Wasm runtimes (#2263)
-* Runtime/wasm: more marshalling fixes — `input_value` on a bad object
-  raises `Failure "input_value: bad object"` instead of using the
-  `Marshal.data_size` prefix; and bigarray deserialization rejects an
-  out-of-range dimension count or an oversized dimension instead of
-  truncating it (#2263)
-* Runtime/wasm: ephemeron data fixes — `Ephemeron.get_data` no longer
-  traps when the data is a JS value reached through an integer key (it
-  unwrapped and recast the value unconditionally), and `blit_data` from
-  an empty source now clears the destination instead of leaving its old
-  data in place (#2263)
-* Runtime/wasm: the lexer engine only runs the position-memory moves on
-  transitions that have a memory action (`pc_off > 0`), matching the C
-  and JS runtimes; previously a redundant no-op call was made on
-  memoryless transitions (#2263)
-* Runtime/wasm: the bytecode-section accessors
-  (`caml_get_section_table`, `caml_dynlink_get_bytecode_sections`) raise
-  `Failure "Program not compiled with --toplevel"` when the sections are
-  absent, like the JS runtime, instead of trapping with an
-  uncatchable "illegal cast" or silently returning 0 (#2263)
-* Runtime/wasm: `Obj.new_block` with the double-array tag now builds a
-  float array with the dedicated representation, so float-array
-  primitives on the result work instead of trapping (it previously
-  always built a generic block) (#2263)
-* Runtime: `O_APPEND` / `Open_append` now matches native semantics: the
-  file offset starts at the beginning of the file (so `lseek`/`pos_out`
-  report 0 right after opening) and every write goes to the end of the
-  file, even after seeking backwards. Previously the offset was moved to
-  EOF once at open time, which mis-reported the position and, for the
-  in-memory backend, let a write after a seek overwrite instead of
-  append (#2263)
-* Runtime: the QuickJS standard file descriptors raise on a write or
-  read error instead of returning 0; an error on stdout (e.g. EPIPE)
-  used to make the flush/write loop spin forever, and a read error was
-  silently turned into EOF (#2270)
-* Runtime: `Unix.close` removes the descriptor from the fd table, so a
-  closed fd no longer resolves to its old file and the slot can be
-  reused (#2303)
-* Runtime: float arrays are marshalled as a `CODE_DOUBLE_ARRAY` block
-  like the native runtime, instead of a generic tag-254 block with
-  per-element double codes; jsoo-marshalled float arrays can now be
-  read by the native and Wasm runtimes (#2270)
-* Runtime: the Str engine no longer masks instruction arguments to 8
-  bits; regexps with more than 256 constant-pool entries (large
-  alternations) indexed the wrong pool slot and mismatched (#2270)
-* Compiler: fix the dead require() guard in the share_constant pass: it
-  matched the identifier "requires" instead of "require", so string
-  literals passed to require could be replaced by a shared variable,
-  confusing bundlers (#2284)
-* Runtime: `compare_nat` (legacy `num` support) iterates over the
-  common significant digit length instead of the first operand's full
-  length, so it no longer reads outside the second operand's subrange
-  and mis-orders equal values when the lengths differ (#2270)
-* Runtime: `Digest`/MD5 computes the high word of the message bit
-  length without 32-bit truncation, so digests of inputs >= 2 GiB
-  (e.g. `Digest.file` on a large file) are correct; the
-  `caml_jsstring_of_string` shared-buffer fast path is reachable again
-  (it tested `ArrayBuffer.length` instead of `byteLength`) (#2270)
-* Compiler: when re-printing parsed JavaScript, an `in` operator inside
-  a conditional's else-branch, an arrow concise body, or a yield payload
-  in a `for`-initializer is now parenthesized; the printer used to emit
-  output that did not parse (#2282)
-* Runtime/wasm: `float_of_string` no longer traps on inputs like `"nin"`
-  (the `nan`/`inf` detection read past the end of the string) and no
-  longer accepts JavaScript binary/octal literals such as `"0b101"` or
-  `"0o17"`; both now raise `Failure` like the native runtime (#2263)
-* Runtime: `float_of_string` in the JavaScript runtime skips all leading
-  whitespace (tab, newline, …), not only spaces, matching the native and
-  wasm runtimes; `"\t1.5"` now parses instead of raising `Failure` (#2263)
-* Runtime/wasm: `float_of_string` of a hex literal with a huge exponent
-  (e.g. `"0x1p12884901890"`) saturates to infinity/0 instead of wrapping
-  the exponent modulo 2^32 and returning a wrong finite value such as
-  `4.0` (#2263)
-* Compiler: bound the statement-nesting depth of generated functions by
-  emitting a flat dispatch loop instead of a deep tower of nested labelled
-  blocks when a block has many sibling merge-node branch targets. Deep
-  nesting could overflow some JavaScript engine parsers (e.g. SpiderMonkey,
-  "too much recursion" at load time) (#2122)
-* Compiler: fix UGEINT bytecode lowering (returned wrong result on
-  equal operands)
-* Runtime: `caml_dynlink_open_lib` drops the `mode` argument on OCaml
-  >= 5.1 (it threw a `TypeError` because the filename landed in the
-  removed parameter) and returns the index of the library slot it
-  filled rather than one past it (#2270)
-* Runtime: `Domain.spawn` with a body that raises now succeeds and
-  `Domain.join` re-raises the exception, instead of the exception
-  escaping `spawn` and leaving the domain id and termination mutex in
-  a broken state; the Wasm runtime additionally now sets the spawned
-  domain's id. The `Finished (Error _)` termination payload also uses
-  the layout expected by the running OCaml version — the bare `exn`
-  before 5.5 and `exn * raw_backtrace` from 5.5 — so `Domain.join` no
-  longer re-raises a malformed exception on OCaml 5.2–5.4 (#2263,
-  #2270, #2302)
-* Runtime: `Float.Array.sub`/`append`/`concat` return a proper
-  tag-254 float array (their result had tag 0); `Array.make` of an
-  invalid length raises `Invalid_argument "Array.make"` instead of
-  `"index out of bounds"` (#2270)
-* Runtime: several small fixes from the runtime review (#2270): the
-  `Runtime_events` cursor primitives are named `caml_ml_runtime_events_*`
-  (they were dead code under the wrong name); `jsoo_effect_not_supported`
-  is provided only when effects are disabled (the `//!If:` annotation was
-  silently ignored); `Blake2.create` truncates an over-long key instead
-  of discarding the truncation; and `OCAMLRUNPARAM` backtrace parsing is
-  left-to-right last-wins (`b,b=0` now disables backtraces)
-* Runtime: `Sys.command` returns the child's exit status instead of
-  `1` for any failure; `Sys.getenv` raises `Not_found` for names
-  inherited from `Object.prototype` (e.g. `"toString"`); and
-  `Sys.isatty` consults the channel's file instead of always
-  returning false (#2270)
-* Runtime: Graphics fixes (#2270): `plot`/`point_color` use the
-  bottom-left-origin pixel row `height - 1 - y` so they agree with
-  `fill_rect`/`draw_image`/text; `draw_arc` no longer renders the
-  wrong quadrant for a nonzero start angle (the canvas y-flip negates
-  the angle); the first `draw_image` of an image is synchronous
-  (it drew through an asynchronous `Image`/data-URL round trip); and
-  `fill_rect` now paints `(w+1)x(h+1)` pixels (including the far edge
-  column `x+w` and row `y+h`) to match the native X11 backend; the
-  `lineto`, `draw_rect`, `draw_arc`, `fill_arc` and `fill_poly` use the
-  same `height - 1 - y` row as `plot`/`fill_rect` instead of `height - y`,
-  so they are no longer shifted one pixel down relative to the other
-  primitives and to native; `fill_arc` closes a partial arc through the
-  centre, filling
-  a pie slice like native instead of the circular segment a bare path
-  fill produced; stroked lines, rectangles and arcs are centred on the
-  pixel grid (a half-pixel offset) so a 1px stroke stays crisp like the
-  native backend instead of blurring across two rows; filled arcs,
-  circles and ellipses are centred on the pixel rather than the pixel
-  corner, so they no longer sit half a pixel up and to the left of
-  native; and line caps and joins are round, matching the X11 backend's
-  thick lines
-* Runtime: comparing an immediate against a custom block (e.g.
-  `compare (Obj.repr 1) (Obj.repr 1L)`) no longer throws a `TypeError`
-  and orders the immediate before the block, like the native runtime
-  (#2270)
-* Compiler: fix reference unboxing (#2210)
-* Compiler/wasm: fix int division return type to Unnormalized (#2197)
-* Compiler/wasm: preserve physical identity of empty closures (#2207)
-* Compiler/wasm: fix crash when compiling some function calls (#2208)
-* Compiler: fix missing conditional simplification (#2217)
-* Compiler: fix Js_assign.simpl (#2218)
-* Runtime: fix caml_oo_cache_id (#2224)
-* Runtime: `Ephemeron.blit_key` no longer overwrites the destination's
-  data with the source's data (#2263)
-* Runtime: `Weak.get_copy` and `Ephemeron.get_data_copy` now copy
-  bytes values too; they used to return the weakly held value itself
-  (#2270)
-* Runtime (wasm): `Weak.get_copy` and `Ephemeron.get_data_copy` now
-  copy float arrays, matching the native and JavaScript runtimes
-  (#2270)
-* Runtime: `Hashtbl.hash` now hashes float arrays like native (a
-  dedicated tag-254 case mixing the elements); the JS runtime hashed
-  them as generic blocks and the Wasm runtime ignored them entirely,
-  so all three runtimes disagreed. Abstract-tag blocks are now skipped
-  like in the C runtime (#2263, #2270)
-* Runtime: `in_channel_of_descr` and `out_channel_of_descr` allocate a
-  fresh channel per call like the C runtime; both channels used to
-  share one record, making them physically equal and looping forever
-  on reads; `is_binary_mode` reports true by default (#2270)
-* Runtime: many filesystem fixes (#2270): the fake device no longer
-  destroys a directory renamed into its own subtree (EINVAL), refuses
-  to unlink directories (EISDIR), accepts `access` on directories,
-  preserves binary content registered as bytes, and reports Unix
-  errors with the proper code, syscall and path; missing-file errors
-  use the native message format; mount points are no longer matched
-  as regexes; cross-device renames raise `Sys_error`; the node backend
-  no longer truncates file sizes to 32 bits in truncate/ftruncate,
-  leaves the fd offset unchanged on ftruncate, and masks `st_perm`
-  like the C runtime; the QuickJS backend refuses `rmdir` on files and
-  `unlink` on directories, honors an explicit file permission of 0,
-  and no longer truncates file lengths to 32 bits
-* Runtime: Unix fixes (#2270): `Unix.error_message` no longer crashes
-  for error codes absent from node's error map (or on node < 22);
-  `chmod` raises `Unix_error`; `readdir` includes the "." and ".."
-  entries like native
-* Runtime: the Str engine's SIMPLEOPT/SIMPLESTAR/SIMPLEPLUS opcodes
-  no longer read past the end of the string; matching a negated
-  character class at the end of the input could loop forever (#2270)
-* Runtime: unmarshalling now decodes BLOCK32 sizes with an unsigned
-  shift; blocks with 2^21 or more fields were silently read as having
-  a single field, corrupting the stream (#2270)
-* Runtime: unmarshalling registers big-endian double arrays
-  (CODE_DOUBLE_ARRAY32_BIG) in the object table like its sibling
-  codes; shared references read after one resolved to the wrong
-  object (#2270)
-* Runtime: fix `Int64.shift_right` for negative values and shift
-  counts 41 to 47; the sign bits did not reach the low limb (#2270)
-* Runtime: comparison of float16 bigarrays now handles nan like the
-  other float kinds; a nan element used to compare equal to anything
-* Runtime: ephemeron data is now weakly keyed on the key object itself
-  rather than on its WeakRef wrapper, so key <-> data cycles can be
-  garbage collected (#2274)
-* Runtime: `Gc.finalise_last` callbacks are invoked through
-  caml_callback; with `--effects=cps` they silently never ran, and
-  `Gc.counters` now returns an ordinary tuple instead of a float-array
-  block (#2279)
-* Runtime: the `caml_bigstring_blit_*` primitives now treat bigarray
-  positions as raw offsets, like base_bigstring's native stubs and the
-  Wasm runtime, instead of running them through the layout-aware index
-  translation; this fixes `ba_to_ba` (where the read position was
-  translated but the write position was not) as well as `string_to_ba`,
-  `bytes_to_ba` and `ba_to_bytes` for fortran_layout bigarrays
-* Runtime: bigarray hashing now zero-extends tail elements as the C
-  runtime does; signed 8/16-bit bigarrays whose size is not a multiple
-  of the hashed word size hashed differently from native (and the byte
-  case trapped under WASI on the Wasm runtime)
-* Runtime: exact float formatting and parsing: precisions above 100 no
-  longer raise (`%.150e`), `%f` of values >= 1e21 prints the exact
-  decimal expansion, hex float literals are parsed with correct
-  rounding instead of underflowing to 0, and `ldexp` no longer rounds
-  twice on the way into the subnormal range (#2270)
-* Runtime: the `#` flag no longer adds a base prefix to zero;
-  `Printf.printf "%#x" 0` printed `0x0` where native prints `0`
-* Runtime: the fake filesystem no longer ignores `Open_append`; writes
-  on an append-mode channel used to overwrite the file from the start
-* Runtime: `Open_append` now implies write access, as in the C runtime
-  (`O_WRONLY | O_APPEND`); `open_out_gen [Open_append; Open_creat]`
-  used to produce a channel that fails on write
-* Runtime: renaming a file to itself on the fake filesystem no longer
-  deletes it
-* Runtime: `flush` on a closed out_channel no longer raises; the manual
-  specifies it does nothing in that case
-* Runtime/wasm: fix Int64.of_string (#2223)
-* Compiler: don't rewrite `x = e + x` into `x += e` for the `Plus`
-  operator; JavaScript `+` is not commutative for strings, which made
-  whole-program builds emit reversed `Filename.concat` operands and
-  silently broke `Filename.temp_file`
-* Runtime/wasm: fix string conversion from JS to OCaml (#2230)
-* Lib: fix several `Dom_html` bindings (#2221)
+* Compiler: don't rewrite `x = e + x` into `x += e` for `+` (not
+  commutative on strings), which reversed `Filename.concat` operands and
+  broke `Filename.temp_file` in whole-program builds
+* Compiler: fix the dead `require()` guard in share_constant (it matched
+  "requires"), which could replace `require` string arguments and confuse
+  bundlers (#2284)
+* Compiler: parenthesize `in` in conditional else-branches, arrow concise
+  bodies and `for`-initializer yields when re-printing parsed JavaScript,
+  which previously emitted output that did not parse (#2282)
+* Compiler: emit a flat dispatch loop instead of deeply nested labelled
+  blocks for many sibling merge targets, avoiding parser "too much
+  recursion" overflows (#2122)
+* Compiler: avoid JS stack overflow on deep mutually-recursive direct-style
+  calls under `--effects=double-translation`
+* Compiler: fix reference unboxing (#2210), a missing conditional
+  simplification (#2217), `Js_assign.simpl` (#2218), and UGEINT lowering
+* Compiler/wasm: fix the int-division return type (#2197), preserve the
+  physical identity of empty closures (#2207), and fix a crash on some
+  function calls (#2208)
+* Runtime: hashing is now consistent across backends — JS strings with code
+  points above U+00FF mix two 16-bit units per word, `Hashtbl.hash` of float
+  arrays, bigarray tail zero-extension and `float32_hash` normalize like
+  native; ASCII/Latin-1 strings are unchanged (#2263, #2270, #2332)
+* Runtime/wasm: bring many primitives in line with the JavaScript runtime —
+  `caml_wrap_exception` only wraps real `Error`s, `caml_js_meth_call`
+  decodes method names as UTF-8, the exception formatter grows its buffer,
+  `Sys.is_directory`/`file_exists` follow symlinks, `isatty` returns false
+  in browsers, `caml_seek_in` validates the destination, `Array.make`/
+  `Obj.new_block` build proper float arrays, `caml_unregister_named_value`
+  handles non-head bucket entries, the lexer only moves position memory on
+  memory-action transitions, the bytecode-section accessors raise without
+  `--toplevel`, format-string `#`/`%+f`/`% f` corner cases, and
+  `Condition.wait` is a no-op with each condition variable having a distinct
+  identity (#2263)
+* Runtime: marshalling fixes on both backends — `Marshal.to_buffer` returns
+  the byte count; float arrays use `CODE_DOUBLE_ARRAY` (readable by native
+  and Wasm); BLOCK32 sizes are decoded with an unsigned shift (≥ 2^21 fields
+  no longer truncated) and a block with ≥ 2^22 fields raises instead of
+  truncating; `input_value` on a bad object raises `Failure`; bigarray
+  deserialization rejects bad dimensions; big-endian double arrays are
+  registered in the object table (#2263, #2270)
+* Runtime: filesystem fixes (#2270) — the fake device no longer destroys a
+  directory renamed into its own subtree, refuses to unlink directories,
+  honors `Open_append` (which now implies write access), reports proper Unix
+  error codes/syscalls/paths, no longer matches mount points as regexes,
+  raises `Sys_error` on cross-device renames, keeps file sizes 64-bit on the
+  node backend, and no longer deletes a file renamed onto itself; `flush` on
+  a closed channel no longer raises
+* Runtime: `O_APPEND`/`Open_append` matches native on both backends — the
+  file offset starts at 0 (so `lseek`/`pos_out` report 0 right after opening)
+  and every write goes to the end of the file, even after seeking backwards
+  (#2306)
+* Runtime: an empty path raises `ENOENT` on the JavaScript backend like
+  native (and the Wasm runtime), so `Unix.stat ""`, `Unix.opendir ""`, etc.
+  raise instead of operating on the cwd, and `Sys.file_exists ""` is false
+  (#2354)
+* Runtime: Unix fixes — `Unix.localtime` computes `tm_yday` from the date
+  (was off by one during DST) and reaches `Intl` safely; `Unix.close` frees
+  the fd-table slot; `Unix.error_message` no longer crashes on unknown codes
+  or node < 22; `chmod` raises `Unix_error`; `readdir` includes "." and
+  "..", and add `Unix.getegid` / fix the `Unix.getgrgid` export (#2263,
+  #2270, #2303, #2304)
+* Runtime: channel fixes — `in_channel_of_descr`/`out_channel_of_descr`
+  allocate fresh channels (they used to share a record and loop on reads);
+  refill-hook channels grow their buffer and keep `pos_in`/`pos_out`
+  correct; `Sys.command` returns the child exit status; `Sys.getenv` raises
+  on prototype names; `Sys.isatty` consults the channel's file (#2270, #2330)
+* Runtime: Str engine fixes — SIMPLEOPT/STAR/PLUS no longer read past the
+  end of the string (a trailing negated class could loop forever),
+  instruction arguments are no longer masked to 8 bits (regexps with > 256
+  pool entries mis-indexed), and a `Str.replace` backreference one past the
+  last group raises instead of trapping (#2263, #2270)
+* Runtime: ephemeron/weak fixes — `blit_key`, `blit_data`, `get_data`,
+  `get_copy` and `get_data_copy` corrected (no clobbering, copy bytes and
+  float arrays, no traps on JS-valued data); data is weakly keyed on the key
+  object so key↔data cycles can be collected; `Gc.finalise_last` runs under
+  `--effects=cps`; `Gc.counters` returns a plain tuple (#2263, #2270, #2274,
+  #2279)
+* Runtime: numeric fixes — `Digest`/MD5 correct for inputs ≥ 2 GiB;
+  `Int64.shift_right` for negatives with shift counts 41–47;
+  `Int64.of_string` (#2223); `Printf "%#x" 0` prints `0`; float16 bigarray
+  NaN comparison; comparing an immediate against a custom block no longer
+  throws and orders correctly; `Float.Array.sub`/`append`/`concat` return
+  tag-254 arrays; `caml_bigstring_blit_*` treat positions as raw offsets;
+  `compare_nat` reads only the common digit length (#2263, #2270)
+* Runtime: float formatting and parsing — the exact decimal expansion is
+  printed beyond `toFixed`/`toExponential`'s limits (`%.150e`, `%f` of values
+  ≥ 1e21); hex-float literals parse with correct rounding, saturate huge
+  exponents instead of wrapping, and reject non-decimal/JavaScript literals;
+  `ldexp` rounds once into the subnormal range; and `float_of_string` skips
+  all leading whitespace (#2263, #2270)
+* Runtime: `caml_float16_of_double` rounds through `float32` like native, so
+  `float16` tie values agree across the js, wasm and native backends; and
+  `Unix.getuid`/`geteuid`/`getgid`/`getegid` return the real ids on Node (the
+  WASI build keeps `1`) (#2280)
+* Runtime: Graphics backend fixes (#2270) — consistent bottom-left pixel
+  origin across all primitives, correct `draw_arc` quadrant, synchronous
+  first `draw_image`, `fill_rect` paints the far edges, pie-slice `fill_arc`,
+  half-pixel-centred strokes/fills for crisp lines, and round caps/joins,
+  matching the native X11 backend
+* Runtime: `Domain.spawn` of a raising body now succeeds and `Domain.join`
+  re-raises (with the `Finished` payload layout expected per OCaml version),
+  instead of corrupting the domain id and termination mutex (#2263, #2270,
+  #2302)
+* Runtime: `caml_dynlink_open_lib` drops the `mode` argument on OCaml ≥ 5.1
+  and returns the filled library-slot index (#2270)
+* Runtime: misc runtime-review fixes — `Runtime_events.User.register`
+  orders `typ`/`tag` correctly and the cursor primitives are renamed
+  `caml_ml_runtime_events_*`; `jsoo_effect_not_supported` is provided only
+  when effects are disabled; `Blake2.create` truncates an over-long key;
+  `OCAMLRUNPARAM` backtrace parsing is last-wins; fix `caml_oo_cache_id`
+  (#2224) and JS→OCaml string conversion (#2230) (#2263, #2270)
+* Lib: binding fixes (#2350) — `CSS.Angle` parses integer angles such as
+  `"45deg"`; `CSS.Color` rejects empty channels (`"rgb(,,)"`);
+  `IntersectionObserver.takeRecords` is wrapped in `Js.t`; `EventSource`
+  `onopen`/`onerror` receive a plain `Dom.event`; `Intl.Collator.compare`
+  returns `Js.number_t`; `Dom.attr.ownerElement` is typed `element t opt
+  readonly_prop`; `Regexp.replace_first` preserves all flags except `g`
+  (adds a `flags` accessor)
+* Lib: fix method-name mangling — `Typed_array._BYTES_PER_ELEMENT_`,
+  `WebGL._MAX_RENDERBUFFER_SIZE_` and `canvasElement.toDataURL_compression`
+  resolved to the wrong JavaScript identifiers
 * Lib: defer `Intl.{Collator,DateTimeFormat,...}` member lookups so the
-  `Intl` module no longer throws at load time on hosts where
-  `globalThis.Intl` is undefined
-* Lib: fix method-name mangling on a few bindings where the OCaml name
-  resolved to the wrong JavaScript identifier:
-  `Typed_array._BYTES_PER_ELEMENT` (called `BYTES_PER`),
-  `WebGL._MAX_RENDERBUFFER_SIZE` (called `MAX_RENDERBUFFER`), and
-  `canvasElement.toDataURL_type_compression` (called `toDataURL_type`).
-  Renamed to `_BYTES_PER_ELEMENT_`, `_MAX_RENDERBUFFER_SIZE_`, and
-  `toDataURL_compression` respectively
-* Lib: fix `onbeforeunload` handler breaking navigation (#1436). The
-  `event_listener` return type is now `bool t optdef`, with `undefined`
-  meaning "no opinion" so `beforeunload` handlers don't trigger a
-  spurious confirmation dialog. Adds `Dom.listener`/`full_listener`, and
-  types `onbeforeunload` and `Event.beforeunload` against the
-  `beforeUnloadEvent` class.
-* Compiler: avoid JS stack overflow on deep mutually recursive
-  direct-style calls under `--effects=double-translation`; the trampoline
-  pass now applies the same `caml_stack_check_depth` / trampoline pattern
-  used for CPS calls to the direct half of cps_needed mutually recursive
-  closures
+  module no longer throws at load time when `globalThis.Intl` is undefined
+* Lib: fix `onbeforeunload` breaking navigation (#1436) — the
+  `event_listener` return type is now `bool t optdef` (`undefined` means "no
+  opinion"), with new `Dom.listener`/`full_listener` and a typed
+  `beforeUnloadEvent`
+* Lib: fix several `Dom_html` bindings (#2221)
 
 # 6.3.2 (2026-02-15) - Lille
 
