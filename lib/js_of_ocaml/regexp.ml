@@ -62,14 +62,16 @@ let global_replace r s s_by =
   Js.to_bytestring (Js.bytestring s)##(replace r (quote_repl s_by))
 
 let replace_first r s s_by =
+  (* Reuse all the flags of [r] except [g], so that only the first match is
+     replaced; dropping [g] this way preserves [i], [m], [u], [s], [y], ... *)
   let flags =
-    match Js.to_bool r##.ignoreCase, Js.to_bool r##.multiline with
-    | false, false -> Js.string ""
-    | false, true -> Js.string "m"
-    | true, false -> Js.string "i"
-    | true, true -> Js.string "mi"
+    let b = Buffer.create 8 in
+    String.iter
+      (fun c -> if not (Char.equal c 'g') then Buffer.add_char b c)
+      (Js.to_string r##.flags);
+    Buffer.contents b
   in
-  let r' = new%js Js.regExp_withFlags r##.source flags in
+  let r' = new%js Js.regExp_withFlags r##.source (Js.string flags) in
   Js.to_bytestring (Js.bytestring s)##(replace r' (quote_repl s_by))
 
 let list_of_js_array a =
