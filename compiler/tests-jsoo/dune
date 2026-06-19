@@ -179,6 +179,7 @@
    test_custom_name
    test_text_codec_fallback
    test_unix
+   channel_refill
    test_promise
    test_lwt_promise
    test_unix_perms
@@ -277,6 +278,19 @@
   (javascript_files custom.js))
  (wasm_of_ocaml
   (javascript_files custom.js custom.wat))
+ (modes js wasm))
+
+; Uses [Sys_js.set_channel_filler], a js_of_ocaml runtime feature absent
+; under the WASI runtime; exercised on both the JavaScript and wasm runtimes.
+
+(test
+ (name channel_refill)
+ (modules channel_refill)
+ (libraries js_of_ocaml)
+ (enabled_if
+  (and
+   (<> %{profile} wasi)
+   (<> %{profile} wasi-with-native-effects)))
  (modes js wasm))
 
 ; Uses Js values (Js.string/Js.null), so it cannot run natively or under
