@@ -100,7 +100,8 @@ module Collator = struct
     end
 
   class type t = object
-    method compare : (Js.js_string Js.t -> Js.js_string Js.t -> int) Js.readonly_prop
+    method compare :
+      (Js.js_string Js.t -> Js.js_string Js.t -> Js.number_t) Js.readonly_prop
 
     method resolvedOptions : unit -> resolved_options Js.t Js.meth
   end

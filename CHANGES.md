@@ -125,6 +125,9 @@
 * Lib: `CSS.Color.js_t_of_js_string` now rejects malformed colors with
   empty channels such as `"rgb(,,)"` and `"rgba(1,2,3,)"`, which were
   previously accepted (#2350)
+* Lib: `Intl.Collator`'s `compare` method now returns a `Js.number_t`
+  instead of an `int`, faithfully reflecting that it returns a JS number
+  (use `Js.float_of_number` to inspect the sign) (#2350)
 * Runtime/wasm: `Str.replace`/`Str.global_replace` raise `Failure` on a
   backreference to a group one past the last (e.g. `"\1"` against a
   group-less regexp) instead of trapping with an out-of-bounds access;
