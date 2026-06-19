@@ -77,7 +77,8 @@ val matched_string : result -> string
 
 val matched_group : result -> int -> string option
 (** [matched_group r i] is the [i]th group matched. Groups in matches are
-  * obtained with parentheses. Groups are 1-based. *)
+  * obtained with parentheses and are 1-based; index [0] returns the whole
+  * matched substring (as [matched_string] does). *)
 
 val global_replace : regexp -> string -> string -> string
 (** [global_replace r s by] replaces all of the matches of [r] in [s] by [by]. *)

@@ -151,7 +151,7 @@ and attr = object
 
   method value : js_string t prop
 
-  method ownerElement : element t prop
+  method ownerElement : element t opt readonly_prop
 end
 
 (** Specification of [NamedNodeMap] objects. *)

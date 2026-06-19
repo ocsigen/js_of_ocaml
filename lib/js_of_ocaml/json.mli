@@ -24,7 +24,11 @@ val output : 'a -> Js.js_string Js.t
 
 val unsafe_input : Js.js_string Js.t -> 'a
 (** Unmarshal a string in JSON format as an OCaml value (unsafe but
-    fast !). *)
+    fast !).
+
+    Raises [Failure] under the wasm_of_ocaml backend, where the encoding
+    of OCaml values is ambiguous (integers and floats both map to
+    numbers). *)
 
 (**/**)
 

@@ -81,9 +81,7 @@ type file_url =
 type url =
   | Http of http_url
   | Https of http_url
-  | File of file_url
-      (** The type for urls. [File] is for local files and [Exotic s] is for
-    unknown/unsupported protocols. *)
+  | File of file_url  (** The type for urls. [File] is for local files. *)
 
 exception Not_an_http_protocol
 

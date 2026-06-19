@@ -128,7 +128,7 @@ type 'a writeonly_prop = < set : 'a -> unit > gen_prop
 type 'a prop = < get : 'a ; set : 'a -> unit > gen_prop
 (** Type of read/write properties:
       a Javascript object
-        [<p : t Js.writeonly_prop> Js.t]
+        [<p : t Js.prop> Js.t]
       has a read/write property [p] of type [t]. *)
 
 type 'a optdef_prop = < get : 'a optdef ; set : 'a -> unit > gen_prop
@@ -567,30 +567,30 @@ val date_fromTimeValue : (number_t -> date t) constr
       [Date] object initialized with the time value [t]. *)
 
 val date_month : (int -> int -> date t) constr
-(** Constructor of [Date] objects: [new%js date_fromTimeValue y m]
+(** Constructor of [Date] objects: [new%js date_month y m]
       returns a [Date] object corresponding to year [y] and month [m]. *)
 
 val date_day : (int -> int -> int -> date t) constr
-(** Constructor of [Date] objects: [new%js date_fromTimeValue y m d]
+(** Constructor of [Date] objects: [new%js date_day y m d]
       returns a [Date] object corresponding to year [y], month [m] and
       day [d]. *)
 
 val date_hour : (int -> int -> int -> int -> date t) constr
-(** Constructor of [Date] objects: [new%js date_fromTimeValue y m d h]
+(** Constructor of [Date] objects: [new%js date_hour y m d h]
       returns a [Date] object corresponding to year [y] to hour [h]. *)
 
 val date_min : (int -> int -> int -> int -> int -> date t) constr
-(** Constructor of [Date] objects: [new%js date_fromTimeValue y m d h m']
+(** Constructor of [Date] objects: [new%js date_min y m d h m']
       returns a [Date] object corresponding to year [y] to minute [m']. *)
 
 val date_sec : (int -> int -> int -> int -> int -> int -> date t) constr
 (** Constructor of [Date] objects:
-      [new%js date_fromTimeValue y m d h m' s]
+      [new%js date_sec y m d h m' s]
       returns a [Date] object corresponding to year [y] to second [s]. *)
 
 val date_ms : (int -> int -> int -> int -> int -> int -> int -> date t) constr
 (** Constructor of [Date] objects:
-      [new%js date_fromTimeValue y m d h m' s ms]
+      [new%js date_ms y m d h m' s ms]
       returns a [Date] object corresponding to year [y]
       to millisecond [ms]. *)
 
@@ -776,8 +776,12 @@ val unescape : js_string t -> js_string t
 val isNaN : 'a -> bool
 
 val parseInt : js_string t -> int
+(** Parse a string as an integer. Raises [Failure "parseInt"] if the
+      string does not start with a number. *)
 
 val parseFloat : js_string t -> number_t
+(** Parse a string as a floating-point number. Raises
+      [Failure "parseFloat"] if the string does not start with a number. *)
 
 (** {2 Conversion functions between Javascript and OCaml types} *)
 
@@ -823,14 +827,14 @@ external float_of_number : number t -> float = "caml_js_to_float"
 (** Conversion of Javascript number objects to OCaml floats. *)
 
 external int32 : int32 -> number_t = "caml_js_from_int32"
-(** Conversion of OCaml floats to Javascript numbers. *)
+(** Conversion of OCaml 32-bit integers to Javascript numbers. *)
 
 external to_int32 : number_t -> int32 = "caml_js_to_int32"
 (** Conversion of Javascript numbers to OCaml 32-bits. The given
     floating-point number is truncated to an integer. *)
 
 external nativeint : nativeint -> number_t = "caml_js_from_nativeint"
-(** Conversion of OCaml 32-bits integers to Javascript numbers. *)
+(** Conversion of OCaml native integers to Javascript numbers. *)
 
 external to_nativeint : number_t -> nativeint = "caml_js_to_nativeint"
 (** Conversion of Javascript numbers to OCaml native integers. The

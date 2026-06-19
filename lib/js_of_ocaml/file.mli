@@ -130,18 +130,6 @@ class type fileReader = object ('self)
 
   method error : fileError t readonly_prop
 
-  method onloadstart : ('self t, 'self progressEvent t) event_listener writeonly_prop
-
-  method onprogress : ('self t, 'self progressEvent t) event_listener writeonly_prop
-
-  method onload : ('self t, 'self progressEvent t) event_listener writeonly_prop
-
-  method onabort : ('self t, 'self progressEvent t) event_listener writeonly_prop
-
-  method onerror : ('self t, 'self progressEvent t) event_listener writeonly_prop
-
-  method onloadend : ('self t, 'self progressEvent t) event_listener writeonly_prop
-
   inherit progressEventTarget
 end
 

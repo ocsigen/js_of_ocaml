@@ -151,7 +151,7 @@ and attr = object
 
   method value : js_string t prop
 
-  method ownerElement : element t prop
+  method ownerElement : element t opt readonly_prop
 end
 
 (** Specification of [NamedNodeMap] objects. *)
@@ -328,8 +328,8 @@ end
 
 val insertBefore : #node t -> #node t -> #node t opt -> unit
 (** [insertBefore p n c] inserts node [n] as child of node [p],
-      just before node [c], or as last child if [p] is empty.
-      The expression [insertBefore n c p] behave the same as
+      just before node [c], or as last child if [c] is null.
+      The expression [insertBefore p n c] behave the same as
       [p##insertBefore n c] but avoid the need of coercing the
       different objects to [node t]. *)
 
