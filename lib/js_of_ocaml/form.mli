@@ -31,9 +31,6 @@ val formData : formData t constr
 
 val formData_form : (Dom_html.formElement t -> formData t) constr
 
-(* be careful, this might not be implemented in all browser.
-   To check availability, use [Js.Optdef.to_option (Js.def formData)] *)
-
 type form_elt =
   [ `String of js_string t
   | `File of File.file t

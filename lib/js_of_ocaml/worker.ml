@@ -72,5 +72,5 @@ let set_onmessage handler =
 
 let post_message msg =
   if not (Js.Optdef.test Unsafe.global##.postMessage)
-  then invalid_arg "Worker.onmessage is undefined";
+  then invalid_arg "Worker.postMessage is undefined";
   Unsafe.global##postMessage msg
