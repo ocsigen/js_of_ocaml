@@ -57,4 +57,4 @@ let%expect_test _ =
 let%expect_test "replace_first preserves non-g flags" =
   let re = Regexp.regexp_with_flag "a.b" "s" in
   Printf.printf "%S\n" (Regexp.replace_first re "a\nb" "X");
-  [%expect {| "a\nb" |}]
+  [%expect {| "X" |}]

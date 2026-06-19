@@ -319,6 +319,8 @@ and regExp = object
 
   method source : js_string t readonly_prop
 
+  method flags : js_string t readonly_prop
+
   method global : bool t readonly_prop
 
   method ignoreCase : bool t readonly_prop
