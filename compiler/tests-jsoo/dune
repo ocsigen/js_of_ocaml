@@ -17,6 +17,26 @@
  (preprocess
   (pps ppx_expect)))
 
+; [format with large precision] checks the exact decimal expansion of a
+; double. The native oracle is mingw on Windows, whose printf rounds past
+; ~17 significant digits and so cannot reproduce it; disable the whole test
+; there. js and wasm are OS-independent and still run on every other
+; platform.
+
+(library
+ (name jsoo_testsuite_floats_exact)
+ (modules test_floats_exact)
+ (enabled_if
+  (and
+   (>= %{ocaml_version} 4.14)
+   (<> %{ocaml-config:os_type} Win32)))
+ (inline_tests
+  (deps
+   (sandbox preserve_file_kind))
+  (modes js wasm best))
+ (preprocess
+  (pps ppx_expect)))
+
 (library
  (name jsoo_testsuite_5_2)
  (modules test_io_5_2)
@@ -163,6 +183,7 @@
    test_io
    test_io_5_2
    test_floats
+   test_floats_exact
    test_float16
    test_bigarray
    test_list_of_js_array
