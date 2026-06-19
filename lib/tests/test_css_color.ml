@@ -71,8 +71,8 @@ let%expect_test "js_t_of_js_string validation" =
     rgb(10%,3%,60%)        -> ok
     hsl(120,75%,56%)       -> ok
     hotpink                -> ok
-    rgb(,,)                -> ok
+    rgb(,,)                -> rejected
     rgb()                  -> rejected
-    rgba(1,2,3,)           -> ok
+    rgba(1,2,3,)           -> rejected
     notacolor              -> rejected
     |}]

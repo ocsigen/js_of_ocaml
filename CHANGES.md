@@ -118,6 +118,9 @@
 * Lib: `EventSource`'s `onopen`/`onerror` handlers now receive a plain
   `Dom.event` instead of a `messageEvent`; these events carry no
   `data`/`origin`/`lastEventId` (only `onmessage` does) (#2350)
+* Lib: `CSS.Color.js_t_of_js_string` now rejects malformed colors with
+  empty channels such as `"rgb(,,)"` and `"rgba(1,2,3,)"`, which were
+  previously accepted (#2350)
 * Runtime/wasm: `Str.replace`/`Str.global_replace` raise `Failure` on a
   backreference to a group one past the last (e.g. `"\1"` against a
   group-less regexp) instead of trapping with an out-of-bounds access;
