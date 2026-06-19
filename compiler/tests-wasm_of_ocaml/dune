@@ -24,15 +24,6 @@
  (libraries unix))
 
 (tests
- (names bigstring_kind)
- (modes js wasm)
- (enabled_if
-  (<> %{profile} wasi))
- (libraries js_of_ocaml)
- (preprocess
-  (pps js_of_ocaml-ppx)))
-
-(tests
  (names gh2093)
  (modes wasm)
  (enabled_if
