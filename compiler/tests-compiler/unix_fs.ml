@@ -414,7 +414,7 @@ let f () =
     let oc = open_out "ccc" in
     close_out oc;
     print_endline "files created";
-    let dh = Unix.opendir "" in
+    let dh = Unix.opendir "." in
     print_endline "got directory handle";
     read dh;
     read dh;
