@@ -37,9 +37,7 @@ end
 let headers : headers Js.t Js.constr = Js.Unsafe.global##._Headers
 
 let headers_of_list (l : (string * string) list) : headers Js.t =
-  let h : headers Js.t =
-    Js.Unsafe.new_obj (Js.Unsafe.global##._Headers : _ Js.constr) [||]
-  in
+  let h = new%js headers in
   List.iter (fun (k, v) -> h##append (Js.string k) (Js.string v)) l;
   h
 

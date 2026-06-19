@@ -42,13 +42,6 @@ type form_contents =
   | `FormData of formData t
   ]
 
-let rec filter_map f = function
-  | [] -> []
-  | v :: q -> (
-      match f v with
-      | None -> filter_map f q
-      | Some v' -> v' :: filter_map f q)
-
 class type submittableElement = object
   method disabled : bool t prop
 
@@ -76,7 +69,7 @@ let get_select_val (elt : selectElement t) =
       let options =
         Array.init elt##.options##.length (fun i -> Opt.to_option (elt##.options##item i))
       in
-      filter_map
+      List.filter_map
         (function
           | None -> None
           | Some e ->
@@ -111,7 +104,7 @@ let get_input_val ?(get = false) (elt : inputElement t) =
                 | None -> []
                 | Some file -> [ name, `File file ]
               else
-                filter_map
+                List.filter_map
                   (fun f ->
                     match Opt.to_option f with
                     | None -> None

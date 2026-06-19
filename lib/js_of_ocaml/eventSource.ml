@@ -35,7 +35,6 @@ class type ['a] messageEvent = object
   method origin : js_string t readonly_prop
 
   method lastEventId : js_string t readonly_prop
-  (* method source : unit *)
 end
 
 class type eventSource = object ('self)
