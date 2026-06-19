@@ -150,7 +150,7 @@ module ReaderEvent : sig
 end
 
 val filename : file t -> js_string t
-(** [filename] handles old firefox without name property *)
+(** [filename file] is the name of [file] (equivalent to [file##.name]). *)
 
 val fileReader : fileReader t constr
 

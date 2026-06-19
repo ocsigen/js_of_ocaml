@@ -94,21 +94,7 @@ class type file = object
   (** @deprecated Use [lastModified] instead. *)
 end
 
-(* in firefox 3.0-3.5 file.name is not available, we use the nonstandard fileName instead *)
-class type file_name_only = object
-  method name : js_string t optdef readonly_prop
-
-  method fileName : js_string t optdef readonly_prop
-end
-
-let filename file =
-  let file : file_name_only t = Js.Unsafe.coerce file in
-  match Optdef.to_option file##.name with
-  | None -> (
-      match Optdef.to_option file##.fileName with
-      | None -> failwith "can't retrieve file name: not implemented"
-      | Some name -> name)
-  | Some name -> name
+let filename file = file##.name
 
 type file_any = < > t
 
