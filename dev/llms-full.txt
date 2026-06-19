@@ -8829,7 +8829,8 @@ type t = {
 type block = 
   | Catch of Javascript.formal_parameter
   | Params of Javascript.formal_parameter_list
-  | Normal
+  | Var_scope (* A scope that anchors var declarations but has no parameters: the program top level and class static initialization blocks. Its vars do not propagate to an enclosing scope. *)
+  | Let_scope (* A lexical block: it anchors block-scoped (let/const/using) bindings. Its vars hoist to the nearest enclosing Params/Var_scope scope. *)
 ```
 ```ocaml
 class type  freevar = object ... end
