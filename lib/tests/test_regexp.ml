@@ -50,3 +50,11 @@ let%expect_test _ =
   | None -> print_endline "Quote 3 3"
   | Some _ -> ());
   [%expect {||}]
+
+(* [replace_first] must keep every flag of the regexp except [g]. Here the
+   [s] (dotAll) flag lets [.] match the newline; dropping it would leave the
+   string unchanged. *)
+let%expect_test "replace_first preserves non-g flags" =
+  let re = Regexp.regexp_with_flag "a.b" "s" in
+  Printf.printf "%S\n" (Regexp.replace_first re "a\nb" "X");
+  [%expect {| "a\nb" |}]
