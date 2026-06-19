@@ -462,7 +462,6 @@
 - [Class type `Dom_html.meterElement`](js_of_ocaml/Js_of_ocaml-Dom_html-class-type-meterElement.md)
 - [Class type `Dom_html.modElement`](js_of_ocaml/Js_of_ocaml-Dom_html-class-type-modElement.md)
 - [Class type `Dom_html.mouseEvent`](js_of_ocaml/Js_of_ocaml-Dom_html-class-type-mouseEvent.md)
-- [Class type `Dom_html.mouseScrollEvent`](js_of_ocaml/Js_of_ocaml-Dom_html-class-type-mouseScrollEvent.md)
 - [Class type `Dom_html.mousewheelEvent`](js_of_ocaml/Js_of_ocaml-Dom_html-class-type-mousewheelEvent.md)
 - [Class type `Dom_html.navigator`](js_of_ocaml/Js_of_ocaml-Dom_html-class-type-navigator.md)
 - [Class type `Dom_html.nodeSelector`](js_of_ocaml/Js_of_ocaml-Dom_html-class-type-nodeSelector.md)

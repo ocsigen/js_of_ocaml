@@ -73,7 +73,7 @@ val matched_string : result -> string
 ```ocaml
 val matched_group : result -> int -> string option
 ```
-`matched_group r i` is the `i`th group matched. Groups in matches are \* obtained with parentheses. Groups are 1-based.
+`matched_group r i` is the `i`th group matched. Groups in matches are \* obtained with parentheses and are 1-based; index `0` returns the whole \* matched substring (as `matched_string` does).
 
 ```ocaml
 val global_replace : regexp -> string -> string -> string

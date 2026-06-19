@@ -53,9 +53,6 @@ val keyup : Dom_html.keyboardEvent Js.t typ
 val mousewheel : Dom_html.mousewheelEvent Js.t typ
 ```
 ```ocaml
-val _DOMMouseScroll : Dom_html.mouseScrollEvent Js.t typ
-```
-```ocaml
 val wheel : Dom_html.wheelEvent Js.t typ
 ```
 ```ocaml

@@ -239,7 +239,7 @@ then (
              let collator =
                new%js Intl.collator_constr (def (array [| lang |])) undefined
              in
-             Js.float (float_of_int (collator##.compare a b))));
+             collator##.compare a b));
       letters
     in
     let a = jas [| &quot;a&quot;; &quot;z&quot;; &quot;ä&quot; |] in
@@ -264,7 +264,9 @@ then (
 
     let firstAlphabetical locale letter1 letter2 =
       let collator = new%js Intl.collator_constr (def (array [| locale |])) undefined in
-      if collator##.compare letter1 letter2 &gt; 0 then letter1 else letter2
+      if Js.float_of_number (collator##.compare letter1 letter2) &gt; 0.
+      then letter1
+      else letter2
     in
     fc (firstAlphabetical (string &quot;de&quot;) (string &quot;z&quot;) (string &quot;ä&quot;));
     fc (firstAlphabetical (string &quot;sv&quot;) (string &quot;z&quot;) (string &quot;ä&quot;));
@@ -274,8 +276,7 @@ then (
       new%js Intl.collator_constr (def (jas [| &quot;de-u-co-phonebk&quot; |])) undefined
     in
     let a =
-      a##sort
-        (wrap_callback (fun v1 v2 -&gt; Js.float (float_of_int (collator##.compare v1 v2))))
+      a##sort (wrap_callback (fun v1 v2 -&gt; collator##.compare v1 v2))
     in
     fc (a##join (string &quot;, &quot;));
 
@@ -286,7 +287,9 @@ then (
     let collator = new%js Intl.collator_constr (def (jas [| &quot;fr&quot; |])) (def options) in
     let s = string &quot;congres&quot; in
     let matches =
-      a##filter (wrap_callback (fun v _ _ -&gt; bool (collator##.compare v s = 0)))
+      a##filter
+        (wrap_callback (fun v _ _ -&gt;
+             bool (Js.float_of_number (collator##.compare v s) = 0.)))
     in
     fc (matches##join (string &quot;, &quot;));
 

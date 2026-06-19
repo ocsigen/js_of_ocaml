@@ -173,7 +173,28 @@ method groupCollapsed_5 : _ -> _ -> _ -> _ -> _ -> unit Js_of_ocaml__.Js.meth
 method groupEnd : unit Js_of_ocaml__.Js.meth
 ```
 ```ocaml
+method table : _ -> unit Js_of_ocaml__.Js.meth
+```
+```ocaml
+method count : unit Js_of_ocaml__.Js.meth
+```
+```ocaml
+method count_ : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t ->
+  unit Js_of_ocaml__.Js.meth
+```
+```ocaml
+method countReset : unit Js_of_ocaml__.Js.meth
+```
+```ocaml
+method countReset_ : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t ->
+  unit Js_of_ocaml__.Js.meth
+```
+```ocaml
 method time : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t ->
+  unit Js_of_ocaml__.Js.meth
+```
+```ocaml
+method timeLog : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t ->
   unit Js_of_ocaml__.Js.meth
 ```
 ```ocaml

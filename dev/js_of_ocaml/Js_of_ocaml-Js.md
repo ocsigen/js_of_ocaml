@@ -84,7 +84,7 @@ Type of write-only properties: a Javascript object `<p : t Js.writeonly_prop> Js
 ```ocaml
 type 'a prop = < get : 'a ; set : 'a -> unit > gen_prop
 ```
-Type of read/write properties: a Javascript object `<p : t Js.writeonly_prop> Js.t` has a read/write property `p` of type `t`.
+Type of read/write properties: a Javascript object `<p : t Js.prop> Js.t` has a read/write property `p` of type `t`.
 
 ```ocaml
 type 'a optdef_prop = < get : 'a optdef ; set : 'a -> unit > gen_prop
@@ -299,32 +299,32 @@ Constructor of `Date` objects: `new%js date_fromTimeValue t` returns a `Date` ob
 ```ocaml
 val date_month : (int -> int -> date t) constr
 ```
-Constructor of `Date` objects: `new%js date_fromTimeValue y m` returns a `Date` object corresponding to year `y` and month `m`.
+Constructor of `Date` objects: `new%js date_month y m` returns a `Date` object corresponding to year `y` and month `m`.
 
 ```ocaml
 val date_day : (int -> int -> int -> date t) constr
 ```
-Constructor of `Date` objects: `new%js date_fromTimeValue y m d` returns a `Date` object corresponding to year `y`, month `m` and day `d`.
+Constructor of `Date` objects: `new%js date_day y m d` returns a `Date` object corresponding to year `y`, month `m` and day `d`.
 
 ```ocaml
 val date_hour : (int -> int -> int -> int -> date t) constr
 ```
-Constructor of `Date` objects: `new%js date_fromTimeValue y m d h` returns a `Date` object corresponding to year `y` to hour `h`.
+Constructor of `Date` objects: `new%js date_hour y m d h` returns a `Date` object corresponding to year `y` to hour `h`.
 
 ```ocaml
 val date_min : (int -> int -> int -> int -> int -> date t) constr
 ```
-Constructor of `Date` objects: `new%js date_fromTimeValue y m d h m'` returns a `Date` object corresponding to year `y` to minute `m'`.
+Constructor of `Date` objects: `new%js date_min y m d h m'` returns a `Date` object corresponding to year `y` to minute `m'`.
 
 ```ocaml
 val date_sec : (int -> int -> int -> int -> int -> int -> date t) constr
 ```
-Constructor of `Date` objects: `new%js date_fromTimeValue y m d h m' s` returns a `Date` object corresponding to year `y` to second `s`.
+Constructor of `Date` objects: `new%js date_sec y m d h m' s` returns a `Date` object corresponding to year `y` to second `s`.
 
 ```ocaml
 val date_ms : (int -> int -> int -> int -> int -> int -> int -> date t) constr
 ```
-Constructor of `Date` objects: `new%js date_fromTimeValue y m d h m' s ms` returns a `Date` object corresponding to year `y` to millisecond `ms`.
+Constructor of `Date` objects: `new%js date_ms y m d h m' s ms` returns a `Date` object corresponding to year `y` to millisecond `ms`.
 
 ```ocaml
 class type  date_constr = object ... end
@@ -408,9 +408,13 @@ val isNaN : 'a -> bool
 ```ocaml
 val parseInt : js_string t -> int
 ```
+Parse a string as an integer. Raises `Failure "parseInt"` if the string does not start with a number.
+
 ```ocaml
 val parseFloat : js_string t -> number_t
 ```
+Parse a string as a floating-point number. Raises `Failure "parseFloat"` if the string does not start with a number.
+
 
 ### Conversion functions between Javascript and OCaml types
 
@@ -477,7 +481,7 @@ Conversion of Javascript number objects to OCaml floats.
 ```ocaml
 val int32 : int32 -> number_t
 ```
-Conversion of OCaml floats to Javascript numbers.
+Conversion of OCaml 32-bit integers to Javascript numbers.
 
 ```ocaml
 val to_int32 : number_t -> int32
@@ -487,7 +491,7 @@ Conversion of Javascript numbers to OCaml 32-bits. The given floating-point numb
 ```ocaml
 val nativeint : nativeint -> number_t
 ```
-Conversion of OCaml 32-bits integers to Javascript numbers.
+Conversion of OCaml native integers to Javascript numbers.
 
 ```ocaml
 val to_nativeint : number_t -> nativeint

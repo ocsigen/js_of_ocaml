@@ -59,9 +59,6 @@ class type  wheelEvent = object ... end
 class type  mousewheelEvent = wheelEvent
 ```
 ```ocaml
-class type  mouseScrollEvent = object ... end
-```
-```ocaml
 class type  touchEvent = object ... end
 ```
 ```ocaml
@@ -1134,7 +1131,6 @@ type taggedEvent =
   | KeyboardEvent of keyboardEvent Js.t
   | MessageEvent of messageEvent Js.t
   | MousewheelEvent of mousewheelEvent Js.t
-  | MouseScrollEvent of mouseScrollEvent Js.t
   | PopStateEvent of popStateEvent Js.t
   | OtherEvent of event Js.t
 ```

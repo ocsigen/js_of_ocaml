@@ -28,5 +28,6 @@ method disconnect : unit Js_of_ocaml__.Js.meth
 ```ocaml
 method takeRecords : intersectionObserverEntry Js_of_ocaml__.Js.t
                        Js_of_ocaml__.Js.js_array
+                       Js_of_ocaml__.Js.t
                        Js_of_ocaml__.Js.meth
 ```

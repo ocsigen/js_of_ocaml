@@ -16,6 +16,9 @@ method toString : js_string t meth
 method source : js_string t readonly_prop
 ```
 ```ocaml
+method flags : js_string t readonly_prop
+```
+```ocaml
 method global : bool t readonly_prop
 ```
 ```ocaml

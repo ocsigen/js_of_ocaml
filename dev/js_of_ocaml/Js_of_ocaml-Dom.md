@@ -96,7 +96,7 @@ Specification of `Document` objects.
 ```ocaml
 val insertBefore : node Js.t -> node Js.t -> node Js.t Js.opt -> unit
 ```
-`insertBefore p n c` inserts node `n` as child of node `p`, just before node `c`, or as last child if `p` is empty. The expression `insertBefore n c p` behave the same as `p##insertBefore n c` but avoid the need of coercing the different objects to `node t`.
+`insertBefore p n c` inserts node `n` as child of node `p`, just before node `c`, or as last child if `c` is null. The expression `insertBefore p n c` behave the same as `p##insertBefore n c` but avoid the need of coercing the different objects to `node t`.
 
 ```ocaml
 val replaceChild : node Js.t -> node Js.t -> node Js.t -> unit

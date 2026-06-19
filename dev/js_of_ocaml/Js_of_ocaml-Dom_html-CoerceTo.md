@@ -204,9 +204,6 @@ val keyboardEvent : event Js.t -> keyboardEvent Js.t Js.opt
 val wheelEvent : event Js.t -> mousewheelEvent Js.t Js.opt
 ```
 ```ocaml
-val mouseScrollEvent : event Js.t -> mouseScrollEvent Js.t Js.opt
-```
-```ocaml
 val popStateEvent : event Js.t -> popStateEvent Js.t Js.opt
 ```
 ```ocaml

@@ -16,7 +16,7 @@ method close : unit Js_of_ocaml__.Js.meth
 ```
 ```ocaml
 method onopen : ('self Js_of_ocaml__.Js.t,
-                  'self messageEvent Js_of_ocaml__.Js.t)
+                  'self Js_of_ocaml__.Dom.event Js_of_ocaml__.Js.t)
                   Js_of_ocaml__.Dom.event_listener
                   Js_of_ocaml__.Js.writeonly_prop
 ```
@@ -28,7 +28,7 @@ method onmessage : ('self Js_of_ocaml__.Js.t,
 ```
 ```ocaml
 method onerror : ('self Js_of_ocaml__.Js.t,
-                   'self messageEvent Js_of_ocaml__.Js.t)
+                   'self Js_of_ocaml__.Dom.event Js_of_ocaml__.Js.t)
                    Js_of_ocaml__.Dom.event_listener
                    Js_of_ocaml__.Js.writeonly_prop
 ```

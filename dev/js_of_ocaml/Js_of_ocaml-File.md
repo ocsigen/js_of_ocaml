@@ -63,7 +63,7 @@ module ReaderEvent : sig ... end
 ```ocaml
 val filename : file Js.t -> Js.js_string Js.t
 ```
-`filename` handles old firefox without name property
+`filename file` is the name of `file` (equivalent to `file##.name`).
 
 ```ocaml
 val fileReader : fileReader Js.t Js.constr

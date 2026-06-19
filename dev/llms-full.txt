@@ -16497,42 +16497,6 @@ method result : file_any Js_of_ocaml__.Js.readonly_prop
 method error : fileError Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
 ```
 ```ocaml
-method onloadstart : ('self Js_of_ocaml__.Js.t,
-                       'self progressEvent Js_of_ocaml__.Js.t)
-                       Js_of_ocaml__.Dom.event_listener
-                       Js_of_ocaml__.Js.writeonly_prop
-```
-```ocaml
-method onprogress : ('self Js_of_ocaml__.Js.t,
-                      'self progressEvent Js_of_ocaml__.Js.t)
-                      Js_of_ocaml__.Dom.event_listener
-                      Js_of_ocaml__.Js.writeonly_prop
-```
-```ocaml
-method onload : ('self Js_of_ocaml__.Js.t,
-                  'self progressEvent Js_of_ocaml__.Js.t)
-                  Js_of_ocaml__.Dom.event_listener
-                  Js_of_ocaml__.Js.writeonly_prop
-```
-```ocaml
-method onabort : ('self Js_of_ocaml__.Js.t,
-                   'self progressEvent Js_of_ocaml__.Js.t)
-                   Js_of_ocaml__.Dom.event_listener
-                   Js_of_ocaml__.Js.writeonly_prop
-```
-```ocaml
-method onerror : ('self Js_of_ocaml__.Js.t,
-                   'self progressEvent Js_of_ocaml__.Js.t)
-                   Js_of_ocaml__.Dom.event_listener
-                   Js_of_ocaml__.Js.writeonly_prop
-```
-```ocaml
-method onloadend : ('self Js_of_ocaml__.Js.t,
-                     'self progressEvent Js_of_ocaml__.Js.t)
-                     Js_of_ocaml__.Dom.event_listener
-                     Js_of_ocaml__.Js.writeonly_prop
-```
-```ocaml
 inherit progressEventTarget
 ```
 
@@ -16664,7 +16628,7 @@ val filename :
   file Js_of_ocaml.Js.t ->
   Js_of_ocaml.Js.js_string Js_of_ocaml.Js.t
 ```
-`filename` handles old firefox without name property
+`filename file` is the name of `file` (equivalent to `file##.name`).
 
 ```ocaml
 val fileReader : fileReader Js_of_ocaml.Js.t Js_of_ocaml.Js.constr
@@ -23617,7 +23581,28 @@ method groupCollapsed_5 : _ -> _ -> _ -> _ -> _ -> unit Js_of_ocaml__.Js.meth
 method groupEnd : unit Js_of_ocaml__.Js.meth
 ```
 ```ocaml
+method table : _ -> unit Js_of_ocaml__.Js.meth
+```
+```ocaml
+method count : unit Js_of_ocaml__.Js.meth
+```
+```ocaml
+method count_ : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t ->
+  unit Js_of_ocaml__.Js.meth
+```
+```ocaml
+method countReset : unit Js_of_ocaml__.Js.meth
+```
+```ocaml
+method countReset_ : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t ->
+  unit Js_of_ocaml__.Js.meth
+```
+```ocaml
 method time : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t ->
+  unit Js_of_ocaml__.Js.meth
+```
+```ocaml
+method timeLog : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t ->
   unit Js_of_ocaml__.Js.meth
 ```
 ```ocaml
@@ -23732,7 +23717,8 @@ method value : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
                  Js_of_ocaml__.Js.prop
 ```
 ```ocaml
-method ownerElement : element Js_of_ocaml__.Js.t Js_of_ocaml__.Js.prop
+method ownerElement : element Js_of_ocaml__.Js.t Js_of_ocaml__.Js.opt
+                        Js_of_ocaml__.Js.readonly_prop
 ```
 
 
@@ -24614,7 +24600,7 @@ Specification of `Document` objects.
 ```ocaml
 val insertBefore : node Js.t -> node Js.t -> node Js.t Js.opt -> unit
 ```
-`insertBefore p n c` inserts node `n` as child of node `p`, just before node `c`, or as last child if `p` is empty. The expression `insertBefore n c p` behave the same as `p##insertBefore n c` but avoid the need of coercing the different objects to `node t`.
+`insertBefore p n c` inserts node `n` as child of node `p`, just before node `c`, or as last child if `c` is null. The expression `insertBefore p n c` behave the same as `p##insertBefore n c` but avoid the need of coercing the different objects to `node t`.
 
 ```ocaml
 val replaceChild : node Js.t -> node Js.t -> node Js.t -> unit
@@ -24875,9 +24861,6 @@ val keyup : Dom_html.keyboardEvent Js.t typ
 ```
 ```ocaml
 val mousewheel : Dom_html.mousewheelEvent Js.t typ
-```
-```ocaml
-val _DOMMouseScroll : Dom_html.mouseScrollEvent Js.t typ
 ```
 ```ocaml
 val wheel : Dom_html.wheelEvent Js.t typ
@@ -25368,9 +25351,6 @@ val keyboardEvent : event Js.t -> keyboardEvent Js.t Js.opt
 val wheelEvent : event Js.t -> mousewheelEvent Js.t Js.opt
 ```
 ```ocaml
-val mouseScrollEvent : event Js.t -> mouseScrollEvent Js.t Js.opt
-```
-```ocaml
 val popStateEvent : event Js.t -> popStateEvent Js.t Js.opt
 ```
 ```ocaml
@@ -25474,9 +25454,6 @@ val keyup : keyboardEvent Js.t typ
 ```
 ```ocaml
 val mousewheel : mousewheelEvent Js.t typ
-```
-```ocaml
-val _DOMMouseScroll : mouseScrollEvent Js.t typ
 ```
 ```ocaml
 val wheel : wheelEvent Js.t typ
@@ -32559,29 +32536,6 @@ method pageY : Js_of_ocaml__.Js.number_t Js_of_ocaml__.Js.optdef
 
 ---
 
-# Class type `Dom_html.mouseScrollEvent`
-
-```ocaml
-inherit mouseEvent
-```
-```ocaml
-method detail : int Js_of_ocaml__.Js.readonly_prop
-```
-```ocaml
-method axis : int Js_of_ocaml__.Js.optdef Js_of_ocaml__.Js.readonly_prop
-```
-```ocaml
-method _HORIZONTAL_AXIS : int Js_of_ocaml__.Js.optdef
-                            Js_of_ocaml__.Js.readonly_prop
-```
-```ocaml
-method _VERTICAL_AXIS : int Js_of_ocaml__.Js.optdef
-                          Js_of_ocaml__.Js.readonly_prop
-```
-
-
----
-
 # Class type `Dom_html.mousewheelEvent`
 
 ```ocaml
@@ -36493,9 +36447,6 @@ class type  wheelEvent = object ... end
 class type  mousewheelEvent = wheelEvent
 ```
 ```ocaml
-class type  mouseScrollEvent = object ... end
-```
-```ocaml
 class type  touchEvent = object ... end
 ```
 ```ocaml
@@ -37568,7 +37519,6 @@ type taggedEvent =
   | KeyboardEvent of keyboardEvent Js.t
   | MessageEvent of messageEvent Js.t
   | MousewheelEvent of mousewheelEvent Js.t
-  | MouseScrollEvent of mouseScrollEvent Js.t
   | PopStateEvent of popStateEvent Js.t
   | OtherEvent of event Js.t
 ```
@@ -43528,7 +43478,7 @@ method close : unit Js_of_ocaml__.Js.meth
 ```
 ```ocaml
 method onopen : ('self Js_of_ocaml__.Js.t,
-                  'self messageEvent Js_of_ocaml__.Js.t)
+                  'self Js_of_ocaml__.Dom.event Js_of_ocaml__.Js.t)
                   Js_of_ocaml__.Dom.event_listener
                   Js_of_ocaml__.Js.writeonly_prop
 ```
@@ -43540,7 +43490,7 @@ method onmessage : ('self Js_of_ocaml__.Js.t,
 ```
 ```ocaml
 method onerror : ('self Js_of_ocaml__.Js.t,
-                   'self messageEvent Js_of_ocaml__.Js.t)
+                   'self Js_of_ocaml__.Dom.event Js_of_ocaml__.Js.t)
                    Js_of_ocaml__.Dom.event_listener
                    Js_of_ocaml__.Js.writeonly_prop
 ```
@@ -44100,42 +44050,6 @@ method result : file_any Js_of_ocaml__.Js.readonly_prop
 method error : fileError Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
 ```
 ```ocaml
-method onloadstart : ('self Js_of_ocaml__.Js.t,
-                       'self progressEvent Js_of_ocaml__.Js.t)
-                       Js_of_ocaml__.Dom.event_listener
-                       Js_of_ocaml__.Js.writeonly_prop
-```
-```ocaml
-method onprogress : ('self Js_of_ocaml__.Js.t,
-                      'self progressEvent Js_of_ocaml__.Js.t)
-                      Js_of_ocaml__.Dom.event_listener
-                      Js_of_ocaml__.Js.writeonly_prop
-```
-```ocaml
-method onload : ('self Js_of_ocaml__.Js.t,
-                  'self progressEvent Js_of_ocaml__.Js.t)
-                  Js_of_ocaml__.Dom.event_listener
-                  Js_of_ocaml__.Js.writeonly_prop
-```
-```ocaml
-method onabort : ('self Js_of_ocaml__.Js.t,
-                   'self progressEvent Js_of_ocaml__.Js.t)
-                   Js_of_ocaml__.Dom.event_listener
-                   Js_of_ocaml__.Js.writeonly_prop
-```
-```ocaml
-method onerror : ('self Js_of_ocaml__.Js.t,
-                   'self progressEvent Js_of_ocaml__.Js.t)
-                   Js_of_ocaml__.Dom.event_listener
-                   Js_of_ocaml__.Js.writeonly_prop
-```
-```ocaml
-method onloadend : ('self Js_of_ocaml__.Js.t,
-                     'self progressEvent Js_of_ocaml__.Js.t)
-                     Js_of_ocaml__.Dom.event_listener
-                     Js_of_ocaml__.Js.writeonly_prop
-```
-```ocaml
 inherit progressEventTarget
 ```
 
@@ -44267,7 +44181,7 @@ module ReaderEvent : sig ... end
 ```ocaml
 val filename : file Js.t -> Js.js_string Js.t
 ```
-`filename` handles old firefox without name property
+`filename file` is the name of `file` (equivalent to `file##.name`).
 
 ```ocaml
 val fileReader : fileReader Js.t Js.constr
@@ -44543,6 +44457,7 @@ method disconnect : unit Js_of_ocaml__.Js.meth
 ```ocaml
 method takeRecords : intersectionObserverEntry Js_of_ocaml__.Js.t
                        Js_of_ocaml__.Js.js_array
+                       Js_of_ocaml__.Js.t
                        Js_of_ocaml__.Js.meth
 ```
 
@@ -44730,7 +44645,7 @@ method caseFirst : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
 ```ocaml
 method compare : (Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t ->
                    Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t ->
-                   int)
+                   Js_of_ocaml__.Js.number_t)
                    Js_of_ocaml__.Js.readonly_prop
 ```
 ```ocaml
@@ -45620,7 +45535,7 @@ then (
              let collator =
                new%js Intl.collator_constr (def (array [| lang |])) undefined
              in
-             Js.float (float_of_int (collator##.compare a b))));
+             collator##.compare a b));
       letters
     in
     let a = jas [| "a"; "z"; "ä" |] in
@@ -45645,7 +45560,9 @@ then (
 
     let firstAlphabetical locale letter1 letter2 =
       let collator = new%js Intl.collator_constr (def (array [| locale |])) undefined in
-      if collator##.compare letter1 letter2 > 0 then letter1 else letter2
+      if Js.float_of_number (collator##.compare letter1 letter2) > 0.
+      then letter1
+      else letter2
     in
     fc (firstAlphabetical (string "de") (string "z") (string "ä"));
     fc (firstAlphabetical (string "sv") (string "z") (string "ä"));
@@ -45655,8 +45572,7 @@ then (
       new%js Intl.collator_constr (def (jas [| "de-u-co-phonebk" |])) undefined
     in
     let a =
-      a##sort
-        (wrap_callback (fun v1 v2 -> Js.float (float_of_int (collator##.compare v1 v2))))
+      a##sort (wrap_callback (fun v1 v2 -> collator##.compare v1 v2))
     in
     fc (a##join (string ", "));
 
@@ -45667,7 +45583,9 @@ then (
     let collator = new%js Intl.collator_constr (def (jas [| "fr" |])) (def options) in
     let s = string "congres" in
     let matches =
-      a##filter (wrap_callback (fun v _ _ -> bool (collator##.compare v s = 0)))
+      a##filter
+        (wrap_callback (fun v _ _ ->
+             bool (Js.float_of_number (collator##.compare v s) = 0.)))
     in
     fc (matches##join (string ", "));
 
@@ -46931,6 +46849,9 @@ method toString : js_string t meth
 method source : js_string t readonly_prop
 ```
 ```ocaml
+method flags : js_string t readonly_prop
+```
+```ocaml
 method global : bool t readonly_prop
 ```
 ```ocaml
@@ -47112,7 +47033,7 @@ Type of write-only properties: a Javascript object `<p : t Js.writeonly_prop> Js
 ```ocaml
 type 'a prop = < get : 'a ; set : 'a -> unit > gen_prop
 ```
-Type of read/write properties: a Javascript object `<p : t Js.writeonly_prop> Js.t` has a read/write property `p` of type `t`.
+Type of read/write properties: a Javascript object `<p : t Js.prop> Js.t` has a read/write property `p` of type `t`.
 
 ```ocaml
 type 'a optdef_prop = < get : 'a optdef ; set : 'a -> unit > gen_prop
@@ -47327,32 +47248,32 @@ Constructor of `Date` objects: `new%js date_fromTimeValue t` returns a `Date` ob
 ```ocaml
 val date_month : (int -> int -> date t) constr
 ```
-Constructor of `Date` objects: `new%js date_fromTimeValue y m` returns a `Date` object corresponding to year `y` and month `m`.
+Constructor of `Date` objects: `new%js date_month y m` returns a `Date` object corresponding to year `y` and month `m`.
 
 ```ocaml
 val date_day : (int -> int -> int -> date t) constr
 ```
-Constructor of `Date` objects: `new%js date_fromTimeValue y m d` returns a `Date` object corresponding to year `y`, month `m` and day `d`.
+Constructor of `Date` objects: `new%js date_day y m d` returns a `Date` object corresponding to year `y`, month `m` and day `d`.
 
 ```ocaml
 val date_hour : (int -> int -> int -> int -> date t) constr
 ```
-Constructor of `Date` objects: `new%js date_fromTimeValue y m d h` returns a `Date` object corresponding to year `y` to hour `h`.
+Constructor of `Date` objects: `new%js date_hour y m d h` returns a `Date` object corresponding to year `y` to hour `h`.
 
 ```ocaml
 val date_min : (int -> int -> int -> int -> int -> date t) constr
 ```
-Constructor of `Date` objects: `new%js date_fromTimeValue y m d h m'` returns a `Date` object corresponding to year `y` to minute `m'`.
+Constructor of `Date` objects: `new%js date_min y m d h m'` returns a `Date` object corresponding to year `y` to minute `m'`.
 
 ```ocaml
 val date_sec : (int -> int -> int -> int -> int -> int -> date t) constr
 ```
-Constructor of `Date` objects: `new%js date_fromTimeValue y m d h m' s` returns a `Date` object corresponding to year `y` to second `s`.
+Constructor of `Date` objects: `new%js date_sec y m d h m' s` returns a `Date` object corresponding to year `y` to second `s`.
 
 ```ocaml
 val date_ms : (int -> int -> int -> int -> int -> int -> int -> date t) constr
 ```
-Constructor of `Date` objects: `new%js date_fromTimeValue y m d h m' s ms` returns a `Date` object corresponding to year `y` to millisecond `ms`.
+Constructor of `Date` objects: `new%js date_ms y m d h m' s ms` returns a `Date` object corresponding to year `y` to millisecond `ms`.
 
 ```ocaml
 class type  date_constr = object ... end
@@ -47436,9 +47357,13 @@ val isNaN : 'a -> bool
 ```ocaml
 val parseInt : js_string t -> int
 ```
+Parse a string as an integer. Raises `Failure "parseInt"` if the string does not start with a number.
+
 ```ocaml
 val parseFloat : js_string t -> number_t
 ```
+Parse a string as a floating-point number. Raises `Failure "parseFloat"` if the string does not start with a number.
+
 
 ### Conversion functions between Javascript and OCaml types
 
@@ -47505,7 +47430,7 @@ Conversion of Javascript number objects to OCaml floats.
 ```ocaml
 val int32 : int32 -> number_t
 ```
-Conversion of OCaml floats to Javascript numbers.
+Conversion of OCaml 32-bit integers to Javascript numbers.
 
 ```ocaml
 val to_int32 : number_t -> int32
@@ -47515,7 +47440,7 @@ Conversion of Javascript numbers to OCaml 32-bits. The given floating-point numb
 ```ocaml
 val nativeint : nativeint -> number_t
 ```
-Conversion of OCaml 32-bits integers to Javascript numbers.
+Conversion of OCaml native integers to Javascript numbers.
 
 ```ocaml
 val to_nativeint : number_t -> nativeint
@@ -47644,6 +47569,8 @@ Marshal any OCaml value into this JSON representation.
 val unsafe_input : Js.js_string Js.t -> 'a
 ```
 Unmarshal a string in JSON format as an OCaml value (unsafe but fast !).
+
+Raises `Failure` under the wasm\_of\_ocaml backend, where the encoding of OCaml values is ambiguous (integers and floats both map to numbers).
 
 
 ---
@@ -48399,7 +48326,7 @@ val matched_string : result -> string
 ```ocaml
 val matched_group : result -> int -> string option
 ```
-`matched_group r i` is the `i`th group matched. Groups in matches are \* obtained with parentheses. Groups are 1-based.
+`matched_group r i` is the `i`th group matched. Groups in matches are \* obtained with parentheses and are 1-based; index `0` returns the whole \* matched substring (as `matched_string` does).
 
 ```ocaml
 val global_replace : regexp -> string -> string -> string
