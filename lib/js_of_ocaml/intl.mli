@@ -47,7 +47,7 @@ then (
              let collator =
                new%js Intl.collator_constr (def (array [| lang |])) undefined
              in
-             Js.float (float_of_int (collator##.compare a b))));
+             collator##.compare a b));
       letters
     in
     let a = jas [| "a"; "z"; "ä" |] in
@@ -72,7 +72,9 @@ then (
 
     let firstAlphabetical locale letter1 letter2 =
       let collator = new%js Intl.collator_constr (def (array [| locale |])) undefined in
-      if collator##.compare letter1 letter2 > 0 then letter1 else letter2
+      if Js.float_of_number (collator##.compare letter1 letter2) > 0.
+      then letter1
+      else letter2
     in
     fc (firstAlphabetical (string "de") (string "z") (string "ä"));
     fc (firstAlphabetical (string "sv") (string "z") (string "ä"));
@@ -82,8 +84,7 @@ then (
       new%js Intl.collator_constr (def (jas [| "de-u-co-phonebk" |])) undefined
     in
     let a =
-      a##sort
-        (wrap_callback (fun v1 v2 -> Js.float (float_of_int (collator##.compare v1 v2))))
+      a##sort (wrap_callback (fun v1 v2 -> collator##.compare v1 v2))
     in
     fc (a##join (string ", "));
 
@@ -94,7 +95,9 @@ then (
     let collator = new%js Intl.collator_constr (def (jas [| "fr" |])) (def options) in
     let s = string "congres" in
     let matches =
-      a##filter (wrap_callback (fun v _ _ -> bool (collator##.compare v s = 0)))
+      a##filter
+        (wrap_callback (fun v _ _ ->
+             bool (Js.float_of_number (collator##.compare v s) = 0.)))
     in
     fc (matches##join (string ", "));
 
@@ -410,7 +413,8 @@ module Collator : sig
   val options : unit -> options Js.t
 
   class type t = object
-    method compare : (Js.js_string Js.t -> Js.js_string Js.t -> int) Js.readonly_prop
+    method compare :
+      (Js.js_string Js.t -> Js.js_string Js.t -> Js.number_t) Js.readonly_prop
 
     method resolvedOptions : unit -> resolved_options Js.t Js.meth
   end
