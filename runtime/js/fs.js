@@ -85,9 +85,20 @@ var path_is_absolute = make_path_is_absolute();
 
 //Provides: caml_make_path
 //Requires: caml_current_dir
-//Requires: caml_jsstring_of_string, path_is_absolute
-function caml_make_path(name) {
+//Requires: caml_jsstring_of_string, path_is_absolute, caml_raise_system_error
+function caml_make_path(name, raise_unix) {
   name = caml_jsstring_of_string(name);
+  // An empty path is invalid: like native (and the wasm runtime), it must not
+  // resolve to the current directory but fail with ENOENT. [raise_unix]
+  // selects Unix_error (Unix callers) vs Sys_error (Sys callers).
+  if (name === "")
+    caml_raise_system_error(
+      raise_unix,
+      "ENOENT",
+      "",
+      "No such file or directory",
+      "",
+    );
   if (!path_is_absolute(name)) name = caml_current_dir + name;
   var comp0 = path_is_absolute(name);
   var comp = comp0[1].split(/[/\\]/);
@@ -168,8 +179,8 @@ function caml_list_mount_point() {
 
 //Provides: resolve_fs_device
 //Requires: caml_make_path, jsoo_mount_point, caml_raise_sys_error, caml_get_root, MlNodeDevice, caml_trailing_slash, fs_node_supported
-function resolve_fs_device(name) {
-  var path = caml_make_path(name);
+function resolve_fs_device(name, raise_unix) {
+  var path = caml_make_path(name, raise_unix);
   var name = path.join("/");
   var name_slash = caml_trailing_slash(name);
   var res;
@@ -268,8 +279,11 @@ function caml_raise_no_such_file(name, raise_unix, cmd) {
 }
 
 //Provides: caml_sys_file_exists
-//Requires: resolve_fs_device
+//Requires: resolve_fs_device, caml_jsstring_of_string
 function caml_sys_file_exists(name) {
+  // An empty path exists nowhere; like native, return false rather than
+  // resolving "" to the current directory (which always exists).
+  if (caml_jsstring_of_string(name) === "") return 0;
   var root = resolve_fs_device(name);
   return root.device.exists(root.rest);
 }

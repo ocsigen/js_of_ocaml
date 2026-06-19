@@ -126,6 +126,10 @@
 * Runtime/wasm (WASI): `Unix.utimes` follows symlinks like native and the
   other path operations; it passed `lookupflags = 0`, so it set the times
   on the symlink itself instead of its target (#2263)
+* Runtime: an empty path is no longer resolved to the current directory on
+  the JavaScript backend but fails with `ENOENT` like native (and the Wasm
+  runtime), so `Unix.stat ""`, `Unix.opendir ""`, etc. raise instead of
+  silently operating on the cwd; `Sys.file_exists ""` returns false (#2354)
 * Runtime: `Unix.localtime` computes `tm_yday` from the calendar date
   instead of the wall-clock distance to January 1, which was off by one
   during DST; the js and wasm-on-node backends share the fix (#2304)
