@@ -675,25 +675,32 @@ module Color = struct
   (* TODO? be more restrictive, clip values into standard range *)
   let js_t_of_js_string s =
     let rgb_re =
-      new%js Js.regExp (Js.bytestring "^rgb\\(\\s*\\d*,\\s*\\d*,\\s*\\d*\\)$")
+      new%js Js.regExp (Js.bytestring "^rgb\\(\\s*\\d+,\\s*\\d+,\\s*\\d+\\)$")
     in
     let rgb_pct_re =
-      new%js Js.regExp (Js.bytestring "^rgb\\(\\s*\\d*%,\\s*\\d*%,\\s*\\d*%\\)$")
+      new%js Js.regExp (Js.bytestring "^rgb\\(\\s*\\d+%,\\s*\\d+%,\\s*\\d+%\\)$")
     in
     let rgba_re =
       new%js Js.regExp
-        (Js.bytestring "^rgba\\(\\s*\\d*,\\s*\\d*,\\s*\\d*,\\d*\\.?\\d*\\)$")
+        (Js.bytestring "^rgba\\(\\s*\\d+,\\s*\\d+,\\s*\\d+,\\d*\\.?\\d+\\)$")
     in
     let rgba_pct_re =
       new%js Js.regExp
-        (Js.bytestring "^rgba\\(\\s*\\d*%,\\s*\\d*%,\\s*\\d*%,\\d*\\.?\\d*\\)$")
+        (Js.bytestring "^rgba\\(\\s*\\d+%,\\s*\\d+%,\\s*\\d+%,\\d*\\.?\\d+\\)$")
     in
     let hsl_re =
-      new%js Js.regExp (Js.bytestring "^hsl\\(\\s*\\d*,\\s*\\d*%,\\s*\\d*%\\)$")
+      new%js Js.regExp (Js.bytestring "^hsl\\(\\s*\\d+,\\s*\\d+%,\\s*\\d+%\\)$")
     in
     let hsla_re =
       new%js Js.regExp
-        (Js.bytestring "^hsla\\(\\s*\\d*,\\s*\\d*%,\\s*\\d*%,\\d*\\.?\\d*\\)$")
+        (Js.bytestring "^hsla\\(\\s*\\d+,\\s*\\d+%,\\s*\\d+%,\\d*\\.?\\d+\\)$")
+    in
+    (* [s] is a valid color if it matches one of the functional notations
+       above or is a known color name ([name_of_string] raises otherwise). *)
+    let is_color_name () =
+      match name_of_string (Js.to_string s) with
+      | _ -> true
+      | exception _ -> false
     in
     if
       Js.to_bool (rgb_re##test s)
@@ -702,11 +709,9 @@ module Color = struct
       || Js.to_bool (rgba_pct_re##test s)
       || Js.to_bool (hsl_re##test s)
       || Js.to_bool (hsla_re##test s)
+      || is_color_name ()
     then s
-    else
-      match name_of_string (Js.to_string s) with
-      | _ -> s
-      | exception _ -> raise (Invalid_argument (Js.to_string s ^ " is not a valid color"))
+    else raise (Invalid_argument (Js.to_string s ^ " is not a valid color"))
 
   let js c = Js.string (string_of_t c)
 
