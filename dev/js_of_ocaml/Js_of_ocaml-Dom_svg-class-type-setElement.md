@@ -23,3 +23,22 @@ method getCurrentTime : Js_of_ocaml__.Js.number_t Js_of_ocaml__.Js.meth
 ```ocaml
 method getSimpleDuration : Js_of_ocaml__.Js.number_t Js_of_ocaml__.Js.meth
 ```
+```ocaml
+method beginElement : unit Js_of_ocaml__.Js.meth
+```
+SVG 2 addition (from `ElementTimeControl`).
+
+```ocaml
+method beginElementAt : Js_of_ocaml__.Js.number_t -> unit Js_of_ocaml__.Js.meth
+```
+SVG 2 addition (from `ElementTimeControl`).
+
+```ocaml
+method endElement : unit Js_of_ocaml__.Js.meth
+```
+SVG 2 addition (from `ElementTimeControl`).
+
+```ocaml
+method endElementAt : Js_of_ocaml__.Js.number_t -> unit Js_of_ocaml__.Js.meth
+```
+SVG 2 addition (from `ElementTimeControl`).

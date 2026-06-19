@@ -14,7 +14,12 @@ inherit langSpace
 inherit externalResourcesRequired
 ```
 ```ocaml
-inherit stylable
+method maskUnits : animatedUnitType Js_of_ocaml__.Js.t
+                     Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method maskContentUnits : animatedUnitType Js_of_ocaml__.Js.t
+                            Js_of_ocaml__.Js.readonly_prop
 ```
 ```ocaml
 method x : animatedLength Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop

@@ -1,9 +1,7 @@
 
 # Class type `Dom_svg.elementInstance`
 
-```ocaml
-inherit Js_of_ocaml__.Dom_html.eventTarget
-```
+deprecated Removed in SVG 2.
 ```ocaml
 method correspondingElement : element Js_of_ocaml__.Js.t
                                 Js_of_ocaml__.Js.readonly_prop

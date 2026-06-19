@@ -4,6 +4,3 @@
 ```ocaml
 inherit animationElement
 ```
-```ocaml
-inherit stylable
-```

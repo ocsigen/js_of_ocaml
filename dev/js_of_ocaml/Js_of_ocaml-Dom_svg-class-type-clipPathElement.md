@@ -14,8 +14,9 @@ inherit langSpace
 inherit externalResourcesRequired
 ```
 ```ocaml
-inherit stylable
+inherit transformable
 ```
 ```ocaml
-inherit transformable
+method clipPathUnits : animatedUnitType Js_of_ocaml__.Js.t
+                         Js_of_ocaml__.Js.readonly_prop
 ```

@@ -169,3 +169,83 @@ val view : element Js.t -> viewElement Js.t Js.opt
 ```ocaml
 val vkern : element Js.t -> element Js.t Js.opt
 ```
+```ocaml
+val marker : element Js.t -> markerElement Js.t Js.opt
+```
+```ocaml
+val feBlend : element Js.t -> feBlendElement Js.t Js.opt
+```
+```ocaml
+val feColorMatrix : element Js.t -> feColorMatrixElement Js.t Js.opt
+```
+```ocaml
+val feComponentTransfer : 
+  element Js.t ->
+  feComponentTransferElement Js.t Js.opt
+```
+```ocaml
+val feFuncR : element Js.t -> feFuncRElement Js.t Js.opt
+```
+```ocaml
+val feFuncG : element Js.t -> feFuncGElement Js.t Js.opt
+```
+```ocaml
+val feFuncB : element Js.t -> feFuncBElement Js.t Js.opt
+```
+```ocaml
+val feFuncA : element Js.t -> feFuncAElement Js.t Js.opt
+```
+```ocaml
+val feComposite : element Js.t -> feCompositeElement Js.t Js.opt
+```
+```ocaml
+val feConvolveMatrix : element Js.t -> feConvolveMatrixElement Js.t Js.opt
+```
+```ocaml
+val feDiffuseLighting : element Js.t -> feDiffuseLightingElement Js.t Js.opt
+```
+```ocaml
+val feDistantLight : element Js.t -> feDistantLightElement Js.t Js.opt
+```
+```ocaml
+val fePointLight : element Js.t -> fePointLightElement Js.t Js.opt
+```
+```ocaml
+val feSpotLight : element Js.t -> feSpotLightElement Js.t Js.opt
+```
+```ocaml
+val feDisplacementMap : element Js.t -> feDisplacementMapElement Js.t Js.opt
+```
+```ocaml
+val feFlood : element Js.t -> feFloodElement Js.t Js.opt
+```
+```ocaml
+val feGaussianBlur : element Js.t -> feGaussianBlurElement Js.t Js.opt
+```
+```ocaml
+val feImage : element Js.t -> feImageElement Js.t Js.opt
+```
+```ocaml
+val feMerge : element Js.t -> feMergeElement Js.t Js.opt
+```
+```ocaml
+val feMergeNode : element Js.t -> feMergeNodeElement Js.t Js.opt
+```
+```ocaml
+val feMorphology : element Js.t -> feMorphologyElement Js.t Js.opt
+```
+```ocaml
+val feOffset : element Js.t -> feOffsetElement Js.t Js.opt
+```
+```ocaml
+val feSpecularLighting : element Js.t -> feSpecularLightingElement Js.t Js.opt
+```
+```ocaml
+val feTile : element Js.t -> feTileElement Js.t Js.opt
+```
+```ocaml
+val feTurbulence : element Js.t -> feTurbulenceElement Js.t Js.opt
+```
+```ocaml
+val feDropShadow : element Js.t -> feDropShadowElement Js.t Js.opt
+```

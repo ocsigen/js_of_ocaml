@@ -2,10 +2,7 @@
 # Class type `Dom_svg.pathElement`
 
 ```ocaml
-inherit element
-```
-```ocaml
-inherit tests
+inherit geometryElement
 ```
 ```ocaml
 inherit langSpace
@@ -14,27 +11,11 @@ inherit langSpace
 inherit externalResourcesRequired
 ```
 ```ocaml
-inherit stylable
-```
-```ocaml
-inherit transformable
-```
-```ocaml
 inherit animatedPathData
 ```
 ```ocaml
-method pathLength : animatedNumber Js_of_ocaml__.Js.t
-                      Js_of_ocaml__.Js.readonly_prop
-```
-```ocaml
-method getTotalLength : Js_of_ocaml__.Js.number_t Js_of_ocaml__.Js.meth
-```
-```ocaml
-method getPointAtLength : Js_of_ocaml__.Js.number_t ->
-  point Js_of_ocaml__.Js.t Js_of_ocaml__.Js.meth
-```
-```ocaml
-method getPathSegAtLength : Js_of_ocaml__.Js.number_t -> int
+method getPathSegAtLength : Js_of_ocaml__.Js.number_t ->
+  int Js_of_ocaml__.Js.meth
 ```
 ```ocaml
 method createSVGPathSegClosePath : pathSegClosePath Js_of_ocaml__.Js.meth

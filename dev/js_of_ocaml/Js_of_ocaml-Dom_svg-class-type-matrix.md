@@ -2,22 +2,22 @@
 # Class type `Dom_svg.matrix`
 
 ```ocaml
-method a : Js_of_ocaml__.Js.number_t Js_of_ocaml__.Js.readonly_prop
+method a : Js_of_ocaml__.Js.number_t Js_of_ocaml__.Js.prop
 ```
 ```ocaml
-method b : Js_of_ocaml__.Js.number_t Js_of_ocaml__.Js.readonly_prop
+method b : Js_of_ocaml__.Js.number_t Js_of_ocaml__.Js.prop
 ```
 ```ocaml
-method c : Js_of_ocaml__.Js.number_t Js_of_ocaml__.Js.readonly_prop
+method c : Js_of_ocaml__.Js.number_t Js_of_ocaml__.Js.prop
 ```
 ```ocaml
-method d : Js_of_ocaml__.Js.number_t Js_of_ocaml__.Js.readonly_prop
+method d : Js_of_ocaml__.Js.number_t Js_of_ocaml__.Js.prop
 ```
 ```ocaml
-method e : Js_of_ocaml__.Js.number_t Js_of_ocaml__.Js.readonly_prop
+method e : Js_of_ocaml__.Js.number_t Js_of_ocaml__.Js.prop
 ```
 ```ocaml
-method f : Js_of_ocaml__.Js.number_t Js_of_ocaml__.Js.readonly_prop
+method f : Js_of_ocaml__.Js.number_t Js_of_ocaml__.Js.prop
 ```
 ```ocaml
 method multiply : matrix Js_of_ocaml__.Js.t ->

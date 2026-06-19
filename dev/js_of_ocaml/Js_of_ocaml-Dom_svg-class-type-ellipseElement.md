@@ -2,22 +2,13 @@
 # Class type `Dom_svg.ellipseElement`
 
 ```ocaml
-inherit element
-```
-```ocaml
-inherit tests
+inherit geometryElement
 ```
 ```ocaml
 inherit langSpace
 ```
 ```ocaml
 inherit externalResourcesRequired
-```
-```ocaml
-inherit stylable
-```
-```ocaml
-inherit transformable
 ```
 ```ocaml
 method cx : animatedLength Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop

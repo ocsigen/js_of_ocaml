@@ -1,6 +1,7 @@
 
 # Class type `Dom_svg.svg_error`
 
+deprecated Removed in SVG 2.
 ```ocaml
 inherit Js_of_ocaml__.Js.error
 ```

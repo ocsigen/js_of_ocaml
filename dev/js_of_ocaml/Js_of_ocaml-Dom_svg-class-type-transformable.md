@@ -1,6 +1,7 @@
 
 # Class type `Dom_svg.transformable`
 
+deprecated Replaced by SVGGraphicsElement in SVG 2.
 ```ocaml
 inherit locatable
 ```

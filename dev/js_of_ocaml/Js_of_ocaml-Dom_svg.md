@@ -16,12 +16,14 @@ type error_code =
   | INVALID_VALUE_ERR
   | MATRIX_NOT_INVERTABLE
 ```
+deprecated Removed in SVG 2.
 ```ocaml
 class type  svg_error = object ... end
 ```
 ```ocaml
 exception SVGError of svg_error
 ```
+deprecated Removed in SVG 2.
 ```ocaml
 type lengthUnitType = 
   | LENGTHTYPE_UNKNOWN
@@ -151,6 +153,87 @@ type spreadMethodType =
   | SPREADMETHOD_REPEAT
 ```
 ```ocaml
+type markerUnitType = 
+  | SVG_MARKERUNITS_UNKNOWN
+  | SVG_MARKERUNITS_USERSPACEONUSE
+  | SVG_MARKERUNITS_STROKEWIDTH
+```
+```ocaml
+type markerOrientType = 
+  | SVG_MARKER_ORIENT_UNKNOWN
+  | SVG_MARKER_ORIENT_AUTO
+  | SVG_MARKER_ORIENT_ANGLE
+```
+```ocaml
+type blendModeType = 
+  | SVG_FEBLEND_MODE_UNKNOWN
+  | SVG_FEBLEND_MODE_NORMAL
+  | SVG_FEBLEND_MODE_MULTIPLY
+  | SVG_FEBLEND_MODE_SCREEN
+  | SVG_FEBLEND_MODE_DARKEN
+  | SVG_FEBLEND_MODE_LIGHTEN
+```
+```ocaml
+type colorMatrixType = 
+  | SVG_FECOLORMATRIX_TYPE_UNKNOWN
+  | SVG_FECOLORMATRIX_TYPE_MATRIX
+  | SVG_FECOLORMATRIX_TYPE_SATURATE
+  | SVG_FECOLORMATRIX_TYPE_HUEROTATE
+  | SVG_FECOLORMATRIX_TYPE_LUMINANCETOALPHA
+```
+```ocaml
+type componentTransferType = 
+  | SVG_FECOMPONENTTRANSFER_TYPE_UNKNOWN
+  | SVG_FECOMPONENTTRANSFER_TYPE_IDENTITY
+  | SVG_FECOMPONENTTRANSFER_TYPE_TABLE
+  | SVG_FECOMPONENTTRANSFER_TYPE_DISCRETE
+  | SVG_FECOMPONENTTRANSFER_TYPE_LINEAR
+  | SVG_FECOMPONENTTRANSFER_TYPE_GAMMA
+```
+```ocaml
+type compositeOperatorType = 
+  | SVG_FECOMPOSITE_OPERATOR_UNKNOWN
+  | SVG_FECOMPOSITE_OPERATOR_OVER
+  | SVG_FECOMPOSITE_OPERATOR_IN
+  | SVG_FECOMPOSITE_OPERATOR_OUT
+  | SVG_FECOMPOSITE_OPERATOR_ATOP
+  | SVG_FECOMPOSITE_OPERATOR_XOR
+  | SVG_FECOMPOSITE_OPERATOR_ARITHMETIC
+```
+```ocaml
+type edgeModeType = 
+  | SVG_EDGEMODE_UNKNOWN
+  | SVG_EDGEMODE_DUPLICATE
+  | SVG_EDGEMODE_WRAP
+  | SVG_EDGEMODE_NONE
+```
+```ocaml
+type channelSelectorType = 
+  | SVG_CHANNEL_UNKNOWN
+  | SVG_CHANNEL_R
+  | SVG_CHANNEL_G
+  | SVG_CHANNEL_B
+  | SVG_CHANNEL_A
+```
+```ocaml
+type morphologyOperatorType = 
+  | SVG_MORPHOLOGY_OPERATOR_UNKNOWN
+  | SVG_MORPHOLOGY_OPERATOR_ERODE
+  | SVG_MORPHOLOGY_OPERATOR_DILATE
+```
+```ocaml
+type turbulenceType = 
+  | SVG_TURBULENCE_TYPE_UNKNOWN
+  | SVG_TURBULENCE_TYPE_FRACTALNOISE
+  | SVG_TURBULENCE_TYPE_TURBULENCE
+```
+```ocaml
+type stitchType = 
+  | SVG_STITCHTYPE_UNKNOWN
+  | SVG_STITCHTYPE_STITCH
+  | SVG_STITCHTYPE_NOSTITCH
+```
+```ocaml
 type suspendHandleID
 ```
 ```ocaml
@@ -176,6 +259,9 @@ class type  stringList = Js.js_string Js.t list
 ```
 ```ocaml
 class type  animatedEnumeration = int animated
+```
+```ocaml
+class type  animatedUnitType = unitType animated
 ```
 ```ocaml
 class type  animatedInteger = int animated
@@ -241,6 +327,15 @@ class type  langSpace = object ... end
 class type  externalResourcesRequired = object ... end
 ```
 ```ocaml
+class type  graphicsElement = object ... end
+```
+```ocaml
+class type  geometryElement = object ... end
+```
+```ocaml
+class type  unknownElement = graphicsElement
+```
+```ocaml
 class type  fitToViewBox = object ... end
 ```
 ```ocaml
@@ -290,6 +385,9 @@ class type  switchElement = object ... end
 ```
 ```ocaml
 class type  styleElement = object ... end
+```
+```ocaml
+class type  cssStyleSheet = object ... end
 ```
 ```ocaml
 class type  point = object ... end
@@ -415,6 +513,15 @@ class type  altGlyphItemElement = element
 class type  glyphRefElement = object ... end
 ```
 ```ocaml
+class type  animatedMarkerUnit = markerUnitType animated
+```
+```ocaml
+class type  animatedMarkerOrient = markerOrientType animated
+```
+```ocaml
+class type  markerElement = object ... end
+```
+```ocaml
 class type  animatedSpreadMethod = spreadMethodType animated
 ```
 ```ocaml
@@ -440,6 +547,114 @@ class type  maskElement = object ... end
 ```
 ```ocaml
 class type  filterElement = object ... end
+```
+```ocaml
+class type  filterPrimitiveStandardAttributes = object ... end
+```
+```ocaml
+class type  animatedBlendMode = blendModeType animated
+```
+```ocaml
+class type  animatedColorMatrixType = colorMatrixType animated
+```
+```ocaml
+class type  animatedComponentTransferType = componentTransferType animated
+```
+```ocaml
+class type  animatedCompositeOperator = compositeOperatorType animated
+```
+```ocaml
+class type  animatedEdgeMode = edgeModeType animated
+```
+```ocaml
+class type  animatedChannelSelector = channelSelectorType animated
+```
+```ocaml
+class type  animatedMorphologyOperator = morphologyOperatorType animated
+```
+```ocaml
+class type  animatedTurbulenceType = turbulenceType animated
+```
+```ocaml
+class type  animatedStitchType = stitchType animated
+```
+```ocaml
+class type  feBlendElement = object ... end
+```
+```ocaml
+class type  feColorMatrixElement = object ... end
+```
+```ocaml
+class type  feComponentTransferElement = object ... end
+```
+```ocaml
+class type  componentTransferFunctionElement = object ... end
+```
+```ocaml
+class type  feFuncRElement = componentTransferFunctionElement
+```
+```ocaml
+class type  feFuncGElement = componentTransferFunctionElement
+```
+```ocaml
+class type  feFuncBElement = componentTransferFunctionElement
+```
+```ocaml
+class type  feFuncAElement = componentTransferFunctionElement
+```
+```ocaml
+class type  feCompositeElement = object ... end
+```
+```ocaml
+class type  feConvolveMatrixElement = object ... end
+```
+```ocaml
+class type  feDiffuseLightingElement = object ... end
+```
+```ocaml
+class type  feDistantLightElement = object ... end
+```
+```ocaml
+class type  fePointLightElement = object ... end
+```
+```ocaml
+class type  feSpotLightElement = object ... end
+```
+```ocaml
+class type  feDisplacementMapElement = object ... end
+```
+```ocaml
+class type  feFloodElement = object ... end
+```
+```ocaml
+class type  feGaussianBlurElement = object ... end
+```
+```ocaml
+class type  feImageElement = object ... end
+```
+```ocaml
+class type  feMergeElement = object ... end
+```
+```ocaml
+class type  feMergeNodeElement = object ... end
+```
+```ocaml
+class type  feMorphologyElement = object ... end
+```
+```ocaml
+class type  feOffsetElement = object ... end
+```
+```ocaml
+class type  feSpecularLightingElement = object ... end
+```
+```ocaml
+class type  feTileElement = object ... end
+```
+```ocaml
+class type  feTurbulenceElement = object ... end
+```
+```ocaml
+class type  feDropShadowElement = object ... end
 ```
 ```ocaml
 class type  cursorElement = object ... end
@@ -668,6 +883,86 @@ val createView : document Js.t -> viewElement Js.t
 ```
 ```ocaml
 val createvkern : document Js.t -> element Js.t
+```
+```ocaml
+val createMarker : document Js.t -> markerElement Js.t
+```
+```ocaml
+val createFeBlend : document Js.t -> feBlendElement Js.t
+```
+```ocaml
+val createFeColorMatrix : document Js.t -> feColorMatrixElement Js.t
+```
+```ocaml
+val createFeComponentTransfer : 
+  document Js.t ->
+  feComponentTransferElement Js.t
+```
+```ocaml
+val createFeFuncR : document Js.t -> feFuncRElement Js.t
+```
+```ocaml
+val createFeFuncG : document Js.t -> feFuncGElement Js.t
+```
+```ocaml
+val createFeFuncB : document Js.t -> feFuncBElement Js.t
+```
+```ocaml
+val createFeFuncA : document Js.t -> feFuncAElement Js.t
+```
+```ocaml
+val createFeComposite : document Js.t -> feCompositeElement Js.t
+```
+```ocaml
+val createFeConvolveMatrix : document Js.t -> feConvolveMatrixElement Js.t
+```
+```ocaml
+val createFeDiffuseLighting : document Js.t -> feDiffuseLightingElement Js.t
+```
+```ocaml
+val createFeDistantLight : document Js.t -> feDistantLightElement Js.t
+```
+```ocaml
+val createFePointLight : document Js.t -> fePointLightElement Js.t
+```
+```ocaml
+val createFeSpotLight : document Js.t -> feSpotLightElement Js.t
+```
+```ocaml
+val createFeDisplacementMap : document Js.t -> feDisplacementMapElement Js.t
+```
+```ocaml
+val createFeFlood : document Js.t -> feFloodElement Js.t
+```
+```ocaml
+val createFeGaussianBlur : document Js.t -> feGaussianBlurElement Js.t
+```
+```ocaml
+val createFeImage : document Js.t -> feImageElement Js.t
+```
+```ocaml
+val createFeMerge : document Js.t -> feMergeElement Js.t
+```
+```ocaml
+val createFeMergeNode : document Js.t -> feMergeNodeElement Js.t
+```
+```ocaml
+val createFeMorphology : document Js.t -> feMorphologyElement Js.t
+```
+```ocaml
+val createFeOffset : document Js.t -> feOffsetElement Js.t
+```
+```ocaml
+val createFeSpecularLighting : document Js.t -> feSpecularLightingElement Js.t
+```
+```ocaml
+val createFeTile : document Js.t -> feTileElement Js.t
+```
+```ocaml
+val createFeTurbulence : document Js.t -> feTurbulenceElement Js.t
+```
+```ocaml
+val createFeDropShadow : document Js.t -> feDropShadowElement Js.t
 ```
 ```ocaml
 val svg_element : element Js.t Js.constr

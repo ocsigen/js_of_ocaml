@@ -17,3 +17,4 @@ inherit zoomAndPan
 method viewTarget : stringList Js_of_ocaml__.Js.t
                       Js_of_ocaml__.Js.readonly_prop
 ```
+deprecated Removed in SVG 2.

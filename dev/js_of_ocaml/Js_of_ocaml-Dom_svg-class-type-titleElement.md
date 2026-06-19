@@ -7,6 +7,3 @@ inherit element
 ```ocaml
 inherit langSpace
 ```
-```ocaml
-inherit stylable
-```

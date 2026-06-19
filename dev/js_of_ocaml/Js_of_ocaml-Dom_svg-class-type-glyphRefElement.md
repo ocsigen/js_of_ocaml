@@ -1,14 +1,12 @@
 
 # Class type `Dom_svg.glyphRefElement`
 
+deprecated Removed in SVG 2. SVG fonts replaced by WOFF.
 ```ocaml
 inherit element
 ```
 ```ocaml
 inherit uriReference
-```
-```ocaml
-inherit stylable
 ```
 ```ocaml
 method glyphRef : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t

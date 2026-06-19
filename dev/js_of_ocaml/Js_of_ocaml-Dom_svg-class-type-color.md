@@ -1,6 +1,7 @@
 
 # Class type `Dom_svg.color`
 
+deprecated Removed in SVG 2.
 ```ocaml
 method colorType : colorType Js_of_ocaml__.Js.readonly_prop
 ```

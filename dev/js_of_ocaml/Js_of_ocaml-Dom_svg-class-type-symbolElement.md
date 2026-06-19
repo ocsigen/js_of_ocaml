@@ -2,7 +2,7 @@
 # Class type `Dom_svg.symbolElement`
 
 ```ocaml
-inherit element
+inherit graphicsElement
 ```
 ```ocaml
 inherit langSpace
@@ -11,11 +11,35 @@ inherit langSpace
 inherit externalResourcesRequired
 ```
 ```ocaml
-inherit stylable
-```
-```ocaml
 inherit fitToViewBox
 ```
 ```ocaml
-inherit Js_of_ocaml__.Dom_html.eventTarget
+method x : animatedLength Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
 ```
+SVG 2 addition.
+
+```ocaml
+method y : animatedLength Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+```
+SVG 2 addition.
+
+```ocaml
+method width : animatedLength Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+```
+SVG 2 addition.
+
+```ocaml
+method height : animatedLength Js_of_ocaml__.Js.t
+                  Js_of_ocaml__.Js.readonly_prop
+```
+SVG 2 addition.
+
+```ocaml
+method refX : animatedLength Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+```
+SVG 2 addition.
+
+```ocaml
+method refY : animatedLength Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+```
+SVG 2 addition.

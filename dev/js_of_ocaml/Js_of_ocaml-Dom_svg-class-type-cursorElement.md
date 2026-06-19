@@ -1,6 +1,7 @@
 
 # Class type `Dom_svg.cursorElement`
 
+deprecated Removed in SVG 2. Use CSS cursor property.
 ```ocaml
 inherit element
 ```

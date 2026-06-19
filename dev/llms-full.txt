@@ -37896,6 +37896,86 @@ val view : element Js.t -> viewElement Js.t Js.opt
 ```ocaml
 val vkern : element Js.t -> element Js.t Js.opt
 ```
+```ocaml
+val marker : element Js.t -> markerElement Js.t Js.opt
+```
+```ocaml
+val feBlend : element Js.t -> feBlendElement Js.t Js.opt
+```
+```ocaml
+val feColorMatrix : element Js.t -> feColorMatrixElement Js.t Js.opt
+```
+```ocaml
+val feComponentTransfer : 
+  element Js.t ->
+  feComponentTransferElement Js.t Js.opt
+```
+```ocaml
+val feFuncR : element Js.t -> feFuncRElement Js.t Js.opt
+```
+```ocaml
+val feFuncG : element Js.t -> feFuncGElement Js.t Js.opt
+```
+```ocaml
+val feFuncB : element Js.t -> feFuncBElement Js.t Js.opt
+```
+```ocaml
+val feFuncA : element Js.t -> feFuncAElement Js.t Js.opt
+```
+```ocaml
+val feComposite : element Js.t -> feCompositeElement Js.t Js.opt
+```
+```ocaml
+val feConvolveMatrix : element Js.t -> feConvolveMatrixElement Js.t Js.opt
+```
+```ocaml
+val feDiffuseLighting : element Js.t -> feDiffuseLightingElement Js.t Js.opt
+```
+```ocaml
+val feDistantLight : element Js.t -> feDistantLightElement Js.t Js.opt
+```
+```ocaml
+val fePointLight : element Js.t -> fePointLightElement Js.t Js.opt
+```
+```ocaml
+val feSpotLight : element Js.t -> feSpotLightElement Js.t Js.opt
+```
+```ocaml
+val feDisplacementMap : element Js.t -> feDisplacementMapElement Js.t Js.opt
+```
+```ocaml
+val feFlood : element Js.t -> feFloodElement Js.t Js.opt
+```
+```ocaml
+val feGaussianBlur : element Js.t -> feGaussianBlurElement Js.t Js.opt
+```
+```ocaml
+val feImage : element Js.t -> feImageElement Js.t Js.opt
+```
+```ocaml
+val feMerge : element Js.t -> feMergeElement Js.t Js.opt
+```
+```ocaml
+val feMergeNode : element Js.t -> feMergeNodeElement Js.t Js.opt
+```
+```ocaml
+val feMorphology : element Js.t -> feMorphologyElement Js.t Js.opt
+```
+```ocaml
+val feOffset : element Js.t -> feOffsetElement Js.t Js.opt
+```
+```ocaml
+val feSpecularLighting : element Js.t -> feSpecularLightingElement Js.t Js.opt
+```
+```ocaml
+val feTile : element Js.t -> feTileElement Js.t Js.opt
+```
+```ocaml
+val feTurbulence : element Js.t -> feTurbulenceElement Js.t Js.opt
+```
+```ocaml
+val feDropShadow : element Js.t -> feDropShadowElement Js.t Js.opt
+```
 
 
 ---
@@ -37903,13 +37983,10 @@ val vkern : element Js.t -> element Js.t Js.opt
 # Class type `Dom_svg.aElement`
 
 ```ocaml
-inherit element
+inherit graphicsElement
 ```
 ```ocaml
 inherit uriReference
-```
-```ocaml
-inherit tests
 ```
 ```ocaml
 inherit langSpace
@@ -37918,13 +37995,97 @@ inherit langSpace
 inherit externalResourcesRequired
 ```
 ```ocaml
-inherit stylable
-```
-```ocaml
-inherit transformable
-```
-```ocaml
 method target : animatedString Js_of_ocaml__.Js.t
+                  Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method download : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                    Js_of_ocaml__.Js.prop
+```
+SVG 2 addition.
+
+```ocaml
+method ping : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                Js_of_ocaml__.Js.prop
+```
+SVG 2 addition.
+
+```ocaml
+method rel : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+               Js_of_ocaml__.Js.prop
+```
+SVG 2 addition.
+
+```ocaml
+method relList : Js_of_ocaml__.Dom_html.tokenList Js_of_ocaml__.Js.t
+                   Js_of_ocaml__.Js.readonly_prop
+```
+SVG 2 addition.
+
+```ocaml
+method hreflang : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                    Js_of_ocaml__.Js.prop
+```
+SVG 2 addition.
+
+```ocaml
+method type_ : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                 Js_of_ocaml__.Js.prop
+```
+SVG 2 addition.
+
+```ocaml
+method referrerPolicy : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                          Js_of_ocaml__.Js.prop
+```
+SVG 2 addition.
+
+```ocaml
+method text : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                Js_of_ocaml__.Js.prop
+```
+SVG 2 addition (synonym for `textContent`).
+
+```ocaml
+method protocol : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                    Js_of_ocaml__.Js.prop
+```
+SVG 2 addition (from `HTMLHyperlinkElementUtils`).
+
+```ocaml
+method username : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                    Js_of_ocaml__.Js.prop
+```
+```ocaml
+method password : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                    Js_of_ocaml__.Js.prop
+```
+```ocaml
+method host : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                Js_of_ocaml__.Js.prop
+```
+```ocaml
+method hostname : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                    Js_of_ocaml__.Js.prop
+```
+```ocaml
+method port : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                Js_of_ocaml__.Js.prop
+```
+```ocaml
+method pathname : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                    Js_of_ocaml__.Js.prop
+```
+```ocaml
+method search : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                  Js_of_ocaml__.Js.prop
+```
+```ocaml
+method hash : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                Js_of_ocaml__.Js.prop
+```
+```ocaml
+method origin : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
                   Js_of_ocaml__.Js.readonly_prop
 ```
 
@@ -37933,30 +38094,81 @@ method target : animatedString Js_of_ocaml__.Js.t
 
 # Class type `Dom_svg.altGlyphDefElement`
 
+deprecated Removed in SVG 2. SVG fonts replaced by WOFF.
 ```ocaml
 inherit Js_of_ocaml__.Dom.element
+```
+```ocaml
+inherit Js_of_ocaml__.Dom_html.eventTarget
 ```
 ```ocaml
 method id : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t Js_of_ocaml__.Js.prop
 ```
 ```ocaml
 method xmlbase : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                   Js_of_ocaml__.Js.optdef
                    Js_of_ocaml__.Js.prop
 ```
+deprecated Removed in SVG 2.
 ```ocaml
-method ownerSVGElement : svgElement Js_of_ocaml__.Js.t
+method ownerSVGElement : svgElement Js_of_ocaml__.Js.t Js_of_ocaml__.Js.opt
                            Js_of_ocaml__.Js.readonly_prop
 ```
 ```ocaml
-method viewportElement : element Js_of_ocaml__.Js.t
+method viewportElement : element Js_of_ocaml__.Js.t Js_of_ocaml__.Js.opt
                            Js_of_ocaml__.Js.readonly_prop
 ```
+```ocaml
+method tabIndex : int Js_of_ocaml__.Js.prop
+```
+SVG 2 addition.
+
+```ocaml
+method focus : unit Js_of_ocaml__.Js.meth
+```
+SVG 2 addition.
+
+```ocaml
+method blur : unit Js_of_ocaml__.Js.meth
+```
+SVG 2 addition.
+
+```ocaml
+method style : Js_of_ocaml__.Dom_html.cssStyleDeclaration Js_of_ocaml__.Js.t
+                 Js_of_ocaml__.Js.readonly_prop
+```
+SVG 2: merged in from `SVGStylable`.
+
+```ocaml
+method className : animatedString Js_of_ocaml__.Js.t
+                     Js_of_ocaml__.Js.readonly_prop
+```
+SVG 2: merged in from `SVGStylable`.
+
+deprecated Use classList (from Dom.element) instead.
+```ocaml
+method dataset : Js_of_ocaml__.Dom_html.domStringMap Js_of_ocaml__.Js.t
+                   Js_of_ocaml__.Js.readonly_prop
+```
+SVG 2 addition (from `HTMLOrForeignElement`).
+
+```ocaml
+method autofocus : bool Js_of_ocaml__.Js.t Js_of_ocaml__.Js.prop
+```
+SVG 2 addition (from `HTMLOrForeignElement`).
+
+```ocaml
+method nonce : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                 Js_of_ocaml__.Js.prop
+```
+SVG 2 addition (from `HTMLOrForeignElement`).
 
 
 ---
 
 # Class type `Dom_svg.altGlyphElement`
 
+deprecated Removed in SVG 2. SVG fonts replaced by WOFF.
 ```ocaml
 inherit textPositioningElement
 ```
@@ -37977,24 +38189,74 @@ method format : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
 
 # Class type `Dom_svg.altGlyphItemElement`
 
+deprecated Removed in SVG 2. SVG fonts replaced by WOFF.
 ```ocaml
 inherit Js_of_ocaml__.Dom.element
+```
+```ocaml
+inherit Js_of_ocaml__.Dom_html.eventTarget
 ```
 ```ocaml
 method id : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t Js_of_ocaml__.Js.prop
 ```
 ```ocaml
 method xmlbase : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                   Js_of_ocaml__.Js.optdef
                    Js_of_ocaml__.Js.prop
 ```
+deprecated Removed in SVG 2.
 ```ocaml
-method ownerSVGElement : svgElement Js_of_ocaml__.Js.t
+method ownerSVGElement : svgElement Js_of_ocaml__.Js.t Js_of_ocaml__.Js.opt
                            Js_of_ocaml__.Js.readonly_prop
 ```
 ```ocaml
-method viewportElement : element Js_of_ocaml__.Js.t
+method viewportElement : element Js_of_ocaml__.Js.t Js_of_ocaml__.Js.opt
                            Js_of_ocaml__.Js.readonly_prop
 ```
+```ocaml
+method tabIndex : int Js_of_ocaml__.Js.prop
+```
+SVG 2 addition.
+
+```ocaml
+method focus : unit Js_of_ocaml__.Js.meth
+```
+SVG 2 addition.
+
+```ocaml
+method blur : unit Js_of_ocaml__.Js.meth
+```
+SVG 2 addition.
+
+```ocaml
+method style : Js_of_ocaml__.Dom_html.cssStyleDeclaration Js_of_ocaml__.Js.t
+                 Js_of_ocaml__.Js.readonly_prop
+```
+SVG 2: merged in from `SVGStylable`.
+
+```ocaml
+method className : animatedString Js_of_ocaml__.Js.t
+                     Js_of_ocaml__.Js.readonly_prop
+```
+SVG 2: merged in from `SVGStylable`.
+
+deprecated Use classList (from Dom.element) instead.
+```ocaml
+method dataset : Js_of_ocaml__.Dom_html.domStringMap Js_of_ocaml__.Js.t
+                   Js_of_ocaml__.Js.readonly_prop
+```
+SVG 2 addition (from `HTMLOrForeignElement`).
+
+```ocaml
+method autofocus : bool Js_of_ocaml__.Js.t Js_of_ocaml__.Js.prop
+```
+SVG 2 addition (from `HTMLOrForeignElement`).
+
+```ocaml
+method nonce : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                 Js_of_ocaml__.Js.prop
+```
+SVG 2 addition (from `HTMLOrForeignElement`).
 
 
 ---
@@ -38031,9 +38293,6 @@ method convertToSpecifiedUnits : angleUnitType -> unit Js_of_ocaml__.Js.meth
 ```ocaml
 inherit animationElement
 ```
-```ocaml
-inherit stylable
-```
 
 
 ---
@@ -38042,9 +38301,6 @@ inherit stylable
 
 ```ocaml
 inherit animationElement
-```
-```ocaml
-inherit stylable
 ```
 
 
@@ -38074,6 +38330,25 @@ method getCurrentTime : Js_of_ocaml__.Js.number_t Js_of_ocaml__.Js.meth
 ```ocaml
 method getSimpleDuration : Js_of_ocaml__.Js.number_t Js_of_ocaml__.Js.meth
 ```
+```ocaml
+method beginElement : unit Js_of_ocaml__.Js.meth
+```
+SVG 2 addition (from `ElementTimeControl`).
+
+```ocaml
+method beginElementAt : Js_of_ocaml__.Js.number_t -> unit Js_of_ocaml__.Js.meth
+```
+SVG 2 addition (from `ElementTimeControl`).
+
+```ocaml
+method endElement : unit Js_of_ocaml__.Js.meth
+```
+SVG 2 addition (from `ElementTimeControl`).
+
+```ocaml
+method endElementAt : Js_of_ocaml__.Js.number_t -> unit Js_of_ocaml__.Js.meth
+```
+SVG 2 addition (from `ElementTimeControl`).
 
 
 ---
@@ -38102,6 +38377,25 @@ method getCurrentTime : Js_of_ocaml__.Js.number_t Js_of_ocaml__.Js.meth
 ```ocaml
 method getSimpleDuration : Js_of_ocaml__.Js.number_t Js_of_ocaml__.Js.meth
 ```
+```ocaml
+method beginElement : unit Js_of_ocaml__.Js.meth
+```
+SVG 2 addition (from `ElementTimeControl`).
+
+```ocaml
+method beginElementAt : Js_of_ocaml__.Js.number_t -> unit Js_of_ocaml__.Js.meth
+```
+SVG 2 addition (from `ElementTimeControl`).
+
+```ocaml
+method endElement : unit Js_of_ocaml__.Js.meth
+```
+SVG 2 addition (from `ElementTimeControl`).
+
+```ocaml
+method endElementAt : Js_of_ocaml__.Js.number_t -> unit Js_of_ocaml__.Js.meth
+```
+SVG 2 addition (from `ElementTimeControl`).
 
 
 ---
@@ -38112,7 +38406,7 @@ method getSimpleDuration : Js_of_ocaml__.Js.number_t Js_of_ocaml__.Js.meth
 method baseVal : 'a Js_of_ocaml__.Js.prop
 ```
 ```ocaml
-method animVal : 'a Js_of_ocaml__.Js.prop
+method animVal : 'a Js_of_ocaml__.Js.readonly_prop
 ```
 
 
@@ -38124,7 +38418,19 @@ method animVal : 'a Js_of_ocaml__.Js.prop
 method baseVal : 'a Js_of_ocaml__.Js.prop
 ```
 ```ocaml
-method animVal : 'a Js_of_ocaml__.Js.prop
+method animVal : 'a Js_of_ocaml__.Js.readonly_prop
+```
+
+
+---
+
+# Class type `Dom_svg.animatedBlendMode`
+
+```ocaml
+method baseVal : 'a Js_of_ocaml__.Js.prop
+```
+```ocaml
+method animVal : 'a Js_of_ocaml__.Js.readonly_prop
 ```
 
 
@@ -38136,7 +38442,67 @@ method animVal : 'a Js_of_ocaml__.Js.prop
 method baseVal : 'a Js_of_ocaml__.Js.prop
 ```
 ```ocaml
-method animVal : 'a Js_of_ocaml__.Js.prop
+method animVal : 'a Js_of_ocaml__.Js.readonly_prop
+```
+
+
+---
+
+# Class type `Dom_svg.animatedChannelSelector`
+
+```ocaml
+method baseVal : 'a Js_of_ocaml__.Js.prop
+```
+```ocaml
+method animVal : 'a Js_of_ocaml__.Js.readonly_prop
+```
+
+
+---
+
+# Class type `Dom_svg.animatedColorMatrixType`
+
+```ocaml
+method baseVal : 'a Js_of_ocaml__.Js.prop
+```
+```ocaml
+method animVal : 'a Js_of_ocaml__.Js.readonly_prop
+```
+
+
+---
+
+# Class type `Dom_svg.animatedComponentTransferType`
+
+```ocaml
+method baseVal : 'a Js_of_ocaml__.Js.prop
+```
+```ocaml
+method animVal : 'a Js_of_ocaml__.Js.readonly_prop
+```
+
+
+---
+
+# Class type `Dom_svg.animatedCompositeOperator`
+
+```ocaml
+method baseVal : 'a Js_of_ocaml__.Js.prop
+```
+```ocaml
+method animVal : 'a Js_of_ocaml__.Js.readonly_prop
+```
+
+
+---
+
+# Class type `Dom_svg.animatedEdgeMode`
+
+```ocaml
+method baseVal : 'a Js_of_ocaml__.Js.prop
+```
+```ocaml
+method animVal : 'a Js_of_ocaml__.Js.readonly_prop
 ```
 
 
@@ -38148,7 +38514,7 @@ method animVal : 'a Js_of_ocaml__.Js.prop
 method baseVal : 'a Js_of_ocaml__.Js.prop
 ```
 ```ocaml
-method animVal : 'a Js_of_ocaml__.Js.prop
+method animVal : 'a Js_of_ocaml__.Js.readonly_prop
 ```
 
 
@@ -38160,7 +38526,7 @@ method animVal : 'a Js_of_ocaml__.Js.prop
 method baseVal : 'a Js_of_ocaml__.Js.prop
 ```
 ```ocaml
-method animVal : 'a Js_of_ocaml__.Js.prop
+method animVal : 'a Js_of_ocaml__.Js.readonly_prop
 ```
 
 
@@ -38172,7 +38538,7 @@ method animVal : 'a Js_of_ocaml__.Js.prop
 method baseVal : 'a Js_of_ocaml__.Js.prop
 ```
 ```ocaml
-method animVal : 'a Js_of_ocaml__.Js.prop
+method animVal : 'a Js_of_ocaml__.Js.readonly_prop
 ```
 
 
@@ -38184,7 +38550,43 @@ method animVal : 'a Js_of_ocaml__.Js.prop
 method baseVal : 'a Js_of_ocaml__.Js.prop
 ```
 ```ocaml
-method animVal : 'a Js_of_ocaml__.Js.prop
+method animVal : 'a Js_of_ocaml__.Js.readonly_prop
+```
+
+
+---
+
+# Class type `Dom_svg.animatedMarkerOrient`
+
+```ocaml
+method baseVal : 'a Js_of_ocaml__.Js.prop
+```
+```ocaml
+method animVal : 'a Js_of_ocaml__.Js.readonly_prop
+```
+
+
+---
+
+# Class type `Dom_svg.animatedMarkerUnit`
+
+```ocaml
+method baseVal : 'a Js_of_ocaml__.Js.prop
+```
+```ocaml
+method animVal : 'a Js_of_ocaml__.Js.readonly_prop
+```
+
+
+---
+
+# Class type `Dom_svg.animatedMorphologyOperator`
+
+```ocaml
+method baseVal : 'a Js_of_ocaml__.Js.prop
+```
+```ocaml
+method animVal : 'a Js_of_ocaml__.Js.readonly_prop
 ```
 
 
@@ -38196,7 +38598,7 @@ method animVal : 'a Js_of_ocaml__.Js.prop
 method baseVal : 'a Js_of_ocaml__.Js.prop
 ```
 ```ocaml
-method animVal : 'a Js_of_ocaml__.Js.prop
+method animVal : 'a Js_of_ocaml__.Js.readonly_prop
 ```
 
 
@@ -38208,7 +38610,7 @@ method animVal : 'a Js_of_ocaml__.Js.prop
 method baseVal : 'a Js_of_ocaml__.Js.prop
 ```
 ```ocaml
-method animVal : 'a Js_of_ocaml__.Js.prop
+method animVal : 'a Js_of_ocaml__.Js.readonly_prop
 ```
 
 
@@ -38217,20 +38619,28 @@ method animVal : 'a Js_of_ocaml__.Js.prop
 # Class type `Dom_svg.animatedPathData`
 
 ```ocaml
-method pathSegList : pathSegList Js_of_ocaml__.Js.t Js_of_ocaml__.Js.prop
+method pathSegList : pathSegList Js_of_ocaml__.Js.t Js_of_ocaml__.Js.optdef
+                       Js_of_ocaml__.Js.readonly_prop
 ```
+deprecated SVGPathSeg API is deprecated in SVG 2.
 ```ocaml
 method normalizedPathSegList : pathSegList Js_of_ocaml__.Js.t
-                                 Js_of_ocaml__.Js.prop
+                                 Js_of_ocaml__.Js.optdef
+                                 Js_of_ocaml__.Js.readonly_prop
 ```
+deprecated SVGPathSeg API is deprecated in SVG 2. Not implemented in most browsers.
 ```ocaml
 method animatedPathSegList : pathSegList Js_of_ocaml__.Js.t
-                               Js_of_ocaml__.Js.prop
+                               Js_of_ocaml__.Js.optdef
+                               Js_of_ocaml__.Js.readonly_prop
 ```
+deprecated SVGPathSeg API is deprecated in SVG 2.
 ```ocaml
 method animatedNormalizedPathSegList : pathSegList Js_of_ocaml__.Js.t
-                                         Js_of_ocaml__.Js.prop
+                                         Js_of_ocaml__.Js.optdef
+                                         Js_of_ocaml__.Js.readonly_prop
 ```
+deprecated SVGPathSeg API is deprecated in SVG 2. Not implemented in most browsers.
 
 
 ---
@@ -38241,7 +38651,7 @@ method animatedNormalizedPathSegList : pathSegList Js_of_ocaml__.Js.t
 method points : pointList Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
 ```
 ```ocaml
-method animatedpoints : pointList Js_of_ocaml__.Js.t
+method animatedPoints : pointList Js_of_ocaml__.Js.t
                           Js_of_ocaml__.Js.readonly_prop
 ```
 
@@ -38254,7 +38664,7 @@ method animatedpoints : pointList Js_of_ocaml__.Js.t
 method baseVal : 'a Js_of_ocaml__.Js.prop
 ```
 ```ocaml
-method animVal : 'a Js_of_ocaml__.Js.prop
+method animVal : 'a Js_of_ocaml__.Js.readonly_prop
 ```
 
 
@@ -38266,7 +38676,7 @@ method animVal : 'a Js_of_ocaml__.Js.prop
 method baseVal : 'a Js_of_ocaml__.Js.prop
 ```
 ```ocaml
-method animVal : 'a Js_of_ocaml__.Js.prop
+method animVal : 'a Js_of_ocaml__.Js.readonly_prop
 ```
 
 
@@ -38278,7 +38688,19 @@ method animVal : 'a Js_of_ocaml__.Js.prop
 method baseVal : 'a Js_of_ocaml__.Js.prop
 ```
 ```ocaml
-method animVal : 'a Js_of_ocaml__.Js.prop
+method animVal : 'a Js_of_ocaml__.Js.readonly_prop
+```
+
+
+---
+
+# Class type `Dom_svg.animatedStitchType`
+
+```ocaml
+method baseVal : 'a Js_of_ocaml__.Js.prop
+```
+```ocaml
+method animVal : 'a Js_of_ocaml__.Js.readonly_prop
 ```
 
 
@@ -38290,7 +38712,7 @@ method animVal : 'a Js_of_ocaml__.Js.prop
 method baseVal : 'a Js_of_ocaml__.Js.prop
 ```
 ```ocaml
-method animVal : 'a Js_of_ocaml__.Js.prop
+method animVal : 'a Js_of_ocaml__.Js.readonly_prop
 ```
 
 
@@ -38302,7 +38724,31 @@ method animVal : 'a Js_of_ocaml__.Js.prop
 method baseVal : 'a Js_of_ocaml__.Js.prop
 ```
 ```ocaml
-method animVal : 'a Js_of_ocaml__.Js.prop
+method animVal : 'a Js_of_ocaml__.Js.readonly_prop
+```
+
+
+---
+
+# Class type `Dom_svg.animatedTurbulenceType`
+
+```ocaml
+method baseVal : 'a Js_of_ocaml__.Js.prop
+```
+```ocaml
+method animVal : 'a Js_of_ocaml__.Js.readonly_prop
+```
+
+
+---
+
+# Class type `Dom_svg.animatedUnitType`
+
+```ocaml
+method baseVal : 'a Js_of_ocaml__.Js.prop
+```
+```ocaml
+method animVal : 'a Js_of_ocaml__.Js.readonly_prop
 ```
 
 
@@ -38332,6 +38778,25 @@ method getCurrentTime : Js_of_ocaml__.Js.number_t Js_of_ocaml__.Js.meth
 ```ocaml
 method getSimpleDuration : Js_of_ocaml__.Js.number_t Js_of_ocaml__.Js.meth
 ```
+```ocaml
+method beginElement : unit Js_of_ocaml__.Js.meth
+```
+SVG 2 addition (from `ElementTimeControl`).
+
+```ocaml
+method beginElementAt : Js_of_ocaml__.Js.number_t -> unit Js_of_ocaml__.Js.meth
+```
+SVG 2 addition (from `ElementTimeControl`).
+
+```ocaml
+method endElement : unit Js_of_ocaml__.Js.meth
+```
+SVG 2 addition (from `ElementTimeControl`).
+
+```ocaml
+method endElementAt : Js_of_ocaml__.Js.number_t -> unit Js_of_ocaml__.Js.meth
+```
+SVG 2 addition (from `ElementTimeControl`).
 
 
 ---
@@ -38339,22 +38804,13 @@ method getSimpleDuration : Js_of_ocaml__.Js.number_t Js_of_ocaml__.Js.meth
 # Class type `Dom_svg.circleElement`
 
 ```ocaml
-inherit element
-```
-```ocaml
-inherit tests
+inherit geometryElement
 ```
 ```ocaml
 inherit langSpace
 ```
 ```ocaml
 inherit externalResourcesRequired
-```
-```ocaml
-inherit stylable
-```
-```ocaml
-inherit transformable
 ```
 ```ocaml
 method cx : animatedLength Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
@@ -38384,10 +38840,11 @@ inherit langSpace
 inherit externalResourcesRequired
 ```
 ```ocaml
-inherit stylable
+inherit transformable
 ```
 ```ocaml
-inherit transformable
+method clipPathUnits : animatedUnitType Js_of_ocaml__.Js.t
+                         Js_of_ocaml__.Js.readonly_prop
 ```
 
 
@@ -38395,6 +38852,7 @@ inherit transformable
 
 # Class type `Dom_svg.color`
 
+deprecated Removed in SVG 2.
 ```ocaml
 method colorType : colorType Js_of_ocaml__.Js.readonly_prop
 ```
@@ -38423,8 +38881,72 @@ method setColor : colorType ->
 
 ---
 
+# Class type `Dom_svg.componentTransferFunctionElement`
+
+```ocaml
+inherit element
+```
+```ocaml
+method _type : animatedComponentTransferType Js_of_ocaml__.Js.t
+                 Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method tableValues : animatedNumberList Js_of_ocaml__.Js.t
+                       Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method slope : animatedNumber Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method intercept : animatedNumber Js_of_ocaml__.Js.t
+                     Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method amplitude : animatedNumber Js_of_ocaml__.Js.t
+                     Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method exponent : animatedNumber Js_of_ocaml__.Js.t
+                    Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method offset : animatedNumber Js_of_ocaml__.Js.t
+                  Js_of_ocaml__.Js.readonly_prop
+```
+
+
+---
+
+# Class type `Dom_svg.cssStyleSheet`
+
+```ocaml
+method type_ : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                 Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method href : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                Js_of_ocaml__.Js.opt
+                Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method title : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                 Js_of_ocaml__.Js.opt
+                 Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method media : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                 Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method disabled : bool Js_of_ocaml__.Js.t Js_of_ocaml__.Js.prop
+```
+
+
+---
+
 # Class type `Dom_svg.cursorElement`
 
+deprecated Removed in SVG 2. Use CSS cursor property.
 ```ocaml
 inherit element
 ```
@@ -38450,22 +38972,13 @@ method y : animatedLength Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
 # Class type `Dom_svg.defsElement`
 
 ```ocaml
-inherit element
-```
-```ocaml
-inherit tests
+inherit graphicsElement
 ```
 ```ocaml
 inherit langSpace
 ```
 ```ocaml
 inherit externalResourcesRequired
-```
-```ocaml
-inherit stylable
-```
-```ocaml
-inherit transformable
 ```
 
 
@@ -38478,9 +38991,6 @@ inherit element
 ```
 ```ocaml
 inherit langSpace
-```
-```ocaml
-inherit stylable
 ```
 
 
@@ -38521,29 +39031,76 @@ method rootElement : svgElement Js_of_ocaml__.Js.t Js_of_ocaml__.Js.opt
 inherit Js_of_ocaml__.Dom.element
 ```
 ```ocaml
+inherit Js_of_ocaml__.Dom_html.eventTarget
+```
+```ocaml
 method id : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t Js_of_ocaml__.Js.prop
 ```
 ```ocaml
 method xmlbase : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                   Js_of_ocaml__.Js.optdef
                    Js_of_ocaml__.Js.prop
 ```
+deprecated Removed in SVG 2.
 ```ocaml
-method ownerSVGElement : svgElement Js_of_ocaml__.Js.t
+method ownerSVGElement : svgElement Js_of_ocaml__.Js.t Js_of_ocaml__.Js.opt
                            Js_of_ocaml__.Js.readonly_prop
 ```
 ```ocaml
-method viewportElement : element Js_of_ocaml__.Js.t
+method viewportElement : element Js_of_ocaml__.Js.t Js_of_ocaml__.Js.opt
                            Js_of_ocaml__.Js.readonly_prop
 ```
+```ocaml
+method tabIndex : int Js_of_ocaml__.Js.prop
+```
+SVG 2 addition.
+
+```ocaml
+method focus : unit Js_of_ocaml__.Js.meth
+```
+SVG 2 addition.
+
+```ocaml
+method blur : unit Js_of_ocaml__.Js.meth
+```
+SVG 2 addition.
+
+```ocaml
+method style : Js_of_ocaml__.Dom_html.cssStyleDeclaration Js_of_ocaml__.Js.t
+                 Js_of_ocaml__.Js.readonly_prop
+```
+SVG 2: merged in from `SVGStylable`.
+
+```ocaml
+method className : animatedString Js_of_ocaml__.Js.t
+                     Js_of_ocaml__.Js.readonly_prop
+```
+SVG 2: merged in from `SVGStylable`.
+
+deprecated Use classList (from Dom.element) instead.
+```ocaml
+method dataset : Js_of_ocaml__.Dom_html.domStringMap Js_of_ocaml__.Js.t
+                   Js_of_ocaml__.Js.readonly_prop
+```
+SVG 2 addition (from `HTMLOrForeignElement`).
+
+```ocaml
+method autofocus : bool Js_of_ocaml__.Js.t Js_of_ocaml__.Js.prop
+```
+SVG 2 addition (from `HTMLOrForeignElement`).
+
+```ocaml
+method nonce : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                 Js_of_ocaml__.Js.prop
+```
+SVG 2 addition (from `HTMLOrForeignElement`).
 
 
 ---
 
 # Class type `Dom_svg.elementInstance`
 
-```ocaml
-inherit Js_of_ocaml__.Dom_html.eventTarget
-```
+deprecated Removed in SVG 2.
 ```ocaml
 method correspondingElement : element Js_of_ocaml__.Js.t
                                 Js_of_ocaml__.Js.readonly_prop
@@ -38582,11 +39139,12 @@ method nextSibling : elementInstance Js_of_ocaml__.Js.t
 
 # Class type `Dom_svg.elementInstanceList`
 
+deprecated Removed in SVG 2.
 ```ocaml
 method length : int Js_of_ocaml__.Js.readonly_prop
 ```
 ```ocaml
-method item : int -> elementInstance Js_of_ocaml__.Js.t
+method item : int -> elementInstance Js_of_ocaml__.Js.t Js_of_ocaml__.Js.meth
 ```
 
 
@@ -38595,22 +39153,13 @@ method item : int -> elementInstance Js_of_ocaml__.Js.t
 # Class type `Dom_svg.ellipseElement`
 
 ```ocaml
-inherit element
-```
-```ocaml
-inherit tests
+inherit geometryElement
 ```
 ```ocaml
 inherit langSpace
 ```
 ```ocaml
 inherit externalResourcesRequired
-```
-```ocaml
-inherit stylable
-```
-```ocaml
-inherit transformable
 ```
 ```ocaml
 method cx : animatedLength Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
@@ -38630,9 +39179,699 @@ method ry : animatedLength Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
 
 # Class type `Dom_svg.externalResourcesRequired`
 
+deprecated Removed in SVG 2.
 ```ocaml
 method externalResourcesRequired : animatedBoolean Js_of_ocaml__.Js.t
                                      Js_of_ocaml__.Js.readonly_prop
+```
+
+
+---
+
+# Class type `Dom_svg.feBlendElement`
+
+```ocaml
+inherit element
+```
+```ocaml
+inherit filterPrimitiveStandardAttributes
+```
+```ocaml
+method in1 : animatedString Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method in2 : animatedString Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method mode : animatedBlendMode Js_of_ocaml__.Js.t
+                Js_of_ocaml__.Js.readonly_prop
+```
+
+
+---
+
+# Class type `Dom_svg.feColorMatrixElement`
+
+```ocaml
+inherit element
+```
+```ocaml
+inherit filterPrimitiveStandardAttributes
+```
+```ocaml
+method in1 : animatedString Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method _type : animatedColorMatrixType Js_of_ocaml__.Js.t
+                 Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method values : animatedNumberList Js_of_ocaml__.Js.t
+                  Js_of_ocaml__.Js.readonly_prop
+```
+
+
+---
+
+# Class type `Dom_svg.feComponentTransferElement`
+
+```ocaml
+inherit element
+```
+```ocaml
+inherit filterPrimitiveStandardAttributes
+```
+```ocaml
+method in1 : animatedString Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+```
+
+
+---
+
+# Class type `Dom_svg.feCompositeElement`
+
+```ocaml
+inherit element
+```
+```ocaml
+inherit filterPrimitiveStandardAttributes
+```
+```ocaml
+method in1 : animatedString Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method in2 : animatedString Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method operator : animatedCompositeOperator Js_of_ocaml__.Js.t
+                    Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method k1 : animatedNumber Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method k2 : animatedNumber Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method k3 : animatedNumber Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method k4 : animatedNumber Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+```
+
+
+---
+
+# Class type `Dom_svg.feConvolveMatrixElement`
+
+```ocaml
+inherit element
+```
+```ocaml
+inherit filterPrimitiveStandardAttributes
+```
+```ocaml
+method in1 : animatedString Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method orderX : animatedInteger Js_of_ocaml__.Js.t
+                  Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method orderY : animatedInteger Js_of_ocaml__.Js.t
+                  Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method kernelMatrix : animatedNumberList Js_of_ocaml__.Js.t
+                        Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method divisor : animatedNumber Js_of_ocaml__.Js.t
+                   Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method bias : animatedNumber Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method targetX : animatedInteger Js_of_ocaml__.Js.t
+                   Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method targetY : animatedInteger Js_of_ocaml__.Js.t
+                   Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method edgeMode : animatedEdgeMode Js_of_ocaml__.Js.t
+                    Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method kernelUnitLengthX : animatedNumber Js_of_ocaml__.Js.t
+                             Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method kernelUnitLengthY : animatedNumber Js_of_ocaml__.Js.t
+                             Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method preserveAlpha : animatedBoolean Js_of_ocaml__.Js.t
+                         Js_of_ocaml__.Js.readonly_prop
+```
+
+
+---
+
+# Class type `Dom_svg.feDiffuseLightingElement`
+
+```ocaml
+inherit element
+```
+```ocaml
+inherit filterPrimitiveStandardAttributes
+```
+```ocaml
+method in1 : animatedString Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method surfaceScale : animatedNumber Js_of_ocaml__.Js.t
+                        Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method diffuseConstant : animatedNumber Js_of_ocaml__.Js.t
+                           Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method kernelUnitLengthX : animatedNumber Js_of_ocaml__.Js.t
+                             Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method kernelUnitLengthY : animatedNumber Js_of_ocaml__.Js.t
+                             Js_of_ocaml__.Js.readonly_prop
+```
+
+
+---
+
+# Class type `Dom_svg.feDisplacementMapElement`
+
+```ocaml
+inherit element
+```
+```ocaml
+inherit filterPrimitiveStandardAttributes
+```
+```ocaml
+method in1 : animatedString Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method in2 : animatedString Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method scale : animatedNumber Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method xChannelSelector : animatedChannelSelector Js_of_ocaml__.Js.t
+                            Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method yChannelSelector : animatedChannelSelector Js_of_ocaml__.Js.t
+                            Js_of_ocaml__.Js.readonly_prop
+```
+
+
+---
+
+# Class type `Dom_svg.feDistantLightElement`
+
+```ocaml
+inherit element
+```
+```ocaml
+method azimuth : animatedNumber Js_of_ocaml__.Js.t
+                   Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method elevation : animatedNumber Js_of_ocaml__.Js.t
+                     Js_of_ocaml__.Js.readonly_prop
+```
+
+
+---
+
+# Class type `Dom_svg.feDropShadowElement`
+
+```ocaml
+inherit element
+```
+```ocaml
+inherit filterPrimitiveStandardAttributes
+```
+```ocaml
+method in1 : animatedString Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method dx : animatedNumber Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method dy : animatedNumber Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method stdDeviationX : animatedNumber Js_of_ocaml__.Js.t
+                         Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method stdDeviationY : animatedNumber Js_of_ocaml__.Js.t
+                         Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method setStdDeviation : Js_of_ocaml__.Js.number_t ->
+  Js_of_ocaml__.Js.number_t ->
+  unit Js_of_ocaml__.Js.meth
+```
+
+
+---
+
+# Class type `Dom_svg.feFloodElement`
+
+```ocaml
+inherit element
+```
+```ocaml
+inherit filterPrimitiveStandardAttributes
+```
+
+
+---
+
+# Class type `Dom_svg.feFuncAElement`
+
+```ocaml
+inherit element
+```
+```ocaml
+method _type : animatedComponentTransferType Js_of_ocaml__.Js.t
+                 Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method tableValues : animatedNumberList Js_of_ocaml__.Js.t
+                       Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method slope : animatedNumber Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method intercept : animatedNumber Js_of_ocaml__.Js.t
+                     Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method amplitude : animatedNumber Js_of_ocaml__.Js.t
+                     Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method exponent : animatedNumber Js_of_ocaml__.Js.t
+                    Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method offset : animatedNumber Js_of_ocaml__.Js.t
+                  Js_of_ocaml__.Js.readonly_prop
+```
+
+
+---
+
+# Class type `Dom_svg.feFuncBElement`
+
+```ocaml
+inherit element
+```
+```ocaml
+method _type : animatedComponentTransferType Js_of_ocaml__.Js.t
+                 Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method tableValues : animatedNumberList Js_of_ocaml__.Js.t
+                       Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method slope : animatedNumber Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method intercept : animatedNumber Js_of_ocaml__.Js.t
+                     Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method amplitude : animatedNumber Js_of_ocaml__.Js.t
+                     Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method exponent : animatedNumber Js_of_ocaml__.Js.t
+                    Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method offset : animatedNumber Js_of_ocaml__.Js.t
+                  Js_of_ocaml__.Js.readonly_prop
+```
+
+
+---
+
+# Class type `Dom_svg.feFuncGElement`
+
+```ocaml
+inherit element
+```
+```ocaml
+method _type : animatedComponentTransferType Js_of_ocaml__.Js.t
+                 Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method tableValues : animatedNumberList Js_of_ocaml__.Js.t
+                       Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method slope : animatedNumber Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method intercept : animatedNumber Js_of_ocaml__.Js.t
+                     Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method amplitude : animatedNumber Js_of_ocaml__.Js.t
+                     Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method exponent : animatedNumber Js_of_ocaml__.Js.t
+                    Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method offset : animatedNumber Js_of_ocaml__.Js.t
+                  Js_of_ocaml__.Js.readonly_prop
+```
+
+
+---
+
+# Class type `Dom_svg.feFuncRElement`
+
+```ocaml
+inherit element
+```
+```ocaml
+method _type : animatedComponentTransferType Js_of_ocaml__.Js.t
+                 Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method tableValues : animatedNumberList Js_of_ocaml__.Js.t
+                       Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method slope : animatedNumber Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method intercept : animatedNumber Js_of_ocaml__.Js.t
+                     Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method amplitude : animatedNumber Js_of_ocaml__.Js.t
+                     Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method exponent : animatedNumber Js_of_ocaml__.Js.t
+                    Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method offset : animatedNumber Js_of_ocaml__.Js.t
+                  Js_of_ocaml__.Js.readonly_prop
+```
+
+
+---
+
+# Class type `Dom_svg.feGaussianBlurElement`
+
+```ocaml
+inherit element
+```
+```ocaml
+inherit filterPrimitiveStandardAttributes
+```
+```ocaml
+method in1 : animatedString Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method stdDeviationX : animatedNumber Js_of_ocaml__.Js.t
+                         Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method stdDeviationY : animatedNumber Js_of_ocaml__.Js.t
+                         Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method edgeMode : animatedEdgeMode Js_of_ocaml__.Js.t
+                    Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method setStdDeviation : Js_of_ocaml__.Js.number_t ->
+  Js_of_ocaml__.Js.number_t ->
+  unit Js_of_ocaml__.Js.meth
+```
+
+
+---
+
+# Class type `Dom_svg.feImageElement`
+
+```ocaml
+inherit element
+```
+```ocaml
+inherit uriReference
+```
+```ocaml
+inherit langSpace
+```
+```ocaml
+inherit externalResourcesRequired
+```
+```ocaml
+inherit filterPrimitiveStandardAttributes
+```
+```ocaml
+method preserveAspectRatio : animatedPreserveAspectRatio Js_of_ocaml__.Js.t
+                               Js_of_ocaml__.Js.readonly_prop
+```
+
+
+---
+
+# Class type `Dom_svg.feMergeElement`
+
+```ocaml
+inherit element
+```
+```ocaml
+inherit filterPrimitiveStandardAttributes
+```
+
+
+---
+
+# Class type `Dom_svg.feMergeNodeElement`
+
+```ocaml
+inherit element
+```
+```ocaml
+method in1 : animatedString Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+```
+
+
+---
+
+# Class type `Dom_svg.feMorphologyElement`
+
+```ocaml
+inherit element
+```
+```ocaml
+inherit filterPrimitiveStandardAttributes
+```
+```ocaml
+method in1 : animatedString Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method operator : animatedMorphologyOperator Js_of_ocaml__.Js.t
+                    Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method radiusX : animatedNumber Js_of_ocaml__.Js.t
+                   Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method radiusY : animatedNumber Js_of_ocaml__.Js.t
+                   Js_of_ocaml__.Js.readonly_prop
+```
+
+
+---
+
+# Class type `Dom_svg.feOffsetElement`
+
+```ocaml
+inherit element
+```
+```ocaml
+inherit filterPrimitiveStandardAttributes
+```
+```ocaml
+method in1 : animatedString Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method dx : animatedNumber Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method dy : animatedNumber Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+```
+
+
+---
+
+# Class type `Dom_svg.fePointLightElement`
+
+```ocaml
+inherit element
+```
+```ocaml
+method x : animatedNumber Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method y : animatedNumber Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method z : animatedNumber Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+```
+
+
+---
+
+# Class type `Dom_svg.feSpecularLightingElement`
+
+```ocaml
+inherit element
+```
+```ocaml
+inherit filterPrimitiveStandardAttributes
+```
+```ocaml
+method in1 : animatedString Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method surfaceScale : animatedNumber Js_of_ocaml__.Js.t
+                        Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method specularConstant : animatedNumber Js_of_ocaml__.Js.t
+                            Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method specularExponent : animatedNumber Js_of_ocaml__.Js.t
+                            Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method kernelUnitLengthX : animatedNumber Js_of_ocaml__.Js.t
+                             Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method kernelUnitLengthY : animatedNumber Js_of_ocaml__.Js.t
+                             Js_of_ocaml__.Js.readonly_prop
+```
+
+
+---
+
+# Class type `Dom_svg.feSpotLightElement`
+
+```ocaml
+inherit element
+```
+```ocaml
+method x : animatedNumber Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method y : animatedNumber Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method z : animatedNumber Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method pointsAtX : animatedNumber Js_of_ocaml__.Js.t
+                     Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method pointsAtY : animatedNumber Js_of_ocaml__.Js.t
+                     Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method pointsAtZ : animatedNumber Js_of_ocaml__.Js.t
+                     Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method specularExponent : animatedNumber Js_of_ocaml__.Js.t
+                            Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method limitingConeAngle : animatedNumber Js_of_ocaml__.Js.t
+                             Js_of_ocaml__.Js.readonly_prop
+```
+
+
+---
+
+# Class type `Dom_svg.feTileElement`
+
+```ocaml
+inherit element
+```
+```ocaml
+inherit filterPrimitiveStandardAttributes
+```
+```ocaml
+method in1 : animatedString Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+```
+
+
+---
+
+# Class type `Dom_svg.feTurbulenceElement`
+
+```ocaml
+inherit element
+```
+```ocaml
+inherit filterPrimitiveStandardAttributes
+```
+```ocaml
+method baseFrequencyX : animatedNumber Js_of_ocaml__.Js.t
+                          Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method baseFrequencyY : animatedNumber Js_of_ocaml__.Js.t
+                          Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method numOctaves : animatedInteger Js_of_ocaml__.Js.t
+                      Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method seed : animatedNumber Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method stitchTiles : animatedStitchType Js_of_ocaml__.Js.t
+                       Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method _type : animatedTurbulenceType Js_of_ocaml__.Js.t
+                 Js_of_ocaml__.Js.readonly_prop
 ```
 
 
@@ -38653,7 +39892,12 @@ inherit langSpace
 inherit externalResourcesRequired
 ```
 ```ocaml
-inherit stylable
+method filterUnits : animatedUnitType Js_of_ocaml__.Js.t
+                       Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method primitiveUnits : animatedUnitType Js_of_ocaml__.Js.t
+                          Js_of_ocaml__.Js.readonly_prop
 ```
 ```ocaml
 method x : animatedLength Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
@@ -38669,15 +39913,41 @@ method height : animatedLength Js_of_ocaml__.Js.t
                   Js_of_ocaml__.Js.readonly_prop
 ```
 ```ocaml
-method filterResX : animatedInteger Js_of_ocaml__.Js.t
+method filterResX : animatedInteger Js_of_ocaml__.Js.t Js_of_ocaml__.Js.optdef
                       Js_of_ocaml__.Js.readonly_prop
 ```
+deprecated Removed in SVG 2.
 ```ocaml
-method filterResY : animatedInteger Js_of_ocaml__.Js.t
+method filterResY : animatedInteger Js_of_ocaml__.Js.t Js_of_ocaml__.Js.optdef
                       Js_of_ocaml__.Js.readonly_prop
 ```
+deprecated Removed in SVG 2.
 ```ocaml
 method setFilterRes : int -> int -> unit Js_of_ocaml__.Js.meth
+```
+deprecated Removed in SVG 2.
+
+
+---
+
+# Class type `Dom_svg.filterPrimitiveStandardAttributes`
+
+```ocaml
+method x : animatedLength Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method y : animatedLength Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method width : animatedLength Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method height : animatedLength Js_of_ocaml__.Js.t
+                  Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method result : animatedString Js_of_ocaml__.Js.t
+                  Js_of_ocaml__.Js.readonly_prop
 ```
 
 
@@ -38698,11 +39968,9 @@ method preserveAspectRatio : animatedPreserveAspectRatio Js_of_ocaml__.Js.t
 
 # Class type `Dom_svg.fontElement`
 
+deprecated Removed in SVG 2. Use WOFF/WOFF2 fonts.
 ```ocaml
 inherit element
-```
-```ocaml
-inherit stylable
 ```
 
 
@@ -38710,120 +39978,370 @@ inherit stylable
 
 # Class type `Dom_svg.fontFaceElement`
 
+deprecated Removed in SVG 2. Use WOFF/WOFF2 fonts.
 ```ocaml
 inherit Js_of_ocaml__.Dom.element
+```
+```ocaml
+inherit Js_of_ocaml__.Dom_html.eventTarget
 ```
 ```ocaml
 method id : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t Js_of_ocaml__.Js.prop
 ```
 ```ocaml
 method xmlbase : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                   Js_of_ocaml__.Js.optdef
                    Js_of_ocaml__.Js.prop
 ```
+deprecated Removed in SVG 2.
 ```ocaml
-method ownerSVGElement : svgElement Js_of_ocaml__.Js.t
+method ownerSVGElement : svgElement Js_of_ocaml__.Js.t Js_of_ocaml__.Js.opt
                            Js_of_ocaml__.Js.readonly_prop
 ```
 ```ocaml
-method viewportElement : element Js_of_ocaml__.Js.t
+method viewportElement : element Js_of_ocaml__.Js.t Js_of_ocaml__.Js.opt
                            Js_of_ocaml__.Js.readonly_prop
 ```
+```ocaml
+method tabIndex : int Js_of_ocaml__.Js.prop
+```
+SVG 2 addition.
+
+```ocaml
+method focus : unit Js_of_ocaml__.Js.meth
+```
+SVG 2 addition.
+
+```ocaml
+method blur : unit Js_of_ocaml__.Js.meth
+```
+SVG 2 addition.
+
+```ocaml
+method style : Js_of_ocaml__.Dom_html.cssStyleDeclaration Js_of_ocaml__.Js.t
+                 Js_of_ocaml__.Js.readonly_prop
+```
+SVG 2: merged in from `SVGStylable`.
+
+```ocaml
+method className : animatedString Js_of_ocaml__.Js.t
+                     Js_of_ocaml__.Js.readonly_prop
+```
+SVG 2: merged in from `SVGStylable`.
+
+deprecated Use classList (from Dom.element) instead.
+```ocaml
+method dataset : Js_of_ocaml__.Dom_html.domStringMap Js_of_ocaml__.Js.t
+                   Js_of_ocaml__.Js.readonly_prop
+```
+SVG 2 addition (from `HTMLOrForeignElement`).
+
+```ocaml
+method autofocus : bool Js_of_ocaml__.Js.t Js_of_ocaml__.Js.prop
+```
+SVG 2 addition (from `HTMLOrForeignElement`).
+
+```ocaml
+method nonce : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                 Js_of_ocaml__.Js.prop
+```
+SVG 2 addition (from `HTMLOrForeignElement`).
 
 
 ---
 
 # Class type `Dom_svg.fontFaceFormatElement`
 
+deprecated Removed in SVG 2. Use WOFF/WOFF2 fonts.
 ```ocaml
 inherit Js_of_ocaml__.Dom.element
+```
+```ocaml
+inherit Js_of_ocaml__.Dom_html.eventTarget
 ```
 ```ocaml
 method id : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t Js_of_ocaml__.Js.prop
 ```
 ```ocaml
 method xmlbase : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                   Js_of_ocaml__.Js.optdef
                    Js_of_ocaml__.Js.prop
 ```
+deprecated Removed in SVG 2.
 ```ocaml
-method ownerSVGElement : svgElement Js_of_ocaml__.Js.t
+method ownerSVGElement : svgElement Js_of_ocaml__.Js.t Js_of_ocaml__.Js.opt
                            Js_of_ocaml__.Js.readonly_prop
 ```
 ```ocaml
-method viewportElement : element Js_of_ocaml__.Js.t
+method viewportElement : element Js_of_ocaml__.Js.t Js_of_ocaml__.Js.opt
                            Js_of_ocaml__.Js.readonly_prop
 ```
+```ocaml
+method tabIndex : int Js_of_ocaml__.Js.prop
+```
+SVG 2 addition.
+
+```ocaml
+method focus : unit Js_of_ocaml__.Js.meth
+```
+SVG 2 addition.
+
+```ocaml
+method blur : unit Js_of_ocaml__.Js.meth
+```
+SVG 2 addition.
+
+```ocaml
+method style : Js_of_ocaml__.Dom_html.cssStyleDeclaration Js_of_ocaml__.Js.t
+                 Js_of_ocaml__.Js.readonly_prop
+```
+SVG 2: merged in from `SVGStylable`.
+
+```ocaml
+method className : animatedString Js_of_ocaml__.Js.t
+                     Js_of_ocaml__.Js.readonly_prop
+```
+SVG 2: merged in from `SVGStylable`.
+
+deprecated Use classList (from Dom.element) instead.
+```ocaml
+method dataset : Js_of_ocaml__.Dom_html.domStringMap Js_of_ocaml__.Js.t
+                   Js_of_ocaml__.Js.readonly_prop
+```
+SVG 2 addition (from `HTMLOrForeignElement`).
+
+```ocaml
+method autofocus : bool Js_of_ocaml__.Js.t Js_of_ocaml__.Js.prop
+```
+SVG 2 addition (from `HTMLOrForeignElement`).
+
+```ocaml
+method nonce : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                 Js_of_ocaml__.Js.prop
+```
+SVG 2 addition (from `HTMLOrForeignElement`).
 
 
 ---
 
 # Class type `Dom_svg.fontFaceNameElement`
 
+deprecated Removed in SVG 2. Use WOFF/WOFF2 fonts.
 ```ocaml
 inherit Js_of_ocaml__.Dom.element
+```
+```ocaml
+inherit Js_of_ocaml__.Dom_html.eventTarget
 ```
 ```ocaml
 method id : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t Js_of_ocaml__.Js.prop
 ```
 ```ocaml
 method xmlbase : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                   Js_of_ocaml__.Js.optdef
                    Js_of_ocaml__.Js.prop
 ```
+deprecated Removed in SVG 2.
 ```ocaml
-method ownerSVGElement : svgElement Js_of_ocaml__.Js.t
+method ownerSVGElement : svgElement Js_of_ocaml__.Js.t Js_of_ocaml__.Js.opt
                            Js_of_ocaml__.Js.readonly_prop
 ```
 ```ocaml
-method viewportElement : element Js_of_ocaml__.Js.t
+method viewportElement : element Js_of_ocaml__.Js.t Js_of_ocaml__.Js.opt
                            Js_of_ocaml__.Js.readonly_prop
 ```
+```ocaml
+method tabIndex : int Js_of_ocaml__.Js.prop
+```
+SVG 2 addition.
+
+```ocaml
+method focus : unit Js_of_ocaml__.Js.meth
+```
+SVG 2 addition.
+
+```ocaml
+method blur : unit Js_of_ocaml__.Js.meth
+```
+SVG 2 addition.
+
+```ocaml
+method style : Js_of_ocaml__.Dom_html.cssStyleDeclaration Js_of_ocaml__.Js.t
+                 Js_of_ocaml__.Js.readonly_prop
+```
+SVG 2: merged in from `SVGStylable`.
+
+```ocaml
+method className : animatedString Js_of_ocaml__.Js.t
+                     Js_of_ocaml__.Js.readonly_prop
+```
+SVG 2: merged in from `SVGStylable`.
+
+deprecated Use classList (from Dom.element) instead.
+```ocaml
+method dataset : Js_of_ocaml__.Dom_html.domStringMap Js_of_ocaml__.Js.t
+                   Js_of_ocaml__.Js.readonly_prop
+```
+SVG 2 addition (from `HTMLOrForeignElement`).
+
+```ocaml
+method autofocus : bool Js_of_ocaml__.Js.t Js_of_ocaml__.Js.prop
+```
+SVG 2 addition (from `HTMLOrForeignElement`).
+
+```ocaml
+method nonce : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                 Js_of_ocaml__.Js.prop
+```
+SVG 2 addition (from `HTMLOrForeignElement`).
 
 
 ---
 
 # Class type `Dom_svg.fontFaceSrcElement`
 
+deprecated Removed in SVG 2. Use WOFF/WOFF2 fonts.
 ```ocaml
 inherit Js_of_ocaml__.Dom.element
+```
+```ocaml
+inherit Js_of_ocaml__.Dom_html.eventTarget
 ```
 ```ocaml
 method id : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t Js_of_ocaml__.Js.prop
 ```
 ```ocaml
 method xmlbase : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                   Js_of_ocaml__.Js.optdef
                    Js_of_ocaml__.Js.prop
 ```
+deprecated Removed in SVG 2.
 ```ocaml
-method ownerSVGElement : svgElement Js_of_ocaml__.Js.t
+method ownerSVGElement : svgElement Js_of_ocaml__.Js.t Js_of_ocaml__.Js.opt
                            Js_of_ocaml__.Js.readonly_prop
 ```
 ```ocaml
-method viewportElement : element Js_of_ocaml__.Js.t
+method viewportElement : element Js_of_ocaml__.Js.t Js_of_ocaml__.Js.opt
                            Js_of_ocaml__.Js.readonly_prop
 ```
+```ocaml
+method tabIndex : int Js_of_ocaml__.Js.prop
+```
+SVG 2 addition.
+
+```ocaml
+method focus : unit Js_of_ocaml__.Js.meth
+```
+SVG 2 addition.
+
+```ocaml
+method blur : unit Js_of_ocaml__.Js.meth
+```
+SVG 2 addition.
+
+```ocaml
+method style : Js_of_ocaml__.Dom_html.cssStyleDeclaration Js_of_ocaml__.Js.t
+                 Js_of_ocaml__.Js.readonly_prop
+```
+SVG 2: merged in from `SVGStylable`.
+
+```ocaml
+method className : animatedString Js_of_ocaml__.Js.t
+                     Js_of_ocaml__.Js.readonly_prop
+```
+SVG 2: merged in from `SVGStylable`.
+
+deprecated Use classList (from Dom.element) instead.
+```ocaml
+method dataset : Js_of_ocaml__.Dom_html.domStringMap Js_of_ocaml__.Js.t
+                   Js_of_ocaml__.Js.readonly_prop
+```
+SVG 2 addition (from `HTMLOrForeignElement`).
+
+```ocaml
+method autofocus : bool Js_of_ocaml__.Js.t Js_of_ocaml__.Js.prop
+```
+SVG 2 addition (from `HTMLOrForeignElement`).
+
+```ocaml
+method nonce : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                 Js_of_ocaml__.Js.prop
+```
+SVG 2 addition (from `HTMLOrForeignElement`).
 
 
 ---
 
 # Class type `Dom_svg.fontFaceUriElement`
 
+deprecated Removed in SVG 2. Use WOFF/WOFF2 fonts.
 ```ocaml
 inherit Js_of_ocaml__.Dom.element
+```
+```ocaml
+inherit Js_of_ocaml__.Dom_html.eventTarget
 ```
 ```ocaml
 method id : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t Js_of_ocaml__.Js.prop
 ```
 ```ocaml
 method xmlbase : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                   Js_of_ocaml__.Js.optdef
                    Js_of_ocaml__.Js.prop
 ```
+deprecated Removed in SVG 2.
 ```ocaml
-method ownerSVGElement : svgElement Js_of_ocaml__.Js.t
+method ownerSVGElement : svgElement Js_of_ocaml__.Js.t Js_of_ocaml__.Js.opt
                            Js_of_ocaml__.Js.readonly_prop
 ```
 ```ocaml
-method viewportElement : element Js_of_ocaml__.Js.t
+method viewportElement : element Js_of_ocaml__.Js.t Js_of_ocaml__.Js.opt
                            Js_of_ocaml__.Js.readonly_prop
 ```
+```ocaml
+method tabIndex : int Js_of_ocaml__.Js.prop
+```
+SVG 2 addition.
+
+```ocaml
+method focus : unit Js_of_ocaml__.Js.meth
+```
+SVG 2 addition.
+
+```ocaml
+method blur : unit Js_of_ocaml__.Js.meth
+```
+SVG 2 addition.
+
+```ocaml
+method style : Js_of_ocaml__.Dom_html.cssStyleDeclaration Js_of_ocaml__.Js.t
+                 Js_of_ocaml__.Js.readonly_prop
+```
+SVG 2: merged in from `SVGStylable`.
+
+```ocaml
+method className : animatedString Js_of_ocaml__.Js.t
+                     Js_of_ocaml__.Js.readonly_prop
+```
+SVG 2: merged in from `SVGStylable`.
+
+deprecated Use classList (from Dom.element) instead.
+```ocaml
+method dataset : Js_of_ocaml__.Dom_html.domStringMap Js_of_ocaml__.Js.t
+                   Js_of_ocaml__.Js.readonly_prop
+```
+SVG 2 addition (from `HTMLOrForeignElement`).
+
+```ocaml
+method autofocus : bool Js_of_ocaml__.Js.t Js_of_ocaml__.Js.prop
+```
+SVG 2 addition (from `HTMLOrForeignElement`).
+
+```ocaml
+method nonce : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                 Js_of_ocaml__.Js.prop
+```
+SVG 2 addition (from `HTMLOrForeignElement`).
 
 
 ---
@@ -38831,22 +40349,13 @@ method viewportElement : element Js_of_ocaml__.Js.t
 # Class type `Dom_svg.foreignObjectElement`
 
 ```ocaml
-inherit element
-```
-```ocaml
-inherit tests
+inherit graphicsElement
 ```
 ```ocaml
 inherit langSpace
 ```
 ```ocaml
 inherit externalResourcesRequired
-```
-```ocaml
-inherit stylable
-```
-```ocaml
-inherit transformable
 ```
 ```ocaml
 method x : animatedLength Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
@@ -38868,10 +40377,7 @@ method height : animatedLength Js_of_ocaml__.Js.t
 # Class type `Dom_svg.gElement`
 
 ```ocaml
-inherit element
-```
-```ocaml
-inherit tests
+inherit graphicsElement
 ```
 ```ocaml
 inherit langSpace
@@ -38879,14 +40385,33 @@ inherit langSpace
 ```ocaml
 inherit externalResourcesRequired
 ```
+
+
+---
+
+# Class type `Dom_svg.geometryElement`
+
 ```ocaml
-inherit stylable
+inherit graphicsElement
 ```
 ```ocaml
-inherit transformable
+method pathLength : animatedNumber Js_of_ocaml__.Js.t
+                      Js_of_ocaml__.Js.readonly_prop
 ```
 ```ocaml
-inherit Js_of_ocaml__.Dom_html.eventTarget
+method isPointInFill : point Js_of_ocaml__.Js.t ->
+  bool Js_of_ocaml__.Js.t Js_of_ocaml__.Js.meth
+```
+```ocaml
+method isPointInStroke : point Js_of_ocaml__.Js.t ->
+  bool Js_of_ocaml__.Js.t Js_of_ocaml__.Js.meth
+```
+```ocaml
+method getTotalLength : Js_of_ocaml__.Js.number_t Js_of_ocaml__.Js.meth
+```
+```ocaml
+method getPointAtLength : Js_of_ocaml__.Js.number_t ->
+  point Js_of_ocaml__.Js.t Js_of_ocaml__.Js.meth
 ```
 
 
@@ -38894,11 +40419,9 @@ inherit Js_of_ocaml__.Dom_html.eventTarget
 
 # Class type `Dom_svg.glyphElement`
 
+deprecated Removed in SVG 2. Use WOFF/WOFF2 fonts.
 ```ocaml
 inherit element
-```
-```ocaml
-inherit stylable
 ```
 
 
@@ -38906,14 +40429,12 @@ inherit stylable
 
 # Class type `Dom_svg.glyphRefElement`
 
+deprecated Removed in SVG 2. SVG fonts replaced by WOFF.
 ```ocaml
 inherit element
 ```
 ```ocaml
 inherit uriReference
-```
-```ocaml
-inherit stylable
 ```
 ```ocaml
 method glyphRef : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
@@ -38948,7 +40469,8 @@ inherit element
 inherit uriReference
 ```
 ```ocaml
-inherit stylable
+method gradientUnits : animatedUnitType Js_of_ocaml__.Js.t
+                         Js_of_ocaml__.Js.readonly_prop
 ```
 ```ocaml
 method gradientTransform : animatedTransformList Js_of_ocaml__.Js.t
@@ -38962,8 +40484,47 @@ method spreadMethod : animatedSpreadMethod Js_of_ocaml__.Js.t
 
 ---
 
+# Class type `Dom_svg.graphicsElement`
+
+```ocaml
+inherit element
+```
+```ocaml
+inherit tests
+```
+```ocaml
+method transform : animatedTransformList Js_of_ocaml__.Js.t
+                     Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method getBBox : rect Js_of_ocaml__.Js.t Js_of_ocaml__.Js.meth
+```
+```ocaml
+method getCTM : matrix Js_of_ocaml__.Js.t Js_of_ocaml__.Js.meth
+```
+```ocaml
+method getScreenCTM : matrix Js_of_ocaml__.Js.t Js_of_ocaml__.Js.meth
+```
+```ocaml
+method nearestViewportElement : element Js_of_ocaml__.Js.t Js_of_ocaml__.Js.opt
+                                  Js_of_ocaml__.Js.optdef
+                                  Js_of_ocaml__.Js.readonly_prop
+```
+deprecated Removed in SVG 2 (and from Safari); gated behind a pref in Firefox but still present, deprecated, in Chrome/Edge. optdef reflects its absence in engines that dropped it.
+```ocaml
+method farthestViewportElement : element Js_of_ocaml__.Js.t
+                                   Js_of_ocaml__.Js.opt
+                                   Js_of_ocaml__.Js.optdef
+                                   Js_of_ocaml__.Js.readonly_prop
+```
+deprecated Removed in SVG 2 (and from Safari); gated behind a pref in Firefox but still present, deprecated, in Chrome/Edge. optdef reflects its absence in engines that dropped it.
+
+
+---
+
 # Class type `Dom_svg.iccColor`
 
+deprecated Removed in SVG 2.
 ```ocaml
 method colorProfile : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
                         Js_of_ocaml__.Js.prop
@@ -38978,25 +40539,16 @@ method colors : numberList Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
 # Class type `Dom_svg.imageElement`
 
 ```ocaml
-inherit element
+inherit graphicsElement
 ```
 ```ocaml
 inherit uriReference
-```
-```ocaml
-inherit tests
 ```
 ```ocaml
 inherit langSpace
 ```
 ```ocaml
 inherit externalResourcesRequired
-```
-```ocaml
-inherit stylable
-```
-```ocaml
-inherit transformable
 ```
 ```ocaml
 method x : animatedLength Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
@@ -39011,12 +40563,23 @@ method width : animatedLength Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
 method height : animatedLength Js_of_ocaml__.Js.t
                   Js_of_ocaml__.Js.readonly_prop
 ```
+```ocaml
+method preserveAspectRatio : animatedPreserveAspectRatio Js_of_ocaml__.Js.t
+                               Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method crossOrigin : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                       Js_of_ocaml__.Js.opt
+                       Js_of_ocaml__.Js.prop
+```
+SVG 2 addition.
 
 
 ---
 
 # Class type `Dom_svg.langSpace`
 
+deprecated Merged into SVGElement in SVG 2. Use lang/xml:lang attributes.
 ```ocaml
 method xmllang : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
                    Js_of_ocaml__.Js.prop
@@ -39059,6 +40622,11 @@ method convertToSpecifiedUnits : lengthUnitType -> unit Js_of_ocaml__.Js.meth
 # Class type `Dom_svg.lengthList`
 
 ```ocaml
+method length : int Js_of_ocaml__.Js.readonly_prop
+```
+SVG 2 alias of `numberOfItems`.
+
+```ocaml
 method numberOfItems : int Js_of_ocaml__.Js.readonly_prop
 ```
 ```ocaml
@@ -39089,25 +40657,13 @@ method appendItem : 'a -> 'a Js_of_ocaml__.Js.meth
 # Class type `Dom_svg.lineElement`
 
 ```ocaml
-inherit element
-```
-```ocaml
-inherit tests
+inherit geometryElement
 ```
 ```ocaml
 inherit langSpace
 ```
 ```ocaml
 inherit externalResourcesRequired
-```
-```ocaml
-inherit stylable
-```
-```ocaml
-inherit transformable
-```
-```ocaml
-inherit Js_of_ocaml__.Dom_html.eventTarget
 ```
 ```ocaml
 method x1 : animatedLength Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
@@ -39149,6 +40705,11 @@ method y2 : animatedLength Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
 # Class type `Dom_svg.list`
 
 ```ocaml
+method length : int Js_of_ocaml__.Js.readonly_prop
+```
+SVG 2 alias of `numberOfItems`.
+
+```ocaml
 method numberOfItems : int Js_of_ocaml__.Js.readonly_prop
 ```
 ```ocaml
@@ -39178,12 +40739,14 @@ method appendItem : 'a -> 'a Js_of_ocaml__.Js.meth
 
 # Class type `Dom_svg.locatable`
 
+deprecated Replaced by SVGGraphicsElement in SVG 2.
 ```ocaml
-method nearestViewportElement : element Js_of_ocaml__.Js.t
+method nearestViewportElement : element Js_of_ocaml__.Js.t Js_of_ocaml__.Js.opt
                                   Js_of_ocaml__.Js.readonly_prop
 ```
 ```ocaml
 method farthestViewportElement : element Js_of_ocaml__.Js.t
+                                   Js_of_ocaml__.Js.opt
                                    Js_of_ocaml__.Js.readonly_prop
 ```
 ```ocaml
@@ -39199,6 +40762,7 @@ method getScreenCTM : matrix Js_of_ocaml__.Js.t Js_of_ocaml__.Js.meth
 method getTransformToElement : element Js_of_ocaml__.Js.t ->
   matrix Js_of_ocaml__.Js.t Js_of_ocaml__.Js.meth
 ```
+deprecated Removed in SVG 2. Use getScreenCTM and matrix inversion.
 
 
 ---
@@ -39213,6 +40777,63 @@ inherit uriReference
 ```
 ```ocaml
 inherit externalResourcesRequired
+```
+
+
+---
+
+# Class type `Dom_svg.markerElement`
+
+```ocaml
+inherit element
+```
+```ocaml
+inherit langSpace
+```
+```ocaml
+inherit externalResourcesRequired
+```
+```ocaml
+inherit fitToViewBox
+```
+```ocaml
+method refX : animatedLength Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method refY : animatedLength Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method markerUnits : animatedMarkerUnit Js_of_ocaml__.Js.t
+                       Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method markerWidth : animatedLength Js_of_ocaml__.Js.t
+                       Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method markerHeight : animatedLength Js_of_ocaml__.Js.t
+                        Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method orientType : animatedMarkerOrient Js_of_ocaml__.Js.t
+                      Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method orientAngle : animatedAngle Js_of_ocaml__.Js.t
+                       Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method orient : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                  Js_of_ocaml__.Js.prop
+```
+SVG 2 addition (string reflection of the `orient` attribute).
+
+```ocaml
+method setOrientToAuto : unit Js_of_ocaml__.Js.meth
+```
+```ocaml
+method setOrientToAngle : angle Js_of_ocaml__.Js.t ->
+  unit Js_of_ocaml__.Js.meth
 ```
 
 
@@ -39233,7 +40854,12 @@ inherit langSpace
 inherit externalResourcesRequired
 ```
 ```ocaml
-inherit stylable
+method maskUnits : animatedUnitType Js_of_ocaml__.Js.t
+                     Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method maskContentUnits : animatedUnitType Js_of_ocaml__.Js.t
+                            Js_of_ocaml__.Js.readonly_prop
 ```
 ```ocaml
 method x : animatedLength Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
@@ -39255,22 +40881,22 @@ method height : animatedLength Js_of_ocaml__.Js.t
 # Class type `Dom_svg.matrix`
 
 ```ocaml
-method a : Js_of_ocaml__.Js.number_t Js_of_ocaml__.Js.readonly_prop
+method a : Js_of_ocaml__.Js.number_t Js_of_ocaml__.Js.prop
 ```
 ```ocaml
-method b : Js_of_ocaml__.Js.number_t Js_of_ocaml__.Js.readonly_prop
+method b : Js_of_ocaml__.Js.number_t Js_of_ocaml__.Js.prop
 ```
 ```ocaml
-method c : Js_of_ocaml__.Js.number_t Js_of_ocaml__.Js.readonly_prop
+method c : Js_of_ocaml__.Js.number_t Js_of_ocaml__.Js.prop
 ```
 ```ocaml
-method d : Js_of_ocaml__.Js.number_t Js_of_ocaml__.Js.readonly_prop
+method d : Js_of_ocaml__.Js.number_t Js_of_ocaml__.Js.prop
 ```
 ```ocaml
-method e : Js_of_ocaml__.Js.number_t Js_of_ocaml__.Js.readonly_prop
+method e : Js_of_ocaml__.Js.number_t Js_of_ocaml__.Js.prop
 ```
 ```ocaml
-method f : Js_of_ocaml__.Js.number_t Js_of_ocaml__.Js.readonly_prop
+method f : Js_of_ocaml__.Js.number_t Js_of_ocaml__.Js.prop
 ```
 ```ocaml
 method multiply : matrix Js_of_ocaml__.Js.t ->
@@ -39326,25 +40952,79 @@ method skewY : Js_of_ocaml__.Js.number_t ->
 inherit Js_of_ocaml__.Dom.element
 ```
 ```ocaml
+inherit Js_of_ocaml__.Dom_html.eventTarget
+```
+```ocaml
 method id : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t Js_of_ocaml__.Js.prop
 ```
 ```ocaml
 method xmlbase : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                   Js_of_ocaml__.Js.optdef
                    Js_of_ocaml__.Js.prop
 ```
+deprecated Removed in SVG 2.
 ```ocaml
-method ownerSVGElement : svgElement Js_of_ocaml__.Js.t
+method ownerSVGElement : svgElement Js_of_ocaml__.Js.t Js_of_ocaml__.Js.opt
                            Js_of_ocaml__.Js.readonly_prop
 ```
 ```ocaml
-method viewportElement : element Js_of_ocaml__.Js.t
+method viewportElement : element Js_of_ocaml__.Js.t Js_of_ocaml__.Js.opt
                            Js_of_ocaml__.Js.readonly_prop
 ```
+```ocaml
+method tabIndex : int Js_of_ocaml__.Js.prop
+```
+SVG 2 addition.
+
+```ocaml
+method focus : unit Js_of_ocaml__.Js.meth
+```
+SVG 2 addition.
+
+```ocaml
+method blur : unit Js_of_ocaml__.Js.meth
+```
+SVG 2 addition.
+
+```ocaml
+method style : Js_of_ocaml__.Dom_html.cssStyleDeclaration Js_of_ocaml__.Js.t
+                 Js_of_ocaml__.Js.readonly_prop
+```
+SVG 2: merged in from `SVGStylable`.
+
+```ocaml
+method className : animatedString Js_of_ocaml__.Js.t
+                     Js_of_ocaml__.Js.readonly_prop
+```
+SVG 2: merged in from `SVGStylable`.
+
+deprecated Use classList (from Dom.element) instead.
+```ocaml
+method dataset : Js_of_ocaml__.Dom_html.domStringMap Js_of_ocaml__.Js.t
+                   Js_of_ocaml__.Js.readonly_prop
+```
+SVG 2 addition (from `HTMLOrForeignElement`).
+
+```ocaml
+method autofocus : bool Js_of_ocaml__.Js.t Js_of_ocaml__.Js.prop
+```
+SVG 2 addition (from `HTMLOrForeignElement`).
+
+```ocaml
+method nonce : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                 Js_of_ocaml__.Js.prop
+```
+SVG 2 addition (from `HTMLOrForeignElement`).
 
 
 ---
 
 # Class type `Dom_svg.numberList`
+
+```ocaml
+method length : int Js_of_ocaml__.Js.readonly_prop
+```
+SVG 2 alias of `numberOfItems`.
 
 ```ocaml
 method numberOfItems : int Js_of_ocaml__.Js.readonly_prop
@@ -39377,10 +41057,7 @@ method appendItem : 'a -> 'a Js_of_ocaml__.Js.meth
 # Class type `Dom_svg.pathElement`
 
 ```ocaml
-inherit element
-```
-```ocaml
-inherit tests
+inherit geometryElement
 ```
 ```ocaml
 inherit langSpace
@@ -39389,27 +41066,11 @@ inherit langSpace
 inherit externalResourcesRequired
 ```
 ```ocaml
-inherit stylable
-```
-```ocaml
-inherit transformable
-```
-```ocaml
 inherit animatedPathData
 ```
 ```ocaml
-method pathLength : animatedNumber Js_of_ocaml__.Js.t
-                      Js_of_ocaml__.Js.readonly_prop
-```
-```ocaml
-method getTotalLength : Js_of_ocaml__.Js.number_t Js_of_ocaml__.Js.meth
-```
-```ocaml
-method getPointAtLength : Js_of_ocaml__.Js.number_t ->
-  point Js_of_ocaml__.Js.t Js_of_ocaml__.Js.meth
-```
-```ocaml
-method getPathSegAtLength : Js_of_ocaml__.Js.number_t -> int
+method getPathSegAtLength : Js_of_ocaml__.Js.number_t ->
+  int Js_of_ocaml__.Js.meth
 ```
 ```ocaml
 method createSVGPathSegClosePath : pathSegClosePath Js_of_ocaml__.Js.meth
@@ -39616,16 +41277,16 @@ method y2 : Js_of_ocaml__.Js.number_t Js_of_ocaml__.Js.prop
 inherit pathSeg
 ```
 ```ocaml
-method x : Js_of_ocaml__.Js.number_t
+method x : Js_of_ocaml__.Js.number_t Js_of_ocaml__.Js.prop
 ```
 ```ocaml
-method y : Js_of_ocaml__.Js.number_t
+method y : Js_of_ocaml__.Js.number_t Js_of_ocaml__.Js.prop
 ```
 ```ocaml
-method x2 : Js_of_ocaml__.Js.number_t
+method x2 : Js_of_ocaml__.Js.number_t Js_of_ocaml__.Js.prop
 ```
 ```ocaml
-method y2 : Js_of_ocaml__.Js.number_t
+method y2 : Js_of_ocaml__.Js.number_t Js_of_ocaml__.Js.prop
 ```
 
 
@@ -39658,10 +41319,10 @@ method y1 : Js_of_ocaml__.Js.number_t Js_of_ocaml__.Js.prop
 inherit pathSeg
 ```
 ```ocaml
-method x : Js_of_ocaml__.Js.number_t
+method x : Js_of_ocaml__.Js.number_t Js_of_ocaml__.Js.prop
 ```
 ```ocaml
-method y : Js_of_ocaml__.Js.number_t
+method y : Js_of_ocaml__.Js.number_t Js_of_ocaml__.Js.prop
 ```
 
 
@@ -39688,7 +41349,7 @@ method y : Js_of_ocaml__.Js.number_t Js_of_ocaml__.Js.prop
 inherit pathSeg
 ```
 ```ocaml
-method x : Js_of_ocaml__.Js.number_t
+method x : Js_of_ocaml__.Js.number_t Js_of_ocaml__.Js.prop
 ```
 
 
@@ -39700,13 +41361,18 @@ method x : Js_of_ocaml__.Js.number_t
 inherit pathSeg
 ```
 ```ocaml
-method y : Js_of_ocaml__.Js.number_t
+method y : Js_of_ocaml__.Js.number_t Js_of_ocaml__.Js.prop
 ```
 
 
 ---
 
 # Class type `Dom_svg.pathSegList`
+
+```ocaml
+method length : int Js_of_ocaml__.Js.readonly_prop
+```
+SVG 2 alias of `numberOfItems`.
 
 ```ocaml
 method numberOfItems : int Js_of_ocaml__.Js.readonly_prop
@@ -39769,10 +41435,15 @@ inherit langSpace
 inherit externalResourcesRequired
 ```
 ```ocaml
-inherit stylable
+inherit fitToViewBox
 ```
 ```ocaml
-inherit fitToViewBox
+method patternUnits : animatedUnitType Js_of_ocaml__.Js.t
+                        Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method patternContentUnits : animatedUnitType Js_of_ocaml__.Js.t
+                               Js_of_ocaml__.Js.readonly_prop
 ```
 ```ocaml
 method patternTransform : animatedTransformList Js_of_ocaml__.Js.t
@@ -39798,10 +41469,10 @@ method height : animatedLength Js_of_ocaml__.Js.t
 # Class type `Dom_svg.point`
 
 ```ocaml
-method x : Js_of_ocaml__.Js.number_t Js_of_ocaml__.Js.readonly_prop
+method x : Js_of_ocaml__.Js.number_t Js_of_ocaml__.Js.prop
 ```
 ```ocaml
-method y : Js_of_ocaml__.Js.number_t Js_of_ocaml__.Js.readonly_prop
+method y : Js_of_ocaml__.Js.number_t Js_of_ocaml__.Js.prop
 ```
 ```ocaml
 method matrixTransform : matrix Js_of_ocaml__.Js.t ->
@@ -39812,6 +41483,11 @@ method matrixTransform : matrix Js_of_ocaml__.Js.t ->
 ---
 
 # Class type `Dom_svg.pointList`
+
+```ocaml
+method length : int Js_of_ocaml__.Js.readonly_prop
+```
+SVG 2 alias of `numberOfItems`.
 
 ```ocaml
 method numberOfItems : int Js_of_ocaml__.Js.readonly_prop
@@ -39844,22 +41520,13 @@ method appendItem : 'a -> 'a Js_of_ocaml__.Js.meth
 # Class type `Dom_svg.polyLineElement`
 
 ```ocaml
-inherit element
-```
-```ocaml
-inherit tests
+inherit geometryElement
 ```
 ```ocaml
 inherit langSpace
 ```
 ```ocaml
 inherit externalResourcesRequired
-```
-```ocaml
-inherit stylable
-```
-```ocaml
-inherit transformable
 ```
 ```ocaml
 inherit animatedPoints
@@ -39871,22 +41538,13 @@ inherit animatedPoints
 # Class type `Dom_svg.polygonElement`
 
 ```ocaml
-inherit element
-```
-```ocaml
-inherit tests
+inherit geometryElement
 ```
 ```ocaml
 inherit langSpace
 ```
 ```ocaml
 inherit externalResourcesRequired
-```
-```ocaml
-inherit stylable
-```
-```ocaml
-inherit transformable
 ```
 ```ocaml
 inherit animatedPoints
@@ -39898,10 +41556,10 @@ inherit animatedPoints
 # Class type `Dom_svg.preserveAspectRatio`
 
 ```ocaml
-method align : alignmentType Js_of_ocaml__.Js.readonly_prop
+method align : alignmentType Js_of_ocaml__.Js.prop
 ```
 ```ocaml
-method meetOrSlice : meetOrSliceType Js_of_ocaml__.Js.readonly_prop
+method meetOrSlice : meetOrSliceType Js_of_ocaml__.Js.prop
 ```
 
 
@@ -39927,6 +41585,10 @@ method fx : animatedLength Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
 ```ocaml
 method fy : animatedLength Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
 ```
+```ocaml
+method fr : animatedLength Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+```
+SVG 2 addition (focal radius).
 
 
 ---
@@ -39952,22 +41614,13 @@ method height : Js_of_ocaml__.Js.number_t Js_of_ocaml__.Js.prop
 # Class type `Dom_svg.rectElement`
 
 ```ocaml
-inherit element
-```
-```ocaml
-inherit tests
+inherit geometryElement
 ```
 ```ocaml
 inherit langSpace
 ```
 ```ocaml
 inherit externalResourcesRequired
-```
-```ocaml
-inherit stylable
-```
-```ocaml
-inherit transformable
 ```
 ```ocaml
 method x : animatedLength Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
@@ -40012,6 +41665,12 @@ inherit externalResourcesRequired
 method type_ : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
                  Js_of_ocaml__.Js.prop
 ```
+```ocaml
+method crossOrigin : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                       Js_of_ocaml__.Js.opt
+                       Js_of_ocaml__.Js.prop
+```
+SVG 2 addition.
 
 
 ---
@@ -40040,6 +41699,25 @@ method getCurrentTime : Js_of_ocaml__.Js.number_t Js_of_ocaml__.Js.meth
 ```ocaml
 method getSimpleDuration : Js_of_ocaml__.Js.number_t Js_of_ocaml__.Js.meth
 ```
+```ocaml
+method beginElement : unit Js_of_ocaml__.Js.meth
+```
+SVG 2 addition (from `ElementTimeControl`).
+
+```ocaml
+method beginElementAt : Js_of_ocaml__.Js.number_t -> unit Js_of_ocaml__.Js.meth
+```
+SVG 2 addition (from `ElementTimeControl`).
+
+```ocaml
+method endElement : unit Js_of_ocaml__.Js.meth
+```
+SVG 2 addition (from `ElementTimeControl`).
+
+```ocaml
+method endElementAt : Js_of_ocaml__.Js.number_t -> unit Js_of_ocaml__.Js.meth
+```
+SVG 2 addition (from `ElementTimeControl`).
 
 
 ---
@@ -40050,9 +41728,6 @@ method getSimpleDuration : Js_of_ocaml__.Js.number_t Js_of_ocaml__.Js.meth
 inherit element
 ```
 ```ocaml
-inherit stylable
-```
-```ocaml
 method offset : animatedNumber Js_of_ocaml__.Js.t
                   Js_of_ocaml__.Js.readonly_prop
 ```
@@ -40061,6 +41736,11 @@ method offset : animatedNumber Js_of_ocaml__.Js.t
 ---
 
 # Class type `Dom_svg.stringList`
+
+```ocaml
+method length : int Js_of_ocaml__.Js.readonly_prop
+```
+SVG 2 alias of `numberOfItems`.
 
 ```ocaml
 method numberOfItems : int Js_of_ocaml__.Js.readonly_prop
@@ -40092,6 +41772,7 @@ method appendItem : 'a -> 'a Js_of_ocaml__.Js.meth
 
 # Class type `Dom_svg.stylable`
 
+deprecated Merged into element (SVGElement) in SVG 2; retained only for backward compatibility. Use the style/className methods on element.
 ```ocaml
 method className : animatedString Js_of_ocaml__.Js.t
                      Js_of_ocaml__.Js.readonly_prop
@@ -40124,6 +41805,16 @@ method media : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
 method title : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
                  Js_of_ocaml__.Js.prop
 ```
+```ocaml
+method disabled : bool Js_of_ocaml__.Js.t Js_of_ocaml__.Js.prop
+```
+SVG 2 addition (from `LinkStyle`).
+
+```ocaml
+method sheet : cssStyleSheet Js_of_ocaml__.Js.t Js_of_ocaml__.Js.opt
+                 Js_of_ocaml__.Js.readonly_prop
+```
+SVG 2 addition (from `LinkStyle`).
 
 
 ---
@@ -40131,22 +41822,13 @@ method title : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
 # Class type `Dom_svg.svgElement`
 
 ```ocaml
-inherit element
-```
-```ocaml
-inherit tests
+inherit graphicsElement
 ```
 ```ocaml
 inherit langSpace
 ```
 ```ocaml
 inherit externalResourcesRequired
-```
-```ocaml
-inherit stylable
-```
-```ocaml
-inherit locatable
 ```
 ```ocaml
 inherit fitToViewBox
@@ -40169,37 +41851,55 @@ method height : animatedLength Js_of_ocaml__.Js.t
 ```
 ```ocaml
 method contentScriptType : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                             Js_of_ocaml__.Js.optdef
                              Js_of_ocaml__.Js.prop
 ```
+deprecated Removed in SVG 2.
 ```ocaml
 method contentStyleType : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                            Js_of_ocaml__.Js.optdef
                             Js_of_ocaml__.Js.prop
 ```
+deprecated Removed in SVG 2.
 ```ocaml
-method viewport : rect Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+method viewport : rect Js_of_ocaml__.Js.t Js_of_ocaml__.Js.optdef
+                    Js_of_ocaml__.Js.readonly_prop
 ```
+deprecated Removed in SVG 2.
 ```ocaml
 method pixelUnitToMillimeterX : Js_of_ocaml__.Js.number_t
+                                  Js_of_ocaml__.Js.optdef
                                   Js_of_ocaml__.Js.readonly_prop
 ```
+deprecated Removed in SVG 2.
 ```ocaml
 method pixelUnitToMillimeterY : Js_of_ocaml__.Js.number_t
+                                  Js_of_ocaml__.Js.optdef
                                   Js_of_ocaml__.Js.readonly_prop
 ```
+deprecated Removed in SVG 2.
 ```ocaml
 method screenPixelUnitToMillimeterX : Js_of_ocaml__.Js.number_t
+                                        Js_of_ocaml__.Js.optdef
                                         Js_of_ocaml__.Js.readonly_prop
 ```
+deprecated Removed in SVG 2.
 ```ocaml
 method screenPixelUnitToMillimeterY : Js_of_ocaml__.Js.number_t
+                                        Js_of_ocaml__.Js.optdef
                                         Js_of_ocaml__.Js.readonly_prop
 ```
+deprecated Removed in SVG 2.
 ```ocaml
-method useCurrentView : bool Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+method useCurrentView : bool Js_of_ocaml__.Js.t Js_of_ocaml__.Js.optdef
+                          Js_of_ocaml__.Js.readonly_prop
 ```
+deprecated Removed in SVG 2.
 ```ocaml
-method currentView : viewSpec Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+method currentView : viewSpec Js_of_ocaml__.Js.t Js_of_ocaml__.Js.optdef
+                       Js_of_ocaml__.Js.readonly_prop
 ```
+deprecated Removed in SVG 2.
 ```ocaml
 method currentScale : Js_of_ocaml__.Js.number_t Js_of_ocaml__.Js.prop
 ```
@@ -40210,15 +41910,19 @@ method currentTranslate : point Js_of_ocaml__.Js.t
 ```ocaml
 method suspendRedraw : int -> suspendHandleID Js_of_ocaml__.Js.meth
 ```
+deprecated Deprecated in SVG 2. Has no effect.
 ```ocaml
 method unsuspendRedraw : suspendHandleID -> unit Js_of_ocaml__.Js.meth
 ```
+deprecated Deprecated in SVG 2. Has no effect.
 ```ocaml
 method unsuspendRedrawAll : unit Js_of_ocaml__.Js.meth
 ```
+deprecated Deprecated in SVG 2. Has no effect.
 ```ocaml
 method forceRedraw : unit Js_of_ocaml__.Js.meth
 ```
+deprecated Deprecated in SVG 2. Has no effect.
 ```ocaml
 method pauseAnimations : unit Js_of_ocaml__.Js.meth
 ```
@@ -40236,27 +41940,28 @@ method setCurrentTime : int -> unit Js_of_ocaml__.Js.meth
 ```
 ```ocaml
 method getIntersectionList : rect Js_of_ocaml__.Js.t ->
-  element Js_of_ocaml__.Js.t ->
+  element Js_of_ocaml__.Js.t Js_of_ocaml__.Js.opt ->
   element Js_of_ocaml__.Dom.nodeList Js_of_ocaml__.Js.t Js_of_ocaml__.Js.meth
 ```
 ```ocaml
 method getEnclosureList : rect Js_of_ocaml__.Js.t ->
-  element Js_of_ocaml__.Js.t ->
+  element Js_of_ocaml__.Js.t Js_of_ocaml__.Js.opt ->
   element Js_of_ocaml__.Dom.nodeList Js_of_ocaml__.Js.t Js_of_ocaml__.Js.meth
 ```
 ```ocaml
 method checkIntersection : element Js_of_ocaml__.Js.t ->
   rect Js_of_ocaml__.Js.t ->
-  bool Js_of_ocaml__.Js.t
+  bool Js_of_ocaml__.Js.t Js_of_ocaml__.Js.meth
 ```
 ```ocaml
 method checkEnclosure : element Js_of_ocaml__.Js.t ->
   rect Js_of_ocaml__.Js.t ->
-  bool Js_of_ocaml__.Js.t
+  bool Js_of_ocaml__.Js.t Js_of_ocaml__.Js.meth
 ```
 ```ocaml
 method deselectAll : unit Js_of_ocaml__.Js.meth
 ```
+deprecated Deprecated in SVG 2. Use Selection API.
 ```ocaml
 method createSVGNumber : Js_of_ocaml__.Js.number Js_of_ocaml__.Js.t
                            Js_of_ocaml__.Js.meth
@@ -40293,6 +41998,7 @@ method getElementById : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t ->
 
 # Class type `Dom_svg.svg_error`
 
+deprecated Removed in SVG 2.
 ```ocaml
 inherit Js_of_ocaml__.Js.error
 ```
@@ -40306,22 +42012,13 @@ method code : error_code Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
 # Class type `Dom_svg.switchElement`
 
 ```ocaml
-inherit element
-```
-```ocaml
-inherit tests
+inherit graphicsElement
 ```
 ```ocaml
 inherit langSpace
 ```
 ```ocaml
 inherit externalResourcesRequired
-```
-```ocaml
-inherit stylable
-```
-```ocaml
-inherit transformable
 ```
 
 
@@ -40330,7 +42027,7 @@ inherit transformable
 # Class type `Dom_svg.symbolElement`
 
 ```ocaml
-inherit element
+inherit graphicsElement
 ```
 ```ocaml
 inherit langSpace
@@ -40339,14 +42036,38 @@ inherit langSpace
 inherit externalResourcesRequired
 ```
 ```ocaml
-inherit stylable
-```
-```ocaml
 inherit fitToViewBox
 ```
 ```ocaml
-inherit Js_of_ocaml__.Dom_html.eventTarget
+method x : animatedLength Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
 ```
+SVG 2 addition.
+
+```ocaml
+method y : animatedLength Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+```
+SVG 2 addition.
+
+```ocaml
+method width : animatedLength Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+```
+SVG 2 addition.
+
+```ocaml
+method height : animatedLength Js_of_ocaml__.Js.t
+                  Js_of_ocaml__.Js.readonly_prop
+```
+SVG 2 addition.
+
+```ocaml
+method refX : animatedLength Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+```
+SVG 2 addition.
+
+```ocaml
+method refY : animatedLength Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+```
+SVG 2 addition.
 
 
 ---
@@ -40354,9 +42075,10 @@ inherit Js_of_ocaml__.Dom_html.eventTarget
 # Class type `Dom_svg.tests`
 
 ```ocaml
-method requiredFeatures : stringList Js_of_ocaml__.Js.t
+method requiredFeatures : stringList Js_of_ocaml__.Js.t Js_of_ocaml__.Js.optdef
                             Js_of_ocaml__.Js.readonly_prop
 ```
+deprecated Removed in SVG 2.
 ```ocaml
 method requiredExtensions : stringList Js_of_ocaml__.Js.t
                               Js_of_ocaml__.Js.readonly_prop
@@ -40369,6 +42091,7 @@ method systemLanguage : stringList Js_of_ocaml__.Js.t
 method hasExtension : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t ->
   bool Js_of_ocaml__.Js.t Js_of_ocaml__.Js.meth
 ```
+deprecated Removed in SVG 2.
 
 
 ---
@@ -40376,22 +42099,13 @@ method hasExtension : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t ->
 # Class type `Dom_svg.textContentElement`
 
 ```ocaml
-inherit element
-```
-```ocaml
-inherit tests
+inherit graphicsElement
 ```
 ```ocaml
 inherit langSpace
 ```
 ```ocaml
 inherit externalResourcesRequired
-```
-```ocaml
-inherit stylable
-```
-```ocaml
-inherit Js_of_ocaml__.Dom_html.eventTarget
 ```
 ```ocaml
 method textLength : animatedLength Js_of_ocaml__.Js.t
@@ -40442,9 +42156,6 @@ method selectSubString : int -> int -> unit Js_of_ocaml__.Js.meth
 ```ocaml
 inherit textPositioningElement
 ```
-```ocaml
-inherit transformable
-```
 
 
 ---
@@ -40477,7 +42188,7 @@ method spacing : textPathElementSpacing Js_of_ocaml__.Js.readonly_prop
 method baseVal : 'a Js_of_ocaml__.Js.prop
 ```
 ```ocaml
-method animVal : 'a Js_of_ocaml__.Js.prop
+method animVal : 'a Js_of_ocaml__.Js.readonly_prop
 ```
 
 
@@ -40489,7 +42200,7 @@ method animVal : 'a Js_of_ocaml__.Js.prop
 method baseVal : 'a Js_of_ocaml__.Js.prop
 ```
 ```ocaml
-method animVal : 'a Js_of_ocaml__.Js.prop
+method animVal : 'a Js_of_ocaml__.Js.readonly_prop
 ```
 
 
@@ -40529,9 +42240,6 @@ inherit element
 ```
 ```ocaml
 inherit langSpace
-```
-```ocaml
-inherit stylable
 ```
 
 
@@ -40595,6 +42303,7 @@ method consolidate : transform Js_of_ocaml__.Js.t Js_of_ocaml__.Js.meth
 
 # Class type `Dom_svg.transformable`
 
+deprecated Replaced by SVGGraphicsElement in SVG 2.
 ```ocaml
 inherit locatable
 ```
@@ -40608,6 +42317,7 @@ method transform : animatedTransformList Js_of_ocaml__.Js.t
 
 # Class type `Dom_svg.trefElement`
 
+deprecated Removed in SVG 2. Use tspan with href instead.
 ```ocaml
 inherit textPositioningElement
 ```
@@ -40645,6 +42355,44 @@ method rotate : animatedNumberList Js_of_ocaml__.Js.t
 
 ---
 
+# Class type `Dom_svg.unknownElement`
+
+```ocaml
+inherit element
+```
+```ocaml
+inherit tests
+```
+```ocaml
+method transform : animatedTransformList Js_of_ocaml__.Js.t
+                     Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method getBBox : rect Js_of_ocaml__.Js.t Js_of_ocaml__.Js.meth
+```
+```ocaml
+method getCTM : matrix Js_of_ocaml__.Js.t Js_of_ocaml__.Js.meth
+```
+```ocaml
+method getScreenCTM : matrix Js_of_ocaml__.Js.t Js_of_ocaml__.Js.meth
+```
+```ocaml
+method nearestViewportElement : element Js_of_ocaml__.Js.t Js_of_ocaml__.Js.opt
+                                  Js_of_ocaml__.Js.optdef
+                                  Js_of_ocaml__.Js.readonly_prop
+```
+deprecated Removed in SVG 2 (and from Safari); gated behind a pref in Firefox but still present, deprecated, in Chrome/Edge. optdef reflects its absence in engines that dropped it.
+```ocaml
+method farthestViewportElement : element Js_of_ocaml__.Js.t
+                                   Js_of_ocaml__.Js.opt
+                                   Js_of_ocaml__.Js.optdef
+                                   Js_of_ocaml__.Js.readonly_prop
+```
+deprecated Removed in SVG 2 (and from Safari); gated behind a pref in Firefox but still present, deprecated, in Chrome/Edge. optdef reflects its absence in engines that dropped it.
+
+
+---
+
 # Class type `Dom_svg.uriReference`
 
 ```ocaml
@@ -40657,25 +42405,16 @@ method href : animatedString Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
 # Class type `Dom_svg.useElement`
 
 ```ocaml
-inherit element
+inherit graphicsElement
 ```
 ```ocaml
 inherit uriReference
-```
-```ocaml
-inherit tests
 ```
 ```ocaml
 inherit langSpace
 ```
 ```ocaml
 inherit externalResourcesRequired
-```
-```ocaml
-inherit stylable
-```
-```ocaml
-inherit transformable
 ```
 ```ocaml
 method x : animatedLength Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
@@ -40691,13 +42430,15 @@ method height : animatedLength Js_of_ocaml__.Js.t
                   Js_of_ocaml__.Js.readonly_prop
 ```
 ```ocaml
-method instanceRoot : elementInstance Js_of_ocaml__.Js.t
+method instanceRoot : element Js_of_ocaml__.Js.t Js_of_ocaml__.Js.opt
                         Js_of_ocaml__.Js.readonly_prop
 ```
+deprecated In SVG 2 typed SVGElement?; in practice browsers expose a shadow tree from use rather than populating this.
 ```ocaml
-method animatedInstanceRoot : elementInstance Js_of_ocaml__.Js.t
+method animatedInstanceRoot : element Js_of_ocaml__.Js.t Js_of_ocaml__.Js.opt
                                 Js_of_ocaml__.Js.readonly_prop
 ```
+deprecated In SVG 2 typed SVGElement?; in practice browsers expose a shadow tree from use rather than populating this.
 
 
 ---
@@ -40720,12 +42461,14 @@ inherit zoomAndPan
 method viewTarget : stringList Js_of_ocaml__.Js.t
                       Js_of_ocaml__.Js.readonly_prop
 ```
+deprecated Removed in SVG 2.
 
 
 ---
 
 # Class type `Dom_svg.viewSpec`
 
+deprecated Removed in SVG 2.
 ```ocaml
 inherit zoomAndPan
 ```
@@ -40786,12 +42529,14 @@ type error_code =
   | INVALID_VALUE_ERR
   | MATRIX_NOT_INVERTABLE
 ```
+deprecated Removed in SVG 2.
 ```ocaml
 class type  svg_error = object ... end
 ```
 ```ocaml
 exception SVGError of svg_error
 ```
+deprecated Removed in SVG 2.
 ```ocaml
 type lengthUnitType = 
   | LENGTHTYPE_UNKNOWN
@@ -40921,6 +42666,87 @@ type spreadMethodType =
   | SPREADMETHOD_REPEAT
 ```
 ```ocaml
+type markerUnitType = 
+  | SVG_MARKERUNITS_UNKNOWN
+  | SVG_MARKERUNITS_USERSPACEONUSE
+  | SVG_MARKERUNITS_STROKEWIDTH
+```
+```ocaml
+type markerOrientType = 
+  | SVG_MARKER_ORIENT_UNKNOWN
+  | SVG_MARKER_ORIENT_AUTO
+  | SVG_MARKER_ORIENT_ANGLE
+```
+```ocaml
+type blendModeType = 
+  | SVG_FEBLEND_MODE_UNKNOWN
+  | SVG_FEBLEND_MODE_NORMAL
+  | SVG_FEBLEND_MODE_MULTIPLY
+  | SVG_FEBLEND_MODE_SCREEN
+  | SVG_FEBLEND_MODE_DARKEN
+  | SVG_FEBLEND_MODE_LIGHTEN
+```
+```ocaml
+type colorMatrixType = 
+  | SVG_FECOLORMATRIX_TYPE_UNKNOWN
+  | SVG_FECOLORMATRIX_TYPE_MATRIX
+  | SVG_FECOLORMATRIX_TYPE_SATURATE
+  | SVG_FECOLORMATRIX_TYPE_HUEROTATE
+  | SVG_FECOLORMATRIX_TYPE_LUMINANCETOALPHA
+```
+```ocaml
+type componentTransferType = 
+  | SVG_FECOMPONENTTRANSFER_TYPE_UNKNOWN
+  | SVG_FECOMPONENTTRANSFER_TYPE_IDENTITY
+  | SVG_FECOMPONENTTRANSFER_TYPE_TABLE
+  | SVG_FECOMPONENTTRANSFER_TYPE_DISCRETE
+  | SVG_FECOMPONENTTRANSFER_TYPE_LINEAR
+  | SVG_FECOMPONENTTRANSFER_TYPE_GAMMA
+```
+```ocaml
+type compositeOperatorType = 
+  | SVG_FECOMPOSITE_OPERATOR_UNKNOWN
+  | SVG_FECOMPOSITE_OPERATOR_OVER
+  | SVG_FECOMPOSITE_OPERATOR_IN
+  | SVG_FECOMPOSITE_OPERATOR_OUT
+  | SVG_FECOMPOSITE_OPERATOR_ATOP
+  | SVG_FECOMPOSITE_OPERATOR_XOR
+  | SVG_FECOMPOSITE_OPERATOR_ARITHMETIC
+```
+```ocaml
+type edgeModeType = 
+  | SVG_EDGEMODE_UNKNOWN
+  | SVG_EDGEMODE_DUPLICATE
+  | SVG_EDGEMODE_WRAP
+  | SVG_EDGEMODE_NONE
+```
+```ocaml
+type channelSelectorType = 
+  | SVG_CHANNEL_UNKNOWN
+  | SVG_CHANNEL_R
+  | SVG_CHANNEL_G
+  | SVG_CHANNEL_B
+  | SVG_CHANNEL_A
+```
+```ocaml
+type morphologyOperatorType = 
+  | SVG_MORPHOLOGY_OPERATOR_UNKNOWN
+  | SVG_MORPHOLOGY_OPERATOR_ERODE
+  | SVG_MORPHOLOGY_OPERATOR_DILATE
+```
+```ocaml
+type turbulenceType = 
+  | SVG_TURBULENCE_TYPE_UNKNOWN
+  | SVG_TURBULENCE_TYPE_FRACTALNOISE
+  | SVG_TURBULENCE_TYPE_TURBULENCE
+```
+```ocaml
+type stitchType = 
+  | SVG_STITCHTYPE_UNKNOWN
+  | SVG_STITCHTYPE_STITCH
+  | SVG_STITCHTYPE_NOSTITCH
+```
+```ocaml
 type suspendHandleID
 ```
 ```ocaml
@@ -40946,6 +42772,9 @@ class type  stringList = Js.js_string Js.t list
 ```
 ```ocaml
 class type  animatedEnumeration = int animated
+```
+```ocaml
+class type  animatedUnitType = unitType animated
 ```
 ```ocaml
 class type  animatedInteger = int animated
@@ -41011,6 +42840,15 @@ class type  langSpace = object ... end
 class type  externalResourcesRequired = object ... end
 ```
 ```ocaml
+class type  graphicsElement = object ... end
+```
+```ocaml
+class type  geometryElement = object ... end
+```
+```ocaml
+class type  unknownElement = graphicsElement
+```
+```ocaml
 class type  fitToViewBox = object ... end
 ```
 ```ocaml
@@ -41060,6 +42898,9 @@ class type  switchElement = object ... end
 ```
 ```ocaml
 class type  styleElement = object ... end
+```
+```ocaml
+class type  cssStyleSheet = object ... end
 ```
 ```ocaml
 class type  point = object ... end
@@ -41185,6 +43026,15 @@ class type  altGlyphItemElement = element
 class type  glyphRefElement = object ... end
 ```
 ```ocaml
+class type  animatedMarkerUnit = markerUnitType animated
+```
+```ocaml
+class type  animatedMarkerOrient = markerOrientType animated
+```
+```ocaml
+class type  markerElement = object ... end
+```
+```ocaml
 class type  animatedSpreadMethod = spreadMethodType animated
 ```
 ```ocaml
@@ -41210,6 +43060,114 @@ class type  maskElement = object ... end
 ```
 ```ocaml
 class type  filterElement = object ... end
+```
+```ocaml
+class type  filterPrimitiveStandardAttributes = object ... end
+```
+```ocaml
+class type  animatedBlendMode = blendModeType animated
+```
+```ocaml
+class type  animatedColorMatrixType = colorMatrixType animated
+```
+```ocaml
+class type  animatedComponentTransferType = componentTransferType animated
+```
+```ocaml
+class type  animatedCompositeOperator = compositeOperatorType animated
+```
+```ocaml
+class type  animatedEdgeMode = edgeModeType animated
+```
+```ocaml
+class type  animatedChannelSelector = channelSelectorType animated
+```
+```ocaml
+class type  animatedMorphologyOperator = morphologyOperatorType animated
+```
+```ocaml
+class type  animatedTurbulenceType = turbulenceType animated
+```
+```ocaml
+class type  animatedStitchType = stitchType animated
+```
+```ocaml
+class type  feBlendElement = object ... end
+```
+```ocaml
+class type  feColorMatrixElement = object ... end
+```
+```ocaml
+class type  feComponentTransferElement = object ... end
+```
+```ocaml
+class type  componentTransferFunctionElement = object ... end
+```
+```ocaml
+class type  feFuncRElement = componentTransferFunctionElement
+```
+```ocaml
+class type  feFuncGElement = componentTransferFunctionElement
+```
+```ocaml
+class type  feFuncBElement = componentTransferFunctionElement
+```
+```ocaml
+class type  feFuncAElement = componentTransferFunctionElement
+```
+```ocaml
+class type  feCompositeElement = object ... end
+```
+```ocaml
+class type  feConvolveMatrixElement = object ... end
+```
+```ocaml
+class type  feDiffuseLightingElement = object ... end
+```
+```ocaml
+class type  feDistantLightElement = object ... end
+```
+```ocaml
+class type  fePointLightElement = object ... end
+```
+```ocaml
+class type  feSpotLightElement = object ... end
+```
+```ocaml
+class type  feDisplacementMapElement = object ... end
+```
+```ocaml
+class type  feFloodElement = object ... end
+```
+```ocaml
+class type  feGaussianBlurElement = object ... end
+```
+```ocaml
+class type  feImageElement = object ... end
+```
+```ocaml
+class type  feMergeElement = object ... end
+```
+```ocaml
+class type  feMergeNodeElement = object ... end
+```
+```ocaml
+class type  feMorphologyElement = object ... end
+```
+```ocaml
+class type  feOffsetElement = object ... end
+```
+```ocaml
+class type  feSpecularLightingElement = object ... end
+```
+```ocaml
+class type  feTileElement = object ... end
+```
+```ocaml
+class type  feTurbulenceElement = object ... end
+```
+```ocaml
+class type  feDropShadowElement = object ... end
 ```
 ```ocaml
 class type  cursorElement = object ... end
@@ -41438,6 +43396,86 @@ val createView : document Js.t -> viewElement Js.t
 ```
 ```ocaml
 val createvkern : document Js.t -> element Js.t
+```
+```ocaml
+val createMarker : document Js.t -> markerElement Js.t
+```
+```ocaml
+val createFeBlend : document Js.t -> feBlendElement Js.t
+```
+```ocaml
+val createFeColorMatrix : document Js.t -> feColorMatrixElement Js.t
+```
+```ocaml
+val createFeComponentTransfer : 
+  document Js.t ->
+  feComponentTransferElement Js.t
+```
+```ocaml
+val createFeFuncR : document Js.t -> feFuncRElement Js.t
+```
+```ocaml
+val createFeFuncG : document Js.t -> feFuncGElement Js.t
+```
+```ocaml
+val createFeFuncB : document Js.t -> feFuncBElement Js.t
+```
+```ocaml
+val createFeFuncA : document Js.t -> feFuncAElement Js.t
+```
+```ocaml
+val createFeComposite : document Js.t -> feCompositeElement Js.t
+```
+```ocaml
+val createFeConvolveMatrix : document Js.t -> feConvolveMatrixElement Js.t
+```
+```ocaml
+val createFeDiffuseLighting : document Js.t -> feDiffuseLightingElement Js.t
+```
+```ocaml
+val createFeDistantLight : document Js.t -> feDistantLightElement Js.t
+```
+```ocaml
+val createFePointLight : document Js.t -> fePointLightElement Js.t
+```
+```ocaml
+val createFeSpotLight : document Js.t -> feSpotLightElement Js.t
+```
+```ocaml
+val createFeDisplacementMap : document Js.t -> feDisplacementMapElement Js.t
+```
+```ocaml
+val createFeFlood : document Js.t -> feFloodElement Js.t
+```
+```ocaml
+val createFeGaussianBlur : document Js.t -> feGaussianBlurElement Js.t
+```
+```ocaml
+val createFeImage : document Js.t -> feImageElement Js.t
+```
+```ocaml
+val createFeMerge : document Js.t -> feMergeElement Js.t
+```
+```ocaml
+val createFeMergeNode : document Js.t -> feMergeNodeElement Js.t
+```
+```ocaml
+val createFeMorphology : document Js.t -> feMorphologyElement Js.t
+```
+```ocaml
+val createFeOffset : document Js.t -> feOffsetElement Js.t
+```
+```ocaml
+val createFeSpecularLighting : document Js.t -> feSpecularLightingElement Js.t
+```
+```ocaml
+val createFeTile : document Js.t -> feTileElement Js.t
+```
+```ocaml
+val createFeTurbulence : document Js.t -> feTurbulenceElement Js.t
+```
+```ocaml
+val createFeDropShadow : document Js.t -> feDropShadowElement Js.t
 ```
 ```ocaml
 val svg_element : element Js.t Js.constr

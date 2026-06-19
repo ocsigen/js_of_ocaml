@@ -5,5 +5,5 @@
 inherit pathSeg
 ```
 ```ocaml
-method x : Js_of_ocaml__.Js.number_t
+method x : Js_of_ocaml__.Js.number_t Js_of_ocaml__.Js.prop
 ```

@@ -4,6 +4,3 @@
 ```ocaml
 inherit textPositioningElement
 ```
-```ocaml
-inherit transformable
-```

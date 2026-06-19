@@ -2,22 +2,13 @@
 # Class type `Dom_svg.textContentElement`
 
 ```ocaml
-inherit element
-```
-```ocaml
-inherit tests
+inherit graphicsElement
 ```
 ```ocaml
 inherit langSpace
 ```
 ```ocaml
 inherit externalResourcesRequired
-```
-```ocaml
-inherit stylable
-```
-```ocaml
-inherit Js_of_ocaml__.Dom_html.eventTarget
 ```
 ```ocaml
 method textLength : animatedLength Js_of_ocaml__.Js.t

@@ -8,7 +8,8 @@ inherit element
 inherit uriReference
 ```
 ```ocaml
-inherit stylable
+method gradientUnits : animatedUnitType Js_of_ocaml__.Js.t
+                         Js_of_ocaml__.Js.readonly_prop
 ```
 ```ocaml
 method gradientTransform : animatedTransformList Js_of_ocaml__.Js.t

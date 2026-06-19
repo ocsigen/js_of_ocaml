@@ -1,6 +1,7 @@
 
 # Class type `Dom_svg.altGlyphElement`
 
+deprecated Removed in SVG 2. SVG fonts replaced by WOFF.
 ```ocaml
 inherit textPositioningElement
 ```

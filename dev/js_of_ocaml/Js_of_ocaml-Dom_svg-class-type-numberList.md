@@ -2,6 +2,11 @@
 # Class type `Dom_svg.numberList`
 
 ```ocaml
+method length : int Js_of_ocaml__.Js.readonly_prop
+```
+SVG 2 alias of `numberOfItems`.
+
+```ocaml
 method numberOfItems : int Js_of_ocaml__.Js.readonly_prop
 ```
 ```ocaml
