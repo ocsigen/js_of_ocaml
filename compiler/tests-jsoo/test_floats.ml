@@ -198,6 +198,9 @@ let%expect_test "of_string" =
   let x = " 3.14" in
   print' (fun () -> float_of_string x);
   [%expect {| 3.140000 |}];
+  let x = "\t3.14" in
+  print' (fun () -> float_of_string x);
+  [%expect {| 3.140000 |}];
   let x = "3. 14" in
   print' (fun () -> float_of_string x);
   [%expect {| Failure("float_of_string") |}];

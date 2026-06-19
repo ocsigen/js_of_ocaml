@@ -240,6 +240,9 @@
   (the `nan`/`inf` detection read past the end of the string) and no
   longer accepts JavaScript binary/octal literals such as `"0b101"` or
   `"0o17"`; both now raise `Failure` like the native runtime (#2263)
+* Runtime: `float_of_string` in the JavaScript runtime skips all leading
+  whitespace (tab, newline, …), not only spaces, matching the native and
+  wasm runtimes; `"\t1.5"` now parses instead of raising `Failure` (#2263)
 * Runtime/wasm: `float_of_string` of a hex literal with a huge exponent
   (e.g. `"0x1p12884901890"`) saturates to infinity/0 instead of wrapping
   the exponent modulo 2^32 and returning a wrong finite value such as
