@@ -45,3 +45,24 @@ let%expect_test _ =
       with exn -> print_endline (Printexc.to_string exn))
     a;
   [%expect {||}]
+
+(* [CSS.Angle.js] always formats with a decimal point, so the round-trip test
+   above never exercises parsing an integer-valued angle (e.g. "45deg"), which
+   is the common form found in actual CSS values. [js_t] is private, so coerce
+   a raw string to feed it to [ml] the way a DOM value would. *)
+let%expect_test "parse angle without decimal point" =
+  let as_js_t s : CSS.Angle.js_t = Obj.magic (Js.string s) in
+  List.iter
+    (fun s ->
+      match CSS.Angle.ml (as_js_t s) with
+      | a -> Printf.printf "%s -> %s\n%!" s (CSS.Angle.string_of_t a)
+      | exception exn -> Printf.printf "%s -> %s\n%!" s (Printexc.to_string exn))
+    [ "45deg"; "100grad"; "2turns"; "1rad"; "0.5deg" ];
+  [%expect
+    {|
+    45deg -> Invalid_argument("45deg is not a valid length")
+    100grad -> Invalid_argument("100grad is not a valid length")
+    2turns -> Invalid_argument("2turns is not a valid length")
+    1rad -> Invalid_argument("1rad is not a valid length")
+    0.5deg -> 0.500000deg
+    |}]
