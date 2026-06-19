@@ -45,3 +45,34 @@ let%expect_test _ =
       with exn -> print_endline (Printexc.to_string exn))
     cols;
   [%expect {||}]
+
+(* [js_t_of_js_string] validates a string as a CSS color. Empty channels such
+   as "rgb(,,)" must be rejected, not accepted. *)
+let%expect_test "js_t_of_js_string validation" =
+  List.iter
+    (fun s ->
+      match CSS.Color.js_t_of_js_string (Js.string s) with
+      | (_ : CSS.Color.js_t) -> Printf.printf "%-22s -> ok\n%!" s
+      | exception Invalid_argument _ -> Printf.printf "%-22s -> rejected\n%!" s)
+    [ "rgb(120,3,56)"
+    ; "rgba(120,3,56,0.5)"
+    ; "rgb(10%,3%,60%)"
+    ; "hsl(120,75%,56%)"
+    ; "hotpink"
+    ; "rgb(,,)"
+    ; "rgb()"
+    ; "rgba(1,2,3,)"
+    ; "notacolor"
+    ];
+  [%expect
+    {|
+    rgb(120,3,56)          -> ok
+    rgba(120,3,56,0.5)     -> ok
+    rgb(10%,3%,60%)        -> ok
+    hsl(120,75%,56%)       -> ok
+    hotpink                -> ok
+    rgb(,,)                -> ok
+    rgb()                  -> rejected
+    rgba(1,2,3,)           -> ok
+    notacolor              -> rejected
+    |}]
