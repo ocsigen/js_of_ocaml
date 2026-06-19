@@ -127,6 +127,13 @@
         (loop $continue
          (block $backtrack
           (block $prefix_match
+           (local.set $instr
+              (i31.get_s
+                 (ref.cast (ref i31)
+                    (array.get $block (local.get $prog)
+                       (local.get $pc)))))
+           (local.set $pc
+              (i32.add (local.get $pc) (i32.const 1)))
            (block $CHECKPROGRESS
             (block $SETMARK
              (block $PUSHBACK
@@ -145,13 +152,6 @@
                           (block $STRING
                            (block $CHARNORM
                             (block $CHAR
-                             (local.set $instr
-                                (i31.get_s
-                                   (ref.cast (ref i31)
-                                      (array.get $block (local.get $prog)
-                                         (local.get $pc)))))
-                             (local.set $pc
-                                (i32.add (local.get $pc) (i32.const 1)))
                              (br_table
                                 $CHAR $CHARNORM $STRING $STRINGNORM $CHARCLASS
                                 $BOL $EOL $WORDBOUNDARY $BEGGROUP $ENDGROUP
