@@ -59,7 +59,7 @@ class type intersectionObserver = object
 
   method disconnect : unit Js.meth
 
-  method takeRecords : intersectionObserverEntry Js.t Js.js_array Js.meth
+  method takeRecords : intersectionObserverEntry Js.t Js.js_array Js.t Js.meth
 end
 
 val empty_intersection_observer_options : unit -> intersectionObserverOptions Js.t
