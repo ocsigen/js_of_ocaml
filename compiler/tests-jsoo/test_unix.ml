@@ -262,10 +262,10 @@ let%expect_test "error_message of a non-WASI error code" =
    native (open ""/stat "" etc.). *)
 let%expect_test "empty path is ENOENT" =
   (match Unix.stat "" with
-   | _ -> print_endline "ok"
-   | exception Unix.Unix_error (Unix.ENOENT, _, _) -> print_endline "ENOENT"
-   | exception Unix.Unix_error (e, _, _) ->
-       print_endline (String.lowercase_ascii (Unix.error_message e)));
+  | _ -> print_endline "ok"
+  | exception Unix.Unix_error (Unix.ENOENT, _, _) -> print_endline "ENOENT"
+  | exception Unix.Unix_error (e, _, _) ->
+      print_endline (String.lowercase_ascii (Unix.error_message e)));
   [%expect {| ENOENT |}]
 
 (* Unix.utimes follows symlinks (it is utimes, not lutimes): setting the
