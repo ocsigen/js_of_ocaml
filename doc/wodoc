@@ -27,6 +27,7 @@
 ;; ocaml.org; lwt is added once its docs are rebuilt with wodoc (ocsigen/lwt#1109).
 (hosted
   (tyxml        tyxml        subdir)
+  (lwt          lwt          subdir)
   (reactiveData reactiveData root))
 (nav
   (section "Getting Started"
