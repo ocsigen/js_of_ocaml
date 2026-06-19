@@ -47,11 +47,11 @@ class type eventSource = object ('self)
 
   method close : unit meth
 
-  method onopen : ('self t, 'self messageEvent t) event_listener writeonly_prop
+  method onopen : ('self t, 'self Dom.event t) event_listener writeonly_prop
 
   method onmessage : ('self t, 'self messageEvent t) event_listener writeonly_prop
 
-  method onerror : ('self t, 'self messageEvent t) event_listener writeonly_prop
+  method onerror : ('self t, 'self Dom.event t) event_listener writeonly_prop
 end
 
 class type options = object

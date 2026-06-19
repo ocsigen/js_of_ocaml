@@ -119,6 +119,9 @@
 * Lib: fix the return type of `IntersectionObserver`'s `takeRecords`
   method, which was missing a `Js.t` wrapper around the result array
   (#2350)
+* Lib: `EventSource`'s `onopen`/`onerror` handlers now receive a plain
+  `Dom.event` instead of a `messageEvent`; these events carry no
+  `data`/`origin`/`lastEventId` (only `onmessage` does) (#2350)
 * Runtime/wasm: `Str.replace`/`Str.global_replace` raise `Failure` on a
   backreference to a group one past the last (e.g. `"\1"` against a
   group-less regexp) instead of trapping with an out-of-bounds access;
