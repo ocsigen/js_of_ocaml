@@ -569,9 +569,15 @@ function caml_parse_float(s, err_msg) {
   if (!Number.isNaN(res) && r_float.test(s)) return res;
   s = s.replace(/_/g, "");
   res = +s;
-  if ((!Number.isNaN(res) && r_float.test(s)) || /^[ \t\n\v\f\r]*[+-]?nan$/i.test(s))
+  if (
+    (!Number.isNaN(res) && r_float.test(s)) ||
+    /^[ \t\n\v\f\r]*[+-]?nan$/i.test(s)
+  )
     return res;
-  var m = /^[ \t\n\v\f\r]*([+-]?)0x([0-9a-f]*)\.?([0-9a-f]*)(?:p([+-]?[0-9]+))?$/i.exec(s);
+  var m =
+    /^[ \t\n\v\f\r]*([+-]?)0x([0-9a-f]*)\.?([0-9a-f]*)(?:p([+-]?[0-9]+))?$/i.exec(
+      s,
+    );
   //          1        2             3               4
   if (m && m[2].length + m[3].length > 0) {
     var sign = m[1] === "-" ? -1 : 1;
@@ -602,7 +608,8 @@ function caml_parse_float(s, err_msg) {
       e += shift;
     }
   }
-  if (/^[ \t\n\v\f\r]*\+?inf(inity)?$/i.test(s)) return Number.POSITIVE_INFINITY;
+  if (/^[ \t\n\v\f\r]*\+?inf(inity)?$/i.test(s))
+    return Number.POSITIVE_INFINITY;
   if (/^[ \t\n\v\f\r]*-inf(inity)?$/i.test(s)) return Number.NEGATIVE_INFINITY;
   caml_failwith(err_msg);
 }

@@ -104,6 +104,16 @@ index c6d09fb..61b1e5b 100644
  let%expect_test "Bignum.abs" =
    let test t =
      let t' = require_no_allocation (fun () -> abs t) in
+@@ -164,8 +169,8 @@
+ let%expect_test ("Float.to_string_hum big exponents (js-only)" [@tags "js-only"]) =
+   let x = -3.3810849992682576E+37 in
+   print_s
+     [%sexp (Float.to_string_hum ~delimiter:'_' ~decimals:7 ~strip_zero:false x : string)];
+-  [%expect {| -33_810_849_992_682_576_000_000_000_000_000_000_000.0000000 |}]
++  [%expect {| -33_810_849_992_682_574_344_623_022_087_906_263_040.0000000 |}]
+ ;;
+
+ let%expect_test "to_string_hum" =
 |bignum}
     )
   ; ( "bin_prot"
