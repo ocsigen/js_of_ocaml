@@ -51,6 +51,8 @@
   `Dom_html`/`Lwt_js_events` handlers can be attached to them (#519), and fix
   the `prop`/`readonly_prop` split (e.g. writable `SVGPoint`/`SVGMatrix`
   coordinates).
+* Lib: add `Console` bindings for `table`, `count`, `countReset` and
+  `timeLog` (#2350)
 * Lib: remove dead legacy-browser code from the DOM bindings: the
   IE `attachEvent`/`detachEvent` fallback in
   `Dom.addEventListenerWithOptions`, the IE `createElement` HTML-string

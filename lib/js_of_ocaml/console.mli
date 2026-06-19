@@ -122,7 +122,19 @@ class type console = object
 
   method groupEnd : unit meth
 
+  method table : _ -> unit meth
+
+  method count : unit meth
+
+  method count_ : js_string t -> unit meth
+
+  method countReset : unit meth
+
+  method countReset_ : js_string t -> unit meth
+
   method time : js_string t -> unit meth
+
+  method timeLog : js_string t -> unit meth
 
   method timeEnd : js_string t -> unit meth
 end

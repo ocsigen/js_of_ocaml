@@ -37,16 +37,9 @@ let blob_constr = Unsafe.global##._Blob
 type 'a make_blob =
   ?contentType:string -> ?endings:[ `Transparent | `Native ] -> 'a -> blob t
 
-let rec filter_map f = function
-  | [] -> []
-  | v :: q -> (
-      match f v with
-      | None -> filter_map f q
-      | Some v' -> v' :: filter_map f q)
-
 let make_blob_options contentType endings =
   let options =
-    filter_map
+    List.filter_map
       (fun (name, v) ->
         match v with
         | None -> None
