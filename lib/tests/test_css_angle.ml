@@ -60,9 +60,9 @@ let%expect_test "parse angle without decimal point" =
     [ "45deg"; "100grad"; "2turns"; "1rad"; "0.5deg" ];
   [%expect
     {|
-    45deg -> Invalid_argument("45deg is not a valid length")
-    100grad -> Invalid_argument("100grad is not a valid length")
-    2turns -> Invalid_argument("2turns is not a valid length")
-    1rad -> Invalid_argument("1rad is not a valid length")
+    45deg -> 45.000000deg
+    100grad -> 100.000000grad
+    2turns -> 2.000000turns
+    1rad -> 1.000000rad
     0.5deg -> 0.500000deg
     |}]

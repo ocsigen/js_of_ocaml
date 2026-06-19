@@ -109,6 +109,9 @@
   (#2329)
 * Runtime/wasm: `caml_unregister_named_value` can remove entries that are
   not the head of their hash bucket (#2331)
+* Lib: `CSS.Angle.ml` now parses integer-valued angles such as `"45deg"`;
+  the parser previously required a decimal point and raised
+  `Invalid_argument` otherwise (#2350)
 * Runtime/wasm: `Str.replace`/`Str.global_replace` raise `Failure` on a
   backreference to a group one past the last (e.g. `"\1"` against a
   group-less regexp) instead of trapping with an out-of-bounds access;

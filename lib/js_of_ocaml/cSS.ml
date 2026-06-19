@@ -900,8 +900,8 @@ module Angle = struct
 
   let ml j =
     let s = Js.to_string j in
-    let re = Regexp.regexp "^(\\d*(?:\\.\\d*))(deg|grad|rad|turns)$" in
-    let fail () = raise (Invalid_argument (s ^ " is not a valid length")) in
+    let re = Regexp.regexp "^(\\d*(?:\\.\\d*)?)(deg|grad|rad|turns)$" in
+    let fail () = raise (Invalid_argument (s ^ " is not a valid angle")) in
     match Regexp.string_match re s 0 with
     | None -> fail ()
     | Some r -> (
@@ -911,7 +911,7 @@ module Angle = struct
           | Some f -> (
               try float_of_string f
               with Invalid_argument s ->
-                raise (Invalid_argument ("length conversion error: " ^ s)))
+                raise (Invalid_argument ("angle conversion error: " ^ s)))
         in
         match Regexp.matched_group r 2 with
         | Some "deg" -> Deg f
