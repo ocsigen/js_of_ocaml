@@ -710,19 +710,6 @@ end
 
 and mousewheelEvent = (* Deprecated *) wheelEvent
 
-and mouseScrollEvent = object
-  (* Deprecated *)
-  inherit mouseEvent
-
-  method detail : int readonly_prop
-
-  method axis : int optdef readonly_prop
-
-  method _HORIZONTAL_AXIS : int optdef readonly_prop
-
-  method _VERTICAL_AXIS : int optdef readonly_prop
-end
-
 and touchEvent = object
   inherit event
 
@@ -3661,8 +3648,6 @@ module Event : sig
 
   val mousewheel : mousewheelEvent t typ
 
-  val _DOMMouseScroll : mouseScrollEvent t typ
-
   val wheel : wheelEvent t typ
 
   val touchstart : touchEvent t typ
@@ -4355,7 +4340,6 @@ type taggedEvent =
   | KeyboardEvent of keyboardEvent t
   | MessageEvent of messageEvent t
   | MousewheelEvent of mousewheelEvent t
-  | MouseScrollEvent of mouseScrollEvent t
   | PopStateEvent of popStateEvent t
   | OtherEvent of event t
 
@@ -4576,8 +4560,6 @@ module CoerceTo : sig
   val keyboardEvent : #event t -> keyboardEvent t opt
 
   val wheelEvent : #event t -> mousewheelEvent t opt
-
-  val mouseScrollEvent : #event t -> mouseScrollEvent t opt
 
   val popStateEvent : #event t -> popStateEvent t opt
 

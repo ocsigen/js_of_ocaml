@@ -51,6 +51,16 @@
   `Dom_html`/`Lwt_js_events` handlers can be attached to them (#519), and fix
   the `prop`/`readonly_prop` split (e.g. writable `SVGPoint`/`SVGMatrix`
   coordinates).
+* Lib: remove dead legacy-browser code from the DOM bindings: the
+  IE `attachEvent`/`detachEvent` fallback in
+  `Dom.addEventListenerWithOptions`, the IE `createElement` HTML-string
+  hack, the `cancelBubble` fallback in `Dom_html.stopPropagation`, and
+  the prefixed `requestAnimationFrame` probes. Removes the obsolete
+  Gecko `MouseScrollEvent`/`_DOMMouseScroll` bindings (breaking: drops
+  the `mouseScrollEvent` type, the `MouseScrollEvent` `taggedEvent`
+  variant, `Dom_html.CoerceTo.mouseScrollEvent` and
+  `Dom_html.Event._DOMMouseScroll`). `File.filename` no longer consults
+  the nonstandard Firefox 3.x `fileName` property. (#2350)
 
 ## Bug fixes
 * Runtime/wasm: `caml_seek_in` validates the seek destination for

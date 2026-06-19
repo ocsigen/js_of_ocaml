@@ -21,8 +21,6 @@
 open Js
 open! Import
 
-external html_escape : js_string t -> js_string t = "caml_js_html_escape"
-
 external html_entities : js_string t -> js_string t opt = "caml_js_html_entities"
 
 let decode_html_entities s =
@@ -696,19 +694,6 @@ and wheelEvent = object
 end
 
 and mousewheelEvent = wheelEvent
-
-and mouseScrollEvent = object
-  (* Deprecated *)
-  inherit mouseEvent
-
-  method detail : int readonly_prop
-
-  method axis : int optdef readonly_prop
-
-  method _HORIZONTAL_AXIS : int optdef readonly_prop
-
-  method _VERTICAL_AXIS : int optdef readonly_prop
-end
 
 and touchEvent = object
   inherit event
@@ -1520,8 +1505,6 @@ module Event = struct
   let mousewheel = Dom.Event.make "mousewheel"
 
   let wheel = Dom.Event.make "wheel"
-
-  let _DOMMouseScroll = Dom.Event.make "DOMMouseScroll"
 
   let touchstart = Dom.Event.make "touchstart"
 
@@ -3767,41 +3750,11 @@ let createElement (doc : document t) name = doc##createElement (Js.string name)
 
 let unsafeCreateElement doc name = Js.Unsafe.coerce (createElement doc name)
 
-let createElementSyntax = ref `Unknown
-
-let rec unsafeCreateElementEx ?_type ?name doc elt =
-  if Poly.(_type = None) && Poly.(name = None)
-  then Js.Unsafe.coerce (createElement doc elt)
-  else
-    match !createElementSyntax with
-    | `Standard ->
-        let res = Js.Unsafe.coerce (createElement doc elt) in
-        opt_iter _type (fun t -> res##._type := t);
-        opt_iter name (fun n -> res##.name := n);
-        res
-    | `Extended ->
-        let a = new%js Js.array_empty in
-        ignore (a##push_2 (Js.string "<") (Js.string elt));
-        opt_iter _type (fun t ->
-            ignore (a##push_3 (Js.string " type=\"") (html_escape t) (Js.string "\"")));
-        opt_iter name (fun n ->
-            ignore (a##push_3 (Js.string " name=\"") (html_escape n) (Js.string "\"")));
-        ignore (a##push (Js.string ">"));
-        Js.Unsafe.coerce (doc##createElement (a##join (Js.string "")))
-    | `Unknown ->
-        createElementSyntax :=
-          if
-            try
-              let el : inputElement Js.t =
-                Js.Unsafe.coerce
-                  (document##createElement (Js.string "<input name=\"x\">"))
-              in
-              Js.equals el##.tagName##toLowerCase (Js.string "input")
-              && Js.equals el##.name (Js.string "x")
-            with _ -> false
-          then `Extended
-          else `Standard;
-        unsafeCreateElementEx ?_type ?name doc elt
+let unsafeCreateElementEx ?_type ?name doc elt =
+  let res = Js.Unsafe.coerce (createElement doc elt) in
+  opt_iter _type (fun t -> res##._type := t);
+  opt_iter name (fun n -> res##.name := n);
+  res
 
 let createHtml doc : htmlElement t = unsafeCreateElement doc "html"
 
@@ -4145,8 +4098,6 @@ module CoerceTo = struct
   let keyboardEvent ev = unsafeCoerceEvent Js.Unsafe.global##._KeyboardEvent ev
 
   let wheelEvent ev = unsafeCoerceEvent Js.Unsafe.global##._WheelEvent ev
-
-  let mouseScrollEvent ev = unsafeCoerceEvent Js.Unsafe.global##._MouseScrollEvent ev
 
   let popStateEvent ev = unsafeCoerceEvent Js.Unsafe.global##._PopStateEvent ev
 
@@ -4887,7 +4838,6 @@ type taggedEvent =
   | KeyboardEvent of keyboardEvent t
   | MessageEvent of messageEvent t
   | MousewheelEvent of mousewheelEvent t
-  | MouseScrollEvent of mouseScrollEvent t
   | PopStateEvent of popStateEvent t
   | OtherEvent of event t
 
@@ -4902,17 +4852,13 @@ let taggedEvent (ev : #event Js.t) =
             (CoerceTo.wheelEvent ev)
             (fun () ->
               Js.Opt.case
-                (CoerceTo.mouseScrollEvent ev)
+                (CoerceTo.popStateEvent ev)
                 (fun () ->
                   Js.Opt.case
-                    (CoerceTo.popStateEvent ev)
-                    (fun () ->
-                      Js.Opt.case
-                        (CoerceTo.messageEvent ev)
-                        (fun () -> OtherEvent (ev :> event t))
-                        (fun ev -> MessageEvent ev))
-                    (fun ev -> PopStateEvent ev))
-                (fun ev -> MouseScrollEvent ev))
+                    (CoerceTo.messageEvent ev)
+                    (fun () -> OtherEvent (ev :> event t))
+                    (fun ev -> MessageEvent ev))
+                (fun ev -> PopStateEvent ev))
             (fun ev -> MousewheelEvent ev))
         (fun ev -> KeyboardEvent ev))
     (fun ev -> MouseEvent ev)
@@ -4921,10 +4867,7 @@ let opt_taggedEvent ev = Opt.case ev (fun () -> None) (fun ev -> Some (taggedEve
 
 let stopPropagation ev =
   let e = Js.Unsafe.coerce ev in
-  Optdef.case
-    e##.stopPropagation
-    (fun () -> e##.cancelBubble := Js._true)
-    (fun _ -> e##_stopPropagation)
+  e##_stopPropagation
 
 module DomStringMap = struct
   let get (m : domStringMap t) (k : js_string t) : js_string t optdef = Js.Unsafe.get m k
@@ -5042,18 +4985,10 @@ let makeOptionalEffectTiming
 let _requestAnimationFrame : (unit -> unit) Js.callback -> unit =
   Js.Unsafe.pure_expr (fun _ ->
       let w = Js.Unsafe.coerce window in
-      let l =
-        [ w##.requestAnimationFrame
-        ; w##.mozRequestAnimationFrame
-        ; w##.webkitRequestAnimationFrame
-        ; w##.oRequestAnimationFrame
-        ; w##.msRequestAnimationFrame
-        ]
-      in
-      try
-        let req = List.find (fun c -> Js.Optdef.test c) l in
-        fun callback -> Js.Unsafe.fun_call req [| Js.Unsafe.inject callback |]
-      with Not_found ->
+      let req = w##.requestAnimationFrame in
+      if Js.Optdef.test req
+      then fun callback -> Js.Unsafe.fun_call req [| Js.Unsafe.inject callback |]
+      else
         let now () = Js.to_float (new%js Js.date_now)##getTime in
         let last = ref (now ()) in
         fun callback ->
