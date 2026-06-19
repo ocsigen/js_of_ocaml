@@ -1,6 +1,6 @@
 // wodoc default syntax-highlight starter: start odoc's bundled highlight.js and
 // teach it the OCaml extensions used across Ocsigen, so any doc can colour them:
-//   - eliom:       let%client / %server / %shared (per-side colour), ~%x injection
+//   - eliom:       let%client / %server / %shared / %rpc (per-side colour), ~%x injection
 //   - lwt:         let%lwt / match%lwt / … and the let* / and* / let+ operators
 //   - js_of_ocaml: object%js / [%js] / … and the obj##meth / obj##.prop operators
 //   - the name bound by let / and (function names)
@@ -9,11 +9,13 @@
   if (oc && oc.contains) {
     var rules = [];
     var lead = "(?:let|and|val|module|open|include|method|class|type|exception|fun)";
-    // eliom: whole `let%client` (etc.) and bare `%client` -> per-side colour
-    ["client", "server", "shared"].forEach(function (s) {
+    // eliom: whole `let%client` (etc.) and bare `%client` -> per-side colour.
+    // %rpc gets its own class; the stylesheet gives it the same green as %shared
+    // (a server-defined call exposed to the client) instead of the generic %xxx keyword.
+    ["client", "server", "shared", "rpc"].forEach(function (s) {
       rules.push({ className: "eliom-" + s, begin: new RegExp("\\b" + lead + "%" + s + "\\b") });
     });
-    ["client", "server", "shared"].forEach(function (s) {
+    ["client", "server", "shared", "rpc"].forEach(function (s) {
       rules.push({ className: "eliom-" + s, begin: new RegExp("%" + s + "\\b") });
     });
     // lwt: let*, and*, let+, and+ binding operators
