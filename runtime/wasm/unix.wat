@@ -2616,9 +2616,15 @@
    ;; WASI has no notion of user/group ids; return 1 like the JS runtime's
    ;; fallback when [process.getuid] and friends are unavailable.
    (func (export "unix_getuid") (export "caml_unix_getuid")
-      (export "unix_geteuid") (export "caml_unix_geteuid")
-      (export "unix_getgid") (export "caml_unix_getgid")
-      (export "unix_getegid") (export "caml_unix_getegid")
+      (param (ref eq)) (result (ref eq))
+      (ref.i31 (i32.const 1)))
+   (func (export "unix_geteuid") (export "caml_unix_geteuid")
+      (param (ref eq)) (result (ref eq))
+      (ref.i31 (i32.const 1)))
+   (func (export "unix_getgid") (export "caml_unix_getgid")
+      (param (ref eq)) (result (ref eq))
+      (ref.i31 (i32.const 1)))
+   (func (export "unix_getegid") (export "caml_unix_getegid")
       (param (ref eq)) (result (ref eq))
       (ref.i31 (i32.const 1)))
 )
