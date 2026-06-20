@@ -24,6 +24,9 @@
     rules.push({ className: "operator", begin: /##\.?/ });
     // eliom: ~%x client-value injection
     rules.push({ className: "subst", begin: /~%[A-Za-z_][\w']*/ });
+    // labelled / optional arguments: ~name(:) and ?name(:)  (after ~%x, so it
+    // never swallows a client-value injection; label names are lowercase idents)
+    rules.push({ className: "label", begin: /[~?][a-z_][\w']*:?/ });
     // any other ppx extension (%lwt, %js, %rpc, …) -- LAST so the specific rules win
     rules.push({ className: "keyword", begin: /%[a-z]+/ });
     oc.contains.unshift.apply(oc.contains, rules);
