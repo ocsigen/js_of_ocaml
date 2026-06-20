@@ -183,6 +183,7 @@
    test_custom_name
    test_text_codec_fallback
    test_unix
+   test_unix_symlink
    channel_refill
    test_promise
    test_lwt_promise
@@ -232,6 +233,29 @@
   (<> %{profile} quickjs))
  (modules test_unix)
  (libraries unix compiler-libs.common js_of_ocaml-compiler)
+ (inline_tests
+  (deps
+   (sandbox preserve_file_kind))
+  (modes js wasm best))
+ (preprocess
+  (pps ppx_expect)))
+
+; test_unix_symlink creates symlinks and stats through them. WASI rejects
+; symlinks to absolute targets with EPERM (its capability model forbids
+; escaping a preopen); the QuickJS shim does not implement [Unix.symlink];
+; and on Windows node cannot [stat] a directory symlink without elevation.
+; So it only runs on Unix-like hosts under the JS / wasm-on-unix runtimes.
+
+(library
+ (name jsoo_testsuite_symlink)
+ (enabled_if
+  (and
+   (<> %{profile} quickjs)
+   (<> %{profile} wasi)
+   (<> %{profile} wasi-with-native-effects)
+   (<> %{os_type} Win32)))
+ (modules test_unix_symlink)
+ (libraries unix)
  (inline_tests
   (deps
    (sandbox preserve_file_kind))
