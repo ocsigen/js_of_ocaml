@@ -24,8 +24,15 @@
     ]}
     on module (Pstr_module),
     toplevel bindings (Pstr_value, Pstr_primitive)
+    toplevel extensions, e.g. [let%expect_test "..." = ... [@@if ...]]
+    (Pstr_extension)
     pattern in case (pc_lhs)
     and module in signature (Psig_module)
+
+    For toplevel extensions to be gated we must run before context-free
+    rewriters such as ppx_expect expand them; this is achieved by
+    registering the implementation transformation as a [Before]
+    instrumentation (see registration at the end of the file).
 *)
 
 open StdLabels
@@ -311,11 +318,79 @@ let drop_str loc = { pstr_desc = Pstr_attribute drop_attr; pstr_loc = loc }
 
 let drop_sig loc = { psig_desc = Psig_attribute drop_attr; psig_loc = loc }
 
+let is_if_attr = function
+  | { attr_name = { txt = "if"; _ }; _ } -> true
+  | _ -> false
+
+let strip_if attrs = List.filter attrs ~f:(fun a -> not (is_if_attr a))
+
+(* Attributes that gate a toplevel extension item such as
+   [let%expect_test "..." = ... [@@if ...]]. The parser attaches the [@@if]
+   to the binding inside the extension payload, so we look there (and on the
+   extension item itself) for the gating attributes. *)
+let extension_if_attrs ((_, payload) : extension) ext_attrs =
+  let inner =
+    match payload with
+    | PStr [ { pstr_desc = Pstr_value (_, vbs); _ } ] ->
+        List.concat (List.map vbs ~f:(fun vb -> vb.pvb_attributes))
+    | PStr [ { pstr_desc = Pstr_eval (_, attrs); _ } ] -> attrs
+    | _ -> []
+  in
+  List.filter (ext_attrs @ inner) ~f:is_if_attr
+
+(* Remove the [@if] attributes once they have been evaluated, so that the
+   downstream rewriters (e.g. ppx_expect) do not choke on a leftover
+   attribute in an unexpected position. *)
+let strip_extension_if ((name, payload) : extension) ext_attrs =
+  let payload =
+    match payload with
+    | PStr [ ({ pstr_desc = Pstr_value (r, vbs); _ } as item) ] ->
+        let vbs =
+          List.map vbs ~f:(fun vb ->
+              { vb with pvb_attributes = strip_if vb.pvb_attributes })
+        in
+        PStr [ { item with pstr_desc = Pstr_value (r, vbs) } ]
+    | other -> other
+  in
+  (name, payload), strip_if ext_attrs
+
+(* A floating attribute [@@@if cond] gates the rest of the enclosing
+   structure: when [cond] is false every following item is dropped, when it is
+   true the marker itself is removed. This is convenient to gate a whole test
+   module on an OCaml version without repeating [@@if] on each item. *)
+let truncate_floating_str items =
+  let rec loop = function
+    | [] -> []
+    | { pstr_desc = Pstr_attribute attr; pstr_loc; _ } :: rest when is_if_attr attr ->
+        if keep pstr_loc [ attr ] then loop rest else []
+    | item :: rest -> item :: loop rest
+  in
+  loop items
+
 let traverse =
-  object
+  object (self)
     inherit Ppxlib.Ast_traverse.map as super
 
+    method! structure items = super#structure (truncate_floating_str items)
+
     method! structure_item item =
+      (* Handle gated toplevel extensions (e.g. [let%expect_test]) before
+         recursing, so the whole extension is dropped before context-free
+         rewriters expand it. *)
+      match item.pstr_desc with
+      | Pstr_extension (ext, ext_attrs) -> (
+          match extension_if_attrs ext ext_attrs with
+          | [] -> self#structure_item_default item
+          | attrs ->
+              if keep item.pstr_loc attrs
+              then
+                let ext, ext_attrs = strip_extension_if ext ext_attrs in
+                super#structure_item
+                  { item with pstr_desc = Pstr_extension (ext, ext_attrs) }
+              else drop_str item.pstr_loc)
+      | _ -> self#structure_item_default item
+
+    method private structure_item_default item =
       let item = super#structure_item item in
       match item.pstr_desc with
       | Pstr_module { pmb_attributes; pmb_loc; _ } ->
@@ -351,6 +426,9 @@ let traverse =
 
 let () =
   Ppxlib.Driver.register_transformation
-    ~impl:traverse#structure
+    ~instrument:
+      (Ppxlib.Driver.Instrument.make
+         traverse#structure
+         ~position:Ppxlib.Driver.Instrument.Before)
     ~intf:traverse#signature
     "ppx_optcomp_light"
