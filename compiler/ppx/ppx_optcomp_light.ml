@@ -21,7 +21,11 @@
     It only support the following attribute
     {[
       [@if ocaml_version < (4,12,0)]
+      [@if os_type <> "Win32"]
     ]}
+    The supported predicates are [ocaml_version], [ast_version], [oxcaml]
+    and [os_type] (a string, e.g. "Unix" / "Win32" / "Cygwin"), combined
+    with the usual comparison and boolean operators. They can be placed
     on module (Pstr_module),
     toplevel bindings (Pstr_value, Pstr_primitive)
     toplevel extensions, e.g. [let%expect_test "..." = ... [@@if ...]]
@@ -204,11 +208,14 @@ let keep loc (attrs : attributes) =
                        (match Version.extra with
                        | Some (Plus, "ox") -> true
                        | _ -> false))
+                 ||| (pexp_ident (lident (string "os_type"))
+                     >>| fun () -> String Sys.os_type)
                  ||| (pexp_construct (lident (string "true")) drop >>| fun () -> Bool true)
                  ||| (pexp_construct (lident (string "false")) drop
                      >>| fun () -> Bool false)
                  ||| (pexp_constant (pconst_integer __ none)
                      >>| fun () d -> Int (int_of_string d))
+                 ||| (pexp_constant (pconst_string __ drop drop) >>| fun () s -> String s)
                  ||| (pexp_tuple __ >>| fun () l -> Tuple (List.map l ~f:eval))
                  ||| (pexp_apply __ __
                      >>| fun () op l ->
@@ -224,6 +231,7 @@ let keep loc (attrs : attributes) =
                                | Version _, _ | _, Version _ ->
                                    Version.compare (version a) (version b)
                                | Int a, Int b -> compare a b
+                               | String a, String b -> compare a b
                                | _ -> raise (Invalid loc)
                              in
                              let op =

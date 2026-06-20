@@ -6,19 +6,14 @@
 
 ; [format with large precision] checks the exact decimal expansion of a
 ; double. The native oracle is mingw on Windows, whose printf rounds past
-; ~17 significant digits and so cannot reproduce it; disable the whole test
-; there. js and wasm are OS-independent and still run on every other
+; ~17 significant digits and so cannot reproduce it. Both that Windows
+; exclusion and the OCaml version gate live in the source as a floating
+; [@@@if]; js and wasm are OS-independent and still run on every other
 ; platform.
-
-; The version part of the gate (>= 4.14) lives in the source as a floating
-; [@@@if]; the Windows exclusion stays here because ppx_optcomp_light cannot
-; test the OS.
 
 (library
  (name jsoo_testsuite_floats_exact)
  (modules test_floats_exact)
- (enabled_if
-  (<> %{ocaml-config:os_type} Win32))
  (inline_tests
   (deps
    (sandbox preserve_file_kind))
@@ -231,14 +226,12 @@
  (preprocess
   (pps ppx_expect)))
 
-; Windows node rejects the O_APPEND flag combination (EINVAL) and positions
-; the append offset differently, so the test cannot assert native semantics
-; there; it runs on Unix-like hosts only.
+; The Windows exclusion lives in the source as a floating [@@@if os_type
+; <> "Win32"]: Windows node rejects the O_APPEND flag combination and
+; positions the append offset differently.
 
 (library
  (name jsoo_testsuite_unix_open_append)
- (enabled_if
-  (<> %{os_type} Win32))
  (modules unix_open_append)
  (libraries unix)
  (inline_tests
@@ -246,7 +239,7 @@
    (sandbox preserve_file_kind))
   (modes js wasm best))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  (name jsoo_testsuite_str)

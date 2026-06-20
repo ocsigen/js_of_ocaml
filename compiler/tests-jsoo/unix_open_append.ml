@@ -1,3 +1,8 @@
+(* Windows node rejects the O_APPEND flag combination (EINVAL) and positions
+   the append offset differently, so these tests assert native semantics on
+   Unix-like hosts only. *)
+[@@@if os_type <> "Win32"]
+
 let%expect_test "openfile O_APPEND offset" =
   (* [Unix.openfile [O_APPEND]] must match native semantics:
      - the file offset starts at 0 right after opening (it is *not* moved to
