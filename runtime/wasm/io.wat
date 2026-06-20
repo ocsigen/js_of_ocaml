@@ -1379,6 +1379,14 @@
                   (local.set $fd_offset (call $get_fd_offset (local.get $fd)))
                   (local.set $offset
                      (struct.get $fd_offset $offset (local.get $fd_offset)))
+                  ;; [O_APPEND]: every write goes to the end of the file,
+                  ;; regardless of the current offset (which [seek] may have
+                  ;; moved). Reposition to EOF before writing, like fs_node.js:
+                  ;; the OS append flag alone is not portable for a positioned
+                  ;; write (it appends on Linux but not macOS).
+                  (if (struct.get $fd_offset $append (local.get $fd_offset))
+                     (then
+                        (local.set $offset (call $file_size (local.get $fd)))))
                   (try
                      (do
                         (local.set $written
