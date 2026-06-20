@@ -105,7 +105,7 @@ let test_descriptor_writes () =
   return ()
 
 let test_load_success () =
-  fonts##add bebas;
+  ignore (fonts##add bebas : Css_font_loading.fontFaceSet Js.t);
   bebas##load
   >>= fun loaded ->
   check

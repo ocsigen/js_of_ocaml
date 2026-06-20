@@ -48,7 +48,7 @@ class type fontFace = object
 end
 
 class type fontFaceSet = object
-  method add : fontFace Js.t -> unit meth
+  method add : fontFace Js.t -> fontFaceSet Js.t meth
 
   method check : js_string t -> js_string t -> bool t meth
 
