@@ -130,6 +130,8 @@ module HofM (M: Map.S) : Hashtbl.SeededS with type key = M.key =
     let copy = Hashtbl.copy
     let add = Hashtbl.add
     let remove = Hashtbl.remove
+    let find_and_remove = Hashtbl.find_and_remove [@@if ocaml_version >= (5, 5, 0)]
+    let find_and_replace = Hashtbl.find_and_replace [@@if ocaml_version >= (5, 5, 0)]
     let find = Hashtbl.find
     let find_opt = Hashtbl.find_opt
     let find_all = Hashtbl.find_all
