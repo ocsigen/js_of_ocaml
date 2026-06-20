@@ -28,17 +28,11 @@
       (func $caml_js_new (param (ref eq)) (param (ref eq)) (result (ref eq))))
    (import "jslib" "caml_js_from_array"
       (func $caml_js_from_array (param (ref eq)) (result (ref eq))))
-   (import "js" "caml_js_html_escape"
-      (func $caml_js_html_escape_js (param anyref) (result anyref)))
    (import "js" "caml_js_html_entities"
       (func $caml_js_html_entities_js (param anyref) (result anyref)))
 
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
-
-   (func (export "caml_js_html_escape") (param (ref eq)) (result (ref eq))
-      (return_call $wrap
-         (call $caml_js_html_escape_js (call $unwrap (local.get 0)))))
 
    (func (export "caml_js_html_entities") (param (ref eq)) (result (ref eq))
       (return_call $wrap
