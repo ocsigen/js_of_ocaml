@@ -22,4 +22,8 @@
  (build_if
   (>= %{ocaml_version} 5))
  (libraries)
- (modes js wasm))
+ (modes js wasm)
+ ; find_and_remove/find_and_replace were added to Hashtbl.SeededS in OCaml
+ ; 5.5; ppx_optcomp_light gates them in [HofM] so this builds on 5.0-5.5.
+ (preprocess
+  (pps ppx_optcomp_light)))
