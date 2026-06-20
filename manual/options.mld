@@ -82,7 +82,7 @@ The [--file] flag is also supported by wasm_of_ocaml.
  | [--no-extern-fs] | Only allow files embedded at compile time (js_of_ocaml only) |
 }
 
-{1:env-vars Environment variables}
+{1:env_vars Environment variables}
 
 {t
  | Option | Description |

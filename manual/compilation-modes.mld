@@ -26,7 +26,7 @@ js_of_ocaml program.byte -o program.js
 v}
 
 Some libraries require additional runtime files. See
-{{!page-"linker".finding-runtime}JavaScript primitives} for how to discover them.
+{{!page-"linker".finding_runtime}JavaScript primitives} for how to discover them.
 
 The compiler performs global dead-code elimination and cross-module optimizations,
 producing smaller and faster output.
@@ -42,7 +42,7 @@ js_of_ocaml build-runtime -o runtime.js
 v}
 
 Some libraries require additional runtime files. See
-{{!page-"linker".finding-runtime}JavaScript primitives} for how to discover them.
+{{!page-"linker".finding_runtime}JavaScript primitives} for how to discover them.
 
 {2 2. Compile units and libraries}
 

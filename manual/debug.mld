@@ -104,7 +104,7 @@ Or compile with:
 js_of_ocaml --enable with-js-error program.byte
 v}
 
-See {{!page-"errors".stack-traces}Error handling} for details.
+See {{!page-"errors".stack_traces}Error handling} for details.
 
 {1:devtools-tips Chrome DevTools tips}
 
