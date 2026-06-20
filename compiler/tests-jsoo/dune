@@ -351,15 +351,20 @@
 ; Uses [Sys_js.set_channel_filler], a js_of_ocaml runtime feature absent
 ; under the WASI runtime; exercised on both the JavaScript and wasm runtimes.
 
-(test
- (name channel_refill)
+(library
+ (name jsoo_testsuite_channel_refill)
  (modules channel_refill)
  (libraries js_of_ocaml)
  (enabled_if
   (and
    (<> %{profile} wasi)
    (<> %{profile} wasi-with-native-effects)))
- (modes js wasm))
+ (inline_tests
+  (deps
+   (sandbox preserve_file_kind))
+  (modes js wasm))
+ (preprocess
+  (pps ppx_expect)))
 
 ; Uses Js values (Js.string/Js.null), so it cannot run natively or under
 ; the WASI runtime; exercised on both the JavaScript and wasm runtimes.

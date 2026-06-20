@@ -3,7 +3,7 @@
    consistent (the offset has to advance). *)
 open Js_of_ocaml
 
-let () =
+let%expect_test "a refill hook may return more than the channel buffer holds" =
   let f = Filename.temp_file "fill" ".txt" in
   (let oc = open_out f in
    close_out oc);
@@ -21,4 +21,8 @@ let () =
   let rest = In_channel.input_all ic in
   Printf.printf "total=%d\n" (100 + String.length rest);
   close_in ic;
-  Sys.remove f
+  Sys.remove f;
+  [%expect {|
+    first=100 pos=100
+    total=200000
+    |}]
