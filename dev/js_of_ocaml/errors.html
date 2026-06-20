@@ -90,7 +90,7 @@
 </div>
 <div class="page-toc">
   <h3>On this page</h3>
-  <nav class="odoc-toc odoc-local-toc"><ul><li><a href="#catching-js-exceptions">Catching JavaScript exceptions in OCaml</a><ul><li><a href="#inspecting-javascript-errors">Inspecting JavaScript errors</a></li></ul></li><li><a href="#raising-js-errors">Raising JavaScript errors from OCaml</a></li><li><a href="#exception-propagation">Exception propagation in exported functions</a></li><li><a href="#stack-traces">Stack traces for OCaml exceptions</a><ul><li><a href="#manual-attachment">Manual attachment</a></li><li><a href="#extracting-attached-errors">Extracting attached errors</a></li><li><a href="#automatic-attachment">Automatic attachment</a></li></ul></li></ul></nav>
+  <nav class="odoc-toc odoc-local-toc"><ul><li><a href="#catching-js-exceptions">Catching JavaScript exceptions in OCaml</a><ul><li><a href="#inspecting-javascript-errors">Inspecting JavaScript errors</a></li></ul></li><li><a href="#raising-js-errors">Raising JavaScript errors from OCaml</a></li><li><a href="#exception-propagation">Exception propagation in exported functions</a></li><li><a href="#stack_traces">Stack traces for OCaml exceptions</a><ul><li><a href="#manual-attachment">Manual attachment</a></li><li><a href="#extracting-attached-errors">Extracting attached errors</a></li><li><a href="#automatic-attachment">Automatic attachment</a></li></ul></li></ul></nav>
 </div>
 <nav class="api-nav manual-nav">
 <h3>Getting Started</h3>
@@ -159,7 +159,7 @@
 </div>
 <div class="page-toc">
   <h3>On this page</h3>
-  <nav class="odoc-toc odoc-local-toc"><ul><li><a href="#catching-js-exceptions">Catching JavaScript exceptions in OCaml</a><ul><li><a href="#inspecting-javascript-errors">Inspecting JavaScript errors</a></li></ul></li><li><a href="#raising-js-errors">Raising JavaScript errors from OCaml</a></li><li><a href="#exception-propagation">Exception propagation in exported functions</a></li><li><a href="#stack-traces">Stack traces for OCaml exceptions</a><ul><li><a href="#manual-attachment">Manual attachment</a></li><li><a href="#extracting-attached-errors">Extracting attached errors</a></li><li><a href="#automatic-attachment">Automatic attachment</a></li></ul></li></ul></nav>
+  <nav class="odoc-toc odoc-local-toc"><ul><li><a href="#catching-js-exceptions">Catching JavaScript exceptions in OCaml</a><ul><li><a href="#inspecting-javascript-errors">Inspecting JavaScript errors</a></li></ul></li><li><a href="#raising-js-errors">Raising JavaScript errors from OCaml</a></li><li><a href="#exception-propagation">Exception propagation in exported functions</a></li><li><a href="#stack_traces">Stack traces for OCaml exceptions</a><ul><li><a href="#manual-attachment">Manual attachment</a></li><li><a href="#extracting-attached-errors">Extracting attached errors</a></li><li><a href="#automatic-attachment">Automatic attachment</a></li></ul></li></ul></nav>
 </div>
 <nav class="api-nav manual-nav">
 <h3>Getting Started</h3>
@@ -248,7 +248,7 @@ let () = Js.export &quot;divide&quot; divide</code></pre><p>From JavaScript, you
   // e is an array, not an Error object
   // e.message is undefined
   console.log(e);  // [0, [0, &quot;Failure&quot;, ...], &quot;Division by zero&quot;]
-}</code></pre><p>For better JavaScript interoperability, raise JavaScript errors instead of OCaml exceptions</p><h2 id="stack-traces">Stack traces for OCaml exceptions</h2><p>By default, OCaml exceptions don't carry JavaScript stack traces. This makes debugging difficult since you can't see where an exception originated in browser DevTools or Node.js.</p><p>The solution is to attach a JavaScript <code>Error</code> object to an OCaml exception. JavaScript <code>Error</code> objects capture the call stack at the point of creation, so attaching one to an OCaml exception preserves the stack trace for debugging.</p><h3 id="manual-attachment">Manual attachment</h3><p>Use <a href="Js_of_ocaml/Js/Js_error/index.html#val-attach_js_backtrace" title="Js_of_ocaml.Js.Js_error.attach_js_backtrace">Js_error.attach_js_backtrace</a> to attach a JavaScript stack trace to an OCaml exception:</p><pre class="language-ocaml"><code>let process data =
+}</code></pre><p>For better JavaScript interoperability, raise JavaScript errors instead of OCaml exceptions</p><h2 id="stack_traces">Stack traces for OCaml exceptions</h2><p>By default, OCaml exceptions don't carry JavaScript stack traces. This makes debugging difficult since you can't see where an exception originated in browser DevTools or Node.js.</p><p>The solution is to attach a JavaScript <code>Error</code> object to an OCaml exception. JavaScript <code>Error</code> objects capture the call stack at the point of creation, so attaching one to an OCaml exception preserves the stack trace for debugging.</p><h3 id="manual-attachment">Manual attachment</h3><p>Use <a href="Js_of_ocaml/Js/Js_error/index.html#val-attach_js_backtrace" title="Js_of_ocaml.Js.Js_error.attach_js_backtrace">Js_error.attach_js_backtrace</a> to attach a JavaScript stack trace to an OCaml exception:</p><pre class="language-ocaml"><code>let process data =
   try
     do_something data
   with exn -&gt;

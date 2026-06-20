@@ -4,7 +4,7 @@
 
 ## Requirements
 
-**OCaml**: 4\.13 to 5\.4
+**OCaml**: 4\.13 to 5\.5
 
 **Build tools**:
 

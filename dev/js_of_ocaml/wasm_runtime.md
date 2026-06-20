@@ -58,31 +58,7 @@ The preprocessor allows optional compilation based on the OCaml version:
    (@then ...)
    (@else ...))
 ```
-Variables are referenced with a `{{$`
-
-}
-
-}
-
-prefix (for instance `{{$ocaml_version`
-
-}
-
-}
-
-, `{{$wasi`
-
-}
-
-}
-
-, `{{$oxcaml`
-
-}
-
-}
-
-).
+Variables are referenced with a `$` prefix (for instance `$ocaml_version`, `$wasi`, `$oxcaml`).
 
 Available operators:
 

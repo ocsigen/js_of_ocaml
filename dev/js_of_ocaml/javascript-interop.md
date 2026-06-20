@@ -385,7 +385,7 @@ For JavaScript functions declared in runtime files (with `//Provides:`), you can
 ```ocaml
 external my_primitive : int -> int -> int = "my_js_function"
 ```
-This calls the JavaScript function `my_js_function` directly, without the overhead of `Js.Unsafe` wrappers. See *writing JavaScript primitives* for how to define such functions.
+This calls the JavaScript function `my_js_function` directly, without the overhead of `Js.Unsafe` wrappers. See [writing JavaScript primitives](./linker.md#writing_primitives) for how to define such functions.
 
 
 ## Passing OCaml functions to JavaScript
@@ -547,7 +547,7 @@ For type-safe JSON handling, use [ppx\_deriving\_json](./ppx-deriving.md).
 
 JavaScript values declared with `//Provides:` in runtime files can be accessed from OCaml. There are two approaches depending on whether you're accessing a function or a non-function value.
 
-See *writing JavaScript primitives* for more about the `//Provides:` syntax.
+See [writing JavaScript primitives](./linker.md#writing_primitives) for more about the `//Provides:` syntax.
 
 
 ### Functions: use `external`

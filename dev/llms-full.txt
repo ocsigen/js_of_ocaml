@@ -119,7 +119,7 @@ See [runtime representation](./runtime-representation.md) for details.
 
 ## Requirements
 
-**OCaml**: 4\.13 to 5\.4
+**OCaml**: 4\.13 to 5\.5
 
 **Build tools**:
 
@@ -748,7 +748,7 @@ For JavaScript functions declared in runtime files (with `//Provides:`), you can
 ```ocaml
 external my_primitive : int -> int -> int = "my_js_function"
 ```
-This calls the JavaScript function `my_js_function` directly, without the overhead of `Js.Unsafe` wrappers. See *writing JavaScript primitives* for how to define such functions.
+This calls the JavaScript function `my_js_function` directly, without the overhead of `Js.Unsafe` wrappers. See [writing JavaScript primitives](./linker.md#writing_primitives) for how to define such functions.
 
 
 ## Passing OCaml functions to JavaScript
@@ -910,7 +910,7 @@ For type-safe JSON handling, use [ppx\_deriving\_json](./ppx-deriving.md).
 
 JavaScript values declared with `//Provides:` in runtime files can be accessed from OCaml. There are two approaches depending on whether you're accessing a function or a non-function value.
 
-See *writing JavaScript primitives* for more about the `//Provides:` syntax.
+See [writing JavaScript primitives](./linker.md#writing_primitives) for more about the `//Provides:` syntax.
 
 
 ### Functions: use `external`
@@ -1990,7 +1990,7 @@ This is the simplest mode. Compile your bytecode executable directly:
 ```
 js_of_ocaml program.byte -o program.js
 ```
-Some libraries require additional runtime files. See *JavaScript primitives* for how to discover them.
+Some libraries require additional runtime files. See [JavaScript primitives](./linker.md#finding_runtime) for how to discover them.
 
 The compiler performs global dead-code elimination and cross-module optimizations, producing smaller and faster output.
 
@@ -2005,7 +2005,7 @@ Separate compilation involves three steps: build the runtime, compile units, and
 ```
 js_of_ocaml build-runtime -o runtime.js
 ```
-Some libraries require additional runtime files. See *JavaScript primitives* for how to discover them.
+Some libraries require additional runtime files. See [JavaScript primitives](./linker.md#finding_runtime) for how to discover them.
 
 
 ### 2\. Compile units and libraries
@@ -2853,31 +2853,7 @@ The preprocessor allows optional compilation based on the OCaml version:
    (@then ...)
    (@else ...))
 ```
-Variables are referenced with a `{{$`
-
-}
-
-}
-
-prefix (for instance `{{$ocaml_version`
-
-}
-
-}
-
-, `{{$wasi`
-
-}
-
-}
-
-, `{{$oxcaml`
-
-}
-
-}
-
-).
+Variables are referenced with a `$` prefix (for instance `$ocaml_version`, `$wasi`, `$oxcaml`).
 
 Available operators:
 
@@ -3222,7 +3198,7 @@ Or compile with:
 ```
 js_of_ocaml --enable with-js-error program.byte
 ```
-See *Error handling* for details.
+See [Error handling](./errors.md#stack_traces) for details.
 
 
 ## Chrome DevTools tips
@@ -3608,7 +3584,7 @@ Use the [PPX syntax extension](./ppx.md) instead.
 
 # Environment variables
 
-This page has been moved to *Command-line options*.
+This page has been moved to [Command-line options](./options.md#env_vars).
 
 
 ---

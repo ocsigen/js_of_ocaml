@@ -23,7 +23,7 @@ This is the simplest mode. Compile your bytecode executable directly:
 ```
 js_of_ocaml program.byte -o program.js
 ```
-Some libraries require additional runtime files. See *JavaScript primitives* for how to discover them.
+Some libraries require additional runtime files. See [JavaScript primitives](./linker.md#finding_runtime) for how to discover them.
 
 The compiler performs global dead-code elimination and cross-module optimizations, producing smaller and faster output.
 
@@ -38,7 +38,7 @@ Separate compilation involves three steps: build the runtime, compile units, and
 ```
 js_of_ocaml build-runtime -o runtime.js
 ```
-Some libraries require additional runtime files. See *JavaScript primitives* for how to discover them.
+Some libraries require additional runtime files. See [JavaScript primitives](./linker.md#finding_runtime) for how to discover them.
 
 
 ### 2\. Compile units and libraries
