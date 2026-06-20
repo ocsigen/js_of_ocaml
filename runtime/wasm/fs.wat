@@ -200,9 +200,10 @@
       (param $path (ref $bytes)) (result (ref $bytes))
       (local $need_slash i32) (local $i i32) (local $abs_path (ref $bytes))
       (if (i32.eqz (array.len (local.get $path)))
-         (then ;; empty path: leave it empty so it matches no preopen and the
-               ;; operation fails with ENOENT, like native (open "" etc.),
-               ;; rather than silently resolving to the current directory
+         (then ;; empty path: left empty here; wasi_resolve_path rejects it
+               ;; with ENOENT before resolution, like native (stat ""/open
+               ;; "" etc.). It cannot be rejected from the resolved path
+               ;; because "" would also match the current-directory preopen.
             (return (local.get $path))))
       (if (i32.eq (i32.const 47) ;; '/'
              (array.get_u $bytes (local.get $path) (i32.const 0)))
@@ -362,6 +363,12 @@
       (result (;fd;) i32 (;address;) i32 (;length;) i32)
       (local $res_0 i32) (local $res_1 (ref $bytes))
       (local $p i32)
+      ;; An empty path matches no entry and fails with ENOENT like native,
+      ;; rather than resolving to the current directory. This is checked on
+      ;; the original path: make_absolute would turn "" into current_dir,
+      ;; which is indistinguishable from ".".
+      (if (i32.eqz (array.len (ref.cast (ref $bytes) (local.get $vpath))))
+         (then (return (i32.const -1) (i32.const 0) (i32.const 0))))
       (call $resolve_abs_path
          (call $make_absolute
             (ref.cast (ref $bytes) (local.get $vpath))))
