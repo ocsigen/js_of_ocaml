@@ -285,8 +285,14 @@
  (preprocess
   (pps ppx_expect)))
 
+; Windows node rejects the O_APPEND flag combination (EINVAL) and positions
+; the append offset differently, so the test cannot assert native semantics
+; there; it runs on Unix-like hosts only.
+
 (library
  (name jsoo_testsuite_unix_open_append)
+ (enabled_if
+  (<> %{os_type} Win32))
  (modules unix_open_append)
  (libraries unix)
  (inline_tests
