@@ -132,6 +132,10 @@
    (import "bindings" "close" (func $close (param (ref eq))))
    (import "bindings" "isatty"
       (func $isatty (param (ref eq)) (result (ref eq))))
+   (import "bindings" "getuid" (func $getuid (result i32)))
+   (import "bindings" "geteuid" (func $geteuid (result i32)))
+   (import "bindings" "getgid" (func $getgid (result i32)))
+   (import "bindings" "getegid" (func $getegid (result i32)))
    (import "js" "unix_error" (global $unix_error_js (ref any)))
    (import "js" "caml_strerror"
       (func $caml_strerror (param i32) (result (ref any))))
@@ -2592,12 +2596,33 @@
    (export "caml_unix_isatty" (func $isatty))
 ))
 
+(@if $wasi
+(@then
+   ;; WASI has no notion of user/group ids; return 1 like the JS runtime's
+   ;; fallback when [process.getuid] and friends are unavailable.
    (func (export "unix_getuid") (export "caml_unix_getuid")
       (export "unix_geteuid") (export "caml_unix_geteuid")
       (export "unix_getgid") (export "caml_unix_getgid")
       (export "unix_getegid") (export "caml_unix_getegid")
       (param (ref eq)) (result (ref eq))
       (ref.i31 (i32.const 1)))
+)
+(@else
+   ;; On Node, return the real ids (the bindings fall back to 1 in a browser
+   ;; or wherever [process.getuid] is missing), matching runtime/js/unix.js.
+   (func (export "unix_getuid") (export "caml_unix_getuid")
+      (param (ref eq)) (result (ref eq))
+      (ref.i31 (call $getuid)))
+   (func (export "unix_geteuid") (export "caml_unix_geteuid")
+      (param (ref eq)) (result (ref eq))
+      (ref.i31 (call $geteuid)))
+   (func (export "unix_getgid") (export "caml_unix_getgid")
+      (param (ref eq)) (result (ref eq))
+      (ref.i31 (call $getgid)))
+   (func (export "unix_getegid") (export "caml_unix_getegid")
+      (param (ref eq)) (result (ref eq))
+      (ref.i31 (call $getegid)))
+))
 
    (func (export "unix_getpwnam") (export "caml_unix_getpwnam")
       (export "unix_getpwuid") (export "caml_unix_getpwuid")

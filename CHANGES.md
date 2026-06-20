@@ -65,6 +65,15 @@
   the nonstandard Firefox 3.x `fileName` property. (#2350)
 
 ## Bug fixes
+* Runtime: `caml_float16_of_double` (the JS runtime) rounds a double to
+  `float16` by first casting it to `float32` like native, instead of
+  rounding straight onto the `float16` grid; tie values then round
+  consistently across the js, wasm and native backends (e.g.
+  `65519.99999958789` overflows to infinity, not `65504`) (#2280)
+* Runtime/wasm: `Unix.getuid`/`geteuid`/`getgid`/`getegid` return the real
+  ids on Node (`process.getuid()`, ...) like the JS runtime, instead of
+  always returning `1`; the WASI build keeps `1`, which has no user ids
+  (#2280)
 * Runtime/wasm: `caml_seek_in` validates the seek destination for
   negativity instead of the current offset, so `seek_in ch (-5)` raises
   `Sys_error "Invalid argument"` instead of silently corrupting the file

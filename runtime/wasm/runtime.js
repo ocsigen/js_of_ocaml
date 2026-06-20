@@ -646,6 +646,14 @@
     // In a browser there is no tty and no [require]; report false instead of
     // throwing on the undefined [require].
     isatty: (fd) => (isNode ? +require("node:tty").isatty(fd) : 0),
+    getuid: () =>
+      globalThis.process?.getuid ? globalThis.process.getuid() : 1,
+    geteuid: () =>
+      globalThis.process?.geteuid ? globalThis.process.geteuid() : 1,
+    getgid: () =>
+      globalThis.process?.getgid ? globalThis.process.getgid() : 1,
+    getegid: () =>
+      globalThis.process?.getegid ? globalThis.process.getegid() : 1,
     time: () => performance.now(),
     getcwd: () => (isNode ? globalThis.process.cwd() : "/static"),
     chdir: (x) => globalThis.process.chdir(x),
