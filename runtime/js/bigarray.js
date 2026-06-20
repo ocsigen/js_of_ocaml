@@ -74,109 +74,35 @@ var caml_double_of_float16 = (function () {
 
 //Provides: caml_float16_of_double pure
 var caml_float16_of_double = (function () {
-  const INVERSE_OF_EPSILON = 1 / Number.EPSILON;
-
-  function roundTiesToEven(num) {
-    return num + INVERSE_OF_EPSILON - INVERSE_OF_EPSILON;
-  }
-
-  const FLOAT16_MIN_VALUE = 6.103515625e-5;
-  const FLOAT16_MAX_VALUE = 65504;
-  const FLOAT16_EPSILON = 0.0009765625;
-
-  const FLOAT16_EPSILON_MULTIPLIED_BY_FLOAT16_MIN_VALUE =
-    FLOAT16_EPSILON * FLOAT16_MIN_VALUE;
-  const FLOAT16_EPSILON_DEVIDED_BY_EPSILON =
-    FLOAT16_EPSILON * INVERSE_OF_EPSILON;
-
-  function roundToFloat16(num) {
-    const number = +num;
-
-    // NaN, Infinity, -Infinity, 0, -0
-    if (!Number.isFinite(number) || number === 0) {
-      return number;
-    }
-
-    // finite except 0, -0
-    const sign = number > 0 ? 1 : -1;
-    const absolute = Math.abs(number);
-
-    // small number
-    if (absolute < FLOAT16_MIN_VALUE) {
-      return (
-        sign *
-        roundTiesToEven(
-          absolute / FLOAT16_EPSILON_MULTIPLIED_BY_FLOAT16_MIN_VALUE,
-        ) *
-        FLOAT16_EPSILON_MULTIPLIED_BY_FLOAT16_MIN_VALUE
-      );
-    }
-
-    const temp = (1 + FLOAT16_EPSILON_DEVIDED_BY_EPSILON) * absolute;
-    const result = temp - (temp - absolute);
-
-    // large number
-    if (result > FLOAT16_MAX_VALUE || Number.isNaN(result)) {
-      return sign * Number.POSITIVE_INFINITY;
-    }
-
-    return sign * result;
-  }
-
-  // base algorithm: http://fox-toolkit.org/ftp/fasthalffloatconversion.pdf
-
-  const baseTable = new Uint16Array(512);
-  const shiftTable = new Uint8Array(512);
-
-  for (let i = 0; i < 256; ++i) {
-    const e = i - 127;
-
-    // very small number (0, -0)
-    if (e < -24) {
-      baseTable[i] = 0x0000;
-      baseTable[i | 0x100] = 0x8000;
-      shiftTable[i] = 24;
-      shiftTable[i | 0x100] = 24;
-
-      // small number (denorm)
-    } else if (e < -14) {
-      baseTable[i] = 0x0400 >> (-e - 14);
-      baseTable[i | 0x100] = (0x0400 >> (-e - 14)) | 0x8000;
-      shiftTable[i] = -e - 1;
-      shiftTable[i | 0x100] = -e - 1;
-
-      // normal number
-    } else if (e <= 15) {
-      baseTable[i] = (e + 15) << 10;
-      baseTable[i | 0x100] = ((e + 15) << 10) | 0x8000;
-      shiftTable[i] = 13;
-      shiftTable[i | 0x100] = 13;
-
-      // large number (Infinity, -Infinity)
-    } else if (e < 128) {
-      baseTable[i] = 0x7c00;
-      baseTable[i | 0x100] = 0xfc00;
-      shiftTable[i] = 24;
-      shiftTable[i | 0x100] = 24;
-
-      // stay (NaN, Infinity, -Infinity)
-    } else {
-      baseTable[i] = 0x7c00;
-      baseTable[i | 0x100] = 0xfc00;
-      shiftTable[i] = 13;
-      shiftTable[i | 0x100] = 13;
-    }
-  }
-
+  // Faithful port of the native runtime's float_to_half_fast3_rtne
+  // (caml_float_to_float16 in runtime/bigarray.c). The double is first
+  // rounded to a float32 (the `(float) x` cast native performs), then to a
+  // float16, each step round-to-nearest-ties-to-even. Rounding the double
+  // straight onto the float16 grid would double-round differently from
+  // native and the wasm runtime on tie cases (e.g. 65519.99999958789 must
+  // give 0x7c00, not 0x7bff).
   const buffer = new ArrayBuffer(4);
-  const floatView = new Float32Array(buffer);
-  const uint32View = new Uint32Array(buffer);
-
-  return function (num) {
-    floatView[0] = roundToFloat16(num);
-    const f = uint32View[0];
-    const e = (f >> 23) & 0x1ff;
-    return baseTable[e] + ((f & 0x007fffff) >> shiftTable[e]);
+  const f32 = new Float32Array(buffer);
+  const u32 = new Uint32Array(buffer);
+  return function (f) {
+    f32[0] = f; // round to float32
+    let x = u32[0] >>> 0;
+    const sign = x & 0x80000000;
+    x = (x ^ sign) >>> 0;
+    let o;
+    if (x >= 0x47800000) {
+      // |x| >= 2^16: infinity, or NaN if the float32 was a NaN
+      o = x > 0x7f800000 ? 0x7e00 : 0x7c00;
+    } else if (x < 0x38800000) {
+      // |x| < 2^-14: subnormal, rounded via the magic-number add
+      u32[0] = x;
+      f32[0] = f32[0] + 0.5;
+      o = (u32[0] - 0x3f000000) >>> 0;
+    } else {
+      // normal: round-to-nearest-even over the 13 dropped mantissa bits
+      o = (x + 0xc8000fff + ((x >>> 13) & 1)) >>> 13;
+    }
+    return (o | (sign >>> 16)) & 0xffff;
   };
 })();
 
