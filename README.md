@@ -99,7 +99,7 @@ optimized:
 - self recursive functions (when the tail calls are the function itself) are
   compiled using a loop.
 - trampolines are used otherwise.
-  [More](http://ocsigen.org/js_of_ocaml/dev/manual/tailcall) about tail call
+  [More](https://ocsigen.org/js_of_ocaml/latest/js_of_ocaml/tailcall.html) about tail call
   optimization.
 
 Effect handlers are supported with the `--effects={cps,double-translation}`

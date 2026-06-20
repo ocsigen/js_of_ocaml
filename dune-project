@@ -9,8 +9,8 @@
 (authors "Ocsigen team <dev@ocsigen.org>")
 (maintainers "Ocsigen team <dev@ocsigen.org>")
 (source (github ocsigen/js_of_ocaml))
-(homepage "https://ocsigen.org/js_of_ocaml/latest/manual/overview")
-(documentation "https://ocsigen.org/js_of_ocaml/latest/manual/overview")
+(homepage "https://ocsigen.org/js_of_ocaml/latest/js_of_ocaml/overview.html")
+(documentation "https://ocsigen.org/js_of_ocaml/latest/js_of_ocaml/overview.html")
 (license "GPL-2.0-or-later" "LGPL-2.1-or-later WITH OCaml-LGPL-linking-exception")
 
 (package
