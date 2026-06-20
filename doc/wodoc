@@ -4,7 +4,8 @@
 ;;               --menu <shared menu.html> [--latest]
 (project js_of_ocaml)
 (title Js_of_ocaml)
-(pub /js_of_ocaml)
+(url-prefix /js_of_ocaml)
+(css /css/style.css /css/ocsigen-odoc.css)  ; shared Ocsigen theme (wodoc css default changed)
 (landing js_of_ocaml/index.html)
 ;; no (highlight …): wodoc's default starter already colours js_of_ocaml/lwt/eliom syntax.
 ;; Build the API with odoc_driver (the engine ocaml.org uses) on the INSTALLED
