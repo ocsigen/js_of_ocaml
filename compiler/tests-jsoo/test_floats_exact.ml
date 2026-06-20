@@ -1,10 +1,10 @@
 (* Formatting with precisions above 100 (toFixed/toExponential's limit) and
    %f of values >= 1e21 must print the exact decimal expansion, like glibc.
    Native is the oracle, but mingw's printf rounds past ~17 significant
-   digits, so the dune stanza disables this test on Windows; the js and wasm
-   runtimes are OS-independent and still exercised everywhere else. *)
+   digits, so this test is disabled on Windows; the js and wasm runtimes are
+   OS-independent and still exercised everywhere else. *)
 
-[@@@if ocaml_version >= (4, 14, 0)]
+[@@@if ocaml_version >= (4, 14, 0) && os_type <> "Win32"]
 
 let%expect_test "format with large precision" =
   let p (fmt : _ format) x =
