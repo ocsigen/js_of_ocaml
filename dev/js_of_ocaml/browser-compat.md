@@ -1,7 +1,7 @@
 
 # Targeting older browsers
 
-Js\_of\_ocaml's generated code and runtime target **ECMAScript 2020 (ES2020)**. Out of the box, the output runs on Node.js 16+ and any evergreen browser released since early 2020 (Chrome 80+, Firefox 74+, Safari 13\.4+, Edge 80+).
+Js\_of\_ocaml's generated code and runtime target **ECMAScript 2020 (ES2020)**. Out of the box, the output runs on Node.js 18+, QuickJS-NG, and any evergreen browser released since early 2020 (Chrome 80+, Firefox 74+, Safari 13\.4+, Edge 80+).
 
 If you need to support an older engine, you can post-process the generated JavaScript with [Babel](https://babeljs.io) and ship polyfills with [core-js](https://github.com/zloirock/core-js). Js\_of\_ocaml has no built-in downleveling.
 
