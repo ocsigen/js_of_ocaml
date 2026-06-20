@@ -28,7 +28,7 @@ OCaml 5.x code using effect handlers can be compiled in three different ways:
 
 ## Installation and usage
 
-Installation and usage documentation can be found in [the js_of_ocaml manual](https://ocsigen.org/js_of_ocaml/dev/manual/wasm_overview).
+Installation and usage documentation can be found in [the js_of_ocaml manual](https://ocsigen.org/js_of_ocaml/latest/js_of_ocaml/wasm_overview.html).
 
 ## Running the test suite
 
