@@ -36,10 +36,15 @@ let handle comp =
        }
 (*with Not_found -> assert false*)
 
-let () =
+let%expect_test "deep handler: return, raised and failed computations" =
   handle comp1;
   handle comp2;
-  handle comp3
+  handle comp3;
+  [%expect {|
+    5
+    42
+    42
+    |}]
 
 type 'a status =
   | Complete of 'a
@@ -70,9 +75,10 @@ let rec run_both a b =
 
 let comp2 () = perform (Xchg 21) * perform (Xchg 21)
 
-let () =
+let%expect_test "two coroutines exchange values" =
   let x, y = run_both (step comp1) (step comp2) in
-  Format.printf ">> %d %d@." x y
+  Format.printf ">> %d %d@." x y;
+  [%expect {| >> 42 0 |}]
 
 type _ Effect.t += Fork : (unit -> unit) -> unit t | Yield : unit t
 
@@ -137,7 +143,7 @@ let run (main : unit -> unit) : unit =
   in
   spawn main
 
-let _ =
+let%expect_test "round-robin scheduler with a rendezvous exchange" =
   run (fun _ ->
       fork (fun _ ->
           Format.printf "[t1] Sending 0@.";
@@ -146,7 +152,14 @@ let _ =
       fork (fun _ ->
           Format.printf "[t2] Sending 1@.";
           let v = xchg 1 in
-          Format.printf "[t2] received %d@." v))
+          Format.printf "[t2] received %d@." v));
+  [%expect
+    {|
+    [t1] Sending 0
+    [t2] Sending 1
+    [t2] received 0
+    [t1] received 1
+    |}]
 
 (*****)
 
@@ -176,42 +189,49 @@ let baz () =
           | _ -> None)
     }
 
-let () = Format.printf "%s@." (baz ())
+let%expect_test "nested handlers each catch their own effect" =
+  Format.printf "%s@." (baz ());
+  [%expect {| Hello, world! Coucou! Hello, world! |}]
 
 (****)
 
-let () =
+let%expect_test "discontinue raises in the suspended computation" =
   Format.printf
     "%s@."
     (try_with
        (fun () -> try perform F with Not_found -> "Discontinued")
        ()
-       { effc = (fun (type a) (eff : a t) -> Some (fun k -> discontinue k Not_found)) })
+       { effc = (fun (type a) (eff : a t) -> Some (fun k -> discontinue k Not_found)) });
+  [%expect {| Discontinued |}]
 
-let () =
+let%expect_test "a handler returning None leaves the effect Unhandled" =
   Format.printf
     "%s@."
     (try_with
        (fun () -> try perform F with Unhandled _ -> "Unhandled")
        ()
-       { effc = (fun (type a) (eff : a t) -> None) })
+       { effc = (fun (type a) (eff : a t) -> None) });
+  [%expect {| Unhandled |}]
 
-let () = Format.printf "%s@." (try bar () with Unhandled _ -> "Saw unhandled exception")
+let%expect_test "an unhandled effect escapes as the Unhandled exception" =
+  Format.printf "%s@." (try bar () with Unhandled _ -> "Saw unhandled exception");
+  [%expect {| Saw unhandled exception |}]
 
-let () =
-  try
-    Format.printf "%d@."
-    @@ try_with
-         perform
-         (Xchg 0)
-         { effc =
-             (fun (type a) (eff : a t) ->
-               match eff with
-               | Xchg n ->
-                   Some (fun (k : (a, _) continuation) -> continue k 21 + continue k 21)
-               | _ -> None)
-         }
-  with Continuation_already_resumed -> Format.printf "One-shot@."
+let%expect_test "continuations are one-shot" =
+  (try
+     Format.printf "%d@."
+     @@ try_with
+          perform
+          (Xchg 0)
+          { effc =
+              (fun (type a) (eff : a t) ->
+                match eff with
+                | Xchg n ->
+                    Some (fun (k : (a, _) continuation) -> continue k 21 + continue k 21)
+                | _ -> None)
+          }
+   with Continuation_already_resumed -> Format.printf "One-shot@.");
+  [%expect {| One-shot |}]
 
 (****)
 
@@ -245,7 +265,9 @@ let rec loop () =
       loop ()
   | None -> Format.printf "@."
 
-let () = loop ()
+let%expect_test "effects turn an iterator into a generator" =
+  loop ();
+  [%expect {| OCaml |}]
 
 (****)
 
@@ -285,11 +307,17 @@ let run (comp : unit -> unit) : unit =
   in
   loop_send (fiber comp) ()
 
-let () =
+let%expect_test "shallow handlers run a send/recv protocol" =
   run (fun () ->
       Format.printf "Send 42@.";
       perform (Send 42);
       Format.printf "Recv: %d@." (perform Recv);
       Format.printf "Send 43@.";
       perform (Send 43);
-      Format.printf "Recv: %d@." (perform Recv))
+      Format.printf "Recv: %d@." (perform Recv));
+  [%expect {|
+    Send 42
+    Recv: 42
+    Send 43
+    Recv: 43
+    |}]
