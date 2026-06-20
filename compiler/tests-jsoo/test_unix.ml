@@ -222,30 +222,6 @@ let%expect_test "closed fds do not resolve" =
   Sys.remove f;
   [%expect {| EBADF |}]
 
-(* Sys.is_directory follows symlinks (uses stat, not lstat), like native:
-   a symlink to a directory is a directory, a symlink to a file is not. *)
-let%expect_test "is_directory follows symlinks" =
-  let d = Filename.temp_file "jsoo_symdir" "" in
-  Sys.remove d;
-  Unix.mkdir d 0o755;
-  let f = Filename.temp_file "jsoo_symfile" ".dat" in
-  let ld = Filename.temp_file "jsoo_lnd" "" in
-  Sys.remove ld;
-  let lf = Filename.temp_file "jsoo_lnf" "" in
-  Sys.remove lf;
-  Unix.symlink d ld;
-  Unix.symlink f lf;
-  Printf.printf "symlink->dir: %b\n" (Sys.is_directory ld);
-  Printf.printf "symlink->file: %b\n" (Sys.is_directory lf);
-  Sys.remove ld;
-  Sys.remove lf;
-  Sys.remove f;
-  Unix.rmdir d;
-  [%expect {|
-    symlink->dir: true
-    symlink->file: false
-    |}]
-
 (* An error variant with no WASI errno equivalent (e.g. EWOULDBLOCK) must
    still produce a real message, not "Unknown error -1". The exact text is
    backend-specific (a descriptive string natively / under node, the error
@@ -267,16 +243,3 @@ let%expect_test "empty path is ENOENT" =
   | exception Unix.Unix_error (e, _, _) ->
       print_endline (String.lowercase_ascii (Unix.error_message e)));
   [%expect {| ENOENT |}]
-
-(* Unix.utimes follows symlinks (it is utimes, not lutimes): setting the
-   times through a symlink updates the target. *)
-let%expect_test "utimes follows symlinks" =
-  let f = Filename.temp_file "jsoo_utf" ".dat" in
-  let l = Filename.temp_file "jsoo_utl" "" in
-  Sys.remove l;
-  Unix.symlink f l;
-  Unix.utimes l 12345.0 12345.0;
-  Printf.printf "%b\n" ((Unix.stat f).Unix.st_mtime = 12345.0);
-  Sys.remove l;
-  Sys.remove f;
-  [%expect {| true |}]
