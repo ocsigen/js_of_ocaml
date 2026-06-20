@@ -19,16 +19,6 @@
 
 ///////////// Jslib: code specific to Js_of_ocaml
 
-//Provides: caml_js_html_escape const (const)
-var caml_js_regexps = { amp: /&/g, lt: /</g, quot: /"/g, all: /[&<"]/ };
-function caml_js_html_escape(s) {
-  if (!caml_js_regexps.all.test(s)) return s;
-  return s
-    .replace(caml_js_regexps.amp, "&amp;")
-    .replace(caml_js_regexps.lt, "&lt;")
-    .replace(caml_js_regexps.quot, "&quot;");
-}
-
 //Provides: caml_js_html_entities
 function caml_js_html_entities(s) {
   var entity = /^&#?[0-9a-zA-Z]+;$/;
