@@ -412,7 +412,7 @@ external my_primitive : int -> int -> int = "my_js_function"
 ]}
 
 This calls the JavaScript function [my_js_function] directly, without the
-overhead of [Js.Unsafe] wrappers. See {{!page-"linker".writing-primitives}writing JavaScript primitives}
+overhead of [Js.Unsafe] wrappers. See {{!page-"linker".writing_primitives}writing JavaScript primitives}
 for how to define such functions.
 
 {1:callbacks Passing OCaml functions to JavaScript}
@@ -586,7 +586,7 @@ JavaScript values declared with [//Provides:] in runtime files can be
 accessed from OCaml. There are two approaches depending on whether you're
 accessing a function or a non-function value.
 
-See {{!page-"linker".writing-primitives}writing JavaScript primitives}
+See {{!page-"linker".writing_primitives}writing JavaScript primitives}
 for more about the [//Provides:] syntax.
 
 {2 Functions: use [external]}

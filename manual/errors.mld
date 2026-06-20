@@ -82,7 +82,7 @@ try {
 For better JavaScript interoperability, raise JavaScript errors instead of
 OCaml exceptions
 
-{1:stack-traces Stack traces for OCaml exceptions}
+{1:stack_traces Stack traces for OCaml exceptions}
 
 By default, OCaml exceptions don't carry JavaScript stack traces. This makes
 debugging difficult since you can't see where an exception originated in

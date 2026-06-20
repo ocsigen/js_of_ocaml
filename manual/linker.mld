@@ -19,7 +19,7 @@ Pass JavaScript files (must have ".js" extension) directly:
 js_of_ocaml myruntime.js program.byte
 v}
 
-{1:finding-runtime Finding runtime files}
+{1:finding_runtime Finding runtime files}
 
 OCaml libraries often require JavaScript runtime files. The js_of_ocaml compiler
 does not automatically locate these files - They must be passed explicitly on the command line.
@@ -53,7 +53,7 @@ v}
 
 With {b dune}, this is handled automatically.
 
-{1:writing-primitives Writing JavaScript primitives}
+{1:writing_primitives Writing JavaScript primitives}
 
 User-defined primitives need to be implemented in a separate JavaScript file.
 See {{!page-"runtime-representation"}runtime representation} for how

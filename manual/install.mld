@@ -2,7 +2,7 @@
 
 {1:requirements Requirements}
 
-{b OCaml}: 4.13 to 5.4
+{b OCaml}: 4.13 to 5.5
 
 {b Build tools}:
 - dune >= 3.19
