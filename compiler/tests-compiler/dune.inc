@@ -10,7 +10,7 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  ;; compiler/tests-compiler/bool_context.ml
@@ -23,7 +23,7 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  ;; compiler/tests-compiler/build_path_prefix_map.ml
@@ -36,7 +36,7 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  ;; compiler/tests-compiler/call_gen.ml
@@ -49,7 +49,7 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  ;; compiler/tests-compiler/compact.ml
@@ -62,7 +62,7 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  ;; compiler/tests-compiler/cond.ml
@@ -75,7 +75,7 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  ;; compiler/tests-compiler/constant_sinking.ml
@@ -88,7 +88,7 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  ;; compiler/tests-compiler/direct_calls.ml
@@ -101,7 +101,7 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  ;; compiler/tests-compiler/effects.ml
@@ -116,7 +116,7 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  ;; compiler/tests-compiler/effects_continuations.ml
@@ -130,7 +130,7 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  ;; compiler/tests-compiler/effects_exceptions.ml
@@ -144,7 +144,7 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  ;; compiler/tests-compiler/effects_toplevel.ml
@@ -157,7 +157,7 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  ;; compiler/tests-compiler/eliminate_exception_handler.ml
@@ -171,7 +171,7 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  ;; compiler/tests-compiler/empty_cma.ml
@@ -184,7 +184,7 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  ;; compiler/tests-compiler/end_to_end.ml
@@ -197,7 +197,7 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  ;; compiler/tests-compiler/error.ml
@@ -211,7 +211,7 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  ;; compiler/tests-compiler/es6.ml
@@ -224,7 +224,7 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  ;; compiler/tests-compiler/exceptions.ml
@@ -238,7 +238,7 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  ;; compiler/tests-compiler/exports.ml
@@ -251,7 +251,7 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  ;; compiler/tests-compiler/getenv.ml
@@ -264,7 +264,7 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  ;; compiler/tests-compiler/gh1007.ml
@@ -277,7 +277,7 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  ;; compiler/tests-compiler/gh1051.ml
@@ -292,7 +292,7 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  ;; compiler/tests-compiler/gh1320.ml
@@ -305,7 +305,7 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  ;; compiler/tests-compiler/gh1349.ml
@@ -318,7 +318,7 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  ;; compiler/tests-compiler/gh1354.ml
@@ -332,7 +332,7 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  ;; compiler/tests-compiler/gh1390.ml
@@ -345,7 +345,7 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  ;; compiler/tests-compiler/gh1481.ml
@@ -358,7 +358,7 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  ;; compiler/tests-compiler/gh1494.ml
@@ -371,7 +371,7 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  ;; compiler/tests-compiler/gh1559.ml
@@ -384,7 +384,7 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  ;; compiler/tests-compiler/gh1599.ml
@@ -397,7 +397,7 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  ;; compiler/tests-compiler/gh1659.ml
@@ -410,7 +410,7 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  ;; compiler/tests-compiler/gh1768.ml
@@ -423,7 +423,7 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  ;; compiler/tests-compiler/gh1868.ml
@@ -437,7 +437,7 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  ;; compiler/tests-compiler/gh2106.ml
@@ -450,7 +450,7 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  ;; compiler/tests-compiler/gh2122.ml
@@ -463,7 +463,7 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  ;; compiler/tests-compiler/gh2156.ml
@@ -476,7 +476,7 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  ;; compiler/tests-compiler/gh2217.ml
@@ -489,7 +489,7 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  ;; compiler/tests-compiler/gh2218.ml
@@ -502,7 +502,7 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  ;; compiler/tests-compiler/gh747.ml
@@ -516,7 +516,7 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  ;; compiler/tests-compiler/gl507.ml
@@ -529,7 +529,7 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  ;; compiler/tests-compiler/global_deadcode.ml
@@ -543,7 +543,7 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  ;; compiler/tests-compiler/inlining.ml
@@ -556,7 +556,7 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  ;; compiler/tests-compiler/js_parser_printer.ml
@@ -570,7 +570,7 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  ;; compiler/tests-compiler/jsopt.ml
@@ -583,7 +583,7 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  ;; compiler/tests-compiler/lambda_lifting.ml
@@ -596,7 +596,7 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  ;; compiler/tests-compiler/lazy.ml
@@ -604,13 +604,12 @@
  (modules lazy)
  (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
  (inline_tests
-  (enabled_if (>= %{ocaml_version} 5))
   (deps
    (file %{project_root}/compiler/bin-js_of_ocaml/js_of_ocaml.exe)
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  ;; compiler/tests-compiler/loop_in_handler.ml
@@ -623,7 +622,7 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  ;; compiler/tests-compiler/loops.ml
@@ -637,7 +636,7 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  ;; compiler/tests-compiler/macro.ml
@@ -650,7 +649,7 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  ;; compiler/tests-compiler/match_with_exn.ml
@@ -663,7 +662,7 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  ;; compiler/tests-compiler/minify.ml
@@ -676,7 +675,7 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  ;; compiler/tests-compiler/mutable_closure.ml
@@ -689,22 +688,20 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  ;; compiler/tests-compiler/obj.ml
  (name obj_15)
- (enabled_if (>= %{ocaml_version} 5))
  (modules obj)
  (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
  (inline_tests
-  (enabled_if (and (>= %{ocaml_version} 5) (not %{oxcaml_supported})))
   (deps
    (file %{project_root}/compiler/bin-js_of_ocaml/js_of_ocaml.exe)
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  ;; compiler/tests-compiler/obj_dup.ml
@@ -717,7 +714,7 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  ;; compiler/tests-compiler/oo.ml
@@ -730,7 +727,7 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  ;; compiler/tests-compiler/rec.ml
@@ -738,27 +735,12 @@
  (modules rec)
  (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
  (inline_tests
-  (enabled_if (< %{ocaml_version} 5.2))
   (deps
    (file %{project_root}/compiler/bin-js_of_ocaml/js_of_ocaml.exe)
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
-
-(library
- ;; compiler/tests-compiler/rec52.ml
- (name rec52_15)
- (modules rec52)
- (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
- (inline_tests
-  (enabled_if (>= %{ocaml_version} 5.2))
-  (deps
-   (file %{project_root}/compiler/bin-js_of_ocaml/js_of_ocaml.exe)
-   (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
- (flags (:standard -open Jsoo_compiler_expect_tests_helper))
- (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  ;; compiler/tests-compiler/scopes.ml
@@ -772,7 +754,7 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  ;; compiler/tests-compiler/shape.ml
@@ -785,7 +767,7 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  ;; compiler/tests-compiler/side_effect.ml
@@ -798,7 +780,7 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  ;; compiler/tests-compiler/sourcemap.ml
@@ -811,7 +793,7 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  ;; compiler/tests-compiler/static_eval.ml
@@ -824,7 +806,7 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  ;; compiler/tests-compiler/string_concat_eq.ml
@@ -837,7 +819,7 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  ;; compiler/tests-compiler/sys_command.ml
@@ -850,7 +832,7 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  ;; compiler/tests-compiler/sys_fs.ml
@@ -863,7 +845,7 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  ;; compiler/tests-compiler/tailcall.ml
@@ -876,7 +858,7 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  ;; compiler/tests-compiler/target_env.ml
@@ -889,7 +871,7 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  ;; compiler/tests-compiler/test_string.ml
@@ -902,7 +884,7 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  ;; compiler/tests-compiler/unix_fs.ml
@@ -916,7 +898,7 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  ;; compiler/tests-compiler/update_dummy.ml
@@ -929,7 +911,7 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  ;; compiler/tests-compiler/var_coalescing.ml
@@ -942,7 +924,7 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  ;; compiler/tests-compiler/variable_declaration_output.ml
@@ -955,4 +937,4 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))

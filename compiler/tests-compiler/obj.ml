@@ -17,7 +17,12 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-open Util
+open! Util
+
+(* Some Obj functions stopped being primitives in OCaml 5, changing the
+   generated code; the expected output here is the >= 5 one. OxCaml differs
+   again, so it is excluded too. *)
+[@@@if ocaml_version >= (5, 0, 0) && not oxcaml]
 
 let%expect_test "static eval of string get" =
   let program =

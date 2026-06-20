@@ -17,6 +17,10 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+(* Compressed marshaling requires OCaml 5.1.1 and is not available under
+   OxCaml. *)
+[@@@if ocaml_version >= (5, 1, 1) && not oxcaml]
+
 let%expect_test _ =
   let data =
     "\132\149\166\189\r\022\206\021\001\147F\137d(\181/\253\000Xm\000\0000\n\
