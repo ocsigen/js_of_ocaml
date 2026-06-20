@@ -33,9 +33,28 @@
     // the name bound by let / let%x / let* / and -> a function/title (lookbehind
     // may be unsupported on old browsers; guard so the rest still applies)
     try {
+      // The bound name(s) after let/and -> title (orange). Covers:
+      //   let f x y = ...        -> f only (x y are parameters)
+      //   let p, r, s = ...      -> p, r, s (top-level tuple binding)
+      //   let (p, r) = ...       -> p, r   (parenthesised tuple binding)
+      // but NOT a tuple PARAMETER: in `let f (p, r) = ...` a name precedes the
+      // paren, so the `\(?` anchored right after let/and cannot reach p/r, and
+      // f alone stays coloured.
+      // `(?:rec\s+)?` lets the name be found after `let rec`; the negative
+      // lookahead then keeps the `rec`/`module` keywords themselves uncoloured.
+      var lead = "\\b(?:let|and)(?:%[a-z]+|[*+])?\\s+(?:rec\\s+)?";
+      // first name, possibly the first one inside a parenthesised tuple; never a
+      // bare `rec`/`module` keyword (e.g. `let rec f`, `let (module M)`).
       oc.contains.unshift({
         className: "title",
-        begin: new RegExp("(?<=\\b(?:let|and)(?:%[a-z]+|[*+])?\\s+)[a-z_][\\w']*"),
+        begin: new RegExp("(?<=" + lead + "\\(?\\s*)(?!(?:module|rec)\\b)[a-z_][\\w']*"),
+      });
+      // the following tuple names, reached through identifiers/commas/spaces only
+      // (no further parens, and never across `=`), so only genuine tuple bindings
+      // get every name coloured.
+      oc.contains.unshift({
+        className: "title",
+        begin: new RegExp("(?<=" + lead + "\\(?[\\w\\s,']*,\\s*)[a-z_][\\w']*"),
       });
     } catch (e) { /* lookbehind unsupported: skip function-name highlighting */ }
     hljs.registerLanguage("ocaml", function () { return oc; });
