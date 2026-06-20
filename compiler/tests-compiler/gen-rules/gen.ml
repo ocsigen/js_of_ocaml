@@ -33,7 +33,6 @@ type lang =
   | Not of lang
   | NEQ of lang * lang
   | GE of lang * lang
-  | LT of lang * lang
   | Var of string
   | Atom of string
   | And of lang list
@@ -48,8 +47,6 @@ let profile = Var "profile"
 
 let ge v = GE (ocaml_version, Atom v)
 
-let lt v = LT (ocaml_version, Atom v)
-
 let not x = Not x
 
 let not_quickjs = NEQ (profile, Atom "quickjs")
@@ -60,16 +57,16 @@ let and_ = function
   | l -> And l
 
 let lib_enabled_if = function
-  | "obj" | "effects" -> [ ge "5" ]
+  (* [effects] uses effect handler syntax, which does not parse before OCaml 5,
+     so it cannot be gated with ppx_optcomp_light and stays a dune gate.
+     [obj]/[lazy] only differ in generated output and are gated in-source with
+     a floating [@@@if]. *)
+  | "effects" -> [ ge "5" ]
   | "gh1051" -> [ arch_sixtyfour ]
   | _ -> []
 
 let test_enabled_if = function
-  | "obj" -> [ ge "5"; not oxcaml ] (* Some Obj functions are no longer primitives *)
-  | "lazy" -> [ ge "5" ]
   | "gh1051" -> [ arch_sixtyfour ]
-  | "rec52" -> [ ge "5.2" ]
-  | "rec" -> [ lt "5.2" ]
   | "gh1354"
   | "gh1868"
   | "exceptions"
@@ -92,7 +89,6 @@ let rec pp f = function
   | Not x -> Format.fprintf f "(not %a)" pp x
   | NEQ (a, b) -> Format.fprintf f "(<> %a %a)" pp a pp b
   | GE (a, b) -> Format.fprintf f "(>= %a %a)" pp a pp b
-  | LT (a, b) -> Format.fprintf f "(< %a %a)" pp a pp b
   | Var x -> Format.fprintf f "%%{%s}" x
   | Atom x -> Format.fprintf f "%s" x
   | And [] -> assert false
@@ -130,7 +126,7 @@ let () =
    (file %%{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 |}
         prefix
         basename

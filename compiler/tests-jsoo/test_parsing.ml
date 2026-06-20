@@ -17,6 +17,9 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+(* The parser error reporting exercised here matches OCaml >= 5.1.1. *)
+[@@@if ocaml_version >= (5, 1, 1)]
+
 let parse s =
   try
     let lexbuf = Lexing.from_string s in

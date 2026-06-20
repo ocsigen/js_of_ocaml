@@ -17,6 +17,10 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+(* These tests were historically gated on OCaml >= 4.14 (bundled with the
+   In_channel/Out_channel tests); keep that gate. *)
+[@@@if ocaml_version >= (4, 14, 0)]
+
 let%expect_test _ =
   (* copied from https://github.com/ocaml/ocaml/pull/1794 *)
   let z =

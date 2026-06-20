@@ -4,78 +4,27 @@
   (env-vars
    (FOO bar))))
 
-(library
- (name jsoo_testsuite_latest)
- (modules test_io test_floats)
- (libraries unix compiler-libs.common js_of_ocaml-compiler)
- (enabled_if
-  (>= %{ocaml_version} 4.14))
- (inline_tests
-  (deps
-   (sandbox preserve_file_kind))
-  (modes js wasm best))
- (preprocess
-  (pps ppx_expect)))
-
 ; [format with large precision] checks the exact decimal expansion of a
 ; double. The native oracle is mingw on Windows, whose printf rounds past
 ; ~17 significant digits and so cannot reproduce it; disable the whole test
 ; there. js and wasm are OS-independent and still run on every other
 ; platform.
 
+; The version part of the gate (>= 4.14) lives in the source as a floating
+; [@@@if]; the Windows exclusion stays here because ppx_optcomp_light cannot
+; test the OS.
+
 (library
  (name jsoo_testsuite_floats_exact)
  (modules test_floats_exact)
  (enabled_if
-  (and
-   (>= %{ocaml_version} 4.14)
-   (<> %{ocaml-config:os_type} Win32)))
+  (<> %{ocaml-config:os_type} Win32))
  (inline_tests
   (deps
    (sandbox preserve_file_kind))
   (modes js wasm best))
  (preprocess
-  (pps ppx_expect)))
-
-(library
- (name jsoo_testsuite_5_2)
- (modules test_io_5_2)
- (enabled_if
-  (>= %{ocaml_version} 5.2))
- (inline_tests
-  (deps
-   (sandbox preserve_file_kind))
-  (modes js wasm best))
- (preprocess
-  (pps ppx_expect)))
-
-(library
- (name jsoo_testsuite_compression)
- (modules test_marshal_compressed)
- (libraries unix compiler-libs.common js_of_ocaml-compiler)
- (enabled_if
-  (and
-   (>= %{ocaml_version} 5.1.1)
-   (not %{oxcaml_supported})))
- (inline_tests
-  (deps
-   (sandbox preserve_file_kind))
-  (modes js wasm best))
- (preprocess
-  (pps ppx_expect)))
-
-(library
- (name jsoo_testsuite_parsing)
- (modules test_parsing calc_parser calc_lexer)
- (libraries unix compiler-libs.common js_of_ocaml-compiler)
- (enabled_if
-  (>= %{ocaml_version} 5.1.1))
- (inline_tests
-  (deps
-   (sandbox preserve_file_kind))
-  (modes js wasm best))
- (preprocess
-  (pps ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect)))
 
 (library
  (name jsoo_testsuite_perms)
@@ -180,18 +129,13 @@
  (modules
   (:standard
    \
-   test_io
-   test_io_5_2
-   test_floats
    test_floats_exact
    test_float16
    test_bigarray
    test_list_of_js_array
-   test_marshal_compressed
    test_marshal_float32
    test_marshal_float32_js
    test_md5_large
-   test_parsing
    test_ugeint
    ugeint_bytecode_probe
    test_runtime_value
@@ -215,9 +159,7 @@
    test_str
    test_weak_gc
    toplevel_sections
-   obj_block_float
-   calc_parser
-   calc_lexer))
+   obj_block_float))
  (libraries unix compiler-libs.common js_of_ocaml-compiler)
  (foreign_stubs
   (language c)
@@ -227,7 +169,10 @@
    (sandbox preserve_file_kind))
   (modes js wasm best))
  (preprocess
-  (pps ppx_expect)))
+  ; ppx_optcomp_light lets version-specific tests (e.g. those gated with
+  ; [@@@if ocaml_version >= ...]) share this single library across OCaml
+  ; versions instead of living in their own enabled_if'd libraries.
+  (pps ppx_optcomp_light ppx_expect)))
 
 ; test_bigarray uses the float16 kind, which requires OCaml 5.2.
 
@@ -439,13 +384,13 @@
 
 (test
  (name condition)
- ; build_if, not enabled_if: Condition/Mutex are in the threads library on
- ; OCaml < 5, so enabled_if would still compile (and fail) the module under
- ; `make all`.
+ ; The OCaml < 5 gate lives in the source as a floating [@@@if]: Condition/Mutex
+ ; are in the threads library on OCaml < 5, and gating the body keeps the module
+ ; compiling (empty) on older compilers without pulling in threads.
  (modules condition)
- (build_if
-  (>= %{ocaml_version} 5))
- (modes js wasm))
+ (modes js wasm)
+ (preprocess
+  (pps ppx_optcomp_light)))
 
 ; The js accessor lives in the optional +toplevel.js runtime fragment, so it
 ; is linked explicitly; --toplevel is deliberately NOT passed, so the bytecode

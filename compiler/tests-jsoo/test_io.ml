@@ -17,6 +17,9 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+(* The In_channel/Out_channel APIs exercised here require OCaml 4.14. *)
+[@@@if ocaml_version >= (4, 14, 0)]
+
 let%expect_test "unicode" =
   let () = print_endline "the • and › characters" in
   [%expect {| the • and › characters |}]
@@ -130,3 +133,18 @@ let%expect_test "flush_all flushes user channels" =
   Sys.remove f;
   print_endline s;
   [%expect {| hello |}]
+
+(* [Out_channel.is_binary_mode] was added in OCaml 5.2. *)
+let%expect_test "is_binary_mode" =
+  let f = Filename.temp_file "jsoo_bin" ".txt" in
+  let oc = open_out f in
+  (* On Unix (and the js/wasm runtimes) text channels report binary mode;
+     native Windows reports them as non-binary. *)
+  Printf.printf
+    "%b %b\n"
+    (Sys.win32 || Out_channel.is_binary_mode oc)
+    (Sys.win32 || Out_channel.is_binary_mode stdout);
+  close_out oc;
+  Sys.remove f;
+  [%expect {| true true |}]
+[@@if ocaml_version >= (5, 2, 0)]
