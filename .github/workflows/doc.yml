@@ -123,6 +123,7 @@ jobs:
         working-directory: relsrc
         run: |
           opam install . --deps-only --with-doc
+          opam install js_of_ocaml js_of_ocaml-lwt js_of_ocaml-tyxml js_of_ocaml-toplevel
           opam install lwt_log yojson graphics higlo
           opam pin add -n wodoc https://github.com/ocsigen/wodoc.git
           opam install wodoc
