@@ -79,3 +79,26 @@ type i64 = int64 [@@deriving json]
 let%expect_test _ =
   test i64_json 100000000000000000L;
   [%expect {||}]
+
+type f = float [@@deriving json]
+
+(* The generic [test] helper can't be reused for floats: [nan = nan] is
+   [false], so compare nan specially. Guards the writer/lexer agreement on
+   non-finite floats. *)
+let test_float v =
+  let v' = Deriving_Json.from_string f_json (Deriving_Json.to_string f_json v) in
+  let ok =
+    match classify_float v with
+    | FP_nan -> Float.is_nan v'
+    | _ -> v = v'
+  in
+  if ok then () else print_endline "Not equal"
+
+let%expect_test _ =
+  test_float 3.14;
+  test_float 0.;
+  test_float (-0.);
+  test_float infinity;
+  test_float neg_infinity;
+  test_float nan;
+  [%expect {||}]

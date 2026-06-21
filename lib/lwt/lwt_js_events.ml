@@ -330,7 +330,6 @@ let mousewheel ?use_capture ?passive target =
          ?passive:(opt_map Js.bool passive)
          target
          (fun (ev : #Dom_html.event Js.t) ~dx ~dy ->
-           Console.console##log ev;
            cancel ();
            Lwt.wakeup w (ev, (dx, dy));
            Js.bool true)

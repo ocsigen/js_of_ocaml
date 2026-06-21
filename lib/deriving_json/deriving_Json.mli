@@ -166,6 +166,7 @@ module Json_int32 : Json with type a = int32
 
 module Json_int64 : Json with type a = int64
 
+(* Unimplemented: [read] and [write] both raise [Failure]. *)
 module Json_nativeint : Json with type a = nativeint
 
 (* module Json_num       : Json with type a = Num.num *)
