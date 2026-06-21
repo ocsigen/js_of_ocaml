@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Module Graphics_js — Js_of_ocaml</title>
+  <link rel="stylesheet" href="/css/style.css"/>
+  <link rel="stylesheet" href="/css/ocsigen-odoc.css"/>
+  <link rel="alternate" type="text/markdown" href="../../js_of_ocaml-lwt/Graphics_js.md"/>
+  <script src="../../highlight.pack.js"></script>
+  <script src="../../wodoc-highlight.js"></script>
+</head>
+<body class="wodoc-page wodoc-doc">
+  <!-- Shared site menu — THE single source of truth for the header, top menu and
+     drawer of EVERY Ocsigen doc page (vitrine + all projects). Canonical copy
+     lives here in ocsigen.github.io; each project's build fetches it. Injected
+     by `wodoc assemble --menu`. Holes filled by the tool (braces omitted here so
+     this comment is not itself rewritten by the hole-filler):
+       subproject  the sub-project name shown next to the Ocsigen logo
+                   (empty on the vitrine), via --subproject
+       leftnav     the project's left navigation, expanded into BOTH the mobile
+                   drawer (below) and the left column (in the page template),
+                   via --leftnav
+     The current entry is highlighted by adding the `current` class to the
+     element carrying data-wodoc-page=<id>: --current on the vitrine (page id),
+     --menu-current in a project (the project id). Nothing is hardcoded here, so
+     this file is the ONLY place the menu is defined.
+
+     Links are the FINAL site paths (/<project>/, /<page>): the target layout
+     where each project is served at ocsigen.org/<project>/ — no transitional
+     /wodoc/ prefix. -->
+<div class="page-header">
+  <p class="logo-ocsigen"><a href="/"><img src="/img/ocsigen-white.svg" alt="Ocsigen"/></a></p>
+  <p class="logo-subproject">Js_of_ocaml</p>
+
+  <div class="mainmenu">
+    <p class="mainmenu-home" data-wodoc-page="githubio"><a href="/">Home</a></p>
+    <p class="mainmenu-doc" data-wodoc-page="tuto"><a href="/tuto/">Doc</a></p>
+    <p class="mainmenu-blog" data-wodoc-page="blog"><a href="/blog/">Blog</a></p>
+    <p data-wodoc-page="eliom"><a href="/eliom/">Eliom</a></p>
+    <p data-wodoc-page="js_of_ocaml" class="current"><a href="/js_of_ocaml/">Js_of_ocaml</a></p>
+    <p data-wodoc-page="ocsigenserver"><a href="/ocsigenserver/">Server</a></p>
+    <p data-wodoc-page="lwt"><a href="/lwt/">Lwt</a></p>
+    <p data-wodoc-page="tyxml"><a href="/tyxml/">Tyxml</a></p>
+    <p data-wodoc-page="ocsigen-start"><a href="/ocsigen-start/">Start</a></p>
+  </div>
+
+  <form id="googlesearch" action="https://google.com/search">
+    <input name="q" id="gsearch-box" placeholder="Search using Google"/>
+    <label for="gsearch-box"><img src="/img/search.svg" alt="" id="gsearch-icon"/></label>
+    <input type="submit" id="gsearch-submit" onclick="document.getElementById('gsearch-box').value += ' site:ocsigen.org';"/>
+  </form>
+
+  <aside class="how-drawer">
+    <input id="how-drawer-toggle" type="checkbox"/>
+    <label for="how-drawer-toggle" id="how-drawer-label"><span class="how-drawer-icon"></span></label>
+    <nav class="how-drawer-content">
+      <ul class="drawermainmenu">
+        <li class="drawermainmenu-home" data-wodoc-page="githubio"><a href="/">Home</a></li>
+        <li class="drawermainmenu-doc" data-wodoc-page="tuto"><a href="/tuto/">Doc</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="eliom"><a href="/eliom/">Eliom</a></li>
+        <li class="drawermainmenu-project current" data-wodoc-page="js_of_ocaml"><a href="/js_of_ocaml/">Js_of_ocaml</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsigenserver"><a href="/ocsigenserver/">Server</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="lwt"><a href="/lwt/">Lwt</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="tyxml"><a href="/tyxml/">Tyxml</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsigen-toolkit"><a href="/ocsigen-toolkit/">Toolkit</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsigen-start"><a href="/ocsigen-start/">Start</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsipersist"><a href="/ocsipersist/">Ocsipersist</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="reactiveData"><a href="/reactiveData/">ReactiveData</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsigen-i18n"><a href="/ocsigen-i18n/">i18n</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="wodoc"><a href="/wodoc/">Wodoc</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="projects"><a href="/projects">Other projects</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="papers"><a href="/papers">Research papers</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="credits"><a href="/credits">Who does Ocsigen?</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="contributing"><a href="/contributing">Contributing</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="blog"><a href="/blog/">Blog</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="install"><a href="/install">Installation</a></li>
+        <li class="drawermainmenu-page"><a href="https://github.com/ocsigen">Source code</a></li>
+      </ul>
+      <!-- On mobile the left column is hidden; its menu lives here in the burger
+           (.how-doctree, shown only on narrow screens), as the old site did.
+           Empty on the vitrine; the leftnav hole is filled (with the same
+           fragment as the left column) only on project pages. -->
+      <nav class="how-doctree"><div class="docversion">
+  <label>Version:
+    <select class="wodoc-version" onchange="wodocVersion(this.value)">
+      <option value="6.4.0">6.4.0</option>
+    </select>
+  </label>
+</div>
+<div class="page-toc">
+  <h3>On this page</h3>
+  <nav class="odoc-toc odoc-local-toc"><ul><li><a href="#initializations">Initializations</a></li><li><a href="#mouse-and-keyboard-events">Mouse and keyboard events</a></li><li><a href="#mouse-and-keyboard-polling">Mouse and keyboard polling</a></li></ul></nav>
+</div>
+<nav class="api-nav manual-nav">
+<h3>Getting Started</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/overview.html"><a href="../../js_of_ocaml/overview.html">Overview</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/install.html"><a href="../../js_of_ocaml/install.html">Installation</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/quickstart.html"><a href="../../js_of_ocaml/quickstart.html">Quick Start</a></li>
+</ul>
+<h3>Programming Guide</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/javascript-interop.html"><a href="../../js_of_ocaml/javascript-interop.html">JavaScript interop</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/ppx.html"><a href="../../js_of_ocaml/ppx.html">PPX syntax extension</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/ppx-deriving.html"><a href="../../js_of_ocaml/ppx-deriving.html">JSON derivation</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/rev-bindings.html"><a href="../../js_of_ocaml/rev-bindings.html">Export OCaml code to JavaScript</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/errors.html"><a href="../../js_of_ocaml/errors.html">Error handling</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/api.html"><a href="../../js_of_ocaml/api.html">API</a></li>
+</ul>
+<h3>Lwt Support</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/lwt.html"><a href="../../js_of_ocaml/lwt.html">Lwt support</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml-lwt/Js_of_ocaml_lwt/index.html"><a href="../../js_of_ocaml-lwt/Js_of_ocaml_lwt/index.html">API</a></li>
+</ul>
+<h3>Compiler</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/options.html"><a href="../../js_of_ocaml/options.html">Command line options</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/compilation-modes.html"><a href="../../js_of_ocaml/compilation-modes.html">Compilation modes</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/linker.html"><a href="../../js_of_ocaml/linker.html">JavaScript primitives</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/tailcall.html"><a href="../../js_of_ocaml/tailcall.html">Tailcall optimization</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/effects.html"><a href="../../js_of_ocaml/effects.html">Effect handlers</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/runtime-representation.html"><a href="../../js_of_ocaml/runtime-representation.html">Runtime representation</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/browser-compat.html"><a href="../../js_of_ocaml/browser-compat.html">Targeting older browsers</a></li>
+</ul>
+<h3>Wasm_of_ocaml</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/wasm_overview.html"><a href="../../js_of_ocaml/wasm_overview.html">Overview</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/wasm_runtime.html"><a href="../../js_of_ocaml/wasm_runtime.html">Writing Wasm primitives</a></li>
+</ul>
+<h3>How-to Guides</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/build-toplevel.html"><a href="../../js_of_ocaml/build-toplevel.html">Build a toplevel or use Dynlink</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/debug.html"><a href="../../js_of_ocaml/debug.html">Debug a program</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/performances.html"><a href="../../js_of_ocaml/performances.html">Performance</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/contribute.html"><a href="../../js_of_ocaml/contribute.html">Contribute</a></li>
+</ul>
+<h3>Try it</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/files/toplevel/index.html"><a href="../../js_of_ocaml/files/toplevel/index.html">OCaml toplevel</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/examples.html"><a href="../../js_of_ocaml/examples.html">Examples and projects</a></li>
+</ul>
+</nav>
+</nav>
+    </nav>
+  </aside>
+</div>
+
+
+  <div class="project-page">
+    <div class="twocols">
+      <nav class="leftcol">
+        <div class="docversion">
+  <label>Version:
+    <select class="wodoc-version" onchange="wodocVersion(this.value)">
+      <option value="6.4.0">6.4.0</option>
+    </select>
+  </label>
+</div>
+<div class="page-toc">
+  <h3>On this page</h3>
+  <nav class="odoc-toc odoc-local-toc"><ul><li><a href="#initializations">Initializations</a></li><li><a href="#mouse-and-keyboard-events">Mouse and keyboard events</a></li><li><a href="#mouse-and-keyboard-polling">Mouse and keyboard polling</a></li></ul></nav>
+</div>
+<nav class="api-nav manual-nav">
+<h3>Getting Started</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/overview.html"><a href="../../js_of_ocaml/overview.html">Overview</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/install.html"><a href="../../js_of_ocaml/install.html">Installation</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/quickstart.html"><a href="../../js_of_ocaml/quickstart.html">Quick Start</a></li>
+</ul>
+<h3>Programming Guide</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/javascript-interop.html"><a href="../../js_of_ocaml/javascript-interop.html">JavaScript interop</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/ppx.html"><a href="../../js_of_ocaml/ppx.html">PPX syntax extension</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/ppx-deriving.html"><a href="../../js_of_ocaml/ppx-deriving.html">JSON derivation</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/rev-bindings.html"><a href="../../js_of_ocaml/rev-bindings.html">Export OCaml code to JavaScript</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/errors.html"><a href="../../js_of_ocaml/errors.html">Error handling</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/api.html"><a href="../../js_of_ocaml/api.html">API</a></li>
+</ul>
+<h3>Lwt Support</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/lwt.html"><a href="../../js_of_ocaml/lwt.html">Lwt support</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml-lwt/Js_of_ocaml_lwt/index.html"><a href="../../js_of_ocaml-lwt/Js_of_ocaml_lwt/index.html">API</a></li>
+</ul>
+<h3>Compiler</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/options.html"><a href="../../js_of_ocaml/options.html">Command line options</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/compilation-modes.html"><a href="../../js_of_ocaml/compilation-modes.html">Compilation modes</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/linker.html"><a href="../../js_of_ocaml/linker.html">JavaScript primitives</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/tailcall.html"><a href="../../js_of_ocaml/tailcall.html">Tailcall optimization</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/effects.html"><a href="../../js_of_ocaml/effects.html">Effect handlers</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/runtime-representation.html"><a href="../../js_of_ocaml/runtime-representation.html">Runtime representation</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/browser-compat.html"><a href="../../js_of_ocaml/browser-compat.html">Targeting older browsers</a></li>
+</ul>
+<h3>Wasm_of_ocaml</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/wasm_overview.html"><a href="../../js_of_ocaml/wasm_overview.html">Overview</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/wasm_runtime.html"><a href="../../js_of_ocaml/wasm_runtime.html">Writing Wasm primitives</a></li>
+</ul>
+<h3>How-to Guides</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/build-toplevel.html"><a href="../../js_of_ocaml/build-toplevel.html">Build a toplevel or use Dynlink</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/debug.html"><a href="../../js_of_ocaml/debug.html">Debug a program</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/performances.html"><a href="../../js_of_ocaml/performances.html">Performance</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/contribute.html"><a href="../../js_of_ocaml/contribute.html">Contribute</a></li>
+</ul>
+<h3>Try it</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/files/toplevel/index.html"><a href="../../js_of_ocaml/files/toplevel/index.html">OCaml toplevel</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/examples.html"><a href="../../js_of_ocaml/examples.html">Examples and projects</a></li>
+</ul>
+</nav>
+
+      </nav>
+      <article class="rightcol">
+        <header class="odoc-preamble"><h1>Module <code><span>Graphics_js</span></code></h1><p>Javascript binding for Graphics lib</p></header>
+        <div class="odoc-content"><div class="odoc-include"><details open="open"><summary class="spec include"><code><span><span class="keyword">include</span> <span class="keyword">module</span> <span class="keyword">type</span> <span class="keyword">of</span> <span class="xref-unresolved">Graphics</span></span></code></summary><div class="odoc-spec"><div class="spec exception anchored" id="exception-Graphic_failure"><code><span><span class="keyword">exception</span> </span><span><span class="exception">Graphic_failure</span> <span class="keyword">of</span> string</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-close_graph"><code><span><span class="keyword">val</span> close_graph : <span>unit <span class="arrow">&#45;&gt;</span></span> unit</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-set_window_title"><code><span><span class="keyword">val</span> set_window_title : <span>string <span class="arrow">&#45;&gt;</span></span> unit</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-resize_window"><code><span><span class="keyword">val</span> resize_window : <span>int <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> unit</span></code></div></div><div class="odoc-spec"><div class="spec value external anchored" id="val-clear_graph"><code><span><span class="keyword">val</span> clear_graph : <span>unit <span class="arrow">&#45;&gt;</span></span> unit</span></code></div></div><div class="odoc-spec"><div class="spec value external anchored" id="val-size_x"><code><span><span class="keyword">val</span> size_x : <span>unit <span class="arrow">&#45;&gt;</span></span> int</span></code></div></div><div class="odoc-spec"><div class="spec value external anchored" id="val-size_y"><code><span><span class="keyword">val</span> size_y : <span>unit <span class="arrow">&#45;&gt;</span></span> int</span></code></div></div><div class="odoc-spec"><div class="spec type anchored" id="type-color"><code><span><span class="keyword">type</span> color</span><span> = int</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-rgb"><code><span><span class="keyword">val</span> rgb : <span>int <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> <a href="#type-color">color</a></span></code></div></div><div class="odoc-spec"><div class="spec value external anchored" id="val-set_color"><code><span><span class="keyword">val</span> set_color : <span><a href="#type-color">color</a> <span class="arrow">&#45;&gt;</span></span> unit</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-background"><code><span><span class="keyword">val</span> background : <a href="#type-color">color</a></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-foreground"><code><span><span class="keyword">val</span> foreground : <a href="#type-color">color</a></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-black"><code><span><span class="keyword">val</span> black : <a href="#type-color">color</a></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-white"><code><span><span class="keyword">val</span> white : <a href="#type-color">color</a></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-red"><code><span><span class="keyword">val</span> red : <a href="#type-color">color</a></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-green"><code><span><span class="keyword">val</span> green : <a href="#type-color">color</a></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-blue"><code><span><span class="keyword">val</span> blue : <a href="#type-color">color</a></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-yellow"><code><span><span class="keyword">val</span> yellow : <a href="#type-color">color</a></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-cyan"><code><span><span class="keyword">val</span> cyan : <a href="#type-color">color</a></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-magenta"><code><span><span class="keyword">val</span> magenta : <a href="#type-color">color</a></span></code></div></div><div class="odoc-spec"><div class="spec value external anchored" id="val-plot"><code><span><span class="keyword">val</span> plot : <span>int <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> unit</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-plots"><code><span><span class="keyword">val</span> plots : <span><span><span>(int * int)</span> array</span> <span class="arrow">&#45;&gt;</span></span> unit</span></code></div></div><div class="odoc-spec"><div class="spec value external anchored" id="val-point_color"><code><span><span class="keyword">val</span> point_color : <span>int <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> <a href="#type-color">color</a></span></code></div></div><div class="odoc-spec"><div class="spec value external anchored" id="val-moveto"><code><span><span class="keyword">val</span> moveto : <span>int <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> unit</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-rmoveto"><code><span><span class="keyword">val</span> rmoveto : <span>int <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> unit</span></code></div></div><div class="odoc-spec"><div class="spec value external anchored" id="val-current_x"><code><span><span class="keyword">val</span> current_x : <span>unit <span class="arrow">&#45;&gt;</span></span> int</span></code></div></div><div class="odoc-spec"><div class="spec value external anchored" id="val-current_y"><code><span><span class="keyword">val</span> current_y : <span>unit <span class="arrow">&#45;&gt;</span></span> int</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-current_point"><code><span><span class="keyword">val</span> current_point : <span>unit <span class="arrow">&#45;&gt;</span></span> int * int</span></code></div></div><div class="odoc-spec"><div class="spec value external anchored" id="val-lineto"><code><span><span class="keyword">val</span> lineto : <span>int <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> unit</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-rlineto"><code><span><span class="keyword">val</span> rlineto : <span>int <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> unit</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-curveto"><code><span><span class="keyword">val</span> curveto : <span><span>(int * int)</span> <span class="arrow">&#45;&gt;</span></span> <span><span>(int * int)</span> <span class="arrow">&#45;&gt;</span></span> <span><span>(int * int)</span> <span class="arrow">&#45;&gt;</span></span> unit</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-draw_rect"><code><span><span class="keyword">val</span> draw_rect : <span>int <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> unit</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-draw_poly_line"><code><span><span class="keyword">val</span> draw_poly_line : <span><span><span>(int * int)</span> array</span> <span class="arrow">&#45;&gt;</span></span> unit</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-draw_poly"><code><span><span class="keyword">val</span> draw_poly : <span><span><span>(int * int)</span> array</span> <span class="arrow">&#45;&gt;</span></span> unit</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-draw_segments"><code><span><span class="keyword">val</span> draw_segments : <span><span><span>(int * int * int * int)</span> array</span> <span class="arrow">&#45;&gt;</span></span> unit</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-draw_arc"><code><span><span class="keyword">val</span> draw_arc : <span>int <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> unit</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-draw_ellipse"><code><span><span class="keyword">val</span> draw_ellipse : <span>int <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> unit</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-draw_circle"><code><span><span class="keyword">val</span> draw_circle : <span>int <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> unit</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-set_line_width"><code><span><span class="keyword">val</span> set_line_width : <span>int <span class="arrow">&#45;&gt;</span></span> unit</span></code></div></div><div class="odoc-spec"><div class="spec value external anchored" id="val-draw_char"><code><span><span class="keyword">val</span> draw_char : <span>char <span class="arrow">&#45;&gt;</span></span> unit</span></code></div></div><div class="odoc-spec"><div class="spec value external anchored" id="val-draw_string"><code><span><span class="keyword">val</span> draw_string : <span>string <span class="arrow">&#45;&gt;</span></span> unit</span></code></div></div><div class="odoc-spec"><div class="spec value external anchored" id="val-set_font"><code><span><span class="keyword">val</span> set_font : <span>string <span class="arrow">&#45;&gt;</span></span> unit</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-set_text_size"><code><span><span class="keyword">val</span> set_text_size : <span>int <span class="arrow">&#45;&gt;</span></span> unit</span></code></div></div><div class="odoc-spec"><div class="spec value external anchored" id="val-text_size"><code><span><span class="keyword">val</span> text_size : <span>string <span class="arrow">&#45;&gt;</span></span> int * int</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-fill_rect"><code><span><span class="keyword">val</span> fill_rect : <span>int <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> unit</span></code></div></div><div class="odoc-spec"><div class="spec value external anchored" id="val-fill_poly"><code><span><span class="keyword">val</span> fill_poly : <span><span><span>(int * int)</span> array</span> <span class="arrow">&#45;&gt;</span></span> unit</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-fill_arc"><code><span><span class="keyword">val</span> fill_arc : <span>int <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> unit</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-fill_ellipse"><code><span><span class="keyword">val</span> fill_ellipse : <span>int <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> unit</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-fill_circle"><code><span><span class="keyword">val</span> fill_circle : <span>int <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> unit</span></code></div></div><div class="odoc-spec"><div class="spec type anchored" id="type-image"><code><span><span class="keyword">type</span> image</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-transp"><code><span><span class="keyword">val</span> transp : <a href="#type-color">color</a></span></code></div></div><div class="odoc-spec"><div class="spec value external anchored" id="val-make_image"><code><span><span class="keyword">val</span> make_image : <span><span><span><a href="#type-color">color</a> array</span> array</span> <span class="arrow">&#45;&gt;</span></span> <a href="#type-image">image</a></span></code></div></div><div class="odoc-spec"><div class="spec value external anchored" id="val-dump_image"><code><span><span class="keyword">val</span> dump_image : <span><a href="#type-image">image</a> <span class="arrow">&#45;&gt;</span></span> <span><span><a href="#type-color">color</a> array</span> array</span></span></code></div></div><div class="odoc-spec"><div class="spec value external anchored" id="val-draw_image"><code><span><span class="keyword">val</span> draw_image : <span><a href="#type-image">image</a> <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> unit</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-get_image"><code><span><span class="keyword">val</span> get_image : <span>int <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> <a href="#type-image">image</a></span></code></div></div><div class="odoc-spec"><div class="spec value external anchored" id="val-create_image"><code><span><span class="keyword">val</span> create_image : <span>int <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> <a href="#type-image">image</a></span></code></div></div><div class="odoc-spec"><div class="spec value external anchored" id="val-blit_image"><code><span><span class="keyword">val</span> blit_image : <span><a href="#type-image">image</a> <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> unit</span></code></div></div><div class="odoc-spec"><div class="spec type anchored" id="type-status"><code><span><span class="keyword">type</span> status</span><span> = </span><span>{</span></code><ol><li id="type-status.mouse_x" class="def record field anchored"><code><span>mouse_x : int;</span></code></li><li id="type-status.mouse_y" class="def record field anchored"><code><span>mouse_y : int;</span></code></li><li id="type-status.button" class="def record field anchored"><code><span>button : bool;</span></code></li><li id="type-status.keypressed" class="def record field anchored"><code><span>keypressed : bool;</span></code></li><li id="type-status.key" class="def record field anchored"><code><span>key : char;</span></code></li></ol><code><span>}</span></code></div></div><div class="odoc-spec"><div class="spec type anchored" id="type-event"><code><span><span class="keyword">type</span> event</span><span> = </span></code><ol><li id="type-event.Button_down" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Button_down</span></span></code></li><li id="type-event.Button_up" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Button_up</span></span></code></li><li id="type-event.Key_pressed" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Key_pressed</span></span></code></li><li id="type-event.Mouse_motion" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Mouse_motion</span></span></code></li><li id="type-event.Poll" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Poll</span></span></code></li></ol></div></div><div class="odoc-spec"><div class="spec value external anchored" id="val-wait_next_event"><code><span><span class="keyword">val</span> wait_next_event : <span><span><a href="#type-event">event</a> list</span> <span class="arrow">&#45;&gt;</span></span> <a href="#type-status">status</a></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-loop_at_exit"><code><span><span class="keyword">val</span> loop_at_exit : <span><span><a href="#type-event">event</a> list</span> <span class="arrow">&#45;&gt;</span></span> <span><span>(<span><a href="#type-status">status</a> <span class="arrow">&#45;&gt;</span></span> unit)</span> <span class="arrow">&#45;&gt;</span></span> unit</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-key_pressed"><code><span><span class="keyword">val</span> key_pressed : <span>unit <span class="arrow">&#45;&gt;</span></span> bool</span></code></div></div><div class="odoc-spec"><div class="spec value external anchored" id="val-sound"><code><span><span class="keyword">val</span> sound : <span>int <span class="arrow">&#45;&gt;</span></span> <span>int <span class="arrow">&#45;&gt;</span></span> unit</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-auto_synchronize"><code><span><span class="keyword">val</span> auto_synchronize : <span>bool <span class="arrow">&#45;&gt;</span></span> unit</span></code></div></div><div class="odoc-spec"><div class="spec value external anchored" id="val-synchronize"><code><span><span class="keyword">val</span> synchronize : <span>unit <span class="arrow">&#45;&gt;</span></span> unit</span></code></div></div><div class="odoc-spec"><div class="spec value external anchored" id="val-display_mode"><code><span><span class="keyword">val</span> display_mode : <span>bool <span class="arrow">&#45;&gt;</span></span> unit</span></code></div></div><div class="odoc-spec"><div class="spec value external anchored" id="val-remember_mode"><code><span><span class="keyword">val</span> remember_mode : <span>bool <span class="arrow">&#45;&gt;</span></span> unit</span></code></div></div></details></div><h3 id="initializations">Initializations</h3><div class="odoc-spec"><div class="spec type anchored" id="type-context"><code><span><span class="keyword">type</span> context</span></code></div><div class="spec-doc"><p>type of a graphic context</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-open_graph"><code><span><span class="keyword">val</span> open_graph : <span>string <span class="arrow">&#45;&gt;</span></span> unit</span></code></div><div class="spec-doc"><p>Open a graphics window. The graphics window is cleared and the current point is set to (0, 0). The string argument is used to pass optional information on the desired graphics mode, the graphics window size, and so on. Specification can be found at http://www.w3schools.com/jsref/met_win_open.asp. Note: an extra specification is available, &quot;target&quot;, to specifies the target attribute or the name of the window.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-open_canvas"><code><span><span class="keyword">val</span> open_canvas : <span><span><a href="../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-canvasElement/index.html">Js_of_ocaml.Dom_html.canvasElement</a> <a href="../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span> unit</span></code></div><div class="spec-doc"><p>use a canvas to setup the current context</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-get_context"><code><span><span class="keyword">val</span> get_context : <span>unit <span class="arrow">&#45;&gt;</span></span> <a href="#type-context">context</a></span></code></div><div class="spec-doc"><p>Get the current context</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-set_context"><code><span><span class="keyword">val</span> set_context : <span><a href="#type-context">context</a> <span class="arrow">&#45;&gt;</span></span> unit</span></code></div><div class="spec-doc"><p>Set the current context</p></div></div><h3 id="mouse-and-keyboard-events">Mouse and keyboard events</h3><div class="odoc-spec"><div class="spec value anchored" id="val-loop"><code><span><span class="keyword">val</span> loop : <span><span><a href="#type-event">event</a> list</span> <span class="arrow">&#45;&gt;</span></span> <span><span>(<span><a href="#type-status">status</a> <span class="arrow">&#45;&gt;</span></span> unit)</span> <span class="arrow">&#45;&gt;</span></span> unit</span></code></div><div class="spec-doc"><p>Loops forever and listen to the given events. Those events automatically returns a status record, which is used by the function given in argument.</p></div></div><h3 id="mouse-and-keyboard-polling">Mouse and keyboard polling</h3><div class="odoc-spec"><div class="spec value anchored" id="val-mouse_pos"><code><span><span class="keyword">val</span> mouse_pos : <span>unit <span class="arrow">&#45;&gt;</span></span> <span><span>(int * int)</span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div><div class="spec-doc"><p>Return the position of the mouse cursor, relative to the graphics window. If the mouse cursor is outside of the graphics window, <code>mouse_pos()</code> returns a point outside of the range <code>0..size_x()-1, 0..size_y()-1</code>.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-button_down"><code><span><span class="keyword">val</span> button_down : <span>unit <span class="arrow">&#45;&gt;</span></span> <span>bool <span class="xref-unresolved">Lwt</span>.t</span></span></code></div><div class="spec-doc"><p>Return <code>true</code> if the mouse button is pressed, <code>false</code> otherwise.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-read_key"><code><span><span class="keyword">val</span> read_key : <span>unit <span class="arrow">&#45;&gt;</span></span> <span>char <span class="xref-unresolved">Lwt</span>.t</span></span></code></div><div class="spec-doc"><p>Wait for a key to be pressed, and return the corresponding character. Keypresses are queued.</p></div></div></div>
+      </article>
+    </div>
+  </div>
+
+  <script>
+    var wodocPub = "/js_of_ocaml";
+    // Switch version: keep the current page, swapping only the version segment.
+    function wodocVersion(v) {
+      if (!v) return;
+      var re = new RegExp('^(' + wodocPub + '/)[^/]+');
+      var p = location.pathname;
+      location.href =
+        re.test(p) ? p.replace(re, '$1' + v) : wodocPub + '/' + v + '/index.html';
+    }
+    // Build the version <select> from the project's versions.json (the single
+    // source of truth, refreshed on every build/release), so even older frozen
+    // pages list the current set. Falls back to the baked <option>s on failure.
+    (function () {
+      var seg = (location.pathname.match(
+        new RegExp('^' + wodocPub + '/([^/]+)')) || [])[1];
+      function select(sel) {
+        var i;
+        for (i = 0; i < sel.options.length; i++)
+          if (sel.options[i].value === seg) { sel.selectedIndex = i; return; }
+        if (seg) {
+          var o = document.createElement('option');
+          o.value = seg; o.textContent = seg; o.selected = true;
+          sel.insertBefore(o, sel.firstChild);
+        }
+      }
+      fetch(wodocPub + '/versions.json')
+        .then(function (r) { if (!r.ok) throw 0; return r.json(); })
+        .then(function (m) {
+          var list = m.list || [], latest = m.latest;
+          document.querySelectorAll('.wodoc-version').forEach(function (sel) {
+            sel.innerHTML = '';
+            list.forEach(function (v) {
+              var o = document.createElement('option');
+              if (v === latest) { o.value = 'latest'; o.textContent = v + ' (latest)'; }
+              else { o.value = v; o.textContent = v; }
+              sel.appendChild(o);
+            });
+            select(sel);
+          });
+        })
+        .catch(function () {
+          document.querySelectorAll('.wodoc-version').forEach(select);
+        });
+    })();
+  </script>
+</body>
+</html>

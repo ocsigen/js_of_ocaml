@@ -1,0 +1,1114 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Module Js_of_ocaml_lwt.Lwt_js_events — Js_of_ocaml</title>
+  <link rel="stylesheet" href="/css/style.css"/>
+  <link rel="stylesheet" href="/css/ocsigen-odoc.css"/>
+  <link rel="alternate" type="text/markdown" href="../../../js_of_ocaml-lwt/Js_of_ocaml_lwt-Lwt_js_events.md"/>
+  <script src="../../../highlight.pack.js"></script>
+  <script src="../../../wodoc-highlight.js"></script>
+</head>
+<body class="wodoc-page wodoc-doc">
+  <!-- Shared site menu — THE single source of truth for the header, top menu and
+     drawer of EVERY Ocsigen doc page (vitrine + all projects). Canonical copy
+     lives here in ocsigen.github.io; each project's build fetches it. Injected
+     by `wodoc assemble --menu`. Holes filled by the tool (braces omitted here so
+     this comment is not itself rewritten by the hole-filler):
+       subproject  the sub-project name shown next to the Ocsigen logo
+                   (empty on the vitrine), via --subproject
+       leftnav     the project's left navigation, expanded into BOTH the mobile
+                   drawer (below) and the left column (in the page template),
+                   via --leftnav
+     The current entry is highlighted by adding the `current` class to the
+     element carrying data-wodoc-page=<id>: --current on the vitrine (page id),
+     --menu-current in a project (the project id). Nothing is hardcoded here, so
+     this file is the ONLY place the menu is defined.
+
+     Links are the FINAL site paths (/<project>/, /<page>): the target layout
+     where each project is served at ocsigen.org/<project>/ — no transitional
+     /wodoc/ prefix. -->
+<div class="page-header">
+  <p class="logo-ocsigen"><a href="/"><img src="/img/ocsigen-white.svg" alt="Ocsigen"/></a></p>
+  <p class="logo-subproject">Js_of_ocaml</p>
+
+  <div class="mainmenu">
+    <p class="mainmenu-home" data-wodoc-page="githubio"><a href="/">Home</a></p>
+    <p class="mainmenu-doc" data-wodoc-page="tuto"><a href="/tuto/">Doc</a></p>
+    <p class="mainmenu-blog" data-wodoc-page="blog"><a href="/blog/">Blog</a></p>
+    <p data-wodoc-page="eliom"><a href="/eliom/">Eliom</a></p>
+    <p data-wodoc-page="js_of_ocaml" class="current"><a href="/js_of_ocaml/">Js_of_ocaml</a></p>
+    <p data-wodoc-page="ocsigenserver"><a href="/ocsigenserver/">Server</a></p>
+    <p data-wodoc-page="lwt"><a href="/lwt/">Lwt</a></p>
+    <p data-wodoc-page="tyxml"><a href="/tyxml/">Tyxml</a></p>
+    <p data-wodoc-page="ocsigen-start"><a href="/ocsigen-start/">Start</a></p>
+  </div>
+
+  <form id="googlesearch" action="https://google.com/search">
+    <input name="q" id="gsearch-box" placeholder="Search using Google"/>
+    <label for="gsearch-box"><img src="/img/search.svg" alt="" id="gsearch-icon"/></label>
+    <input type="submit" id="gsearch-submit" onclick="document.getElementById('gsearch-box').value += ' site:ocsigen.org';"/>
+  </form>
+
+  <aside class="how-drawer">
+    <input id="how-drawer-toggle" type="checkbox"/>
+    <label for="how-drawer-toggle" id="how-drawer-label"><span class="how-drawer-icon"></span></label>
+    <nav class="how-drawer-content">
+      <ul class="drawermainmenu">
+        <li class="drawermainmenu-home" data-wodoc-page="githubio"><a href="/">Home</a></li>
+        <li class="drawermainmenu-doc" data-wodoc-page="tuto"><a href="/tuto/">Doc</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="eliom"><a href="/eliom/">Eliom</a></li>
+        <li class="drawermainmenu-project current" data-wodoc-page="js_of_ocaml"><a href="/js_of_ocaml/">Js_of_ocaml</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsigenserver"><a href="/ocsigenserver/">Server</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="lwt"><a href="/lwt/">Lwt</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="tyxml"><a href="/tyxml/">Tyxml</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsigen-toolkit"><a href="/ocsigen-toolkit/">Toolkit</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsigen-start"><a href="/ocsigen-start/">Start</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsipersist"><a href="/ocsipersist/">Ocsipersist</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="reactiveData"><a href="/reactiveData/">ReactiveData</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsigen-i18n"><a href="/ocsigen-i18n/">i18n</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="wodoc"><a href="/wodoc/">Wodoc</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="projects"><a href="/projects">Other projects</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="papers"><a href="/papers">Research papers</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="credits"><a href="/credits">Who does Ocsigen?</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="contributing"><a href="/contributing">Contributing</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="blog"><a href="/blog/">Blog</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="install"><a href="/install">Installation</a></li>
+        <li class="drawermainmenu-page"><a href="https://github.com/ocsigen">Source code</a></li>
+      </ul>
+      <!-- On mobile the left column is hidden; its menu lives here in the burger
+           (.how-doctree, shown only on narrow screens), as the old site did.
+           Empty on the vitrine; the leftnav hole is filled (with the same
+           fragment as the left column) only on project pages. -->
+      <nav class="how-doctree"><div class="docversion">
+  <label>Version:
+    <select class="wodoc-version" onchange="wodocVersion(this.value)">
+      <option value="6.4.0">6.4.0</option>
+    </select>
+  </label>
+</div>
+<div class="page-toc">
+  <h3>On this page</h3>
+  <nav class="odoc-toc odoc-local-toc"><ul><li><a href="#create-lwt-threads-for-events">Create Lwt threads for events</a></li><li><a href="#predefined-functions-for-some-types-of-events">Predefined functions for some types of events</a></li></ul></nav>
+</div>
+<nav class="api-nav manual-nav">
+<h3>Getting Started</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/overview.html"><a href="../../../js_of_ocaml/overview.html">Overview</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/install.html"><a href="../../../js_of_ocaml/install.html">Installation</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/quickstart.html"><a href="../../../js_of_ocaml/quickstart.html">Quick Start</a></li>
+</ul>
+<h3>Programming Guide</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/javascript-interop.html"><a href="../../../js_of_ocaml/javascript-interop.html">JavaScript interop</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/ppx.html"><a href="../../../js_of_ocaml/ppx.html">PPX syntax extension</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/ppx-deriving.html"><a href="../../../js_of_ocaml/ppx-deriving.html">JSON derivation</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/rev-bindings.html"><a href="../../../js_of_ocaml/rev-bindings.html">Export OCaml code to JavaScript</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/errors.html"><a href="../../../js_of_ocaml/errors.html">Error handling</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/api.html"><a href="../../../js_of_ocaml/api.html">API</a></li>
+</ul>
+<h3>Lwt Support</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/lwt.html"><a href="../../../js_of_ocaml/lwt.html">Lwt support</a></li>
+<li class="ml3 current" data-wodoc-page="js_of_ocaml-lwt/Js_of_ocaml_lwt/index.html"><a href="../../../js_of_ocaml-lwt/Js_of_ocaml_lwt/index.html">API</a></li>
+</ul>
+<h3>Compiler</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/options.html"><a href="../../../js_of_ocaml/options.html">Command line options</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/compilation-modes.html"><a href="../../../js_of_ocaml/compilation-modes.html">Compilation modes</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/linker.html"><a href="../../../js_of_ocaml/linker.html">JavaScript primitives</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/tailcall.html"><a href="../../../js_of_ocaml/tailcall.html">Tailcall optimization</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/effects.html"><a href="../../../js_of_ocaml/effects.html">Effect handlers</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/runtime-representation.html"><a href="../../../js_of_ocaml/runtime-representation.html">Runtime representation</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/browser-compat.html"><a href="../../../js_of_ocaml/browser-compat.html">Targeting older browsers</a></li>
+</ul>
+<h3>Wasm_of_ocaml</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/wasm_overview.html"><a href="../../../js_of_ocaml/wasm_overview.html">Overview</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/wasm_runtime.html"><a href="../../../js_of_ocaml/wasm_runtime.html">Writing Wasm primitives</a></li>
+</ul>
+<h3>How-to Guides</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/build-toplevel.html"><a href="../../../js_of_ocaml/build-toplevel.html">Build a toplevel or use Dynlink</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/debug.html"><a href="../../../js_of_ocaml/debug.html">Debug a program</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/performances.html"><a href="../../../js_of_ocaml/performances.html">Performance</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/contribute.html"><a href="../../../js_of_ocaml/contribute.html">Contribute</a></li>
+</ul>
+<h3>Try it</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/files/toplevel/index.html"><a href="../../../js_of_ocaml/files/toplevel/index.html">OCaml toplevel</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/examples.html"><a href="../../../js_of_ocaml/examples.html">Examples and projects</a></li>
+</ul>
+</nav>
+</nav>
+    </nav>
+  </aside>
+</div>
+
+
+  <div class="project-page">
+    <div class="twocols">
+      <nav class="leftcol">
+        <div class="docversion">
+  <label>Version:
+    <select class="wodoc-version" onchange="wodocVersion(this.value)">
+      <option value="6.4.0">6.4.0</option>
+    </select>
+  </label>
+</div>
+<div class="page-toc">
+  <h3>On this page</h3>
+  <nav class="odoc-toc odoc-local-toc"><ul><li><a href="#create-lwt-threads-for-events">Create Lwt threads for events</a></li><li><a href="#predefined-functions-for-some-types-of-events">Predefined functions for some types of events</a></li></ul></nav>
+</div>
+<nav class="api-nav manual-nav">
+<h3>Getting Started</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/overview.html"><a href="../../../js_of_ocaml/overview.html">Overview</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/install.html"><a href="../../../js_of_ocaml/install.html">Installation</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/quickstart.html"><a href="../../../js_of_ocaml/quickstart.html">Quick Start</a></li>
+</ul>
+<h3>Programming Guide</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/javascript-interop.html"><a href="../../../js_of_ocaml/javascript-interop.html">JavaScript interop</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/ppx.html"><a href="../../../js_of_ocaml/ppx.html">PPX syntax extension</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/ppx-deriving.html"><a href="../../../js_of_ocaml/ppx-deriving.html">JSON derivation</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/rev-bindings.html"><a href="../../../js_of_ocaml/rev-bindings.html">Export OCaml code to JavaScript</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/errors.html"><a href="../../../js_of_ocaml/errors.html">Error handling</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/api.html"><a href="../../../js_of_ocaml/api.html">API</a></li>
+</ul>
+<h3>Lwt Support</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/lwt.html"><a href="../../../js_of_ocaml/lwt.html">Lwt support</a></li>
+<li class="ml3 current" data-wodoc-page="js_of_ocaml-lwt/Js_of_ocaml_lwt/index.html"><a href="../../../js_of_ocaml-lwt/Js_of_ocaml_lwt/index.html">API</a></li>
+</ul>
+<h3>Compiler</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/options.html"><a href="../../../js_of_ocaml/options.html">Command line options</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/compilation-modes.html"><a href="../../../js_of_ocaml/compilation-modes.html">Compilation modes</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/linker.html"><a href="../../../js_of_ocaml/linker.html">JavaScript primitives</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/tailcall.html"><a href="../../../js_of_ocaml/tailcall.html">Tailcall optimization</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/effects.html"><a href="../../../js_of_ocaml/effects.html">Effect handlers</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/runtime-representation.html"><a href="../../../js_of_ocaml/runtime-representation.html">Runtime representation</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/browser-compat.html"><a href="../../../js_of_ocaml/browser-compat.html">Targeting older browsers</a></li>
+</ul>
+<h3>Wasm_of_ocaml</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/wasm_overview.html"><a href="../../../js_of_ocaml/wasm_overview.html">Overview</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/wasm_runtime.html"><a href="../../../js_of_ocaml/wasm_runtime.html">Writing Wasm primitives</a></li>
+</ul>
+<h3>How-to Guides</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/build-toplevel.html"><a href="../../../js_of_ocaml/build-toplevel.html">Build a toplevel or use Dynlink</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/debug.html"><a href="../../../js_of_ocaml/debug.html">Debug a program</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/performances.html"><a href="../../../js_of_ocaml/performances.html">Performance</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/contribute.html"><a href="../../../js_of_ocaml/contribute.html">Contribute</a></li>
+</ul>
+<h3>Try it</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/files/toplevel/index.html"><a href="../../../js_of_ocaml/files/toplevel/index.html">OCaml toplevel</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/examples.html"><a href="../../../js_of_ocaml/examples.html">Examples and projects</a></li>
+</ul>
+</nav>
+
+      </nav>
+      <article class="rightcol">
+        <header class="odoc-preamble"><h1>Module <code><span>Js_of_ocaml_lwt.Lwt_js_events</span></code></h1><p>Programming mouse or keyboard events handlers using Lwt</p></header>
+        <div class="odoc-content"><p>Reminder: Event capturing starts with the outer most element in the DOM and works inwards to the HTML element the event took place on (capture phase) and then out again (bubbling phase).</p><p>Examples of use:</p><p>Waiting for a click on <code>elt1</code> before continuing:</p><pre class="language-ocaml"><code>let%lwt _ = Lwt_js_events.click elt1 in</code></pre><p>Doing some operation for each value change in input element <code>inp</code>:</p><pre class="language-ocaml"><code>Lwt_js_events.(async (fun () -&gt;
+   clicks inp1 (fun ev _ -&gt; ...)
+))</code></pre><p>Defining a thread that waits for ESC key on an element:</p><pre class="language-ocaml"><code>let rec esc elt =
+   let%lwt ev = keydown elt in
+   if ev##.keyCode = 27
+   then Lwt.return ev
+   else esc elt</code></pre><p>Waiting for a click or escape key before continuing:</p><pre class="language-ocaml"><code>let%lwt () =
+    Lwt.pick [(let%lwt _ = esc Dom_html.document in Lwt.return ());
+              (let%lwt _ = click Dom_html.document in Lwt.return ())]
+  in ...</code></pre><h3 id="create-lwt-threads-for-events">Create Lwt threads for events</h3><div class="odoc-spec"><div class="spec value anchored" id="val-make_event"><code><span><span class="keyword">val</span> make_event : 
+  <span><span><span><span>(<a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-event/index.html">Js_of_ocaml.Dom_html.event</a> <span class="keyword">as</span> 'a)</span> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span>
+    <a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/Event/index.html#type-typ">Js_of_ocaml.Dom_html.Event.typ</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><span class="type-var">'a</span> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div><div class="spec-doc"><p><code>make_event ev target</code> creates a Lwt thread that waits for the event <code>ev</code> to happen on <code>target</code> (once). This thread isa cancellable using <code>Lwt.cancel</code>. If you set the optional parameter <code>~use_capture:true</code>, the event will be caught during the capture phase, otherwise it is caught during the bubbling phase (default). If you set the optional parameter <code>~passive:true</code>, the user agent will ignore <code>preventDefault</code> calls inside the event callback.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-seq_loop"><code><span><span class="keyword">val</span> seq_loop : 
+  <span><span>(<span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span> <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span> <span><span class="type-var">'target</span> <span class="arrow">&#45;&gt;</span></span> <span><span class="type-var">'event</span> <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="type-var">'target</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span class="type-var">'event</span> <span class="arrow">&#45;&gt;</span></span> <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span> <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div><div class="spec-doc"><p><code>seq_loop (make_event ev) target handler</code> creates a looping Lwt thread that waits for the event <code>ev</code> to happen on <code>target</code>, then execute handler, and start again waiting for the event. Events happening during the execution of the handler are ignored. See <code>async_loop</code> and <code>buffered_loop</code> for alternative semantics.</p><p>For example, the <code>clicks</code> function below is defined by:</p><p><code>let clicks ?use_capture ?passive t = seq_loop click ?use_capture ?passive t</code></p><p>The thread returned is cancellable using <code>Lwt.cancel</code>. In order for the loop thread to be canceled from within the handler, the latter receives the former as its second parameter.</p><p>By default, cancelling the loop will not cancel the potential currently running handler. This behaviour can be changed by setting the <code>cancel_handler</code> parameter to true.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-async_loop"><code><span><span class="keyword">val</span> async_loop : 
+  <span><span>(<span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span> <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span> <span><span class="type-var">'target</span> <span class="arrow">&#45;&gt;</span></span> <span><span class="type-var">'event</span> <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="type-var">'target</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span class="type-var">'event</span> <span class="arrow">&#45;&gt;</span></span> <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span> <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div><div class="spec-doc"><p><code>async_loop</code> is similar to <code>seq_loop</code>, but each handler runs independently. No event is thus missed, but since several instances of the handler can be run concurrently, it is up to the programmer to ensure that they interact correctly.</p><p>Cancelling the loop will not cancel the potential currently running handlers.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-buffered_loop"><code><span><span class="keyword">val</span> buffered_loop : 
+  <span><span>(<span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span> <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span> <span><span class="type-var">'target</span> <span class="arrow">&#45;&gt;</span></span> <span><span class="type-var">'event</span> <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?cancel_queue</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="type-var">'target</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span class="type-var">'event</span> <span class="arrow">&#45;&gt;</span></span> <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span> <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div><div class="spec-doc"><p><code>buffered_loop</code> is similar to <code>seq_loop</code>, but any event that occurs during an execution of the handler is queued instead of being ignored.</p><p>No event is thus missed, but there can be a non predictable delay between its trigger and its treatment. It is thus a good idea to use this loop with handlers whose running time is short, so the memorized event still makes sense when the handler is eventually executed. It is also up to the programmer to ensure that event handlers terminate so the queue will eventually be emptied.</p><p>By default, cancelling the loop will not cancel the (potential) currently running handler, but any other queued event will be dropped. This behaviour can be customized using the two optional parameters <code>cancel_handler</code> and <code>cancel_queue</code>.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-async"><code><span><span class="keyword">val</span> async : <span><span>(<span>unit <span class="arrow">&#45;&gt;</span></span> <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span> unit</span></code></div><div class="spec-doc"><p><code>async t</code> records a thread to be executed later. It is implemented by calling yield, then Lwt.async. This is useful if you want to create a new event listener when you are inside an event handler. This avoids the current event to be caught by the new event handler (if it propagates).</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-func_limited_loop"><code><span><span class="keyword">val</span> func_limited_loop : 
+  <span><span>(<span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span> <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span> <span><span class="type-var">'a</span> <span class="arrow">&#45;&gt;</span></span> <span><span class="type-var">'b</span> <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span>unit <span class="arrow">&#45;&gt;</span></span> <span><span class="type-var">'a</span> <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="type-var">'a</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span class="type-var">'b</span> <span class="arrow">&#45;&gt;</span></span> <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span> <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div><div class="spec-doc"><p><code>func_limited_loop event delay_fun target handler</code> will behave like <code>Lwt_js_events.async_loop event target handler</code> but it will run <code>delay_fun</code> first, and execute <code>handler</code> only when <code>delay_fun</code> is finished and no other event occurred in the meantime.</p><p>This allows to limit the number of events caught.</p><p>Be careful, it is an asynchrone loop, so if you give too little time, several instances of your handler could be run in same time *</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-limited_loop"><code><span><span class="keyword">val</span> limited_loop : 
+  <span><span>(<span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span> <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span> <span><span class="type-var">'a</span> <span class="arrow">&#45;&gt;</span></span> <span><span class="type-var">'b</span> <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?elapsed_time</span>:float <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="type-var">'a</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span class="type-var">'b</span> <span class="arrow">&#45;&gt;</span></span> <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span> <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div><div class="spec-doc"><p>Same as func_limited_loop but take time instead of function By default elapsed_time = 0.1s = 100ms *</p></div></div><h3 id="predefined-functions-for-some-types-of-events">Predefined functions for some types of events</h3><div class="odoc-spec"><div class="spec value anchored" id="val-click"><code><span><span class="keyword">val</span> click : 
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-mouseEvent/index.html">Js_of_ocaml.Dom_html.mouseEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-copy"><code><span><span class="keyword">val</span> copy : 
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-clipboardEvent/index.html">Js_of_ocaml.Dom_html.clipboardEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-cut"><code><span><span class="keyword">val</span> cut : 
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-clipboardEvent/index.html">Js_of_ocaml.Dom_html.clipboardEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-paste"><code><span><span class="keyword">val</span> paste : 
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-clipboardEvent/index.html">Js_of_ocaml.Dom_html.clipboardEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-dblclick"><code><span><span class="keyword">val</span> dblclick : 
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-mouseEvent/index.html">Js_of_ocaml.Dom_html.mouseEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-mousedown"><code><span><span class="keyword">val</span> mousedown : 
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-mouseEvent/index.html">Js_of_ocaml.Dom_html.mouseEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-mouseup"><code><span><span class="keyword">val</span> mouseup : 
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-mouseEvent/index.html">Js_of_ocaml.Dom_html.mouseEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-mouseover"><code><span><span class="keyword">val</span> mouseover : 
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-mouseEvent/index.html">Js_of_ocaml.Dom_html.mouseEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-mousemove"><code><span><span class="keyword">val</span> mousemove : 
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-mouseEvent/index.html">Js_of_ocaml.Dom_html.mouseEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-mouseout"><code><span><span class="keyword">val</span> mouseout : 
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-mouseEvent/index.html">Js_of_ocaml.Dom_html.mouseEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-keypress"><code><span><span class="keyword">val</span> keypress : 
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-keyboardEvent/index.html">Js_of_ocaml.Dom_html.keyboardEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-keydown"><code><span><span class="keyword">val</span> keydown : 
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-keyboardEvent/index.html">Js_of_ocaml.Dom_html.keyboardEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-keyup"><code><span><span class="keyword">val</span> keyup : 
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-keyboardEvent/index.html">Js_of_ocaml.Dom_html.keyboardEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-input"><code><span><span class="keyword">val</span> input : 
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-event/index.html">Js_of_ocaml.Dom_html.event</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-timeupdate"><code><span><span class="keyword">val</span> timeupdate : 
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-event/index.html">Js_of_ocaml.Dom_html.event</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-change"><code><span><span class="keyword">val</span> change : 
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-event/index.html">Js_of_ocaml.Dom_html.event</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-dragstart"><code><span><span class="keyword">val</span> dragstart : 
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-dragEvent/index.html">Js_of_ocaml.Dom_html.dragEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-dragend"><code><span><span class="keyword">val</span> dragend : 
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-dragEvent/index.html">Js_of_ocaml.Dom_html.dragEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-dragenter"><code><span><span class="keyword">val</span> dragenter : 
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-dragEvent/index.html">Js_of_ocaml.Dom_html.dragEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-dragover"><code><span><span class="keyword">val</span> dragover : 
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-dragEvent/index.html">Js_of_ocaml.Dom_html.dragEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-dragleave"><code><span><span class="keyword">val</span> dragleave : 
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-dragEvent/index.html">Js_of_ocaml.Dom_html.dragEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-drag"><code><span><span class="keyword">val</span> drag : 
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-dragEvent/index.html">Js_of_ocaml.Dom_html.dragEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-drop"><code><span><span class="keyword">val</span> drop : 
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-dragEvent/index.html">Js_of_ocaml.Dom_html.dragEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-focus"><code><span><span class="keyword">val</span> focus : 
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-focusEvent/index.html">Js_of_ocaml.Dom_html.focusEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-blur"><code><span><span class="keyword">val</span> blur : 
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-focusEvent/index.html">Js_of_ocaml.Dom_html.focusEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-scroll"><code><span><span class="keyword">val</span> scroll : 
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-event/index.html">Js_of_ocaml.Dom_html.event</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-submit"><code><span><span class="keyword">val</span> submit : 
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-submitEvent/index.html">Js_of_ocaml.Dom_html.submitEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-select"><code><span><span class="keyword">val</span> select : 
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-event/index.html">Js_of_ocaml.Dom_html.event</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-mousewheel"><code><span><span class="keyword">val</span> mousewheel : 
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-mouseEvent/index.html">Js_of_ocaml.Dom_html.mouseEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> * <span>(int * int)</span>)</span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div><div class="spec-doc"><p>This function returns the event, together with the numbers of ticks the mouse wheel moved. Positive means down or right. This interface is compatible with all (recent) browsers.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-wheel"><code><span><span class="keyword">val</span> wheel : 
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-mousewheelEvent/index.html">Js_of_ocaml.Dom_html.mousewheelEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-touchstart"><code><span><span class="keyword">val</span> touchstart : 
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-touchEvent/index.html">Js_of_ocaml.Dom_html.touchEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-touchmove"><code><span><span class="keyword">val</span> touchmove : 
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-touchEvent/index.html">Js_of_ocaml.Dom_html.touchEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-touchend"><code><span><span class="keyword">val</span> touchend : 
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-touchEvent/index.html">Js_of_ocaml.Dom_html.touchEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-touchcancel"><code><span><span class="keyword">val</span> touchcancel : 
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-touchEvent/index.html">Js_of_ocaml.Dom_html.touchEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-lostpointercapture"><code><span><span class="keyword">val</span> lostpointercapture : 
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-pointerEvent/index.html">Js_of_ocaml.Dom_html.pointerEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-gotpointercapture"><code><span><span class="keyword">val</span> gotpointercapture : 
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-pointerEvent/index.html">Js_of_ocaml.Dom_html.pointerEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-pointerenter"><code><span><span class="keyword">val</span> pointerenter : 
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-pointerEvent/index.html">Js_of_ocaml.Dom_html.pointerEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-pointercancel"><code><span><span class="keyword">val</span> pointercancel : 
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-pointerEvent/index.html">Js_of_ocaml.Dom_html.pointerEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-pointerdown"><code><span><span class="keyword">val</span> pointerdown : 
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-pointerEvent/index.html">Js_of_ocaml.Dom_html.pointerEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-pointerleave"><code><span><span class="keyword">val</span> pointerleave : 
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-pointerEvent/index.html">Js_of_ocaml.Dom_html.pointerEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-pointermove"><code><span><span class="keyword">val</span> pointermove : 
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-pointerEvent/index.html">Js_of_ocaml.Dom_html.pointerEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-pointerout"><code><span><span class="keyword">val</span> pointerout : 
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-pointerEvent/index.html">Js_of_ocaml.Dom_html.pointerEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-pointerover"><code><span><span class="keyword">val</span> pointerover : 
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-pointerEvent/index.html">Js_of_ocaml.Dom_html.pointerEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-pointerup"><code><span><span class="keyword">val</span> pointerup : 
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-pointerEvent/index.html">Js_of_ocaml.Dom_html.pointerEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-transitionend"><code><span><span class="keyword">val</span> transitionend : 
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-transitionEvent/index.html">Js_of_ocaml.Dom_html.transitionEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div><div class="spec-doc"><p>Returns when a CSS transition terminates on the element.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-transitionstart"><code><span><span class="keyword">val</span> transitionstart : 
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-transitionEvent/index.html">Js_of_ocaml.Dom_html.transitionEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-transitionrun"><code><span><span class="keyword">val</span> transitionrun : 
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-transitionEvent/index.html">Js_of_ocaml.Dom_html.transitionEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-transitioncancel"><code><span><span class="keyword">val</span> transitioncancel : 
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-transitionEvent/index.html">Js_of_ocaml.Dom_html.transitionEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-load"><code><span><span class="keyword">val</span> load : 
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-imageElement/index.html">Js_of_ocaml.Dom_html.imageElement</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-event/index.html">Js_of_ocaml.Dom_html.event</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-error"><code><span><span class="keyword">val</span> error : 
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-imageElement/index.html">Js_of_ocaml.Dom_html.imageElement</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-event/index.html">Js_of_ocaml.Dom_html.event</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-abort"><code><span><span class="keyword">val</span> abort : 
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-imageElement/index.html">Js_of_ocaml.Dom_html.imageElement</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-event/index.html">Js_of_ocaml.Dom_html.event</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-canplay"><code><span><span class="keyword">val</span> canplay : 
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-event/index.html">Js_of_ocaml.Dom_html.event</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-canplaythrough"><code><span><span class="keyword">val</span> canplaythrough : 
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-event/index.html">Js_of_ocaml.Dom_html.event</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-durationchange"><code><span><span class="keyword">val</span> durationchange : 
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-event/index.html">Js_of_ocaml.Dom_html.event</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-emptied"><code><span><span class="keyword">val</span> emptied : 
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-event/index.html">Js_of_ocaml.Dom_html.event</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-ended"><code><span><span class="keyword">val</span> ended : 
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-event/index.html">Js_of_ocaml.Dom_html.event</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-loadeddata"><code><span><span class="keyword">val</span> loadeddata : 
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-event/index.html">Js_of_ocaml.Dom_html.event</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-loadedmetadata"><code><span><span class="keyword">val</span> loadedmetadata : 
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-event/index.html">Js_of_ocaml.Dom_html.event</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-loadstart"><code><span><span class="keyword">val</span> loadstart : 
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-event/index.html">Js_of_ocaml.Dom_html.event</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-pause"><code><span><span class="keyword">val</span> pause : 
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-event/index.html">Js_of_ocaml.Dom_html.event</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-play"><code><span><span class="keyword">val</span> play : 
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-event/index.html">Js_of_ocaml.Dom_html.event</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-playing"><code><span><span class="keyword">val</span> playing : 
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-event/index.html">Js_of_ocaml.Dom_html.event</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-ratechange"><code><span><span class="keyword">val</span> ratechange : 
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-event/index.html">Js_of_ocaml.Dom_html.event</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-seeked"><code><span><span class="keyword">val</span> seeked : 
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-event/index.html">Js_of_ocaml.Dom_html.event</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-seeking"><code><span><span class="keyword">val</span> seeking : 
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-event/index.html">Js_of_ocaml.Dom_html.event</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-stalled"><code><span><span class="keyword">val</span> stalled : 
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-event/index.html">Js_of_ocaml.Dom_html.event</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-suspend"><code><span><span class="keyword">val</span> suspend : 
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-event/index.html">Js_of_ocaml.Dom_html.event</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-volumechange"><code><span><span class="keyword">val</span> volumechange : 
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-event/index.html">Js_of_ocaml.Dom_html.event</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-waiting"><code><span><span class="keyword">val</span> waiting : 
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-event/index.html">Js_of_ocaml.Dom_html.event</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-clicks"><code><span><span class="keyword">val</span> clicks : 
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-mouseEvent/index.html">Js_of_ocaml.Dom_html.mouseEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+    <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span>
+    <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-copies"><code><span><span class="keyword">val</span> copies : 
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-clipboardEvent/index.html">Js_of_ocaml.Dom_html.clipboardEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+    <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span>
+    <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-cuts"><code><span><span class="keyword">val</span> cuts : 
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-clipboardEvent/index.html">Js_of_ocaml.Dom_html.clipboardEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+    <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span>
+    <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-pastes"><code><span><span class="keyword">val</span> pastes : 
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-clipboardEvent/index.html">Js_of_ocaml.Dom_html.clipboardEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+    <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span>
+    <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-dblclicks"><code><span><span class="keyword">val</span> dblclicks : 
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-mouseEvent/index.html">Js_of_ocaml.Dom_html.mouseEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+    <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span>
+    <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-mousedowns"><code><span><span class="keyword">val</span> mousedowns : 
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-mouseEvent/index.html">Js_of_ocaml.Dom_html.mouseEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+    <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span>
+    <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-mouseups"><code><span><span class="keyword">val</span> mouseups : 
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-mouseEvent/index.html">Js_of_ocaml.Dom_html.mouseEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+    <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span>
+    <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-mouseovers"><code><span><span class="keyword">val</span> mouseovers : 
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-mouseEvent/index.html">Js_of_ocaml.Dom_html.mouseEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+    <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span>
+    <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-mousemoves"><code><span><span class="keyword">val</span> mousemoves : 
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-mouseEvent/index.html">Js_of_ocaml.Dom_html.mouseEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+    <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span>
+    <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-mouseouts"><code><span><span class="keyword">val</span> mouseouts : 
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-mouseEvent/index.html">Js_of_ocaml.Dom_html.mouseEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+    <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span>
+    <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-keypresses"><code><span><span class="keyword">val</span> keypresses : 
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-keyboardEvent/index.html">Js_of_ocaml.Dom_html.keyboardEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+    <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span>
+    <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-keydowns"><code><span><span class="keyword">val</span> keydowns : 
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-keyboardEvent/index.html">Js_of_ocaml.Dom_html.keyboardEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+    <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span>
+    <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-keyups"><code><span><span class="keyword">val</span> keyups : 
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-keyboardEvent/index.html">Js_of_ocaml.Dom_html.keyboardEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+    <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span>
+    <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-inputs"><code><span><span class="keyword">val</span> inputs : 
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-event/index.html">Js_of_ocaml.Dom_html.event</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span> <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span> <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-timeupdates"><code><span><span class="keyword">val</span> timeupdates : 
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-event/index.html">Js_of_ocaml.Dom_html.event</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span> <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span> <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-changes"><code><span><span class="keyword">val</span> changes : 
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-event/index.html">Js_of_ocaml.Dom_html.event</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span> <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span> <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-dragstarts"><code><span><span class="keyword">val</span> dragstarts : 
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-dragEvent/index.html">Js_of_ocaml.Dom_html.dragEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span> <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span> <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-dragends"><code><span><span class="keyword">val</span> dragends : 
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-dragEvent/index.html">Js_of_ocaml.Dom_html.dragEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span> <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span> <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-dragenters"><code><span><span class="keyword">val</span> dragenters : 
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-dragEvent/index.html">Js_of_ocaml.Dom_html.dragEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span> <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span> <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-dragovers"><code><span><span class="keyword">val</span> dragovers : 
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-dragEvent/index.html">Js_of_ocaml.Dom_html.dragEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span> <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span> <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-dragleaves"><code><span><span class="keyword">val</span> dragleaves : 
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-dragEvent/index.html">Js_of_ocaml.Dom_html.dragEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span> <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span> <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-drags"><code><span><span class="keyword">val</span> drags : 
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-dragEvent/index.html">Js_of_ocaml.Dom_html.dragEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span> <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span> <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-drops"><code><span><span class="keyword">val</span> drops : 
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-dragEvent/index.html">Js_of_ocaml.Dom_html.dragEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span> <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span> <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-mousewheels"><code><span><span class="keyword">val</span> mousewheels : 
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span>(<span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-mouseEvent/index.html">Js_of_ocaml.Dom_html.mouseEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> * <span>(int * int)</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+    <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span>
+    <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-wheels"><code><span><span class="keyword">val</span> wheels : 
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-mousewheelEvent/index.html">Js_of_ocaml.Dom_html.mousewheelEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+    <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span>
+    <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-touchstarts"><code><span><span class="keyword">val</span> touchstarts : 
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-touchEvent/index.html">Js_of_ocaml.Dom_html.touchEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+    <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span>
+    <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-touchmoves"><code><span><span class="keyword">val</span> touchmoves : 
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-touchEvent/index.html">Js_of_ocaml.Dom_html.touchEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+    <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span>
+    <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-touchends"><code><span><span class="keyword">val</span> touchends : 
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-touchEvent/index.html">Js_of_ocaml.Dom_html.touchEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+    <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span>
+    <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-touchcancels"><code><span><span class="keyword">val</span> touchcancels : 
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-touchEvent/index.html">Js_of_ocaml.Dom_html.touchEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+    <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span>
+    <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-focuses"><code><span><span class="keyword">val</span> focuses : 
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-focusEvent/index.html">Js_of_ocaml.Dom_html.focusEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+    <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span>
+    <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-blurs"><code><span><span class="keyword">val</span> blurs : 
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-focusEvent/index.html">Js_of_ocaml.Dom_html.focusEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+    <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span>
+    <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-scrolls"><code><span><span class="keyword">val</span> scrolls : 
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-event/index.html">Js_of_ocaml.Dom_html.event</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span> <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span> <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-submits"><code><span><span class="keyword">val</span> submits : 
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-submitEvent/index.html">Js_of_ocaml.Dom_html.submitEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+    <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span>
+    <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-selects"><code><span><span class="keyword">val</span> selects : 
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-event/index.html">Js_of_ocaml.Dom_html.event</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span> <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span> <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-loads"><code><span><span class="keyword">val</span> loads : 
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-imageElement/index.html">Js_of_ocaml.Dom_html.imageElement</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-event/index.html">Js_of_ocaml.Dom_html.event</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span> <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span> <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-errors"><code><span><span class="keyword">val</span> errors : 
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-imageElement/index.html">Js_of_ocaml.Dom_html.imageElement</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-event/index.html">Js_of_ocaml.Dom_html.event</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span> <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span> <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-aborts"><code><span><span class="keyword">val</span> aborts : 
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-imageElement/index.html">Js_of_ocaml.Dom_html.imageElement</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-event/index.html">Js_of_ocaml.Dom_html.event</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span> <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span> <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-canplays"><code><span><span class="keyword">val</span> canplays : 
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-event/index.html">Js_of_ocaml.Dom_html.event</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span> <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span> <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-canplaythroughs"><code><span><span class="keyword">val</span> canplaythroughs : 
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-event/index.html">Js_of_ocaml.Dom_html.event</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span> <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span> <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-durationchanges"><code><span><span class="keyword">val</span> durationchanges : 
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-event/index.html">Js_of_ocaml.Dom_html.event</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span> <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span> <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-emptieds"><code><span><span class="keyword">val</span> emptieds : 
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-event/index.html">Js_of_ocaml.Dom_html.event</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span> <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span> <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-endeds"><code><span><span class="keyword">val</span> endeds : 
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-event/index.html">Js_of_ocaml.Dom_html.event</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span> <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span> <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-loadeddatas"><code><span><span class="keyword">val</span> loadeddatas : 
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-event/index.html">Js_of_ocaml.Dom_html.event</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span> <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span> <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-loadedmetadatas"><code><span><span class="keyword">val</span> loadedmetadatas : 
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-event/index.html">Js_of_ocaml.Dom_html.event</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span> <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span> <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-loadstarts"><code><span><span class="keyword">val</span> loadstarts : 
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-event/index.html">Js_of_ocaml.Dom_html.event</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span> <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span> <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-pauses"><code><span><span class="keyword">val</span> pauses : 
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-event/index.html">Js_of_ocaml.Dom_html.event</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span> <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span> <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-plays"><code><span><span class="keyword">val</span> plays : 
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-event/index.html">Js_of_ocaml.Dom_html.event</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span> <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span> <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-playings"><code><span><span class="keyword">val</span> playings : 
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-event/index.html">Js_of_ocaml.Dom_html.event</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span> <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span> <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-ratechanges"><code><span><span class="keyword">val</span> ratechanges : 
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-event/index.html">Js_of_ocaml.Dom_html.event</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span> <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span> <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-seekeds"><code><span><span class="keyword">val</span> seekeds : 
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-event/index.html">Js_of_ocaml.Dom_html.event</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span> <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span> <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-seekings"><code><span><span class="keyword">val</span> seekings : 
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-event/index.html">Js_of_ocaml.Dom_html.event</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span> <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span> <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-stalleds"><code><span><span class="keyword">val</span> stalleds : 
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-event/index.html">Js_of_ocaml.Dom_html.event</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span> <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span> <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-suspends"><code><span><span class="keyword">val</span> suspends : 
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-event/index.html">Js_of_ocaml.Dom_html.event</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span> <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span> <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-volumechanges"><code><span><span class="keyword">val</span> volumechanges : 
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-event/index.html">Js_of_ocaml.Dom_html.event</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span> <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span> <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-waitings"><code><span><span class="keyword">val</span> waitings : 
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-event/index.html">Js_of_ocaml.Dom_html.event</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span> <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span> <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-lostpointercaptures"><code><span><span class="keyword">val</span> lostpointercaptures : 
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-pointerEvent/index.html">Js_of_ocaml.Dom_html.pointerEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+    <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span>
+    <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-gotpointercaptures"><code><span><span class="keyword">val</span> gotpointercaptures : 
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-pointerEvent/index.html">Js_of_ocaml.Dom_html.pointerEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+    <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span>
+    <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-pointerenters"><code><span><span class="keyword">val</span> pointerenters : 
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-pointerEvent/index.html">Js_of_ocaml.Dom_html.pointerEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+    <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span>
+    <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-pointercancels"><code><span><span class="keyword">val</span> pointercancels : 
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-pointerEvent/index.html">Js_of_ocaml.Dom_html.pointerEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+    <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span>
+    <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-pointerdowns"><code><span><span class="keyword">val</span> pointerdowns : 
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-pointerEvent/index.html">Js_of_ocaml.Dom_html.pointerEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+    <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span>
+    <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-pointerleaves"><code><span><span class="keyword">val</span> pointerleaves : 
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-pointerEvent/index.html">Js_of_ocaml.Dom_html.pointerEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+    <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span>
+    <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-pointermoves"><code><span><span class="keyword">val</span> pointermoves : 
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-pointerEvent/index.html">Js_of_ocaml.Dom_html.pointerEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+    <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span>
+    <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-pointerouts"><code><span><span class="keyword">val</span> pointerouts : 
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-pointerEvent/index.html">Js_of_ocaml.Dom_html.pointerEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+    <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span>
+    <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-pointerovers"><code><span><span class="keyword">val</span> pointerovers : 
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-pointerEvent/index.html">Js_of_ocaml.Dom_html.pointerEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+    <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span>
+    <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-pointerups"><code><span><span class="keyword">val</span> pointerups : 
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-pointerEvent/index.html">Js_of_ocaml.Dom_html.pointerEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+    <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span>
+    <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-transitionends"><code><span><span class="keyword">val</span> transitionends : 
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-transitionEvent/index.html">Js_of_ocaml.Dom_html.transitionEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+    <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span>
+    <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-transitionstarts"><code><span><span class="keyword">val</span> transitionstarts : 
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-transitionEvent/index.html">Js_of_ocaml.Dom_html.transitionEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+    <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span>
+    <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-transitionruns"><code><span><span class="keyword">val</span> transitionruns : 
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-transitionEvent/index.html">Js_of_ocaml.Dom_html.transitionEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+    <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span>
+    <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-transitioncancels"><code><span><span class="keyword">val</span> transitioncancels : 
+  <span><span class="optlabel">?cancel_handler</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?use_capture</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?passive</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-eventTarget/index.html">Js_of_ocaml.Dom_html.eventTarget</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-transitionEvent/index.html">Js_of_ocaml.Dom_html.transitionEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+    <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span>
+    <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-request_animation_frame"><code><span><span class="keyword">val</span> request_animation_frame : <span>unit <span class="arrow">&#45;&gt;</span></span> <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div><div class="spec-doc"><p>Returns when a repaint of the window by the browser starts. (see JS method <code>window.requestAnimationFrame</code>)</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-onload"><code><span><span class="keyword">val</span> onload : <span>unit <span class="arrow">&#45;&gt;</span></span> <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-event/index.html">Js_of_ocaml.Dom_html.event</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div><div class="spec-doc"><p>Returns when the page is loaded</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-domContentLoaded"><code><span><span class="keyword">val</span> domContentLoaded : <span>unit <span class="arrow">&#45;&gt;</span></span> <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-onunload"><code><span><span class="keyword">val</span> onunload : <span>unit <span class="arrow">&#45;&gt;</span></span> <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-event/index.html">Js_of_ocaml.Dom_html.event</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-onbeforeunload"><code><span><span class="keyword">val</span> onbeforeunload : 
+  <span>unit <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-beforeUnloadEvent/index.html">Js_of_ocaml.Dom_html.beforeUnloadEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-onresize"><code><span><span class="keyword">val</span> onresize : <span>unit <span class="arrow">&#45;&gt;</span></span> <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-event/index.html">Js_of_ocaml.Dom_html.event</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-onorientationchange"><code><span><span class="keyword">val</span> onorientationchange : 
+  <span>unit <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-event/index.html">Js_of_ocaml.Dom_html.event</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-onpopstate"><code><span><span class="keyword">val</span> onpopstate : 
+  <span>unit <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-popStateEvent/index.html">Js_of_ocaml.Dom_html.popStateEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-onhashchange"><code><span><span class="keyword">val</span> onhashchange : 
+  <span>unit <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-hashChangeEvent/index.html">Js_of_ocaml.Dom_html.hashChangeEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-onorientationchange_or_onresize"><code><span><span class="keyword">val</span> onorientationchange_or_onresize : 
+  <span>unit <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-event/index.html">Js_of_ocaml.Dom_html.event</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-onresizes"><code><span><span class="keyword">val</span> onresizes : 
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-event/index.html">Js_of_ocaml.Dom_html.event</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span> <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span> <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-onorientationchanges"><code><span><span class="keyword">val</span> onorientationchanges : 
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-event/index.html">Js_of_ocaml.Dom_html.event</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span> <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span> <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-onpopstates"><code><span><span class="keyword">val</span> onpopstates : 
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-popStateEvent/index.html">Js_of_ocaml.Dom_html.popStateEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+    <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span>
+    <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-onhashchanges"><code><span><span class="keyword">val</span> onhashchanges : 
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-hashChangeEvent/index.html">Js_of_ocaml.Dom_html.hashChangeEvent</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+    <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span>
+    <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-onorientationchanges_or_onresizes"><code><span><span class="keyword">val</span> onorientationchanges_or_onresizes : 
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-event/index.html">Js_of_ocaml.Dom_html.event</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span> <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span> <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-limited_onresizes"><code><span><span class="keyword">val</span> limited_onresizes : 
+  <span><span class="optlabel">?elapsed_time</span>:float <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-event/index.html">Js_of_ocaml.Dom_html.event</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span> <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span> <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-limited_onorientationchanges"><code><span><span class="keyword">val</span> limited_onorientationchanges : 
+  <span><span class="optlabel">?elapsed_time</span>:float <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-event/index.html">Js_of_ocaml.Dom_html.event</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span> <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span> <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-limited_onorientationchanges_or_onresizes"><code><span><span class="keyword">val</span> limited_onorientationchanges_or_onresizes : 
+  <span><span class="optlabel">?elapsed_time</span>:float <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span><a href="../../../js_of_ocaml/Js_of_ocaml/Dom_html/class-type-event/index.html">Js_of_ocaml.Dom_html.event</a> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/index.html#type-t">Js_of_ocaml.Js.t</a></span> <span class="arrow">&#45;&gt;</span></span> <span><span>unit <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span> <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div></div>
+      </article>
+    </div>
+  </div>
+
+  <script>
+    var wodocPub = "/js_of_ocaml";
+    // Switch version: keep the current page, swapping only the version segment.
+    function wodocVersion(v) {
+      if (!v) return;
+      var re = new RegExp('^(' + wodocPub + '/)[^/]+');
+      var p = location.pathname;
+      location.href =
+        re.test(p) ? p.replace(re, '$1' + v) : wodocPub + '/' + v + '/index.html';
+    }
+    // Build the version <select> from the project's versions.json (the single
+    // source of truth, refreshed on every build/release), so even older frozen
+    // pages list the current set. Falls back to the baked <option>s on failure.
+    (function () {
+      var seg = (location.pathname.match(
+        new RegExp('^' + wodocPub + '/([^/]+)')) || [])[1];
+      function select(sel) {
+        var i;
+        for (i = 0; i < sel.options.length; i++)
+          if (sel.options[i].value === seg) { sel.selectedIndex = i; return; }
+        if (seg) {
+          var o = document.createElement('option');
+          o.value = seg; o.textContent = seg; o.selected = true;
+          sel.insertBefore(o, sel.firstChild);
+        }
+      }
+      fetch(wodocPub + '/versions.json')
+        .then(function (r) { if (!r.ok) throw 0; return r.json(); })
+        .then(function (m) {
+          var list = m.list || [], latest = m.latest;
+          document.querySelectorAll('.wodoc-version').forEach(function (sel) {
+            sel.innerHTML = '';
+            list.forEach(function (v) {
+              var o = document.createElement('option');
+              if (v === latest) { o.value = 'latest'; o.textContent = v + ' (latest)'; }
+              else { o.value = v; o.textContent = v; }
+              sel.appendChild(o);
+            });
+            select(sel);
+          });
+        })
+        .catch(function () {
+          document.querySelectorAll('.wodoc-version').forEach(select);
+        });
+    })();
+  </script>
+</body>
+</html>

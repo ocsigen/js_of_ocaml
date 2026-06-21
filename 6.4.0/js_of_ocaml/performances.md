@@ -1,0 +1,56 @@
+
+# Performance
+
+We have compared the running time of OCaml programs executed natively, interpreted by the bytecode interpreter, and executed by a JavaScript engine after compilation by Js\_of\_ocaml.
+
+With a state-of-the-art JavaScript engine (such as Google's V8 and Mozilla's SpiderMonkey), programs often run faster when compiled to JavaScript than with the OCaml bytecode interpreter.
+
+Benchmarks were run in November 2022 with engines available in Ubuntu 22\.04 (V8: 8\.4.371.19-node.16, SpiderMonkey: JavaScript-C91.10.0).
+
+
+## Execution time
+
+![Relative execution times](files/performances/time.png)
+**Notes**:
+
+- Exceptions are very expensive, preventing some benchmarks from finishing in reasonable time
+- String operations are slow (splay) because OCaml strings cannot be mapped directly to JavaScript's immutable UTF-16 strings
+- Memory allocation might be less efficient (splay, taku)
+
+## Code size
+
+![Relative size](files/performances/size.png)
+Most of the time, the generated JavaScript code is smaller than the bytecode file. The benchmarks are small programs that do not make much use of any library. The generated code remains smaller than the bytecode file for large programs (ocamlc, js\_of\_ocaml).
+
+The size gain can be much larger for programs that rely on external libraries, thanks to dead code elimination.
+
+
+## Comparison with handwritten JavaScript
+
+![Relative execution times](files/performances/nativejs.png)
+Comparing execution times between handwritten JavaScript and generated code shows that results are implementation-dependent.
+
+
+## Compiler optimization levels
+
+![Relative size](files/performances/size-optim.png)
+![Relative execution times](files/performances/time-optim.png)
+
+## Effect handlers impact
+
+![Relative size](files/performances/size-effects.png)
+![Relative size (compressed with bzip2)](files/performances/size-bzip2-effects.png)
+![Relative execution times](files/performances/time-effects.png)
+The performance impact of supporting effect handlers:
+
+**Size**:
+
+- Code is about 20% larger
+- The impact on compressed code is much lower since we add many function definitions, which are verbose in JavaScript but compress well
+- The compressed code size hardly increases for large files compressed with `bzip2`
+- Code using `Lwt`, `Async`, or `Incremental` can see a larger increase (up to 45% larger, or 7% larger when compressed)
+**Speed**:
+
+- Almost no impact for small monomorphic programs
+- Slowdown is usually below 30%
+- Can be larger for code that heavily uses higher-order functions and polymorphism (`Lwt` code, for instance)

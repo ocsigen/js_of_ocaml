@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Module Js_of_ocaml_lwt.Promise — Js_of_ocaml</title>
+  <link rel="stylesheet" href="/css/style.css"/>
+  <link rel="stylesheet" href="/css/ocsigen-odoc.css"/>
+  <link rel="alternate" type="text/markdown" href="../../../js_of_ocaml-lwt/Js_of_ocaml_lwt-Promise.md"/>
+  <script src="../../../highlight.pack.js"></script>
+  <script src="../../../wodoc-highlight.js"></script>
+</head>
+<body class="wodoc-page wodoc-doc">
+  <!-- Shared site menu — THE single source of truth for the header, top menu and
+     drawer of EVERY Ocsigen doc page (vitrine + all projects). Canonical copy
+     lives here in ocsigen.github.io; each project's build fetches it. Injected
+     by `wodoc assemble --menu`. Holes filled by the tool (braces omitted here so
+     this comment is not itself rewritten by the hole-filler):
+       subproject  the sub-project name shown next to the Ocsigen logo
+                   (empty on the vitrine), via --subproject
+       leftnav     the project's left navigation, expanded into BOTH the mobile
+                   drawer (below) and the left column (in the page template),
+                   via --leftnav
+     The current entry is highlighted by adding the `current` class to the
+     element carrying data-wodoc-page=<id>: --current on the vitrine (page id),
+     --menu-current in a project (the project id). Nothing is hardcoded here, so
+     this file is the ONLY place the menu is defined.
+
+     Links are the FINAL site paths (/<project>/, /<page>): the target layout
+     where each project is served at ocsigen.org/<project>/ — no transitional
+     /wodoc/ prefix. -->
+<div class="page-header">
+  <p class="logo-ocsigen"><a href="/"><img src="/img/ocsigen-white.svg" alt="Ocsigen"/></a></p>
+  <p class="logo-subproject">Js_of_ocaml</p>
+
+  <div class="mainmenu">
+    <p class="mainmenu-home" data-wodoc-page="githubio"><a href="/">Home</a></p>
+    <p class="mainmenu-doc" data-wodoc-page="tuto"><a href="/tuto/">Doc</a></p>
+    <p class="mainmenu-blog" data-wodoc-page="blog"><a href="/blog/">Blog</a></p>
+    <p data-wodoc-page="eliom"><a href="/eliom/">Eliom</a></p>
+    <p data-wodoc-page="js_of_ocaml" class="current"><a href="/js_of_ocaml/">Js_of_ocaml</a></p>
+    <p data-wodoc-page="ocsigenserver"><a href="/ocsigenserver/">Server</a></p>
+    <p data-wodoc-page="lwt"><a href="/lwt/">Lwt</a></p>
+    <p data-wodoc-page="tyxml"><a href="/tyxml/">Tyxml</a></p>
+    <p data-wodoc-page="ocsigen-start"><a href="/ocsigen-start/">Start</a></p>
+  </div>
+
+  <form id="googlesearch" action="https://google.com/search">
+    <input name="q" id="gsearch-box" placeholder="Search using Google"/>
+    <label for="gsearch-box"><img src="/img/search.svg" alt="" id="gsearch-icon"/></label>
+    <input type="submit" id="gsearch-submit" onclick="document.getElementById('gsearch-box').value += ' site:ocsigen.org';"/>
+  </form>
+
+  <aside class="how-drawer">
+    <input id="how-drawer-toggle" type="checkbox"/>
+    <label for="how-drawer-toggle" id="how-drawer-label"><span class="how-drawer-icon"></span></label>
+    <nav class="how-drawer-content">
+      <ul class="drawermainmenu">
+        <li class="drawermainmenu-home" data-wodoc-page="githubio"><a href="/">Home</a></li>
+        <li class="drawermainmenu-doc" data-wodoc-page="tuto"><a href="/tuto/">Doc</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="eliom"><a href="/eliom/">Eliom</a></li>
+        <li class="drawermainmenu-project current" data-wodoc-page="js_of_ocaml"><a href="/js_of_ocaml/">Js_of_ocaml</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsigenserver"><a href="/ocsigenserver/">Server</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="lwt"><a href="/lwt/">Lwt</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="tyxml"><a href="/tyxml/">Tyxml</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsigen-toolkit"><a href="/ocsigen-toolkit/">Toolkit</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsigen-start"><a href="/ocsigen-start/">Start</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsipersist"><a href="/ocsipersist/">Ocsipersist</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="reactiveData"><a href="/reactiveData/">ReactiveData</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsigen-i18n"><a href="/ocsigen-i18n/">i18n</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="wodoc"><a href="/wodoc/">Wodoc</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="projects"><a href="/projects">Other projects</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="papers"><a href="/papers">Research papers</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="credits"><a href="/credits">Who does Ocsigen?</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="contributing"><a href="/contributing">Contributing</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="blog"><a href="/blog/">Blog</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="install"><a href="/install">Installation</a></li>
+        <li class="drawermainmenu-page"><a href="https://github.com/ocsigen">Source code</a></li>
+      </ul>
+      <!-- On mobile the left column is hidden; its menu lives here in the burger
+           (.how-doctree, shown only on narrow screens), as the old site did.
+           Empty on the vitrine; the leftnav hole is filled (with the same
+           fragment as the left column) only on project pages. -->
+      <nav class="how-doctree"><div class="docversion">
+  <label>Version:
+    <select class="wodoc-version" onchange="wodocVersion(this.value)">
+      <option value="6.4.0">6.4.0</option>
+    </select>
+  </label>
+</div>
+<div class="page-toc">
+  <h3>On this page</h3>
+  <nav class="odoc-toc odoc-local-toc"><ul><ul><li><a href="#type-safety">Type safety</a></li><li><a href="#interop-with-raw-javascript-promises">Interop with raw JavaScript promises</a></li></ul></li><li><a href="#errors">Errors</a></li><li><a href="#building-promises">Building promises</a></li><li><a href="#chaining">Chaining</a></li><li><a href="#combinators">Combinators</a></li><li><a href="#unsafe-interop">Unsafe interop</a></li><li><a href="#capability-detection">Capability detection</a></li></ul></nav>
+</div>
+<nav class="api-nav manual-nav">
+<h3>Getting Started</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/overview.html"><a href="../../../js_of_ocaml/overview.html">Overview</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/install.html"><a href="../../../js_of_ocaml/install.html">Installation</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/quickstart.html"><a href="../../../js_of_ocaml/quickstart.html">Quick Start</a></li>
+</ul>
+<h3>Programming Guide</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/javascript-interop.html"><a href="../../../js_of_ocaml/javascript-interop.html">JavaScript interop</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/ppx.html"><a href="../../../js_of_ocaml/ppx.html">PPX syntax extension</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/ppx-deriving.html"><a href="../../../js_of_ocaml/ppx-deriving.html">JSON derivation</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/rev-bindings.html"><a href="../../../js_of_ocaml/rev-bindings.html">Export OCaml code to JavaScript</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/errors.html"><a href="../../../js_of_ocaml/errors.html">Error handling</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/api.html"><a href="../../../js_of_ocaml/api.html">API</a></li>
+</ul>
+<h3>Lwt Support</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/lwt.html"><a href="../../../js_of_ocaml/lwt.html">Lwt support</a></li>
+<li class="ml3 current" data-wodoc-page="js_of_ocaml-lwt/Js_of_ocaml_lwt/index.html"><a href="../../../js_of_ocaml-lwt/Js_of_ocaml_lwt/index.html">API</a></li>
+</ul>
+<h3>Compiler</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/options.html"><a href="../../../js_of_ocaml/options.html">Command line options</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/compilation-modes.html"><a href="../../../js_of_ocaml/compilation-modes.html">Compilation modes</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/linker.html"><a href="../../../js_of_ocaml/linker.html">JavaScript primitives</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/tailcall.html"><a href="../../../js_of_ocaml/tailcall.html">Tailcall optimization</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/effects.html"><a href="../../../js_of_ocaml/effects.html">Effect handlers</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/runtime-representation.html"><a href="../../../js_of_ocaml/runtime-representation.html">Runtime representation</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/browser-compat.html"><a href="../../../js_of_ocaml/browser-compat.html">Targeting older browsers</a></li>
+</ul>
+<h3>Wasm_of_ocaml</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/wasm_overview.html"><a href="../../../js_of_ocaml/wasm_overview.html">Overview</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/wasm_runtime.html"><a href="../../../js_of_ocaml/wasm_runtime.html">Writing Wasm primitives</a></li>
+</ul>
+<h3>How-to Guides</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/build-toplevel.html"><a href="../../../js_of_ocaml/build-toplevel.html">Build a toplevel or use Dynlink</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/debug.html"><a href="../../../js_of_ocaml/debug.html">Debug a program</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/performances.html"><a href="../../../js_of_ocaml/performances.html">Performance</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/contribute.html"><a href="../../../js_of_ocaml/contribute.html">Contribute</a></li>
+</ul>
+<h3>Try it</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/files/toplevel/index.html"><a href="../../../js_of_ocaml/files/toplevel/index.html">OCaml toplevel</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/examples.html"><a href="../../../js_of_ocaml/examples.html">Examples and projects</a></li>
+</ul>
+</nav>
+</nav>
+    </nav>
+  </aside>
+</div>
+
+
+  <div class="project-page">
+    <div class="twocols">
+      <nav class="leftcol">
+        <div class="docversion">
+  <label>Version:
+    <select class="wodoc-version" onchange="wodocVersion(this.value)">
+      <option value="6.4.0">6.4.0</option>
+    </select>
+  </label>
+</div>
+<div class="page-toc">
+  <h3>On this page</h3>
+  <nav class="odoc-toc odoc-local-toc"><ul><ul><li><a href="#type-safety">Type safety</a></li><li><a href="#interop-with-raw-javascript-promises">Interop with raw JavaScript promises</a></li></ul></li><li><a href="#errors">Errors</a></li><li><a href="#building-promises">Building promises</a></li><li><a href="#chaining">Chaining</a></li><li><a href="#combinators">Combinators</a></li><li><a href="#unsafe-interop">Unsafe interop</a></li><li><a href="#capability-detection">Capability detection</a></li></ul></nav>
+</div>
+<nav class="api-nav manual-nav">
+<h3>Getting Started</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/overview.html"><a href="../../../js_of_ocaml/overview.html">Overview</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/install.html"><a href="../../../js_of_ocaml/install.html">Installation</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/quickstart.html"><a href="../../../js_of_ocaml/quickstart.html">Quick Start</a></li>
+</ul>
+<h3>Programming Guide</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/javascript-interop.html"><a href="../../../js_of_ocaml/javascript-interop.html">JavaScript interop</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/ppx.html"><a href="../../../js_of_ocaml/ppx.html">PPX syntax extension</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/ppx-deriving.html"><a href="../../../js_of_ocaml/ppx-deriving.html">JSON derivation</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/rev-bindings.html"><a href="../../../js_of_ocaml/rev-bindings.html">Export OCaml code to JavaScript</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/errors.html"><a href="../../../js_of_ocaml/errors.html">Error handling</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/api.html"><a href="../../../js_of_ocaml/api.html">API</a></li>
+</ul>
+<h3>Lwt Support</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/lwt.html"><a href="../../../js_of_ocaml/lwt.html">Lwt support</a></li>
+<li class="ml3 current" data-wodoc-page="js_of_ocaml-lwt/Js_of_ocaml_lwt/index.html"><a href="../../../js_of_ocaml-lwt/Js_of_ocaml_lwt/index.html">API</a></li>
+</ul>
+<h3>Compiler</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/options.html"><a href="../../../js_of_ocaml/options.html">Command line options</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/compilation-modes.html"><a href="../../../js_of_ocaml/compilation-modes.html">Compilation modes</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/linker.html"><a href="../../../js_of_ocaml/linker.html">JavaScript primitives</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/tailcall.html"><a href="../../../js_of_ocaml/tailcall.html">Tailcall optimization</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/effects.html"><a href="../../../js_of_ocaml/effects.html">Effect handlers</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/runtime-representation.html"><a href="../../../js_of_ocaml/runtime-representation.html">Runtime representation</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/browser-compat.html"><a href="../../../js_of_ocaml/browser-compat.html">Targeting older browsers</a></li>
+</ul>
+<h3>Wasm_of_ocaml</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/wasm_overview.html"><a href="../../../js_of_ocaml/wasm_overview.html">Overview</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/wasm_runtime.html"><a href="../../../js_of_ocaml/wasm_runtime.html">Writing Wasm primitives</a></li>
+</ul>
+<h3>How-to Guides</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/build-toplevel.html"><a href="../../../js_of_ocaml/build-toplevel.html">Build a toplevel or use Dynlink</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/debug.html"><a href="../../../js_of_ocaml/debug.html">Debug a program</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/performances.html"><a href="../../../js_of_ocaml/performances.html">Performance</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/contribute.html"><a href="../../../js_of_ocaml/contribute.html">Contribute</a></li>
+</ul>
+<h3>Try it</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/files/toplevel/index.html"><a href="../../../js_of_ocaml/files/toplevel/index.html">OCaml toplevel</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/examples.html"><a href="../../../js_of_ocaml/examples.html">Examples and projects</a></li>
+</ul>
+</nav>
+
+      </nav>
+      <article class="rightcol">
+        <header class="odoc-preamble"><h1>Module <code><span>Js_of_ocaml_lwt.Promise</span></code></h1></header>
+        <div class="odoc-content"><div class="odoc-include"><details open="open"><summary class="spec include"><code><span><span class="keyword">include</span> <span class="keyword">module</span> <span class="keyword">type</span> <span class="keyword">of</span> <span class="keyword">struct</span> <span class="keyword">include</span> <a href="../../../js_of_ocaml/Js_of_ocaml/Promise/index.html">Js_of_ocaml.Promise</a> <span class="keyword">end</span></span></code></summary><h3 id="type-safety">Type safety</h3><p>Native JavaScript promises automatically flatten any thenable returned from a handler or passed to <code>Promise.resolve</code>. That means a JavaScript <code>Promise</code> can never resolve with another <code>Promise</code> as its value, which is unsound at the OCaml type level for, say, <code>'a t t</code>.</p><p>These bindings work around that by wrapping thenable values in a small container before resolving and unwrapping on the way out; non-thenable values are passed through unchanged so the common case pays no allocation. As a result, <code>'a t</code> values always resolve with a value of OCaml type <code>'a</code>, even when <code>'a</code> is itself <code>'_ t</code>.</p><h3 id="interop-with-raw-javascript-promises">Interop with raw JavaScript promises</h3><p>Use <a href="#val-of_any"><code>of_any</code></a> / <a href="#val-to_any"><code>to_any</code></a> to interoperate with promises coming from outside this module. A <code>'a t</code> obtained via <a href="#val-of_any"><code>of_any</code></a> from a foreign promise will not be wrapped, so it is up to the caller to ensure the types line up.</p><div class="odoc-spec"><div class="spec type anchored" id="type-t"><code><span><span class="keyword">type</span> <span>+'a t</span></span><span> = <span><span class="type-var">'a</span> <a href="../../../js_of_ocaml/Js_of_ocaml/Promise/index.html#type-t">Js_of_ocaml.Promise.t</a></span></span></code></div></div><div class="odoc-spec"><div class="spec type anchored" id="type-error"><code><span><span class="keyword">type</span> error</span><span> = <a href="../../../js_of_ocaml/Js_of_ocaml/Promise/index.html#type-error">Js_of_ocaml.Promise.error</a></span></code></div><div class="spec-doc"><p>The reason a promise was rejected. JavaScript allows rejecting with any value (not necessarily an <code>Error</code>), so <a href="#type-error"><code>error</code></a> is opaque; use <a href="#val-error_to_any"><code>error_to_any</code></a> to inspect it and <a href="#val-error_of_any"><code>error_of_any</code></a> to construct one.</p></div></div><h2 id="errors">Errors</h2><div class="odoc-spec"><div class="spec value anchored" id="val-error_of_any"><code><span><span class="keyword">val</span> error_of_any : <span><a href="../../../js_of_ocaml/Js_of_ocaml/Js/Unsafe/index.html#type-any">Js_of_ocaml.Js.Unsafe.any</a> <span class="arrow">&#45;&gt;</span></span> <a href="#type-error">error</a></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-error_to_any"><code><span><span class="keyword">val</span> error_to_any : <span><a href="#type-error">error</a> <span class="arrow">&#45;&gt;</span></span> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/Unsafe/index.html#type-any">Js_of_ocaml.Js.Unsafe.any</a></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-error_of_exn"><code><span><span class="keyword">val</span> error_of_exn : <span>exn <span class="arrow">&#45;&gt;</span></span> <a href="#type-error">error</a></span></code></div><div class="spec-doc"><p>Use an OCaml exception as a rejection reason.</p></div></div><h2 id="building-promises">Building promises</h2><div class="odoc-spec"><div class="spec value anchored" id="val-resolve"><code><span><span class="keyword">val</span> resolve : <span><span class="type-var">'a</span> <span class="arrow">&#45;&gt;</span></span> <span><span class="type-var">'a</span> <a href="#type-t">t</a></span></span></code></div><div class="spec-doc"><p>A promise already fulfilled with the given value.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-reject"><code><span><span class="keyword">val</span> reject : <span><a href="#type-error">error</a> <span class="arrow">&#45;&gt;</span></span> <span><span class="type-var">'a</span> <a href="#type-t">t</a></span></span></code></div><div class="spec-doc"><p>A promise already rejected with the given reason.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-make"><code><span><span class="keyword">val</span> make : <span><span>(<span><span class="label">resolve</span>:<span>(<span><span class="type-var">'a</span> <span class="arrow">&#45;&gt;</span></span> unit)</span> <span class="arrow">&#45;&gt;</span></span> <span><span class="label">reject</span>:<span>(<span><a href="#type-error">error</a> <span class="arrow">&#45;&gt;</span></span> unit)</span> <span class="arrow">&#45;&gt;</span></span> unit)</span> <span class="arrow">&#45;&gt;</span></span> <span><span class="type-var">'a</span> <a href="#type-t">t</a></span></span></code></div><div class="spec-doc"><p><code>make f</code> runs <code>f</code> synchronously with two callbacks; <code>f</code> is expected to eventually invoke either <code>resolve</code> or <code>reject</code> to settle the promise.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-with_resolvers"><code><span><span class="keyword">val</span> with_resolvers : <span>unit <span class="arrow">&#45;&gt;</span></span> <span><span class="type-var">'a</span> <a href="#type-t">t</a></span> * <span>(<span><span class="type-var">'a</span> <span class="arrow">&#45;&gt;</span></span> unit)</span> * <span>(<span><a href="#type-error">error</a> <span class="arrow">&#45;&gt;</span></span> unit)</span></span></code></div><div class="spec-doc"><p><code>with_resolvers ()</code> returns <code>(p, resolve, reject)</code> where <code>p</code> is a fresh promise that is settled by calling <code>resolve x</code> (to fulfill with <code>x</code>) or <code>reject e</code> (to reject with <code>e</code>). Bound to the <code>Promise.withResolvers()</code> static method (ES2024).</p></div></div><h2 id="chaining">Chaining</h2><div class="odoc-spec"><div class="spec value anchored" id="val-then_"><code><span><span class="keyword">val</span> then_ : <span><span class="optlabel">?on_error</span>:<span>(<span><a href="#type-error">error</a> <span class="arrow">&#45;&gt;</span></span> <span><span class="type-var">'b</span> <a href="#type-t">t</a></span>)</span> <span class="arrow">&#45;&gt;</span></span> <span><span>(<span><span class="type-var">'a</span> <span class="arrow">&#45;&gt;</span></span> <span><span class="type-var">'b</span> <a href="#type-t">t</a></span>)</span> <span class="arrow">&#45;&gt;</span></span> <span><span><span class="type-var">'a</span> <a href="#type-t">t</a></span> <span class="arrow">&#45;&gt;</span></span> <span><span class="type-var">'b</span> <a href="#type-t">t</a></span></span></code></div><div class="spec-doc"><p><code>then_ f p</code> returns a new promise that, when <code>p</code> fulfills with <code>x</code>, fulfills (or rejects) like <code>f x</code>. If <code>p</code> is rejected, the rejection is propagated.</p><p>If <code>~on_error</code> is supplied, this is the two-callback form of <code>.then(f, g)</code> in JavaScript: <code>on_error</code> only fires for rejections of <code>p</code> itself. If <code>f</code> returns a rejected promise, <code>on_error</code> does <em>not</em> catch it; chain a <a href="#val-catch"><code>catch</code></a> afterwards if you need that.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-catch"><code><span><span class="keyword">val</span> catch : <span><span>(<span><a href="#type-error">error</a> <span class="arrow">&#45;&gt;</span></span> <span><span class="type-var">'a</span> <a href="#type-t">t</a></span>)</span> <span class="arrow">&#45;&gt;</span></span> <span><span><span class="type-var">'a</span> <a href="#type-t">t</a></span> <span class="arrow">&#45;&gt;</span></span> <span><span class="type-var">'a</span> <a href="#type-t">t</a></span></span></code></div><div class="spec-doc"><p><code>catch f p</code> returns a new promise that, when <code>p</code> is rejected with reason <code>e</code>, fulfills (or rejects) like <code>f e</code>. If <code>p</code> is fulfilled, its value is propagated.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-finally"><code><span><span class="keyword">val</span> finally : <span><span>(<span>unit <span class="arrow">&#45;&gt;</span></span> unit)</span> <span class="arrow">&#45;&gt;</span></span> <span><span><span class="type-var">'a</span> <a href="#type-t">t</a></span> <span class="arrow">&#45;&gt;</span></span> <span><span class="type-var">'a</span> <a href="#type-t">t</a></span></span></code></div><div class="spec-doc"><p><code>finally f p</code> returns a new promise that settles the same way as <code>p</code>, after invoking <code>f</code> for its side effect.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-map"><code><span><span class="keyword">val</span> map : <span><span>(<span><span class="type-var">'a</span> <span class="arrow">&#45;&gt;</span></span> <span class="type-var">'b</span>)</span> <span class="arrow">&#45;&gt;</span></span> <span><span><span class="type-var">'a</span> <a href="#type-t">t</a></span> <span class="arrow">&#45;&gt;</span></span> <span><span class="type-var">'b</span> <a href="#type-t">t</a></span></span></code></div><div class="spec-doc"><p><code>map f p</code> is <code>then_ (fun x -&gt; resolve (f x)) p</code>.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-bind"><code><span><span class="keyword">val</span> bind : <span><span>(<span><span class="type-var">'a</span> <span class="arrow">&#45;&gt;</span></span> <span><span class="type-var">'b</span> <a href="#type-t">t</a></span>)</span> <span class="arrow">&#45;&gt;</span></span> <span><span><span class="type-var">'a</span> <a href="#type-t">t</a></span> <span class="arrow">&#45;&gt;</span></span> <span><span class="type-var">'b</span> <a href="#type-t">t</a></span></span></code></div><div class="spec-doc"><p>Alias for <a href="#val-then_"><code>then_</code></a>.</p></div></div><h2 id="combinators">Combinators</h2><div class="odoc-spec"><div class="spec value anchored" id="val-all"><code><span><span class="keyword">val</span> all : <span><span><span><span class="type-var">'a</span> <a href="#type-t">t</a></span> list</span> <span class="arrow">&#45;&gt;</span></span> <span><span><span class="type-var">'a</span> list</span> <a href="#type-t">t</a></span></span></code></div><div class="spec-doc"><p><code>all ps</code> resolves with the values of all promises in <code>ps</code>, in order, or rejects with the reason of the first promise to reject.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-all_settled"><code><span><span class="keyword">val</span> all_settled : <span><span><span><span class="type-var">'a</span> <a href="#type-t">t</a></span> list</span> <span class="arrow">&#45;&gt;</span></span> <span><span><span><span>(<span class="type-var">'a</span>, <a href="#type-error">error</a>)</span> <span class="xref-unresolved">Stdlib</span>.result</span> list</span> <a href="#type-t">t</a></span></span></code></div><div class="spec-doc"><p><code>all_settled ps</code> resolves once every promise in <code>ps</code> has settled, with a list in the same order: <code>Ok v</code> for a fulfilled promise and <code>Error e</code> for a rejected one. The returned promise never rejects.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-any"><code><span><span class="keyword">val</span> any : <span><span><span><span class="type-var">'a</span> <a href="#type-t">t</a></span> list</span> <span class="arrow">&#45;&gt;</span></span> <span><span class="type-var">'a</span> <a href="#type-t">t</a></span></span></code></div><div class="spec-doc"><p><code>any ps</code> fulfills as soon as any promise in <code>ps</code> fulfills. If every promise rejects, the returned promise rejects with an <code>AggregateError</code> whose <code>errors</code> property lists the rejection reasons.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-race"><code><span><span class="keyword">val</span> race : <span><span><span><span class="type-var">'a</span> <a href="#type-t">t</a></span> list</span> <span class="arrow">&#45;&gt;</span></span> <span><span class="type-var">'a</span> <a href="#type-t">t</a></span></span></code></div><div class="spec-doc"><p><code>race ps</code> settles like the first promise in <code>ps</code> to settle, fulfilled or rejected.</p></div></div><h2 id="unsafe-interop">Unsafe interop</h2><div class="odoc-spec"><div class="spec value anchored" id="val-to_any"><code><span><span class="keyword">val</span> to_any : <span><span><span class="type-var">'a</span> <a href="#type-t">t</a></span> <span class="arrow">&#45;&gt;</span></span> <a href="../../../js_of_ocaml/Js_of_ocaml/Js/Unsafe/index.html#type-any">Js_of_ocaml.Js.Unsafe.any</a></span></code></div><div class="spec-doc"><p>Expose the underlying JavaScript promise. The resolved value may be the internal wrapper rather than the raw payload; consumers that observe the value should chain a <code>.then</code> that unwraps via <a href="#val-of_any"><code>of_any</code></a> → <a href="#val-then_"><code>then_</code></a> rather than reading <code>.then</code> directly from the foreign side.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-of_any"><code><span><span class="keyword">val</span> of_any : <span><a href="../../../js_of_ocaml/Js_of_ocaml/Js/Unsafe/index.html#type-any">Js_of_ocaml.Js.Unsafe.any</a> <span class="arrow">&#45;&gt;</span></span> <span><span class="type-var">'a</span> <a href="#type-t">t</a></span></span></code></div><div class="spec-doc"><p>Treat a foreign JavaScript promise as a <code>'a t</code>. The returned value is only sound if the underlying promise actually resolves with a value of type <code>'a</code>; raw foreign values are passed through <a href="#val-then_"><code>then_</code></a> unchanged.</p></div></div><h2 id="capability-detection">Capability detection</h2><div class="odoc-spec"><div class="spec value anchored" id="val-is_supported"><code><span><span class="keyword">val</span> is_supported : <span>unit <span class="arrow">&#45;&gt;</span></span> bool</span></code></div><div class="spec-doc"><p>Whether the JavaScript <code>Promise</code> global is available in the current environment.</p></div></div></details></div><div class="odoc-spec"><div class="spec exception anchored" id="exception-Rejected"><code><span><span class="keyword">exception</span> </span><span><span class="exception">Rejected</span> <span class="keyword">of</span> <a href="../../../js_of_ocaml/Js_of_ocaml/Promise/index.html#type-error">Js_of_ocaml.Promise.error</a></span></code></div><div class="spec-doc"><p>Raised by the <code>Lwt.t</code> returned by <a href="#val-to_lwt"><code>to_lwt</code></a> when the underlying <code>Promise</code> rejects. The rejection reason is wrapped unchanged — even when it is an OCaml exception (e.g. produced via <a href="#val-error_of_exn"><code>Promise.error_of_exn</code></a>), use <a href="#val-error_to_any"><code>Promise.error_to_any</code></a> to inspect it.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-to_lwt"><code><span><span class="keyword">val</span> to_lwt : <span><span><span class="type-var">'a</span> <a href="../../../js_of_ocaml/Js_of_ocaml/Promise/index.html#type-t">Js_of_ocaml.Promise.t</a></span> <span class="arrow">&#45;&gt;</span></span> <span><span class="type-var">'a</span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div><div class="spec-doc"><p><code>to_lwt p</code> is an Lwt thread that fulfils with the value <code>p</code> resolves with, or fails with <a href="#exception-Rejected"><code>Rejected</code></a> if <code>p</code> is rejected.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-of_lwt"><code><span><span class="keyword">val</span> of_lwt : <span><span><span class="type-var">'a</span> <span class="xref-unresolved">Lwt</span>.t</span> <span class="arrow">&#45;&gt;</span></span> <span><span class="type-var">'a</span> <a href="../../../js_of_ocaml/Js_of_ocaml/Promise/index.html#type-t">Js_of_ocaml.Promise.t</a></span></span></code></div><div class="spec-doc"><p><code>of_lwt t</code> is a <code>Promise</code> that resolves with the value <code>t</code> returns, or rejects with <code>Promise.error_of_exn exn</code> if <code>t</code> fails.</p></div></div></div>
+      </article>
+    </div>
+  </div>
+
+  <script>
+    var wodocPub = "/js_of_ocaml";
+    // Switch version: keep the current page, swapping only the version segment.
+    function wodocVersion(v) {
+      if (!v) return;
+      var re = new RegExp('^(' + wodocPub + '/)[^/]+');
+      var p = location.pathname;
+      location.href =
+        re.test(p) ? p.replace(re, '$1' + v) : wodocPub + '/' + v + '/index.html';
+    }
+    // Build the version <select> from the project's versions.json (the single
+    // source of truth, refreshed on every build/release), so even older frozen
+    // pages list the current set. Falls back to the baked <option>s on failure.
+    (function () {
+      var seg = (location.pathname.match(
+        new RegExp('^' + wodocPub + '/([^/]+)')) || [])[1];
+      function select(sel) {
+        var i;
+        for (i = 0; i < sel.options.length; i++)
+          if (sel.options[i].value === seg) { sel.selectedIndex = i; return; }
+        if (seg) {
+          var o = document.createElement('option');
+          o.value = seg; o.textContent = seg; o.selected = true;
+          sel.insertBefore(o, sel.firstChild);
+        }
+      }
+      fetch(wodocPub + '/versions.json')
+        .then(function (r) { if (!r.ok) throw 0; return r.json(); })
+        .then(function (m) {
+          var list = m.list || [], latest = m.latest;
+          document.querySelectorAll('.wodoc-version').forEach(function (sel) {
+            sel.innerHTML = '';
+            list.forEach(function (v) {
+              var o = document.createElement('option');
+              if (v === latest) { o.value = 'latest'; o.textContent = v + ' (latest)'; }
+              else { o.value = v; o.textContent = v; }
+              sel.appendChild(o);
+            });
+            select(sel);
+          });
+        })
+        .catch(function () {
+          document.querySelectorAll('.wodoc-version').forEach(select);
+        });
+    })();
+  </script>
+</body>
+</html>

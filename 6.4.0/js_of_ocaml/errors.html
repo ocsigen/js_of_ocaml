@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Error handling between OCaml and JavaScript — Js_of_ocaml</title>
+  <link rel="stylesheet" href="/css/style.css"/>
+  <link rel="stylesheet" href="/css/ocsigen-odoc.css"/>
+  <link rel="alternate" type="text/markdown" href="../js_of_ocaml/errors.md"/>
+  <script src="../highlight.pack.js"></script>
+  <script src="../wodoc-highlight.js"></script>
+</head>
+<body class="wodoc-page wodoc-doc">
+  <!-- Shared site menu — THE single source of truth for the header, top menu and
+     drawer of EVERY Ocsigen doc page (vitrine + all projects). Canonical copy
+     lives here in ocsigen.github.io; each project's build fetches it. Injected
+     by `wodoc assemble --menu`. Holes filled by the tool (braces omitted here so
+     this comment is not itself rewritten by the hole-filler):
+       subproject  the sub-project name shown next to the Ocsigen logo
+                   (empty on the vitrine), via --subproject
+       leftnav     the project's left navigation, expanded into BOTH the mobile
+                   drawer (below) and the left column (in the page template),
+                   via --leftnav
+     The current entry is highlighted by adding the `current` class to the
+     element carrying data-wodoc-page=<id>: --current on the vitrine (page id),
+     --menu-current in a project (the project id). Nothing is hardcoded here, so
+     this file is the ONLY place the menu is defined.
+
+     Links are the FINAL site paths (/<project>/, /<page>): the target layout
+     where each project is served at ocsigen.org/<project>/ — no transitional
+     /wodoc/ prefix. -->
+<div class="page-header">
+  <p class="logo-ocsigen"><a href="/"><img src="/img/ocsigen-white.svg" alt="Ocsigen"/></a></p>
+  <p class="logo-subproject">Js_of_ocaml</p>
+
+  <div class="mainmenu">
+    <p class="mainmenu-home" data-wodoc-page="githubio"><a href="/">Home</a></p>
+    <p class="mainmenu-doc" data-wodoc-page="tuto"><a href="/tuto/">Doc</a></p>
+    <p class="mainmenu-blog" data-wodoc-page="blog"><a href="/blog/">Blog</a></p>
+    <p data-wodoc-page="eliom"><a href="/eliom/">Eliom</a></p>
+    <p data-wodoc-page="js_of_ocaml" class="current"><a href="/js_of_ocaml/">Js_of_ocaml</a></p>
+    <p data-wodoc-page="ocsigenserver"><a href="/ocsigenserver/">Server</a></p>
+    <p data-wodoc-page="lwt"><a href="/lwt/">Lwt</a></p>
+    <p data-wodoc-page="tyxml"><a href="/tyxml/">Tyxml</a></p>
+    <p data-wodoc-page="ocsigen-start"><a href="/ocsigen-start/">Start</a></p>
+  </div>
+
+  <form id="googlesearch" action="https://google.com/search">
+    <input name="q" id="gsearch-box" placeholder="Search using Google"/>
+    <label for="gsearch-box"><img src="/img/search.svg" alt="" id="gsearch-icon"/></label>
+    <input type="submit" id="gsearch-submit" onclick="document.getElementById('gsearch-box').value += ' site:ocsigen.org';"/>
+  </form>
+
+  <aside class="how-drawer">
+    <input id="how-drawer-toggle" type="checkbox"/>
+    <label for="how-drawer-toggle" id="how-drawer-label"><span class="how-drawer-icon"></span></label>
+    <nav class="how-drawer-content">
+      <ul class="drawermainmenu">
+        <li class="drawermainmenu-home" data-wodoc-page="githubio"><a href="/">Home</a></li>
+        <li class="drawermainmenu-doc" data-wodoc-page="tuto"><a href="/tuto/">Doc</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="eliom"><a href="/eliom/">Eliom</a></li>
+        <li class="drawermainmenu-project current" data-wodoc-page="js_of_ocaml"><a href="/js_of_ocaml/">Js_of_ocaml</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsigenserver"><a href="/ocsigenserver/">Server</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="lwt"><a href="/lwt/">Lwt</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="tyxml"><a href="/tyxml/">Tyxml</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsigen-toolkit"><a href="/ocsigen-toolkit/">Toolkit</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsigen-start"><a href="/ocsigen-start/">Start</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsipersist"><a href="/ocsipersist/">Ocsipersist</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="reactiveData"><a href="/reactiveData/">ReactiveData</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsigen-i18n"><a href="/ocsigen-i18n/">i18n</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="wodoc"><a href="/wodoc/">Wodoc</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="projects"><a href="/projects">Other projects</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="papers"><a href="/papers">Research papers</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="credits"><a href="/credits">Who does Ocsigen?</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="contributing"><a href="/contributing">Contributing</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="blog"><a href="/blog/">Blog</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="install"><a href="/install">Installation</a></li>
+        <li class="drawermainmenu-page"><a href="https://github.com/ocsigen">Source code</a></li>
+      </ul>
+      <!-- On mobile the left column is hidden; its menu lives here in the burger
+           (.how-doctree, shown only on narrow screens), as the old site did.
+           Empty on the vitrine; the leftnav hole is filled (with the same
+           fragment as the left column) only on project pages. -->
+      <nav class="how-doctree"><div class="docversion">
+  <label>Version:
+    <select class="wodoc-version" onchange="wodocVersion(this.value)">
+      <option value="6.4.0">6.4.0</option>
+    </select>
+  </label>
+</div>
+<div class="page-toc">
+  <h3>On this page</h3>
+  <nav class="odoc-toc odoc-local-toc"><ul><li><a href="#catching-js-exceptions">Catching JavaScript exceptions in OCaml</a><ul><li><a href="#inspecting-javascript-errors">Inspecting JavaScript errors</a></li></ul></li><li><a href="#raising-js-errors">Raising JavaScript errors from OCaml</a></li><li><a href="#exception-propagation">Exception propagation in exported functions</a></li><li><a href="#stack_traces">Stack traces for OCaml exceptions</a><ul><li><a href="#manual-attachment">Manual attachment</a></li><li><a href="#extracting-attached-errors">Extracting attached errors</a></li><li><a href="#automatic-attachment">Automatic attachment</a></li></ul></li></ul></nav>
+</div>
+<nav class="api-nav manual-nav">
+<h3>Getting Started</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/overview.html"><a href="../js_of_ocaml/overview.html">Overview</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/install.html"><a href="../js_of_ocaml/install.html">Installation</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/quickstart.html"><a href="../js_of_ocaml/quickstart.html">Quick Start</a></li>
+</ul>
+<h3>Programming Guide</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/javascript-interop.html"><a href="../js_of_ocaml/javascript-interop.html">JavaScript interop</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/ppx.html"><a href="../js_of_ocaml/ppx.html">PPX syntax extension</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/ppx-deriving.html"><a href="../js_of_ocaml/ppx-deriving.html">JSON derivation</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/rev-bindings.html"><a href="../js_of_ocaml/rev-bindings.html">Export OCaml code to JavaScript</a></li>
+<li class="ml3 current" data-wodoc-page="js_of_ocaml/errors.html"><a href="../js_of_ocaml/errors.html">Error handling</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/api.html"><a href="../js_of_ocaml/api.html">API</a></li>
+</ul>
+<h3>Lwt Support</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/lwt.html"><a href="../js_of_ocaml/lwt.html">Lwt support</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml-lwt/Js_of_ocaml_lwt/index.html"><a href="../js_of_ocaml-lwt/Js_of_ocaml_lwt/index.html">API</a></li>
+</ul>
+<h3>Compiler</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/options.html"><a href="../js_of_ocaml/options.html">Command line options</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/compilation-modes.html"><a href="../js_of_ocaml/compilation-modes.html">Compilation modes</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/linker.html"><a href="../js_of_ocaml/linker.html">JavaScript primitives</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/tailcall.html"><a href="../js_of_ocaml/tailcall.html">Tailcall optimization</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/effects.html"><a href="../js_of_ocaml/effects.html">Effect handlers</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/runtime-representation.html"><a href="../js_of_ocaml/runtime-representation.html">Runtime representation</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/browser-compat.html"><a href="../js_of_ocaml/browser-compat.html">Targeting older browsers</a></li>
+</ul>
+<h3>Wasm_of_ocaml</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/wasm_overview.html"><a href="../js_of_ocaml/wasm_overview.html">Overview</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/wasm_runtime.html"><a href="../js_of_ocaml/wasm_runtime.html">Writing Wasm primitives</a></li>
+</ul>
+<h3>How-to Guides</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/build-toplevel.html"><a href="../js_of_ocaml/build-toplevel.html">Build a toplevel or use Dynlink</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/debug.html"><a href="../js_of_ocaml/debug.html">Debug a program</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/performances.html"><a href="../js_of_ocaml/performances.html">Performance</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/contribute.html"><a href="../js_of_ocaml/contribute.html">Contribute</a></li>
+</ul>
+<h3>Try it</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/files/toplevel/index.html"><a href="../js_of_ocaml/files/toplevel/index.html">OCaml toplevel</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/examples.html"><a href="../js_of_ocaml/examples.html">Examples and projects</a></li>
+</ul>
+</nav>
+</nav>
+    </nav>
+  </aside>
+</div>
+
+
+  <div class="project-page">
+    <div class="twocols">
+      <nav class="leftcol">
+        <div class="docversion">
+  <label>Version:
+    <select class="wodoc-version" onchange="wodocVersion(this.value)">
+      <option value="6.4.0">6.4.0</option>
+    </select>
+  </label>
+</div>
+<div class="page-toc">
+  <h3>On this page</h3>
+  <nav class="odoc-toc odoc-local-toc"><ul><li><a href="#catching-js-exceptions">Catching JavaScript exceptions in OCaml</a><ul><li><a href="#inspecting-javascript-errors">Inspecting JavaScript errors</a></li></ul></li><li><a href="#raising-js-errors">Raising JavaScript errors from OCaml</a></li><li><a href="#exception-propagation">Exception propagation in exported functions</a></li><li><a href="#stack_traces">Stack traces for OCaml exceptions</a><ul><li><a href="#manual-attachment">Manual attachment</a></li><li><a href="#extracting-attached-errors">Extracting attached errors</a></li><li><a href="#automatic-attachment">Automatic attachment</a></li></ul></li></ul></nav>
+</div>
+<nav class="api-nav manual-nav">
+<h3>Getting Started</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/overview.html"><a href="../js_of_ocaml/overview.html">Overview</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/install.html"><a href="../js_of_ocaml/install.html">Installation</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/quickstart.html"><a href="../js_of_ocaml/quickstart.html">Quick Start</a></li>
+</ul>
+<h3>Programming Guide</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/javascript-interop.html"><a href="../js_of_ocaml/javascript-interop.html">JavaScript interop</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/ppx.html"><a href="../js_of_ocaml/ppx.html">PPX syntax extension</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/ppx-deriving.html"><a href="../js_of_ocaml/ppx-deriving.html">JSON derivation</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/rev-bindings.html"><a href="../js_of_ocaml/rev-bindings.html">Export OCaml code to JavaScript</a></li>
+<li class="ml3 current" data-wodoc-page="js_of_ocaml/errors.html"><a href="../js_of_ocaml/errors.html">Error handling</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/api.html"><a href="../js_of_ocaml/api.html">API</a></li>
+</ul>
+<h3>Lwt Support</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/lwt.html"><a href="../js_of_ocaml/lwt.html">Lwt support</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml-lwt/Js_of_ocaml_lwt/index.html"><a href="../js_of_ocaml-lwt/Js_of_ocaml_lwt/index.html">API</a></li>
+</ul>
+<h3>Compiler</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/options.html"><a href="../js_of_ocaml/options.html">Command line options</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/compilation-modes.html"><a href="../js_of_ocaml/compilation-modes.html">Compilation modes</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/linker.html"><a href="../js_of_ocaml/linker.html">JavaScript primitives</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/tailcall.html"><a href="../js_of_ocaml/tailcall.html">Tailcall optimization</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/effects.html"><a href="../js_of_ocaml/effects.html">Effect handlers</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/runtime-representation.html"><a href="../js_of_ocaml/runtime-representation.html">Runtime representation</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/browser-compat.html"><a href="../js_of_ocaml/browser-compat.html">Targeting older browsers</a></li>
+</ul>
+<h3>Wasm_of_ocaml</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/wasm_overview.html"><a href="../js_of_ocaml/wasm_overview.html">Overview</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/wasm_runtime.html"><a href="../js_of_ocaml/wasm_runtime.html">Writing Wasm primitives</a></li>
+</ul>
+<h3>How-to Guides</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/build-toplevel.html"><a href="../js_of_ocaml/build-toplevel.html">Build a toplevel or use Dynlink</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/debug.html"><a href="../js_of_ocaml/debug.html">Debug a program</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/performances.html"><a href="../js_of_ocaml/performances.html">Performance</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/contribute.html"><a href="../js_of_ocaml/contribute.html">Contribute</a></li>
+</ul>
+<h3>Try it</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/files/toplevel/index.html"><a href="../js_of_ocaml/files/toplevel/index.html">OCaml toplevel</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/examples.html"><a href="../js_of_ocaml/examples.html">Examples and projects</a></li>
+</ul>
+</nav>
+
+      </nav>
+      <article class="rightcol">
+        <header class="odoc-preamble"><h1 id="error-handling-between-ocaml-and-javascript">Error handling between OCaml and JavaScript</h1><p>This page explains how exceptions propagate between OCaml and JavaScript code, and how to properly handle errors in both directions.</p></header>
+        <div class="odoc-content"><h2 id="catching-js-exceptions">Catching JavaScript exceptions in OCaml</h2><p>When JavaScript code throws an exception and it propagates to OCaml code, it is wrapped in the <code>Js_error.Exn</code> exception, which holds a value of type <code>Js_error.t</code>:</p><pre class="language-ocaml"><code>open Js_of_ocaml
+
+let safe_parse json_str =
+  try
+    Some (Js._JSON##parse (Js.string json_str))
+  with Js_error.Exn err -&gt;
+    (* err has type Js_error.t *)
+    Printf.eprintf &quot;Parse error: %s\n&quot; (Js_error.to_string err);
+    None</code></pre><h3 id="inspecting-javascript-errors">Inspecting JavaScript errors</h3><p>The <a href="Js_of_ocaml/Js/Js_error/index.html" title="Js_of_ocaml.Js.Js_error">Js_error</a> module provides functions to inspect error details:</p><pre class="language-ocaml"><code>let handle_error err =
+  (* Error message *)
+  let msg = Js_error.message err in
+
+  (* Error name (e.g., &quot;TypeError&quot;, &quot;ReferenceError&quot;) *)
+  let name = Js_error.name err in
+
+  (* Stack trace (if available) *)
+  let stack = Js_error.stack err in
+
+  Printf.eprintf &quot;Error [%s]: %s\n&quot; name msg;
+  Option.iter (Printf.eprintf &quot;Stack:\n%s\n&quot;) stack</code></pre><h2 id="raising-js-errors">Raising JavaScript errors from OCaml</h2><p>To throw a JavaScript error that JavaScript code can catch:</p><pre class="language-ocaml"><code>let validate_positive n =
+  if n &lt; 0 then
+    let err = new%js Js.error_constr (Js.string &quot;Value must be positive&quot;) in
+    Js_error.raise_ (Js_error.of_error err)
+  else
+    n</code></pre><h2 id="exception-propagation">Exception propagation in exported functions</h2><p>When you export OCaml functions to JavaScript, uncaught OCaml exceptions will propagate to JavaScript. However, OCaml exceptions are <b>not</b> JavaScript <code>Error</code> objects (see <a href="runtime-representation.html#exceptions" title="exceptions">runtime representation</a>).</p><pre class="language-ocaml"><code>let divide x y =
+  if y = 0 then failwith &quot;Division by zero&quot;
+  else x / y
+
+let () = Js.export &quot;divide&quot; divide</code></pre><p>From JavaScript, you can catch the exception, but it won't be an <code>Error</code>:</p><pre class="language-javascript"><code>try {
+  divide(10, 0);
+} catch (e) {
+  // e is an array, not an Error object
+  // e.message is undefined
+  console.log(e);  // [0, [0, &quot;Failure&quot;, ...], &quot;Division by zero&quot;]
+}</code></pre><p>For better JavaScript interoperability, raise JavaScript errors instead of OCaml exceptions</p><h2 id="stack_traces">Stack traces for OCaml exceptions</h2><p>By default, OCaml exceptions don't carry JavaScript stack traces. This makes debugging difficult since you can't see where an exception originated in browser DevTools or Node.js.</p><p>The solution is to attach a JavaScript <code>Error</code> object to an OCaml exception. JavaScript <code>Error</code> objects capture the call stack at the point of creation, so attaching one to an OCaml exception preserves the stack trace for debugging.</p><h3 id="manual-attachment">Manual attachment</h3><p>Use <a href="Js_of_ocaml/Js/Js_error/index.html#val-attach_js_backtrace" title="Js_of_ocaml.Js.Js_error.attach_js_backtrace">Js_error.attach_js_backtrace</a> to attach a JavaScript stack trace to an OCaml exception:</p><pre class="language-ocaml"><code>let process data =
+  try
+    do_something data
+  with exn -&gt;
+    let exn = Js_error.attach_js_backtrace exn ~force:false in
+    (* Log or rethrow with JS backtrace attached *)
+    raise exn</code></pre><p>The <code>~force:false</code> parameter only attaches a new error if one isn't already present. Use <code>~force:true</code> to always attach a fresh stack trace.</p><h3 id="extracting-attached-errors">Extracting attached errors</h3><p>Use <a href="Js_of_ocaml/Js/Js_error/index.html#val-of_exn" title="Js_of_ocaml.Js.Js_error.of_exn">Js_error.of_exn</a> to extract the JavaScript error from an OCaml exception:</p><pre class="language-ocaml"><code>let log_with_backtrace exn =
+  match Js_error.of_exn exn with
+  | Some js_err -&gt;
+      Printf.eprintf &quot;JS Error: %s\n&quot; (Js_error.to_string js_err);
+      Option.iter (Printf.eprintf &quot;Stack:\n%s\n&quot;) (Js_error.stack js_err)
+  | None -&gt;
+      Printf.eprintf &quot;OCaml Error: %s\n&quot; (Printexc.to_string exn)</code></pre><h3 id="automatic-attachment">Automatic attachment</h3><p>Js_of_ocaml can automatically attach a JavaScript <code>Error</code> whenever an OCaml exception is raised. This is convenient but has a performance cost since creating <code>Error</code> objects is expensive.</p><p>Automatic attachment is enabled when:</p><ol><li><code>Printexc.backtrace_status() = true</code>, <b>and</b></li><li><p>Either:</p><ul><li>The environment variable <code>OCAMLRUNPARAM</code> contains <code>b=1</code>, or</li><li>The program was compiled with <code>--enable with-js-error</code></li></ul></li></ol><p>Example with environment variable:</p><pre>OCAMLRUNPARAM=b=1 node program.js</pre><p>Example with compiler flag:</p><pre>js_of_ocaml --enable with-js-error program.byte</pre><p>When an unhandled OCaml exception has an attached JavaScript <code>Error</code>, it will be thrown as that error, allowing browsers and Node.js to display a proper stack trace.</p></div>
+      </article>
+    </div>
+  </div>
+
+  <script>
+    var wodocPub = "/js_of_ocaml";
+    // Switch version: keep the current page, swapping only the version segment.
+    function wodocVersion(v) {
+      if (!v) return;
+      var re = new RegExp('^(' + wodocPub + '/)[^/]+');
+      var p = location.pathname;
+      location.href =
+        re.test(p) ? p.replace(re, '$1' + v) : wodocPub + '/' + v + '/index.html';
+    }
+    // Build the version <select> from the project's versions.json (the single
+    // source of truth, refreshed on every build/release), so even older frozen
+    // pages list the current set. Falls back to the baked <option>s on failure.
+    (function () {
+      var seg = (location.pathname.match(
+        new RegExp('^' + wodocPub + '/([^/]+)')) || [])[1];
+      function select(sel) {
+        var i;
+        for (i = 0; i < sel.options.length; i++)
+          if (sel.options[i].value === seg) { sel.selectedIndex = i; return; }
+        if (seg) {
+          var o = document.createElement('option');
+          o.value = seg; o.textContent = seg; o.selected = true;
+          sel.insertBefore(o, sel.firstChild);
+        }
+      }
+      fetch(wodocPub + '/versions.json')
+        .then(function (r) { if (!r.ok) throw 0; return r.json(); })
+        .then(function (m) {
+          var list = m.list || [], latest = m.latest;
+          document.querySelectorAll('.wodoc-version').forEach(function (sel) {
+            sel.innerHTML = '';
+            list.forEach(function (v) {
+              var o = document.createElement('option');
+              if (v === latest) { o.value = 'latest'; o.textContent = v + ' (latest)'; }
+              else { o.value = v; o.textContent = v; }
+              sel.appendChild(o);
+            });
+            select(sel);
+          });
+        })
+        .catch(function () {
+          document.querySelectorAll('.wodoc-version').forEach(select);
+        });
+    })();
+  </script>
+</body>
+</html>

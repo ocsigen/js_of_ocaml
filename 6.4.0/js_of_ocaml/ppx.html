@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>PPX syntax extension — Js_of_ocaml</title>
+  <link rel="stylesheet" href="/css/style.css"/>
+  <link rel="stylesheet" href="/css/ocsigen-odoc.css"/>
+  <link rel="alternate" type="text/markdown" href="../js_of_ocaml/ppx.md"/>
+  <script src="../highlight.pack.js"></script>
+  <script src="../wodoc-highlight.js"></script>
+</head>
+<body class="wodoc-page wodoc-doc">
+  <!-- Shared site menu — THE single source of truth for the header, top menu and
+     drawer of EVERY Ocsigen doc page (vitrine + all projects). Canonical copy
+     lives here in ocsigen.github.io; each project's build fetches it. Injected
+     by `wodoc assemble --menu`. Holes filled by the tool (braces omitted here so
+     this comment is not itself rewritten by the hole-filler):
+       subproject  the sub-project name shown next to the Ocsigen logo
+                   (empty on the vitrine), via --subproject
+       leftnav     the project's left navigation, expanded into BOTH the mobile
+                   drawer (below) and the left column (in the page template),
+                   via --leftnav
+     The current entry is highlighted by adding the `current` class to the
+     element carrying data-wodoc-page=<id>: --current on the vitrine (page id),
+     --menu-current in a project (the project id). Nothing is hardcoded here, so
+     this file is the ONLY place the menu is defined.
+
+     Links are the FINAL site paths (/<project>/, /<page>): the target layout
+     where each project is served at ocsigen.org/<project>/ — no transitional
+     /wodoc/ prefix. -->
+<div class="page-header">
+  <p class="logo-ocsigen"><a href="/"><img src="/img/ocsigen-white.svg" alt="Ocsigen"/></a></p>
+  <p class="logo-subproject">Js_of_ocaml</p>
+
+  <div class="mainmenu">
+    <p class="mainmenu-home" data-wodoc-page="githubio"><a href="/">Home</a></p>
+    <p class="mainmenu-doc" data-wodoc-page="tuto"><a href="/tuto/">Doc</a></p>
+    <p class="mainmenu-blog" data-wodoc-page="blog"><a href="/blog/">Blog</a></p>
+    <p data-wodoc-page="eliom"><a href="/eliom/">Eliom</a></p>
+    <p data-wodoc-page="js_of_ocaml" class="current"><a href="/js_of_ocaml/">Js_of_ocaml</a></p>
+    <p data-wodoc-page="ocsigenserver"><a href="/ocsigenserver/">Server</a></p>
+    <p data-wodoc-page="lwt"><a href="/lwt/">Lwt</a></p>
+    <p data-wodoc-page="tyxml"><a href="/tyxml/">Tyxml</a></p>
+    <p data-wodoc-page="ocsigen-start"><a href="/ocsigen-start/">Start</a></p>
+  </div>
+
+  <form id="googlesearch" action="https://google.com/search">
+    <input name="q" id="gsearch-box" placeholder="Search using Google"/>
+    <label for="gsearch-box"><img src="/img/search.svg" alt="" id="gsearch-icon"/></label>
+    <input type="submit" id="gsearch-submit" onclick="document.getElementById('gsearch-box').value += ' site:ocsigen.org';"/>
+  </form>
+
+  <aside class="how-drawer">
+    <input id="how-drawer-toggle" type="checkbox"/>
+    <label for="how-drawer-toggle" id="how-drawer-label"><span class="how-drawer-icon"></span></label>
+    <nav class="how-drawer-content">
+      <ul class="drawermainmenu">
+        <li class="drawermainmenu-home" data-wodoc-page="githubio"><a href="/">Home</a></li>
+        <li class="drawermainmenu-doc" data-wodoc-page="tuto"><a href="/tuto/">Doc</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="eliom"><a href="/eliom/">Eliom</a></li>
+        <li class="drawermainmenu-project current" data-wodoc-page="js_of_ocaml"><a href="/js_of_ocaml/">Js_of_ocaml</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsigenserver"><a href="/ocsigenserver/">Server</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="lwt"><a href="/lwt/">Lwt</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="tyxml"><a href="/tyxml/">Tyxml</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsigen-toolkit"><a href="/ocsigen-toolkit/">Toolkit</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsigen-start"><a href="/ocsigen-start/">Start</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsipersist"><a href="/ocsipersist/">Ocsipersist</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="reactiveData"><a href="/reactiveData/">ReactiveData</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsigen-i18n"><a href="/ocsigen-i18n/">i18n</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="wodoc"><a href="/wodoc/">Wodoc</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="projects"><a href="/projects">Other projects</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="papers"><a href="/papers">Research papers</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="credits"><a href="/credits">Who does Ocsigen?</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="contributing"><a href="/contributing">Contributing</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="blog"><a href="/blog/">Blog</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="install"><a href="/install">Installation</a></li>
+        <li class="drawermainmenu-page"><a href="https://github.com/ocsigen">Source code</a></li>
+      </ul>
+      <!-- On mobile the left column is hidden; its menu lives here in the burger
+           (.how-doctree, shown only on narrow screens), as the old site did.
+           Empty on the vitrine; the leftnav hole is filled (with the same
+           fragment as the left column) only on project pages. -->
+      <nav class="how-doctree"><div class="docversion">
+  <label>Version:
+    <select class="wodoc-version" onchange="wodocVersion(this.value)">
+      <option value="6.4.0">6.4.0</option>
+    </select>
+  </label>
+</div>
+<div class="page-toc">
+  <h3>On this page</h3>
+  <nav class="odoc-toc odoc-local-toc"><ul><li><a href="#installation">Installation</a></li><li><a href="#quick-reference">Quick reference</a></li><li><a href="#getting-properties">Getting properties</a><ul><li><a href="#typing-rule">Typing rule</a></li></ul></li><li><a href="#setting-properties">Setting properties</a><ul><li><a href="#typing-rule_2">Typing rule</a></li></ul></li><li><a href="#calling-methods">Calling methods</a><ul><li><a href="#method-chaining">Method chaining</a></li><li><a href="#typing-rule_3">Typing rule</a></li></ul></li><li><a href="#constructors">Using constructors</a><ul><li><a href="#non-identifier-constructors">Non-identifier constructors</a></li><li><a href="#typing-rule_4">Typing rule</a></li></ul></li><li><a href="#object-literals">Creating object literals</a><ul><li><a href="#property-attributes">Property attributes</a></li><li><a href="#using-self">Using self</a></li><li><a href="#generated-type">Generated type</a></li></ul></li><li><a href="#see-also">See also</a></li></ul></nav>
+</div>
+<nav class="api-nav manual-nav">
+<h3>Getting Started</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/overview.html"><a href="../js_of_ocaml/overview.html">Overview</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/install.html"><a href="../js_of_ocaml/install.html">Installation</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/quickstart.html"><a href="../js_of_ocaml/quickstart.html">Quick Start</a></li>
+</ul>
+<h3>Programming Guide</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/javascript-interop.html"><a href="../js_of_ocaml/javascript-interop.html">JavaScript interop</a></li>
+<li class="ml3 current" data-wodoc-page="js_of_ocaml/ppx.html"><a href="../js_of_ocaml/ppx.html">PPX syntax extension</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/ppx-deriving.html"><a href="../js_of_ocaml/ppx-deriving.html">JSON derivation</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/rev-bindings.html"><a href="../js_of_ocaml/rev-bindings.html">Export OCaml code to JavaScript</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/errors.html"><a href="../js_of_ocaml/errors.html">Error handling</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/api.html"><a href="../js_of_ocaml/api.html">API</a></li>
+</ul>
+<h3>Lwt Support</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/lwt.html"><a href="../js_of_ocaml/lwt.html">Lwt support</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml-lwt/Js_of_ocaml_lwt/index.html"><a href="../js_of_ocaml-lwt/Js_of_ocaml_lwt/index.html">API</a></li>
+</ul>
+<h3>Compiler</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/options.html"><a href="../js_of_ocaml/options.html">Command line options</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/compilation-modes.html"><a href="../js_of_ocaml/compilation-modes.html">Compilation modes</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/linker.html"><a href="../js_of_ocaml/linker.html">JavaScript primitives</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/tailcall.html"><a href="../js_of_ocaml/tailcall.html">Tailcall optimization</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/effects.html"><a href="../js_of_ocaml/effects.html">Effect handlers</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/runtime-representation.html"><a href="../js_of_ocaml/runtime-representation.html">Runtime representation</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/browser-compat.html"><a href="../js_of_ocaml/browser-compat.html">Targeting older browsers</a></li>
+</ul>
+<h3>Wasm_of_ocaml</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/wasm_overview.html"><a href="../js_of_ocaml/wasm_overview.html">Overview</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/wasm_runtime.html"><a href="../js_of_ocaml/wasm_runtime.html">Writing Wasm primitives</a></li>
+</ul>
+<h3>How-to Guides</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/build-toplevel.html"><a href="../js_of_ocaml/build-toplevel.html">Build a toplevel or use Dynlink</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/debug.html"><a href="../js_of_ocaml/debug.html">Debug a program</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/performances.html"><a href="../js_of_ocaml/performances.html">Performance</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/contribute.html"><a href="../js_of_ocaml/contribute.html">Contribute</a></li>
+</ul>
+<h3>Try it</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/files/toplevel/index.html"><a href="../js_of_ocaml/files/toplevel/index.html">OCaml toplevel</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/examples.html"><a href="../js_of_ocaml/examples.html">Examples and projects</a></li>
+</ul>
+</nav>
+</nav>
+    </nav>
+  </aside>
+</div>
+
+
+  <div class="project-page">
+    <div class="twocols">
+      <nav class="leftcol">
+        <div class="docversion">
+  <label>Version:
+    <select class="wodoc-version" onchange="wodocVersion(this.value)">
+      <option value="6.4.0">6.4.0</option>
+    </select>
+  </label>
+</div>
+<div class="page-toc">
+  <h3>On this page</h3>
+  <nav class="odoc-toc odoc-local-toc"><ul><li><a href="#installation">Installation</a></li><li><a href="#quick-reference">Quick reference</a></li><li><a href="#getting-properties">Getting properties</a><ul><li><a href="#typing-rule">Typing rule</a></li></ul></li><li><a href="#setting-properties">Setting properties</a><ul><li><a href="#typing-rule_2">Typing rule</a></li></ul></li><li><a href="#calling-methods">Calling methods</a><ul><li><a href="#method-chaining">Method chaining</a></li><li><a href="#typing-rule_3">Typing rule</a></li></ul></li><li><a href="#constructors">Using constructors</a><ul><li><a href="#non-identifier-constructors">Non-identifier constructors</a></li><li><a href="#typing-rule_4">Typing rule</a></li></ul></li><li><a href="#object-literals">Creating object literals</a><ul><li><a href="#property-attributes">Property attributes</a></li><li><a href="#using-self">Using self</a></li><li><a href="#generated-type">Generated type</a></li></ul></li><li><a href="#see-also">See also</a></li></ul></nav>
+</div>
+<nav class="api-nav manual-nav">
+<h3>Getting Started</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/overview.html"><a href="../js_of_ocaml/overview.html">Overview</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/install.html"><a href="../js_of_ocaml/install.html">Installation</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/quickstart.html"><a href="../js_of_ocaml/quickstart.html">Quick Start</a></li>
+</ul>
+<h3>Programming Guide</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/javascript-interop.html"><a href="../js_of_ocaml/javascript-interop.html">JavaScript interop</a></li>
+<li class="ml3 current" data-wodoc-page="js_of_ocaml/ppx.html"><a href="../js_of_ocaml/ppx.html">PPX syntax extension</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/ppx-deriving.html"><a href="../js_of_ocaml/ppx-deriving.html">JSON derivation</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/rev-bindings.html"><a href="../js_of_ocaml/rev-bindings.html">Export OCaml code to JavaScript</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/errors.html"><a href="../js_of_ocaml/errors.html">Error handling</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/api.html"><a href="../js_of_ocaml/api.html">API</a></li>
+</ul>
+<h3>Lwt Support</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/lwt.html"><a href="../js_of_ocaml/lwt.html">Lwt support</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml-lwt/Js_of_ocaml_lwt/index.html"><a href="../js_of_ocaml-lwt/Js_of_ocaml_lwt/index.html">API</a></li>
+</ul>
+<h3>Compiler</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/options.html"><a href="../js_of_ocaml/options.html">Command line options</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/compilation-modes.html"><a href="../js_of_ocaml/compilation-modes.html">Compilation modes</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/linker.html"><a href="../js_of_ocaml/linker.html">JavaScript primitives</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/tailcall.html"><a href="../js_of_ocaml/tailcall.html">Tailcall optimization</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/effects.html"><a href="../js_of_ocaml/effects.html">Effect handlers</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/runtime-representation.html"><a href="../js_of_ocaml/runtime-representation.html">Runtime representation</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/browser-compat.html"><a href="../js_of_ocaml/browser-compat.html">Targeting older browsers</a></li>
+</ul>
+<h3>Wasm_of_ocaml</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/wasm_overview.html"><a href="../js_of_ocaml/wasm_overview.html">Overview</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/wasm_runtime.html"><a href="../js_of_ocaml/wasm_runtime.html">Writing Wasm primitives</a></li>
+</ul>
+<h3>How-to Guides</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/build-toplevel.html"><a href="../js_of_ocaml/build-toplevel.html">Build a toplevel or use Dynlink</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/debug.html"><a href="../js_of_ocaml/debug.html">Debug a program</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/performances.html"><a href="../js_of_ocaml/performances.html">Performance</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/contribute.html"><a href="../js_of_ocaml/contribute.html">Contribute</a></li>
+</ul>
+<h3>Try it</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/files/toplevel/index.html"><a href="../js_of_ocaml/files/toplevel/index.html">OCaml toplevel</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/examples.html"><a href="../js_of_ocaml/examples.html">Examples and projects</a></li>
+</ul>
+</nav>
+
+      </nav>
+      <article class="rightcol">
+        <header class="odoc-preamble"><h1 id="ppx-syntax-extension">PPX syntax extension</h1><p>The <code>js_of_ocaml-ppx</code> package provides syntax for working with JavaScript values from OCaml. This page is a <b>syntax reference</b>; see <a href="javascript-interop.html" title="javascript-interop">JavaScript interop</a> for conceptual background on types, conversions, and when to use each approach.</p></header>
+        <div class="odoc-content"><h2 id="installation">Installation</h2><pre>opam install js_of_ocaml-ppx</pre><p>With dune, add the preprocessor to your library or executable:</p><pre>(library
+ (name mylib)
+ (preprocess (pps js_of_ocaml-ppx)))</pre><h2 id="quick-reference">Quick reference</h2><table class="odoc-table"><tr><td><p>Syntax</p></td><td><p>Description</p></td><td><p>Example</p></td></tr><tr><td><p><code>obj##.prop</code></p></td><td><p>Get property</p></td><td><p><code>element##.innerHTML</code></p></td></tr><tr><td><p><code>obj##.prop := v</code></p></td><td><p>Set property</p></td><td><p><code>element##.innerHTML := Js.string &quot;Hi&quot;</code></p></td></tr><tr><td><p><code>obj##meth args</code></p></td><td><p>Call method</p></td><td><p><code>console##log (Js.string &quot;Hi&quot;)</code></p></td></tr><tr><td><p><code>new%js constr args</code></p></td><td><p>Call constructor</p></td><td><p><code>new%js array_constr 10</code></p></td></tr><tr><td><p><code>object%js ... end</code></p></td><td><p>Create object literal</p></td><td><p>See below</p></td></tr></table><h2 id="getting-properties">Getting properties</h2><p>Use <code>##.</code> (with a dot) to access a property:</p><pre class="language-ocaml"><code>(* Get the document title *)
+let title = Dom_html.document##.title
+
+(* Get element dimensions *)
+let width = element##.clientWidth
+let height = element##.clientHeight
+
+(* Get nested properties *)
+let href = Dom_html.window##.location##.href</code></pre><h3 id="typing-rule">Typing rule</h3><pre>obj : &lt;prop : t Js.readonly_prop&gt; Js.t
+--------------------------------------
+          obj##.prop : t</pre><h2 id="setting-properties">Setting properties</h2><p>Use <code>##.</code> with <code>:=</code> to set a property:</p><pre class="language-ocaml"><code>(* Set the document title *)
+Dom_html.document##.title := Js.string &quot;New Title&quot;
+
+(* Set element style *)
+element##.style##.color := Js.string &quot;red&quot;
+element##.style##.display := Js.string &quot;none&quot;
+
+(* Set event handler *)
+button##.onclick := Dom_html.handler (fun _ -&gt;
+  Console.console##log (Js.string &quot;Clicked!&quot;);
+  Js._true)</code></pre><h3 id="typing-rule_2">Typing rule</h3><pre>  obj : &lt;prop : t Js.writeonly_prop&gt; Js.t
+value : t
+-----------------------------------------
+  obj##.prop := value : unit</pre><h2 id="calling-methods">Calling methods</h2><p>Use <code>##</code> (without a dot) to call a method:</p><pre class="language-ocaml"><code>(* Console logging *)
+Console.console##log (Js.string &quot;Hello&quot;)
+Console.console##warn (Js.string &quot;Warning!&quot;)
+
+(* DOM methods *)
+let element = Dom_html.document##getElementById (Js.string &quot;myId&quot;)
+Dom_html.document##.body##appendChild element
+
+(* String methods *)
+let upper = js_string##toUpperCase
+let sub = js_string##substring 0 5
+
+(* Array methods *)
+js_array##push item
+js_array##forEach (Js.wrap_callback (fun x _idx _arr -&gt;
+  Console.console##log x))</code></pre><h3 id="method-chaining">Method chaining</h3><p>For easier chaining, you can wrap the method call in parentheses:</p><pre class="language-ocaml"><code>(* These are equivalent *)
+let result = obj##meth1##meth2##meth3
+let result = obj##(meth1)##(meth2)##(meth3)
+
+(* Useful when methods have arguments *)
+let result = str##(split (Js.string &quot;,&quot;))##(join (Js.string &quot;;&quot;))</code></pre><h3 id="typing-rule_3">Typing rule</h3><pre> obj : &lt;meth : t1 -&gt; t2 -&gt; ... -&gt; tn -&gt; u Js.meth&gt; Js.t
+args : t1, t2, ..., tn
+-------------------------------------------------------
+             obj##meth args : u</pre><p><b>Note</b>: Partial application is not allowed. You must provide all arguments.</p><h2 id="constructors">Using constructors</h2><p>Use <code>new%js</code> to call JavaScript constructors:</p><pre class="language-ocaml"><code>(* Create a Date *)
+let date_constr = Js.Unsafe.global##._Date
+let now = new%js date_constr
+let specific = new%js date_constr 2024 0 15  (* Jan 15, 2024 *)
+
+(* Create a RegExp *)
+let regexp_constr = Js.Unsafe.global##._RegExp
+let pattern = new%js regexp_constr (Js.string &quot;\\d+&quot;) (Js.string &quot;g&quot;)
+
+(* Create an Array with size *)
+let array_constr = Js.Unsafe.global##._Array
+let arr = new%js array_constr 10</code></pre><h3 id="non-identifier-constructors">Non-identifier constructors</h3><p>When the constructor is not a simple identifier, bind it first:</p><pre class="language-ocaml"><code>let constr = (Js.Unsafe.global##.SomeLib)##._SomeClass in
+let obj = new%js constr arg1 arg2</code></pre><h3 id="typing-rule_4">Typing rule</h3><pre>constr : (t1 -&gt; ... -&gt; tn -&gt; u Js.t) Js.constr
+  args : t1, ..., tn
+----------------------------------------------
+       new%js constr args : u Js.t</pre><h2 id="object-literals">Creating object literals</h2><p>Use <code>object%js ... end</code> to create JavaScript object literals:</p><pre class="language-ocaml"><code>(* Simple object *)
+let point = object%js
+  val x = 10
+  val y = 20
+end
+
+(* Object with methods *)
+let counter = object%js (self)
+  val mutable count = 0
+  method increment = self##.count := self##.count + 1
+  method get = self##.count
+end
+
+(* Configuration object *)
+let config = object%js
+  val url = Js.string &quot;https://api.example.com&quot;
+  val timeout = 5000
+  val mutable retries = 3
+end</code></pre><h3 id="property-attributes">Property attributes</h3><p>Control property access with attributes:</p><pre class="language-ocaml"><code>object%js
+  val readonly_prop = 42                   (* read-only by default *)
+  val also_readonly = 42 [@@readonly]      (* explicit read-only *)
+  val mutable readwrite = 42               (* read/write with mutable *)
+  val also_readwrite = 42 [@@readwrite]    (* explicit read/write *)
+  val writeonly = 42 [@@writeonly]         (* write-only *)
+  val optional = Js.undefined [@@optdef]   (* optional/undefined *)
+end</code></pre><table class="odoc-table"><tr><td><p>Declaration</p></td><td><p>Property type</p></td><td><p>Can read</p></td><td><p>Can write</p></td></tr><tr><td><p><code>val x = v</code></p></td><td><p><code>readonly_prop</code></p></td><td><p>Yes</p></td><td><p>No</p></td></tr><tr><td><p><code>val mutable x = v</code></p></td><td><p><code>prop</code></p></td><td><p>Yes</p></td><td><p>Yes</p></td></tr><tr><td><p><code>val x = v [@@readonly]</code></p></td><td><p><code>readonly_prop</code></p></td><td><p>Yes</p></td><td><p>No</p></td></tr><tr><td><p><code>val x = v [@@readwrite]</code></p></td><td><p><code>prop</code></p></td><td><p>Yes</p></td><td><p>Yes</p></td></tr><tr><td><p><code>val x = v [@@writeonly]</code></p></td><td><p><code>writeonly_prop</code></p></td><td><p>No</p></td><td><p>Yes</p></td></tr><tr><td><p><code>val x = v [@@optdef]</code></p></td><td><p><code>optdef_prop</code></p></td><td><p>Yes (Js.Optdef)</p></td><td><p>Yes</p></td></tr></table><h3 id="using-self">Using <code>self</code></h3><p>The identifier in parentheses binds to JavaScript's <code>this</code>:</p><pre class="language-ocaml"><code>let obj = object%js (self)
+  val mutable x = 0
+  method setX v = self##.x := v
+  method getX = self##.x
+  method double = self##setX (self##.x * 2)
+end</code></pre><h3 id="generated-type">Generated type</h3><p>The object literal:</p><pre class="language-ocaml"><code>object%js (self)
+  val x = 3
+  val mutable y = 4
+  method add dx dy =
+    self##.x + self##.y + dx + dy
+end</code></pre><p>Has the type:</p><pre class="language-ocaml"><code>&lt; x : int Js.readonly_prop;
+  y : int Js.prop;
+  add : int -&gt; int -&gt; int Js.meth &gt; Js.t</code></pre><h2 id="see-also">See also</h2><ul><li><a href="javascript-interop.html" title="javascript-interop">JavaScript interop</a> - Concepts: type conversions, null/undefined, callbacks, bindings</li><li><a href="Js_of_ocaml/Js/index.html" title="Js_of_ocaml.Js">Js</a> - Full API reference</li></ul></div>
+      </article>
+    </div>
+  </div>
+
+  <script>
+    var wodocPub = "/js_of_ocaml";
+    // Switch version: keep the current page, swapping only the version segment.
+    function wodocVersion(v) {
+      if (!v) return;
+      var re = new RegExp('^(' + wodocPub + '/)[^/]+');
+      var p = location.pathname;
+      location.href =
+        re.test(p) ? p.replace(re, '$1' + v) : wodocPub + '/' + v + '/index.html';
+    }
+    // Build the version <select> from the project's versions.json (the single
+    // source of truth, refreshed on every build/release), so even older frozen
+    // pages list the current set. Falls back to the baked <option>s on failure.
+    (function () {
+      var seg = (location.pathname.match(
+        new RegExp('^' + wodocPub + '/([^/]+)')) || [])[1];
+      function select(sel) {
+        var i;
+        for (i = 0; i < sel.options.length; i++)
+          if (sel.options[i].value === seg) { sel.selectedIndex = i; return; }
+        if (seg) {
+          var o = document.createElement('option');
+          o.value = seg; o.textContent = seg; o.selected = true;
+          sel.insertBefore(o, sel.firstChild);
+        }
+      }
+      fetch(wodocPub + '/versions.json')
+        .then(function (r) { if (!r.ok) throw 0; return r.json(); })
+        .then(function (m) {
+          var list = m.list || [], latest = m.latest;
+          document.querySelectorAll('.wodoc-version').forEach(function (sel) {
+            sel.innerHTML = '';
+            list.forEach(function (v) {
+              var o = document.createElement('option');
+              if (v === latest) { o.value = 'latest'; o.textContent = v + ' (latest)'; }
+              else { o.value = v; o.textContent = v; }
+              sel.appendChild(o);
+            });
+            select(sel);
+          });
+        })
+        .catch(function () {
+          document.querySelectorAll('.wodoc-version').forEach(select);
+        });
+    })();
+  </script>
+</body>
+</html>
