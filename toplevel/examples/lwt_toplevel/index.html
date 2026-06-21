@@ -420,17 +420,24 @@
           useWasm = false;
         }
       }
-      function load_script(url){
+      function load_script(url, onerror){
         var fileref=document.createElement('script');
         fileref.setAttribute("type","text/javascript");
         fileref.setAttribute("src", prefix+(version===""?"":(version+"/"))+url);
+        if (onerror) fileref.onerror = onerror;
         document.getElementsByTagName("head")[0].appendChild(fileref);
       }
-      if (useWasm) {
-        load_script("toplevel_wasm.js");
-      } else {
+      function load_js_toplevel(){
         load_script("exported-unit.cmis.js");
         load_script(main);
+      }
+      if (useWasm) {
+        // The browser supports the Wasm features we need, but the Wasm
+        // toplevel may not have been built (e.g. wasm_of_ocaml unavailable).
+        // Fall back to the JavaScript toplevel if it fails to load.
+        load_script("toplevel_wasm.js", load_js_toplevel);
+      } else {
+        load_js_toplevel();
       }
 
     </script>
