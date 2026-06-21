@@ -92,7 +92,7 @@ v}
 
 {b [//If: flag]} - Only include if flag is enabled (e.g., [//If: effects])
 
-{b [//Ifnot: flag]} - Only include if flag is disabled
+{b [//If: !flag]} - Only include if flag is disabled
 
 {b [//Deprecated: message]} - Mark primitive as deprecated
 
