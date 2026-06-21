@@ -24,7 +24,7 @@
   no longer relies on the JavaScript zstd/BLAKE2 shims to unmarshal
   compressed values or compute Digest.BLAKE512/256/128. This also makes
   both available under the WASI target, which has no JavaScript (#2249)
-* Runtime: initial support for quickjs-ng
+* Runtime: initial support for quickjs-ng (#2229)
 * Lib: add `Promise` — type-safe bindings to JavaScript promises (even for
   `'a Promise.t Promise.t`), with Lwt interop in `Js_of_ocaml_lwt.Promise`
   (`to_lwt`/`of_lwt`) and Promise-typed `Dom_html` bindings
@@ -56,7 +56,7 @@
 ## Bug fixes
 * Compiler: don't rewrite `x = e + x` into `x += e` for `+` (not
   commutative on strings), which reversed `Filename.concat` operands and
-  broke `Filename.temp_file` in whole-program builds
+  broke `Filename.temp_file` in whole-program builds (#2228)
 * Compiler: fix the dead `require()` guard in share_constant (it matched
   "requires"), which could replace `require` string arguments and confuse
   bundlers (#2284)
@@ -67,7 +67,7 @@
   blocks for many sibling merge targets, avoiding parser "too much
   recursion" overflows (#2122)
 * Compiler: avoid JS stack overflow on deep mutually-recursive direct-style
-  calls under `--effects=double-translation`
+  calls under `--effects=double-translation` (#2243)
 * Compiler: fix reference unboxing (#2210), a missing conditional
   simplification (#2217), `Js_assign.simpl` (#2218), and UGEINT lowering
 * Compiler/wasm: fix the int-division return type (#2197), preserve the
@@ -175,9 +175,10 @@
   (adds a `flags` accessor)
 * Lib: fix method-name mangling — `Typed_array._BYTES_PER_ELEMENT_`,
   `WebGL._MAX_RENDERBUFFER_SIZE_` and `canvasElement.toDataURL_compression`
-  resolved to the wrong JavaScript identifiers
+  resolved to the wrong JavaScript identifiers (#2239)
 * Lib: defer `Intl.{Collator,DateTimeFormat,...}` member lookups so the
   module no longer throws at load time when `globalThis.Intl` is undefined
+  (#2229)
 * Lib: fix `onbeforeunload` breaking navigation (#1436) — the
   `event_listener` return type is now `bool t optdef` (`undefined` means "no
   opinion"), with new `Dom.listener`/`full_listener` and a typed
