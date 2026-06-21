@@ -63,7 +63,7 @@ let text_response url code headers req =
   { url
   ; code
   ; content = Js.Opt.case req##.responseText (fun () -> Js.string "") (fun x -> x)
-  ; content_xml = (fun () -> assert false)
+  ; content_xml = (fun () -> None)
   ; headers
   }
 
@@ -71,7 +71,7 @@ let document_response url code headers req =
   { url
   ; code
   ; content = File.CoerceTo.document req##.response
-  ; content_xml = (fun () -> assert false)
+  ; content_xml = (fun () -> None)
   ; headers
   }
 
@@ -79,7 +79,7 @@ let json_response url code headers req =
   { url
   ; code
   ; content = File.CoerceTo.json req##.response
-  ; content_xml = (fun () -> assert false)
+  ; content_xml = (fun () -> None)
   ; headers
   }
 
@@ -87,7 +87,7 @@ let blob_response url code headers req =
   { url
   ; code
   ; content = File.CoerceTo.blob req##.response
-  ; content_xml = (fun () -> assert false)
+  ; content_xml = (fun () -> None)
   ; headers
   }
 
@@ -95,7 +95,7 @@ let arraybuffer_response url code headers req =
   { url
   ; code
   ; content = File.CoerceTo.arrayBuffer req##.response
-  ; content_xml = (fun () -> assert false)
+  ; content_xml = (fun () -> None)
   ; headers
   }
 
