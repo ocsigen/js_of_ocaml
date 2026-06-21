@@ -1,4 +1,4 @@
-# dev
+# 6.4.0 (2026-06-21) - Lille
 
 ## Features/Changes
 * Compiler: initial support for OCaml 5.5.0 (#2197, #2220)
