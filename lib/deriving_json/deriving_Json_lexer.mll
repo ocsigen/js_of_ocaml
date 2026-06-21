@@ -260,7 +260,7 @@ and read_int32 v = parse
 and read_int64 v = parse
     '-'? positive_int    { try Int64.of_string (Lexing.lexeme lexbuf)
          with _ ->
-           lexer_error "Int32 overflow" v lexbuf }
+           lexer_error "Int64 overflow" v lexbuf }
   | _                    { lexer_error "Expected int64 but found" v lexbuf }
   | eof                  { eof_error v lexbuf }
 

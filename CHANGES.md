@@ -183,6 +183,11 @@
   opinion"), with new `Dom.listener`/`full_listener` and a typed
   `beforeUnloadEvent`
 * Lib: fix several `Dom_html` bindings (#2221)
+* Lib: `Deriving_Json` now round-trips non-finite floats — the writer emits
+  `NaN`/`Infinity`/`-Infinity` (matching the reader) instead of OCaml's
+  `nan`/`inf`/`-inf`, which the reader rejected
+* Lib: drop a stray `console.log` fired on every event in
+  `Lwt_js_events.mousewheel`
 
 # 6.3.2 (2026-02-15) - Lille
 

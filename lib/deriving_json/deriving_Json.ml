@@ -261,11 +261,19 @@ module Json_float = Defaults (struct
   type a = float
 
   let write buffer f =
-    (* "%.15g" can be (much) shorter; "%.17g" is round-trippable *)
-    let s = Printf.sprintf "%.15g" f in
-    if Poly.(float_of_string s = f)
-    then Buffer.add_string buffer s
-    else Printf.bprintf buffer "%.17g" f
+    if Float.is_finite f
+    then begin
+      (* "%.15g" can be (much) shorter; "%.17g" is round-trippable *)
+      let s = Printf.sprintf "%.15g" f in
+      if Poly.(float_of_string s = f)
+      then Buffer.add_string buffer s
+      else Printf.bprintf buffer "%.17g" f
+    end
+    else if Float.is_nan f
+    then Buffer.add_string buffer "NaN"
+    else if Poly.(f > 0.)
+    then Buffer.add_string buffer "Infinity"
+    else Buffer.add_string buffer "-Infinity"
 
   let read buf = Lexer.read_number buf
 end)
