@@ -1,6 +1,10 @@
 
 # Module `Js_of_ocaml_lwt`
 
+Lwt support for Js\_of\_ocaml.
+
+**This library is provided by the `js_of_ocaml-lwt` opam package.**
+
 ```ocaml
 module XmlHttpRequest : sig ... end
 ```

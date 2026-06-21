@@ -1,6 +1,10 @@
 
 # Module `Js_of_ocaml_tyxml`
 
+TyXML support for Js\_of\_ocaml.
+
+**This library is provided by the `js_of_ocaml-tyxml` opam package.**
+
 ```ocaml
 module Tyxml_js : sig ... end
 ```

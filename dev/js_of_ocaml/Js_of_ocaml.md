@@ -1,6 +1,10 @@
 
 # Module `Js_of_ocaml`
 
+Bindings to the browser and Node.js runtime.
+
+**This library is provided by the `js_of_ocaml` opam package.**
+
 ```ocaml
 module Abort : sig ... end
 ```
