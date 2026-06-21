@@ -26,7 +26,7 @@ tag, of type [(ref i31)].
 (type $bytes (array (mut i8)))
 (type $float (struct (field f64)))
 (type $float_array (array (mut f64)))
-(type $js (struct (ref null any)))
+(type $js (struct (field anyref)))
 v}
 
 {2 Int32, Int64, and Nativeint}

@@ -25,17 +25,19 @@ type person = {
 }
 [@@deriving json]
 
-(* Serialize to JSON *)
-let json_str = person_to_json { name = "Alice"; age = 30 }
+(* Serialize to a JSON string *)
+let json_str = Deriving_Json.to_string person_json { name = "Alice"; age = 30 }
 
-(* Deserialize from JSON *)
-let alice = person_of_json json_str
+(* Deserialize from a JSON string *)
+let alice = Deriving_Json.from_string person_json json_str
 ]}
 
 The [[@@deriving json]] attribute generates:
-- [person_of_json] — deserialize from JSON
-- [person_to_json] — serialize to JSON
-- [person_json] — a [Deriving_Json.t] witness
+- [person_to_json : Buffer.t -> person -> unit] — write a value to a buffer
+- [person_of_json : Deriving_Json_lexer.lexbuf -> person] — read a value from a lexer buffer
+- [person_json : person Deriving_Json.t] — a witness, usable with
+  [Deriving_Json.to_string] and [Deriving_Json.from_string] for string conversion
+  (as in the example above)
 
 {b Note}: For types named [t], the prefix is omitted (e.g., [of_json] instead of [t_of_json]).
 
