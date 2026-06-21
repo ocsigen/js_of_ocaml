@@ -1,37 +1,51 @@
 {0 API reference}
 
-The Js_of_ocaml distribution is made of several packages. This page gathers the
-public modules of each; see the {{!page-"index"}documentation home} for the
-manual.
+The Js_of_ocaml distribution ships several opam packages, each providing one or
+more libraries. This page lists the public modules of every package; see the
+{{!page-"index"}documentation home} for the manual.
 
-{1 Js_of_ocaml — the base library}
+The top-level module of each library also states, in its own documentation,
+which opam package provides it.
+
+{1 [js_of_ocaml] — the base library}
+
+Provided by the [js_of_ocaml] opam package (library [js_of_ocaml]).
 
 Core runtime and JavaScript values:
 
 {!modules:
 Js_of_ocaml.Js
+Js_of_ocaml.Js_error
 Js_of_ocaml.Jstable
 Js_of_ocaml.Sys_js
 Js_of_ocaml.Typed_array
+Js_of_ocaml.Effect_js
 }
 
 Browser APIs:
 
 {!modules:
+Js_of_ocaml.Abort
 Js_of_ocaml.CSS
+Js_of_ocaml.Console
 Js_of_ocaml.Dom
 Js_of_ocaml.Dom_events
 Js_of_ocaml.Dom_html
 Js_of_ocaml.Dom_svg
 Js_of_ocaml.EventSource
+Js_of_ocaml.Fetch
 Js_of_ocaml.File
-Js_of_ocaml.Firebug
 Js_of_ocaml.Form
 Js_of_ocaml.Geolocation
+Js_of_ocaml.IntersectionObserver
 Js_of_ocaml.Intl
 Js_of_ocaml.Json
 Js_of_ocaml.MutationObserver
+Js_of_ocaml.Performance
+Js_of_ocaml.PerformanceObserver
+Js_of_ocaml.Promise
 Js_of_ocaml.Regexp
+Js_of_ocaml.ResizeObserver
 Js_of_ocaml.Url
 Js_of_ocaml.WebGL
 Js_of_ocaml.WebSockets
@@ -39,26 +53,43 @@ Js_of_ocaml.Worker
 Js_of_ocaml.XmlHttpRequest
 }
 
-{1 Js_of_ocaml-lwt — Lwt support}
+The same opam package also provides the [js_of_ocaml.deriving] library — the
+runtime used by the code that [[@@deriving json]] generates:
+
+{!modules:
+Deriving_Json
+Deriving_Json_lexer
+}
+
+{1 [js_of_ocaml-lwt] — Lwt support}
+
+Provided by the [js_of_ocaml-lwt] opam package (library [js_of_ocaml-lwt]).
 
 - {!Js_of_ocaml_lwt.Lwt_js} — sleeping and yielding
 - {!Js_of_ocaml_lwt.Lwt_js_events} — DOM events as Lwt threads
 - {!Js_of_ocaml_lwt.XmlHttpRequest} — XMLHttpRequest with Lwt
 - {!Js_of_ocaml_lwt.Jsonp} — JSONP requests
 - {!Js_of_ocaml_lwt.File} — reading files with Lwt
+- {!Js_of_ocaml_lwt.Promise} — bridge between Lwt threads and JS promises
 
-{1 Js_of_ocaml-ppx_deriving_json — JSON derivation}
+{1 [js_of_ocaml-ppx_deriving_json] — JSON derivation syntax}
 
-{!modules:
-Deriving_Json
-}
+Provided by the [js_of_ocaml-ppx_deriving_json] opam package. This is the PPX
+that derives JSON serializers ([[@@deriving json]]); the generated code relies
+on the {!Deriving_Json} runtime from the [js_of_ocaml] package above. See
+{{!page-"ppx-deriving"}the manual} for usage.
 
-{1 Js_of_ocaml-tyxml — TyXML support}
+{1 [js_of_ocaml-tyxml] — TyXML support}
+
+Provided by the [js_of_ocaml-tyxml] opam package (library [js_of_ocaml-tyxml]).
 
 - {!Js_of_ocaml_tyxml.Tyxml_js} — build and manipulate DOM trees with TyXML
 - {!Js_of_ocaml_tyxml.Tyxml_cast} — cast between TyXML and Dom nodes
 - {!Js_of_ocaml_tyxml.Tyxml_cast_sigs} — signatures for the casts
 
-{1 Js_of_ocaml-toplevel — toplevel and Dynlink}
+{1 [js_of_ocaml-toplevel] — toplevel and Dynlink}
+
+Provided by the [js_of_ocaml-toplevel] opam package (library
+[js_of_ocaml-toplevel]).
 
 - {!Js_of_ocaml_toplevel.JsooTop} — run an OCaml toplevel in the browser
