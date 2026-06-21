@@ -218,7 +218,7 @@
 (type $bytes (array (mut i8)))
 (type $float (struct (field f64)))
 (type $float_array (array (mut f64)))
-(type $js (struct (ref null any)))</pre><h3 id="int32,-int64,-and-nativeint">Int32, Int64, and Nativeint</h3><p>Import these functions to access or allocate integers:</p><pre>(import &quot;env&quot; &quot;Int32_val&quot;
+(type $js (struct (field anyref)))</pre><h3 id="int32,-int64,-and-nativeint">Int32, Int64, and Nativeint</h3><p>Import these functions to access or allocate integers:</p><pre>(import &quot;env&quot; &quot;Int32_val&quot;
    (func $Int32_val (param (ref eq)) (result i32)))
 (import &quot;env&quot; &quot;caml_copy_int32&quot;
    (func $caml_copy_int32 (param i32) (result (ref eq))))

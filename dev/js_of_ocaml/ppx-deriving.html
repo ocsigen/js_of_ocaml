@@ -220,11 +220,11 @@
 }
 [@@deriving json]
 
-(* Serialize to JSON *)
-let json_str = person_to_json { name = &quot;Alice&quot;; age = 30 }
+(* Serialize to a JSON string *)
+let json_str = Deriving_Json.to_string person_json { name = &quot;Alice&quot;; age = 30 }
 
-(* Deserialize from JSON *)
-let alice = person_of_json json_str</code></pre><p>The <code>[@@deriving json]</code> attribute generates:</p><ul><li><code>person_of_json</code> — deserialize from JSON</li><li><code>person_to_json</code> — serialize to JSON</li><li><code>person_json</code> — a <code>Deriving_Json.t</code> witness</li></ul><p><b>Note</b>: For types named <code>t</code>, the prefix is omitted (e.g., <code>of_json</code> instead of <code>t_of_json</code>).</p><p>The <code>[%to_json: type]</code> and <code>[%of_json: type]</code> syntax also works with any type expression:</p><pre class="language-ocaml"><code>let json = [%to_json: int list] [1; 2; 3]
+(* Deserialize from a JSON string *)
+let alice = Deriving_Json.from_string person_json json_str</code></pre><p>The <code>[@@deriving json]</code> attribute generates:</p><ul><li><code>person_to_json : Buffer.t -&gt; person -&gt; unit</code> — write a value to a buffer</li><li><code>person_of_json : Deriving_Json_lexer.lexbuf -&gt; person</code> — read a value from a lexer buffer</li><li><code>person_json : person Deriving_Json.t</code> — a witness, usable with <code>Deriving_Json.to_string</code> and <code>Deriving_Json.from_string</code> for string conversion (as in the example above)</li></ul><p><b>Note</b>: For types named <code>t</code>, the prefix is omitted (e.g., <code>of_json</code> instead of <code>t_of_json</code>).</p><p>The <code>[%to_json: type]</code> and <code>[%of_json: type]</code> syntax also works with any type expression:</p><pre class="language-ocaml"><code>let json = [%to_json: int list] [1; 2; 3]
 let nums = [%of_json: int list] json</code></pre><h2 id="supported-types">Supported types</h2><p>The deriver supports:</p><ul><li>Basic types: <code>int</code>, <code>float</code>, <code>string</code>, <code>bool</code></li><li>Options: <code>'a option</code></li><li>Lists and arrays: <code>'a list</code>, <code>'a array</code></li><li>Records and variants</li><li>Polymorphic variants</li><li>Recursive types</li></ul><h2 id="see-also">See also</h2><ul><li><a href="javascript-interop.html#json" title="json">JSON serialization</a> — Direct JSON output</li></ul></div>
       </article>
     </div>

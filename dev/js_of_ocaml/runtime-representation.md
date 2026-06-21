@@ -118,7 +118,7 @@ Bigarrays are represented as Ml\_Bigarray objects, which use JavaScript Typed Ar
 | `Int16_signed` | `Int16Array` |
 | `Int16_unsigned` | `Uint16Array` |
 | `Int32` | `Int32Array` |
-| `Int64` | Two `Int32Array`s |
+| `Int64` | `Int32Array` (2 elements per value) |
 | `Int` | `Int32Array` |
 | `Nativeint` | `Int32Array` |
 | `Complex32` | `Float32Array` (2 elements per complex) |
@@ -131,7 +131,7 @@ OCaml exceptions are represented as:
 
 - **Without arguments**: the exception identity directly (a unique object per exception type)
 - **With arguments**: a JavaScript array where index 1 is the exception identity and remaining indices contain the arguments
-For example, `Not_found` is just its identity object, while `Failure "oops"` becomes `[<Failure identity>, "oops"]`.
+For example, `Not_found` is just its identity object, while `Failure "oops"` becomes `[0, <Failure identity>, "oops"]` (index 0 is the block tag).
 
 **Note**: OCaml exceptions are not JavaScript `Error` objects. When an OCaml exception propagates to JavaScript code, it appears as an array, not an `Error`. See [error handling](./errors.md) for how to work with exceptions across the OCaml/JavaScript boundary.
 

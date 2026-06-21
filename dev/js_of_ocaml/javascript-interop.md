@@ -568,7 +568,7 @@ This is efficient and integrates naturally with OCaml code.
 
 ### Non-function values: use `runtime_value`
 
-For JavaScript **objects, constants, or other non-function values**, use [Js.runtime\_value](./Js_of_ocaml-Js-Unsafe.md#val-runtime_value):
+For JavaScript **objects, constants, or other non-function values**, use [Js.Unsafe.runtime\_value](./Js_of_ocaml-Js-Unsafe.md#val-runtime_value):
 
 ```javascript
 //Provides: myConfig
@@ -576,7 +576,7 @@ var myConfig = { debug: true, version: 42 };
 ```
 ```ocaml
 let config : < debug : bool Js.t Js.prop; version : int Js.prop > Js.t =
-  Js.runtime_value "myConfig"
+  Js.Unsafe.runtime_value "myConfig"
 ```
 **Important**: The argument must be a string literal, not a variable.
 

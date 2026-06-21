@@ -19,7 +19,7 @@ The following types are used for blocks, strings (and bytes), floats, float arra
 (type $bytes (array (mut i8)))
 (type $float (struct (field f64)))
 (type $float_array (array (mut f64)))
-(type $js (struct (ref null any)))
+(type $js (struct (field anyref)))
 ```
 
 ### Int32, Int64, and Nativeint

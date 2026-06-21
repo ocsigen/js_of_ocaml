@@ -90,7 +90,7 @@ function primitive_name(arg1, arg2) {
 
 **`//If: flag`** \- Only include if flag is enabled (e.g., `//If: effects`)
 
-**`//Ifnot: flag`** \- Only include if flag is disabled
+**`//If: !flag`** \- Only include if flag is disabled
 
 **`//Deprecated: message`** \- Mark primitive as deprecated
 

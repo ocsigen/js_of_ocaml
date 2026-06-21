@@ -8,12 +8,12 @@
 
 **Build tools**:
 
-- dune \>= 3\.19
+- dune \>= 3\.20
 - menhir
 **Libraries**:
 
 - cmdliner \>= 2\.0
-- ppxlib \>= 0\.35
+- ppxlib \>= 0\.33
 - sedlex \>= 3\.3
 - yojson \>= 2\.1
 

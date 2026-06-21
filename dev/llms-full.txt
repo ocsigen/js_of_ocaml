@@ -123,12 +123,12 @@ See [runtime representation](./runtime-representation.md) for details.
 
 **Build tools**:
 
-- dune \>= 3\.19
+- dune \>= 3\.20
 - menhir
 **Libraries**:
 
 - cmdliner \>= 2\.0
-- ppxlib \>= 0\.35
+- ppxlib \>= 0\.33
 - sedlex \>= 3\.3
 - yojson \>= 2\.1
 
@@ -931,7 +931,7 @@ This is efficient and integrates naturally with OCaml code.
 
 ### Non-function values: use `runtime_value`
 
-For JavaScript **objects, constants, or other non-function values**, use [Js.runtime\_value](./Js_of_ocaml-Js-Unsafe.md#val-runtime_value):
+For JavaScript **objects, constants, or other non-function values**, use [Js.Unsafe.runtime\_value](./Js_of_ocaml-Js-Unsafe.md#val-runtime_value):
 
 ```javascript
 //Provides: myConfig
@@ -939,7 +939,7 @@ var myConfig = { debug: true, version: 42 };
 ```
 ```ocaml
 let config : < debug : bool Js.t Js.prop; version : int Js.prop > Js.t =
-  Js.runtime_value "myConfig"
+  Js.Unsafe.runtime_value "myConfig"
 ```
 **Important**: The argument must be a string literal, not a variable.
 
@@ -1231,17 +1231,17 @@ type person = {
 }
 [@@deriving json]
 
-(* Serialize to JSON *)
-let json_str = person_to_json { name = "Alice"; age = 30 }
+(* Serialize to a JSON string *)
+let json_str = Deriving_Json.to_string person_json { name = "Alice"; age = 30 }
 
-(* Deserialize from JSON *)
-let alice = person_of_json json_str
+(* Deserialize from a JSON string *)
+let alice = Deriving_Json.from_string person_json json_str
 ```
 The `[@@deriving json]` attribute generates:
 
-- `person_of_json` — deserialize from JSON
-- `person_to_json` — serialize to JSON
-- `person_json` — a `Deriving_Json.t` witness
+- `person_to_json : Buffer.t -> person -> unit` — write a value to a buffer
+- `person_of_json : Deriving_Json_lexer.lexbuf -> person` — read a value from a lexer buffer
+- `person_json : person Deriving_Json.t` — a witness, usable with `Deriving_Json.to_string` and `Deriving_Json.from_string` for string conversion (as in the example above)
 **Note**: For types named `t`, the prefix is omitted (e.g., `of_json` instead of `t_of_json`).
 
 The `[%to_json: type]` and `[%of_json: type]` syntax also works with any type expression:
@@ -2153,7 +2153,7 @@ function primitive_name(arg1, arg2) {
 
 **`//If: flag`** \- Only include if flag is enabled (e.g., `//If: effects`)
 
-**`//Ifnot: flag`** \- Only include if flag is disabled
+**`//If: !flag`** \- Only include if flag is disabled
 
 **`//Deprecated: message`** \- Mark primitive as deprecated
 
@@ -2535,7 +2535,7 @@ Bigarrays are represented as Ml\_Bigarray objects, which use JavaScript Typed Ar
 | `Int16_signed` | `Int16Array` |
 | `Int16_unsigned` | `Uint16Array` |
 | `Int32` | `Int32Array` |
-| `Int64` | Two `Int32Array`s |
+| `Int64` | `Int32Array` (2 elements per value) |
 | `Int` | `Int32Array` |
 | `Nativeint` | `Int32Array` |
 | `Complex32` | `Float32Array` (2 elements per complex) |
@@ -2548,7 +2548,7 @@ OCaml exceptions are represented as:
 
 - **Without arguments**: the exception identity directly (a unique object per exception type)
 - **With arguments**: a JavaScript array where index 1 is the exception identity and remaining indices contain the arguments
-For example, `Not_found` is just its identity object, while `Failure "oops"` becomes `[<Failure identity>, "oops"]`.
+For example, `Not_found` is just its identity object, while `Failure "oops"` becomes `[0, <Failure identity>, "oops"]` (index 0 is the block tag).
 
 **Note**: OCaml exceptions are not JavaScript `Error` objects. When an OCaml exception propagates to JavaScript code, it appears as an array, not an `Error`. See [error handling](./errors.md) for how to work with exceptions across the OCaml/JavaScript boundary.
 
@@ -2814,7 +2814,7 @@ The following types are used for blocks, strings (and bytes), floats, float arra
 (type $bytes (array (mut i8)))
 (type $float (struct (field f64)))
 (type $float_array (array (mut f64)))
-(type $js (struct (ref null any)))
+(type $js (struct (field anyref)))
 ```
 
 ### Int32, Int64, and Nativeint
