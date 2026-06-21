@@ -29,15 +29,16 @@ let read_with_filereader (fileReader : fileReader t constr) kind file =
   let res, w = Lwt.task () in
   reader##.onloadend :=
     handler (fun _ ->
-        if reader##.readyState == DONE
-        then
-          Lwt.wakeup
-            w
-            (match Opt.to_option (CoerceTo.string reader##.result) with
-            | None -> assert false (* can't happen: called with good readAs_ *)
-            | Some s -> s)
-        else ();
-        (* CCC TODO: handle errors *)
+        (if reader##.readyState == DONE
+         then
+           match Opt.to_option (CoerceTo.string reader##.result) with
+           | Some s -> Lwt.wakeup_later w s
+           | None ->
+               (* [result] is null on a read error or after [abort] (which is
+                  also how cancelling [res] tears down the read); since we hold
+                  the only resolver, [res] is non-sleeping here only when
+                  cancelled, and [wakeup_later_exn] is a no-op in that case. *)
+               Lwt.wakeup_later_exn w (Failure "Lwt_file: could not read file"));
         Js._false);
   Lwt.on_cancel res (fun () -> reader##abort);
   (match kind with

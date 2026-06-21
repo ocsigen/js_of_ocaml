@@ -603,11 +603,12 @@ let transitioncancels ?cancel_handler ?use_capture ?passive t =
   seq_loop transitioncancel ?cancel_handler ?use_capture ?passive t
 
 let request_animation_frame () =
-  let t, s = Lwt.wait () in
-  let (_ : Dom_html.animation_frame_request_id) =
+  let t, s = Lwt.task () in
+  let id =
     Dom_html.window##requestAnimationFrame
       (Js.wrap_callback (fun (_ : Js.number_t) -> Lwt.wakeup s ()))
   in
+  Lwt.on_cancel t (fun () -> Dom_html.window##cancelAnimationFrame id);
   t
 
 let onload () = make_event Dom_html.Event.load Dom_html.window

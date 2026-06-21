@@ -188,6 +188,13 @@
   `nan`/`inf`/`-inf`, which the reader rejected
 * Lib: drop a stray `console.log` fired on every event in
   `Lwt_js_events.mousewheel`
+* Lib: `Lwt_file` read functions now fail the thread with an exception on a
+  read error or abort instead of raising `assert false`
+* Lib: `Lwt_xmlHttpRequest` frame `content_xml` returns `None` for non-default
+  response types (text/json/blob/arraybuffer/document) instead of raising
+  `assert false`
+* Lib: `Lwt_js_events.request_animation_frame` is now cancellable — cancelling
+  the thread cancels the pending animation-frame callback
 
 # 6.3.2 (2026-02-15) - Lille
 
