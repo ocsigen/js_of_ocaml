@@ -185,16 +185,16 @@
 * Lib: fix several `Dom_html` bindings (#2221)
 * Lib: `Deriving_Json` now round-trips non-finite floats — the writer emits
   `NaN`/`Infinity`/`-Infinity` (matching the reader) instead of OCaml's
-  `nan`/`inf`/`-inf`, which the reader rejected
+  `nan`/`inf`/`-inf`, which the reader rejected (#2365)
 * Lib: drop a stray `console.log` fired on every event in
-  `Lwt_js_events.mousewheel`
+  `Lwt_js_events.mousewheel` (#2365)
 * Lib: `Lwt_file` read functions now fail the thread with an exception on a
-  read error or abort instead of raising `assert false`
+  read error or abort instead of raising `assert false` (#2365)
 * Lib: `Lwt_xmlHttpRequest` frame `content_xml` returns `None` for non-default
   response types (text/json/blob/arraybuffer/document) instead of raising
-  `assert false`
+  `assert false` (#2365)
 * Lib: `Lwt_js_events.request_animation_frame` is now cancellable — cancelling
-  the thread cancels the pending animation-frame callback
+  the thread cancels the pending animation-frame callback (#2365)
 
 # 6.3.2 (2026-02-15) - Lille
 
