@@ -1,0 +1,34 @@
+; Completeness guard for manual/api.mld: fails if a public module of a
+; documented library is missing from the API reference page.
+
+(executable
+ (name check_api)
+ (modules check_api))
+
+(rule
+ (action
+  (with-stdout-to
+   undocumented.actual
+   (run
+    ./check_api.exe
+    --api
+    %{dep:../api.mld}
+    --skip
+    Firebug
+    --wrapper
+    %{dep:../../lib/js_of_ocaml/js_of_ocaml.ml}
+    --wrapper
+    %{dep:../../lib/lwt/js_of_ocaml_lwt.ml}
+    --wrapper
+    %{dep:../../lib/tyxml/js_of_ocaml_tyxml.ml}
+    --wrapper
+    %{dep:../../toplevel/lib/js_of_ocaml_toplevel.ml}
+    --module
+    Deriving_Json
+    --module
+    Deriving_Json_lexer))))
+
+(rule
+ (alias runtest)
+ (action
+  (diff undocumented.expected undocumented.actual)))

@@ -18,6 +18,10 @@
  *)
 
 (** Typesafe IO (based on the {i deriving} library).
+
+    {b This module is provided by the [js_of_ocaml.deriving] library, part of the
+    [js_of_ocaml] opam package.}
+
     @see <https://github.com/ocsigen/deriving> the source code of {i deriving}
     @see <http://code.google.com/p/deriving/> the documentation of the original {i deriving} library by Jeremy Yallop.
 *)

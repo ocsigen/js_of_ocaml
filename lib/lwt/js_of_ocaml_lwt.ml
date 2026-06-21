@@ -17,6 +17,10 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+(** Lwt support for Js_of_ocaml.
+
+    {b This library is provided by the [js_of_ocaml-lwt] opam package.} *)
+
 module XmlHttpRequest = struct
   include Js_of_ocaml.XmlHttpRequest
   include Lwt_xmlHttpRequest

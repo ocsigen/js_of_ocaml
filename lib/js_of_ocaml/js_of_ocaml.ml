@@ -17,6 +17,10 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+(** Bindings to the browser and Node.js runtime.
+
+    {b This library is provided by the [js_of_ocaml] opam package.} *)
+
 module Abort = Abort
 module CSS = CSS
 module Console = Console

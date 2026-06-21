@@ -17,6 +17,10 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+(** TyXML support for Js_of_ocaml.
+
+    {b This library is provided by the [js_of_ocaml-tyxml] opam package.} *)
+
 module Tyxml_js = Tyxml_js
 module Tyxml_cast = Tyxml_cast
 module Tyxml_cast_sigs = Tyxml_cast_sigs
