@@ -19,6 +19,9 @@
 
 (* https://github.com/ocsigen/js_of_ocaml/issues/1051 *)
 
+(* The nativeint truncation warning depends on the native integer width. *)
+[@@@if arch_sixtyfour]
+
 let prog = {|let () = Printf.printf "%nx" 0xffffffffn;;|}
 
 let%expect_test _ =

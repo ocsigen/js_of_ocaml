@@ -23,8 +23,9 @@
       [@if ocaml_version < (4,12,0)]
       [@if os_type <> "Win32"]
     ]}
-    The supported predicates are [ocaml_version], [ast_version], [oxcaml]
-    and [os_type] (a string, e.g. "Unix" / "Win32" / "Cygwin"), combined
+    The supported predicates are [ocaml_version], [ast_version], [oxcaml],
+    [arch_sixtyfour] and [os_type] (a string, e.g. "Unix" / "Win32" / "Cygwin"),
+    combined
     with the usual comparison and boolean operators (see
     {!Ppx_light_predicate.Predicate}). They can be placed
     on module (Pstr_module),
@@ -63,7 +64,8 @@ let keep _loc (attrs : attributes) =
         Predicate.eval_compile_time (Predicate.parse e)
       in
       try List.for_all ~f:keep_one ifs
-      with Predicate.Invalid loc -> Location.raise_errorf ~loc "Invalid attribute format")
+      with Predicate.Invalid loc ->
+        Location.raise_errorf ~loc "Invalid attribute format")
 
 let filter_map ~f l =
   let l =
