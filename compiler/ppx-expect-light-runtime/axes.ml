@@ -73,7 +73,10 @@ let rec version_compare v v' =
   | [], [] -> 0
   | [], y :: _ -> compare 0 y
   | x :: _, [] -> compare x 0
-  | x :: xs, y :: ys -> ( match compare (x : int) y with 0 -> version_compare xs ys | n -> n)
+  | x :: xs, y :: ys -> (
+      match compare (x : int) y with
+      | 0 -> version_compare xs ys
+      | n -> n)
 
 let int_size_64 = Sys.int_size >= 63
 
@@ -86,6 +89,8 @@ let tag_dropped = function
   | "native-only" -> not (String.equal backend "native")
   | "no-quickjs" -> String.equal engine "quickjs"
   | "quickjs-only" -> not (String.equal engine "quickjs")
+  | "no-wasi" -> String.equal engine "wasi"
+  | "wasi-only" -> not (String.equal engine "wasi")
   | "64-bits-only" -> not int_size_64
   | "32-bits-only" -> int_size_64
   | _ -> false
