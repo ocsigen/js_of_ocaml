@@ -96,13 +96,9 @@
  ; via `make test-md5-large`.
  (name jsoo_testsuite_md5_large)
  (modules test_md5_large)
- (enabled_if
-  (and
-   %{env:JSOO_TEST_MD5_LARGE=false}
-   ;; The sparse-file trick is not portable to the quickjs / wasi fs shims.
-   (<> %{profile} wasi)
-   (<> %{profile} wasi-with-native-effects)
-   (<> %{profile} quickjs)))
+ ; Off by default (the env opt-in stays in dune); the quickjs/wasi gating
+ ; lives in the source as a [@when ...] predicate.
+ (enabled_if %{env:JSOO_TEST_MD5_LARGE=false})
  (inline_tests
   (deps
    (sandbox preserve_file_kind))

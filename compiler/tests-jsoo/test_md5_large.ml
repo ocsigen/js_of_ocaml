@@ -32,7 +32,8 @@
    Even so, hashing 2 GiB takes ~40s in JS, so this test is off by default.
    Enable it with [JSOO_TEST_MD5_LARGE=true] (see [make test-md5-large]). *)
 
-let%expect_test "md5 of a >2GiB input (issue #2300)" =
+(* The sparse-file trick is not portable to the quickjs / wasi fs shims. *)
+let%expect_test ("md5 of a >2GiB input (issue #2300)" [@when (not wasi) && not quickjs]) =
   (* 2^31 + 8 bytes.  This does not fit in an OCaml [int] under js_of_ocaml,
      where [int] is 32 bits, so the size is kept as an [int64] and the actual
      length comes from the filesystem rather than from OCaml. *)
