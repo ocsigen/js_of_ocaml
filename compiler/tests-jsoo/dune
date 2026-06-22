@@ -21,6 +21,42 @@
  (preprocess
   (pps ppx_optcomp_light ppx_expect_light)))
 
+; These libraries stay separate, but their profile gating lives in the test
+; sources as [@when ...] predicates instead of dune [enabled_if (<> %{profile}
+; ...)], so a test runs wherever it actually works.
+
+(library
+ (name jsoo_testsuite_unix)
+ (modules test_unix)
+ (libraries unix compiler-libs.common js_of_ocaml-compiler)
+ (inline_tests
+  (deps
+   (sandbox preserve_file_kind))
+  (modes js wasm best))
+ (preprocess
+  (pps ppx_expect_light)))
+
+(library
+ (name jsoo_testsuite_perms)
+ (modules test_unix_perms)
+ (libraries unix)
+ (inline_tests
+  (deps
+   (sandbox preserve_file_kind))
+  (modes js wasm best))
+ (preprocess
+  (pps ppx_expect_light)))
+
+(library
+ (name jsoo_testsuite_sys_command)
+ (modules test_sys_command)
+ (inline_tests
+  (deps
+   (sandbox preserve_file_kind))
+  (modes js wasm best))
+ (preprocess
+  (pps ppx_expect_light)))
+
 (library
  (name jsoo_testsuite_ugeint)
  (modules test_ugeint)
@@ -97,6 +133,9 @@
    runtime_events_register
    test_custom_name
    test_text_codec_fallback
+   test_unix
+   test_unix_perms
+   test_sys_command
    test_unix_symlink
    channel_refill
    unix_open_append
