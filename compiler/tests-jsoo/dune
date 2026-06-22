@@ -132,7 +132,6 @@
    runtime_events_register
    test_custom_name
    test_text_codec_fallback
-   test_unix
    test_unix_symlink
    channel_refill
    unix_open_append
@@ -168,23 +167,6 @@
  (foreign_stubs
   (language c)
   (names bigarray_stubs))
- (inline_tests
-  (deps
-   (sandbox preserve_file_kind))
-  (modes js wasm best))
- (preprocess
-  (pps ppx_expect_light)))
-
-; test_unix exercises [Unix.link], which the QuickJS shim does not
-; implement, so it lives in its own library that's disabled under the
-; quickjs profile.
-
-(library
- (name jsoo_testsuite_unix)
- (enabled_if
-  (<> %{profile} quickjs))
- (modules test_unix)
- (libraries unix compiler-libs.common js_of_ocaml-compiler)
  (inline_tests
   (deps
    (sandbox preserve_file_kind))

@@ -1,5 +1,7 @@
 let%expect_test "Unix.error_message" =
   Printf.printf "%s\n" (String.lowercase_ascii (Unix.error_message ENOENT));
+  (* QuickJS reports the errno name rather than a descriptive message. *)
+  [%expect ({| enoent |} [@when quickjs])];
   [%expect {| no such file or directory |}]
 
 let%expect_test "Unix.times" =
@@ -14,7 +16,7 @@ let%expect_test "Unix.times" =
   then Printf.printf "OK\n";
   [%expect {| OK |}]
 
-let%expect_test "Unix.link" =
+let%expect_test ("Unix.link" [@when not quickjs]) =
   let tmp = Filename.temp_file "a" "txt" in
   let ch = open_out tmp in
   output_string ch "test\n";
@@ -67,6 +69,9 @@ let%expect_test "Unix.read" =
   (try Printf.printf "read: %d\n" (Unix.read fd (Bytes.create 8) 0 8)
    with Unix.Unix_error (err, _, _) ->
      Printf.printf "%s\n" (String.lowercase_ascii (Unix.error_message err)));
+  [%expect ({|
+    write failed
+    ebadf |} [@when quickjs])];
   [%expect {|
     write failed
     bad file descriptor
@@ -136,7 +141,7 @@ let%expect_test "Unix.getenv" =
   Printf.printf "%s\n" (Sys.getenv "FOO");
   [%expect {| bar |}]
 
-let%expect_test "Sys.getenv prototype" =
+let%expect_test ("Sys.getenv prototype" [@when not quickjs]) =
   let get n =
     match Sys.getenv n with
     | v -> Printf.printf "found %b\n" (String.length v >= 0)
@@ -151,7 +156,7 @@ let%expect_test "Sys.getenv prototype" =
 
 (* Sizes must not be truncated to 32 bits, ftruncate must not move the
    tracked fd offset, and st_perm must not include the file-type bits. *)
-let%expect_test "truncate and stat" =
+let%expect_test ("truncate and stat" [@when not quickjs]) =
   let f = Filename.temp_file "jsoo_trunc" ".dat" in
   Unix.LargeFile.truncate f 5_000_000_000L;
   Printf.printf "%Ld\n" (Unix.LargeFile.stat f).Unix.LargeFile.st_size;
@@ -180,7 +185,7 @@ let%expect_test "truncate and stat" =
     type bits: 0o0
     |}]
 
-let%expect_test "chmod on a missing file" =
+let%expect_test ("chmod on a missing file" [@when not quickjs]) =
   (* #2287: chmod of a missing path raises Unix_error(ENOENT, "chmod", _) on
      every backend the Unix tests run on (native, the js backend including
      Windows, wasm-on-node, and WASI -- which has no chmod but still reports
@@ -192,7 +197,7 @@ let%expect_test "chmod on a missing file" =
    with Unix.Unix_error (Unix.ENOENT, "chmod", _) -> print_endline "ENOENT chmod");
   [%expect {| ENOENT chmod |}]
 
-let%expect_test "readdir includes . and .." =
+let%expect_test ("readdir includes . and .." [@when not quickjs]) =
   let d = Filename.temp_file "jsoo_dir" "" in
   Sys.remove d;
   Unix.mkdir d 0o755;
