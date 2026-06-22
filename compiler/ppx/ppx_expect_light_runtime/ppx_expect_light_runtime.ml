@@ -243,4 +243,9 @@ let exit () =
   then begin
     Printf.eprintf "ppx_expect_light: FAILED %d / %d tests\n%!" failed !ran;
     Stdlib.exit 2
-  end
+  end;
+  (* Force process termination instead of returning, like ppx_inline_test's
+     runner. Under js_of_ocaml/wasm_of_ocaml this stops a dangling async
+     operation left by a test (e.g. an un-awaited [fetch]) from keeping node
+     alive and crashing on an unhandled rejection after the tests pass. *)
+  Stdlib.exit 0
