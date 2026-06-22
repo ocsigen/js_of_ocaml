@@ -52,7 +52,6 @@
 (library
  ;; lib/tests/test_fun_call.ml
  (name test_fun_call_75)
- (enabled_if (<> %{profile} with-effects))
  (modules test_fun_call)
  (libraries js_of_ocaml unix)
  (inline_tests (modes js))

@@ -59,8 +59,6 @@ let neq_profile v = NEQ (profile, Atom v)
 
 let not_quickjs = neq_profile "quickjs"
 
-let not_with_effects = neq_profile "with-effects"
-
 (* These tests rely on features not yet available when targeting WASI. *)
 let not_wasi = [ neq_profile "wasi"; neq_profile "wasi-with-native-effects" ]
 
@@ -74,7 +72,10 @@ let lib_enabled_if = function
      in the source as a floating [@@@if ocaml_version >= (5, 0, 0)]. It is not
      wasi-gated (unlike the [_] default below). *)
   | "test_sys" -> []
-  | "test_fun_call" -> [ not_with_effects ]
+  (* [test_fun_call]'s two strict-arity callback tests differ under
+     [--effects cps]; they carry a per-test [@when effects <> "cps"] in the
+     source. The library is not wasi-gated. *)
+  | "test_fun_call" -> []
   (* [test_localtime] mutates process.env.TZ, which is Node-specific. *)
   | "test_localtime" -> not_quickjs :: not_wasi
   | "test_fetch" -> not_quickjs :: not_wasi
