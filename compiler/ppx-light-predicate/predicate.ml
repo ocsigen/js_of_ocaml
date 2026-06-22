@@ -258,6 +258,16 @@ let reify_string (t : t) : expression =
   | Ident (_, "os_type") -> [%expr Ppx_expect_light_runtime.Axes.os_type]
   | Ident (_, "backend") -> [%expr Ppx_expect_light_runtime.Axes.backend]
   | Ident (_, "engine") -> [%expr Ppx_expect_light_runtime.Axes.engine]
+  | Ident (_, "effects") ->
+      (* [caml_jsoo_flags_effects] is a js/wasm-only primitive (its native stub
+         aborts). Emitting the [external] here, at the use site, keeps the
+         symbol out of the shared runtime library — which is also linked into
+         native test runners that never reference [effects]. *)
+      [%expr
+        let module M = struct
+          external get : unit -> string = "caml_jsoo_flags_effects"
+        end in
+        M.get ()]
   | String (_, s) -> Ast_builder.Default.estring ~loc s
   | _ -> raise (Invalid loc)
 
@@ -284,7 +294,7 @@ let kind_of (t : t) : kind =
   match t with
   | Ident (_, "ocaml_version") -> K_version
   | Tuple _ -> K_version
-  | Ident (_, ("os_type" | "backend" | "engine")) -> K_string
+  | Ident (_, ("os_type" | "backend" | "engine" | "effects")) -> K_string
   | String _ -> K_string
   | Int _ -> K_int
   | _ -> K_unknown
