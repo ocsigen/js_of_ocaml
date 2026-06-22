@@ -19,8 +19,10 @@
 
 open! Util
 
-(* In OxCaml, the call to Printf.printf is compiled differently. *)
-[@@@if not oxcaml]
+(* The test compiles a program that uses the [Effect] stdlib module, so it
+   needs OCaml >= 5. In OxCaml, the call to Printf.printf is compiled
+   differently. *)
+[@@@if ocaml_version >= (5, 0, 0) && not oxcaml]
 
 let%expect_test "test-compiler/lib-effects/test1.ml" =
   let program =

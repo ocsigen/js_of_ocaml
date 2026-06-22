@@ -27,6 +27,8 @@
     - [ocaml_version] — the running OCaml version, compared against an [(maj, min,
       patch)] tuple.
     - [ast_version] — the ppxlib selected AST version (compile-time only).
+    - [arch_sixtyfour] — whether the toolchain targets 64-bit ([Sys.word_size =
+      64]); compile-time only.
     - [oxcaml] — whether the compiler is the OxCaml flavour.
     - [os_type] — [Sys.os_type] ("Unix" / "Win32" / "Cygwin").
     - [backend] / [engine] — runtime only (see {!reify}).
@@ -56,19 +58,19 @@ type t
 
 exception Invalid of Location.t
 
+val parse : expression -> t
 (** Parse a predicate expression into {!t}. Raises {!Invalid} on syntactically
     unexpected constructs. *)
-val parse : expression -> t
 
-(** Evaluate the predicate now, at preprocessing time. Resolves [ocaml_version],
-    [ast_version], [oxcaml] and [os_type]. Raises {!Invalid} on constructs that
-    are not meaningful at compile time (e.g. [backend], [engine], or the runtime
-    shorthands). *)
 val eval_compile_time : t -> bool
+(** Evaluate the predicate now, at preprocessing time. Resolves [ocaml_version],
+    [ast_version], [arch_sixtyfour], [oxcaml] and [os_type]. Raises {!Invalid} on
+    constructs that are not meaningful at compile time (e.g. [backend], [engine],
+    or the runtime shorthands). *)
 
+val reify : loc:Location.t -> t -> expression
 (** Reify the predicate into an OCaml expression of type [bool] that evaluates it
     at runtime against [Ppx_expect_light_runtime.Axes]. Supports [ocaml_version],
     [os_type], [oxcaml], [backend], [engine] and the runtime shorthands. Raises
     {!Invalid} on constructs that are only meaningful at compile time (e.g.
     [ast_version]). *)
-val reify : loc:Location.t -> t -> expression

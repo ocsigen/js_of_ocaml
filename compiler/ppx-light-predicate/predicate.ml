@@ -184,6 +184,7 @@ let rec eval_value (t : t) : value =
         | Some (Plus, "ox") -> true
         | _ -> false)
   | Ident (_, "os_type") -> V_string Sys.os_type
+  | Ident (_, "arch_sixtyfour") -> V_bool (Sys.word_size = 64)
   | Ident (loc, _) -> raise (Invalid loc)
   | Bool (_, b) -> V_bool b
   | Int (_, i) -> V_int i
