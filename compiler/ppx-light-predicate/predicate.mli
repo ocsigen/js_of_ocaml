@@ -32,7 +32,7 @@
     - [backend] / [engine] — runtime only (see {!reify}).
 
     plus the runtime-only shorthands [js], [wasm], [native], [node], [quickjs],
-    [win32], [unix], [cygwin]. *)
+    [wasi], [win32], [unix], [cygwin]. *)
 
 open Ppxlib
 

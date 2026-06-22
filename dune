@@ -55,7 +55,9 @@
    (compilation_mode whole_program))
   (binaries
    (tools/node_wrapper.exe as node)
-   (tools/node_wrapper.exe as node.exe)))
+   (tools/node_wrapper.exe as node.exe))
+  (env-vars
+   (JSOO_TEST_ENGINE wasi)))
  (wasi-with-native-effects
   (js_of_ocaml
    ;; Native effects is not supported in js
@@ -66,7 +68,9 @@
     (:standard --effects native --enable wasi)))
   (binaries
    (tools/node_wrapper.exe as node)
-   (tools/node_wrapper.exe as node.exe)))
+   (tools/node_wrapper.exe as node.exe))
+  (env-vars
+   (JSOO_TEST_ENGINE wasi)))
  (bench_no_debug
   (flags
    (:standard \ -g))
