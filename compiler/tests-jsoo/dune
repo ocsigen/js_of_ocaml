@@ -176,20 +176,12 @@
  (preprocess
   (pps ppx_expect_light)))
 
-; test_unix_symlink creates symlinks and stats through them. WASI rejects
-; symlinks to absolute targets with EPERM (its capability model forbids
-; escaping a preopen); the QuickJS shim does not implement [Unix.symlink];
-; and on Windows node cannot [stat] a directory symlink without elevation.
-; So it only runs on Unix-like hosts under the JS / wasm-on-unix runtimes.
+; test_unix_symlink's profile/OS gating lives in the source as [@when ...]
+; predicates (Unix-like hosts under the JS / wasm-on-node runtimes only), so
+; this library needs no enabled_if.
 
 (library
  (name jsoo_testsuite_symlink)
- (enabled_if
-  (and
-   (<> %{profile} quickjs)
-   (<> %{profile} wasi)
-   (<> %{profile} wasi-with-native-effects)
-   (<> %{os_type} Win32)))
  (modules test_unix_symlink)
  (libraries unix)
  (inline_tests
