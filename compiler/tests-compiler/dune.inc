@@ -205,7 +205,6 @@
  (modules error)
  (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
  (inline_tests
-  (enabled_if (<> %{profile} quickjs))
   (deps
    (file %{project_root}/compiler/bin-js_of_ocaml/js_of_ocaml.exe)
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
@@ -564,7 +563,6 @@
  (modules js_parser_printer)
  (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
  (inline_tests
-  (enabled_if (<> %{profile} quickjs))
   (deps
    (file %{project_root}/compiler/bin-js_of_ocaml/js_of_ocaml.exe)
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
@@ -748,7 +746,6 @@
  (modules scopes)
  (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
  (inline_tests
-  (enabled_if (<> %{profile} quickjs))
   (deps
    (file %{project_root}/compiler/bin-js_of_ocaml/js_of_ocaml.exe)
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
@@ -892,7 +889,6 @@
  (modules unix_fs)
  (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
  (inline_tests
-  (enabled_if (<> %{profile} quickjs))
   (deps
    (file %{project_root}/compiler/bin-js_of_ocaml/js_of_ocaml.exe)
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
