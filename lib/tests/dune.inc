@@ -7,7 +7,7 @@
  (libraries js_of_ocaml unix)
  (inline_tests (modes js wasm))
  (preprocess
-  (pps ppx_js_internal ppx_expect)))
+  (pps ppx_js_internal ppx_expect_light)))
 
 (library
  ;; lib/tests/test_css_color.ml
@@ -17,7 +17,7 @@
  (libraries js_of_ocaml unix)
  (inline_tests (modes js wasm))
  (preprocess
-  (pps ppx_js_internal ppx_expect)))
+  (pps ppx_js_internal ppx_expect_light)))
 
 (library
  ;; lib/tests/test_css_length.ml
@@ -27,7 +27,7 @@
  (libraries js_of_ocaml unix)
  (inline_tests (modes js wasm))
  (preprocess
-  (pps ppx_js_internal ppx_expect)))
+  (pps ppx_js_internal ppx_expect_light)))
 
 (library
  ;; lib/tests/test_eval.ml
@@ -37,7 +37,7 @@
  (libraries js_of_ocaml unix)
  (inline_tests (modes js wasm))
  (preprocess
-  (pps ppx_js_internal ppx_expect)))
+  (pps ppx_js_internal ppx_expect_light)))
 
 (library
  ;; lib/tests/test_fetch.ml
@@ -47,7 +47,7 @@
  (libraries js_of_ocaml unix)
  (inline_tests (modes js wasm))
  (preprocess
-  (pps ppx_js_internal ppx_expect)))
+  (pps ppx_js_internal ppx_expect_light)))
 
 (library
  ;; lib/tests/test_fun_call.ml
@@ -57,7 +57,7 @@
  (libraries js_of_ocaml unix)
  (inline_tests (modes js))
  (preprocess
-  (pps ppx_js_internal ppx_expect)))
+  (pps ppx_js_internal ppx_expect_light)))
 
 (library
  ;; lib/tests/test_fun_call_2.ml
@@ -67,7 +67,7 @@
  (libraries js_of_ocaml unix)
  (inline_tests (modes js wasm))
  (preprocess
-  (pps ppx_js_internal ppx_expect)))
+  (pps ppx_js_internal ppx_expect_light)))
 
 (library
  ;; lib/tests/test_json.ml
@@ -77,7 +77,7 @@
  (libraries js_of_ocaml unix)
  (inline_tests (modes js wasm))
  (preprocess
-  (pps ppx_js_internal ppx_expect)))
+  (pps ppx_js_internal ppx_expect_light)))
 
 (library
  ;; lib/tests/test_localtime.ml
@@ -87,7 +87,7 @@
  (libraries js_of_ocaml unix)
  (inline_tests (modes js))
  (preprocess
-  (pps ppx_js_internal ppx_expect)))
+  (pps ppx_js_internal ppx_expect_light)))
 
 (library
  ;; lib/tests/test_misc.ml
@@ -97,7 +97,7 @@
  (libraries js_of_ocaml unix)
  (inline_tests (modes js wasm))
  (preprocess
-  (pps ppx_js_internal ppx_expect)))
+  (pps ppx_js_internal ppx_expect_light)))
 
 (library
  ;; lib/tests/test_nodejs_filesystem_errors.ml
@@ -107,7 +107,7 @@
  (libraries js_of_ocaml unix)
  (inline_tests (modes js wasm))
  (preprocess
-  (pps ppx_js_internal ppx_expect)))
+  (pps ppx_js_internal ppx_expect_light)))
 
 (library
  ;; lib/tests/test_poly_compare.ml
@@ -117,7 +117,7 @@
  (libraries js_of_ocaml unix)
  (inline_tests (modes js))
  (preprocess
-  (pps ppx_js_internal ppx_expect)))
+  (pps ppx_js_internal ppx_expect_light)))
 
 (library
  ;; lib/tests/test_poly_equal.ml
@@ -127,7 +127,7 @@
  (libraries js_of_ocaml unix)
  (inline_tests (modes js wasm))
  (preprocess
-  (pps ppx_js_internal ppx_expect)))
+  (pps ppx_js_internal ppx_expect_light)))
 
 (library
  ;; lib/tests/test_promise.ml
@@ -137,7 +137,7 @@
  (libraries js_of_ocaml unix)
  (inline_tests (modes js wasm))
  (preprocess
-  (pps ppx_js_internal ppx_expect)))
+  (pps ppx_js_internal ppx_expect_light)))
 
 (library
  ;; lib/tests/test_regexp.ml
@@ -147,7 +147,7 @@
  (libraries js_of_ocaml unix)
  (inline_tests (modes js wasm))
  (preprocess
-  (pps ppx_js_internal ppx_expect)))
+  (pps ppx_js_internal ppx_expect_light)))
 
 (library
  ;; lib/tests/test_string.ml
@@ -157,7 +157,7 @@
  (libraries js_of_ocaml unix)
  (inline_tests (modes js wasm))
  (preprocess
-  (pps ppx_js_internal ppx_expect)))
+  (pps ppx_js_internal ppx_expect_light)))
 
 (library
  ;; lib/tests/test_sys.ml
@@ -167,7 +167,7 @@
  (libraries js_of_ocaml unix)
  (inline_tests (modes js))
  (preprocess
-  (pps ppx_js_internal ppx_expect)))
+  (pps ppx_js_internal ppx_expect_light)))
 
 (library
  ;; lib/tests/test_typed_array.ml
@@ -177,7 +177,7 @@
  (libraries js_of_ocaml unix)
  (inline_tests (modes js wasm))
  (preprocess
-  (pps ppx_js_internal ppx_expect)))
+  (pps ppx_js_internal ppx_expect_light)))
 
 (library
  ;; lib/tests/test_unsafe_set_get.ml
@@ -187,7 +187,7 @@
  (libraries js_of_ocaml unix)
  (inline_tests (modes js wasm))
  (preprocess
-  (pps ppx_js_internal ppx_expect)))
+  (pps ppx_js_internal ppx_expect_light)))
 
 (library
  ;; lib/tests/test_url.ml
@@ -197,4 +197,4 @@
  (libraries js_of_ocaml unix)
  (inline_tests (modes js wasm))
  (preprocess
-  (pps ppx_js_internal ppx_expect)))
+  (pps ppx_js_internal ppx_expect_light)))

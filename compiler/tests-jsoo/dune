@@ -19,7 +19,7 @@
    (sandbox preserve_file_kind))
   (modes js wasm best))
  (preprocess
-  (pps ppx_optcomp_light ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect_light)))
 
 (library
  (name jsoo_testsuite_perms)
@@ -37,7 +37,7 @@
    (sandbox preserve_file_kind))
   (modes js wasm best))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_expect_light)))
 
 (library
  (name jsoo_testsuite_sys_command)
@@ -54,7 +54,7 @@
    (sandbox preserve_file_kind))
   (modes js wasm best))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_expect_light)))
 
 (library
  (name jsoo_testsuite_float32_js)
@@ -64,7 +64,7 @@
  (inline_tests
   (modes js))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_expect_light)))
 
 (library
  (name jsoo_testsuite_ugeint)
@@ -74,7 +74,7 @@
  (inline_tests
   (modes js wasm best))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_expect_light)))
 
 (rule
  ; Guard against future OxCaml changes peepholing UGEINT away the same
@@ -96,7 +96,7 @@
  (inline_tests
   (modes wasm best))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_expect_light)))
 
 (library
  ; The #2300 regression has to digest a >2 GiB input, which takes far longer
@@ -117,7 +117,7 @@
    (sandbox preserve_file_kind))
   (modes js wasm best))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_expect_light)))
 
 (library
  (name jsoo_testsuite)
@@ -167,7 +167,7 @@
   ; ppx_optcomp_light lets version-specific tests (e.g. those gated with
   ; [@@@if ocaml_version >= ...]) share this single library across OCaml
   ; versions instead of living in their own enabled_if'd libraries.
-  (pps ppx_optcomp_light ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect_light)))
 
 ; test_bigarray uses the float16 kind, which requires OCaml 5.2.
 
@@ -184,7 +184,7 @@
    (sandbox preserve_file_kind))
   (modes js wasm best))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_expect_light)))
 
 ; test_unix exercises [Unix.link], which the QuickJS shim does not
 ; implement, so it lives in its own library that's disabled under the
@@ -201,7 +201,7 @@
    (sandbox preserve_file_kind))
   (modes js wasm best))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_expect_light)))
 
 ; test_unix_symlink creates symlinks and stats through them. WASI rejects
 ; symlinks to absolute targets with EPERM (its capability model forbids
@@ -224,7 +224,7 @@
    (sandbox preserve_file_kind))
   (modes js wasm best))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_expect_light)))
 
 ; The Windows exclusion lives in the source as a floating [@@@if os_type
 ; <> "Win32"]: Windows node rejects the O_APPEND flag combination and
@@ -239,7 +239,7 @@
    (sandbox preserve_file_kind))
   (modes js wasm best))
  (preprocess
-  (pps ppx_optcomp_light ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect_light)))
 
 (library
  (name jsoo_testsuite_str)
@@ -250,7 +250,7 @@
    (sandbox preserve_file_kind))
   (modes js wasm best))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_expect_light)))
 
 (test
  (name test_float16)
@@ -302,7 +302,7 @@
    (sandbox preserve_file_kind))
   (modes js wasm))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_expect_light)))
 
 ; Uses Js values (Js.string/Js.null), so it cannot run natively or under
 ; the WASI runtime; exercised on both the JavaScript and wasm runtimes.
@@ -330,7 +330,7 @@
   (modes js wasm))
  (libraries js_of_ocaml)
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_expect_light)))
 
 ; Bigstring.of_arrayBuffer produces a char bigarray; uses Js, js and wasm only.
 
@@ -345,7 +345,7 @@
   (modes js wasm))
  (libraries js_of_ocaml)
  (preprocess
-  (pps js_of_ocaml-ppx ppx_expect)))
+  (pps js_of_ocaml-ppx ppx_expect_light)))
 
 ; caml_wrap_exception wrapping of thrown JS values; uses Js, js and wasm only.
 
@@ -456,7 +456,7 @@
   (modes js wasm))
  (libraries js_of_ocaml)
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_expect_light)))
 
 ; The TextEncoder/TextDecoder fallbacks in [runtime/js/mlBytes.js] are
 ; cross-checked against the host Web Encoding API. That only works on
@@ -471,7 +471,7 @@
   (modes js))
  (libraries js_of_ocaml)
  (preprocess
-  (pps js_of_ocaml-ppx ppx_expect)))
+  (pps js_of_ocaml-ppx ppx_expect_light)))
 
 (library
  (name test_list_of_js_array)
@@ -484,7 +484,7 @@
   (modes js wasm))
  (libraries js_of_ocaml)
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_expect_light)))
 
 (ocamlyacc calc_parser)
 

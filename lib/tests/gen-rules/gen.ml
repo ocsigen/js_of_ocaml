@@ -128,7 +128,7 @@ let () =
  (libraries js_of_ocaml unix)
  (inline_tests (modes %s))
  (preprocess
-  (pps ppx_js_internal ppx_expect)))
+  (pps ppx_js_internal ppx_expect_light)))
 |}
         prefix
         basename

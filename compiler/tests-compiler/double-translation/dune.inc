@@ -10,7 +10,7 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_optcomp_light ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect_light)))
 
 (library
  ;; compiler/tests-compiler/double-translation/effects_continuations.ml
@@ -24,7 +24,7 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_optcomp_light ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect_light)))
 
 (library
  ;; compiler/tests-compiler/double-translation/effects_exceptions.ml
@@ -38,7 +38,7 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_optcomp_light ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect_light)))
 
 (library
  ;; compiler/tests-compiler/double-translation/effects_toplevel.ml
@@ -51,7 +51,7 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_optcomp_light ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect_light)))
 
 (library
  ;; compiler/tests-compiler/double-translation/mutual_recursion.ml
@@ -64,4 +64,4 @@
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_optcomp_light ppx_expect)))
+  (pps ppx_optcomp_light ppx_expect_light)))
