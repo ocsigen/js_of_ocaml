@@ -16,9 +16,12 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-open Js_of_ocaml_compiler
+open! Js_of_ocaml_compiler
 open! Stdlib
-open Util
+open! Util
+
+(* OxCaml emits more debug locations, which changes the generated code. *)
+[@@@if not oxcaml]
 
 let%expect_test _ =
   with_temp_dir ~f:(fun () ->

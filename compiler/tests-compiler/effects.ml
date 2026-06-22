@@ -17,7 +17,10 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-open Util
+open! Util
+
+(* In OxCaml, the call to Printf.printf is compiled differently. *)
+[@@@if not oxcaml]
 
 let%expect_test "test-compiler/lib-effects/test1.ml" =
   let program =

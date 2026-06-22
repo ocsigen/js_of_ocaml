@@ -1,4 +1,7 @@
-open Util
+open! Util
+
+(* In OxCaml, raise is always reraise, which changes the generated code. *)
+[@@@if not oxcaml]
 
 let%expect_test "Eliminates unused functions from functor" =
   let program =

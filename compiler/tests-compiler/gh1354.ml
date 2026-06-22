@@ -19,6 +19,9 @@
 
 (* https://github.com/ocsigen/js_of_ocaml/issues/1354 *)
 
+(* In OxCaml, raise is always reraise, which changes the generated code. *)
+[@@@if not oxcaml]
+
 let%expect_test _ =
   let prog =
     {|
