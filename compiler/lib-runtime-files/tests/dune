@@ -3,4 +3,4 @@
  (libraries js_of_ocaml-compiler.runtime-files)
  (inline_tests)
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_expect_light)))

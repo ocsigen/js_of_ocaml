@@ -4,5 +4,5 @@
  (inline_tests)
  (enabled_if %{lib-available:qcheck})
  (preprocess
-  (pps ppx_expect))
+  (pps ppx_expect_light))
  (libraries js_of_ocaml-compiler qcheck))

@@ -8,4 +8,4 @@
     (<> %{profile} wasi-with-native-effects)))
   (modes js wasm))
  (preprocess
-  (pps ppx_expect ppx_deriving_json)))
+  (pps ppx_expect_light ppx_deriving_json)))

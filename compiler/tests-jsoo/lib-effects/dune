@@ -29,7 +29,7 @@
    deep_state
    test_finalise))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_expect_light)))
 
 (tests
  (build_if
