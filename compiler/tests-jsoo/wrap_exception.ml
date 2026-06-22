@@ -11,11 +11,12 @@ let classify f =
   | exception Failure m -> "Failure " ^ m
   | exception e -> "other: " ^ Printexc.to_string e
 
-let () =
+let%expect_test ("caml_wrap_exception" [@when not wasi]) =
   assert (
     classify (fun () -> ignore (Js.Unsafe.eval_string "(function(){throw 'boom'})()"))
     = "Failure boom");
   assert (
     classify (fun () -> ignore (Js.Unsafe.eval_string "(function(){throw null})()"))
     = "Failure null");
-  print_endline "ok"
+  print_endline "ok";
+  [%expect {| ok |}]

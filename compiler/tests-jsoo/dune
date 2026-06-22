@@ -298,15 +298,14 @@
 
 ; caml_wrap_exception wrapping of thrown JS values; uses Js, js and wasm only.
 
-(test
- (name wrap_exception)
+(library
+ (name jsoo_test_wrap_exception)
  (modules wrap_exception)
  (libraries js_of_ocaml)
- (enabled_if
-  (and
-   (<> %{profile} wasi)
-   (<> %{profile} wasi-with-native-effects)))
- (modes js wasm))
+ (inline_tests
+  (modes js wasm))
+ (preprocess
+  (pps ppx_expect_light)))
 
 ; UTF-8 method-name resolution in caml_js_meth_call; uses Js values, so it
 ; runs on the JavaScript and wasm runtimes only.
