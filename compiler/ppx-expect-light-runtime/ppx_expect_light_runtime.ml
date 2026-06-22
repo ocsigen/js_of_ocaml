@@ -360,6 +360,12 @@ let exit () =
   let mismatches = ref 0 in
   let errors = ref 0 in
   let ran = ref 0 in
+  (* Like ppx_inline_test, hold failure reports until the end in verbose mode so
+     they don't interleave with the per-test progress lines on stdout. *)
+  let delayed = ref [] in
+  let report s =
+    if cfg.verbose then delayed := s :: !delayed else output_string stderr s
+  in
   (* [-verbose] line, kept close to ppx_inline_test's:
      [File "f.ml", line N, characters s-e: name (0.000 sec)]. *)
   let verbose_descr (test : test) =
@@ -413,19 +419,24 @@ let exit () =
         | corrections ->
             incr mismatches;
             all_corrections := List.rev_append corrections !all_corrections;
-            if not dune_mode
-            then List.iter (fun s -> output_string stderr s) (List.rev r.reports));
+            if not dune_mode then List.iter report (List.rev r.reports));
         match exn with
         | None -> ()
         | Some (e, bt) ->
             incr errors;
-            Printf.eprintf
-              "FAILED: %s\n  exception: %s\n%s\n"
-              descr
-              (Printexc.to_string e)
-              bt
+            report
+              (Printf.sprintf
+                 "FAILED: %s\n  exception: %s\n%s\n"
+                 descr
+                 (Printexc.to_string e)
+                 bt)
       end)
     (List.rev !tests);
+  (match List.rev !delayed with
+  | [] -> ()
+  | reports ->
+      Printf.eprintf "\n%s\n" (String.make 70 '=');
+      List.iter (fun s -> output_string stderr s) reports);
   Corrected.write ~root:cfg.source_tree_root !all_corrections;
   flush stderr;
   let failed = if dune_mode then !errors else !mismatches + !errors in
