@@ -382,14 +382,18 @@ let exit () =
       let descr =
         Printf.sprintf "%s:%d %s" test.filename test.line_number test.description
       in
-      if not (lib_selected cfg test)
-      then () (* belongs to another library linked into this runner *)
-      else if
-        (not (partition_selected cfg test))
-        || tags_skipped cfg test.tags
+      if
+        (not (lib_selected cfg test))
+        || (not (partition_selected cfg test))
         || (not (only_test_match cfg test))
         || not (matching_ok cfg descr)
-      then () (* filtered out; like ppx_inline_test, skipped tests are not shown *)
+      then () (* not part of this run (other library/partition, or not requested) *)
+      else if tags_skipped cfg test.tags
+      then (
+        if
+          (* Unlike ppx_inline_test, surface tag-skipped tests in verbose mode. *)
+          cfg.verbose
+        then Printf.printf "%s (skipped)\n%!" (verbose_descr test))
       else begin
         incr ran;
         if cfg.verbose then print_string (verbose_descr test);
