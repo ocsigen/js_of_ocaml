@@ -16,7 +16,7 @@ depends: [
   "ocaml" {>= "4.13"}
   "js_of_ocaml-compiler" {= version}
   "num" {with-test}
-  "ppx_expect" {>= "v0.14.2" & with-test}
+  "out-channel-redirect" {with-test}
   "ppxlib" {>= "0.33"}
   "re" {>= "1.9.0" & with-test}
   "odoc" {with-doc}
