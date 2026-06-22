@@ -25,7 +25,8 @@
     ]}
     The supported predicates are [ocaml_version], [ast_version], [oxcaml]
     and [os_type] (a string, e.g. "Unix" / "Win32" / "Cygwin"), combined
-    with the usual comparison and boolean operators. They can be placed
+    with the usual comparison and boolean operators (see
+    {!Ppx_light_predicate.Predicate}). They can be placed
     on module (Pstr_module),
     toplevel bindings (Pstr_value, Pstr_primitive)
     toplevel extensions, e.g. [let%expect_test "..." = ... [@@if ...]]
@@ -41,142 +42,9 @@
 
 open StdLabels
 open Ppxlib.Parsetree
+module Predicate = Ppx_light_predicate.Predicate
 
-module Version : sig
-  type t
-
-  val of_list : int list -> t
-
-  val compare : t -> t -> int
-
-  val current : t
-
-  type extra_prefix =
-    | Plus
-    | Tilde
-
-  val extra : (extra_prefix * string) option
-end = struct
-  type t = int list
-
-  let of_list l = l
-
-  let split_char ~sep p =
-    let len = String.length p in
-    let rec split beg cur =
-      if cur >= len
-      then if cur - beg > 0 then [ String.sub p ~pos:beg ~len:(cur - beg) ] else []
-      else if sep p.[cur]
-      then String.sub p ~pos:beg ~len:(cur - beg) :: split (cur + 1) (cur + 1)
-      else split beg (cur + 1)
-    in
-    split 0 0
-
-  let split v =
-    match
-      split_char
-        ~sep:(function
-          | '+' | '-' | '~' -> true
-          | _ -> false)
-        v
-    with
-    | [] -> assert false
-    | x :: _ ->
-        List.map
-          (split_char
-             ~sep:(function
-               | '.' -> true
-               | _ -> false)
-             x)
-          ~f:int_of_string
-
-  let current = split Sys.ocaml_version
-
-  let compint (a : int) b = compare a b
-
-  let rec compare v v' =
-    match v, v' with
-    | [ x ], [ y ] -> compint x y
-    | [], [] -> 0
-    | [], y :: _ -> compint 0 y
-    | x :: _, [] -> compint x 0
-    | x :: xs, y :: ys -> (
-        match compint x y with
-        | 0 -> compare xs ys
-        | n -> n)
-
-  type extra_prefix =
-    | Plus
-    | Tilde
-
-  type release_info = { extra : (extra_prefix * string) option }
-
-  let extra =
-    (* Sys.ocaml_release is only available since OCaml 4.14. For older
-       version of OCaml, [ocaml_release.extra] will evaluate to
-       [None]. *)
-    let ocaml_release = { extra = None } in
-    ignore ocaml_release.extra;
-    match
-      let open! Sys in
-      ocaml_release.extra
-    with
-    | None -> None
-    | Some (Plus, tag) -> Some (Plus, tag)
-    | Some (Tilde, tag) -> Some (Tilde, tag)
-end
-
-exception Invalid of Location.t
-
-type op =
-  | LE
-  | GE
-  | GT
-  | LT
-  | NEQ
-  | EQ
-  | AND
-  | OR
-  | NOT
-
-type e =
-  | Version of Version.t
-  | Tuple of e list
-  | Bool of bool
-  | Int of int
-  | String of string
-
-let get_bin_op = function
-  | { pexp_desc = Pexp_ident { txt = Lident str; _ }; pexp_loc = loc; _ } -> (
-      match str with
-      | "<=" -> LE
-      | ">=" -> GE
-      | ">" -> GT
-      | "<" -> LT
-      | "=" -> EQ
-      | "<>" -> NEQ
-      | "&&" -> AND
-      | "||" -> OR
-      | _ -> raise (Invalid loc))
-  | { pexp_loc = loc; _ } -> raise (Invalid loc)
-
-let get_un_op = function
-  | { pexp_desc = Pexp_ident { txt = Lident str; _ }; pexp_loc = loc; _ } -> (
-      match str with
-      | "not" -> NOT
-      | _ -> raise (Invalid loc))
-  | { pexp_loc = loc; _ } -> raise (Invalid loc)
-
-let version = function
-  | Version v -> v
-  | Tuple l ->
-      Version.of_list
-        (List.map l ~f:(function
-          | Int i -> i
-          | _ -> raise (Invalid Location.none)))
-  | Bool _ | Int _ | String _ -> raise (Invalid Location.none)
-
-let keep loc (attrs : attributes) =
+let keep _loc (attrs : attributes) =
   let ifs =
     List.filter attrs ~f:(function
       | { attr_name = { txt = "if"; _ }; _ } -> true
@@ -185,110 +53,17 @@ let keep loc (attrs : attributes) =
   match ifs with
   | [] -> true
   | _ -> (
-      try
-        let keep_one ({ attr_payload; attr_loc; _ } as attr) =
-          Ppxlib.Attribute.mark_as_handled_manually attr;
-          let e =
-            match attr_payload with
-            | PStr [ { pstr_desc = Pstr_eval (e, []); _ } ] -> e
-            | _ -> raise (Invalid attr_loc)
-          in
-          let rec eval e =
-            let open Ppxlib.Ast_pattern in
-            let loc = e.pexp_loc in
-            match
-              (parse_res
-                 (pexp_ident (lident (string "ocaml_version"))
-                 >>| (fun () -> Version Version.current)
-                 ||| (pexp_ident (lident (string "ast_version"))
-                     >>| fun () -> Int Ppxlib.Selected_ast.version)
-                 ||| (pexp_ident (lident (string "oxcaml"))
-                     >>| fun () ->
-                     Bool
-                       (match Version.extra with
-                       | Some (Plus, "ox") -> true
-                       | _ -> false))
-                 ||| (pexp_ident (lident (string "os_type"))
-                     >>| fun () -> String Sys.os_type)
-                 ||| (pexp_construct (lident (string "true")) drop >>| fun () -> Bool true)
-                 ||| (pexp_construct (lident (string "false")) drop
-                     >>| fun () -> Bool false)
-                 ||| (pexp_constant (pconst_integer __ none)
-                     >>| fun () d -> Int (int_of_string d))
-                 ||| (pexp_constant (pconst_string __ drop drop) >>| fun () s -> String s)
-                 ||| (pexp_tuple __ >>| fun () l -> Tuple (List.map l ~f:eval))
-                 ||| (pexp_apply __ __
-                     >>| fun () op l ->
-                     match l with
-                     | [ (Nolabel, a); (Nolabel, b) ] -> (
-                         let op = get_bin_op op in
-                         let a = eval a in
-                         let b = eval b in
-                         match op with
-                         | LE | GE | LT | GT | NEQ | EQ ->
-                             let comp =
-                               match a, b with
-                               | Version _, _ | _, Version _ ->
-                                   Version.compare (version a) (version b)
-                               | Int a, Int b -> compare a b
-                               | String a, String b -> compare a b
-                               | _ -> raise (Invalid loc)
-                             in
-                             let op =
-                               match op with
-                               | LE -> ( <= )
-                               | GE -> ( >= )
-                               | LT -> ( < )
-                               | GT -> ( > )
-                               | EQ -> ( = )
-                               | NEQ -> ( <> )
-                               | _ -> assert false
-                             in
-                             Bool (op comp 0)
-                         | AND -> (
-                             match a, b with
-                             | Bool a, Bool b -> Bool (a && b)
-                             | _ -> raise (Invalid loc))
-                         | OR -> (
-                             match a, b with
-                             | Bool a, Bool b -> Bool (a || b)
-                             | _ -> raise (Invalid loc))
-                         | NOT -> raise (Invalid loc))
-                     | [ (Nolabel, a) ] -> (
-                         let op = get_un_op op in
-                         let a = eval a in
-                         match op, a with
-                         | NOT, Bool b -> Bool (not b)
-                         | NOT, _ -> raise (Invalid loc)
-                         | _ -> raise (Invalid loc))
-                     | _ -> raise (Invalid loc))))
-                loc
-                e
-                ()
-            with
-            | Ok res -> res
-            | Error _ -> raise (Invalid loc)
-          in
-          match eval e with
-          | Bool b -> b
-          | Int _ | String _ | Tuple _ | Version _ -> raise (Invalid loc)
+      let keep_one ({ attr_payload; attr_loc; _ } as attr) =
+        Ppxlib.Attribute.mark_as_handled_manually attr;
+        let e =
+          match attr_payload with
+          | PStr [ { pstr_desc = Pstr_eval (e, []); _ } ] -> e
+          | _ -> raise (Predicate.Invalid attr_loc)
         in
-        let keep = List.for_all ~f:keep_one ifs in
-        if false
-        then
-          if not keep
-          then
-            Printf.eprintf
-              "dropping %s:%d\n%!"
-              loc.Location.loc_start.pos_fname
-              loc.Location.loc_start.pos_lnum
-          else
-            Printf.eprintf
-              "keep %s:%d\n%!"
-              loc.Location.loc_start.pos_fname
-              loc.Location.loc_start.pos_lnum;
-        keep
-      with Invalid loc -> Location.raise_errorf ~loc "Invalid attribute format")
+        Predicate.eval_compile_time (Predicate.parse e)
+      in
+      try List.for_all ~f:keep_one ifs
+      with Predicate.Invalid loc -> Location.raise_errorf ~loc "Invalid attribute format")
 
 let filter_map ~f l =
   let l =

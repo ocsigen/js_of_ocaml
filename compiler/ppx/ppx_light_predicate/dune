@@ -1,0 +1,5 @@
+(library
+ (name ppx_light_predicate)
+ (libraries compiler-libs.common ppxlib)
+ (preprocess
+  (pps ppxlib.metaquot)))

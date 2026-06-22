@@ -1,0 +1,3 @@
+(library
+ (name ppx_expect_light_runtime)
+ (libraries out-channel-redirect))
