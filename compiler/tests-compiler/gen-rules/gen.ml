@@ -31,7 +31,6 @@ let prefix : string =
 
 type lang =
   | Not of lang
-  | NEQ of lang * lang
   | GE of lang * lang
   | Var of string
   | Atom of string
@@ -43,13 +42,9 @@ let arch_sixtyfour = Var "arch_sixtyfour"
 
 let oxcaml = Var "oxcaml_supported"
 
-let profile = Var "profile"
-
 let ge v = GE (ocaml_version, Atom v)
 
 let not x = Not x
-
-let not_quickjs = NEQ (profile, Atom "quickjs")
 
 let and_ = function
   | [] -> assert false
@@ -78,16 +73,10 @@ let test_enabled_if = function
   | "effects" ->
       [ not oxcaml ] (* Call to Printf.printf is somehow compiled differently *)
   | "gh747" -> [ not oxcaml ] (* More debug locations *)
-  | "error" | "scopes" | "unix_fs" | "js_parser_printer" ->
-      (* Tests assert engine-specific output: jsoo's [caml_fatal_uncaught_exception]
-         only fires under Node (via process.on("uncaughtException")), and
-         [node --check] error messages differ from QuickJS's parser. *)
-      [ not_quickjs ]
   | _ -> []
 
 let rec pp f = function
   | Not x -> Format.fprintf f "(not %a)" pp x
-  | NEQ (a, b) -> Format.fprintf f "(<> %a %a)" pp a pp b
   | GE (a, b) -> Format.fprintf f "(>= %a %a)" pp a pp b
   | Var x -> Format.fprintf f "%%{%s}" x
   | Atom x -> Format.fprintf f "%s" x
