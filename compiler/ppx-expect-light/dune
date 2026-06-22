@@ -10,6 +10,8 @@
   (flags
    ("inline-test-runner"
     %{library-name}
+    -partition
+    %{partition}
     -source-tree-root
     %{workspace_root}
     -diff-cmd

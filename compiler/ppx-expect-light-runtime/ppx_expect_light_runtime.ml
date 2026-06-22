@@ -23,9 +23,12 @@ type variant =
   }
 
 type test =
-  { filename : string
+  { lib : string
+  ; filename : string
   ; description : string
   ; line_number : int
+  ; start_pos : int
+  ; end_pos : int
   ; tags : string list
   ; expectations : variant array array
   ; body : unit -> unit
@@ -33,8 +36,28 @@ type test =
 
 let tests : test list ref = ref []
 
-let register_test ~filename ~description ~line_number ~tags ~expectations body =
-  tests := { filename; description; line_number; tags; expectations; body } :: !tests
+let register_test
+    ~lib
+    ~filename
+    ~description
+    ~line_number
+    ~start_pos
+    ~end_pos
+    ~tags
+    ~expectations
+    body =
+  tests :=
+    { lib
+    ; filename
+    ; description
+    ; line_number
+    ; start_pos
+    ; end_pos
+    ; tags
+    ; expectations
+    ; body
+    }
+    :: !tests
 
 (* -- Per-test run state --------------------------------------------------- *)
 
@@ -114,7 +137,7 @@ type config =
   ; partition : string option
   ; only_test : (string * int option) list (* filename suffix, optional line *)
   ; matching : string list (* name substrings *)
-  ; libname : string
+  ; libname : string (* run only tests belonging to this library *)
   ; source_tree_root : string
   ; diff_cmd : string option
   ; verbose : bool
@@ -196,6 +219,7 @@ let parse_argv () =
     incr i
   done;
   if !i < n then incr i;
+  (* The positional library-name argument: only tests belonging to it run. *)
   (if !i < n
    then
      let a = argv.(!i) in
@@ -280,15 +304,34 @@ let matching_ok cfg descr =
   | [] -> true
   | subs -> List.exists (fun substring -> is_substring ~substring descr) subs
 
+(* A test's filename ([%expect]'s [pos_fname]) is its partition, so each source
+   file forms one partition that dune can run in its own process. *)
+let partition_selected cfg (test : test) =
+  match cfg.partition with
+  | None -> true
+  | Some p -> String.equal p test.filename
+
+(* A runner links its library's dependencies, so it sees tests from several
+   libraries; only run the ones belonging to the requested library (the
+   positional argument). An empty request runs every library. *)
+let lib_selected cfg (test : test) =
+  String.equal cfg.libname "" || String.equal cfg.libname test.lib
+
 let exit () =
   Printexc.record_backtrace true;
   let cfg = parse_argv () in
-  (* We expose a single partition per library (we do not partition at
-     preprocessing time); name it after the library, or "all". *)
-  let partition_name = if String.equal cfg.libname "" then "all" else cfg.libname in
   let list_partitions oc =
-    output_string oc partition_name;
-    output_char oc '\n'
+    (* Distinct filenames of this library's tests, in source order. *)
+    let seen = Hashtbl.create 16 in
+    List.iter
+      (fun (test : test) ->
+        if lib_selected cfg test && not (Hashtbl.mem seen test.filename)
+        then begin
+          Hashtbl.add seen test.filename ();
+          output_string oc test.filename;
+          output_char oc '\n'
+        end)
+      (List.rev !tests)
   in
   if cfg.list_partitions
   then begin
@@ -303,12 +346,6 @@ let exit () =
       list_partitions oc;
       close_out oc;
       Stdlib.exit 0);
-  (* A [-partition] other than ours selects no tests. *)
-  let partition_active =
-    match cfg.partition with
-    | None -> true
-    | Some p -> String.equal p partition_name
-  in
   (* In [-diff-cmd -] mode (always passed by dune) the runner just writes the
      [.corrected] files and lets dune diff them against the sources and drive
      promotion: an expect mismatch is therefore NOT a runner failure. Run
@@ -323,22 +360,33 @@ let exit () =
   let mismatches = ref 0 in
   let errors = ref 0 in
   let ran = ref 0 in
-  let log_verbose status descr =
-    if cfg.verbose then Printf.eprintf "[%s] %s\n%!" status descr
+  (* [-verbose] line, kept close to ppx_inline_test's:
+     [File "f.ml", line N, characters s-e: name (0.000 sec)]. *)
+  let verbose_descr (test : test) =
+    Printf.sprintf
+      "File %S, line %d, characters %d-%d%s"
+      test.filename
+      test.line_number
+      test.start_pos
+      test.end_pos
+      (if String.equal test.description "" then "" else ": " ^ test.description)
   in
   List.iter
     (fun (test : test) ->
       let descr =
         Printf.sprintf "%s:%d %s" test.filename test.line_number test.description
       in
-      if
-        (not partition_active)
+      if not (lib_selected cfg test)
+      then () (* belongs to another library linked into this runner *)
+      else if
+        (not (partition_selected cfg test))
         || tags_skipped cfg test.tags
         || (not (only_test_match cfg test))
         || not (matching_ok cfg descr)
-      then log_verbose "SKIP" descr
+      then () (* filtered out; like ppx_inline_test, skipped tests are not shown *)
       else begin
         incr ran;
+        if cfg.verbose then print_string (verbose_descr test);
         let cap = Capture.start () in
         let r =
           { cap
@@ -350,42 +398,32 @@ let exit () =
           }
         in
         current := Some r;
+        let t0 = Sys.time () in
         let exn =
           match test.body () with
           | () -> None
           | exception e -> Some (e, Printexc.get_backtrace ())
         in
+        let elapsed = Sys.time () -. t0 in
         current := None;
         Capture.stop cap;
-        let mismatched =
-          match r.corrections with
-          | [] -> false
-          | corrections ->
-              incr mismatches;
-              all_corrections := List.rev_append corrections !all_corrections;
-              if not dune_mode
-              then List.iter (fun s -> output_string stderr s) (List.rev r.reports);
-              true
-        in
-        let errored =
-          match exn with
-          | None -> false
-          | Some (e, bt) ->
-              incr errors;
-              Printf.eprintf
-                "FAILED: %s\n  exception: %s\n%s\n"
-                descr
-                (Printexc.to_string e)
-                bt;
-              true
-        in
-        log_verbose
-          (if errored
-           then "ERROR"
-           else if mismatched
-           then if dune_mode then "DIFF" else "FAIL"
-           else "PASS")
-          descr
+        if cfg.verbose then Printf.printf " (%.3f sec)\n%!" elapsed;
+        (match r.corrections with
+        | [] -> ()
+        | corrections ->
+            incr mismatches;
+            all_corrections := List.rev_append corrections !all_corrections;
+            if not dune_mode
+            then List.iter (fun s -> output_string stderr s) (List.rev r.reports));
+        match exn with
+        | None -> ()
+        | Some (e, bt) ->
+            incr errors;
+            Printf.eprintf
+              "FAILED: %s\n  exception: %s\n%s\n"
+              descr
+              (Printexc.to_string e)
+              bt
       end)
     (List.rev !tests);
   Corrected.write ~root:cfg.source_tree_root !all_corrections;

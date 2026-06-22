@@ -32,13 +32,17 @@ type variant =
   ; payload_end : int (* byte offset just past the literal token *)
   }
 
-(** Register an [let%expect_test]. [expectations] holds one group of [variant]s
-    per assertion point (in source order); [check ~index:k] refers to group
-    [k]. *)
+(** Register an [let%expect_test]. [lib] is the library the test belongs to (so
+    the runner can ignore tests from dependencies linked into it). [expectations]
+    holds one group of [variant]s per assertion point (in source order);
+    [check ~index:k] refers to group [k]. *)
 val register_test :
-     filename:string
+     lib:string
+  -> filename:string
   -> description:string
   -> line_number:int
+  -> start_pos:int
+  -> end_pos:int
   -> tags:string list
   -> expectations:variant array array
   -> (unit -> unit)
