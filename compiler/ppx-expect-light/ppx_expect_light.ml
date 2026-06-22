@@ -243,6 +243,18 @@ let tags_of_attributes (attrs : attribute list) : string list =
       | PStr [ { pstr_desc = Pstr_eval (e, _); _ } ] -> [ one e ]
       | _ -> invalid ~loc "[@tags] expects string literals")
 
+(* dune passes the library name being preprocessed as the [library-name]
+   ppxlib cookie; record it so each test knows which library it belongs to. *)
+let library_name = ref ""
+
+let () =
+  Driver.Cookies.add_simple_handler
+    "library-name"
+    Ast_pattern.(estring __)
+    ~f:(function
+      | Some name -> library_name := name
+      | None -> ())
+
 let expand_test ~loc (vb : value_binding) : structure_item =
   let description, tags =
     match vb.pvb_pat.ppat_desc with
@@ -254,15 +266,22 @@ let expand_test ~loc (vb : value_binding) : structure_item =
   let pos = vb.pvb_loc.loc_start in
   let filename = pos.pos_fname in
   let line_number = pos.pos_lnum in
+  (* Character offsets of the test on its starting line, like ppx_inline_test,
+     so the [-verbose] location reads identically. *)
+  let start_pos = pos.pos_cnum - pos.pos_bol in
+  let end_pos = vb.pvb_loc.loc_end.pos_cnum - pos.pos_bol in
   let body, groups = transform_body vb.pvb_expr in
   let expectations = eexpectations ~loc groups in
   let tags = Ast_builder.Default.elist ~loc (List.map tags ~f:(estring ~loc)) in
   [%stri
     let () =
       Ppx_expect_light_runtime.register_test
+        ~lib:[%e estring ~loc !library_name]
         ~filename:[%e estring ~loc filename]
         ~description:[%e estring ~loc description]
         ~line_number:[%e Ast_builder.Default.eint ~loc line_number]
+        ~start_pos:[%e Ast_builder.Default.eint ~loc start_pos]
+        ~end_pos:[%e Ast_builder.Default.eint ~loc end_pos]
         ~tags:[%e tags]
         ~expectations:[%e expectations]
         (fun () -> [%e body])]
