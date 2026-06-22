@@ -110,11 +110,72 @@ type config =
   { drop : string list
   ; require : string list
   ; list_partitions : bool
+  ; list_partitions_into_file : string option
+  ; partition : string option
+  ; only_test : (string * int option) list (* filename suffix, optional line *)
+  ; matching : string list (* name substrings *)
   ; libname : string
   ; source_tree_root : string
   ; diff_cmd : string option
   ; verbose : bool
   }
+
+(* [s] contains [substring] (used by [-matching]). *)
+let is_substring ~substring s =
+  let m = String.length substring and n = String.length s in
+  if m = 0
+  then true
+  else
+    let rec loop i =
+      if i + m > n
+      then false
+      else if String.equal (String.sub s i m) substring
+      then true
+      else loop (i + 1)
+    in
+    loop 0
+
+(* Parse a [-only-test] location: [file.ml], [file.ml:line], or the
+   [File "file.ml", line N, ...] form printed by the compiler. *)
+let parse_only_spec (s : string) : string * int option =
+  let digits_at str start =
+    let n = String.length str in
+    let j = ref start in
+    while !j < n && str.[!j] >= '0' && str.[!j] <= '9' do
+      incr j
+    done;
+    if !j > start then int_of_string_opt (String.sub str start (!j - start)) else None
+  in
+  let prefix = "File \"" in
+  let plen = String.length prefix in
+  if String.length s >= plen && String.equal (String.sub s 0 plen) prefix
+  then
+    let rest = String.sub s plen (String.length s - plen) in
+    match String.index_opt rest '"' with
+    | None -> s, None
+    | Some q ->
+        let file = String.sub rest 0 q in
+        let after = String.sub rest q (String.length rest - q) in
+        let line =
+          let m = "line " in
+          let n = String.length after and ml = String.length m in
+          let rec loop i =
+            if i + ml > n
+            then None
+            else if String.equal (String.sub after i ml) m
+            then digits_at after (i + ml)
+            else loop (i + 1)
+          in
+          loop 0
+        in
+        file, line
+  else
+    match String.index_opt s ':' with
+    | None -> s, None
+    | Some k ->
+        let file = String.sub s 0 k in
+        let after = String.sub s (k + 1) (String.length s - k - 1) in
+        file, digits_at after 0
 
 let parse_argv () =
   let argv = Sys.argv in
@@ -123,6 +184,10 @@ let parse_argv () =
   let drop = ref [] in
   let require = ref [] in
   let list_partitions = ref false in
+  let list_partitions_into_file = ref None in
+  let partition = ref None in
+  let only_test = ref [] in
+  let matching = ref [] in
   let source_tree_root = ref "." in
   let diff_cmd = ref None in
   let verbose = ref false in
@@ -154,8 +219,18 @@ let parse_argv () =
     | "-diff-cmd" ->
         incr i;
         if !i < n then diff_cmd := Some argv.(!i)
-    | "-partition" | "-list-partitions-into-file" | "-matching" | "-only-test" ->
-        incr i (* skip the flag's value *)
+    | "-list-partitions-into-file" ->
+        incr i;
+        if !i < n then list_partitions_into_file := Some argv.(!i)
+    | "-partition" ->
+        incr i;
+        if !i < n then partition := Some argv.(!i)
+    | "-matching" ->
+        incr i;
+        if !i < n then matching := argv.(!i) :: !matching
+    | "-only-test" ->
+        incr i;
+        if !i < n then only_test := parse_only_spec argv.(!i) :: !only_test
     | arg ->
         (* Fail on an unrecognised argument rather than skipping it: an unknown
            flag may carry behaviour we are silently dropping. *)
@@ -166,25 +241,74 @@ let parse_argv () =
   { drop = !drop
   ; require = !require
   ; list_partitions = !list_partitions
+  ; list_partitions_into_file = !list_partitions_into_file
+  ; partition = !partition
+  ; only_test = !only_test
+  ; matching = !matching
   ; libname = !libname
   ; source_tree_root = !source_tree_root
   ; diff_cmd = !diff_cmd
   ; verbose = !verbose
   }
 
-let test_skipped cfg tags =
+let tags_skipped cfg tags =
   List.exists (fun t -> Axes.tag_dropped t || List.mem t cfg.drop) tags
   || List.exists (fun req -> not (List.mem req tags)) cfg.require
+
+(* [-only-test] location match, mirroring ppx_inline_test: the test's filename
+   must end with the requested suffix on a path boundary, and the line (if
+   given) must match. *)
+let only_test_match cfg (test : test) =
+  match cfg.only_test with
+  | [] -> true
+  | specs ->
+      List.exists
+        (fun (file, line_opt) ->
+          let dn = test.filename in
+          let ps = String.length dn - String.length file in
+          ps >= 0
+          && String.equal (String.sub dn ps (String.length file)) file
+          && (ps = 0 || Char.equal dn.[ps - 1] '/')
+          &&
+          match line_opt with
+          | None -> true
+          | Some line -> line = test.line_number)
+        specs
+
+let matching_ok cfg descr =
+  match cfg.matching with
+  | [] -> true
+  | subs -> List.exists (fun substring -> is_substring ~substring descr) subs
 
 let exit () =
   Printexc.record_backtrace true;
   let cfg = parse_argv () in
+  (* We expose a single partition per library (we do not partition at
+     preprocessing time); name it after the library, or "all". *)
+  let partition_name = if String.equal cfg.libname "" then "all" else cfg.libname in
+  let list_partitions oc =
+    output_string oc partition_name;
+    output_char oc '\n'
+  in
   if cfg.list_partitions
   then begin
-    print_string (if String.equal cfg.libname "" then "all" else cfg.libname);
-    print_newline ();
+    list_partitions stdout;
+    flush stdout;
     Stdlib.exit 0
   end;
+  (match cfg.list_partitions_into_file with
+  | None -> ()
+  | Some file ->
+      let oc = open_out file in
+      list_partitions oc;
+      close_out oc;
+      Stdlib.exit 0);
+  (* A [-partition] other than ours selects no tests. *)
+  let partition_active =
+    match cfg.partition with
+    | None -> true
+    | Some p -> String.equal p partition_name
+  in
   (* In [-diff-cmd -] mode (always passed by dune) the runner just writes the
      [.corrected] files and lets dune diff them against the sources and drive
      promotion: an expect mismatch is therefore NOT a runner failure. Run
@@ -207,7 +331,11 @@ let exit () =
       let descr =
         Printf.sprintf "%s:%d %s" test.filename test.line_number test.description
       in
-      if test_skipped cfg test.tags
+      if
+        (not partition_active)
+        || tags_skipped cfg test.tags
+        || (not (only_test_match cfg test))
+        || not (matching_ok cfg descr)
       then log_verbose "SKIP" descr
       else begin
         incr ran;
