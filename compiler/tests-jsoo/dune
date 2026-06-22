@@ -239,19 +239,18 @@
  (preprocess
   (pps ppx_expect_light)))
 
-(test
- (name test_runtime_value)
+(library
+ (name jsoo_test_runtime_value)
  (modules test_runtime_value)
  (libraries js_of_ocaml)
- (enabled_if
-  (and
-   (<> %{profile} wasi)
-   (<> %{profile} wasi-with-native-effects)))
  (js_of_ocaml
   (javascript_files custom.js))
  (wasm_of_ocaml
   (javascript_files custom.js custom.wat))
- (modes js wasm))
+ (inline_tests
+  (modes js wasm))
+ (preprocess
+  (pps ppx_expect_light)))
 
 ; Uses [Sys_js.set_channel_filler], a js_of_ocaml runtime feature absent
 ; under the WASI runtime; exercised on both the JavaScript and wasm runtimes.
