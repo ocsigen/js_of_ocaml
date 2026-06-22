@@ -1,6 +1,7 @@
 let on_windows = Sys.os_type = "Win32"
 
-let%expect_test "Unix.chmod / Unix.fchmod / Unix.access" =
+let%expect_test
+    ("Unix.chmod / Unix.fchmod / Unix.access" [@when (not wasi) && not quickjs]) =
   let tmp = Filename.temp_file "a" "txt" in
   let test ?(ok_on_windows = false) flags =
     try

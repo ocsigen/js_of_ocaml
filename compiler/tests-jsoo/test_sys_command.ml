@@ -3,7 +3,7 @@
    WASI (no process execution), so this test is excluded from the WASI
    profiles in the dune file. *)
 
-let%expect_test "Sys.command exit code" =
+let%expect_test ("Sys.command exit code" [@when not wasi]) =
   Printf.printf "%d\n" (Sys.command "exit 42");
   Printf.printf "%d\n" (Sys.command "exit 0");
   [%expect {|
