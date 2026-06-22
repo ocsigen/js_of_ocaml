@@ -17,7 +17,10 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-open Js_of_ocaml
+open! Js_of_ocaml
+
+(* The tests use [In_channel.input_all], which is OCaml >= 5 only. *)
+[@@@if ocaml_version >= (5, 0, 0)]
 
 let content =
   let t = Random.State.make [| 1; 2; 3; 4; 5 |] in

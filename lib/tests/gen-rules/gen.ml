@@ -49,16 +49,11 @@ let prefix : string =
 
 type lang =
   | NEQ of lang * lang
-  | GE of lang * lang
   | Var of string
   | Atom of string
   | And of lang list
 
-let ocaml_version = Var "ocaml_version"
-
 let profile = Var "profile"
-
-let ge v = GE (ocaml_version, Atom v)
 
 let neq_profile v = NEQ (profile, Atom v)
 
@@ -75,7 +70,10 @@ let and_ = function
   | l -> And l
 
 let lib_enabled_if = function
-  | "test_sys" -> [ ge "5" ]
+  (* [test_sys] needs OCaml >= 5 ([In_channel.input_all]); that gate now lives
+     in the source as a floating [@@@if ocaml_version >= (5, 0, 0)]. It is not
+     wasi-gated (unlike the [_] default below). *)
+  | "test_sys" -> []
   | "test_fun_call" -> [ not_with_effects ]
   (* [test_localtime] mutates process.env.TZ, which is Node-specific. *)
   | "test_localtime" -> not_quickjs :: not_wasi
@@ -92,7 +90,6 @@ let run_wasm = function
 
 let rec pp f = function
   | NEQ (a, b) -> Format.fprintf f "(<> %a %a)" pp a pp b
-  | GE (a, b) -> Format.fprintf f "(>= %a %a)" pp a pp b
   | Var x -> Format.fprintf f "%%{%s}" x
   | Atom x -> Format.fprintf f "%s" x
   | And [] -> assert false
@@ -128,7 +125,7 @@ let () =
  (libraries js_of_ocaml unix)
  (inline_tests (modes %s))
  (preprocess
-  (pps ppx_js_internal ppx_expect_light)))
+  (pps ppx_js_internal ppx_optcomp_light ppx_expect_light)))
 |}
         prefix
         basename
