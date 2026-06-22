@@ -331,7 +331,9 @@ and reify_cmp loc op a b =
       in
       rel_to_int loc op cmp [%expr 0]
   | K_string ->
-      let cmp = [%expr String.compare [%e reify_string a] [%e reify_string b]] in
+      (* Fully qualify: the test module may [open] something that shadows
+         [String] (e.g. js_of_ocaml's [Typed_array]). *)
+      let cmp = [%expr Stdlib.String.compare [%e reify_string a] [%e reify_string b]] in
       rel_to_int loc op cmp [%expr 0]
   | K_int -> rel_to_int loc op (reify_int a) (reify_int b)
   | K_unknown -> raise (Invalid loc)
