@@ -6,7 +6,7 @@
 
 type Runtime_events.User.tag += My_tag
 
-let () =
+let%expect_test "Runtime_events.User registration" =
   let ev = Runtime_events.User.register "myev" My_tag Runtime_events.Type.span in
   assert (Runtime_events.User.name ev = "myev");
   match Runtime_events.User.tag ev with
