@@ -243,6 +243,31 @@ let tags_of_attributes (attrs : attribute list) : string list =
       | PStr [ { pstr_desc = Pstr_eval (e, _); _ } ] -> [ one e ]
       | _ -> invalid ~loc "[@tags] expects string literals")
 
+(* [@when COND] on the test description gates whether the test runs at all,
+   using the same predicate grammar as [%expect ... [@when]] (a runtime check,
+   so it can mention backend/engine which [@@if] cannot). *)
+let when_of_attributes (attrs : attribute list) : expression option =
+  match
+    List.find_opt attrs ~f:(fun (a : attribute) -> String.equal a.attr_name.txt "when")
+  with
+  | None -> None
+  | Some attr ->
+      Attribute.mark_as_handled_manually attr;
+      let loc = attr.attr_loc in
+      let cond =
+        match attr.attr_payload with
+        | PStr [ { pstr_desc = Pstr_eval (e, _); _ } ] -> e
+        | _ -> invalid ~loc "[@when] expects a single predicate expression"
+      in
+      let t =
+        try Predicate.parse cond
+        with Predicate.Invalid loc -> invalid ~loc "invalid [@when] predicate"
+      in
+      Some
+        (try Predicate.reify ~loc:cond.pexp_loc t
+         with Predicate.Invalid loc ->
+           invalid ~loc "[@when] predicate is not meaningful at runtime")
+
 (* dune passes the library name being preprocessed as the [library-name]
    ppxlib cookie; record it so each test knows which library it belongs to. *)
 let library_name = ref ""
@@ -273,6 +298,11 @@ let expand_test ~loc (vb : value_binding) : structure_item =
   let body, groups = transform_body vb.pvb_expr in
   let expectations = eexpectations ~loc groups in
   let tags = Ast_builder.Default.elist ~loc (List.map tags ~f:(estring ~loc)) in
+  let condition =
+    match when_of_attributes vb.pvb_pat.ppat_attributes with
+    | Some c -> [%expr fun () -> [%e c]]
+    | None -> [%expr fun () -> true]
+  in
   [%stri
     let () =
       Ppx_expect_light_runtime.register_test
@@ -283,6 +313,7 @@ let expand_test ~loc (vb : value_binding) : structure_item =
         ~start_pos:[%e Ast_builder.Default.eint ~loc start_pos]
         ~end_pos:[%e Ast_builder.Default.eint ~loc end_pos]
         ~tags:[%e tags]
+        ~condition:[%e condition]
         ~expectations:[%e expectations]
         (fun () -> [%e body])]
 

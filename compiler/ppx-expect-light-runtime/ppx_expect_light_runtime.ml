@@ -30,6 +30,7 @@ type test =
   ; start_pos : int
   ; end_pos : int
   ; tags : string list
+  ; condition : unit -> bool (* reified [@when] on the test; gates running *)
   ; expectations : variant array array
   ; body : unit -> unit
   }
@@ -44,6 +45,7 @@ let register_test
     ~start_pos
     ~end_pos
     ~tags
+    ~condition
     ~expectations
     body =
   tests :=
@@ -54,6 +56,7 @@ let register_test
     ; start_pos
     ; end_pos
     ; tags
+    ; condition
     ; expectations
     ; body
     }
@@ -388,10 +391,11 @@ let exit () =
         || (not (only_test_match cfg test))
         || not (matching_ok cfg descr)
       then () (* not part of this run (other library/partition, or not requested) *)
-      else if tags_skipped cfg test.tags
+      else if tags_skipped cfg test.tags || not (test.condition ())
       then (
         if
-          (* Unlike ppx_inline_test, surface tag-skipped tests in verbose mode. *)
+          (* Skipped by [@tags] or a false [@when]. Unlike ppx_inline_test,
+             surface these in verbose mode. *)
           cfg.verbose
         then Printf.printf "%s (skipped)\n%!" (verbose_descr test))
       else begin
