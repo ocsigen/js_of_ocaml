@@ -44,6 +44,7 @@ val register_test :
   -> start_pos:int
   -> end_pos:int
   -> tags:string list
+  -> condition:(unit -> bool)
   -> expectations:variant array array
   -> (unit -> unit)
   -> unit
