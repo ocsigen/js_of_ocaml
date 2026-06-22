@@ -95,13 +95,13 @@ jobs:
         run: sudo apt-get update
 
       - name: Checkout tree
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           path: wasm_of_ocaml
 
       - name: Checkout Jane Street opam repository
         if: ${{ matrix.jane_street_tests && ! endsWith(matrix.ocaml-compiler, '+ox') }}
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: janestreet/opam-repository
           ref: 2819773f29b6f6c14b918eae3cb40c8ff6b22d0e
@@ -109,7 +109,7 @@ jobs:
 
       - name: Checkout OxCaml opam repository
         if: ${{ matrix.jane_street_tests && endsWith(matrix.ocaml-compiler, '+ox') }}
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: oxcaml/opam-repository
           ref: ${{ env.OXCAML_OPAM_REPO_REF }}

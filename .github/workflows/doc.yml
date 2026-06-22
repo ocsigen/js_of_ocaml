@@ -40,7 +40,7 @@ jobs:
       contents: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up OCaml
         uses: ocaml/setup-ocaml@v3
@@ -99,12 +99,12 @@ jobs:
       contents: write
     steps:
       - name: Check out this branch (wodoc config + manual)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           path: docsrc
 
       - name: Check out the release sources (the tag)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.event.inputs.version }}
           path: relsrc
@@ -136,7 +136,7 @@ jobs:
           --out "$PWD/_relbuild" --label "$VERSION"
 
       - name: Checkout gh-pages
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: gh-pages
           path: site

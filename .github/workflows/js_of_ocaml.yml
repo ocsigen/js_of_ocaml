@@ -118,7 +118,7 @@ jobs:
         run: sudo apt-get update
 
       - name: Checkout tree
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
         # EJGA: Note that I tried to fix this upstream as depext is
         # getting much better, but no luck yet, c.f:
