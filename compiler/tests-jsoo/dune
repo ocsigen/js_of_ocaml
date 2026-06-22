@@ -57,16 +57,6 @@
   (pps ppx_expect_light)))
 
 (library
- (name jsoo_testsuite_float32_js)
- (modules test_marshal_float32_js)
- (libraries unix compiler-libs.common js_of_ocaml-compiler)
- (enabled_if %{oxcaml_supported})
- (inline_tests
-  (modes js))
- (preprocess
-  (pps ppx_expect_light)))
-
-(library
  (name jsoo_testsuite_ugeint)
  (modules test_ugeint)
  (libraries unix compiler-libs.common js_of_ocaml-compiler)
@@ -94,7 +84,7 @@
  (libraries unix compiler-libs.common js_of_ocaml-compiler)
  (enabled_if %{oxcaml_supported})
  (inline_tests
-  (modes wasm best))
+  (modes js wasm))
  (preprocess
   (pps ppx_expect_light)))
 
@@ -129,7 +119,6 @@
    test_bigarray
    test_list_of_js_array
    test_marshal_float32
-   test_marshal_float32_js
    test_md5_large
    test_ugeint
    ugeint_bytecode_probe
