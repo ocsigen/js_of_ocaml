@@ -113,6 +113,7 @@ type config =
   ; libname : string
   ; source_tree_root : string
   ; diff_cmd : string option
+  ; verbose : bool
   }
 
 let parse_argv () =
@@ -124,6 +125,7 @@ let parse_argv () =
   let list_partitions = ref false in
   let source_tree_root = ref "." in
   let diff_cmd = ref None in
+  let verbose = ref false in
   let i = ref 1 in
   while !i < n && not (String.equal argv.(!i) "inline-test-runner") do
     incr i
@@ -145,6 +147,7 @@ let parse_argv () =
         incr i;
         if !i < n then require := argv.(!i) :: !require
     | "-list-partitions" -> list_partitions := true
+    | "-verbose" -> verbose := true
     | "-source-tree-root" ->
         incr i;
         if !i < n then source_tree_root := argv.(!i)
@@ -153,7 +156,11 @@ let parse_argv () =
         if !i < n then diff_cmd := Some argv.(!i)
     | "-partition" | "-list-partitions-into-file" | "-matching" | "-only-test" ->
         incr i (* skip the flag's value *)
-    | _ -> () (* ignore unknown flags *));
+    | arg ->
+        (* Fail on an unrecognised argument rather than skipping it: an unknown
+           flag may carry behaviour we are silently dropping. *)
+        Printf.eprintf "ppx_expect_light: unknown argument %S\n%!" arg;
+        Stdlib.exit 1);
     incr i
   done;
   { drop = !drop
@@ -162,6 +169,7 @@ let parse_argv () =
   ; libname = !libname
   ; source_tree_root = !source_tree_root
   ; diff_cmd = !diff_cmd
+  ; verbose = !verbose
   }
 
 let test_skipped cfg tags =
@@ -191,16 +199,19 @@ let exit () =
   let mismatches = ref 0 in
   let errors = ref 0 in
   let ran = ref 0 in
+  let log_verbose status descr =
+    if cfg.verbose then Printf.eprintf "[%s] %s\n%!" status descr
+  in
   List.iter
-    (fun test ->
+    (fun (test : test) ->
+      let descr =
+        Printf.sprintf "%s:%d %s" test.filename test.line_number test.description
+      in
       if test_skipped cfg test.tags
-      then ()
+      then log_verbose "SKIP" descr
       else begin
         incr ran;
         let cap = Capture.start () in
-        let descr =
-          Printf.sprintf "%s:%d %s" test.filename test.line_number test.description
-        in
         let r =
           { cap
           ; expectations = test.expectations
@@ -218,22 +229,35 @@ let exit () =
         in
         current := None;
         Capture.stop cap;
-        (match r.corrections with
-        | [] -> ()
-        | corrections ->
-            incr mismatches;
-            all_corrections := List.rev_append corrections !all_corrections;
-            if not dune_mode
-            then List.iter (fun s -> output_string stderr s) (List.rev r.reports));
-        match exn with
-        | None -> ()
-        | Some (e, bt) ->
-            incr errors;
-            Printf.eprintf
-              "FAILED: %s\n  exception: %s\n%s\n"
-              descr
-              (Printexc.to_string e)
-              bt
+        let mismatched =
+          match r.corrections with
+          | [] -> false
+          | corrections ->
+              incr mismatches;
+              all_corrections := List.rev_append corrections !all_corrections;
+              if not dune_mode
+              then List.iter (fun s -> output_string stderr s) (List.rev r.reports);
+              true
+        in
+        let errored =
+          match exn with
+          | None -> false
+          | Some (e, bt) ->
+              incr errors;
+              Printf.eprintf
+                "FAILED: %s\n  exception: %s\n%s\n"
+                descr
+                (Printexc.to_string e)
+                bt;
+              true
+        in
+        log_verbose
+          (if errored
+           then "ERROR"
+           else if mismatched
+           then if dune_mode then "DIFF" else "FAIL"
+           else "PASS")
+          descr
       end)
     (List.rev !tests);
   Corrected.write ~root:cfg.source_tree_root !all_corrections;
