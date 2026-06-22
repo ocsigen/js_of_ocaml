@@ -3,7 +3,8 @@
    consistent (the offset has to advance). *)
 open Js_of_ocaml
 
-let%expect_test "a refill hook may return more than the channel buffer holds" =
+let%expect_test
+    ("a refill hook may return more than the channel buffer holds" [@when not wasi]) =
   let f = Filename.temp_file "fill" ".txt" in
   (let oc = open_out f in
    close_out oc);

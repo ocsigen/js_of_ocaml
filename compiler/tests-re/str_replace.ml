@@ -11,7 +11,7 @@ let show ~repl ~re s =
   | r -> Printf.printf "%S\n" r
   | exception Failure msg -> Printf.printf "Failure: %s\n" msg
 
-let%expect_test "backreference past the last group" =
+let%expect_test ("backreference past the last group" [@when not wasi]) =
   show ~repl:"\\1" ~re:"a" "banana";
   [%expect {| Failure: Str.replace: reference to unmatched group |}];
   show ~repl:"\\2" ~re:{|\(a\)|} "banana";
@@ -19,11 +19,11 @@ let%expect_test "backreference past the last group" =
   show ~repl:"\\9" ~re:"abc" "abc";
   [%expect {| Failure: Str.replace: reference to unmatched group |}]
 
-let%expect_test "backreference to an unmatched group" =
+let%expect_test ("backreference to an unmatched group" [@when not wasi]) =
   show ~repl:"\\1" ~re:{|\(a\)\|\(b\)|} "b";
   [%expect {| Failure: Str.replace: reference to unmatched group |}]
 
-let%expect_test "valid backreferences" =
+let%expect_test ("valid backreferences" [@when not wasi]) =
   show ~repl:{|[\1]|} ~re:{|\(a\)|} "banana";
   [%expect {| "b[a]n[a]n[a]" |}];
   show ~repl:"\\0!" ~re:"a" "banana";

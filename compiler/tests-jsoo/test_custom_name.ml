@@ -1,4 +1,4 @@
-let%expect_test _ =
+let%expect_test (_ [@when not wasi]) =
   print_endline (Jsoo_runtime.Js.custom_identifier (Obj.repr 1L));
   [%expect {| _j |}];
 
