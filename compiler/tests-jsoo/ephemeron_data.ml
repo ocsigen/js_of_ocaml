@@ -15,7 +15,7 @@
 module E = Obj.Ephemeron
 module Js = Js_of_ocaml.Js
 
-let () =
+let%expect_test ("Obj.Ephemeron data" [@when not wasi]) =
   (* blit_data from an empty source must clear the destination. *)
   let dst = E.create 1 in
   E.set_data dst (Obj.repr 42);

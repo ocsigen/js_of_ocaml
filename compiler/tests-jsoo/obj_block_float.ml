@@ -7,7 +7,7 @@
    float-array primitive on the result trapped instead of working as in
    the native and JS runtimes. *)
 
-let () =
+let%expect_test "Obj double_array_tag block" =
   (* [Obj.new_block double_array_tag n] takes [n] as a word count on the
      native and bytecode backends (a float spans [64 / Sys.word_size] words,
      i.e. 2 on 32-bit), but as an element count on the js and wasm backends.
