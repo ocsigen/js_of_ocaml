@@ -30,7 +30,6 @@ let prefix : string =
   loop [ "" ] (Sys.getcwd ()) |> String.concat ~sep:"/"
 
 type lang =
-  | Not of lang
   | GE of lang * lang
   | Var of string
   | Atom of string
@@ -40,11 +39,7 @@ let ocaml_version = Var "ocaml_version"
 
 let arch_sixtyfour = Var "arch_sixtyfour"
 
-let oxcaml = Var "oxcaml_supported"
-
 let ge v = GE (ocaml_version, Atom v)
-
-let not x = Not x
 
 let and_ = function
   | [] -> assert false
@@ -62,21 +57,11 @@ let lib_enabled_if = function
 
 let test_enabled_if = function
   | "gh1051" -> [ arch_sixtyfour ]
-  | "gh1354"
-  | "gh1868"
-  | "exceptions"
-  | "effects_continuations"
-  | "effects_exceptions"
-  | "eliminate_exception_handler"
-  | "loops"
-  | "global_deadcode" -> [ not oxcaml ] (* In OxCaml, raise is always reraise *)
-  | "effects" ->
-      [ not oxcaml ] (* Call to Printf.printf is somehow compiled differently *)
-  | "gh747" -> [ not oxcaml ] (* More debug locations *)
+  (* OxCaml output differences (raise/reraise, Printf, debug locations) are
+     gated in-source with a floating [@@@if not oxcaml]. *)
   | _ -> []
 
 let rec pp f = function
-  | Not x -> Format.fprintf f "(not %a)" pp x
   | GE (a, b) -> Format.fprintf f "(>= %a %a)" pp a pp b
   | Var x -> Format.fprintf f "%%{%s}" x
   | Atom x -> Format.fprintf f "%s" x

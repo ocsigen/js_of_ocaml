@@ -18,7 +18,6 @@
  (modules effects_continuations)
  (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
  (inline_tests
-  (enabled_if (not %{oxcaml_supported}))
   (deps
    (file %{project_root}/compiler/bin-js_of_ocaml/js_of_ocaml.exe)
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
@@ -32,7 +31,6 @@
  (modules effects_exceptions)
  (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
  (inline_tests
-  (enabled_if (not %{oxcaml_supported}))
   (deps
    (file %{project_root}/compiler/bin-js_of_ocaml/js_of_ocaml.exe)
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
