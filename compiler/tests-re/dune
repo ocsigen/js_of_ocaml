@@ -13,12 +13,6 @@
  (name tests_re_replace)
  (modules str_replace)
  (libraries str)
- ;; ppx_expect_light reads the source tree to produce diffs, which the WASI
- ;; filesystem sandbox forbids ("Capabilities insufficient").
- (enabled_if
-  (and
-   (<> %{profile} wasi)
-   (<> %{profile} wasi-with-native-effects)))
  (inline_tests
   (modes js wasm best))
  (preprocess

@@ -266,10 +266,6 @@
  (name jsoo_testsuite_channel_refill)
  (modules channel_refill)
  (libraries js_of_ocaml)
- (enabled_if
-  (and
-   (<> %{profile} wasi)
-   (<> %{profile} wasi-with-native-effects)))
  (inline_tests
   (deps
    (sandbox preserve_file_kind))
@@ -295,10 +291,6 @@
 (library
  (name hash_jsstring)
  (modules hash_jsstring)
- (enabled_if
-  (and
-   (<> %{profile} wasi)
-   (<> %{profile} wasi-with-native-effects)))
  (inline_tests
   (modes js wasm))
  (libraries js_of_ocaml)
@@ -310,10 +302,6 @@
 (library
  (name bigstring_kind)
  (modules bigstring_kind)
- (enabled_if
-  (and
-   (<> %{profile} wasi)
-   (<> %{profile} wasi-with-native-effects)))
  (inline_tests
   (modes js wasm))
  (libraries js_of_ocaml)
@@ -421,10 +409,6 @@
 (library
  (name test_custom_name)
  (modules test_custom_name)
- (enabled_if
-  (and
-   (<> %{profile} wasi)
-   (<> %{profile} wasi-with-native-effects)))
  (inline_tests
   (modes js wasm))
  (libraries js_of_ocaml)
@@ -449,10 +433,6 @@
 (library
  (name test_list_of_js_array)
  (modules test_list_of_js_array)
- (enabled_if
-  (and
-   (<> %{profile} wasi)
-   (<> %{profile} wasi-with-native-effects)))
  (inline_tests
   (modes js wasm))
  (libraries js_of_ocaml)

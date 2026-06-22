@@ -50,7 +50,7 @@ let test t v =
   then ()
   else print_endline "Not equal"
 
-let%expect_test _ =
+let%expect_test (_ [@when not wasi]) =
   test json ([ 1; 2; 3 ], Some 1., str);
   [%expect {||}]
 
@@ -59,7 +59,7 @@ type intseq =
   | S of int * intseq
 [@@deriving json]
 
-let%expect_test _ =
+let%expect_test (_ [@when not wasi]) =
   test intseq_json (S (1, S (2, S (3, Z))));
   [%expect {||}]
 
@@ -70,13 +70,13 @@ type 'a seq =
 
 type w = int seq [@@deriving json]
 
-let%expect_test _ =
+let%expect_test (_ [@when not wasi]) =
   test w_json (SS (1, SS (2, SS (3, ZZ))));
   [%expect {||}]
 
 type i64 = int64 [@@deriving json]
 
-let%expect_test _ =
+let%expect_test (_ [@when not wasi]) =
   test i64_json 100000000000000000L;
   [%expect {||}]
 
@@ -94,7 +94,7 @@ let test_float v =
   in
   if ok then () else print_endline "Not equal"
 
-let%expect_test _ =
+let%expect_test (_ [@when not wasi]) =
   test_float 3.14;
   test_float 0.;
   test_float (-0.);
