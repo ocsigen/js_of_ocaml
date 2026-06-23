@@ -134,9 +134,11 @@ let op_name (e : expression) =
   | Pexp_ident { txt = Lident s; _ } when known_op s -> s
   | _ -> raise (Invalid e.pexp_loc)
 
-(* [Ppxlib.Parsetree] is pinned to a fixed AST version (independent of the host
-   compiler), so matching the parsetree directly is safe and simpler than going
-   through [Ast_pattern]. *)
+(* [Ppxlib.Parsetree] is pinned to a fixed AST version, so matching it directly
+   is simple — except for [Pexp_tuple]: OxCaml's ppxlib gives its payload
+   per-element labels ([(string option * expression) list]), which this single
+   source can't pattern-match portably. [Ast_pattern.pexp_tuple] exposes the
+   unlabeled [expression list] on both, so tuples are routed through it. *)
 let rec parse (e : expression) : t =
   let loc = e.pexp_loc in
   match e.pexp_desc with
@@ -145,7 +147,6 @@ let rec parse (e : expression) : t =
   | Pexp_construct ({ txt = Lident "false"; _ }, None) -> Bool (loc, false)
   | Pexp_constant (Pconst_integer (d, None)) -> Int (loc, int_of_string d)
   | Pexp_constant (Pconst_string (s, _, _)) -> String (loc, s)
-  | Pexp_tuple l -> Tuple (loc, List.map l ~f:parse)
   | Pexp_apply (op, args) ->
       let op = op_name op in
       let args =
@@ -154,7 +155,10 @@ let rec parse (e : expression) : t =
           | (Labelled _ | Optional _), _ -> raise (Invalid loc))
       in
       App (loc, op, args)
-  | _ -> raise (Invalid loc)
+  | _ -> (
+      match Ast_pattern.parse_res Ast_pattern.(pexp_tuple __) loc e (fun l -> l) with
+      | Ok l -> Tuple (loc, List.map l ~f:parse)
+      | Error _ -> raise (Invalid loc))
 
 (* -- Compile-time evaluation ----------------------------------------------- *)
 
