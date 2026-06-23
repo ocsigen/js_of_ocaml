@@ -1,7 +1,7 @@
 let%expect_test "Unix.error_message" =
   Printf.printf "%s\n" (String.lowercase_ascii (Unix.error_message ENOENT));
   (* QuickJS reports the errno name rather than a descriptive message. *)
-  [%expect ({| enoent |} [@when quickjs])];
+  [%expect ({| enoent |} [@when quickjs && not native])];
   [%expect {| no such file or directory |}]
 
 let%expect_test "Unix.times" =
@@ -71,7 +71,7 @@ let%expect_test "Unix.read" =
      Printf.printf "%s\n" (String.lowercase_ascii (Unix.error_message err)));
   [%expect ({|
     write failed
-    ebadf |} [@when quickjs])];
+    ebadf |} [@when quickjs && not native])];
   [%expect {|
     write failed
     bad file descriptor
