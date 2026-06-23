@@ -238,9 +238,15 @@ let tags_of_attributes (attrs : attribute list) : string list =
         | _ -> invalid ~loc "[@tags] expects string literals"
       in
       match attr.attr_payload with
-      | PStr [ { pstr_desc = Pstr_eval ({ pexp_desc = Pexp_tuple l; _ }, _); _ } ] ->
-          List.map l ~f:one
-      | PStr [ { pstr_desc = Pstr_eval (e, _); _ } ] -> [ one e ]
+      | PStr [ { pstr_desc = Pstr_eval (e, _); _ } ] -> (
+          (* A tuple [@tags "a", "b"] is read via [Ast_pattern.pexp_tuple]:
+             OxCaml's ppxlib changes the raw [Pexp_tuple] payload, but the
+             pattern exposes a portable [expression list]. *)
+          match
+            Ast_pattern.parse_res Ast_pattern.(pexp_tuple __) e.pexp_loc e (fun l -> l)
+          with
+          | Ok l -> List.map l ~f:one
+          | Error _ -> [ one e ])
       | _ -> invalid ~loc "[@tags] expects string literals")
 
 (* [@when COND] on the test description gates whether the test runs at all,
