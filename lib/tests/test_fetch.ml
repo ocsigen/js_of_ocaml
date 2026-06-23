@@ -21,13 +21,16 @@ let is_promise any =
 
 let get_or_none o = Js.Opt.case o (fun () -> "<none>") Js.to_string
 
-let%expect_test "is_supported" =
+(* The fetch API (including the support probe) is not available under QuickJS,
+   so the whole suite is gated with [@when not quickjs]. *)
+
+let%expect_test ("is_supported" [@when not quickjs]) =
   print_endline (if Fetch.is_supported () then "PASSED" else "FAILED");
   [%expect {| PASSED |}]
 
 (* {1 Headers} *)
 
-let%expect_test "headers constructor (no arg) starts empty" =
+let%expect_test ("headers constructor (no arg) starts empty" [@when not quickjs]) =
   let h = new%js Fetch.headers in
   print_endline (string_of_bool (Js.to_bool (h##has (Js.string "x"))));
   h##append (Js.string "x") (Js.string "1");
@@ -37,7 +40,7 @@ let%expect_test "headers constructor (no arg) starts empty" =
     1
     |}]
 
-let%expect_test "headers_of_list round-trips pairs" =
+let%expect_test ("headers_of_list round-trips pairs" [@when not quickjs]) =
   let h = Fetch.headers_of_list [ "content-type", "text/plain"; "x-trace", "abc" ] in
   print_endline (get_or_none (h##get (Js.string "content-type")));
   print_endline (get_or_none (h##get (Js.string "x-trace")));
@@ -48,7 +51,7 @@ let%expect_test "headers_of_list round-trips pairs" =
     false
     |}]
 
-let%expect_test "headers append/set/delete and forEach" =
+let%expect_test ("headers append/set/delete and forEach" [@when not quickjs]) =
   let h = Fetch.headers_of_list [ "x-a", "1" ] in
   h##set (Js.string "x-a") (Js.string "2");
   print_endline (get_or_none (h##get (Js.string "x-a")));
@@ -69,7 +72,7 @@ let%expect_test "headers append/set/delete and forEach" =
 
 (* {1 Request} *)
 
-let%expect_test "request constructor (no init) defaults to GET" =
+let%expect_test ("request constructor (no init) defaults to GET" [@when not quickjs]) =
   let req = new%js Fetch.request (Js.string "https://example.invalid/x") in
   print_endline (Js.to_string req##.url);
   print_endline (Js.to_string req##._method);
@@ -78,7 +81,7 @@ let%expect_test "request constructor (no init) defaults to GET" =
     GET
     |}]
 
-let%expect_test "requestInit fields round-trip through Request" =
+let%expect_test ("requestInit fields round-trip through Request" [@when not quickjs]) =
   let init = Fetch.empty_request_init () in
   init##._method := Js.string "POST";
   init##.body := Js.Unsafe.inject (Js.string "hello");
@@ -118,7 +121,7 @@ let%expect_test "requestInit fields round-trip through Request" =
     false
     |}]
 
-let%expect_test "request other readonly fields are accessible" =
+let%expect_test ("request other readonly fields are accessible" [@when not quickjs]) =
   let req = new%js Fetch.request (Js.string "https://example.invalid/x") in
   (* [destination] is the empty string for a Request not driven by a
      resource fetch (e.g. a non-script-initiated subresource). *)
@@ -137,7 +140,7 @@ let%expect_test "request other readonly fields are accessible" =
     signal is AbortSignal: true
     |}]
 
-let%expect_test "request.clone returns a distinct Request" =
+let%expect_test ("request.clone returns a distinct Request" [@when not quickjs]) =
   let req = new%js Fetch.request (Js.string "https://example.invalid/x") in
   let cloned = req##clone in
   print_endline (Js.to_string cloned##.url);
@@ -149,7 +152,7 @@ let%expect_test "request.clone returns a distinct Request" =
 
 (* {1 Response} *)
 
-let%expect_test "response constructor exposes defaults" =
+let%expect_test ("response constructor exposes defaults" [@when not quickjs]) =
   let resp = new%js Fetch.response (Js.Unsafe.inject (Js.string "hello")) in
   print_endline ("status=" ^ string_of_int resp##.status);
   print_endline ("ok=" ^ string_of_bool (Js.to_bool resp##.ok));
@@ -169,7 +172,8 @@ let%expect_test "response constructor exposes defaults" =
     bodyUsed=false
     |}]
 
-let%expect_test "response_with_init applies status/statusText/headers" =
+let%expect_test
+    ("response_with_init applies status/statusText/headers" [@when not quickjs]) =
   let init = Fetch.empty_response_init () in
   init##.status := 201;
   init##.statusText := Js.string "Created";
@@ -187,7 +191,7 @@ let%expect_test "response_with_init applies status/statusText/headers" =
     x-from-init=v
     |}]
 
-let%expect_test "response status outside 2xx flips ok" =
+let%expect_test ("response status outside 2xx flips ok" [@when not quickjs]) =
   let init = Fetch.empty_response_init () in
   init##.status := 404;
   let resp = new%js Fetch.response_with_init (Js.Unsafe.inject (Js.string "")) init in
@@ -198,7 +202,7 @@ let%expect_test "response status outside 2xx flips ok" =
     false
     |}]
 
-let%expect_test "response.clone returns a distinct Response" =
+let%expect_test ("response.clone returns a distinct Response" [@when not quickjs]) =
   let resp = new%js Fetch.response (Js.Unsafe.inject (Js.string "hi")) in
   let cloned = resp##clone in
   print_endline (string_of_int cloned##.status);
@@ -210,7 +214,7 @@ let%expect_test "response.clone returns a distinct Response" =
 
 (* {1 Body methods (sync shape — async behavior covered in tests-browser)} *)
 
-let%expect_test "all body methods return Promise instances" =
+let%expect_test ("all body methods return Promise instances" [@when not quickjs]) =
   let resp = new%js Fetch.response (Js.Unsafe.inject (Js.string "hello")) in
   print_endline (string_of_bool (is_promise (Promise.to_any resp##text)));
   let resp = new%js Fetch.response (Js.Unsafe.inject (Js.string "hello")) in
@@ -229,7 +233,7 @@ let%expect_test "all body methods return Promise instances" =
 (* [formData] is not universally implemented on synthetic Responses, so
    we only assert that the binding exists and returns *something* (which
    will be a [Promise] in all conforming environments). *)
-let%expect_test "body.formData is callable" =
+let%expect_test ("body.formData is callable" [@when not quickjs]) =
   let resp = new%js Fetch.response (Js.Unsafe.inject (Js.string "")) in
   let p = Promise.to_any resp##formData in
   print_endline (string_of_bool (is_promise p));

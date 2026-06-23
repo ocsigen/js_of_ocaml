@@ -42,7 +42,7 @@
 (library
  ;; lib/tests/test_fetch.ml
  (name test_fetch_75)
- (enabled_if (and (<> %{profile} quickjs) (<> %{profile} wasi) (<> %{profile} wasi-with-native-effects)))
+ (enabled_if (and (<> %{profile} wasi) (<> %{profile} wasi-with-native-effects)))
  (modules test_fetch)
  (libraries js_of_ocaml unix)
  (inline_tests (modes js wasm))
@@ -81,7 +81,7 @@
 (library
  ;; lib/tests/test_localtime.ml
  (name test_localtime_75)
- (enabled_if (and (<> %{profile} quickjs) (<> %{profile} wasi) (<> %{profile} wasi-with-native-effects)))
+ (enabled_if (and (<> %{profile} wasi) (<> %{profile} wasi-with-native-effects)))
  (modules test_localtime)
  (libraries js_of_ocaml unix)
  (inline_tests (modes js))

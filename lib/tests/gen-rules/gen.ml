@@ -57,8 +57,6 @@ let profile = Var "profile"
 
 let neq_profile v = NEQ (profile, Atom v)
 
-let not_quickjs = neq_profile "quickjs"
-
 (* These tests rely on features not yet available when targeting WASI. *)
 let not_wasi = [ neq_profile "wasi"; neq_profile "wasi-with-native-effects" ]
 
@@ -76,9 +74,8 @@ let lib_enabled_if = function
      [--effects cps]; they carry a per-test [@when effects <> "cps"] in the
      source. The library is not wasi-gated. *)
   | "test_fun_call" -> []
-  (* [test_localtime] mutates process.env.TZ, which is Node-specific. *)
-  | "test_localtime" -> not_quickjs :: not_wasi
-  | "test_fetch" -> not_quickjs :: not_wasi
+  (* [test_localtime] (process.env.TZ) and [test_fetch] (the fetch API) gate the
+     quickjs engine in-source with a per-test [@when not quickjs]. *)
   | _ -> not_wasi
 
 (* Some tests cannot run under wasm yet. *)
