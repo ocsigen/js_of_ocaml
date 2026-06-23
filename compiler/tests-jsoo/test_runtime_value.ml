@@ -1,6 +1,6 @@
 open Js_of_ocaml
 
-let%expect_test ("Jsoo_runtime.Js.runtime_value" [@when not wasi]) =
+let%expect_test "Jsoo_runtime.Js.runtime_value" =
   let p : Js.js_string Js.t = Jsoo_runtime.Js.runtime_value "process" in
   let o : _ Js.t = Jsoo_runtime.Js.runtime_value "obj" in
   let del = Jsoo_runtime.Js.runtime_value "caml_js_delete" in

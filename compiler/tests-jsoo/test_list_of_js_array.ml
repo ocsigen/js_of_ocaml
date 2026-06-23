@@ -1,4 +1,4 @@
-let%expect_test ("caml_list_of_js_array" [@when not wasi]) =
+let%expect_test "caml_list_of_js_array" =
   (* Round-trip: OCaml list -> JS array -> OCaml list.
      Tests that caml_list_of_js_array preserves element order. *)
   let original = [ 1; 2; 3; 4; 5 ] in

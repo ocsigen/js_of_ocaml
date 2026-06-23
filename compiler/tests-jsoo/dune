@@ -241,6 +241,8 @@
 
 (library
  (name jsoo_test_runtime_value)
+ (enabled_if
+  (<> %{env:JSOO_TEST_ENGINE=node} wasi))
  (modules test_runtime_value)
  (libraries js_of_ocaml)
  (js_of_ocaml
@@ -257,6 +259,8 @@
 
 (library
  (name jsoo_testsuite_channel_refill)
+ (enabled_if
+  (<> %{env:JSOO_TEST_ENGINE=node} wasi))
  (modules channel_refill)
  (libraries js_of_ocaml)
  (inline_tests
@@ -271,6 +275,8 @@
 
 (library
  (name jsoo_test_ephemeron_data)
+ (enabled_if
+  (<> %{env:JSOO_TEST_ENGINE=node} wasi))
  (modules ephemeron_data)
  (libraries js_of_ocaml)
  (inline_tests
@@ -282,6 +288,8 @@
 
 (library
  (name hash_jsstring)
+ (enabled_if
+  (<> %{env:JSOO_TEST_ENGINE=node} wasi))
  (modules hash_jsstring)
  (inline_tests
   (modes js wasm))
@@ -293,6 +301,8 @@
 
 (library
  (name bigstring_kind)
+ (enabled_if
+  (<> %{env:JSOO_TEST_ENGINE=node} wasi))
  (modules bigstring_kind)
  (inline_tests
   (modes js wasm))
@@ -304,6 +314,8 @@
 
 (library
  (name jsoo_test_wrap_exception)
+ (enabled_if
+  (<> %{env:JSOO_TEST_ENGINE=node} wasi))
  (modules wrap_exception)
  (libraries js_of_ocaml)
  (inline_tests
@@ -316,6 +328,8 @@
 
 (library
  (name jsoo_test_meth_call_utf8)
+ (enabled_if
+  (<> %{env:JSOO_TEST_ENGINE=node} wasi))
  (modules meth_call_utf8)
  (libraries js_of_ocaml)
  (inline_tests
@@ -400,6 +414,8 @@
 
 (library
  (name test_custom_name)
+ (enabled_if
+  (<> %{env:JSOO_TEST_ENGINE=node} wasi))
  (modules test_custom_name)
  (inline_tests
   (modes js wasm))
@@ -422,6 +438,8 @@
 
 (library
  (name test_list_of_js_array)
+ (enabled_if
+  (<> %{env:JSOO_TEST_ENGINE=node} wasi))
  (modules test_list_of_js_array)
  (inline_tests
   (modes js wasm))

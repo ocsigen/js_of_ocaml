@@ -11,7 +11,7 @@ let classify f =
   | exception Failure m -> "Failure " ^ m
   | exception e -> "other: " ^ Printexc.to_string e
 
-let%expect_test ("caml_wrap_exception" [@when not wasi]) =
+let%expect_test "caml_wrap_exception" =
   assert (
     classify (fun () -> ignore (Js.Unsafe.eval_string "(function(){throw 'boom'})()"))
     = "Failure boom");
