@@ -408,13 +408,11 @@
   (pps ppx_expect_light)))
 
 ; The TextEncoder/TextDecoder fallbacks in [runtime/js/mlBytes.js] are
-; cross-checked against the host Web Encoding API. That only works on
-; hosts that provide TextEncoder/TextDecoder, so skip under quickjs.
+; cross-checked against the host Web Encoding API; the tests are gated in the
+; source with [@when not quickjs] (QuickJS provides no host TextEncoder).
 
 (library
  (name test_text_codec_fallback)
- (enabled_if
-  (<> %{profile} quickjs))
  (modules test_text_codec_fallback)
  (inline_tests
   (modes js))

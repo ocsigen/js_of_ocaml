@@ -20,9 +20,12 @@ let enc_fallback : encoder Js.t =
 let dec_fallback : decoder Js.t =
   Jsoo_runtime.Js.runtime_value "jsoo_text_decoder_fallback"
 
-let enc_host : encoder Js.t = Js.Unsafe.eval_string "new TextEncoder()"
+(* Lazy so that merely loading this module does not require a host
+   TextEncoder/TextDecoder: under engines that lack them (e.g. QuickJS) the
+   tests below are skipped via [@when not quickjs] and never force these. *)
+let enc_host : encoder Js.t Lazy.t = lazy (Js.Unsafe.eval_string "new TextEncoder()")
 
-let dec_host : decoder Js.t = Js.Unsafe.eval_string "new TextDecoder()"
+let dec_host : decoder Js.t Lazy.t = lazy (Js.Unsafe.eval_string "new TextDecoder()")
 
 let hex_of_bytes (a : Typed_array.uint8Array Js.t) =
   String.concat
@@ -60,7 +63,7 @@ let jsstring_of_codes codes : Js.js_string Js.t =
 
 let check_encode label (s : Js.js_string Js.t) =
   let fb = enc_fallback##encode s in
-  let host = enc_host##encode s in
+  let host = (Lazy.force enc_host)##encode s in
   Printf.printf "%s -> [%s]" label (hex_of_bytes fb);
   if not (bytes_eq fb host) then Printf.printf "  ! host: [%s]" (hex_of_bytes host);
   print_newline ()
@@ -68,13 +71,13 @@ let check_encode label (s : Js.js_string Js.t) =
 let check_decode label bytes =
   let arr = uint8_of_list bytes in
   let fb = dec_fallback##decode arr in
-  let host = dec_host##decode arr in
+  let host = (Lazy.force dec_host)##decode arr in
   Printf.printf "%s [%s] -> [%s]" label (hex_of_list bytes) (codepoints_of_jsstring fb);
   if Js.to_string fb <> Js.to_string host
   then Printf.printf "  ! host: [%s]" (codepoints_of_jsstring host);
   print_newline ()
 
-let%expect_test "encoder: well-formed UTF-16 input" =
+let%expect_test ("encoder: well-formed UTF-16 input" [@when not quickjs]) =
   check_encode {|""|} (Js.string "");
   check_encode {|"Hello, world!"|} (Js.string "Hello, world!");
   (* boundaries of each UTF-8 byte-length range *)
@@ -97,7 +100,7 @@ let%expect_test "encoder: well-formed UTF-16 input" =
     "a中🎉b" -> [61 e4 b8 ad f0 9f 8e 89 62]
     |}]
 
-let%expect_test "encoder: lone surrogates become U+FFFD" =
+let%expect_test ("encoder: lone surrogates become U+FFFD" [@when not quickjs]) =
   (* WHATWG: any UTF-16 code unit that isn't part of a valid surrogate
      pair is replaced by the UTF-8 encoding of U+FFFD (ef bf bd). *)
   check_encode {|high alone|} (jsstring_of_codes [ 0xd83c ]);
@@ -114,7 +117,7 @@ let%expect_test "encoder: lone surrogates become U+FFFD" =
     high + non-surrogate BMP -> [ef bf bd c3 a9]
     |}]
 
-let%expect_test "decoder: well-formed UTF-8 input" =
+let%expect_test ("decoder: well-formed UTF-8 input" [@when not quickjs]) =
   check_decode {|empty|} [];
   check_decode {|ASCII "Hi"|} [ 0x48; 0x69 ];
   check_decode {|U+00E9 "é"|} [ 0xc3; 0xa9 ];
@@ -146,7 +149,7 @@ let%expect_test "decoder: well-formed UTF-8 input" =
     U+10FFFF (largest 4-byte) [f4 8f bf bf] -> [U+DBFF U+DFFF]
     |}]
 
-let%expect_test "decoder: invalid leads emit single U+FFFD" =
+let%expect_test ("decoder: invalid leads emit single U+FFFD" [@when not quickjs]) =
   check_decode {|stray 0x80|} [ 0x80 ];
   check_decode {|stray 0xbf|} [ 0xbf ];
   check_decode {|overlong 0xc0 0x80|} [ 0xc0; 0x80 ];
@@ -171,7 +174,8 @@ let%expect_test "decoder: invalid leads emit single U+FFFD" =
     2-byte lead + new lead [c2 c0] -> [U+FFFD U+FFFD]
     |}]
 
-let%expect_test "decoder: truncated sequences (maximal-subpart rule)" =
+let%expect_test
+    ("decoder: truncated sequences (maximal-subpart rule)" [@when not quickjs]) =
   (* A single U+FFFD is emitted that consumes the longest prefix that
      could have started a valid sequence. *)
   check_decode {|truncated 2-byte|} [ 0xc2 ];
@@ -190,7 +194,8 @@ let%expect_test "decoder: truncated sequences (maximal-subpart rule)" =
     truncated 4-byte (3/4) [f0 9f 8e] -> [U+FFFD]
     |}]
 
-let%expect_test "decoder: non-shortest forms and UTF-8-encoded surrogates" =
+let%expect_test
+    ("decoder: non-shortest forms and UTF-8-encoded surrogates" [@when not quickjs]) =
   check_decode {|non-shortest 3-byte for U+07FF|} [ 0xe0; 0x9f; 0xbf ];
   check_decode {|non-shortest 4-byte for U+FFFF|} [ 0xf0; 0x8f; 0xbf; 0xbf ];
   check_decode {|surrogate U+D800 in UTF-8|} [ 0xed; 0xa0; 0x80 ];
@@ -203,7 +208,7 @@ let%expect_test "decoder: non-shortest forms and UTF-8-encoded surrogates" =
     surrogate U+DFFF in UTF-8 [ed bf bf] -> [U+FFFD U+FFFD U+FFFD]
     |}]
 
-let%expect_test "decoder: lead with bad continuation, mixed runs" =
+let%expect_test ("decoder: lead with bad continuation, mixed runs" [@when not quickjs]) =
   check_decode {|2-byte lead + ASCII|} [ 0xc2; 0x41 ];
   check_decode {|3-byte lead + ASCII|} [ 0xe4; 0x41 ];
   check_decode {|mixed valid/invalid|} [ 0x48; 0xff; 0x69 ];
