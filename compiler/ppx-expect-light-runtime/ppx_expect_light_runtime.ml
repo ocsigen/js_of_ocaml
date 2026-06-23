@@ -307,12 +307,17 @@ let matching_ok cfg descr =
   | [] -> true
   | subs -> List.exists (fun substring -> is_substring ~substring descr) subs
 
-(* A test's filename ([%expect]'s [pos_fname]) is its partition, so each source
-   file forms one partition that dune can run in its own process. *)
+(* Each source file forms one partition that dune can run in its own process.
+   The partition is the file's basename rather than its full [pos_fname]: a
+   library's modules all live in one directory, so basenames are unique within
+   it (and dune always passes the library name too, so identical basenames in
+   sibling libraries are still told apart by [lib_selected]). *)
+let partition_of (test : test) = Filename.basename test.filename
+
 let partition_selected cfg (test : test) =
   match cfg.partition with
   | None -> true
-  | Some p -> String.equal p test.filename
+  | Some p -> String.equal p (partition_of test)
 
 (* A runner links its library's dependencies, so it sees tests from several
    libraries; only run the ones belonging to the requested library (the
@@ -324,14 +329,16 @@ let exit () =
   Printexc.record_backtrace true;
   let cfg = parse_argv () in
   let list_partitions oc =
-    (* Distinct filenames of this library's tests, in source order. *)
+    (* Distinct partitions (file basenames) of this library's tests, in source
+       order. *)
     let seen = Hashtbl.create 16 in
     List.iter
       (fun (test : test) ->
-        if lib_selected cfg test && not (Hashtbl.mem seen test.filename)
+        let partition = partition_of test in
+        if lib_selected cfg test && not (Hashtbl.mem seen partition)
         then begin
-          Hashtbl.add seen test.filename ();
-          output_string oc test.filename;
+          Hashtbl.add seen partition ();
+          output_string oc partition;
           output_char oc '\n'
         end)
       (List.rev !tests)
