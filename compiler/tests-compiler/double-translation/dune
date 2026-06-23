@@ -1,14 +1,14 @@
-(include dune.inc)
+; Like the parent directory, all modules share one library and each source file
+; is its own inline-test partition. New *.ml files are picked up automatically.
 
-(rule
- (deps
-  (glob_files *.ml))
- (action
-  (with-stdout-to
-   dune.inc.gen
-   (run ../gen-rules/gen.exe jsoo_compiler_test))))
-
-(rule
- (alias runtest)
- (action
-  (diff dune.inc dune.inc.gen)))
+(library
+ (name jsoo_compiler_test_double_translation)
+ (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
+ (inline_tests
+  (deps
+   (file %{project_root}/compiler/bin-js_of_ocaml/js_of_ocaml.exe)
+   (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
+ (flags
+  (:standard -open Jsoo_compiler_expect_tests_helper))
+ (preprocess
+  (pps ppx_optcomp_light ppx_expect_light)))
