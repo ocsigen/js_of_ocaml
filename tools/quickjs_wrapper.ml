@@ -7,11 +7,11 @@
    runtime can fall back to them when Node's `process` is not present.
    `--stack-size` raises QuickJS's default 256 KiB engine stack to a
    value comparable to Node, which trips up tests that recurse deeply.
-   `--no-unhandled-rejection` matches Node's default: a promise rejection
-   that is handled asynchronously (the usual `reject ... |> catch` shape) is
-   not fatal. Without it QuickJS reports the rejection and exits non-zero
-   before the catch microtask even runs. *)
-let extra_args = [ "--std"; "--no-unhandled-rejection"; "--stack-size"; "32000000" ]
+
+   (QuickJS-NG >= 0.10 no longer treats an asynchronously-handled promise
+   rejection as a fatal error, so the test_promise / test_lwt_promise chains
+   pass without any extra flag.) *)
+let extra_args = [ "--std"; "--stack-size"; "32000000" ]
 
 let quickjs_bin = try Sys.getenv "JSOO_QUICKJS_BIN" with Not_found -> "qjs"
 
