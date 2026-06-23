@@ -18,8 +18,15 @@
 val backend : string
 (** ["js"] / ["wasm"] / ["native"] (from [Sys.backend_type]). *)
 
-val engine : string
-(** ["quickjs"] when [JSOO_TEST_ENGINE=quickjs], ["node"] otherwise. *)
+val target_engine : string
+(** The engine a generated program runs under: ["quickjs"] when
+    [JSOO_TEST_ENGINE=quickjs], ["node"] otherwise. Use this for a native test
+    that runs a program under another engine (e.g. tests-compiler). *)
+
+val host_engine : string
+(** The engine the current test process itself runs on: ["native"] for a native
+    process, otherwise [target_engine] (the js/wasm process is hosted by it).
+    The [node]/[quickjs]/[wasi] predicate shorthands resolve to this. *)
 
 val os_type : string
 (** [Sys.os_type]. *)
