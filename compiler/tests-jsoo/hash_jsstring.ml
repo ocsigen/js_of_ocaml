@@ -23,8 +23,7 @@ let check s =
     if js <> ocaml then Printf.printf "  MISMATCH vs OCaml string: %d\n" ocaml
   end
 
-let%expect_test
-    ("JS string hashing matches the JS runtime (ASCII and UTF-8)" [@when not wasi]) =
+let%expect_test "JS string hashing matches the JS runtime (ASCII and UTF-8)" =
   List.iter
     check
     [ (* ASCII *)

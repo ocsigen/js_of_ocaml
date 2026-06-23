@@ -5,7 +5,7 @@
 open Js_of_ocaml
 open Typed_array
 
-let%expect_test ("Bigstring.of_arrayBuffer produces a char bigarray" [@when not wasi]) =
+let%expect_test "Bigstring.of_arrayBuffer produces a char bigarray" =
   let a = Bigarray.Array1.create Bigarray.char Bigarray.c_layout 3 in
   a.{0} <- 'a';
   a.{1} <- 'b';

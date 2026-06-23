@@ -5,7 +5,7 @@
 
 open Js_of_ocaml
 
-let%expect_test ("caml_js_meth_call UTF-8 names" [@when not wasi]) =
+let%expect_test "caml_js_meth_call UTF-8 names" =
   (* "café" — the é (U+00E9) is two bytes in UTF-8. *)
   let name = "café" in
   let o = Js.Unsafe.obj [||] in
