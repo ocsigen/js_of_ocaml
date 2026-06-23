@@ -47,7 +47,7 @@ let test_no_run js_prog =
   in
   print_file (Filetype.path_of_js_file js_min_file)
 
-let%expect_test "let inside forloop" =
+let%expect_test ("let inside forloop" [@when target_engine <> "quickjs"]) =
   test
     {|
 (function () {
@@ -74,7 +74,7 @@ let%expect_test "let inside forloop" =
     1
     2 |}]
 
-let%expect_test "let inside forin" =
+let%expect_test ("let inside forin" [@when target_engine <> "quickjs"]) =
   test
     {|
 (function () {
@@ -106,7 +106,7 @@ let%expect_test "let inside forin" =
     6
     2 |}]
 
-let%expect_test "let inside forof" =
+let%expect_test ("let inside forof" [@when target_engine <> "quickjs"]) =
   test
     {|
 (function () {
@@ -137,7 +137,8 @@ let%expect_test "let inside forof" =
     6
     2 |}]
 
-let%expect_test "forof iterable: loop binding is in TDZ" =
+let%expect_test
+    ("forof iterable: loop binding is in TDZ" [@when target_engine <> "quickjs"]) =
   (* The loop binding is in the temporal dead zone when the iterable
      expression is evaluated. The minifier should resolve `items` in
      the iterable to the loop variable, not the outer one. *)
@@ -172,7 +173,8 @@ let%expect_test "forof iterable: loop binding is in TDZ" =
       7:   ());
     |}]
 
-let%expect_test "forin iterable: loop binding is in TDZ" =
+let%expect_test
+    ("forin iterable: loop binding is in TDZ" [@when target_engine <> "quickjs"]) =
   (* Same as above for for-in. *)
   test_no_run
     {|
@@ -205,7 +207,7 @@ let%expect_test "forin iterable: loop binding is in TDZ" =
       7:   ());
     |}]
 
-let%expect_test "let inside forawaitof" =
+let%expect_test ("let inside forawaitof" [@when target_engine <> "quickjs"]) =
   test
     {|
 async function f () {
@@ -230,7 +232,7 @@ async function f () {
       6:  console.log(v1);
       7: } |}]
 
-let%expect_test "let inside switch" =
+let%expect_test ("let inside switch" [@when target_engine <> "quickjs"]) =
   test
     {|
 (function () {
@@ -258,7 +260,8 @@ let%expect_test "let inside switch" =
     3
     2 |}]
 
-let%expect_test "let and var inside class static block" =
+let%expect_test
+    ("let and var inside class static block" [@when target_engine <> "quickjs"]) =
   test
     {|
 (function () {
@@ -295,7 +298,7 @@ let%expect_test "let and var inside class static block" =
     0 2 3
     |}]
 
-let%expect_test "named class expression" =
+let%expect_test ("named class expression" [@when target_engine <> "quickjs"]) =
   test
     {|
 (function () {
@@ -338,7 +341,7 @@ let%expect_test "named class expression" =
     0 3 0
     |}]
 
-let%expect_test "let inside block" =
+let%expect_test ("let inside block" [@when target_engine <> "quickjs"]) =
   test
     {|
 (function () {
@@ -364,7 +367,7 @@ let%expect_test "let inside block" =
     4 2
     |}]
 
-let%expect_test "functions have local scope" =
+let%expect_test ("functions have local scope" [@when target_engine <> "quickjs"]) =
   test {|
 function f (p) {
   return e
@@ -379,7 +382,7 @@ function f (p) {
         $ cat "test.min.js"
           1: function f(v1){return e; if(v1){function v2(){} v2();}} |}]
 
-let%expect_test "import" =
+let%expect_test ("import" [@when target_engine <> "quickjs"]) =
   let test ?(module_ = false) js_prog =
     let name = if module_ then "test.mjs" else "test.js" in
     let js_file = js_prog |> Filetype.js_text_of_string |> Filetype.write_js ~name in
@@ -500,7 +503,7 @@ import "./module-name.mjs";
     $ cat "test.min.js"
       1: import "./module-name.mjs"; |}]
 
-let%expect_test "export" =
+let%expect_test ("export" [@when target_engine <> "quickjs"]) =
   let test ?(module_ = false) js_prog =
     try
       let name = if module_ then "test.mjs" else "test.js" in

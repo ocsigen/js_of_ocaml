@@ -70,8 +70,7 @@
   (>= %{ocaml_version} 5))
  (enabled_if
   (and
-   (<> %{profile} wasi)
-   (<> %{profile} wasi-with-native-effects)
+   (<> %{env:JSOO_TEST_ENGINE=node} wasi)
    (<> %{profile} quickjs)))
  (modules test_finalise)
  (libraries js_of_ocaml)
