@@ -29,6 +29,11 @@ let t_corner =
 
 let print_t t = Format.sprintf "%ld" (Int31.to_int32 t)
 
+(* The captured output is compared against a string built with [Format]'s [@.]
+   (a bare ["\n"]); on Windows the native runtime writes ["\r\n"], so strip the
+   [\r] before comparing. *)
+let drop_cr s = String.concat ~sep:"" (String.split_on_char ~sep:'\r' s)
+
 let%expect_test _ =
   Test.check_exn
   @@ Test.make
@@ -66,7 +71,7 @@ let%expect_test _ =
   let i = Gen.(generate1 (no_shrink out_of_range_i32)) in
   let i_trunc = Int32.(shift_right (shift_left i 1) 1) in
   ignore (Int31.of_int32_warning_on_overflow i);
-  let output = [%expect.output] in
+  let output = drop_cr [%expect.output] in
   let expected =
     Format.sprintf
       "Warning [integer-overflow]: int32 0x%lx (%ld) truncated to 0x%lx (%ld); the \
@@ -84,7 +89,7 @@ let%expect_test _ =
   let i = Gen.(generate1 (no_shrink out_of_range_int)) in
   let i_trunc = Int32.(shift_right (shift_left (of_int i) 1) 1) in
   ignore (Int31.of_int_warning_on_overflow i);
-  let output = [%expect.output] in
+  let output = drop_cr [%expect.output] in
   let expected =
     Format.sprintf
       "Warning [integer-overflow]: integer 0x%x (%d) truncated to 0x%lx (%ld); the \
@@ -102,7 +107,7 @@ let%expect_test _ =
   let i = Gen.(generate1 (no_shrink (Nativeint.of_int <$> out_of_range_int))) in
   let i_trunc = Int32.(shift_right (shift_left (Nativeint.to_int32 i) 1) 1) in
   ignore (Int31.of_nativeint_warning_on_overflow i);
-  let output = [%expect.output] in
+  let output = drop_cr [%expect.output] in
   let expected =
     Format.sprintf
       "Warning [integer-overflow]: native integer 0x%nx (%nd) truncated to 0x%lx (%ld); \
