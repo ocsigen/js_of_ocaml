@@ -360,9 +360,7 @@
  (name toplevel_sections)
  (modules toplevel_sections)
  (enabled_if
-  (and
-   (<> %{profile} wasi)
-   (<> %{profile} wasi-with-native-effects)))
+  (<> %{env:JSOO_TEST_ENGINE=node} wasi))
  (modes js wasm)
  (js_of_ocaml
   (compilation_mode whole_program)
@@ -379,8 +377,7 @@
  (modules test_weak_gc)
  (enabled_if
   (and
-   (<> %{profile} wasi)
-   (<> %{profile} wasi-with-native-effects)
+   (<> %{env:JSOO_TEST_ENGINE=node} wasi)
    (<> %{profile} quickjs)))
  (libraries js_of_ocaml)
  (modes js)
@@ -391,9 +388,7 @@
  (name test_promise)
  (modules test_promise)
  (enabled_if
-  (and
-   (<> %{profile} wasi)
-   (<> %{profile} wasi-with-native-effects)))
+  (<> %{env:JSOO_TEST_ENGINE=node} wasi))
  (libraries js_of_ocaml)
  (modes js wasm)
  (preprocess
@@ -404,9 +399,7 @@
  (package js_of_ocaml-lwt)
  (modules test_lwt_promise)
  (enabled_if
-  (and
-   (<> %{profile} wasi)
-   (<> %{profile} wasi-with-native-effects)))
+  (<> %{env:JSOO_TEST_ENGINE=node} wasi))
  (libraries js_of_ocaml js_of_ocaml-lwt lwt)
  (modes js wasm)
  (preprocess

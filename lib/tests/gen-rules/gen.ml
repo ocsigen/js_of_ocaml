@@ -48,17 +48,17 @@ let prefix : string =
   loop [ "" ] (Sys.getcwd ()) |> String.concat ~sep:"/"
 
 type lang =
-  | NEQ of lang * lang
-  | Var of string
-  | Atom of string
+  | Neq_env of
+      { var : string
+      ; default : string
+      ; value : string
+      }
   | And of lang list
 
-let profile = Var "profile"
-
-let neq_profile v = NEQ (profile, Atom v)
-
-(* These tests rely on features not yet available when targeting WASI. *)
-let not_wasi = [ neq_profile "wasi"; neq_profile "wasi-with-native-effects" ]
+(* These tests rely on features not yet available when targeting WASI. Both the
+   [wasi] and [wasi-with-native-effects] profiles set [JSOO_TEST_ENGINE=wasi],
+   so testing the env var avoids enumerating the profiles by name. *)
+let not_wasi = [ Neq_env { var = "JSOO_TEST_ENGINE"; default = "node"; value = "wasi" } ]
 
 let and_ = function
   | [] -> assert false
@@ -87,9 +87,8 @@ let run_wasm = function
   | _ -> true
 
 let rec pp f = function
-  | NEQ (a, b) -> Format.fprintf f "(<> %a %a)" pp a pp b
-  | Var x -> Format.fprintf f "%%{%s}" x
-  | Atom x -> Format.fprintf f "%s" x
+  | Neq_env { var; default; value } ->
+      Format.fprintf f "(<> %%{env:%s=%s} %s)" var default value
   | And [] -> assert false
   | And l ->
       Format.fprintf

@@ -13,8 +13,7 @@
   (>= %{ocaml_version} 5.1))
  (enabled_if
   (and
-   (<> %{profile} wasi)
-   (<> %{profile} wasi-with-native-effects)
+   (<> %{env:JSOO_TEST_ENGINE=node} wasi)
    (not %{env:CI=false})))
  ; WASI has no notion of tty
  ; isatty_tty does not work on the CI since we are not running in a tty there
