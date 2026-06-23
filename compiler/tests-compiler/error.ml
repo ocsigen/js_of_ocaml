@@ -27,7 +27,7 @@ let normalize x =
 let compile_and_run_no_alert =
   compile_and_run ~ocaml_flags:[ "-alert"; "-unsafe_multidomain" ]
 
-let%expect_test ("uncaugh error" [@when not quickjs]) =
+let%expect_test ("uncaugh error" [@when target_engine <> "quickjs"]) =
   let prog = {| let _ = raise Not_found |} in
   compile_and_run prog;
   print_endline (normalize [%expect.output]);

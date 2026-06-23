@@ -286,7 +286,7 @@ f (); Sys.chdir "/static"; f () |};
     Failure("caml_unix_lstat: not implemented")
     |}]
 
-let%expect_test ("Unix.opendir" [@when not quickjs]) =
+let%expect_test ("Unix.opendir" [@when target_engine <> "quickjs"]) =
   compile_and_run
     ~unix:true
     {|
@@ -385,7 +385,7 @@ let () = f (); Sys.chdir "/static"; f () |};
     Unix.Unix_error(Unix.EBADF, "readdir", "<PATH>")
     |}]
 
-let%expect_test ("Unix.opendir - empty path" [@when not quickjs]) =
+let%expect_test ("Unix.opendir - empty path" [@when target_engine <> "quickjs"]) =
   compile_and_run
     ~unix:true
     {|

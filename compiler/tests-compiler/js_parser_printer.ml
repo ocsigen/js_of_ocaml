@@ -539,8 +539,9 @@ let%expect_test "in operator in arrow concise body" =
 
 (* The tests below feed invalid JS through [node --check]; QuickJS's parser
    reports different (or no) errors, so they are gated to non-quickjs engines. *)
-let%expect_test ("in operator in arrow concise body - parsing error" [@when not quickjs])
-    =
+let%expect_test
+    ("in operator in arrow concise body - parsing error"
+     [@when target_engine <> "quickjs"]) =
   (* Per ECMAScript spec, 'in' is disallowed in arrow concise body within for-loop initializer *)
   print
     ~report:true
@@ -552,7 +553,8 @@ let%expect_test ("in operator in arrow concise body - parsing error" [@when not 
   (* This should be a parsing error per spec - 'in' in concise body inherits [~In] context *)
   [%expect {| cannot parse js (from l:2, c:24)@. |}]
 
-let%expect_test ("in operator in nested arrow concise body" [@when not quickjs]) =
+let%expect_test
+    ("in operator in nested arrow concise body" [@when target_engine <> "quickjs"]) =
   (* Nested arrows also propagate [~In] context through concise bodies *)
   print
     ~report:true
@@ -803,7 +805,7 @@ const as = () => () => ts(void 0, void 0, void 0, function* () {})
   [%expect {|
     const as = ()=>()=>ts(void 0, void 0, void 0, function*(){}); |}]
 
-let%expect_test ("error reporting" [@when not quickjs]) =
+let%expect_test ("error reporting" [@when target_engine <> "quickjs"]) =
   (try
      print ~invalid:true ~compact:false {|
     var x = 2;
@@ -947,7 +949,7 @@ let%expect_test "tokens" =
      9: 4:var, 8:s, 10:=, 12:tag, 15:`, 16:asd , 20:${, 23:test, 28:}, 29: te, 32:`, 0:;,
     11: 4:var, 8:s, 10:=, 12:`, 13:asd , 17:${, 20:f, 21:(, 22:`, 23:space , 29:${, 31:test, 35:}, 36: space, 42:`, 43:,, 45:32, 47:), 49:}, 50: te, 53:`, 0:;, |}]
 
-let%expect_test ("invalid ident" [@when not quickjs]) =
+let%expect_test ("invalid ident" [@when target_engine <> "quickjs"]) =
   parse_print_token
     ~invalid:true
     {|
@@ -976,7 +978,7 @@ let%expect_test "string" =
     4: 4:var, 8:a, 10:=, 12:"munpi\207\128\207\128\207\128qtex", 26:;,
     5: 4:var, 8:a, 10:=, 12:"munpi\207\128\207\128\207\128qtex", 26:;, |}]
 
-let%expect_test ("multiline string" [@when not quickjs]) =
+let%expect_test ("multiline string" [@when target_engine <> "quickjs"]) =
   let clean s = Str.global_replace (Str.regexp "\r\n") "\n" s in
   parse_print_token ~invalid:true (clean {|
     42;

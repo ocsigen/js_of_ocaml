@@ -19,10 +19,22 @@ let backend =
   | Other "wasm_of_ocaml" -> "wasm"
   | Other s -> s
 
-let engine =
+(* The engine a generated program is run under, from the dune profile. This is
+   the right axis for a native test that compiles and runs a program under
+   another engine (e.g. tests-compiler invoking quickjs). *)
+let target_engine =
   match Sys.getenv_opt "JSOO_TEST_ENGINE" with
   | Some e when not (String.equal e "") -> e
   | _ -> "node"
+
+(* The engine the current test process itself runs on. A native test process
+   does not run under a JS/wasm engine, so it ignores [JSOO_TEST_ENGINE]; only a
+   js/wasm process is actually hosted by [target_engine]. The [node]/[quickjs]/
+   [wasi] shorthands resolve to this axis. *)
+let host_engine =
+  match Sys.backend_type with
+  | Native | Bytecode -> "native"
+  | Other _ -> target_engine
 
 let os_type = Sys.os_type
 
@@ -87,10 +99,10 @@ let tag_dropped = function
   | "no-wasm" -> String.equal backend "wasm"
   | "wasm-only" -> not (String.equal backend "wasm")
   | "native-only" -> not (String.equal backend "native")
-  | "no-quickjs" -> String.equal engine "quickjs"
-  | "quickjs-only" -> not (String.equal engine "quickjs")
-  | "no-wasi" -> String.equal engine "wasi"
-  | "wasi-only" -> not (String.equal engine "wasi")
+  | "no-quickjs" -> String.equal host_engine "quickjs"
+  | "quickjs-only" -> not (String.equal host_engine "quickjs")
+  | "no-wasi" -> String.equal host_engine "wasi"
+  | "wasi-only" -> not (String.equal host_engine "wasi")
   | "64-bits-only" -> not int_size_64
   | "32-bits-only" -> int_size_64
   | _ -> false
