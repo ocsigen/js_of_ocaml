@@ -23,12 +23,12 @@ let%expect_test "conditional backend" =
     (match Sys.backend_type with
     | Native | Bytecode -> "is native"
     | Other _ -> "not native");
-  [%expect {| not native |} [@when js || wasm]];
+  [%expect ({| not native |} [@when js || wasm])];
   [%expect {| is native |}]
 
 let%expect_test "conditional version" =
   Printf.printf "ocaml %s" (if true then "modern" else "ancient");
-  [%expect {| ocaml ancient |} [@when ocaml_version < (4, 0, 0)]];
+  [%expect ({| ocaml ancient |} [@when ocaml_version < (4, 0, 0)])];
   [%expect {| ocaml modern |}]
 
 let%expect_test "multiline" =
