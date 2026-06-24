@@ -5,7 +5,9 @@
  (name jsoo_compiler_test_double_translation)
  (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
  (inline_tests
+  ;; See the parent dune: depend on the profile-selected [node] wrapper.
   (deps
+   %{bin:node}
    (file %{project_root}/compiler/bin-js_of_ocaml/js_of_ocaml.exe)
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags
