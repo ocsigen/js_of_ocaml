@@ -1,46 +1,44 @@
 ; jsoo's lib tests. dune runs each source file as its own inline-test partition
 ; (see ppx_expect_light's -list-partitions/-partition), so grouping modules into
-; a few libraries keeps test-execution parallelism without a library per module.
-; Modules can only share a library when they agree on the two stanza fields that
-; differ between them: the [enabled_if] gate and the [inline_tests] [modes]. Most
-; tests run under both backends and are skipped under the wasi profiles
-; (JSOO_TEST_ENGINE=wasi); a handful are special-cased into their own libraries
-; below. New *.ml files join the default (js+wasm) library automatically.
+; a couple of libraries keeps test-execution parallelism without a library per
+; module. New *.ml files join the default (js+wasm) library automatically.
 
-; test_localtime (process.env.TZ) and test_poly_compare run js-only.
+; These tests rely on features not available when targeting WASI (e.g. the parts
+; of [unix] js_of_ocaml doesn't provide). Rather than gate each library with an
+; [enabled_if], disable both backends under the wasi profiles (both set
+; JSOO_TEST_ENGINE=wasi): no inline-test runner is then built there, so neither
+; the js mode (missing [unix] primitives) nor the wasm mode (js_of_ocaml's inline
+; JS fragments can't link without a JS host) is attempted. js_of_ocaml is already
+; disabled under wasi-with-native-effects by the root dune.
+
+(env
+ (wasi
+  (js_of_ocaml
+   (enabled_if false))
+  (wasm_of_ocaml
+   (enabled_if false)))
+ (wasi-with-native-effects
+  (wasm_of_ocaml
+   (enabled_if false))))
+
+; js-only tests, kept out of the js+wasm library below because they have no wasm
+; counterpart: test_localtime uses process.env.TZ; test_fun_call's strict-arity
+; callback tests differ under --effects=cps (per-test [@when effects <> "cps"]);
+; test_sys needs OCaml >= 5 (floating [@@@if ocaml_version >= (5, 0, 0)]).
 
 (library
  (name jsoo_lib_expect_tests_js)
- (enabled_if
-  (<> %{env:JSOO_TEST_ENGINE=node} wasi))
- (modules test_localtime test_poly_compare)
+ (modules test_fun_call test_localtime test_poly_compare test_sys)
  (libraries js_of_ocaml unix)
  (inline_tests
   (modes js))
  (preprocess
   (pps ppx_js_internal ppx_optcomp_light ppx_expect_light)))
 
-; test_sys needs OCaml >= 5 (In_channel.input_all); that gate lives in the
-; source as a floating [@@@if ocaml_version >= (5, 0, 0)]. test_fun_call's two
-; strict-arity callback tests differ under --effects=cps; they carry a per-test
-; [@when effects <> "cps"]. Both run js-only and, unlike the rest, are NOT
-; wasi-gated.
-
-(library
- (name jsoo_lib_expect_tests_js_all_profiles)
- (modules test_fun_call test_sys)
- (libraries js_of_ocaml unix)
- (inline_tests
-  (modes js))
- (preprocess
-  (pps ppx_js_internal ppx_optcomp_light ppx_expect_light)))
-
-; Everything else: js + wasm, wasi-gated.
+; Everything else: js + wasm.
 
 (library
  (name jsoo_lib_expect_tests)
- (enabled_if
-  (<> %{env:JSOO_TEST_ENGINE=node} wasi))
  (modules
   (:standard \ test_fun_call test_localtime test_poly_compare test_sys))
  (libraries js_of_ocaml unix)
