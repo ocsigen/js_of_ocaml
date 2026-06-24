@@ -530,4 +530,6 @@
 
    (func (export "caml_with_async_exns") (param $f (ref eq)) (result (ref eq))
       (return_call $caml_callback_1 (local.get $f) (ref.i31 (i32.const 0))))
+
+   (global (export "caml_exception") (mut (ref eq)) (ref.i31 (i32.const 0)))
 )
