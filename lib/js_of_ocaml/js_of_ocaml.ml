@@ -28,6 +28,7 @@ module Dom = Dom
 module Dom_events = Dom_events
 module Dom_html = Dom_html
 module Dom_svg = Dom_svg
+module Css_font = Css_font
 module Effect_js = Effect_js
 module EventSource = EventSource
 module Fetch = Fetch
