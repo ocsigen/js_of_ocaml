@@ -441,6 +441,7 @@ let solver vars uses defs live_vars scoped_live_vars =
     + They are applied to a function.
  *)
 let zero prog pure_funs sentinel live_table =
+  let count = ref 0 in
   let compact_vars vars =
     let i = ref (Array.length vars - 1) in
     while !i >= 0 && Var.equal vars.(!i) sentinel do
@@ -453,7 +454,13 @@ let zero prog pure_funs sentinel live_table =
     | Domain.Dead -> false
     | Top | Live _ -> true
   in
-  let zero_var x = if is_live x then x else sentinel in
+  let zero_var x =
+    if is_live x
+    then x
+    else (
+      incr count;
+      sentinel)
+  in
   let zero_instr instr =
     match instr with
     | Let (x, e) -> (
@@ -463,7 +470,12 @@ let zero prog pure_funs sentinel live_table =
             | Live fields ->
                 let vars =
                   Array.mapi
-                    ~f:(fun i v -> if IntMap.mem i fields then v else sentinel)
+                    ~f:(fun i v ->
+                      if IntMap.mem i fields
+                      then v
+                      else (
+                        incr count;
+                        sentinel))
                     vars
                   |> compact_vars
                 in
@@ -509,7 +521,15 @@ let zero prog pure_funs sentinel live_table =
     in
     { block with body; branch }
   in
-  let blocks = prog.blocks |> Addr.Map.map zero_block in
+  let blocks =
+    Addr.Map.fold
+      (fun pc block blocks ->
+        let saved = !count in
+        let block' = zero_block block in
+        if !count = saved then blocks else Addr.Map.add pc block' blocks)
+      prog.blocks
+      prog.blocks
+  in
   { prog with blocks }
 
 module Print = struct
