@@ -10,7 +10,11 @@
  (name jsoo_compiler_test)
  (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
  (inline_tests
+  ;; Depend on the profile-selected [node] wrapper (defined in the root dune's
+  ;; env) so dune materialises the right one on PATH before the runner execs it
+  ;; and re-runs the tests when it changes.
   (deps
+   %{bin:node}
    (file %{project_root}/compiler/bin-js_of_ocaml/js_of_ocaml.exe)
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
  (flags
