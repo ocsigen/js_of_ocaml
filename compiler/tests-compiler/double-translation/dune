@@ -1,5 +1,4 @@
-; Like the parent directory, all modules share one library and each source file
-; is its own inline-test partition. New *.ml files are picked up automatically.
+; One library, tests partitioned per file (see ../dune).
 
 (library
  (name jsoo_compiler_test_double_translation)

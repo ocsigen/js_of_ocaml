@@ -17,6 +17,11 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+(* The whole test uses the [Bigarray.float16] kind, which requires OCaml 5.2;
+   gate the entire module (opens included) so it compiles empty on older
+   compilers. *)
+[@@@if ocaml_version >= (5, 2, 0)]
+
 open! Stdlib
 open StdLabels
 open Bigarray

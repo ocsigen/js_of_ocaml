@@ -1,15 +1,11 @@
-; jsoo's lib tests. dune runs each source file as its own inline-test partition
-; (see ppx_expect_light's -list-partitions/-partition), so grouping modules into
-; a couple of libraries keeps test-execution parallelism without a library per
-; module. New *.ml files join the default (js+wasm) library automatically.
+; jsoo's lib tests. ppx_expect_light runs each file as its own inline-test
+; partition, so a single library still keeps per-file parallelism.
 
-; These tests rely on features not available when targeting WASI (e.g. the parts
-; of [unix] js_of_ocaml doesn't provide). Rather than gate each library with an
-; [enabled_if], disable both backends under the wasi profiles (both set
-; JSOO_TEST_ENGINE=wasi): no inline-test runner is then built there, so neither
-; the js mode (missing [unix] primitives) nor the wasm mode (js_of_ocaml's inline
-; JS fragments can't link without a JS host) is attempted. js_of_ocaml is already
-; disabled under wasi-with-native-effects by the root dune.
+; These tests depend on the js_of_ocaml library, which is not compatible with
+; WASI. Rather than gate each library with an [enabled_if], disable both backends
+; under the wasi profiles (both set JSOO_TEST_ENGINE=wasi): no inline-test runner
+; is then built there. js_of_ocaml is already disabled under
+; wasi-with-native-effects by the root dune.
 
 (env
  (wasi
@@ -21,26 +17,8 @@
   (wasm_of_ocaml
    (enabled_if false))))
 
-; js-only tests, kept out of the js+wasm library below because they have no wasm
-; counterpart: test_localtime uses process.env.TZ; test_fun_call's strict-arity
-; callback tests differ under --effects=cps (per-test [@when effects <> "cps"]);
-; test_sys needs OCaml >= 5 (floating [@@@if ocaml_version >= (5, 0, 0)]).
-
-(library
- (name jsoo_lib_expect_tests_js)
- (modules test_fun_call test_localtime test_poly_compare test_sys)
- (libraries js_of_ocaml unix)
- (inline_tests
-  (modes js))
- (preprocess
-  (pps ppx_js_internal ppx_optcomp_light ppx_expect_light)))
-
-; Everything else: js + wasm.
-
 (library
  (name jsoo_lib_expect_tests)
- (modules
-  (:standard \ test_fun_call test_localtime test_poly_compare test_sys))
  (libraries js_of_ocaml unix)
  (inline_tests
   (modes js wasm))

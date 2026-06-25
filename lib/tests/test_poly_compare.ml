@@ -18,7 +18,7 @@
  *)
 open Js_of_ocaml
 
-let%expect_test "poly equal" =
+let%expect_test ("poly equal" [@tags "js-only"]) =
   let obj1 = Js.Unsafe.obj [||] in
   let obj2 = Js.Unsafe.obj [||] in
   assert (List.mem obj1 [ obj1 ]);
@@ -26,14 +26,14 @@ let%expect_test "poly equal" =
   assert (not (List.mem obj1 [ obj2 ]));
   ()
 
-let%expect_test "poly equal neg" =
+let%expect_test ("poly equal neg" [@tags "js-only"]) =
   let obj1 = Js.Unsafe.obj [||] in
   let obj2 = Js.Unsafe.obj [||] in
   assert (obj1 <> obj2);
   assert (not (obj1 <> obj1));
   ()
 
-let%expect_test "poly compare" =
+let%expect_test ("poly compare" [@tags "js-only"]) =
   let obj1 = Js.Unsafe.obj [| "a", Js.Unsafe.inject 0 |] in
   let obj2 = Js.Unsafe.obj [| "a", Js.Unsafe.inject 0 |] in
   (match List.sort compare [ obj1; obj2 ] with
@@ -53,7 +53,7 @@ let%expect_test "poly compare" =
 
 type pack = Pack : 'a -> pack
 
-let%expect_test "number comparison" =
+let%expect_test ("number comparison" [@tags "js-only"]) =
   assert (Pack 2 = Pack 2.);
   assert (Pack (Js.Unsafe.js_expr "Number(2)") = Pack 2.);
   assert (Pack (Js.Unsafe.js_expr "new Number(2)") = Pack 2.);
@@ -66,7 +66,7 @@ let%expect_test "number comparison" =
 
 let js_string_enabled = Js.typeof (Obj.magic "") == Js.string "string"
 
-let%expect_test "string comparison" =
+let%expect_test ("string comparison" [@tags "js-only"]) =
   assert (Pack (Js.Unsafe.js_expr "String(2)") = Pack (Js.string "2"));
   assert (Pack (Js.Unsafe.js_expr "String('abc')") = Pack (Js.string "abc"));
   assert (
@@ -80,7 +80,7 @@ let%expect_test "string comparison" =
     Pack (Js.Unsafe.js_expr "new String('abcd')")
     = Pack (Js.Unsafe.js_expr "new String('abcd')"))
 
-let%expect_test "symbol comparison" =
+let%expect_test ("symbol comparison" [@tags "js-only"]) =
   let s1 = Pack (Js.Unsafe.js_expr "Symbol('2')") in
   let s2 = Pack (Js.Unsafe.js_expr "Symbol('2')") in
   assert (s1 <> s2);
@@ -89,7 +89,7 @@ let%expect_test "symbol comparison" =
   assert (compare s1 s2 = 1);
   assert (compare s2 s1 = 1)
 
-let%expect_test "object comparison" =
+let%expect_test ("object comparison" [@tags "js-only"]) =
   let s1 = Pack (Js.Unsafe.js_expr "{}") in
   let s2 = Pack (Js.Unsafe.js_expr "{}") in
   assert (s1 <> s2);
@@ -98,7 +98,7 @@ let%expect_test "object comparison" =
   assert (compare s1 s2 = 1);
   assert (compare s2 s1 = 1)
 
-let%expect_test "null/undefined comparison" =
+let%expect_test ("null/undefined comparison" [@tags "js-only"]) =
   let s1 = Pack (Js.Unsafe.js_expr "undefined") in
   let s2 = Pack (Js.Unsafe.js_expr "null") in
   assert (s1 <> s2);
@@ -107,7 +107,7 @@ let%expect_test "null/undefined comparison" =
   assert (compare s1 s2 = 1);
   assert (compare s2 s1 = -1)
 
-let%expect_test "poly compare" =
+let%expect_test ("poly compare" [@tags "js-only"]) =
   let l =
     [ Pack (object end)
     ; Pack 0
