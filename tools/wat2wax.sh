@@ -40,7 +40,7 @@ for wat in "$SRC"/*.wat; do
   count=$((count + 1))
   name="$(basename "$wat" .wat)"
   dst="$OUT/$name.wax"
-  if wax -i wat -f wax -o "$dst" "$wat" 2>"$OUT/$name.err"; then
+  if wax -i wat -f wax -W naming=error -o "$dst" "$wat" 2>"$OUT/$name.err"; then
     echo "✓ $name.wat -> $name.wax"
     rm -f "$OUT/$name.err"
   else
