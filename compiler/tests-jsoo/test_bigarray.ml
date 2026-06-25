@@ -17,10 +17,9 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-(* The whole test uses the [Bigarray.float16] kind, which requires OCaml 5.2;
-   gate the entire module (opens included) so it compiles empty on older
-   compilers. *)
-[@@@if ocaml_version >= (5, 2, 0)]
+(* Only the four [Bigarray.float16] tests need OCaml 5.2 (float16 is 5.2+); they
+   carry a per-test [@@if ocaml_version >= (5, 2, 0)]. Every other test runs on
+   all supported compilers. *)
 
 open! Stdlib
 open StdLabels
@@ -148,6 +147,7 @@ let%expect_test "compare elt" =
   [%expect {| ''\000'' < ''\001'': Bigarray compare the same |}];
   test char Char.to_string '\255' '\000';
   [%expect {| ''\255'' > ''\000'': Bigarray compare the same |}]
+[@@if ocaml_version >= (5, 2, 0)]
 
 let%expect_test "compare" =
   let test (type a b) (a : a) (b : b) =
@@ -332,6 +332,7 @@ let%expect_test "hash" =
     1c259f64 int64 300
     1e14ef2b nativeint 20
     314148ee nativeint 300 |}]
+[@@if ocaml_version >= (5, 2, 0)]
 
 let%expect_test "float16 equality with nan" =
   (* nan <> nan, so structural equality on a bigarray containing a nan
@@ -340,6 +341,7 @@ let%expect_test "float16 equality with nan" =
   let a = from_list float16 [ nan ] in
   Printf.printf "%b %b\n" (a = a) (compare a a = 0);
   [%expect {| false true |}]
+[@@if ocaml_version >= (5, 2, 0)]
 
 let%expect_test "bigstring blit positions are raw offsets" =
   (* These primitives back base_bigstring's bigstring_blit_* stubs,
@@ -430,3 +432,4 @@ let%expect_test "float16 rounds through float32 (double-rounding)" =
     0x1.578p+7
     -0x1.178p+12
     |}]
+[@@if ocaml_version >= (5, 2, 0)]

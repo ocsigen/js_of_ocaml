@@ -19,8 +19,11 @@
 
 open! Js_of_ocaml
 
-(* The tests use [In_channel.input_all], which is OCaml >= 5 only. *)
-[@@@if ocaml_version >= (5, 0, 0)]
+(* The four [In_channel.input_all] tests carry a per-test [@@if] (the API is
+   5.0+), so they only build on OCaml >= 5. The three tests digesting the
+   Random-generated [content] run everywhere, but the Random PRNG changed in 5.0,
+   so each digest snapshot has a [@when ocaml_version >= (5, 0, 0)] variant (the
+   5.x value) and a default (the pre-5 value). Everything else runs unconditionally. *)
 
 let content =
   let t = Random.State.make [| 1; 2; 3; 4; 5 |] in
@@ -30,13 +33,15 @@ let print_digest d = print_endline (Digest.to_hex d)
 
 let%expect_test _ =
   print_digest (Digest.string content);
-  [%expect {| dd5da7fa373a2b2257d361aaf76845a0 |}];
+  [%expect ({| dd5da7fa373a2b2257d361aaf76845a0 |} [@when ocaml_version >= (5, 0, 0)])];
+  [%expect {| ed06ea572e62b0e2448c55777aeaca4c |}];
   let c = open_out_bin "/static/temp0" in
   output_string c content;
   close_out c;
   let c = open_in_bin "/static/temp0" in
   print_digest (Digest.channel c (-1));
-  [%expect {| dd5da7fa373a2b2257d361aaf76845a0 |}];
+  [%expect ({| dd5da7fa373a2b2257d361aaf76845a0 |} [@when ocaml_version >= (5, 0, 0)])];
+  [%expect {| ed06ea572e62b0e2448c55777aeaca4c |}];
   let c = open_out_bin "/static/temp1" in
   close_out c;
   let c = open_in_bin "/static/temp1" in
@@ -48,7 +53,8 @@ let%expect_test _ =
         pos := String.length content;
         content));
   print_digest (Digest.channel c (-1));
-  [%expect {| dd5da7fa373a2b2257d361aaf76845a0 |}];
+  [%expect ({| dd5da7fa373a2b2257d361aaf76845a0 |} [@when ocaml_version >= (5, 0, 0)])];
+  [%expect {| ed06ea572e62b0e2448c55777aeaca4c |}];
   let c = open_in_bin "/static/temp1" in
   let pos = ref 0 in
   Sys_js.set_channel_filler c (fun () ->
@@ -63,19 +69,22 @@ let%expect_test _ =
         pos := !pos + len;
         c);
   print_digest (Digest.channel c (-1));
-  [%expect {| dd5da7fa373a2b2257d361aaf76845a0 |}];
+  [%expect ({| dd5da7fa373a2b2257d361aaf76845a0 |} [@when ocaml_version >= (5, 0, 0)])];
+  [%expect {| ed06ea572e62b0e2448c55777aeaca4c |}];
   ()
 
 let%expect_test _ =
   let size = String.length content / 2 in
   print_digest (Digest.string (String.sub content 0 size));
-  [%expect {| 573705548ab0d6c8a2193579611511a2 |}];
+  [%expect ({| 573705548ab0d6c8a2193579611511a2 |} [@when ocaml_version >= (5, 0, 0)])];
+  [%expect {| e2a6ef4c88593bb6d8e456687407bf04 |}];
   let c = open_out_bin "/static/temp0" in
   output_string c content;
   close_out c;
   let c = open_in_bin "/static/temp0" in
   print_digest (Digest.channel c size);
-  [%expect {| 573705548ab0d6c8a2193579611511a2 |}];
+  [%expect ({| 573705548ab0d6c8a2193579611511a2 |} [@when ocaml_version >= (5, 0, 0)])];
+  [%expect {| e2a6ef4c88593bb6d8e456687407bf04 |}];
   let c = open_out_bin "/static/temp1" in
   close_out c;
   let c = open_in_bin "/static/temp1" in
@@ -87,7 +96,8 @@ let%expect_test _ =
         pos := String.length content;
         content));
   print_digest (Digest.channel c size);
-  [%expect {| 573705548ab0d6c8a2193579611511a2 |}];
+  [%expect ({| 573705548ab0d6c8a2193579611511a2 |} [@when ocaml_version >= (5, 0, 0)])];
+  [%expect {| e2a6ef4c88593bb6d8e456687407bf04 |}];
   let c = open_in_bin "/static/temp1" in
   let pos = ref 0 in
   Sys_js.set_channel_filler c (fun () ->
@@ -102,12 +112,14 @@ let%expect_test _ =
         pos := !pos + len;
         c);
   print_digest (Digest.channel c size);
-  [%expect {| 573705548ab0d6c8a2193579611511a2 |}];
+  [%expect ({| 573705548ab0d6c8a2193579611511a2 |} [@when ocaml_version >= (5, 0, 0)])];
+  [%expect {| e2a6ef4c88593bb6d8e456687407bf04 |}];
   ()
 
 let%expect_test _ =
   print_digest (Digest.string content);
-  [%expect {| dd5da7fa373a2b2257d361aaf76845a0 |}];
+  [%expect ({| dd5da7fa373a2b2257d361aaf76845a0 |} [@when ocaml_version >= (5, 0, 0)])];
+  [%expect {| ed06ea572e62b0e2448c55777aeaca4c |}];
   let c = open_out_bin "/static/temp0" in
   output_string c content;
   close_out c;
@@ -129,6 +141,7 @@ let%expect_test "open_out_gen Open_append" =
   Printf.printf "[%s]" (In_channel.input_all c);
   close_in c;
   [%expect {| [hello world] |}]
+[@@if ocaml_version >= (5, 0, 0)]
 
 (* [Open_append] implies write permission: the C runtime maps it to
    O_WRONLY | O_APPEND. *)
@@ -143,6 +156,7 @@ let%expect_test "Open_append implies write access" =
      close_in c
    with Sys_error msg -> print_endline ("Sys_error: " ^ msg));
   [%expect {| [hello] |}]
+[@@if ocaml_version >= (5, 0, 0)]
 
 (* Renaming a file to itself must succeed and leave the file intact
    (POSIX rename is a no-op in that case). *)
@@ -159,6 +173,7 @@ let%expect_test "Sys.rename to itself" =
     close_in c)
   else print_endline "gone";
   [%expect {| [hello] |}]
+[@@if ocaml_version >= (5, 0, 0)]
 
 (* From the manual (close_out): "Output functions raise a Sys_error
    exception when they are applied to a closed output channel, except
@@ -266,6 +281,7 @@ let%expect_test "register bytes content" =
   String.iter (fun c -> Printf.printf " %02x" (Char.code c)) s;
   print_newline ();
   [%expect {| 4: ff 00 80 61 |}]
+[@@if ocaml_version >= (5, 0, 0)]
 
 let%expect_test "mount points are not regexs" =
   Sys_js.mount ~path:"/dyn.dir/" (fun ~prefix:_ ~path:_ -> Some "data");
