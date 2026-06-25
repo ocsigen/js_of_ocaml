@@ -4,62 +4,15 @@
   (env-vars
    (FOO bar))))
 
-; [format with large precision] checks the exact decimal expansion of a
-; double. The native oracle is mingw on Windows, whose printf rounds past
-; ~17 significant digits and so cannot reproduce it. Both that Windows
-; exclusion and the OCaml version gate live in the source as a floating
-; [@@@if]; js and wasm are OS-independent and still run on every other
-; platform.
+; OxCaml-only tests sharing the same deps and gating, so they live in one
+; library: test_ugeint exercises the UGEINT primitives OxCaml emits, and
+; test_marshal_float32 the float32 marshalling. Both run on js, wasm and native
+; — the float32 default [%expect] is the native/wasm custom-block encoding (the
+; [@when js] variant carries the js encoding).
 
 (library
- (name jsoo_testsuite_floats_exact)
- (modules test_floats_exact)
- (inline_tests
-  (deps
-   (sandbox preserve_file_kind))
-  (modes js wasm best))
- (preprocess
-  (pps ppx_optcomp_light ppx_expect_light)))
-
-; These libraries stay separate, but their profile gating lives in the test
-; sources as [@when ...] predicates instead of dune [enabled_if (<> %{profile}
-; ...)], so a test runs wherever it actually works.
-
-(library
- (name jsoo_testsuite_unix)
- (modules test_unix)
- (libraries unix compiler-libs.common js_of_ocaml-compiler)
- (inline_tests
-  (deps
-   (sandbox preserve_file_kind))
-  (modes js wasm best))
- (preprocess
-  (pps ppx_expect_light)))
-
-(library
- (name jsoo_testsuite_perms)
- (modules test_unix_perms)
- (libraries unix)
- (inline_tests
-  (deps
-   (sandbox preserve_file_kind))
-  (modes js wasm best))
- (preprocess
-  (pps ppx_expect_light)))
-
-(library
- (name jsoo_testsuite_sys_command)
- (modules test_sys_command)
- (inline_tests
-  (deps
-   (sandbox preserve_file_kind))
-  (modes js wasm best))
- (preprocess
-  (pps ppx_expect_light)))
-
-(library
- (name jsoo_testsuite_ugeint)
- (modules test_ugeint)
+ (name jsoo_testsuite_oxcaml)
+ (modules test_ugeint test_marshal_float32)
  (libraries unix compiler-libs.common js_of_ocaml-compiler)
  (enabled_if %{oxcaml_supported})
  (inline_tests
@@ -78,16 +31,6 @@
  (action
   (bash
    "ocamlc %{deps} -o probe.bc && dumpobj probe.bc | grep -qE '^[[:space:]]*[0-9]+[[:space:]]+UGEINT'")))
-
-(library
- (name jsoo_testsuite_float32)
- (modules test_marshal_float32)
- (libraries unix compiler-libs.common js_of_ocaml-compiler)
- (enabled_if %{oxcaml_supported})
- (inline_tests
-  (modes js wasm))
- (preprocess
-  (pps ppx_expect_light)))
 
 (library
  ; The #2300 regression has to digest a >2 GiB input, which takes far longer
@@ -111,9 +54,7 @@
  (modules
   (:standard
    \
-   test_floats_exact
    test_float16
-   test_bigarray
    test_list_of_js_array
    test_marshal_float32
    test_md5_large
@@ -125,93 +66,28 @@
    bigstring_kind
    wrap_exception
    meth_call_utf8
-   test_condition
    runtime_events_register
    test_custom_name
    test_text_codec_fallback
-   test_unix
-   test_unix_perms
-   test_sys_command
-   test_unix_symlink
+   test_sys
+   test_nodejs_filesystem_errors
    channel_refill
-   unix_open_append
    test_promise
    test_lwt_promise
-   test_str
    test_weak_gc
-   toplevel_sections
-   obj_block_float))
- (libraries unix compiler-libs.common js_of_ocaml-compiler)
+   toplevel_sections))
+ (libraries unix compiler-libs.common js_of_ocaml-compiler str)
+ ; bigarray_stubs backs test_bigarray; its symbols are disjoint from
+ ; jsoo_runtime_stubs and the C is version-agnostic.
  (foreign_stubs
   (language c)
-  (names jsoo_runtime_stubs))
- (inline_tests
-  (deps
-   (sandbox preserve_file_kind))
-  (modes js wasm best))
- (preprocess
-  ; ppx_optcomp_light lets version-specific tests (e.g. those gated with
-  ; [@@@if ocaml_version >= ...]) share this single library across OCaml
-  ; versions instead of living in their own enabled_if'd libraries.
-  (pps ppx_optcomp_light ppx_expect_light)))
-
-; test_bigarray uses the float16 kind, which requires OCaml 5.2.
-
-(library
- (name jsoo_testsuite_bigarray)
- (modules test_bigarray)
- (enabled_if
-  (>= %{ocaml_version} 5.2))
- (foreign_stubs
-  (language c)
-  (names bigarray_stubs))
- (inline_tests
-  (deps
-   (sandbox preserve_file_kind))
-  (modes js wasm best))
- (preprocess
-  (pps ppx_expect_light)))
-
-; test_unix_symlink's profile/OS gating lives in the source as [@when ...]
-; predicates (Unix-like hosts under the JS / wasm-on-node runtimes only), so
-; this library needs no enabled_if.
-
-(library
- (name jsoo_testsuite_symlink)
- (modules test_unix_symlink)
- (libraries unix)
- (inline_tests
-  (deps
-   (sandbox preserve_file_kind))
-  (modes js wasm best))
- (preprocess
-  (pps ppx_expect_light)))
-
-; The Windows exclusion lives in the source as a floating [@@@if os_type
-; <> "Win32"]: Windows node rejects the O_APPEND flag combination and
-; positions the append offset differently.
-
-(library
- (name jsoo_testsuite_unix_open_append)
- (modules unix_open_append)
- (libraries unix)
+  (names jsoo_runtime_stubs bigarray_stubs))
  (inline_tests
   (deps
    (sandbox preserve_file_kind))
   (modes js wasm best))
  (preprocess
   (pps ppx_optcomp_light ppx_expect_light)))
-
-(library
- (name jsoo_testsuite_str)
- (modules test_str)
- (libraries str)
- (inline_tests
-  (deps
-   (sandbox preserve_file_kind))
-  (modes js wasm best))
- (preprocess
-  (pps ppx_expect_light)))
 
 (test
  (name test_float16)
@@ -232,14 +108,6 @@
   (pps ppx_expect_light)))
 
 (library
- (name jsoo_test_obj_block_float)
- (modules obj_block_float)
- (inline_tests
-  (modes js wasm best))
- (preprocess
-  (pps ppx_expect_light)))
-
-(library
  (name jsoo_test_runtime_value)
  (enabled_if
   (<> %{env:JSOO_TEST_ENGINE=node} wasi))
@@ -254,46 +122,55 @@
  (preprocess
   (pps ppx_expect_light)))
 
-; Uses [Sys_js.set_channel_filler], a js_of_ocaml runtime feature absent
-; under the WASI runtime; exercised on both the JavaScript and wasm runtimes.
+; test_sys drives the jsoo fake filesystem (Sys_js, jsoo_create_file, Unix) under
+; the /static mount, which only exists on the JavaScript runtime, so it is
+; js-only (never wasm, native or WASI). It also needs OCaml >= 5, gated in the
+; source as a floating [@@@if] (hence ppx_optcomp_light).
 
 (library
- (name jsoo_testsuite_channel_refill)
+ (name jsoo_testsuite_sys)
  (enabled_if
   (<> %{env:JSOO_TEST_ENGINE=node} wasi))
- (modules channel_refill)
+ (modules test_sys)
+ (libraries js_of_ocaml unix)
+ (inline_tests
+  (deps
+   (sandbox preserve_file_kind))
+  (modes js))
+ (preprocess
+  (pps ppx_optcomp_light ppx_expect_light)))
+
+; js_of_ocaml runtime-behaviour tests with one shared signature: they use Js
+; values / runtime features, so they run on the JavaScript and wasm runtimes
+; only (never native or WASI). Grouped into a single library; each module covers
+; one area:
+;   ephemeron_data                - Js values kept live through ephemerons
+;   hash_jsstring                 - JS-string hashing matches the JS runtime
+;   wrap_exception                - caml_wrap_exception on thrown JS values
+;   meth_call_utf8                - UTF-8 method-name resolution in caml_js_meth_call
+;   test_custom_name              - custom value names
+;   test_list_of_js_array         - Js array <-> list conversion
+;   channel_refill                - Sys_js.set_channel_filler
+;   test_nodejs_filesystem_errors - node fs error mapping (caml_sys_read_directory)
+
+(library
+ (name jsoo_testsuite_js_runtime)
+ (enabled_if
+  (<> %{env:JSOO_TEST_ENGINE=node} wasi))
+ (modules
+  ephemeron_data
+  hash_jsstring
+  wrap_exception
+  meth_call_utf8
+  test_custom_name
+  test_list_of_js_array
+  channel_refill
+  test_nodejs_filesystem_errors)
  (libraries js_of_ocaml)
  (inline_tests
   (deps
    (sandbox preserve_file_kind))
   (modes js wasm))
- (preprocess
-  (pps ppx_expect_light)))
-
-; Uses Js values (Js.string/Js.null), so it cannot run natively or under
-; the WASI runtime; exercised on both the JavaScript and wasm runtimes.
-
-(library
- (name jsoo_test_ephemeron_data)
- (enabled_if
-  (<> %{env:JSOO_TEST_ENGINE=node} wasi))
- (modules ephemeron_data)
- (libraries js_of_ocaml)
- (inline_tests
-  (modes js wasm))
- (preprocess
-  (pps ppx_expect_light)))
-
-; JS-string hashing matches the JS runtime; uses Js values, js and wasm only.
-
-(library
- (name hash_jsstring)
- (enabled_if
-  (<> %{env:JSOO_TEST_ENGINE=node} wasi))
- (modules hash_jsstring)
- (inline_tests
-  (modes js wasm))
- (libraries js_of_ocaml)
  (preprocess
   (pps ppx_expect_light)))
 
@@ -309,48 +186,6 @@
  (libraries js_of_ocaml)
  (preprocess
   (pps js_of_ocaml-ppx ppx_expect_light)))
-
-; caml_wrap_exception wrapping of thrown JS values; uses Js, js and wasm only.
-
-(library
- (name jsoo_test_wrap_exception)
- (enabled_if
-  (<> %{env:JSOO_TEST_ENGINE=node} wasi))
- (modules wrap_exception)
- (libraries js_of_ocaml)
- (inline_tests
-  (modes js wasm))
- (preprocess
-  (pps ppx_expect_light)))
-
-; UTF-8 method-name resolution in caml_js_meth_call; uses Js values, so it
-; runs on the JavaScript and wasm runtimes only.
-
-(library
- (name jsoo_test_meth_call_utf8)
- (enabled_if
-  (<> %{env:JSOO_TEST_ENGINE=node} wasi))
- (modules meth_call_utf8)
- (libraries js_of_ocaml)
- (inline_tests
-  (modes js wasm))
- (preprocess
-  (pps ppx_expect_light)))
-
-; Condition variables agree between js and wasm. Not run natively: it calls
-; Condition.wait, which blocks forever there.
-
-(library
- (name jsoo_test_condition)
- ; The OCaml < 5 gate lives in the source as a floating [@@@if]: Condition/Mutex
- ; are in the threads library on OCaml < 5, and gating the body keeps the module
- ; compiling (empty) on older compilers without pulling in threads. (The module
- ; is named test_condition, not condition, to avoid shadowing stdlib Condition.)
- (modules test_condition)
- (inline_tests
-  (modes js wasm))
- (preprocess
-  (pps ppx_optcomp_light ppx_expect_light)))
 
 ; The js accessor lives in the optional +toplevel.js runtime fragment, so it
 ; is linked explicitly; --toplevel is deliberately NOT passed, so the bytecode
@@ -405,17 +240,6 @@
  (preprocess
   (pps ppx_js_internal)))
 
-(library
- (name test_custom_name)
- (enabled_if
-  (<> %{env:JSOO_TEST_ENGINE=node} wasi))
- (modules test_custom_name)
- (inline_tests
-  (modes js wasm))
- (libraries js_of_ocaml)
- (preprocess
-  (pps ppx_expect_light)))
-
 ; The TextEncoder/TextDecoder fallbacks in [runtime/js/mlBytes.js] are
 ; cross-checked against the host Web Encoding API; the tests are gated in the
 ; source with [@when not quickjs] (QuickJS provides no host TextEncoder).
@@ -428,17 +252,6 @@
  (libraries js_of_ocaml)
  (preprocess
   (pps js_of_ocaml-ppx ppx_expect_light)))
-
-(library
- (name test_list_of_js_array)
- (enabled_if
-  (<> %{env:JSOO_TEST_ENGINE=node} wasi))
- (modules test_list_of_js_array)
- (inline_tests
-  (modes js wasm))
- (libraries js_of_ocaml)
- (preprocess
-  (pps ppx_expect_light)))
 
 (ocamlyacc calc_parser)
 

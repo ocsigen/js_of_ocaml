@@ -8,7 +8,7 @@
    failing the module on older compilers. *)
 [@@@if ocaml_version >= (5, 0, 0)]
 
-let%expect_test "Condition.create/signal/broadcast" =
+let%expect_test ("Condition.create/signal/broadcast" [@when not native]) =
   assert (Condition.create () != Condition.create ());
   let m = Mutex.create () in
   let c = Condition.create () in

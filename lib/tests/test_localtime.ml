@@ -23,7 +23,7 @@
 
 open Js_of_ocaml
 
-let%expect_test ("localtime tm_yday under DST" [@when not quickjs]) =
+let%expect_test ("localtime tm_yday under DST" [@when not quickjs] [@tags "js-only"]) =
   ignore (Js.Unsafe.js_expr {|(process.env.TZ = "America/New_York")|});
   (* 2021-07-01T04:30:00Z is 2021-07-01 00:30 in New York, with DST in
      effect; tm_yday must not be computed from the wall-clock distance
@@ -41,7 +41,8 @@ let%expect_test ("localtime tm_yday under DST" [@when not quickjs]) =
   [%expect {| 2021-07-01 00:30 yday=181 dst=true |}]
 
 let%expect_test
-    ("localtime tm_isdst for Europe/Dublin (negative DST)" [@when not quickjs]) =
+    ("localtime tm_isdst for Europe/Dublin (negative DST)"
+     [@when not quickjs] [@tags "js-only"]) =
   ignore (Js.Unsafe.js_expr {|(process.env.TZ = "Europe/Dublin")|});
   (* Dublin uses "negative DST": winter (GMT) is the daylight deviation
      from its summer standard (IST), so tm_isdst must match the native

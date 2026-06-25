@@ -1,10 +1,6 @@
-; All test modules in this directory share one library: dune runs each source
-; file as its own inline-test partition (see ppx_expect_light's
-; -list-partitions/-partition), so a single library keeps test-execution
-; parallelism without a library per module. New *.ml files are picked up
-; automatically. Profile/version/arch gating lives in the test sources
-; themselves (a floating [@@@if ...] from ppx_optcomp_light, or a per-test
-; [@when ...] from ppx_expect_light).
+; One library for all modules; ppx_expect_light runs each file as its own
+; inline-test partition, so test parallelism is preserved. Gating lives in the
+; sources (ppx_optcomp_light [@@@if] / ppx_expect_light [@when]).
 
 (library
  (name jsoo_compiler_test)
