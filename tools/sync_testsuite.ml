@@ -106,7 +106,6 @@ let _ignore_ x =
     | "utils" (* not relevant *)
     | "warnings" (* not relevant *)
     | "weak-ephe-final" (* ?? *)
-    | "win-unicode" (* not relevant *)
     | "lf_skiplist" (* not relevant *)
     | "lib-bigarray-2" -> `Ignore
     | "lib-digest/blake2b_self_test.ml" -> `Ignore
