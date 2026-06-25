@@ -395,6 +395,35 @@ let transitionrun ?use_capture ?passive elt =
 let transitioncancel ?use_capture ?passive elt =
   make_event Dom_html.Event.transitioncancel ?use_capture ?passive elt
 
+let mutation
+    ?attributes
+    ?child_list
+    ?character_data
+    ?subtree
+    ?attribute_old_value
+    ?character_data_old_value
+    ?attribute_filter
+    node =
+  let t, w = Lwt.task () in
+  let cancel o = o##disconnect in
+  let o =
+    MutationObserver.observe
+      ~node
+      ~f:(fun records observer ->
+        cancel observer;
+        Lwt.wakeup w records)
+      ?child_list
+      ?attributes
+      ?character_data
+      ?subtree
+      ?attribute_old_value
+      ?character_data_old_value
+      ?attribute_filter
+      ()
+  in
+  Lwt.on_cancel t (fun () -> cancel o);
+  t
+
 let clicks ?cancel_handler ?use_capture ?passive t =
   seq_loop click ?cancel_handler ?use_capture ?passive t
 
@@ -601,6 +630,32 @@ let transitionruns ?cancel_handler ?use_capture ?passive t =
 
 let transitioncancels ?cancel_handler ?use_capture ?passive t =
   seq_loop transitioncancel ?cancel_handler ?use_capture ?passive t
+
+let mutations
+    ?cancel_handler
+    ?attributes
+    ?child_list
+    ?character_data
+    ?subtree
+    ?attribute_old_value
+    ?character_data_old_value
+    ?attribute_filter
+    node
+    handler =
+  seq_loop
+    (fun ?use_capture:_ ?passive:_ () ->
+      mutation
+        ?attributes
+        ?child_list
+        ?character_data
+        ?subtree
+        ?attribute_old_value
+        ?character_data_old_value
+        ?attribute_filter
+        node)
+    ?cancel_handler
+    ()
+    handler
 
 let request_animation_frame () =
   let t, s = Lwt.task () in
