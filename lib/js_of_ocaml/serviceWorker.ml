@@ -32,9 +32,6 @@ class type serviceWorker = object ('self)
 
   method onstatechange :
     ('self Js.t, 'self Dom.event Js.t) Dom.event_listener Js.writeonly_prop
-
-  method onerror :
-    ('self Js.t, Worker.errorEvent Js.t) Dom.event_listener Js.writeonly_prop
 end
 
 class type registrationOptions = object
@@ -60,7 +57,7 @@ class type serviceWorkerRegistration = object ('self)
 
   method updateViaCache : Js.js_string Js.t Js.readonly_prop
 
-  method update : unit Promise.t Js.meth
+  method update : serviceWorkerRegistration Js.t Promise.t Js.meth
 
   method unregister : bool Js.t Promise.t Js.meth
 
@@ -98,6 +95,10 @@ class type serviceWorkerContainer = object ('self)
   method onmessage :
     ('self Js.t, Js.Unsafe.any MessageChannel.messageEvent Js.t) Dom.event_listener
     Js.writeonly_prop
+
+  method onmessageerror :
+    ('self Js.t, Js.Unsafe.any MessageChannel.messageEvent Js.t) Dom.event_listener
+    Js.writeonly_prop
 end
 
 let container () : serviceWorkerContainer Js.t Js.optdef =
@@ -123,7 +124,11 @@ class type fetchEvent = object
 
   method resultingClientId : Js.js_string Js.t Js.readonly_prop
 
+  method replacesClientId : Js.js_string Js.t Js.readonly_prop
+
   method preloadResponse : Js.Unsafe.any Promise.t Js.readonly_prop
+
+  method handled : unit Promise.t Js.readonly_prop
 
   method respondWith : Fetch.response Js.t Promise.t -> unit Js.meth
 end
@@ -134,6 +139,8 @@ class type client = object
   method url : Js.js_string Js.t Js.readonly_prop
 
   method _type : Js.js_string Js.t Js.readonly_prop
+
+  method frameType : Js.js_string Js.t Js.readonly_prop
 
   method postMessage : 'a. 'a -> unit Js.meth
 
@@ -147,6 +154,8 @@ class type windowClient = object
   method focused : bool Js.t Js.readonly_prop
 
   method visibilityState : Js.js_string Js.t Js.readonly_prop
+
+  method ancestorOrigins : Js.js_string Js.t Js.js_array Js.t Js.readonly_prop
 
   method focus : windowClient Js.t Promise.t Js.meth
 
@@ -194,6 +203,10 @@ class type serviceWorkerGlobalScope = object ('self)
   method onfetch : ('self Js.t, fetchEvent Js.t) Dom.event_listener Js.writeonly_prop
 
   method onmessage :
+    ('self Js.t, Js.Unsafe.any MessageChannel.messageEvent Js.t) Dom.event_listener
+    Js.writeonly_prop
+
+  method onmessageerror :
     ('self Js.t, Js.Unsafe.any MessageChannel.messageEvent Js.t) Dom.event_listener
     Js.writeonly_prop
 end
