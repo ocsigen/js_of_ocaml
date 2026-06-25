@@ -187,7 +187,7 @@
       (local $fa (ref $float_array))
       (local $i i32)
       (local $len i32)
-      (local $tag i32)
+      (local $tg i32)
       (local $str anyref)
       (local.set $sz (i31.get_u (ref.cast (ref i31) (local.get $limit))))
       (if (i32.gt_u (local.get $sz) (global.get $HASH_QUEUE_SIZE))
@@ -231,11 +231,11 @@
                      (local.set $b
                         (br_on_cast_fail $not_block (ref eq) (ref $block)
                            (local.get $v)))
-                     (local.set $tag
+                     (local.set $tg
                         (i31.get_u
                            (ref.cast (ref i31)
                               (array.get $block (local.get $b) (i32.const 0)))))
-                     (if (i32.eq (local.get $tag) (global.get $forward_tag))
+                     (if (i32.eq (local.get $tg) (global.get $forward_tag))
                         (then
                            (local.set $i (i32.const 0))
                            (loop $forward
@@ -261,7 +261,7 @@
                                        (global.get $MAX_FORWARD_DEREFERENCE)))
                                  (br $forward)))
                               (br $again))))
-                     (if (i32.eq (local.get $tag) (global.get $object_tag))
+                     (if (i32.eq (local.get $tg) (global.get $object_tag))
                         (then
                            (local.set $h
                               (call $caml_hash_mix_int (local.get $h)
@@ -272,14 +272,14 @@
                            (br $loop)))
                      ;; abstract tag: block contents unknown, do nothing
                      (br_if $loop
-                        (i32.eq (local.get $tag) (global.get $abstract_tag)))
+                        (i32.eq (local.get $tg) (global.get $abstract_tag)))
                      (local.set $len (array.len (local.get $b)))
                      (local.set $h
                         (call $caml_hash_mix_int (local.get $h)
                            (i32.or
                               (i32.shl (i32.sub (local.get $len) (i32.const 1))
                                  (i32.const 10))
-                              (local.get $tag))))
+                              (local.get $tg))))
                      (local.set $i (i32.const 1))
                      (loop $block_iter
                         (br_if $loop (i32.ge_u (local.get $i) (local.get $len)))

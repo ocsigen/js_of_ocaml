@@ -222,12 +222,12 @@
    (func (export "caml_domain_tls_get") (param (ref eq)) (result (ref eq))
       (global.get $caml_domain_tls))
 
-   (global $caml_ml_domain_unique_token (ref eq)
+   (global $domain_unique_token (ref eq)
       (array.new_fixed $block 1 (ref.i31 (i32.const 0))))
 
    (func (export "caml_ml_domain_unique_token")
       (param (ref eq)) (result (ref eq))
-      (global.get $caml_ml_domain_unique_token))
+      (global.get $domain_unique_token))
 
    (func (export "caml_ml_domain_set_name")
       (param (ref eq)) (result (ref eq))

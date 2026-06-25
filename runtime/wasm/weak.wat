@@ -144,7 +144,7 @@
       (local.get $r))
 
    (func $caml_ephe_set_data (export "caml_ephe_set_data")
-      (param $vx (ref eq)) (param $data (ref eq)) (result (ref eq))
+      (param $vx (ref eq)) (param $dat (ref eq)) (result (ref eq))
       (local $x (ref $block))
       (local $v (ref eq))
       (local $m (ref any)) (local $m' (ref any))
@@ -153,7 +153,7 @@
 (@if (not $wasi)
 (@then
       (local.set $i (array.len (local.get $x)))
-      (local.set $m (local.get $data))
+      (local.set $m (local.get $dat))
       (loop $loop
          (local.set $i (i32.sub (local.get $i) (i32.const 1)))
          (if (i32.ge_u (local.get $i) (global.get $caml_ephe_key_offset))
@@ -175,10 +175,10 @@
                (array.set $block (local.get $x) (local.get $i)
                   (global.get $caml_ephe_none))
                (br $loop))))
-      (local.set $data (call $wrap (local.get $m)))
+      (local.set $dat (call $wrap (local.get $m)))
 ))
       (array.set $block (local.get $x) (global.get $caml_ephe_data_offset)
-         (local.get $data))
+         (local.get $dat))
       (ref.i31 (i32.const 0)))
 
    (func $caml_ephe_unset_data (export "caml_ephe_unset_data")

@@ -75,7 +75,7 @@
    (type $f64_array (array (mut f64)))
    (type $f32_array (array (mut f32)))
 
-   (type $data
+   (type $dat
       (struct
          (field $array (ref array))
          (field $offset i32)
@@ -110,18 +110,18 @@
         ;; f32
         (array.new $f32_array (f32.const 0) (local.get $sz))))
       (extern.convert_any
-         (struct.new $data (local.get $a) (i32.const 0) (local.get $sz))))
+         (struct.new $dat (local.get $a) (i32.const 0) (local.get $sz))))
 
    (func $ta_fill_int (param $b (ref extern)) (param $v i32)
-      (local $d (ref $data))
+      (local $d (ref $dat))
       (local $a (ref array))
       (local $a32 (ref $i32_array)) (local $a16 (ref $i16_array))
       (local $a8 (ref $bytes))
       (local $ofs i32) (local $i i32) (local $len i32)
-      (local.set $d (ref.cast (ref $data) (any.convert_extern (local.get $b))))
-      (local.set $a (struct.get $data $array (local.get $d)))
-      (local.set $ofs (struct.get $data $offset (local.get $d)))
-      (local.set $len (struct.get $data $len (local.get $d)))
+      (local.set $d (ref.cast (ref $dat) (any.convert_extern (local.get $b))))
+      (local.set $a (struct.get $dat $array (local.get $d)))
+      (local.set $ofs (struct.get $dat $offset (local.get $d)))
+      (local.set $len (struct.get $dat $len (local.get $d)))
       (if (ref.test (ref $i32_array) (local.get $a))
          (then
             (local.set $a32 (ref.cast (ref $i32_array) (local.get $a)))
@@ -156,15 +156,15 @@
                   (br $loop)))))))))
 
    (func $ta_fill_float (param $b (ref extern)) (param $f f64)
-      (local $d (ref $data))
+      (local $d (ref $dat))
       (local $a (ref array))
       (local $a64 (ref $float_array)) (local $a32 (ref $f32_array))
       (local $f32 f32)
       (local $ofs i32) (local $i i32) (local $len i32)
-      (local.set $d (ref.cast (ref $data) (any.convert_extern (local.get $b))))
-      (local.set $a (struct.get $data $array (local.get $d)))
-      (local.set $ofs (struct.get $data $offset (local.get $d)))
-      (local.set $len (struct.get $data $len (local.get $d)))
+      (local.set $d (ref.cast (ref $dat) (any.convert_extern (local.get $b))))
+      (local.set $a (struct.get $dat $array (local.get $d)))
+      (local.set $ofs (struct.get $dat $offset (local.get $d)))
+      (local.set $len (struct.get $dat $len (local.get $d)))
       (if (ref.test (ref $float_array) (local.get $a))
          (then
             (local.set $a64 (ref.cast (ref $float_array) (local.get $a)))
@@ -189,9 +189,9 @@
                      (br $loop)))))))
 
    (func $ta_set (export "ta_set")
-      (param $d (ref extern)) (param $s (ref extern)) (param $do i32)
-      (local $sd (ref $data)) (local $sa (ref array)) (local $so i32)
-      (local $dd (ref $data)) (local $da (ref array))
+      (param $d (ref extern)) (param $s (ref extern)) (param $doff i32)
+      (local $sd (ref $dat)) (local $sa (ref array)) (local $so i32)
+      (local $dd (ref $dat)) (local $da (ref array))
       (local $i i32) (local $len i32)
       (local $sf64 (ref $float_array)) (local $df64 (ref $float_array))
       (local $sf32 (ref $f32_array)) (local $df32 (ref $f32_array))
@@ -199,14 +199,14 @@
       (local $si32 (ref $i32_array)) (local $di32 (ref $i32_array))
       (local $si16 (ref $i16_array)) (local $di16 (ref $i16_array))
       (local $si8 (ref $bytes)) (local $di8 (ref $bytes))
-      (local.set $sd (ref.cast (ref $data) (any.convert_extern (local.get $s))))
-      (local.set $sa (struct.get $data $array (local.get $sd)))
-      (local.set $so (struct.get $data $offset (local.get $sd)))
-      (local.set $len (struct.get $data $len (local.get $sd)))
-      (local.set $dd (ref.cast (ref $data) (any.convert_extern (local.get $d))))
-      (local.set $da (struct.get $data $array (local.get $dd)))
-      (local.set $do
-         (i32.add (struct.get $data $offset (local.get $dd)) (local.get $do)))
+      (local.set $sd (ref.cast (ref $dat) (any.convert_extern (local.get $s))))
+      (local.set $sa (struct.get $dat $array (local.get $sd)))
+      (local.set $so (struct.get $dat $offset (local.get $sd)))
+      (local.set $len (struct.get $dat $len (local.get $sd)))
+      (local.set $dd (ref.cast (ref $dat) (any.convert_extern (local.get $d))))
+      (local.set $da (struct.get $dat $array (local.get $dd)))
+      (local.set $doff
+         (i32.add (struct.get $dat $offset (local.get $dd)) (local.get $doff)))
       (if (ref.test (ref $float_array) (local.get $sa))
          (then
             (local.set $sf64 (ref.cast (ref $float_array) (local.get $sa)))
@@ -215,7 +215,7 @@
                (if (i32.lt_u (local.get $i) (local.get $len))
                   (then
                      (array.set $float_array (local.get $df64)
-                        (i32.add (local.get $do) (local.get $i))
+                        (i32.add (local.get $doff) (local.get $i))
                         (array.get $float_array (local.get $sf64)
                            (i32.add (local.get $so) (local.get $i))))
                      (local.set $i (i32.add (local.get $i) (i32.const 1)))
@@ -228,7 +228,7 @@
                (if (i32.lt_u (local.get $i) (local.get $len))
                   (then
                      (array.set $f32_array (local.get $df32)
-                        (i32.add (local.get $do) (local.get $i))
+                        (i32.add (local.get $doff) (local.get $i))
                         (array.get $f32_array (local.get $sf32)
                            (i32.add (local.get $so) (local.get $i))))
                      (local.set $i (i32.add (local.get $i) (i32.const 1)))
@@ -241,7 +241,7 @@
                (if (i32.lt_u (local.get $i) (local.get $len))
                   (then
                      (array.set $i64_array (local.get $di64)
-                        (i32.add (local.get $do) (local.get $i))
+                        (i32.add (local.get $doff) (local.get $i))
                         (array.get $i64_array (local.get $si64)
                            (i32.add (local.get $so) (local.get $i))))
                      (local.set $i (i32.add (local.get $i) (i32.const 1)))
@@ -254,7 +254,7 @@
                (if (i32.lt_u (local.get $i) (local.get $len))
                   (then
                      (array.set $i32_array (local.get $di32)
-                        (i32.add (local.get $do) (local.get $i))
+                        (i32.add (local.get $doff) (local.get $i))
                         (array.get $i32_array (local.get $si32)
                            (i32.add (local.get $so) (local.get $i))))
                      (local.set $i (i32.add (local.get $i) (i32.const 1)))
@@ -267,7 +267,7 @@
                (if (i32.lt_u (local.get $i) (local.get $len))
                   (then
                      (array.set $i16_array (local.get $di16)
-                        (i32.add (local.get $do) (local.get $i))
+                        (i32.add (local.get $doff) (local.get $i))
                         (array.get_u $i16_array (local.get $si16)
                            (i32.add (local.get $so) (local.get $i))))
                      (local.set $i (i32.add (local.get $i) (i32.const 1)))
@@ -280,7 +280,7 @@
                (if (i32.lt_u (local.get $i) (local.get $len))
                   (then
                      (array.set $bytes (local.get $di8)
-                        (i32.add (local.get $do) (local.get $i))
+                        (i32.add (local.get $doff) (local.get $i))
                         (array.get_u $bytes (local.get $si8)
                            (i32.add (local.get $so) (local.get $i))))
                      (local.set $i (i32.add (local.get $i) (i32.const 1)))
@@ -291,38 +291,38 @@
 
    (func $ta_subarray (export "ta_subarray")
       (param $b (ref extern)) (param $s i32) (param $e i32) (result (ref extern))
-      (local $d (ref $data))
+      (local $d (ref $dat))
       (local $a (ref array))
-      (local.set $d (ref.cast (ref $data) (any.convert_extern (local.get $b))))
-      (local.set $a (struct.get $data $array (local.get $d)))
+      (local.set $d (ref.cast (ref $dat) (any.convert_extern (local.get $b))))
+      (local.set $a (struct.get $dat $array (local.get $d)))
       (if (ref.test (ref $i64_array) (local.get $a))
          (then
             (local.set $s (i32.shr_u (local.get $s) (i32.const 1)))
             (local.set $e (i32.shr_u (local.get $e) (i32.const 1)))))
       (extern.convert_any
-         (struct.new $data
+         (struct.new $dat
             (local.get $a)
-            (i32.add (struct.get $data $offset (local.get $d)) (local.get $s))
+            (i32.add (struct.get $dat $offset (local.get $d)) (local.get $s))
             (i32.sub (local.get $e) (local.get $s)))))
 
    (func $ta_blit_from_bytes (export "ta_blit_from_bytes")
       (param $s (ref $bytes)) (param $so i32)
-      (param $b (ref extern)) (param $do i32)
+      (param $b (ref extern)) (param $doff i32)
       (param $len i32)
-      (local $data (ref $data))
+      (local $dat (ref $dat))
       (local $d (ref $bytes))
       (local $i i32)
-      (local.set $data
-         (ref.cast (ref $data) (any.convert_extern (local.get $b))))
+      (local.set $dat
+         (ref.cast (ref $dat) (any.convert_extern (local.get $b))))
       (local.set $d
-         (ref.cast (ref $bytes) (struct.get $data $array (local.get $data))))
-      (local.set $do
-         (i32.add (local.get $do) (struct.get $data $offset (local.get $data))))
+         (ref.cast (ref $bytes) (struct.get $dat $array (local.get $dat))))
+      (local.set $doff
+         (i32.add (local.get $doff) (struct.get $dat $offset (local.get $dat))))
       (loop $loop
          (if (i32.lt_u (local.get $i) (local.get $len))
             (then
                (array.set $bytes (local.get $d)
-                  (i32.add (local.get $do) (local.get $i))
+                  (i32.add (local.get $doff) (local.get $i))
                   (array.get_u $bytes (local.get $s)
                      (i32.add (local.get $so) (local.get $i))))
                (local.set $i (i32.add (local.get $i) (i32.const 1)))
@@ -330,22 +330,22 @@
 
    (func $ta_blit_to_bytes (export "ta_blit_to_bytes")
       (param $b (ref extern)) (param $so i32)
-      (param $d (ref $bytes)) (param $do i32)
+      (param $d (ref $bytes)) (param $doff i32)
       (param $len i32)
-      (local $data (ref $data))
+      (local $dat (ref $dat))
       (local $s (ref $bytes))
       (local $i i32)
-      (local.set $data
-         (ref.cast (ref $data) (any.convert_extern (local.get $b))))
+      (local.set $dat
+         (ref.cast (ref $dat) (any.convert_extern (local.get $b))))
       (local.set $s
-         (ref.cast (ref $bytes) (struct.get $data $array (local.get $data))))
+         (ref.cast (ref $bytes) (struct.get $dat $array (local.get $dat))))
       (local.set $so
-         (i32.add (local.get $so) (struct.get $data $offset (local.get $data))))
+         (i32.add (local.get $so) (struct.get $dat $offset (local.get $dat))))
       (loop $loop
          (if (i32.lt_u (local.get $i) (local.get $len))
             (then
                (array.set $bytes (local.get $d)
-                  (i32.add (local.get $do) (local.get $i))
+                  (i32.add (local.get $doff) (local.get $i))
                   (array.get_u $bytes (local.get $s)
                      (i32.add (local.get $so) (local.get $i))))
                (local.set $i (i32.add (local.get $i) (i32.const 1)))
@@ -355,141 +355,141 @@
 
    (func $dv_get_i8 (export "dv_get_i8")
       (param $a (ref extern)) (param $i i32) (result i32)
-      (local $d (ref $data))
-      (local.set $d (ref.cast (ref $data) (any.convert_extern (local.get $a))))
+      (local $d (ref $dat))
+      (local.set $d (ref.cast (ref $dat) (any.convert_extern (local.get $a))))
       (array.get_s $i8_array
-         (ref.cast (ref $i8_array) (struct.get $data $array (local.get $d)))
-         (i32.add (struct.get $data $offset (local.get $d)) (local.get $i))))
+         (ref.cast (ref $i8_array) (struct.get $dat $array (local.get $d)))
+         (i32.add (struct.get $dat $offset (local.get $d)) (local.get $i))))
 
    (func $dv_get_ui8 (export "dv_get_ui8")
       (param $a (ref extern)) (param $i i32) (result i32)
-      (local $d (ref $data))
-      (local.set $d (ref.cast (ref $data) (any.convert_extern (local.get $a))))
+      (local $d (ref $dat))
+      (local.set $d (ref.cast (ref $dat) (any.convert_extern (local.get $a))))
       (array.get_u $i8_array
-         (ref.cast (ref $i8_array) (struct.get $data $array (local.get $d)))
-         (i32.add (struct.get $data $offset (local.get $d)) (local.get $i))))
+         (ref.cast (ref $i8_array) (struct.get $dat $array (local.get $d)))
+         (i32.add (struct.get $dat $offset (local.get $d)) (local.get $i))))
 
    (func $dv_get_i16 (export "dv_get_i16")
       (param $a (ref extern)) (param $i i32) (param i32) (result i32)
-      (local $d (ref $data))
-      (local.set $d (ref.cast (ref $data) (any.convert_extern (local.get $a))))
+      (local $d (ref $dat))
+      (local.set $d (ref.cast (ref $dat) (any.convert_extern (local.get $a))))
       (array.get_s $i16_array
-         (ref.cast (ref $i16_array) (struct.get $data $array (local.get $d)))
-         (i32.add (struct.get $data $offset (local.get $d))
+         (ref.cast (ref $i16_array) (struct.get $dat $array (local.get $d)))
+         (i32.add (struct.get $dat $offset (local.get $d))
             (i32.shr_u (local.get $i) (i32.const 1)))))
 
    (func $dv_get_ui16 (export "dv_get_ui16")
       (param $a (ref extern)) (param $i i32) (param i32) (result i32)
-      (local $d (ref $data))
-      (local.set $d (ref.cast (ref $data) (any.convert_extern (local.get $a))))
+      (local $d (ref $dat))
+      (local.set $d (ref.cast (ref $dat) (any.convert_extern (local.get $a))))
       (array.get_u $i16_array
-         (ref.cast (ref $i16_array) (struct.get $data $array (local.get $d)))
-         (i32.add (struct.get $data $offset (local.get $d))
+         (ref.cast (ref $i16_array) (struct.get $dat $array (local.get $d)))
+         (i32.add (struct.get $dat $offset (local.get $d))
             (i32.shr_u (local.get $i) (i32.const 1)))))
 
    (func $dv_get_i32 (export "dv_get_i32")
       (param $a (ref extern)) (param $i i32) (param i32) (result i32)
-      (local $d (ref $data))
-      (local.set $d (ref.cast (ref $data) (any.convert_extern (local.get $a))))
+      (local $d (ref $dat))
+      (local.set $d (ref.cast (ref $dat) (any.convert_extern (local.get $a))))
       (array.get $i32_array
-         (ref.cast (ref $i32_array) (struct.get $data $array (local.get $d)))
-         (i32.add (struct.get $data $offset (local.get $d))
+         (ref.cast (ref $i32_array) (struct.get $dat $array (local.get $d)))
+         (i32.add (struct.get $dat $offset (local.get $d))
             (i32.shr_u (local.get $i) (i32.const 2)))))
 
    (func $dv_get_i64 (export "dv_get_i64")
       (param $a (ref extern)) (param $i i32) (param i32) (result i64)
-      (local $d (ref $data))
-      (local.set $d (ref.cast (ref $data) (any.convert_extern (local.get $a))))
+      (local $d (ref $dat))
+      (local.set $d (ref.cast (ref $dat) (any.convert_extern (local.get $a))))
       (array.get $i64_array
-         (ref.cast (ref $i64_array) (struct.get $data $array (local.get $d)))
-         (i32.add (struct.get $data $offset (local.get $d))
+         (ref.cast (ref $i64_array) (struct.get $dat $array (local.get $d)))
+         (i32.add (struct.get $dat $offset (local.get $d))
             (i32.shr_u (local.get $i) (i32.const 3)))))
 
    (func $dv_get_f32 (export "dv_get_f32")
       (param $a (ref extern)) (param $i i32) (param i32) (result f32)
-      (local $d (ref $data))
-      (local.set $d (ref.cast (ref $data) (any.convert_extern (local.get $a))))
+      (local $d (ref $dat))
+      (local.set $d (ref.cast (ref $dat) (any.convert_extern (local.get $a))))
       (array.get $f32_array
-         (ref.cast (ref $f32_array) (struct.get $data $array (local.get $d)))
-         (i32.add (struct.get $data $offset (local.get $d))
+         (ref.cast (ref $f32_array) (struct.get $dat $array (local.get $d)))
+         (i32.add (struct.get $dat $offset (local.get $d))
             (i32.shr_u (local.get $i) (i32.const 2)))))
 
    (func $dv_get_f64 (export "dv_get_f64")
       (param $a (ref extern)) (param $i i32) (param i32) (result f64)
-      (local $d (ref $data))
-      (local.set $d (ref.cast (ref $data) (any.convert_extern (local.get $a))))
+      (local $d (ref $dat))
+      (local.set $d (ref.cast (ref $dat) (any.convert_extern (local.get $a))))
       (array.get $f64_array
-         (ref.cast (ref $f64_array) (struct.get $data $array (local.get $d)))
-         (i32.add (struct.get $data $offset (local.get $d))
+         (ref.cast (ref $f64_array) (struct.get $dat $array (local.get $d)))
+         (i32.add (struct.get $dat $offset (local.get $d))
             (i32.shr_u (local.get $i) (i32.const 3)))))
 
    (func $dv_set_i8 (export "dv_set_i8")
       (param $a (ref extern)) (param $i i32) (param $v i32)
-      (local $d (ref $data))
-      (local.set $d (ref.cast (ref $data) (any.convert_extern (local.get $a))))
+      (local $d (ref $dat))
+      (local.set $d (ref.cast (ref $dat) (any.convert_extern (local.get $a))))
       (array.set $i8_array
-         (ref.cast (ref $i8_array) (struct.get $data $array (local.get $d)))
-         (i32.add (struct.get $data $offset (local.get $d)) (local.get $i))
+         (ref.cast (ref $i8_array) (struct.get $dat $array (local.get $d)))
+         (i32.add (struct.get $dat $offset (local.get $d)) (local.get $i))
          (local.get $v)))
 
    (func $dv_set_i16 (export "dv_set_i16")
       (param $a (ref extern)) (param $i i32) (param $v i32) (param i32)
-      (local $d (ref $data))
-      (local.set $d (ref.cast (ref $data) (any.convert_extern (local.get $a))))
+      (local $d (ref $dat))
+      (local.set $d (ref.cast (ref $dat) (any.convert_extern (local.get $a))))
       (array.set $i16_array
-         (ref.cast (ref $i16_array) (struct.get $data $array (local.get $d)))
-         (i32.add (struct.get $data $offset (local.get $d))
+         (ref.cast (ref $i16_array) (struct.get $dat $array (local.get $d)))
+         (i32.add (struct.get $dat $offset (local.get $d))
             (i32.shr_u (local.get $i) (i32.const 1)))
          (local.get $v)))
 
    (func $dv_set_i32 (export "dv_set_i32")
       (param $a (ref extern)) (param $i i32) (param $v i32) (param i32)
-      (local $d (ref $data))
-      (local.set $d (ref.cast (ref $data) (any.convert_extern (local.get $a))))
+      (local $d (ref $dat))
+      (local.set $d (ref.cast (ref $dat) (any.convert_extern (local.get $a))))
       (array.set $i32_array
-         (ref.cast (ref $i32_array) (struct.get $data $array (local.get $d)))
-         (i32.add (struct.get $data $offset (local.get $d))
+         (ref.cast (ref $i32_array) (struct.get $dat $array (local.get $d)))
+         (i32.add (struct.get $dat $offset (local.get $d))
             (i32.shr_u (local.get $i) (i32.const 2)))
          (local.get $v)))
 
    (func $dv_set_i64 (export "dv_set_i64")
       (param $a (ref extern)) (param $i i32) (param $v i64) (param i32)
-      (local $d (ref $data))
-      (local.set $d (ref.cast (ref $data) (any.convert_extern (local.get $a))))
+      (local $d (ref $dat))
+      (local.set $d (ref.cast (ref $dat) (any.convert_extern (local.get $a))))
       (array.set $i64_array
-         (ref.cast (ref $i64_array) (struct.get $data $array (local.get $d)))
-         (i32.add (struct.get $data $offset (local.get $d))
+         (ref.cast (ref $i64_array) (struct.get $dat $array (local.get $d)))
+         (i32.add (struct.get $dat $offset (local.get $d))
             (i32.shr_u (local.get $i) (i32.const 3)))
          (local.get $v)))
 
    (func $dv_set_f32 (export "dv_set_f32")
       (param $a (ref extern)) (param $i i32) (param $v f32) (param i32)
-      (local $d (ref $data))
-      (local.set $d (ref.cast (ref $data) (any.convert_extern (local.get $a))))
+      (local $d (ref $dat))
+      (local.set $d (ref.cast (ref $dat) (any.convert_extern (local.get $a))))
       (array.set $f32_array
-         (ref.cast (ref $f32_array) (struct.get $data $array (local.get $d)))
-         (i32.add (struct.get $data $offset (local.get $d))
+         (ref.cast (ref $f32_array) (struct.get $dat $array (local.get $d)))
+         (i32.add (struct.get $dat $offset (local.get $d))
             (i32.shr_u (local.get $i) (i32.const 2)))
          (local.get $v)))
 
    (func $dv_set_f64 (export "dv_set_f64")
       (param $a (ref extern)) (param $i i32) (param $v f64) (param i32)
-      (local $d (ref $data))
-      (local.set $d (ref.cast (ref $data) (any.convert_extern (local.get $a))))
+      (local $d (ref $dat))
+      (local.set $d (ref.cast (ref $dat) (any.convert_extern (local.get $a))))
       (array.set $f64_array
-         (ref.cast (ref $f64_array) (struct.get $data $array (local.get $d)))
-         (i32.add (struct.get $data $offset (local.get $d))
+         (ref.cast (ref $f64_array) (struct.get $dat $array (local.get $d)))
+         (i32.add (struct.get $dat $offset (local.get $d))
             (i32.shr_u (local.get $i) (i32.const 3)))
          (local.get $v)))
 
    (func $dv_get_ui16_unaligned
       (param $b (ref extern)) (param $i i32) (param i32) (result i32)
-      (local $d (ref $data)) (local $s (ref $bytes))
-      (local.set $d (ref.cast (ref $data) (any.convert_extern (local.get $b))))
+      (local $d (ref $dat)) (local $s (ref $bytes))
+      (local.set $d (ref.cast (ref $dat) (any.convert_extern (local.get $b))))
       (local.set $s
-         (ref.cast (ref $bytes) (struct.get $data $array (local.get $d))))
+         (ref.cast (ref $bytes) (struct.get $dat $array (local.get $d))))
       (local.set $i
-         (i32.add (struct.get $data $offset (local.get $d)) (local.get $i)))
+         (i32.add (struct.get $dat $offset (local.get $d)) (local.get $i)))
       (i32.or
          (array.get_u $bytes (local.get $s) (local.get $i))
          (i32.shl
@@ -499,12 +499,12 @@
 
    (func $dv_get_i32_unaligned (export "dv_get_i32_unaligned")
       (param $b (ref extern)) (param $i i32) (param i32) (result i32)
-      (local $d (ref $data)) (local $s (ref $bytes))
-      (local.set $d (ref.cast (ref $data) (any.convert_extern (local.get $b))))
+      (local $d (ref $dat)) (local $s (ref $bytes))
+      (local.set $d (ref.cast (ref $dat) (any.convert_extern (local.get $b))))
       (local.set $s
-         (ref.cast (ref $bytes) (struct.get $data $array (local.get $d))))
+         (ref.cast (ref $bytes) (struct.get $dat $array (local.get $d))))
       (local.set $i
-         (i32.add (struct.get $data $offset (local.get $d)) (local.get $i)))
+         (i32.add (struct.get $dat $offset (local.get $d)) (local.get $i)))
       (i32.or
          (i32.or
             (array.get_u $bytes (local.get $s) (local.get $i))
@@ -537,24 +537,24 @@
 
    (func $dv_set_i16_unaligned
       (param $b (ref extern)) (param $i i32) (param $v i32) (param i32)
-      (local $d (ref $data)) (local $s (ref $bytes)) (local $j i32)
-      (local.set $d (ref.cast (ref $data) (any.convert_extern (local.get $b))))
+      (local $d (ref $dat)) (local $s (ref $bytes)) (local $j i32)
+      (local.set $d (ref.cast (ref $dat) (any.convert_extern (local.get $b))))
       (local.set $s
-         (ref.cast (ref $bytes) (struct.get $data $array (local.get $d))))
+         (ref.cast (ref $bytes) (struct.get $dat $array (local.get $d))))
       (local.set $i
-         (i32.add (struct.get $data $offset (local.get $d)) (local.get $i)))
+         (i32.add (struct.get $dat $offset (local.get $d)) (local.get $i)))
       (array.set $bytes (local.get $s) (local.get $i) (local.get $v))
       (array.set $bytes (local.get $s) (i32.add (local.get $i) (i32.const 1))
          (i32.shr_u (local.get $v) (i32.const 8))))
 
    (func $dv_set_i32_unaligned
       (param $b (ref extern)) (param $i i32) (param $v i32) (param i32)
-      (local $d (ref $data)) (local $s (ref $bytes))
-      (local.set $d (ref.cast (ref $data) (any.convert_extern (local.get $b))))
+      (local $d (ref $dat)) (local $s (ref $bytes))
+      (local.set $d (ref.cast (ref $dat) (any.convert_extern (local.get $b))))
       (local.set $s
-         (ref.cast (ref $bytes) (struct.get $data $array (local.get $d))))
+         (ref.cast (ref $bytes) (struct.get $dat $array (local.get $d))))
       (local.set $i
-         (i32.add (struct.get $data $offset (local.get $d)) (local.get $i)))
+         (i32.add (struct.get $dat $offset (local.get $d)) (local.get $i)))
       (array.set $bytes (local.get $s) (local.get $i) (local.get $v))
       (array.set $bytes (local.get $s) (i32.add (local.get $i) (i32.const 1))
          (i32.shr_u (local.get $v) (i32.const 8)))
@@ -1068,7 +1068,7 @@
       (local $b (ref $bigarray))
       (local $num_dims i32) (local $dim (ref $int_array))
       (local $flags i32) (local $kind i32)
-      (local $data (ref extern))
+      (local $dat (ref extern))
       (local $view (ref extern))
       (local $i i32) (local $len i32)
       (local $l i64)
@@ -1102,13 +1102,13 @@
                (local.set $i (i32.add (local.get $i) (i32.const 1)))
                (br $loop))))
       (local.set $len (call $caml_ba_get_size (local.get $dim)))
-      (local.set $data
+      (local.set $dat
          (call $caml_ba_create_buffer (local.get $kind) (local.get $len)))
-      (local.set $view (call $dv_make (local.get $data)))
+      (local.set $view (call $dv_make (local.get $dat)))
       (local.set $b
          (struct.new $bigarray
             (global.get $bigarray_ops)
-            (local.get $data)
+            (local.get $dat)
             (local.get $view)
             (local.get $dim)
             (local.get $num_dims)
@@ -1253,7 +1253,7 @@
       (param $vkind (ref eq)) (param $layout (ref eq)) (param $d (ref eq))
       (result (ref eq))
       (local $vdim (ref $block))
-      (local $data (ref extern)) (local $dim (ref $int_array))
+      (local $dat (ref extern)) (local $dim (ref $int_array))
       (local $kind i32) (local $num_dims i32) (local $i i32) (local $n i32)
       (local.set $kind (i31.get_s (ref.cast (ref i31) (local.get $vkind))))
       (local.set $vdim (ref.cast (ref $block) (local.get $d)))
@@ -1279,13 +1279,13 @@
                   (local.get $dim) (local.get $i) (local.get $n))
                (local.set $i (i32.add (local.get $i) (i32.const 1)))
                (br $loop))))
-      (local.set $data
+      (local.set $dat
          (call $caml_ba_create_buffer (local.get $kind)
             (call $caml_ba_get_size (local.get $dim))))
       (struct.new $bigarray
          (global.get $bigarray_ops)
-         (local.get $data)
-         (call $dv_make (local.get $data))
+         (local.get $dat)
+         (call $dv_make (local.get $dat))
          (local.get $dim)
          (local.get $num_dims)
          (local.get $kind)
@@ -1297,24 +1297,24 @@
 (@if (not $wasi)
 (@then
    (func (export "caml_ba_from_typed_array") (param $v (ref eq)) (result (ref eq))
-      (local $data (ref extern))
+      (local $dat (ref extern))
       (local $kind i32)
       (local $len i32)
-      (local.set $data
+      (local.set $dat
          (call $ta_normalize
             (ref.as_non_null (extern.convert_any (call $unwrap (local.get $v))))))
-      (local.set $kind (call $ta_kind (local.get $data)))
+      (local.set $kind (call $ta_kind (local.get $dat)))
       (if (i32.lt_s (local.get $kind) (i32.const 0))
          (then (call $caml_invalid_argument (global.get $ta_unsupported_kind))))
       (if (i32.eq (local.get $kind) (i32.const 14)) ;; Uint8ClampedArray
          (then (local.set $kind (i32.const 3))))
-      (local.set $len (call $ta_length (local.get $data)))
+      (local.set $len (call $ta_length (local.get $dat)))
       (if (i32.lt_s (local.get $len) (i32.const 0))
          (then (call $caml_invalid_argument (global.get $ta_too_large))))
       (struct.new $bigarray
          (global.get $bigarray_ops)
-         (local.get $data)
-         (call $dv_make (local.get $data))
+         (local.get $dat)
+         (call $dv_make (local.get $dat))
          (array.new_fixed $int_array 1 (local.get $len))
          (i32.const 1)
          (local.get $kind)
@@ -1324,18 +1324,18 @@
    ;; of re-inferring it (a Uint8Array would otherwise yield int8_unsigned,
    ;; kind 3). Used for bigstrings, which are char bigarrays.
    (func (export "caml_ba_char_of_typed_array") (param $v (ref eq)) (result (ref eq))
-      (local $data (ref extern))
+      (local $dat (ref extern))
       (local $len i32)
-      (local.set $data
+      (local.set $dat
          (call $ta_normalize
             (ref.as_non_null (extern.convert_any (call $unwrap (local.get $v))))))
-      (local.set $len (call $ta_length (local.get $data)))
+      (local.set $len (call $ta_length (local.get $dat)))
       (if (i32.lt_s (local.get $len) (i32.const 0))
          (then (call $caml_invalid_argument (global.get $ta_too_large))))
       (struct.new $bigarray
          (global.get $bigarray_ops)
-         (local.get $data)
-         (call $dv_make (local.get $data))
+         (local.get $dat)
+         (call $dv_make (local.get $dat))
          (array.new_fixed $int_array 1 (local.get $len))
          (i32.const 1)
          (i32.const 12) ;; char
@@ -2281,14 +2281,14 @@
    (func (export "caml_ba_fill")
       (param $vba (ref eq)) (param $v (ref eq)) (result (ref eq))
       (local $ba (ref $bigarray))
-      (local $data (ref extern))
+      (local $dat (ref extern))
       (local $view (ref extern))
       (local $l i64)
       (local $i i32) (local $len i32)
       (local $f1 f64) (local $f2 f64) (local $f1' f32) (local $f2' f32)
       (local $b (ref $float_array))
       (local.set $ba (ref.cast (ref $bigarray) (local.get $vba)))
-      (local.set $data (struct.get $bigarray $ba_data (local.get $ba)))
+      (local.set $dat (struct.get $bigarray $ba_data (local.get $ba)))
       (block $float
        (block $int
         (block $int32
@@ -2300,7 +2300,7 @@
                $int32 $complex32 $complex64 $int $float16
                (struct.get_u $bigarray $ba_kind (local.get $ba))))
              ;; float16
-             (call $ta_fill_int (local.get $data)
+             (call $ta_fill_int (local.get $dat)
                 (call $double_to_float16
                    (struct.get $float 0 (ref.cast (ref $float) (local.get $v)))))
              (return (ref.i31 (i32.const 0))))
@@ -2365,14 +2365,14 @@
                    (br $loop))))
           (return (ref.i31 (i32.const 0))))
          ;; int32
-         (call $ta_fill_int (local.get $data) (call $Int32_val (local.get $v)))
+         (call $ta_fill_int (local.get $dat) (call $Int32_val (local.get $v)))
          (return (ref.i31 (i32.const 0))))
         ;; int
-        (call $ta_fill_int (local.get $data)
+        (call $ta_fill_int (local.get $dat)
            (i31.get_s (ref.cast (ref i31) (local.get $v))))
         (return (ref.i31 (i32.const 0))))
        ;; float
-       (call $ta_fill_float (local.get $data)
+       (call $ta_fill_float (local.get $dat)
           (struct.get $float 0 (ref.cast (ref $float) (local.get $v))))
        (return (ref.i31 (i32.const 0))))
 
@@ -3114,21 +3114,21 @@
    (func (export "caml_ba_get_view") (param $vba (ref eq)) (result (ref extern))
       (struct.get $bigarray $ba_view (ref.cast (ref $bigarray) (local.get $vba))))
 
-   (func (export "caml_ba_set_data") (param $vba (ref eq)) (param $data (ref extern))
+   (func (export "caml_ba_set_data") (param $vba (ref eq)) (param $dat (ref extern))
       (struct.set $bigarray $ba_data (ref.cast (ref $bigarray) (local.get $vba))
-         (local.get $data)))
+         (local.get $dat)))
 
    (func (export "caml_ba_get_dim") (param $vba (ref eq)) (result (ref $int_array))
       (struct.get $bigarray $ba_dim (ref.cast (ref $bigarray) (local.get $vba))))
 
    (func (export "caml_ba_alloc")
       (param $kind i32) (param $layout i32) (param $num_dims i32)
-      (param $data (ref extern)) (param $dim (ref $int_array))
+      (param $dat (ref extern)) (param $dim (ref $int_array))
       (result (ref eq))
       (struct.new $bigarray
          (global.get $bigarray_ops)
-         (local.get $data)
-         (call $dv_make (local.get $data))
+         (local.get $dat)
+         (call $dv_make (local.get $dat))
          (local.get $dim)
          (local.get $num_dims)
          (local.get $kind)

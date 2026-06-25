@@ -119,7 +119,7 @@
    (import "bindings" "file_size" (func $file_size (param i32) (result i64)))
    (import "bindings" "access" (func $access (param anyref) (param i32)))
    (import "bindings" "open"
-      (func $open (param anyref) (param i32) (param i32) (result i32)))
+      (func $open_fn (param anyref) (param i32) (param i32) (result i32)))
    (import "bindings" "write"
       (func $write (param i32 (ref extern) i32 i32 i64) (result i32)))
    (import "bindings" "write"
@@ -209,17 +209,17 @@
       "Exception Unix.Unix_error not initialized, please link unix.cma")
 
    (func $get_unix_error_exn (result (ref eq))
-      (local $unix_error_exn eqref)
+      (local $exn eqref)
       (if (ref.test (ref i31) (global.get $unix_error_exn))
          (then
-            (local.set $unix_error_exn
+            (local.set $exn
                (call $caml_named_value (global.get $unix_error_str)))
-            (if (ref.is_null (local.get $unix_error_exn))
+            (if (ref.is_null (local.get $exn))
                (then
                   (call $caml_invalid_argument
                       (global.get $unix_error_not_initialized))))
             (global.set $unix_error_exn
-               (ref.as_non_null (local.get $unix_error_exn)))))
+               (ref.as_non_null (local.get $exn)))))
       (global.get $unix_error_exn))
 
    (@string $no_arg "")
@@ -406,8 +406,8 @@
          (return (call $caml_string_of_jsstring (local.get $s)))))
       (return (global.get $no_arg)))
 
-   (@string $code "code")
-   (@string $errno "errno")
+   (@string $code_str "code")
+   (@string $errno_str "errno")
    (@string $indexOf "indexOf")
    (@string $syscall "syscall")
    (@string $path "path")
@@ -418,7 +418,7 @@
       (local $errno (ref eq))
       (local $variant (ref eq))
       (local.set $exn (call $wrap (any.convert_extern (local.get $exception))))
-      (local.set $code (call $caml_js_get (local.get $exn) (global.get $code)))
+      (local.set $code (call $caml_js_get (local.get $exn) (global.get $code_str)))
       (local.set $variant
          (call $caml_js_meth_call (global.get $unix_error)
             (global.get $indexOf)
@@ -427,7 +427,7 @@
       (if (ref.eq (local.get $variant) (ref.i31 (i32.const -1)))
          (then
             (local.set $errno
-               (call $caml_js_get (local.get $exn) (global.get $errno)))
+               (call $caml_js_get (local.get $exn) (global.get $errno_str)))
             (local.set $errno
                (ref.i31
                   (if (result i32) (ref.test (ref i31) (local.get $errno))
@@ -717,7 +717,7 @@
 
 (@if $wasi
 (@then
-   (@string $utimes "utimes")
+   (@string $utimes_str "utimes")
 
    (func (export "unix_utimes") (export "caml_unix_utimes")
       (param $path (ref eq)) (param $atime (ref eq)) (param $mtime (ref eq))
@@ -726,7 +726,7 @@
       (local $atim i64) (local $mtim i64)
       (local $set_to_now i32) (local $res i32)
       (local $at f64) (local $mt f64)
-      (call $unix_resolve_path (global.get $utimes) (local.get $path))
+      (call $unix_resolve_path (global.get $utimes_str) (local.get $path))
       (local.set $p_len)
       (local.set $p_addr)
       (local.set $p_fd)
@@ -756,7 +756,7 @@
             (i32.shl (i32.const 5) (local.get $set_to_now))))
       (call $free (local.get $p_addr))
       (call $caml_unix_error_if
-         (local.get $res) (global.get $utimes) (local.get $path))
+         (local.get $res) (global.get $utimes_str) (local.get $path))
       (ref.i31 (i32.const 0)))
 )
 (@else
@@ -872,29 +872,29 @@
          (local.get $res) (local.get $name) (local.get $path))
       (return_call $alloc_stat (local.get $large) (local.get $buffer)))
 
-   (@string $stat "stat")
+   (@string $stat_str "stat")
 
    (func (export "unix_stat") (export "caml_unix_stat")
       (param $path (ref eq)) (result (ref eq))
       (return_call $stat
-         (local.get $path) (i32.const 0) (i32.const 1) (global.get $stat)))
+         (local.get $path) (i32.const 0) (i32.const 1) (global.get $stat_str)))
 
    (func (export "unix_stat_64") (export "caml_unix_stat_64")
       (param $path (ref eq)) (result (ref eq))
       (return_call $stat
-         (local.get $path) (i32.const 1) (i32.const 1) (global.get $stat)))
+         (local.get $path) (i32.const 1) (i32.const 1) (global.get $stat_str)))
 
-   (@string $lstat "lstat")
+   (@string $lstat_str "lstat")
 
    (func (export "unix_lstat") (export "caml_unix_lstat")
       (param $path (ref eq)) (result (ref eq))
       (return_call $stat
-         (local.get $path) (i32.const 0) (i32.const 0) (global.get $lstat)))
+         (local.get $path) (i32.const 0) (i32.const 0) (global.get $lstat_str)))
 
    (func (export "unix_lstat_64") (export "caml_unix_lstat_64")
       (param $path (ref eq)) (result (ref eq))
       (return_call $stat
-         (local.get $path) (i32.const 1) (i32.const 0) (global.get $lstat)))
+         (local.get $path) (i32.const 1) (i32.const 0) (global.get $lstat_str)))
 
    (func $fstat (param $fd (ref eq)) (param $large i32) (result (ref eq))
       (local $buffer i32) (local $res i32)
@@ -981,7 +981,7 @@
 
 (@if $wasi
 (@then
-   (@string $chmod "chmod")
+   (@string $chmod_str "chmod")
 
    (func (export "unix_chmod") (export "caml_unix_chmod")
       (param $path (ref eq)) (param $perms (ref eq)) (result (ref eq))
@@ -990,7 +990,7 @@
       ;; WASI has no notion of permissions, so the mode change is a no-op; but
       ;; still report a missing path like native (which raises ENOENT) instead
       ;; of silently succeeding. We can only check that the path exists.
-      (call $unix_resolve_path (global.get $chmod) (local.get $path))
+      (call $unix_resolve_path (global.get $chmod_str) (local.get $path))
       (local.set $p_len)
       (local.set $p_addr)
       (local.set $p_fd)
@@ -1004,7 +1004,7 @@
             (local.get $buffer)))
       (call $free (local.get $p_addr))
       (call $caml_unix_error_if
-         (local.get $res) (global.get $chmod) (local.get $path))
+         (local.get $res) (global.get $chmod_str) (local.get $path))
       (ref.i31 (i32.const 0)))
 )
 (@else
@@ -1040,7 +1040,7 @@
 
 (@if $wasi
 (@then
-   (@string $rename "rename")
+   (@string $rename_str "rename")
 
    (func (export "unix_rename") (export "caml_unix_rename")
       (param $o (ref eq)) (param $n (ref eq)) (result (ref eq))
@@ -1077,7 +1077,7 @@
       (call $free (local.get $op_addr))
       (call $free (local.get $np_addr))
       (call $caml_unix_error_if
-         (local.get $res) (global.get $rename) (local.get $arg))
+         (local.get $res) (global.get $rename_str) (local.get $arg))
       (ref.i31 (i32.const 0)))
 )
 (@else
@@ -1095,13 +1095,13 @@
 
 (@if $wasi
 (@then
-   (@string $chdir "chdir")
+   (@string $chdir_str "chdir")
 
    (func (export "unix_chdir") (export "caml_unix_chdir")
       (param $name (ref eq)) (result (ref eq))
       (local $p_fd i32) (local $p_addr i32) (local $p_len i32)
       (local $buffer i32) (local $res i32) (local $kind i32)
-      (call $unix_resolve_path (global.get $chdir) (local.get $name))
+      (call $unix_resolve_path (global.get $chdir_str) (local.get $name))
       (local.set $p_len)
       (local.set $p_addr)
       (local.set $p_fd)
@@ -1115,12 +1115,12 @@
             (local.get $buffer)))
       (call $free (local.get $p_addr))
       (call $caml_unix_error_if
-         (local.get $res) (global.get $chdir) (local.get $name))
+         (local.get $res) (global.get $chdir_str) (local.get $name))
       (local.set $kind (i32.load8_u offset=16 (local.get $buffer)))
       (if (i32.ne (local.get $kind) (i32.const 3))
          (then
             (call $caml_unix_error (i32.const 54) ;; ENOTDIR
-               (global.get $chdir) (local.get $name))))
+               (global.get $chdir_str) (local.get $name))))
       (call $wasi_chdir (local.get $name))
       (ref.i31 (i32.const 0)))
 )
@@ -1147,11 +1147,11 @@
 
 (@if $wasi
 (@then
-   (@string $mkdir "mkdir")
+   (@string $mkdir_str "mkdir")
 
    (func (export "unix_mkdir") (export "caml_unix_mkdir")
       (param $path (ref eq)) (param $perm (ref eq)) (result (ref eq))
-      (return_call $unix_path_op (global.get $mkdir) (local.get $path)
+      (return_call $unix_path_op (global.get $mkdir_str) (local.get $path)
          (ref.func $path_create_directory)))
 )
 (@else
@@ -1181,13 +1181,13 @@
          ;; host directory stream may omit them, so they are synthesized
          (field $dots (mut i32))))
 
-   (@string $opendir "opendir")
+   (@string $opendir_str "opendir")
 
    (func $unix_opendir (export "unix_opendir") (export "caml_unix_opendir")
       (param $name (ref eq)) (result (ref eq))
       (local $p_fd i32) (local $p_addr i32) (local $p_len i32)
       (local $buffer i32) (local $res i32)
-      (call $unix_resolve_path (global.get $opendir) (local.get $name))
+      (call $unix_resolve_path (global.get $opendir_str) (local.get $name))
       (local.set $p_len)
       (local.set $p_addr)
       (local.set $p_fd)
@@ -1205,7 +1205,7 @@
             (local.get $buffer)))
       (call $free (local.get $p_addr))
       (call $caml_unix_error_if
-         (local.get $res) (global.get $opendir) (local.get $name))
+         (local.get $res) (global.get $opendir_str) (local.get $name))
       (struct.new $directory
          (i32.load (local.get $buffer))
          (call $checked_malloc (i32.const 512))
@@ -1443,11 +1443,11 @@
 
 (@if $wasi
 (@then
-   (@string $unlink "unlink")
+   (@string $unlink_str "unlink")
 
    (func (export "unix_unlink") (export "caml_unix_unlink")
       (param $path (ref eq)) (result (ref eq))
-      (return_call $unix_path_op (global.get $unlink) (local.get $path)
+      (return_call $unix_path_op (global.get $unlink_str) (local.get $path)
          (ref.func $path_unlink_file)))
 )
 (@else
@@ -1464,11 +1464,11 @@
 
 (@if $wasi
 (@then
-   (@string $rmdir "rmdir")
+   (@string $rmdir_str "rmdir")
 
    (func (export "unix_rmdir") (export "caml_unix_rmdir")
       (param $path (ref eq)) (result (ref eq))
-      (return_call $unix_path_op (global.get $rmdir) (local.get $path)
+      (return_call $unix_path_op (global.get $rmdir_str) (local.get $path)
          (ref.func $path_remove_directory)))
 )
 (@else
@@ -1485,7 +1485,7 @@
 
 (@if $wasi
 (@then
-   (@string $link "link")
+   (@string $link_str "link")
 
    (func (export "unix_link") (export "caml_unix_link")
       (param $follow (ref eq)) (param $o (ref eq)) (param $n (ref eq))
@@ -1533,7 +1533,7 @@
       (call $free (local.get $op_addr))
       (call $free (local.get $np_addr))
       (call $caml_unix_error_if
-         (local.get $res) (global.get $link) (local.get $arg))
+         (local.get $res) (global.get $link_str) (local.get $arg))
       (ref.i31 (i32.const 0)))
 )
 (@else
@@ -1565,7 +1565,7 @@
 
 (@if $wasi
 (@then
-   (@string $symlink "symlink")
+   (@string $symlink_str "symlink")
 
    (func (export "unix_symlink") (export "caml_unix_symlink")
       (param $to_dir (ref eq)) (param $o (ref eq)) (param $n (ref eq))
@@ -1603,7 +1603,7 @@
       (call $free (local.get $op))
       (call $free (local.get $np_addr))
       (call $caml_unix_error_if
-         (local.get $res) (global.get $symlink) (local.get $arg))
+         (local.get $res) (global.get $symlink_str) (local.get $arg))
       (ref.i31 (i32.const 0)))
 )
 (@else
@@ -1633,13 +1633,13 @@
 
 (@if $wasi
 (@then
-   (@string $readlink "readlink")
+   (@string $readlink_str "readlink")
 
    (func (export "unix_readlink") (export "caml_unix_readlink")
       (param $path (ref eq)) (result (ref eq))
       (local $p_fd i32) (local $p_addr i32) (local $p_len i32)
       (local $buffer i32) (local $buf i32) (local $res i32)
-      (call $unix_resolve_path (global.get $readlink) (local.get $path))
+      (call $unix_resolve_path (global.get $readlink_str) (local.get $path))
       (local.set $p_len)
       (local.set $p_addr)
       (local.set $p_fd)
@@ -1655,7 +1655,7 @@
             (local.get $buffer)))
       (call $free (local.get $p_addr))
       (call $caml_unix_error_if
-         (local.get $res) (global.get $readlink) (local.get $path))
+         (local.get $res) (global.get $readlink_str) (local.get $path))
       (return_call $blit_memory_to_string
          (local.get $buf) (i32.load (local.get $buffer))))
 )
@@ -1676,13 +1676,13 @@
 
 (@if $wasi
 (@then
-   (@string $truncate "truncate")
+   (@string $truncate_str "truncate")
 
-   (func $truncate (param $path (ref eq)) (param $len i64) (result (ref eq))
+   (func $truncate_impl (param $path (ref eq)) (param $len i64) (result (ref eq))
       (local $p_fd i32) (local $p_addr i32) (local $p_len i32)
       (local $fd i32) (local $res i32) (local $buffer i32)
       (block $error
-         (call $unix_resolve_path (global.get $truncate) (local.get $path))
+         (call $unix_resolve_path (global.get $truncate_str) (local.get $path))
          (local.set $p_len)
          (local.set $p_addr)
          (local.set $p_fd)
@@ -1711,20 +1711,20 @@
          (br_if $error (local.get $res))
          (return (ref.i31 (i32.const 0))))
       (call $caml_unix_error
-         (local.get $res) (global.get $truncate) (local.get $path))
+         (local.get $res) (global.get $truncate_str) (local.get $path))
       (return (ref.i31 (i32.const 0))))
 
    (func (export "unix_truncate") (export "caml_unix_truncate")
       (param $path (ref eq)) (param $len (ref eq))
       (result (ref eq))
-      (return_call $truncate (local.get $path)
+      (return_call $truncate_impl (local.get $path)
          (i64.extend_i32_s
             (i31.get_s (ref.cast (ref i31) (local.get $len))))))
 
    (func (export "unix_truncate_64") (export "caml_unix_truncate_64")
       (param $path (ref eq)) (param $len (ref eq))
       (result (ref eq))
-      (return_call $truncate (local.get $path)
+      (return_call $truncate_impl (local.get $path)
          (call $Int64_val (local.get $len))))
 )
 (@else
@@ -1807,14 +1807,14 @@
 
 (@if $wasi
 (@then
-   (@string $access "access")
+   (@string $access_str "access")
 
    ;; We can only check that the file exists
    (func (export "unix_access") (export "caml_unix_access")
       (param $path (ref eq)) (param $flags (ref eq)) (result (ref eq))
       (local $p_fd i32) (local $p_addr i32) (local $p_len i32)
       (local $res i32) (local $buffer i32)
-      (call $unix_resolve_path (global.get $access) (local.get $path))
+      (call $unix_resolve_path (global.get $access_str) (local.get $path))
       (local.set $p_len)
       (local.set $p_addr)
       (local.set $p_fd)
@@ -1828,7 +1828,7 @@
             (local.get $buffer)))
       (call $free (local.get $p_addr))
       (call $caml_unix_error_if
-         (local.get $res) (global.get $access) (local.get $path))
+         (local.get $res) (global.get $access_str) (local.get $path))
       (return (ref.i31 (i32.const 0))))
 )
 (@else
@@ -1875,7 +1875,7 @@
          (i32.const 0) (i32.const 0x200) (i32.const 0x1000) (i32.const 0x800)
          (i32.const 0) (i32.const 0) (i32.const 0)))
 
-   (@string $open "open")
+   (@string $open_str "open")
 
    (func (export "unix_open") (export "caml_unix_open")
       (param $vpath (ref eq)) (param $vflags (ref eq)) (param $perm (ref eq))
@@ -1883,7 +1883,7 @@
       (local $flags i32) (local $offset i64)
       (local $path_fd i32) (local $path_addr i32) (local $path_len i32)
       (local $res i32) (local $buffer i32)
-      (call $unix_resolve_path (global.get $open) (local.get $vpath))
+      (call $unix_resolve_path (global.get $open_str) (local.get $vpath))
       (local.set $path_len)
       (local.set $path_addr)
       (local.set $path_fd)
@@ -1909,7 +1909,7 @@
             (local.get $buffer)))
       (call $free (local.get $path_addr))
       (call $caml_unix_error_if
-         (local.get $res) (global.get $open) (local.get $vpath))
+         (local.get $res) (global.get $open_str) (local.get $vpath))
       (ref.i31 (i32.load (local.get $buffer))))
 )
 (@else
@@ -1941,7 +1941,7 @@
       (try
          (do
             (local.set $fd
-               (call $open
+               (call $open_fn
                   (call $unwrap
                      (call $caml_jsstring_of_string (local.get $path)))
                   (local.get $flags)
@@ -2082,7 +2082,7 @@
          (local.get $pos) (local.get $n))
       (ref.i31 (local.get $n)))
 
-   (type $data
+   (type $dat
       (struct
          (field $array (ref array))
          (field $offset i32)
@@ -2091,19 +2091,19 @@
    (func (export "unix_write_bigarray") (export "caml_unix_write_bigarray")
       (param $vfd (ref eq)) (param $vbuf (ref eq)) (param $vpos (ref eq))
       (param $vlen (ref eq)) (param $vsingle (ref eq)) (result (ref eq))
-      (local $fd i32) (local $data (ref $data)) (local $buf (ref $bytes))
+      (local $fd i32) (local $dat (ref $dat)) (local $buf (ref $bytes))
       (local $pos i32) (local $len i32) (local $n i32) (local $written i32)
       (local $buffer i32) (local $nwritten i32) (local $iovs i32)
       (local $iovs_len i32) (local $numbytes i32) (local $res i32)
       (local.set $fd (i31.get_u (ref.cast (ref i31) (local.get $vfd))))
-      (local.set $data
-         (ref.cast (ref $data)
+      (local.set $dat
+         (ref.cast (ref $dat)
             (any.convert_extern (call $caml_ba_get_data (local.get $vbuf)))))
       (local.set $buf
-         (ref.cast (ref $bytes) (struct.get $data $array (local.get $data))))
+         (ref.cast (ref $bytes) (struct.get $dat $array (local.get $dat))))
       (local.set $pos
           (i32.add (i31.get_u (ref.cast (ref i31) (local.get $vpos)))
-             (struct.get $data $offset (local.get $data))))
+             (struct.get $dat $offset (local.get $dat))))
       (local.set $len (i31.get_u (ref.cast (ref i31) (local.get $vlen))))
       (local.set $buffer (call $get_buffer))
       (local.set $nwritten (local.get $buffer))
@@ -2138,19 +2138,19 @@
    (func (export "unix_read_bigarray") (export "caml_unix_read_bigarray")
       (param $vfd (ref eq)) (param $vbuf (ref eq)) (param $vpos (ref eq))
       (param $vlen (ref eq)) (result (ref eq))
-      (local $fd i32) (local $data (ref $data)) (local $buf (ref $bytes))
+      (local $fd i32) (local $dat (ref $dat)) (local $buf (ref $bytes))
       (local $pos i32) (local $len i32) (local $n i32)
       (local $buffer i32) (local $nread i32) (local $iovs i32)
       (local $iovs_len i32) (local $res i32)
       (local.set $fd (i31.get_u (ref.cast (ref i31) (local.get $vfd))))
-      (local.set $data
-         (ref.cast (ref $data)
+      (local.set $dat
+         (ref.cast (ref $dat)
             (any.convert_extern (call $caml_ba_get_data (local.get $vbuf)))))
       (local.set $buf
-         (ref.cast (ref $bytes) (struct.get $data $array (local.get $data))))
+         (ref.cast (ref $bytes) (struct.get $dat $array (local.get $dat))))
       (local.set $pos
           (i32.add (i31.get_u (ref.cast (ref i31) (local.get $vpos)))
-             (struct.get $data $offset (local.get $data))))
+             (struct.get $dat $offset (local.get $dat))))
       (local.set $len (i31.get_u (ref.cast (ref i31) (local.get $vlen))))
       (if (i32.gt_u (local.get $len) (global.get $IO_BUFFER_SIZE))
          (then

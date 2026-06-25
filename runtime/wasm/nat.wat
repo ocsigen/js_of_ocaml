@@ -58,7 +58,7 @@
    (type $digits (array (mut i32)))
    (type $nat
       (sub final $custom
-         (struct (field (ref $custom_operations)) (field $data (ref $digits)))))
+         (struct (field (ref $custom_operations)) (field $dat (ref $digits)))))
 
    (global $nat_ops (export "nat_ops") (ref $custom_operations)
       (struct.new $custom_operations
@@ -73,8 +73,8 @@
 
    ;; Helpers
 
-   (func $data (param $v (ref eq)) (result (ref $digits))
-      (struct.get $nat $data (ref.cast (ref $nat) (local.get $v))))
+   (func $get_data (param $v (ref eq)) (result (ref $digits))
+      (struct.get $nat $dat (ref.cast (ref $nat) (local.get $v))))
 
    (func $int (param $v (ref eq)) (result i32)
       (i31.get_s (ref.cast (ref i31) (local.get $v))))
@@ -132,7 +132,7 @@
 
    (func $caml_hash_nat (param $v (ref eq)) (result i32)
       (local $d (ref $digits)) (local $len i32) (local $h i32) (local $i i32)
-      (local.set $d (call $data (local.get $v)))
+      (local.set $d (call $get_data (local.get $v)))
       (local.set $len
          (call $num_digits (local.get $d) (i32.const 0)
             (array.len (local.get $d))))
@@ -149,7 +149,7 @@
    (func $serialize_nat
       (param $s (ref eq)) (param $v (ref eq)) (result i32) (result i32)
       (local $d (ref $digits)) (local $len i32) (local $i i32)
-      (local.set $d (call $data (local.get $v)))
+      (local.set $d (call $get_data (local.get $v)))
       (local.set $len (array.len (local.get $d)))
       (call $caml_serialize_int_4 (local.get $s) (local.get $len))
       (loop $loop
@@ -185,13 +185,13 @@
       (return_call $alloc_nat (call $int (local.get $size)) (i32.const -1)))
 
    (func (export "length_nat") (param $nat (ref eq)) (result (ref eq))
-      (ref.i31 (array.len (call $data (local.get $nat)))))
+      (ref.i31 (array.len (call $get_data (local.get $nat)))))
 
    (func (export "set_to_zero_nat")
       (param $nat (ref eq)) (param $ofs (ref eq)) (param $len (ref eq))
       (result (ref eq))
       (local $d (ref $digits)) (local $o i32) (local $i i32) (local $l i32)
-      (local.set $d (call $data (local.get $nat)))
+      (local.set $d (call $get_data (local.get $nat)))
       (local.set $o (call $int (local.get $ofs)))
       (local.set $l (call $int (local.get $len)))
       (loop $loop
@@ -208,49 +208,49 @@
       (param $nat2 (ref eq)) (param $ofs2 (ref eq)) (param $len (ref eq))
       (result (ref eq))
       (array.copy $digits $digits
-         (call $data (local.get $nat1)) (call $int (local.get $ofs1))
-         (call $data (local.get $nat2)) (call $int (local.get $ofs2))
+         (call $get_data (local.get $nat1)) (call $int (local.get $ofs1))
+         (call $get_data (local.get $nat2)) (call $int (local.get $ofs2))
          (call $int (local.get $len)))
       (ref.i31 (i32.const 0)))
 
    (func (export "set_digit_nat")
       (param $nat (ref eq)) (param $ofs (ref eq)) (param $digit (ref eq))
       (result (ref eq))
-      (array.set $digits (call $data (local.get $nat))
+      (array.set $digits (call $get_data (local.get $nat))
          (call $int (local.get $ofs)) (call $int (local.get $digit)))
       (ref.i31 (i32.const 0)))
 
    (func (export "nth_digit_nat")
       (param $nat (ref eq)) (param $ofs (ref eq)) (result (ref eq))
       (ref.i31
-         (array.get $digits (call $data (local.get $nat))
+         (array.get $digits (call $get_data (local.get $nat))
             (call $int (local.get $ofs)))))
 
    (func (export "set_digit_nat_native")
       (param $nat (ref eq)) (param $ofs (ref eq)) (param $digit (ref eq))
       (result (ref eq))
-      (array.set $digits (call $data (local.get $nat))
+      (array.set $digits (call $get_data (local.get $nat))
          (call $int (local.get $ofs)) (call $Nativeint_val (local.get $digit)))
       (ref.i31 (i32.const 0)))
 
    (func (export "nth_digit_nat_native")
       (param $nat (ref eq)) (param $ofs (ref eq)) (result (ref eq))
       (return_call $caml_copy_nativeint
-         (array.get $digits (call $data (local.get $nat))
+         (array.get $digits (call $get_data (local.get $nat))
             (call $int (local.get $ofs)))))
 
    (func (export "num_digits_nat")
       (param $nat (ref eq)) (param $ofs (ref eq)) (param $len (ref eq))
       (result (ref eq))
       (ref.i31
-         (call $num_digits (call $data (local.get $nat))
+         (call $num_digits (call $get_data (local.get $nat))
             (call $int (local.get $ofs)) (call $int (local.get $len)))))
 
    (func (export "num_leading_zero_bits_in_digit")
       (param $nat (ref eq)) (param $ofs (ref eq)) (result (ref eq))
       (ref.i31
          (i32.clz
-            (array.get $digits (call $data (local.get $nat))
+            (array.get $digits (call $get_data (local.get $nat))
                (call $int (local.get $ofs))))))
 
    (func (export "is_digit_int")
@@ -261,7 +261,7 @@
       ;; only clears the top bit because there an int is 32 bits.)
       (ref.i31
          (i32.lt_u
-            (array.get $digits (call $data (local.get $nat))
+            (array.get $digits (call $get_data (local.get $nat))
                (call $int (local.get $ofs)))
             (i32.const 0x40000000))))
 
@@ -269,7 +269,7 @@
       (param $nat (ref eq)) (param $ofs (ref eq)) (result (ref eq))
       (ref.i31
          (i32.eqz
-            (array.get $digits (call $data (local.get $nat))
+            (array.get $digits (call $get_data (local.get $nat))
                (call $int (local.get $ofs))))))
 
    (func (export "is_digit_normalized")
@@ -280,7 +280,7 @@
       (param $nat (ref eq)) (param $ofs (ref eq)) (result (ref eq))
       (ref.i31
          (i32.and
-            (array.get $digits (call $data (local.get $nat))
+            (array.get $digits (call $get_data (local.get $nat))
                (call $int (local.get $ofs)))
             (i32.const 1))))
 
@@ -310,7 +310,7 @@
       (param $nat (ref eq)) (param $ofs (ref eq)) (param $len (ref eq))
       (param $carry (ref eq)) (result (ref eq))
       (ref.i31
-         (call $incr (call $data (local.get $nat)) (call $int (local.get $ofs))
+         (call $incr (call $get_data (local.get $nat)) (call $int (local.get $ofs))
             (call $int (local.get $len)) (call $int (local.get $carry)))))
 
    (func $add
@@ -346,8 +346,8 @@
       (param $nat2 (ref eq)) (param $ofs2 (ref eq)) (param $len2 (ref eq))
       (param $carry (ref eq)) (result (ref eq))
       (ref.i31
-         (call $add (call $data (local.get $nat1)) (call $int (local.get $ofs1))
-            (call $int (local.get $len1)) (call $data (local.get $nat2))
+         (call $add (call $get_data (local.get $nat1)) (call $int (local.get $ofs1))
+            (call $int (local.get $len1)) (call $get_data (local.get $nat2))
             (call $int (local.get $ofs2)) (call $int (local.get $len2))
             (call $int (local.get $carry)))))
 
@@ -356,7 +356,7 @@
       (result (ref eq))
       (local $d (ref $digits)) (local $o i32) (local $l i32) (local $i i32)
       (local $idx i32)
-      (local.set $d (call $data (local.get $nat)))
+      (local.set $d (call $get_data (local.get $nat)))
       (local.set $o (call $int (local.get $ofs)))
       (local.set $l (call $int (local.get $len)))
       (loop $loop
@@ -397,7 +397,7 @@
       (param $nat (ref eq)) (param $ofs (ref eq)) (param $len (ref eq))
       (param $carry (ref eq)) (result (ref eq))
       (ref.i31
-         (call $decr (call $data (local.get $nat)) (call $int (local.get $ofs))
+         (call $decr (call $get_data (local.get $nat)) (call $int (local.get $ofs))
             (call $int (local.get $len)) (call $int (local.get $carry)))))
 
    (func $sub
@@ -433,8 +433,8 @@
       (param $nat2 (ref eq)) (param $ofs2 (ref eq)) (param $len2 (ref eq))
       (param $carry (ref eq)) (result (ref eq))
       (ref.i31
-         (call $sub (call $data (local.get $nat1)) (call $int (local.get $ofs1))
-            (call $int (local.get $len1)) (call $data (local.get $nat2))
+         (call $sub (call $get_data (local.get $nat1)) (call $int (local.get $ofs1))
+            (call $int (local.get $len1)) (call $get_data (local.get $nat2))
             (call $int (local.get $ofs2)) (call $int (local.get $len2))
             (call $int (local.get $carry)))))
 
@@ -486,7 +486,7 @@
             (return_call $add (local.get $d1)
                (i32.add (local.get $o1) (local.get $l2))
                (i32.sub (local.get $l1) (local.get $l2))
-               (struct.get $nat $data (call $single (i32.wrap_i64 (local.get $carry))))
+               (struct.get $nat $dat (call $single (i32.wrap_i64 (local.get $carry))))
                (i32.const 0) (i32.const 1) (i32.const 0))))
       (i32.wrap_i64 (local.get $carry)))
 
@@ -496,10 +496,10 @@
       (param $nat3 (ref eq)) (param $ofs3 (ref eq)) (result (ref eq))
       (ref.i31
          (call $mult_digit
-            (call $data (local.get $nat1)) (call $int (local.get $ofs1))
-            (call $int (local.get $len1)) (call $data (local.get $nat2))
+            (call $get_data (local.get $nat1)) (call $int (local.get $ofs1))
+            (call $int (local.get $len1)) (call $get_data (local.get $nat2))
             (call $int (local.get $ofs2)) (call $int (local.get $len2))
-            (call $data (local.get $nat3)) (call $int (local.get $ofs3)))))
+            (call $get_data (local.get $nat3)) (call $int (local.get $ofs3)))))
 
    (func $mult
       (param $d1 (ref $digits)) (param $o1 i32) (param $l1 i32)
@@ -527,10 +527,10 @@
       (result (ref eq))
       (ref.i31
          (call $mult
-            (call $data (local.get $nat1)) (call $int (local.get $ofs1))
-            (call $int (local.get $len1)) (call $data (local.get $nat2))
+            (call $get_data (local.get $nat1)) (call $int (local.get $ofs1))
+            (call $int (local.get $len1)) (call $get_data (local.get $nat2))
             (call $int (local.get $ofs2)) (call $int (local.get $len2))
-            (call $data (local.get $nat3)) (call $int (local.get $ofs3))
+            (call $get_data (local.get $nat3)) (call $int (local.get $ofs3))
             (call $int (local.get $len3)))))
 
    (func (export "square_nat")
@@ -539,10 +539,10 @@
       (result (ref eq))
       (local $d1 (ref $digits)) (local $o1 i32) (local $l1 i32)
       (local $d2 (ref $digits)) (local $o2 i32) (local $l2 i32) (local $carry i32)
-      (local.set $d1 (call $data (local.get $nat1)))
+      (local.set $d1 (call $get_data (local.get $nat1)))
       (local.set $o1 (call $int (local.get $ofs1)))
       (local.set $l1 (call $int (local.get $len1)))
-      (local.set $d2 (call $data (local.get $nat2)))
+      (local.set $d2 (call $get_data (local.get $nat2)))
       (local.set $o2 (call $int (local.get $ofs2)))
       (local.set $l2 (call $int (local.get $len2)))
       (local.set $carry
@@ -581,8 +581,8 @@
       (param $nat1 (ref eq)) (param $ofs1 (ref eq)) (param $len1 (ref eq))
       (param $nat2 (ref eq)) (param $ofs2 (ref eq)) (param $nbits (ref eq))
       (result (ref eq))
-      (call $shift_left (call $data (local.get $nat1)) (call $int (local.get $ofs1))
-         (call $int (local.get $len1)) (call $data (local.get $nat2))
+      (call $shift_left (call $get_data (local.get $nat1)) (call $int (local.get $ofs1))
+         (call $int (local.get $len1)) (call $get_data (local.get $nat2))
          (call $int (local.get $ofs2)) (call $int (local.get $nbits)))
       (ref.i31 (i32.const 0)))
 
@@ -613,8 +613,8 @@
       (param $nat1 (ref eq)) (param $ofs1 (ref eq)) (param $len1 (ref eq))
       (param $nat2 (ref eq)) (param $ofs2 (ref eq)) (param $nbits (ref eq))
       (result (ref eq))
-      (call $shift_right (call $data (local.get $nat1)) (call $int (local.get $ofs1))
-         (call $int (local.get $len1)) (call $data (local.get $nat2))
+      (call $shift_right (call $get_data (local.get $nat1)) (call $int (local.get $ofs1))
+         (call $int (local.get $len1)) (call $get_data (local.get $nat2))
          (call $int (local.get $ofs2)) (call $int (local.get $nbits)))
       (ref.i31 (i32.const 0)))
 
@@ -646,8 +646,8 @@
       (result (ref eq))
       (ref.i31
          (call $compare
-            (call $data (local.get $nat1)) (call $int (local.get $ofs1))
-            (call $int (local.get $len1)) (call $data (local.get $nat2))
+            (call $get_data (local.get $nat1)) (call $int (local.get $ofs1))
+            (call $int (local.get $len1)) (call $get_data (local.get $nat2))
             (call $int (local.get $ofs2)) (call $int (local.get $len2)))))
 
    (func (export "compare_digits_nat")
@@ -655,9 +655,9 @@
       (param $nat2 (ref eq)) (param $ofs2 (ref eq)) (result (ref eq))
       (local $x i32) (local $y i32)
       (local.set $x
-         (array.get $digits (call $data (local.get $nat1)) (call $int (local.get $ofs1))))
+         (array.get $digits (call $get_data (local.get $nat1)) (call $int (local.get $ofs1))))
       (local.set $y
-         (array.get $digits (call $data (local.get $nat2)) (call $int (local.get $ofs2))))
+         (array.get $digits (call $get_data (local.get $nat2)) (call $int (local.get $ofs2))))
       ;; signed comparison, matching the JS runtime
       (ref.i31
          (i32.sub (i32.gt_s (local.get $x) (local.get $y))
@@ -667,11 +667,11 @@
       (param $nat1 (ref eq)) (param $ofs1 (ref eq))
       (param $nat2 (ref eq)) (param $ofs2 (ref eq)) (result (ref eq))
       (local $d1 (ref $digits)) (local $o1 i32)
-      (local.set $d1 (call $data (local.get $nat1)))
+      (local.set $d1 (call $get_data (local.get $nat1)))
       (local.set $o1 (call $int (local.get $ofs1)))
       (array.set $digits (local.get $d1) (local.get $o1)
          (i32.and (array.get $digits (local.get $d1) (local.get $o1))
-            (array.get $digits (call $data (local.get $nat2))
+            (array.get $digits (call $get_data (local.get $nat2))
                (call $int (local.get $ofs2)))))
       (ref.i31 (i32.const 0)))
 
@@ -679,11 +679,11 @@
       (param $nat1 (ref eq)) (param $ofs1 (ref eq))
       (param $nat2 (ref eq)) (param $ofs2 (ref eq)) (result (ref eq))
       (local $d1 (ref $digits)) (local $o1 i32)
-      (local.set $d1 (call $data (local.get $nat1)))
+      (local.set $d1 (call $get_data (local.get $nat1)))
       (local.set $o1 (call $int (local.get $ofs1)))
       (array.set $digits (local.get $d1) (local.get $o1)
          (i32.or (array.get $digits (local.get $d1) (local.get $o1))
-            (array.get $digits (call $data (local.get $nat2))
+            (array.get $digits (call $get_data (local.get $nat2))
                (call $int (local.get $ofs2)))))
       (ref.i31 (i32.const 0)))
 
@@ -691,11 +691,11 @@
       (param $nat1 (ref eq)) (param $ofs1 (ref eq))
       (param $nat2 (ref eq)) (param $ofs2 (ref eq)) (result (ref eq))
       (local $d1 (ref $digits)) (local $o1 i32)
-      (local.set $d1 (call $data (local.get $nat1)))
+      (local.set $d1 (call $get_data (local.get $nat1)))
       (local.set $o1 (call $int (local.get $ofs1)))
       (array.set $digits (local.get $d1) (local.get $o1)
          (i32.xor (array.get $digits (local.get $d1) (local.get $o1))
-            (array.get $digits (call $data (local.get $nat2))
+            (array.get $digits (call $get_data (local.get $nat2))
                (call $int (local.get $ofs2)))))
       (ref.i31 (i32.const 0)))
 
@@ -731,11 +731,11 @@
       (param $nat1 (ref eq)) (param $ofs1 (ref eq)) (param $len (ref eq))
       (param $nat2 (ref eq)) (param $ofs2 (ref eq)) (result (ref eq))
       (call $div_digit
-         (call $data (local.get $natq)) (call $int (local.get $ofsq))
-         (call $data (local.get $natr)) (call $int (local.get $ofsr))
-         (call $data (local.get $nat1)) (call $int (local.get $ofs1))
+         (call $get_data (local.get $natq)) (call $int (local.get $ofsq))
+         (call $get_data (local.get $natr)) (call $int (local.get $ofsr))
+         (call $get_data (local.get $nat1)) (call $int (local.get $ofs1))
          (call $int (local.get $len))
-         (call $data (local.get $nat2)) (call $int (local.get $ofs2)))
+         (call $get_data (local.get $nat2)) (call $int (local.get $ofs2)))
       (ref.i31 (i32.const 0)))
 
    (func (export "div_nat")
@@ -746,10 +746,10 @@
       (local $d2 (ref $digits)) (local $o2 i32) (local $l2 i32)
       (local $s i32) (local $d i64) (local $a (ref $digits)) (local $i i32)
       (local $quo i32) (local $zero (ref $digits))
-      (local.set $d1 (call $data (local.get $nat1)))
+      (local.set $d1 (call $get_data (local.get $nat1)))
       (local.set $o1 (call $int (local.get $ofs1)))
       (local.set $l1 (call $int (local.get $len1)))
-      (local.set $d2 (call $data (local.get $nat2)))
+      (local.set $d2 (call $get_data (local.get $nat2)))
       (local.set $o2 (call $int (local.get $ofs2)))
       (local.set $l2 (call $int (local.get $len2)))
       (if (i32.eq (local.get $l2) (i32.const 1))
@@ -802,7 +802,7 @@
                (drop (call $mult_digit (local.get $a) (i32.const 0)
                   (i32.add (local.get $l2) (i32.const 1))
                   (local.get $d2) (local.get $o2) (local.get $l2)
-                  (struct.get $nat $data (call $single (local.get $quo)))
+                  (struct.get $nat $dat (call $single (local.get $quo)))
                   (i32.const 0)))
                (drop (call $sub (local.get $d1)
                   (i32.sub (i32.add (local.get $o1) (local.get $i)) (local.get $l2))

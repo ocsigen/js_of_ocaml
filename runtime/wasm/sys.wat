@@ -66,7 +66,7 @@
    (import "jslib" "caml_js_meth_call"
       (func $caml_js_meth_call
          (param (ref eq)) (param (ref eq)) (param (ref eq)) (result (ref eq))))
-   (import "bindings" "argv" (func $argv (result (ref extern))))
+   (import "bindings" "argv" (func $argv_fn (result (ref extern))))
    (import "bindings" "on_windows" (global $on_windows i32))
    (import "bindings" "on_arm64" (global $on_arm64 i32))
    (import "bindings" "isatty"
@@ -102,7 +102,7 @@
    (global $environment_data (mut i32) (i32.const 0))
 
    (func $initialize_env
-      (local $buffer i32) (local $res i32) (local $env i32) (local $data i32)
+      (local $buffer i32) (local $res i32) (local $env i32) (local $dat i32)
       (if (i32.eqz (global.get $environment))
          (then
             (local.set $buffer (call $get_buffer))
@@ -117,18 +117,18 @@
             (local.set $env
                (call $checked_malloc
                   (i32.shl (i32.load (local.get $buffer)) (i32.const 2))))
-            (local.set $data
+            (local.set $dat
                (call $checked_malloc (i32.load offset=4 (local.get $buffer))))
             (local.set $res
-               (call $environ_get (local.get $env) (local.get $data)))
+               (call $environ_get (local.get $env) (local.get $dat)))
             (if (local.get $res)
                (then
                   (call $free (local.get $env))
-                  (call $free (local.get $data))
+                  (call $free (local.get $dat))
                   (call $caml_handle_sys_error
                      (ref.i31 (i32.const 0)) (local.get $res))))
             (global.set $environment (local.get $env))
-            (global.set $environment_data (local.get $data))
+            (global.set $environment_data (local.get $dat))
             (global.set $environment_count (i32.load (local.get $buffer))))))
 
    (func $caml_getenv
@@ -222,7 +222,7 @@
    (func $caml_sys_argv (export "caml_sys_argv")
       (param (ref eq)) (result (ref eq))
       (local $buffer i32) (local $res i32)
-      (local $argc i32) (local $argv i32) (local $argv_buf i32)
+      (local $argc i32) (local $argv_ptr i32) (local $argv_buf i32)
       (local $args (ref $block)) (local $arg i32) (local $i i32)
       (block $init
          (return (br_on_null $init (global.get $argv))))
@@ -234,12 +234,12 @@
                (i32.add (local.get $buffer) (i32.const 4))))
          (br_if $error (local.get $res))
          (local.set $argc (i32.load (local.get $buffer)))
-         (local.set $argv
+         (local.set $argv_ptr
             (call $checked_malloc (i32.shl (local.get $argc) (i32.const 2))))
          (local.set $argv_buf
             (call $checked_malloc (i32.load offset=4 (local.get $buffer))))
          (local.set $res
-            (call $args_get (local.get $argv) (local.get $argv_buf)))
+            (call $args_get (local.get $argv_ptr) (local.get $argv_buf)))
          (br_if $error (local.get $res))
          (local.set $args
             (array.new $block (ref.i31 (i32.const 0))
@@ -249,7 +249,7 @@
                (then
                   (local.set $arg
                      (i32.load
-                        (i32.add (local.get $argv)
+                        (i32.add (local.get $argv_ptr)
                            (i32.shl (local.get $i) (i32.const 2)))))
                   (array.set $block (local.get $args)
                      (i32.add (local.get $i) (i32.const 1))
@@ -259,12 +259,12 @@
                      (i32.add (local.get $i) (i32.const 1)))
                   (br $loop))))
          (global.set $argv (local.get $args))
-         (call $free (local.get $argv))
+         (call $free (local.get $argv_ptr))
          (call $free (local.get $argv_buf))
          (return (local.get $args)))
       ;; error path: free any buffers already allocated (free(0) is a no-op
       ;; when reached before the allocations)
-      (call $free (local.get $argv))
+      (call $free (local.get $argv_ptr))
       (call $free (local.get $argv_buf))
       (call $caml_handle_sys_error (ref.i31 (i32.const 0)) (local.get $res))
       (array.new_fixed $block 0))
@@ -278,12 +278,12 @@
 (@else
    (func (export "caml_sys_argv") (param (ref eq)) (result (ref eq))
       ;; ZZZ
-      (call $caml_js_to_string_array (call $argv)))
+      (call $caml_js_to_string_array (call $argv_fn)))
 
    (func (export "caml_sys_executable_name")
       (param (ref eq)) (result (ref eq))
       (array.get $block
-         (ref.cast (ref $block) (call $caml_js_to_string_array (call $argv)))
+         (ref.cast (ref $block) (call $caml_js_to_string_array (call $argv_fn)))
          (i32.const 1)))
 ))
 

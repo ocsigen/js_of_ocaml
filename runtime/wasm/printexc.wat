@@ -28,17 +28,17 @@
    (type $buffer
       (struct
          (field $pos (mut i32))
-         (field $data (mut (ref $bytes)))))
+         (field $dat (mut (ref $bytes)))))
 
    ;; Ensure the buffer has room for [$extra] more bytes, growing (and
    ;; copying) its backing array if needed -- so the formatted message is not
    ;; truncated at a fixed size, matching the unbounded JS runtime.
    (func $ensure_capacity (param $buf (ref $buffer)) (param $extra i32)
       (local $pos i32) (local $cap i32) (local $need i32) (local $newcap i32)
-      (local $data (ref $bytes)) (local $new (ref $bytes))
+      (local $dat (ref $bytes)) (local $new (ref $bytes))
       (local.set $pos (struct.get $buffer 0 (local.get $buf)))
-      (local.set $data (struct.get $buffer 1 (local.get $buf)))
-      (local.set $cap (array.len (local.get $data)))
+      (local.set $dat (struct.get $buffer 1 (local.get $buf)))
+      (local.set $cap (array.len (local.get $dat)))
       (local.set $need (i32.add (local.get $pos) (local.get $extra)))
       (if (i32.gt_u (local.get $need) (local.get $cap))
          (then
@@ -49,7 +49,7 @@
                (array.new $bytes (i32.const 0) (local.get $newcap)))
             (array.copy $bytes $bytes
                (local.get $new) (i32.const 0)
-               (local.get $data) (i32.const 0)
+               (local.get $dat) (i32.const 0)
                (local.get $pos))
             (struct.set $buffer 1 (local.get $buf) (local.get $new)))))
 

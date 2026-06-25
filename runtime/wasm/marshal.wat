@@ -21,7 +21,7 @@
       (func $caml_invalid_argument (param (ref eq))))
    (import "fail" "caml_raise_end_of_file" (func $caml_raise_end_of_file))
    (import "obj" "object_tag" (global $object_tag i32))
-   (import "obj" "null" (global $null (ref eq)))
+   (import "obj" "null" (global $null_value (ref eq)))
    (import "obj" "caml_set_oo_id"
       (func $caml_set_oo_id (param (ref eq)) (result (ref eq))))
    (import "string" "caml_string_concat"
@@ -137,7 +137,7 @@
                     (struct.get $marshal_header $data_len (local.get $h))))
              (array.len (local.get $str)))
          (then
-            (call $bad_length (global.get $input_val_from_string))))
+            (call $fail_bad_length (global.get $input_val_from_string))))
       (call $decompress_input (local.get $s) (local.get $h)
          (global.get $input_val_from_string))
       (return_call $intern_rec (local.get $s) (local.get $h)))
@@ -163,7 +163,7 @@
          (call $get_intern_state (local.get $header) (i32.const 0)))
       (local.set $magic (call $read32 (local.get $s)))
       (if (i32.eq (local.get $magic) (global.get $Intext_magic_number_big))
-         (then (call $too_large (global.get $input_value))))
+         (then (call $fail_too_large (global.get $input_value))))
       (if (i32.eq (local.get $magic) (global.get $Intext_magic_number_small))
          (then (local.set $len (i32.const 15))))
       (if (i32.eq (local.get $magic)
@@ -172,10 +172,10 @@
             (local.set $len
                (i32.and (call $read8u (local.get $s)) (i32.const 0x3F)))
             (if (i32.lt_u (local.get $len) (i32.const 5))
-               (then (call $bad_object (global.get $input_value))))
+               (then (call $fail_bad_object (global.get $input_value))))
             (local.set $len (i32.sub (local.get $len) (i32.const 5)))))
       (if (i32.eqz (local.get $len))
-         (then (call $bad_object (global.get $input_value))))
+         (then (call $fail_bad_object (global.get $input_value))))
       (if (i32.lt_u
              (call $caml_really_getblock (local.get $ch)
                 (local.get $header) (i32.const 5) (local.get $len))
@@ -479,7 +479,7 @@
    (@string $ill_formed "input_value: ill-formed message")
 
    (@string $unknown_custom "input_value: unknown custom block identifier")
-   (@string $expected_size "input_value: expected a fixed-size custom block")
+   (@string $err_expected_size "input_value: expected a fixed-size custom block")
    (@string $incorrect_size
       "input_value: incorrect length of serialized custom block")
 
@@ -521,7 +521,7 @@
                   (i32.ne (local.get $code) (global.get $CODE_CUSTOM)))
                (then (call $caml_failwith (global.get $incorrect_size))))
             (return (local.get $r_0)))
-         (call $caml_failwith (global.get $expected_size)))
+         (call $caml_failwith (global.get $err_expected_size)))
       (call $caml_failwith (global.get $unknown_custom))
       (ref.i31 (i32.const 0)))
 
@@ -556,7 +556,7 @@
       (local $sp (ref null $stack_item))
       (local $item (ref $stack_item))
       (local $code i32)
-      (local $header i32) (local $tag i32) (local $size i32)
+      (local $header i32) (local $tg i32) (local $size i32)
       (local $len i32) (local $pos i32) (local $pos' i32) (local $ofs i32)
       (local $b (ref $block))
       (local $str (ref $bytes))
@@ -594,7 +594,7 @@
                    (if (i32.ge_u (local.get $code) (global.get $PREFIX_SMALL_BLOCK))
                       (then
                          ;; Small block
-                         (local.set $tag
+                         (local.set $tg
                             (i32.and (local.get $code) (i32.const 0xF)))
                          (local.set $size
                             (i32.and (i32.shr_u (local.get $code) (i32.const 4))
@@ -648,7 +648,7 @@
                                             (global.get $ill_formed))
                                          (br $done))
                                         ;; NULL
-                                        (local.set $v (global.get $null))
+                                        (local.set $v (global.get $null_value))
                                         (br $done))
                                        ;; CUSTOM
                                        (local.set $v
@@ -685,7 +685,7 @@
                                  (br $read_string))
                                 ;; BLOCK32
                                 (local.set $header (call $read32 (local.get $s)))
-                                (local.set $tag
+                                (local.set $tg
                                    (i32.and (local.get $header)
                                       (i32.const 0xFF)))
                                 (local.set $size
@@ -746,7 +746,7 @@
             (array.new $block (ref.i31 (i32.const 0))
                (i32.add (local.get $size) (i32.const 1))))
          (array.set $block (local.get $b) (i32.const 0)
-            (ref.i31 (local.get $tag)))
+            (ref.i31 (local.get $tg)))
          (if (local.get $size)
             (then
                (call $register_object (local.get $s) (local.get $b))
@@ -779,19 +779,19 @@
 
    (@string $too_large ": object too large to be read back on a 32-bit platform")
 
-   (func $too_large (param $prim (ref eq))
+   (func $fail_too_large (param $prim (ref eq))
       (call $caml_failwith
          (call $caml_string_concat (local.get $prim) (global.get $too_large))))
 
    (@string $bad_object ": bad object")
 
-   (func $bad_object (param $prim (ref eq))
+   (func $fail_bad_object (param $prim (ref eq))
       (call $caml_failwith
          (call $caml_string_concat (local.get $prim) (global.get $bad_object))))
 
    (@string $bad_length ": bad length")
 
-   (func $bad_length (param $prim (ref eq))
+   (func $fail_bad_length (param $prim (ref eq))
       (call $caml_failwith
          (call $caml_string_concat (local.get $prim) (global.get $bad_length))))
 
@@ -832,7 +832,7 @@
       (local.set $magic (call $read32 (local.get $s)))
       (if (i32.eq (local.get $magic) (global.get $Intext_magic_number_big))
          (then
-            (call $too_large (local.get $prim))))
+            (call $fail_too_large (local.get $prim))))
       (if (i32.eq (local.get $magic) (global.get $Intext_magic_number_small))
          (then
             (local.set $header_len (i32.const 20))
@@ -851,11 +851,11 @@
             (local.set $num_objects (call $readvlq (local.get $s)))
             (drop (call $readvlq (local.get $s)))
             (if (struct.get $intern_state $overflow (local.get $s))
-               (then (call $too_large (local.get $prim))))
+               (then (call $fail_too_large (local.get $prim))))
             (drop (call $readvlq (local.get $s)))
             (local.set $compressed (i32.const 1)))
          (else
-            (call $bad_object (local.get $prim))))))
+            (call $fail_bad_object (local.get $prim))))))
       (struct.new $marshal_header
          (local.get $header_len)
          (local.get $data_len)
@@ -885,7 +885,7 @@
             (i31.get_u (ref.cast (ref i31) (local.get $ofs)))))
       (local.set $magic (call $read32 (local.get $s)))
       (if (i32.eq (local.get $magic) (global.get $Intext_magic_number_big))
-         (then (call $too_large (global.get $marshal_data_size))))
+         (then (call $fail_too_large (global.get $marshal_data_size))))
       (if (i32.eq (local.get $magic) (global.get $Intext_magic_number_small))
          (then
             (local.set $header_len (i32.const 20))
@@ -897,9 +897,9 @@
                (i32.and (call $read8u (local.get $s)) (i32.const 0x3F)))
             (local.set $data_len (call $readvlq (local.get $s)))
             (if (struct.get $intern_state $overflow (local.get $s))
-               (then (call $too_large (global.get $marshal_data_size)))))
+               (then (call $fail_too_large (global.get $marshal_data_size)))))
          (else
-            (call $bad_object (global.get $marshal_data_size))))))
+            (call $fail_bad_object (global.get $marshal_data_size))))))
       (ref.i31
          (i32.add
             (i32.sub (local.get $header_len)
@@ -910,7 +910,7 @@
       (struct
          (field $next (mut (ref null $output_block)))
          (field $end (mut i32))
-         (field $data (ref $bytes))))
+         (field $dat (ref $bytes))))
 
    (type $extern_state
       (struct
@@ -952,7 +952,7 @@
          (i32.const 0)
          (i32.const 0)
          (call $map_new)
-         (struct.get $output_block $data (local.get $output))
+         (struct.get $output_block $dat (local.get $output))
          (local.get $pos)
          (struct.get $output_block $end (local.get $output))
          (local.get $output)
@@ -1183,19 +1183,19 @@
             (local.get $d)))))))
 
    (func $extern_header
-      (param $s (ref $extern_state)) (param $sz i32) (param $tag i32)
-      (if (i32.and (i32.lt_u (local.get $tag) (i32.const 16))
+      (param $s (ref $extern_state)) (param $sz i32) (param $tg i32)
+      (if (i32.and (i32.lt_u (local.get $tg) (i32.const 16))
              (i32.lt_u (local.get $sz) (i32.const 8)))
          (then
              (call $write (local.get $s)
                 (i32.add (global.get $PREFIX_SMALL_BLOCK)
-                   (i32.or (local.get $tag)
+                   (i32.or (local.get $tg)
                       (i32.shl (local.get $sz) (i32.const 4))))))
          (else
             (if (i32.ge_u (local.get $sz) (i32.const 0x400000))
                (then (call $caml_failwith (global.get $array_too_large))))
             (call $writecode32 (local.get $s) (global.get $CODE_BLOCK32)
-               (i32.or (local.get $tag)
+               (i32.or (local.get $tg)
                   (i32.shl (local.get $sz) (i32.const 10)))))))
 
    (func $extern_string (param $s (ref $extern_state)) (param $v (ref $bytes))
@@ -1306,7 +1306,7 @@
       (local $item (ref $stack_item))
       (local $b (ref $block)) (local $str (ref $bytes))
       (local $fa (ref $float_array))
-      (local $tag i32) (local $sz i32)
+      (local $tg i32) (local $sz i32)
       (local $pos i32)
       (local $r_0 i32)
       (local $r_1 i32)
@@ -1322,7 +1322,7 @@
                (local.set $b
                   (br_on_cast_fail $not_block (ref eq) (ref $block)
                      (local.get $v)))
-               (local.set $tag
+               (local.set $tg
                   (i31.get_u
                      (ref.cast (ref i31)
                         (array.get $block (local.get $b) (i32.const 0)))))
@@ -1330,7 +1330,7 @@
                (if (i32.eqz (local.get $sz))
                   (then
                      (call $extern_header
-                        (local.get $s) (i32.const 0) (local.get $tag))
+                        (local.get $s) (i32.const 0) (local.get $tg))
                      (br $next_item)))
                (local.set $pos
                   (call $extern_lookup_position (local.get $s) (local.get $v)))
@@ -1343,7 +1343,7 @@
                      (br $next_item)))
                (call $extern_record_location (local.get $s) (local.get $v))
                (call $extern_header
-                  (local.get $s) (local.get $sz) (local.get $tag))
+                  (local.get $s) (local.get $sz) (local.get $tg))
                (call $extern_size
                   (local.get $s) (local.get $sz) (local.get $sz))
                (if (i32.gt_u (local.get $sz) (i32.const 1))
@@ -1355,7 +1355,7 @@
                            (local.get $sp)))))
                (local.set $v (array.get $block (local.get $b) (i32.const 1)))
                (br $loop)))
-            (if (ref.eq (local.get $v) (global.get $null))
+            (if (ref.eq (local.get $v) (global.get $null_value))
                (then
                   (call $write (local.get $s) (global.get $CODE_NULL))
                   (br $next_item)))
@@ -1517,7 +1517,7 @@
             (local.set $len (struct.get $output_block $end (local.get $blk)))
             (array.copy $bytes $bytes
                (local.get $res) (local.get $pos)
-               (struct.get $output_block $data (local.get $blk)) (i32.const 0)
+               (struct.get $output_block $dat (local.get $blk)) (i32.const 0)
                (local.get $len))
             (local.set $pos (i32.add (local.get $pos) (local.get $len)))
             (local.set $blk
@@ -1579,7 +1579,7 @@
       (loop $loop
          (block $done
             (call $caml_really_putblock (local.get $ch)
-               (struct.get $output_block $data (local.get $blk))
+               (struct.get $output_block $dat (local.get $blk))
                (i32.const 0)
                (struct.get $output_block $end (local.get $blk)))
             (local.set $blk

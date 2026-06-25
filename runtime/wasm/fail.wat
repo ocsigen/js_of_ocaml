@@ -36,10 +36,10 @@
       (throw $ocaml_exception (local.get $v)))
 
    (func $caml_raise_with_arg (export "caml_raise_with_arg")
-      (param $tag (ref eq)) (param $arg (ref eq))
+      (param $tg (ref eq)) (param $arg (ref eq))
       (throw $ocaml_exception
          (array.new_fixed $block 3
-            (ref.i31 (i32.const 0)) (local.get $tag) (local.get $arg))))
+            (ref.i31 (i32.const 0)) (local.get $tg) (local.get $arg))))
 
    ;; caml_global_data is a $block: index 0 is the tag, data starts at 1
    (global $OUT_OF_MEMORY_EXN i32 (i32.const 1))

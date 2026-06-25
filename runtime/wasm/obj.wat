@@ -200,14 +200,14 @@
 
    (func (export "caml_update_dummy_lazy")
       (param $dummy (ref eq)) (param $newval (ref eq)) (result (ref eq))
-      (local $tag i32)
+      (local $tg i32)
       (local $b (ref $block))
-      (local.set $tag
+      (local.set $tg
          (i31.get_s (ref.cast (ref i31) (call $caml_obj_tag (local.get $newval)))))
       (block $update
-         (br_if $update (i32.eq (local.get $tag) (global.get $lazy_tag)))
-         (br_if $update (i32.eq (local.get $tag) (global.get $forcing_tag)))
-         (br_if $update (i32.eq (local.get $tag) (global.get $forward_tag)))
+         (br_if $update (i32.eq (local.get $tg) (global.get $lazy_tag)))
+         (br_if $update (i32.eq (local.get $tg) (global.get $forcing_tag)))
+         (br_if $update (i32.eq (local.get $tg) (global.get $forward_tag)))
          (local.set $b (ref.cast (ref $block) (local.get $dummy)))
          (array.set $block (local.get $b) (i32.const 0)
             (ref.i31 (global.get $forward_tag)))
@@ -222,8 +222,8 @@
       (local $s (ref $bytes)) (local $s' (ref $bytes))
       (local $len i32)
       ;; Handle null values for or_null
-      (if (ref.eq (local.get $v) (global.get $null))
-         (then (return (global.get $null))))
+      (if (ref.eq (local.get $v) (global.get $null_value))
+         (then (return (global.get $null_value))))
       ;; Handle immediate integers
       (if (ref.test (ref i31) (local.get $v))
          (then (return (local.get $v))))
@@ -267,22 +267,22 @@
       (call $caml_dup_custom (local.get $v)))
 
    (func (export "caml_obj_with_tag")
-      (param $tag (ref eq)) (param $v (ref eq)) (result (ref eq))
+      (param $tg (ref eq)) (param $v (ref eq)) (result (ref eq))
       (local $res (ref eq))
       (local.set $res (call $caml_obj_dup (local.get $v)))
       (array.set $block (ref.cast (ref $block) (local.get $res)) (i32.const 0)
-         (local.get $tag))
+         (local.get $tg))
       (local.get $res))
 
    (func (export "caml_obj_block")
-      (param $tag (ref eq)) (param $size (ref eq)) (result (ref eq))
+      (param $tg (ref eq)) (param $size (ref eq)) (result (ref eq))
       (local $res (ref $block))
       (local $n i32)
       ;; TODO: fail for values that are not represented as an array
       (local.set $n (i31.get_s (ref.cast (ref i31) (local.get $size))))
       ;; Float arrays have a dedicated representation; a generic block
       ;; would trap on the first float-array primitive.
-      (if (i32.eq (i31.get_s (ref.cast (ref i31) (local.get $tag)))
+      (if (i32.eq (i31.get_s (ref.cast (ref i31) (local.get $tg)))
                   (global.get $double_array_tag))
          (then
             (return (array.new $float_array (f64.const 0) (local.get $n)))))
@@ -290,12 +290,12 @@
          (array.new $block
             (ref.i31 (i32.const 0))
             (i32.add (local.get $n) (i32.const 1))))
-      (array.set $block (local.get $res) (i32.const 0) (local.get $tag))
+      (array.set $block (local.get $res) (i32.const 0) (local.get $tg))
       (local.get $res))
 
    (func $caml_obj_tag (export "caml_obj_tag")
       (param $v (ref eq)) (result (ref eq))
-      (if (ref.eq (local.get $v) (global.get $null))
+      (if (ref.eq (local.get $v) (global.get $null_value))
          (then (return (ref.i31 (i32.const 1010)))))
       (if (ref.test (ref i31) (local.get $v))
          (then (return (ref.i31 (i32.const 1000)))))
@@ -450,7 +450,7 @@
       (param $obj (ref eq)) (param $vtag (ref eq)) (param $vcacheid (ref eq))
       (result (ref eq))
       (local $meths (ref $block))
-      (local $tag i32) (local $cacheid i32) (local $ofs i32)
+      (local $tg i32) (local $cacheid i32) (local $ofs i32)
       (local $li i32) (local $mi i32) (local $hi i32)
       (local.set $meths
          (ref.cast (ref $block)
@@ -468,7 +468,7 @@
                      (array.get $block
                         (local.get $meths)
                         (i32.sub (local.get $ofs) (i32.const 1))))))))
-      (local.set $tag (i31.get_s (ref.cast (ref i31) (local.get $vtag))))
+      (local.set $tg (i31.get_s (ref.cast (ref i31) (local.get $vtag))))
       (local.set $li (i32.const 3))
       (local.set $hi
          (i32.add
@@ -486,7 +486,7 @@
                                      (i32.const 1))
                           (i32.const 1)))
                (if (i32.lt_s
-                      (local.get $tag)
+                      (local.get $tg)
                       (i31.get_s
                          (ref.cast (ref i31)
                             (array.get $block
@@ -506,13 +506,13 @@
       (param $obj (ref eq)) (param $vtag (ref eq))
       (result (ref eq))
       (local $meths (ref $block))
-      (local $tag i32)
+      (local $tg i32)
       (local $li i32) (local $mi i32) (local $hi i32)
       (local.set $meths
          (ref.cast (ref $block)
             (array.get $block
                (ref.cast (ref $block) (local.get $obj)) (i32.const 1))))
-      (local.set $tag (i31.get_s (ref.cast (ref i31) (local.get $vtag))))
+      (local.set $tg (i31.get_s (ref.cast (ref i31) (local.get $vtag))))
       (local.set $li (i32.const 3))
       (local.set $hi
          (i32.add
@@ -530,7 +530,7 @@
                                      (i32.const 1))
                           (i32.const 1)))
                (if (i32.lt_s
-                      (local.get $tag)
+                      (local.get $tg)
                       (i31.get_s
                          (ref.cast (ref i31)
                             (array.get $block
@@ -606,8 +606,8 @@
          (local.get $y)))
 ))
 
-   (type $null (struct))
-   (global $null (export "null") (ref eq) (struct.new $null))
+   (type $null_value (struct))
+   (global $null_value (export "null") (ref eq) (struct.new $null_value))
 
    (@string $int_as_pointer_not_implemented
       "caml_int_as_pointer is not supported")
@@ -616,5 +616,5 @@
       (if (i32.eqz (ref.eq (local.get $x) (ref.i31 (i32.const 0))))
          (then
             (call $caml_failwith (global.get $int_as_pointer_not_implemented))))
-      (global.get $null))
+      (global.get $null_value))
 )

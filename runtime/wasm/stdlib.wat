@@ -452,7 +452,7 @@
    (func (export "caml_get_global_data") (param (ref eq)) (result (ref eq))
       (global.get $caml_global_data))
 
-   (type $func (func (result (ref eq))))
+   (type $thunk (func (result (ref eq))))
 
    (@string $fatal_error "Fatal error: exception ")
    (@string $handle_uncaught_exception "Printexc.handle_uncaught_exception")
@@ -471,7 +471,7 @@
       (call $caml_main (ref.func $reraise_exception)))
 ))
 
-   (type $wrapper_func (func (param (ref $func))))
+   (type $wrapper_func (func (param (ref $thunk))))
    (global $caml_main_wrapper (export "caml_main_wrapper")
       (mut (ref null $wrapper_func))
       (ref.null $wrapper_func))
@@ -483,10 +483,10 @@
          (do
             (block $fallback
                (call_ref $wrapper_func
-                  (ref.cast (ref $func) (local.get $start))
+                  (ref.cast (ref $thunk) (local.get $start))
                   (br_on_null $fallback (global.get $caml_main_wrapper)))
                (return))
-            (drop (call_ref $func (ref.cast (ref $func) (local.get $start)))))
+            (drop (call_ref $thunk (ref.cast (ref $thunk) (local.get $start)))))
          (catch $ocaml_exit)
          (catch $ocaml_exception
             (local.set $exn)
