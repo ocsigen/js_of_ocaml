@@ -1,5 +1,9 @@
 # dev
 
+## Features/Changes
+* Lib: add `Lwt_js_events.mutation`/`mutations` — wait for `MutationObserver`
+  mutation records as Lwt threads (#250)
+
 ## Bug fixes
 * Runtime/wasm: derive the wat-module name from the basename of the input
   path in `runtime/wasm/args.ml`, so dune 3.24's leading-`./` path-form

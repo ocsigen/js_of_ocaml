@@ -1155,6 +1155,45 @@ val transitioncancels :
   -> (Dom_html.transitionEvent Js.t -> unit Lwt.t -> unit Lwt.t)
   -> unit Lwt.t
 
+(** {2 Mutation observers} *)
+
+val mutation :
+     ?attributes:bool
+  -> ?child_list:bool
+  -> ?character_data:bool
+  -> ?subtree:bool
+  -> ?attribute_old_value:bool
+  -> ?character_data_old_value:bool
+  -> ?attribute_filter:Js.js_string Js.t list
+  -> #Dom.node Js.t
+  -> MutationObserver.mutationRecord Js.t Js.js_array Js.t Lwt.t
+(** [mutation node] creates a Lwt thread that waits for the next batch of
+    mutations on [node], as reported by a [MutationObserver], and returns
+    the array of mutation records. The observer is disconnected once the
+    thread returns (or is cancelled with [Lwt.cancel]).
+
+    The optional parameters mirror the fields of [MutationObserverInit]; at
+    least one of [~child_list], [~attributes] or [~character_data] must be
+    set, otherwise the underlying [observe] call raises (as per the spec).
+    See {!MutationObserver.observe}. *)
+
+val mutations :
+     ?cancel_handler:bool
+  -> ?attributes:bool
+  -> ?child_list:bool
+  -> ?character_data:bool
+  -> ?subtree:bool
+  -> ?attribute_old_value:bool
+  -> ?character_data_old_value:bool
+  -> ?attribute_filter:Js.js_string Js.t list
+  -> #Dom.node Js.t
+  -> (MutationObserver.mutationRecord Js.t Js.js_array Js.t -> unit Lwt.t -> unit Lwt.t)
+  -> unit Lwt.t
+(** [mutations node handler] is the looping counterpart of {!mutation},
+    built on top of {!seq_loop}: it observes [node] and runs [handler] on
+    each batch of mutation records, then observes again. As with the other
+    loops, mutations happening while the handler runs are not reported. *)
+
 val request_animation_frame : unit -> unit Lwt.t
 (** Returns when a repaint of the window by the browser starts.
     (see JS method [window.requestAnimationFrame]) *)
