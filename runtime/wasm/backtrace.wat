@@ -21,14 +21,14 @@
 (@if $wasi
 (@then
    (global $backtrace_status (mut (ref eq)) (ref.i31 (i32.const 0)))
-   (func $backtrace_status (result (ref eq))
+   (func $get_backtrace_status (result (ref eq))
       (global.get $backtrace_status))
    (func $record_backtrace (param $b (ref eq))
       (global.set $backtrace_status (local.get $b)))
 )
 (@else
    (import "bindings" "backtrace_status"
-      (func $backtrace_status (result (ref eq))))
+      (func $get_backtrace_status (result (ref eq))))
    (import "bindings" "record_backtrace"
       (func $record_backtrace (param (ref eq))))
 ))
@@ -42,7 +42,7 @@
 
    (func (export "caml_backtrace_status")
       (param (ref eq)) (result (ref eq))
-      (call $backtrace_status))
+      (call $get_backtrace_status))
 
    (func (export "caml_convert_raw_backtrace")
       (param (ref eq)) (result (ref eq))

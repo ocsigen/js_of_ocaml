@@ -66,7 +66,7 @@
          (@char "i") (@char "n") (@char "f") (@char"i")
          (@char "n") (@char "i") (@char "t") (@char "y")))
 
-   (global $nan (ref $chars)
+   (global $nan_chars (ref $chars)
       (array.new_fixed $chars 3 (@char "n") (@char "a") (@char "n")))
 
    (func (export "Double_val") (param $v (ref eq)) (result f64)
@@ -103,7 +103,7 @@
                         (then
                            (global.get $infinity))
                         (else
-                           (global.get $nan))))
+                           (global.get $nan_chars))))
                   (local.set $len (array.len (local.get $txt)))
                   (local.set $s
                      (array.new $bytes (i32.const 0)
@@ -276,7 +276,7 @@
       (local.get $conversion)
       (local.get $uppercase))
 
-   (global $inf (ref $chars)
+   (global $inf_chars (ref $chars)
       (array.new_fixed $chars 3 (@char "i") (@char "n") (@char "f")))
 
 (@if $wasi
@@ -355,12 +355,12 @@
                   (local.set $txt
                      (if (result (ref $chars)) (i64.eqz (local.get $m))
                         (then
-                           (global.get $inf))
+                           (global.get $inf_chars))
                         (else
                            (local.set $negative (i32.const 0))
                            (local.set $i
                               (i32.ne (local.get $sign_style) (i32.const 0)))
-                           (global.get $nan))))
+                           (global.get $nan_chars))))
                   (local.set $len (array.len (local.get $txt)))
                   (local.set $s
                      (array.new $bytes (i32.const 0)

@@ -59,7 +59,7 @@
 )
 (@else
    (import "bindings" "open"
-      (func $open (param anyref) (param i32) (param i32) (result i32)))
+      (func $open_fn (param anyref) (param i32) (param i32) (result i32)))
    (import "bindings" "close" (func $close (param i32)))
    (import "bindings" "write"
       (func $write
@@ -176,7 +176,7 @@
          (local.get $i)
          (local.get $v)))
 
-   (type $data
+   (type $dat
       (struct
          (field $array (ref array))
          (field $offset i32)
@@ -186,26 +186,26 @@
       (param $buf (ref extern)) (param $i i32)
       (param $ta (ref extern)) (param $j i32)
       (param $len i32)
-      (local $data (ref $data))
-      (local.set $data
-         (ref.cast (ref $data) (any.convert_extern (local.get $ta))))
+      (local $dat (ref $dat))
+      (local.set $dat
+         (ref.cast (ref $dat) (any.convert_extern (local.get $ta))))
       (call $caml_blit_dataview_to_bytes
          (local.get $buf)
          (local.get $i)
-         (ref.cast (ref $bytes) (struct.get $data $array (local.get $data)))
-         (i32.add (struct.get $data $offset (local.get $data)) (local.get $j))
+         (ref.cast (ref $bytes) (struct.get $dat $array (local.get $dat)))
+         (i32.add (struct.get $dat $offset (local.get $dat)) (local.get $j))
          (local.get $len)))
 
    (func $ta_blit_to_buffer
       (param $ta (ref extern)) (param $i i32)
       (param $buf (ref extern)) (param $j i32)
       (param $len i32)
-      (local $data (ref $data))
-      (local.set $data
-         (ref.cast (ref $data) (any.convert_extern (local.get $ta))))
+      (local $dat (ref $dat))
+      (local.set $dat
+         (ref.cast (ref $dat) (any.convert_extern (local.get $ta))))
       (call $caml_blit_bytes_to_dataview
-         (ref.cast (ref $bytes) (struct.get $data $array (local.get $data)))
-         (i32.add (struct.get $data $offset (local.get $data)) (local.get $i))
+         (ref.cast (ref $bytes) (struct.get $dat $array (local.get $dat)))
+         (i32.add (struct.get $dat $offset (local.get $dat)) (local.get $i))
          (local.get $buf)
          (local.get $j)
          (local.get $len)))
@@ -514,7 +514,7 @@
       (try
          (do
             (local.set $fd
-               (call $open
+               (call $open_fn
                   (call $unwrap
                      (call $caml_jsstring_of_string (local.get $path)))
                   (local.get $flags)

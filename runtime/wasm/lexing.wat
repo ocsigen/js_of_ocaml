@@ -40,17 +40,17 @@
    (global $lex_last_action i32 (i32.const 8))
    (global $lex_eof_reached i32 (i32.const 9))
    (global $lex_mem i32 (i32.const 10))
-   (global $lex_base i32 (i32.const 1))
-   (global $lex_backtrk i32 (i32.const 2))
-   (global $lex_default i32 (i32.const 3))
-   (global $lex_trans i32 (i32.const 4))
-   (global $lex_check i32 (i32.const 5))
-   (global $lex_base_code i32 (i32.const 6))
-   (global $lex_backtrk_code i32 (i32.const 7))
-   (global $lex_default_code i32 (i32.const 8))
-   (global $lex_trans_code i32 (i32.const 9))
-   (global $lex_check_code i32 (i32.const 10))
-   (global $lex_code i32 (i32.const 11))
+   (global $lex_base_field i32 (i32.const 1))
+   (global $lex_backtrk_field i32 (i32.const 2))
+   (global $lex_default_field i32 (i32.const 3))
+   (global $lex_trans_field i32 (i32.const 4))
+   (global $lex_check_field i32 (i32.const 5))
+   (global $lex_base_code_field i32 (i32.const 6))
+   (global $lex_backtrk_code_field i32 (i32.const 7))
+   (global $lex_default_code_field i32 (i32.const 8))
+   (global $lex_trans_code_field i32 (i32.const 9))
+   (global $lex_check_code_field i32 (i32.const 10))
+   (global $lex_code_field i32 (i32.const 11))
 
    (@string $lexing_empty_token "lexing: empty token")
 
@@ -91,19 +91,19 @@
             (local.set $state (i32.sub (i32.const -1) (local.get $state)))))
       (local.set $lex_base
          (ref.cast (ref $bytes)
-            (array.get $block (local.get $tbl) (global.get $lex_base))))
+            (array.get $block (local.get $tbl) (global.get $lex_base_field))))
       (local.set $lex_backtrk
          (ref.cast (ref $bytes)
-            (array.get $block (local.get $tbl) (global.get $lex_backtrk))))
+            (array.get $block (local.get $tbl) (global.get $lex_backtrk_field))))
       (local.set $lex_check
          (ref.cast (ref $bytes)
-            (array.get $block (local.get $tbl) (global.get $lex_check))))
+            (array.get $block (local.get $tbl) (global.get $lex_check_field))))
       (local.set $lex_trans
          (ref.cast (ref $bytes)
-            (array.get $block (local.get $tbl) (global.get $lex_trans))))
+            (array.get $block (local.get $tbl) (global.get $lex_trans_field))))
       (local.set $lex_default
          (ref.cast (ref $bytes)
-            (array.get $block (local.get $tbl) (global.get $lex_default))))
+            (array.get $block (local.get $tbl) (global.get $lex_default_field))))
       (loop $loop
          (local.set $base (call $get (local.get $lex_base) (local.get $state)))
          (if (i32.lt_s (local.get $base) (i32.const 0))
@@ -254,37 +254,37 @@
             (local.set $state (i32.sub (i32.const -1) (local.get $state)))))
       (local.set $lex_code
          (ref.cast (ref $bytes)
-            (array.get $block (local.get $tbl) (global.get $lex_code))))
+            (array.get $block (local.get $tbl) (global.get $lex_code_field))))
       (local.set $lex_base
          (ref.cast (ref $bytes)
-            (array.get $block (local.get $tbl) (global.get $lex_base))))
+            (array.get $block (local.get $tbl) (global.get $lex_base_field))))
       (local.set $lex_base_code
          (ref.cast (ref $bytes)
-            (array.get $block (local.get $tbl) (global.get $lex_base_code))))
+            (array.get $block (local.get $tbl) (global.get $lex_base_code_field))))
       (local.set $lex_backtrk
          (ref.cast (ref $bytes)
-            (array.get $block (local.get $tbl) (global.get $lex_backtrk))))
+            (array.get $block (local.get $tbl) (global.get $lex_backtrk_field))))
       (local.set $lex_backtrk_code
          (ref.cast (ref $bytes)
-            (array.get $block (local.get $tbl) (global.get $lex_backtrk_code))))
+            (array.get $block (local.get $tbl) (global.get $lex_backtrk_code_field))))
       (local.set $lex_check
          (ref.cast (ref $bytes)
-            (array.get $block (local.get $tbl) (global.get $lex_check))))
+            (array.get $block (local.get $tbl) (global.get $lex_check_field))))
       (local.set $lex_check_code
          (ref.cast (ref $bytes)
-            (array.get $block (local.get $tbl) (global.get $lex_check_code))))
+            (array.get $block (local.get $tbl) (global.get $lex_check_code_field))))
       (local.set $lex_trans
          (ref.cast (ref $bytes)
-            (array.get $block (local.get $tbl) (global.get $lex_trans))))
+            (array.get $block (local.get $tbl) (global.get $lex_trans_field))))
       (local.set $lex_trans_code
          (ref.cast (ref $bytes)
-            (array.get $block (local.get $tbl) (global.get $lex_trans_code))))
+            (array.get $block (local.get $tbl) (global.get $lex_trans_code_field))))
       (local.set $lex_default
          (ref.cast (ref $bytes)
-            (array.get $block (local.get $tbl) (global.get $lex_default))))
+            (array.get $block (local.get $tbl) (global.get $lex_default_field))))
       (local.set $lex_default_code
          (ref.cast (ref $bytes)
-            (array.get $block (local.get $tbl) (global.get $lex_default_code))))
+            (array.get $block (local.get $tbl) (global.get $lex_default_code_field))))
       (loop $loop
          (local.set $base (call $get (local.get $lex_base) (local.get $state)))
          (if (i32.lt_s (local.get $base) (i32.const 0))

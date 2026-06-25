@@ -55,7 +55,7 @@
    (global $STACKS_GROWN_2 i32 (i32.const 3))
    (global $SEMANTIC_ACTION_COMPUTED i32 (i32.const 4))
    (global $ERROR_DETECTED i32 (i32.const 5))
-   (global $loop i32 (i32.const 6))
+   (global $loop_state i32 (i32.const 6))
    (global $testshift i32 (i32.const 7))
    (global $shift i32 (i32.const 8))
    (global $shift_recover i32 (i32.const 9))
@@ -87,16 +87,16 @@
 
    (global $tbl_transl_const i32 (i32.const 2))
    (global $tbl_transl_block i32 (i32.const 3))
-   (global $tbl_lhs i32 (i32.const 4))
-   (global $tbl_len i32 (i32.const 5))
-   (global $tbl_defred i32 (i32.const 6))
-   (global $tbl_dgoto i32 (i32.const 7))
-   (global $tbl_sindex i32 (i32.const 8))
-   (global $tbl_rindex i32 (i32.const 9))
-   (global $tbl_gindex i32 (i32.const 10))
+   (global $tbl_lhs_field i32 (i32.const 4))
+   (global $tbl_len_field i32 (i32.const 5))
+   (global $tbl_defred_field i32 (i32.const 6))
+   (global $tbl_dgoto_field i32 (i32.const 7))
+   (global $tbl_sindex_field i32 (i32.const 8))
+   (global $tbl_rindex_field i32 (i32.const 9))
+   (global $tbl_gindex_field i32 (i32.const 10))
    (global $tbl_tablesize i32 (i32.const 11))
-   (global $tbl_table i32 (i32.const 12))
-   (global $tbl_check i32 (i32.const 13))
+   (global $tbl_table_field i32 (i32.const 12))
+   (global $tbl_check_field i32 (i32.const 13))
    (global $tbl_names_const i32 (i32.const 15))
    (global $tbl_names_block i32 (i32.const 16))
 
@@ -230,31 +230,31 @@
       (local.set $tables (ref.cast (ref $block) (local.get $vtables)))
       (local.set $tbl_defred
          (ref.cast (ref $bytes)
-            (array.get $block (local.get $tables) (global.get $tbl_defred))))
+            (array.get $block (local.get $tables) (global.get $tbl_defred_field))))
       (local.set $tbl_sindex
          (ref.cast (ref $bytes)
-            (array.get $block (local.get $tables) (global.get $tbl_sindex))))
+            (array.get $block (local.get $tables) (global.get $tbl_sindex_field))))
       (local.set $tbl_check
          (ref.cast (ref $bytes)
-            (array.get $block (local.get $tables) (global.get $tbl_check))))
+            (array.get $block (local.get $tables) (global.get $tbl_check_field))))
       (local.set $tbl_rindex
          (ref.cast (ref $bytes)
-            (array.get $block (local.get $tables) (global.get $tbl_rindex))))
+            (array.get $block (local.get $tables) (global.get $tbl_rindex_field))))
       (local.set $tbl_table
          (ref.cast (ref $bytes)
-            (array.get $block (local.get $tables) (global.get $tbl_table))))
+            (array.get $block (local.get $tables) (global.get $tbl_table_field))))
       (local.set $tbl_len
          (ref.cast (ref $bytes)
-            (array.get $block (local.get $tables) (global.get $tbl_len))))
+            (array.get $block (local.get $tables) (global.get $tbl_len_field))))
       (local.set $tbl_lhs
          (ref.cast (ref $bytes)
-            (array.get $block (local.get $tables) (global.get $tbl_lhs))))
+            (array.get $block (local.get $tables) (global.get $tbl_lhs_field))))
       (local.set $tbl_gindex
          (ref.cast (ref $bytes)
-            (array.get $block (local.get $tables) (global.get $tbl_gindex))))
+            (array.get $block (local.get $tables) (global.get $tbl_gindex_field))))
       (local.set $tbl_dgoto
          (ref.cast (ref $bytes)
-            (array.get $block (local.get $tables) (global.get $tbl_dgoto))))
+            (array.get $block (local.get $tables) (global.get $tbl_dgoto_field))))
       (local.set $env (ref.cast (ref $block) (local.get $venv)))
       (local.set $cmd (i31.get_s (ref.cast (ref i31) (local.get $vcmd))))
       (local.set $sp
@@ -487,7 +487,7 @@
                      (array.set $block (local.get $env)
                         (global.get $env_curr_char)
                         (ref.i31 (i32.const -1)))
-                     (local.set $cmd (global.get $loop))
+                     (local.set $cmd (global.get $loop_state))
                      (br $next))))
               ;; shift:
               (array.set $block (local.get $env) (global.get $env_curr_char)
@@ -541,7 +541,7 @@
                      (global.get $env_symb_end_stack)))
                (i32.add (local.get $sp) (i32.const 1))
                (array.get $block (local.get $env) (global.get $env_symb_end)))
-            (local.set $cmd (global.get $loop))
+            (local.set $cmd (global.get $loop_state))
             (br $next))
            ;; reduce:
            (if (global.get $caml_parser_trace)
@@ -643,7 +643,7 @@
                         (array.get $block (local.get $env)
                            (global.get $env_symb_end_stack)))
                      (i32.add (local.get $asp) (i32.const 1))))))
-         (local.set $cmd (global.get $loop))
+         (local.set $cmd (global.get $loop_state))
          (br $next))
         ;; default:
         (return (ref.i31 (global.get $RAISE_PARSE_ERROR)))))
