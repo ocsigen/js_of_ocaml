@@ -21,7 +21,7 @@ depends: [
   "re" {>= "1.9.0" & with-test}
   "odoc" {with-doc}
 ]
-depopts: ["graphics" "lwt_log"]
+depopts: ["graphics"]
 dev-repo: "git+https://github.com/ocsigen/js_of_ocaml.git"
 x-maintenance-intent: ["(latest)"]
 build: [

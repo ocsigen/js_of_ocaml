@@ -76,7 +76,7 @@ make bench
 opam install --deps-only -t js_of_ocaml js_of_ocaml-lwt \
   js_of_ocaml-compiler js_of_ocaml-toplevel js_of_ocaml-ppx \
   js_of_ocaml-ppx_deriving_json js_of_ocaml-tyxml
-opam install odoc lwt_log yojson ocp-indent graphics higlo
+opam install odoc yojson ocp-indent graphics higlo
 ```
 
 **Requirements:**

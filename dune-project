@@ -52,9 +52,7 @@
   (num :with-test)
   (re (and (>= 1.9.0) :with-test)))
  (depopts
-  graphics
-  lwt_log
-))
+  graphics))
 
 (package
  (name js_of_ocaml-ppx_deriving_json)

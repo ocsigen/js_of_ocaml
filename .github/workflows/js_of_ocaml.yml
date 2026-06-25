@@ -227,5 +227,5 @@ jobs:
       - name: build doc (compile check)
         if: ${{ !matrix.skip-doc }}
         run: |
-          opam install odoc lwt_log yojson ocp-indent graphics higlo
+          opam install odoc yojson ocp-indent graphics higlo
           opam exec -- make doc
