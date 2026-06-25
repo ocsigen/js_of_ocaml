@@ -3,6 +3,8 @@
 ## Features/Changes
 * Lib: add `Lwt_js_events.mutation`/`mutations` — wait for `MutationObserver`
   mutation records as Lwt threads (#250)
+* Lib: remove `js_of_ocaml-lwt.logger` and the `lwt_log` dependency, as
+  upstream `lwt_log` is deprecated (#2378)
 
 ## Bug fixes
 * Runtime/wasm: derive the wat-module name from the basename of the input

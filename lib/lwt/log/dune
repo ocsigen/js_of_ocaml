@@ -1,8 +1,0 @@
-(library
- (name lwt_log_js)
- (public_name js_of_ocaml-lwt.logger)
- (synopsis "Lwt logger for js_of_ocaml.")
- (optional)
- (libraries js_of_ocaml lwt lwt_log.core)
- (preprocess
-  (pps js_of_ocaml-ppx)))
