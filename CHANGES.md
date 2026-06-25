@@ -10,6 +10,9 @@
   resolve the spec's union argument/return types (#2380)
 * Lib: add `Notification` and `Clipboard` — bindings to the Notifications API
   and the (Promise-typed) async Clipboard API (#2379)
+* Lib: add bindings for the Service Worker API (`ServiceWorker`),
+  channel messaging (`MessageChannel`, `MessagePort`, `MessageEvent`) and the
+  Cache API (`Cache`) (#NNNN)
 * Lib: add `Lwt_js_events.mutation`/`mutations` — wait for `MutationObserver`
   mutation records as Lwt threads (#250)
 * Lib: remove `js_of_ocaml-lwt.logger` and the `lwt_log` dependency, as
