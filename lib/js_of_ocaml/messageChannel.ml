@@ -49,6 +49,8 @@ and messagePort = object ('self)
 
   method onmessageerror :
     ('self Js.t, Js.Unsafe.any messageEvent Js.t) Dom.event_listener Js.writeonly_prop
+
+  method onclose : ('self Js.t, 'self Dom.event Js.t) Dom.event_listener Js.writeonly_prop
 end
 
 class type messageChannel = object

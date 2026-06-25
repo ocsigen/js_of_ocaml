@@ -40,6 +40,17 @@ end
 
 val empty_query_options : unit -> queryOptions t
 
+(** Like {!class-type:queryOptions} but with a [cacheName] to restrict
+    {!class-type:cacheStorage}[##match_withOptions] to a single named cache.
+    Create an empty record with {!empty_multi_query_options}. *)
+class type multiQueryOptions = object
+  inherit queryOptions
+
+  method cacheName : js_string t writeonly_prop
+end
+
+val empty_multi_query_options : unit -> multiQueryOptions t
+
 (** A single named {!Cache} instance, obtained from {!class-type:cacheStorage}.
 
     The methods come in two flavours: the [_url] variants take the request as a
@@ -92,6 +103,9 @@ class type cacheStorage = object
   method match_ : Fetch.request t -> Fetch.response t optdef Promise.t meth
 
   method match_url : js_string t -> Fetch.response t optdef Promise.t meth
+
+  method match_withOptions :
+    Fetch.request t -> multiQueryOptions t -> Fetch.response t optdef Promise.t meth
 
   method has : js_string t -> bool t Promise.t meth
 

@@ -28,6 +28,14 @@ end
 
 let empty_query_options () : queryOptions Js.t = Js.Unsafe.obj [||]
 
+class type multiQueryOptions = object
+  inherit queryOptions
+
+  method cacheName : Js.js_string Js.t Js.writeonly_prop
+end
+
+let empty_multi_query_options () : multiQueryOptions Js.t = Js.Unsafe.obj [||]
+
 class type cache = object
   method match_ : Fetch.request Js.t -> Fetch.response Js.t Js.optdef Promise.t Js.meth
 
@@ -77,6 +85,11 @@ class type cacheStorage = object
   method match_ : Fetch.request Js.t -> Fetch.response Js.t Js.optdef Promise.t Js.meth
 
   method match_url : Js.js_string Js.t -> Fetch.response Js.t Js.optdef Promise.t Js.meth
+
+  method match_withOptions :
+       Fetch.request Js.t
+    -> multiQueryOptions Js.t
+    -> Fetch.response Js.t Js.optdef Promise.t Js.meth
 
   method has : Js.js_string Js.t -> bool Js.t Promise.t Js.meth
 

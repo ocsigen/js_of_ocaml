@@ -48,8 +48,6 @@ class type serviceWorker = object ('self)
   method postMessage_withTransfer : 'a. 'a -> Unsafe.any js_array t -> unit meth
 
   method onstatechange : ('self t, 'self Dom.event t) Dom.event_listener writeonly_prop
-
-  method onerror : ('self t, Worker.errorEvent t) Dom.event_listener writeonly_prop
 end
 
 (** Options for {!class-type:serviceWorkerContainer}[##register_withOptions].
@@ -80,7 +78,9 @@ class type serviceWorkerRegistration = object ('self)
 
   method updateViaCache : js_string t readonly_prop
 
-  method update : unit Promise.t meth
+  method update : serviceWorkerRegistration t Promise.t meth
+  (** Triggers a soft update of the registration; resolves with the
+      registration object. *)
 
   method unregister : bool t Promise.t meth
   (** Resolves with [true] if the registration was found and unregistered. *)
@@ -116,6 +116,9 @@ class type serviceWorkerContainer = object ('self)
 
   method onmessage :
     ('self t, Unsafe.any MessageChannel.messageEvent t) Dom.event_listener writeonly_prop
+
+  method onmessageerror :
+    ('self t, Unsafe.any MessageChannel.messageEvent t) Dom.event_listener writeonly_prop
 end
 
 val container : unit -> serviceWorkerContainer t optdef
@@ -148,7 +151,13 @@ class type fetchEvent = object
 
   method resultingClientId : js_string t readonly_prop
 
+  method replacesClientId : js_string t readonly_prop
+
   method preloadResponse : Unsafe.any Promise.t readonly_prop
+
+  method handled : unit Promise.t readonly_prop
+  (** Resolves once the request has been handled (whether or not
+      [respondWith] was called). *)
 
   method respondWith : Fetch.response t Promise.t -> unit meth
   (** [event##respondWith p] provides the response (as a promise) for the
@@ -162,7 +171,10 @@ class type client = object
   method url : js_string t readonly_prop
 
   method _type : js_string t readonly_prop
-  (** One of ["window"], ["worker"], ["sharedworker"] or ["all"]. *)
+  (** One of ["window"], ["worker"] or ["sharedworker"]. *)
+
+  method frameType : js_string t readonly_prop
+  (** One of ["auxiliary"], ["top-level"], ["nested"] or ["none"]. *)
 
   method postMessage : 'a. 'a -> unit meth
 
@@ -176,6 +188,8 @@ class type windowClient = object
   method focused : bool t readonly_prop
 
   method visibilityState : js_string t readonly_prop
+
+  method ancestorOrigins : js_string t js_array t readonly_prop
 
   method focus : windowClient t Promise.t meth
 
@@ -227,6 +241,9 @@ class type serviceWorkerGlobalScope = object ('self)
   method onfetch : ('self t, fetchEvent t) Dom.event_listener writeonly_prop
 
   method onmessage :
+    ('self t, Unsafe.any MessageChannel.messageEvent t) Dom.event_listener writeonly_prop
+
+  method onmessageerror :
     ('self t, Unsafe.any MessageChannel.messageEvent t) Dom.event_listener writeonly_prop
 end
 

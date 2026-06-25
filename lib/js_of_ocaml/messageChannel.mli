@@ -67,6 +67,8 @@ and messagePort = object ('self)
 
   method onmessageerror :
     ('self t, Unsafe.any messageEvent t) Dom.event_listener writeonly_prop
+
+  method onclose : ('self t, 'self Dom.event t) Dom.event_listener writeonly_prop
 end
 
 class type messageChannel = object
