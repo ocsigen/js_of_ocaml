@@ -209,6 +209,37 @@ index b145cb3..e5fc412 100644
     )
   ; ( "zarith_stubs_js"
     , {zs|
+diff --git a/runtime.wat b/runtime.wat
+index 1234567..89abcde 100644
+--- a/runtime.wat
++++ b/runtime.wat
+@@ -306,20 +306,18 @@
+       (call $caml_serialize_int_4 (local.get $s) (local.get $nb))
+       (call $serialize (ref.func $caml_serialize_int_1) (local.get $s)
+          (local.get $z))
+-      (tuple.make 2
+-          (i32.add (i32.const 4) (local.get $nb))
+-          (i32.and (i32.const -8) (i32.add (i32.const 15) (local.get $nb)))))
++      (i32.add (i32.const 4) (local.get $nb))
++      (i32.and (i32.const -8) (i32.add (i32.const 15) (local.get $nb))))
+
+    (func $ml_z_custom_deserialize
+       (param $s (ref eq)) (result (ref eq)) (result i32)
+       (local $neg i32) (local $nb i32)
+       (local.set $neg (call $caml_deserialize_uint_1 (local.get $s)))
+       (local.set $nb (call $caml_deserialize_int_4 (local.get $s)))
+-      (tuple.make 2
+-         (call $wrap_bigint
+-            (call $deserialize (ref.func $caml_deserialize_uint_1) (local.get $s)
+-               (local.get $neg) (local.get $nb)))
+-         (i32.add (i32.const 4) (local.get $nb))))
++      (call $wrap_bigint
++         (call $deserialize (ref.func $caml_deserialize_uint_1) (local.get $s)
++            (local.get $neg) (local.get $nb)))
++      (i32.add (i32.const 4) (local.get $nb)))
+
+    (func (export "ml_z_cdiv")
+       (param $z1 (ref eq)) (param $z2 (ref eq)) (result (ref eq))
 diff --git a/test/bitwise.ml b/test/bitwise.ml
 index 5fd0ddc..4833923 100644
 --- a/test/bitwise.ml
