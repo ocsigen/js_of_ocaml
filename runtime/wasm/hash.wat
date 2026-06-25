@@ -183,8 +183,10 @@
       (local $sz i32) (local $num i32) (local $h i32)
       (local $rd i32) (local $wr i32)
       (local $v (ref eq))
-      (local $b (ref $block))
+      (local $bv (ref $block))
       (local $fa (ref $float_array))
+      (local $iv (ref i31)) (local $sv (ref $bytes))
+      (local $flv (ref $float)) (local $cv (ref $custom))
       (local $i i32)
       (local $len i32)
       (local $tg i32)
@@ -208,49 +210,51 @@
                (local.set $rd (i32.add (local.get $rd) (i32.const 1)))
                (block $again
                   (drop (block $not_int (result (ref eq))
+                     (local.set $iv
+                        (br_on_cast_fail $not_int (ref eq) (ref i31)
+                           (local.get $v)))
                      (local.set $h
                         (call $caml_hash_mix_int (local.get $h)
                            (i32.add
                               (i32.shl
-                                 (i31.get_s
-                                    (br_on_cast_fail
-                                       $not_int (ref eq) (ref i31)
-                                       (local.get $v)))
+                                 (i31.get_s (local.get $iv))
                                  (i32.const 1))
                               (i32.const 1))))
                      (local.set $num (i32.sub (local.get $num) (i32.const 1)))
                      (br $loop)))
                   (drop (block $not_string (result (ref eq))
+                     (local.set $sv
+                        (br_on_cast_fail $not_string (ref eq) (ref $bytes)
+                           (local.get $v)))
                      (local.set $h
                         (call $caml_hash_mix_string (local.get $h)
-                           (br_on_cast_fail $not_string (ref eq) (ref $bytes)
-                              (local.get $v))))
+                           (local.get $sv)))
                      (local.set $num (i32.sub (local.get $num) (i32.const 1)))
                      (br $loop)))
                   (drop (block $not_block (result (ref eq))
-                     (local.set $b
+                     (local.set $bv
                         (br_on_cast_fail $not_block (ref eq) (ref $block)
                            (local.get $v)))
                      (local.set $tg
                         (i31.get_u
                            (ref.cast (ref i31)
-                              (array.get $block (local.get $b) (i32.const 0)))))
+                              (array.get $block (local.get $bv) (i32.const 0)))))
                      (if (i32.eq (local.get $tg) (global.get $forward_tag))
                         (then
                            (local.set $i (i32.const 0))
                            (loop $forward
                               (local.set $v
                                  (array.get $block
-                                    (local.get $b) (i32.const 1)))
+                                    (local.get $bv) (i32.const 1)))
                               (drop (block $not_block' (result (ref eq))
-                                 (local.set $b
+                                 (local.set $bv
                                     (br_on_cast_fail
                                        $not_block' (ref eq) (ref $block)
                                        (local.get $v)))
                                  (br_if $again
                                     (i32.eqz
                                        (ref.eq
-                                          (array.get $block (local.get $b)
+                                          (array.get $block (local.get $bv)
                                              (i32.const 0))
                                           (ref.i31 (global.get $forward_tag)))))
                                  (local.set $i
@@ -268,12 +272,12 @@
                                  (i31.get_s
                                     (ref.cast (ref i31)
                                        (array.get $block
-                                          (local.get $b) (i32.const 2))))))
+                                          (local.get $bv) (i32.const 2))))))
                            (br $loop)))
                      ;; abstract tag: block contents unknown, do nothing
                      (br_if $loop
                         (i32.eq (local.get $tg) (global.get $abstract_tag)))
-                     (local.set $len (array.len (local.get $b)))
+                     (local.set $len (array.len (local.get $bv)))
                      (local.set $h
                         (call $caml_hash_mix_int (local.get $h)
                            (i32.or
@@ -286,17 +290,18 @@
                         (br_if $loop (i32.ge_u (local.get $wr) (local.get $sz)))
                         (array.set $block (global.get $caml_hash_queue)
                            (local.get $wr)
-                           (array.get $block (local.get $b) (local.get $i)))
+                           (array.get $block (local.get $bv) (local.get $i)))
                         (local.set $wr (i32.add (local.get $wr) (i32.const 1)))
                         (local.set $i (i32.add (local.get $i) (i32.const 1)))
                         (br $block_iter))
                      (unreachable)))
                   (drop (block $not_float (result (ref eq))
+                     (local.set $flv
+                        (br_on_cast_fail $not_float (ref eq) (ref $float)
+                           (local.get $v)))
                      (local.set $h
                         (call $caml_hash_mix_double (local.get $h)
-                           (struct.get $float 0
-                              (br_on_cast_fail $not_float (ref eq) (ref $float)
-                                 (local.get $v)))))
+                           (struct.get $float 0 (local.get $flv))))
                      (local.set $num (i32.sub (local.get $num) (i32.const 1)))
                      (br $loop)))
                   (drop (block $not_float_array (result (ref eq))
@@ -321,6 +326,9 @@
                                  (i32.gt_s (local.get $num) (i32.const 0))))))
                      (br $loop)))
                   (drop (block $not_custom (result (ref eq))
+                     (local.set $cv
+                        (br_on_cast_fail $not_custom (ref eq) (ref $custom)
+                           (local.get $v)))
                      (local.set $h
                         (call $caml_hash_mix_int (local.get $h)
                            (call_ref $hash
@@ -328,9 +336,7 @@
                               (br_on_null $loop
                                  (struct.get $custom_operations $hash
                                     (struct.get $custom 0
-                                       (br_on_cast_fail $not_custom
-                                          (ref eq) (ref $custom)
-                                          (local.get $v))))))))
+                                       (local.get $cv)))))))
                      (local.set $num (i32.sub (local.get $num) (i32.const 1)))
                      (br $loop)))
 (@if (not $wasi)
