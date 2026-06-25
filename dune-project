@@ -147,6 +147,7 @@
   menhirLib
   menhirSdk
   (yojson (>= 2.1))
+  (wax-lib (>= 0.2.0))
   conf-binaryen)
  (depopts
   ocamlfind

@@ -104,6 +104,16 @@
   targeting JavaScript (#2441)
 * Compiler: with `--effects=double-translation`, only generate a CPS version
   of the functions that may run below an effect handler (#2441)
+* Compiler/wasm: preprocess and assemble the runtime files with the Wax
+  toolchain instead of the in-house Wasm text preprocessor. Wax resolves the
+  `(@if ...)` annotations, names the exported functions and assembles each
+  module to a WebAssembly binary before `wasm-merge` links them; a runtime file
+  may now be written in the Wax language as well, by extension. Each module is
+  validated as it is assembled, so a type error, a bad stack shape or a wrong
+  arity in a runtime file is reported against its source rather than reaching
+  Binaryen or the engine. This adds a dependency on `wax-lib`, and removes the
+  `wasm_of_ocaml preprocess` command (and its `pp` alias), which exposed the
+  preprocessor that is now gone (#2373)
 
 ## Bug fixes
 * Compiler: with `--effects=double-translation`, fix calls with too many

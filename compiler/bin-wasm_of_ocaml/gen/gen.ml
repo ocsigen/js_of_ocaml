@@ -115,9 +115,8 @@ let print_flags f flags =
            k
            (fun f v ->
              match v with
-             | `S s -> Format.fprintf f "Wat_preprocess.String \"%s\"" s
-             | `B b ->
-                 Format.fprintf f "Wat_preprocess.Bool %s" (if b then "true" else "false"))
+             | `S s -> Format.fprintf f "Wax_link.String \"%s\"" s
+             | `B b -> Format.fprintf f "Wax_link.Bool %s" (if b then "true" else "false"))
            v))
     flags
 
