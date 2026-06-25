@@ -33,7 +33,7 @@ jobs:
           - "5.1"
           - "5.2"
           - "5.3"
-          - "5.5"
+          - "5.4"
         skip-test:
           - true
         skip-doc:
@@ -68,7 +68,7 @@ jobs:
             skip-doc: true
           - os: ubuntu-latest
             os-name: Ubuntu
-            ocaml-compiler: "5.4.0"
+            ocaml-compiler: "5.5"
             skip-effects: false
             skip-test: false
             skip-doc: false
