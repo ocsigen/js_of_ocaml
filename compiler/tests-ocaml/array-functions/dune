@@ -1,3 +1,11 @@
 (tests
  (names test)
+ (modules test)
+ (modes js wasm))
+
+(tests
+ (names test_iarray)
+ (modules test_iarray)
+ (build_if
+  (>= %{ocaml_version} 5.5))
  (modes js wasm))
