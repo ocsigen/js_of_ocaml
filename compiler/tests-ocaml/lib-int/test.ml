@@ -100,7 +100,7 @@ let test_min_max () =
 
 let naive_popcount n =
   let c = ref 0 in
-  for i = 0 to Sys.int_size do
+  for i = 0 to Sys.int_size - 1 do
     if Int.(logand n (shift_left 1 i)) <> 0 then incr c
   done;
   !c
