@@ -24,7 +24,12 @@ let readdir s =
   Sys.readdir s
   |> Array.to_seq
   |> Seq.filter_map (fun f ->
-      if Sys.is_directory (Filename.concat s f)
+      (* Skip hidden entries (e.g. editor lock files like [.#foo.ml], which are
+         dangling symlinks that would match the [.ml] suffix below and then
+         break [Sys.is_directory] / [patdiff]). *)
+      if String.length f > 0 && Char.equal f.[0] '.'
+      then None
+      else if Sys.is_directory (Filename.concat s f)
       then Some (File.Dir f)
       else if String.ends_with ~suffix:".ml" f
       then Some (File.Ml f)
