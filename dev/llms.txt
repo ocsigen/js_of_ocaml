@@ -289,8 +289,6 @@
 - [Class type `XmlHttpRequest.xmlHttpRequest`](js_of_ocaml-lwt/Js_of_ocaml_lwt-XmlHttpRequest-class-type-xmlHttpRequest.md)
 - [Class type `XmlHttpRequest.xmlHttpRequestUpload`](js_of_ocaml-lwt/Js_of_ocaml_lwt-XmlHttpRequest-class-type-xmlHttpRequestUpload.md)
 - [Module `Js_of_ocaml_lwt.XmlHttpRequest`](js_of_ocaml-lwt/Js_of_ocaml_lwt-XmlHttpRequest.md)
-- [Module `Lwt_log_js.Section`](js_of_ocaml-lwt/Lwt_log_js-Section.md)
-- [Module `Lwt_log_js`](js_of_ocaml-lwt/Lwt_log_js.md)
 - [Module `Ppx_js`](js_of_ocaml-ppx/Ppx_js.md)
 - [Module `Ppx_js_rewriter`](js_of_ocaml-ppx/Ppx_js_rewriter.md)
 - [Module `Ppx_deriving_json`](js_of_ocaml-ppx_deriving_json/Ppx_deriving_json.md)
