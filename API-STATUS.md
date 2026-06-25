@@ -45,7 +45,7 @@ This document lists standard JavaScript/Web APIs and their support status in js_
 |-----|------|-----|---------------------|
 | XMLHttpRequest | Yes | No | `XmlHttpRequest` |
 | Fetch API | Yes | Yes | `Fetch` · Brr: `Brr_io.Fetch` |
-| MessageChannel / MessagePort | No | Yes | [#1464](https://github.com/ocsigen/js_of_ocaml/issues/1464) · Brr: `Brr_io.Message` |
+| MessageChannel / MessagePort | Yes | Yes | `MessageChannel` · Brr: `Brr_io.Message` |
 | WebSocket | Yes | Yes | `WebSockets` · Brr: `Brr_io.Websocket` |
 | Server-Sent Events (EventSource) | Yes | No | `EventSource` |
 | Beacon API | No | No | |
@@ -56,14 +56,14 @@ This document lists standard JavaScript/Web APIs and their support status in js_
 |-----|------|-----|---------------------|
 | Web Storage (localStorage/sessionStorage) | Yes | Yes | `Dom_html` (storage) · Brr: `Brr_io.Storage` |
 | IndexedDB | No | No | |
-| Cache API | No | Yes | Brr: `Brr_io.Fetch.Cache` |
+| Cache API | Yes | Yes | `Cache` · Brr: `Brr_io.Fetch.Cache` |
 
 ## Workers
 
 | API | jsoo | Brr | jsoo Module / Notes |
 |-----|------|-----|---------------------|
 | Web Workers | Yes | Yes | `Worker` · Brr: `Brr_webworkers.Worker` |
-| Service Workers | No | Yes | Brr: `Brr_webworkers.Service_worker` |
+| Service Workers | Yes | Yes | `ServiceWorker` · Brr: `Brr_webworkers.Service_worker` |
 | Shared Workers | No | Yes | Brr: `Brr_webworkers.Worker.Shared` |
 
 ## File & Binary Data
@@ -170,11 +170,11 @@ other APIs depend on it.
 
 ### Tier 1 — High
 
-| API | Issue | In Brr | Why |
-|-----|-------|--------|-----|
-| Service Workers | — | Yes | Required for PWAs and offline-capable apps. Cache API depends on it. |
-| Cache API | — | Yes | Paired with Service Workers for offline support and network caching strategies. |
-| MessageChannel / MessagePort | [#1464](https://github.com/ocsigen/js_of_ocaml/issues/1464) | Yes | Structured communication between Workers, iframes, and windows. Needed for non-trivial Worker usage. |
+All previously Tier 1 APIs are now implemented: **Web Crypto** (`Crypto`),
+**Clipboard** (`Clipboard`), **Notifications** (`Notification`), **Service
+Workers** (`ServiceWorker`), the **Cache API** (`Cache`) and **MessageChannel /
+MessagePort** (`MessageChannel`) — together enabling PWAs and structured
+Worker/iframe/window communication.
 
 ### Tier 2 — Medium
 
@@ -206,7 +206,5 @@ other APIs depend on it.
 
 ### Suggested implementation order
 
-1. **Service Workers + Cache API** — enables PWAs, the main class of apps jsoo
-   cannot fully support today.
-2. **MessageChannel / Broadcast Channel** — small APIs that fill out the
+1. **Broadcast Channel** — small API that fills out the
    remaining communication gaps.

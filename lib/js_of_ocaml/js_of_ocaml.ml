@@ -23,6 +23,7 @@
 
 module Abort = Abort
 module CSS = CSS
+module Cache = Cache
 module Clipboard = Clipboard
 module Console = Console
 module Crypto = Crypto
@@ -44,6 +45,7 @@ module Js = Js
 module Js_error = Js.Js_error
 module Json = Json
 module Jstable = Jstable
+module MessageChannel = MessageChannel
 module MutationObserver = MutationObserver
 module Notification = Notification
 module Performance = Performance
@@ -51,6 +53,7 @@ module PerformanceObserver = PerformanceObserver
 module Promise = Promise
 module ResizeObserver = ResizeObserver
 module Regexp = Regexp
+module ServiceWorker = ServiceWorker
 module Sys_js = Sys_js
 module Typed_array = Typed_array
 module Url = Url
