@@ -1,3 +1,11 @@
+# dev
+
+## Bug fixes
+* Runtime/wasm: derive the wat-module name from the basename of the input
+  path in `runtime/wasm/args.ml`, so dune 3.24's leading-`./` path-form
+  representation (ocaml/dune#15156) keeps producing well-formed
+  `module:path` lines for `wasmoo_link_wasm`.
+
 # 6.4.0 (2026-06-21) - Lille
 
 ## Features/Changes
