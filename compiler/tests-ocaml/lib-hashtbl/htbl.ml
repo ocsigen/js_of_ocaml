@@ -274,3 +274,20 @@ let () =
   let l = List.sort compare l in
   List.iter (fun (k, v) -> Printf.printf "%i,%i\n" k v) l;
   Printf.printf "%i elements\n" (Hashtbl.length h)
+
+let () =
+  let h = Hashtbl.create 16 in
+  Hashtbl.add h 0 0;
+  assert (Hashtbl.find_and_replace h 0 1 = Some 0);
+  assert (Hashtbl.find_and_remove h 0 = Some 1);
+  assert (Hashtbl.find_and_remove h 0 = None);
+  assert (Hashtbl.find_and_replace h 0 1 = None);
+  assert (Hashtbl.find_and_remove h 0 = Some 1);
+  Hashtbl.clear h;
+  Hashtbl.add h 0 0;
+  Hashtbl.add h 0 1;
+  assert (Hashtbl.find_and_replace h 0 2 = Some 1);
+  assert (Hashtbl.find_and_remove h 0 = Some 2);
+  assert (Hashtbl.find_and_remove h 0 = Some 0);
+  assert (Hashtbl.find_and_remove h 0 = None);
+[@@if ocaml_version >= (5, 5, 0)]
