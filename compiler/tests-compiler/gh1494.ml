@@ -20,6 +20,11 @@
 (* https://github.com/ocsigen/js_of_ocaml/issues/1007 *)
 
 (* Small bug in the global flow analysis in fast mode *)
+
+(* The generated JS encodes stdlib field indices that shifted in OCaml 5.5; the
+   snapshot is promoted for 5.5+, so gate the test there. *)
+[@@@if ocaml_version >= (5, 5, 0)]
+
 let%expect_test _ =
   let prog =
     {|
@@ -39,7 +44,7 @@ let () =
   [%expect
     {|
     function bug(param){
-     var g = [0, function(x){return function(_b_){return _b_;};}];
+     var g = [0, function(x){return Stdlib_Fun[1];}];
      return [0, function(param){return caml_call1(g[1], 1);}, g];
     }
     //end
