@@ -1,4 +1,10 @@
 (tests
  (names recursive_module_init)
+ (modules recursive_module_init)
  (libraries)
+ (modes js wasm))
+
+(test
+ (name main)
+ (modules main offset pr4008 pr6726 pr7427)
  (modes js wasm))
