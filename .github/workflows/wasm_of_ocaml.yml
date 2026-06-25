@@ -212,6 +212,11 @@ jobs:
           opam pin add -n ppx_inline_test.v0.17.1 https://github.com/ocaml-wasm/ppx_inline_test.git#wasm-v0.17
           opam pin add -n ppx_expect.v0.17.3 https://github.com/ocaml-wasm/ppx_expect.git#wasm-v0.17
 
+      # wax is not released on opam yet; pin it so wasm_of_ocaml-compiler's
+      # dependency on it resolves.
+      - name: Pin wax
+        run: opam pin add -n wax https://github.com/vouillon/wax.git
+
       - name: Install wasm_of_ocaml and its test dependencies
         working-directory: ./wasm_of_ocaml
         run: |

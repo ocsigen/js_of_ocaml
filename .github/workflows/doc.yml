@@ -47,6 +47,10 @@ jobs:
         with:
           ocaml-compiler: "5.4.0"
 
+      # wax is not released on opam yet.
+      - name: Pin wax
+        run: opam pin add -n wax https://github.com/vouillon/wax.git
+
       - name: Install dependencies
         run: |
           opam install . --deps-only --with-doc
@@ -118,6 +122,10 @@ jobs:
         run: |
           rm -rf relsrc/doc
           cp -a docsrc/doc relsrc/doc
+
+      # wax is not released on opam yet.
+      - name: Pin wax
+        run: opam pin add -n wax https://github.com/vouillon/wax.git
 
       - name: Install dependencies (in the release tree)
         working-directory: relsrc
