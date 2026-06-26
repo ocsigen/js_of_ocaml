@@ -110,7 +110,7 @@ This document lists standard JavaScript/Web APIs and their support status in js_
 | Pointer Events | Yes | Yes | `Dom_html` · Brr: `Brr.Ev.Pointer` |
 | Wheel Events | Yes | Yes | `Dom_html` · Brr: `Brr.Ev.Wheel` |
 | Drag and Drop Events | Yes | Yes | `Dom_html` · Brr: `Brr.Ev.Drag` |
-| Clipboard API | No | Yes | Brr: `Brr_io.Clipboard` |
+| Clipboard API | Yes | Yes | `Clipboard` · Brr: `Brr_io.Clipboard` |
 | Fullscreen API | Yes | Yes | `Dom_html` (`requestFullscreen` / `exitFullscreen`) · Brr: `Brr.El.request_fullscreen`, `Brr.Document.exit_fullscreen` |
 | Gamepad API | No | No | |
 | Pointer Lock API | Yes | Yes | `Dom_html` (`requestPointerLock`) · Brr: `Brr.El.request_pointer_lock` |
@@ -155,7 +155,7 @@ This document lists standard JavaScript/Web APIs and their support status in js_
 | Web Animations API | Yes | No | `Dom_html` (`animate`, `getAnimations`; `animation`, `animationEffect`, `keyframeEffect`, `computedKeyframe`, `animationTimeline`, `documentTimeline`, `optionalEffectTiming`, `computedEffectTiming`, `keyframeAnimationOptions`, `animationPlaybackEvent`) |
 | Web Components (Custom Elements, Shadow DOM) | Partial | No | `Dom_html` (Shadow DOM — `attachShadow`, `shadowRoot`, `assignedSlot`, `slot`); Custom Elements not bound |
 | Web Crypto API | Yes | Yes | `Crypto` · Brr: `Brr_webcrypto` |
-| Notifications API | No | Yes | Brr: `Brr_io.Notification` |
+| Notifications API | Yes | Yes | `Notification` · Brr: `Brr_io.Notification` |
 | Broadcast Channel API | No | Yes | Brr: `Brr_io.Message.Broadcast_channel` |
 | AbortController / AbortSignal | Yes | Yes | `Abort` · Brr: `Brr.Abort` |
 
@@ -172,11 +172,9 @@ other APIs depend on it.
 
 | API | Issue | In Brr | Why |
 |-----|-------|--------|-----|
-| Clipboard API | — | Yes | Copy/paste is a basic UX expectation. The older `document.execCommand` path is deprecated. |
 | Service Workers | — | Yes | Required for PWAs and offline-capable apps. Cache API depends on it. |
 | Cache API | — | Yes | Paired with Service Workers for offline support and network caching strategies. |
 | MessageChannel / MessagePort | [#1464](https://github.com/ocsigen/js_of_ocaml/issues/1464) | Yes | Structured communication between Workers, iframes, and windows. Needed for non-trivial Worker usage. |
-| Notifications API | — | Yes | Common engagement feature in web apps. Small API surface. |
 
 ### Tier 2 — Medium
 
@@ -208,8 +206,7 @@ other APIs depend on it.
 
 ### Suggested implementation order
 
-1. **Clipboard API** — small surface, high user-facing value.
-2. **Service Workers + Cache API** — enables PWAs, the main class of apps jsoo
+1. **Service Workers + Cache API** — enables PWAs, the main class of apps jsoo
    cannot fully support today.
-3. **MessageChannel / Notifications / Broadcast Channel** — small APIs that fill
-   out the remaining communication gaps.
+2. **MessageChannel / Broadcast Channel** — small APIs that fill out the
+   remaining communication gaps.
