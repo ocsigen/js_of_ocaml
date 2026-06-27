@@ -1,6 +1,13 @@
 # dev
 
 ## Features/Changes
+* Lib: add `Crypto` — bindings to the Web Crypto API (`crypto`,
+  `getRandomValues`, `randomUUID`, and the Promise-typed `SubtleCrypto`), with a
+  typed `params` variant (one constructor per algorithm) and
+  `to_algorithm`/`of_algorithm` conversions, typed `Key_type`/`Key_usage`/
+  `Key_format` enums, and overloaded `generateKey`/`generateKey_pair`,
+  `importKey`/`importKey_jwk` and `exportKey`/`exportKey_jwk` methods that
+  resolve the spec's union argument/return types (#NNNN)
 * Lib: add `Lwt_js_events.mutation`/`mutations` — wait for `MutationObserver`
   mutation records as Lwt threads (#250)
 * Lib: remove `js_of_ocaml-lwt.logger` and the `lwt_log` dependency, as

@@ -154,7 +154,7 @@ This document lists standard JavaScript/Web APIs and their support status in js_
 | Performance API (now, mark, measure, entries) | Yes | Partial | `Performance` · Brr: `Brr.Performance` |
 | Web Animations API | Yes | No | `Dom_html` (`animate`, `getAnimations`; `animation`, `animationEffect`, `keyframeEffect`, `computedKeyframe`, `animationTimeline`, `documentTimeline`, `optionalEffectTiming`, `computedEffectTiming`, `keyframeAnimationOptions`, `animationPlaybackEvent`) |
 | Web Components (Custom Elements, Shadow DOM) | Partial | No | `Dom_html` (Shadow DOM — `attachShadow`, `shadowRoot`, `assignedSlot`, `slot`); Custom Elements not bound |
-| Web Crypto API | No | Yes | Brr: `Brr_webcrypto` |
+| Web Crypto API | Yes | Yes | `Crypto` · Brr: `Brr_webcrypto` |
 | Notifications API | No | Yes | Brr: `Brr_io.Notification` |
 | Broadcast Channel API | No | Yes | Brr: `Brr_io.Message.Broadcast_channel` |
 | AbortController / AbortSignal | Yes | Yes | `Abort` · Brr: `Brr.Abort` |
@@ -172,7 +172,6 @@ other APIs depend on it.
 
 | API | Issue | In Brr | Why |
 |-----|-------|--------|-----|
-| Web Crypto API | — | Yes | Required for authentication (JWT, PKCE), token generation, hashing. No safe workaround. |
 | Clipboard API | — | Yes | Copy/paste is a basic UX expectation. The older `document.execCommand` path is deprecated. |
 | Service Workers | — | Yes | Required for PWAs and offline-capable apps. Cache API depends on it. |
 | Cache API | — | Yes | Paired with Service Workers for offline support and network caching strategies. |
@@ -209,9 +208,8 @@ other APIs depend on it.
 
 ### Suggested implementation order
 
-1. **Web Crypto API** — security-critical, no safe workaround.
-2. **Clipboard API** — small surface, high user-facing value.
-3. **Service Workers + Cache API** — enables PWAs, the main class of apps jsoo
+1. **Clipboard API** — small surface, high user-facing value.
+2. **Service Workers + Cache API** — enables PWAs, the main class of apps jsoo
    cannot fully support today.
-4. **MessageChannel / Notifications / Broadcast Channel** — small APIs that fill
+3. **MessageChannel / Notifications / Broadcast Channel** — small APIs that fill
    out the remaining communication gaps.
