@@ -151,6 +151,20 @@ class type fetchEvent = object
   method respondWith : Fetch.response Js.t Promise.t -> unit Js.meth
 end
 
+class type ['a] extendableMessageEvent = object
+  inherit extendableEvent
+
+  method data : 'a Js.readonly_prop
+
+  method origin : Js.js_string Js.t Js.readonly_prop
+
+  method lastEventId : Js.js_string Js.t Js.readonly_prop
+
+  method source : Js.Unsafe.any Js.opt Js.readonly_prop
+
+  method ports : MessageChannel.messagePort Js.t Js.js_array Js.t Js.readonly_prop
+end
+
 class type client = object
   method id : Js.js_string Js.t Js.readonly_prop
 
@@ -221,11 +235,11 @@ class type serviceWorkerGlobalScope = object ('self)
   method onfetch : ('self Js.t, fetchEvent Js.t) Dom.event_listener Js.writeonly_prop
 
   method onmessage :
-    ('self Js.t, Js.Unsafe.any MessageChannel.messageEvent Js.t) Dom.event_listener
+    ('self Js.t, Js.Unsafe.any extendableMessageEvent Js.t) Dom.event_listener
     Js.writeonly_prop
 
   method onmessageerror :
-    ('self Js.t, Js.Unsafe.any MessageChannel.messageEvent Js.t) Dom.event_listener
+    ('self Js.t, Js.Unsafe.any extendableMessageEvent Js.t) Dom.event_listener
     Js.writeonly_prop
 end
 

@@ -190,6 +190,28 @@ class type fetchEvent = object
       intercepted request. *)
 end
 
+(** The event delivered to the worker's [message] / [messageerror] handlers.
+    Unlike a plain {!MessageChannel.messageEvent} it extends
+    {!class-type:extendableEvent}, so the handler can call [waitUntil] to keep
+    the worker alive until asynchronous processing of the message finishes. The
+    type parameter ['a] is the type of the [data] payload. *)
+class type ['a] extendableMessageEvent = object
+  inherit extendableEvent
+
+  method data : 'a readonly_prop
+
+  method origin : js_string t readonly_prop
+
+  method lastEventId : js_string t readonly_prop
+
+  method source : Unsafe.any opt readonly_prop
+  (** The message source: a {!class-type:client}, a
+      {!class-type:serviceWorker} or a {!MessageChannel.messagePort}; [null]
+      when there is none. *)
+
+  method ports : MessageChannel.messagePort t js_array t readonly_prop
+end
+
 (** A client (a [Window], worker or shared worker) controlled by the worker. *)
 class type client = object
   method id : js_string t readonly_prop
@@ -267,10 +289,10 @@ class type serviceWorkerGlobalScope = object ('self)
   method onfetch : ('self t, fetchEvent t) Dom.event_listener writeonly_prop
 
   method onmessage :
-    ('self t, Unsafe.any MessageChannel.messageEvent t) Dom.event_listener writeonly_prop
+    ('self t, Unsafe.any extendableMessageEvent t) Dom.event_listener writeonly_prop
 
   method onmessageerror :
-    ('self t, Unsafe.any MessageChannel.messageEvent t) Dom.event_listener writeonly_prop
+    ('self t, Unsafe.any extendableMessageEvent t) Dom.event_listener writeonly_prop
 end
 
 val global : unit -> serviceWorkerGlobalScope t
