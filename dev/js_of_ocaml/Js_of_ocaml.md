@@ -16,6 +16,11 @@ module CSS : sig ... end
 This module contains a few types and values to ease the use of CSS properties and such. If you think a feature is missing, consider sending a patch or an RFE to the mailing list.
 
 ```ocaml
+module Clipboard : sig ... end
+```
+Clipboard API.
+
+```ocaml
 module Console : sig ... end
 ```
 Console API (debugging console).
@@ -108,6 +113,11 @@ A minimal table implementation specialized for [`Js.js_string`](./Js_of_ocaml-Js
 module MutationObserver : sig ... end
 ```
 MutationObserver API
+
+```ocaml
+module Notification : sig ... end
+```
+Notifications API.
 
 ```ocaml
 module Performance : sig ... end

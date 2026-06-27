@@ -1592,6 +1592,7 @@ Browser APIs:
 
 [`Js_of_ocaml.Abort`](./Js_of_ocaml-Abort.md) AbortController / AbortSignal.
 [`Js_of_ocaml.CSS`](./Js_of_ocaml-CSS.md) This module contains a few types and values to ease the use of CSS properties and such. If you think a feature is missing, consider sending a patch or an RFE to the mailing list.
+[`Js_of_ocaml.Clipboard`](./Js_of_ocaml-Clipboard.md) Clipboard API.
 [`Js_of_ocaml.Console`](./Js_of_ocaml-Console.md) Console API (debugging console).
 [`Js_of_ocaml.Crypto`](./Js_of_ocaml-Crypto.md) Web Crypto API.
 [`Js_of_ocaml.Dom`](./Js_of_ocaml-Dom.md) DOM binding
@@ -1607,6 +1608,7 @@ Browser APIs:
 [`Js_of_ocaml.Intl`](./Js_of_ocaml-Intl.md) Internationalization API
 [`Js_of_ocaml.Json`](./Js_of_ocaml-Json.md) Unsafe IO. (See Deriving\_Json for typesafe IO)
 [`Js_of_ocaml.MutationObserver`](./Js_of_ocaml-MutationObserver.md) MutationObserver API
+[`Js_of_ocaml.Notification`](./Js_of_ocaml-Notification.md) Notifications API.
 [`Js_of_ocaml.Performance`](./Js_of_ocaml-Performance.md) Performance API
 [`Js_of_ocaml.PerformanceObserver`](./Js_of_ocaml-PerformanceObserver.md) PerformanceObserver API
 [`Js_of_ocaml.Promise`](./Js_of_ocaml-Promise.md) Bindings to the JavaScript Promise API.
@@ -23032,6 +23034,98 @@ module Length : sig ... end
 ```ocaml
 module Angle : sig ... end
 ```
+
+
+---
+
+# Class type `Clipboard.clipboard`
+
+```ocaml
+method read : clipboardItem Js_of_ocaml__.Js.t Js_of_ocaml__.Js.js_array
+                Js_of_ocaml__.Js.t
+                Js_of_ocaml__.Promise.t
+                Js_of_ocaml__.Js.meth
+```
+```ocaml
+method readText : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                    Js_of_ocaml__.Promise.t
+                    Js_of_ocaml__.Js.meth
+```
+```ocaml
+method write : clipboardItem Js_of_ocaml__.Js.t Js_of_ocaml__.Js.js_array
+                 Js_of_ocaml__.Js.t ->
+  unit Js_of_ocaml__.Promise.t Js_of_ocaml__.Js.meth
+```
+```ocaml
+method writeText : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t ->
+  unit Js_of_ocaml__.Promise.t Js_of_ocaml__.Js.meth
+```
+
+
+---
+
+# Class type `Clipboard.clipboardItem`
+
+```ocaml
+method types : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                 Js_of_ocaml__.Js.js_array
+                 Js_of_ocaml__.Js.t
+                 Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method presentationStyle : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                             Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method getType : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t ->
+  Js_of_ocaml__.File.blob Js_of_ocaml__.Js.t Js_of_ocaml__.Promise.t
+    Js_of_ocaml__.Js.meth
+```
+
+
+---
+
+# Module `Js_of_ocaml.Clipboard`
+
+Clipboard API.
+
+A code example:
+
+```ocaml
+  if Clipboard.is_supported ()
+  then
+    ignore
+      (Promise.map
+         (fun () -> Console.console##log (Js.string "copied"))
+         ((Clipboard.clipboard ())##writeText (Js.string "Hello!")))
+```
+see [https://developer.mozilla.org/en-US/docs/Web/API/Clipboard\_API](https://developer.mozilla.org/en-US/docs/Web/API/Clipboard_API) 
+see [https://w3c.github.io/clipboard-apis/](https://w3c.github.io/clipboard-apis/) 
+```ocaml
+class type  clipboardItem = object ... end
+```
+```ocaml
+val clipboardItem : (Js.Unsafe.any -> clipboardItem Js.t) Js.constr
+```
+`new%js clipboardItem data` builds a clipboard item. `data` is a plain JavaScript object whose keys are MIME types and whose values are the associated [`File.blob`](./Js_of_ocaml-File-class-type-blob.md), string, or a promise resolving to either.
+
+```ocaml
+val item_supports : Js.js_string Js.t -> bool Js.t
+```
+`item_supports mime` reports whether the given MIME type is supported by the clipboard. Bound to the static `ClipboardItem.supports` method.
+
+```ocaml
+class type  clipboard = object ... end
+```
+```ocaml
+val clipboard : unit -> clipboard Js.t
+```
+The `navigator.clipboard` object.
+
+```ocaml
+val is_supported : unit -> bool
+```
+Whether `navigator.clipboard` is available in the current environment.
 
 
 ---
@@ -47875,6 +47969,265 @@ Helper to create a new observer and connect it to a node
 
 ---
 
+# Class type `Notification.notification`
+
+```ocaml
+method title : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                 Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method dir : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+               Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method lang : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method body : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method navigate : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                    Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method tag : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+               Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method icon : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method image : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                 Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method badge : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                 Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method vibrate : int Js_of_ocaml__.Js.js_array Js_of_ocaml__.Js.t
+                   Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method data : Js_of_ocaml__.Js.Unsafe.any Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method requireInteraction : bool Js_of_ocaml__.Js.t
+                              Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method silent : bool Js_of_ocaml__.Js.t Js_of_ocaml__.Js.opt
+                  Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method renotify : bool Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method timestamp : Js_of_ocaml__.Js.number_t Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method actions : notificationAction Js_of_ocaml__.Js.t
+                   Js_of_ocaml__.Js.js_array
+                   Js_of_ocaml__.Js.t
+                   Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method close : unit Js_of_ocaml__.Js.meth
+```
+```ocaml
+method onclick : ('self Js_of_ocaml__.Js.t,
+                   'self Js_of_ocaml__.Dom.event Js_of_ocaml__.Js.t)
+                   Js_of_ocaml__.Dom.event_listener
+                   Js_of_ocaml__.Js.writeonly_prop
+```
+```ocaml
+method onclose : ('self Js_of_ocaml__.Js.t,
+                   'self Js_of_ocaml__.Dom.event Js_of_ocaml__.Js.t)
+                   Js_of_ocaml__.Dom.event_listener
+                   Js_of_ocaml__.Js.writeonly_prop
+```
+```ocaml
+method onerror : ('self Js_of_ocaml__.Js.t,
+                   'self Js_of_ocaml__.Dom.event Js_of_ocaml__.Js.t)
+                   Js_of_ocaml__.Dom.event_listener
+                   Js_of_ocaml__.Js.writeonly_prop
+```
+```ocaml
+method onshow : ('self Js_of_ocaml__.Js.t,
+                  'self Js_of_ocaml__.Dom.event Js_of_ocaml__.Js.t)
+                  Js_of_ocaml__.Dom.event_listener
+                  Js_of_ocaml__.Js.writeonly_prop
+```
+
+
+---
+
+# Class type `Notification.notificationAction`
+
+A single action shown alongside a (persistent) notification. Used both when building [`notificationOptions`](./Js_of_ocaml-Notification-class-type-notificationOptions.md) and when reading [`notification`](./Js_of_ocaml-Notification.md#val-notification)'s `actions`; the members are therefore read-write.
+
+```ocaml
+method action : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                  Js_of_ocaml__.Js.prop
+```
+```ocaml
+method title : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                 Js_of_ocaml__.Js.prop
+```
+```ocaml
+method navigate : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                    Js_of_ocaml__.Js.prop
+```
+```ocaml
+method icon : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                Js_of_ocaml__.Js.prop
+```
+
+
+---
+
+# Class type `Notification.notificationOptions`
+
+Initializer for [`notification`](./Js_of_ocaml-Notification-class-type-notification.md). All fields are optional; create an empty record with [`empty_options`](./Js_of_ocaml-Notification.md#val-empty_options) and populate the ones you need.
+
+```ocaml
+method dir : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+               Js_of_ocaml__.Js.writeonly_prop
+```
+Text direction: `"auto"` (default), `"ltr"` or `"rtl"`.
+
+```ocaml
+method lang : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                Js_of_ocaml__.Js.writeonly_prop
+```
+```ocaml
+method body : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                Js_of_ocaml__.Js.writeonly_prop
+```
+```ocaml
+method navigate : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                    Js_of_ocaml__.Js.writeonly_prop
+```
+```ocaml
+method tag : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+               Js_of_ocaml__.Js.writeonly_prop
+```
+```ocaml
+method icon : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                Js_of_ocaml__.Js.writeonly_prop
+```
+```ocaml
+method image : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                 Js_of_ocaml__.Js.writeonly_prop
+```
+```ocaml
+method badge : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                 Js_of_ocaml__.Js.writeonly_prop
+```
+```ocaml
+method vibrate : int Js_of_ocaml__.Js.js_array Js_of_ocaml__.Js.t
+                   Js_of_ocaml__.Js.writeonly_prop
+```
+```ocaml
+method data : Js_of_ocaml__.Js.Unsafe.any Js_of_ocaml__.Js.writeonly_prop
+```
+```ocaml
+method requireInteraction : bool Js_of_ocaml__.Js.t
+                              Js_of_ocaml__.Js.writeonly_prop
+```
+```ocaml
+method silent : bool Js_of_ocaml__.Js.t Js_of_ocaml__.Js.opt
+                  Js_of_ocaml__.Js.writeonly_prop
+```
+```ocaml
+method renotify : bool Js_of_ocaml__.Js.t Js_of_ocaml__.Js.writeonly_prop
+```
+```ocaml
+method timestamp : Js_of_ocaml__.Js.number_t Js_of_ocaml__.Js.writeonly_prop
+```
+```ocaml
+method actions : notificationAction Js_of_ocaml__.Js.t
+                   Js_of_ocaml__.Js.js_array
+                   Js_of_ocaml__.Js.t
+                   Js_of_ocaml__.Js.writeonly_prop
+```
+
+
+---
+
+# Module `Js_of_ocaml.Notification`
+
+Notifications API.
+
+A code example:
+
+```ocaml
+  if Notification.is_supported ()
+  then
+    Promise.map
+      (fun perm ->
+        if Js.to_string perm = "granted"
+        then
+          let options = Notification.empty_options () in
+          options##.body := Js.string "Hello from OCaml!";
+          ignore (new%js Notification.notification_with_options
+                    (Js.string "Title") options))
+      (Notification.request_permission ())
+```
+see [https://developer.mozilla.org/en-US/docs/Web/API/Notifications\_API](https://developer.mozilla.org/en-US/docs/Web/API/Notifications_API) 
+see [https://notifications.spec.whatwg.org/](https://notifications.spec.whatwg.org/) 
+```ocaml
+class type  notificationAction = object ... end
+```
+A single action shown alongside a (persistent) notification. Used both when building [`notificationOptions`](./Js_of_ocaml-Notification-class-type-notificationOptions.md) and when reading [`notification`](./#val-notification)'s `actions`; the members are therefore read-write.
+
+```ocaml
+class type  notificationOptions = object ... end
+```
+Initializer for [`notification`](./Js_of_ocaml-Notification-class-type-notification.md). All fields are optional; create an empty record with [`empty_options`](./#val-empty_options) and populate the ones you need.
+
+```ocaml
+val empty_options : unit -> notificationOptions Js.t
+```
+```ocaml
+class type  notification = object ... end
+```
+```ocaml
+val notification : (Js.js_string Js.t -> notification Js.t) Js.constr
+```
+```ocaml
+val notification_with_options : 
+  (Js.js_string Js.t ->
+    notificationOptions Js.t ->
+    notification Js.t)
+    Js.constr
+```
+```ocaml
+val permission : unit -> Js.js_string Js.t
+```
+The current permission to display notifications: `"granted"`, `"denied"` or `"default"`.
+
+```ocaml
+val max_actions : unit -> int
+```
+The maximum number of actions supported by notifications on this device.
+
+```ocaml
+val request_permission : unit -> Js.js_string Js.t Promise.t
+```
+Request permission from the user to display notifications. The promise resolves with the new permission value (see [`permission`](./#val-permission)).
+
+```ocaml
+val is_supported : unit -> bool
+```
+Whether the `Notification` global is available in the current environment.
+
+
+---
+
 # Class type `Performance.performance`
 
 ```ocaml
@@ -52084,6 +52437,11 @@ module CSS : sig ... end
 This module contains a few types and values to ease the use of CSS properties and such. If you think a feature is missing, consider sending a patch or an RFE to the mailing list.
 
 ```ocaml
+module Clipboard : sig ... end
+```
+Clipboard API.
+
+```ocaml
 module Console : sig ... end
 ```
 Console API (debugging console).
@@ -52176,6 +52534,11 @@ A minimal table implementation specialized for [`Js.js_string`](./Js_of_ocaml-Js
 module MutationObserver : sig ... end
 ```
 MutationObserver API
+
+```ocaml
+module Notification : sig ... end
+```
+Notifications API.
 
 ```ocaml
 module Performance : sig ... end

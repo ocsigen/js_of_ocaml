@@ -22,6 +22,7 @@ Browser APIs:
 
 [`Js_of_ocaml.Abort`](./Js_of_ocaml-Abort.md) AbortController / AbortSignal.
 [`Js_of_ocaml.CSS`](./Js_of_ocaml-CSS.md) This module contains a few types and values to ease the use of CSS properties and such. If you think a feature is missing, consider sending a patch or an RFE to the mailing list.
+[`Js_of_ocaml.Clipboard`](./Js_of_ocaml-Clipboard.md) Clipboard API.
 [`Js_of_ocaml.Console`](./Js_of_ocaml-Console.md) Console API (debugging console).
 [`Js_of_ocaml.Crypto`](./Js_of_ocaml-Crypto.md) Web Crypto API.
 [`Js_of_ocaml.Dom`](./Js_of_ocaml-Dom.md) DOM binding
@@ -37,6 +38,7 @@ Browser APIs:
 [`Js_of_ocaml.Intl`](./Js_of_ocaml-Intl.md) Internationalization API
 [`Js_of_ocaml.Json`](./Js_of_ocaml-Json.md) Unsafe IO. (See Deriving\_Json for typesafe IO)
 [`Js_of_ocaml.MutationObserver`](./Js_of_ocaml-MutationObserver.md) MutationObserver API
+[`Js_of_ocaml.Notification`](./Js_of_ocaml-Notification.md) Notifications API.
 [`Js_of_ocaml.Performance`](./Js_of_ocaml-Performance.md) Performance API
 [`Js_of_ocaml.PerformanceObserver`](./Js_of_ocaml-PerformanceObserver.md) PerformanceObserver API
 [`Js_of_ocaml.Promise`](./Js_of_ocaml-Promise.md) Bindings to the JavaScript Promise API.
