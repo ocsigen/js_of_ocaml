@@ -27,6 +27,7 @@ Browser APIs:
 {!modules:
 Js_of_ocaml.Abort
 Js_of_ocaml.CSS
+Js_of_ocaml.Clipboard
 Js_of_ocaml.Console
 Js_of_ocaml.Crypto
 Js_of_ocaml.Dom
@@ -42,6 +43,7 @@ Js_of_ocaml.IntersectionObserver
 Js_of_ocaml.Intl
 Js_of_ocaml.Json
 Js_of_ocaml.MutationObserver
+Js_of_ocaml.Notification
 Js_of_ocaml.Performance
 Js_of_ocaml.PerformanceObserver
 Js_of_ocaml.Promise
