@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Module Js_of_ocaml.Crypto — Js_of_ocaml</title>
+  <link rel="stylesheet" href="/css/style.css"/>
+  <link rel="stylesheet" href="/css/ocsigen-odoc.css"/>
+  <link rel="alternate" type="text/markdown" href="../../../js_of_ocaml/Js_of_ocaml-Crypto.md"/>
+  <script src="../../../highlight.pack.js"></script>
+  <script src="../../../wodoc-highlight.js"></script>
+</head>
+<body class="wodoc-page wodoc-doc">
+  <!-- Shared site menu — THE single source of truth for the header, top menu and
+     drawer of EVERY Ocsigen doc page (vitrine + all projects). Canonical copy
+     lives here in ocsigen.github.io; each project's build fetches it. Injected
+     by `wodoc assemble --menu`. Holes filled by the tool (braces omitted here so
+     this comment is not itself rewritten by the hole-filler):
+       subproject  the sub-project name shown next to the Ocsigen logo
+                   (empty on the vitrine), via --subproject
+       leftnav     the project's left navigation, expanded into BOTH the mobile
+                   drawer (below) and the left column (in the page template),
+                   via --leftnav
+     The current entry is highlighted by adding the `current` class to the
+     element carrying data-wodoc-page=<id>: --current on the vitrine (page id),
+     --menu-current in a project (the project id). Nothing is hardcoded here, so
+     this file is the ONLY place the menu is defined.
+
+     Links are the FINAL site paths (/<project>/, /<page>): the target layout
+     where each project is served at ocsigen.org/<project>/ — no transitional
+     /wodoc/ prefix. -->
+<div class="page-header">
+  <p class="logo-ocsigen"><a href="/"><img src="/img/ocsigen-white.svg" alt="Ocsigen"/></a></p>
+  <p class="logo-subproject">Js_of_ocaml</p>
+
+  <div class="mainmenu">
+    <p class="mainmenu-home" data-wodoc-page="githubio"><a href="/">Home</a></p>
+    <p class="mainmenu-doc" data-wodoc-page="tuto"><a href="/tuto/">Doc</a></p>
+    <p class="mainmenu-blog" data-wodoc-page="blog"><a href="/blog/">Blog</a></p>
+    <p data-wodoc-page="eliom"><a href="/eliom/">Eliom</a></p>
+    <p data-wodoc-page="js_of_ocaml" class="current"><a href="/js_of_ocaml/">Js_of_ocaml</a></p>
+    <p data-wodoc-page="ocsigenserver"><a href="/ocsigenserver/">Server</a></p>
+    <p data-wodoc-page="lwt"><a href="/lwt/">Lwt</a></p>
+    <p data-wodoc-page="tyxml"><a href="/tyxml/">Tyxml</a></p>
+    <p data-wodoc-page="ocsigen-start"><a href="/ocsigen-start/">Start</a></p>
+  </div>
+
+  <form id="googlesearch" action="https://google.com/search">
+    <input name="q" id="gsearch-box" placeholder="Search using Google"/>
+    <label for="gsearch-box"><img src="/img/search.svg" alt="" id="gsearch-icon"/></label>
+    <input type="submit" id="gsearch-submit" onclick="document.getElementById('gsearch-box').value += ' site:ocsigen.org';"/>
+  </form>
+
+  <aside class="how-drawer">
+    <input id="how-drawer-toggle" type="checkbox"/>
+    <label for="how-drawer-toggle" id="how-drawer-label"><span class="how-drawer-icon"></span></label>
+    <nav class="how-drawer-content">
+      <ul class="drawermainmenu">
+        <li class="drawermainmenu-home" data-wodoc-page="githubio"><a href="/">Home</a></li>
+        <li class="drawermainmenu-doc" data-wodoc-page="tuto"><a href="/tuto/">Doc</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="eliom"><a href="/eliom/">Eliom</a></li>
+        <li class="drawermainmenu-project current" data-wodoc-page="js_of_ocaml"><a href="/js_of_ocaml/">Js_of_ocaml</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsigenserver"><a href="/ocsigenserver/">Server</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="lwt"><a href="/lwt/">Lwt</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="tyxml"><a href="/tyxml/">Tyxml</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsigen-toolkit"><a href="/ocsigen-toolkit/">Toolkit</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsigen-start"><a href="/ocsigen-start/">Start</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsipersist"><a href="/ocsipersist/">Ocsipersist</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="reactiveData"><a href="/reactiveData/">ReactiveData</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsigen-i18n"><a href="/ocsigen-i18n/">i18n</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="wodoc"><a href="/wodoc/">Wodoc</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="projects"><a href="/projects">Other projects</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="papers"><a href="/papers">Research papers</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="credits"><a href="/credits">Who does Ocsigen?</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="contributing"><a href="/contributing">Contributing</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="blog"><a href="/blog/">Blog</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="install"><a href="/install">Installation</a></li>
+        <li class="drawermainmenu-page"><a href="https://github.com/ocsigen">Source code</a></li>
+      </ul>
+      <!-- On mobile the left column is hidden; its menu lives here in the burger
+           (.how-doctree, shown only on narrow screens), as the old site did.
+           Empty on the vitrine; the leftnav hole is filled (with the same
+           fragment as the left column) only on project pages. -->
+      <nav class="how-doctree"><div class="docversion">
+  <label>Version:
+    <select class="wodoc-version" onchange="wodocVersion(this.value)">
+      <option value="dev">dev</option>
+    </select>
+  </label>
+</div>
+<div class="page-toc">
+  <h3>On this page</h3>
+  <nav class="odoc-toc odoc-local-toc"><ul><li><a href="#common-types">Common types</a></li><li><a href="#key-types,-usages-and-formats">Key types, usages and formats</a></li><li><a href="#keys">Keys</a></li><li><a href="#typed-algorithm-parameters">Typed algorithm parameters</a></li><li><a href="#subtlecrypto">SubtleCrypto</a></li><li><a href="#crypto">Crypto</a></li></ul></nav>
+</div>
+<nav class="api-nav manual-nav">
+<h3>Getting Started</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/overview.html"><a href="../../../js_of_ocaml/overview.html">Overview</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/install.html"><a href="../../../js_of_ocaml/install.html">Installation</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/quickstart.html"><a href="../../../js_of_ocaml/quickstart.html">Quick Start</a></li>
+</ul>
+<h3>Programming Guide</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/javascript-interop.html"><a href="../../../js_of_ocaml/javascript-interop.html">JavaScript interop</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/ppx.html"><a href="../../../js_of_ocaml/ppx.html">PPX syntax extension</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/ppx-deriving.html"><a href="../../../js_of_ocaml/ppx-deriving.html">JSON derivation</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/rev-bindings.html"><a href="../../../js_of_ocaml/rev-bindings.html">Export OCaml code to JavaScript</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/errors.html"><a href="../../../js_of_ocaml/errors.html">Error handling</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/api.html"><a href="../../../js_of_ocaml/api.html">API</a></li>
+</ul>
+<h3>Lwt Support</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/lwt.html"><a href="../../../js_of_ocaml/lwt.html">Lwt support</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml-lwt/Js_of_ocaml_lwt/index.html"><a href="../../../js_of_ocaml-lwt/Js_of_ocaml_lwt/index.html">API</a></li>
+</ul>
+<h3>Compiler</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/options.html"><a href="../../../js_of_ocaml/options.html">Command line options</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/compilation-modes.html"><a href="../../../js_of_ocaml/compilation-modes.html">Compilation modes</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/linker.html"><a href="../../../js_of_ocaml/linker.html">JavaScript primitives</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/tailcall.html"><a href="../../../js_of_ocaml/tailcall.html">Tailcall optimization</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/effects.html"><a href="../../../js_of_ocaml/effects.html">Effect handlers</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/runtime-representation.html"><a href="../../../js_of_ocaml/runtime-representation.html">Runtime representation</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/browser-compat.html"><a href="../../../js_of_ocaml/browser-compat.html">Targeting older browsers</a></li>
+</ul>
+<h3>Wasm_of_ocaml</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/wasm_overview.html"><a href="../../../js_of_ocaml/wasm_overview.html">Overview</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/wasm_runtime.html"><a href="../../../js_of_ocaml/wasm_runtime.html">Writing Wasm primitives</a></li>
+</ul>
+<h3>How-to Guides</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/build-toplevel.html"><a href="../../../js_of_ocaml/build-toplevel.html">Build a toplevel or use Dynlink</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/debug.html"><a href="../../../js_of_ocaml/debug.html">Debug a program</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/performances.html"><a href="../../../js_of_ocaml/performances.html">Performance</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/contribute.html"><a href="../../../js_of_ocaml/contribute.html">Contribute</a></li>
+</ul>
+<h3>Try it</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/files/toplevel/index.html"><a href="../../../js_of_ocaml/files/toplevel/index.html">OCaml toplevel</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/examples.html"><a href="../../../js_of_ocaml/examples.html">Examples and projects</a></li>
+</ul>
+</nav>
+</nav>
+    </nav>
+  </aside>
+</div>
+
+
+  <div class="project-page">
+    <div class="twocols">
+      <nav class="leftcol">
+        <div class="docversion">
+  <label>Version:
+    <select class="wodoc-version" onchange="wodocVersion(this.value)">
+      <option value="dev">dev</option>
+    </select>
+  </label>
+</div>
+<div class="page-toc">
+  <h3>On this page</h3>
+  <nav class="odoc-toc odoc-local-toc"><ul><li><a href="#common-types">Common types</a></li><li><a href="#key-types,-usages-and-formats">Key types, usages and formats</a></li><li><a href="#keys">Keys</a></li><li><a href="#typed-algorithm-parameters">Typed algorithm parameters</a></li><li><a href="#subtlecrypto">SubtleCrypto</a></li><li><a href="#crypto">Crypto</a></li></ul></nav>
+</div>
+<nav class="api-nav manual-nav">
+<h3>Getting Started</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/overview.html"><a href="../../../js_of_ocaml/overview.html">Overview</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/install.html"><a href="../../../js_of_ocaml/install.html">Installation</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/quickstart.html"><a href="../../../js_of_ocaml/quickstart.html">Quick Start</a></li>
+</ul>
+<h3>Programming Guide</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/javascript-interop.html"><a href="../../../js_of_ocaml/javascript-interop.html">JavaScript interop</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/ppx.html"><a href="../../../js_of_ocaml/ppx.html">PPX syntax extension</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/ppx-deriving.html"><a href="../../../js_of_ocaml/ppx-deriving.html">JSON derivation</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/rev-bindings.html"><a href="../../../js_of_ocaml/rev-bindings.html">Export OCaml code to JavaScript</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/errors.html"><a href="../../../js_of_ocaml/errors.html">Error handling</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/api.html"><a href="../../../js_of_ocaml/api.html">API</a></li>
+</ul>
+<h3>Lwt Support</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/lwt.html"><a href="../../../js_of_ocaml/lwt.html">Lwt support</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml-lwt/Js_of_ocaml_lwt/index.html"><a href="../../../js_of_ocaml-lwt/Js_of_ocaml_lwt/index.html">API</a></li>
+</ul>
+<h3>Compiler</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/options.html"><a href="../../../js_of_ocaml/options.html">Command line options</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/compilation-modes.html"><a href="../../../js_of_ocaml/compilation-modes.html">Compilation modes</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/linker.html"><a href="../../../js_of_ocaml/linker.html">JavaScript primitives</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/tailcall.html"><a href="../../../js_of_ocaml/tailcall.html">Tailcall optimization</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/effects.html"><a href="../../../js_of_ocaml/effects.html">Effect handlers</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/runtime-representation.html"><a href="../../../js_of_ocaml/runtime-representation.html">Runtime representation</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/browser-compat.html"><a href="../../../js_of_ocaml/browser-compat.html">Targeting older browsers</a></li>
+</ul>
+<h3>Wasm_of_ocaml</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/wasm_overview.html"><a href="../../../js_of_ocaml/wasm_overview.html">Overview</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/wasm_runtime.html"><a href="../../../js_of_ocaml/wasm_runtime.html">Writing Wasm primitives</a></li>
+</ul>
+<h3>How-to Guides</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/build-toplevel.html"><a href="../../../js_of_ocaml/build-toplevel.html">Build a toplevel or use Dynlink</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/debug.html"><a href="../../../js_of_ocaml/debug.html">Debug a program</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/performances.html"><a href="../../../js_of_ocaml/performances.html">Performance</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/contribute.html"><a href="../../../js_of_ocaml/contribute.html">Contribute</a></li>
+</ul>
+<h3>Try it</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/files/toplevel/index.html"><a href="../../../js_of_ocaml/files/toplevel/index.html">OCaml toplevel</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/examples.html"><a href="../../../js_of_ocaml/examples.html">Examples and projects</a></li>
+</ul>
+</nav>
+
+      </nav>
+      <article class="rightcol">
+        <header class="odoc-preamble"><h1>Module <code><span>Js_of_ocaml.Crypto</span></code></h1><p>Web Crypto API.</p><p>A code example:</p><pre class="language-ocaml"><code>  let hash data =
+    Promise.map
+      (fun buf -&gt; buf)
+      ((Crypto.subtle ())##digest
+         (Crypto.algorithm (Js.string &quot;SHA-256&quot;))
+         (Crypto.buffer_source_of_array_buffer_view data))</code></pre><p>Most of <code>SubtleCrypto</code> is exposed as object methods, mirroring the JavaScript surface: obtain the <code>subtle</code> object with <a href="#val-subtle"><code>subtle</code></a> and call its methods with <code>##</code>.</p><ul class="at-tags"><li class="see"><span class="at-tag">see</span> <a href="https://developer.mozilla.org/en-US/docs/Web/API/Web_Crypto_API" class="value">https://developer.mozilla.org/en-US/docs/Web/API/Web_Crypto_API</a> </li></ul><ul class="at-tags"><li class="see"><span class="at-tag">see</span> <a href="https://w3c.github.io/webcrypto/" class="value">https://w3c.github.io/webcrypto/</a> </li></ul></header>
+        <div class="odoc-content"><h2 id="common-types">Common types</h2><div class="odoc-spec"><div class="spec type anchored" id="type-algorithm"><code><span><span class="keyword">type</span> algorithm</span></code></div><div class="spec-doc"><p>An <code>AlgorithmIdentifier</code>: either a bare name (e.g. <code>&quot;SHA-256&quot;</code>) or a parameter object (e.g. <code>{name: &quot;AES-GCM&quot;; iv: ...}</code>). Build one with <a href="#val-algorithm"><code>algorithm</code></a> or <a href="#val-algorithm_obj"><code>algorithm_obj</code></a>.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-algorithm"><code><span><span class="keyword">val</span> algorithm : <span><span><a href="../Js/class-type-js_string/index.html">Js.js_string</a> <a href="../Js/index.html#type-t">Js.t</a></span> <span class="arrow">&#45;&gt;</span></span> <a href="#type-algorithm">algorithm</a></span></code></div><div class="spec-doc"><p><code>algorithm name</code> is the bare-name form of an algorithm identifier, such as <code>algorithm (Js.string &quot;SHA-256&quot;)</code>.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-algorithm_obj"><code><span><span class="keyword">val</span> algorithm_obj : <span><span><span>&lt; .. &gt;</span> <a href="../Js/index.html#type-t">Js.t</a></span> <span class="arrow">&#45;&gt;</span></span> <a href="#type-algorithm">algorithm</a></span></code></div><div class="spec-doc"><p><code>algorithm_obj o</code> uses an arbitrary parameter object as an algorithm identifier. Build <code>o</code> with <a href="../Js/Unsafe/index.html#val-obj"><code>Js.Unsafe.obj</code></a> or the <code>object%js</code> syntax.</p></div></div><div class="odoc-spec"><div class="spec type anchored" id="type-bufferSource"><code><span><span class="keyword">type</span> bufferSource</span></code></div><div class="spec-doc"><p>A <code>BufferSource</code>: an <code>ArrayBuffer</code> or any <code>ArrayBufferView</code> (typed array or <code>DataView</code>). Build one with <a href="#val-buffer_source_of_array_buffer"><code>buffer_source_of_array_buffer</code></a> or <a href="#val-buffer_source_of_array_buffer_view"><code>buffer_source_of_array_buffer_view</code></a>.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-buffer_source_of_array_buffer"><code><span><span class="keyword">val</span> buffer_source_of_array_buffer : 
+  <span><span><a href="../Typed_array/class-type-arrayBuffer/index.html">Typed_array.arrayBuffer</a> <a href="../Js/index.html#type-t">Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <a href="#type-bufferSource">bufferSource</a></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-buffer_source_of_array_buffer_view"><code><span><span class="keyword">val</span> buffer_source_of_array_buffer_view : 
+  <span><span><a href="../Typed_array/class-type-arrayBufferView/index.html">Typed_array.arrayBufferView</a> <a href="../Js/index.html#type-t">Js.t</a></span> <span class="arrow">&#45;&gt;</span></span>
+  <a href="#type-bufferSource">bufferSource</a></span></code></div></div><h2 id="key-types,-usages-and-formats">Key types, usages and formats</h2><div class="odoc-spec"><div class="spec module anchored" id="module-Key_type"><code><span><span class="keyword">module</span> <a href="Key_type/index.html">Key_type</a></span><span> : <span class="keyword">sig</span> ... <span class="keyword">end</span></span></code></div><div class="spec-doc"><p>The <code>KeyType</code> of a <a href="class-type-cryptoKey/index.html"><code>cryptoKey</code></a>.</p></div></div><div class="odoc-spec"><div class="spec module anchored" id="module-Key_usage"><code><span><span class="keyword">module</span> <a href="Key_usage/index.html">Key_usage</a></span><span> : <span class="keyword">sig</span> ... <span class="keyword">end</span></span></code></div><div class="spec-doc"><p>A <code>KeyUsage</code>: an operation a <a href="class-type-cryptoKey/index.html"><code>cryptoKey</code></a> may be used for.</p></div></div><div class="odoc-spec"><div class="spec module anchored" id="module-Key_format"><code><span><span class="keyword">module</span> <a href="Key_format/index.html">Key_format</a></span><span> : <span class="keyword">sig</span> ... <span class="keyword">end</span></span></code></div><div class="spec-doc"><p>A <code>KeyFormat</code> for importing and exporting keys.</p></div></div><h2 id="keys">Keys</h2><div class="odoc-spec"><div class="spec class-type anchored" id="class-type-cryptoKey"><code><span><span class="keyword">class</span> <span class="keyword">type</span>  </span><span><a href="class-type-cryptoKey/index.html">cryptoKey</a></span><span> = <span class="keyword">object</span> ... <span class="keyword">end</span></span></code></div></div><div class="odoc-spec"><div class="spec class-type anchored" id="class-type-cryptoKeyPair"><code><span><span class="keyword">class</span> <span class="keyword">type</span>  </span><span><a href="class-type-cryptoKeyPair/index.html">cryptoKeyPair</a></span><span> = <span class="keyword">object</span> ... <span class="keyword">end</span></span></code></div></div><div class="odoc-spec"><div class="spec type anchored" id="type-jsonWebKey"><code><span><span class="keyword">type</span> jsonWebKey</span><span> = <a href="../Js/Unsafe/index.html#type-any">Js.Unsafe.any</a></span></code></div><div class="spec-doc"><p>A key in <code>JsonWebKey</code> form (RFC 7517): a plain JSON object whose members carry the key material (e.g. <code>kty</code>, <code>n</code>, <code>e</code> for RSA; <code>crv</code>, <code>x</code>, <code>y</code> for EC). Exposed as <a href="../Js/Unsafe/index.html#type-any"><code>Js.Unsafe.any</code></a>: read its members with <a href="../Js/Unsafe/index.html#val-get"><code>Js.Unsafe.get</code></a>, build one with <a href="../Js/Unsafe/index.html#val-obj"><code>Js.Unsafe.obj</code></a>, and serialise/parse with the <code>JSON</code> global.</p></div></div><h2 id="typed-algorithm-parameters">Typed algorithm parameters</h2><div class="odoc-spec"><div class="spec type anchored" id="type-params"><code><span><span class="keyword">type</span> params</span><span> = </span></code><ol><li id="type-params.RSASSA_PKCS1_v1_5" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">RSASSA_PKCS1_v1_5</span></span></code><div class="def-doc"><span class="comment-delim">(*</span><p>Sign/verify; parameters are just the name.</p><span class="comment-delim">*)</span></div></li><li id="type-params.RSA_PSS" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">RSA_PSS</span> <span class="keyword">of</span> </span><span>{</span></code><ol><li id="type-params.salt_length" class="def record field anchored"><code><span>salt_length : int;</span></code></li></ol><code><span>}</span></code></li><li id="type-params.RSA_OAEP" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">RSA_OAEP</span> <span class="keyword">of</span> </span><span>{</span></code><ol><li id="type-params.label" class="def record field anchored"><code><span>label : <span><a href="#type-bufferSource">bufferSource</a> option</span>;</span></code></li></ol><code><span>}</span></code></li><li id="type-params.ECDSA" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">ECDSA</span> <span class="keyword">of</span> </span><span>{</span></code><ol><li id="type-params.hash" class="def record field anchored"><code><span>hash : <a href="#type-algorithm">algorithm</a>;</span></code></li></ol><code><span>}</span></code></li><li id="type-params.ECDH" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">ECDH</span> <span class="keyword">of</span> </span><span>{</span></code><ol><li id="type-params.public" class="def record field anchored"><code><span>public : <span><a href="class-type-cryptoKey/index.html">cryptoKey</a> <a href="../Js/index.html#type-t">Js.t</a></span>;</span></code></li></ol><code><span>}</span></code></li><li id="type-params.AES_CTR" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">AES_CTR</span> <span class="keyword">of</span> </span><span>{</span></code><ol><li id="type-params.counter" class="def record field anchored"><code><span>counter : <a href="#type-bufferSource">bufferSource</a>;</span></code></li><li id="type-params.length" class="def record field anchored"><code><span>length : int;</span></code></li></ol><code><span>}</span></code></li><li id="type-params.AES_CBC" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">AES_CBC</span> <span class="keyword">of</span> </span><span>{</span></code><ol><li id="type-params.iv" class="def record field anchored"><code><span>iv : <a href="#type-bufferSource">bufferSource</a>;</span></code></li></ol><code><span>}</span></code></li><li id="type-params.AES_GCM" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">AES_GCM</span> <span class="keyword">of</span> </span><span>{</span></code><ol><li id="type-params.iv" class="def record field anchored"><code><span>iv : <a href="#type-bufferSource">bufferSource</a>;</span></code></li><li id="type-params.additional_data" class="def record field anchored"><code><span>additional_data : <span><a href="#type-bufferSource">bufferSource</a> option</span>;</span></code></li><li id="type-params.tag_length" class="def record field anchored"><code><span>tag_length : <span>int option</span>;</span></code></li></ol><code><span>}</span></code></li><li id="type-params.AES_KW" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">AES_KW</span></span></code><div class="def-doc"><span class="comment-delim">(*</span><p>Key-wrapping; parameters are just the name.</p><span class="comment-delim">*)</span></div></li><li id="type-params.HMAC" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">HMAC</span></span></code><div class="def-doc"><span class="comment-delim">(*</span><p>Sign/verify; parameters are just the name.</p><span class="comment-delim">*)</span></div></li><li id="type-params.HKDF" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">HKDF</span> <span class="keyword">of</span> </span><span>{</span></code><ol><li id="type-params.hash" class="def record field anchored"><code><span>hash : <a href="#type-algorithm">algorithm</a>;</span></code></li><li id="type-params.salt" class="def record field anchored"><code><span>salt : <a href="#type-bufferSource">bufferSource</a>;</span></code></li><li id="type-params.info" class="def record field anchored"><code><span>info : <a href="#type-bufferSource">bufferSource</a>;</span></code></li></ol><code><span>}</span></code></li><li id="type-params.PBKDF2" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">PBKDF2</span> <span class="keyword">of</span> </span><span>{</span></code><ol><li id="type-params.hash" class="def record field anchored"><code><span>hash : <a href="#type-algorithm">algorithm</a>;</span></code></li><li id="type-params.salt" class="def record field anchored"><code><span>salt : <a href="#type-bufferSource">bufferSource</a>;</span></code></li><li id="type-params.iterations" class="def record field anchored"><code><span>iterations : int;</span></code></li></ol><code><span>}</span></code></li><li id="type-params.RSA_keygen" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">RSA_keygen</span> <span class="keyword">of</span> </span><span>{</span></code><ol><li id="type-params.name" class="def record field anchored"><code><span>name : <span><a href="../Js/class-type-js_string/index.html">Js.js_string</a> <a href="../Js/index.html#type-t">Js.t</a></span>;</span></code><div class="def-doc"><span class="comment-delim">(*</span><p><code>&quot;RSASSA-PKCS1-v1_5&quot;</code>, <code>&quot;RSA-PSS&quot;</code> or <code>&quot;RSA-OAEP&quot;</code>.</p><span class="comment-delim">*)</span></div></li><li id="type-params.modulus_length" class="def record field anchored"><code><span>modulus_length : int;</span></code></li><li id="type-params.public_exponent" class="def record field anchored"><code><span>public_exponent : <span><a href="../Typed_array/index.html#type-uint8Array">Typed_array.uint8Array</a> <a href="../Js/index.html#type-t">Js.t</a></span>;</span></code></li><li id="type-params.hash" class="def record field anchored"><code><span>hash : <a href="#type-algorithm">algorithm</a>;</span></code></li></ol><code><span>}</span></code><div class="def-doc"><span class="comment-delim">(*</span><p><code>RsaHashedKeyGenParams</code> for <a href="class-type-subtleCrypto/index.html#method-generateKey"><code>subtleCrypto.generateKey</code></a>.</p><span class="comment-delim">*)</span></div></li><li id="type-params.RSA_import" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">RSA_import</span> <span class="keyword">of</span> </span><span>{</span></code><ol><li id="type-params.name" class="def record field anchored"><code><span>name : <span><a href="../Js/class-type-js_string/index.html">Js.js_string</a> <a href="../Js/index.html#type-t">Js.t</a></span>;</span></code><div class="def-doc"><span class="comment-delim">(*</span><p><code>&quot;RSASSA-PKCS1-v1_5&quot;</code>, <code>&quot;RSA-PSS&quot;</code> or <code>&quot;RSA-OAEP&quot;</code>.</p><span class="comment-delim">*)</span></div></li><li id="type-params.hash" class="def record field anchored"><code><span>hash : <a href="#type-algorithm">algorithm</a>;</span></code></li></ol><code><span>}</span></code><div class="def-doc"><span class="comment-delim">(*</span><p><code>RsaHashedImportParams</code> for <a href="class-type-subtleCrypto/index.html#method-importKey"><code>subtleCrypto.importKey</code></a>.</p><span class="comment-delim">*)</span></div></li><li id="type-params.EC_keygen" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">EC_keygen</span> <span class="keyword">of</span> </span><span>{</span></code><ol><li id="type-params.name" class="def record field anchored"><code><span>name : <span><a href="../Js/class-type-js_string/index.html">Js.js_string</a> <a href="../Js/index.html#type-t">Js.t</a></span>;</span></code><div class="def-doc"><span class="comment-delim">(*</span><p><code>&quot;ECDSA&quot;</code> or <code>&quot;ECDH&quot;</code>.</p><span class="comment-delim">*)</span></div></li><li id="type-params.named_curve" class="def record field anchored"><code><span>named_curve : <span><a href="../Js/class-type-js_string/index.html">Js.js_string</a> <a href="../Js/index.html#type-t">Js.t</a></span>;</span></code></li></ol><code><span>}</span></code><div class="def-doc"><span class="comment-delim">(*</span><p><code>EcKeyGenParams</code>.</p><span class="comment-delim">*)</span></div></li><li id="type-params.AES_keygen" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">AES_keygen</span> <span class="keyword">of</span> </span><span>{</span></code><ol><li id="type-params.name" class="def record field anchored"><code><span>name : <span><a href="../Js/class-type-js_string/index.html">Js.js_string</a> <a href="../Js/index.html#type-t">Js.t</a></span>;</span></code><div class="def-doc"><span class="comment-delim">(*</span><p><code>&quot;AES-CTR&quot;</code>, <code>&quot;AES-CBC&quot;</code>, <code>&quot;AES-GCM&quot;</code> or <code>&quot;AES-KW&quot;</code>.</p><span class="comment-delim">*)</span></div></li><li id="type-params.length" class="def record field anchored"><code><span>length : int;</span></code></li></ol><code><span>}</span></code><div class="def-doc"><span class="comment-delim">(*</span><p><code>AesKeyGenParams</code>.</p><span class="comment-delim">*)</span></div></li><li id="type-params.HMAC_keygen" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">HMAC_keygen</span> <span class="keyword">of</span> </span><span>{</span></code><ol><li id="type-params.hash" class="def record field anchored"><code><span>hash : <a href="#type-algorithm">algorithm</a>;</span></code></li><li id="type-params.length" class="def record field anchored"><code><span>length : <span>int option</span>;</span></code></li></ol><code><span>}</span></code><div class="def-doc"><span class="comment-delim">(*</span><p><code>HmacKeyGenParams</code>.</p><span class="comment-delim">*)</span></div></li><li id="type-params.SHA_1" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">SHA_1</span></span></code></li><li id="type-params.SHA_256" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">SHA_256</span></span></code></li><li id="type-params.SHA_384" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">SHA_384</span></span></code></li><li id="type-params.SHA_512" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">SHA_512</span></span></code></li><li id="type-params.Other" class="def variant constructor anchored"><code><span>| </span><span><span class="constructor">Other</span> <span class="keyword">of</span> <span><a href="../Js/class-type-js_string/index.html">Js.js_string</a> <a href="../Js/index.html#type-t">Js.t</a></span></span></code><div class="def-doc"><span class="comment-delim">(*</span><p>An algorithm whose name is not recognised.</p><span class="comment-delim">*)</span></div></li></ol></div><div class="spec-doc"><p>A typed view of an <a href="#val-algorithm"><code>algorithm</code></a> identifier, with one constructor per WebCrypto algorithm-parameter dictionary. The nullary constructors map to a bare name string; the others map to a parameter object. <code>hash</code> fields are themselves <a href="#val-algorithm"><code>algorithm</code></a> values (usually a digest name such as <a href="#val-to_algorithm"><code>to_algorithm</code></a> of <a href="#type-params.SHA_256"><code>SHA_256</code></a>).</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-to_algorithm"><code><span><span class="keyword">val</span> to_algorithm : <span><a href="#type-params">params</a> <span class="arrow">&#45;&gt;</span></span> <a href="#type-algorithm">algorithm</a></span></code></div><div class="spec-doc"><p>Build a JS <code>AlgorithmIdentifier</code> from typed <a href="#type-params"><code>params</code></a>.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-of_algorithm"><code><span><span class="keyword">val</span> of_algorithm : <span><a href="#type-algorithm">algorithm</a> <span class="arrow">&#45;&gt;</span></span> <a href="#type-params">params</a></span></code></div><div class="spec-doc"><p>Recover typed <a href="#type-params"><code>params</code></a> from a JS <code>AlgorithmIdentifier</code> by dispatching on its <code>name</code>. Key-generation and import parameter objects are told apart from same-named operation parameters by which fields are present (e.g. <code>modulusLength</code> vs <code>hash</code> for RSA, <code>namedCurve</code> for EC, <code>iv</code>/<code>counter</code> vs <code>length</code> for AES). An unrecognised name maps to <a href="#type-params.Other"><code>Other</code></a>.</p></div></div><h2 id="subtlecrypto">SubtleCrypto</h2><div class="odoc-spec"><div class="spec class-type anchored" id="class-type-subtleCrypto"><code><span><span class="keyword">class</span> <span class="keyword">type</span>  </span><span><a href="class-type-subtleCrypto/index.html">subtleCrypto</a></span><span> = <span class="keyword">object</span> ... <span class="keyword">end</span></span></code></div></div><h2 id="crypto">Crypto</h2><div class="odoc-spec"><div class="spec class-type anchored" id="class-type-crypto"><code><span><span class="keyword">class</span> <span class="keyword">type</span>  </span><span><a href="class-type-crypto/index.html">crypto</a></span><span> = <span class="keyword">object</span> ... <span class="keyword">end</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-crypto"><code><span><span class="keyword">val</span> crypto : <span>unit <span class="arrow">&#45;&gt;</span></span> <span><a href="class-type-crypto/index.html">crypto</a> <a href="../Js/index.html#type-t">Js.t</a></span></span></code></div><div class="spec-doc"><p>The <code>crypto</code> global (<code>globalThis.crypto</code>).</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-subtle"><code><span><span class="keyword">val</span> subtle : <span>unit <span class="arrow">&#45;&gt;</span></span> <span><a href="class-type-subtleCrypto/index.html">subtleCrypto</a> <a href="../Js/index.html#type-t">Js.t</a></span></span></code></div><div class="spec-doc"><p><code>(crypto ())##.subtle</code>. Only available in a secure context.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-is_supported"><code><span><span class="keyword">val</span> is_supported : <span>unit <span class="arrow">&#45;&gt;</span></span> bool</span></code></div><div class="spec-doc"><p>Whether the <code>crypto</code> global is available in the current environment.</p></div></div></div>
+      </article>
+    </div>
+  </div>
+
+  <script>
+    var wodocPub = "/js_of_ocaml";
+    // Switch version: keep the current page, swapping only the version segment.
+    function wodocVersion(v) {
+      if (!v) return;
+      var re = new RegExp('^(' + wodocPub + '/)[^/]+');
+      var p = location.pathname;
+      location.href =
+        re.test(p) ? p.replace(re, '$1' + v) : wodocPub + '/' + v + '/index.html';
+    }
+    // Build the version <select> from the project's versions.json (the single
+    // source of truth, refreshed on every build/release), so even older frozen
+    // pages list the current set. Falls back to the baked <option>s on failure.
+    (function () {
+      var seg = (location.pathname.match(
+        new RegExp('^' + wodocPub + '/([^/]+)')) || [])[1];
+      function select(sel) {
+        var i;
+        for (i = 0; i < sel.options.length; i++)
+          if (sel.options[i].value === seg) { sel.selectedIndex = i; return; }
+        if (seg) {
+          var o = document.createElement('option');
+          o.value = seg; o.textContent = seg; o.selected = true;
+          sel.insertBefore(o, sel.firstChild);
+        }
+      }
+      fetch(wodocPub + '/versions.json')
+        .then(function (r) { if (!r.ok) throw 0; return r.json(); })
+        .then(function (m) {
+          var list = m.list || [], latest = m.latest;
+          document.querySelectorAll('.wodoc-version').forEach(function (sel) {
+            sel.innerHTML = '';
+            list.forEach(function (v) {
+              var o = document.createElement('option');
+              if (v === latest) { o.value = 'latest'; o.textContent = v + ' (latest)'; }
+              else { o.value = v; o.textContent = v; }
+              sel.appendChild(o);
+            });
+            select(sel);
+          });
+        })
+        .catch(function () {
+          document.querySelectorAll('.wodoc-version').forEach(select);
+        });
+    })();
+  </script>
+</body>
+</html>

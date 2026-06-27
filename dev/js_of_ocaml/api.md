@@ -23,6 +23,7 @@ Browser APIs:
 [`Js_of_ocaml.Abort`](./Js_of_ocaml-Abort.md) AbortController / AbortSignal.
 [`Js_of_ocaml.CSS`](./Js_of_ocaml-CSS.md) This module contains a few types and values to ease the use of CSS properties and such. If you think a feature is missing, consider sending a patch or an RFE to the mailing list.
 [`Js_of_ocaml.Console`](./Js_of_ocaml-Console.md) Console API (debugging console).
+[`Js_of_ocaml.Crypto`](./Js_of_ocaml-Crypto.md) Web Crypto API.
 [`Js_of_ocaml.Dom`](./Js_of_ocaml-Dom.md) DOM binding
 [`Js_of_ocaml.Dom_events`](./Js_of_ocaml-Dom_events.md) Javascript events
 [`Js_of_ocaml.Dom_html`](./Js_of_ocaml-Dom_html.md) DOM HTML binding

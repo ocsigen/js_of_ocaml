@@ -1593,6 +1593,7 @@ Browser APIs:
 [`Js_of_ocaml.Abort`](./Js_of_ocaml-Abort.md) AbortController / AbortSignal.
 [`Js_of_ocaml.CSS`](./Js_of_ocaml-CSS.md) This module contains a few types and values to ease the use of CSS properties and such. If you think a feature is missing, consider sending a patch or an RFE to the mailing list.
 [`Js_of_ocaml.Console`](./Js_of_ocaml-Console.md) Console API (debugging console).
+[`Js_of_ocaml.Crypto`](./Js_of_ocaml-Crypto.md) Web Crypto API.
 [`Js_of_ocaml.Dom`](./Js_of_ocaml-Dom.md) DOM binding
 [`Js_of_ocaml.Dom_events`](./Js_of_ocaml-Dom_events.md) Javascript events
 [`Js_of_ocaml.Dom_html`](./Js_of_ocaml-Dom_html.md) DOM HTML binding
@@ -23253,6 +23254,483 @@ class type  console = object ... end
 ```ocaml
 val console : console Js.t
 ```
+
+
+---
+
+# Module `Crypto.Key_format`
+
+A `KeyFormat` for importing and exporting keys.
+
+```ocaml
+type t = 
+  | Raw
+  | Spki
+  | Pkcs8
+  | Jwk
+```
+```ocaml
+val to_js : t -> Js.js_string Js.t
+```
+```ocaml
+val of_js : Js.js_string Js.t -> t
+```
+raises `Invalid_argument` on an unrecognised string.
+
+
+---
+
+# Module `Crypto.Key_type`
+
+The `KeyType` of a [`cryptoKey`](./Js_of_ocaml-Crypto-class-type-cryptoKey.md).
+
+```ocaml
+type t = 
+  | Public
+  | Private
+  | Secret
+```
+```ocaml
+val to_js : t -> Js.js_string Js.t
+```
+```ocaml
+val of_js : Js.js_string Js.t -> t
+```
+raises `Invalid_argument` on an unrecognised string.
+
+
+---
+
+# Module `Crypto.Key_usage`
+
+A `KeyUsage`: an operation a [`cryptoKey`](./Js_of_ocaml-Crypto-class-type-cryptoKey.md) may be used for.
+
+```ocaml
+type t = 
+  | Encrypt
+  | Decrypt
+  | Sign
+  | Verify
+  | Derive_key
+  | Derive_bits
+  | Wrap_key
+  | Unwrap_key
+```
+```ocaml
+val to_js : t -> Js.js_string Js.t
+```
+```ocaml
+val of_js : Js.js_string Js.t -> t
+```
+raises `Invalid_argument` on an unrecognised string.
+```ocaml
+val list_to_js : t list -> Js.js_string Js.t Js.js_array Js.t
+```
+```ocaml
+val list_of_js : Js.js_string Js.t Js.js_array Js.t -> t list
+```
+
+
+---
+
+# Class type `Crypto.crypto`
+
+```ocaml
+method subtle : subtleCrypto Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method getRandomValues : 'a 'b 'c. ('a, 'b, 'c)
+                                     Js_of_ocaml__.Typed_array.typedArray
+                                     Js_of_ocaml__.Js.t ->
+  ('a, 'b, 'c) Js_of_ocaml__.Typed_array.typedArray Js_of_ocaml__.Js.t
+    Js_of_ocaml__.Js.meth
+```
+```ocaml
+method randomUUID : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                      Js_of_ocaml__.Js.meth
+```
+
+
+---
+
+# Class type `Crypto.cryptoKey`
+
+```ocaml
+method _type : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                 Js_of_ocaml__.Js.readonly_prop
+```
+The key type: `"secret"`, `"private"` or `"public"`.
+
+```ocaml
+method extractable : bool Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method algorithm : algorithm Js_of_ocaml__.Js.readonly_prop
+```
+The algorithm the key is for; pass to `of_algorithm` to inspect it.
+
+```ocaml
+method usages : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                  Js_of_ocaml__.Js.js_array
+                  Js_of_ocaml__.Js.t
+                  Js_of_ocaml__.Js.readonly_prop
+```
+
+
+---
+
+# Class type `Crypto.cryptoKeyPair`
+
+```ocaml
+method publicKey : cryptoKey Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method privateKey : cryptoKey Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+```
+
+
+---
+
+# Class type `Crypto.subtleCrypto`
+
+```ocaml
+method encrypt : algorithm ->
+  cryptoKey Js_of_ocaml__.Js.t ->
+  bufferSource ->
+  Js_of_ocaml__.Typed_array.arrayBuffer Js_of_ocaml__.Js.t
+    Js_of_ocaml__.Promise.t
+    Js_of_ocaml__.Js.meth
+```
+```ocaml
+method decrypt : algorithm ->
+  cryptoKey Js_of_ocaml__.Js.t ->
+  bufferSource ->
+  Js_of_ocaml__.Typed_array.arrayBuffer Js_of_ocaml__.Js.t
+    Js_of_ocaml__.Promise.t
+    Js_of_ocaml__.Js.meth
+```
+```ocaml
+method sign : algorithm ->
+  cryptoKey Js_of_ocaml__.Js.t ->
+  bufferSource ->
+  Js_of_ocaml__.Typed_array.arrayBuffer Js_of_ocaml__.Js.t
+    Js_of_ocaml__.Promise.t
+    Js_of_ocaml__.Js.meth
+```
+```ocaml
+method verify : algorithm ->
+  cryptoKey Js_of_ocaml__.Js.t ->
+  bufferSource ->
+  bufferSource ->
+  bool Js_of_ocaml__.Js.t Js_of_ocaml__.Promise.t Js_of_ocaml__.Js.meth
+```
+```ocaml
+method digest : algorithm ->
+  bufferSource ->
+  Js_of_ocaml__.Typed_array.arrayBuffer Js_of_ocaml__.Js.t
+    Js_of_ocaml__.Promise.t
+    Js_of_ocaml__.Js.meth
+```
+```ocaml
+method generateKey : algorithm ->
+  bool Js_of_ocaml__.Js.t ->
+  Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t Js_of_ocaml__.Js.js_array
+    Js_of_ocaml__.Js.t ->
+  cryptoKey Js_of_ocaml__.Js.t Js_of_ocaml__.Promise.t Js_of_ocaml__.Js.meth
+```
+Generate a single key (AES, HMAC, …).
+
+```ocaml
+method generateKey_pair : algorithm ->
+  bool Js_of_ocaml__.Js.t ->
+  Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t Js_of_ocaml__.Js.js_array
+    Js_of_ocaml__.Js.t ->
+  cryptoKeyPair Js_of_ocaml__.Js.t Js_of_ocaml__.Promise.t
+    Js_of_ocaml__.Js.meth
+```
+Generate a key pair (RSA, EC, …).
+
+```ocaml
+method deriveKey : algorithm ->
+  cryptoKey Js_of_ocaml__.Js.t ->
+  algorithm ->
+  bool Js_of_ocaml__.Js.t ->
+  Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t Js_of_ocaml__.Js.js_array
+    Js_of_ocaml__.Js.t ->
+  cryptoKey Js_of_ocaml__.Js.t Js_of_ocaml__.Promise.t Js_of_ocaml__.Js.meth
+```
+```ocaml
+method deriveBits : algorithm ->
+  cryptoKey Js_of_ocaml__.Js.t ->
+  Js_of_ocaml__.Typed_array.arrayBuffer Js_of_ocaml__.Js.t
+    Js_of_ocaml__.Promise.t
+    Js_of_ocaml__.Js.meth
+```
+Derive bits using the algorithm's default length.
+
+```ocaml
+method deriveBits_length : algorithm ->
+  cryptoKey Js_of_ocaml__.Js.t ->
+  int ->
+  Js_of_ocaml__.Typed_array.arrayBuffer Js_of_ocaml__.Js.t
+    Js_of_ocaml__.Promise.t
+    Js_of_ocaml__.Js.meth
+```
+`deriveBits_length algorithm baseKey length` derives `length` bits.
+
+```ocaml
+method importKey : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t ->
+  bufferSource ->
+  algorithm ->
+  bool Js_of_ocaml__.Js.t ->
+  Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t Js_of_ocaml__.Js.js_array
+    Js_of_ocaml__.Js.t ->
+  cryptoKey Js_of_ocaml__.Js.t Js_of_ocaml__.Promise.t Js_of_ocaml__.Js.meth
+```
+Import a key from raw bytes (the `raw`, `spki` and `pkcs8` formats).
+
+```ocaml
+method importKey_jwk : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t ->
+  jsonWebKey ->
+  algorithm ->
+  bool Js_of_ocaml__.Js.t ->
+  Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t Js_of_ocaml__.Js.js_array
+    Js_of_ocaml__.Js.t ->
+  cryptoKey Js_of_ocaml__.Js.t Js_of_ocaml__.Promise.t Js_of_ocaml__.Js.meth
+```
+Import a key from a `jsonWebKey` (the `jwk` format).
+
+```ocaml
+method exportKey : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t ->
+  cryptoKey Js_of_ocaml__.Js.t ->
+  Js_of_ocaml__.Typed_array.arrayBuffer Js_of_ocaml__.Js.t
+    Js_of_ocaml__.Promise.t
+    Js_of_ocaml__.Js.meth
+```
+Export to raw bytes (the `raw`, `spki` and `pkcs8` formats).
+
+```ocaml
+method exportKey_jwk : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t ->
+  cryptoKey Js_of_ocaml__.Js.t ->
+  jsonWebKey Js_of_ocaml__.Promise.t Js_of_ocaml__.Js.meth
+```
+Export to a `jsonWebKey` (the `jwk` format).
+
+```ocaml
+method wrapKey : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t ->
+  cryptoKey Js_of_ocaml__.Js.t ->
+  cryptoKey Js_of_ocaml__.Js.t ->
+  algorithm ->
+  Js_of_ocaml__.Typed_array.arrayBuffer Js_of_ocaml__.Js.t
+    Js_of_ocaml__.Promise.t
+    Js_of_ocaml__.Js.meth
+```
+```ocaml
+method unwrapKey : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t ->
+  bufferSource ->
+  cryptoKey Js_of_ocaml__.Js.t ->
+  algorithm ->
+  algorithm ->
+  bool Js_of_ocaml__.Js.t ->
+  Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t Js_of_ocaml__.Js.js_array
+    Js_of_ocaml__.Js.t ->
+  cryptoKey Js_of_ocaml__.Js.t Js_of_ocaml__.Promise.t Js_of_ocaml__.Js.meth
+```
+
+
+---
+
+# Module `Js_of_ocaml.Crypto`
+
+Web Crypto API.
+
+A code example:
+
+```ocaml
+  let hash data =
+    Promise.map
+      (fun buf -> buf)
+      ((Crypto.subtle ())##digest
+         (Crypto.algorithm (Js.string "SHA-256"))
+         (Crypto.buffer_source_of_array_buffer_view data))
+```
+Most of `SubtleCrypto` is exposed as object methods, mirroring the JavaScript surface: obtain the `subtle` object with [`subtle`](./#val-subtle) and call its methods with `##`.
+
+see [https://developer.mozilla.org/en-US/docs/Web/API/Web\_Crypto\_API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Crypto_API) 
+see [https://w3c.github.io/webcrypto/](https://w3c.github.io/webcrypto/) 
+
+## Common types
+
+```ocaml
+type algorithm
+```
+An `AlgorithmIdentifier`: either a bare name (e.g. `"SHA-256"`) or a parameter object (e.g. `{name: "AES-GCM"; iv: ...}`). Build one with [`algorithm`](./#val-algorithm) or [`algorithm_obj`](./#val-algorithm_obj).
+
+```ocaml
+val algorithm : Js.js_string Js.t -> algorithm
+```
+`algorithm name` is the bare-name form of an algorithm identifier, such as `algorithm (Js.string "SHA-256")`.
+
+```ocaml
+val algorithm_obj : < .. > Js.t -> algorithm
+```
+`algorithm_obj o` uses an arbitrary parameter object as an algorithm identifier. Build `o` with [`Js.Unsafe.obj`](./Js_of_ocaml-Js-Unsafe.md#val-obj) or the `object%js` syntax.
+
+```ocaml
+type bufferSource
+```
+A `BufferSource`: an `ArrayBuffer` or any `ArrayBufferView` (typed array or `DataView`). Build one with [`buffer_source_of_array_buffer`](./#val-buffer_source_of_array_buffer) or [`buffer_source_of_array_buffer_view`](./#val-buffer_source_of_array_buffer_view).
+
+```ocaml
+val buffer_source_of_array_buffer : 
+  Typed_array.arrayBuffer Js.t ->
+  bufferSource
+```
+```ocaml
+val buffer_source_of_array_buffer_view : 
+  Typed_array.arrayBufferView Js.t ->
+  bufferSource
+```
+
+## Key types, usages and formats
+
+```ocaml
+module Key_type : sig ... end
+```
+The `KeyType` of a [`cryptoKey`](./Js_of_ocaml-Crypto-class-type-cryptoKey.md).
+
+```ocaml
+module Key_usage : sig ... end
+```
+A `KeyUsage`: an operation a [`cryptoKey`](./Js_of_ocaml-Crypto-class-type-cryptoKey.md) may be used for.
+
+```ocaml
+module Key_format : sig ... end
+```
+A `KeyFormat` for importing and exporting keys.
+
+
+## Keys
+
+```ocaml
+class type  cryptoKey = object ... end
+```
+```ocaml
+class type  cryptoKeyPair = object ... end
+```
+```ocaml
+type jsonWebKey = Js.Unsafe.any
+```
+A key in `JsonWebKey` form (RFC 7517\): a plain JSON object whose members carry the key material (e.g. `kty`, `n`, `e` for RSA; `crv`, `x`, `y` for EC). Exposed as [`Js.Unsafe.any`](./Js_of_ocaml-Js-Unsafe.md#type-any): read its members with [`Js.Unsafe.get`](./Js_of_ocaml-Js-Unsafe.md#val-get), build one with [`Js.Unsafe.obj`](./Js_of_ocaml-Js-Unsafe.md#val-obj), and serialise/parse with the `JSON` global.
+
+
+## Typed algorithm parameters
+
+```ocaml
+type params = 
+  | RSASSA_PKCS1_v1_5 (* Sign/verify; parameters are just the name. *)
+  | RSA_PSS of {
+    salt_length : int;
+  }
+  | RSA_OAEP of {
+    label : bufferSource option;
+  }
+  | ECDSA of {
+    hash : algorithm;
+  }
+  | ECDH of {
+    public : cryptoKey Js.t;
+  }
+  | AES_CTR of {
+    counter : bufferSource;
+    length : int;
+  }
+  | AES_CBC of {
+    iv : bufferSource;
+  }
+  | AES_GCM of {
+    iv : bufferSource;
+    additional_data : bufferSource option;
+    tag_length : int option;
+  }
+  | AES_KW (* Key-wrapping; parameters are just the name. *)
+  | HMAC (* Sign/verify; parameters are just the name. *)
+  | HKDF of {
+    hash : algorithm;
+    salt : bufferSource;
+    info : bufferSource;
+  }
+  | PBKDF2 of {
+    hash : algorithm;
+    salt : bufferSource;
+    iterations : int;
+  }
+  | RSA_keygen of {
+    name : Js.js_string Js.t; (* "RSASSA-PKCS1-v1_5", "RSA-PSS" or "RSA-OAEP". *)
+    modulus_length : int;
+    public_exponent : Typed_array.uint8Array Js.t;
+    hash : algorithm;
+  } (* RsaHashedKeyGenParams for subtleCrypto.generateKey. *)
+  | RSA_import of {
+    name : Js.js_string Js.t; (* "RSASSA-PKCS1-v1_5", "RSA-PSS" or "RSA-OAEP". *)
+    hash : algorithm;
+  } (* RsaHashedImportParams for subtleCrypto.importKey. *)
+  | EC_keygen of {
+    name : Js.js_string Js.t; (* "ECDSA" or "ECDH". *)
+    named_curve : Js.js_string Js.t;
+  } (* EcKeyGenParams. *)
+  | AES_keygen of {
+    name : Js.js_string Js.t; (* "AES-CTR", "AES-CBC", "AES-GCM" or "AES-KW". *)
+    length : int;
+  } (* AesKeyGenParams. *)
+  | HMAC_keygen of {
+    hash : algorithm;
+    length : int option;
+  } (* HmacKeyGenParams. *)
+  | SHA_1
+  | SHA_256
+  | SHA_384
+  | SHA_512
+  | Other of Js.js_string Js.t (* An algorithm whose name is not recognised. *)
+```
+A typed view of an [`algorithm`](./#val-algorithm) identifier, with one constructor per WebCrypto algorithm-parameter dictionary. The nullary constructors map to a bare name string; the others map to a parameter object. `hash` fields are themselves [`algorithm`](./#val-algorithm) values (usually a digest name such as [`to_algorithm`](./#val-to_algorithm) of [`SHA_256`](./#type-params.SHA_256)).
+
+```ocaml
+val to_algorithm : params -> algorithm
+```
+Build a JS `AlgorithmIdentifier` from typed [`params`](./#type-params).
+
+```ocaml
+val of_algorithm : algorithm -> params
+```
+Recover typed [`params`](./#type-params) from a JS `AlgorithmIdentifier` by dispatching on its `name`. Key-generation and import parameter objects are told apart from same-named operation parameters by which fields are present (e.g. `modulusLength` vs `hash` for RSA, `namedCurve` for EC, `iv`/`counter` vs `length` for AES). An unrecognised name maps to [`Other`](./#type-params.Other).
+
+
+## SubtleCrypto
+
+```ocaml
+class type  subtleCrypto = object ... end
+```
+
+## Crypto
+
+```ocaml
+class type  crypto = object ... end
+```
+```ocaml
+val crypto : unit -> crypto Js.t
+```
+The `crypto` global (`globalThis.crypto`).
+
+```ocaml
+val subtle : unit -> subtleCrypto Js.t
+```
+`(crypto ())##.subtle`. Only available in a secure context.
+
+```ocaml
+val is_supported : unit -> bool
+```
+Whether the `crypto` global is available in the current environment.
 
 
 ---
@@ -51609,6 +52087,11 @@ This module contains a few types and values to ease the use of CSS properties an
 module Console : sig ... end
 ```
 Console API (debugging console).
+
+```ocaml
+module Crypto : sig ... end
+```
+Web Crypto API.
 
 ```ocaml
 module Dom : sig ... end

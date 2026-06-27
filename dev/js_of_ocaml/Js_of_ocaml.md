@@ -21,6 +21,11 @@ module Console : sig ... end
 Console API (debugging console).
 
 ```ocaml
+module Crypto : sig ... end
+```
+Web Crypto API.
+
+```ocaml
 module Dom : sig ... end
 ```
 DOM binding
