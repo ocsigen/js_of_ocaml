@@ -44,6 +44,22 @@ end
 
 let empty_registration_options () : registrationOptions Js.t = Js.Unsafe.obj [||]
 
+class type navigationPreloadState = object
+  method enabled : bool Js.t Js.readonly_prop
+
+  method headerValue : Js.js_string Js.t Js.optdef Js.readonly_prop
+end
+
+class type navigationPreloadManager = object
+  method enable : unit Promise.t Js.meth
+
+  method disable : unit Promise.t Js.meth
+
+  method setHeaderValue : Js.js_string Js.t -> unit Promise.t Js.meth
+
+  method getState : navigationPreloadState Js.t Promise.t Js.meth
+end
+
 class type serviceWorkerRegistration = object ('self)
   inherit Dom_html.eventTarget
 
@@ -52,6 +68,8 @@ class type serviceWorkerRegistration = object ('self)
   method waiting : serviceWorker Js.t Js.opt Js.readonly_prop
 
   method active : serviceWorker Js.t Js.opt Js.readonly_prop
+
+  method navigationPreload : navigationPreloadManager Js.t Js.readonly_prop
 
   method scope : Js.js_string Js.t Js.readonly_prop
 

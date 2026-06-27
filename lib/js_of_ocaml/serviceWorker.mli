@@ -64,6 +64,30 @@ end
 
 val empty_registration_options : unit -> registrationOptions t
 
+(** The state of a registration's navigation preload, as resolved by
+    {!class-type:navigationPreloadManager}[##getState]. *)
+class type navigationPreloadState = object
+  method enabled : bool t readonly_prop
+
+  method headerValue : js_string t optdef readonly_prop
+  (** The [Service-Worker-Navigation-Preload] header value; [undefined] when
+      not set. *)
+end
+
+(** Manages navigation preloading for a {!class-type:serviceWorkerRegistration},
+    exposed as its [navigationPreload]. *)
+class type navigationPreloadManager = object
+  method enable : unit Promise.t meth
+
+  method disable : unit Promise.t meth
+
+  method setHeaderValue : js_string t -> unit Promise.t meth
+  (** Sets the value sent in the [Service-Worker-Navigation-Preload] request
+      header for preload requests. *)
+
+  method getState : navigationPreloadState t Promise.t meth
+end
+
 (** A registration of a service worker against a scope. Inherits [EventTarget]. *)
 class type serviceWorkerRegistration = object ('self)
   inherit Dom_html.eventTarget
@@ -73,6 +97,8 @@ class type serviceWorkerRegistration = object ('self)
   method waiting : serviceWorker t opt readonly_prop
 
   method active : serviceWorker t opt readonly_prop
+
+  method navigationPreload : navigationPreloadManager t readonly_prop
 
   method scope : js_string t readonly_prop
 
