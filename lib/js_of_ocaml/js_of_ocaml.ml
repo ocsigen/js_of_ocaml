@@ -23,6 +23,7 @@
 
 module Abort = Abort
 module CSS = CSS
+module Clipboard = Clipboard
 module Console = Console
 module Crypto = Crypto
 module Dom = Dom
@@ -44,6 +45,7 @@ module Js_error = Js.Js_error
 module Json = Json
 module Jstable = Jstable
 module MutationObserver = MutationObserver
+module Notification = Notification
 module Performance = Performance
 module PerformanceObserver = PerformanceObserver
 module Promise = Promise

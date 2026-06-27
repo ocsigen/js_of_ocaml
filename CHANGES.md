@@ -8,6 +8,8 @@
   `Key_format` enums, and overloaded `generateKey`/`generateKey_pair`,
   `importKey`/`importKey_jwk` and `exportKey`/`exportKey_jwk` methods that
   resolve the spec's union argument/return types (#2380)
+* Lib: add `Notification` and `Clipboard` — bindings to the Notifications API
+  and the (Promise-typed) async Clipboard API (#2379)
 * Lib: add `Lwt_js_events.mutation`/`mutations` — wait for `MutationObserver`
   mutation records as Lwt threads (#250)
 * Lib: remove `js_of_ocaml-lwt.logger` and the `lwt_log` dependency, as
