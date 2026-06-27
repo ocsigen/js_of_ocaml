@@ -22,6 +22,8 @@ class type notificationAction = object
 
   method title : Js.js_string Js.t Js.prop
 
+  method navigate : Js.js_string Js.t Js.prop
+
   method icon : Js.js_string Js.t Js.prop
 end
 

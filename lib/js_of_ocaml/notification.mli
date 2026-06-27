@@ -46,6 +46,8 @@ class type notificationAction = object
 
   method title : js_string t prop
 
+  method navigate : js_string t prop
+
   method icon : js_string t prop
 end
 
