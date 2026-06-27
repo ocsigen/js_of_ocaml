@@ -27,6 +27,7 @@ Browser APIs:
 {!modules:
 Js_of_ocaml.Abort
 Js_of_ocaml.CSS
+Js_of_ocaml.Cache
 Js_of_ocaml.Clipboard
 Js_of_ocaml.Console
 Js_of_ocaml.Crypto
@@ -42,6 +43,7 @@ Js_of_ocaml.Geolocation
 Js_of_ocaml.IntersectionObserver
 Js_of_ocaml.Intl
 Js_of_ocaml.Json
+Js_of_ocaml.MessageChannel
 Js_of_ocaml.MutationObserver
 Js_of_ocaml.Notification
 Js_of_ocaml.Performance
@@ -49,6 +51,7 @@ Js_of_ocaml.PerformanceObserver
 Js_of_ocaml.Promise
 Js_of_ocaml.Regexp
 Js_of_ocaml.ResizeObserver
+Js_of_ocaml.ServiceWorker
 Js_of_ocaml.Url
 Js_of_ocaml.WebGL
 Js_of_ocaml.WebSockets
