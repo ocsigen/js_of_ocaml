@@ -28,6 +28,7 @@ Browser APIs:
 Js_of_ocaml.Abort
 Js_of_ocaml.CSS
 Js_of_ocaml.Console
+Js_of_ocaml.Crypto
 Js_of_ocaml.Dom
 Js_of_ocaml.Dom_events
 Js_of_ocaml.Dom_html
