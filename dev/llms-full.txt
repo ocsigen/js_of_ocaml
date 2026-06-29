@@ -1592,6 +1592,7 @@ Browser APIs:
 
 [`Js_of_ocaml.Abort`](./Js_of_ocaml-Abort.md) AbortController / AbortSignal.
 [`Js_of_ocaml.CSS`](./Js_of_ocaml-CSS.md) This module contains a few types and values to ease the use of CSS properties and such. If you think a feature is missing, consider sending a patch or an RFE to the mailing list.
+[`Js_of_ocaml.Cache`](./Js_of_ocaml-Cache.md) Cache API: persistent storage of Fetch Request/Response pairs.
 [`Js_of_ocaml.Clipboard`](./Js_of_ocaml-Clipboard.md) Clipboard API.
 [`Js_of_ocaml.Console`](./Js_of_ocaml-Console.md) Console API (debugging console).
 [`Js_of_ocaml.Crypto`](./Js_of_ocaml-Crypto.md) Web Crypto API.
@@ -1607,6 +1608,7 @@ Browser APIs:
 [`Js_of_ocaml.IntersectionObserver`](./Js_of_ocaml-IntersectionObserver.md) The Intersection Observer API provides a way to asynchronously observe changes in the intersection of a target element with an ancestor element or with a top-level document's viewport.
 [`Js_of_ocaml.Intl`](./Js_of_ocaml-Intl.md) Internationalization API
 [`Js_of_ocaml.Json`](./Js_of_ocaml-Json.md) Unsafe IO. (See Deriving\_Json for typesafe IO)
+[`Js_of_ocaml.MessageChannel`](./Js_of_ocaml-MessageChannel.md) Channel messaging: MessageChannel, MessagePort and MessageEvent.
 [`Js_of_ocaml.MutationObserver`](./Js_of_ocaml-MutationObserver.md) MutationObserver API
 [`Js_of_ocaml.Notification`](./Js_of_ocaml-Notification.md) Notifications API.
 [`Js_of_ocaml.Performance`](./Js_of_ocaml-Performance.md) Performance API
@@ -1614,6 +1616,7 @@ Browser APIs:
 [`Js_of_ocaml.Promise`](./Js_of_ocaml-Promise.md) Bindings to the JavaScript Promise API.
 [`Js_of_ocaml.Regexp`](./Js_of_ocaml-Regexp.md) Types for regexps.
 [`Js_of_ocaml.ResizeObserver`](./Js_of_ocaml-ResizeObserver.md) ResizeObserver API
+[`Js_of_ocaml.ServiceWorker`](./Js_of_ocaml-ServiceWorker.md) Service Workers.
 [`Js_of_ocaml.Url`](./Js_of_ocaml-Url.md) This module provides functions for tampering with Url. It's main goal is to allow one to stay in the Ocaml realm without wandering into the Dom\_html.window\##.location object.
 [`Js_of_ocaml.WebGL`](./Js_of_ocaml-WebGL.md) WebGL binding
 [`Js_of_ocaml.WebSockets`](./Js_of_ocaml-WebSockets.md) WebSocket binding
@@ -23034,6 +23037,246 @@ module Length : sig ... end
 ```ocaml
 module Angle : sig ... end
 ```
+
+
+---
+
+# Class type `Cache.cache`
+
+A single named [`Cache`](./Js_of_ocaml-Cache.md) instance, obtained from [`cacheStorage`](./Js_of_ocaml-Cache-class-type-cacheStorage.md).
+
+The methods come in two flavours: the `_url` variants take the request as a URL string, while the others take a [Request](./Js_of_ocaml-Fetch.md#request).
+
+```ocaml
+method match_ : Js_of_ocaml__.Fetch.request Js_of_ocaml__.Js.t ->
+  Js_of_ocaml__.Fetch.response Js_of_ocaml__.Js.t Js_of_ocaml__.Js.optdef
+    Js_of_ocaml__.Promise.t
+    Js_of_ocaml__.Js.meth
+```
+```ocaml
+method match_url : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t ->
+  Js_of_ocaml__.Fetch.response Js_of_ocaml__.Js.t Js_of_ocaml__.Js.optdef
+    Js_of_ocaml__.Promise.t
+    Js_of_ocaml__.Js.meth
+```
+```ocaml
+method match_withOptions : Js_of_ocaml__.Fetch.request Js_of_ocaml__.Js.t ->
+  queryOptions Js_of_ocaml__.Js.t ->
+  Js_of_ocaml__.Fetch.response Js_of_ocaml__.Js.t Js_of_ocaml__.Js.optdef
+    Js_of_ocaml__.Promise.t
+    Js_of_ocaml__.Js.meth
+```
+```ocaml
+method matchAll : Js_of_ocaml__.Fetch.response Js_of_ocaml__.Js.t
+                    Js_of_ocaml__.Js.js_array
+                    Js_of_ocaml__.Js.t
+                    Js_of_ocaml__.Promise.t
+                    Js_of_ocaml__.Js.meth
+```
+```ocaml
+method matchAll_request : Js_of_ocaml__.Fetch.request Js_of_ocaml__.Js.t ->
+  Js_of_ocaml__.Fetch.response Js_of_ocaml__.Js.t Js_of_ocaml__.Js.js_array
+    Js_of_ocaml__.Js.t
+    Js_of_ocaml__.Promise.t
+    Js_of_ocaml__.Js.meth
+```
+```ocaml
+method matchAll_withOptions : Js_of_ocaml__.Fetch.request Js_of_ocaml__.Js.t ->
+  queryOptions Js_of_ocaml__.Js.t ->
+  Js_of_ocaml__.Fetch.response Js_of_ocaml__.Js.t Js_of_ocaml__.Js.js_array
+    Js_of_ocaml__.Js.t
+    Js_of_ocaml__.Promise.t
+    Js_of_ocaml__.Js.meth
+```
+```ocaml
+method add : Js_of_ocaml__.Fetch.request Js_of_ocaml__.Js.t ->
+  unit Js_of_ocaml__.Promise.t Js_of_ocaml__.Js.meth
+```
+`cache##add req` fetches `req` and stores the resulting response. The promise rejects if the response does not have an ok status.
+
+```ocaml
+method add_url : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t ->
+  unit Js_of_ocaml__.Promise.t Js_of_ocaml__.Js.meth
+```
+```ocaml
+method addAll : Js_of_ocaml__.Fetch.request Js_of_ocaml__.Js.t
+                  Js_of_ocaml__.Js.js_array
+                  Js_of_ocaml__.Js.t ->
+  unit Js_of_ocaml__.Promise.t Js_of_ocaml__.Js.meth
+```
+```ocaml
+method addAll_url : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                      Js_of_ocaml__.Js.js_array
+                      Js_of_ocaml__.Js.t ->
+  unit Js_of_ocaml__.Promise.t Js_of_ocaml__.Js.meth
+```
+```ocaml
+method put : Js_of_ocaml__.Fetch.request Js_of_ocaml__.Js.t ->
+  Js_of_ocaml__.Fetch.response Js_of_ocaml__.Js.t ->
+  unit Js_of_ocaml__.Promise.t Js_of_ocaml__.Js.meth
+```
+```ocaml
+method put_url : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t ->
+  Js_of_ocaml__.Fetch.response Js_of_ocaml__.Js.t ->
+  unit Js_of_ocaml__.Promise.t Js_of_ocaml__.Js.meth
+```
+```ocaml
+method delete : Js_of_ocaml__.Fetch.request Js_of_ocaml__.Js.t ->
+  bool Js_of_ocaml__.Js.t Js_of_ocaml__.Promise.t Js_of_ocaml__.Js.meth
+```
+`cache##delete req` resolves with `true` if a matching entry was found and removed, `false` otherwise.
+
+```ocaml
+method delete_url : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t ->
+  bool Js_of_ocaml__.Js.t Js_of_ocaml__.Promise.t Js_of_ocaml__.Js.meth
+```
+```ocaml
+method delete_withOptions : Js_of_ocaml__.Fetch.request Js_of_ocaml__.Js.t ->
+  queryOptions Js_of_ocaml__.Js.t ->
+  bool Js_of_ocaml__.Js.t Js_of_ocaml__.Promise.t Js_of_ocaml__.Js.meth
+```
+```ocaml
+method keys : Js_of_ocaml__.Fetch.request Js_of_ocaml__.Js.t
+                Js_of_ocaml__.Js.js_array
+                Js_of_ocaml__.Js.t
+                Js_of_ocaml__.Promise.t
+                Js_of_ocaml__.Js.meth
+```
+```ocaml
+method keys_request : Js_of_ocaml__.Fetch.request Js_of_ocaml__.Js.t ->
+  Js_of_ocaml__.Fetch.request Js_of_ocaml__.Js.t Js_of_ocaml__.Js.js_array
+    Js_of_ocaml__.Js.t
+    Js_of_ocaml__.Promise.t
+    Js_of_ocaml__.Js.meth
+```
+
+
+---
+
+# Class type `Cache.cacheStorage`
+
+The set of named [`Cache`](./Js_of_ocaml-Cache.md)s for the current origin, exposed as the global `caches` (see [`caches`](./Js_of_ocaml-Cache.md#val-caches)).
+
+```ocaml
+method match_ : Js_of_ocaml__.Fetch.request Js_of_ocaml__.Js.t ->
+  Js_of_ocaml__.Fetch.response Js_of_ocaml__.Js.t Js_of_ocaml__.Js.optdef
+    Js_of_ocaml__.Promise.t
+    Js_of_ocaml__.Js.meth
+```
+```ocaml
+method match_url : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t ->
+  Js_of_ocaml__.Fetch.response Js_of_ocaml__.Js.t Js_of_ocaml__.Js.optdef
+    Js_of_ocaml__.Promise.t
+    Js_of_ocaml__.Js.meth
+```
+```ocaml
+method match_withOptions : Js_of_ocaml__.Fetch.request Js_of_ocaml__.Js.t ->
+  multiQueryOptions Js_of_ocaml__.Js.t ->
+  Js_of_ocaml__.Fetch.response Js_of_ocaml__.Js.t Js_of_ocaml__.Js.optdef
+    Js_of_ocaml__.Promise.t
+    Js_of_ocaml__.Js.meth
+```
+```ocaml
+method has : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t ->
+  bool Js_of_ocaml__.Js.t Js_of_ocaml__.Promise.t Js_of_ocaml__.Js.meth
+```
+```ocaml
+method open_ : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t ->
+  cache Js_of_ocaml__.Js.t Js_of_ocaml__.Promise.t Js_of_ocaml__.Js.meth
+```
+`caches##open_ name` resolves with the `cache` named `name`, creating it if it does not yet exist.
+
+```ocaml
+method delete : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t ->
+  bool Js_of_ocaml__.Js.t Js_of_ocaml__.Promise.t Js_of_ocaml__.Js.meth
+```
+```ocaml
+method keys : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                Js_of_ocaml__.Js.js_array
+                Js_of_ocaml__.Js.t
+                Js_of_ocaml__.Promise.t
+                Js_of_ocaml__.Js.meth
+```
+
+
+---
+
+# Class type `Cache.multiQueryOptions`
+
+Like [`queryOptions`](./Js_of_ocaml-Cache-class-type-queryOptions.md) but with a `cacheName` to restrict [`cacheStorage`](./Js_of_ocaml-Cache-class-type-cacheStorage.md)`##match_withOptions` to a single named cache. Create an empty record with [`empty_multi_query_options`](./Js_of_ocaml-Cache.md#val-empty_multi_query_options).
+
+```ocaml
+inherit queryOptions
+```
+```ocaml
+method cacheName : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                     Js_of_ocaml__.Js.writeonly_prop
+```
+
+
+---
+
+# Class type `Cache.queryOptions`
+
+Options controlling how a request is matched against cached entries. Create an empty record with [`empty_query_options`](./Js_of_ocaml-Cache.md#val-empty_query_options).
+
+```ocaml
+method ignoreSearch : bool Js_of_ocaml__.Js.t Js_of_ocaml__.Js.writeonly_prop
+```
+```ocaml
+method ignoreMethod : bool Js_of_ocaml__.Js.t Js_of_ocaml__.Js.writeonly_prop
+```
+```ocaml
+method ignoreVary : bool Js_of_ocaml__.Js.t Js_of_ocaml__.Js.writeonly_prop
+```
+
+
+---
+
+# Module `Js_of_ocaml.Cache`
+
+Cache API: persistent storage of [`Fetch`](./Js_of_ocaml-Fetch.md) `Request`/`Response` pairs.
+
+Available from [`Dom_html.window`](./Js_of_ocaml-Dom_html-class-type-window.md) and from [`ServiceWorker`](./Js_of_ocaml-ServiceWorker.md) contexts; the Cache API requires a secure context. The methods are Promise-typed — see [`Promise`](./Js_of_ocaml-Promise.md).
+
+see [https://developer.mozilla.org/en-US/docs/Web/API/Cache](https://developer.mozilla.org/en-US/docs/Web/API/Cache) 
+see [https://developer.mozilla.org/en-US/docs/Web/API/CacheStorage](https://developer.mozilla.org/en-US/docs/Web/API/CacheStorage) 
+see [https://w3c.github.io/ServiceWorker/\#cache-interface](https://w3c.github.io/ServiceWorker/#cache-interface) 
+```ocaml
+class type  queryOptions = object ... end
+```
+Options controlling how a request is matched against cached entries. Create an empty record with [`empty_query_options`](./#val-empty_query_options).
+
+```ocaml
+val empty_query_options : unit -> queryOptions Js.t
+```
+```ocaml
+class type  multiQueryOptions = object ... end
+```
+Like [`queryOptions`](./Js_of_ocaml-Cache-class-type-queryOptions.md) but with a `cacheName` to restrict [`cacheStorage`](./Js_of_ocaml-Cache-class-type-cacheStorage.md)`##match_withOptions` to a single named cache. Create an empty record with [`empty_multi_query_options`](./#val-empty_multi_query_options).
+
+```ocaml
+val empty_multi_query_options : unit -> multiQueryOptions Js.t
+```
+```ocaml
+class type  cache = object ... end
+```
+A single named [`Cache`](#) instance, obtained from [`cacheStorage`](./Js_of_ocaml-Cache-class-type-cacheStorage.md).
+
+```ocaml
+class type  cacheStorage = object ... end
+```
+The set of named [`Cache`](#)s for the current origin, exposed as the global `caches` (see [`caches`](./#val-caches)).
+
+```ocaml
+val caches : unit -> cacheStorage Js.t
+```
+The `caches` global (`CacheStorage`) for the current origin. Guard with [`is_supported`](./#val-is_supported) in environments where the Cache API may be missing.
+
+```ocaml
+val is_supported : unit -> bool
+```
+Whether the `caches` global is available in the current environment.
 
 
 ---
@@ -47803,6 +48046,178 @@ val keys : 'a t -> Js.js_string Js.t list
 
 ---
 
+# Class type `MessageChannel.messageChannel`
+
+```ocaml
+method port1 : messagePort Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method port2 : messagePort Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+```
+
+
+---
+
+# Class type `MessageChannel.messageEvent`
+
+A message delivered to a `message` / `messageerror` listener (also used by [`Worker`](./Js_of_ocaml-Worker.md), [`ServiceWorker`](./Js_of_ocaml-ServiceWorker.md) and `postMessage` on a [`messagePort`](./Js_of_ocaml-MessageChannel-class-type-messagePort.md)). The type parameter `'a` is the type of the `data` payload.
+
+```ocaml
+inherit Js_of_ocaml__.Dom_html.event
+```
+```ocaml
+method data : 'a Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method origin : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                  Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method lastEventId : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                       Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method source : Js_of_ocaml__.Js.Unsafe.any Js_of_ocaml__.Js.opt
+                  Js_of_ocaml__.Js.readonly_prop
+```
+The `source` of a message event is a `MessageEventSource`, i.e. one of a `WindowProxy`, a `messagePort` or a `ServiceWorker.serviceWorker`; `null` when there is none.
+
+```ocaml
+method ports : messagePort Js_of_ocaml__.Js.t Js_of_ocaml__.Js.js_array
+                 Js_of_ocaml__.Js.t
+                 Js_of_ocaml__.Js.readonly_prop
+```
+
+
+---
+
+# Class type `MessageChannel.messageEventInit`
+
+Initializer for [`messageEvent`](./Js_of_ocaml-MessageChannel.md#val-messageEvent). All fields are optional; create an empty record with [`empty_message_event_init`](./Js_of_ocaml-MessageChannel.md#val-empty_message_event_init) and populate the ones you need. The `data` payload is injected as [`Js.Unsafe.any`](./Js_of_ocaml-Js-Unsafe.md#type-any); the resulting event is read back at whatever type the caller annotates [`messageEvent_with_init`](./Js_of_ocaml-MessageChannel.md#val-messageEvent_with_init) with.
+
+```ocaml
+method data : Js_of_ocaml__.Js.Unsafe.any Js_of_ocaml__.Js.writeonly_prop
+```
+```ocaml
+method origin : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                  Js_of_ocaml__.Js.writeonly_prop
+```
+```ocaml
+method lastEventId : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                       Js_of_ocaml__.Js.writeonly_prop
+```
+```ocaml
+method source : Js_of_ocaml__.Js.Unsafe.any Js_of_ocaml__.Js.writeonly_prop
+```
+```ocaml
+method ports : messagePort Js_of_ocaml__.Js.t Js_of_ocaml__.Js.js_array
+                 Js_of_ocaml__.Js.t
+                 Js_of_ocaml__.Js.writeonly_prop
+```
+
+
+---
+
+# Class type `MessageChannel.messagePort`
+
+One of the two endpoints of a [`messageChannel`](./Js_of_ocaml-MessageChannel-class-type-messageChannel.md). Messages posted on one port are delivered to the `message` listener of the other.
+
+```ocaml
+inherit Js_of_ocaml__.Dom_html.eventTarget
+```
+```ocaml
+method postMessage : 'a. 'a -> unit Js_of_ocaml__.Js.meth
+```
+```ocaml
+method postMessage_withTransfer : 'a. 'a ->
+  Js_of_ocaml__.Js.Unsafe.any Js_of_ocaml__.Js.js_array Js_of_ocaml__.Js.t ->
+  unit Js_of_ocaml__.Js.meth
+```
+`port##postMessage_withTransfer msg transfer` posts `msg`, transferring ownership of the [transferable objects](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Transferable_objects) in `transfer` (e.g. `ArrayBuffer`s or other `messagePort`s) to the receiving context.
+
+```ocaml
+method start : unit Js_of_ocaml__.Js.meth
+```
+```ocaml
+method close : unit Js_of_ocaml__.Js.meth
+```
+```ocaml
+method onmessage : ('self Js_of_ocaml__.Js.t,
+                     Js_of_ocaml__.Js.Unsafe.any messageEvent
+                       Js_of_ocaml__.Js.t)
+                     Js_of_ocaml__.Dom.event_listener
+                     Js_of_ocaml__.Js.writeonly_prop
+```
+```ocaml
+method onmessageerror : ('self Js_of_ocaml__.Js.t,
+                          Js_of_ocaml__.Js.Unsafe.any messageEvent
+                            Js_of_ocaml__.Js.t)
+                          Js_of_ocaml__.Dom.event_listener
+                          Js_of_ocaml__.Js.writeonly_prop
+```
+```ocaml
+method onclose : ('self Js_of_ocaml__.Js.t,
+                   'self Js_of_ocaml__.Dom.event Js_of_ocaml__.Js.t)
+                   Js_of_ocaml__.Dom.event_listener
+                   Js_of_ocaml__.Js.writeonly_prop
+```
+
+
+---
+
+# Module `Js_of_ocaml.MessageChannel`
+
+Channel messaging: `MessageChannel`, `MessagePort` and `MessageEvent`.
+
+see [https://developer.mozilla.org/en-US/docs/Web/API/MessageChannel](https://developer.mozilla.org/en-US/docs/Web/API/MessageChannel) 
+see [https://developer.mozilla.org/en-US/docs/Web/API/MessagePort](https://developer.mozilla.org/en-US/docs/Web/API/MessagePort) 
+see [https://developer.mozilla.org/en-US/docs/Web/API/MessageEvent](https://developer.mozilla.org/en-US/docs/Web/API/MessageEvent) 
+see [https://html.spec.whatwg.org/multipage/web-messaging.html](https://html.spec.whatwg.org/multipage/web-messaging.html) 
+```ocaml
+class type 'a messageEvent = object ... end
+```
+A message delivered to a `message` / `messageerror` listener (also used by [`Worker`](./Js_of_ocaml-Worker.md), [`ServiceWorker`](./Js_of_ocaml-ServiceWorker.md) and `postMessage` on a [`messagePort`](./Js_of_ocaml-MessageChannel-class-type-messagePort.md)). The type parameter `'a` is the type of the `data` payload.
+
+```ocaml
+class type  messagePort = object ... end
+```
+One of the two endpoints of a [`messageChannel`](./Js_of_ocaml-MessageChannel-class-type-messageChannel.md). Messages posted on one port are delivered to the `message` listener of the other.
+
+```ocaml
+class type  messageChannel = object ... end
+```
+```ocaml
+val messageChannel : messageChannel Js.t Js.constr
+```
+
+### MessageEvent constructor
+
+```ocaml
+class type  messageEventInit = object ... end
+```
+Initializer for [`messageEvent`](./#val-messageEvent). All fields are optional; create an empty record with [`empty_message_event_init`](./#val-empty_message_event_init) and populate the ones you need. The `data` payload is injected as [`Js.Unsafe.any`](./Js_of_ocaml-Js-Unsafe.md#type-any); the resulting event is read back at whatever type the caller annotates [`messageEvent_with_init`](./#val-messageEvent_with_init) with.
+
+```ocaml
+val empty_message_event_init : unit -> messageEventInit Js.t
+```
+```ocaml
+val messageEvent : (Js.js_string Js.t -> 'a messageEvent Js.t) Js.constr
+```
+```ocaml
+val messageEvent_with_init : 
+  (Js.js_string Js.t ->
+    messageEventInit Js.t ->
+    'a messageEvent Js.t)
+    Js.constr
+```
+```ocaml
+val is_supported : unit -> bool
+```
+Whether the `MessageChannel` global is available in the current environment.
+
+
+---
+
 # Class type `MutationObserver.mutationObserver`
 
 ```ocaml
@@ -48940,6 +49355,608 @@ val observe :
   resizeObserver Js.t
 ```
 Helper to create a new observer and connect it to a node.
+
+
+---
+
+# Class type `ServiceWorker.client`
+
+A client (a `Window`, worker or shared worker) controlled by the worker.
+
+```ocaml
+method id : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+              Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method url : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+               Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method _type : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                 Js_of_ocaml__.Js.readonly_prop
+```
+One of `"window"`, `"worker"` or `"sharedworker"`.
+
+```ocaml
+method frameType : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                     Js_of_ocaml__.Js.readonly_prop
+```
+One of `"auxiliary"`, `"top-level"`, `"nested"` or `"none"`.
+
+```ocaml
+method postMessage : 'a. 'a -> unit Js_of_ocaml__.Js.meth
+```
+```ocaml
+method postMessage_withTransfer : 'a. 'a ->
+  Js_of_ocaml__.Js.Unsafe.any Js_of_ocaml__.Js.js_array Js_of_ocaml__.Js.t ->
+  unit Js_of_ocaml__.Js.meth
+```
+
+
+---
+
+# Class type `ServiceWorker.clients`
+
+The worker's `clients` object, used to enumerate and message controlled clients.
+
+```ocaml
+method get : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t ->
+  client Js_of_ocaml__.Js.t Js_of_ocaml__.Js.optdef Js_of_ocaml__.Promise.t
+    Js_of_ocaml__.Js.meth
+```
+```ocaml
+method matchAll : client Js_of_ocaml__.Js.t Js_of_ocaml__.Js.js_array
+                    Js_of_ocaml__.Js.t
+                    Js_of_ocaml__.Promise.t
+                    Js_of_ocaml__.Js.meth
+```
+```ocaml
+method matchAll_withOptions : clientsQueryOptions Js_of_ocaml__.Js.t ->
+  client Js_of_ocaml__.Js.t Js_of_ocaml__.Js.js_array Js_of_ocaml__.Js.t
+    Js_of_ocaml__.Promise.t
+    Js_of_ocaml__.Js.meth
+```
+```ocaml
+method openWindow : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t ->
+  windowClient Js_of_ocaml__.Js.t Js_of_ocaml__.Js.opt Js_of_ocaml__.Promise.t
+    Js_of_ocaml__.Js.meth
+```
+```ocaml
+method claim : unit Js_of_ocaml__.Promise.t Js_of_ocaml__.Js.meth
+```
+
+
+---
+
+# Class type `ServiceWorker.clientsQueryOptions`
+
+Options for `clients##matchAll_withOptions`. Create an empty record with [`empty_clients_query_options`](./Js_of_ocaml-ServiceWorker.md#val-empty_clients_query_options).
+
+```ocaml
+method includeUncontrolled : bool Js_of_ocaml__.Js.t
+                               Js_of_ocaml__.Js.writeonly_prop
+```
+```ocaml
+method _type : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                 Js_of_ocaml__.Js.writeonly_prop
+```
+
+
+---
+
+# Class type `ServiceWorker.extendableEvent`
+
+Base class of events that may extend the service worker's lifetime via `waitUntil`.
+
+```ocaml
+inherit Js_of_ocaml__.Dom_html.event
+```
+```ocaml
+method waitUntil : 'a. 'a Js_of_ocaml__.Promise.t -> unit Js_of_ocaml__.Js.meth
+```
+
+
+---
+
+# Class type `ServiceWorker.extendableMessageEvent`
+
+The event delivered to the worker's `message` / `messageerror` handlers. Unlike a plain [`MessageChannel.messageEvent`](./Js_of_ocaml-MessageChannel-class-type-messageEvent.md) it extends [`extendableEvent`](./Js_of_ocaml-ServiceWorker-class-type-extendableEvent.md), so the handler can call `waitUntil` to keep the worker alive until asynchronous processing of the message finishes. The type parameter `'a` is the type of the `data` payload.
+
+```ocaml
+inherit extendableEvent
+```
+```ocaml
+method data : 'a Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method origin : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                  Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method lastEventId : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                       Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method source : Js_of_ocaml__.Js.Unsafe.any Js_of_ocaml__.Js.opt
+                  Js_of_ocaml__.Js.readonly_prop
+```
+The message source: a `client`, a `serviceWorker` or a `MessageChannel.messagePort`; `null` when there is none.
+
+```ocaml
+method ports : Js_of_ocaml__.MessageChannel.messagePort Js_of_ocaml__.Js.t
+                 Js_of_ocaml__.Js.js_array
+                 Js_of_ocaml__.Js.t
+                 Js_of_ocaml__.Js.readonly_prop
+```
+
+
+---
+
+# Class type `ServiceWorker.fetchEvent`
+
+The event passed to the worker's `fetch` handler.
+
+```ocaml
+inherit extendableEvent
+```
+```ocaml
+method request : Js_of_ocaml__.Fetch.request Js_of_ocaml__.Js.t
+                   Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method clientId : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                    Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method resultingClientId : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                             Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method replacesClientId : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                            Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method preloadResponse : Js_of_ocaml__.Js.Unsafe.any Js_of_ocaml__.Promise.t
+                           Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method handled : unit Js_of_ocaml__.Promise.t Js_of_ocaml__.Js.readonly_prop
+```
+Resolves once the request has been handled (whether or not `respondWith` was called).
+
+```ocaml
+method respondWith : Js_of_ocaml__.Fetch.response Js_of_ocaml__.Js.t
+                       Js_of_ocaml__.Promise.t ->
+  unit Js_of_ocaml__.Js.meth
+```
+`event##respondWith p` provides the response (as a promise) for the intercepted request.
+
+
+---
+
+# Class type `ServiceWorker.navigationPreloadManager`
+
+Manages navigation preloading for a [`serviceWorkerRegistration`](./Js_of_ocaml-ServiceWorker-class-type-serviceWorkerRegistration.md), exposed as its `navigationPreload`.
+
+```ocaml
+method enable : unit Js_of_ocaml__.Promise.t Js_of_ocaml__.Js.meth
+```
+```ocaml
+method disable : unit Js_of_ocaml__.Promise.t Js_of_ocaml__.Js.meth
+```
+```ocaml
+method setHeaderValue : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t ->
+  unit Js_of_ocaml__.Promise.t Js_of_ocaml__.Js.meth
+```
+Sets the value sent in the `Service-Worker-Navigation-Preload` request header for preload requests.
+
+```ocaml
+method getState : navigationPreloadState Js_of_ocaml__.Js.t
+                    Js_of_ocaml__.Promise.t
+                    Js_of_ocaml__.Js.meth
+```
+
+
+---
+
+# Class type `ServiceWorker.navigationPreloadState`
+
+The state of a registration's navigation preload, as resolved by [`navigationPreloadManager`](./Js_of_ocaml-ServiceWorker-class-type-navigationPreloadManager.md)`##getState`.
+
+```ocaml
+method enabled : bool Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method headerValue : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                       Js_of_ocaml__.Js.optdef
+                       Js_of_ocaml__.Js.readonly_prop
+```
+The `Service-Worker-Navigation-Preload` header value; `undefined` when not set.
+
+
+---
+
+# Class type `ServiceWorker.registrationOptions`
+
+Options for [`serviceWorkerContainer`](./Js_of_ocaml-ServiceWorker-class-type-serviceWorkerContainer.md)`##register_withOptions`. Create an empty record with [`empty_registration_options`](./Js_of_ocaml-ServiceWorker.md#val-empty_registration_options).
+
+```ocaml
+method scope : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                 Js_of_ocaml__.Js.writeonly_prop
+```
+```ocaml
+method _type : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                 Js_of_ocaml__.Js.writeonly_prop
+```
+Either `"classic"` (default) or `"module"`.
+
+```ocaml
+method updateViaCache : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                          Js_of_ocaml__.Js.writeonly_prop
+```
+Either `"imports"` (default), `"all"` or `"none"`.
+
+
+---
+
+# Class type `ServiceWorker.serviceWorker`
+
+A service worker, as seen from a controlled page. Inherits `EventTarget`.
+
+```ocaml
+inherit Js_of_ocaml__.Dom_html.eventTarget
+```
+```ocaml
+method scriptURL : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                     Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method state : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                 Js_of_ocaml__.Js.readonly_prop
+```
+One of `"parsed"`, `"installing"`, `"installed"`, `"activating"`, `"activated"` or `"redundant"`.
+
+```ocaml
+method postMessage : 'a. 'a -> unit Js_of_ocaml__.Js.meth
+```
+```ocaml
+method postMessage_withTransfer : 'a. 'a ->
+  Js_of_ocaml__.Js.Unsafe.any Js_of_ocaml__.Js.js_array Js_of_ocaml__.Js.t ->
+  unit Js_of_ocaml__.Js.meth
+```
+```ocaml
+method onstatechange : ('self Js_of_ocaml__.Js.t,
+                         'self Js_of_ocaml__.Dom.event Js_of_ocaml__.Js.t)
+                         Js_of_ocaml__.Dom.event_listener
+                         Js_of_ocaml__.Js.writeonly_prop
+```
+
+
+---
+
+# Class type `ServiceWorker.serviceWorkerContainer`
+
+The page-facing entry point, exposed as `navigator.serviceWorker` (see [`container`](./Js_of_ocaml-ServiceWorker.md#val-container)). Inherits `EventTarget`.
+
+```ocaml
+inherit Js_of_ocaml__.Dom_html.eventTarget
+```
+```ocaml
+method controller : serviceWorker Js_of_ocaml__.Js.t Js_of_ocaml__.Js.opt
+                      Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method ready : serviceWorkerRegistration Js_of_ocaml__.Js.t
+                 Js_of_ocaml__.Promise.t
+                 Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method register : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t ->
+  serviceWorkerRegistration Js_of_ocaml__.Js.t Js_of_ocaml__.Promise.t
+    Js_of_ocaml__.Js.meth
+```
+```ocaml
+method register_withOptions : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t ->
+  registrationOptions Js_of_ocaml__.Js.t ->
+  serviceWorkerRegistration Js_of_ocaml__.Js.t Js_of_ocaml__.Promise.t
+    Js_of_ocaml__.Js.meth
+```
+```ocaml
+method getRegistration : serviceWorkerRegistration Js_of_ocaml__.Js.t
+                           Js_of_ocaml__.Js.optdef
+                           Js_of_ocaml__.Promise.t
+                           Js_of_ocaml__.Js.meth
+```
+```ocaml
+method getRegistration_withUrl : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t ->
+  serviceWorkerRegistration Js_of_ocaml__.Js.t Js_of_ocaml__.Js.optdef
+    Js_of_ocaml__.Promise.t
+    Js_of_ocaml__.Js.meth
+```
+```ocaml
+method getRegistrations : serviceWorkerRegistration Js_of_ocaml__.Js.t
+                            Js_of_ocaml__.Js.js_array
+                            Js_of_ocaml__.Js.t
+                            Js_of_ocaml__.Promise.t
+                            Js_of_ocaml__.Js.meth
+```
+```ocaml
+method startMessages : unit Js_of_ocaml__.Js.meth
+```
+```ocaml
+method oncontrollerchange : ('self Js_of_ocaml__.Js.t,
+                              'self Js_of_ocaml__.Dom.event Js_of_ocaml__.Js.t)
+                              Js_of_ocaml__.Dom.event_listener
+                              Js_of_ocaml__.Js.writeonly_prop
+```
+```ocaml
+method onmessage : ('self Js_of_ocaml__.Js.t,
+                     Js_of_ocaml__.Js.Unsafe.any
+                       Js_of_ocaml__.MessageChannel.messageEvent
+                       Js_of_ocaml__.Js.t)
+                     Js_of_ocaml__.Dom.event_listener
+                     Js_of_ocaml__.Js.writeonly_prop
+```
+```ocaml
+method onmessageerror : ('self Js_of_ocaml__.Js.t,
+                          Js_of_ocaml__.Js.Unsafe.any
+                            Js_of_ocaml__.MessageChannel.messageEvent
+                            Js_of_ocaml__.Js.t)
+                          Js_of_ocaml__.Dom.event_listener
+                          Js_of_ocaml__.Js.writeonly_prop
+```
+
+
+---
+
+# Class type `ServiceWorker.serviceWorkerGlobalScope`
+
+The global scope of a running service worker (its `self`). Inherits `EventTarget`.
+
+```ocaml
+inherit Js_of_ocaml__.Dom_html.eventTarget
+```
+```ocaml
+method clients : clients Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method registration : serviceWorkerRegistration Js_of_ocaml__.Js.t
+                        Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method serviceWorker : serviceWorker Js_of_ocaml__.Js.t
+                         Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method skipWaiting : unit Js_of_ocaml__.Promise.t Js_of_ocaml__.Js.meth
+```
+```ocaml
+method oninstall : ('self Js_of_ocaml__.Js.t,
+                     extendableEvent Js_of_ocaml__.Js.t)
+                     Js_of_ocaml__.Dom.event_listener
+                     Js_of_ocaml__.Js.writeonly_prop
+```
+```ocaml
+method onactivate : ('self Js_of_ocaml__.Js.t,
+                      extendableEvent Js_of_ocaml__.Js.t)
+                      Js_of_ocaml__.Dom.event_listener
+                      Js_of_ocaml__.Js.writeonly_prop
+```
+```ocaml
+method onfetch : ('self Js_of_ocaml__.Js.t, fetchEvent Js_of_ocaml__.Js.t)
+                   Js_of_ocaml__.Dom.event_listener
+                   Js_of_ocaml__.Js.writeonly_prop
+```
+```ocaml
+method onmessage : ('self Js_of_ocaml__.Js.t,
+                     Js_of_ocaml__.Js.Unsafe.any extendableMessageEvent
+                       Js_of_ocaml__.Js.t)
+                     Js_of_ocaml__.Dom.event_listener
+                     Js_of_ocaml__.Js.writeonly_prop
+```
+```ocaml
+method onmessageerror : ('self Js_of_ocaml__.Js.t,
+                          Js_of_ocaml__.Js.Unsafe.any extendableMessageEvent
+                            Js_of_ocaml__.Js.t)
+                          Js_of_ocaml__.Dom.event_listener
+                          Js_of_ocaml__.Js.writeonly_prop
+```
+
+
+---
+
+# Class type `ServiceWorker.serviceWorkerRegistration`
+
+A registration of a service worker against a scope. Inherits `EventTarget`.
+
+```ocaml
+inherit Js_of_ocaml__.Dom_html.eventTarget
+```
+```ocaml
+method installing : serviceWorker Js_of_ocaml__.Js.t Js_of_ocaml__.Js.opt
+                      Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method waiting : serviceWorker Js_of_ocaml__.Js.t Js_of_ocaml__.Js.opt
+                   Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method active : serviceWorker Js_of_ocaml__.Js.t Js_of_ocaml__.Js.opt
+                  Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method navigationPreload : navigationPreloadManager Js_of_ocaml__.Js.t
+                             Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method scope : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                 Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method updateViaCache : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                          Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method update : serviceWorkerRegistration Js_of_ocaml__.Js.t
+                  Js_of_ocaml__.Promise.t
+                  Js_of_ocaml__.Js.meth
+```
+Triggers a soft update of the registration; resolves with the registration object.
+
+```ocaml
+method unregister : bool Js_of_ocaml__.Js.t Js_of_ocaml__.Promise.t
+                      Js_of_ocaml__.Js.meth
+```
+Resolves with `true` if the registration was found and unregistered.
+
+```ocaml
+method onupdatefound : ('self Js_of_ocaml__.Js.t,
+                         'self Js_of_ocaml__.Dom.event Js_of_ocaml__.Js.t)
+                         Js_of_ocaml__.Dom.event_listener
+                         Js_of_ocaml__.Js.writeonly_prop
+```
+
+
+---
+
+# Class type `ServiceWorker.windowClient`
+
+A [`client`](./Js_of_ocaml-ServiceWorker-class-type-client.md) that is a top-level browsing context (a window/tab).
+
+```ocaml
+inherit client
+```
+```ocaml
+method focused : bool Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method visibilityState : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                           Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method ancestorOrigins : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                           Js_of_ocaml__.Js.js_array
+                           Js_of_ocaml__.Js.t
+                           Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method focus : windowClient Js_of_ocaml__.Js.t Js_of_ocaml__.Promise.t
+                 Js_of_ocaml__.Js.meth
+```
+```ocaml
+method navigate : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t ->
+  windowClient Js_of_ocaml__.Js.t Js_of_ocaml__.Js.opt Js_of_ocaml__.Promise.t
+    Js_of_ocaml__.Js.meth
+```
+
+
+---
+
+# Module `Js_of_ocaml.ServiceWorker`
+
+Service Workers.
+
+This module covers both sides of the API: the page-facing registration API ([`container`](./#val-container), [`serviceWorkerContainer`](./Js_of_ocaml-ServiceWorker-class-type-serviceWorkerContainer.md), [`serviceWorkerRegistration`](./Js_of_ocaml-ServiceWorker-class-type-serviceWorkerRegistration.md), [`serviceWorker`](./Js_of_ocaml-ServiceWorker-class-type-serviceWorker.md)) and the worker-side global scope ([`global`](./#val-global), [`serviceWorkerGlobalScope`](./Js_of_ocaml-ServiceWorker-class-type-serviceWorkerGlobalScope.md) and its events). The Cache API used inside a worker lives in [`Cache`](./Js_of_ocaml-Cache.md).
+
+Service Workers require a secure context. The Promise-typed members use [`Promise`](./Js_of_ocaml-Promise.md).
+
+see [https://developer.mozilla.org/en-US/docs/Web/API/Service\_Worker\_API](https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API) 
+see [https://w3c.github.io/ServiceWorker/](https://w3c.github.io/ServiceWorker/) 
+```ocaml
+class type  serviceWorker = object ... end
+```
+A service worker, as seen from a controlled page. Inherits `EventTarget`.
+
+```ocaml
+class type  registrationOptions = object ... end
+```
+Options for [`serviceWorkerContainer`](./Js_of_ocaml-ServiceWorker-class-type-serviceWorkerContainer.md)`##register_withOptions`. Create an empty record with [`empty_registration_options`](./#val-empty_registration_options).
+
+```ocaml
+val empty_registration_options : unit -> registrationOptions Js.t
+```
+```ocaml
+class type  navigationPreloadState = object ... end
+```
+The state of a registration's navigation preload, as resolved by [`navigationPreloadManager`](./Js_of_ocaml-ServiceWorker-class-type-navigationPreloadManager.md)`##getState`.
+
+```ocaml
+class type  navigationPreloadManager = object ... end
+```
+Manages navigation preloading for a [`serviceWorkerRegistration`](./Js_of_ocaml-ServiceWorker-class-type-serviceWorkerRegistration.md), exposed as its `navigationPreload`.
+
+```ocaml
+class type  serviceWorkerRegistration = object ... end
+```
+A registration of a service worker against a scope. Inherits `EventTarget`.
+
+```ocaml
+class type  serviceWorkerContainer = object ... end
+```
+The page-facing entry point, exposed as `navigator.serviceWorker` (see [`container`](./#val-container)). Inherits `EventTarget`.
+
+```ocaml
+val container : unit -> serviceWorkerContainer Js.t Js.optdef
+```
+`navigator.serviceWorker`, or `undefined` when service workers are not supported (including non-secure contexts).
+
+```ocaml
+val is_supported : unit -> bool
+```
+Whether `navigator.serviceWorker` is available in the current environment.
+
+
+## Service worker global scope
+
+The following bindings are meant to be used from *inside* a service worker (see [`global`](./#val-global)); they are not available on a controlled page.
+
+```ocaml
+class type  extendableEvent = object ... end
+```
+Base class of events that may extend the service worker's lifetime via `waitUntil`.
+
+```ocaml
+class type  fetchEvent = object ... end
+```
+The event passed to the worker's `fetch` handler.
+
+```ocaml
+class type 'a extendableMessageEvent = object ... end
+```
+The event delivered to the worker's `message` / `messageerror` handlers. Unlike a plain [`MessageChannel.messageEvent`](./Js_of_ocaml-MessageChannel-class-type-messageEvent.md) it extends [`extendableEvent`](./Js_of_ocaml-ServiceWorker-class-type-extendableEvent.md), so the handler can call `waitUntil` to keep the worker alive until asynchronous processing of the message finishes. The type parameter `'a` is the type of the `data` payload.
+
+```ocaml
+class type  client = object ... end
+```
+A client (a `Window`, worker or shared worker) controlled by the worker.
+
+```ocaml
+class type  windowClient = object ... end
+```
+A [`client`](./Js_of_ocaml-ServiceWorker-class-type-client.md) that is a top-level browsing context (a window/tab).
+
+```ocaml
+class type  clientsQueryOptions = object ... end
+```
+Options for `clients##matchAll_withOptions`. Create an empty record with [`empty_clients_query_options`](./#val-empty_clients_query_options).
+
+```ocaml
+val empty_clients_query_options : unit -> clientsQueryOptions Js.t
+```
+```ocaml
+class type  clients = object ... end
+```
+The worker's `clients` object, used to enumerate and message controlled clients.
+
+```ocaml
+class type  serviceWorkerGlobalScope = object ... end
+```
+The global scope of a running service worker (its `self`). Inherits `EventTarget`.
+
+```ocaml
+val global : unit -> serviceWorkerGlobalScope Js.t
+```
+The service worker's global scope. Only meaningful when the current code is actually running as a service worker.
 
 
 ---
@@ -52437,6 +53454,11 @@ module CSS : sig ... end
 This module contains a few types and values to ease the use of CSS properties and such. If you think a feature is missing, consider sending a patch or an RFE to the mailing list.
 
 ```ocaml
+module Cache : sig ... end
+```
+Cache API: persistent storage of [`Fetch`](./Js_of_ocaml-Fetch.md) `Request`/`Response` pairs.
+
+```ocaml
 module Clipboard : sig ... end
 ```
 Clipboard API.
@@ -52531,6 +53553,11 @@ module Jstable : sig ... end
 A minimal table implementation specialized for [`Js.js_string`](./Js_of_ocaml-Js-class-type-js_string.md) keys. This is faster than regular OCaml hashtables.
 
 ```ocaml
+module MessageChannel : sig ... end
+```
+Channel messaging: `MessageChannel`, `MessagePort` and `MessageEvent`.
+
+```ocaml
 module MutationObserver : sig ... end
 ```
 MutationObserver API
@@ -52564,6 +53591,11 @@ ResizeObserver API
 module Regexp : sig ... end
 ```
 Types for regexps.
+
+```ocaml
+module ServiceWorker : sig ... end
+```
+Service Workers.
 
 ```ocaml
 module Sys_js : sig ... end

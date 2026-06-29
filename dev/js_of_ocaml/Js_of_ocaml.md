@@ -16,6 +16,11 @@ module CSS : sig ... end
 This module contains a few types and values to ease the use of CSS properties and such. If you think a feature is missing, consider sending a patch or an RFE to the mailing list.
 
 ```ocaml
+module Cache : sig ... end
+```
+Cache API: persistent storage of [`Fetch`](./Js_of_ocaml-Fetch.md) `Request`/`Response` pairs.
+
+```ocaml
 module Clipboard : sig ... end
 ```
 Clipboard API.
@@ -110,6 +115,11 @@ module Jstable : sig ... end
 A minimal table implementation specialized for [`Js.js_string`](./Js_of_ocaml-Js-class-type-js_string.md) keys. This is faster than regular OCaml hashtables.
 
 ```ocaml
+module MessageChannel : sig ... end
+```
+Channel messaging: `MessageChannel`, `MessagePort` and `MessageEvent`.
+
+```ocaml
 module MutationObserver : sig ... end
 ```
 MutationObserver API
@@ -143,6 +153,11 @@ ResizeObserver API
 module Regexp : sig ... end
 ```
 Types for regexps.
+
+```ocaml
+module ServiceWorker : sig ... end
+```
+Service Workers.
 
 ```ocaml
 module Sys_js : sig ... end

@@ -22,6 +22,7 @@ Browser APIs:
 
 [`Js_of_ocaml.Abort`](./Js_of_ocaml-Abort.md) AbortController / AbortSignal.
 [`Js_of_ocaml.CSS`](./Js_of_ocaml-CSS.md) This module contains a few types and values to ease the use of CSS properties and such. If you think a feature is missing, consider sending a patch or an RFE to the mailing list.
+[`Js_of_ocaml.Cache`](./Js_of_ocaml-Cache.md) Cache API: persistent storage of Fetch Request/Response pairs.
 [`Js_of_ocaml.Clipboard`](./Js_of_ocaml-Clipboard.md) Clipboard API.
 [`Js_of_ocaml.Console`](./Js_of_ocaml-Console.md) Console API (debugging console).
 [`Js_of_ocaml.Crypto`](./Js_of_ocaml-Crypto.md) Web Crypto API.
@@ -37,6 +38,7 @@ Browser APIs:
 [`Js_of_ocaml.IntersectionObserver`](./Js_of_ocaml-IntersectionObserver.md) The Intersection Observer API provides a way to asynchronously observe changes in the intersection of a target element with an ancestor element or with a top-level document's viewport.
 [`Js_of_ocaml.Intl`](./Js_of_ocaml-Intl.md) Internationalization API
 [`Js_of_ocaml.Json`](./Js_of_ocaml-Json.md) Unsafe IO. (See Deriving\_Json for typesafe IO)
+[`Js_of_ocaml.MessageChannel`](./Js_of_ocaml-MessageChannel.md) Channel messaging: MessageChannel, MessagePort and MessageEvent.
 [`Js_of_ocaml.MutationObserver`](./Js_of_ocaml-MutationObserver.md) MutationObserver API
 [`Js_of_ocaml.Notification`](./Js_of_ocaml-Notification.md) Notifications API.
 [`Js_of_ocaml.Performance`](./Js_of_ocaml-Performance.md) Performance API
@@ -44,6 +46,7 @@ Browser APIs:
 [`Js_of_ocaml.Promise`](./Js_of_ocaml-Promise.md) Bindings to the JavaScript Promise API.
 [`Js_of_ocaml.Regexp`](./Js_of_ocaml-Regexp.md) Types for regexps.
 [`Js_of_ocaml.ResizeObserver`](./Js_of_ocaml-ResizeObserver.md) ResizeObserver API
+[`Js_of_ocaml.ServiceWorker`](./Js_of_ocaml-ServiceWorker.md) Service Workers.
 [`Js_of_ocaml.Url`](./Js_of_ocaml-Url.md) This module provides functions for tampering with Url. It's main goal is to allow one to stay in the Ocaml realm without wandering into the Dom\_html.window\##.location object.
 [`Js_of_ocaml.WebGL`](./Js_of_ocaml-WebGL.md) WebGL binding
 [`Js_of_ocaml.WebSockets`](./Js_of_ocaml-WebSockets.md) WebSocket binding
