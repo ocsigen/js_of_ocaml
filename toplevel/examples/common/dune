@@ -8,7 +8,7 @@
  (libraries
   js_of_ocaml
   js_of_ocaml-tyxml
-  js_of_ocaml-toplevel.msg
+  js_of_ocaml-toplevel.protocol
   lwt
   (select
    ocp_indent.ml

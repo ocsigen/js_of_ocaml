@@ -1,5 +1,5 @@
 ;; Host page: the interactive notebook UI, driving the worker via
-;; Js_of_ocaml_toplevel_lwt.Async. It depends only on the dependency-free msg
+;; Js_of_ocaml_toplevel_worker_lwt_client.Async. It depends only on the dependency-free protocol
 ;; library (for the result type) and Async, so it does not link the toplevel
 ;; runtime and is built as a plain program.
 
@@ -10,8 +10,8 @@
   js_of_ocaml
   js_of_ocaml-lwt
   lwt
-  js_of_ocaml-toplevel.msg
-  js_of_ocaml-toplevel.lwt)
+  js_of_ocaml-toplevel.protocol
+  js_of_ocaml-toplevel.worker_lwt_client)
  (modes byte)
  (preprocess
   (pps js_of_ocaml-ppx)))

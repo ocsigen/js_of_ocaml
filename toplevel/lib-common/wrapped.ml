@@ -19,7 +19,7 @@
 
 open! Js_of_ocaml_compiler
 open! Js_of_ocaml_compiler.Stdlib
-module Wrapped_intf = Js_of_ocaml_toplevel_msg.Wrapped_intf
+module Wrapped_intf = Js_of_ocaml_toplevel_protocol.Wrapped_intf
 
 (* The result types are defined in the dependency-free [msg] library (so the
    host driver can use them without the toplevel runtime); re-export them here. *)

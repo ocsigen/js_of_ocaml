@@ -3,7 +3,7 @@
  (public_name js_of_ocaml-toplevel.common)
  (synopsis "Js_of_ocaml toplevel library (backend-neutral)")
  (libraries
-  js_of_ocaml-toplevel.msg
+  js_of_ocaml-toplevel.protocol
   js_of_ocaml-compiler
   compiler-libs.bytecomp
   compiler-libs.toplevel)

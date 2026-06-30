@@ -127,8 +127,8 @@ let setup_input_handlers ~container ~textbox ~output ~execute ~reset =
 (* Underline the part of [loc] in the echoed source, whose lines are the [sharp]
    elements reachable from [first]. The caller picks [first]: the first echoed
    node of the phrase. *)
-let highlight_location ~first (loc : Js_of_ocaml_toplevel_msg.Wrapped_intf.loc) =
-  let module W = Js_of_ocaml_toplevel_msg.Wrapped_intf in
+let highlight_location ~first (loc : Js_of_ocaml_toplevel_protocol.Wrapped_intf.loc) =
+  let module W = Js_of_ocaml_toplevel_protocol.Wrapped_intf in
   let x = ref 0 in
   iter_on_sharp first ~f:(fun e ->
       incr x;

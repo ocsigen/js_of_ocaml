@@ -17,7 +17,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-open! Js_of_ocaml_toplevel_msg
+open! Js_of_ocaml_toplevel_protocol
 
 (** The [result] types are defined in the dependency-free [msg] library and
     re-exported here. *)

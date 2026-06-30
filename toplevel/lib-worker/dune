@@ -6,7 +6,7 @@
  (public_name js_of_ocaml-toplevel.worker)
  (synopsis "Js_of_ocaml toplevel Web Worker entry point")
  (libraries
-  js_of_ocaml-toplevel.msg
+  js_of_ocaml-toplevel.protocol
   js_of_ocaml-toplevel
   js_of_ocaml
   compiler-libs.toplevel))

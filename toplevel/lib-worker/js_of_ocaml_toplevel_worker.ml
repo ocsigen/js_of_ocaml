@@ -19,7 +19,7 @@
 
 open Js_of_ocaml
 open! Js_of_ocaml_toplevel
-open Js_of_ocaml_toplevel_msg
+open Js_of_ocaml_toplevel_protocol
 open Worker_msg
 
 (* [handler] returns a [Wrapped.result] directly; the dispatcher maps that

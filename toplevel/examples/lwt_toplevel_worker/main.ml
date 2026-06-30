@@ -22,7 +22,7 @@
    Worker instead of in the UI thread. The page (this file) only edits source,
    ships it to the worker and renders the results, so a long computation never
    freezes the UI; the toplevel itself lives in [worker.js] and is driven
-   through {!Js_of_ocaml_toplevel_lwt.Async}.
+   through {!Js_of_ocaml_toplevel_worker_lwt_client}.
 
    Because a Web Worker has no DOM, code typed here cannot touch the page
    (Dom_html, Graphics, ...); pure computations, the stdlib and Lwt all work.
@@ -33,10 +33,10 @@ open Js_of_ocaml
 open Js_of_ocaml_lwt
 open Toplevel_util
 open Lwt
-module Async = Js_of_ocaml_toplevel_lwt.Async
-(* The host only needs the result type, from the dependency-free msg library —
+module Async = Js_of_ocaml_toplevel_worker_lwt_client
+(* The host only needs the result type, from the dependency-free protocol library —
    not the toplevel runtime. *)
-module Wrapped = Js_of_ocaml_toplevel_msg.Wrapped_intf
+module Wrapped = Js_of_ocaml_toplevel_protocol.Wrapped_intf
 
 let compiler_name = "OCaml"
 
