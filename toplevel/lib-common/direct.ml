@@ -22,8 +22,7 @@ open Js_of_ocaml_compiler.Stdlib
 
 let setup =
   lazy
-    (Topdirs.dir_directory "/static/cmis";
-     Toploop.add_directive
+    (Toploop.add_directive
        "enable"
        (Toploop.Directive_string Config.Flag.enable)
        { section = "js_of_ocaml"; doc = "Enable the given flag" };
@@ -101,12 +100,21 @@ let execute printval ?pp_code ?highlight_location pp_answer s =
 
 let initialized = ref false
 
+let reset_toplevel_env () =
+  (* Register the directory holding the runtime cmi bundles both before and
+     after [initialize_toplevel_env]: before, so building the environment can
+     load Stdlib from there; after, because [initialize_toplevel_env] resets the
+     load path and later lookups of other libraries would otherwise fail. *)
+  Topdirs.dir_directory "/static/cmis";
+  Toploop.initialize_toplevel_env ();
+  Topdirs.dir_directory "/static/cmis"
+
 let initialize () =
   if not !initialized
   then (
     initialized := true;
     Sys.interactive := false;
     Lazy.force setup;
-    Toploop.initialize_toplevel_env ();
+    reset_toplevel_env ();
     Toploop.input_name := "//toplevel//";
     Sys.interactive := true)

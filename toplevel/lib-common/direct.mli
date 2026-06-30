@@ -38,3 +38,8 @@ val execute :
 
 val initialize : unit -> unit
 (** Initialize Js_of_ocaml toplevel. Idempotent. *)
+
+val reset_toplevel_env : unit -> unit
+(** Reset the toplevel environment (as on a [#reset]/restart), discarding all
+    user bindings while keeping the runtime cmi directory on the load path so
+    libraries stay resolvable. *)

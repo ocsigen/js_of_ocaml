@@ -123,7 +123,9 @@ let handler : type a. a host_msg -> a Wrapped.result = function
       (* Drop any scratch typing env before wiping the toplevel, so the
          saved-env snapshot is not left dangling across the reset. *)
       Wrapped.clear_check ();
-      Toploop.initialize_toplevel_env ();
+      (* Reset via Direct so the cmi load path survives (plain
+         [Toploop.initialize_toplevel_env] would drop it). *)
+      Direct.reset_toplevel_env ();
       return_unit_success
   | Check { setenv; code } -> Wrapped.check () ~setenv code
   | Clear_check ->
