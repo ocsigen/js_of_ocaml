@@ -29,6 +29,7 @@
 
 open Js_of_ocaml
 module Async = Js_of_ocaml_toplevel_worker_lwt_client
+
 (* The host only needs the result type, from the dependency-free protocol library —
    not the toplevel runtime. *)
 module Wrapped = Js_of_ocaml_toplevel_protocol.Wrapped_intf
@@ -71,6 +72,11 @@ let render out (result : _ Wrapped.result) =
    the channels — they come back on the [result] and are shown by [render]. *)
 let cur_out = ref (fun (_cls : string) (_s : string) -> ())
 
+(* The worker evaluates one cell at a time, and its stdout/stderr are routed
+   through the single [cur_out] above. Serialize cell evaluation on the host so
+   [cur_out] is only ever pointed at the cell that is actually running. *)
+let chain = ref Lwt.return_unit
+
 let notebook = Dom_html.getElementById "notebook"
 
 let rec add_cell top ?(value = "") () =
@@ -101,71 +107,101 @@ let rec add_cell top ?(value = "") () =
           (fun el -> el##focus)
   in
   let now () = Js.to_float (new%js Js.date_now)##getTime in
+  (* Guard against a second Shift+Enter while this cell is already queued or
+     running, which would evaluate it twice. *)
+  let pending = ref false in
   let run () =
-    output##.innerHTML := Js.string "";
-    status##.innerHTML := Js.string "";
-    cur_out := append output;
-    let start = now () in
-    let elapsed () = (now () -. start) /. 1000. in
-    (* The work happens off the UI thread, so show a live "running… Xs" timer
-       while it is pending. *)
-    let label = Dom_html.createSpan doc in
-    label##.className := Js.string "elapsed";
-    Dom.appendChild status label;
-    (* A user-driven interrupt: a hung cell can only be stopped by killing the
-       worker, and only the user knows whether to. Resolve [cancel] when the
-       button (shown after [show_cancel_after]) is clicked. *)
-    let cancel, wake_cancel = Lwt.wait () in
-    let button = Dom_html.createButton doc in
-    button##.textContent := Js.some (Js.string "Cancel");
-    button##.onclick :=
-      Dom_html.handler (fun _ ->
-          if Lwt.is_sleeping cancel then Lwt.wakeup_later wake_cancel ();
-          Js._false);
-    let button_shown = ref false in
-    let tick () =
-      label##.textContent
-      := Js.some (Js.string (Printf.sprintf "running… %.1fs" (elapsed ())));
-      if (not !button_shown) && elapsed () >= show_cancel_after
-      then (
-        button_shown := true;
-        Dom.appendChild status button)
-    in
-    tick ();
-    let timer = Dom_html.window##setInterval (Js.wrap_callback tick) (Js.float 100.) in
-    let exec =
-      Async.execute
-        top
-        ~print_outcome:true
-        ~ppf_answer:(append output "ans")
-        (Js.to_string input##.value)
-    in
-    (* Race the evaluation against the Cancel button. [Lwt.choose] leaves the
-       loser running, so when [cancel] wins, [exec] is still in flight;
-       {!Async.interrupt} terminates the (possibly hung) worker, cancelling it. *)
-    Lwt.choose
-      [ (exec >>= fun result -> Lwt.return (`Done result))
-      ; (cancel >>= fun () -> Lwt.return `Cancelled)
-      ]
-    >>= fun outcome ->
-    Dom_html.window##clearInterval timer;
-    status##.innerHTML := Js.string "";
-    match outcome with
-    | `Done result ->
-        render output result;
-        advance ();
-        Lwt.return_unit
-    | `Cancelled ->
-        append
-          output
-          "err"
-          (Printf.sprintf
-             "Interrupted after %.1fs. Restarting the worker; earlier \
-              definitions are lost.\n"
-             (elapsed ()));
-        Async.interrupt top >>= fun () ->
-        advance ();
-        Lwt.return_unit
+    if !pending
+    then Lwt.return_unit
+    else (
+      pending := true;
+      (* Wait for the previously evaluated cell to finish before claiming the
+         worker (and [cur_out]). *)
+      let prev = !chain in
+      let this_done, mark_done = Lwt.wait () in
+      chain := this_done;
+      prev
+      >>= fun () ->
+      output##.innerHTML := Js.string "";
+      status##.innerHTML := Js.string "";
+      cur_out := append output;
+      let start = now () in
+      let elapsed () = (now () -. start) /. 1000. in
+      (* The work happens off the UI thread, so show a live "running… Xs" timer
+         while it is pending. *)
+      let label = Dom_html.createSpan doc in
+      label##.className := Js.string "elapsed";
+      Dom.appendChild status label;
+      (* A user-driven interrupt: a hung cell can only be stopped by killing the
+         worker, and only the user knows whether to. Resolve [cancel] when the
+         button (shown after [show_cancel_after]) is clicked. *)
+      let cancel, wake_cancel = Lwt.wait () in
+      let button = Dom_html.createButton doc in
+      button##.textContent := Js.some (Js.string "Cancel");
+      button##.onclick :=
+        Dom_html.handler (fun _ ->
+            if Lwt.is_sleeping cancel then Lwt.wakeup_later wake_cancel ();
+            Js._false);
+      let button_shown = ref false in
+      let tick () =
+        label##.textContent :=
+          Js.some (Js.string (Printf.sprintf "running… %.1fs" (elapsed ())));
+        if (not !button_shown) && elapsed () >= show_cancel_after
+        then (
+          button_shown := true;
+          Dom.appendChild status button)
+      in
+      tick ();
+      let timer = Dom_html.window##setInterval (Js.wrap_callback tick) (Js.float 100.) in
+      let exec =
+        Async.execute
+          top
+          ~print_outcome:true
+          ~ppf_answer:(append output "ans")
+          (Js.to_string input##.value)
+      in
+      (* [Lwt.finalize] guarantees the timer is cleared, the chain is released
+         (so the next cell can run) and the re-entrancy guard is lifted, even if
+         rendering or the restart raises. *)
+      Lwt.finalize
+        (fun () ->
+          (* Race the evaluation against the Cancel button. {!Async.interrupt}
+             kills the worker, which cancels [exec]; [try_bind] turns that into
+             [`Cancelled] so it is handled rather than left dangling. *)
+          Lwt.choose
+            [ Lwt.try_bind
+                (fun () -> exec)
+                (fun result -> Lwt.return (`Done result))
+                (fun _ -> Lwt.return `Cancelled)
+            ; (cancel >>= fun () -> Lwt.return `Aborted)
+            ]
+          >>= fun outcome ->
+          match outcome with
+          | `Done result ->
+              render output result;
+              advance ();
+              Lwt.return_unit
+          | `Cancelled ->
+              append output "err" "Aborted.\n";
+              Lwt.return_unit
+          | `Aborted ->
+              append
+                output
+                "err"
+                (Printf.sprintf
+                   "Interrupted after %.1fs. Restarting the worker; earlier definitions \
+                    are lost.\n"
+                   (elapsed ()));
+              Async.interrupt top
+              >>= fun () ->
+              advance ();
+              Lwt.return_unit)
+        (fun () ->
+          Dom_html.window##clearInterval timer;
+          status##.innerHTML := Js.string "";
+          pending := false;
+          Lwt.wakeup_later mark_done ();
+          Lwt.return_unit))
   in
   input##.onkeydown :=
     Dom_html.handler (fun e ->
@@ -176,7 +212,10 @@ let rec add_cell top ?(value = "") () =
           Js._false)
         else Js._true);
   (* Clicking anywhere in the cell focuses its input. *)
-  cell##.onclick := Dom_html.handler (fun _ -> input##focus; Js._true);
+  cell##.onclick :=
+    Dom_html.handler (fun _ ->
+        input##focus;
+        Js._true);
   input##focus;
   run
 
@@ -206,7 +245,9 @@ let () =
         ; "let () = while true do () done  (* hangs: click Cancel to interrupt *)"
         ]
       in
-      Lwt_list.iter_s (fun run -> run ()) (List.map (fun value -> add_cell top ~value ()) samples)
+      Lwt_list.iter_s
+        (fun run -> run ())
+        (List.map (fun value -> add_cell top ~value ()) samples)
     in
     Lwt.async run;
     Js._false

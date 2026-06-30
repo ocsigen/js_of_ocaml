@@ -47,24 +47,24 @@ let normalize code =
 let lexbuf s p ppf =
   let s = normalize s in
   fun buffer len ->
-  if !p = String.length s
-  then 0
-  else
-    let len', nl =
-      try String.index_from s !p '\n' - !p + 1, false
-      with _ -> String.length s - !p, true
-    in
-    let len'' = min len len' in
-    String.blit ~src:s ~src_pos:!p ~dst:buffer ~dst_pos:0 ~len:len'';
-    (match ppf with
-    | Some ppf ->
-        Format.fprintf ppf "%s" (Bytes.sub_string buffer ~pos:0 ~len:len'');
-        (* Only emit the synthetic newline once the whole final (newline-less)
+    if !p = String.length s
+    then 0
+    else
+      let len', nl =
+        try String.index_from s !p '\n' - !p + 1, false
+        with _ -> String.length s - !p, true
+      in
+      let len'' = min len len' in
+      String.blit ~src:s ~src_pos:!p ~dst:buffer ~dst_pos:0 ~len:len'';
+      (match ppf with
+      | Some ppf ->
+          Format.fprintf ppf "%s" (Bytes.sub_string buffer ~pos:0 ~len:len'');
+          (* Only emit the synthetic newline once the whole final (newline-less)
            segment has been echoed: when the segment is larger than [len] it
            is fed in several chunks, and a newline after a partial chunk would
            split a line mid-source. *)
-        if nl && len'' = len' then Format.pp_print_newline ppf ();
-        Format.pp_print_flush ppf ()
-    | None -> ());
-    p := !p + len'';
-    len''
+          if nl && len'' = len' then Format.pp_print_newline ppf ();
+          Format.pp_print_flush ppf ()
+      | None -> ());
+      p := !p + len'';
+      len''

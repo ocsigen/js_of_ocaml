@@ -170,8 +170,8 @@ let synced_env = ref None
 
 let scratch_env_error =
   { msg =
-      "cannot run code while a scratch typing environment from [check \
-       ~setenv:true] is active; clear it with [clear_check] first."
+      "cannot run code while a scratch typing environment from [check ~setenv:true] is \
+       active; clear it with [clear_check] first."
   ; locs = []
   }
 
@@ -245,6 +245,15 @@ let step () ?(print_outcome = false) ~ppf_answer lb =
   | End_of_file ->
       flush_all ();
       `Ok `Eof
+  | (Syntaxerr.Error _ | Lexer.Error _) as exn ->
+      (* A syntax/lex error leaves the lexbuf positioned mid-phrase. Flush the
+         buffered input so that a caller which keeps stepping makes progress (the
+         refill feeds one line at a time) instead of re-parsing the same broken
+         phrase forever. Type/eval errors leave the lexbuf past the [;;], so no
+         flush is needed there. *)
+      Lexing.flush_input lb;
+      flush_all ();
+      `Err (error_of_exn exn)
   | exn ->
       flush_all ();
       `Err (error_of_exn exn)
@@ -334,6 +343,12 @@ let check () ?(setenv = false) code =
   @@ fun () ->
   let lb = Lexing.from_string code in
   init_loc lb "//toplevel//";
+  (* Type inference mutates the global type graph in place: unification links
+     type variables (including the weak variables that live in the toplevel
+     environment, e.g. the ['_weak] in [let r = ref []]). Snapshot it so a
+     speculative or failing [check] leaves no residue; [Toploop.execute_phrase]
+     does the same for [execute]. *)
+  let snap = Btype.snapshot () in
   try
     let env =
       List.fold_left
@@ -343,14 +358,24 @@ let check () ?(setenv = false) code =
     in
     if setenv
     then (
-      (* Snapshot the in-sync environment on the first [setenv] of a run, so
-         [clear_check] can roll back to it later; consecutive [check ~setenv]
-         keep building on the scratch env and must not overwrite it. *)
+      (* Committing the scratch env: keep the inferred mutations. Snapshot the
+         in-sync environment on the first [setenv] of a run, so [clear_check] can
+         roll back to it later; consecutive [check ~setenv] keep building on the
+         scratch env and must not overwrite it. *)
       (match !synced_env with
       | Some _ -> ()
       | None -> synced_env := Some !Toploop.toplevel_env);
-      Toploop.toplevel_env := env);
+      Toploop.toplevel_env := env)
+    else
+      (* A non-committing check: undo the mutations so the real environment's
+         (weak) type variables are not silently constrained. *)
+      Btype.backtrack snap;
     `Ok ()
   with
-  | End_of_file -> `Ok ()
-  | exn -> `Err (error_of_exn exn)
+  | End_of_file ->
+      Btype.backtrack snap;
+      `Ok ()
+  | exn ->
+      (* Drop the partial mutations of the failed check. *)
+      Btype.backtrack snap;
+      `Err (error_of_exn exn)

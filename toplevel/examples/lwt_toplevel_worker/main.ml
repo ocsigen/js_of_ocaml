@@ -34,6 +34,7 @@ open Js_of_ocaml_lwt
 open Toplevel_util
 open Lwt
 module Async = Js_of_ocaml_toplevel_worker_lwt_client
+
 (* The host only needs the result type, from the dependency-free protocol library —
    not the toplevel runtime. *)
 module Wrapped = Js_of_ocaml_toplevel_protocol.Wrapped_intf
@@ -91,10 +92,14 @@ let setup_toplevel ~report top =
 let setup_examples ~container ~textbox =
   (* Cache-bust so an edited examples list is picked up on reload rather than
      served stale from the browser cache. *)
-  let url = Printf.sprintf "examples.ml?v=%.0f" (Js.to_float (new%js Js.date_now)##getTime) in
+  let url =
+    Printf.sprintf "examples.ml?v=%.0f" (Js.to_float (new%js Js.date_now)##getTime)
+  in
   XmlHttpRequest.get url
   >>= fun frame ->
-  let content = if frame.XmlHttpRequest.code = 200 then frame.XmlHttpRequest.content else "" in
+  let content =
+    if frame.XmlHttpRequest.code = 200 then frame.XmlHttpRequest.content else ""
+  in
   Toplevel_util.setup_examples
     ~container_id:"toplevel-examples"
     ~on_pick:(fun acc ->
@@ -112,7 +117,9 @@ let run () =
      channels. Route them to the block of the phrase currently running, so each
      phrase's output sits right under its echoed code; before the first phrase
      (e.g. the startup banner) it goes straight to the output. *)
-  let cur_out = ref (fun (cls : string) (s : string) -> append Colorize.text output cls s) in
+  let cur_out =
+    ref (fun (cls : string) (s : string) -> append Colorize.text output cls s)
+  in
   Async.create
     ~pp_stdout:(fun s -> !cur_out "stdout" s)
     ~pp_stderr:(fun s -> !cur_out "stderr" s)
@@ -169,8 +176,7 @@ let run () =
       | None -> label##.textContent := Js.some (Js.string "queued…")
       | Some start ->
           let s = (now () -. start) /. 1000. in
-          label##.textContent
-          := Js.some (Js.string (Printf.sprintf "running… %.1fs" s));
+          label##.textContent := Js.some (Js.string (Printf.sprintf "running… %.1fs" s));
           if (not !button_shown) && s >= show_abort_after
           then (
             button_shown := true;
@@ -201,13 +207,16 @@ let run () =
         append Colorize.text block "stderr" "Cancelled (was queued).\n";
         (* Keep the chain intact: our successor must still wait for [prev]. *)
         Lwt.async (fun () ->
-            prev >>= fun () -> Lwt.wakeup_later mark_done (); Lwt.return_unit);
+            prev
+            >>= fun () ->
+            Lwt.wakeup_later mark_done ();
+            Lwt.return_unit);
         finish ()
     | `Ready ->
         running_since := Some (now ());
         tick ();
         (* Route this phrase's program output to its block while it runs. *)
-        cur_out := (fun cls s -> append Colorize.text block cls s);
+        (cur_out := fun cls s -> append Colorize.text block cls s);
         (* [Async.execute] normalizes the source, so a trailing [;;] is
            optional. The code is already echoed, so no [ppf_code]. *)
         let exec =
@@ -217,59 +226,64 @@ let run () =
             ~ppf_answer:(append Colorize.ocaml block "caml")
             content
         in
-        (* Race evaluation against the Abort button. {!Async.interrupt} kills the
-           worker, which cancels [exec]; [try_bind] turns that into [`Cancelled]
-           (e.g. from a Ctrl+K reset) so it is not mistaken for a normal exit. *)
-        Lwt.choose
-          [ Lwt.try_bind
-              (fun () -> exec)
-              (fun result -> Lwt.return (`Done result))
-              (fun _ -> Lwt.return `Cancelled)
-          ; (abort >>= fun () -> Lwt.return `Aborted)
-          ]
-        >>= fun outcome ->
-        (match outcome with
-         | `Done result ->
-             let warnings, error =
-               match result with
-               | Wrapped.Success (_, warnings) -> warnings, None
-               | Wrapped.Error (err, warnings) -> warnings, Some err
-             in
-             List.iter (report block) warnings;
-             Option.iter (report block) error;
-             Lwt.return_unit
-         | `Cancelled ->
-             append Colorize.text block "stderr" "Aborted.\n";
-             Lwt.return_unit
-         | `Aborted ->
-             let secs =
-               match !running_since with
-               | Some s -> (now () -. s) /. 1000.
-               | None -> 0.
-             in
-             append
-               Colorize.text
-               block
-               "stderr"
-               (Printf.sprintf
-                  "Aborted after %.1fs. Restarting the toplevel; earlier \
-                   definitions are lost.\n"
-                  secs);
-             Async.interrupt top)
-        >>= fun () ->
-        (* Only now let the next queued phrase run: after an abort, the worker
-           has finished restarting. *)
-        Lwt.wakeup_later mark_done ();
-        finish ()
+        (* [Lwt.finalize] guarantees the timer is cleared and the next queued
+           phrase is released (so the toplevel does not lock up) even if
+           rendering or the restart raises. *)
+        Lwt.finalize
+          (fun () ->
+            (* Race evaluation against the Abort button. {!Async.interrupt} kills
+               the worker, which cancels [exec]; [try_bind] turns that into
+               [`Cancelled] (e.g. from a Ctrl+K reset) so it is not mistaken for a
+               normal exit. *)
+            Lwt.choose
+              [ Lwt.try_bind
+                  (fun () -> exec)
+                  (fun result -> Lwt.return (`Done result))
+                  (fun _ -> Lwt.return `Cancelled)
+              ; (abort >>= fun () -> Lwt.return `Aborted)
+              ]
+            >>= fun outcome ->
+            match outcome with
+            | `Done result ->
+                let warnings, error =
+                  match result with
+                  | Wrapped.Success (_, warnings) -> warnings, None
+                  | Wrapped.Error (err, warnings) -> warnings, Some err
+                in
+                List.iter (report block) warnings;
+                Option.iter (report block) error;
+                Lwt.return_unit
+            | `Cancelled ->
+                append Colorize.text block "stderr" "Aborted.\n";
+                Lwt.return_unit
+            | `Aborted ->
+                let secs =
+                  match !running_since with
+                  | Some s -> (now () -. s) /. 1000.
+                  | None -> 0.
+                in
+                append
+                  Colorize.text
+                  block
+                  "stderr"
+                  (Printf.sprintf
+                     "Aborted after %.1fs. Restarting the toplevel; earlier definitions \
+                      are lost.\n"
+                     secs);
+                (* The restart banner (after_init) flows through [cur_out]; send
+                   it to the main output, not this finished phrase's block. *)
+                (cur_out := fun cls s -> append Colorize.text output cls s);
+                Async.interrupt top)
+          (fun () ->
+            (* Release the next queued phrase only once any restart has completed
+               (the body above awaits Async.interrupt). *)
+            Lwt.wakeup_later mark_done ();
+            finish ())
   in
   (* Ctrl/Cmd+K resets the worker's toplevel (clears all bindings and re-runs
      the setup phrases). *)
-  setup_input_handlers
-    ~container
-    ~textbox
-    ~output
-    ~execute
-    ~reset:(fun () -> Lwt.async (fun () -> Async.reset top ()));
+  setup_input_handlers ~container ~textbox ~output ~execute ~reset:(fun () ->
+      Lwt.async (fun () -> Async.reset top ()));
   (Lwt.async_exception_hook :=
      fun exc -> append Colorize.text output "stderr" (Printexc.to_string exc ^ "\n"));
   Lwt.async (fun () ->
