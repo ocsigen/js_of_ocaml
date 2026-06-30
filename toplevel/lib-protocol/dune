@@ -1,6 +1,7 @@
 ;; Shared toplevel-result types and the host <-> worker message protocol.
-;; Deliberately dependency-free so the host driver (Async) can use it without
-;; linking the toplevel runtime.
+;; Deliberately dependency-free so the host driver
+;; (Js_of_ocaml_toplevel_worker_lwt_client) can use it without linking the
+;; toplevel runtime.
 
 (library
  (name js_of_ocaml_toplevel_protocol)
