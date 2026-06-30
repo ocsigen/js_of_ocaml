@@ -114,7 +114,11 @@ type step_result =
 type _ host_msg =
   | Init : { cmis_base_url : string } -> unit host_msg
   | Reset : unit host_msg
-  | Check : { setenv : bool; code : string } -> unit host_msg
+  | Check :
+      { setenv : bool
+      ; code : string
+      }
+      -> unit host_msg
   | Clear_check : unit host_msg
   | Execute :
       { code_fd : Fd.t option
@@ -139,8 +143,18 @@ type _ host_msg =
       }
       -> bool host_msg
   | Import_scripts : string list -> unit host_msg
-  | Open_lexbuf : { id : Lexbuf.t; code : string; code_fd : Fd.t option } -> unit host_msg
-  | Step : { lexbuf : Lexbuf.t; print_outcome : bool; answer_fd : Fd.t } -> step_result host_msg
+  | Open_lexbuf :
+      { id : Lexbuf.t
+      ; code : string
+      ; code_fd : Fd.t option
+      }
+      -> unit host_msg
+  | Step :
+      { lexbuf : Lexbuf.t
+      ; print_outcome : bool
+      ; answer_fd : Fd.t
+      }
+      -> step_result host_msg
   | Close_lexbuf : { lexbuf : Lexbuf.t } -> unit host_msg
 
 type _ msg_ty =
@@ -154,8 +168,12 @@ type (_, _) eq = Eq : ('a, 'a) eq
 
 type toploop_msg =
   | Write : Fd.t * string -> toploop_msg (* pseudo file descriptor * content *)
-  | ReturnSuccess : Message_id.t * 'a msg_ty * 'a * Wrapped_intf.warning list -> toploop_msg
-  | ReturnError : Message_id.t * Wrapped_intf.error * Wrapped_intf.warning list -> toploop_msg
+  | ReturnSuccess :
+      Message_id.t * 'a msg_ty * 'a * Wrapped_intf.warning list
+      -> toploop_msg
+  | ReturnError :
+      Message_id.t * Wrapped_intf.error * Wrapped_intf.warning list
+      -> toploop_msg
 
 let ty_of_host_msg : type t. t host_msg -> t msg_ty = function
   | Init _ -> Unit

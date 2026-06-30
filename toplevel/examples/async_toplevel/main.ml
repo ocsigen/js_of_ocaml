@@ -26,6 +26,7 @@
 
 open Js_of_ocaml
 module Async = Js_of_ocaml_toplevel_worker_lwt_client
+
 (* The host only needs the result type, from the dependency-free protocol library —
    not the toplevel runtime. *)
 module Wrapped = Js_of_ocaml_toplevel_protocol.Wrapped_intf

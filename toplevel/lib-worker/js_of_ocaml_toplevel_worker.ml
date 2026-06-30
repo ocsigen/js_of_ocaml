@@ -41,6 +41,9 @@ let return_exn exn = Wrapped.Error (Wrapped.error_of_exn exn, [])
    callbacks), the messages queue fills up super quickly and kills the
    browser / tab.
 
+   The wait is adaptive: it only spins when the previous message was sent less
+   than a millisecond ago, so an occasional [print] is not slowed down.
+
    A possible improvement would be to bufferize the messages channel
    per channel, and emit the buffer of each channel every ms if it has
    changed. But it could cause bad asynchronicity in case the worker
@@ -48,16 +51,16 @@ let return_exn exn = Wrapped.Error (Wrapped.error_of_exn exn, [])
    still need some kind of active waiting to limit throughput. All in
    all this spinwait is not that ugly.
 
-   TODO: replace with requestAnimationFrame or per-channel batching
-   (see #833 review). *)
+   TODO: per-channel batching (see #833 review). [requestAnimationFrame] is
+   not available in a Web Worker, so it cannot replace this. *)
 let last = ref 0.
 
 let rec wait () =
-  let now =
-    Sys.time ()
-    (* let's hope this yields a bit *)
-  in
-  if now -. !last > 0.001 then last := now else wait ()
+  let now = Sys.time () in
+  (* [Sys.time] is [Date.now]-based and can jump backwards (NTP, suspend/resume).
+     Proceed on a backward jump too, otherwise the spin would freeze (and stall
+     the worker, and the host with it) until wall-clock time caught back up. *)
+  if now -. !last > 0.001 || now < !last then last := now else wait ()
 
 let post_message (m : toploop_msg) =
   (* Throttle only the high-frequency [Write] messages (stdout/stderr and
@@ -120,6 +123,9 @@ let handler : type a. a host_msg -> a Wrapped.result = function
       return_unit_success
   | Reset ->
       clear_fds ();
+      (* Drop any open parsing sessions: they belong to the environment being
+         wiped (their code fds are already gone with [clear_fds]). *)
+      lexbufs := Lexbuf.Map.empty;
       (* Drop any scratch typing env before wiping the toplevel, so the
          saved-env snapshot is not left dangling across the reset. *)
       Wrapped.clear_check ();
@@ -151,6 +157,11 @@ let handler : type a. a host_msg -> a Wrapped.result = function
       close_fd answer_fd;
       result
   | Open_lexbuf { id; code; code_fd } ->
+      (* Defensive against an id reused while a prior session under it is still
+         open (host counter desync): release the old echo fd first. *)
+      (match Lexbuf.Map.find_opt id !lexbufs with
+      | Some (_, old_code_fd) -> Option.iter close_fd old_code_fd
+      | None -> ());
       let ppf_code = Option.map wrap_fd code_fd in
       let lb = Wrapped.make_lexbuf ?ppf_code code in
       lexbufs := Lexbuf.Map.add id (lb, code_fd) !lexbufs;
@@ -158,7 +169,8 @@ let handler : type a. a host_msg -> a Wrapped.result = function
   | Step { lexbuf; print_outcome; answer_fd } -> (
       match Lexbuf.Map.find_opt lexbuf !lexbufs with
       | None ->
-          Wrapped.Error ({ Wrapped.msg = "Toplevel worker: unknown lexbuf"; locs = [] }, [])
+          Wrapped.Error
+            ({ Wrapped.msg = "Toplevel worker: unknown lexbuf"; locs = [] }, [])
       | Some (lb, _) ->
           let ppf_answer = wrap_fd answer_fd in
           let result = Wrapped.step () ~print_outcome ~ppf_answer lb in

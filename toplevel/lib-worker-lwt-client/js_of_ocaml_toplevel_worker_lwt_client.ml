@@ -39,7 +39,8 @@ let return_success e = Lwt.return (Wrapped_intf.Success (e, []))
 
 let return_unit_success = return_success ()
 
-type u = U : 'a msg_ty * 'a Wrapped_intf.result Lwt.u * 'a Wrapped_intf.result Lwt.t -> u
+type u =
+  | U : 'a msg_ty * 'a Wrapped_intf.result Lwt.u * 'a Wrapped_intf.result Lwt.t -> u
 
 type output = string -> unit
 
@@ -99,23 +100,27 @@ let onmessage worker (ev : _ Worker.messageEvent Js.t) =
           Console.console##warn
             (Js.string (Printf.sprintf "Missing wakeners (%d)" (Message_id.to_int id)));
           Js._false
-      | Some (U (ty_u, u, _)) ->
+      | Some (U (ty_u, u, t)) ->
           worker.wakeners <- Message_id.Map.remove id worker.wakeners;
-          (match check_equal ty_u ty_v with
-          | Eq -> Lwt.wakeup u (Wrapped_intf.Success (v, w))
-          | exception Not_equal ->
-              Console.console##warn
-                (Js.string
-                   (Printf.sprintf "Unexpected wakeners (%d)" (Message_id.to_int id)));
-              let err =
-                { Wrapped_intf.msg =
-                    Printf.sprintf
-                      "Worker returned a value of unexpected type for request %d"
-                      (Message_id.to_int id)
-                ; locs = []
-                }
-              in
-              Lwt.wakeup u (Wrapped_intf.Error (err, w)));
+          (* The thread may already have been cancelled by the caller; waking a
+             resolved [u] would raise. Drop the late reply in that case. *)
+          (if Lwt.is_sleeping t
+           then
+             match check_equal ty_u ty_v with
+             | Eq -> Lwt.wakeup u (Wrapped_intf.Success (v, w))
+             | exception Not_equal ->
+                 Console.console##warn
+                   (Js.string
+                      (Printf.sprintf "Unexpected wakeners (%d)" (Message_id.to_int id)));
+                 let err =
+                   { Wrapped_intf.msg =
+                       Printf.sprintf
+                         "Worker returned a value of unexpected type for request %d"
+                         (Message_id.to_int id)
+                   ; locs = []
+                   }
+                 in
+                 Lwt.wakeup u (Wrapped_intf.Error (err, w)));
           Js._false)
   | ReturnError (id, e, w) -> (
       match Message_id.Map.find_opt id worker.wakeners with
@@ -123,9 +128,9 @@ let onmessage worker (ev : _ Worker.messageEvent Js.t) =
           Console.console##warn
             (Js.string (Printf.sprintf "Missing wakeners (%d)" (Message_id.to_int id)));
           Js._false
-      | Some (U (_, u, _)) ->
+      | Some (U (_, u, t)) ->
           worker.wakeners <- Message_id.Map.remove id worker.wakeners;
-          Lwt.wakeup u (Wrapped_intf.Error (e, w));
+          if Lwt.is_sleeping t then Lwt.wakeup u (Wrapped_intf.Error (e, w));
           Js._false)
 
 (* A worker [error] event means the worker script failed to load (e.g.
@@ -141,7 +146,10 @@ let fail_pending worker err =
   let wakeners = worker.wakeners in
   worker.wakeners <- Message_id.Map.empty;
   Message_id.Map.iter
-    (fun _id (U (_, u, _)) -> Lwt.wakeup u (Wrapped_intf.Error (err, [])))
+    (fun _id (U (_, u, t)) ->
+      (* Skip threads already resolved/cancelled: waking them would raise and
+         abort the iteration, stranding the rest. *)
+      if Lwt.is_sleeping t then Lwt.wakeup u (Wrapped_intf.Error (err, [])))
     wakeners
 
 let onerror worker (ev : Worker.errorEvent Js.t) =
@@ -210,9 +218,10 @@ and do_reset_worker () =
         |> Fd.Map.add Fd.stdout (Fd.Map.find Fd.stdout worker.fds)
         |> Fd.Map.add Fd.stderr (Fd.Map.find Fd.stderr worker.fds);
       worker.fd_counter <- Fd.first_free;
-      (* The respawned worker has no parsing sessions; any handle handed out
-         before the reset is now stale. *)
-      worker.lexbuf_counter <- Lexbuf.first;
+      (* Keep [lexbuf_counter] monotonic across generations (like [counter]
+         below). The respawned worker has no parsing sessions, so a stale handle
+         held from before the reset must not alias a freshly opened one; with a
+         monotonic counter a stale [step] hits "unknown lexbuf" instead. *)
       let imported = worker.imported in
       worker.imported <- [];
       worker.pending_imports <- [];
@@ -235,7 +244,8 @@ and do_reset_worker () =
              than pretend the reset succeeded. *)
           worker.pp_stderr err.Wrapped_intf.msg;
           Lwt.return_unit
-      | Wrapped_intf.Success ((), _) -> worker.after_init worker >>= fun _ -> Lwt.return_unit)
+      | Wrapped_intf.Success ((), _) ->
+          worker.after_init worker >>= fun _ -> Lwt.return_unit)
     else Lwt.return_unit
 
 and import_cmis_js worker name =
@@ -358,7 +368,8 @@ let clear_check worker = post worker Clear_check >>= fun _ -> Lwt.return_unit
 let execute worker ?ppf_code ?(print_outcome = true) ~ppf_answer code =
   let ppf_code = Option.map (create_fd worker) ppf_code in
   let ppf_answer = create_fd worker ppf_answer in
-  post worker @@ Execute { code_fd = ppf_code; print_outcome; answer_fd = ppf_answer; code }
+  post worker
+  @@ Execute { code_fd = ppf_code; print_outcome; answer_fd = ppf_answer; code }
   >>= fun result ->
   Option.iter (close_fd worker) ppf_code;
   close_fd worker ppf_answer;
@@ -376,7 +387,13 @@ let open_lexbuf worker ?ppf_code code =
   let id = worker.lexbuf_counter in
   worker.lexbuf_counter <- Lexbuf.next id;
   post worker @@ Open_lexbuf { id; code; code_fd }
-  >>= fun (_ : unit Wrapped_intf.result) -> Lwt.return { lb_id = id; lb_code_fd = code_fd }
+  >>= function
+  | Wrapped_intf.Success ((), _) -> Lwt.return { lb_id = id; lb_code_fd = code_fd }
+  | Wrapped_intf.Error (err, _) ->
+      (* The session was not created; release the echo fd and surface the error
+         rather than handing back a handle to a non-existent session. *)
+      Option.iter (close_fd worker) code_fd;
+      Lwt.fail (Failure err.Wrapped_intf.msg)
 
 let step worker ?(print_outcome = false) ~ppf_answer lexbuf =
   let answer_fd = create_fd worker ppf_answer in

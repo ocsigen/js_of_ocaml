@@ -80,7 +80,10 @@ let rec add_cell ?(value = "") () =
           Js._false)
         else Js._true);
   (* Clicking anywhere in the cell focuses its input. *)
-  cell##.onclick := Dom_html.handler (fun _ -> input##focus; Js._true);
+  cell##.onclick :=
+    Dom_html.handler (fun _ ->
+        input##focus;
+        Js._true);
   input##focus;
   run
 

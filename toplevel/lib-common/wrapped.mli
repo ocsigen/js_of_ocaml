@@ -19,12 +19,12 @@
 
 open! Js_of_ocaml_toplevel_protocol
 
-(** The [result] types are defined in the dependency-free [msg] library and
-    re-exported here. *)
 type loc = Wrapped_intf.loc =
   { loc_start : int * int
   ; loc_end : int * int
   }
+(** The [result] types are defined in the dependency-free [msg] library and
+    re-exported here. *)
 
 type error = Wrapped_intf.error =
   { msg : string

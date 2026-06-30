@@ -93,7 +93,10 @@ let () =
 (* [check ~setenv:true] keeps the resulting type environment as a scratch env
    whose definitions have no runtime backing. *)
 let () =
-  report "check-setenv" ~expect:"" (Wrapped.check () ~setenv:true "let scratch_only = 1;;")
+  report
+    "check-setenv"
+    ~expect:""
+    (Wrapped.check () ~setenv:true "let scratch_only = 1;;")
 
 (* While that scratch env is active, running code is rejected. *)
 let () =
@@ -151,7 +154,9 @@ let () =
    otherwise re-evaluating prepends a separator before the message. *)
 let () =
   let warn_msg () =
-    match Wrapped.execute () ~print_outcome:false ~ppf_answer "let _ = function Some _ -> ()" with
+    match
+      Wrapped.execute () ~print_outcome:false ~ppf_answer "let _ = function Some _ -> ()"
+    with
     | Wrapped.Success (_, w :: _) -> w.Wrapped.msg
     | _ -> ""
   in
@@ -167,7 +172,11 @@ let () =
   let outcome () =
     Buffer.clear buf;
     ignore
-      (Wrapped.execute () ~print_outcome:true ~ppf_answer:ppf "let head = function x :: _ -> x"
+      (Wrapped.execute
+         ()
+         ~print_outcome:true
+         ~ppf_answer:ppf
+         "let head = function x :: _ -> x"
         : bool Wrapped.result);
     Format.pp_print_flush ppf ();
     Buffer.contents buf
