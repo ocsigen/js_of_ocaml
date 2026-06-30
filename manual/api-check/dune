@@ -22,7 +22,7 @@
     --wrapper
     %{dep:../../lib/tyxml/js_of_ocaml_tyxml.ml}
     --wrapper
-    %{dep:../../toplevel/lib/js_of_ocaml_toplevel.ml}
+    %{dep:../../toplevel/lib-toplevel/js_of_ocaml_toplevel.ml}
     --module
     Deriving_Json
     --module

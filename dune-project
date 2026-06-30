@@ -89,13 +89,15 @@
  (depends
   (ocaml (>= 4.13))
   (js_of_ocaml-compiler (= :version))
+  (js_of_ocaml (= :version))
   (ocamlfind (>= 1.5.1))
 ;;(cohttp-lwt-unix (and (>= 6.0.0) :with-test))
   (graphics :with-test)
   (num :with-test)
   (ppxlib (>= 0.33))
-  (re (and (>= 1.9.0) :with-test))
-))
+  (re (and (>= 1.9.0) :with-test)))
+ (depopts
+  lwt))
 
 (package
  (name js_of_ocaml-tyxml)
