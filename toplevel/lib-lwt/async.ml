@@ -17,15 +17,15 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 open Js_of_ocaml
-open! Js_of_ocaml_toplevel
+open! Js_of_ocaml_toplevel_msg
 open Worker_msg
 
-type 'a result = 'a Wrapped.result Lwt.t
+type 'a result = 'a Wrapped_intf.result Lwt.t
 
 let ( >>= ) = Lwt.bind
 
 let ( >>? ) o f =
-  let open! Wrapped in
+  let open! Wrapped_intf in
   o
   >>= function
   | Error (err, w) -> Lwt.return (Error (err, w))
@@ -35,11 +35,11 @@ let ( >>? ) o f =
       | Error (err, w') -> Lwt.return (Error (err, w @ w'))
       | Success (x, w') -> Lwt.return (Success (x, w @ w')))
 
-let return_success e = Lwt.return (Wrapped.Success (e, []))
+let return_success e = Lwt.return (Wrapped_intf.Success (e, []))
 
 let return_unit_success = return_success ()
 
-type u = U : 'a msg_ty * 'a Wrapped.result Lwt.u * 'a Wrapped.result Lwt.t -> u
+type u = U : 'a msg_ty * 'a Wrapped_intf.result Lwt.u * 'a Wrapped_intf.result Lwt.t -> u
 
 type output = string -> unit
 
@@ -47,7 +47,7 @@ type toplevel =
   { cmis_base_url : string
   ; js_file : string
   ; mutable imported : string list
-  ; mutable pending_imports : (string * unit Wrapped.result Lwt.t) list
+  ; mutable pending_imports : (string * unit Wrapped_intf.result Lwt.t) list
   ; mutable worker : (Js.js_string Js.t, Js.js_string Js.t) Worker.worker Js.t
   ; mutable wakeners : u Message_id.Map.t
   ; mutable counter : Message_id.t
@@ -102,20 +102,20 @@ let onmessage worker (ev : _ Worker.messageEvent Js.t) =
       | Some (U (ty_u, u, _)) ->
           worker.wakeners <- Message_id.Map.remove id worker.wakeners;
           (match check_equal ty_u ty_v with
-          | Eq -> Lwt.wakeup u (Wrapped.Success (v, w))
+          | Eq -> Lwt.wakeup u (Wrapped_intf.Success (v, w))
           | exception Not_equal ->
               Console.console##warn
                 (Js.string
                    (Printf.sprintf "Unexpected wakeners (%d)" (Message_id.to_int id)));
               let err =
-                { Wrapped.msg =
+                { Wrapped_intf.msg =
                     Printf.sprintf
                       "Worker returned a value of unexpected type for request %d"
                       (Message_id.to_int id)
                 ; locs = []
                 }
               in
-              Lwt.wakeup u (Wrapped.Error (err, w)));
+              Lwt.wakeup u (Wrapped_intf.Error (err, w)));
           Js._false)
   | ReturnError (id, e, w) -> (
       match Message_id.Map.find_opt id worker.wakeners with
@@ -125,7 +125,7 @@ let onmessage worker (ev : _ Worker.messageEvent Js.t) =
           Js._false
       | Some (U (_, u, _)) ->
           worker.wakeners <- Message_id.Map.remove id worker.wakeners;
-          Lwt.wakeup u (Wrapped.Error (e, w));
+          Lwt.wakeup u (Wrapped_intf.Error (e, w));
           Js._false)
 
 (* A worker [error] event means the worker script failed to load (e.g.
@@ -141,7 +141,7 @@ let fail_pending worker err =
   let wakeners = worker.wakeners in
   worker.wakeners <- Message_id.Map.empty;
   Message_id.Map.iter
-    (fun _id (U (_, u, _)) -> Lwt.wakeup u (Wrapped.Error (err, [])))
+    (fun _id (U (_, u, _)) -> Lwt.wakeup u (Wrapped_intf.Error (err, [])))
     wakeners
 
 let onerror worker (ev : Worker.errorEvent Js.t) =
@@ -153,7 +153,7 @@ let onerror worker (ev : Worker.errorEvent Js.t) =
       ev##.lineno
   in
   Console.console##error (Js.string msg);
-  fail_pending worker { Wrapped.msg; locs = [] };
+  fail_pending worker { Wrapped_intf.msg; locs = [] };
   Js._false
 
 let install_handlers worker =
@@ -178,7 +178,7 @@ let never_ending () =
     [onmessage] by calling [Lwt.wakeup]. They should never end with
     an exception, unless canceled. When canceled, the worker is
     killed and a new one is spawned. *)
-let rec post : type a. toplevel -> a host_msg -> a Wrapped.result Lwt.t =
+let rec post : type a. toplevel -> a host_msg -> a Wrapped_intf.result Lwt.t =
  fun worker msg ->
   let msg_id = worker.counter in
   let msg_ty = ty_of_host_msg msg in
@@ -229,13 +229,13 @@ and do_reset_worker () =
       >>= fun () ->
       post worker @@ Init { cmis_base_url = worker.cmis_base_url }
       >>= function
-      | Wrapped.Error (err, _) ->
+      | Wrapped_intf.Error (err, _) ->
           (* A respawned worker that cannot re-initialize: report it and
              skip [after_init] (its setup phrases would all fail) rather
              than pretend the reset succeeded. *)
-          worker.pp_stderr err.Wrapped.msg;
+          worker.pp_stderr err.Wrapped_intf.msg;
           Lwt.return_unit
-      | Wrapped.Success ((), _) -> worker.after_init worker >>= fun _ -> Lwt.return_unit)
+      | Wrapped_intf.Success ((), _) -> worker.after_init worker >>= fun _ -> Lwt.return_unit)
     else Lwt.return_unit
 
 and import_cmis_js worker name =
@@ -266,7 +266,7 @@ and import_cmis_js worker name =
         Lwt.on_any t (fun _ -> remove_pending ()) (fun _ -> remove_pending ());
         Lwt.protected t
 
-exception Init_failed of Wrapped.error
+exception Init_failed of Wrapped_intf.error
 
 let create
     ?(cmis_base_url = "")
@@ -303,13 +303,13 @@ let create
      handing back a worker whose toplevel env was never initialized. *)
   post worker @@ Init { cmis_base_url }
   >>= function
-  | Wrapped.Error (err, _) ->
+  | Wrapped_intf.Error (err, _) ->
       (* [create] never returns this worker, so the caller has no handle to
          tear it down: terminate it here so a worker that failed to init does
          not stay alive and idle. [wakeners] is already empty at this point. *)
       terminate worker;
       Lwt.fail (Init_failed err)
-  | Wrapped.Success ((), _) ->
+  | Wrapped_intf.Success ((), _) ->
       (* As on the [Error] path, tear the worker down if [after_init] fails:
          [create] never returns it, so the caller could not. *)
       Lwt.catch
@@ -333,12 +333,12 @@ let reset worker ?(timeout = never_ending) () =
     ; (timeout >>= fun () -> Lwt.return `Timeout)
     ]
   >>= function
-  | `Reset (Wrapped.Success ((), _)) ->
+  | `Reset (Wrapped_intf.Success ((), _)) ->
       Lwt.cancel timeout;
       worker.after_init worker
-  | `Reset (Wrapped.Error (err, _)) ->
+  | `Reset (Wrapped_intf.Error (err, _)) ->
       Lwt.cancel timeout;
-      worker.pp_stderr err.Wrapped.msg;
+      worker.pp_stderr err.Wrapped_intf.msg;
       worker.reset_worker worker
   | `Timeout ->
       (* Not canceling the Reset thread, but manually resetting. *)
@@ -369,7 +369,7 @@ let open_lexbuf worker ?ppf_code code =
   let id = worker.lexbuf_counter in
   worker.lexbuf_counter <- Lexbuf.next id;
   post worker @@ Open_lexbuf { id; code; code_fd }
-  >>= fun (_ : unit Wrapped.result) -> Lwt.return { lb_id = id; lb_code_fd = code_fd }
+  >>= fun (_ : unit Wrapped_intf.result) -> Lwt.return { lb_id = id; lb_code_fd = code_fd }
 
 let step worker ?(print_outcome = false) ~ppf_answer lexbuf =
   let answer_fd = create_fd worker ppf_answer in
@@ -380,7 +380,7 @@ let step worker ?(print_outcome = false) ~ppf_answer lexbuf =
 
 let close_lexbuf worker lexbuf =
   post worker @@ Close_lexbuf { lexbuf = lexbuf.lb_id }
-  >>= fun (_ : unit Wrapped.result) ->
+  >>= fun (_ : unit Wrapped_intf.result) ->
   Option.iter (close_fd worker) lexbuf.lb_code_fd;
   Lwt.return_unit
 

@@ -1,0 +1,12 @@
+;; Worker side: installs the onmessage handler that drives the toplevel inside
+;; a Web Worker. Links the toplevel runtime (Wrapped/Direct); the host does not.
+
+(library
+ (name js_of_ocaml_toplevel_worker)
+ (public_name js_of_ocaml-toplevel.worker)
+ (synopsis "Js_of_ocaml toplevel Web Worker entry point")
+ (libraries
+  js_of_ocaml-toplevel.msg
+  js_of_ocaml-toplevel
+  js_of_ocaml
+  compiler-libs.toplevel))

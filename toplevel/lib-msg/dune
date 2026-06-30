@@ -1,0 +1,8 @@
+;; Shared toplevel-result types and the host <-> worker message protocol.
+;; Deliberately dependency-free so the host driver (Async) can use it without
+;; linking the toplevel runtime.
+
+(library
+ (name js_of_ocaml_toplevel_msg)
+ (public_name js_of_ocaml-toplevel.msg)
+ (synopsis "Js_of_ocaml toplevel worker message protocol"))

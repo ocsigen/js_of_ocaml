@@ -19,20 +19,23 @@
 
 open! Js_of_ocaml_compiler
 open! Js_of_ocaml_compiler.Stdlib
+module Wrapped_intf = Js_of_ocaml_toplevel_msg.Wrapped_intf
 
-type loc =
+(* The result types are defined in the dependency-free [msg] library (so the
+   host driver can use them without the toplevel runtime); re-export them here. *)
+type loc = Wrapped_intf.loc =
   { loc_start : int * int
   ; loc_end : int * int
   }
 
-type error =
+type error = Wrapped_intf.error =
   { msg : string
   ; locs : loc list
   }
 
 type warning = error
 
-type 'a result =
+type 'a result = 'a Wrapped_intf.result =
   | Success of 'a * warning list
   | Error of error * warning list
 
