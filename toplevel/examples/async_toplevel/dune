@@ -1,6 +1,7 @@
-;; Host page: drives the worker via Js_of_ocaml_toplevel_worker_lwt_client.Async. It depends
-;; only on the dependency-free protocol library (for the result type) and Async, so
-;; it does not link the toplevel runtime and is built as a plain program.
+;; Host page: drives the worker via Js_of_ocaml_toplevel_worker_lwt_client. It
+;; depends only on the dependency-free protocol library (for the result type)
+;; and that library, so it does not link the toplevel runtime and is built as a
+;; plain program.
 
 (executable
  (name main)

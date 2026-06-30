@@ -53,7 +53,8 @@ module type Wrapped = sig
         environment without running them, so they have no runtime value. Code
         execution ([execute], [use], [use_mod_string]) is therefore
         rejected with an [Error] until the scratch environment is cleared (see
-        [Wrapped.clear_check] / [Async.clear_check]). [check ~setenv:false]
+        [Wrapped.clear_check] / [Js_of_ocaml_toplevel_worker_lwt_client.clear_check]).
+        [check ~setenv:false]
         (the default) does not touch the environment and stays freely
         interleavable with execution.
 

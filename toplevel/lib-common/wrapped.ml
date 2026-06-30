@@ -94,7 +94,8 @@ let with_capture (f : unit -> [ `Ok of 'a | `Err of error ]) : 'a result =
   (* [Includemod] attaches expanded signature context to module-type
      mismatch error records. That context can hold closures (e.g. from
      [Location.report_printer]), which are not marshallable — so when
-     [Async] ships an error across a Worker boundary via [Json.output]
+     [Js_of_ocaml_toplevel_worker_lwt_client] ships an error across a Worker
+     boundary via [Json.output]
      (built on [Marshal]) it raises "function value". Setting
      [error_size := 0] disables the enrichment; errors still report
      the mismatch, just without the fancy expansion. *)
