@@ -19,6 +19,7 @@
 
 open Js_of_ocaml
 open! Js_of_ocaml_toplevel
+open Js_of_ocaml_toplevel_msg
 open Worker_msg
 
 (* [handler] returns a [Wrapped.result] directly; the dispatcher maps that
@@ -101,18 +102,6 @@ let wrap_fd, close_fd, clear_fds =
   in
   wrap_fd, close_fd, clear_fds
 
-let stdout_ppf = wrap_fd Fd.stdout
-
-let stderr_ppf = wrap_fd Fd.stderr
-
-let () =
-  Sys_js.set_channel_flusher stdout (fun s ->
-      Format.pp_print_string stdout_ppf s;
-      Format.pp_print_flush stdout_ppf ());
-  Sys_js.set_channel_flusher stderr (fun s ->
-      Format.pp_print_string stderr_ppf s;
-      Format.pp_print_flush stderr_ppf ())
-
 (** Code compilation and execution *)
 
 (* TODO protect execution with a mutex! *)
@@ -166,7 +155,8 @@ let handler : type a. a host_msg -> a Wrapped.result = function
       return_unit_success
   | Step { lexbuf; print_outcome; answer_fd } -> (
       match Lexbuf.Map.find_opt lexbuf !lexbufs with
-      | None -> Wrapped.Error ({ Wrapped.msg = "Worker_main: unknown lexbuf"; locs = [] }, [])
+      | None ->
+          Wrapped.Error ({ Wrapped.msg = "Toplevel worker: unknown lexbuf"; locs = [] }, [])
       | Some (lb, _) ->
           let ppf_answer = wrap_fd answer_fd in
           let result = Wrapped.step () ~print_outcome ~ppf_answer lb in
@@ -187,8 +177,19 @@ let handler : type a. a host_msg -> a Wrapped.result = function
 let new_directive name k = Hashtbl.add Toploop.directive_table name k
 [@@alert "-deprecated"]
 
-let () =
-  let handler (type t) data =
+(* Install the channel flushers, the ["cmis"] directive and the [onmessage]
+   handler that drives the toplevel. Call this once from the worker's entry
+   point; nothing happens at module load. *)
+let start () =
+  let stdout_ppf = wrap_fd Fd.stdout in
+  let stderr_ppf = wrap_fd Fd.stderr in
+  Sys_js.set_channel_flusher stdout (fun s ->
+      Format.pp_print_string stdout_ppf s;
+      Format.pp_print_flush stdout_ppf ());
+  Sys_js.set_channel_flusher stderr (fun s ->
+      Format.pp_print_string stderr_ppf s;
+      Format.pp_print_flush stderr_ppf ());
+  let dispatch (type t) data =
     let (id, data) : Message_id.t * t host_msg = Json.unsafe_input data in
     (* Once [id] is decoded, never let an exception escape: the host has
        queued a wakener under [id] and will hang forever if no
@@ -214,4 +215,4 @@ let () =
   new_directive
     "cmis"
     (Toploop.Directive_string (fun name -> Worker.import_scripts [ name ]));
-  Worker.set_onmessage (fun s -> handler s)
+  Worker.set_onmessage (fun s -> dispatch s)

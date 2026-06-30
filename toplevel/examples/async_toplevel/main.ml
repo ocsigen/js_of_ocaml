@@ -26,7 +26,9 @@
 
 open Js_of_ocaml
 module Async = Js_of_ocaml_toplevel_lwt.Async
-module Wrapped = Js_of_ocaml_toplevel.Wrapped
+(* The host only needs the result type, from the dependency-free msg library —
+   not the toplevel runtime. *)
+module Wrapped = Js_of_ocaml_toplevel_msg.Wrapped_intf
 
 let ( >>= ) = Lwt.bind
 

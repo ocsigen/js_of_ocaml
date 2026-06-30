@@ -1,6 +1,6 @@
 (* Js_of_ocaml library
  * http://www.ocsigen.org/js_of_ocaml/
- * Copyright (C) 2017 Hugo Heuzard
+ * Copyright (C) 2016 OCamlPro
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -17,17 +17,10 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-module Direct = Js_of_ocaml_toplevel_common.Direct
-module Wrapped = Js_of_ocaml_toplevel_common.Wrapped
-module Wrapped_intf = Js_of_ocaml_toplevel_common.Wrapped_intf
+(** Worker-side entrypoint. *)
 
-(** Initialize the toplevel environment (directives and environment). Must be
-    called before evaluating with {!Direct} or {!Wrapped}. Idempotent. *)
-let initialize = Direct.initialize
-
-module JsooTop = Direct
-[@@deprecated "Renamed to Direct; use Js_of_ocaml_toplevel.Direct."]
-module JsooTopWrapped = Wrapped
-[@@deprecated "Renamed to Wrapped; use Js_of_ocaml_toplevel.Wrapped."]
-module JsooTopIntf = Wrapped_intf
-[@@deprecated "Renamed to Wrapped_intf; use Js_of_ocaml_toplevel.Wrapped_intf."]
+val start : unit -> unit
+(** Install the [onmessage] handler that drives the toplevel in this Web
+    Worker, along with the stdout/stderr channel flushers and the ["cmis"]
+    directive. Call once from the worker program's entry point; nothing is
+    installed at module load. *)

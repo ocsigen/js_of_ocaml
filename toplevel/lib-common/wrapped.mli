@@ -17,22 +17,25 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-(** A [result] type for all the toplevel functions. *)
-type 'a result =
-  | Success of 'a * warning list
-  | Error of error * warning list
+open! Js_of_ocaml_toplevel_msg
 
-and error =
+(** The [result] types are defined in the dependency-free [msg] library and
+    re-exported here. *)
+type loc = Wrapped_intf.loc =
+  { loc_start : int * int
+  ; loc_end : int * int
+  }
+
+type error = Wrapped_intf.error =
   { msg : string
   ; locs : loc list
   }
 
-and warning = error
+type warning = error
 
-and loc =
-  { loc_start : int * int
-  ; loc_end : int * int
-  }
+type 'a result = 'a Wrapped_intf.result =
+  | Success of 'a * warning list
+  | Error of error * warning list
 
 include
   Wrapped_intf.Wrapped

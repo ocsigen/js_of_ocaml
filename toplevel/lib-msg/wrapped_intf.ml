@@ -17,6 +17,26 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+(* Result of a toplevel operation, shared between the in-process [Wrapped]
+   evaluator and the host/worker message protocol. Errors and warnings are
+   first-class values rather than printed. *)
+
+type loc =
+  { loc_start : int * int
+  ; loc_end : int * int
+  }
+
+type error =
+  { msg : string
+  ; locs : loc list
+  }
+
+type warning = error
+
+type 'a result =
+  | Success of 'a * warning list
+  | Error of error * warning list
+
 module type Wrapped = sig
   type toplevel
 

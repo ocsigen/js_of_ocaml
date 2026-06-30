@@ -17,7 +17,6 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-(* Worker-side entry point. Loading [Worker_main] installs the [onmessage]
-   handler that drives the toplevel from inside this Web Worker; it exposes
-   no values, so we bind it anonymously just to pull in its side effects. *)
-module _ = Js_of_ocaml_toplevel_lwt.Worker_main
+(* Worker-side entry point: install the handler that drives the toplevel from
+   inside this Web Worker. *)
+let () = Js_of_ocaml_toplevel_worker.start ()

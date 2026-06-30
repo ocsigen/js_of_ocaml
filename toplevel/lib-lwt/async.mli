@@ -16,11 +16,11 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
-open! Js_of_ocaml_toplevel
+open! Js_of_ocaml_toplevel_msg
 
 type toplevel
 
-type 'a result = 'a Wrapped.result Lwt.t
+type 'a result = 'a Wrapped_intf.result Lwt.t
 
 type output = string -> unit
 
@@ -28,7 +28,7 @@ type lexbuf
 (** Handle for a worker-side parsing session created by {!open_lexbuf} and
     stepped one phrase at a time with {!step}. *)
 
-exception Init_failed of Wrapped.error
+exception Init_failed of Wrapped_intf.error
 (** Raised (as the result of the {!create} thread) when the worker fails to
     initialize its toplevel environment — for instance when the worker
     script cannot be loaded or [stdlib.cmis.js] is missing under the
@@ -47,7 +47,7 @@ val create :
 
 val set_after_init : toplevel -> (toplevel -> unit Lwt.t) -> unit
 
-val import_cmis_js : toplevel -> string -> unit Wrapped.result Lwt.t
+val import_cmis_js : toplevel -> string -> unit Wrapped_intf.result Lwt.t
 
 val reset : toplevel -> ?timeout:(unit -> unit Lwt.t) -> unit -> unit Lwt.t
 

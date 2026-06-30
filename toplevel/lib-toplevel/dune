@@ -1,10 +1,8 @@
 (library
- (name js_of_ocaml_toplevel_common)
- (public_name js_of_ocaml-toplevel.common)
- (synopsis "Js_of_ocaml toplevel library (backend-neutral)")
+ (name js_of_ocaml_toplevel)
+ (public_name js_of_ocaml-toplevel)
+ (synopsis "Js_of_ocaml toplevel library")
  (libraries
-  js_of_ocaml-compiler
-  compiler-libs.bytecomp
-  compiler-libs.toplevel)
- (preprocess
-  (pps ppx_optcomp_light)))
+  js_of_ocaml-toplevel.msg
+  js_of_ocaml-toplevel.common
+  js_of_ocaml-compiler.dynlink))

@@ -16,8 +16,6 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
-open! Js_of_ocaml_toplevel
-
 (** Types of the messages exchanged with a toplevel in a Web Worker. *)
 
 (* Identifier correlating a request with its reply. Abstract so it cannot be
@@ -156,8 +154,8 @@ type (_, _) eq = Eq : ('a, 'a) eq
 
 type toploop_msg =
   | Write : Fd.t * string -> toploop_msg (* pseudo file descriptor * content *)
-  | ReturnSuccess : Message_id.t * 'a msg_ty * 'a * Wrapped.warning list -> toploop_msg
-  | ReturnError : Message_id.t * Wrapped.error * Wrapped.warning list -> toploop_msg
+  | ReturnSuccess : Message_id.t * 'a msg_ty * 'a * Wrapped_intf.warning list -> toploop_msg
+  | ReturnError : Message_id.t * Wrapped_intf.error * Wrapped_intf.warning list -> toploop_msg
 
 let ty_of_host_msg : type t. t host_msg -> t msg_ty = function
   | Init _ -> Unit
