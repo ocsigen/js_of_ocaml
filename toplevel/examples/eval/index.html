@@ -1,26 +1,101 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <title></title>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta charset="utf-8" />
+    <title>OCaml notebook</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        max-width: 820px;
+        margin: 2em auto;
+        color: #222;
+      }
+      h1 {
+        font-size: 1.2em;
+        font-weight: 600;
+      }
+      h1 small {
+        color: #888;
+        font-weight: 400;
+      }
+      #notebook {
+        counter-reset: cell;
+      }
+      .cell {
+        position: relative;
+        counter-increment: cell;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        margin: 0.7em 0;
+        padding-left: 2.8em;
+        overflow: hidden;
+        transition:
+          border-color 0.15s,
+          box-shadow 0.15s;
+      }
+      /* Number each cell, in a left gutter. */
+      .cell::before {
+        content: "[" counter(cell) "]";
+        position: absolute;
+        left: 0;
+        top: 0.5em;
+        width: 2.3em;
+        text-align: right;
+        color: #aaa;
+        font: 12px monospace;
+        user-select: none;
+      }
+      /* Highlight the whole cell whose input is focused. */
+      .cell:focus-within {
+        border-color: #2a6;
+        box-shadow: 0 0 0 3px rgba(34, 170, 102, 0.25);
+      }
+      .cell:focus-within::before {
+        color: #2a6;
+      }
+      .input {
+        width: 100%;
+        box-sizing: border-box;
+        border: 0;
+        border-left: 3px solid #cdd;
+        padding: 0.5em 0.7em;
+        font-family: monospace;
+        font-size: 14px;
+        resize: vertical;
+      }
+      .cell:focus-within .input {
+        border-left-color: #2a6;
+        background: #fbfffd;
+      }
+      .input:focus {
+        outline: none;
+      }
+      .output {
+        padding: 0 0.7em 0.4em 0.9em;
+        font-family: monospace;
+        font-size: 14px;
+        white-space: pre-wrap;
+      }
+      .output:empty {
+        display: none;
+      }
+      .ans {
+        color: #225;
+      }
+      .stdout {
+        color: #111;
+      }
+      .stderr {
+        color: #a60;
+      }
+      .err {
+        color: #c22;
+      }
+    </style>
   </head>
   <body>
-    <script type="text/ocaml" stdout="script1" stderr="script1">
-      let rec fact x =
-      if x = 0
-      then 1
-      else x * fact (pred x)
-      let _ = Format.printf "fact 10 = %d@." (fact 10)
-      let _ = Format.eprintf "fact 20 = %d@." (fact 20)
-    </script>
-    <div id="script1"> </div>
-
-    <script type="text/ocaml" stdout="script2" stderr="script2">
-      print_endline "└── ";;
-    </script>
-    <div id="script2"> </div>
-
+    <h1>OCaml notebook <small>— Shift+Enter to evaluate</small></h1>
+    <div id="notebook"></div>
     <script type="text/javascript" src="eval.js"></script>
-
   </body>
 </html>

@@ -60,8 +60,9 @@ let setup_pseudo_fs ~load_cmis_from_server =
   if load_cmis_from_server then Sys_js.mount ~path:"/home/" (load_resource "filesys/")
 
 let exec' s =
-  let res : bool = Direct.use Format.std_formatter s in
-  if not res then Format.eprintf "error while evaluating %s@." s
+  match Wrapped.use () ~ppf_answer:Format.std_formatter s with
+  | Wrapped.Success (true, _) -> ()
+  | _ -> Format.eprintf "error while evaluating %s@." s
 
 module Version = struct
   type t = int list
@@ -290,7 +291,7 @@ let setup_share_button ~output =
 
 let current_position = ref 0
 
-let highlight_location loc =
+let highlight_location (loc : Wrapped.loc) =
   let x = ref 0 in
   let output = by_id "output" in
   let first =
@@ -298,8 +299,8 @@ let highlight_location loc =
   in
   iter_on_sharp first ~f:(fun e ->
       incr x;
-      let _file1, line1, col1 = Location.get_pos_info loc.Location.loc_start in
-      let _file2, line2, col2 = Location.get_pos_info loc.Location.loc_end in
+      let line1, col1 = loc.Wrapped.loc_start in
+      let line2, col2 = loc.Wrapped.loc_end in
       if !x >= line1 && !x <= line2
       then
         let from_ = if !x = line1 then `Pos col1 else `Pos 0 in
@@ -376,18 +377,31 @@ let run ~setup_preview () =
   let caml_ppf = make_ppf (append Colorize.ocaml output "caml") in
   let execute () =
     let content = Js.to_string textbox##.value##trim in
-    let content' =
-      let len = String.length content in
-      if
-        try content <> "" && content.[len - 1] <> ';' && content.[len - 2] <> ';'
-        with _ -> true
-      then content ^ ";;"
-      else content
-    in
     current_position := output##.childNodes##.length;
     textbox##.value := Js.string "";
     History.push content;
-    Direct.execute true ~pp_code:sharp_ppf ~highlight_location caml_ppf content';
+    (* [Wrapped] returns errors and warnings as values (and normalizes the
+       source, so no trailing [;;] is needed). Render them to stderr — which
+       this page styles into the output — and highlight their source locations
+       in the echoed input. *)
+    let report (e : Wrapped.error) =
+      Format.fprintf Format.err_formatter "%s@." e.Wrapped.msg;
+      List.iter highlight_location e.Wrapped.locs
+    in
+    let warnings, error =
+      match
+        Wrapped.execute
+          ()
+          ~ppf_code:sharp_ppf
+          ~print_outcome:true
+          ~ppf_answer:caml_ppf
+          content
+      with
+      | Wrapped.Success (_, warnings) -> warnings, None
+      | Wrapped.Error (err, warnings) -> warnings, Some err
+    in
+    List.iter report warnings;
+    Option.iter report error;
     resize ~container ~textbox ()
     >>= fun () ->
     container##.scrollTop := Js.float (float container##.scrollHeight);

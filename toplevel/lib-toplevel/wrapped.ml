@@ -41,12 +41,26 @@ let convert_loc loc =
   let _file2, line2, col2 = Location.get_pos_info loc.Location.loc_end in
   { loc_start = line1, col1; loc_end = line2, col2 }
 
+(* The [Location] report printer ends its output with a newline; drop it so a
+   rendered [msg] is a bare message and consumers control the final formatting
+   (otherwise a consumer adding its own newline produces a blank line). *)
+let drop_trailing_newline s =
+  let n = ref (String.length s) in
+  while !n > 0 && Char.equal s.[!n - 1] '\n' do
+    decr n
+  done;
+  String.sub s ~pos:0 ~len:!n
+
 (* Run [f] with a capturing [Location.warning_reporter] and Marshal-safe
    [Clflags.error_size] installed; restore both on exit. [f] returns
    [`Ok v] or [`Err e]; [with_capture] pairs that with the captured
    warning list to produce a [result]. All mutable state is local to
    this call — the module exposes no global warning ref. *)
 let with_capture (f : unit -> [ `Ok of 'a | `Err of error ]) : 'a result =
+  (* Reset [Location]'s per-phrase line counter, as the stock toplevel loop
+     does. Otherwise it accumulates across evaluations and the report printer
+     prepends a blank-line separator before diagnostics on the second run. *)
+  Location.reset ();
   let warnings = ref [] in
   let prev_reporter = !Location.warning_reporter in
   let prev_error_size = !Clflags.error_size in
@@ -65,9 +79,13 @@ let with_capture (f : unit -> [ `Ok of 'a | `Err of error ]) : 'a result =
            let printer = !Location.report_printer () in
            printer.pp printer ppf report;
            Format.pp_print_flush ppf ();
-           let msg = Buffer.contents buf in
+           let msg = drop_trailing_newline (Buffer.contents buf) in
            let loc = convert_loc loc in
            warnings := { msg; locs = [ loc ] } :: !warnings;
+           (* Rendering the warning into our private buffer bumped [Location]'s
+              line counter; undo that so the outcome printed afterwards (in the
+              same phrase) is not prefixed with a separating blank line. *)
+           Location.reset ();
            None
        | None -> None);
   (* [Includemod] attaches expanded signature context to module-type
@@ -120,7 +138,7 @@ let report_error err =
   let ppf = Format.formatter_of_buffer buf in
   let locs = report_error_rec ppf err in
   Format.pp_print_flush ppf ();
-  let msg = Buffer.contents buf in
+  let msg = drop_trailing_newline (Buffer.contents buf) in
   { msg; locs }
 
 let error_of_exn exn =
@@ -130,60 +148,59 @@ let error_of_exn exn =
       let msg = Printexc.to_string exn in
       { msg; locs = [] }
 
+(** Enforcing the [check ~setenv:true] / code-execution separation *)
+
+(* [check ~setenv:true] installs definitions into the type environment but
+   discards the translated lambda, so those bindings have no runtime
+   counterpart: the type environment is left out of sync with the runtime,
+   and running code afterwards could read uninitialized globals. While such
+   a "scratch" environment is active we therefore refuse to run code (see
+   [execute], [use], [use_mod_string], which return [Error]);
+   [clear_check] restores the environment snapshot taken just before the
+   first [check ~setenv:true], dropping the type-only definitions while
+   keeping everything that was actually executed. [check ~setenv:true]
+   itself ran no code, so there is nothing on the runtime side to undo.
+
+   [None] means no scratch env is active; [Some env] both marks it active
+   and holds the in-sync environment to restore on [clear_check]. *)
+let synced_env = ref None
+
+let scratch_env_error =
+  { msg =
+      "cannot run code while a scratch typing environment from [check \
+       ~setenv:true] is active; clear it with [clear_check] first."
+  ; locs = []
+  }
+
+let clear_check () =
+  (match !synced_env with
+  | Some env -> Toploop.toplevel_env := env
+  | None -> ());
+  synced_env := None
+
+(* Run [f] unless a scratch typing environment is active, in which case
+   reject with [scratch_env_error] instead of executing code. *)
+let guard_run f =
+  match !synced_env with
+  | Some _ -> Error (scratch_env_error, [])
+  | None -> f ()
+
 (** Execution helpers *)
 
-let trim_end s =
-  let ws = function
-    | ' ' | '\t' | '\n' -> true
-    | _ -> false
-  in
-  let len = String.length s in
-  let stop = ref (len - 1) in
-  while !stop >= 0 && ws s.[!stop] do
-    decr stop
-  done;
-  String.sub s ~pos:0 ~len:(!stop + 1)
-
-let normalize code =
-  let content = trim_end code in
-  if String.is_empty content
-  then content
-  else if String.ends_with ~suffix:";;" content
-  then content ^ "\n"
-  else content ^ " ;;\n"
-
 let init_loc lb filename =
-  Location.input_name := filename;
-  Location.input_lexbuf := Some lb;
-  Location.init lb filename
-
-let refill_lexbuf s p ppf buffer len =
-  if !p = String.length s
-  then 0
-  else
-    let len', nl =
-      try String.index_from s !p '\n' - !p + 1, false
-      with _ -> String.length s - !p, true
-    in
-    let len'' = min len len' in
-    String.blit ~src:s ~src_pos:!p ~dst:buffer ~dst_pos:0 ~len:len'';
-    (match ppf with
-    | Some ppf ->
-        Format.fprintf ppf "%s" (Bytes.sub_string buffer ~pos:0 ~len:len'');
-        if nl && len'' = len' then Format.pp_print_newline ppf ();
-        Format.pp_print_flush ppf ()
-    | None -> ());
-    p := !p + len'';
-    len''
+  Location.init lb filename;
+  (* [Location.init] points [input_lexbuf] at [lb], which makes the error
+     printer inline a source excerpt. [Wrapped] reports locations via [locs]
+     instead, so clear it to keep rendered messages excerpt-free (consumers
+     show the source themselves) and avoid pinning the lexbuf. *)
+  Location.input_lexbuf := None
 
 let execute () ?ppf_code ?(print_outcome = true) ~ppf_answer code =
-  with_capture @@ fun () ->
-  let code = normalize code in
-  let lb =
-    match ppf_code with
-    | Some ppf_code -> Lexing.from_function (refill_lexbuf code (ref 0) (Some ppf_code))
-    | None -> Lexing.from_string code
-  in
+  guard_run
+  @@ fun () ->
+  with_capture
+  @@ fun () ->
+  let lb = Lexing.from_function (Refill.lexbuf code (ref 0) ppf_code) in
   init_loc lb "//toplevel//";
   let rec loop () =
     let phr = !Toploop.parse_toplevel_phrase lb in
@@ -204,8 +221,36 @@ let execute () ?ppf_code ?(print_outcome = true) ~ppf_answer code =
       flush_all ();
       `Err (error_of_exn exn)
 
-let use_string () ?(filename = "//toplevel//") ?(print_outcome = true) ~ppf_answer code =
-  with_capture @@ fun () ->
+let make_lexbuf ?ppf_code code =
+  let lb = Lexing.from_function (Refill.lexbuf code (ref 0) ppf_code) in
+  init_loc lb "//toplevel//";
+  lb
+
+let step () ?(print_outcome = false) ~ppf_answer lb =
+  guard_run
+  @@ fun () ->
+  with_capture
+  @@ fun () ->
+  try
+    let phr = !Toploop.parse_toplevel_phrase lb in
+    let phr = Ppx.preprocess_phrase phr in
+    let success = Toploop.execute_phrase print_outcome ppf_answer phr in
+    Format.pp_print_flush ppf_answer ();
+    flush_all ();
+    `Ok (`Phrase success)
+  with
+  | End_of_file ->
+      flush_all ();
+      `Ok `Eof
+  | exn ->
+      flush_all ();
+      `Err (error_of_exn exn)
+
+let use () ?(filename = "//toplevel//") ?(print_outcome = false) ~ppf_answer code =
+  guard_run
+  @@ fun () ->
+  with_capture
+  @@ fun () ->
   let lb = Lexing.from_string code in
   init_loc lb filename;
   try
@@ -250,15 +295,16 @@ let parse_mod_string modname sig_code impl_code =
   Ptop_def [ Str.module_ (Mb.mk (Location.mknoloc (Some modname)) m) ]
 
 let use_mod_string () ?(print_outcome = true) ~ppf_answer ~modname ?sig_code impl_code =
-  with_capture @@ fun () ->
+  guard_run
+  @@ fun () ->
+  with_capture
+  @@ fun () ->
   try
     if not (String.equal (String.capitalize_ascii modname) modname)
     then
       invalid_arg
         "Wrapped.use_mod_string: the module name must start with a capital letter.";
-    let phr =
-      Ppx.preprocess_phrase @@ parse_mod_string modname sig_code impl_code
-    in
+    let phr = Ppx.preprocess_phrase @@ parse_mod_string modname sig_code impl_code in
     let res = Toploop.execute_phrase print_outcome ppf_answer phr in
     Format.pp_print_flush ppf_answer ();
     flush_all ();
@@ -281,7 +327,8 @@ let check_phrase env = function
   | Parsetree.Ptop_dir _ -> env
 
 let check () ?(setenv = false) code =
-  with_capture @@ fun () ->
+  with_capture
+  @@ fun () ->
   let lb = Lexing.from_string code in
   init_loc lb "//toplevel//";
   try
@@ -291,7 +338,15 @@ let check () ?(setenv = false) code =
         ~init:!Toploop.toplevel_env
         (List.map ~f:Ppx.preprocess_phrase (!Toploop.parse_use_file lb))
     in
-    if setenv then Toploop.toplevel_env := env;
+    if setenv
+    then (
+      (* Snapshot the in-sync environment on the first [setenv] of a run, so
+         [clear_check] can roll back to it later; consecutive [check ~setenv]
+         keep building on the scratch env and must not overwrite it. *)
+      (match !synced_env with
+      | Some _ -> ()
+      | None -> synced_env := Some !Toploop.toplevel_env);
+      Toploop.toplevel_env := env);
     `Ok ()
   with
   | End_of_file -> `Ok ()

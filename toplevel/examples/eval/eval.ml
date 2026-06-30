@@ -1,62 +1,99 @@
+open Js_of_ocaml
 open Js_of_ocaml_toplevel
 
-let () = Direct.initialize ()
+let () = initialize ()
 
-let execute code =
-  let code = Js_of_ocaml.Js.to_string code in
-  let buffer = Buffer.create 100 in
-  let formatter = Format.formatter_of_buffer buffer in
-  Direct.execute true formatter code;
-  Js_of_ocaml.Js.string (Buffer.contents buffer)
+let doc = Dom_html.document
 
-let () =
-  Js_of_ocaml.Js.export
-    "evaluator"
-    (object%js
-       val execute = execute
-    end)
+(* Append [s] to [out] inside a [<span class=cls>] (ignoring empty chunks). *)
+let append out cls s =
+  if s <> ""
+  then (
+    let span = Dom_html.createSpan doc in
+    span##.className := Js.string cls;
+    Dom.appendChild span (doc##createTextNode (Js.string s));
+    Dom.appendChild out span)
 
-let append_string output cl s =
-  let open Js_of_ocaml in
-  let d = Dom_html.window##.document in
-  let span = Dom_html.createDiv d in
-  span##.classList##add (Js.string cl);
-  Dom.appendChild span (d##createTextNode (Js.string s));
-  Dom.appendChild output span
+(* A formatter that appends what it receives to [out] with class [cls]. *)
+let formatter out cls =
+  let b = Buffer.create 128 in
+  Format.make_formatter (Buffer.add_substring b) (fun () ->
+      append out cls (Buffer.contents b);
+      Buffer.clear b)
 
-let configure o chan attr default =
-  let open Js_of_ocaml in
-  try
-    let v = o##getAttribute (Js.string attr) in
-    match Js.Opt.to_option v with
-    | None -> raise Not_found
-    | Some id ->
-        let dom = Dom_html.getElementById (Js.to_string id) in
-        Sys_js.set_channel_flusher chan (append_string dom attr)
-  with Not_found -> Sys_js.set_channel_flusher chan default
+(* Render a [Wrapped] result's warnings and error into [out]. [Wrapped] returns
+   them as values rather than printing them, so the consumer renders them. *)
+let render out (result : _ Wrapped.result) =
+  let ppf = formatter out "err" in
+  let report (e : Wrapped.error) = Format.fprintf ppf "%s@." e.Wrapped.msg in
+  let warnings, error =
+    match result with
+    | Wrapped.Success (_, w) -> w, None
+    | Wrapped.Error (e, w) -> w, Some e
+  in
+  List.iter report warnings;
+  Option.iter report error
 
-let () =
-  let open Js_of_ocaml in
-  let toploop_ = open_out "/dev/null" in
-  let toploop_ppf = Format.formatter_of_out_channel toploop_ in
-  Direct.initialize ();
-  let scripts = Dom_html.window##.document##getElementsByTagName (Js.string "script") in
-  let default_stdout = Format.printf "%s@." in
-  let default_stderr = Format.eprintf "%s@." in
-  let default_toploop x = Format.eprintf "%s@." x in
-  for i = 0 to scripts##.length - 1 do
-    let item_opt = scripts##item i in
-    let elt_opt = Js.Opt.bind item_opt Dom_html.CoerceTo.element in
-    match Dom_html.opt_tagged elt_opt with
-    | Some (Dom_html.Script script) ->
-        if script##._type = Js.string "text/ocaml"
+let notebook = Dom_html.getElementById "notebook"
+
+let rec add_cell ?(value = "") () =
+  let cell = Dom_html.createDiv doc in
+  cell##.className := Js.string "cell";
+  let input = Dom_html.createTextarea doc in
+  input##.className := Js.string "input";
+  input##.value := Js.string value;
+  input##.rows := 2;
+  let output = Dom_html.createDiv doc in
+  output##.className := Js.string "output";
+  Dom.appendChild cell input;
+  Dom.appendChild cell output;
+  Dom.appendChild notebook cell;
+  let run () =
+    output##.innerHTML := Js.string "";
+    (* The evaluated program's own output flows through the [stdout]/[stderr]
+       channels; route them to this cell. Compiler diagnostics do not — they
+       come back on the [result] and are shown by [render]. *)
+    Sys_js.set_channel_flusher stdout (append output "stdout");
+    Sys_js.set_channel_flusher stderr (append output "stderr");
+    render
+      output
+      (Wrapped.execute
+         ()
+         ~print_outcome:true
+         ~ppf_answer:(formatter output "ans")
+         (Js.to_string input##.value));
+    (* Move on like a notebook: focus the next cell, opening a fresh one below
+       if this was the last. *)
+    match Js.Opt.to_option cell##.nextSibling with
+    | None -> ignore (add_cell () : unit -> unit)
+    | Some next ->
+        Js.Opt.iter
+          (Js.Opt.bind next##.firstChild Dom_html.CoerceTo.element)
+          (fun el -> el##focus)
+  in
+  input##.onkeydown :=
+    Dom_html.handler (fun e ->
+        (* Shift+Enter evaluates; plain Enter keeps inserting newlines. *)
+        if e##.keyCode = 13 && Js.to_bool e##.shiftKey
         then (
-          let txt = Js.to_string script##.text in
-          configure script stdout "stdout" default_stdout;
-          configure script stderr "stderr" default_stderr;
-          configure script toploop_ "toploop" default_toploop;
-          let _ret = Direct.use toploop_ppf txt in
-          ())
-        else ()
-    | _ -> ()
-  done
+          run ();
+          Js._false)
+        else Js._true);
+  (* Clicking anywhere in the cell focuses its input. *)
+  cell##.onclick := Dom_html.handler (fun _ -> input##focus; Js._true);
+  input##focus;
+  run
+
+(* A few cells, pre-filled and evaluated, to show off values, stdout, warnings
+   and errors; a fresh empty cell is appended once the last one runs. *)
+let () =
+  let samples =
+    [ "let rec fib n = if n < 2 then n else fib (n - 1) + fib (n - 2)\n\
+       let () = Printf.printf \"fib 10 = %d\\n\" (fib 10)"
+    ; "List.map (fun n -> n * n) [ 1; 2; 3; 4; 5 ]"
+    ; "print_endline \"a side effect on stdout\""
+    ; "let head = function x :: _ -> x  (* non-exhaustive match: a warning *)"
+    ; "let type_error = 1 + \"oops\""
+    ]
+  in
+  List.iter (fun run -> run ()) (List.map (fun value -> add_cell ~value ()) samples)

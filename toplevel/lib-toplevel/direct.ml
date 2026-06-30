@@ -46,45 +46,39 @@ let setup =
        ; doc = "Set the depth of tail calls before going through a trampoline"
        })
 
-let refill_lexbuf s p ppf buffer len =
-  if !p = String.length s
-  then 0
-  else
-    let len', nl =
-      try String.index_from s !p '\n' - !p + 1, false
-      with _ -> String.length s - !p, true
-    in
-    let len'' = min len len' in
-    String.blit ~src:s ~src_pos:!p ~dst:buffer ~dst_pos:0 ~len:len'';
-    (match ppf with
-    | Some ppf ->
-        Format.fprintf ppf "%s" (Bytes.sub_string buffer ~pos:0 ~len:len'');
-        if nl then Format.pp_print_newline ppf ();
-        Format.pp_print_flush ppf ()
-    | None -> ());
-    p := !p + len'';
-    len''
+let init_loc lb filename =
+  Location.init lb filename;
+  (* [Location.init] points [input_lexbuf] at [lb]; clear it so rendered errors
+     do not inline a source excerpt (locations are reported on their own). *)
+  Location.input_lexbuf := None
 
-let use ffp content =
-  let fname, oc =
-    Filename.open_temp_file ~mode:[ Open_binary ] "jsoo_toplevel" "fake_stdin"
-  in
-  output_string oc content;
-  close_out oc;
+(* Reimplements [Toploop.use_silently] so that the toplevel's in-process ppx
+   rewriters are applied (via [Ppx.preprocess_phrase]); [use_silently] only
+   knows about external [-ppx] executables, which cannot run in the browser. *)
+let use ?(print_outcome = false) ffp content =
+  let lb = Lexing.from_string content in
+  init_loc lb "//toplevel//";
   try
-    let b = Toploop.use_silently ffp fname in
-    Sys.remove fname;
-    b
-  with e ->
-    Sys.remove fname;
-    raise e
-[@@if ocaml_version < (4, 14, 0)]
-
-let use ffp content = Toploop.use_silently ffp (String content)
-[@@if ocaml_version >= (4, 14, 0)]
+    List.iter
+      ~f:(fun phr ->
+        if not (Toploop.execute_phrase print_outcome ffp phr)
+        then raise Exit
+        else Format.pp_print_flush ffp ())
+      (List.map ~f:Ppx.preprocess_phrase (!Toploop.parse_use_file lb));
+    flush_all ();
+    true
+  with
+  | Exit ->
+      flush_all ();
+      false
+  | x ->
+      flush_all ();
+      Errors.report_error ffp x;
+      false
 
 let execute printval ?pp_code ?highlight_location pp_answer s =
-  let lb = Lexing.from_function (refill_lexbuf s (ref 0) pp_code) in
+  let lb = Lexing.from_function (Refill.lexbuf s (ref 0) pp_code) in
+  init_loc lb "//toplevel//";
   (try
      while true do
        try
