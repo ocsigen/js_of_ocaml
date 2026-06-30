@@ -3,6 +3,6 @@
  (public_name js_of_ocaml-toplevel)
  (synopsis "Js_of_ocaml toplevel library")
  (libraries
-  js_of_ocaml-toplevel.msg
+  js_of_ocaml-toplevel.protocol
   js_of_ocaml-toplevel.common
   js_of_ocaml-compiler.dynlink))

@@ -3,6 +3,6 @@
 ;; linking the toplevel runtime.
 
 (library
- (name js_of_ocaml_toplevel_msg)
- (public_name js_of_ocaml-toplevel.msg)
+ (name js_of_ocaml_toplevel_protocol)
+ (public_name js_of_ocaml-toplevel.protocol)
  (synopsis "Js_of_ocaml toplevel worker message protocol"))

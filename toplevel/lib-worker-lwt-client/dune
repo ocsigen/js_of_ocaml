@@ -1,0 +1,11 @@
+;; Host driver: drives a worker over the message protocol. Depends only on the
+;; dependency-free protocol library, so it does not link the toplevel runtime.
+
+(library
+ (name js_of_ocaml_toplevel_worker_lwt_client)
+ (public_name js_of_ocaml-toplevel.worker_lwt_client)
+ (optional)
+ (synopsis "Js_of_ocaml toplevel worker client (Lwt host driver)")
+ (libraries lwt js_of_ocaml js_of_ocaml-toplevel.protocol)
+ (preprocess
+  (pps js_of_ocaml-ppx)))

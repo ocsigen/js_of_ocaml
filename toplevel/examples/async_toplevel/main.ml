@@ -22,13 +22,13 @@
    The heavy lifting (parsing, type-checking, byte-compilation) happens in
    [worker.js]; this page only sends source phrases over and renders the
    results, so the UI thread never blocks. See [worker.ml] for the worker
-   side and {!Js_of_ocaml_toplevel_lwt.Async} for the message protocol. *)
+   side and {!Js_of_ocaml_toplevel_worker_lwt_client} for the message protocol. *)
 
 open Js_of_ocaml
-module Async = Js_of_ocaml_toplevel_lwt.Async
-(* The host only needs the result type, from the dependency-free msg library —
+module Async = Js_of_ocaml_toplevel_worker_lwt_client
+(* The host only needs the result type, from the dependency-free protocol library —
    not the toplevel runtime. *)
-module Wrapped = Js_of_ocaml_toplevel_msg.Wrapped_intf
+module Wrapped = Js_of_ocaml_toplevel_protocol.Wrapped_intf
 
 let ( >>= ) = Lwt.bind
 

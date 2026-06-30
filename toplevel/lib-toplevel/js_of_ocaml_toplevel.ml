@@ -19,7 +19,7 @@
 
 module Direct = Js_of_ocaml_toplevel_common.Direct
 module Wrapped = Js_of_ocaml_toplevel_common.Wrapped
-module Wrapped_intf = Js_of_ocaml_toplevel_msg.Wrapped_intf
+module Wrapped_intf = Js_of_ocaml_toplevel_protocol.Wrapped_intf
 
 (** Initialize the toplevel environment (directives and environment). Must be
     called before evaluating with {!Direct} or {!Wrapped}. Idempotent. *)
