@@ -40,4 +40,30 @@ include
      and type 'a result := 'a result
      and type output := Format.formatter
 
+val clear_check : unit -> unit
+(** Discard the scratch typing environment left by [check ~setenv:true],
+    restoring the environment as it was just before that call (and thus
+    re-enabling {!execute}, {!use} and {!use_mod_string}). All
+    definitions actually executed beforehand are kept; only the type-only
+    definitions introduced by [check ~setenv:true] are dropped. A no-op when
+    no scratch environment is active. *)
+
+val make_lexbuf : ?ppf_code:Format.formatter -> string -> Lexing.lexbuf
+(** Build a normalized lexbuf for {!step} from a source string. When [ppf_code]
+    is given, the source is echoed to it as it is consumed. The lexbuf holds no
+    resource beyond what the GC reclaims; there is nothing to close. *)
+
+val step :
+     unit
+  -> ?print_outcome:bool
+  -> ppf_answer:Format.formatter
+  -> Lexing.lexbuf
+  -> [ `Phrase of bool | `Eof ] result
+(** Parse, preprocess and evaluate the next toplevel phrase from the lexbuf.
+    Returns [Success (`Phrase ok)] for a phrase that ran ([ok] is [false] if it
+    raised at evaluation time, with the backtrace already on [ppf_answer]),
+    [Success `Eof] once the buffer is exhausted, or [Error] on a parse/type
+    error. The caller drives the loop and decides whether to continue after a
+    failure. *)
+
 val error_of_exn : exn -> error

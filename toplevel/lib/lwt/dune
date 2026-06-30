@@ -7,7 +7,6 @@
   lwt
   js_of_ocaml-compiler
   js_of_ocaml
-  bytes
   js_of_ocaml-toplevel
   compiler-libs.bytecomp
   compiler-libs.toplevel)

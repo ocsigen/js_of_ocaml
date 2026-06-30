@@ -1,0 +1,71 @@
+;; Host page: drives the worker via Js_of_ocaml_toplevel_lwt.Async.
+;; No -linkall: that keeps Worker_main (whose module-load side effect
+;; installs an onmessage handler) out of the main-thread program.
+
+(executable
+ (name main)
+ (modules main)
+ (libraries
+  js_of_ocaml
+  js_of_ocaml-lwt
+  js_of_ocaml-toplevel
+  js_of_ocaml-toplevel.lwt)
+ (modes byte)
+ (preprocess
+  (pps js_of_ocaml-ppx)))
+
+;; The host references [Wrapped] (for the result type) and so transitively
+;; links the toplevel runtime; build it with --toplevel so the dynlink
+;; primitives it needs are provided. It does not itself run a toplevel, so
+;; --no-cmis (no embedded .cmi bundles) keeps it small.
+
+;; Worker: runs the toplevel. -linkall embeds every unit so the toplevel
+;; can reference the whole stdlib; the .cmi bundles are loaded at runtime
+;; from stdlib.cmis.js (hence --no-cmis here).
+
+(executable
+ (name worker)
+ (modules worker)
+ (libraries js_of_ocaml js_of_ocaml-toplevel js_of_ocaml-toplevel.lwt)
+ (link_flags
+  (:standard -linkall))
+ (modes byte))
+
+(rule
+ (targets main.js)
+ (action
+  (run
+   %{bin:js_of_ocaml}
+   --toplevel
+   --no-cmis
+   --disable
+   shortvar
+   -w
+   no-missing-effects-backend
+   %{dep:main.bc}
+   -o
+   %{targets})))
+
+(rule
+ (targets worker.js)
+ (action
+  (run
+   %{bin:js_of_ocaml}
+   --toplevel
+   --no-cmis
+   --disable
+   shortvar
+   -w
+   no-missing-effects-backend
+   %{dep:worker.bc}
+   -o
+   %{targets})))
+
+(rule
+ (target stdlib.cmis.js)
+ (action
+  (run jsoo_mkcmis -o %{target} stdlib)))
+
+(alias
+ (name default)
+ (deps index.html main.js worker.js stdlib.cmis.js))

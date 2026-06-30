@@ -21,25 +21,14 @@ open Js_of_ocaml
 open! Js_of_ocaml_toplevel
 open Worker_msg
 
-type 'a return =
-  | ReturnSuccess of 'a * Wrapped.warning list
-  | ReturnError of Wrapped.error * Wrapped.warning list
+(* [handler] returns a [Wrapped.result] directly; the dispatcher maps that
+   onto the wire [Worker_msg.ReturnSuccess]/[ReturnError] constructors. *)
 
-let return_success v w = ReturnSuccess (v, w)
+let return_unit_success = Wrapped.Success ((), [])
 
-let return_unit_success = return_success () []
-
-let return_error e w = ReturnError (e, w)
-
-let return_exn exn = return_error (Wrapped.error_of_exn exn) []
-
-let unwrap_result : _ Wrapped.result -> _ = function
-  | Success (b, w) -> return_success b w
-  | Error (err, w) -> return_error err w
+let return_exn exn = Wrapped.Error (Wrapped.error_of_exn exn, [])
 
 (** File descriptors *)
-
-module IntMap = Map.Make (Int)
 
 (* Limit the frequency of sent messages to one per ms, using an active
    loop (yuck) because, well, there is no other concurrency primitive
@@ -70,13 +59,19 @@ let rec wait () =
   if now -. !last > 0.001 then last := now else wait ()
 
 let post_message (m : toploop_msg) =
-  wait ();
+  (* Throttle only the high-frequency [Write] messages (stdout/stderr and
+     user callbacks): a program printing in a tight loop is what floods the
+     host message queue and can kill the tab. Control replies are bounded
+     (one per request), so send them immediately rather than adding latency. *)
+  (match m with
+  | Write _ -> wait ()
+  | ReturnSuccess _ | ReturnError _ -> ());
   Worker.post_message (Json.output m)
 
 let wrap_fd, close_fd, clear_fds =
-  let fds = ref IntMap.empty in
+  let fds = ref Fd.Map.empty in
   let wrap_fd fd =
-    try IntMap.find fd !fds
+    try Fd.Map.find fd !fds
     with Not_found ->
       let buf = Buffer.create 503 in
       let flush () =
@@ -87,27 +82,28 @@ let wrap_fd, close_fd, clear_fds =
           post_message (Write (fd, s)))
       in
       let ppf = Format.make_formatter (Buffer.add_substring buf) flush in
-      fds := IntMap.add fd ppf !fds;
+      fds := Fd.Map.add fd ppf !fds;
       ppf
   in
   let close_fd fd =
-    if IntMap.mem fd !fds then Format.pp_print_flush (IntMap.find fd !fds) ();
-    fds := IntMap.remove fd !fds
+    if Fd.Map.mem fd !fds then Format.pp_print_flush (Fd.Map.find fd !fds) ();
+    fds := Fd.Map.remove fd !fds
   in
   let clear_fds () =
+    (* Keep the persistent stdout/stderr channels across a reset. *)
     fds :=
-      IntMap.fold
+      Fd.Map.fold
         (fun id ppf fds ->
           Format.pp_print_flush ppf ();
-          if id = 0 || id = 1 then IntMap.add id ppf fds else fds)
+          if Fd.is_reserved id then Fd.Map.add id ppf fds else fds)
         !fds
-        IntMap.empty
+        Fd.Map.empty
   in
   wrap_fd, close_fd, clear_fds
 
-let stdout_ppf = wrap_fd 0
+let stdout_ppf = wrap_fd Fd.stdout
 
-let stderr_ppf = wrap_fd 1
+let stderr_ppf = wrap_fd Fd.stderr
 
 let () =
   Sys_js.set_channel_flusher stdout (fun s ->
@@ -121,47 +117,67 @@ let () =
 
 (* TODO protect execution with a mutex! *)
 
+(* Parsing sessions held by the worker and stepped one phrase at a time, keyed
+   by the id the host allocated. Each entry keeps the [code_fd] (if any) so the
+   echo formatter can be flushed and dropped when the lexbuf is closed. *)
+let lexbufs = ref Lexbuf.Map.empty
+
 (** Message dispatcher *)
 
-let handler : type a. a host_msg -> a return = function
-  | Init prefix ->
-      Worker.import_scripts [ prefix ^ "stdlib.cmis.js" ];
+let handler : type a. a host_msg -> a Wrapped.result = function
+  | Init { cmis_base_url } ->
+      Worker.import_scripts [ cmis_base_url ^ "stdlib.cmis.js" ];
       Direct.initialize ();
       return_unit_success
   | Reset ->
       clear_fds ();
+      (* Drop any scratch typing env before wiping the toplevel, so the
+         saved-env snapshot is not left dangling across the reset. *)
+      Wrapped.clear_check ();
       Toploop.initialize_toplevel_env ();
       return_unit_success
-  | Check (setenv, code) ->
-      let result = Wrapped.check () ~setenv code in
-      unwrap_result result
-  | Execute (fd_code, print_outcome, fd_answer, code) ->
-      let ppf_code = Option.map wrap_fd fd_code in
-      let ppf_answer = wrap_fd fd_answer in
+  | Check { setenv; code } -> Wrapped.check () ~setenv code
+  | Clear_check ->
+      Wrapped.clear_check ();
+      return_unit_success
+  | Execute { code_fd; print_outcome; answer_fd; code } ->
+      let ppf_code = Option.map wrap_fd code_fd in
+      let ppf_answer = wrap_fd answer_fd in
       let result = Wrapped.execute () ?ppf_code ~print_outcome ~ppf_answer code in
-      Option.iter close_fd fd_code;
-      close_fd fd_answer;
-      unwrap_result result
-  | Use_string (filename, print_outcome, fd_answer, code) ->
-      let ppf_answer = wrap_fd fd_answer in
+      Option.iter close_fd code_fd;
+      close_fd answer_fd;
+      result
+  | Use_string { filename; print_outcome; answer_fd; code } ->
+      let ppf_answer = wrap_fd answer_fd in
+      let result = Wrapped.use () ?filename ~print_outcome ~ppf_answer code in
+      close_fd answer_fd;
+      result
+  | Use_mod_string { answer_fd; print_outcome; modname; sig_code; code } ->
+      let ppf_answer = wrap_fd answer_fd in
       let result =
-        Wrapped.use_string () ?filename ~print_outcome ~ppf_answer code
+        Wrapped.use_mod_string () ~ppf_answer ~print_outcome ~modname ?sig_code code
       in
-      close_fd fd_answer;
-      unwrap_result result
-  | Use_mod_string (fd_answer, print_outcome, modname, sig_code, impl_code) ->
-      let ppf_answer = wrap_fd fd_answer in
-      let result =
-        Wrapped.use_mod_string
-          ()
-          ~ppf_answer
-          ~print_outcome
-          ~modname
-          ?sig_code
-          impl_code
-      in
-      close_fd fd_answer;
-      unwrap_result result
+      close_fd answer_fd;
+      result
+  | Open_lexbuf { id; code; code_fd } ->
+      let ppf_code = Option.map wrap_fd code_fd in
+      let lb = Wrapped.make_lexbuf ?ppf_code code in
+      lexbufs := Lexbuf.Map.add id (lb, code_fd) !lexbufs;
+      return_unit_success
+  | Step { lexbuf; print_outcome; answer_fd } -> (
+      match Lexbuf.Map.find_opt lexbuf !lexbufs with
+      | None -> Wrapped.Error ({ Wrapped.msg = "Worker_main: unknown lexbuf"; locs = [] }, [])
+      | Some (lb, _) ->
+          let ppf_answer = wrap_fd answer_fd in
+          let result = Wrapped.step () ~print_outcome ~ppf_answer lb in
+          close_fd answer_fd;
+          result)
+  | Close_lexbuf { lexbuf } ->
+      (match Lexbuf.Map.find_opt lexbuf !lexbufs with
+      | None -> ()
+      | Some (_lb, code_fd) -> Option.iter close_fd code_fd);
+      lexbufs := Lexbuf.Map.remove lexbuf !lexbufs;
+      return_unit_success
   | Import_scripts urls -> (
       try
         Worker.import_scripts urls;
@@ -173,19 +189,27 @@ let new_directive name k = Hashtbl.add Toploop.directive_table name k
 
 let () =
   let handler (type t) data =
-    let (id, data) : int * t host_msg = Json.unsafe_input data in
-    let ty = ty_of_host_msg data in
-    (* Never let an exception escape here: the host has already queued a
-       wakener under [id] and will hang forever if no [ReturnSuccess] or
-       [ReturnError] ever arrives. Any exception escaping the per-message
-       [handler] becomes a [ReturnError]. *)
-    let result =
-      try handler data with exn -> return_exn exn
-    in
-    match result with
-    | ReturnSuccess (v, w) ->
-        post_message (Worker_msg.ReturnSuccess (id, ty, v, w))
-    | ReturnError (res, w) -> post_message (Worker_msg.ReturnError (id, res, w))
+    let (id, data) : Message_id.t * t host_msg = Json.unsafe_input data in
+    (* Once [id] is decoded, never let an exception escape: the host has
+       queued a wakener under [id] and will hang forever if no
+       [ReturnSuccess] or [ReturnError] ever arrives. Both the dispatch
+       ([handler]) and the reply ([ty_of_host_msg], [post_message]) run
+       under this guard, so any failure is reported back as a
+       [ReturnError] under [id]. Decoding [id] itself is necessarily
+       outside the guard; a failure there is caught by the host's worker
+       [onerror] handler instead. *)
+    try
+      let ty = ty_of_host_msg data in
+      let result = try handler data with exn -> return_exn exn in
+      match result with
+      | Wrapped.Success (v, w) -> post_message (Worker_msg.ReturnSuccess (id, ty, v, w))
+      | Wrapped.Error (res, w) -> post_message (Worker_msg.ReturnError (id, res, w))
+    with exn ->
+      (* [ty_of_host_msg], or the success [post_message] (e.g. a reply
+         value [Json.output] cannot marshal), raised after [handler] had
+         already returned; surface it under [id] rather than hang. The
+         [error_of_exn] payload is plain data, so this reply marshals. *)
+      post_message (Worker_msg.ReturnError (id, Wrapped.error_of_exn exn, []))
   in
   new_directive
     "cmis"

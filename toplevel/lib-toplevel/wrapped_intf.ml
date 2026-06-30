@@ -27,13 +27,19 @@ module type Wrapped = sig
   val check : toplevel -> ?setenv:bool -> string -> unit result
   (** Parse and typecheck a given source code
 
-      @param setenv should the resulting environment replace the current
-                    environment ?
+      @param setenv
+        should the resulting environment replace the current environment? Note
+        that [setenv:true] only type-checks: it adds definitions to the type
+        environment without running them, so they have no runtime value. Code
+        execution ([execute], [use], [use_mod_string]) is therefore
+        rejected with an [Error] until the scratch environment is cleared (see
+        [Wrapped.clear_check] / [Async.clear_check]). [check ~setenv:false]
+        (the default) does not touch the environment and stays freely
+        interleavable with execution.
 
-      @return [Success ()] in case of success and [Error err]
-              where [err] contains the error message otherwise.
-
-  *)
+      @return
+        [Success ()] in case of success and [Error err] where [err] contains
+        the error message otherwise. *)
 
   val execute :
        toplevel
@@ -66,7 +72,7 @@ module type Wrapped = sig
               - [Error err]: parsing or typechecking failed before any
                 phrase could run; [err.msg] is the rendered error. *)
 
-  val use_string :
+  val use :
        toplevel
     -> ?filename:string
     -> ?print_outcome:bool
@@ -82,7 +88,10 @@ module type Wrapped = sig
 
       @param ppf_answer see {!val:execute}.
 
-      @param print_outcome see {!val:execute}.
+      @param print_outcome
+        whether to print the computed values and their types; unlike
+        {!execute} it defaults to [false] (silent, like
+        [Toploop.use_silently]).
 
       @return as {!val:execute}.
 

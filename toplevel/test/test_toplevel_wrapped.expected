@@ -16,3 +16,24 @@ Error, 0 warning(s)
 Success, 0 warning(s)
 === use-mod ===
 Success, 0 warning(s)
+=== check-setenv ===
+Success, 0 warning(s)
+=== execute-blocked ===
+Error, 0 warning(s)
+  error contains "scratch typing environment": true
+=== execute-after-clear ===
+Success, 0 warning(s)
+=== scratch-dropped ===
+Error, 0 warning(s)
+  error contains "Unbound value": true
+  loc: (1,8)-(1,20)
+=== executed-kept ===
+Success, 0 warning(s)
+=== step ===
+phrase ok=true
+error contains "Unbound value": true
+phrase ok=true
+eof
+=== re-eval warning ===
+leading blank: false
+outcome leading blank: false
