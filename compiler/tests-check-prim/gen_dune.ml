@@ -84,6 +84,7 @@ let rule bc ocaml_version os_type ocaml_variant =
   Printf.sprintf
     {|(rule
  (targets %s)
+ (deps %s)
  (mode
   (promote (until-clean)))
  (enabled_if %s)
@@ -95,9 +96,10 @@ let rule bc ocaml_version os_type ocaml_variant =
     check-runtime
     +dynlink.js
     +toplevel.js
-    %%{dep:%s}))))
+    %s))))
 |}
     target
+    bc
     enabled_if
     bc
 
