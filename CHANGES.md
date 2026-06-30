@@ -17,6 +17,9 @@
   mutation records as Lwt threads (#250)
 * Lib: remove `js_of_ocaml-lwt.logger` and the `lwt_log` dependency, as
   upstream `lwt_log` is deprecated (#2378)
+* Toplevel: new `Wrapped` and `Async` APIs returning errors and warnings as
+  first-class values; adds a new `js_of_ocaml-toplevel.lwt` sublibrary for
+  running the toplevel in a WebWorker (#66, #833)
 
 # 6.4.1 (2026-06-30) - Lille
 

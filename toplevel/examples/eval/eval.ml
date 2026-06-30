@@ -1,12 +1,12 @@
 open Js_of_ocaml_toplevel
 
-let () = JsooTop.initialize ()
+let () = Direct.initialize ()
 
 let execute code =
   let code = Js_of_ocaml.Js.to_string code in
   let buffer = Buffer.create 100 in
   let formatter = Format.formatter_of_buffer buffer in
-  JsooTop.execute true formatter code;
+  Direct.execute true formatter code;
   Js_of_ocaml.Js.string (Buffer.contents buffer)
 
 let () =
@@ -39,7 +39,7 @@ let () =
   let open Js_of_ocaml in
   let toploop_ = open_out "/dev/null" in
   let toploop_ppf = Format.formatter_of_out_channel toploop_ in
-  JsooTop.initialize ();
+  Direct.initialize ();
   let scripts = Dom_html.window##.document##getElementsByTagName (Js.string "script") in
   let default_stdout = Format.printf "%s@." in
   let default_stderr = Format.eprintf "%s@." in
@@ -55,7 +55,7 @@ let () =
           configure script stdout "stdout" default_stdout;
           configure script stderr "stderr" default_stderr;
           configure script toploop_ "toploop" default_toploop;
-          let _ret = JsooTop.use toploop_ppf txt in
+          let _ret = Direct.use toploop_ppf txt in
           ())
         else ()
     | _ -> ()

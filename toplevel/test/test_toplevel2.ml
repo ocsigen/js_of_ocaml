@@ -4,7 +4,7 @@ let () =
     (Unsafe.js_expr "require")
     [| Unsafe.coerce (string "./stdlib.cmis.js") |]
 
-let () = Js_of_ocaml_toplevel.JsooTop.initialize ()
+let () = Js_of_ocaml_toplevel.Direct.initialize ()
 
 let fmt = Format.std_formatter
 
@@ -21,7 +21,7 @@ let () =
       iter (String.split_on_char '\n' str))
 
 let () =
-  Js_of_ocaml_toplevel.JsooTop.execute
+  Js_of_ocaml_toplevel.Direct.execute
     true
     ~pp_code:fmt
     ~highlight_location:(fun _ -> ())
@@ -33,7 +33,7 @@ let () = Printf.printf "parseInt(%f) = %d\n" f (parseInt f);;
 |}
 
 let () =
-  Js_of_ocaml_toplevel.JsooTop.execute
+  Js_of_ocaml_toplevel.Direct.execute
     true
     ~pp_code:fmt
     ~highlight_location:(fun _ -> ())
@@ -47,7 +47,7 @@ let () =
   Unsafe.fun_call (Unsafe.js_expr "require") [| Unsafe.coerce (string "./re.cmis.js") |]
 
 let () =
-  Js_of_ocaml_toplevel.JsooTop.execute
+  Js_of_ocaml_toplevel.Direct.execute
     true
     ~pp_code:fmt
     ~highlight_location:(fun _ -> ())
