@@ -1,0 +1,74 @@
+;; Host page: the standard toplevel UI, driving the worker via
+;; Js_of_ocaml_toplevel_lwt.Async. It depends only on the dependency-free msg
+;; library (for the result type) and Async, so it does not link the toplevel
+;; runtime and is built as a plain program.
+
+(executable
+ (name main)
+ (modules main)
+ (libraries
+  js_of_ocaml
+  js_of_ocaml-lwt
+  js_of_ocaml-tyxml
+  lwt
+  js_of_ocaml-toplevel.msg
+  js_of_ocaml-toplevel.lwt
+  toplevel_examples_common)
+ (modes byte)
+ (preprocess
+  (pps js_of_ocaml-ppx)))
+
+;; Worker: runs the toplevel. -linkall embeds every unit so the toplevel can
+;; reference them; the matching .cmi bundles are loaded at runtime from
+;; stdlib.cmis.js (hence --no-cmis here). Only unwrapped libraries are usable
+;; from the toplevel this way, so the cmi bundle below covers stdlib, lwt and
+;; jsoo_runtime, not the wrapped js_of_ocaml (which the worker still links for
+;; its own driver).
+
+(executable
+ (name worker)
+ (modules worker)
+ (libraries
+  js_of_ocaml
+  lwt
+  js_of_ocaml-toplevel
+  js_of_ocaml-toplevel.worker
+  compiler-libs.toplevel)
+ (link_flags
+  (:standard -linkall))
+ (modes byte))
+
+(rule
+ (targets main.js)
+ (action
+  (run %{bin:js_of_ocaml} --disable shortvar %{dep:main.bc} -o %{targets})))
+
+(rule
+ (targets worker.js)
+ (action
+  (run
+   %{bin:js_of_ocaml}
+   --toplevel
+   --no-cmis
+   --disable
+   shortvar
+   -w
+   no-missing-effects-backend
+   %{dep:worker.bc}
+   -o
+   %{targets})))
+
+;; The toplevel type-checks against these .cmi bundles, fetched by the worker
+;; at startup. The generic worker driver imports the file named stdlib.cmis.js.
+
+(rule
+ (target stdlib.cmis.js)
+ (action
+  (run jsoo_mkcmis -o %{target} stdlib js_of_ocaml-compiler.runtime lwt)))
+
+;; examples.ml is a data file, fetched at runtime to fill the examples sidebar.
+;; It only holds DOM-free snippets, since a Web Worker has no DOM.
+
+(alias
+ (name default)
+ (deps index.html main.js worker.js stdlib.cmis.js examples.ml))
