@@ -51,6 +51,14 @@ val import_cmis_js : toplevel -> string -> unit Wrapped_intf.result Lwt.t
 
 val reset : toplevel -> ?timeout:(unit -> unit Lwt.t) -> unit -> unit Lwt.t
 
+val interrupt : toplevel -> unit Lwt.t
+(** Forcibly terminate the worker — use this when a computation is stuck in an
+    infinite loop and so cannot be reached by {!reset}'s cooperative [Reset]
+    message — and respawn a fresh, re-initialized one (re-importing the cmis
+    bundles and running [after_init]). Any request in flight fails with
+    [Lwt.Canceled]. All toplevel state is lost, since the worker process is
+    killed. *)
+
 val clear_check : toplevel -> unit Lwt.t
 (** Discard the scratch typing environment left by [check ~setenv:true] on the
     worker, re-enabling {!execute} and the other code-running operations. See
