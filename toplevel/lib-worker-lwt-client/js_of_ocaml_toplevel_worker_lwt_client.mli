@@ -43,7 +43,10 @@ val create :
   -> unit
   -> toplevel Lwt.t
 (** Spawn the worker and initialize its toplevel. The returned thread fails
-    with {!Init_failed} if initialization does not succeed. *)
+    with {!Init_failed} if initialization does not succeed.
+
+    The worker fetches [<cmis_base_url>stdlib.cmis.js] at startup only if the
+    cmis are not already embedded (i.e. it was built with [--no-cmis]). *)
 
 val set_after_init : toplevel -> (toplevel -> unit Lwt.t) -> unit
 

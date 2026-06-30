@@ -46,6 +46,69 @@ v}
 wasm_of_ocaml --toplevel toplevel.byte -o toplevel.js
 v}
 
+{2 Running the toplevel in a Web Worker}
+
+The toplevel can run in a
+{{:https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API}Web Worker}
+so that parsing, compiling and evaluating code does not block the page: the page
+ships source to the worker and renders the results asynchronously.
+
+This splits into two programs:
+
+- the {e worker}, which links the toplevel and evaluates the code;
+- the {e host} page, which drives the worker and renders results — it does
+  {e not} link the toplevel runtime, so it stays small.
+
+The worker's entry point hands control to the generic driver:
+
+{@ocaml[
+(* worker.ml *)
+let () = Js_of_ocaml_toplevel_worker.start ()
+]}
+
+Build it like a toplevel. Passing [--no-cmis] keeps the [.cmi] files out of
+[worker.js] (smaller output); the cmis are then provided as a bundle that the
+worker fetches at startup:
+
+{v
+ocamlfind ocamlc -g -linkall \
+    -package js_of_ocaml-toplevel -package js_of_ocaml-toplevel.worker \
+    -linkpkg worker.ml -o worker.byte
+js_of_ocaml --toplevel --no-cmis worker.byte -o worker.js
+v}
+
+Produce that bundle with [jsoo_mkcmis]; it must be named [stdlib.cmis.js]. Only
+unwrapped libraries are resolvable from the toplevel this way (for example
+[stdlib] and [lwt], not the wrapped [js_of_ocaml]):
+
+{v
+jsoo_mkcmis -o stdlib.cmis.js stdlib
+v}
+
+Both [js_of_ocaml] and [jsoo_mkcmis] place cmis under [/static/cmis], so the
+worker only fetches the bundle when the cmis are not already there: drop
+[--no-cmis] to embed them in [worker.js] instead, and no bundle is needed.
+
+The host page drives the worker through
+{!Js_of_ocaml_toplevel_worker_lwt_client} ([create], [execute], [reset], and
+[interrupt] to stop a hung computation). It depends only on
+[js_of_ocaml-toplevel.worker_lwt_client] and the dependency-free
+[js_of_ocaml-toplevel.protocol] (for the result type), so it links no toplevel
+runtime:
+
+{v
+ocamlfind ocamlc -g \
+    -package js_of_ocaml-lwt \
+    -package js_of_ocaml-toplevel.worker_lwt_client \
+    -package js_of_ocaml-toplevel.protocol \
+    -linkpkg main.ml -o main.byte
+js_of_ocaml main.byte -o main.js
+v}
+
+The [toplevel/examples/lwt_toplevel_worker] sources are a complete example, with
+a banner, input history, an examples sidebar, and a Cancel button that
+interrupts a stuck computation.
+
 {2 Limiting available modules}
 
 By default, all linked modules are available in the toplevel. To limit this,
