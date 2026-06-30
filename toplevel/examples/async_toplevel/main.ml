@@ -42,9 +42,20 @@ let () =
       append "Spawning the toplevel Web Worker...\n";
       (* [stdlib.cmis.js] is fetched by the worker (see [Async.create]'s
          [cmis_base_url]) so the toplevel can type-check against the stdlib. *)
-      Async.create ~pp_stdout:append ~pp_stderr:append ~js_file:"worker.js" ()
+      Async.create
+        ~pp_stdout:append
+        ~pp_stderr:append
+        ~after_init:(fun top ->
+          (* A toplevel-style banner showing the version actually running in the
+             worker (evaluated there, not on this page). *)
+          Async.use
+            top
+            ~ppf_answer:(fun _ -> ())
+            {|let () = Format.printf "        OCaml version %s@.@." Sys.ocaml_version|}
+          >>= fun _ -> Lwt.return_unit)
+        ~js_file:"worker.js"
+        ()
       >>= fun top ->
-      append "Worker ready.\n\n";
       let phrase code =
         append (Printf.sprintf "# %s\n" code);
         Async.execute top ~print_outcome:true ~ppf_answer:append code

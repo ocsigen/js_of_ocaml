@@ -1,0 +1,24 @@
+;; UI helpers shared by the toplevel examples (lwt_toplevel, lwt_toplevel_worker).
+;; Backend-neutral: it pulls in no toplevel runtime, so the worker example's host
+;; page can use it while staying lean.
+
+(library
+ (name toplevel_examples_common)
+ (wrapped false)
+ (libraries
+  js_of_ocaml
+  js_of_ocaml-tyxml
+  js_of_ocaml-toplevel.msg
+  lwt
+  (select
+   ocp_indent.ml
+   from
+   (ocp-indent.lib -> ocp_indent.ok.ml)
+   (-> ocp_indent.fake.ml))
+  (select
+   colorize.ml
+   from
+   (higlo -> colorize.higlo.ml)
+   (!higlo -> colorize.fake.ml)))
+ (preprocess
+  (pps js_of_ocaml-ppx)))

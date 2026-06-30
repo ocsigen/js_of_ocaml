@@ -2,17 +2,12 @@
 
 (library
  (name lwt_toplevel_lib)
- (modules
-  toplevel_main
-  indent
-  colorize
-  ocp_indent
-  ppx_support
-  graphics_dummy)
+ (modules toplevel_main ppx_support graphics_dummy)
  (libraries
   js_of_ocaml-compiler
   js_of_ocaml-tyxml
   js_of_ocaml-toplevel.common
+  toplevel_examples_common
   lwt
   js_of_ocaml-lwt
   ;; not used directly
@@ -22,16 +17,6 @@
   reactiveData
   str
   dynlink
-  (select
-   ocp_indent.ml
-   from
-   (ocp-indent.lib -> ocp_indent.ok.ml)
-   (-> ocp_indent.fake.ml))
-  (select
-   colorize.ml
-   from
-   (higlo -> colorize.higlo.ml)
-   (!higlo -> colorize.fake.ml))
   (select
    graphics_dummy.ml
    from
