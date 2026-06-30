@@ -1,5 +1,5 @@
 (executables
- (names eval)
+ (names notebook)
  (libraries js_of_ocaml-compiler js_of_ocaml-toplevel)
  (link_flags
   (:standard -linkall))
@@ -9,12 +9,12 @@
 
 (rule
  (targets export.txt)
- (deps eval.bc)
+ (deps notebook.bc)
  (action
   (run jsoo_listunits -o %{targets} stdlib)))
 
 (rule
- (targets eval.js)
+ (targets notebook.js)
  (action
   (run
    %{bin:js_of_ocaml}
@@ -24,10 +24,10 @@
    --pretty
    -w
    no-missing-effects-backend
-   %{dep:eval.bc}
+   %{dep:notebook.bc}
    -o
    %{targets})))
 
 (alias
  (name default)
- (deps eval.js index.html))
+ (deps notebook.js index.html))

@@ -1,0 +1,58 @@
+;; Host page: the interactive notebook UI, driving the worker via
+;; Js_of_ocaml_toplevel_lwt.Async. It depends only on the dependency-free msg
+;; library (for the result type) and Async, so it does not link the toplevel
+;; runtime and is built as a plain program.
+
+(executable
+ (name main)
+ (modules main)
+ (libraries
+  js_of_ocaml
+  js_of_ocaml-lwt
+  lwt
+  js_of_ocaml-toplevel.msg
+  js_of_ocaml-toplevel.lwt)
+ (modes byte)
+ (preprocess
+  (pps js_of_ocaml-ppx)))
+
+;; Worker: runs the toplevel. -linkall embeds every unit so the toplevel
+;; can reference the whole stdlib; the .cmi bundles are loaded at runtime
+;; from stdlib.cmis.js (hence --no-cmis here).
+
+(executable
+ (name worker)
+ (modules worker)
+ (libraries js_of_ocaml js_of_ocaml-toplevel js_of_ocaml-toplevel.worker)
+ (link_flags
+  (:standard -linkall))
+ (modes byte))
+
+(rule
+ (targets main.js)
+ (action
+  (run %{bin:js_of_ocaml} --disable shortvar %{dep:main.bc} -o %{targets})))
+
+(rule
+ (targets worker.js)
+ (action
+  (run
+   %{bin:js_of_ocaml}
+   --toplevel
+   --no-cmis
+   --disable
+   shortvar
+   -w
+   no-missing-effects-backend
+   %{dep:worker.bc}
+   -o
+   %{targets})))
+
+(rule
+ (target stdlib.cmis.js)
+ (action
+  (run jsoo_mkcmis -o %{target} stdlib)))
+
+(alias
+ (name default)
+ (deps index.html main.js worker.js stdlib.cmis.js))

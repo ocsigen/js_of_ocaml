@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>OCaml notebook (Web Worker)</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        max-width: 820px;
+        margin: 2em auto;
+        color: #222;
+      }
+      h1 {
+        font-size: 1.2em;
+        font-weight: 600;
+      }
+      h1 small {
+        color: #888;
+        font-weight: 400;
+      }
+      #notebook {
+        counter-reset: cell;
+      }
+      .cell {
+        position: relative;
+        counter-increment: cell;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        margin: 0.7em 0;
+        padding-left: 2.8em;
+        overflow: hidden;
+        transition:
+          border-color 0.15s,
+          box-shadow 0.15s;
+      }
+      /* Number each cell, in a left gutter. */
+      .cell::before {
+        content: "[" counter(cell) "]";
+        position: absolute;
+        left: 0;
+        top: 0.5em;
+        width: 2.3em;
+        text-align: right;
+        color: #aaa;
+        font: 12px monospace;
+        user-select: none;
+      }
+      /* Highlight the whole cell whose input is focused. */
+      .cell:focus-within {
+        border-color: #2a6;
+        box-shadow: 0 0 0 3px rgba(34, 170, 102, 0.25);
+      }
+      .cell:focus-within::before {
+        color: #2a6;
+      }
+      /* Pending indicator: elapsed time and, after a while, a Cancel button. */
+      .status {
+        padding: 0.2em 0.7em 0.4em 0.9em;
+        font: 12px sans-serif;
+        color: #2a6;
+      }
+      .status:empty {
+        display: none;
+      }
+      .status .elapsed {
+        animation: pulse 1s ease-in-out infinite;
+      }
+      .status button {
+        margin-left: 0.9em;
+        font: 12px sans-serif;
+        color: #c22;
+        background: #fff;
+        border: 1px solid #c22;
+        border-radius: 4px;
+        padding: 0.1em 0.7em;
+        cursor: pointer;
+      }
+      .status button:hover {
+        background: #fee;
+      }
+      @keyframes pulse {
+        50% {
+          opacity: 0.3;
+        }
+      }
+      .input {
+        width: 100%;
+        box-sizing: border-box;
+        border: 0;
+        border-left: 3px solid #cdd;
+        padding: 0.5em 0.7em;
+        font-family: monospace;
+        font-size: 14px;
+        resize: vertical;
+      }
+      .cell:focus-within .input {
+        border-left-color: #2a6;
+        background: #fbfffd;
+      }
+      .input:focus {
+        outline: none;
+      }
+      .output {
+        padding: 0 0.7em 0.4em 0.9em;
+        font-family: monospace;
+        font-size: 14px;
+        white-space: pre-wrap;
+      }
+      .output:empty {
+        display: none;
+      }
+      .ans {
+        color: #225;
+      }
+      .stdout {
+        color: #111;
+      }
+      .stderr {
+        color: #a60;
+      }
+      .err {
+        color: #c22;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>
+      OCaml notebook
+      <small>— runs in a Web Worker, Shift+Enter to evaluate</small>
+    </h1>
+    <div id="notebook"></div>
+    <script type="text/javascript" src="main.js"></script>
+  </body>
+</html>

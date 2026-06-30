@@ -344,6 +344,13 @@ let reset worker ?(timeout = never_ending) () =
       (* Not canceling the Reset thread, but manually resetting. *)
       worker.reset_worker worker
 
+(* Forcibly restart the worker. Unlike {!reset}, this does not try the
+   cooperative [Reset] message first — a worker stuck in an infinite loop
+   cannot process it — it goes straight to terminate + respawn. [reset_worker]
+   cancels every in-flight request as part of [terminate], so their threads
+   fail with [Lwt.Canceled]. *)
+let interrupt worker = worker.reset_worker worker
+
 let check worker ?(setenv = false) code = post worker @@ Check { setenv; code }
 
 let clear_check worker = post worker Clear_check >>= fun _ -> Lwt.return_unit
