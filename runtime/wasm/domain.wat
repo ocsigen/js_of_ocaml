@@ -239,6 +239,10 @@
       (param (ref eq)) (result (ref eq))
       (ref.i31 (i32.const 1)))
 
+   (func (export "caml_max_domain_count")
+      (param (ref eq)) (result (ref eq))
+      (ref.i31 (i32.const 1)))
+
    (global $caml_domain_id (export "caml_domain_id") (mut i32) (i32.const 0))
    (global $caml_domain_latest_id (export "caml_domain_latest_id") (mut i32)
       (i32.const 1))
