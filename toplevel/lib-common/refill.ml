@@ -22,7 +22,7 @@ open! Js_of_ocaml_compiler.Stdlib
 
 let trim_end s =
   let ws = function
-    | ' ' | '\t' | '\n' -> true
+    | ' ' | '\t' | '\n' | '\r' -> true
     | _ -> false
   in
   let len = String.length s in

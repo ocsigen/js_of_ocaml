@@ -284,6 +284,19 @@ let use () ?(filename = "//toplevel//") ?(print_outcome = false) ~ppf_answer cod
       flush_all ();
       `Err (error_of_exn exn)
 
+(* [Ast_helper.Mod.constraint_] differs on OxCaml: the module type became
+   optional and moved ahead of the module expression, and a [modes] argument was
+   inserted. Wrap [structure : sig] behind a version-neutral helper. *)
+let constrain_structure str s =
+  let open Ast_helper in
+  Mod.constraint_ (Mod.structure str) (Mty.signature s)
+[@@if not oxcaml]
+
+let constrain_structure str s =
+  let open Ast_helper in
+  Mod.constraint_ (Some (Mty.signature s)) [] (Mod.structure str)
+[@@if oxcaml]
+
 let parse_mod_string modname sig_code impl_code =
   let open Parsetree in
   let open Ast_helper in
@@ -303,7 +316,7 @@ let parse_mod_string modname sig_code impl_code =
         let sig_lb = Lexing.from_string sig_code in
         init_loc sig_lb (String.uncapitalize_ascii modname ^ ".mli");
         let s = Parse.interface sig_lb in
-        Mod.constraint_ (Mod.structure str) (Mty.signature s)
+        constrain_structure str s
   in
   Ptop_def [ Str.module_ (Mb.mk (Location.mknoloc (Some modname)) m) ]
 
@@ -326,13 +339,47 @@ let use_mod_string () ?(print_outcome = true) ~ppf_answer ~modname ?sig_code imp
     flush_all ();
     `Err (error_of_exn exn)
 
+(* [Typemod.type_toplevel_phrase] gained a [Shape.t] in its result tuple in
+   4.14; drop it here so [check_phrase] stays version-agnostic. OxCaml also takes
+   an extra [Types.signature] argument (the accumulated toplevel signature, empty
+   here since we type a single scratch phrase). *)
+let type_toplevel_phrase env sstr =
+  let str, sg, sg_names, newenv = Typemod.type_toplevel_phrase env sstr in
+  str, sg, sg_names, newenv
+[@@if (not oxcaml) && ocaml_version < (4, 14, 0)]
+
+let type_toplevel_phrase env sstr =
+  let str, sg, sg_names, _shape, newenv = Typemod.type_toplevel_phrase env sstr in
+  str, sg, sg_names, newenv
+[@@if (not oxcaml) && ocaml_version >= (4, 14, 0)]
+
+let type_toplevel_phrase env sstr =
+  let str, sg, sg_names, _shape, newenv = Typemod.type_toplevel_phrase env [] sstr in
+  str, sg, sg_names, newenv
+[@@if oxcaml]
+
+(* [Includemod.signatures]'s [~mark] argument is an [Includemod.mark] variant
+   before 5.3 and a [bool] from 5.3 on. OxCaml replaces [signatures] with
+   [check_implementation ~modes] (see its toplevel/topcommon.ml). *)
+let includemod_signatures env sg sg' =
+  ignore (Includemod.signatures ~mark:Includemod.Mark_positive env sg sg')
+[@@if (not oxcaml) && ocaml_version < (5, 3, 0)]
+
+let includemod_signatures env sg sg' =
+  ignore (Includemod.signatures ~mark:true env sg sg')
+[@@if (not oxcaml) && ocaml_version >= (5, 3, 0)]
+
+let includemod_signatures env sg sg' =
+  Includemod.check_implementation env ~modes:Includemod.modes_toplevel sg sg'
+[@@if oxcaml]
+
 (* Extracted from the "execute" function in "ocaml/toplevel/toploop.ml" *)
 let check_phrase env = function
   | Parsetree.Ptop_def sstr ->
       Typecore.reset_delayed_checks ();
-      let str, sg, sg_names, _, newenv = Typemod.type_toplevel_phrase env sstr in
+      let str, sg, sg_names, newenv = type_toplevel_phrase env sstr in
       let sg' = Typemod.Signature_names.simplify newenv sg_names sg in
-      ignore (Includemod.signatures ~mark:true env sg sg');
+      includemod_signatures env sg sg';
       Typecore.force_delayed_checks ();
       let _lam = Translmod.transl_toplevel_definition str in
       Warnings.check_fatal ();

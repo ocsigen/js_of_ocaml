@@ -44,6 +44,9 @@ type u =
 
 type output = string -> unit
 
+(* [pp_stdout] is stored but not read yet (FIXME below); disable the
+   unused-field warning (69) for the record. A per-field attribute did not
+   suppress it on every OCaml version, so it is set on the whole declaration. *)
 type toplevel =
   { cmis_base_url : string
   ; js_file : string
@@ -57,9 +60,10 @@ type toplevel =
   ; mutable lexbuf_counter : Lexbuf.t
   ; mutable reset_worker : toplevel -> unit Lwt.t
   ; mutable after_init : toplevel -> unit Lwt.t
-  ; pp_stdout : output [@ocaml.warning "-69"] (* FIXME *)
+  ; pp_stdout : output (* FIXME: kept for API symmetry; not yet routed *)
   ; pp_stderr : output
   }
+[@@warning "-69"]
 
 (* Host-side handle for a worker-side parsing session: [lb_id] is what crosses
    the wire; [lb_code_fd] is the echo descriptor to release when it is closed. *)
