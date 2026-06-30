@@ -266,6 +266,31 @@ index 059d011..b40264e 100644
  module Zarith_version = Zarith_version
 |zs}
     )
+  ; ( "ppx_css"
+    , {|
+diff --git a/standalone/css_inliner.ml b/standalone/css_inliner.ml
+--- a/standalone/css_inliner.ml
++++ b/standalone/css_inliner.ml
+@@ -68,11 +68,15 @@
+     Buffer.add_string w mli_file;
+     Buffer.add_string w " end\n");
+   create_file alias_ml ~f:(fun w ->
+-    Buffer.add_string w ("include " ^ String.capitalize generated_name ^ "\n"));
++    Buffer.add_string
++      w
++      ("include " ^ String.capitalize (Filename.basename generated_name) ^ "\n"));
+   create_file alias_mli ~f:(fun w ->
+     Buffer.add_string
+       w
+-      ("include module type of " ^ String.capitalize generated_name ^ "\n"))
++      ("include module type of "
++       ^ String.capitalize (Filename.basename generated_name)
++       ^ "\n"))
+ ;;
+
+ let command =
+|}
+    )
   ]
 
 let removes =

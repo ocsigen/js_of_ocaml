@@ -282,6 +282,27 @@ index fdf9926..d0ccf6a 100644
  let non_ascii = [%sedlex.regexp? Compl ascii]
  let ident_start_code_point = [%sedlex.regexp? 'a' .. 'z' | 'A' .. 'Z' | '_' | non_ascii]
  let ident_code_point = [%sedlex.regexp? ident_start_code_point | '0' .. '9' | '-']
+diff --git a/standalone/css_inliner.ml b/standalone/css_inliner.ml
+--- a/standalone/css_inliner.ml
++++ b/standalone/css_inliner.ml
+@@ -68,11 +68,15 @@
+     Buffer.add_string w mli_file;
+     Buffer.add_string w " end\n");
+   create_file alias_ml ~f:(fun w ->
+-    Buffer.add_string w ("include " ^ String.capitalize generated_name ^ "\n"));
++    Buffer.add_string
++      w
++      ("include " ^ String.capitalize (Filename.basename generated_name) ^ "\n"));
+   create_file alias_mli ~f:(fun w ->
+     Buffer.add_string
+       w
+-      ("include module type of " ^ String.capitalize generated_name ^ "\n"))
++      ("include module type of "
++       ^ String.capitalize (Filename.basename generated_name)
++       ^ "\n"))
+ ;;
+
+ let command =
 |}
     )
   ]
