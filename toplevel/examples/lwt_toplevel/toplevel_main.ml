@@ -60,7 +60,7 @@ let setup_pseudo_fs ~load_cmis_from_server =
   if load_cmis_from_server then Sys_js.mount ~path:"/home/" (load_resource "filesys/")
 
 let exec' s =
-  let res : bool = JsooTop.use Format.std_formatter s in
+  let res : bool = Direct.use Format.std_formatter s in
   if not res then Format.eprintf "error while evaluating %s@." s
 
 module Version = struct
@@ -113,7 +113,7 @@ end
 
 let setup_toplevel () =
   Clflags.debug := true;
-  JsooTop.initialize ();
+  Direct.initialize ();
   Sys.interactive := false;
   if Version.compare Version.current [ 4; 07 ] >= 0 then exec' "open Stdlib";
   exec'
@@ -387,7 +387,7 @@ let run ~setup_preview () =
     current_position := output##.childNodes##.length;
     textbox##.value := Js.string "";
     History.push content;
-    JsooTop.execute true ~pp_code:sharp_ppf ~highlight_location caml_ppf content';
+    Direct.execute true ~pp_code:sharp_ppf ~highlight_location caml_ppf content';
     resize ~container ~textbox ()
     >>= fun () ->
     container##.scrollTop := Js.float (float container##.scrollHeight);

@@ -1,6 +1,6 @@
 (* Js_of_ocaml library
  * http://www.ocsigen.org/js_of_ocaml/
- * Copyright (C) 2014 Hugo Heuzard
+ * Copyright (C) 2016 OCamlPro
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -16,23 +16,31 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
+open! Js_of_ocaml_toplevel
 
-open Format
-(** Helper for Js_of_ocaml Toplevel. *)
+type toplevel
 
-val use : formatter -> string -> bool
-(** [use fmt content] Execute commands [content]. It does not print types nor values. *)
+type 'a result = 'a Wrapped.result Lwt.t
 
-val execute :
-     bool
-  -> ?pp_code:formatter
-  -> ?highlight_location:(Location.t -> unit)
-  -> formatter
-  -> string
+type output = string -> unit
+
+val create :
+     ?cmis_prefix:string
+  -> ?after_init:(toplevel -> unit Lwt.t)
+  -> pp_stdout:output
+  -> pp_stderr:output
+  -> js_file:string
   -> unit
-(** [execute print fmt content] Execute [content].
-    [print] says whether the values and types of the results should be printed.
-    [pp_code] formatter can be use to output ocaml source during lexing. *)
+  -> toplevel Lwt.t
 
-val initialize : unit -> unit
-(** Initialize Js_of_ocaml toplevel. *)
+val set_after_init : toplevel -> (toplevel -> unit Lwt.t) -> unit
+
+val import_cmis_js : toplevel -> string -> unit Wrapped.result Lwt.t
+
+val reset : toplevel -> ?timeout:(unit -> unit Lwt.t) -> unit -> unit Lwt.t
+
+include
+  Wrapped_intf.Wrapped
+    with type toplevel := toplevel
+     and type 'a result := 'a result
+     and type output := output

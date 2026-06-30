@@ -89,7 +89,7 @@ let execute printval ?pp_code ?highlight_location pp_answer s =
      while true do
        try
          let phr = !Toploop.parse_toplevel_phrase lb in
-         let phr = JsooTopPpx.preprocess_phrase phr in
+         let phr = Ppx.preprocess_phrase phr in
          ignore (Toploop.execute_phrase printval pp_answer phr : bool)
        with
        | End_of_file -> raise End_of_file
@@ -97,7 +97,7 @@ let execute printval ?pp_code ?highlight_location pp_answer s =
            (match highlight_location with
            | None -> ()
            | Some f -> (
-               match JsooTopError.loc x with
+               match Error_loc.loc x with
                | None -> ()
                | Some loc -> f loc));
            Errors.report_error Format.err_formatter x
@@ -105,9 +105,14 @@ let execute printval ?pp_code ?highlight_location pp_answer s =
    with End_of_file -> ());
   flush_all ()
 
+let initialized = ref false
+
 let initialize () =
-  Sys.interactive := false;
-  Lazy.force setup;
-  Toploop.initialize_toplevel_env ();
-  Toploop.input_name := "//toplevel//";
-  Sys.interactive := true
+  if not !initialized
+  then (
+    initialized := true;
+    Sys.interactive := false;
+    Lazy.force setup;
+    Toploop.initialize_toplevel_env ();
+    Toploop.input_name := "//toplevel//";
+    Sys.interactive := true)

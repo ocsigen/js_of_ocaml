@@ -1,0 +1,18 @@
+=== ok ===
+Success, 0 warning(s)
+=== warning ===
+Success, 1 warning(s)
+  warning contains "": true
+  loc: (1,15)-(1,16)
+=== type-error ===
+Error, 0 warning(s)
+  error contains "Unbound value": true
+  loc: (1,8)-(1,12)
+=== syntax-error ===
+Error, 0 warning(s)
+  error contains "Syntax error": true
+  loc: (1,4)-(1,5)
+=== check-ok ===
+Success, 0 warning(s)
+=== use-mod ===
+Success, 0 warning(s)

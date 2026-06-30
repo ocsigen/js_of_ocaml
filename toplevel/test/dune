@@ -1,5 +1,5 @@
 (executables
- (names test_toplevel1 test_toplevel2)
+ (names test_toplevel1 test_toplevel2 test_toplevel_wrapped)
  (libraries js_of_ocaml js_of_ocaml_toplevel re)
  (flags
   (:standard -linkall))
@@ -68,6 +68,30 @@
    %{target}
    (run node ./test_toplevel1.js))))
 
+(rule
+ (targets test_toplevel_wrapped.js)
+ (action
+  (run
+   %{bin:js_of_ocaml}
+   --export
+   %{dep:export.txt}
+   --toplevel
+   --disable
+   shortvar
+   -w
+   no-missing-effects-backend
+   %{dep:test_toplevel_wrapped.bc}
+   -o
+   %{targets})))
+
+(rule
+ (target test_toplevel_wrapped.actual)
+ (deps test_toplevel_wrapped.js)
+ (action
+  (with-stdout-to
+   %{target}
+   (run node ./test_toplevel_wrapped.js))))
+
 ; test_toplevel2 loads CMI bundles via CommonJS `require("./stdlib.cmis.js")`,
 ; which the QuickJS shim does not implement.
 
@@ -85,6 +109,11 @@
  (alias runtest-js)
  (action
   (diff test_toplevel.expected test_toplevel1.actual)))
+
+(rule
+ (alias runtest-js)
+ (action
+  (diff test_toplevel_wrapped.expected test_toplevel_wrapped.actual)))
 
 (rule
  (alias runtest-js)
