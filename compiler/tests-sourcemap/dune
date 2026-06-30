@@ -21,8 +21,9 @@
 (test
  (name dump_sourcemap)
  (modules dump_sourcemap)
+ (deps test.bc.js)
  (action
-  (run %{test} %{dep:test.bc.js}))
+  (run %{test} test.bc.js))
  (enabled_if
   (= %{profile} dev))
  (libraries js_of_ocaml-compiler))

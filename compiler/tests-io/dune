@@ -22,12 +22,13 @@
  (names md5)
  (modes js wasm)
  (deps
+  some-random-file
   (sandbox preserve_file_kind))
  (action
   (progn
-   (run node %{test} %{dep:some-random-file})
-   (run node %{test} %{dep:some-random-file} %{dep:some-random-file})
-   (run node %{test} -offset 2000 -length 4000 %{dep:some-random-file})
+   (run node %{test} some-random-file)
+   (run node %{test} some-random-file some-random-file)
+   (run node %{test} -offset 2000 -length 4000 some-random-file)
    (pipe-stdout
     (echo "tests")
     (run node %{test}))
@@ -42,11 +43,12 @@
  (names md5_nat)
  (modes
   (best exe))
+ (deps some-random-file)
  (action
   (progn
-   (run %{test} %{dep:some-random-file})
-   (run %{test} %{dep:some-random-file} %{dep:some-random-file})
-   (run %{test} -offset 2000 -length 4000 %{dep:some-random-file})
+   (run %{test} some-random-file)
+   (run %{test} some-random-file some-random-file)
+   (run %{test} -offset 2000 -length 4000 some-random-file)
    (pipe-stdout
     (echo "tests")
     (run %{test}))
