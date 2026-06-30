@@ -118,7 +118,12 @@ let lexbufs = ref Lexbuf.Map.empty
 
 let handler : type a. a host_msg -> a Wrapped.result = function
   | Init { cmis_base_url } ->
-      Worker.import_scripts [ cmis_base_url ^ "stdlib.cmis.js" ];
+      (* Fetch the cmi bundle only if the cmis are not already present. They are
+         when the worker was built without [--no-cmis]: [js_of_ocaml] embeds them
+         at [/static/cmis] (see [Pseudo_fs]), the very path [jsoo_mkcmis] and the
+         bundle use, so a missing [stdlib.cmi] there means we must load it. *)
+      if not (Sys.file_exists "/static/cmis/stdlib.cmi")
+      then Worker.import_scripts [ cmis_base_url ^ "stdlib.cmis.js" ];
       Direct.initialize ();
       return_unit_success
   | Reset ->
@@ -188,12 +193,9 @@ let handler : type a. a host_msg -> a Wrapped.result = function
         return_unit_success
       with exn -> return_exn exn)
 
-let new_directive name k = Hashtbl.add Toploop.directive_table name k
-[@@alert "-deprecated"]
-
-(* Install the channel flushers, the ["cmis"] directive and the [onmessage]
-   handler that drives the toplevel. Call this once from the worker's entry
-   point; nothing happens at module load. *)
+(* Install the channel flushers and the [onmessage] handler that drives the
+   toplevel. Call this once from the worker's entry point; nothing happens at
+   module load. *)
 let start () =
   let stdout_ppf = wrap_fd Fd.stdout in
   let stderr_ppf = wrap_fd Fd.stderr in
@@ -226,7 +228,4 @@ let start () =
          [error_of_exn] payload is plain data, so this reply marshals. *)
       post_message (Worker_msg.ReturnError (id, Wrapped.error_of_exn exn, []))
   in
-  new_directive
-    "cmis"
-    (Toploop.Directive_string (fun name -> Worker.import_scripts [ name ]));
   Worker.set_onmessage (fun s -> dispatch s)

@@ -20,7 +20,14 @@
 * Toplevel: new `Wrapped` and `Async` APIs returning errors and warnings as
   first-class values; adds new `js_of_ocaml-toplevel.protocol`,
   `js_of_ocaml-toplevel.worker` and `js_of_ocaml-toplevel.worker_lwt_client`
-  sublibraries for running the toplevel in a WebWorker (#66, #833)
+  sublibraries for running the toplevel in a WebWorker. Revives the
+  asynchronous toplevel originally contributed in the unmerged #435 (#66, #833)
+
+## Bug fixes
+* Toplevel: keep the `/static/cmis` directory on the load path across
+  `Toploop.initialize_toplevel_env`, so libraries whose cmis are loaded at
+  runtime stay resolvable; previously the directory was registered only while
+  Stdlib was loaded and then dropped, leaving later lookups unresolved (#833)
 
 # 6.4.1 (2026-06-30) - Lille
 
