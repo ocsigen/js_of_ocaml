@@ -5,6 +5,10 @@
   path in `runtime/wasm/args.ml`, so dune 3.24's leading-`./` path-form
   representation (ocaml/dune#15156) keeps producing well-formed
   `module:path` lines for `wasmoo_link_wasm`.
+* Tests: pass file paths as literal arguments (with explicit `(deps ...)`)
+  instead of `%{dep:...}` in the `md5`/`md5_nat` and `dump_sourcemap` tests,
+  which echo the path verbatim, so dune 3.24's leading-`./` path form
+  (ocaml/dune#15156) no longer breaks their expected output (#2384)
 
 # 6.4.0 (2026-06-21) - Lille
 
