@@ -18,6 +18,11 @@
 * Lib: remove `js_of_ocaml-lwt.logger` and the `lwt_log` dependency, as
   upstream `lwt_log` is deprecated (#2378)
 
+## Bug fixes
+* Tyxml: when the same attribute (e.g. multiple `a_class`) is given several
+  times, keep the first one and ignore the rest, matching browser semantics,
+  instead of letting the last one silently overwrite the others (#968)
+
 # 6.4.1 (2026-06-30) - Lille
 
 ## Bug fixes
