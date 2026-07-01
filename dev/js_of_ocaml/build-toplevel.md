@@ -13,7 +13,7 @@ A toplevel is an interactive OCaml environment (like `ocaml` or `utop`). Js\_of\
 
 ### With js\_of\_ocaml
 
-1. Initialize the toplevel in your OCaml code using `Js_of_ocaml_toplevel.JsooTop.initialize`
+1. Initialize the toplevel in your OCaml code using `Js_of_ocaml_toplevel.Direct.initialize`
 1. Build your bytecode with debug info and linkall:
    
    ```
@@ -28,7 +28,7 @@ A toplevel is an interactive OCaml environment (like `ocaml` or `utop`). Js\_of\
 
 ### With wasm\_of\_ocaml
 
-1. Initialize the toplevel in your OCaml code using `Js_of_ocaml_toplevel.JsooTop.initialize`
+1. Initialize the toplevel in your OCaml code using `Js_of_ocaml_toplevel.Direct.initialize`
 1. Build your bytecode with debug info and linkall, linking `wasm_of_ocaml-compiler.dynlink` and `js_of_ocaml-toplevel.common`:
    
    ```
@@ -41,6 +41,48 @@ A toplevel is an interactive OCaml environment (like `ocaml` or `utop`). Js\_of\
    ```
    wasm_of_ocaml --toplevel toplevel.byte -o toplevel.js
    ```
+
+### Running the toplevel in a Web Worker
+
+The toplevel can run in a [Web Worker](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API) so that parsing, compiling and evaluating code does not block the page: the page ships source to the worker and renders the results asynchronously.
+
+This splits into two programs:
+
+- the *worker*, which links the toplevel and evaluates the code;
+- the *host* page, which drives the worker and renders results — it does *not* link the toplevel runtime, so it stays small.
+The worker's entry point hands control to the generic driver:
+
+```ocaml
+(* worker.ml *)
+let () = Js_of_ocaml_toplevel_worker.start ()
+```
+Build it like a toplevel. Passing `--no-cmis` keeps the `.cmi` files out of `worker.js` (smaller output); the cmis are then provided as a bundle that the worker fetches at startup:
+
+```
+ocamlfind ocamlc -g -linkall \
+    -package js_of_ocaml-toplevel -package js_of_ocaml-toplevel.worker \
+    -linkpkg worker.ml -o worker.byte
+js_of_ocaml --toplevel --no-cmis worker.byte -o worker.js
+```
+Produce that bundle with `jsoo_mkcmis`; it must be named `stdlib.cmis.js`. Only unwrapped libraries are resolvable from the toplevel this way (for example `stdlib` and `lwt`, not the wrapped `js_of_ocaml`):
+
+```
+jsoo_mkcmis -o stdlib.cmis.js stdlib
+```
+Both `js_of_ocaml` and `jsoo_mkcmis` place cmis under `/static/cmis`, so the worker only fetches the bundle when the cmis are not already there: drop `--no-cmis` to embed them in `worker.js` instead, and no bundle is needed.
+
+The host page drives the worker through `Js_of_ocaml_toplevel_worker_lwt_client` (`create`, `execute`, `reset`, and `interrupt` to stop a hung computation). It depends only on `js_of_ocaml-toplevel.worker_lwt_client` and the dependency-free `js_of_ocaml-toplevel.protocol` (for the result type), so it links no toplevel runtime:
+
+```
+ocamlfind ocamlc -g \
+    -package js_of_ocaml-lwt \
+    -package js_of_ocaml-toplevel.worker_lwt_client \
+    -package js_of_ocaml-toplevel.protocol \
+    -linkpkg main.ml -o main.byte
+js_of_ocaml main.byte -o main.js
+```
+The `toplevel/examples/lwt_toplevel_worker` sources are a complete example, with a banner, input history, an examples sidebar, and a Cancel button that interrupts a stuck computation.
+
 
 ### Limiting available modules
 

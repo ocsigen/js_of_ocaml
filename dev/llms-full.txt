@@ -1655,7 +1655,9 @@ Provided by the `js_of_ocaml-tyxml` opam package (library `js_of_ocaml-tyxml`).
 
 Provided by the `js_of_ocaml-toplevel` opam package (library `js_of_ocaml-toplevel`).
 
-- `Js_of_ocaml_toplevel.JsooTop` — run an OCaml toplevel in the browser
+- `Js_of_ocaml_toplevel.Direct` — run an OCaml toplevel in the browser
+- `Js_of_ocaml_toplevel.Wrapped` — toplevel evaluation returning errors and warnings as first-class values
+- `Js_of_ocaml_toplevel.Wrapped_intf` — result, error and warning types shared with the Web Worker driver
 
 
 ---
@@ -2956,7 +2958,7 @@ A toplevel is an interactive OCaml environment (like `ocaml` or `utop`). Js\_of\
 
 ### With js\_of\_ocaml
 
-1. Initialize the toplevel in your OCaml code using `Js_of_ocaml_toplevel.JsooTop.initialize`
+1. Initialize the toplevel in your OCaml code using `Js_of_ocaml_toplevel.Direct.initialize`
 1. Build your bytecode with debug info and linkall:
    
    ```
@@ -2971,7 +2973,7 @@ A toplevel is an interactive OCaml environment (like `ocaml` or `utop`). Js\_of\
 
 ### With wasm\_of\_ocaml
 
-1. Initialize the toplevel in your OCaml code using `Js_of_ocaml_toplevel.JsooTop.initialize`
+1. Initialize the toplevel in your OCaml code using `Js_of_ocaml_toplevel.Direct.initialize`
 1. Build your bytecode with debug info and linkall, linking `wasm_of_ocaml-compiler.dynlink` and `js_of_ocaml-toplevel.common`:
    
    ```
@@ -2984,6 +2986,48 @@ A toplevel is an interactive OCaml environment (like `ocaml` or `utop`). Js\_of\
    ```
    wasm_of_ocaml --toplevel toplevel.byte -o toplevel.js
    ```
+
+### Running the toplevel in a Web Worker
+
+The toplevel can run in a [Web Worker](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API) so that parsing, compiling and evaluating code does not block the page: the page ships source to the worker and renders the results asynchronously.
+
+This splits into two programs:
+
+- the *worker*, which links the toplevel and evaluates the code;
+- the *host* page, which drives the worker and renders results — it does *not* link the toplevel runtime, so it stays small.
+The worker's entry point hands control to the generic driver:
+
+```ocaml
+(* worker.ml *)
+let () = Js_of_ocaml_toplevel_worker.start ()
+```
+Build it like a toplevel. Passing `--no-cmis` keeps the `.cmi` files out of `worker.js` (smaller output); the cmis are then provided as a bundle that the worker fetches at startup:
+
+```
+ocamlfind ocamlc -g -linkall \
+    -package js_of_ocaml-toplevel -package js_of_ocaml-toplevel.worker \
+    -linkpkg worker.ml -o worker.byte
+js_of_ocaml --toplevel --no-cmis worker.byte -o worker.js
+```
+Produce that bundle with `jsoo_mkcmis`; it must be named `stdlib.cmis.js`. Only unwrapped libraries are resolvable from the toplevel this way (for example `stdlib` and `lwt`, not the wrapped `js_of_ocaml`):
+
+```
+jsoo_mkcmis -o stdlib.cmis.js stdlib
+```
+Both `js_of_ocaml` and `jsoo_mkcmis` place cmis under `/static/cmis`, so the worker only fetches the bundle when the cmis are not already there: drop `--no-cmis` to embed them in `worker.js` instead, and no bundle is needed.
+
+The host page drives the worker through `Js_of_ocaml_toplevel_worker_lwt_client` (`create`, `execute`, `reset`, and `interrupt` to stop a hung computation). It depends only on `js_of_ocaml-toplevel.worker_lwt_client` and the dependency-free `js_of_ocaml-toplevel.protocol` (for the result type), so it links no toplevel runtime:
+
+```
+ocamlfind ocamlc -g \
+    -package js_of_ocaml-lwt \
+    -package js_of_ocaml-toplevel.worker_lwt_client \
+    -package js_of_ocaml-toplevel.protocol \
+    -linkpkg main.ml -o main.byte
+js_of_ocaml main.byte -o main.js
+```
+The `toplevel/examples/lwt_toplevel_worker` sources are a complete example, with a banner, input history, an examples sidebar, and a Cancel button that interrupts a stuck computation.
+
 
 ### Limiting available modules
 
@@ -3578,6 +3622,21 @@ The entry point of this library is the module: [`Js_of_ocaml_toplevel`](./Js_of_
 ## Library js\_of\_ocaml-toplevel.common
 
 The entry point of this library is the module: [`Js_of_ocaml_toplevel_common`](./Js_of_ocaml_toplevel_common.md).
+
+
+## Library js\_of\_ocaml-toplevel.protocol
+
+The entry point of this library is the module: [`Js_of_ocaml_toplevel_protocol`](./Js_of_ocaml_toplevel_protocol.md).
+
+
+## Library js\_of\_ocaml-toplevel.worker
+
+The entry point of this library is the module: [`Js_of_ocaml_toplevel_worker`](./Js_of_ocaml_toplevel_worker.md).
+
+
+## Library js\_of\_ocaml-toplevel.worker\_lwt\_client
+
+The entry point of this library is the module: [`Js_of_ocaml_toplevel_worker_lwt_client`](./Js_of_ocaml_toplevel_worker_lwt_client.md).
 
 
 ---
@@ -18602,25 +18661,41 @@ val json : Ppxlib.Deriving.t
 
 # Module `Js_of_ocaml_toplevel`
 
-Run an OCaml toplevel in the browser.
-
-**This library is provided by the `js_of_ocaml-toplevel` opam package.**
+```ocaml
+module Direct = Js_of_ocaml_toplevel_common.Direct
+```
+```ocaml
+module Wrapped = Js_of_ocaml_toplevel_common.Wrapped
+```
+```ocaml
+module Wrapped_intf = Js_of_ocaml_toplevel_protocol.Wrapped_intf
+```
+```ocaml
+val initialize : unit -> unit
+```
+Initialize the toplevel environment (directives and environment). Must be called before evaluating with [`Direct`](./Js_of_ocaml_toplevel_common-Direct.md) or [`Wrapped`](./Js_of_ocaml_toplevel_common-Wrapped.md). Idempotent.
 
 ```ocaml
-module JsooTop = Js_of_ocaml_toplevel_common.JsooTop
+module JsooTop = Direct
+```
+```ocaml
+module JsooTopWrapped = Wrapped
+```
+```ocaml
+module JsooTopIntf = Wrapped_intf
 ```
 
 
 ---
 
-# Module `Js_of_ocaml_toplevel_common.JsooTop`
+# Module `Js_of_ocaml_toplevel_common.Direct`
 
 Helper for Js\_of\_ocaml Toplevel.
 
 ```ocaml
-val use : Stdlib.Format.formatter -> string -> bool
+val use : ?print_outcome:bool -> Stdlib.Format.formatter -> string -> bool
 ```
-`use fmt content` Execute commands `content`. It does not print types nor values.
+`use fmt content` Execute commands `content`, returning `true` if every phrase succeeded. `print_outcome` says whether the computed values and their types should be printed to `fmt`; it defaults to `false` (silent).
 
 ```ocaml
 val execute : 
@@ -18636,12 +18711,17 @@ val execute :
 ```ocaml
 val initialize : unit -> unit
 ```
-Initialize Js\_of\_ocaml toplevel.
+Initialize Js\_of\_ocaml toplevel. Idempotent.
+
+```ocaml
+val reset_toplevel_env : unit -> unit
+```
+Reset the toplevel environment (as on a `#reset`/restart), discarding all user bindings while keeping the runtime cmi directory on the load path so libraries stay resolvable.
 
 
 ---
 
-# Module `Js_of_ocaml_toplevel_common.JsooTopError`
+# Module `Js_of_ocaml_toplevel_common.Error_loc`
 
 ```ocaml
 val loc : exn -> Location.t option
@@ -18650,7 +18730,7 @@ val loc : exn -> Location.t option
 
 ---
 
-# Module `Js_of_ocaml_toplevel_common.JsooTopPpx`
+# Module `Js_of_ocaml_toplevel_common.Ppx`
 
 One can add a ppx rewriter to a toplevel by registering it
 
@@ -18673,18 +18753,579 @@ val preprocess_phrase : Parsetree.toplevel_phrase -> Parsetree.toplevel_phrase
 
 ---
 
+# Module `Js_of_ocaml_toplevel_common.Refill`
+
+```ocaml
+val lexbuf : 
+  string ->
+  int Stdlib.ref ->
+  Stdlib.Format.formatter option ->
+  bytes ->
+  int ->
+  int
+```
+`lexbuf s p ppf buffer len` is a `Lexing.from_function`\-compatible refill function feeding `s` to the lexer one line at a time, tracking the current position in `p`. When `ppf` is `Some _`, each chunk is echoed to it (this is how the toplevel echoes the phrase being read).
+
+`s` is normalized so that it ends with `;;`: the incremental `Toploop.parse_toplevel_phrase` otherwise drops a trailing unterminated phrase.
+
+
+---
+
+# Module `Js_of_ocaml_toplevel_common.Wrapped`
+
+```ocaml
+type loc = Js_of_ocaml_toplevel_protocol.Wrapped_intf.loc = {
+  loc_start : int * int;
+  loc_end : int * int;
+}
+```
+The `result` types are defined in the dependency-free `msg` library and re-exported here.
+
+```ocaml
+type error = Js_of_ocaml_toplevel_protocol.Wrapped_intf.error = {
+  msg : string;
+  locs : loc list;
+}
+```
+```ocaml
+type warning = error
+```
+```ocaml
+type 'a result = 'a Js_of_ocaml_toplevel_protocol.Wrapped_intf.result = 
+  | Success of 'a * warning list
+  | Error of error * warning list
+```
+```ocaml
+val check : unit -> ?setenv:bool -> string -> unit result
+```
+Parse and typecheck a given source code
+
+parameter setenv should the resulting environment replace the current environment? Note that setenv:true only type-checks: it adds definitions to the type environment without running them, so they have no runtime value. Code execution (execute, use, use\_mod\_string) is therefore rejected with an Error until the scratch environment is cleared (see Wrapped.clear\_check / Js\_of\_ocaml\_toplevel\_worker\_lwt\_client.clear\_check). check ~setenv:false (the default) does not touch the environment and stays freely interleavable with execution.
+returns Success () in case of success and Error err where err contains the error message otherwise.
+```ocaml
+val execute : 
+  unit ->
+  ?ppf_code:Stdlib.Format.formatter ->
+  ?print_outcome:bool ->
+  ppf_answer:Stdlib.Format.formatter ->
+  string ->
+  bool result
+```
+Execute a given source code. The evaluation stops after the first toplevel phrase (as terminated by ";;") that fails to compile or for which the evaluation raises an uncaught exception.
+
+parameter ppf\_code a formatter were the source code will be printed before its execution. The printing might be interleaved with call to "pp\_answer" when a line finishes by ";;".
+parameter ppf\_answer a formatter were the compiler outputs will be printed.
+parameter print\_outcome should the toplevel print the computed values and their types ?
+returns Three outcomes:Success true: every phrase compiled and evaluated without raising.Success false: a phrase was compiled but raised an uncaught exception at evaluation time. The toplevel has already rendered the backtrace to ppf\_answer; no structured error is returned here.Error err: parsing or typechecking failed before any phrase could run; err.msg is the rendered error.
+```ocaml
+val use : 
+  unit ->
+  ?filename:string ->
+  ?print_outcome:bool ->
+  ppf_answer:Stdlib.Format.formatter ->
+  string ->
+  bool result
+```
+Execute a given source code. Unlike [`execute`](./#val-execute), the whole buffer is parsed up front (using `Toploop.parse_use_file`); each resulting phrase is then typechecked and evaluated in sequence. Parse errors abort before any phrase runs.
+
+parameter filename a faked filename which will be used in error messages
+parameter ppf\_answer see execute.
+parameter print\_outcome whether to print the computed values and their types; unlike execute it defaults to false (silent, like Toploop.use\_silently).
+returns as execute.
+```ocaml
+val use_mod_string : 
+  unit ->
+  ?print_outcome:bool ->
+  ppf_answer:Stdlib.Format.formatter ->
+  modname:string ->
+  ?sig_code:string ->
+  string ->
+  bool result
+```
+Wrap a given source code into a module and bind it with a given name.
+
+parameter print\_outcome see execute.
+parameter ppf\_answer see execute.
+parameter modname the module name, it must start with a capital character.
+parameter sig\_code source code for the module signature.
+returns as execute.
+```ocaml
+val clear_check : unit -> unit
+```
+Discard the scratch typing environment left by `check ~setenv:true`, restoring the environment as it was just before that call (and thus re-enabling [`execute`](./#val-execute), [`use`](./#val-use) and [`use_mod_string`](./#val-use_mod_string)). All definitions actually executed beforehand are kept; only the type-only definitions introduced by `check ~setenv:true` are dropped. A no-op when no scratch environment is active.
+
+```ocaml
+val make_lexbuf : 
+  ?ppf_code:Stdlib.Format.formatter ->
+  string ->
+  Stdlib.Lexing.lexbuf
+```
+Build a normalized lexbuf for [`step`](./#val-step) from a source string. When `ppf_code` is given, the source is echoed to it as it is consumed. The lexbuf holds no resource beyond what the GC reclaims; there is nothing to close.
+
+```ocaml
+val step : 
+  unit ->
+  ?print_outcome:bool ->
+  ppf_answer:Stdlib.Format.formatter ->
+  Stdlib.Lexing.lexbuf ->
+  [ `Phrase of bool | `Eof ] result
+```
+Parse, preprocess and evaluate the next toplevel phrase from the lexbuf. Returns `Success (`Phrase ok)` for a phrase that ran (`ok` is `false` if it raised at evaluation time, with the backtrace already on `ppf_answer`), `Success `Eof` once the buffer is exhausted, or `Error` on a parse/type error. The caller drives the loop and decides whether to continue after a failure.
+
+```ocaml
+val error_of_exn : exn -> error
+```
+
+
+---
+
 # Module `Js_of_ocaml_toplevel_common`
 
 ```ocaml
-module JsooTop : sig ... end
+module Direct : sig ... end
 ```
 ```ocaml
-module JsooTopError : sig ... end
+module Error_loc : sig ... end
 ```
 ```ocaml
-module JsooTopPpx : sig ... end
+module Ppx : sig ... end
 ```
 One can add a ppx rewriter to a toplevel by registering it
+
+```ocaml
+module Refill : sig ... end
+```
+```ocaml
+module Wrapped : sig ... end
+```
+
+
+---
+
+# Module `Worker_msg.Fd`
+
+```ocaml
+type t
+```
+```ocaml
+val stdout : t
+```
+```ocaml
+val stderr : t
+```
+```ocaml
+val first_free : t
+```
+First descriptor available to `next`; `stdout` and `stderr` are reserved below it and persist across resets.
+
+```ocaml
+val next : t -> t
+```
+```ocaml
+val is_reserved : t -> bool
+```
+```ocaml
+val to_int : t -> int
+```
+For logging only.
+
+```ocaml
+module Map : Stdlib.Map.S with type key = t
+```
+
+
+---
+
+# Module `Worker_msg.Lexbuf`
+
+```ocaml
+type t
+```
+```ocaml
+val first : t
+```
+```ocaml
+val next : t -> t
+```
+```ocaml
+module Map : Stdlib.Map.S with type key = t
+```
+
+
+---
+
+# Module `Worker_msg.Message_id`
+
+```ocaml
+type t
+```
+```ocaml
+val first : t
+```
+```ocaml
+val next : t -> t
+```
+```ocaml
+val to_int : t -> int
+```
+For logging only.
+
+```ocaml
+module Map : Stdlib.Map.S with type key = t
+```
+
+
+---
+
+# Module `Js_of_ocaml_toplevel_protocol.Worker_msg`
+
+Types of the messages exchanged with a toplevel in a Web Worker.
+
+```ocaml
+module Message_id : sig ... end
+```
+```ocaml
+module Fd : sig ... end
+```
+```ocaml
+module Lexbuf : sig ... end
+```
+```ocaml
+type step_result = [ 
+  | `Phrase of bool
+  | `Eof
+ ]
+```
+```ocaml
+type _ host_msg = 
+  | Init : {
+    cmis_base_url : string;
+  } -> unit host_msg
+  | Reset : unit host_msg
+  | Check : {
+    setenv : bool;
+    code : string;
+  } -> unit host_msg
+  | Clear_check : unit host_msg
+  | Execute : {
+    code_fd : Fd.t option;
+    print_outcome : bool;
+    answer_fd : Fd.t;
+    code : string;
+  } -> bool host_msg
+  | Use_string : {
+    filename : string option;
+    print_outcome : bool;
+    answer_fd : Fd.t;
+    code : string;
+  } -> bool host_msg
+  | Use_mod_string : {
+    answer_fd : Fd.t;
+    print_outcome : bool;
+    modname : string;
+    sig_code : string option;
+    code : string;
+  } -> bool host_msg
+  | Import_scripts : string list -> unit host_msg
+  | Open_lexbuf : {
+    id : Lexbuf.t;
+    code : string;
+    code_fd : Fd.t option;
+  } -> unit host_msg
+  | Step : {
+    lexbuf : Lexbuf.t;
+    print_outcome : bool;
+    answer_fd : Fd.t;
+  } -> step_result host_msg
+  | Close_lexbuf : {
+    lexbuf : Lexbuf.t;
+  } -> unit host_msg
+```
+```ocaml
+type _ msg_ty = 
+  | Unit : unit msg_ty
+  | Bool : bool msg_ty
+  | Int : int msg_ty
+  | String : string msg_ty
+  | Step_result : step_result msg_ty
+```
+```ocaml
+type (_, _) eq = 
+  | Eq : ('a, 'a) eq
+```
+```ocaml
+type toploop_msg = 
+  | Write : Fd.t * string -> toploop_msg
+  | ReturnSuccess : Message_id.t
+    * 'a msg_ty
+    * 'a
+    * Wrapped_intf.warning list -> toploop_msg
+  | ReturnError : Message_id.t
+    * Wrapped_intf.error
+    * Wrapped_intf.warning list -> toploop_msg
+```
+```ocaml
+val ty_of_host_msg : 't. 't host_msg -> 't msg_ty
+```
+
+
+---
+
+# Module type `Wrapped_intf.Wrapped`
+
+```ocaml
+type toplevel
+```
+```ocaml
+type 'a result
+```
+```ocaml
+type output
+```
+```ocaml
+val check : toplevel -> ?setenv:bool -> string -> unit result
+```
+Parse and typecheck a given source code
+
+parameter setenv should the resulting environment replace the current environment? Note that setenv:true only type-checks: it adds definitions to the type environment without running them, so they have no runtime value. Code execution (execute, use, use\_mod\_string) is therefore rejected with an Error until the scratch environment is cleared (see Wrapped.clear\_check / Js\_of\_ocaml\_toplevel\_worker\_lwt\_client.clear\_check). check ~setenv:false (the default) does not touch the environment and stays freely interleavable with execution.
+returns Success () in case of success and Error err where err contains the error message otherwise.
+```ocaml
+val execute : 
+  toplevel ->
+  ?ppf_code:output ->
+  ?print_outcome:bool ->
+  ppf_answer:output ->
+  string ->
+  bool result
+```
+Execute a given source code. The evaluation stops after the first toplevel phrase (as terminated by ";;") that fails to compile or for which the evaluation raises an uncaught exception.
+
+parameter ppf\_code a formatter were the source code will be printed before its execution. The printing might be interleaved with call to "pp\_answer" when a line finishes by ";;".
+parameter ppf\_answer a formatter were the compiler outputs will be printed.
+parameter print\_outcome should the toplevel print the computed values and their types ?
+returns Three outcomes:Success true: every phrase compiled and evaluated without raising.Success false: a phrase was compiled but raised an uncaught exception at evaluation time. The toplevel has already rendered the backtrace to ppf\_answer; no structured error is returned here.Error err: parsing or typechecking failed before any phrase could run; err.msg is the rendered error.
+```ocaml
+val use : 
+  toplevel ->
+  ?filename:string ->
+  ?print_outcome:bool ->
+  ppf_answer:output ->
+  string ->
+  bool result
+```
+Execute a given source code. Unlike [`execute`](./#val-execute), the whole buffer is parsed up front (using `Toploop.parse_use_file`); each resulting phrase is then typechecked and evaluated in sequence. Parse errors abort before any phrase runs.
+
+parameter filename a faked filename which will be used in error messages
+parameter ppf\_answer see execute.
+parameter print\_outcome whether to print the computed values and their types; unlike execute it defaults to false (silent, like Toploop.use\_silently).
+returns as execute.
+```ocaml
+val use_mod_string : 
+  toplevel ->
+  ?print_outcome:bool ->
+  ppf_answer:output ->
+  modname:string ->
+  ?sig_code:string ->
+  string ->
+  bool result
+```
+Wrap a given source code into a module and bind it with a given name.
+
+parameter print\_outcome see execute.
+parameter ppf\_answer see execute.
+parameter modname the module name, it must start with a capital character.
+parameter sig\_code source code for the module signature.
+returns as execute.
+
+
+---
+
+# Module `Js_of_ocaml_toplevel_protocol.Wrapped_intf`
+
+```ocaml
+type loc = {
+  loc_start : int * int;
+  loc_end : int * int;
+}
+```
+```ocaml
+type error = {
+  msg : string;
+  locs : loc list;
+}
+```
+```ocaml
+type warning = error
+```
+```ocaml
+type 'a result = 
+  | Success of 'a * warning list
+  | Error of error * warning list
+```
+```ocaml
+module type Wrapped = sig ... end
+```
+
+
+---
+
+# Module `Js_of_ocaml_toplevel_protocol`
+
+```ocaml
+module Worker_msg : sig ... end
+```
+Types of the messages exchanged with a toplevel in a Web Worker.
+
+```ocaml
+module Wrapped_intf : sig ... end
+```
+
+
+---
+
+# Module `Js_of_ocaml_toplevel_worker`
+
+Worker-side entrypoint.
+
+```ocaml
+val start : unit -> unit
+```
+Install the `onmessage` handler that drives the toplevel in this Web Worker, along with the stdout/stderr channel flushers and the `"cmis"` directive. Call once from the worker program's entry point; nothing is installed at module load.
+
+
+---
+
+# Module `Js_of_ocaml_toplevel_worker_lwt_client`
+
+```ocaml
+type toplevel
+```
+```ocaml
+type 'a result = 'a Js_of_ocaml_toplevel_protocol.Wrapped_intf.result Lwt.t
+```
+```ocaml
+type output = string -> unit
+```
+```ocaml
+type lexbuf
+```
+Handle for a worker-side parsing session created by [`open_lexbuf`](./#val-open_lexbuf) and stepped one phrase at a time with [`step`](./#val-step).
+
+```ocaml
+exception Init_failed of Js_of_ocaml_toplevel_protocol.Wrapped_intf.error
+```
+Raised (as the result of the [`create`](./#val-create) thread) when the worker fails to initialize its toplevel environment — for instance when the worker script cannot be loaded or `stdlib.cmis.js` is missing under the `cmis_base_url`.
+
+```ocaml
+val create : 
+  ?cmis_base_url:string ->
+  ?after_init:(toplevel -> unit Lwt.t) ->
+  pp_stdout:output ->
+  pp_stderr:output ->
+  js_file:string ->
+  unit ->
+  toplevel Lwt.t
+```
+Spawn the worker and initialize its toplevel. The returned thread fails with [`Init_failed`](./#exception-Init_failed) if initialization does not succeed.
+
+The worker fetches `<cmis_base_url>stdlib.cmis.js` at startup only if the cmis are not already embedded (i.e. it was built with `--no-cmis`).
+
+```ocaml
+val set_after_init : toplevel -> (toplevel -> unit Lwt.t) -> unit
+```
+```ocaml
+val import_cmis_js : 
+  toplevel ->
+  string ->
+  unit Js_of_ocaml_toplevel_protocol.Wrapped_intf.result Lwt.t
+```
+```ocaml
+val reset : toplevel -> ?timeout:(unit -> unit Lwt.t) -> unit -> unit Lwt.t
+```
+```ocaml
+val interrupt : toplevel -> unit Lwt.t
+```
+Forcibly terminate the worker — use this when a computation is stuck in an infinite loop and so cannot be reached by [`reset`](./#val-reset)'s cooperative `Reset` message — and respawn a fresh, re-initialized one (re-importing the cmis bundles and running `after_init`). Any request in flight fails with `Lwt.Canceled`. All toplevel state is lost, since the worker process is killed.
+
+```ocaml
+val clear_check : toplevel -> unit Lwt.t
+```
+Discard the scratch typing environment left by `check ~setenv:true` on the worker, re-enabling [`execute`](./#val-execute) and the other code-running operations. See [`Js_of_ocaml_toplevel.Wrapped.clear_check`](./Js_of_ocaml_toplevel_common-Wrapped.md#val-clear_check).
+
+```ocaml
+val open_lexbuf : toplevel -> ?ppf_code:output -> string -> lexbuf Lwt.t
+```
+Open a worker-side parsing session over `code` to be stepped with [`step`](./#val-step). When `ppf_code` is given, the source is echoed to it as it is consumed. Release it with [`close_lexbuf`](./#val-close_lexbuf).
+
+```ocaml
+val step : 
+  toplevel ->
+  ?print_outcome:bool ->
+  ppf_answer:output ->
+  lexbuf ->
+  [ `Phrase of bool | `Eof ] result
+```
+Evaluate the next phrase of a session. ``Phrase ok` ran a phrase (`ok` is `false` if it raised at evaluation), ``Eof` once the buffer is exhausted, and an `Error` result on a parse/type error. The caller drives the loop and decides whether to continue after a failure.
+
+```ocaml
+val close_lexbuf : toplevel -> lexbuf -> unit Lwt.t
+```
+Release a session opened with [`open_lexbuf`](./#val-open_lexbuf).
+
+```ocaml
+val check : toplevel -> ?setenv:bool -> string -> unit result
+```
+Parse and typecheck a given source code
+
+parameter setenv should the resulting environment replace the current environment? Note that setenv:true only type-checks: it adds definitions to the type environment without running them, so they have no runtime value. Code execution (execute, use, use\_mod\_string) is therefore rejected with an Error until the scratch environment is cleared (see Wrapped.clear\_check / Js\_of\_ocaml\_toplevel\_worker\_lwt\_client.clear\_check). check ~setenv:false (the default) does not touch the environment and stays freely interleavable with execution.
+returns Success () in case of success and Error err where err contains the error message otherwise.
+```ocaml
+val execute : 
+  toplevel ->
+  ?ppf_code:output ->
+  ?print_outcome:bool ->
+  ppf_answer:output ->
+  string ->
+  bool result
+```
+Execute a given source code. The evaluation stops after the first toplevel phrase (as terminated by ";;") that fails to compile or for which the evaluation raises an uncaught exception.
+
+parameter ppf\_code a formatter were the source code will be printed before its execution. The printing might be interleaved with call to "pp\_answer" when a line finishes by ";;".
+parameter ppf\_answer a formatter were the compiler outputs will be printed.
+parameter print\_outcome should the toplevel print the computed values and their types ?
+returns Three outcomes:Success true: every phrase compiled and evaluated without raising.Success false: a phrase was compiled but raised an uncaught exception at evaluation time. The toplevel has already rendered the backtrace to ppf\_answer; no structured error is returned here.Error err: parsing or typechecking failed before any phrase could run; err.msg is the rendered error.
+```ocaml
+val use : 
+  toplevel ->
+  ?filename:string ->
+  ?print_outcome:bool ->
+  ppf_answer:output ->
+  string ->
+  bool result
+```
+Execute a given source code. Unlike [`execute`](./#val-execute), the whole buffer is parsed up front (using `Toploop.parse_use_file`); each resulting phrase is then typechecked and evaluated in sequence. Parse errors abort before any phrase runs.
+
+parameter filename a faked filename which will be used in error messages
+parameter ppf\_answer see execute.
+parameter print\_outcome whether to print the computed values and their types; unlike execute it defaults to false (silent, like Toploop.use\_silently).
+returns as execute.
+```ocaml
+val use_mod_string : 
+  toplevel ->
+  ?print_outcome:bool ->
+  ppf_answer:output ->
+  modname:string ->
+  ?sig_code:string ->
+  string ->
+  bool result
+```
+Wrap a given source code into a module and bind it with a given name.
+
+parameter print\_outcome see execute.
+parameter ppf\_answer see execute.
+parameter modname the module name, it must start with a capital character.
+parameter sig\_code source code for the module signature.
+returns as execute.
 
 
 ---

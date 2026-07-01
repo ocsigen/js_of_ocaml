@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Module Js_of_ocaml_toplevel_worker_lwt_client — Js_of_ocaml</title>
+  <link rel="stylesheet" href="/css/style.css"/>
+  <link rel="stylesheet" href="/css/ocsigen-odoc.css"/>
+  <link rel="alternate" type="text/markdown" href="../../js_of_ocaml-toplevel/Js_of_ocaml_toplevel_worker_lwt_client.md"/>
+  <script src="../../highlight.pack.js"></script>
+  <script src="../../wodoc-highlight.js"></script>
+</head>
+<body class="wodoc-page wodoc-doc wodoc-project-js_of_ocaml">
+  <!-- Shared site menu — THE single source of truth for the header, top menu and
+     drawer of EVERY Ocsigen doc page (vitrine + all projects). Canonical copy
+     lives here in ocsigen.github.io; each project's build fetches it. Injected
+     by `wodoc assemble --menu`. Holes filled by the tool (braces omitted here so
+     this comment is not itself rewritten by the hole-filler):
+       subproject  the sub-project name shown next to the Ocsigen logo
+                   (empty on the vitrine), via --subproject
+       leftnav     the project's left navigation, expanded into BOTH the mobile
+                   drawer (below) and the left column (in the page template),
+                   via --leftnav
+     The current entry is highlighted by adding the `current` class to the
+     element carrying data-wodoc-page=<id>: --current on the vitrine (page id),
+     --menu-current in a project (the project id). Nothing is hardcoded here, so
+     this file is the ONLY place the menu is defined.
+
+     Links are the FINAL site paths (/<project>/, /<page>): the target layout
+     where each project is served at ocsigen.org/<project>/ — no transitional
+     /wodoc/ prefix. -->
+<div class="page-header">
+  <p class="logo-ocsigen"><a href="/"><img src="/img/ocsigen-white.svg" alt="Ocsigen"/></a></p>
+  <p class="logo-subproject">Js_of_ocaml</p>
+
+  <div class="mainmenu">
+    <p class="mainmenu-home" data-wodoc-page="githubio"><a href="/">Home</a></p>
+    <p class="mainmenu-doc" data-wodoc-page="tuto"><a href="/tuto/">Doc</a></p>
+    <p class="mainmenu-blog" data-wodoc-page="blog"><a href="/blog/">Blog</a></p>
+    <p data-wodoc-page="eliom"><a href="/eliom/">Eliom</a></p>
+    <p data-wodoc-page="js_of_ocaml" class="current"><a href="/js_of_ocaml/">Js_of_ocaml</a></p>
+    <p data-wodoc-page="ocsigenserver"><a href="/ocsigenserver/">Server</a></p>
+    <p data-wodoc-page="lwt"><a href="/lwt/">Lwt</a></p>
+    <p data-wodoc-page="tyxml"><a href="/tyxml/">Tyxml</a></p>
+    <p data-wodoc-page="ocsigen-start"><a href="/ocsigen-start/">Start</a></p>
+  </div>
+
+  <form id="googlesearch" action="https://google.com/search">
+    <input name="q" id="gsearch-box" placeholder="Search using Google"/>
+    <label for="gsearch-box"><img src="/img/search.svg" alt="" id="gsearch-icon"/></label>
+    <input type="submit" id="gsearch-submit" onclick="document.getElementById('gsearch-box').value += ' site:ocsigen.org';"/>
+  </form>
+
+  <aside class="how-drawer">
+    <input id="how-drawer-toggle" type="checkbox"/>
+    <label for="how-drawer-toggle" id="how-drawer-label"><span class="how-drawer-icon"></span></label>
+    <nav class="how-drawer-content">
+      <ul class="drawermainmenu">
+        <li class="drawermainmenu-home" data-wodoc-page="githubio"><a href="/">Home</a></li>
+        <li class="drawermainmenu-doc" data-wodoc-page="tuto"><a href="/tuto/">Doc</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="eliom"><a href="/eliom/">Eliom</a></li>
+        <li class="drawermainmenu-project current" data-wodoc-page="js_of_ocaml"><a href="/js_of_ocaml/">Js_of_ocaml</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsigenserver"><a href="/ocsigenserver/">Server</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="lwt"><a href="/lwt/">Lwt</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="tyxml"><a href="/tyxml/">Tyxml</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsigen-toolkit"><a href="/ocsigen-toolkit/">Toolkit</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsigen-start"><a href="/ocsigen-start/">Start</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsipersist"><a href="/ocsipersist/">Ocsipersist</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="reactiveData"><a href="/reactiveData/">ReactiveData</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsigen-i18n"><a href="/ocsigen-i18n/">i18n</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="wodoc"><a href="/wodoc/">Wodoc</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="projects"><a href="/projects">Other projects</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="papers"><a href="/papers">Research papers</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="credits"><a href="/credits">Who does Ocsigen?</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="contributing"><a href="/contributing">Contributing</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="blog"><a href="/blog/">Blog</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="install"><a href="/install">Installation</a></li>
+        <li class="drawermainmenu-page"><a href="https://github.com/ocsigen">Source code</a></li>
+      </ul>
+      <!-- On mobile the left column is hidden; its menu lives here in the burger
+           (.how-doctree, shown only on narrow screens), as the old site did.
+           Empty on the vitrine; the leftnav hole is filled (with the same
+           fragment as the left column) only on project pages. -->
+      <nav class="how-doctree"><div class="docversion">
+  <label>Version:
+    <select class="wodoc-version" onchange="wodocVersion(this.value)">
+      <option value="dev">dev</option>
+    </select>
+  </label>
+</div>
+<div class="page-toc">
+  <h3>On this page</h3>
+  
+</div>
+<nav class="api-nav manual-nav">
+<h3>Getting Started</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/overview.html"><a href="../../js_of_ocaml/overview.html">Overview</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/install.html"><a href="../../js_of_ocaml/install.html">Installation</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/quickstart.html"><a href="../../js_of_ocaml/quickstart.html">Quick Start</a></li>
+</ul>
+<h3>Programming Guide</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/javascript-interop.html"><a href="../../js_of_ocaml/javascript-interop.html">JavaScript interop</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/ppx.html"><a href="../../js_of_ocaml/ppx.html">PPX syntax extension</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/ppx-deriving.html"><a href="../../js_of_ocaml/ppx-deriving.html">JSON derivation</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/rev-bindings.html"><a href="../../js_of_ocaml/rev-bindings.html">Export OCaml code to JavaScript</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/errors.html"><a href="../../js_of_ocaml/errors.html">Error handling</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/api.html"><a href="../../js_of_ocaml/api.html">API</a></li>
+</ul>
+<h3>Lwt Support</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/lwt.html"><a href="../../js_of_ocaml/lwt.html">Lwt support</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml-lwt/Js_of_ocaml_lwt/index.html"><a href="../../js_of_ocaml-lwt/Js_of_ocaml_lwt/index.html">API</a></li>
+</ul>
+<h3>Compiler</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/options.html"><a href="../../js_of_ocaml/options.html">Command line options</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/compilation-modes.html"><a href="../../js_of_ocaml/compilation-modes.html">Compilation modes</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/linker.html"><a href="../../js_of_ocaml/linker.html">JavaScript primitives</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/tailcall.html"><a href="../../js_of_ocaml/tailcall.html">Tailcall optimization</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/effects.html"><a href="../../js_of_ocaml/effects.html">Effect handlers</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/runtime-representation.html"><a href="../../js_of_ocaml/runtime-representation.html">Runtime representation</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/browser-compat.html"><a href="../../js_of_ocaml/browser-compat.html">Targeting older browsers</a></li>
+</ul>
+<h3>Wasm_of_ocaml</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/wasm_overview.html"><a href="../../js_of_ocaml/wasm_overview.html">Overview</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/wasm_runtime.html"><a href="../../js_of_ocaml/wasm_runtime.html">Writing Wasm primitives</a></li>
+</ul>
+<h3>How-to Guides</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/build-toplevel.html"><a href="../../js_of_ocaml/build-toplevel.html">Build a toplevel or use Dynlink</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/debug.html"><a href="../../js_of_ocaml/debug.html">Debug a program</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/performances.html"><a href="../../js_of_ocaml/performances.html">Performance</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/contribute.html"><a href="../../js_of_ocaml/contribute.html">Contribute</a></li>
+</ul>
+<h3>Try it</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/files/toplevel/index.html"><a href="../../js_of_ocaml/files/toplevel/index.html">OCaml toplevel</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/examples.html"><a href="../../js_of_ocaml/examples.html">Examples and projects</a></li>
+</ul>
+</nav>
+</nav>
+    </nav>
+  </aside>
+</div>
+
+
+  <div class="project-page">
+    <div class="twocols">
+      <nav class="leftcol">
+        <div class="docversion">
+  <label>Version:
+    <select class="wodoc-version" onchange="wodocVersion(this.value)">
+      <option value="dev">dev</option>
+    </select>
+  </label>
+</div>
+<div class="page-toc">
+  <h3>On this page</h3>
+  
+</div>
+<nav class="api-nav manual-nav">
+<h3>Getting Started</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/overview.html"><a href="../../js_of_ocaml/overview.html">Overview</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/install.html"><a href="../../js_of_ocaml/install.html">Installation</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/quickstart.html"><a href="../../js_of_ocaml/quickstart.html">Quick Start</a></li>
+</ul>
+<h3>Programming Guide</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/javascript-interop.html"><a href="../../js_of_ocaml/javascript-interop.html">JavaScript interop</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/ppx.html"><a href="../../js_of_ocaml/ppx.html">PPX syntax extension</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/ppx-deriving.html"><a href="../../js_of_ocaml/ppx-deriving.html">JSON derivation</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/rev-bindings.html"><a href="../../js_of_ocaml/rev-bindings.html">Export OCaml code to JavaScript</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/errors.html"><a href="../../js_of_ocaml/errors.html">Error handling</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/api.html"><a href="../../js_of_ocaml/api.html">API</a></li>
+</ul>
+<h3>Lwt Support</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/lwt.html"><a href="../../js_of_ocaml/lwt.html">Lwt support</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml-lwt/Js_of_ocaml_lwt/index.html"><a href="../../js_of_ocaml-lwt/Js_of_ocaml_lwt/index.html">API</a></li>
+</ul>
+<h3>Compiler</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/options.html"><a href="../../js_of_ocaml/options.html">Command line options</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/compilation-modes.html"><a href="../../js_of_ocaml/compilation-modes.html">Compilation modes</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/linker.html"><a href="../../js_of_ocaml/linker.html">JavaScript primitives</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/tailcall.html"><a href="../../js_of_ocaml/tailcall.html">Tailcall optimization</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/effects.html"><a href="../../js_of_ocaml/effects.html">Effect handlers</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/runtime-representation.html"><a href="../../js_of_ocaml/runtime-representation.html">Runtime representation</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/browser-compat.html"><a href="../../js_of_ocaml/browser-compat.html">Targeting older browsers</a></li>
+</ul>
+<h3>Wasm_of_ocaml</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/wasm_overview.html"><a href="../../js_of_ocaml/wasm_overview.html">Overview</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/wasm_runtime.html"><a href="../../js_of_ocaml/wasm_runtime.html">Writing Wasm primitives</a></li>
+</ul>
+<h3>How-to Guides</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/build-toplevel.html"><a href="../../js_of_ocaml/build-toplevel.html">Build a toplevel or use Dynlink</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/debug.html"><a href="../../js_of_ocaml/debug.html">Debug a program</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/performances.html"><a href="../../js_of_ocaml/performances.html">Performance</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/contribute.html"><a href="../../js_of_ocaml/contribute.html">Contribute</a></li>
+</ul>
+<h3>Try it</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="js_of_ocaml/files/toplevel/index.html"><a href="../../js_of_ocaml/files/toplevel/index.html">OCaml toplevel</a></li>
+<li class="ml3" data-wodoc-page="js_of_ocaml/examples.html"><a href="../../js_of_ocaml/examples.html">Examples and projects</a></li>
+</ul>
+</nav>
+
+      </nav>
+      <article class="rightcol">
+        <header class="odoc-preamble"><h1>Module <code><span>Js_of_ocaml_toplevel_worker_lwt_client</span></code></h1></header>
+        <div class="odoc-content"><div class="odoc-spec"><div class="spec type anchored" id="type-toplevel"><code><span><span class="keyword">type</span> toplevel</span></code></div></div><div class="odoc-spec"><div class="spec type anchored" id="type-result"><code><span><span class="keyword">type</span> <span>'a result</span></span><span> = <span><span><span class="type-var">'a</span> <a href="../Js_of_ocaml_toplevel_protocol/Wrapped_intf/index.html#type-result">Js_of_ocaml_toplevel_protocol.Wrapped_intf.result</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec type anchored" id="type-output"><code><span><span class="keyword">type</span> output</span><span> = <span>string <span class="arrow">&#45;&gt;</span></span> unit</span></code></div></div><div class="odoc-spec"><div class="spec type anchored" id="type-lexbuf"><code><span><span class="keyword">type</span> lexbuf</span></code></div><div class="spec-doc"><p>Handle for a worker-side parsing session created by <a href="#val-open_lexbuf"><code>open_lexbuf</code></a> and stepped one phrase at a time with <a href="#val-step"><code>step</code></a>.</p></div></div><div class="odoc-spec"><div class="spec exception anchored" id="exception-Init_failed"><code><span><span class="keyword">exception</span> </span><span><span class="exception">Init_failed</span> <span class="keyword">of</span> <a href="../Js_of_ocaml_toplevel_protocol/Wrapped_intf/index.html#type-error">Js_of_ocaml_toplevel_protocol.Wrapped_intf.error</a></span></code></div><div class="spec-doc"><p>Raised (as the result of the <a href="#val-create"><code>create</code></a> thread) when the worker fails to initialize its toplevel environment — for instance when the worker script cannot be loaded or <code>stdlib.cmis.js</code> is missing under the <code>cmis_base_url</code>.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-create"><code><span><span class="keyword">val</span> create : 
+  <span><span class="optlabel">?cmis_base_url</span>:string <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?after_init</span>:<span>(<span><a href="#type-toplevel">toplevel</a> <span class="arrow">&#45;&gt;</span></span> <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="label">pp_stdout</span>:<a href="#type-output">output</a> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="label">pp_stderr</span>:<a href="#type-output">output</a> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="label">js_file</span>:string <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="arrow">&#45;&gt;</span></span>
+  <span><a href="#type-toplevel">toplevel</a> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div><div class="spec-doc"><p>Spawn the worker and initialize its toplevel. The returned thread fails with <a href="#exception-Init_failed"><code>Init_failed</code></a> if initialization does not succeed.</p><p>The worker fetches <code>&lt;cmis_base_url&gt;stdlib.cmis.js</code> at startup only if the cmis are not already embedded (i.e. it was built with <code>--no-cmis</code>).</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-set_after_init"><code><span><span class="keyword">val</span> set_after_init : <span><a href="#type-toplevel">toplevel</a> <span class="arrow">&#45;&gt;</span></span> <span><span>(<span><a href="#type-toplevel">toplevel</a> <span class="arrow">&#45;&gt;</span></span> <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span> unit</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-import_cmis_js"><code><span><span class="keyword">val</span> import_cmis_js : 
+  <span><a href="#type-toplevel">toplevel</a> <span class="arrow">&#45;&gt;</span></span>
+  <span>string <span class="arrow">&#45;&gt;</span></span>
+  <span><span>unit <a href="../Js_of_ocaml_toplevel_protocol/Wrapped_intf/index.html#type-result">Js_of_ocaml_toplevel_protocol.Wrapped_intf.result</a></span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-reset"><code><span><span class="keyword">val</span> reset : <span><a href="#type-toplevel">toplevel</a> <span class="arrow">&#45;&gt;</span></span> <span><span class="optlabel">?timeout</span>:<span>(<span>unit <span class="arrow">&#45;&gt;</span></span> <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span> <span>unit <span class="arrow">&#45;&gt;</span></span> <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-interrupt"><code><span><span class="keyword">val</span> interrupt : <span><a href="#type-toplevel">toplevel</a> <span class="arrow">&#45;&gt;</span></span> <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div><div class="spec-doc"><p>Forcibly terminate the worker — use this when a computation is stuck in an infinite loop and so cannot be reached by <a href="#val-reset"><code>reset</code></a>'s cooperative <code>Reset</code> message — and respawn a fresh, re-initialized one (re-importing the cmis bundles and running <code>after_init</code>). Any request in flight fails with <code>Lwt.Canceled</code>. All toplevel state is lost, since the worker process is killed.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-clear_check"><code><span><span class="keyword">val</span> clear_check : <span><a href="#type-toplevel">toplevel</a> <span class="arrow">&#45;&gt;</span></span> <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div><div class="spec-doc"><p>Discard the scratch typing environment left by <code>check ~setenv:true</code> on the worker, re-enabling <a href="#val-execute"><code>execute</code></a> and the other code-running operations. See <a href="../Js_of_ocaml_toplevel_common/Wrapped/index.html#val-clear_check"><code>Js_of_ocaml_toplevel.Wrapped.clear_check</code></a>.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-open_lexbuf"><code><span><span class="keyword">val</span> open_lexbuf : <span><a href="#type-toplevel">toplevel</a> <span class="arrow">&#45;&gt;</span></span> <span><span class="optlabel">?ppf_code</span>:<a href="#type-output">output</a> <span class="arrow">&#45;&gt;</span></span> <span>string <span class="arrow">&#45;&gt;</span></span> <span><a href="#type-lexbuf">lexbuf</a> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div><div class="spec-doc"><p>Open a worker-side parsing session over <code>code</code> to be stepped with <a href="#val-step"><code>step</code></a>. When <code>ppf_code</code> is given, the source is echoed to it as it is consumed. Release it with <a href="#val-close_lexbuf"><code>close_lexbuf</code></a>.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-step"><code><span><span class="keyword">val</span> step : 
+  <span><a href="#type-toplevel">toplevel</a> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?print_outcome</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="label">ppf_answer</span>:<a href="#type-output">output</a> <span class="arrow">&#45;&gt;</span></span>
+  <span><a href="#type-lexbuf">lexbuf</a> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>[ <span>`Phrase of bool</span> <span>| `Eof</span> ]</span> <a href="#type-result">result</a></span></span></code></div><div class="spec-doc"><p>Evaluate the next phrase of a session. <code>`Phrase ok</code> ran a phrase (<code>ok</code> is <code>false</code> if it raised at evaluation), <code>`Eof</code> once the buffer is exhausted, and an <code>Error</code> result on a parse/type error. The caller drives the loop and decides whether to continue after a failure.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-close_lexbuf"><code><span><span class="keyword">val</span> close_lexbuf : <span><a href="#type-toplevel">toplevel</a> <span class="arrow">&#45;&gt;</span></span> <span><a href="#type-lexbuf">lexbuf</a> <span class="arrow">&#45;&gt;</span></span> <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div><div class="spec-doc"><p>Release a session opened with <a href="#val-open_lexbuf"><code>open_lexbuf</code></a>.</p></div></div><div class="odoc-include"><details open="open"><summary class="spec include"><code><span><span class="keyword">include</span> <a href="../Js_of_ocaml_toplevel_protocol/Wrapped_intf/module-type-Wrapped/index.html">Js_of_ocaml_toplevel_protocol.Wrapped_intf.Wrapped</a>
+  <span class="keyword">with</span> <span><span class="keyword">type</span> <a href="../Js_of_ocaml_toplevel_protocol/Wrapped_intf/module-type-Wrapped/index.html#type-toplevel">toplevel</a> := <a href="#type-toplevel">toplevel</a></span>
+   <span class="keyword">and</span> <span><span class="keyword">type</span> <span>'a <a href="../Js_of_ocaml_toplevel_protocol/Wrapped_intf/module-type-Wrapped/index.html#type-result">result</a></span> := <span><span class="type-var">'a</span> <a href="#type-result">result</a></span></span>
+   <span class="keyword">and</span> <span><span class="keyword">type</span> <a href="../Js_of_ocaml_toplevel_protocol/Wrapped_intf/module-type-Wrapped/index.html#type-output">output</a> := <a href="#type-output">output</a></span></span></code></summary><div class="odoc-spec"><div class="spec value anchored" id="val-check"><code><span><span class="keyword">val</span> check : <span><a href="#type-toplevel">toplevel</a> <span class="arrow">&#45;&gt;</span></span> <span><span class="optlabel">?setenv</span>:bool <span class="arrow">&#45;&gt;</span></span> <span>string <span class="arrow">&#45;&gt;</span></span> <span>unit <a href="#type-result">result</a></span></span></code></div><div class="spec-doc"><p>Parse and typecheck a given source code</p><ul class="at-tags"><li class="parameter"><span class="at-tag">parameter</span> <span class="value">setenv</span> <p>should the resulting environment replace the current environment? Note that <code>setenv:true</code> only type-checks: it adds definitions to the type environment without running them, so they have no runtime value. Code execution (<code>execute</code>, <code>use</code>, <code>use_mod_string</code>) is therefore rejected with an <code>Error</code> until the scratch environment is cleared (see <code>Wrapped.clear_check</code> / <code>Js_of_ocaml_toplevel_worker_lwt_client.clear_check</code>). <code>check ~setenv:false</code> (the default) does not touch the environment and stays freely interleavable with execution.</p></li></ul><ul class="at-tags"><li class="returns"><span class="at-tag">returns</span> <p><code>Success ()</code> in case of success and <code>Error err</code> where <code>err</code> contains the error message otherwise.</p></li></ul></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-execute"><code><span><span class="keyword">val</span> execute : 
+  <span><a href="#type-toplevel">toplevel</a> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?ppf_code</span>:<a href="#type-output">output</a> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?print_outcome</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="label">ppf_answer</span>:<a href="#type-output">output</a> <span class="arrow">&#45;&gt;</span></span>
+  <span>string <span class="arrow">&#45;&gt;</span></span>
+  <span>bool <a href="#type-result">result</a></span></span></code></div><div class="spec-doc"><p>Execute a given source code. The evaluation stops after the first toplevel phrase (as terminated by &quot;;;&quot;) that fails to compile or for which the evaluation raises an uncaught exception.</p><ul class="at-tags"><li class="parameter"><span class="at-tag">parameter</span> <span class="value">ppf_code</span> <p>a formatter were the source code will be printed before its execution. The printing might be interleaved with call to &quot;pp_answer&quot; when a line finishes by &quot;;;&quot;.</p></li></ul><ul class="at-tags"><li class="parameter"><span class="at-tag">parameter</span> <span class="value">ppf_answer</span> <p>a formatter were the compiler outputs will be printed.</p></li></ul><ul class="at-tags"><li class="parameter"><span class="at-tag">parameter</span> <span class="value">print_outcome</span> <p>should the toplevel print the computed values and their types ?</p></li></ul><ul class="at-tags"><li class="returns"><span class="at-tag">returns</span> <p>Three outcomes:</p><ul><li><code>Success true</code>: every phrase compiled and evaluated without raising.</li><li><code>Success false</code>: a phrase was compiled but raised an uncaught exception at evaluation time. The toplevel has already rendered the backtrace to <code>ppf_answer</code>; no structured error is returned here.</li><li><code>Error err</code>: parsing or typechecking failed before any phrase could run; <code>err.msg</code> is the rendered error.</li></ul></li></ul></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-use"><code><span><span class="keyword">val</span> use : 
+  <span><a href="#type-toplevel">toplevel</a> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?filename</span>:string <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?print_outcome</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="label">ppf_answer</span>:<a href="#type-output">output</a> <span class="arrow">&#45;&gt;</span></span>
+  <span>string <span class="arrow">&#45;&gt;</span></span>
+  <span>bool <a href="#type-result">result</a></span></span></code></div><div class="spec-doc"><p>Execute a given source code. Unlike <a href="#val-execute"><code>execute</code></a>, the whole buffer is parsed up front (using <code>Toploop.parse_use_file</code>); each resulting phrase is then typechecked and evaluated in sequence. Parse errors abort before any phrase runs.</p><ul class="at-tags"><li class="parameter"><span class="at-tag">parameter</span> <span class="value">filename</span> <p>a faked filename which will be used in error messages</p></li></ul><ul class="at-tags"><li class="parameter"><span class="at-tag">parameter</span> <span class="value">ppf_answer</span> <p>see <a href="#val-execute"><code>execute</code></a>.</p></li></ul><ul class="at-tags"><li class="parameter"><span class="at-tag">parameter</span> <span class="value">print_outcome</span> <p>whether to print the computed values and their types; unlike <a href="#val-execute"><code>execute</code></a> it defaults to <code>false</code> (silent, like <code>Toploop.use_silently</code>).</p></li></ul><ul class="at-tags"><li class="returns"><span class="at-tag">returns</span> <p>as <a href="#val-execute"><code>execute</code></a>.</p></li></ul></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-use_mod_string"><code><span><span class="keyword">val</span> use_mod_string : 
+  <span><a href="#type-toplevel">toplevel</a> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?print_outcome</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="label">ppf_answer</span>:<a href="#type-output">output</a> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="label">modname</span>:string <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?sig_code</span>:string <span class="arrow">&#45;&gt;</span></span>
+  <span>string <span class="arrow">&#45;&gt;</span></span>
+  <span>bool <a href="#type-result">result</a></span></span></code></div><div class="spec-doc"><p>Wrap a given source code into a module and bind it with a given name.</p><ul class="at-tags"><li class="parameter"><span class="at-tag">parameter</span> <span class="value">print_outcome</span> <p>see <a href="#val-execute"><code>execute</code></a>.</p></li></ul><ul class="at-tags"><li class="parameter"><span class="at-tag">parameter</span> <span class="value">ppf_answer</span> <p>see <a href="#val-execute"><code>execute</code></a>.</p></li></ul><ul class="at-tags"><li class="parameter"><span class="at-tag">parameter</span> <span class="value">modname</span> <p>the module name, it must start with a capital character.</p></li></ul><ul class="at-tags"><li class="parameter"><span class="at-tag">parameter</span> <span class="value">sig_code</span> <p>source code for the module signature.</p></li></ul><ul class="at-tags"><li class="returns"><span class="at-tag">returns</span> <p>as <a href="#val-execute"><code>execute</code></a>.</p></li></ul></div></div></details></div></div>
+      </article>
+    </div>
+  </div>
+
+  <script>
+    var wodocPub = "/js_of_ocaml";
+    // Switch version: keep the current page, swapping only the version segment.
+    function wodocVersion(v) {
+      if (!v) return;
+      var re = new RegExp('^(' + wodocPub + '/)[^/]+');
+      var p = location.pathname;
+      location.href =
+        re.test(p) ? p.replace(re, '$1' + v) : wodocPub + '/' + v + '/index.html';
+    }
+    // Build the version <select> from the project's versions.json (the single
+    // source of truth, refreshed on every build/release), so even older frozen
+    // pages list the current set. Falls back to the baked <option>s on failure.
+    (function () {
+      var seg = (location.pathname.match(
+        new RegExp('^' + wodocPub + '/([^/]+)')) || [])[1];
+      function select(sel) {
+        var i;
+        for (i = 0; i < sel.options.length; i++)
+          if (sel.options[i].value === seg) { sel.selectedIndex = i; return; }
+        if (seg) {
+          var o = document.createElement('option');
+          o.value = seg; o.textContent = seg; o.selected = true;
+          sel.insertBefore(o, sel.firstChild);
+        }
+      }
+      fetch(wodocPub + '/versions.json')
+        .then(function (r) { if (!r.ok) throw 0; return r.json(); })
+        .then(function (m) {
+          var list = m.list || [], latest = m.latest;
+          document.querySelectorAll('.wodoc-version').forEach(function (sel) {
+            sel.innerHTML = '';
+            list.forEach(function (v) {
+              var o = document.createElement('option');
+              if (v === latest) { o.value = 'latest'; o.textContent = v + ' (latest)'; }
+              else { o.value = v; o.textContent = v; }
+              sel.appendChild(o);
+            });
+            select(sel);
+          });
+        })
+        .catch(function () {
+          document.querySelectorAll('.wodoc-version').forEach(select);
+        });
+    })();
+  </script>
+</body>
+</html>

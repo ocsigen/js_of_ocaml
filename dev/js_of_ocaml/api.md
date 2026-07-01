@@ -85,4 +85,6 @@ Provided by the `js_of_ocaml-tyxml` opam package (library `js_of_ocaml-tyxml`).
 
 Provided by the `js_of_ocaml-toplevel` opam package (library `js_of_ocaml-toplevel`).
 
-- `Js_of_ocaml_toplevel.JsooTop` — run an OCaml toplevel in the browser
+- `Js_of_ocaml_toplevel.Direct` — run an OCaml toplevel in the browser
+- `Js_of_ocaml_toplevel.Wrapped` — toplevel evaluation returning errors and warnings as first-class values
+- `Js_of_ocaml_toplevel.Wrapped_intf` — result, error and warning types shared with the Web Worker driver
