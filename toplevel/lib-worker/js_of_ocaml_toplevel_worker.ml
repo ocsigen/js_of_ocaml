@@ -44,15 +44,12 @@ let return_exn exn = Wrapped.Error (Wrapped.error_of_exn exn, [])
    The wait is adaptive: it only spins when the previous message was sent less
    than a millisecond ago, so an occasional [print] is not slowed down.
 
-   A possible improvement would be to bufferize the messages channel
-   per channel, and emit the buffer of each channel every ms if it has
-   changed. But it could cause bad asynchronicity in case the worker
-   does a big computation just after a bufferized write. And it would
-   still need some kind of active waiting to limit throughput. All in
-   all this spinwait is not that ugly.
-
-   TODO: per-channel batching (see #833 review). [requestAnimationFrame] is
-   not available in a Web Worker, so it cannot replace this. *)
+   Note: an alternative is per-channel batching (see #833 review) — buffer
+   each channel and emit the buffer every ms if it changed. But it cannot be
+   timer-driven ([setTimeout]/[requestAnimationFrame] never fire while a phrase
+   runs synchronously), so it would delay output emitted just before a long
+   computation. That regression is why the spinwait is kept — and, all in all,
+   it is not that ugly. *)
 let last = ref 0.
 
 let rec wait () =
@@ -107,7 +104,14 @@ let wrap_fd, close_fd, clear_fds =
 
 (** Code compilation and execution *)
 
-(* TODO protect execution with a mutex! *)
+(* No locking is needed around execution. [Worker.set_onmessage] delivers one
+   message at a time, and [handler] runs the phrase to completion before
+   returning: the worker installs no effect handler that suspends a running
+   phrase back to the host event loop, so even under [--effects=cps] a phrase
+   cannot yield mid-execution and let the next request interleave. (User code
+   that schedules its own async work — a promise or timer — runs its callback
+   in a later turn, outside [handler]; that is inherent to a shared toplevel,
+   not a reentrancy a lock here could address.) *)
 
 (* Parsing sessions held by the worker and stepped one phrase at a time, keyed
    by the id the host allocated. Each entry keeps the [code_fd] (if any) so the
