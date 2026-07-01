@@ -166,7 +166,7 @@ and rewrite_body
       in
       (* Add to returned list of lifter functions definitions *)
       let functions =
-        Let (f'', Closure (List.map s ~f:snd, (pc'', []), None)) :: functions
+        Let (f'', Closure (List.map s ~f:snd, (pc'', []), (None, None))) :: functions
       in
       let lifters = Var.Map.add f f' lifters in
       rewrite_body
@@ -280,7 +280,7 @@ and rewrite_body
               }
             in
             let functions =
-              Let (f_tuple, Closure (List.map s ~f:snd, (pc_tuple, []), None))
+              Let (f_tuple, Closure (List.map s ~f:snd, (pc_tuple, []), (None, None)))
               :: functions
             in
             let lifters =

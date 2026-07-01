@@ -35,7 +35,7 @@ type closure_info =
   ; cont : Code.cont
   ; tc : Code.Addr.Set.t Code.Var.Map.t
   ; pos : int
-  ; cloc : Parse_info.t option
+  ; cloc : Optimization_hint.closure_hint option * Parse_info.t option
   ; (* Under --effects=double-translation, the [Closure] instruction that
        binds [f_name]'s direct version is followed by a sibling [Closure] for
        the CPS version and a [caml_cps_closure] primitive pairing them. In
@@ -82,7 +82,7 @@ let rec collect_closures blocks l pos =
   match l with
   | Let (direct_c, Closure (args, ((pc, _) as cont), cloc))
     :: (Let (cps_c, Closure (_, _, _)) as cps_code)
-    :: Let (x, Prim (Extern "caml_cps_closure", [ Pv d; Pv c ]))
+    :: Let (x, Prim (Extern ("caml_cps_closure", None), [ Pv d; Pv c ]))
     :: rem
     when Var.equal d direct_c && Var.equal c cps_c ->
       let _, tc = collect_apply pc blocks Addr.Set.empty Var.Map.empty in
@@ -159,7 +159,8 @@ module Trampoline = struct
         ; body =
             [ Let
                 ( counter_plus_1
-                , Prim (Extern "%int_add", [ Pv counter; Pc (Int Targetint.one) ]) )
+                , Prim (Extern ("%int_add", None), [ Pv counter; Pc (Int Targetint.one) ])
+                )
             ; Let (return, Apply { f; args = counter_plus_1 :: args; exact = true })
             ]
         ; branch = Return return
@@ -173,9 +174,10 @@ module Trampoline = struct
         [ Let
             ( new_args
             , Prim
-                ( Extern "%js_array"
+                ( Extern ("%js_array", None)
                 , Pc (Int Targetint.zero) :: List.map args ~f:(fun x -> Pv x) ) )
-        ; Let (return, Prim (Extern "caml_trampoline_return", [ Pv f; Pv new_args ]))
+        ; Let
+            (return, Prim (Extern ("caml_trampoline_return", None), [ Pv f; Pv new_args ]))
         ]
     ; branch = Return return
     }
@@ -190,14 +192,14 @@ module Trampoline = struct
             [ Event loc
             ; Let (result1, Apply { f; args; exact = true })
             ; Event Parse_info.zero
-            ; Let (result2, Prim (Extern "caml_trampoline", [ Pv result1 ]))
+            ; Let (result2, Prim (Extern ("caml_trampoline", None), [ Pv result1 ]))
             ]
         | Some counter ->
             [ Event loc
             ; Let (counter, Constant (Int Targetint.zero))
             ; Let (result1, Apply { f; args = counter :: args; exact = true })
             ; Event Parse_info.zero
-            ; Let (result2, Prim (Extern "caml_trampoline", [ Pv result1 ]))
+            ; Let (result2, Prim (Extern ("caml_trampoline", None), [ Pv result1 ]))
             ])
     ; branch = Return result2
     }
@@ -328,11 +330,12 @@ module Trampoline_dt = struct
     let new_args = Code.Var.fresh () in
     { params = []
     ; body =
-        [ Let (new_args, Prim (Extern "%js_array", List.map args ~f:(fun x -> Pv x)))
+        [ Let
+            (new_args, Prim (Extern ("%js_array", None), List.map args ~f:(fun x -> Pv x)))
         ; Let
             ( return
             , Prim
-                ( Extern "caml_trampoline_return"
+                ( Extern ("caml_trampoline_return", None)
                 , [ Pv f; Pv new_args; Pc (Int Targetint.one) ] ) )
         ]
     ; branch = Return return
@@ -344,9 +347,11 @@ module Trampoline_dt = struct
     { params = []
     ; body =
         [ Event loc
-        ; Let (args_arr, Prim (Extern "%js_array", List.map args ~f:(fun x -> Pv x)))
+        ; Let
+            (args_arr, Prim (Extern ("%js_array", None), List.map args ~f:(fun x -> Pv x)))
         ; Event Parse_info.zero
-        ; Let (result, Prim (Extern "caml_direct_trampoline", [ Pv inner; Pv args_arr ]))
+        ; Let
+            (result, Prim (Extern ("caml_direct_trampoline", None), [ Pv inner; Pv args_arr ]))
         ]
     ; branch = Return result
     }
@@ -382,7 +387,9 @@ module Trampoline_dt = struct
             Let (new_direct_c, Closure (ci.args, ci.cont, ci.cloc))
           in
           let pair_code =
-            Let (ci.f_name, Prim (Extern "caml_cps_closure", [ Pv wrapper_c; Pv cps_c ]))
+            Let
+              ( ci.f_name
+              , Prim (Extern ("caml_cps_closure", None), [ Pv wrapper_c; Pv cps_c ]) )
           in
           let scc_callees =
             List.fold_left all ~init:[] ~f:(fun acc ci2 ->
@@ -422,7 +429,9 @@ module Trampoline_dt = struct
                 in
                 let direct = Code.Var.fresh () in
                 let branch = Cond (direct, (direct_call_pc, []), (bounce_call_pc, [])) in
-                let last = Let (direct, Prim (Extern "caml_stack_check_depth", [])) in
+                let last =
+                  Let (direct, Prim (Extern ("caml_stack_check_depth", None), []))
+                in
                 let block = { block with body = List.rev (last :: rem_rev); branch } in
                 let blocks = Addr.Map.remove pc blocks in
                 Addr.Map.add pc block blocks, free_pc)
@@ -460,7 +469,9 @@ let dispatch_component_dt free_pc blocks closures_map = function
       | Some { direct_c; cps_c; cps_code } ->
           let direct_code = Let (direct_c, Closure (ci.args, ci.cont, ci.cloc)) in
           let pair_code =
-            Let (ci.f_name, Prim (Extern "caml_cps_closure", [ Pv direct_c; Pv cps_c ]))
+            Let
+              ( ci.f_name
+              , Prim (Extern ("caml_cps_closure", None), [ Pv direct_c; Pv cps_c ]) )
           in
           ( free_pc
           , blocks

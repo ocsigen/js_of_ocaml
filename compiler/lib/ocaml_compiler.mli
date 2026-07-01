@@ -103,4 +103,14 @@ module Cmo_format : sig
   val force_link : t -> bool
 
   val imports : t -> Import_info.t list
+
+  val hints_pos : t -> int
+
+  val hints_size : t -> int
+end
+
+module Hint : sig
+  type t
+
+  val import : t -> Optimization_hint.t option
 end

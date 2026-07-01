@@ -116,9 +116,9 @@ end
 type cont = Addr.t * Var.t list
 
 type prim =
-  | Vectlength
+  | Vectlength of Optimization_hint.array_kind
   | Array_get
-  | Extern of string
+  | Extern of string * Optimization_hint.ccall option
   | Not
   | IsInt
   | Eq
@@ -196,7 +196,8 @@ type expr =
       }
   | Block of int * Var.t array * array_or_not * mutability
   | Field of Var.t * int * field_type
-  | Closure of Var.t list * cont * Parse_info.t option
+  | Closure of
+      Var.t list * cont * (Optimization_hint.closure_hint option * Parse_info.t option)
   | Constant of constant
   | Prim of prim * prim_arg list
   | Special of special
