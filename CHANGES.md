@@ -18,11 +18,13 @@
 * Lib: remove `js_of_ocaml-lwt.logger` and the `lwt_log` dependency, as
   upstream `lwt_log` is deprecated (#2378)
 
+# 6.4.1 (2026-06-30) - Lille
+
 ## Bug fixes
 * Runtime/wasm: derive the wat-module name from the basename of the input
   path in `runtime/wasm/args.ml`, so dune 3.24's leading-`./` path-form
   representation (ocaml/dune#15156) keeps producing well-formed
-  `module:path` lines for `wasmoo_link_wasm`.
+  `module:path` lines for `wasmoo_link_wasm` (#2371)
 * Tests: pass file paths as literal arguments (with explicit `(deps ...)`)
   instead of `%{dep:...}` in the `md5`/`md5_nat`, `dump_sourcemap` and
   `check-prim` tests, which echo the path verbatim, so dune 3.24's leading-`./`
