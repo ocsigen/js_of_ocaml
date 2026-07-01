@@ -422,13 +422,13 @@ module Cmo_format = struct
 
   let force_link (t : t) = t.cu_force_link
 
-  let hints_pos (t : t) = t.cu_hint [@@if ocaml_version >= (5, 4, 1)]
+  let hints_pos (t : t) = t.cu_hint [@@if ocaml_version >= (5, 6, 0)]
 
-  let hints_size (t : t) = t.cu_hintsize [@@if ocaml_version >= (5, 4, 1)]
+  let hints_size (t : t) = t.cu_hintsize [@@if ocaml_version >= (5, 6, 0)]
 
-  let hints_size _ = 0 [@@if ocaml_version < (5, 4, 1)]
+  let hints_size _ = 0 [@@if ocaml_version < (5, 6, 0)]
 
-  let hints_pos _ = 0 [@@if ocaml_version < (5, 4, 1)]
+  let hints_pos _ = 0 [@@if ocaml_version < (5, 6, 0)]
 end
 [@@if not oxcaml]
 
@@ -567,12 +567,15 @@ module Hint = struct
     | Hint_closures l -> Some (Hint_closures (List.map ~f:import_closure_hint l))
     | Hint_ccall hint ->
         Option.map ~f:(fun h -> Optimization_hint.Hint_ccall h) (import_ccall hint)
+    | Hint_physical_comparison ->
+        (* No corresponding optimization in js_of_ocaml yet; ignore the hint. *)
+        None
 end
-[@@if ocaml_version >= (5, 4, 1)]
+[@@if ocaml_version >= (5, 6, 0)]
 
 module Hint = struct
   type t = unit
 
   let import _ = None
 end
-[@@if ocaml_version < (5, 4, 1)]
+[@@if ocaml_version < (5, 6, 0)]
