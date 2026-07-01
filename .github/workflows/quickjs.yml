@@ -49,6 +49,10 @@ jobs:
           sudo install -m 0755 build/qjs /usr/local/bin/qjs
           qjs --help | head -1
 
+      # wax is not released on opam yet.
+      - name: Pin wax
+        run: opam pin add -n wax https://github.com/vouillon/wax.git
+
       - run: opam install . --deps-only --with-test
 
       - run: opam install .

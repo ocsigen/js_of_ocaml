@@ -164,6 +164,10 @@ jobs:
         with:
           token: ${{ github.token }}
 
+      # wax is not released on opam yet.
+      - name: Pin wax
+        run: opam pin add -n wax https://github.com/vouillon/wax.git
+
       - run: opam install . --best-effort --solver builtin-mccs+glpk
         if: ${{ matrix.skip-test }}
 
