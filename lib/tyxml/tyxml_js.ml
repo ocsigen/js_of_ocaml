@@ -194,38 +194,51 @@ module Xml = struct
     | None -> ()
 
   let attach_attribs node l =
+    (* When the same attribute name appears several times (e.g. multiple
+       [a_class]), a browser keeps the first occurrence and ignores the rest.
+       Reproduce that here: without it, each occurrence would subscribe its own
+       [React.S.map], leaving several live signals writing to the same name.
+       They would then fight over time — the attribute alternating between their
+       values on each update, and vanishing whenever any signal yields [None] —
+       not merely the last one silently winning. Keeping only the first
+       occurrence leaves a single writer per name. See #968. *)
+    let seen = Jstable.create () in
     List.iter
       (fun (n', att) ->
         let n = Js.string n' in
-        match att with
-        | Attr a ->
-            let (keepme : unit React.S.t) =
-              React.S.map
-                (function
-                  | Some v -> (
-                      ignore (node##setAttribute n v);
-                      match n' with
-                      | "style" -> node##.style##.cssText := v
-                      | _ ->
-                          iter_prop_protected node n (fun name ->
-                              Js.Unsafe.set node name v))
-                  | None -> (
-                      ignore (node##removeAttribute n);
-                      match n' with
-                      | "style" -> node##.style##.cssText := Js.string ""
-                      | _ ->
-                          iter_prop_protected node n (fun name ->
-                              Js.Unsafe.set node name Js.null)))
-                a
-            in
-            retain (node :> Dom.node Js.t) ~keepme
-        | Event h -> Js.Unsafe.set node n (Js.wrap_callback (fun ev -> Js.bool (h ev)))
-        | MouseEvent h ->
-            Js.Unsafe.set node n (Js.wrap_callback (fun ev -> Js.bool (h ev)))
-        | KeyboardEvent h ->
-            Js.Unsafe.set node n (Js.wrap_callback (fun ev -> Js.bool (h ev)))
-        | TouchEvent h ->
-            Js.Unsafe.set node n (Js.wrap_callback (fun ev -> Js.bool (h ev))))
+        if Js.Optdef.test (Jstable.find seen n)
+        then () (* already set by an earlier attribute of the same name *)
+        else (
+          Jstable.add seen n ();
+          match att with
+          | Attr a ->
+              let (keepme : unit React.S.t) =
+                React.S.map
+                  (function
+                    | Some v -> (
+                        ignore (node##setAttribute n v);
+                        match n' with
+                        | "style" -> node##.style##.cssText := v
+                        | _ ->
+                            iter_prop_protected node n (fun name ->
+                                Js.Unsafe.set node name v))
+                    | None -> (
+                        ignore (node##removeAttribute n);
+                        match n' with
+                        | "style" -> node##.style##.cssText := Js.string ""
+                        | _ ->
+                            iter_prop_protected node n (fun name ->
+                                Js.Unsafe.set node name Js.null)))
+                  a
+              in
+              retain (node :> Dom.node Js.t) ~keepme
+          | Event h -> Js.Unsafe.set node n (Js.wrap_callback (fun ev -> Js.bool (h ev)))
+          | MouseEvent h ->
+              Js.Unsafe.set node n (Js.wrap_callback (fun ev -> Js.bool (h ev)))
+          | KeyboardEvent h ->
+              Js.Unsafe.set node n (Js.wrap_callback (fun ev -> Js.bool (h ev)))
+          | TouchEvent h ->
+              Js.Unsafe.set node n (Js.wrap_callback (fun ev -> Js.bool (h ev)))))
       l
 
   let leaf ?(a = []) name =

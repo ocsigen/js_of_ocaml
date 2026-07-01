@@ -29,6 +29,11 @@
   runtime stay resolvable; previously the directory was registered only while
   Stdlib was loaded and then dropped, leaving later lookups unresolved (#833)
 
+## Bug fixes
+* Tyxml: when the same attribute (e.g. multiple `a_class`) is given several
+  times, keep the first one and ignore the rest, matching browser semantics,
+  instead of letting the last one silently overwrite the others (#968)
+
 # 6.4.1 (2026-06-30) - Lille
 
 ## Bug fixes
