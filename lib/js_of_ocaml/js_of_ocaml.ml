@@ -59,6 +59,7 @@ module Sys_js = Sys_js
 module Typed_array = Typed_array
 module Url = Url
 module WebGL = WebGL
+module WebGL2 = WebGL2
 module WebSockets = WebSockets
 module Worker = Worker
 module XmlHttpRequest = XmlHttpRequest
