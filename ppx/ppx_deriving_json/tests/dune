@@ -24,10 +24,15 @@
  (action
   (run %{exe:main.bc} %{dep:gen.mlt})))
 
+; Upper bound: OCaml 5.6 changed how polymorphic-variant types are printed
+; ([ | poly ] instead of poly), which these toplevel snapshots capture inline.
+
 (rule
  (alias runtest)
  (enabled_if
-  (>= %{ocaml_version} 5.1))
+  (and
+   (>= %{ocaml_version} 5.1)
+   (< %{ocaml_version} 5.6)))
  ;; (package js_of_ocaml-ppx)
  (action
   (diff ppx.mlt ppx.mlt.corrected)))
@@ -35,7 +40,9 @@
 (rule
  (alias runtest)
  (enabled_if
-  (>= %{ocaml_version} 5.3))
+  (and
+   (>= %{ocaml_version} 5.3)
+   (< %{ocaml_version} 5.6)))
  ;; (package js_of_ocaml-ppx)
  (action
   (diff gen.mlt gen.mlt.corrected)))
