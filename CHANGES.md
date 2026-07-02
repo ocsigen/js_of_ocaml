@@ -72,6 +72,9 @@
   load Stdlib at startup (#1721)
 * Runtime: fix comparison between an immediate and a custom block that
   provides a compare op (e.g. zarith), broken by #2290 (#2391)
+* Wasm: resolve `.wasm` assets relative to the runtime file rather than the
+  process entry point, so they load when the program is `require`d (e.g. a CLI
+  wrapper), not only when run directly (#2389)
 * Toplevel: keep the `/static/cmis` directory on the load path across
   `Toploop.initialize_toplevel_env`, so libraries whose cmis are loaded at
   runtime stay resolvable; previously the directory was registered only while
