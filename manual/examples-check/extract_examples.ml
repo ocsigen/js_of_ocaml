@@ -171,7 +171,9 @@ let () =
   in
   parse (List.tl (Array.to_list Sys.argv));
   let opens = List.rev !opens in
-  let files = List.rev !files in
+  (* A [*.mli] glob in dune also matches the ppx-preprocessed [*.pp.mli] copies
+     in the build tree; drop them so each block is not extracted twice. *)
+  let files = List.rev !files |> List.filter (fun f -> not (contains ~sub:".pp." f)) in
   let want = !want in
   set_binary_mode_out stdout true;
   let emit_code line file code =

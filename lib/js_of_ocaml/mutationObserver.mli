@@ -20,7 +20,7 @@
 (** MutationObserver API
 
   A code example:
-  {[
+  {@ocaml[
     if (MutationObserver.is_supported()) then
       let doc = Dom_html.document in
       let target =
@@ -32,9 +32,10 @@
         Console.console##debug records ;
         Console.console##debug observer
       in
-      MutationObserver.observe ~node ~f
-        ~attributes:true ~child_list:true ~character_data:true
-        ()
+      ignore
+        (MutationObserver.observe ~node ~f
+           ~attributes:true ~child_list:true ~character_data:true
+           ())
   ]}
 
   @see <https://developer.mozilla.org/en-US/docs/Web/API/MutationObserver> for API documentation.

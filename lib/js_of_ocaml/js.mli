@@ -855,7 +855,7 @@ val coerce_opt : 'a Opt.t -> ('a -> 'b Opt.t) -> ('a -> 'b) -> 'b
       If [v] is [null] or the coercion returns [null], function [f] is
       called.
       Typical usage is the following:
-      {[Js.coerce_opt (Dom_html.document##getElementById id)
+      {@ocaml parse[Js.coerce_opt (Dom_html.document##getElementById id)
       Dom_html.CoerceTo.div (fun _ -> assert false)]} *)
 
 (** {2 Type checking operators.} *)
@@ -883,7 +883,7 @@ val export : string -> 'a -> unit
 
 val export_all : 'a t -> unit
 (** [export_all obj] export every key of [obj] object.
-{[
+{@ocaml parse[
 export_all
   object%js
     method add x y = x +. y
