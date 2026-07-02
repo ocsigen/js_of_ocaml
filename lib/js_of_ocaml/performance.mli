@@ -19,7 +19,7 @@
 (** Performance API
 
     A code example:
-    {[
+    {@ocaml parse[
       let perf = Performance.performance in
       perf##mark (Js.string "start");
       do_something ();

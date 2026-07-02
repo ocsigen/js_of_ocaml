@@ -90,12 +90,16 @@ Checked blocks need their opens in scope. Two styles, chosen per source file in
 
 ## Current coverage
 
-The whole manual (`manual/*.mld`) — every page that has `{@ocaml[ … ]}` blocks
-is wired in. The API `.mli` doc-comments are not wired in yet.
+- The whole manual (`manual/*.mld`) — every page that has `{@ocaml[ … ]}` blocks
+  is wired in.
+- The whole `js_of_ocaml` library interface — `examples_lib` globs every
+  `lib/js_of_ocaml/*.mli`, so any tagged block (now or in future) is checked.
+  Blocks that were plain `{[ … ]}` are left unchecked; the checkable ones are
+  tagged.
 
-Pages using the base `js_of_ocaml` library share one type unit and one parse
-unit. `manual/ppx-deriving.mld` has its own unit built with the
-`ppx_deriving_json` preprocessor and `js_of_ocaml.deriving` runtime.
+Pages/files using the base `js_of_ocaml` library share type and parse units.
+`manual/ppx-deriving.mld` has its own unit built with the `ppx_deriving_json`
+preprocessor and `js_of_ocaml.deriving` runtime.
 
 ## Adding files to the check
 

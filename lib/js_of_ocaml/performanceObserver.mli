@@ -20,7 +20,7 @@
 (** PerformanceObserver API
 
     A code example:
-    {[
+    {@ocaml[
       if (PerformanceObserver.is_supported()) then
         let entry_types = [ "measure" ] in
         let f entries observer =
@@ -28,8 +28,7 @@
           Console.console##debug entries ;
           Console.console##debug observer
         in
-        PerformanceObserver.observe ~entry_types ~f
-        ()
+        ignore (PerformanceObserver.observe ~entry_types ~f)
    ]}
 
    @see <https://developer.mozilla.org/en-US/docs/Web/API/PerformanceObserver> for API documentation.

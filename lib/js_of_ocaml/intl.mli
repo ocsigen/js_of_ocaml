@@ -20,7 +20,7 @@
 (** Internationalization API
 
     A code example:
-{[
+{@ocaml parse[
 
 open Js;;
 

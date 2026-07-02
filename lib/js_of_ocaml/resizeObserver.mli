@@ -20,7 +20,7 @@
 (** ResizeObserver API
 
     A code example:
-    {[
+    {@ocaml[
       if (ResizeObserver.is_supported ()) then
         let doc = Dom_html.document in
         let target =
@@ -32,9 +32,10 @@
           Console.console##debug entries;
           Console.console##debug observer
         in
-        ResizeObserver.observe ~node ~f
-          ~box:(Js.string "content-box")
-          ()
+        ignore
+          (ResizeObserver.observe ~node ~f
+             ~box:(Js.string "content-box")
+             ())
     ]}
 
     @see <https://developer.mozilla.org/en-US/docs/Web/API/ResizeObserver> for API documentation

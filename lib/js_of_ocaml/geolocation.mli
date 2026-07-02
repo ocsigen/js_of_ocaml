@@ -20,7 +20,7 @@
 (** Geolocation API
 
   A code example:
-  {[
+  {@ocaml[
   if (Geolocation.is_supported()) then
     let geo = Geolocation.geolocation in
     let options = Geolocation.empty_position_options() in
@@ -28,7 +28,7 @@
     let f_success pos =
       let coords = pos##.coords in
       let latitude = coords##.latitude in
-      Console.console##debug latitude ;
+      Console.console##debug latitude
     in
     let f_error err =
       let code = err##.code in

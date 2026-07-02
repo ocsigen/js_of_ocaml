@@ -82,6 +82,30 @@
  (preprocess
   (pps js_of_ocaml-ppx js_of_ocaml-ppx_deriving_json)))
 
+; API examples, from the js_of_ocaml library .mli doc-comments. `open Js_of_ocaml`
+; is injected (the examples reference Js, Dom_html, Intl, Console, ... unqualified).
+
+(rule
+ (target examples_lib.ml)
+ (deps
+  extract_examples.exe
+  (:mlis
+   (glob_files ../../lib/js_of_ocaml/*.mli)))
+ (action
+  (with-stdout-to
+   %{target}
+   (run ./extract_examples.exe --open Js_of_ocaml %{mlis}))))
+
+(library
+ (name examples_lib)
+ (modules examples_lib)
+ (modes byte)
+ (libraries js_of_ocaml)
+ (flags
+  (:standard -w -a))
+ (preprocess
+  (pps js_of_ocaml-ppx)))
+
 ; --- Parse-only blocks -----------------------------------------------------
 
 ; The {@ocaml parse[ ... ]} blocks of the same pages: syntax-checked only (they
@@ -110,13 +134,24 @@
    %{target}
    (run ./extract_examples.exe --select parse %{mlds}))))
 
+(rule
+ (target examples_lib_parse.ml)
+ (deps
+  extract_examples.exe
+  (:mlis
+   (glob_files ../../lib/js_of_ocaml/*.mli)))
+ (action
+  (with-stdout-to
+   %{target}
+   (run ./extract_examples.exe --select parse %{mlis}))))
+
 ; --- Run the checks under @runtest -----------------------------------------
 
 ; Type tier: build the archives (type-checking) — never executed.
 
 (rule
  (alias runtest)
- (deps examples_manual.cma examples_deriving.cma)
+ (deps examples_manual.cma examples_deriving.cma examples_lib.cma)
  (action (progn)))
 
 ; Parse tier: stop after parsing, so undefined identifiers are allowed but a
@@ -133,3 +168,9 @@
    -w
    -a
    examples_manual_parse.ml)))
+
+(rule
+ (alias runtest)
+ (deps examples_lib_parse.ml)
+ (action
+  (run %{ocaml_bin}/ocamlc -stop-after parsing -w -a examples_lib_parse.ml)))
