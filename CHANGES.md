@@ -1,6 +1,13 @@
 # dev
 
 ## Features/Changes
+* Lib: add `WebGL2` — bindings to the WebGL2 rendering context. The context
+  inherits every method and constant of `WebGL`, and adds the WebGL2 objects
+  (vertex array objects, queries, samplers, syncs, transform feedback), 3D and
+  immutable textures, multiple render targets, instanced/range drawing, uniform
+  buffer objects, integer vertex attributes and unsigned-integer uniforms, plus
+  the new sized internal formats and enumerations. `WebGL2.getContext` requests
+  a `"webgl2"` context (#1226)
 * Lib: add `Crypto` — bindings to the Web Crypto API (`crypto`,
   `getRandomValues`, `randomUUID`, and the Promise-typed `SubtleCrypto`), with a
   typed `params` variant (one constructor per algorithm) and

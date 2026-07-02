@@ -55,6 +55,7 @@ Js_of_ocaml.ResizeObserver
 Js_of_ocaml.ServiceWorker
 Js_of_ocaml.Url
 Js_of_ocaml.WebGL
+Js_of_ocaml.WebGL2
 Js_of_ocaml.WebSockets
 Js_of_ocaml.Worker
 Js_of_ocaml.XmlHttpRequest
