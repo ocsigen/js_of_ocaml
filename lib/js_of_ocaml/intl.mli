@@ -20,7 +20,7 @@
 (** Internationalization API
 
     A code example:
-{@ocaml parse[
+{@ocaml[
 
 open Js;;
 
@@ -42,12 +42,8 @@ then (
 
     (* Note: the exact output may be browser-dependent *)
     let letterSort lang letters =
-      letters##sort
-        (wrap_callback (fun a b ->
-             let collator =
-               new%js Intl.collator_constr (def (array [| lang |])) undefined
-             in
-             collator##.compare a b));
+      let collator = new%js Intl.collator_constr (def (array [| lang |])) undefined in
+      ignore (letters##sort (wrap_callback (fun a b -> collator##.compare a b)));
       letters
     in
     let a = jas [| "a"; "z"; "ä" |] in

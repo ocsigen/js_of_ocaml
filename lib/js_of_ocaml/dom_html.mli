@@ -3207,10 +3207,10 @@ val getElementById_coerce : string -> (element t -> 'a opt) -> 'a option
     It returns [None] if there are no such element or if the [coerce] function
     returns [Js.none].
     Typical usage is the following:
-    {[
+    {@ocaml[
       match Dom_html.getElementById_coerce "myinput" Dom_html.CoerceTo.input with
-      | None -> ..
-      | Some input -> ..
+      | None -> ()
+      | Some input -> ignore input
     ]}
 *)
 
