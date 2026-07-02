@@ -30,6 +30,14 @@ opam install odoc yojson ocp-indent graphics higlo
 
 Run `make tests`.
 
+### Documentation examples
+
+Code examples in `.mli` doc-comments and the `manual/` pages are checked by the
+test suite: an `{@ocaml[ ... ]}` block is type-checked against the real API, so
+examples cannot silently drift out of sync. Mark an illustrative snippet that is
+not meant to compile with `{@ocaml parse[ ... ]}` (syntax-checked only) or
+`{@ocaml skip[ ... ]}` (ignored). See `manual/examples-check/` for details.
+
 ## Library binding conventions
 
 When adding new bindings under `lib/js_of_ocaml/`, follow these rules so
