@@ -25,6 +25,13 @@
     objects.
 *)
 
+(* Setup for the checked examples in this file (not rendered by odoc): the
+   examples below read as if written inside this module, i.e. with [open Js].
+{@ocaml prelude[
+open Js_of_ocaml.Js
+let id = string "my-id"
+]} *)
+
 (** {2 Dealing with [null] and [undefined] values.} *)
 
 type +'a opt
@@ -855,7 +862,7 @@ val coerce_opt : 'a Opt.t -> ('a -> 'b Opt.t) -> ('a -> 'b) -> 'b
       If [v] is [null] or the coercion returns [null], function [f] is
       called.
       Typical usage is the following:
-      {@ocaml parse[Js.coerce_opt (Dom_html.document##getElementById id)
+      {@ocaml[Js.coerce_opt (Dom_html.document##getElementById id)
       Dom_html.CoerceTo.div (fun _ -> assert false)]} *)
 
 (** {2 Type checking operators.} *)
@@ -883,7 +890,7 @@ val export : string -> 'a -> unit
 
 val export_all : 'a t -> unit
 (** [export_all obj] export every key of [obj] object.
-{@ocaml parse[
+{@ocaml[
 export_all
   object%js
     method add x y = x +. y
