@@ -19,7 +19,7 @@
 
 (** Tyxml interface.
     Example of use for HTML:
-    {[
+    {@ocaml[
      module T = Tyxml_js.Html
      let html = T.(
        div ~a:[a_class ["several"; "css"; "class"]; a_id "id-of-div"] [

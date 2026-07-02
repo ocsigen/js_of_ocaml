@@ -106,6 +106,55 @@
  (preprocess
   (pps js_of_ocaml-ppx)))
 
+; js_of_ocaml-tyxml examples (the functional Tyxml_js.Html API).
+
+(rule
+ (target examples_tyxml.ml)
+ (deps
+  extract_examples.exe
+  (:mlis
+   (glob_files ../../lib/tyxml/*.mli)))
+ (action
+  (with-stdout-to
+   %{target}
+   (run ./extract_examples.exe --open Js_of_ocaml_tyxml %{mlis}))))
+
+(library
+ (name examples_tyxml)
+ (modules examples_tyxml)
+ (modes byte)
+ (libraries js_of_ocaml-tyxml)
+ (flags
+  (:standard -w -a))
+ (preprocess
+  (pps js_of_ocaml-ppx)))
+
+; js_of_ocaml-lwt examples: need the js ppx (##.), with Lwt_js_events opened so
+; the event functions resolve unqualified. The examples use Lwt.Syntax (let*)
+; rather than lwt_ppx's let%lwt, so no lwt_ppx is required (it is unavailable on
+; some environments, e.g. OxCaml).
+
+(rule
+ (target examples_lwt.ml)
+ (deps
+  extract_examples.exe
+  (:mlis
+   (glob_files ../../lib/lwt/*.mli)))
+ (action
+  (with-stdout-to
+   %{target}
+   (run ./extract_examples.exe --open Js_of_ocaml_lwt.Lwt_js_events %{mlis}))))
+
+(library
+ (name examples_lwt)
+ (modules examples_lwt)
+ (modes byte)
+ (libraries js_of_ocaml js_of_ocaml-lwt lwt)
+ (flags
+  (:standard -w -a))
+ (preprocess
+  (pps js_of_ocaml-ppx)))
+
 ; --- Parse-only blocks -----------------------------------------------------
 
 ; The {@ocaml parse[ ... ]} blocks of the same pages: syntax-checked only (they
@@ -147,11 +196,22 @@
 
 ; --- Run the checks under @runtest -----------------------------------------
 
+; The check only runs on Unix: the parse tier invokes ocamlc through
+; %{ocaml_bin}, which resolves to a bare `ocamlc` (no `.exe`) on Windows, and
+; the check adds no coverage that the Unix jobs don't already provide.
+
 ; Type tier: build the archives (type-checking) — never executed.
 
 (rule
  (alias runtest)
- (deps examples_manual.cma examples_deriving.cma examples_lib.cma)
+ (enabled_if
+  (= %{os_type} Unix))
+ (deps
+  examples_manual.cma
+  examples_deriving.cma
+  examples_lib.cma
+  examples_tyxml.cma
+  examples_lwt.cma)
  (action (progn)))
 
 ; Parse tier: stop after parsing, so undefined identifiers are allowed but a
@@ -159,6 +219,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (= %{os_type} Unix))
  (deps examples_manual_parse.ml)
  (action
   (run
@@ -171,6 +233,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (= %{os_type} Unix))
  (deps examples_lib_parse.ml)
  (action
   (run %{ocaml_bin}/ocamlc -stop-after parsing -w -a examples_lib_parse.ml)))
