@@ -35,6 +35,47 @@
  (action
   (diff stdlib.cma.expected.js stdlib.cma.output.js)))
 
+; Same test on OCaml 5.6, where the compiler emits optimization hints: the
+; generated code (and unit shapes) differ from 5.4, so it needs its own
+; snapshot.
+
+(rule
+ (targets stdlib.cma.5.6.js)
+ (enabled_if
+  (and
+   (>= %{ocaml_version} "5.6")
+   (< %{ocaml_version} "5.7")))
+ (action
+  (run
+   %{bin:js_of_ocaml}
+   --pretty
+   --debug
+   var
+   --debuginfo
+   %{lib:stdlib:stdlib.cma}
+   -o
+   %{targets})))
+
+(rule
+ (targets stdlib.cma.5.6.output.js)
+ (enabled_if
+  (and
+   (>= %{ocaml_version} "5.6")
+   (< %{ocaml_version} "5.7")))
+ (action
+  (with-stdout-to
+   %{targets}
+   (run tail -n +3 %{dep:stdlib.cma.5.6.js}))))
+
+(rule
+ (alias runtest)
+ (enabled_if
+  (and
+   (>= %{ocaml_version} "5.6")
+   (< %{ocaml_version} "5.7")))
+ (action
+  (diff stdlib.cma.5.6.expected.js stdlib.cma.5.6.output.js)))
+
 (library
  (name shapes)
  (modules m1 m2 m3))
