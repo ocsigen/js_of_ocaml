@@ -19,7 +19,7 @@
 (** Web Crypto API.
 
     A code example:
-    {[
+    {@ocaml[
       let hash data =
         Promise.map
           (fun buf -> buf)
