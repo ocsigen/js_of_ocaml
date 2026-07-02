@@ -19,7 +19,7 @@
 (** Clipboard API.
 
     A code example:
-    {[
+    {@ocaml[
       if Clipboard.is_supported ()
       then
         ignore
