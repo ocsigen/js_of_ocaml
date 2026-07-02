@@ -38,7 +38,7 @@
   const imports = wasi.getImportObject();
   function loadRelative(src) {
     const path = require("node:path");
-    const f = path.join(path.dirname(require.main.filename), src);
+    const f = path.join(path.dirname(module.filename), src);
     return require("node:fs/promises").readFile(f);
   }
   async function instantiateModule(code) {
