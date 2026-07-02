@@ -42,8 +42,9 @@ open Js_of_ocaml
 
    Defining a thread that waits for ESC key on an element:
 
-   {[let rec esc elt =
-      let%lwt ev = keydown elt in
+   {@ocaml[let rec esc elt =
+      let open Lwt.Syntax in
+      let* ev = keydown elt in
       if ev##.keyCode = 27
       then Lwt.return ev
       else esc elt]}

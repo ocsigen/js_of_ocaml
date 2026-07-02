@@ -96,6 +96,8 @@ Checked blocks need their opens in scope. Two styles, chosen per source file in
   `lib/js_of_ocaml/*.mli`, so any tagged block (now or in future) is checked.
   Blocks that were plain `{[ … ]}` are left unchecked; the checkable ones are
   tagged.
+- `js_of_ocaml-tyxml` (`examples_tyxml`) and `js_of_ocaml-lwt` (`examples_lwt`),
+  each in its own unit with the right library and ppx (`lwt_ppx` for `let%lwt`).
 
 Pages/files using the base `js_of_ocaml` library share type and parse units.
 `manual/ppx-deriving.mld` has its own unit built with the `ppx_deriving_json`
