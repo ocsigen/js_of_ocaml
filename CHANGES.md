@@ -101,6 +101,14 @@
   `taggedEvent` variant, `CoerceTo.mouseScrollEvent` and
   `Event._DOMMouseScroll` (#2350)
 
+## Documentation
+* Doc: check documentation examples. An `{@ocaml[ … ]}` code block in an `.mli`
+  doc-comment or an `.mld` manual page is type-checked against the library by
+  `dune build @runtest`, so examples that no longer match the API fail the build.
+  The `{@ocaml parse[ … ]}` and `{@ocaml skip[ … ]}` markers opt out of typing
+  (parse-only) and of checking entirely; plain `{[ … ]}` blocks are never
+  checked. See `manual/examples-check/` (#1020)
+
 ## Bug fixes
 * Compiler: don't rewrite `x = e + x` into `x += e` for `+` (not
   commutative on strings), which reversed `Filename.concat` operands and

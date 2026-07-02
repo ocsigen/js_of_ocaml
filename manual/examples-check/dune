@@ -1,0 +1,135 @@
+; Checks the documentation examples. An {@ocaml[ ... ]} code block in a
+; js_of_ocaml .mli doc-comment or .mld manual page is type-checked by default, so
+; an example that no longer matches the API breaks `dune build @runtest`. The
+; {@ocaml parse[ ... ]} and {@ocaml skip[ ... ]} markers opt out of type-checking
+; (parse-only) and of checking entirely; plain {[ ... ]} blocks are never checked.
+; See extract_examples.ml and README.md.
+
+(executable
+ (name extract_examples)
+ (modules extract_examples))
+
+; --- Type-checked blocks ---------------------------------------------------
+
+; Each type unit is a library (not an executable): building the .cma type-checks
+; every module but skips the final link, so an example that declares/uses an
+; `external` primitive that only exists in JS still checks.
+
+; Manual examples, from the .mld pages that use the base `js_of_ocaml` library.
+; The pages read with `open Js_of_ocaml` assumed throughout, so we inject it
+; (--open) rather than repeat it in every small block; the rendered blocks stay
+; clean and are checked as-is. The same file list feeds the parse tier below
+; (pages with only parse-only blocks, e.g. lwt.mld, contribute nothing here).
+
+(rule
+ (target examples_manual.ml)
+ (deps
+  extract_examples.exe
+  (:mlds
+   ../build-toplevel.mld
+   ../debug.mld
+   ../errors.mld
+   ../javascript-interop.mld
+   ../linker.mld
+   ../lwt.mld
+   ../ppx.mld
+   ../quickstart.mld
+   ../rev-bindings.mld
+   ../runtime-representation.mld
+   ../tailcall.mld))
+ (action
+  (with-stdout-to
+   %{target}
+   (run ./extract_examples.exe --open Js_of_ocaml %{mlds}))))
+
+(library
+ (name examples_manual)
+ (modules examples_manual)
+ (modes byte)
+ ; dynlink / wasm_of_ocaml-compiler.dynlink / js_of_ocaml-toplevel.worker:
+ ; the build-toplevel page's Dynlink.loadfile, Wasm_of_ocaml_compiler_dynlink
+ ; and Js_of_ocaml_toplevel_worker examples.
+ (libraries
+  js_of_ocaml
+  dynlink
+  wasm_of_ocaml-compiler.dynlink
+  js_of_ocaml-toplevel.worker)
+ (flags
+  (:standard -w -a))
+ (preprocess
+  (pps js_of_ocaml-ppx)))
+
+; Deriving examples (ppx-deriving.mld) need the ppx_deriving_json preprocessor
+; and its runtime, so they get their own unit.
+
+(rule
+ (target examples_deriving.ml)
+ (deps
+  extract_examples.exe
+  (:mld ../ppx-deriving.mld))
+ (action
+  (with-stdout-to
+   %{target}
+   (run ./extract_examples.exe --open Js_of_ocaml %{mld}))))
+
+(library
+ (name examples_deriving)
+ (modules examples_deriving)
+ (modes byte)
+ (libraries js_of_ocaml js_of_ocaml.deriving)
+ (flags
+  (:standard -w -a))
+ (preprocess
+  (pps js_of_ocaml-ppx js_of_ocaml-ppx_deriving_json)))
+
+; --- Parse-only blocks -----------------------------------------------------
+
+; The {@ocaml parse[ ... ]} blocks of the same pages: syntax-checked only (they
+; reference hypothetical identifiers or placeholder types). No ppx and no --open:
+; `##`/`object%js` parse as plain OCaml, names are never resolved, and injecting
+; an `open` before a bare-expression block would itself be a syntax error.
+
+(rule
+ (target examples_manual_parse.ml)
+ (deps
+  extract_examples.exe
+  (:mlds
+   ../build-toplevel.mld
+   ../debug.mld
+   ../errors.mld
+   ../javascript-interop.mld
+   ../linker.mld
+   ../lwt.mld
+   ../ppx.mld
+   ../quickstart.mld
+   ../rev-bindings.mld
+   ../runtime-representation.mld
+   ../tailcall.mld))
+ (action
+  (with-stdout-to
+   %{target}
+   (run ./extract_examples.exe --select parse %{mlds}))))
+
+; --- Run the checks under @runtest -----------------------------------------
+
+; Type tier: build the archives (type-checking) — never executed.
+
+(rule
+ (alias runtest)
+ (deps examples_manual.cma examples_deriving.cma)
+ (action (progn)))
+
+; Parse tier: stop after parsing, so undefined identifiers are allowed but a
+; genuine syntax error fails.
+
+(rule
+ (alias runtest)
+ (deps examples_manual_parse.ml)
+ (action
+  (run
+   %{ocaml_bin}/ocamlc
+   -stop-after
+   parsing
+   -w
+   -a
+   examples_manual_parse.ml)))

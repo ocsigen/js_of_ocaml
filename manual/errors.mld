@@ -97,7 +97,7 @@ so attaching one to an OCaml exception preserves the stack trace for debugging.
 Use {{!Js_of_ocaml.Js.Js_error.attach_js_backtrace}Js_error.attach_js_backtrace} to attach a JavaScript stack trace
 to an OCaml exception:
 
-{@ocaml[
+{@ocaml parse[
 let process data =
   try
     do_something data

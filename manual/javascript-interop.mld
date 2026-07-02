@@ -127,7 +127,7 @@ There are two ways to write these types:
 v}
 
 {b Named class types} — better for reusable or complex interfaces:
-{@ocaml[
+{@ocaml parse[
 class type myObject = object
   method field1 : type1
   method field2 : type2
@@ -198,17 +198,17 @@ or [obj##.some_property_].
 class type canvas = object
   (* All three refer to the same JS method: drawImage *)
   method drawImage :
-      imageElement Js.t -> int -> int -> unit Js.meth
+      Dom_html.imageElement Js.t -> int -> int -> unit Js.meth
   method drawImage_withSize :
-      imageElement Js.t -> int -> int -> int -> int -> unit Js.meth
+      Dom_html.imageElement Js.t -> int -> int -> int -> int -> unit Js.meth
   method drawImage_fromCanvas :
-      canvasElement Js.t -> int -> int -> unit Js.meth
+      Dom_html.canvasElement Js.t -> int -> int -> unit Js.meth
 end
 ]}
 
 {3 Full naming rules}
 
-{@ocaml[
+{@ocaml skip[
 class type example = object
   (* All of these refer to JS field [meth] *)
   method meth : ..
@@ -270,6 +270,9 @@ Global JavaScript variables are properties of the global object. Use
 (* Access document *)
 let doc : Dom_html.document Js.t = Js.Unsafe.global##.document
 
+(* [config] is the type describing your custom global object *)
+type config
+
 (* Read and write a custom global *)
 let get_config () : config Js.t = Js.Unsafe.global##.myAppConfig
 let set_config (x : config Js.t) = Js.Unsafe.global##.myAppConfig := x
@@ -288,12 +291,12 @@ Verify the library documentation before writing type annotations.
 When a property is missing from the OCaml interface, use
 {{!Js_of_ocaml.Js.Unsafe.coerce}Js.Unsafe.coerce} for untyped access:
 
-{@ocaml[
+{@ocaml parse[
 (* Read a property *)
 let value = (Js.Unsafe.coerce obj)##.someProp
 
 (* Write a property *)
-(Js.Unsafe.coerce obj)##.someProp := v
+(Js.Unsafe.coerce obj)##.someProp := value
 ]}
 
 {1:null-undefined Handling null and undefined}
@@ -306,7 +309,7 @@ Js_of_ocaml represents these with distinct types.
 Use {{!Js_of_ocaml.Js.Opt}Js.Opt} for values that may be [null] (e.g., DOM methods that
 return [null] when an element is not found):
 
-{@ocaml[
+{@ocaml parse[
 (* Check if null *)
 let is_present = Js.Opt.test value
 
@@ -331,7 +334,7 @@ let null_val : element Js.t Js.opt = Js.null
 Use {{!Js_of_ocaml.Js.Optdef}Js.Optdef} for values that may be [undefined] (e.g., optional
 object properties, array access beyond bounds):
 
-{@ocaml[
+{@ocaml parse[
 (* Check if defined *)
 let is_defined = Js.Optdef.test value
 
@@ -396,7 +399,7 @@ let slice arr start stop =
 
 Use {{!Js_of_ocaml.Js.Unsafe.call}Js.Unsafe.call} when you need to explicitly set [this]:
 
-{@ocaml[
+{@ocaml parse[
 (* Equivalent to: func.call(thisArg, arg1, arg2) *)
 let result =
   Js.Unsafe.call func thisArg [| Js.Unsafe.inject arg1; Js.Unsafe.inject arg2 |]
@@ -440,7 +443,7 @@ partially applied function.
 
 Use {{!Js_of_ocaml.Js.wrap_meth_callback}Js.wrap_meth_callback} when the callback needs access to [this]:
 
-{@ocaml[
+{@ocaml parse[
 (* The first parameter receives the 'this' value *)
 let callback = Js.wrap_meth_callback (fun this event ->
   let target : Dom_html.element Js.t = this in
@@ -453,7 +456,7 @@ let callback = Js.wrap_meth_callback (fun this event ->
 For DOM events, use {{!Js_of_ocaml.Dom_html.handler}Dom_html.handler} which wraps the function
 and handles the return value ([Js._false] prevents the default action):
 
-{@ocaml[
+{@ocaml parse[
 let handler = Dom_html.handler (fun event ->
   Dom_html.window##alert (Js.string "Clicked!");
   Js._true)
@@ -463,7 +466,7 @@ button##.onclick := handler
 
 For handlers that need access to [this], use {{!Js_of_ocaml.Dom.full_handler}Dom.full_handler}:
 
-{@ocaml[
+{@ocaml parse[
 let handler = Dom.full_handler (fun this event ->
   let element : Dom_html.element Js.t = this in
   (* ... *)
@@ -475,7 +478,7 @@ let handler = Dom.full_handler (fun this event ->
 For performance-critical code, or when you don't need partial application,
 use {{!Js_of_ocaml.Js.Unsafe.callback}Js.Unsafe.callback}:
 
-{@ocaml[
+{@ocaml parse[
 (* Strict callback - missing args become undefined, extra args are lost *)
 let strict_cb = Js.Unsafe.callback (fun x y -> x + y)
 
@@ -488,7 +491,7 @@ let arity_cb = Js.Unsafe.callback_with_arity 2 (fun x y -> x + y)
 Use {{!Js_of_ocaml.Js.Unsafe.callback_with_arguments}Js.Unsafe.callback_with_arguments} when the callback receives a
 variable number of arguments:
 
-{@ocaml[
+{@ocaml parse[
 let varargs_cb = Js.Unsafe.callback_with_arguments (fun args ->
   let len = args##.length in
   Printf.printf "Called with %d arguments\n" len)
@@ -547,6 +550,9 @@ let as_string (x : string_or_number Js.t) : Js.js_string Js.t Js.opt =
 {2 Converting to OCaml variants}
 
 {@ocaml[
+(* The union type from above *)
+type element_or_text
+
 type child =
   | Element of Dom.element Js.t
   | Text of Dom.text Js.t
@@ -559,8 +565,8 @@ let classify_child (x : element_or_text Js.t) : child =
 (* Now use pattern matching *)
 let handle container =
   match classify_child container##.child with
-  | Element e -> (* work with element *)
-  | Text t -> (* work with text node *)
+  | Element e -> () (* work with element *)
+  | Text t -> () (* work with text node *)
 ]}
 
 {1:json JSON serialization}
@@ -570,7 +576,7 @@ provides serialization between OCaml values and JSON strings. The
 deserialization is unsafe in the same way the OCaml
 Marshal.from_string function is.
 
-{@ocaml[
+{@ocaml parse[
 (* OCaml value -> JSON string *)
 let json : Js.js_string Js.t = Json.output value
 
