@@ -34,7 +34,7 @@ v}
 
 Use [##.] (with a dot) to access a property:
 
-{@ocaml[
+{@ocaml parse[
 (* Get the document title *)
 let title = Dom_html.document##.title
 
@@ -58,7 +58,7 @@ v}
 
 Use [##.] with [:=] to set a property:
 
-{@ocaml[
+{@ocaml parse[
 (* Set the document title *)
 Dom_html.document##.title := Js.string "New Title"
 
@@ -85,7 +85,7 @@ v}
 
 Use [##] (without a dot) to call a method:
 
-{@ocaml[
+{@ocaml parse[
 (* Console logging *)
 Console.console##log (Js.string "Hello")
 Console.console##warn (Js.string "Warning!")
@@ -108,7 +108,7 @@ js_array##forEach (Js.wrap_callback (fun x _idx _arr ->
 
 For easier chaining, you can wrap the method call in parentheses:
 
-{@ocaml[
+{@ocaml parse[
 (* These are equivalent *)
 let result = obj##meth1##meth2##meth3
 let result = obj##(meth1)##(meth2)##(meth3)
@@ -132,7 +132,7 @@ v}
 
 Use [new%js] to call JavaScript constructors:
 
-{@ocaml[
+{@ocaml parse[
 (* Create a Date *)
 let date_constr = Js.Unsafe.global##._Date
 let now = new%js date_constr
@@ -151,8 +151,8 @@ let arr = new%js array_constr 10
 
 When the constructor is not a simple identifier, bind it first:
 
-{@ocaml[
-let constr = (Js.Unsafe.global##.SomeLib)##._SomeClass in
+{@ocaml parse[
+let constr = (Js.Unsafe.global##.SomeLib)##._SomeClass
 let obj = new%js constr arg1 arg2
 ]}
 
@@ -198,9 +198,9 @@ Control property access with attributes:
 {@ocaml[
 object%js
   val readonly_prop = 42                   (* read-only by default *)
-  val also_readonly = 42 [@@readonly]      (* explicit read-only *)
+  val also_readonly_ = 42 [@@readonly]     (* explicit read-only *)
   val mutable readwrite = 42               (* read/write with mutable *)
-  val also_readwrite = 42 [@@readwrite]    (* explicit read/write *)
+  val also_readwrite_ = 42 [@@readwrite]   (* explicit read/write *)
   val writeonly = 42 [@@writeonly]         (* write-only *)
   val optional = Js.undefined [@@optdef]   (* optional/undefined *)
 end
@@ -244,7 +244,7 @@ end
 
 Has the type:
 
-{@ocaml[
+{@ocaml skip[
 < x : int Js.readonly_prop;
   y : int Js.prop;
   add : int -> int -> int Js.meth > Js.t
