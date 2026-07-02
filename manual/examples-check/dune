@@ -15,28 +15,18 @@
 ; every module but skips the final link, so an example that declares/uses an
 ; `external` primitive that only exists in JS still checks.
 
-; Manual examples, from the .mld pages that use the base `js_of_ocaml` library.
-; The pages read with `open Js_of_ocaml` assumed throughout, so we inject it
-; (--open) rather than repeat it in every small block; the rendered blocks stay
-; clean and are checked as-is. The same file list feeds the parse tier below
-; (pages with only parse-only blocks, e.g. lwt.mld, contribute nothing here).
+; Manual examples: every manual/*.mld page. The pages read with `open Js_of_ocaml`
+; assumed throughout, so we inject it (--open) rather than repeat it in every
+; small block; the rendered blocks stay clean and are checked as-is. The same
+; glob feeds the parse tier below (pages with only parse-only blocks, e.g.
+; lwt.mld, and pages with no blocks contribute nothing here).
 
 (rule
  (target examples_manual.ml)
  (deps
   extract_examples.exe
   (:mlds
-   ../build-toplevel.mld
-   ../debug.mld
-   ../errors.mld
-   ../javascript-interop.mld
-   ../linker.mld
-   ../lwt.mld
-   ../ppx.mld
-   ../quickstart.mld
-   ../rev-bindings.mld
-   ../runtime-representation.mld
-   ../tailcall.mld))
+   (glob_files ../*.mld)))
  (action
   (with-stdout-to
    %{target}
@@ -46,37 +36,15 @@
  (name examples_manual)
  (modules examples_manual)
  (modes byte)
- ; dynlink / wasm_of_ocaml-compiler.dynlink / js_of_ocaml-toplevel.worker:
- ; the build-toplevel page's Dynlink.loadfile, Wasm_of_ocaml_compiler_dynlink
- ; and Js_of_ocaml_toplevel_worker examples.
+ ; dynlink / wasm_of_ocaml-compiler.dynlink / js_of_ocaml-toplevel.worker: the
+ ; build-toplevel page's loadfile and worker examples. js_of_ocaml.deriving +
+ ; the ppx_deriving_json preprocessor: the ppx-deriving page.
  (libraries
   js_of_ocaml
+  js_of_ocaml.deriving
   dynlink
   wasm_of_ocaml-compiler.dynlink
   js_of_ocaml-toplevel.worker)
- (flags
-  (:standard -w -a))
- (preprocess
-  (pps js_of_ocaml-ppx)))
-
-; Deriving examples (ppx-deriving.mld) need the ppx_deriving_json preprocessor
-; and its runtime, so they get their own unit.
-
-(rule
- (target examples_deriving.ml)
- (deps
-  extract_examples.exe
-  (:mld ../ppx-deriving.mld))
- (action
-  (with-stdout-to
-   %{target}
-   (run ./extract_examples.exe --open Js_of_ocaml %{mld}))))
-
-(library
- (name examples_deriving)
- (modules examples_deriving)
- (modes byte)
- (libraries js_of_ocaml js_of_ocaml.deriving)
  (flags
   (:standard -w -a))
  (preprocess
@@ -167,17 +135,7 @@
  (deps
   extract_examples.exe
   (:mlds
-   ../build-toplevel.mld
-   ../debug.mld
-   ../errors.mld
-   ../javascript-interop.mld
-   ../linker.mld
-   ../lwt.mld
-   ../ppx.mld
-   ../quickstart.mld
-   ../rev-bindings.mld
-   ../runtime-representation.mld
-   ../tailcall.mld))
+   (glob_files ../*.mld)))
  (action
   (with-stdout-to
    %{target}
@@ -208,7 +166,6 @@
   (= %{os_type} Unix))
  (deps
   examples_manual.cma
-  examples_deriving.cma
   examples_lib.cma
   examples_tyxml.cma
   examples_lwt.cma)
