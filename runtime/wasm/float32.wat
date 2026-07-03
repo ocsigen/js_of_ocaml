@@ -88,8 +88,8 @@
    (type $float32
       (sub final $custom (struct (field (ref $custom_operations)) (field $f32 f32))))
 
-   (func $box_float32 (param $f f32) (result (ref eq))
-      (struct.new $float32 (global.get $float32_ops) (local.get $f)))
+   (func $box_float32 (param $f32 f32) (result (ref eq))
+      (struct.new $float32 (global.get $float32_ops) (local.get $f32)))
 
    (func $unbox_float32 (param $f (ref eq)) (result f32)
       (struct.get $float32 1 (ref.cast (ref $float32) (local.get $f))))

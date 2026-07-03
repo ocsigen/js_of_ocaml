@@ -103,8 +103,8 @@
          (struct.get $int64 1 (ref.cast (ref $int64) (local.get $v)))))
 
    (func $caml_copy_int64 (export "caml_copy_int64")
-      (param $i i64) (result (ref eq))
-      (struct.new $int64 (global.get $int64_ops) (local.get $i)))
+      (param $i64 i64) (result (ref eq))
+      (struct.new $int64 (global.get $int64_ops) (local.get $i64)))
 
    (func (export "Int64_val") (param $v (ref eq)) (result i64)
       (struct.get $int64 1 (ref.cast (ref $int64) (local.get $v))))

@@ -163,17 +163,17 @@
       (i32.mul (local.get $len) (i32.const 8)))
 
    (func $deserialize_nat (param $s (ref eq)) (result (ref eq)) (result i32)
-      (local $d (ref $digits)) (local $len i32) (local $i i32)
+      (local $dat (ref $digits)) (local $len i32) (local $i i32)
       (local.set $len (call $caml_deserialize_int_4 (local.get $s)))
-      (local.set $d (array.new $digits (i32.const 0) (local.get $len)))
+      (local.set $dat (array.new $digits (i32.const 0) (local.get $len)))
       (loop $loop
          (if (i32.lt_s (local.get $i) (local.get $len))
             (then
-               (array.set $digits (local.get $d) (local.get $i)
+               (array.set $digits (local.get $dat) (local.get $i)
                   (call $caml_deserialize_int_4 (local.get $s)))
                (local.set $i (i32.add (local.get $i) (i32.const 1)))
                (br $loop))))
-      (struct.new $nat (global.get $nat_ops) (local.get $d))
+      (struct.new $nat (global.get $nat_ops) (local.get $dat))
       (i32.mul (local.get $len) (i32.const 4)))
 
    ;; Primitives
