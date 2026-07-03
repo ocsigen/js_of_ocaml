@@ -16,13 +16,6 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-(** CSS Font Loading API binding.
-
-    This is a partial binding to the CSS Font Loading API.
-
-    @see <https://developer.mozilla.org/en-US/docs/Web/API/CSS_Font_Loading_API>
-    @see <https://www.w3.org/TR/css-font-loading-3/> *)
-
 open Js
 
 class type fontFace = object
@@ -36,9 +29,9 @@ class type fontFace = object
 
   method unicodeRange : js_string t prop
 
-  method variant : js_string t prop
-
   method featureSettings : js_string t prop
+
+  method variationSettings : js_string t prop
 
   method display : js_string t prop
 

@@ -80,7 +80,6 @@ let test_descriptor_defaults () =
   in
   default "style" (Js.to_string bebas##.style) "normal";
   default "weight" (Js.to_string bebas##.weight) "normal";
-  default "variant" (Js.to_string bebas##.variant) "normal";
   default "featureSettings" (Js.to_string bebas##.featureSettings) "normal";
   default "display" (Js.to_string bebas##.display) "auto";
   return ()

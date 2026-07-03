@@ -36,9 +36,9 @@ class type fontFace = object
 
   method unicodeRange : js_string t prop
 
-  method variant : js_string t prop
-
   method featureSettings : js_string t prop
+
+  method variationSettings : js_string t prop
 
   method display : js_string t prop
 
