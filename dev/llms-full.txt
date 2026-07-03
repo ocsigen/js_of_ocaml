@@ -1609,6 +1609,7 @@ Browser APIs:
 [`Js_of_ocaml.EventSource`](./Js_of_ocaml-EventSource.md) EventSource binding
 [`Js_of_ocaml.Fetch`](./Js_of_ocaml-Fetch.md) Fetch API.
 [`Js_of_ocaml.File`](./Js_of_ocaml-File.md) File API
+[`Js_of_ocaml.FontFace`](./Js_of_ocaml-FontFace.md) CSS Font Loading API binding.
 [`Js_of_ocaml.Form`](./Js_of_ocaml-Form.md) 
 [`Js_of_ocaml.Geolocation`](./Js_of_ocaml-Geolocation.md) Geolocation API
 [`Js_of_ocaml.IntersectionObserver`](./Js_of_ocaml-IntersectionObserver.md) The Intersection Observer API provides a way to asynchronously observe changes in the intersection of a target element with an ancestor element or with a top-level document's viewport.
@@ -30361,6 +30362,10 @@ method images : imageElement collection Js_of_ocaml__.Js.t
                   Js_of_ocaml__.Js.readonly_prop
 ```
 ```ocaml
+method fonts : Js_of_ocaml__.FontFace.fontFaceSet Js_of_ocaml__.Js.t
+                 Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
 method applets : element collection Js_of_ocaml__.Js.t
                    Js_of_ocaml__.Js.readonly_prop
 ```
@@ -45295,6 +45300,128 @@ Add an event listener. This function matches the `addEventListener` DOM method, 
 
 ---
 
+# Class type `FontFace.fontFace`
+
+```ocaml
+method family : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                  Js_of_ocaml__.Js.prop
+```
+```ocaml
+method style : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                 Js_of_ocaml__.Js.prop
+```
+```ocaml
+method weight : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                  Js_of_ocaml__.Js.prop
+```
+```ocaml
+method stretch : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                   Js_of_ocaml__.Js.prop
+```
+```ocaml
+method unicodeRange : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                        Js_of_ocaml__.Js.prop
+```
+```ocaml
+method featureSettings : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                           Js_of_ocaml__.Js.prop
+```
+```ocaml
+method variationSettings : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                             Js_of_ocaml__.Js.prop
+```
+```ocaml
+method display : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                   Js_of_ocaml__.Js.prop
+```
+```ocaml
+method status : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                  Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method load : fontFace Js_of_ocaml__.Js.t Js_of_ocaml__.Promise.t
+                Js_of_ocaml__.Js.meth
+```
+
+
+---
+
+# Class type `FontFace.fontFaceSet`
+
+```ocaml
+method add : fontFace Js_of_ocaml__.Js.t ->
+  fontFaceSet Js_of_ocaml__.Js.t Js_of_ocaml__.Js.meth
+```
+```ocaml
+method check : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t ->
+  Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t ->
+  bool Js_of_ocaml__.Js.t Js_of_ocaml__.Js.meth
+```
+```ocaml
+method clear : unit Js_of_ocaml__.Js.meth
+```
+```ocaml
+method delete : fontFace Js_of_ocaml__.Js.t ->
+  bool Js_of_ocaml__.Js.t Js_of_ocaml__.Js.meth
+```
+```ocaml
+method has : fontFace Js_of_ocaml__.Js.t ->
+  bool Js_of_ocaml__.Js.t Js_of_ocaml__.Js.meth
+```
+```ocaml
+method load : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t ->
+  Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t ->
+  fontFace Js_of_ocaml__.Js.t Js_of_ocaml__.Js.js_array Js_of_ocaml__.Js.t
+    Js_of_ocaml__.Promise.t
+    Js_of_ocaml__.Js.meth
+```
+```ocaml
+method ready : fontFaceSet Js_of_ocaml__.Js.t Js_of_ocaml__.Promise.t
+                 Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
+method status : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
+                  Js_of_ocaml__.Js.readonly_prop
+```
+
+
+---
+
+# Module `Js_of_ocaml.FontFace`
+
+CSS Font Loading API binding.
+
+This is a partial binding to the CSS Font Loading API.
+
+see [https://developer.mozilla.org/en-US/docs/Web/API/CSS\_Font\_Loading\_API](https://developer.mozilla.org/en-US/docs/Web/API/CSS_Font_Loading_API) 
+see [https://www.w3.org/TR/css-font-loading-3/](https://www.w3.org/TR/css-font-loading-3/) 
+```ocaml
+class type  fontFace = object ... end
+```
+```ocaml
+class type  fontFaceSet = object ... end
+```
+```ocaml
+val is_supported : unit -> bool
+```
+`is_supported ()` is `true` if the `FontFace` constructor of the CSS Font Loading API is available in the current environment.
+
+```ocaml
+val create : Js.js_string Js.t -> Js.js_string Js.t -> fontFace Js.t
+```
+`create family source` wraps `new FontFace(family, source)`, where `source` is a CSS `src` descriptor string (e.g. `"url(font.woff2)"`).
+
+```ocaml
+val create_from_buffer : 
+  Js.js_string Js.t ->
+  Typed_array.arrayBuffer Js.t ->
+  fontFace Js.t
+```
+`create_from_buffer family data` wraps `new FontFace(family, data)` with the font's binary data as `data`, for fonts loaded from raw bytes.
+
+
+---
+
 # Class type `Form.formData`
 
 ```ocaml
@@ -54172,6 +54299,11 @@ File API
 ```ocaml
 module Firebug = Console
 ```
+```ocaml
+module FontFace : sig ... end
+```
+CSS Font Loading API binding.
+
 ```ocaml
 module Form : sig ... end
 ```

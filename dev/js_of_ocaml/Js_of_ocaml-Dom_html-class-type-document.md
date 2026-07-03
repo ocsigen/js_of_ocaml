@@ -53,6 +53,10 @@ method images : imageElement collection Js_of_ocaml__.Js.t
                   Js_of_ocaml__.Js.readonly_prop
 ```
 ```ocaml
+method fonts : Js_of_ocaml__.FontFace.fontFaceSet Js_of_ocaml__.Js.t
+                 Js_of_ocaml__.Js.readonly_prop
+```
+```ocaml
 method applets : element collection Js_of_ocaml__.Js.t
                    Js_of_ocaml__.Js.readonly_prop
 ```

@@ -33,6 +33,7 @@ Browser APIs:
 [`Js_of_ocaml.EventSource`](./Js_of_ocaml-EventSource.md) EventSource binding
 [`Js_of_ocaml.Fetch`](./Js_of_ocaml-Fetch.md) Fetch API.
 [`Js_of_ocaml.File`](./Js_of_ocaml-File.md) File API
+[`Js_of_ocaml.FontFace`](./Js_of_ocaml-FontFace.md) CSS Font Loading API binding.
 [`Js_of_ocaml.Form`](./Js_of_ocaml-Form.md) 
 [`Js_of_ocaml.Geolocation`](./Js_of_ocaml-Geolocation.md) Geolocation API
 [`Js_of_ocaml.IntersectionObserver`](./Js_of_ocaml-IntersectionObserver.md) The Intersection Observer API provides a way to asynchronously observe changes in the intersection of a target element with an ancestor element or with a top-level document's viewport.

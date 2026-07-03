@@ -79,6 +79,11 @@ File API
 module Firebug = Console
 ```
 ```ocaml
+module FontFace : sig ... end
+```
+CSS Font Loading API binding.
+
+```ocaml
 module Form : sig ... end
 ```
 ```ocaml
