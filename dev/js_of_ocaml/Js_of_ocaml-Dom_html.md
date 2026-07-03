@@ -512,8 +512,8 @@ val getElementById_coerce : string -> (element Js.t -> 'a Js.opt) -> 'a option
 
 ```ocaml
   match Dom_html.getElementById_coerce "myinput" Dom_html.CoerceTo.input with
-  | None -> ..
-  | Some input -> ..
+  | None -> ()
+  | Some input -> ignore input
 ```
 ```ocaml
 val getElementById : string -> element Js.t

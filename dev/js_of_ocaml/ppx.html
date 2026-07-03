@@ -273,7 +273,7 @@ let pattern = new%js regexp_constr (Js.string &quot;\\d+&quot;) (Js.string &quot
 
 (* Create an Array with size *)
 let array_constr = Js.Unsafe.global##._Array
-let arr = new%js array_constr 10</code></pre><h3 id="non-identifier-constructors">Non-identifier constructors</h3><p>When the constructor is not a simple identifier, bind it first:</p><pre class="language-ocaml"><code>let constr = (Js.Unsafe.global##.SomeLib)##._SomeClass in
+let arr = new%js array_constr 10</code></pre><h3 id="non-identifier-constructors">Non-identifier constructors</h3><p>When the constructor is not a simple identifier, bind it first:</p><pre class="language-ocaml"><code>let constr = (Js.Unsafe.global##.SomeLib)##._SomeClass
 let obj = new%js constr arg1 arg2</code></pre><h3 id="typing-rule_4">Typing rule</h3><pre>constr : (t1 -&gt; ... -&gt; tn -&gt; u Js.t) Js.constr
   args : t1, ..., tn
 ----------------------------------------------
@@ -297,9 +297,9 @@ let config = object%js
   val mutable retries = 3
 end</code></pre><h3 id="property-attributes">Property attributes</h3><p>Control property access with attributes:</p><pre class="language-ocaml"><code>object%js
   val readonly_prop = 42                   (* read-only by default *)
-  val also_readonly = 42 [@@readonly]      (* explicit read-only *)
+  val also_readonly_ = 42 [@@readonly]     (* explicit read-only *)
   val mutable readwrite = 42               (* read/write with mutable *)
-  val also_readwrite = 42 [@@readwrite]    (* explicit read/write *)
+  val also_readwrite_ = 42 [@@readwrite]   (* explicit read/write *)
   val writeonly = 42 [@@writeonly]         (* write-only *)
   val optional = Js.undefined [@@optdef]   (* optional/undefined *)
 end</code></pre><table class="odoc-table"><tr><td><p>Declaration</p></td><td><p>Property type</p></td><td><p>Can read</p></td><td><p>Can write</p></td></tr><tr><td><p><code>val x = v</code></p></td><td><p><code>readonly_prop</code></p></td><td><p>Yes</p></td><td><p>No</p></td></tr><tr><td><p><code>val mutable x = v</code></p></td><td><p><code>prop</code></p></td><td><p>Yes</p></td><td><p>Yes</p></td></tr><tr><td><p><code>val x = v [@@readonly]</code></p></td><td><p><code>readonly_prop</code></p></td><td><p>Yes</p></td><td><p>No</p></td></tr><tr><td><p><code>val x = v [@@readwrite]</code></p></td><td><p><code>prop</code></p></td><td><p>Yes</p></td><td><p>Yes</p></td></tr><tr><td><p><code>val x = v [@@writeonly]</code></p></td><td><p><code>writeonly_prop</code></p></td><td><p>No</p></td><td><p>Yes</p></td></tr><tr><td><p><code>val x = v [@@optdef]</code></p></td><td><p><code>optdef_prop</code></p></td><td><p>Yes (Js.Optdef)</p></td><td><p>Yes</p></td></tr></table><h3 id="using-self">Using <code>self</code></h3><p>The identifier in parentheses binds to JavaScript's <code>this</code>:</p><pre class="language-ocaml"><code>let obj = object%js (self)

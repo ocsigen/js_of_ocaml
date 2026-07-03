@@ -17,9 +17,10 @@ A code example:
       Console.console##debug entries;
       Console.console##debug observer
     in
-    ResizeObserver.observe ~node ~f
-      ~box:(Js.string "content-box")
-      ()
+    ignore
+      (ResizeObserver.observe ~node ~f
+         ~box:(Js.string "content-box")
+         ())
 ```
 see [https://developer.mozilla.org/en-US/docs/Web/API/ResizeObserver](https://developer.mozilla.org/en-US/docs/Web/API/ResizeObserver) for API documentation
 see [https://drafts.csswg.org/resize-observer](https://drafts.csswg.org/resize-observer) for W3C draft spec

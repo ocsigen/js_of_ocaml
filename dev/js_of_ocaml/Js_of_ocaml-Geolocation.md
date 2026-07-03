@@ -13,7 +13,7 @@ if (Geolocation.is_supported()) then
   let f_success pos =
     let coords = pos##.coords in
     let latitude = coords##.latitude in
-    Console.console##debug latitude ;
+    Console.console##debug latitude
   in
   let f_error err =
     let code = err##.code in

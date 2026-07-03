@@ -550,11 +550,11 @@ This enables:
 class type canvas = object
   (* All three refer to the same JS method: drawImage *)
   method drawImage :
-      imageElement Js.t -> int -> int -> unit Js.meth
+      Dom_html.imageElement Js.t -> int -> int -> unit Js.meth
   method drawImage_withSize :
-      imageElement Js.t -> int -> int -> int -> int -> unit Js.meth
+      Dom_html.imageElement Js.t -> int -> int -> int -> int -> unit Js.meth
   method drawImage_fromCanvas :
-      canvasElement Js.t -> int -> int -> unit Js.meth
+      Dom_html.canvasElement Js.t -> int -> int -> unit Js.meth
 end
 ```
 
@@ -619,6 +619,9 @@ Global JavaScript variables are properties of the global object. Use [Js.Unsafe.
 (* Access document *)
 let doc : Dom_html.document Js.t = Js.Unsafe.global##.document
 
+(* [config] is the type describing your custom global object *)
+type config
+
 (* Read and write a custom global *)
 let get_config () : config Js.t = Js.Unsafe.global##.myAppConfig
 let set_config (x : config Js.t) = Js.Unsafe.global##.myAppConfig := x
@@ -640,7 +643,7 @@ When a property is missing from the OCaml interface, use [Js.Unsafe.coerce](./Js
 let value = (Js.Unsafe.coerce obj)##.someProp
 
 (* Write a property *)
-(Js.Unsafe.coerce obj)##.someProp := v
+(Js.Unsafe.coerce obj)##.someProp := value
 ```
 
 ## Handling null and undefined
@@ -876,6 +879,9 @@ let as_string (x : string_or_number Js.t) : Js.js_string Js.t Js.opt =
 ### Converting to OCaml variants
 
 ```ocaml
+(* The union type from above *)
+type element_or_text
+
 type child =
   | Element of Dom.element Js.t
   | Text of Dom.text Js.t
@@ -888,8 +894,8 @@ let classify_child (x : element_or_text Js.t) : child =
 (* Now use pattern matching *)
 let handle container =
   match classify_child container##.child with
-  | Element e -> (* work with element *)
-  | Text t -> (* work with text node *)
+  | Element e -> () (* work with element *)
+  | Text t -> () (* work with text node *)
 ```
 
 ## JSON serialization
@@ -1104,7 +1110,7 @@ let arr = new%js array_constr 10
 When the constructor is not a simple identifier, bind it first:
 
 ```ocaml
-let constr = (Js.Unsafe.global##.SomeLib)##._SomeClass in
+let constr = (Js.Unsafe.global##.SomeLib)##._SomeClass
 let obj = new%js constr arg1 arg2
 ```
 
@@ -1150,9 +1156,9 @@ Control property access with attributes:
 ```ocaml
 object%js
   val readonly_prop = 42                   (* read-only by default *)
-  val also_readonly = 42 [@@readonly]      (* explicit read-only *)
+  val also_readonly_ = 42 [@@readonly]     (* explicit read-only *)
   val mutable readwrite = 42               (* read/write with mutable *)
-  val also_readwrite = 42 [@@readwrite]    (* explicit read/write *)
+  val also_readwrite_ = 42 [@@readwrite]   (* explicit read/write *)
   val writeonly = 42 [@@writeonly]         (* write-only *)
   val optional = Js.undefined [@@optdef]   (* optional/undefined *)
 end
@@ -3406,6 +3412,11 @@ JavaScript runtime files are formatted and linted with **Biome**:
 make fmt-js
 make lint-js
 ```
+
+## Documentation
+
+Code examples in the `.mli` doc-comments and the `manual/` pages are checked by the test suite: OCaml code blocks are type-checked against the real API, so examples cannot silently drift out of sync. An illustrative snippet that is not meant to compile can be marked to be only syntax-checked, or skipped entirely. See `manual/examples-check/` for the markers.
+
 
 ## Testing
 
@@ -16801,7 +16812,8 @@ Defining a thread that waits for ESC key on an element:
 
 ```ocaml
 let rec esc elt =
-   let%lwt ev = keydown elt in
+   let open Lwt.Syntax in
+   let* ev = keydown elt in
    if ev##.keyCode = 27
    then Lwt.return ev
    else esc elt
@@ -37984,8 +37996,8 @@ val getElementById_coerce : string -> (element Js.t -> 'a Js.opt) -> 'a option
 
 ```ocaml
   match Dom_html.getElementById_coerce "myinput" Dom_html.CoerceTo.input with
-  | None -> ..
-  | Some input -> ..
+  | None -> ()
+  | Some input -> ignore input
 ```
 ```ocaml
 val getElementById : string -> element Js.t
@@ -45467,7 +45479,7 @@ if (Geolocation.is_supported()) then
   let f_success pos =
     let coords = pos##.coords in
     let latitude = coords##.latitude in
-    Console.console##debug latitude ;
+    Console.console##debug latitude
   in
   let f_error err =
     let code = err##.code in
@@ -46614,12 +46626,8 @@ then (
 
     (* Note: the exact output may be browser-dependent *)
     let letterSort lang letters =
-      letters##sort
-        (wrap_callback (fun a b ->
-             let collator =
-               new%js Intl.collator_constr (def (array [| lang |])) undefined
-             in
-             collator##.compare a b));
+      let collator = new%js Intl.collator_constr (def (array [| lang |])) undefined in
+      ignore (letters##sort (wrap_callback (fun a b -> collator##.compare a b)));
       letters
     in
     let a = jas [| "a"; "z"; "ä" |] in
@@ -48976,9 +48984,10 @@ A code example:
       Console.console##debug records ;
       Console.console##debug observer
     in
-    MutationObserver.observe ~node ~f
-      ~attributes:true ~child_list:true ~character_data:true
-      ()
+    ignore
+      (MutationObserver.observe ~node ~f
+         ~attributes:true ~child_list:true ~character_data:true
+         ())
 ```
 see [https://developer.mozilla.org/en-US/docs/Web/API/MutationObserver](https://developer.mozilla.org/en-US/docs/Web/API/MutationObserver) for API documentation.
 see [https://dom.spec.whatwg.org/\#mutation-observers](https://dom.spec.whatwg.org/#mutation-observers) for the Web Hypertext Application Technology Working Group (WHATWG) spec.
@@ -49223,15 +49232,16 @@ A code example:
 ```ocaml
   if Notification.is_supported ()
   then
-    Promise.map
-      (fun perm ->
-        if Js.to_string perm = "granted"
-        then
-          let options = Notification.empty_options () in
-          options##.body := Js.string "Hello from OCaml!";
-          ignore (new%js Notification.notification_with_options
-                    (Js.string "Title") options))
-      (Notification.request_permission ())
+    ignore
+      (Promise.map
+         (fun perm ->
+           if Js.to_string perm = "granted"
+           then
+             let options = Notification.empty_options () in
+             options##.body := Js.string "Hello from OCaml!";
+             ignore (new%js Notification.notification_with_options
+                       (Js.string "Title") options))
+         (Notification.request_permission ()))
 ```
 see [https://developer.mozilla.org/en-US/docs/Web/API/Notifications\_API](https://developer.mozilla.org/en-US/docs/Web/API/Notifications_API) 
 see [https://notifications.spec.whatwg.org/](https://notifications.spec.whatwg.org/) 
@@ -49448,10 +49458,15 @@ A code example:
 
 ```ocaml
   let perf = Performance.performance in
-  perf##mark (Js.string "start");
+  ignore (perf##mark (Js.string "start"));
   do_something ();
-  perf##mark (Js.string "end");
-  let _ = perf##measure (Js.string "elapsed") (Js.string "start") (Js.string "end") in
+  ignore (perf##mark (Js.string "end"));
+  let _ =
+    perf##measure
+      (Js.string "elapsed")
+      (Js.def (Js.string "start"))
+      (Js.def (Js.string "end"))
+  in
   let entries = perf##getEntriesByType (Js.string "measure") in
   Js.array_get entries 0 |> ignore
 ```
@@ -49589,8 +49604,7 @@ A code example:
       Console.console##debug entries ;
       Console.console##debug observer
     in
-    PerformanceObserver.observe ~entry_types ~f
-    ()
+    ignore (PerformanceObserver.observe ~entry_types ~f)
 ```
 see [https://developer.mozilla.org/en-US/docs/Web/API/PerformanceObserver](https://developer.mozilla.org/en-US/docs/Web/API/PerformanceObserver) for API documentation.
 ```ocaml
@@ -49954,9 +49968,10 @@ A code example:
       Console.console##debug entries;
       Console.console##debug observer
     in
-    ResizeObserver.observe ~node ~f
-      ~box:(Js.string "content-box")
-      ()
+    ignore
+      (ResizeObserver.observe ~node ~f
+         ~box:(Js.string "content-box")
+         ())
 ```
 see [https://developer.mozilla.org/en-US/docs/Web/API/ResizeObserver](https://developer.mozilla.org/en-US/docs/Web/API/ResizeObserver) for API documentation
 see [https://drafts.csswg.org/resize-observer](https://drafts.csswg.org/resize-observer) for W3C draft spec

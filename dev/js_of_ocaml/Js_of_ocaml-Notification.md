@@ -8,15 +8,16 @@ A code example:
 ```ocaml
   if Notification.is_supported ()
   then
-    Promise.map
-      (fun perm ->
-        if Js.to_string perm = "granted"
-        then
-          let options = Notification.empty_options () in
-          options##.body := Js.string "Hello from OCaml!";
-          ignore (new%js Notification.notification_with_options
-                    (Js.string "Title") options))
-      (Notification.request_permission ())
+    ignore
+      (Promise.map
+         (fun perm ->
+           if Js.to_string perm = "granted"
+           then
+             let options = Notification.empty_options () in
+             options##.body := Js.string "Hello from OCaml!";
+             ignore (new%js Notification.notification_with_options
+                       (Js.string "Title") options))
+         (Notification.request_permission ()))
 ```
 see [https://developer.mozilla.org/en-US/docs/Web/API/Notifications\_API](https://developer.mozilla.org/en-US/docs/Web/API/Notifications_API) 
 see [https://notifications.spec.whatwg.org/](https://notifications.spec.whatwg.org/) 

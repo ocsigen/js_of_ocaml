@@ -244,11 +244,11 @@ end
 end</code></pre><h3 id="method-and-property-name-mangling">Method and property name mangling</h3><p>When accessing a field using the <code>##.</code>/<code>##</code> syntax, the field name is transformed by:</p><ol><li>Removing a leading underscore (if present)</li><li>Removing all characters starting from the last underscore</li></ol><p>This enables:</p><ul><li><b>Capitalized names</b>: <code>_Foo</code> refers to JavaScript's <code>Foo</code></li><li><b>Reserved ocaml keywords</b>: <code>_type</code> refers to JavaScript's <code>type</code></li><li><b>Method overloading</b>: <code>foo_int</code> and <code>foo_string</code> both refer to <code>foo</code></li></ul><p><b>Warning</b>: This mangling is a common source of bugs. If you write <code>obj##.some_property</code>, it accesses the JavaScript property <code>some</code> (not <code>some_property</code>). To access <code>some_property</code>, use <code>obj##._some_property_</code> or <code>obj##.some_property_</code>.</p><h4 id="examples">Examples</h4><pre class="language-ocaml"><code>class type canvas = object
   (* All three refer to the same JS method: drawImage *)
   method drawImage :
-      imageElement Js.t -&gt; int -&gt; int -&gt; unit Js.meth
+      Dom_html.imageElement Js.t -&gt; int -&gt; int -&gt; unit Js.meth
   method drawImage_withSize :
-      imageElement Js.t -&gt; int -&gt; int -&gt; int -&gt; int -&gt; unit Js.meth
+      Dom_html.imageElement Js.t -&gt; int -&gt; int -&gt; int -&gt; int -&gt; unit Js.meth
   method drawImage_fromCanvas :
-      canvasElement Js.t -&gt; int -&gt; int -&gt; unit Js.meth
+      Dom_html.canvasElement Js.t -&gt; int -&gt; int -&gt; unit Js.meth
 end</code></pre><h4 id="full-naming-rules">Full naming rules</h4><pre class="language-ocaml"><code>class type example = object
   (* All of these refer to JS field [meth] *)
   method meth : ..
@@ -283,13 +283,16 @@ let someClass : someClass Js.t =
 let value_a = someClass##._VALUE_A_</code></pre><h2 id="accessing-values">Accessing JavaScript values</h2><p>Once you have described a JavaScript object's type, use the <a href="ppx.html" title="ppx">PPX syntax</a> to access its properties and methods:</p><ul><li><code>obj##.prop</code> — read a property</li><li><code>obj##.prop := v</code> — write a property</li><li><code>obj##meth args</code> — call a method</li></ul><h3 id="global-variables">Global variables</h3><p>Global JavaScript variables are properties of the global object. Use <a href="Js_of_ocaml/Js/Unsafe/index.html#val-global" title="Js_of_ocaml.Js.Unsafe.global">Js.Unsafe.global</a> to access them (<code>window</code> in browsers, <code>globalThis</code> in Node.js):</p><pre class="language-ocaml"><code>(* Access document *)
 let doc : Dom_html.document Js.t = Js.Unsafe.global##.document
 
+(* [config] is the type describing your custom global object *)
+type config
+
 (* Read and write a custom global *)
 let get_config () : config Js.t = Js.Unsafe.global##.myAppConfig
 let set_config (x : config Js.t) = Js.Unsafe.global##.myAppConfig := x</code></pre><p>You can also use <a href="Js_of_ocaml/Js/Unsafe/index.html#val-js_expr" title="Js_of_ocaml.Js.Unsafe.js_expr">Js.Unsafe.js_expr</a> for any JavaScript expression:</p><pre class="language-ocaml"><code>let v = (Js.Unsafe.js_expr &quot;window&quot;)##.document</code></pre><p>Be careful: both <a href="Js_of_ocaml/Js/Unsafe/index.html#val-global" title="Js_of_ocaml.Js.Unsafe.global">Js.Unsafe.global</a> and <a href="Js_of_ocaml/Js/Unsafe/index.html#val-js_expr" title="Js_of_ocaml.Js.Unsafe.js_expr">Js.Unsafe.js_expr</a> are untyped. Verify the library documentation before writing type annotations.</p><h3 id="untyped-property-access">Untyped property access</h3><p>When a property is missing from the OCaml interface, use <a href="Js_of_ocaml/Js/Unsafe/index.html#val-coerce" title="Js_of_ocaml.Js.Unsafe.coerce">Js.Unsafe.coerce</a> for untyped access:</p><pre class="language-ocaml"><code>(* Read a property *)
 let value = (Js.Unsafe.coerce obj)##.someProp
 
 (* Write a property *)
-(Js.Unsafe.coerce obj)##.someProp := v</code></pre><h2 id="null-undefined">Handling null and undefined</h2><p>JavaScript has two &quot;missing value&quot; types: <code>null</code> and <code>undefined</code>. Js_of_ocaml represents these with distinct types.</p><h3 id="js.opt-for-nullable-values-(null)">Js.Opt for nullable values (<code>null</code>)</h3><p>Use <a href="Js_of_ocaml/Js/Opt/index.html" title="Js_of_ocaml.Js.Opt">Js.Opt</a> for values that may be <code>null</code> (e.g., DOM methods that return <code>null</code> when an element is not found):</p><pre class="language-ocaml"><code>(* Check if null *)
+(Js.Unsafe.coerce obj)##.someProp := value</code></pre><h2 id="null-undefined">Handling null and undefined</h2><p>JavaScript has two &quot;missing value&quot; types: <code>null</code> and <code>undefined</code>. Js_of_ocaml represents these with distinct types.</p><h3 id="js.opt-for-nullable-values-(null)">Js.Opt for nullable values (<code>null</code>)</h3><p>Use <a href="Js_of_ocaml/Js/Opt/index.html" title="Js_of_ocaml.Js.Opt">Js.Opt</a> for values that may be <code>null</code> (e.g., DOM methods that return <code>null</code> when an element is not found):</p><pre class="language-ocaml"><code>(* Check if null *)
 let is_present = Js.Opt.test value
 
 (* Convert to OCaml option *)
@@ -380,7 +383,10 @@ let as_element (x : element_or_text Js.t) : Dom.element Js.t Js.opt =
 let as_string (x : string_or_number Js.t) : Js.js_string Js.t Js.opt =
   if Js.typeof x = Js.string &quot;string&quot;
   then Js.some (Js.Unsafe.coerce x)
-  else Js.null</code></pre><h3 id="converting-to-ocaml-variants">Converting to OCaml variants</h3><pre class="language-ocaml"><code>type child =
+  else Js.null</code></pre><h3 id="converting-to-ocaml-variants">Converting to OCaml variants</h3><pre class="language-ocaml"><code>(* The union type from above *)
+type element_or_text
+
+type child =
   | Element of Dom.element Js.t
   | Text of Dom.text Js.t
 
@@ -392,8 +398,8 @@ let classify_child (x : element_or_text Js.t) : child =
 (* Now use pattern matching *)
 let handle container =
   match classify_child container##.child with
-  | Element e -&gt; (* work with element *)
-  | Text t -&gt; (* work with text node *)</code></pre><h2 id="json">JSON serialization</h2><p>The <a href="Js_of_ocaml/Json/index.html" title="Js_of_ocaml.Json">Json</a> module provides serialization between OCaml values and JSON strings. The deserialization is unsafe in the same way the OCaml Marshal.from_string function is.</p><pre class="language-ocaml"><code>(* OCaml value -&gt; JSON string *)
+  | Element e -&gt; () (* work with element *)
+  | Text t -&gt; () (* work with text node *)</code></pre><h2 id="json">JSON serialization</h2><p>The <a href="Js_of_ocaml/Json/index.html" title="Js_of_ocaml.Json">Json</a> module provides serialization between OCaml values and JSON strings. The deserialization is unsafe in the same way the OCaml Marshal.from_string function is.</p><pre class="language-ocaml"><code>(* OCaml value -&gt; JSON string *)
 let json : Js.js_string Js.t = Json.output value
 
 (* JSON string -&gt; OCaml value (unsafe, like Marshal) *)

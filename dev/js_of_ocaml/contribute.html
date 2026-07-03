@@ -90,7 +90,7 @@
 </div>
 <div class="page-toc">
   <h3>On this page</h3>
-  <nav class="odoc-toc odoc-local-toc"><ul><li><a href="#reporting-issues">Reporting issues</a></li><li><a href="#development-setup">Development setup</a><ul><li><a href="#install-dependencies">Install dependencies</a></li><li><a href="#build">Build</a></li></ul></li><li><a href="#pull-requests">Pull requests</a></li><li><a href="#code-style">Code style</a><ul><li><a href="#ocaml">OCaml</a></li><li><a href="#javascript">JavaScript</a></li></ul></li><li><a href="#testing">Testing</a></li><li><a href="#project-structure">Project structure</a></li><li><a href="#see-also">See also</a></li></ul></nav>
+  <nav class="odoc-toc odoc-local-toc"><ul><li><a href="#reporting-issues">Reporting issues</a></li><li><a href="#development-setup">Development setup</a><ul><li><a href="#install-dependencies">Install dependencies</a></li><li><a href="#build">Build</a></li></ul></li><li><a href="#pull-requests">Pull requests</a></li><li><a href="#code-style">Code style</a><ul><li><a href="#ocaml">OCaml</a></li><li><a href="#javascript">JavaScript</a></li></ul></li><li><a href="#documentation">Documentation</a></li><li><a href="#testing">Testing</a></li><li><a href="#project-structure">Project structure</a></li><li><a href="#see-also">See also</a></li></ul></nav>
 </div>
 <nav class="api-nav manual-nav">
 <h3>Getting Started</h3>
@@ -159,7 +159,7 @@
 </div>
 <div class="page-toc">
   <h3>On this page</h3>
-  <nav class="odoc-toc odoc-local-toc"><ul><li><a href="#reporting-issues">Reporting issues</a></li><li><a href="#development-setup">Development setup</a><ul><li><a href="#install-dependencies">Install dependencies</a></li><li><a href="#build">Build</a></li></ul></li><li><a href="#pull-requests">Pull requests</a></li><li><a href="#code-style">Code style</a><ul><li><a href="#ocaml">OCaml</a></li><li><a href="#javascript">JavaScript</a></li></ul></li><li><a href="#testing">Testing</a></li><li><a href="#project-structure">Project structure</a></li><li><a href="#see-also">See also</a></li></ul></nav>
+  <nav class="odoc-toc odoc-local-toc"><ul><li><a href="#reporting-issues">Reporting issues</a></li><li><a href="#development-setup">Development setup</a><ul><li><a href="#install-dependencies">Install dependencies</a></li><li><a href="#build">Build</a></li></ul></li><li><a href="#pull-requests">Pull requests</a></li><li><a href="#code-style">Code style</a><ul><li><a href="#ocaml">OCaml</a></li><li><a href="#javascript">JavaScript</a></li></ul></li><li><a href="#documentation">Documentation</a></li><li><a href="#testing">Testing</a></li><li><a href="#project-structure">Project structure</a></li><li><a href="#see-also">See also</a></li></ul></nav>
 </div>
 <nav class="api-nav manual-nav">
 <h3>Getting Started</h3>
@@ -217,7 +217,7 @@
         <div class="odoc-content"><h2 id="reporting-issues">Reporting issues</h2><p>If you encounter a problem or have questions, please open a <a href="https://github.com/ocsigen/js_of_ocaml/issues/">GitHub issue</a>.</p><ol><li>Check if your issue has already been <a href="https://github.com/ocsigen/js_of_ocaml/issues/">reported</a></li><li>Include version information (<code>ocamlc -version</code>, <code>js_of_ocaml --version</code>)</li><li>Describe the expected and actual behavior</li><li>Provide a minimal reproducible example if possible</li></ol><h2 id="development-setup">Development setup</h2><h3 id="install-dependencies">Install dependencies</h3><pre>opam install --deps-only -t js_of_ocaml js_of_ocaml-lwt \
   js_of_ocaml-compiler js_of_ocaml-toplevel js_of_ocaml-ppx \
   js_of_ocaml-ppx_deriving_json js_of_ocaml-tyxml</pre><h3 id="build">Build</h3><pre>dune build @all</pre><h2 id="pull-requests">Pull requests</h2><ol><li>Discuss significant changes in an issue first</li><li>Fork the repository and create your branch from <code>master</code></li><li>Write tests for new code</li><li>Ensure tests pass (<code>make tests</code>)</li><li>Update <code>CHANGES.md</code> with an entry describing your change</li></ol><h2 id="code-style">Code style</h2><h3 id="ocaml">OCaml</h3><p>Code is formatted with <b>ocamlformat 0.29.0</b>. Run before committing:</p><pre>make fmt</pre><h3 id="javascript">JavaScript</h3><p>JavaScript runtime files are formatted and linted with <b>Biome</b>:</p><pre>make fmt-js
-make lint-js</pre><h2 id="testing">Testing</h2><pre># Run all tests
+make lint-js</pre><h2 id="documentation">Documentation</h2><p>Code examples in the <code>.mli</code> doc-comments and the <code>manual/</code> pages are checked by the test suite: OCaml code blocks are type-checked against the real API, so examples cannot silently drift out of sync. An illustrative snippet that is not meant to compile can be marked to be only syntax-checked, or skipped entirely. See <code>manual/examples-check/</code> for the markers.</p><h2 id="testing">Testing</h2><pre># Run all tests
 make tests
 
 # Run WebAssembly tests

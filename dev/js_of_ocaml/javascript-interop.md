@@ -187,11 +187,11 @@ This enables:
 class type canvas = object
   (* All three refer to the same JS method: drawImage *)
   method drawImage :
-      imageElement Js.t -> int -> int -> unit Js.meth
+      Dom_html.imageElement Js.t -> int -> int -> unit Js.meth
   method drawImage_withSize :
-      imageElement Js.t -> int -> int -> int -> int -> unit Js.meth
+      Dom_html.imageElement Js.t -> int -> int -> int -> int -> unit Js.meth
   method drawImage_fromCanvas :
-      canvasElement Js.t -> int -> int -> unit Js.meth
+      Dom_html.canvasElement Js.t -> int -> int -> unit Js.meth
 end
 ```
 
@@ -256,6 +256,9 @@ Global JavaScript variables are properties of the global object. Use [Js.Unsafe.
 (* Access document *)
 let doc : Dom_html.document Js.t = Js.Unsafe.global##.document
 
+(* [config] is the type describing your custom global object *)
+type config
+
 (* Read and write a custom global *)
 let get_config () : config Js.t = Js.Unsafe.global##.myAppConfig
 let set_config (x : config Js.t) = Js.Unsafe.global##.myAppConfig := x
@@ -277,7 +280,7 @@ When a property is missing from the OCaml interface, use [Js.Unsafe.coerce](./Js
 let value = (Js.Unsafe.coerce obj)##.someProp
 
 (* Write a property *)
-(Js.Unsafe.coerce obj)##.someProp := v
+(Js.Unsafe.coerce obj)##.someProp := value
 ```
 
 ## Handling null and undefined
@@ -513,6 +516,9 @@ let as_string (x : string_or_number Js.t) : Js.js_string Js.t Js.opt =
 ### Converting to OCaml variants
 
 ```ocaml
+(* The union type from above *)
+type element_or_text
+
 type child =
   | Element of Dom.element Js.t
   | Text of Dom.text Js.t
@@ -525,8 +531,8 @@ let classify_child (x : element_or_text Js.t) : child =
 (* Now use pattern matching *)
 let handle container =
   match classify_child container##.child with
-  | Element e -> (* work with element *)
-  | Text t -> (* work with text node *)
+  | Element e -> () (* work with element *)
+  | Text t -> () (* work with text node *)
 ```
 
 ## JSON serialization

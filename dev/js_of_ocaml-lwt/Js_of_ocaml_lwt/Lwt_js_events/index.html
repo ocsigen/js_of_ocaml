@@ -217,7 +217,8 @@
         <div class="odoc-content"><p>Reminder: Event capturing starts with the outer most element in the DOM and works inwards to the HTML element the event took place on (capture phase) and then out again (bubbling phase).</p><p>Examples of use:</p><p>Waiting for a click on <code>elt1</code> before continuing:</p><pre class="language-ocaml"><code>let%lwt _ = Lwt_js_events.click elt1 in</code></pre><p>Doing some operation for each value change in input element <code>inp</code>:</p><pre class="language-ocaml"><code>Lwt_js_events.(async (fun () -&gt;
    clicks inp1 (fun ev _ -&gt; ...)
 ))</code></pre><p>Defining a thread that waits for ESC key on an element:</p><pre class="language-ocaml"><code>let rec esc elt =
-   let%lwt ev = keydown elt in
+   let open Lwt.Syntax in
+   let* ev = keydown elt in
    if ev##.keyCode = 27
    then Lwt.return ev
    else esc elt</code></pre><p>Waiting for a click or escape key before continuing:</p><pre class="language-ocaml"><code>let%lwt () =

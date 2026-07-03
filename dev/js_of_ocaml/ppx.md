@@ -149,7 +149,7 @@ let arr = new%js array_constr 10
 When the constructor is not a simple identifier, bind it first:
 
 ```ocaml
-let constr = (Js.Unsafe.global##.SomeLib)##._SomeClass in
+let constr = (Js.Unsafe.global##.SomeLib)##._SomeClass
 let obj = new%js constr arg1 arg2
 ```
 
@@ -195,9 +195,9 @@ Control property access with attributes:
 ```ocaml
 object%js
   val readonly_prop = 42                   (* read-only by default *)
-  val also_readonly = 42 [@@readonly]      (* explicit read-only *)
+  val also_readonly_ = 42 [@@readonly]     (* explicit read-only *)
   val mutable readwrite = 42               (* read/write with mutable *)
-  val also_readwrite = 42 [@@readwrite]    (* explicit read/write *)
+  val also_readwrite_ = 42 [@@readwrite]   (* explicit read/write *)
   val writeonly = 42 [@@writeonly]         (* write-only *)
   val optional = Js.undefined [@@optdef]   (* optional/undefined *)
 end

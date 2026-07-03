@@ -7,10 +7,15 @@ A code example:
 
 ```ocaml
   let perf = Performance.performance in
-  perf##mark (Js.string "start");
+  ignore (perf##mark (Js.string "start"));
   do_something ();
-  perf##mark (Js.string "end");
-  let _ = perf##measure (Js.string "elapsed") (Js.string "start") (Js.string "end") in
+  ignore (perf##mark (Js.string "end"));
+  let _ =
+    perf##measure
+      (Js.string "elapsed")
+      (Js.def (Js.string "start"))
+      (Js.def (Js.string "end"))
+  in
   let entries = perf##getEntriesByType (Js.string "measure") in
   Js.array_get entries 0 |> ignore
 ```

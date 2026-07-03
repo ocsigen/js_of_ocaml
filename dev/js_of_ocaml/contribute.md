@@ -56,6 +56,11 @@ make fmt-js
 make lint-js
 ```
 
+## Documentation
+
+Code examples in the `.mli` doc-comments and the `manual/` pages are checked by the test suite: OCaml code blocks are type-checked against the real API, so examples cannot silently drift out of sync. An illustrative snippet that is not meant to compile can be marked to be only syntax-checked, or skipped entirely. See `manual/examples-check/` for the markers.
+
+
 ## Testing
 
 ```

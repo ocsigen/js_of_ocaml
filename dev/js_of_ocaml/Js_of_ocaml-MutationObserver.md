@@ -17,9 +17,10 @@ A code example:
       Console.console##debug records ;
       Console.console##debug observer
     in
-    MutationObserver.observe ~node ~f
-      ~attributes:true ~child_list:true ~character_data:true
-      ()
+    ignore
+      (MutationObserver.observe ~node ~f
+         ~attributes:true ~child_list:true ~character_data:true
+         ())
 ```
 see [https://developer.mozilla.org/en-US/docs/Web/API/MutationObserver](https://developer.mozilla.org/en-US/docs/Web/API/MutationObserver) for API documentation.
 see [https://dom.spec.whatwg.org/\#mutation-observers](https://dom.spec.whatwg.org/#mutation-observers) for the Web Hypertext Application Technology Working Group (WHATWG) spec.
