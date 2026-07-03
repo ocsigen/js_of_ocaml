@@ -58,6 +58,10 @@ class type fontFaceSet = object
   method status : js_string t readonly_prop
 end
 
+let fontFace_unsafe = Js.Unsafe.global##._FontFace
+
+let is_supported () = Js.Optdef.test fontFace_unsafe
+
 let constr : (js_string t -> js_string t -> fontFace t) Js.constr =
   Js.Unsafe.global##._FontFace
 
@@ -68,5 +72,5 @@ let constr_from_buffer :
 let create (family : js_string Js.t) (source : js_string Js.t) =
   new%js constr family source
 
-let create_from_buffer (family : js_string Js.t) (source : Typed_array.arrayBuffer Js.t) =
-  new%js constr_from_buffer family source
+let create_from_buffer (family : js_string Js.t) (data : Typed_array.arrayBuffer Js.t) =
+  new%js constr_from_buffer family data

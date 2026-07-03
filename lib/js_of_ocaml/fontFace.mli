@@ -65,10 +65,14 @@ class type fontFaceSet = object
   method status : js_string t readonly_prop
 end
 
+val is_supported : unit -> bool
+(** [is_supported ()] is [true] if the [FontFace] constructor of the CSS Font
+    Loading API is available in the current environment. *)
+
 val create : js_string t -> js_string t -> fontFace t
 (** [create family source] wraps [new FontFace(family, source)], where [source]
     is a CSS [src] descriptor string (e.g. ["url(font.woff2)"]). *)
 
 val create_from_buffer : js_string t -> Typed_array.arrayBuffer t -> fontFace t
-(** [create_from_buffer family source] wraps [new FontFace(family, source)] with
-    the font's binary data as [source], for fonts loaded from raw bytes. *)
+(** [create_from_buffer family data] wraps [new FontFace(family, data)] with the
+    font's binary data as [data], for fonts loaded from raw bytes. *)
