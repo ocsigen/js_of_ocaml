@@ -3111,6 +3111,8 @@ class type document = object
 
   method images : imageElement collection t readonly_prop
 
+  method fonts : FontFace.fontFaceSet t readonly_prop
+
   method applets : element collection t readonly_prop
 
   method links : element collection t readonly_prop

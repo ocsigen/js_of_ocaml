@@ -37,6 +37,7 @@ module Fetch = Fetch
 module File = File
 module Firebug = Console
 [@@ocaml.deprecated "[since 6.0] Use Js_of_ocaml.Console instead."]
+module FontFace = FontFace
 module Form = Form
 module Geolocation = Geolocation
 module IntersectionObserver = IntersectionObserver

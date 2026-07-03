@@ -38,6 +38,7 @@ Js_of_ocaml.Dom_svg
 Js_of_ocaml.EventSource
 Js_of_ocaml.Fetch
 Js_of_ocaml.File
+Js_of_ocaml.FontFace
 Js_of_ocaml.Form
 Js_of_ocaml.Geolocation
 Js_of_ocaml.IntersectionObserver

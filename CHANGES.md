@@ -22,14 +22,14 @@
   `js_of_ocaml-toplevel.worker` and `js_of_ocaml-toplevel.worker_lwt_client`
   sublibraries for running the toplevel in a WebWorker. Revives the
   asynchronous toplevel originally contributed in the unmerged #435 (#66, #833)
+* Lib: add `FontFace` module — partial binding to the CSS Font Loading
+  API, plus a `fonts` property on `Dom_html.document` (#2255)
 
 ## Bug fixes
 * Toplevel: keep the `/static/cmis` directory on the load path across
   `Toploop.initialize_toplevel_env`, so libraries whose cmis are loaded at
   runtime stay resolvable; previously the directory was registered only while
   Stdlib was loaded and then dropped, leaving later lookups unresolved (#833)
-
-## Bug fixes
 * Tyxml: when the same attribute (e.g. multiple `a_class`) is given several
   times, keep the first one and ignore the rest, matching browser semantics,
   instead of letting the last one silently overwrite the others (#968)
