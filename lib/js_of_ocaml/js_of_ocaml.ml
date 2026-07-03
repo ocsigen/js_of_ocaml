@@ -27,7 +27,6 @@ module Cache = Cache
 module Clipboard = Clipboard
 module Console = Console
 module Crypto = Crypto
-module Css_font_loading = Css_font_loading
 module Dom = Dom
 module Dom_events = Dom_events
 module Dom_html = Dom_html
@@ -38,6 +37,7 @@ module Fetch = Fetch
 module File = File
 module Firebug = Console
 [@@ocaml.deprecated "[since 6.0] Use Js_of_ocaml.Console instead."]
+module FontFace = FontFace
 module Form = Form
 module Geolocation = Geolocation
 module IntersectionObserver = IntersectionObserver

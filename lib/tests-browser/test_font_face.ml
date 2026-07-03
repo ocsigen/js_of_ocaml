@@ -56,10 +56,7 @@ let fonts = Dom_html.document##.fonts
    names containing spaces come back quoted, e.g. ["Bebas Neue"]. *)
 let family = "BebasNeueTest"
 
-let bebas =
-  Css_font_loading.create_font_face
-    (Js.string family)
-    (Js.string "url(BebasNeue-Regular.ttf)")
+let bebas = FontFace.create (Js.string family) (Js.string "url(BebasNeue-Regular.ttf)")
 
 let test_initial_state () =
   check
@@ -90,9 +87,7 @@ let test_descriptor_defaults () =
 
 let test_descriptor_writes () =
   let f =
-    Css_font_loading.create_font_face
-      (Js.string "WriteTest")
-      (Js.string "url(BebasNeue-Regular.ttf)")
+    FontFace.create (Js.string "WriteTest") (Js.string "url(BebasNeue-Regular.ttf)")
   in
   f##.style := Js.string "italic";
   f##.weight := Js.string "700";
@@ -107,7 +102,7 @@ let test_descriptor_writes () =
   return ()
 
 let test_load_success () =
-  ignore (fonts##add bebas : Css_font_loading.fontFaceSet Js.t);
+  ignore (fonts##add bebas : FontFace.fontFaceSet Js.t);
   bebas##load
   >>= fun loaded ->
   check
@@ -138,9 +133,7 @@ let test_ready () =
 
 let test_load_failure () =
   let missing =
-    Css_font_loading.create_font_face
-      (Js.string "Missing Font")
-      (Js.string "url(does-not-exist-xyz.ttf)")
+    FontFace.create (Js.string "Missing Font") (Js.string "url(does-not-exist-xyz.ttf)")
   in
   Promise.catch
     (fun e ->

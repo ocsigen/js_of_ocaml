@@ -61,4 +61,5 @@ class type fontFaceSet = object
   method status : js_string t readonly_prop
 end
 
-val create_font_face : js_string t -> js_string t -> fontFace t
+val create : js_string t -> js_string t -> fontFace t
+(** [create family source] wraps [new FontFace(family, source)]. *)
