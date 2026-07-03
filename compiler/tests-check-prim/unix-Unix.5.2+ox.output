@@ -326,6 +326,8 @@ caml_check_bound
 From +bigarray.js:
 caml_ba_create_from (deprecated)
 caml_ba_init
+caml_ba_uint8_get32u
+caml_ba_uint8_set32u
 
 From +bigstring.js:
 caml_bigstring_blit_ba_to_ba
@@ -338,6 +340,13 @@ caml_hash_mix_bigstring
 From +effect.js:
 caml_continuation_use_and_update_handler_noexc
 jsoo_effect_not_supported
+
+From +float32.js:
+caml_ba_uint8_getf32u
+caml_ba_uint8_setf32u
+caml_bytes_getf32u
+caml_bytes_setf32u
+caml_string_getf32u
 
 From +fs.js:
 caml_ba_map_file

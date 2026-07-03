@@ -78,7 +78,8 @@ jobs:
             ocaml-compiler: "ocaml-variants.5.6.0+trunk"
             skip-effects: false
             skip-test: false
-            skip-doc: false
+            # odoc is not installable against 5.6+trunk yet
+            skip-doc: true
           - os: ubuntu-latest
             os-name: Ubuntu
             ocaml-compiler: "5.1"
