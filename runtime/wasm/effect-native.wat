@@ -109,12 +109,12 @@
          (struct.get $func_closure 0
             (ref.cast (ref $func_closure) (local.get $f)))))
 
-   (func $unhandled_effect_wrapper (param $start (ref $thunk))
+   (func $unhandled_effect_wrapper (param $func (ref $thunk))
       (local $continuation (ref $continuation))
       (local $f (ref eq)) (local $v (ref eq))
       (local $resume_res_0 (ref eq)) (local $resume_res_1 (ref $continuation))
       (local.set $continuation (cont.new $continuation (ref.func $wrapper_cont)))
-      (local.set $f (struct.new $func_closure (local.get $start)))
+      (local.set $f (struct.new $func_closure (local.get $func)))
       (local.set $v (ref.i31 (i32.const 0)))
       (loop $loop
          (block $handle_effect (result (ref eq) (ref $continuation))
@@ -143,7 +143,7 @@
       (local $fiber (ref $fiber))
       (local $res (ref eq))
       (local $exn (ref eq))
-      (local $resume_res_0 (ref eq)) (local $resume_res_1 (ref $continuation))
+      (local $resume_res_0 (ref eq)) (local $continuation (ref $continuation))
       (if (ref.eq (local.get $vfiber) (ref.i31 (i32.const 0)))
          (then
             (call $caml_raise_constant
@@ -171,11 +171,11 @@
                         (struct.get $fiber $value (local.get $fiber)))
                      (struct.get $closure 0
                         (ref.cast (ref $closure) (local.get $f)))))
-            (local.set $resume_res_1)
+            (local.set $continuation)
             (local.set $resume_res_0)
             ;; handle effect
             (struct.set $fiber $continuation (local.get $fiber)
-               (local.get $resume_res_1))
+               (local.get $continuation))
             (return_call_ref $function_3
                (local.get $resume_res_0)
                (array.new_fixed $block 3 (ref.i31 (global.get $cont_tag))
@@ -236,31 +236,31 @@
          (struct.get $closure 0 (ref.cast (ref $closure) (local.get $f)))))
 
    (func (export "caml_alloc_stack")
-      (param $hv (ref eq)) (param $hx (ref eq)) (param $hf (ref eq))
+      (param $value (ref eq)) (param $exn (ref eq)) (param $effect (ref eq))
       (result (ref eq))
       (struct.new $fiber
-         (local.get $hv) (local.get $hx) (local.get $hf)
+         (local.get $value) (local.get $exn) (local.get $effect)
          (cont.new $continuation (ref.func $initial_cont))))
 
    (func (export "%with_stack")
-      (param $hv (ref eq)) (param $hx (ref eq)) (param $hf (ref eq))
+      (param $value (ref eq)) (param $exn (ref eq)) (param $effect (ref eq))
       (param $f (ref eq)) (param $v (ref eq))
       (result (ref eq))
       (return_call $resume_fiber
          (struct.new $fiber
-            (local.get $hv) (local.get $hx) (local.get $hf)
+            (local.get $value) (local.get $exn) (local.get $effect)
             (cont.new $continuation (ref.func $initial_cont)))
          (local.get $f) (local.get $v)
          (ref.i31 (i32.const 0))))
 
    (func (export "%with_stack_bind")
-      (param $hv (ref eq)) (param $hx (ref eq)) (param $hf (ref eq))
+      (param $value (ref eq)) (param $exn (ref eq)) (param $effect (ref eq))
       (param $dyn (ref eq)) (param $bind (ref eq))
       (param $f (ref eq)) (param $v (ref eq))
       (result (ref eq))
       (return_call $resume_fiber
          (struct.new $fiber
-            (local.get $hv) (local.get $hx) (local.get $hf)
+            (local.get $value) (local.get $exn) (local.get $effect)
             (cont.new $continuation (ref.func $initial_cont)))
          (local.get $f) (local.get $v)
          (ref.i31 (i32.const 0))))

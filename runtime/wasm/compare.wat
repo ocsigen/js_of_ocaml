@@ -119,18 +119,18 @@
    (func $push_compare_stack (param $stack (ref $compare_stack))
       (param $v1 (ref $block)) (param $v2 (ref $block)) (param $p i32)
       (result (ref $compare_stack))
-      (local $i i32) (local $len i32) (local $len' i32)
+      (local $pos i32) (local $len i32) (local $len' i32)
       (local $stack' (ref $compare_stack))
-      (local.set $i
+      (local.set $pos
          (i32.add (struct.get $compare_stack 0 (local.get $stack))
             (i32.const 1)))
       (local.set $len
          (array.len (struct.get $compare_stack 1 (local.get $stack))))
-      (if (i32.ge_u (local.get $i) (local.get $len))
+      (if (i32.ge_u (local.get $pos) (local.get $len))
          (then
             (local.set $len' (i32.shl (local.get $len) (i32.const 1)))
             (local.set $stack'
-               (struct.new $compare_stack (local.get $i)
+               (struct.new $compare_stack (local.get $pos)
                   (array.new $block_array
                      (global.get $dummy_block) (local.get $len'))
                   (array.new $block_array
@@ -149,13 +149,13 @@
                (struct.get $compare_stack 3 (local.get $stack)) (i32.const 0)
                (local.get $len))
             (local.set $stack (local.get $stack'))))
-      (struct.set $compare_stack 0 (local.get $stack) (local.get $i))
+      (struct.set $compare_stack 0 (local.get $stack) (local.get $pos))
       (array.set $block_array (struct.get $compare_stack 1 (local.get $stack))
-         (local.get $i) (local.get $v1))
+         (local.get $pos) (local.get $v1))
       (array.set $block_array (struct.get $compare_stack 2 (local.get $stack))
-         (local.get $i) (local.get $v2))
+         (local.get $pos) (local.get $v2))
       (array.set $int_array (struct.get $compare_stack 3 (local.get $stack))
-         (local.get $i) (local.get $p))
+         (local.get $pos) (local.get $p))
       (local.get $stack))
 
    (global $unordered (export "unordered") i32 (i32.const 0x80000000))
