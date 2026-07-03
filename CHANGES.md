@@ -68,6 +68,8 @@
   compiler-libs, ...) end up in `/static/cmis`. Previously only whole-program
   compilation embedded them, so a separately-compiled wasm toplevel failed to
   load Stdlib at startup (#1721)
+* Runtime: fix comparison between an immediate and a custom block that
+  provides a compare op (e.g. zarith), broken by #2290 (#2391)
 * Toplevel: keep the `/static/cmis` directory on the load path across
   `Toploop.initialize_toplevel_env`, so libraries whose cmis are loaded at
   runtime stay resolvable; previously the directory was registered only while

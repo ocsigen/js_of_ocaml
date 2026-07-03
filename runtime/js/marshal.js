@@ -246,6 +246,9 @@ var caml_custom_ops = {
     serialize: caml_int64_marshal,
     fixed_length: 8,
     compare: caml_int64_compare,
+    // No [compare_ext]: like the native runtime, an immediate is ordered
+    // strictly before an int64 custom block (see caml_int64_ops).
+    compare_ext: null,
     hash: caml_int64_hash,
   },
   _i: {
@@ -262,6 +265,8 @@ var caml_custom_ops = {
     },
     serialize: caml_ba_serialize,
     compare: caml_ba_compare,
+    // No [compare_ext]: an immediate is ordered before a bigarray block.
+    compare_ext: null,
     hash: caml_ba_hash,
   },
   _bigarr02: {
@@ -270,6 +275,8 @@ var caml_custom_ops = {
     },
     serialize: caml_ba_serialize,
     compare: caml_ba_compare,
+    // No [compare_ext]: an immediate is ordered before a bigarray block.
+    compare_ext: null,
     hash: caml_ba_hash,
   },
 };

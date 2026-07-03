@@ -55,6 +55,7 @@
   (:standard
    \
    test_float16
+   compare_custom
    test_list_of_js_array
    test_marshal_float32
    test_md5_large
@@ -119,6 +120,24 @@
   (javascript_files custom.js custom.wat))
  (inline_tests
   (modes js wasm))
+ (preprocess
+  (pps ppx_expect_light)))
+
+; compare_custom checks polymorphic comparison between an immediate and a
+; custom block whose ops register a [compare] operation (as zarith_stubs_js
+; does). It builds the custom block and registers the op from a companion JS
+; runtime file, so it is js-only.
+
+(library
+ (name jsoo_testsuite_compare_custom)
+ (enabled_if
+  (<> %{env:JSOO_TEST_ENGINE=node} wasi))
+ (modules compare_custom)
+ (libraries js_of_ocaml)
+ (js_of_ocaml
+  (javascript_files compare_custom.js))
+ (inline_tests
+  (modes js))
  (preprocess
   (pps ppx_expect_light)))
 

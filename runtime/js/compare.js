@@ -55,9 +55,26 @@ function caml_compare_val_get_custom(a) {
   );
 }
 
+//Provides: caml_compare_val_number_custom
+//Requires: caml_custom_ops
+function caml_compare_val_number_custom(a, b, custom, dflt, total) {
+  // Compare an immediate against the custom block [custom] using its
+  // [compare_ext] op (falling back to [compare] for runtimes like
+  // zarith_stubs_js that only register it).  Without such an op, return
+  // [dflt]: the immediate is ordered before the block.  0 means equal.
+  var ops = caml_custom_ops[custom.caml_custom];
+  var comp = ops && ("compare_ext" in ops ? ops.compare_ext : ops.compare);
+  if (!comp) return dflt;
+  var x = comp(a, b, total);
+  if (Number.isNaN(x)) return total ? dflt : x; // total && nan : ordered; nan
+  if (x !== (x | 0)) return dflt; // protect against invalid return value
+  return x | 0;
+}
+
 //Provides: caml_compare_val (const, const, const)
 //Requires: caml_int_compare, caml_string_compare, caml_bytes_compare
 //Requires: caml_invalid_argument, caml_compare_val_get_custom, caml_compare_val_tag
+//Requires: caml_compare_val_number_custom
 //Requires: caml_jsbytes_of_string
 //Requires: caml_is_continuation_tag
 function caml_compare_val(a, b, total) {
@@ -88,151 +105,164 @@ function caml_compare_val(a, b, total) {
           return 1;
         }
         if (tag_a === 1000) {
-          // An immediate is less than any block, including a custom block
-          // (e.g. int32/int64/nativeint/bigarray): the built-in custom
-          // blocks define no [compare_ext], so the C runtime orders the
-          // immediate strictly before the block regardless of values.
-          return -1;
+          // An immediate compared against a block.  A custom block may define
+          // a [compare_ext] operation to compare against the immediate (e.g.
+          // zarith, whose small values are immediates and large ones custom
+          // blocks); otherwise the immediate is ordered before the block.
+          if (tag_b === 1255) {
+            var x = caml_compare_val_number_custom(a, b, b, -1, total);
+            if (x !== 0) return x;
+            // equal: keep comparing the remaining fields
+          } else {
+            return -1;
+          }
+        } else if (tag_b === 1000) {
+          if (tag_a === 1255) {
+            var x = caml_compare_val_number_custom(a, b, a, 1, total);
+            if (x !== 0) return x;
+            // equal: keep comparing the remaining fields
+          } else {
+            return 1;
+          }
+        } else {
+          return tag_a < tag_b ? -1 : 1;
         }
-        if (tag_b === 1000) {
-          return 1;
-        }
-        return tag_a < tag_b ? -1 : 1;
       }
       // tag_a = tag_b
-      switch (tag_a) {
-        // 246: Lazy_tag handled bellow
-        case 247: // Closure_tag
-          // Cannot happen
-          caml_invalid_argument("compare: functional value");
-          break;
-        case 248: // Object
-          var x = caml_int_compare(a[2], b[2]) | 0;
-          if (x !== 0) return x;
-          break;
-        case 249: // Infix
-          // Cannot happen
-          caml_invalid_argument("compare: functional value");
-          break;
-        case 250: // Forward tag
-          // Cannot happen, handled above
-          caml_invalid_argument("equal: got Forward_tag, should not happen");
-          break;
-        case 251: //Abstract
-          caml_invalid_argument("equal: abstract value");
-          break;
-        case 252: // OCaml bytes
-          if (a !== b) {
-            var x = caml_bytes_compare(a, b) | 0;
-            if (x !== 0) return x;
-          }
-          break;
-        case 253: // Double_tag
-          // Cannot happen
-          caml_invalid_argument("equal: got Double_tag, should not happen");
-          break;
-        case 254: // Double_array_tag
-          // Cannot happen, handled in caml_compare_val_tag
-          caml_invalid_argument(
-            "equal: got Double_array_tag, should not happen",
-          );
-          break;
-        case 255: // Custom_tag
-          caml_invalid_argument("equal: got Custom_tag, should not happen");
-          break;
-        case 1247: // Function
-          caml_invalid_argument("compare: functional value");
-          break;
-        case 1255: // Custom
-          var comp = caml_compare_val_get_custom(a);
-          if (comp !== caml_compare_val_get_custom(b)) {
-            return a.caml_custom < b.caml_custom ? -1 : 1;
-          }
-          if (!comp) caml_invalid_argument("compare: abstract value");
-          var x = comp(a, b, total);
-          if (Number.isNaN(x)) {
-            // Protect against invalid UNORDERED
-            return total ? -1 : x;
-          }
-          if (x !== (x | 0)) {
-            // Protect against invalid return value
-            return -1;
-          }
-          if (x !== 0) return x | 0;
-          break;
-        case 1256: // compare function
-          var x = a.compare(b, total);
-          if (Number.isNaN(x)) {
-            // Protect against invalid UNORDERED
-            return total ? -1 : x;
-          }
-          if (x !== (x | 0)) {
-            // Protect against invalid return value
-            return -1;
-          }
-          if (x !== 0) return x | 0;
-          break;
-        case 1000: // Number
-          a = +a;
-          b = +b;
-          if (a < b) return -1;
-          if (a > b) return 1;
-          if (a !== b) {
-            if (!total) return Number.NaN;
-            if (!Number.isNaN(a)) return 1;
-            if (!Number.isNaN(b)) return -1;
-          }
-          break;
-        case 1010: // Null pointer
-          return 0;
-        case 1001: // The rest
-          // Here we can be in the following cases:
-          // 1. JavaScript primitive types
-          // 2. JavaScript object that can be coerced to primitive types
-          // 3. JavaScript object than cannot be coerced to primitive types
-          //
-          // (3) will raise a [TypeError]
-          // (2) will coerce to primitive types using [valueOf] or [toString]
-          // (2) and (3), after eventual coercion
-          // - if a and b are strings, apply lexicographic comparison
-          // - if a or b are not strings, convert a and b to number
-          //   and apply standard comparison
-          if (a < b) return -1;
-          if (a > b) return 1;
-          if (a !== b) {
-            return total ? 1 : Number.NaN;
-          }
-          break;
-        case 1251: // JavaScript Symbol, no ordering.
-          if (a !== b) {
-            return total ? 1 : Number.NaN;
-          }
-          break;
-        case 1252: // ocaml strings
-          var a = caml_jsbytes_of_string(a);
-          var b = caml_jsbytes_of_string(b);
-          if (a !== b) {
-            if (a < b) return -1;
-            if (a > b) return 1;
-          }
-          break;
-        case 12520: // javascript strings
-          var a = a.toString();
-          var b = b.toString();
-          if (a !== b) {
-            if (a < b) return -1;
-            if (a > b) return 1;
-          }
-          break;
-        default: // Lazy_tag or Block with other tag
-          if (caml_is_continuation_tag(tag_a)) {
-            caml_invalid_argument("compare: continuation value");
+      else
+        switch (tag_a) {
+          // 246: Lazy_tag handled bellow
+          case 247: // Closure_tag
+            // Cannot happen
+            caml_invalid_argument("compare: functional value");
             break;
-          }
-          if (a.length !== b.length) return a.length < b.length ? -1 : 1;
-          if (a.length > 1) stack.push(a, b, 1);
-          break;
-      }
+          case 248: // Object
+            var x = caml_int_compare(a[2], b[2]) | 0;
+            if (x !== 0) return x;
+            break;
+          case 249: // Infix
+            // Cannot happen
+            caml_invalid_argument("compare: functional value");
+            break;
+          case 250: // Forward tag
+            // Cannot happen, handled above
+            caml_invalid_argument("equal: got Forward_tag, should not happen");
+            break;
+          case 251: //Abstract
+            caml_invalid_argument("equal: abstract value");
+            break;
+          case 252: // OCaml bytes
+            if (a !== b) {
+              var x = caml_bytes_compare(a, b) | 0;
+              if (x !== 0) return x;
+            }
+            break;
+          case 253: // Double_tag
+            // Cannot happen
+            caml_invalid_argument("equal: got Double_tag, should not happen");
+            break;
+          case 254: // Double_array_tag
+            // Cannot happen, handled in caml_compare_val_tag
+            caml_invalid_argument(
+              "equal: got Double_array_tag, should not happen",
+            );
+            break;
+          case 255: // Custom_tag
+            caml_invalid_argument("equal: got Custom_tag, should not happen");
+            break;
+          case 1247: // Function
+            caml_invalid_argument("compare: functional value");
+            break;
+          case 1255: // Custom
+            var comp = caml_compare_val_get_custom(a);
+            if (comp !== caml_compare_val_get_custom(b)) {
+              return a.caml_custom < b.caml_custom ? -1 : 1;
+            }
+            if (!comp) caml_invalid_argument("compare: abstract value");
+            var x = comp(a, b, total);
+            if (Number.isNaN(x)) {
+              // Protect against invalid UNORDERED
+              return total ? -1 : x;
+            }
+            if (x !== (x | 0)) {
+              // Protect against invalid return value
+              return -1;
+            }
+            if (x !== 0) return x | 0;
+            break;
+          case 1256: // compare function
+            var x = a.compare(b, total);
+            if (Number.isNaN(x)) {
+              // Protect against invalid UNORDERED
+              return total ? -1 : x;
+            }
+            if (x !== (x | 0)) {
+              // Protect against invalid return value
+              return -1;
+            }
+            if (x !== 0) return x | 0;
+            break;
+          case 1000: // Number
+            a = +a;
+            b = +b;
+            if (a < b) return -1;
+            if (a > b) return 1;
+            if (a !== b) {
+              if (!total) return Number.NaN;
+              if (!Number.isNaN(a)) return 1;
+              if (!Number.isNaN(b)) return -1;
+            }
+            break;
+          case 1010: // Null pointer
+            return 0;
+          case 1001: // The rest
+            // Here we can be in the following cases:
+            // 1. JavaScript primitive types
+            // 2. JavaScript object that can be coerced to primitive types
+            // 3. JavaScript object than cannot be coerced to primitive types
+            //
+            // (3) will raise a [TypeError]
+            // (2) will coerce to primitive types using [valueOf] or [toString]
+            // (2) and (3), after eventual coercion
+            // - if a and b are strings, apply lexicographic comparison
+            // - if a or b are not strings, convert a and b to number
+            //   and apply standard comparison
+            if (a < b) return -1;
+            if (a > b) return 1;
+            if (a !== b) {
+              return total ? 1 : Number.NaN;
+            }
+            break;
+          case 1251: // JavaScript Symbol, no ordering.
+            if (a !== b) {
+              return total ? 1 : Number.NaN;
+            }
+            break;
+          case 1252: // ocaml strings
+            var a = caml_jsbytes_of_string(a);
+            var b = caml_jsbytes_of_string(b);
+            if (a !== b) {
+              if (a < b) return -1;
+              if (a > b) return 1;
+            }
+            break;
+          case 12520: // javascript strings
+            var a = a.toString();
+            var b = b.toString();
+            if (a !== b) {
+              if (a < b) return -1;
+              if (a > b) return 1;
+            }
+            break;
+          default: // Lazy_tag or Block with other tag
+            if (caml_is_continuation_tag(tag_a)) {
+              caml_invalid_argument("compare: continuation value");
+              break;
+            }
+            if (a.length !== b.length) return a.length < b.length ? -1 : 1;
+            if (a.length > 1) stack.push(a, b, 1);
+            break;
+        }
     }
     if (stack.length === 0) return 0;
     var i = stack.pop();
