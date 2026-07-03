@@ -148,11 +148,11 @@
                (local.set $i (i32.add (local.get $i) (i32.const 4)))
                (br $loop))))
       (local.set $w (i32.const 0))
-      (block $0_bytes
-         (block $1_byte
-            (block $2_bytes
-               (block $3_bytes
-                  (br_table $0_bytes $1_byte $2_bytes $3_bytes
+      (block $zero_bytes
+         (block $one_byte
+            (block $two_bytes
+               (block $three_bytes
+                  (br_table $zero_bytes $one_byte $two_bytes $three_bytes
                      (i32.and (local.get $len) (i32.const 3))))
                (local.set $w
                   (i32.shl (array.get_u $bytes (local.get $s)
