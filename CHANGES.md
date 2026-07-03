@@ -13,6 +13,10 @@
 * Lib: add bindings for the Service Worker API (`ServiceWorker`),
   channel messaging (`MessageChannel`, `MessagePort`, `MessageEvent`) and the
   Cache API (`Cache`) (#2381)
+* Lib: consolidate the duplicate `messageEvent` class types into a single
+  polymorphic `('target, 'data) Dom_html.messageEvent`; the old per-module
+  types (`Worker.messageEvent`, `EventSource.messageEvent`) are kept as
+  deprecated aliases (#2390)
 * Lib: add `Lwt_js_events.mutation`/`mutations` — wait for `MutationObserver`
   mutation records as Lwt threads (#250)
 * Lib: remove `js_of_ocaml-lwt.logger` and the `lwt_log` dependency, as

@@ -979,16 +979,18 @@ and mediaEvent = object
   inherit event
 end
 
-and messageEvent = object
-  inherit event
+and ['target, 'data] messageEvent = object
+  inherit ['target] Dom.event
 
-  method data : Unsafe.any opt readonly_prop
+  method data : 'data readonly_prop
 
   method origin : js_string t readonly_prop
 
   method lastEventId : js_string t readonly_prop
 
   method source : Unsafe.any opt readonly_prop
+
+  method ports : Unsafe.any js_array t readonly_prop
 end
 
 and staticRange = object
@@ -4838,7 +4840,7 @@ let opt_tagged e = Opt.case e (fun () -> None) (fun e -> Some (tagged e))
 type taggedEvent =
   | MouseEvent of mouseEvent t
   | KeyboardEvent of keyboardEvent t
-  | MessageEvent of messageEvent t
+  | MessageEvent of (Unsafe.top, Unsafe.any opt) messageEvent t
   | MousewheelEvent of mousewheelEvent t
   | PopStateEvent of popStateEvent t
   | OtherEvent of event t

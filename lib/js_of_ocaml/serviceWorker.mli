@@ -141,10 +141,12 @@ class type serviceWorkerContainer = object ('self)
     ('self t, 'self Dom.event t) Dom.event_listener writeonly_prop
 
   method onmessage :
-    ('self t, Unsafe.any MessageChannel.messageEvent t) Dom.event_listener writeonly_prop
+    ('self t, ('self, Unsafe.any) Dom_html.messageEvent t) Dom.event_listener
+    writeonly_prop
 
   method onmessageerror :
-    ('self t, Unsafe.any MessageChannel.messageEvent t) Dom.event_listener writeonly_prop
+    ('self t, ('self, Unsafe.any) Dom_html.messageEvent t) Dom.event_listener
+    writeonly_prop
 end
 
 val container : unit -> serviceWorkerContainer t optdef
@@ -191,7 +193,7 @@ class type fetchEvent = object
 end
 
 (** The event delivered to the worker's [message] / [messageerror] handlers.
-    Unlike a plain {!MessageChannel.messageEvent} it extends
+    Unlike a plain {!Dom_html.messageEvent} it extends
     {!class-type:extendableEvent}, so the handler can call [waitUntil] to keep
     the worker alive until asynchronous processing of the message finishes. The
     type parameter ['a] is the type of the [data] payload. *)

@@ -18,21 +18,7 @@
 
 open! Import
 
-class type ['a] messageEvent = object
-  inherit Dom_html.event
-
-  method data : 'a Js.readonly_prop
-
-  method origin : Js.js_string Js.t Js.readonly_prop
-
-  method lastEventId : Js.js_string Js.t Js.readonly_prop
-
-  method source : Js.Unsafe.any Js.opt Js.readonly_prop
-
-  method ports : messagePort Js.t Js.js_array Js.t Js.readonly_prop
-end
-
-and messagePort = object ('self)
+class type messagePort = object ('self)
   inherit Dom_html.eventTarget
 
   method postMessage : 'a. 'a -> unit Js.meth
@@ -45,10 +31,12 @@ and messagePort = object ('self)
   method close : unit Js.meth
 
   method onmessage :
-    ('self Js.t, Js.Unsafe.any messageEvent Js.t) Dom.event_listener Js.writeonly_prop
+    ('self Js.t, ('self, Js.Unsafe.any) Dom_html.messageEvent Js.t) Dom.event_listener
+    Js.writeonly_prop
 
   method onmessageerror :
-    ('self Js.t, Js.Unsafe.any messageEvent Js.t) Dom.event_listener Js.writeonly_prop
+    ('self Js.t, ('self, Js.Unsafe.any) Dom_html.messageEvent Js.t) Dom.event_listener
+    Js.writeonly_prop
 
   method onclose : ('self Js.t, 'self Dom.event Js.t) Dom.event_listener Js.writeonly_prop
 end
@@ -75,11 +63,12 @@ end
 
 let empty_message_event_init () : messageEventInit Js.t = Js.Unsafe.obj [||]
 
-let messageEvent : (Js.js_string Js.t -> 'a messageEvent Js.t) Js.constr =
+let messageEvent : (Js.js_string Js.t -> ('b, 'a) Dom_html.messageEvent Js.t) Js.constr =
   Js.Unsafe.global##._MessageEvent
 
 let messageEvent_with_init :
-    (Js.js_string Js.t -> messageEventInit Js.t -> 'a messageEvent Js.t) Js.constr =
+    (Js.js_string Js.t -> messageEventInit Js.t -> ('b, 'a) Dom_html.messageEvent Js.t)
+    Js.constr =
   Js.Unsafe.global##._MessageEvent
 
 let is_supported () = Js.Optdef.test Js.Unsafe.global##._MessageChannel

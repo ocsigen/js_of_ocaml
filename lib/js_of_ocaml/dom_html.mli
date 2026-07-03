@@ -999,16 +999,29 @@ and mediaEvent = object
   inherit event
 end
 
-and messageEvent = object
-  inherit event
+(** The single shared binding for the DOM [MessageEvent] interface, reused by
+    every "message" event source ([Worker], [WebSocket], [EventSource],
+    {!MessageChannel.messagePort}, [BroadcastChannel] and [window.postMessage]).
+    The type parameter ['target] is the type of the event target (the worker,
+    socket, port, window, ... the listener is attached to) and ['data] is the
+    type of the [data] payload. *)
+and ['target, 'data] messageEvent = object
+  inherit ['target] Dom.event
 
-  method data : Unsafe.any opt readonly_prop
+  method data : 'data readonly_prop
 
   method origin : js_string t readonly_prop
 
   method lastEventId : js_string t readonly_prop
 
   method source : Unsafe.any opt readonly_prop
+  (** The [source] of a message event is a [MessageEventSource], i.e. one of a
+      [WindowProxy], a {!MessageChannel.messagePort} or a
+      {!ServiceWorker.serviceWorker}; [null] when there is none. *)
+
+  method ports : Unsafe.any js_array t readonly_prop
+  (** The [MessagePort]s associated with the message. Coerce the elements to
+      {!MessageChannel.messagePort} to use them. *)
 end
 
 and staticRange = object
@@ -3764,7 +3777,7 @@ module Event : sig
 
   val lostpointercapture : pointerEvent t typ
 
-  val message : messageEvent t typ
+  val message : (Unsafe.top, Unsafe.any opt) messageEvent t typ
 
   val pause : mediaEvent t typ
 
@@ -4340,7 +4353,7 @@ val opt_tagged : #element t opt -> taggedElement option
 type taggedEvent =
   | MouseEvent of mouseEvent t
   | KeyboardEvent of keyboardEvent t
-  | MessageEvent of messageEvent t
+  | MessageEvent of (Unsafe.top, Unsafe.any opt) messageEvent t
   | MousewheelEvent of mousewheelEvent t
   | PopStateEvent of popStateEvent t
   | OtherEvent of event t
@@ -4565,7 +4578,7 @@ module CoerceTo : sig
 
   val popStateEvent : #event t -> popStateEvent t opt
 
-  val messageEvent : #event t -> messageEvent t opt
+  val messageEvent : #event t -> (Unsafe.top, Unsafe.any opt) messageEvent t opt
 
   val inputEvent : #event t -> inputEvent t opt
 

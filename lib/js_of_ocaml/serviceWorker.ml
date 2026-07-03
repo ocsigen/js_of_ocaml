@@ -111,11 +111,11 @@ class type serviceWorkerContainer = object ('self)
     ('self Js.t, 'self Dom.event Js.t) Dom.event_listener Js.writeonly_prop
 
   method onmessage :
-    ('self Js.t, Js.Unsafe.any MessageChannel.messageEvent Js.t) Dom.event_listener
+    ('self Js.t, ('self, Js.Unsafe.any) Dom_html.messageEvent Js.t) Dom.event_listener
     Js.writeonly_prop
 
   method onmessageerror :
-    ('self Js.t, Js.Unsafe.any MessageChannel.messageEvent Js.t) Dom.event_listener
+    ('self Js.t, ('self, Js.Unsafe.any) Dom_html.messageEvent Js.t) Dom.event_listener
     Js.writeonly_prop
 end
 
