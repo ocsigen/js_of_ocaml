@@ -88,7 +88,7 @@ let check_equal : type t1 t2. t1 msg_ty -> t2 msg_ty -> (t1, t2) eq =
   | String, _ -> raise Not_equal
   | Step_result, _ -> raise Not_equal
 
-let onmessage worker (ev : _ Worker.messageEvent Js.t) =
+let onmessage worker (ev : (_, _) Dom_html.messageEvent Js.t) =
   match Json.unsafe_input ev##.data with
   | Write (fd, s) -> (
       try

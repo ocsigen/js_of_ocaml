@@ -27,15 +27,12 @@ type state =
   | OPEN
   | CLOSED
 
-class type ['a] messageEvent = object
-  inherit ['a] Dom.event
+type 'a messageEvent = ('a, js_string t) Dom_html.messageEvent
+[@@ocaml.deprecated "[since 6.5] Use Dom_html.messageEvent instead."]
+(** The type parameter ['a] is the type of the event target; the [data]
+    payload of an [EventSource] message is always [js_string t].
 
-  method data : js_string t readonly_prop
-
-  method origin : js_string t readonly_prop
-
-  method lastEventId : js_string t readonly_prop
-end
+    @deprecated Use {!Dom_html.messageEvent}, the single shared binding. *)
 
 class type eventSource = object ('self)
   method url : js_string t readonly_prop
@@ -48,7 +45,8 @@ class type eventSource = object ('self)
 
   method onopen : ('self t, 'self Dom.event t) event_listener writeonly_prop
 
-  method onmessage : ('self t, 'self messageEvent t) event_listener writeonly_prop
+  method onmessage :
+    ('self t, ('self, js_string t) Dom_html.messageEvent t) event_listener writeonly_prop
 
   method onerror : ('self t, 'self Dom.event t) event_listener writeonly_prop
 end

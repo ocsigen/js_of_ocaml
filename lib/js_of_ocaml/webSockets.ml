@@ -37,9 +37,7 @@ class type ['a] closeEvent = object
 end
 
 class type ['a] messageEvent = object
-  inherit ['a] Dom.event
-
-  method data : Js.js_string Js.t Js.readonly_prop
+  inherit ['a, Js.js_string Js.t] Dom_html.messageEvent
 
   method data_buffer : Typed_array.arrayBuffer Js.t Js.readonly_prop
 

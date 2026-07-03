@@ -34,7 +34,8 @@ class type ['a, 'b] worker = object ('self)
 
   method onerror : ('self t, errorEvent t) event_listener writeonly_prop
 
-  method onmessage : ('self t, 'b messageEvent t) event_listener writeonly_prop
+  method onmessage :
+    ('self t, ('self, 'b) Dom_html.messageEvent t) event_listener writeonly_prop
 
   method postMessage : 'a -> unit meth
 
@@ -55,11 +56,11 @@ and errorEvent = object
   method error : Unsafe.any readonly_prop
 end
 
-and ['a] messageEvent = object
-  inherit event
+type 'a messageEvent = (element, 'a) Dom_html.messageEvent
+[@@ocaml.deprecated "[since 6.5] Use Dom_html.messageEvent instead."]
+(** The type parameter ['a] is the type of the [data] payload.
 
-  method data : 'a readonly_prop
-end
+    @deprecated Use {!Dom_html.messageEvent}, the single shared binding. *)
 
 val create : string -> ('a, 'b) worker t
 

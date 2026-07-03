@@ -26,7 +26,8 @@ class type ['a, 'b] worker = object ('self)
 
   method onerror : ('self t, errorEvent t) event_listener writeonly_prop
 
-  method onmessage : ('self t, 'b messageEvent t) event_listener writeonly_prop
+  method onmessage :
+    ('self t, ('self, 'b) Dom_html.messageEvent t) event_listener writeonly_prop
 
   method postMessage : 'a -> unit meth
 
@@ -47,11 +48,8 @@ and errorEvent = object
   method error : Unsafe.any readonly_prop
 end
 
-and ['a] messageEvent = object
-  inherit event
-
-  method data : 'a readonly_prop
-end
+type 'a messageEvent = (element, 'a) Dom_html.messageEvent
+[@@ocaml.deprecated "[since 6.5] Use Dom_html.messageEvent instead."]
 
 let worker = Unsafe.global##._Worker
 
@@ -67,7 +65,7 @@ let import_scripts scripts : unit =
 let set_onmessage handler =
   if not (Js.Optdef.test Unsafe.global##.onmessage)
   then invalid_arg "Worker.onmessage is undefined";
-  let js_handler (ev : 'a messageEvent Js.t) = handler ev##.data in
+  let js_handler (ev : (_, _) Dom_html.messageEvent Js.t) = handler ev##.data in
   Unsafe.global##.onmessage := wrap_callback js_handler
 
 let post_message msg =
