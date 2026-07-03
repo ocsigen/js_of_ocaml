@@ -52,7 +52,11 @@ class type fontFaceSet = object
 
   method check : js_string t -> js_string t -> bool t meth
 
+  method clear : unit meth
+
   method delete : fontFace Js.t -> bool t meth
+
+  method has : fontFace Js.t -> bool t meth
 
   method load : js_string t -> js_string t -> fontFace t js_array t Promise.t meth
 
@@ -62,4 +66,9 @@ class type fontFaceSet = object
 end
 
 val create : js_string t -> js_string t -> fontFace t
-(** [create family source] wraps [new FontFace(family, source)]. *)
+(** [create family source] wraps [new FontFace(family, source)], where [source]
+    is a CSS [src] descriptor string (e.g. ["url(font.woff2)"]). *)
+
+val create_from_buffer : js_string t -> Typed_array.arrayBuffer t -> fontFace t
+(** [create_from_buffer family source] wraps [new FontFace(family, source)] with
+    the font's binary data as [source], for fonts loaded from raw bytes. *)

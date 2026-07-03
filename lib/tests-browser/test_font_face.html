@@ -78,9 +78,11 @@
 
 <body>
   <h2>CSS Font Loading API test</h2>
-  <p>Exercises <code>FontFace.create</code>, <code>FontFace#load</code>,
-     and the <code>document.fonts</code> <code>FontFaceSet</code> (<code>add</code>,
-     <code>check</code>, <code>ready</code>), including a rejection path.</p>
+  <p>Exercises <code>FontFace.create</code>, <code>FontFace.create_from_buffer</code>,
+     <code>FontFace#load</code>, and the <code>document.fonts</code>
+     <code>FontFaceSet</code> (<code>add</code>, <code>check</code>, <code>has</code>,
+     <code>delete</code>, <code>clear</code>, <code>ready</code>), including a
+     rejection path.</p>
   <p>
     Mode: <strong><script>document.write(isWasm ? 'wasm' : 'js')</script></strong>
     — <script>document.write(isWasm ? '<a href="test_font_face.html">switch to js</a>' : '<a href="test_font_face.html?wasm">switch to wasm</a>')</script>

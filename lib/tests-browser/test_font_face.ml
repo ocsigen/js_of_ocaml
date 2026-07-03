@@ -148,15 +148,46 @@ let test_load_failure () =
     check "load of a missing source rejects" false "unexpectedly resolved";
     return ())
 
-let test_delete () =
+let test_has_and_delete () =
+  check "document.fonts.has is true for a present face" (Js.to_bool (fonts##has bebas)) "";
   check
     "document.fonts.delete returns true for a present face"
     (Js.to_bool (fonts##delete bebas))
     "";
   check
+    "document.fonts.has is false once the face is removed"
+    (not (Js.to_bool (fonts##has bebas)))
+    "";
+  check
     "document.fonts.delete returns false once already removed"
     (not (Js.to_bool (fonts##delete bebas)))
     "";
+  return ()
+
+let test_clear () =
+  let f =
+    FontFace.create (Js.string "ClearTest") (Js.string "url(BebasNeue-Regular.ttf)")
+  in
+  ignore (fonts##add f : FontFace.fontFaceSet Js.t);
+  check "document.fonts.has is true after add" (Js.to_bool (fonts##has f)) "";
+  fonts##clear;
+  check "document.fonts.clear removes the face" (not (Js.to_bool (fonts##has f))) "";
+  return ()
+
+let test_create_from_buffer () =
+  Fetch.fetch (Js.string "BebasNeue-Regular.ttf")
+  >>= fun resp ->
+  resp##arrayBuffer
+  >>= fun buf ->
+  let f = FontFace.create_from_buffer (Js.string "BufferTest") buf in
+  ignore (fonts##add f : FontFace.fontFaceSet Js.t);
+  f##load
+  >>= fun loaded ->
+  check
+    "create_from_buffer builds a FontFace that loads from bytes"
+    (Js.to_string loaded##.status = "loaded")
+    (Js.to_string loaded##.status);
+  ignore (fonts##delete f : bool Js.t);
   return ()
 
 let run () =
@@ -168,7 +199,9 @@ let run () =
     >>= test_set_load
     >>= test_ready
     >>= test_load_failure
-    >>= test_delete
+    >>= test_has_and_delete
+    >>= test_clear
+    >>= test_create_from_buffer
   in
   let _ : unit Promise.t =
     Promise.catch

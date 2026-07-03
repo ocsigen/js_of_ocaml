@@ -52,7 +52,11 @@ class type fontFaceSet = object
 
   method check : js_string t -> js_string t -> bool t meth
 
+  method clear : unit meth
+
   method delete : fontFace Js.t -> bool t meth
+
+  method has : fontFace Js.t -> bool t meth
 
   method load : js_string t -> js_string t -> fontFace t js_array t Promise.t meth
 
@@ -64,5 +68,12 @@ end
 let constr : (js_string t -> js_string t -> fontFace t) Js.constr =
   Js.Unsafe.global##._FontFace
 
+let constr_from_buffer :
+    (js_string t -> Typed_array.arrayBuffer t -> fontFace t) Js.constr =
+  Js.Unsafe.global##._FontFace
+
 let create (family : js_string Js.t) (source : js_string Js.t) =
   new%js constr family source
+
+let create_from_buffer (family : js_string Js.t) (source : Typed_array.arrayBuffer Js.t) =
+  new%js constr_from_buffer family source
