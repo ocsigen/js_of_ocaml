@@ -972,60 +972,60 @@
       (local $x f64)
       (local $y f64)
       (local $z f64)
-      (local $3 i64)
-      (local $4 i64)
-      (local $5 i64)
-      (local $6 i64)
-      (local $7 i64)
-      (local $8 i64)
-      (local $9 i32)
-      (local $10 i32)
-      (local $11 f64)
-      (local $12 f64)
-      (local $13 f64)
-      (local $14 f64)
-      (local $15 f64)
+      (local $v3 i64)
+      (local $v4 i64)
+      (local $v5 i64)
+      (local $v6 i64)
+      (local $v7 i64)
+      (local $v8 i64)
+      (local $v9 i32)
+      (local $v10 i32)
+      (local $v11 f64)
+      (local $v12 f64)
+      (local $v13 f64)
+      (local $v14 f64)
+      (local $v15 f64)
       (local.set $x
          (struct.get $float 0 (ref.cast (ref $float) (local.get $vx))))
       (local.set $y
          (struct.get $float 0 (ref.cast (ref $float) (local.get $vy))))
       (local.set $z
          (struct.get $float 0 (ref.cast (ref $float) (local.get $vz))))
-      (local.set $7
+      (local.set $v7
          (i64.add
-            (local.tee $4
+            (local.tee $v4
                (i64.and
                   (i64.shr_u
-                     (local.tee $3 (i64.reinterpret_f64 (local.get $y)))
+                     (local.tee $v3 (i64.reinterpret_f64 (local.get $y)))
                      (i64.const 52))
                   (i64.const 2047)))
-         (local.tee $6
+         (local.tee $v6
             (i64.and
                (i64.shr_u
-                  (local.tee $5 (i64.reinterpret_f64 (local.get $x)))
+                  (local.tee $v5 (i64.reinterpret_f64 (local.get $x)))
                   (i64.const 52))
                (i64.const 2047)))))
-      (local.set $8 (i64.reinterpret_f64 (local.get $z)))
-      (block $label$1
-         (block $label$2
-            (br_if $label$2 (i64.gt_u (local.get $4) (i64.const 1993)))
-            (br_if $label$2 (i64.gt_u (local.get $6) (i64.const 1993)))
-            (br_if $label$2 (i64.gt_u (local.get $7) (i64.const 3016)))
-            (br_if $label$2
+      (local.set $v8 (i64.reinterpret_f64 (local.get $z)))
+      (block $label_1
+         (block $label_2
+            (br_if $label_2 (i64.gt_u (local.get $v4) (i64.const 1993)))
+            (br_if $label_2 (i64.gt_u (local.get $v6) (i64.const 1993)))
+            (br_if $label_2 (i64.gt_u (local.get $v7) (i64.const 3016)))
+            (br_if $label_2
                (i64.gt_u
-                  (i64.and (local.get $8) (i64.const 0x7fe0000000000000))
+                  (i64.and (local.get $v8) (i64.const 0x7fe0000000000000))
                   (i64.const 0x7c90000000000000)))
-            (local.set $9 (i32.const 0))
-            (br_if $label$2 (i64.le_u (local.get $7) (i64.const 1076)))
-            (local.set $10 (i32.const 0))
-            (br $label$1))
-         (local.set $8
-            (i64.and (i64.shr_u (local.get $8) (i64.const 52))
+            (local.set $v9 (i32.const 0))
+            (br_if $label_2 (i64.le_u (local.get $v7) (i64.const 1076)))
+            (local.set $v10 (i32.const 0))
+            (br $label_1))
+         (local.set $v8
+            (i64.and (i64.shr_u (local.get $v8) (i64.const 52))
                (i64.const 2047)))
          (block $cont
-            (br_if $cont (i64.eq (local.get $4) (i64.const 2047)))
-            (br_if $cont (i64.eq (local.get $6) (i64.const 2047)))
-            (br_if $cont (i64.ne (local.get $8) (i64.const 2047)))
+            (br_if $cont (i64.eq (local.get $v4) (i64.const 2047)))
+            (br_if $cont (i64.eq (local.get $v6) (i64.const 2047)))
+            (br_if $cont (i64.ne (local.get $v8) (i64.const 2047)))
             (return
                (struct.new $float
                   (f64.add (f64.add (local.get $x) (local.get $z))
@@ -1039,29 +1039,29 @@
                   (f64.mul (local.get $x) (local.get $y)))))
          (block $cont
             (block $then
-               (br_if $then (i64.eq (local.get $6) (i64.const 2047)))
-               (br_if $then (i64.eq (local.get $4) (i64.const 2047)))
+               (br_if $then (i64.eq (local.get $v6) (i64.const 2047)))
+               (br_if $then (i64.eq (local.get $v4) (i64.const 2047)))
                (br_if $then (f64.eq (local.get $y) (f64.const 0)))
                (br_if $then (f64.eq (local.get $x) (f64.const 0)))
-               (br_if $cont (i64.ne (local.get $8) (i64.const 2047))))
+               (br_if $cont (i64.ne (local.get $v8) (i64.const 2047))))
             (return
                (struct.new $float
                   (f64.add (f64.mul (local.get $x) (local.get $y))
                      (local.get $z)))))
          (block $cont
-            (br_if $cont (i64.lt_u (local.get $7) (i64.const 3071)))
+            (br_if $cont (i64.lt_u (local.get $v7) (i64.const 3071)))
             (return
                (struct.new $float (f64.mul (local.get $x) (local.get $y)))))
          (block $cont
-            (br_if $cont (i64.gt_u (local.get $7) (i64.const 967)))
+            (br_if $cont (i64.gt_u (local.get $v7) (i64.const 967)))
             (local.set $y
                (select
                   (f64.const 0x1p-1074)
                   (f64.const -0x1p-1074)
-                  (i64.gt_s (i64.xor (local.get $3) (local.get $5))
+                  (i64.gt_s (i64.xor (local.get $v3) (local.get $v5))
                      (i64.const -1))))
             (block $cont2
-               (br_if $cont2 (i64.lt_u (local.get $8) (i64.const 3)))
+               (br_if $cont2 (i64.lt_u (local.get $v8) (i64.const 3)))
                (return
                   (struct.new $float(f64.add (local.get $y) (local.get $z)))))
             (return
@@ -1070,85 +1070,85 @@
                      (f64.add (f64.mul (local.get $z) (f64.const 0x1p54))
                         (local.get $y))
                      (f64.const 0x1p-54)))))
-         (block $label$10
-            (block $label$11
-               (block $label$12
-                  (br_if $label$12 (i64.lt_u (local.get $7) (i64.const 3017)))
+         (block $label_10
+            (block $label_11
+               (block $label_12
+                  (br_if $label_12 (i64.lt_u (local.get $v7) (i64.const 3017)))
                   (local.set $z
                      (select
                         (f64.mul (local.get $z) (f64.const 0x1p-53))
                         (local.get $z)
-                        (i64.gt_u (local.get $8) (i64.const 53))))
+                        (i64.gt_u (local.get $v8) (i64.const 53))))
                   (local.set $x
                      (select
                         (f64.mul (local.get $x) (f64.const 0x1p-53))
                         (local.get $x)
-                        (local.tee $9 (i64.gt_u (local.get $6) (local.get $4)))))
+                        (local.tee $v9 (i64.gt_u (local.get $v6) (local.get $v4)))))
                   (local.set $y
                      (select
                         (local.get $y)
                         (f64.mul (local.get $y) (f64.const 0x1p-53))
-                        (local.get $9)))
-                  (br $label$11))
-               (br_if $label$10 (i64.lt_u (local.get $8) (i64.const 1994)))
-               (block $label$13
-                  (block $label$14
-                     (br_if $label$14 (i64.gt_u (local.get $7) (i64.const 1129)))
-                     (block $label$15
-                        (br_if $label$15
-                           (i64.le_u (local.get $6) (local.get $4)))
+                        (local.get $v9)))
+                  (br $label_11))
+               (br_if $label_10 (i64.lt_u (local.get $v8) (i64.const 1994)))
+               (block $label_13
+                  (block $label_14
+                     (br_if $label_14 (i64.gt_u (local.get $v7) (i64.const 1129)))
+                     (block $label_15
+                        (br_if $label_15
+                           (i64.le_u (local.get $v6) (local.get $v4)))
                         (local.set $x
                            (f64.mul (local.get $x) (f64.const 0x1p108)))
-                        (br $label$13))
+                        (br $label_13))
                      (local.set $y (f64.mul (local.get $y) (f64.const 0x1p108)))
-                     (br $label$13))
-                  (block $label$16
-                     (br_if $label$16 (i64.le_u (local.get $6) (local.get $4)))
+                     (br $label_13))
+                  (block $label_16
+                     (br_if $label_16 (i64.le_u (local.get $v6) (local.get $v4)))
                      (local.set $x
                         (select
                            (f64.mul (local.get $x) (f64.const 0x1p-53))
                            (local.get $x)
-                           (i64.gt_u (local.get $6) (i64.const 53))))
-                     (br $label$13))
+                           (i64.gt_u (local.get $v6) (i64.const 53))))
+                     (br $label_13))
                   (local.set $y
                      (select
                         (f64.mul (local.get $y) (f64.const 0x1p-53))
                         (local.get $y)
-                        (i64.gt_u (local.get $4) (i64.const 53)))))
+                        (i64.gt_u (local.get $v4) (i64.const 53)))))
                (local.set $z (f64.mul (local.get $z) (f64.const 0x1p-53))))
-            (local.set $10 (i32.const 0))
-            (local.set $9 (i32.const 1))
-            (br $label$1))
-         (block $label$17
-            (block $label$18
-               (br_if $label$18 (i64.lt_u (local.get $6) (i64.const 1994)))
+            (local.set $v10 (i32.const 0))
+            (local.set $v9 (i32.const 1))
+            (br $label_1))
+         (block $label_17
+            (block $label_18
+               (br_if $label_18 (i64.lt_u (local.get $v6) (i64.const 1994)))
                (local.set $y (f64.mul (local.get $y) (f64.const 0x1p53)))
                (local.set $x (f64.mul (local.get $x) (f64.const 0x1p-53)))
-               (br $label$17))
-            (block $label$19
-               (br_if $label$19 (i64.lt_u (local.get $4) (i64.const 1994)))
+               (br $label_17))
+            (block $label_19
+               (br_if $label_19 (i64.lt_u (local.get $v4) (i64.const 1994)))
                (local.set $x (f64.mul (local.get $x) (f64.const 0x1p53)))
                (local.set $y (f64.mul (local.get $y) (f64.const 0x1p-53)))
-               (br $label$17))
+               (br $label_17))
             (local.set $z
                (select
                   (f64.mul (local.get $z) (f64.const 0x1p108))
                   (local.get $z)
-                  (local.tee $10 (i64.lt_u (local.get $8) (i64.const 219)))))
+                  (local.tee $v10 (i64.lt_u (local.get $v8) (i64.const 219)))))
             (local.set $x
                (select
                   (f64.mul (local.get $x) (f64.const 0x1p108))
                   (local.get $x)
-                  (local.tee $9 (i64.gt_u (local.get $6) (local.get $4)))))
+                  (local.tee $v9 (i64.gt_u (local.get $v6) (local.get $v4)))))
             (local.set $y
                (select
                   (local.get $y)
                   (f64.mul (local.get $y) (f64.const 0x1p108))
-                  (local.get $9)))
-            (local.set $9 (i32.const 0))
-            (br $label$1))
-         (local.set $9 (i32.const 0))
-         (local.set $10 (i32.const 0)))
+                  (local.get $v9)))
+            (local.set $v9 (i32.const 0))
+            (br $label_1))
+         (local.set $v9 (i32.const 0))
+         (local.set $v10 (i32.const 0)))
       (block $cont
          (br_if $cont (f64.ne (local.get $z) (f64.const 0)))
          (br_if $cont
@@ -1163,68 +1163,68 @@
       (local.set $x
          (f64.sub
             (f64.mul
-               (local.tee $12
+               (local.tee $v12
                   (f64.sub
                      (local.get $x)
-                     (local.tee $11
+                     (local.tee $v11
                         (f64.sub
-                           (local.tee $11
+                           (local.tee $v11
                               (f64.mul (local.get $x) (f64.const 0x8000001)))
-                        (f64.sub (local.get $11) (local.get $x))))))
-               (local.tee $14
+                        (f64.sub (local.get $v11) (local.get $x))))))
+               (local.tee $v14
                   (f64.sub
                      (local.get $y)
-                     (local.tee $13
+                     (local.tee $v13
                      (f64.sub
-                        (local.tee $13
+                        (local.tee $v13
                            (f64.mul (local.get $y) (f64.const 0x8000001)))
-                        (f64.sub (local.get $13) (local.get $y)))))))
+                        (f64.sub (local.get $v13) (local.get $y)))))))
             (f64.sub
                (f64.sub
                   (f64.sub
-                     (local.tee $15 (f64.mul (local.get $y) (local.get $x)))
-                     (f64.mul (local.get $11) (local.get $13)))
-                  (f64.mul (local.get $12) (local.get $13)))
-               (f64.mul (local.get $11) (local.get $14)))))
-      (block $label$21
-         (block $label$22
-            (br_if $label$22
+                     (local.tee $v15 (f64.mul (local.get $y) (local.get $x)))
+                     (f64.mul (local.get $v11) (local.get $v13)))
+                  (f64.mul (local.get $v12) (local.get $v13)))
+               (f64.mul (local.get $v11) (local.get $v14)))))
+      (block $label_21
+         (block $label_22
+            (br_if $label_22
                (f64.ne
-                  (local.tee $y (f64.add (local.get $z) (local.get $15)))
+                  (local.tee $y (f64.add (local.get $z) (local.get $v15)))
                   (f64.const 0)))
-            (br_if $label$21 (f64.eq (local.get $x) (f64.const 0))))
+            (br_if $label_21 (f64.eq (local.get $x) (f64.const 0))))
          (block $cont
             (br_if $cont
                (f64.eq
                   (local.tee $z
                      (f64.add
-                        (local.tee $11
+                        (local.tee $v11
                            (f64.add
                               (f64.sub (local.get $x)
-                                 (local.tee $13
+                                 (local.tee $v13
                                     (f64.sub
                                        (local.tee $z
                                           (f64.add
-                                             (local.tee $11
+                                             (local.tee $v11
                                                 (f64.add
-                                                   (f64.sub (local.get $15)
-                                                      (local.tee $11
+                                                   (f64.sub (local.get $v15)
+                                                      (local.tee $v11
                                                          (f64.sub
                                                             (local.get $y)
                                                             (local.get $z))))
                                                    (f64.sub (local.get $z)
                                                       (f64.sub
                                                          (local.get $y)
-                                                         (local.get $11)))))
+                                                         (local.get $v11)))))
                                              (local.get $x)))
-                                          (local.get $11))))
-                              (f64.sub (local.get $11)
-                                 (f64.sub (local.get $z) (local.get $13)))))
+                                          (local.get $v11))))
+                              (f64.sub (local.get $v11)
+                                 (f64.sub (local.get $z) (local.get $v13)))))
                         (f64.sub
                            (local.tee $y
                               (f64.add
                                  (f64.sub (local.get $z)
-                                    (local.tee $13
+                                    (local.tee $v13
                                        (f64.sub
                                           (local.tee $x
                                              (f64.add (local.get $y)
@@ -1232,14 +1232,14 @@
                                           (local.get $y))))
                                  (f64.sub
                                     (local.get $y)
-                                    (f64.sub (local.get $x) (local.get $13)))))
+                                    (f64.sub (local.get $x) (local.get $v13)))))
                            (local.tee $y
-                              (f64.add (local.get $11) (local.get $y))))))
+                              (f64.add (local.get $v11) (local.get $y))))))
                   (f64.const 0)))
             (br_if $cont
                (i32.and
                   (i32.wrap_i64
-                     (local.tee $4 (i64.reinterpret_f64 (local.get $y))))
+                     (local.tee $v4 (i64.reinterpret_f64 (local.get $y))))
                   (i32.const 1)))
             (local.set $y
                (f64.reinterpret_i64
@@ -1250,10 +1250,10 @@
                         (i32.xor
                            (f64.lt (local.get $y) (f64.const 0))
                            (f64.gt (local.get $z) (f64.const 0))))
-                     (local.get $4)))))
+                     (local.get $v4)))))
          (local.set $y (f64.add (local.get $x) (local.get $y)))
          (block $cont
-            (br_if $cont (i32.eqz (local.get $9)))
+            (br_if $cont (i32.eqz (local.get $v9)))
             (return
                (struct.new $float
                   (f64.mul (local.get $y) (f64.const 0x1p53)))))
@@ -1261,7 +1261,7 @@
             (select
                (f64.mul (local.get $y) (f64.const 0x1p-108))
                (local.get $y)
-               (local.get $10))))
+               (local.get $v10))))
       (struct.new $float (local.get $y)))
 
    (func (export "caml_float_compare")
