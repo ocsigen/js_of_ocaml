@@ -131,9 +131,9 @@
       (return (ref.null eq)))
 
    (func (export "caml_register_named_value")
-      (param $name (ref eq)) (param $v (ref eq)) (result (ref eq))
+      (param $name (ref eq)) (param $value (ref eq)) (result (ref eq))
       (local $h i32)
-      (local $r (ref null $assoc))
+      (local $next (ref null $assoc))
       (local.set $h
          (i32.rem_u
             (i31.get_s
@@ -141,20 +141,20 @@
                   (call $caml_string_hash
                      (ref.i31 (i32.const 0)) (local.get $name))))
             (global.get $Named_value_size)))
-      (local.set $r
+      (local.set $next
          (array.get $assoc_array
             (global.get $named_value_table) (local.get $h)))
       (block $not_found
          (struct.set $assoc 1
             (br_on_null $not_found
-               (call $assoc_find (local.get $name) (local.get $r)))
-            (local.get $v))
+               (call $assoc_find (local.get $name) (local.get $next)))
+            (local.get $value))
          (return (ref.i31 (i32.const 0))))
       (array.set $assoc_array
          (global.get $named_value_table) (local.get $h)
          (struct.new $assoc
             (ref.cast (ref $bytes) (local.get $name))
-            (local.get $v) (local.get $r)))
+            (local.get $value) (local.get $next)))
       (ref.i31 (i32.const 0)))
 
    ;; Used only for testing (tests-jsoo/bin), but inconvenient to pull out
@@ -260,7 +260,7 @@
       (local $h i32)
       (local $max i32)
       (local $idx i32)
-      (local $key (ref $bytes))
+      (local $name (ref $bytes))
       (global.set $link_info (ref.cast (ref $block) (local.get $info)))
       ;; Compute next_idx from symbols field
       (if (ref.test (ref $block)
@@ -299,7 +299,7 @@
                   (if (i32.gt_s (local.get $idx) (local.get $max))
                      (then (local.set $max (local.get $idx))))
                   ;; Build key from global_name
-                  (local.set $key
+                  (local.set $name
                      (call $make_symbol_key
                         ;; is_predef = tag of global_name block
                         (i31.get_u
@@ -320,12 +320,12 @@
                            (ref.cast (ref i31)
                               (call $caml_string_hash
                                  (ref.i31 (i32.const 0))
-                                 (local.get $key))))
+                                 (local.get $name))))
                         (global.get $symbol_table_size)))
                   (array.set $assoc_array
                      (global.get $symbol_table) (local.get $h)
                      (struct.new $assoc
-                        (local.get $key)
+                        (local.get $name)
                         (array.get $block (local.get $pair) (i32.const 2))
                         (array.get $assoc_array
                            (global.get $symbol_table) (local.get $h))))
