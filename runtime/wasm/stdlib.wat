@@ -241,11 +241,12 @@
          (ref.i31 (i32.const 0))
          (ref.i31 (i32.const 0))))
 
-   ;; Field indices for $link_info (after tag at 0)
-   (global $LINK_INFO_SECTIONS i32 (i32.const 1))
+   ;; Field indices for $link_info (after tag at 0). Only SYMBOLS is currently
+   ;; read by the runtime; the others are documented for the layout:
+   ;;   LINK_INFO_SECTIONS = 1
    (global $LINK_INFO_SYMBOLS i32 (i32.const 2))
-   (global $LINK_INFO_PRIM_COUNT i32 (i32.const 3))
-   (global $LINK_INFO_ALIASES i32 (i32.const 4))
+   ;;   LINK_INFO_PRIM_COUNT = 3
+   ;;   LINK_INFO_ALIASES = 4
 
    ;; Next available index for dynamically loaded modules not in the
    ;; static symbols table. Initialized when symbols are set.
@@ -374,8 +375,6 @@
                                           (local.get $key))))
                                  (global.get $symbol_table_size))))))))))
       (i32.const -1))
-
-   (global $caml_register_global_idx (mut i32) (i32.const 0))
 
    (func (export "caml_register_global_by_index")
       (param $v (ref eq)) (param $idx (ref eq)) (result (ref eq))
