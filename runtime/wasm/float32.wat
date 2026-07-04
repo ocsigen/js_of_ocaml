@@ -272,9 +272,6 @@
             (call $caml_float_of_float32 (local.get $y))
             (call $caml_float_of_float32 (local.get $z)))))
 
-   (global $zero (ref eq)
-      (struct.new $float32 (global.get $float32_ops) (f32.const 0)))
-
    (func (export "caml_ba_uint8_getf32")
       (param $a (ref eq)) (param $i i32) (result f32)
       (f32.reinterpret_i32

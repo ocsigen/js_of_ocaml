@@ -49,12 +49,16 @@
 
    (global $ERRCODE i32 (i32.const 256))
 
-   (global $START i32 (i32.const 0))
-   (global $TOKEN_READ i32 (i32.const 1))
-   (global $STACKS_GROWN_1 i32 (i32.const 2))
-   (global $STACKS_GROWN_2 i32 (i32.const 3))
-   (global $SEMANTIC_ACTION_COMPUTED i32 (i32.const 4))
-   (global $ERROR_DETECTED i32 (i32.const 5))
+   ;; Parser engine states, dispatched by value via the br_table below.
+   ;; The first six are entered from the OCaml caller's saved state and only
+   ;; appear as br_table labels, so they are documented here rather than
+   ;; defined as (unused) globals:
+   ;;   START = 0
+   ;;   TOKEN_READ = 1
+   ;;   STACKS_GROWN_1 = 2
+   ;;   STACKS_GROWN_2 = 3
+   ;;   SEMANTIC_ACTION_COMPUTED = 4
+   ;;   ERROR_DETECTED = 5
    (global $loop_state i32 (i32.const 6))
    (global $testshift i32 (i32.const 7))
    (global $shift i32 (i32.const 8))
