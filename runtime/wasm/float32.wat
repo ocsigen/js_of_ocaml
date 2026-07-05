@@ -1,6 +1,4 @@
 (module
-   (import "fail" "caml_failwith"
-      (func $caml_failwith (param (ref eq))))
    (import "marshal" "caml_serialize_int_4"
       (func $caml_serialize_int_4 (param (ref eq)) (param i32)))
    (import "marshal" "caml_deserialize_int_4"
@@ -40,8 +38,6 @@
       (func $caml_bytes_set32 (param (ref eq)) (param i32) (param i32) (result (ref eq))))
    (import "string" "caml_bytes_set32u"
       (func $caml_bytes_set32u (param (ref eq)) (param i32) (param i32) (result (ref eq))))
-   (import "array" "caml_make_vect"
-      (func $caml_make_vect (param (ref eq)) (param (ref eq)) (result (ref eq))))
 
    (type $float (struct (field $f f64)))
 
