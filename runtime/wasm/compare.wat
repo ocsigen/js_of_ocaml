@@ -20,7 +20,6 @@
       (func $equals (param anyref) (param anyref) (result i32)))
    (import "obj" "forward_tag" (global $forward_tag i32))
    (import "obj" "object_tag" (global $object_tag i32))
-   (import "obj" "double_array_tag" (global $double_array_tag i32))
    (import "obj" "caml_obj_tag"
       (func $caml_obj_tag (param (ref eq)) (result (ref eq))))
    (import "obj" "caml_is_closure"

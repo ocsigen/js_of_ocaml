@@ -33,7 +33,6 @@
       (func $caml_copy_int64 (param i64) (result (ref eq))))
    (import "int64" "Int64_val"
       (func $Int64_val (param (ref eq)) (result i64)))
-   (import "obj" "double_array_tag" (global $double_array_tag i32))
    (import "compare" "unordered" (global $unordered i32))
    (import "hash" "caml_hash_mix_int"
       (func $caml_hash_mix_int (param i32) (param i32) (result i32)))

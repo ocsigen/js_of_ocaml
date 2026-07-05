@@ -22,8 +22,6 @@
       (func $caml_js_get (param (ref eq)) (param (ref eq)) (result (ref eq))))
    (import "bigarray" "caml_ba_to_typed_array"
      (func $caml_ba_to_typed_array (param (ref eq)) (result (ref eq))))
-   (import "bigarray" "caml_ba_from_typed_array"
-      (func $caml_ba_from_typed_array (param (ref eq)) (result (ref eq))))
    (import "bigarray" "caml_ba_char_of_typed_array"
       (func $caml_ba_char_of_typed_array (param (ref eq)) (result (ref eq))))
    (import "bigarray" "caml_ba_sub"
