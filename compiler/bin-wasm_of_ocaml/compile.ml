@@ -402,7 +402,6 @@ let run
     ; shape_files
     ; build_config
     ; apply_build_config
-    ; toplevel
     ; dynlink
     ; no_cmis
     ; export_file
@@ -415,6 +414,10 @@ let run
     `Wasm
     ~apply:apply_build_config
     ~print_and_exit:build_config;
+  (* [--toplevel] is turned into a config flag (see {!Cmd_arg}), so that it is
+     also picked up when it comes through [--apply-build-config] (e.g. when dune
+     compiles the library dependencies of a toplevel). *)
+  let toplevel = Config.Flag.toplevel () in
   Generate.init ();
   List.iter shape_files ~f:(fun s ->
       let z = Zip.open_in s in
