@@ -24,6 +24,13 @@
   asynchronous toplevel originally contributed in the unmerged #435 (#66, #833)
 
 ## Bug fixes
+* Wasm: embed cmis when building a toplevel with separate compilation.
+  `wasm_of_ocaml --toplevel` now reports `toplevel=true` in its build config
+  and honors the flag when it comes through `--apply-build-config`, so dune
+  builds the toplevel variant of library dependencies and their cmis (Stdlib,
+  compiler-libs, ...) end up in `/static/cmis`. Previously only whole-program
+  compilation embedded them, so a separately-compiled wasm toplevel failed to
+  load Stdlib at startup (#1721)
 * Toplevel: keep the `/static/cmis` directory on the load path across
   `Toploop.initialize_toplevel_env`, so libraries whose cmis are loaded at
   runtime stay resolvable; previously the directory was registered only while

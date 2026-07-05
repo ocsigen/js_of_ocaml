@@ -68,7 +68,6 @@ type t =
   ; shape_files : string list
   ; build_config : bool
   ; apply_build_config : string option
-  ; toplevel : bool
   ; dynlink : bool
   ; no_cmis : bool
   ; export_file : string option
@@ -214,6 +213,15 @@ let options () =
       build_config
       apply_build_config =
     let chop_extension s = try Filename.chop_extension s with Invalid_argument _ -> s in
+    let common =
+      if toplevel
+      then
+        let open Jsoo_cmdline.Arg in
+        { common with
+          optim = { common.optim with enable = "toplevel" :: common.optim.enable }
+        }
+      else common
+    in
     match build_config, input_file with
     | false, None -> `Error (true, "required argument PROGRAM is missing")
     | _ ->
@@ -256,7 +264,6 @@ let options () =
           ; shape_files
           ; build_config
           ; apply_build_config
-          ; toplevel
           ; dynlink
           ; no_cmis
           ; export_file
@@ -359,6 +366,15 @@ let options_runtime_only () =
     let enable_source_maps = (not no_sourcemap) && sourcemap in
     let include_dirs = normalize_include_dirs include_dirs in
     let effects = normalize_effects effects common in
+    let common =
+      if toplevel
+      then
+        let open Jsoo_cmdline.Arg in
+        { common with
+          optim = { common.optim with enable = "toplevel" :: common.optim.enable }
+        }
+      else common
+    in
     `Ok
       { common
       ; params
@@ -375,7 +391,6 @@ let options_runtime_only () =
       ; shape_files = []
       ; build_config
       ; apply_build_config
-      ; toplevel
       ; dynlink = false
       ; no_cmis = false
       ; export_file = None
