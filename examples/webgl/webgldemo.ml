@@ -209,6 +209,11 @@ let read_model a =
       | Some (V (a, b, c)) -> vertex := (a, b, c) :: !vertex
       | Some (VN (a, b, c)) -> norm := (a, b, c) :: !norm)
     a;
+  if !face = []
+  then
+    alert
+      "could not load the model; note that this example must be served over http, see \
+       examples/README.md";
   make_model
     (Array.of_list (List.rev !vertex))
     (Array.of_list (List.rev !norm))
