@@ -93,6 +93,12 @@ type texture = WebGL.texture
 
 type 'a uniformLocation = 'a WebGL.uniformLocation
 
+type 'a texParam = 'a WebGL.texParam
+
+type wrapMode = WebGL.wrapMode
+
+type depthFunction = WebGL.depthFunction
+
 (** {2 New WebGL2 objects} *)
 
 type query
@@ -130,6 +136,10 @@ type samplerParameterName
 type 'a activeUniformParam
 
 type 'a uniformBlockParam
+
+type transformFeedbackTarget
+
+type textureCompareMode
 
 class type renderingContext = object
   inherit WebGL.renderingContext
@@ -312,6 +322,13 @@ class type renderingContext = object
       ({!type:pixelFormat}); the WebGL1 [renderbufferStorage] taking a
       {!type:format} is still available through inheritance. *)
 
+  (** {2 5.14.8 Texture objects} *)
+
+  method texParameterf : texTarget -> number_t texParam -> number_t -> unit meth
+  (** [texParameterf] for the float texture parameters {!_TEXTURE_MIN_LOD_} and
+      {!_TEXTURE_MAX_LOD_}; the integer/enum parameters go through the inherited
+      [texParameteri]. *)
+
   (** {2 5.14.9 Multiple render targets} *)
 
   method drawBuffers : attachmentPoint js_array t -> unit meth
@@ -379,7 +396,8 @@ class type renderingContext = object
 
   method isTransformFeedback : transformFeedback t -> bool t meth
 
-  method bindTransformFeedback : bufferTarget -> transformFeedback t opt -> unit meth
+  method bindTransformFeedback :
+    transformFeedbackTarget -> transformFeedback t opt -> unit meth
 
   method beginTransformFeedback : beginMode -> unit meth
 
@@ -513,11 +531,42 @@ class type renderingContext = object
 
   method _DYNAMIC_COPY_ : bufferUsage readonly_prop
 
+  (** {3 Framebuffer targets} *)
+
+  method _READ_FRAMEBUFFER_ : fbTarget readonly_prop
+
+  method _DRAW_FRAMEBUFFER_ : fbTarget readonly_prop
+
+  (** {3 New capabilities} *)
+
+  method _RASTERIZER_DISCARD_ : enableCap readonly_prop
+
   (** {3 Texture targets} *)
 
   method _TEXTURE_3D_ : texTarget readonly_prop
 
   method _TEXTURE_2D_ARRAY_ : texTarget readonly_prop
+
+  (** {3 New texture parameters} *)
+
+  method _TEXTURE_WRAP_R_ : wrapMode texParam readonly_prop
+
+  method _TEXTURE_BASE_LEVEL_ : int texParam readonly_prop
+
+  method _TEXTURE_MAX_LEVEL_ : int texParam readonly_prop
+
+  method _TEXTURE_MIN_LOD_ : number_t texParam readonly_prop
+
+  method _TEXTURE_MAX_LOD_ : number_t texParam readonly_prop
+
+  method _TEXTURE_COMPARE_MODE_ : textureCompareMode texParam readonly_prop
+
+  method _TEXTURE_COMPARE_FUNC_ : depthFunction texParam readonly_prop
+
+  method _COMPARE_REF_TO_TEXTURE_ : textureCompareMode readonly_prop
+
+  method _NONE_TCM : textureCompareMode readonly_prop
+  (** The [NONE] value for {!_TEXTURE_COMPARE_MODE_}. *)
 
   (** {3 New external formats} *)
 
@@ -758,6 +807,8 @@ class type renderingContext = object
   method _WAIT_FAILED_ : clientWaitSyncStatus readonly_prop
 
   (** {3 Transform feedback} *)
+
+  method _TRANSFORM_FEEDBACK_ : transformFeedbackTarget readonly_prop
 
   method _INTERLEAVED_ATTRIBS_ : transformFeedbackMode readonly_prop
 
