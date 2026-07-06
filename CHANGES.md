@@ -7,7 +7,9 @@
   immutable textures, multiple render targets, instanced/range drawing, uniform
   buffer objects, integer vertex attributes and unsigned-integer uniforms, plus
   the new sized internal formats and enumerations. `WebGL2.getContext` requests
-  a `"webgl2"` context (#1226)
+  a `"webgl2"` context. The `webgl` example now uses WebGL2, and a new
+  `webgl2_particles` example demonstrates a GPU particle system driven by
+  transform feedback (#1226)
 * Lib: add `Crypto` — bindings to the Web Crypto API (`crypto`,
   `getRandomValues`, `randomUUID`, and the Promise-typed `SubtleCrypto`), with a
   typed `params` variant (one constructor per algorithm) and

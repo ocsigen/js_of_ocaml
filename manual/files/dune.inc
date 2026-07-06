@@ -80,6 +80,14 @@
 
 (rule
  (alias doc-manual)
+ (targets (dir webgl2_particles))
+ (deps
+  ../../examples/webgl2_particles/particles.bc.js
+  ../../examples/webgl2_particles/index.html)
+ (action (bash "mkdir -p webgl2_particles && cp -r ../../examples/webgl2_particles/particles.bc.js ../../examples/webgl2_particles/index.html webgl2_particles")))
+
+(rule
+ (alias doc-manual)
  (targets (dir wiki))
  (deps
   ../../examples/wiki/main.bc.js
