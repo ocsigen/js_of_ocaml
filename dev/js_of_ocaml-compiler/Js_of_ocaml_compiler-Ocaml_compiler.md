@@ -28,3 +28,6 @@ module Compilation_unit_descr : sig ... end
 ```ocaml
 module Cmo_format : sig ... end
 ```
+```ocaml
+module Hint : sig ... end
+```

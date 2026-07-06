@@ -157,6 +157,9 @@ module Ocaml_compiler : sig ... end
 module Ocaml_version : sig ... end
 ```
 ```ocaml
+module Optimization_hint : sig ... end
+```
+```ocaml
 module Parse_bytecode : sig ... end
 ```
 ```ocaml

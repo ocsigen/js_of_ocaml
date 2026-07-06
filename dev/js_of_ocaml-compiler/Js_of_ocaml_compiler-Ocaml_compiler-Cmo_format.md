@@ -22,3 +22,9 @@ val force_link : t -> bool
 ```ocaml
 val imports : t -> Import_info.t list
 ```
+```ocaml
+val hints_pos : t -> int
+```
+```ocaml
+val hints_size : t -> int
+```

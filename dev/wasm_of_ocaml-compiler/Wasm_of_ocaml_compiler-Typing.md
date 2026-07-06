@@ -18,15 +18,12 @@ type boxed_status =
   | Unboxed
 ```
 ```ocaml
-module Bigarray : sig ... end
-```
-```ocaml
 type typ = 
   | Top
   | Int of Integer.kind
   | Number of boxed_number * boxed_status
   | Tuple of typ array
-  | Bigarray of Bigarray.t
+  | Bigarray of Js_of_ocaml_compiler.Optimization_hint.Bigarray.t
   | Null
   | Bot
 ```
@@ -40,7 +37,9 @@ val can_unbox_parameters :
   bool
 ```
 ```ocaml
-val bigarray_element_type : Bigarray.kind -> typ
+val bigarray_element_type : 
+  Js_of_ocaml_compiler.Optimization_hint.Bigarray.kind ->
+  typ
 ```
 ```ocaml
 type t

@@ -4,8 +4,9 @@
 ```ocaml
 val get : 
   bound_error_index:int ->
-  kind:Typing.Bigarray.kind ->
-  layout:Typing.Bigarray.layout ->
+  unsafe:bool ->
+  kind:Js_of_ocaml_compiler.Optimization_hint.Bigarray.kind ->
+  layout:Js_of_ocaml_compiler.Optimization_hint.Bigarray.layout ->
   expression ->
   indices:expression list ->
   expression
@@ -13,8 +14,9 @@ val get :
 ```ocaml
 val set : 
   bound_error_index:int ->
-  kind:Typing.Bigarray.kind ->
-  layout:Typing.Bigarray.layout ->
+  unsafe:bool ->
+  kind:Js_of_ocaml_compiler.Optimization_hint.Bigarray.kind ->
+  layout:Js_of_ocaml_compiler.Optimization_hint.Bigarray.layout ->
   expression ->
   indices:expression list ->
   expression ->

@@ -4737,9 +4737,9 @@ type cont = Addr.t * Var.t list
 ```
 ```ocaml
 type prim = 
-  | Vectlength
+  | Vectlength of Optimization_hint.array_kind
   | Array_get
-  | Extern of string
+  | Extern of string * Optimization_hint.ccall option
   | Not
   | IsInt
   | Eq
@@ -4814,7 +4814,9 @@ type expr =
   }
   | Block of int * Var.t array * array_or_not * mutability
   | Field of Var.t * int * field_type
-  | Closure of Var.t list * cont * Parse_info.t option
+  | Closure of Var.t list
+    * cont
+    * Optimization_hint.closure_hint option * Parse_info.t option
   | Constant of constant
   | Prim of prim * prim_arg list
   | Special of special
@@ -9300,6 +9302,12 @@ val force_link : t -> bool
 ```ocaml
 val imports : t -> Import_info.t list
 ```
+```ocaml
+val hints_pos : t -> int
+```
+```ocaml
+val hints_size : t -> int
+```
 
 
 ---
@@ -9320,6 +9328,18 @@ val full_path_as_string : t -> string
 
 ```ocaml
 type t = Cmo_format.compilation_unit
+```
+
+
+---
+
+# Module `Ocaml_compiler.Hint`
+
+```ocaml
+type t
+```
+```ocaml
+val import : t -> Optimization_hint.t option
 ```
 
 
@@ -9426,6 +9446,9 @@ module Compilation_unit_descr : sig ... end
 ```ocaml
 module Cmo_format : sig ... end
 ```
+```ocaml
+module Hint : sig ... end
+```
 
 
 ---
@@ -9443,6 +9466,124 @@ val compare : t -> t -> int
 ```
 ```ocaml
 val split : string -> t
+```
+
+
+---
+
+# Module `Optimization_hint.Bigarray`
+
+```ocaml
+type kind = 
+  | Float16
+  | Float32
+  | Float32_t
+  | Float64
+  | Int8_signed
+  | Int8_unsigned
+  | Int16_signed
+  | Int16_unsigned
+  | Int32
+  | Int64
+  | Int
+  | Nativeint
+  | Complex32
+  | Complex64
+```
+```ocaml
+type layout = 
+  | C
+  | Fortran
+```
+```ocaml
+type t = {
+  unsafe : bool;
+  kind : kind;
+  layout : layout;
+}
+```
+
+
+---
+
+# Module `Js_of_ocaml_compiler.Optimization_hint`
+
+```ocaml
+type boxed_integer = 
+  | Int32
+  | Int64
+  | Nativeint
+```
+```ocaml
+type array_kind = 
+  | Generic
+  | Value
+  | Float
+```
+```ocaml
+module Bigarray : sig ... end
+```
+```ocaml
+type repr = 
+  | Value
+  | Float
+  | Int32
+  | Nativeint
+  | Int64
+  | Int
+```
+```ocaml
+type primitive = {
+  name : string;
+  args : repr list;
+  res : repr;
+}
+```
+```ocaml
+type ccall = 
+  | Hint_unsafe
+  | Hint_int of boxed_integer
+  | Hint_bigarray of Bigarray.t
+  | Hint_primitive of primitive
+```
+```ocaml
+type inline_attribute = 
+  | Always_inline
+  | Never_inline
+  | Hint_inline
+  | Unroll of int
+  | Default_inline
+```
+```ocaml
+type specialise_attribute = 
+  | Always_specialise
+  | Never_specialise
+  | Default_specialise
+```
+```ocaml
+type closure_hint = {
+  params : repr list;
+  return : repr;
+  inline : inline_attribute;
+  specialise : specialise_attribute;
+  is_a_functor : bool;
+}
+```
+```ocaml
+type t = 
+  | Hint_immutable_block
+  | Hint_arraylength of array_kind
+  | Hint_closures of closure_hint list
+  | Hint_ccall of ccall
+```
+```ocaml
+val print_ccall : Stdlib.Format.formatter -> ccall -> unit
+```
+```ocaml
+val print : Stdlib.Format.formatter -> t -> unit
+```
+```ocaml
+val print_closure_hint : Stdlib.Format.formatter -> closure_hint -> unit
 ```
 
 
@@ -15547,6 +15688,9 @@ module Ocaml_compiler : sig ... end
 ```
 ```ocaml
 module Ocaml_version : sig ... end
+```
+```ocaml
+module Optimization_hint : sig ... end
 ```
 ```ocaml
 module Parse_bytecode : sig ... end
@@ -54811,8 +54955,9 @@ val default_value :
 ```ocaml
 val get : 
   bound_error_index:int ->
-  kind:Typing.Bigarray.kind ->
-  layout:Typing.Bigarray.layout ->
+  unsafe:bool ->
+  kind:Js_of_ocaml_compiler.Optimization_hint.Bigarray.kind ->
+  layout:Js_of_ocaml_compiler.Optimization_hint.Bigarray.layout ->
   expression ->
   indices:expression list ->
   expression
@@ -54820,8 +54965,9 @@ val get :
 ```ocaml
 val set : 
   bound_error_index:int ->
-  kind:Typing.Bigarray.kind ->
-  layout:Typing.Bigarray.layout ->
+  unsafe:bool ->
+  kind:Js_of_ocaml_compiler.Optimization_hint.Bigarray.kind ->
+  layout:Js_of_ocaml_compiler.Optimization_hint.Bigarray.layout ->
   expression ->
   indices:expression list ->
   expression ->
@@ -55309,8 +55455,9 @@ module Make (_ : Target_sig.S) : sig ... end
 ```ocaml
 val get : 
   bound_error_index:int ->
-  kind:Typing.Bigarray.kind ->
-  layout:Typing.Bigarray.layout ->
+  unsafe:bool ->
+  kind:Js_of_ocaml_compiler.Optimization_hint.Bigarray.kind ->
+  layout:Js_of_ocaml_compiler.Optimization_hint.Bigarray.layout ->
   expression ->
   indices:expression list ->
   expression
@@ -55318,8 +55465,9 @@ val get :
 ```ocaml
 val set : 
   bound_error_index:int ->
-  kind:Typing.Bigarray.kind ->
-  layout:Typing.Bigarray.layout ->
+  unsafe:bool ->
+  kind:Js_of_ocaml_compiler.Optimization_hint.Bigarray.kind ->
+  layout:Js_of_ocaml_compiler.Optimization_hint.Bigarray.layout ->
   expression ->
   indices:expression list ->
   expression ->
@@ -56038,8 +56186,9 @@ val f :
 ```ocaml
 val get : 
   bound_error_index:int ->
-  kind:Typing.Bigarray.kind ->
-  layout:Typing.Bigarray.layout ->
+  unsafe:bool ->
+  kind:Js_of_ocaml_compiler.Optimization_hint.Bigarray.kind ->
+  layout:Js_of_ocaml_compiler.Optimization_hint.Bigarray.layout ->
   expression ->
   indices:expression list ->
   expression
@@ -56047,8 +56196,9 @@ val get :
 ```ocaml
 val set : 
   bound_error_index:int ->
-  kind:Typing.Bigarray.kind ->
-  layout:Typing.Bigarray.layout ->
+  unsafe:bool ->
+  kind:Js_of_ocaml_compiler.Optimization_hint.Bigarray.kind ->
+  layout:Js_of_ocaml_compiler.Optimization_hint.Bigarray.layout ->
   expression ->
   indices:expression list ->
   expression ->
@@ -56513,40 +56663,6 @@ module type S = sig ... end
 
 ---
 
-# Module `Typing.Bigarray`
-
-```ocaml
-type kind = 
-  | Float16
-  | Float32
-  | Float32_t
-  | Float64
-  | Int8_signed
-  | Int8_unsigned
-  | Int16_signed
-  | Int16_unsigned
-  | Int32
-  | Int64
-  | Int
-  | Nativeint
-  | Complex32
-  | Complex64
-```
-```ocaml
-type layout = 
-  | C
-  | Fortran
-```
-```ocaml
-type t = {
-  kind : kind;
-  layout : layout;
-}
-```
-
-
----
-
 # Module `Typing.Integer`
 
 ```ocaml
@@ -56578,15 +56694,12 @@ type boxed_status =
   | Unboxed
 ```
 ```ocaml
-module Bigarray : sig ... end
-```
-```ocaml
 type typ = 
   | Top
   | Int of Integer.kind
   | Number of boxed_number * boxed_status
   | Tuple of typ array
-  | Bigarray of Bigarray.t
+  | Bigarray of Js_of_ocaml_compiler.Optimization_hint.Bigarray.t
   | Null
   | Bot
 ```
@@ -56600,7 +56713,9 @@ val can_unbox_parameters :
   bool
 ```
 ```ocaml
-val bigarray_element_type : Bigarray.kind -> typ
+val bigarray_element_type : 
+  Js_of_ocaml_compiler.Optimization_hint.Bigarray.kind ->
+  typ
 ```
 ```ocaml
 type t
