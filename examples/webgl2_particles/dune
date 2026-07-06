@@ -1,0 +1,17 @@
+(executables
+ (names particles)
+ (libraries js_of_ocaml-lwt)
+ (modes js wasm)
+ (js_of_ocaml
+  (compilation_mode separate))
+ (preprocess
+  (pps js_of_ocaml-ppx)))
+
+(alias
+ (name default)
+ (deps particles.bc.js index.html))
+
+(alias
+ (name default)
+ (enabled_if %{env:WASM_OF_OCAML=false})
+ (deps particles.bc.wasm.js))
