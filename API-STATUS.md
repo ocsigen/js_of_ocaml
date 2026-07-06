@@ -88,7 +88,7 @@ This document lists standard JavaScript/Web APIs and their support status in js_
 |-----|------|-----|---------------------|
 | Canvas 2D | Yes | Yes | `Dom_html` (canvasRenderingContext2D) · Brr: `Brr_canvas.C2d` |
 | WebGL | Yes | Yes | `WebGL` · Brr: `Brr_canvas.Gl` |
-| WebGL2 | No | Yes | [#1226](https://github.com/ocsigen/js_of_ocaml/issues/1226) · Brr: `Brr_canvas.Gl` (WebGL2 by default) |
+| WebGL2 | Yes | Yes | `WebGL2` · Brr: `Brr_canvas.Gl` (WebGL2 by default) |
 
 ## Media
 
@@ -194,7 +194,6 @@ Worker/iframe/window communication.
 
 | API | Issue | In Brr | Why |
 |-----|-------|--------|-----|
-| WebGL2 | [#1226](https://github.com/ocsigen/js_of_ocaml/issues/1226) | Yes | 3D graphics. Large API surface, niche audience. |
 | SharedArrayBuffer / Atomics | [#1930](https://github.com/ocsigen/js_of_ocaml/issues/1930) | No | Advanced concurrency. Requires cross-origin isolation headers. |
 | WebRTC | — | No | Peer-to-peer media/data. Very large, complex API. |
 | Web Components — Custom Elements | — | No | Large surface, competes with framework approaches. Shadow DOM portion of Web Components is already bound. |
