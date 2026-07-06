@@ -49,12 +49,12 @@ let init_canvas canvas_id =
   in
   let gl =
     Opt.get
-      (try WebGL.getContext canvas with _ -> null)
-      (fun () -> alert "can't initialise webgl context")
+      (try WebGL2.getContext canvas with _ -> null)
+      (fun () -> alert "can't initialise webgl2 context")
   in
   canvas, gl
 
-let load_shader (gl : WebGL.renderingContext t) shader text =
+let load_shader (gl : WebGL2.renderingContext t) shader text =
   gl##shaderSource shader text;
   gl##compileShader shader;
   if not (to_bool (gl##getShaderParameter shader gl##._COMPILE_STATUS_))
@@ -64,7 +64,7 @@ let load_shader (gl : WebGL.renderingContext t) shader text =
       (to_string text)
       (to_string (gl##getShaderInfoLog shader))
 
-let create_program (gl : WebGL.renderingContext t) vert_src frag_src =
+let create_program (gl : WebGL2.renderingContext t) vert_src frag_src =
   let vertexShader = gl##createShader gl##._VERTEX_SHADER_ in
   let fragmentShader = gl##createShader gl##._FRAGMENT_SHADER_ in
   load_shader gl vertexShader vert_src;
@@ -85,7 +85,9 @@ let get_source src_id =
          Dom_html.CoerceTo.script)
       (fun () -> error "can't find script element %s" src_id)
   in
-  script##.text
+  (* GLSL ES 3.00 requires [#version] to be on the very first line, so strip
+     the newline following the opening script tag *)
+  string (String.trim (to_string script##.text))
 
 let float32array a =
   let array = new%js Typed_array.float32Array (Array.length a) in
@@ -257,6 +259,8 @@ let start (pos, norm) =
   let ambientLight = float32array [| 0.1; 0.1; 0.1 |] in
   gl##uniform3fv_typed lightPos_loc lightPos;
   gl##uniform3fv_typed ambientLight_loc ambientLight;
+  let vao = gl##createVertexArray in
+  gl##bindVertexArray (Opt.return vao);
   let pos_attr = gl##getAttribLocation prog (string "a_position") in
   gl##enableVertexAttribArray pos_attr;
   let array_buffer = gl##createBuffer in

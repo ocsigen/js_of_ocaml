@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <title>WebGL monkey</title>
+    <title>WebGL2 monkey</title>
 <style type="text/css">
 body {
   background-color: #111;
@@ -38,13 +38,14 @@ canvas {
 }
 </style>
 <script id="vertex-shader" type="x-shader/x-vertex">
-  attribute vec3 a_position;
-  attribute vec3 a_normal;
+  #version 300 es
+  in vec3 a_position;
+  in vec3 a_normal;
 
   uniform mat4 u_proj;
 
-  varying mediump vec3 v_position;
-  varying mediump vec3 v_normal;
+  out mediump vec3 v_position;
+  out mediump vec3 v_normal;
 
   void main() {
     vec4 pos = u_proj * vec4(a_position,1);
@@ -55,18 +56,21 @@ canvas {
   }
 </script>
 <script id="fragment-shader" type="x-shader/x-fragment">
+  #version 300 es
   precision mediump float;
-  varying vec3 v_position;
-  varying vec3 v_normal;
+  in vec3 v_position;
+  in vec3 v_normal;
 
   uniform vec3 u_lightPos;
   uniform vec3 u_ambientLight;
+
+  out vec4 color;
 
   void main() {
     vec3 lightDirection = normalize(u_lightPos - v_position);
     float lighting = max(dot(normalize(v_normal), lightDirection), 0.);
     vec3 col = vec3(1,1,1);
-    gl_FragColor = vec4( col * lighting + u_ambientLight, 1);
+    color = vec4( col * lighting + u_ambientLight, 1);
   }
 </script>
   <script type="text/javascript">
@@ -75,7 +79,7 @@ canvas {
   </script>
   </head>
   <body>
-    <h1>WebGL Monkey</h1>
+    <h1>WebGL2 Monkey</h1>
     <canvas id="canvas" height="500" width="500"></canvas>
     <div class="info"><span id="fps"></span> frames per second</div>
   </body>
