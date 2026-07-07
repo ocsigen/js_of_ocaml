@@ -31,22 +31,14 @@ jobs:
           - "5.0"
           - "5.1"
           - "5.2"
+          - "5.3"
           - "5.4"
-        separate_compilation:
-          - true
-        jane_street_tests:
-          - false
-        all_jane_street_tests:
-          - false
         wasi:
           - false
         include:
           - os: macos-latest
             os-name: MacOS
             ocaml-compiler: "5.3"
-            separate_compilation: true
-            jane_street_tests: false
-            all_jane_street_tests: false
             wasi: false
           - os: windows-latest
             os-name: Windows
@@ -54,49 +46,23 @@ jobs:
             # OCaml >= 5.4 the expect tests fail if the virtual filesystem
             # paths are wrong
             ocaml-compiler: "5.5"
-            separate_compilation: true
-            # Jane Street tests disabled for now (basement only works on Linux)
-            jane_street_tests: false
-            all_jane_street_tests: false
           - os: ubuntu-latest
             os-name: Ubuntu
             ocaml-compiler: "ocaml-variants.5.6.0+trunk"
-            separate_compilation: true
-            jane_street_tests: false
-            all_jane_street_tests: false
-          - os: ubuntu-latest
-            os-name: Ubuntu
-            ocaml-compiler: "5.3"
-            separate_compilation: true
-            jane_street_tests: true
-            all_jane_street_tests: true
-            wasi: false
-          - os: ubuntu-latest
-            os-name: Ubuntu
-            ocaml-compiler: "5.3"
-            separate_compilation: false
-            jane_street_tests: true
-            all_jane_street_tests: false
             wasi: false
           - os: ubuntu-latest
             os-name: Ubuntu
             ocaml-compiler: "ocaml-variants.5.2.0+ox"
-            separate_compilation: true
-            jane_street_tests: true
-            all_jane_street_tests: true
             wasi: false
           - os: ubuntu-latest
             os-name: Ubuntu
             ocaml-compiler: "5.3"
-            separate_compilation: true
-            jane_street_tests: false
-            all_jane_street_tests: false
             wasi: true
 
     runs-on: ${{ matrix.os }}
 
     name:
-       ${{ matrix.wasi && 'WASI / ' || '' }}${{ (! matrix.separate_compilation) && 'Whole program / ' || ''}}${{ matrix.ocaml-compiler }} / ${{ matrix.os-name }}${{ matrix.all_jane_street_tests && ' / Jane Street tests' || ''}}
+       ${{ matrix.wasi && 'WASI / ' || '' }}${{ matrix.ocaml-compiler }} / ${{ matrix.os-name }}
 
     steps:
       - name: Update apt cache
@@ -107,22 +73,6 @@ jobs:
         uses: actions/checkout@v7
         with:
           path: wasm_of_ocaml
-
-      - name: Checkout Jane Street opam repository
-        if: ${{ matrix.jane_street_tests && ! endsWith(matrix.ocaml-compiler, '+ox') }}
-        uses: actions/checkout@v7
-        with:
-          repository: janestreet/opam-repository
-          ref: 2819773f29b6f6c14b918eae3cb40c8ff6b22d0e
-          path: janestreet/opam-repository
-
-      - name: Checkout OxCaml opam repository
-        if: ${{ matrix.jane_street_tests && endsWith(matrix.ocaml-compiler, '+ox') }}
-        uses: actions/checkout@v7
-        with:
-          repository: oxcaml/opam-repository
-          ref: ${{ env.OXCAML_OPAM_REPO_REF }}
-          path: janestreet/opam-repository
 
       - name: Set-up Node.js
         uses: actions/setup-node@v6
@@ -194,21 +144,6 @@ jobs:
             > "$DIR/oxcaml-dune-patches.opam"
           opam pin add oxcaml-dune-patches "$DIR" -k path -n -y
 
-      # Add some packaged to the opam invariant;
-      # opam makes wrong choices otherwise
-      - name: Hold some packages
-        if: ${{ matrix.jane_street_tests && endsWith(matrix.ocaml-compiler, '+ox') }}
-        run: |
-          opam install gen_js_api zarith opam-format
-          opam switch set-invariant --formula '["ocaml-variants" {= "5.2.0+ox"} "zarith" "gen_js_api" "opam-format"]'
-
-      - name: Checkout Jane Street packages
-        if: matrix.jane_street_tests
-        run: |
-          opam repo add js janestreet/opam-repository
-          opam install opam-format
-          opam exec -- dune exec --root wasm_of_ocaml tools/ci_setup.exe
-
       - name: Pin Jane Street packages (v0.16)
         if: contains(fromJson('["4.14","5.0","5.1","5.2"]'), matrix.ocaml-compiler)
         run: |
@@ -218,7 +153,7 @@ jobs:
           opam pin add -n ppx_expect.v0.16.1 https://github.com/ocaml-wasm/ppx_expect.git#wasm
 
       - name: Pin Jane Street packages (v0.17)
-        if: ${{ ! (matrix.jane_street_tests || contains(fromJson('["4.14","5.0","5.1","5.2"]'), matrix.ocaml-compiler)) }}
+        if: ${{ ! (contains(fromJson('["4.14","5.0","5.1","5.2"]'), matrix.ocaml-compiler) || endsWith(matrix.ocaml-compiler, '+ox')) }}
         run: |
           opam pin add -n base.v0.17.3 https://github.com/ocaml-wasm/base.git#wasm-v0.17
           opam pin add -n time_now.v0.17.0 https://github.com/ocaml-wasm/time_now.git#wasm-v0.17
@@ -231,7 +166,7 @@ jobs:
           opam install . -t
 
       - name: Run tests
-        if: ${{ matrix.separate_compilation && ! matrix.wasi }}
+        if: ${{ ! matrix.wasi }}
         working-directory: ./wasm_of_ocaml
         run: opam exec -- dune build @runtest-wasm
 
@@ -240,13 +175,13 @@ jobs:
       # See https://github.com/libuv/libuv/issues/3622
 
       - name: Run tests with CPS effects
-        if: ${{ matrix.ocaml-compiler >= '5.' && matrix.separate_compilation && ! matrix.wasi }}
+        if: ${{ matrix.ocaml-compiler >= '5.' && ! matrix.wasi }}
         continue-on-error: ${{ matrix.os == 'windows-latest' }}
         working-directory: ./wasm_of_ocaml
         run: opam exec -- dune build @runtest-wasm --profile with-effects
 
       - name: Run tests with native effects
-        if: ${{ matrix.ocaml-compiler >= '5.' && matrix.separate_compilation && matrix.os != 'windows-latest' }}
+        if: ${{ matrix.ocaml-compiler >= '5.' && matrix.os != 'windows-latest' }}
         working-directory: ./wasm_of_ocaml
         run: opam exec -- dune build @runtest-wasm --profile with-native-effects
 
@@ -275,84 +210,3 @@ jobs:
         env:
           WASM_ENGINE: wasmtime
         run: opam exec -- dune build @runtest-wasm --profile wasi
-
-      - name: Run Base tests
-        if: matrix.all_jane_street_tests
-        continue-on-error: ${{ matrix.os == 'windows-latest' }}
-        working-directory: ./janestreet/lib/base
-        run: opam exec -- dune runtest
-
-      - name: Run Base bigstring tests
-        if: matrix.all_jane_street_tests
-        continue-on-error: ${{ matrix.os == 'windows-latest' }}
-        working-directory: ./janestreet/lib/base_bigstring
-        run: opam exec -- dune runtest
-
-      - name: Run Core tests
-        if: matrix.all_jane_street_tests
-        continue-on-error: ${{ matrix.os == 'windows-latest' }}
-        working-directory: ./janestreet/lib/core
-        run: opam exec -- dune runtest
-
-      - name: Run Bignum tests
-        if: matrix.all_jane_street_tests
-        continue-on-error: ${{ matrix.os == 'windows-latest' }}
-        working-directory: ./janestreet/lib/bignum
-        run: opam exec -- dune runtest
-
-      - name: Run Bin_prot tests
-        if: matrix.all_jane_street_tests
-        continue-on-error: ${{ matrix.os == 'windows-latest' }}
-        working-directory: ./janestreet/lib/bin_prot
-        run: opam exec -- dune runtest
-
-      - name: Run String_dict tests
-        if: matrix.all_jane_street_tests
-        continue-on-error: ${{ matrix.os == 'windows-latest' }}
-        working-directory: ./janestreet/lib/string_dict
-        run: opam exec -- dune runtest
-
-      - name: Run Zarith tests
-        if: matrix.all_jane_street_tests
-        continue-on-error: ${{ matrix.os == 'windows-latest' }}
-        working-directory: ./janestreet/lib/zarith_stubs_js
-        run: opam exec -- dune runtest
-
-      - name: Run Virtual_dom tests
-        if: matrix.all_jane_street_tests
-        continue-on-error: ${{ matrix.os == 'windows-latest' }}
-        working-directory: ./janestreet/lib/virtual_dom
-        run: opam exec -- dune runtest
-
-      - name: Run Bonsai tests
-        if: ${{ matrix.all_jane_street_tests && matrix.os != 'windows-latest' }}
-        continue-on-error: ${{ matrix.os == 'windows-latest' }}
-        working-directory: ./janestreet/lib/bonsai_test
-        run: opam exec -- dune runtest
-
-      - name: Run Bonsai web tests
-        if: ${{ matrix.all_jane_street_tests && matrix.os != 'windows-latest' }}
-        continue-on-error: ${{ matrix.os == 'windows-latest' }}
-        working-directory: ./janestreet/lib/bonsai_web_test
-        run: opam exec -- dune runtest
-
-      - name: Run Bonsai web components' tests
-        if: ${{ matrix.all_jane_street_tests && matrix.os != 'windows-latest' }}
-        continue-on-error: ${{ matrix.os == 'windows-latest' }}
-        working-directory: ./janestreet/lib/bonsai_web_components
-        run: opam exec -- dune runtest
-
-      - name: Run Bonsai tests (release profile)
-        if: ${{ ! matrix.separate_compilation }}
-        working-directory: ./janestreet/lib/bonsai_test
-        run: opam exec -- dune runtest --profile release
-
-      - name: Run Bonsai web tests (release profile)
-        if: ${{ ! matrix.separate_compilation }}
-        working-directory: ./janestreet/lib/bonsai_web_test
-        run: opam exec -- dune runtest --profile release
-
-      - name: Run Bonsai web components' tests (release profile)
-        if: ${{ ! matrix.separate_compilation }}
-        working-directory: ./janestreet/lib/bonsai_web_components
-        run: opam exec -- dune runtest --profile release
