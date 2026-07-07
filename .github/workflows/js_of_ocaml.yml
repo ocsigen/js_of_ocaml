@@ -91,8 +91,8 @@ jobs:
             os-name: Ubuntu
             ocaml-name: "5.4.0+32bit"
             ocaml-compiler: "ocaml-variants.5.4.0+options,ocaml-option-32bit"
-            skip-effects: true # disabled for the same reason than `skip-test`
-            skip-test: true # the `time_now.0.17` package is pulled and doesn't work in 32 bits :(
+            skip-effects: false
+            skip-test: false
             skip-doc: true
           - os: macos-latest
             os-name: MacOS
