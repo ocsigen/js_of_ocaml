@@ -2017,6 +2017,29 @@ let hoisted_vars st =
     st;
   List.rev !vars
 
+(* All idents mentioned in a list of statements, skipping the dead
+   branches of constant conditionals (which [simpl] folds away, see
+   below). Nested functions are included: they can reference [var]s of
+   an enclosing scope. *)
+let live_idents_of_statements body =
+  let ids = ref IdentSet.empty in
+  (object (m)
+     inherit iter as super
+
+     method ident i = ids := IdentSet.add i !ids
+
+     method statement s =
+       match s with
+       | If_statement (ENum n, (iftrue, _), _) when Num.is_one n -> m#statement iftrue
+       | If_statement (ENum n, _, Some (iffalse, _)) when Num.is_zero n ->
+           m#statement iffalse
+       | If_statement (ENum n, _, None) when Num.is_zero n -> ()
+       | _ -> super#statement s
+  end)
+    #statements
+    body;
+  !ids
+
 (* - Split variable_statement *)
 (* - rewrite assign_op *)
 (* - rewrite function_expression into function_declaration *)
@@ -2163,9 +2186,23 @@ class simpl =
       | Block [ x ] -> fst x
       | _ -> s
 
-    method program p = m#statements_top (m#statements p)
+    (* Idents mentioned in the live code of the enclosing [var] scopes,
+       innermost first. Computed lazily: it is only needed when a
+       constant conditional with [var] declarations in its dead branch
+       is folded. *)
+    val mutable live_idents : IdentSet.t Lazy.t list = []
 
-    method function_body b = m#statements_top (m#statements b)
+    method private with_live_scope body f =
+      let saved = live_idents in
+      live_idents <- lazy (live_idents_of_statements body) :: saved;
+      let result = f () in
+      live_idents <- saved;
+      result
+
+    method program p = m#with_live_scope p (fun () -> m#statements_top (m#statements p))
+
+    method function_body b =
+      m#with_live_scope b (fun () -> m#statements_top (m#statements b))
 
     method private statements_top l =
       (* In strict mode, functions inside blocks are scoped to that
@@ -2243,15 +2280,20 @@ class simpl =
         in
         (* [var] declarations are function-scoped: even in a dropped
            branch, they declare the variable for the whole function.
-           Re-emit them (without their initializers) so that later
-           assignments do not reference an undeclared variable. Emitted
-           after the kept branch so that the idents it already declares
-           are deduplicated. *)
+           Re-emit the ones mentioned in live code (without their
+           initializers) so that later assignments do not reference an
+           undeclared variable. Emitted after the kept branch so that
+           the idents it already declares are deduplicated. *)
         match dropped with
         | None -> acc, is_var
         | Some dead ->
+            let mentioned =
+              match live_idents with
+              | [] -> fun _ -> true
+              | live :: _ -> fun id -> IdentSet.mem id (Lazy.force live)
+            in
             List.fold_left
-              (hoisted_vars dead)
+              (List.filter (hoisted_vars dead) ~f:mentioned)
               ~init:(acc, is_var)
               ~f:(fun (acc, prev_is_var) id ->
                 process_one
