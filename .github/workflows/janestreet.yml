@@ -29,29 +29,19 @@ jobs:
           - backend: js
             ocaml-name: ""
             ocaml-compiler: "5.3"
-            whole-program: false
           - backend: js
             ocaml-name: "OxCaml"
             ocaml-compiler: "ocaml-variants.5.2.0+ox"
-            whole-program: false
           - backend: wasm
             ocaml-name: ""
             ocaml-compiler: "5.3"
-            whole-program: false
-          # Whole-program compilation (dune release profile); only the
-          # Bonsai suites are run in this mode.
-          - backend: wasm
-            ocaml-name: ""
-            ocaml-compiler: "5.3"
-            whole-program: true
           - backend: wasm
             ocaml-name: "OxCaml"
             ocaml-compiler: "ocaml-variants.5.2.0+ox"
-            whole-program: false
 
     runs-on: ubuntu-latest
 
-    name: ${{ matrix.backend }} / ${{ matrix.ocaml-name != '' && matrix.ocaml-name || matrix.ocaml-compiler }}${{ matrix.whole-program && ' / Whole program' || '' }}
+    name: ${{ matrix.backend }} / ${{ matrix.ocaml-name != '' && matrix.ocaml-name || matrix.ocaml-compiler }}
 
     steps:
       - name: Update apt cache
@@ -155,71 +145,72 @@ jobs:
         run: npm install deasync
 
       - name: Run Base tests
-        if: ${{ !cancelled() && steps.install.outcome == 'success' && ! matrix.whole-program }}
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         working-directory: ./janestreet/lib/base
         run: opam exec -- dune runtest
 
       - name: Run Base bigstring tests
-        if: ${{ !cancelled() && steps.install.outcome == 'success' && ! matrix.whole-program }}
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         working-directory: ./janestreet/lib/base_bigstring
         run: opam exec -- dune runtest
 
       - name: Run Core tests
-        if: ${{ !cancelled() && steps.install.outcome == 'success' && ! matrix.whole-program }}
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         working-directory: ./janestreet/lib/core
         run: opam exec -- dune runtest
 
       - name: Run Bignum tests
-        if: ${{ !cancelled() && steps.install.outcome == 'success' && ! matrix.whole-program }}
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         working-directory: ./janestreet/lib/bignum
         run: opam exec -- dune runtest
 
       - name: Run Bin_prot tests
-        if: ${{ !cancelled() && steps.install.outcome == 'success' && ! matrix.whole-program }}
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         working-directory: ./janestreet/lib/bin_prot
         run: opam exec -- dune runtest
 
       - name: Run String_dict tests
-        if: ${{ !cancelled() && steps.install.outcome == 'success' && ! matrix.whole-program }}
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         working-directory: ./janestreet/lib/string_dict
         run: opam exec -- dune runtest
 
       - name: Run Zarith tests
-        if: ${{ !cancelled() && steps.install.outcome == 'success' && ! matrix.whole-program }}
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         working-directory: ./janestreet/lib/zarith_stubs_js
         run: opam exec -- dune runtest
 
       - name: Run Virtual_dom tests
-        if: ${{ !cancelled() && steps.install.outcome == 'success' && ! matrix.whole-program }}
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         working-directory: ./janestreet/lib/virtual_dom
         run: opam exec -- dune runtest
 
       - name: Run Bonsai tests
-        if: ${{ !cancelled() && steps.install.outcome == 'success' && ! matrix.whole-program }}
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         working-directory: ./janestreet/lib/bonsai_test
         run: opam exec -- dune runtest
 
       - name: Run Bonsai web tests
-        if: ${{ !cancelled() && steps.install.outcome == 'success' && ! matrix.whole-program }}
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         working-directory: ./janestreet/lib/bonsai_web_test
         run: opam exec -- dune runtest
 
       - name: Run Bonsai web components' tests
-        if: ${{ !cancelled() && steps.install.outcome == 'success' && ! matrix.whole-program }}
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         working-directory: ./janestreet/lib/bonsai_web_components
         run: opam exec -- dune runtest
 
+      # The release profile additionally exercises whole-program compilation
       - name: Run Bonsai tests (release profile)
-        if: ${{ !cancelled() && steps.install.outcome == 'success' && matrix.whole-program }}
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         working-directory: ./janestreet/lib/bonsai_test
         run: opam exec -- dune runtest --profile release
 
       - name: Run Bonsai web tests (release profile)
-        if: ${{ !cancelled() && steps.install.outcome == 'success' && matrix.whole-program }}
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         working-directory: ./janestreet/lib/bonsai_web_test
         run: opam exec -- dune runtest --profile release
 
       - name: Run Bonsai web components' tests (release profile)
-        if: ${{ !cancelled() && steps.install.outcome == 'success' && matrix.whole-program }}
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         working-directory: ./janestreet/lib/bonsai_web_components
         run: opam exec -- dune runtest --profile release
