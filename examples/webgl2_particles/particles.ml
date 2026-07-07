@@ -106,6 +106,29 @@ let get_source src_id =
      the newline following the opening script tag *)
   string (String.trim (to_string script##.text))
 
+(* wire a range input to a label; [on_input] receives the slider value and
+   returns the label text *)
+let setup_slider slider_id label_id on_input =
+  Opt.iter
+    (Opt.bind
+       (Dom_html.document##getElementById (string slider_id))
+       Dom_html.CoerceTo.input)
+    (fun slider ->
+      let label_text = Dom_html.document##createTextNode (Js.string "") in
+      Opt.iter
+        (Opt.bind
+           (Dom_html.document##getElementById (string label_id))
+           Dom_html.CoerceTo.element)
+        (fun span -> Dom.appendChild span label_text);
+      let refresh () =
+        label_text##.data := string (on_input (to_string slider##.value))
+      in
+      refresh ();
+      slider##.oninput :=
+        Dom_html.handler (fun _ ->
+            refresh ();
+            Js._true))
+
 let start () =
   let fps_text = Dom_html.document##createTextNode (Js.string "-") in
   Opt.iter
@@ -190,32 +213,19 @@ let start () =
   gl##clearColor (Js.float 0.02) (Js.float 0.02) (Js.float 0.05) (Js.float 1.);
   check_error gl;
   debug "ready";
-  (* the slider chooses how many of the allocated particles take part *)
+  (* the sliders choose how many particles take part and how fast time runs *)
   let nparticles = ref default_particles in
-  Opt.iter
-    (Opt.bind
-       (Dom_html.document##getElementById (string "count"))
-       Dom_html.CoerceTo.input)
-    (fun slider ->
-      let count_text = Dom_html.document##createTextNode (Js.string "") in
-      Opt.iter
-        (Opt.bind
-           (Dom_html.document##getElementById (string "count-label"))
-           Dom_html.CoerceTo.element)
-        (fun span -> Dom.appendChild span count_text);
-      let update () =
-        (match int_of_string_opt (to_string slider##.value) with
-        | Some n -> nparticles := max 1 (min max_particles n)
-        | None -> ());
-        count_text##.data := string (Printf.sprintf "%d" !nparticles)
-      in
-      slider##.max := string (string_of_int max_particles);
-      slider##.value := string (string_of_int !nparticles);
-      update ();
-      slider##.oninput :=
-        Dom_html.handler (fun _ ->
-            update ();
-            Js._true));
+  setup_slider "count" "count-label" (fun v ->
+      (match int_of_string_opt v with
+      | Some n -> nparticles := max 1 (min max_particles n)
+      | None -> ());
+      Printf.sprintf "%d" !nparticles);
+  let speed = ref 1.0 in
+  setup_slider "speed" "speed-label" (fun v ->
+      (match float_of_string_opt v with
+      | Some s -> speed := max 0. (min 4. s)
+      | None -> ());
+      Printf.sprintf "%.2f" !speed);
   (* the attractor follows the mouse, or orbits while unattended *)
   let attractor = ref None in
   canvas##.onmousemove :=
@@ -252,7 +262,7 @@ let start () =
     in
     (* simulation pass: no fragments, varyings captured into the other buffer *)
     gl##useProgram update_prog;
-    gl##uniform1f dt_loc (Js.number_of_float 0.016);
+    gl##uniform1f dt_loc (Js.number_of_float (0.016 *. !speed));
     gl##uniform2f attractor_loc (Js.number_of_float ax) (Js.number_of_float ay);
     gl##bindVertexArray (Opt.return read_vao);
     gl##bindTransformFeedback gl##._TRANSFORM_FEEDBACK_ (Opt.return write_tf);
