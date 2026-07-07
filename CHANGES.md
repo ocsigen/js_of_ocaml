@@ -30,6 +30,10 @@
   API, plus a `fonts` property on `Dom_html.document` (#2255)
 
 ## Bug fixes
+* Compiler: only fuse `if (e) var x = e; else var x = e2` into
+  `var x = e || e2` when the condition is effect-free; an effectful
+  condition structurally equal to the branch (e.g. two calls to the same
+  function) was evaluated once instead of twice (#2285)
 * Wasm: embed cmis when building a toplevel with separate compilation.
   `wasm_of_ocaml --toplevel` now reports `toplevel=true` in its build config
   and honors the flag when it comes through `--apply-build-config`, so dune

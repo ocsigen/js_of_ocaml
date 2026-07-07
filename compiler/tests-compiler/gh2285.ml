@@ -46,7 +46,7 @@ let%expect_test "if-fusion must not drop an effectful call" =
       print_string (if x then "T" else "F");
       print_newline ()
     |};
-  [%expect {| 1T |}]
+  [%expect {| 2T |}]
 
 (* Folding [if (0) { var y; }] must keep the (hoisted) declaration of [y];
    dropping it makes the later [y = 1] an assignment to an undeclared
