@@ -136,6 +136,12 @@ class type contextAttributes = object
   method preferLowPowerToHighPerformance : bool t prop
 
   method failIfMajorPerformanceCaveat : bool t prop
+
+  method powerPreference : js_string t prop
+
+  method desynchronized : bool t prop
+
+  method xrCompatible : bool t prop
 end
 
 let defaultContextAttributes =
@@ -149,6 +155,9 @@ let defaultContextAttributes =
        ; "preserveDrawingBuffer", inject _false
        ; "preferLowPowerToHighPerformance", inject _false
        ; "failIfMajorPerformanceCaveat", inject _false
+       ; "powerPreference", inject (string "default")
+       ; "desynchronized", inject _false
+       ; "xrCompatible", inject _false
       |])
 
 type buffer
