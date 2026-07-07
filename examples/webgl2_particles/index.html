@@ -37,6 +37,11 @@ canvas {
   color: #aaa;
   font-variant-numeric: tabular-nums;
 }
+.info input[type="range"] {
+  vertical-align: middle;
+  width: 160px;
+  accent-color: #67c;
+}
 </style>
 <script id="update-vertex-shader" type="x-shader/x-vertex">
   #version 300 es
@@ -112,7 +117,9 @@ canvas {
   <body>
     <h1>WebGL2 Particles</h1>
     <canvas id="canvas" height="600" width="600"></canvas>
-    <div class="info">50,000 particles simulated with transform feedback —
+    <div class="info">
+      <input id="count" type="range" min="1000" max="200000" step="1000" value="50000">
+      <span id="count-label"></span> particles simulated with transform feedback —
       move the mouse over the canvas — <span id="fps"></span> frames per second</div>
   </body>
 </html>

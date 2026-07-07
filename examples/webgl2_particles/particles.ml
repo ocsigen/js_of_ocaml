@@ -27,7 +27,11 @@ open Js_of_ocaml_lwt
 open Lwt
 open Js
 
-let nparticles = 50_000
+(* buffers are allocated for [max_particles]; the slider chooses how many are
+   simulated and drawn *)
+let max_particles = 200_000
+
+let default_particles = 50_000
 
 let error f =
   Printf.ksprintf
@@ -130,8 +134,8 @@ let start () =
   in
   (* interleaved particle state: position.xy, velocity.xy *)
   let initial_data =
-    let data = new%js Typed_array.float32Array (nparticles * 4) in
-    for i = 0 to nparticles - 1 do
+    let data = new%js Typed_array.float32Array (max_particles * 4) in
+    for i = 0 to max_particles - 1 do
       let x = Random.float 1.8 -. 0.9 and y = Random.float 1.8 -. 0.9 in
       (* mostly tangential initial velocity, for orbital motion *)
       let s = 0.4 +. Random.float 0.3 in
@@ -186,6 +190,32 @@ let start () =
   gl##clearColor (Js.float 0.02) (Js.float 0.02) (Js.float 0.05) (Js.float 1.);
   check_error gl;
   debug "ready";
+  (* the slider chooses how many of the allocated particles take part *)
+  let nparticles = ref default_particles in
+  Opt.iter
+    (Opt.bind
+       (Dom_html.document##getElementById (string "count"))
+       Dom_html.CoerceTo.input)
+    (fun slider ->
+      let count_text = Dom_html.document##createTextNode (Js.string "") in
+      Opt.iter
+        (Opt.bind
+           (Dom_html.document##getElementById (string "count-label"))
+           Dom_html.CoerceTo.element)
+        (fun span -> Dom.appendChild span count_text);
+      let update () =
+        (match int_of_string_opt (to_string slider##.value) with
+        | Some n -> nparticles := max 1 (min max_particles n)
+        | None -> ());
+        count_text##.data := string (Printf.sprintf "%d" !nparticles)
+      in
+      slider##.max := string (string_of_int max_particles);
+      slider##.value := string (string_of_int !nparticles);
+      update ();
+      slider##.oninput :=
+        Dom_html.handler (fun _ ->
+            update ();
+            Js._true));
   (* the attractor follows the mouse, or orbits while unattended *)
   let attractor = ref None in
   canvas##.onmousemove :=
@@ -228,7 +258,7 @@ let start () =
     gl##bindTransformFeedback gl##._TRANSFORM_FEEDBACK_ (Opt.return write_tf);
     gl##enable gl##._RASTERIZER_DISCARD_;
     gl##beginTransformFeedback gl##._POINTS;
-    gl##drawArrays gl##._POINTS 0 nparticles;
+    gl##drawArrays gl##._POINTS 0 !nparticles;
     gl##endTransformFeedback;
     gl##disable gl##._RASTERIZER_DISCARD_;
     gl##bindTransformFeedback gl##._TRANSFORM_FEEDBACK_ Opt.empty;
@@ -236,7 +266,7 @@ let start () =
     gl##useProgram render_prog;
     gl##clear gl##._COLOR_BUFFER_BIT_;
     gl##bindVertexArray (Opt.return draw_vao);
-    gl##drawArrays gl##._POINTS 0 nparticles;
+    gl##drawArrays gl##._POINTS 0 !nparticles;
     check_error gl;
     let now = get_time () in
     Queue.push (now -. !last_draw) draw_times;
