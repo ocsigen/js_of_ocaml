@@ -34,6 +34,11 @@
   `var x = e || e2` when the condition is effect-free; an effectful
   condition structurally equal to the branch (e.g. two calls to the same
   function) was evaluated once instead of twice (#2285)
+* Compiler: when simplification folds an `if` with a constant condition,
+  re-emit the `var` declarations of the dropped branch: they are hoisted,
+  so dropping them could turn later assignments into references to an
+  undeclared variable (a ReferenceError in strict mode) or crash the
+  minifier's name allocator (#2285)
 * Wasm: embed cmis when building a toplevel with separate compilation.
   `wasm_of_ocaml --toplevel` now reports `toplevel=true` in its build config
   and honors the flag when it comes through `--apply-build-config`, so dune

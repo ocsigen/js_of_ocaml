@@ -37,7 +37,7 @@ let f () =
     {|
     function f(param){
      var f = Stdlib[46];
-     return function(string){var _a_ = string; return caml_call1(f, _a_);};
+     return function(string){var _a_ = string, b; return caml_call1(f, _a_);};
     }
     //end
     |}]
