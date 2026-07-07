@@ -39,6 +39,10 @@ RUN opam install -y --deps-only ./js_of_ocaml-compiler.opam \
  && opam pin add ppxlib -n 0.35.0 \
  && opam clean
 
+# Enable the wasm_of_ocaml backend in the ci_setup-generated dune-workspace,
+# both for the bonsai bench build below and for `make bench` later on.
+ENV WASM_OF_OCAML=true
+
 # Prepare partial render table benchmark
 COPY --chown=opam:opam dune-project ./
 COPY --chown=opam:opam tools ./tools

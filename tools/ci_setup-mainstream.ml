@@ -9,6 +9,13 @@ let jane_root, wasmoo_root =
 
 let repo = Filename.concat jane_root "opam-repository/packages"
 
+(* Which backend this run targets, matching the generated [dune-workspace]
+   toggle. Used to emit backend-specific test expectations and tags. *)
+let target_is_wasm =
+  match Sys.getenv_opt "WASM_OF_OCAML" with
+  | Some ("true" | "1") -> true
+  | _ -> false
+
 let roots =
   [ "bonsai_web_components"; "string_dict"; "ppx_html"; "bonsai_bench"; "float_array" ]
 
@@ -41,7 +48,13 @@ let dune_workspace =
 (env
  (_
   (env-vars (TESTING_FRAMEWORK inline-test))
-  (js_of_ocaml (enabled_if false))
+  (wasm_of_ocaml (enabled_if %{env:WASM_OF_OCAML=false}))
+  ;; Jane Street's runtime.js stubs assume string and bytes share a
+  ;; representation (they build with use-js-string=false), so run the js
+  ;; tests the same way.
+  (js_of_ocaml
+   (enabled_if %{env:JS_OF_OCAML=false})
+   (flags (:standard --disable use-js-string)))
   (flags :standard -alert -all -warn-error -7-8-27-30-32-34-37-49-52-55 -w -7-27-30-32-34-37-49-52-55-56-58-67-69)))
 |}
 
@@ -149,7 +162,9 @@ index cbb9bd5..b5b5a03 100644
      |}];
    gen_tests Tests.float_nan;
 +  [%expect
-+    {| 7f f8 00 00 00 00 00 01 -> NAN |}];
++    {| 7f f8 00 00 00 00 00 |bp}
+      ^ (if target_is_wasm then "01" else "00")
+      ^ {bp| -> NAN |}];
 +(*
    Expect_test_patterns.require_match
      [%here]
@@ -485,3 +500,71 @@ let () =
           failwith (Printf.sprintf "%s %d while patching %s" name i dir))
     patches;
   List.iter (fun p -> Sys.remove (Printf.sprintf "%s/lib/%s" jane_root p)) removes
+
+(****)
+
+(* The forked packages and the [dune] patches above bake in an inline-test
+   tag set that was tuned for wasm: it drops [no-js]/[no-wasm]/[64-bits-only]
+   but never [wasm-only] or [js-only]. A single [(inline_tests (flags ...))]
+   stanza is shared by the [js] and [wasm] runners, so we cannot vary the
+   flags per mode. Each job however enables a single backend (see the
+   generated [dune-workspace], keyed on [WASM_OF_OCAML]/[JS_OF_OCAML]), so we
+   finish by dropping the tag reserved for the *other* backend: [wasm-only]
+   when targeting js, [js-only] when targeting wasm. *)
+
+let extra_drop_tag = if target_is_wasm then "js-only" else "wasm-only"
+
+let contains ~sub s =
+  let sub_len = String.length sub and n = String.length s in
+  let rec loop i =
+    if i + sub_len > n
+    then false
+    else if String.equal (String.sub s i sub_len) sub
+    then true
+    else loop (i + 1)
+  in
+  loop 0
+
+let replace_all ~sub ~by s =
+  let sub_len = String.length sub and n = String.length s in
+  if sub_len = 0
+  then s
+  else begin
+    let buf = Buffer.create n in
+    let i = ref 0 in
+    while !i < n do
+      if !i + sub_len <= n && String.equal (String.sub s !i sub_len) sub
+      then (
+        Buffer.add_string buf by;
+        i := !i + sub_len)
+      else (
+        Buffer.add_char buf s.[!i];
+        incr i)
+    done;
+    Buffer.contents buf
+  end
+
+let rec dune_files dir =
+  Sys.readdir dir
+  |> Array.to_list
+  |> List.concat_map (fun name ->
+      let path = Filename.concat dir name in
+      if try Sys.is_directory path with Sys_error _ -> false
+      then dune_files path
+      else if String.equal name "dune"
+      then [ path ]
+      else [])
+
+let () =
+  let anchor = "(inline_tests (flags " in
+  let by = Printf.sprintf "(inline_tests (flags -drop-tag %s " extra_drop_tag in
+  let already = "-drop-tag " ^ extra_drop_tag in
+  List.iter
+    (fun f ->
+      let contents = In_channel.(with_open_bin f @@ input_all) in
+      if contains ~sub:anchor contents && not (contains ~sub:already contents)
+      then
+        Out_channel.(
+          with_open_bin f
+          @@ fun ch -> output_string ch (replace_all ~sub:anchor ~by contents)))
+    (dune_files (Filename.concat jane_root "lib"))
