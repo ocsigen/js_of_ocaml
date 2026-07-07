@@ -143,6 +143,7 @@ jobs:
           opam exec -- dune exec --root js_of_ocaml tools/ci_setup.exe janestreet js_of_ocaml
 
       - name: Install js_of_ocaml and its test dependencies
+        id: install
         working-directory: ./js_of_ocaml
         run: opam install . -t
 
@@ -154,71 +155,71 @@ jobs:
         run: npm install deasync
 
       - name: Run Base tests
-        if: ${{ ! matrix.whole-program }}
+        if: ${{ !cancelled() && steps.install.outcome == 'success' && ! matrix.whole-program }}
         working-directory: ./janestreet/lib/base
         run: opam exec -- dune runtest
 
       - name: Run Base bigstring tests
-        if: ${{ ! matrix.whole-program }}
+        if: ${{ !cancelled() && steps.install.outcome == 'success' && ! matrix.whole-program }}
         working-directory: ./janestreet/lib/base_bigstring
         run: opam exec -- dune runtest
 
       - name: Run Core tests
-        if: ${{ ! matrix.whole-program }}
+        if: ${{ !cancelled() && steps.install.outcome == 'success' && ! matrix.whole-program }}
         working-directory: ./janestreet/lib/core
         run: opam exec -- dune runtest
 
       - name: Run Bignum tests
-        if: ${{ ! matrix.whole-program }}
+        if: ${{ !cancelled() && steps.install.outcome == 'success' && ! matrix.whole-program }}
         working-directory: ./janestreet/lib/bignum
         run: opam exec -- dune runtest
 
       - name: Run Bin_prot tests
-        if: ${{ ! matrix.whole-program }}
+        if: ${{ !cancelled() && steps.install.outcome == 'success' && ! matrix.whole-program }}
         working-directory: ./janestreet/lib/bin_prot
         run: opam exec -- dune runtest
 
       - name: Run String_dict tests
-        if: ${{ ! matrix.whole-program }}
+        if: ${{ !cancelled() && steps.install.outcome == 'success' && ! matrix.whole-program }}
         working-directory: ./janestreet/lib/string_dict
         run: opam exec -- dune runtest
 
       - name: Run Zarith tests
-        if: ${{ ! matrix.whole-program }}
+        if: ${{ !cancelled() && steps.install.outcome == 'success' && ! matrix.whole-program }}
         working-directory: ./janestreet/lib/zarith_stubs_js
         run: opam exec -- dune runtest
 
       - name: Run Virtual_dom tests
-        if: ${{ ! matrix.whole-program }}
+        if: ${{ !cancelled() && steps.install.outcome == 'success' && ! matrix.whole-program }}
         working-directory: ./janestreet/lib/virtual_dom
         run: opam exec -- dune runtest
 
       - name: Run Bonsai tests
-        if: ${{ ! matrix.whole-program }}
+        if: ${{ !cancelled() && steps.install.outcome == 'success' && ! matrix.whole-program }}
         working-directory: ./janestreet/lib/bonsai_test
         run: opam exec -- dune runtest
 
       - name: Run Bonsai web tests
-        if: ${{ ! matrix.whole-program }}
+        if: ${{ !cancelled() && steps.install.outcome == 'success' && ! matrix.whole-program }}
         working-directory: ./janestreet/lib/bonsai_web_test
         run: opam exec -- dune runtest
 
       - name: Run Bonsai web components' tests
-        if: ${{ ! matrix.whole-program }}
+        if: ${{ !cancelled() && steps.install.outcome == 'success' && ! matrix.whole-program }}
         working-directory: ./janestreet/lib/bonsai_web_components
         run: opam exec -- dune runtest
 
       - name: Run Bonsai tests (release profile)
-        if: ${{ matrix.whole-program }}
+        if: ${{ !cancelled() && steps.install.outcome == 'success' && matrix.whole-program }}
         working-directory: ./janestreet/lib/bonsai_test
         run: opam exec -- dune runtest --profile release
 
       - name: Run Bonsai web tests (release profile)
-        if: ${{ matrix.whole-program }}
+        if: ${{ !cancelled() && steps.install.outcome == 'success' && matrix.whole-program }}
         working-directory: ./janestreet/lib/bonsai_web_test
         run: opam exec -- dune runtest --profile release
 
       - name: Run Bonsai web components' tests (release profile)
-        if: ${{ matrix.whole-program }}
+        if: ${{ !cancelled() && steps.install.outcome == 'success' && matrix.whole-program }}
         working-directory: ./janestreet/lib/bonsai_web_components
         run: opam exec -- dune runtest --profile release
