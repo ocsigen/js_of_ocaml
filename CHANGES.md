@@ -39,6 +39,10 @@
   so dropping them could turn later assignments into references to an
   undeclared variable (a ReferenceError in strict mode) or crash the
   minifier's name allocator (#2285)
+* Compiler: record variable uses occurring in catch-parameter
+  destructuring defaults (`catch ({x = someVar})`) in the free-variable
+  analysis; the short-name allocator could otherwise reuse the name of
+  the referenced variable, making the default read the wrong one (#2285)
 * Wasm: embed cmis when building a toplevel with separate compilation.
   `wasm_of_ocaml --toplevel` now reports `toplevel=true` in its build config
   and honors the flag when it comes through `--apply-build-config`, so dune
