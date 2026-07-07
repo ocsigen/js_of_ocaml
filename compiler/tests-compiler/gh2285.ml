@@ -77,10 +77,10 @@ try {
         {|
         $ cat "test.min.js"
           1: "use strict";var
-          2: z;try{y=1;z=2;console.log("y =",y,"z =",z)}catch(f){console.log("caught:",f.name)}
+          2: z,y;try{y=1;z=2;console.log("y =",y,"z =",z)}catch(f){console.log("caught:",f.name)}
         y = 1 z = 2
 
-        caught: ReferenceError
+        y = 1 z = 2
         |}])
 
 (* Uses occurring in catch-parameter destructuring defaults must be recorded

@@ -1978,6 +1978,36 @@ let use_fun_context l =
     false
   with True -> true
 
+(* [var]-bound idents of a statement, ignoring nested functions and
+   classes (whose [var]s are scoped to their own body). *)
+let hoisted_vars st =
+  let vars = ref [] in
+  (object
+     inherit iter as super
+
+     (* [var] declarations cannot occur inside expressions, except
+        within function and class bodies, which have their own scope. *)
+     method expression _ = ()
+
+     method statement s =
+       match s with
+       | Function_declaration _ | Class_declaration _ -> ()
+       | _ -> super#statement s
+
+     method variable_declaration k d =
+       match k with
+       | Var -> vars := List.rev_append (bound_idents_of_variable_declaration d) !vars
+       | Let | Const | Using | AwaitUsing -> ()
+
+     method for_binding k b =
+       match k with
+       | Var -> vars := List.rev_append (bound_idents_of_binding b) !vars
+       | Let | Const | Using | AwaitUsing -> ()
+  end)
+    #statement
+    st;
+  List.rev !vars
+
 (* - Split variable_statement *)
 (* - rewrite assign_op *)
 (* - rewrite function_expression into function_declaration *)
@@ -2143,20 +2173,21 @@ class simpl =
     method statements s =
       (* Process a single statement: var->expr conversion and if simplifications.
          Returns (acc, is_var) where is_var indicates if result is a var statement. *)
-      let process_one acc prev_is_var st loc =
+      let rec process_one acc prev_is_var st loc =
         (* Drop branches of if-statements with constant conditions before
            visiting, so that variables declared in dropped branches are not
            added to the [declared] set. *)
-        let st, loc =
+        let st, loc, dropped =
           match st with
           (* if (1) e1 ... --> e1 *)
-          | If_statement (ENum n, (iftrue, iftrue_loc), _) when Num.is_one n ->
-              iftrue, iftrue_loc
+          | If_statement (ENum n, (iftrue, iftrue_loc), iffalse) when Num.is_one n ->
+              iftrue, iftrue_loc, Option.map ~f:fst iffalse
           (* if (0) e1 else e2 --> e2 *)
-          | If_statement (ENum n, _, Some (iffalse, iffalse_loc)) when Num.is_zero n ->
-              iffalse, iffalse_loc
-          | If_statement (ENum n, _, None) when Num.is_zero n -> Empty_statement, loc
-          | _ -> st, loc
+          | If_statement (ENum n, (iftrue, _), Some (iffalse, iffalse_loc))
+            when Num.is_zero n -> iffalse, iffalse_loc, Some iftrue
+          | If_statement (ENum n, (iftrue, _), None) when Num.is_zero n ->
+              Empty_statement, loc, Some iftrue
+          | _ -> st, loc, None
         in
         let st = m#with_in_var_sequence prev_is_var m#statement st in
         let is_var =
@@ -2201,7 +2232,24 @@ class simpl =
           *)
           | _ -> (st, loc) :: acc
         in
-        acc, is_var
+        (* [var] declarations are function-scoped: even in a dropped
+           branch, they declare the variable for the whole function.
+           Re-emit them (without their initializers) so that later
+           assignments do not reference an undeclared variable. Emitted
+           after the kept branch so that the idents it already declares
+           are deduplicated. *)
+        match dropped with
+        | None -> acc, is_var
+        | Some dead ->
+            List.fold_left
+              (hoisted_vars dead)
+              ~init:(acc, is_var)
+              ~f:(fun (acc, prev_is_var) id ->
+                process_one
+                  acc
+                  prev_is_var
+                  (Variable_statement (Var, [ DeclIdent (id, None) ]))
+                  loc)
       in
       (* Process statements: expands multi-declaration var statements,
          adjacency tracking for var->expr conversion, and if simplifications.
