@@ -33,14 +33,12 @@ Installation and usage documentation can be found in [the js_of_ocaml manual](ht
 ## Running the test suite
 
 The following commands can be used to set up an opam switch and run the test suite.
+A recent Node.js and [Binaryen](https://github.com/WebAssembly/binaryen) need to be
+available on the PATH.
 ```
-opam switch create wasm-tests 4.14.0
+opam switch create wasm-tests 5.3.0
 eval $(opam env --switch=wasm-tests)
-opam pin add -n base.v0.16.1 git@github.com:ocaml-wasm/base#wasm
-opam pin add -n time_now.v0.16.1 git@github.com:ocaml-wasm/time_now#wasm
-opam pin add -n ppx_inline_test.v0.16.1 git@github.com:ocaml-wasm/ppx_inline_test#wasm
-opam pin add -n ppx_expect.v0.16.1 git@github.com:ocaml-wasm/ppx_expect#wasm
-opam pin add -y -n --with-version 6.0.0 .
+opam pin add -y -n --with-version 6.4.1 .
 opam install . --deps-only --with-test
 WASM_OF_OCAML=true dune build @runtest-wasm
 ```
