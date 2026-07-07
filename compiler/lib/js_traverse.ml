@@ -1269,6 +1269,15 @@ class free =
             | Some (Some id, block) ->
                 let tw = {<state_ = empty; level = same_level>} in
                 let block = tw#statements block in
+                (* Visit the catch parameter so that uses occurring in
+                   destructuring default expressions and computed
+                   property keys are recorded; the idents it binds are
+                   removed from [use] below. *)
+                let id =
+                  match tw#formal_parameter_list { list = [ id ]; rest = None } with
+                  | { list = [ id ]; rest = None } -> id
+                  | _ -> assert false
+                in
                 tw#record_block (Catch id);
                 (* special merge here *)
                 (* we need to propagate both def and use .. *)

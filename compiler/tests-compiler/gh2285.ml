@@ -122,8 +122,8 @@ console.log(outer());
           2: outer(){var
           3: a="GOOD";function
           4: b(){var
-          5: a="BAD";try{throw{}}catch({p:f=a}){return f}}return b()}console.log(outer());
+          5: b="BAD";try{throw{}}catch({p:f=a}){return f}}return b()}console.log(outer());
         GOOD
 
-        BAD
+        GOOD
         |}])
