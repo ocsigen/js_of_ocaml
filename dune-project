@@ -142,7 +142,6 @@
   (ppxlib (>= 0.33))
   (re :with-test)
   (cmdliner (>= 2.0))
-  (opam-format :with-test)
   (sedlex (>= 2.3))
   (menhir (>= 20180523))
   menhirLib
@@ -150,7 +149,8 @@
   (yojson (>= 2.1))
   conf-binaryen)
  (depopts
-  ocamlfind)
+  ocamlfind
+  opam-format)
  (conflicts
   (ocamlfind (< 1.5.1))
   (js_of_ocaml (< 3.0))

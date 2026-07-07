@@ -179,12 +179,6 @@ jobs:
       - run: opam install . --best-effort --solver builtin-mccs+glpk
         if: ${{ matrix.skip-test }}
 
-      - name: Pin specific packages for OxCaml
-        # With OxCaml fixes
-        run: |
-          opam pin add opam-core -n 2.5.1+ox
-        if: ${{ endsWith(matrix.ocaml-compiler, '+ox') }}
-
       - run: opam install . --deps-only --with-test
         # Install the test dependencies
         if: ${{ !matrix.skip-test }}
