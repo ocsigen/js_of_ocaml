@@ -185,19 +185,6 @@ jobs:
           opam pin add opam-core -n 2.5.1+ox
         if: ${{ endsWith(matrix.ocaml-compiler, '+ox') }}
 
-      # oxcaml-dune-patches pins dune <= 3.21, but the project requires
-      # dune >= 3.23. Re-pin the package with the dune version constraint
-      # stripped — opam re-checks dependency constraints on every install,
-      # so a one-shot --ignore-constraints-on flag isn't enough.
-      - name: Drop dune version constraint from oxcaml-dune-patches (OxCaml)
-        if: ${{ endsWith(matrix.ocaml-compiler, '+ox') }}
-        run: |
-          DIR=$(mktemp -d)
-          opam show --raw oxcaml-dune-patches \
-            | perl -0777 -pe 's/"dune"\s+\{build & \([^)]+\)\}/"dune" {build}/' \
-            > "$DIR/oxcaml-dune-patches.opam"
-          opam pin add oxcaml-dune-patches "$DIR" -k path -n -y
-
       - run: opam install . --deps-only --with-test
         # Install the test dependencies
         if: ${{ !matrix.skip-test }}
