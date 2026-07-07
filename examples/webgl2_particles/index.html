@@ -52,6 +52,8 @@ canvas {
 
   uniform float u_dt;
   uniform vec2 u_attractor;
+  uniform float u_gravity;
+  uniform float u_damping;
 
   out vec2 v_position;
   out vec2 v_velocity;
@@ -60,8 +62,11 @@ canvas {
     vec2 d = u_attractor - a_position;
     float r = max(length(d), 0.05);
     vec2 dir = d / r;
-    float force = min(0.35 / (r * r), 3.0);
-    vec2 vel = (a_velocity + dir * force * u_dt) * 0.999;
+    float force = min(u_gravity / (r * r), 3.0);
+    // scale the per-frame damping by the timestep so slow motion (or pause)
+    // does not damp more than real time
+    float damping = pow(u_damping, u_dt * 62.5);
+    vec2 vel = (a_velocity + dir * force * u_dt) * damping;
     vec2 pos = a_position + vel * u_dt;
     if (pos.x < -1.0 || pos.x > 1.0) { vel.x = -vel.x; pos.x = clamp(pos.x, -1.0, 1.0); }
     if (pos.y < -1.0 || pos.y > 1.0) { vel.y = -vel.y; pos.y = clamp(pos.y, -1.0, 1.0); }
@@ -78,6 +83,23 @@ canvas {
   void main() {
     // never runs: rasterization is discarded during the simulation pass
     color = vec4(1.0);
+  }
+</script>
+<script id="fade-vertex-shader" type="x-shader/x-vertex">
+  #version 300 es
+  // fullscreen triangle from gl_VertexID, no vertex attributes needed
+  void main() {
+    vec2 p = vec2(float((gl_VertexID << 1) & 2), float(gl_VertexID & 2));
+    gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0);
+  }
+</script>
+<script id="fade-fragment-shader" type="x-shader/x-fragment">
+  #version 300 es
+  precision mediump float;
+  uniform float u_fade;
+  out vec4 color;
+  void main() {
+    color = vec4(0.02, 0.02, 0.05, u_fade);
   }
 </script>
 <script id="render-vertex-shader" type="x-shader/x-vertex">
@@ -122,7 +144,13 @@ canvas {
       <span id="count-label"></span> particles —
       speed <input id="speed" type="range" min="0" max="3" step="0.05" value="1">
       ×<span id="speed-label"></span> —
-      <span id="fps"></span> frames per second<br>
+      <span id="fps"></span> fps<br>
+      gravity <input id="gravity" type="range" min="0.02" max="2" step="0.01" value="0.35">
+      <span id="gravity-label"></span> —
+      damping <input id="damping" type="range" min="0.98" max="1.002" step="0.0005" value="0.999">
+      <span id="damping-label"></span> —
+      trails <input id="trail" type="range" min="0" max="0.98" step="0.02" value="0.2">
+      <span id="trail-label"></span><br>
       simulated with transform feedback — move the mouse over the canvas
     </div>
   </body>
