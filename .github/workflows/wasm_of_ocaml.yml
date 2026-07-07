@@ -124,10 +124,7 @@ jobs:
         run: opam pin . -n --with-version 6.0.1+ox
 
       - name: Pin specific packages for OxCaml
-        run: |
-          opam pin add gen_js_api -n 1.1.2+ox
-          opam pin add zarith -n 1.14+ox
-          opam pin add sedlex -n 3.6+ox
+        run: opam pin add sedlex -n 3.6+ox
         if: ${{ endsWith(matrix.ocaml-compiler, '+ox') }}
 
       - name: Install wasm_of_ocaml and its test dependencies
