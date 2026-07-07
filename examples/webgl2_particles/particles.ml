@@ -155,6 +155,13 @@ let start () =
       (get_source "render-vertex-shader")
       (get_source "render-fragment-shader")
   in
+  (* fades the previous frame towards the background color, leaving trails *)
+  let fade_prog =
+    create_program
+      gl
+      (get_source "fade-vertex-shader")
+      (get_source "fade-fragment-shader")
+  in
   (* interleaved particle state: position.xy, velocity.xy *)
   let initial_data =
     let data = new%js Typed_array.float32Array (max_particles * 4) in
@@ -208,9 +215,15 @@ let start () =
   gl##bindBuffer_ gl##._ARRAY_BUFFER_ Opt.empty;
   let dt_loc = gl##getUniformLocation update_prog (string "u_dt") in
   let attractor_loc = gl##getUniformLocation update_prog (string "u_attractor") in
+  let gravity_loc = gl##getUniformLocation update_prog (string "u_gravity") in
+  let damping_loc = gl##getUniformLocation update_prog (string "u_damping") in
+  let fade_loc = gl##getUniformLocation fade_prog (string "u_fade") in
   gl##enable gl##._BLEND;
-  gl##blendFunc gl##._SRC_ALPHA_ gl##._ONE;
   gl##clearColor (Js.float 0.02) (Js.float 0.02) (Js.float 0.05) (Js.float 1.);
+  gl##clear gl##._COLOR_BUFFER_BIT_;
+  (* keep the canvas alpha at 1: the fade pass must only dim the color
+     channels, not make the canvas translucent *)
+  gl##colorMask _true _true _true _false;
   check_error gl;
   debug "ready";
   (* the sliders choose how many particles take part and how fast time runs *)
@@ -226,6 +239,24 @@ let start () =
       | Some s -> speed := max 0. (min 4. s)
       | None -> ());
       Printf.sprintf "%.2f" !speed);
+  let gravity = ref 0.35 in
+  setup_slider "gravity" "gravity-label" (fun v ->
+      (match float_of_string_opt v with
+      | Some g -> gravity := max 0. (min 5. g)
+      | None -> ());
+      Printf.sprintf "%.2f" !gravity);
+  let damping = ref 0.999 in
+  setup_slider "damping" "damping-label" (fun v ->
+      (match float_of_string_opt v with
+      | Some d -> damping := max 0.9 (min 1.01 d)
+      | None -> ());
+      Printf.sprintf "%.4f" !damping);
+  let trail = ref 0.2 in
+  setup_slider "trail" "trail-label" (fun v ->
+      (match float_of_string_opt v with
+      | Some t -> trail := max 0. (min 0.98 t)
+      | None -> ());
+      Printf.sprintf "%.2f" !trail);
   (* the attractor follows the mouse, or orbits while unattended *)
   let attractor = ref None in
   canvas##.onmousemove :=
@@ -264,6 +295,8 @@ let start () =
     gl##useProgram update_prog;
     gl##uniform1f dt_loc (Js.number_of_float (0.016 *. !speed));
     gl##uniform2f attractor_loc (Js.number_of_float ax) (Js.number_of_float ay);
+    gl##uniform1f gravity_loc (Js.number_of_float !gravity);
+    gl##uniform1f damping_loc (Js.number_of_float !damping);
     gl##bindVertexArray (Opt.return read_vao);
     gl##bindTransformFeedback gl##._TRANSFORM_FEEDBACK_ (Opt.return write_tf);
     gl##enable gl##._RASTERIZER_DISCARD_;
@@ -272,9 +305,15 @@ let start () =
     gl##endTransformFeedback;
     gl##disable gl##._RASTERIZER_DISCARD_;
     gl##bindTransformFeedback gl##._TRANSFORM_FEEDBACK_ Opt.empty;
-    (* render pass: draw the freshly written buffer *)
+    (* fade pass: dim the previous frame instead of clearing it *)
+    gl##useProgram fade_prog;
+    gl##bindVertexArray Opt.empty;
+    gl##blendFunc gl##._SRC_ALPHA_ gl##._ONE_MINUS_SRC_ALPHA_;
+    gl##uniform1f fade_loc (Js.number_of_float (1. -. !trail));
+    gl##drawArrays gl##._TRIANGLES 0 3;
+    (* render pass: draw the freshly written buffer additively on top *)
     gl##useProgram render_prog;
-    gl##clear gl##._COLOR_BUFFER_BIT_;
+    gl##blendFunc gl##._SRC_ALPHA_ gl##._ONE;
     gl##bindVertexArray (Opt.return draw_vao);
     gl##drawArrays gl##._POINTS 0 !nparticles;
     check_error gl;
