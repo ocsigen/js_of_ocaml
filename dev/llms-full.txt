@@ -26275,7 +26275,8 @@ val loadstart : Dom_html.mediaEvent Js.t typ
 val lostpointercapture : Dom_html.pointerEvent Js.t typ
 ```
 ```ocaml
-val message : Dom_html.messageEvent Js.t typ
+val message : 
+  (Js.Unsafe.top, Js.Unsafe.any Js.opt) Dom_html.messageEvent Js.t typ
 ```
 ```ocaml
 val pause : Dom_html.mediaEvent Js.t typ
@@ -26595,7 +26596,9 @@ val wheelEvent : event Js.t -> mousewheelEvent Js.t Js.opt
 val popStateEvent : event Js.t -> popStateEvent Js.t Js.opt
 ```
 ```ocaml
-val messageEvent : event Js.t -> messageEvent Js.t Js.opt
+val messageEvent : 
+  event Js.t ->
+  (Js.Unsafe.top, Js.Unsafe.any Js.opt) messageEvent Js.t Js.opt
 ```
 ```ocaml
 val inputEvent : event Js.t -> inputEvent Js.t Js.opt
@@ -26868,7 +26871,7 @@ val loadstart : mediaEvent Js.t typ
 val lostpointercapture : pointerEvent Js.t typ
 ```
 ```ocaml
-val message : messageEvent Js.t typ
+val message : (Js.Unsafe.top, Js.Unsafe.any Js.opt) messageEvent Js.t typ
 ```
 ```ocaml
 val pause : mediaEvent Js.t typ
@@ -33601,12 +33604,13 @@ method media : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
 
 # Class type `Dom_html.messageEvent`
 
+The single shared binding for the DOM `MessageEvent` interface, reused by every "message" event source (`Worker`, `WebSocket`, `EventSource`, [`MessageChannel.messagePort`](./Js_of_ocaml-MessageChannel-class-type-messagePort.md), `BroadcastChannel` and `window.postMessage`). The type parameter `'target` is the type of the event target (the worker, socket, port, window, ... the listener is attached to) and `'data` is the type of the `data` payload.
+
 ```ocaml
-inherit event
+inherit 'target Js_of_ocaml__.Dom.event
 ```
 ```ocaml
-method data : Js_of_ocaml__.Js.Unsafe.any Js_of_ocaml__.Js.opt
-                Js_of_ocaml__.Js.readonly_prop
+method data : 'data Js_of_ocaml__.Js.readonly_prop
 ```
 ```ocaml
 method origin : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
@@ -33620,6 +33624,14 @@ method lastEventId : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
 method source : Js_of_ocaml__.Js.Unsafe.any Js_of_ocaml__.Js.opt
                   Js_of_ocaml__.Js.readonly_prop
 ```
+The `source` of a message event is a `MessageEventSource`, i.e. one of a `WindowProxy`, a `MessageChannel.messagePort` or a `ServiceWorker.serviceWorker`; `null` when there is none.
+
+```ocaml
+method ports : Js_of_ocaml__.Js.Unsafe.any Js_of_ocaml__.Js.js_array
+                 Js_of_ocaml__.Js.t
+                 Js_of_ocaml__.Js.readonly_prop
+```
+The `MessagePort`s associated with the message. Coerce the elements to `MessageChannel.messagePort` to use them.
 
 
 ---
@@ -37750,8 +37762,10 @@ class type  transitionEvent = object ... end
 class type  mediaEvent = object ... end
 ```
 ```ocaml
-class type  messageEvent = object ... end
+class type ['target, 'data] messageEvent = object ... end
 ```
+The single shared binding for the DOM `MessageEvent` interface, reused by every "message" event source (`Worker`, `WebSocket`, `EventSource`, [`MessageChannel.messagePort`](./Js_of_ocaml-MessageChannel-class-type-messagePort.md), `BroadcastChannel` and `window.postMessage`). The type parameter `'target` is the type of the event target (the worker, socket, port, window, ... the listener is attached to) and `'data` is the type of the `data` payload.
+
 ```ocaml
 class type  staticRange = object ... end
 ```
@@ -38762,7 +38776,7 @@ val opt_tagged : element Js.t Js.opt -> taggedElement option
 type taggedEvent = 
   | MouseEvent of mouseEvent Js.t
   | KeyboardEvent of keyboardEvent Js.t
-  | MessageEvent of messageEvent Js.t
+  | MessageEvent of (Js.Unsafe.top, Js.Unsafe.any Js.opt) messageEvent Js.t
   | MousewheelEvent of mousewheelEvent Js.t
   | PopStateEvent of popStateEvent Js.t
   | OtherEvent of event Js.t
@@ -44729,7 +44743,9 @@ method onopen : ('self Js_of_ocaml__.Js.t,
 ```
 ```ocaml
 method onmessage : ('self Js_of_ocaml__.Js.t,
-                     'self messageEvent Js_of_ocaml__.Js.t)
+                     ('self, Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t)
+                       Js_of_ocaml__.Dom_html.messageEvent
+                       Js_of_ocaml__.Js.t)
                      Js_of_ocaml__.Dom.event_listener
                      Js_of_ocaml__.Js.writeonly_prop
 ```
@@ -44738,27 +44754,6 @@ method onerror : ('self Js_of_ocaml__.Js.t,
                    'self Js_of_ocaml__.Dom.event Js_of_ocaml__.Js.t)
                    Js_of_ocaml__.Dom.event_listener
                    Js_of_ocaml__.Js.writeonly_prop
-```
-
-
----
-
-# Class type `EventSource.messageEvent`
-
-```ocaml
-inherit 'a Js_of_ocaml__.Dom.event
-```
-```ocaml
-method data : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
-                Js_of_ocaml__.Js.readonly_prop
-```
-```ocaml
-method origin : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
-                  Js_of_ocaml__.Js.readonly_prop
-```
-```ocaml
-method lastEventId : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
-                       Js_of_ocaml__.Js.readonly_prop
 ```
 
 
@@ -44785,8 +44780,11 @@ type state =
   | CLOSED
 ```
 ```ocaml
-class type 'a messageEvent = object ... end
+type 'a messageEvent = ('a, Js.js_string Js.t) Dom_html.messageEvent
 ```
+The type parameter `'a` is the type of the event target; the `data` payload of an `EventSource` message is always `js_string t`.
+
+deprecated Use Dom\_html.messageEvent, the single shared binding.
 ```ocaml
 class type  eventSource = object ... end
 ```
@@ -48978,42 +48976,9 @@ method port2 : messagePort Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
 
 ---
 
-# Class type `MessageChannel.messageEvent`
-
-A message delivered to a `message` / `messageerror` listener (also used by [`Worker`](./Js_of_ocaml-Worker.md), [`ServiceWorker`](./Js_of_ocaml-ServiceWorker.md) and `postMessage` on a [`messagePort`](./Js_of_ocaml-MessageChannel-class-type-messagePort.md)). The type parameter `'a` is the type of the `data` payload.
-
-```ocaml
-inherit Js_of_ocaml__.Dom_html.event
-```
-```ocaml
-method data : 'a Js_of_ocaml__.Js.readonly_prop
-```
-```ocaml
-method origin : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
-                  Js_of_ocaml__.Js.readonly_prop
-```
-```ocaml
-method lastEventId : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
-                       Js_of_ocaml__.Js.readonly_prop
-```
-```ocaml
-method source : Js_of_ocaml__.Js.Unsafe.any Js_of_ocaml__.Js.opt
-                  Js_of_ocaml__.Js.readonly_prop
-```
-The `source` of a message event is a `MessageEventSource`, i.e. one of a `WindowProxy`, a `messagePort` or a `ServiceWorker.serviceWorker`; `null` when there is none.
-
-```ocaml
-method ports : messagePort Js_of_ocaml__.Js.t Js_of_ocaml__.Js.js_array
-                 Js_of_ocaml__.Js.t
-                 Js_of_ocaml__.Js.readonly_prop
-```
-
-
----
-
 # Class type `MessageChannel.messageEventInit`
 
-Initializer for [`messageEvent`](./Js_of_ocaml-MessageChannel.md#val-messageEvent). All fields are optional; create an empty record with [`empty_message_event_init`](./Js_of_ocaml-MessageChannel.md#val-empty_message_event_init) and populate the ones you need. The `data` payload is injected as [`Js.Unsafe.any`](./Js_of_ocaml-Js-Unsafe.md#type-any); the resulting event is read back at whatever type the caller annotates [`messageEvent_with_init`](./Js_of_ocaml-MessageChannel.md#val-messageEvent_with_init) with.
+Initializer for a [`Dom_html.messageEvent`](./Js_of_ocaml-Dom_html-class-type-messageEvent.md). All fields are optional; create an empty record with [`empty_message_event_init`](./Js_of_ocaml-MessageChannel.md#val-empty_message_event_init) and populate the ones you need. The `data` payload is injected as [`Js.Unsafe.any`](./Js_of_ocaml-Js-Unsafe.md#type-any); the resulting event is read back at whatever type the caller annotates [`messageEvent_with_init`](./Js_of_ocaml-MessageChannel.md#val-messageEvent_with_init) with.
 
 ```ocaml
 method data : Js_of_ocaml__.Js.Unsafe.any Js_of_ocaml__.Js.writeonly_prop
@@ -49063,14 +49028,16 @@ method close : unit Js_of_ocaml__.Js.meth
 ```
 ```ocaml
 method onmessage : ('self Js_of_ocaml__.Js.t,
-                     Js_of_ocaml__.Js.Unsafe.any messageEvent
+                     ('self, Js_of_ocaml__.Js.Unsafe.any)
+                       Js_of_ocaml__.Dom_html.messageEvent
                        Js_of_ocaml__.Js.t)
                      Js_of_ocaml__.Dom.event_listener
                      Js_of_ocaml__.Js.writeonly_prop
 ```
 ```ocaml
 method onmessageerror : ('self Js_of_ocaml__.Js.t,
-                          Js_of_ocaml__.Js.Unsafe.any messageEvent
+                          ('self, Js_of_ocaml__.Js.Unsafe.any)
+                            Js_of_ocaml__.Dom_html.messageEvent
                             Js_of_ocaml__.Js.t)
                           Js_of_ocaml__.Dom.event_listener
                           Js_of_ocaml__.Js.writeonly_prop
@@ -49094,11 +49061,6 @@ see [https://developer.mozilla.org/en-US/docs/Web/API/MessagePort](https://devel
 see [https://developer.mozilla.org/en-US/docs/Web/API/MessageEvent](https://developer.mozilla.org/en-US/docs/Web/API/MessageEvent) 
 see [https://html.spec.whatwg.org/multipage/web-messaging.html](https://html.spec.whatwg.org/multipage/web-messaging.html) 
 ```ocaml
-class type 'a messageEvent = object ... end
-```
-A message delivered to a `message` / `messageerror` listener (also used by [`Worker`](./Js_of_ocaml-Worker.md), [`ServiceWorker`](./Js_of_ocaml-ServiceWorker.md) and `postMessage` on a [`messagePort`](./Js_of_ocaml-MessageChannel-class-type-messagePort.md)). The type parameter `'a` is the type of the `data` payload.
-
-```ocaml
 class type  messagePort = object ... end
 ```
 One of the two endpoints of a [`messageChannel`](./Js_of_ocaml-MessageChannel-class-type-messageChannel.md). Messages posted on one port are delivered to the `message` listener of the other.
@@ -49115,19 +49077,20 @@ val messageChannel : messageChannel Js.t Js.constr
 ```ocaml
 class type  messageEventInit = object ... end
 ```
-Initializer for [`messageEvent`](./#val-messageEvent). All fields are optional; create an empty record with [`empty_message_event_init`](./#val-empty_message_event_init) and populate the ones you need. The `data` payload is injected as [`Js.Unsafe.any`](./Js_of_ocaml-Js-Unsafe.md#type-any); the resulting event is read back at whatever type the caller annotates [`messageEvent_with_init`](./#val-messageEvent_with_init) with.
+Initializer for a [`Dom_html.messageEvent`](./Js_of_ocaml-Dom_html-class-type-messageEvent.md). All fields are optional; create an empty record with [`empty_message_event_init`](./#val-empty_message_event_init) and populate the ones you need. The `data` payload is injected as [`Js.Unsafe.any`](./Js_of_ocaml-Js-Unsafe.md#type-any); the resulting event is read back at whatever type the caller annotates [`messageEvent_with_init`](./#val-messageEvent_with_init) with.
 
 ```ocaml
 val empty_message_event_init : unit -> messageEventInit Js.t
 ```
 ```ocaml
-val messageEvent : (Js.js_string Js.t -> 'a messageEvent Js.t) Js.constr
+val messageEvent : 
+  (Js.js_string Js.t -> ('b, 'a) Dom_html.messageEvent Js.t) Js.constr
 ```
 ```ocaml
 val messageEvent_with_init : 
   (Js.js_string Js.t ->
     messageEventInit Js.t ->
-    'a messageEvent Js.t)
+    ('b, 'a) Dom_html.messageEvent Js.t)
     Js.constr
 ```
 ```ocaml
@@ -50387,7 +50350,7 @@ method waitUntil : 'a. 'a Js_of_ocaml__.Promise.t -> unit Js_of_ocaml__.Js.meth
 
 # Class type `ServiceWorker.extendableMessageEvent`
 
-The event delivered to the worker's `message` / `messageerror` handlers. Unlike a plain [`MessageChannel.messageEvent`](./Js_of_ocaml-MessageChannel-class-type-messageEvent.md) it extends [`extendableEvent`](./Js_of_ocaml-ServiceWorker-class-type-extendableEvent.md), so the handler can call `waitUntil` to keep the worker alive until asynchronous processing of the message finishes. The type parameter `'a` is the type of the `data` payload.
+The event delivered to the worker's `message` / `messageerror` handlers. Unlike a plain [`Dom_html.messageEvent`](./Js_of_ocaml-Dom_html-class-type-messageEvent.md) it extends [`extendableEvent`](./Js_of_ocaml-ServiceWorker-class-type-extendableEvent.md), so the handler can call `waitUntil` to keep the worker alive until asynchronous processing of the message finishes. The type parameter `'a` is the type of the `data` payload.
 
 ```ocaml
 inherit extendableEvent
@@ -50618,16 +50581,16 @@ method oncontrollerchange : ('self Js_of_ocaml__.Js.t,
 ```
 ```ocaml
 method onmessage : ('self Js_of_ocaml__.Js.t,
-                     Js_of_ocaml__.Js.Unsafe.any
-                       Js_of_ocaml__.MessageChannel.messageEvent
+                     ('self, Js_of_ocaml__.Js.Unsafe.any)
+                       Js_of_ocaml__.Dom_html.messageEvent
                        Js_of_ocaml__.Js.t)
                      Js_of_ocaml__.Dom.event_listener
                      Js_of_ocaml__.Js.writeonly_prop
 ```
 ```ocaml
 method onmessageerror : ('self Js_of_ocaml__.Js.t,
-                          Js_of_ocaml__.Js.Unsafe.any
-                            Js_of_ocaml__.MessageChannel.messageEvent
+                          ('self, Js_of_ocaml__.Js.Unsafe.any)
+                            Js_of_ocaml__.Dom_html.messageEvent
                             Js_of_ocaml__.Js.t)
                           Js_of_ocaml__.Dom.event_listener
                           Js_of_ocaml__.Js.writeonly_prop
@@ -50850,7 +50813,7 @@ The event passed to the worker's `fetch` handler.
 ```ocaml
 class type 'a extendableMessageEvent = object ... end
 ```
-The event delivered to the worker's `message` / `messageerror` handlers. Unlike a plain [`MessageChannel.messageEvent`](./Js_of_ocaml-MessageChannel-class-type-messageEvent.md) it extends [`extendableEvent`](./Js_of_ocaml-ServiceWorker-class-type-extendableEvent.md), so the handler can call `waitUntil` to keep the worker alive until asynchronous processing of the message finishes. The type parameter `'a` is the type of the `data` payload.
+The event delivered to the worker's `message` / `messageerror` handlers. Unlike a plain [`Dom_html.messageEvent`](./Js_of_ocaml-Dom_html-class-type-messageEvent.md) it extends [`extendableEvent`](./Js_of_ocaml-ServiceWorker-class-type-extendableEvent.md), so the handler can call `waitUntil` to keep the worker alive until asynchronous processing of the message finishes. The type parameter `'a` is the type of the `data` payload.
 
 ```ocaml
 class type  client = object ... end
@@ -53940,11 +53903,8 @@ method wasClean : bool Js_of_ocaml__.Js.t Js_of_ocaml__.Js.readonly_prop
 # Class type `WebSockets.messageEvent`
 
 ```ocaml
-inherit 'a Js_of_ocaml__.Dom.event
-```
-```ocaml
-method data : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
-                Js_of_ocaml__.Js.readonly_prop
+inherit ['a, Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t]
+          Js_of_ocaml__.Dom_html.messageEvent
 ```
 ```ocaml
 method data_buffer : Js_of_ocaml__.Typed_array.arrayBuffer Js_of_ocaml__.Js.t
@@ -54103,18 +54063,6 @@ method error : Js_of_ocaml__.Js.Unsafe.any Js_of_ocaml__.Js.readonly_prop
 
 ---
 
-# Class type `Worker.messageEvent`
-
-```ocaml
-inherit Js_of_ocaml__.Dom_html.event
-```
-```ocaml
-method data : 'a Js_of_ocaml__.Js.readonly_prop
-```
-
-
----
-
 # Class type `Worker.worker`
 
 ```ocaml
@@ -54127,7 +54075,8 @@ method onerror : ('self Js_of_ocaml__.Js.t, errorEvent Js_of_ocaml__.Js.t)
 ```
 ```ocaml
 method onmessage : ('self Js_of_ocaml__.Js.t,
-                     'b messageEvent Js_of_ocaml__.Js.t)
+                     ('self, 'b) Js_of_ocaml__.Dom_html.messageEvent
+                       Js_of_ocaml__.Js.t)
                      Js_of_ocaml__.Dom_html.event_listener
                      Js_of_ocaml__.Js.writeonly_prop
 ```
@@ -54154,8 +54103,11 @@ class type ['a, 'b] worker = object ... end
 class type  errorEvent = object ... end
 ```
 ```ocaml
-class type 'a messageEvent = object ... end
+type 'a messageEvent = (Dom_html.element, 'a) Dom_html.messageEvent
 ```
+The type parameter `'a` is the type of the `data` payload.
+
+deprecated Use Dom\_html.messageEvent, the single shared binding.
 ```ocaml
 val create : string -> ('a, 'b) worker Js.t
 ```

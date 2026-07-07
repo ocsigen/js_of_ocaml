@@ -226,7 +226,7 @@ val loadstart : mediaEvent Js.t typ
 val lostpointercapture : pointerEvent Js.t typ
 ```
 ```ocaml
-val message : messageEvent Js.t typ
+val message : (Js.Unsafe.top, Js.Unsafe.any Js.opt) messageEvent Js.t typ
 ```
 ```ocaml
 val pause : mediaEvent Js.t typ

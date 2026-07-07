@@ -70,7 +70,7 @@ The event passed to the worker's `fetch` handler.
 ```ocaml
 class type 'a extendableMessageEvent = object ... end
 ```
-The event delivered to the worker's `message` / `messageerror` handlers. Unlike a plain [`MessageChannel.messageEvent`](./Js_of_ocaml-MessageChannel-class-type-messageEvent.md) it extends [`extendableEvent`](./Js_of_ocaml-ServiceWorker-class-type-extendableEvent.md), so the handler can call `waitUntil` to keep the worker alive until asynchronous processing of the message finishes. The type parameter `'a` is the type of the `data` payload.
+The event delivered to the worker's `message` / `messageerror` handlers. Unlike a plain [`Dom_html.messageEvent`](./Js_of_ocaml-Dom_html-class-type-messageEvent.md) it extends [`extendableEvent`](./Js_of_ocaml-ServiceWorker-class-type-extendableEvent.md), so the handler can call `waitUntil` to keep the worker alive until asynchronous processing of the message finishes. The type parameter `'a` is the type of the `data` payload.
 
 ```ocaml
 class type  client = object ... end

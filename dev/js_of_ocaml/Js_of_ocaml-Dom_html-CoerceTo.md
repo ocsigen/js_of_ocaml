@@ -207,7 +207,9 @@ val wheelEvent : event Js.t -> mousewheelEvent Js.t Js.opt
 val popStateEvent : event Js.t -> popStateEvent Js.t Js.opt
 ```
 ```ocaml
-val messageEvent : event Js.t -> messageEvent Js.t Js.opt
+val messageEvent : 
+  event Js.t ->
+  (Js.Unsafe.top, Js.Unsafe.any Js.opt) messageEvent Js.t Js.opt
 ```
 ```ocaml
 val inputEvent : event Js.t -> inputEvent Js.t Js.opt

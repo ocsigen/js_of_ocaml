@@ -117,8 +117,10 @@ class type  transitionEvent = object ... end
 class type  mediaEvent = object ... end
 ```
 ```ocaml
-class type  messageEvent = object ... end
+class type ['target, 'data] messageEvent = object ... end
 ```
+The single shared binding for the DOM `MessageEvent` interface, reused by every "message" event source (`Worker`, `WebSocket`, `EventSource`, [`MessageChannel.messagePort`](./Js_of_ocaml-MessageChannel-class-type-messagePort.md), `BroadcastChannel` and `window.postMessage`). The type parameter `'target` is the type of the event target (the worker, socket, port, window, ... the listener is attached to) and `'data` is the type of the `data` payload.
+
 ```ocaml
 class type  staticRange = object ... end
 ```
@@ -1129,7 +1131,7 @@ val opt_tagged : element Js.t Js.opt -> taggedElement option
 type taggedEvent = 
   | MouseEvent of mouseEvent Js.t
   | KeyboardEvent of keyboardEvent Js.t
-  | MessageEvent of messageEvent Js.t
+  | MessageEvent of (Js.Unsafe.top, Js.Unsafe.any Js.opt) messageEvent Js.t
   | MousewheelEvent of mousewheelEvent Js.t
   | PopStateEvent of popStateEvent Js.t
   | OtherEvent of event Js.t

@@ -22,7 +22,9 @@ method onopen : ('self Js_of_ocaml__.Js.t,
 ```
 ```ocaml
 method onmessage : ('self Js_of_ocaml__.Js.t,
-                     'self messageEvent Js_of_ocaml__.Js.t)
+                     ('self, Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t)
+                       Js_of_ocaml__.Dom_html.messageEvent
+                       Js_of_ocaml__.Js.t)
                      Js_of_ocaml__.Dom.event_listener
                      Js_of_ocaml__.Js.writeonly_prop
 ```

@@ -24,14 +24,16 @@ method close : unit Js_of_ocaml__.Js.meth
 ```
 ```ocaml
 method onmessage : ('self Js_of_ocaml__.Js.t,
-                     Js_of_ocaml__.Js.Unsafe.any messageEvent
+                     ('self, Js_of_ocaml__.Js.Unsafe.any)
+                       Js_of_ocaml__.Dom_html.messageEvent
                        Js_of_ocaml__.Js.t)
                      Js_of_ocaml__.Dom.event_listener
                      Js_of_ocaml__.Js.writeonly_prop
 ```
 ```ocaml
 method onmessageerror : ('self Js_of_ocaml__.Js.t,
-                          Js_of_ocaml__.Js.Unsafe.any messageEvent
+                          ('self, Js_of_ocaml__.Js.Unsafe.any)
+                            Js_of_ocaml__.Dom_html.messageEvent
                             Js_of_ocaml__.Js.t)
                           Js_of_ocaml__.Dom.event_listener
                           Js_of_ocaml__.Js.writeonly_prop

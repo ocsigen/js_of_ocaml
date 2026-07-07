@@ -11,7 +11,8 @@ method onerror : ('self Js_of_ocaml__.Js.t, errorEvent Js_of_ocaml__.Js.t)
 ```
 ```ocaml
 method onmessage : ('self Js_of_ocaml__.Js.t,
-                     'b messageEvent Js_of_ocaml__.Js.t)
+                     ('self, 'b) Js_of_ocaml__.Dom_html.messageEvent
+                       Js_of_ocaml__.Js.t)
                      Js_of_ocaml__.Dom_html.event_listener
                      Js_of_ocaml__.Js.writeonly_prop
 ```

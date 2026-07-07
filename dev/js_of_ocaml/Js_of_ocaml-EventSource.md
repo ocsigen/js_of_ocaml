@@ -10,8 +10,11 @@ type state =
   | CLOSED
 ```
 ```ocaml
-class type 'a messageEvent = object ... end
+type 'a messageEvent = ('a, Js.js_string Js.t) Dom_html.messageEvent
 ```
+The type parameter `'a` is the type of the event target; the `data` payload of an `EventSource` message is always `js_string t`.
+
+deprecated Use Dom\_html.messageEvent, the single shared binding.
 ```ocaml
 class type  eventSource = object ... end
 ```
