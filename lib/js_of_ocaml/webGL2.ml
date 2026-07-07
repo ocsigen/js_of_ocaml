@@ -100,6 +100,20 @@ type wrapMode = WebGL.wrapMode
 
 type depthFunction = WebGL.depthFunction
 
+type 'a programParam = 'a WebGL.programParam
+
+type 'a vertexAttribParam = 'a WebGL.vertexAttribParam
+
+type 'a attachParam = 'a WebGL.attachParam
+
+type framebufferStatus = WebGL.framebufferStatus
+
+type uniformType = WebGL.uniformType
+
+type hintTarget = WebGL.hintTarget
+
+type objectType = WebGL.objectType
+
 (** {2 New WebGL2 objects} *)
 
 type query
@@ -132,7 +146,7 @@ type clearBuffer
 
 type transformFeedbackMode
 
-type samplerParameterName
+type 'a samplerParam
 
 type 'a activeUniformParam
 
@@ -141,6 +155,16 @@ type 'a uniformBlockParam
 type transformFeedbackTarget
 
 type textureCompareMode
+
+type 'a indexedParameter
+
+type 'a internalformatParam
+
+type componentType
+
+type colorEncoding
+
+type syncObjectType
 
 class type renderingContext = object
   inherit WebGL.renderingContext
@@ -157,6 +181,26 @@ class type renderingContext = object
 
   method bindBufferRange :
     bufferTarget -> uint -> buffer t -> intptr -> sizeiptr -> unit meth
+
+  method bufferData_withOffset :
+       bufferTarget
+    -> #Typed_array.arrayBufferView t
+    -> bufferUsage
+    -> int
+    -> int
+    -> unit meth
+  (** [bufferData target srcData usage srcOffset length]; a [length] of [0]
+      means up to the end of [srcData]. *)
+
+  method bufferSubData_withOffset :
+    bufferTarget -> intptr -> #Typed_array.arrayBufferView t -> int -> int -> unit meth
+  (** [bufferSubData target dstByteOffset srcData srcOffset length]. *)
+
+  method getBufferSubData_withOffset :
+    bufferTarget -> intptr -> #Typed_array.arrayBufferView t -> int -> int -> unit meth
+  (** [getBufferSubData target srcByteOffset dstBuffer dstOffset length]. *)
+
+  method getIndexedParameter : 'a. 'a indexedParameter -> uint -> 'a meth
 
   (** {2 5.14.3 Programs and shaders} *)
 
@@ -256,6 +300,121 @@ class type renderingContext = object
     -> #Typed_array.arrayBufferView t
     -> unit meth
 
+  method texImage3D_pbo :
+       texTarget
+    -> int
+    -> pixelFormat
+    -> sizei
+    -> sizei
+    -> sizei
+    -> int
+    -> pixelFormat
+    -> pixelType
+    -> intptr
+    -> unit meth
+  (** [texImage3D] sourcing its data from the buffer bound to
+      [PIXEL_UNPACK_BUFFER], at the given byte offset. *)
+
+  method texImage3D_withOffset :
+       texTarget
+    -> int
+    -> pixelFormat
+    -> sizei
+    -> sizei
+    -> sizei
+    -> int
+    -> pixelFormat
+    -> pixelType
+    -> #Typed_array.arrayBufferView t
+    -> int
+    -> unit meth
+  (** [texImage3D] reading from the view starting at element [srcOffset]. *)
+
+  method texSubImage3D_fromImageData :
+       texTarget
+    -> int
+    -> int
+    -> int
+    -> int
+    -> sizei
+    -> sizei
+    -> sizei
+    -> pixelFormat
+    -> pixelType
+    -> Dom_html.imageData t
+    -> unit meth
+
+  method texSubImage3D_fromImage :
+       texTarget
+    -> int
+    -> int
+    -> int
+    -> int
+    -> sizei
+    -> sizei
+    -> sizei
+    -> pixelFormat
+    -> pixelType
+    -> Dom_html.imageElement t
+    -> unit meth
+
+  method texSubImage3D_fromCanvas :
+       texTarget
+    -> int
+    -> int
+    -> int
+    -> int
+    -> sizei
+    -> sizei
+    -> sizei
+    -> pixelFormat
+    -> pixelType
+    -> Dom_html.canvasElement t
+    -> unit meth
+
+  method texSubImage3D_fromVideo :
+       texTarget
+    -> int
+    -> int
+    -> int
+    -> int
+    -> sizei
+    -> sizei
+    -> sizei
+    -> pixelFormat
+    -> pixelType
+    -> Dom_html.videoElement t
+    -> unit meth
+
+  method texSubImage3D_pbo :
+       texTarget
+    -> int
+    -> int
+    -> int
+    -> int
+    -> sizei
+    -> sizei
+    -> sizei
+    -> pixelFormat
+    -> pixelType
+    -> intptr
+    -> unit meth
+
+  method texSubImage3D_withOffset :
+       texTarget
+    -> int
+    -> int
+    -> int
+    -> int
+    -> sizei
+    -> sizei
+    -> sizei
+    -> pixelFormat
+    -> pixelType
+    -> #Typed_array.arrayBufferView t
+    -> int
+    -> unit meth
+
   method copyTexSubImage3D :
     texTarget -> int -> int -> int -> int -> int -> int -> sizei -> sizei -> unit meth
 
@@ -281,6 +440,112 @@ class type renderingContext = object
     -> sizei
     -> pixelFormat
     -> #Typed_array.arrayBufferView t
+    -> unit meth
+
+  method compressedTexImage2D_pbo :
+       texTarget
+    -> int
+    -> pixelFormat
+    -> sizei
+    -> sizei
+    -> int
+    -> sizei
+    -> intptr
+    -> unit meth
+  (** [compressedTexImage2D target level internalformat width height border
+      imageSize offset], reading from the buffer bound to
+      [PIXEL_UNPACK_BUFFER]. *)
+
+  method compressedTexImage2D_withOffset :
+       texTarget
+    -> int
+    -> pixelFormat
+    -> sizei
+    -> sizei
+    -> int
+    -> #Typed_array.arrayBufferView t
+    -> int
+    -> int
+    -> unit meth
+  (** [compressedTexImage2D ... srcData srcOffset srcLengthOverride]. *)
+
+  method compressedTexSubImage2D_pbo :
+       texTarget
+    -> int
+    -> int
+    -> int
+    -> sizei
+    -> sizei
+    -> pixelFormat
+    -> sizei
+    -> intptr
+    -> unit meth
+
+  method compressedTexSubImage2D_withOffset :
+       texTarget
+    -> int
+    -> int
+    -> int
+    -> sizei
+    -> sizei
+    -> pixelFormat
+    -> #Typed_array.arrayBufferView t
+    -> int
+    -> int
+    -> unit meth
+
+  method compressedTexImage3D_pbo :
+       texTarget
+    -> int
+    -> pixelFormat
+    -> sizei
+    -> sizei
+    -> sizei
+    -> int
+    -> sizei
+    -> intptr
+    -> unit meth
+
+  method compressedTexImage3D_withOffset :
+       texTarget
+    -> int
+    -> pixelFormat
+    -> sizei
+    -> sizei
+    -> sizei
+    -> int
+    -> #Typed_array.arrayBufferView t
+    -> int
+    -> int
+    -> unit meth
+
+  method compressedTexSubImage3D_pbo :
+       texTarget
+    -> int
+    -> int
+    -> int
+    -> int
+    -> sizei
+    -> sizei
+    -> sizei
+    -> pixelFormat
+    -> sizei
+    -> intptr
+    -> unit meth
+
+  method compressedTexSubImage3D_withOffset :
+       texTarget
+    -> int
+    -> int
+    -> int
+    -> int
+    -> sizei
+    -> sizei
+    -> sizei
+    -> pixelFormat
+    -> #Typed_array.arrayBufferView t
+    -> int
+    -> int
     -> unit meth
 
   method texStorage2D : texTarget -> sizei -> pixelFormat -> sizei -> sizei -> unit meth
@@ -323,6 +588,9 @@ class type renderingContext = object
       ({!type:pixelFormat}); the WebGL1 [renderbufferStorage] taking a
       {!type:format} is still available through inheritance. *)
 
+  method getInternalformatParameter :
+    'a. rbTarget -> pixelFormat -> 'a internalformatParam -> 'a meth
+
   (** {2 5.14.8 Texture objects} *)
 
   method texParameterf : texTarget -> number_t texParam -> number_t -> unit meth
@@ -330,16 +598,96 @@ class type renderingContext = object
       {!_TEXTURE_MAX_LOD_}; the integer/enum parameters go through the inherited
       [texParameteri]. *)
 
+  method texImage2D_pbo :
+       texTarget
+    -> int
+    -> pixelFormat
+    -> sizei
+    -> sizei
+    -> int
+    -> pixelFormat
+    -> pixelType
+    -> intptr
+    -> unit meth
+  (** [texImage2D] sourcing its data from the buffer bound to
+      [PIXEL_UNPACK_BUFFER], at the given byte offset. *)
+
+  method texImage2D_withOffset :
+       texTarget
+    -> int
+    -> pixelFormat
+    -> sizei
+    -> sizei
+    -> int
+    -> pixelFormat
+    -> pixelType
+    -> #Typed_array.arrayBufferView t
+    -> int
+    -> unit meth
+  (** [texImage2D] reading from the view starting at element [srcOffset]. *)
+
+  method texSubImage2D_pbo :
+       texTarget
+    -> int
+    -> int
+    -> int
+    -> sizei
+    -> sizei
+    -> pixelFormat
+    -> pixelType
+    -> intptr
+    -> unit meth
+
+  method texSubImage2D_withOffset :
+       texTarget
+    -> int
+    -> int
+    -> int
+    -> sizei
+    -> sizei
+    -> pixelFormat
+    -> pixelType
+    -> #Typed_array.arrayBufferView t
+    -> int
+    -> unit meth
+
+  (** {2 5.14.12 Reading back pixels} *)
+
+  method readPixels_pbo :
+    int -> int -> sizei -> sizei -> pixelFormat -> pixelType -> intptr -> unit meth
+  (** [readPixels] writing into the buffer bound to [PIXEL_PACK_BUFFER], at the
+      given byte offset. *)
+
+  method readPixels_withOffset :
+       int
+    -> int
+    -> sizei
+    -> sizei
+    -> pixelFormat
+    -> pixelType
+    -> #Typed_array.arrayBufferView t
+    -> int
+    -> unit meth
+  (** [readPixels] writing into the view starting at element [dstOffset]. *)
+
   (** {2 5.14.9 Multiple render targets} *)
 
   method drawBuffers : attachmentPoint js_array t -> unit meth
 
-  method clearBufferiv : clearBuffer -> int -> #Typed_array.arrayBufferView t -> unit meth
+  method clearBufferiv : clearBuffer -> int -> Typed_array.int32Array t -> unit meth
 
-  method clearBufferuiv :
-    clearBuffer -> int -> #Typed_array.arrayBufferView t -> unit meth
+  method clearBufferuiv : clearBuffer -> int -> Typed_array.uint32Array t -> unit meth
 
-  method clearBufferfv : clearBuffer -> int -> #Typed_array.arrayBufferView t -> unit meth
+  method clearBufferfv : clearBuffer -> int -> Typed_array.float32Array t -> unit meth
+
+  method clearBufferiv_withOffset :
+    clearBuffer -> int -> Typed_array.int32Array t -> int -> unit meth
+
+  method clearBufferuiv_withOffset :
+    clearBuffer -> int -> Typed_array.uint32Array t -> int -> unit meth
+
+  method clearBufferfv_withOffset :
+    clearBuffer -> int -> Typed_array.float32Array t -> int -> unit meth
 
   method clearBufferfi : clearBuffer -> int -> number_t -> int -> unit meth
 
@@ -369,11 +717,11 @@ class type renderingContext = object
 
   method bindSampler : uint -> sampler t opt -> unit meth
 
-  method samplerParameteri : sampler t -> samplerParameterName -> int -> unit meth
+  method samplerParameteri : 'a. sampler t -> 'a samplerParam -> 'a -> unit meth
 
-  method samplerParameterf : sampler t -> samplerParameterName -> number_t -> unit meth
+  method samplerParameterf : sampler t -> number_t samplerParam -> number_t -> unit meth
 
-  method getSamplerParameter : 'a. sampler t -> samplerParameterName -> 'a meth
+  method getSamplerParameter : 'a. sampler t -> 'a samplerParam -> 'a meth
 
   (** {2 5.14.12 Sync objects} *)
 
@@ -568,6 +916,10 @@ class type renderingContext = object
 
   method _NONE_TCM : textureCompareMode readonly_prop
   (** The [NONE] value for {!_TEXTURE_COMPARE_MODE_}. *)
+
+  method _TEXTURE_IMMUTABLE_FORMAT_ : bool t texParam readonly_prop
+
+  method _TEXTURE_IMMUTABLE_LEVELS_ : int texParam readonly_prop
 
   (** {3 New external formats} *)
 
@@ -765,23 +1117,23 @@ class type renderingContext = object
 
   (** {3 Sampler parameters} *)
 
-  method _TEXTURE_MAG_FILTER_SP : samplerParameterName readonly_prop
+  method _TEXTURE_MAG_FILTER_SP : texFilter samplerParam readonly_prop
 
-  method _TEXTURE_MIN_FILTER_SP : samplerParameterName readonly_prop
+  method _TEXTURE_MIN_FILTER_SP : texFilter samplerParam readonly_prop
 
-  method _TEXTURE_WRAP_S_SP : samplerParameterName readonly_prop
+  method _TEXTURE_WRAP_S_SP : wrapMode samplerParam readonly_prop
 
-  method _TEXTURE_WRAP_T_SP : samplerParameterName readonly_prop
+  method _TEXTURE_WRAP_T_SP : wrapMode samplerParam readonly_prop
 
-  method _TEXTURE_WRAP_R_SP : samplerParameterName readonly_prop
+  method _TEXTURE_WRAP_R_SP : wrapMode samplerParam readonly_prop
 
-  method _TEXTURE_MIN_LOD_SP : samplerParameterName readonly_prop
+  method _TEXTURE_MIN_LOD_SP : number_t samplerParam readonly_prop
 
-  method _TEXTURE_MAX_LOD_SP : samplerParameterName readonly_prop
+  method _TEXTURE_MAX_LOD_SP : number_t samplerParam readonly_prop
 
-  method _TEXTURE_COMPARE_MODE_SP : samplerParameterName readonly_prop
+  method _TEXTURE_COMPARE_MODE_SP : textureCompareMode samplerParam readonly_prop
 
-  method _TEXTURE_COMPARE_FUNC_SP : samplerParameterName readonly_prop
+  method _TEXTURE_COMPARE_FUNC_SP : depthFunction samplerParam readonly_prop
 
   (** {3 Sync objects} *)
 
@@ -806,6 +1158,13 @@ class type renderingContext = object
   method _CONDITION_SATISFIED_ : clientWaitSyncStatus readonly_prop
 
   method _WAIT_FAILED_ : clientWaitSyncStatus readonly_prop
+
+  method _OBJECT_TYPE_ : syncObjectType syncParam readonly_prop
+
+  method _SYNC_FENCE_ : syncObjectType readonly_prop
+
+  method _TIMEOUT_IGNORED_ : number_t readonly_prop
+  (** The special timeout value ([-1]) for [clientWaitSync]/[waitSync]. *)
 
   (** {3 Transform feedback} *)
 
@@ -846,6 +1205,11 @@ class type renderingContext = object
   method _UNIFORM_BLOCK_REFERENCED_BY_FRAGMENT_SHADER_ :
     bool t uniformBlockParam readonly_prop
 
+  method _INVALID_INDEX_ : uint readonly_prop
+  (** Returned by [getUniformIndices]/[getUniformBlockIndex] for unknown names
+      (the value is [0xFFFFFFFF], which does not fit a 32-bit OCaml [int];
+      only use it for equality tests). *)
+
   (** {3 New pixel store parameters} *)
 
   method _PACK_ROW_LENGTH_ : int pixelStoreParam readonly_prop
@@ -883,6 +1247,225 @@ class type renderingContext = object
   method _MAX_FRAGMENT_UNIFORM_BLOCKS_ : int parameter readonly_prop
 
   method _UNIFORM_BUFFER_OFFSET_ALIGNMENT_ : int parameter readonly_prop
+
+  method _MAX_ELEMENTS_VERTICES_ : int parameter readonly_prop
+
+  method _MAX_ELEMENTS_INDICES_ : int parameter readonly_prop
+
+  method _MAX_VARYING_COMPONENTS_ : int parameter readonly_prop
+
+  method _MAX_VERTEX_UNIFORM_COMPONENTS_ : int parameter readonly_prop
+
+  method _MAX_FRAGMENT_UNIFORM_COMPONENTS_ : int parameter readonly_prop
+
+  method _MAX_VERTEX_OUTPUT_COMPONENTS_ : int parameter readonly_prop
+
+  method _MAX_FRAGMENT_INPUT_COMPONENTS_ : int parameter readonly_prop
+
+  method _MIN_PROGRAM_TEXEL_OFFSET_ : int parameter readonly_prop
+
+  method _MAX_PROGRAM_TEXEL_OFFSET_ : int parameter readonly_prop
+
+  method _MAX_COMBINED_UNIFORM_BLOCKS_ : int parameter readonly_prop
+
+  method _MAX_TRANSFORM_FEEDBACK_INTERLEAVED_COMPONENTS_ : int parameter readonly_prop
+
+  method _MAX_TRANSFORM_FEEDBACK_SEPARATE_ATTRIBS_ : int parameter readonly_prop
+
+  method _MAX_TRANSFORM_FEEDBACK_SEPARATE_COMPONENTS_ : int parameter readonly_prop
+
+  method _MAX_ELEMENT_INDEX_ : number_t parameter readonly_prop
+
+  method _MAX_SERVER_WAIT_TIMEOUT_ : number_t parameter readonly_prop
+
+  method _MAX_UNIFORM_BLOCK_SIZE_ : number_t parameter readonly_prop
+
+  method _MAX_COMBINED_VERTEX_UNIFORM_COMPONENTS_ : number_t parameter readonly_prop
+
+  method _MAX_COMBINED_FRAGMENT_UNIFORM_COMPONENTS_ : number_t parameter readonly_prop
+
+  method _MAX_TEXTURE_LOD_BIAS_ : number_t parameter readonly_prop
+
+  method _MAX_CLIENT_WAIT_TIMEOUT_WEBGL_ : number_t parameter readonly_prop
+
+  method _READ_BUFFER_ : attachmentPoint parameter readonly_prop
+
+  method _FRAGMENT_SHADER_DERIVATIVE_HINT_ : hintTarget readonly_prop
+
+  method _TRANSFORM_FEEDBACK_ACTIVE_ : bool t parameter readonly_prop
+
+  method _TRANSFORM_FEEDBACK_PAUSED_ : bool t parameter readonly_prop
+
+  (** {3 Binding-point queries} *)
+
+  method _VERTEX_ARRAY_BINDING_ : vertexArrayObject t opt parameter readonly_prop
+
+  method _SAMPLER_BINDING_ : sampler t opt parameter readonly_prop
+
+  method _READ_FRAMEBUFFER_BINDING_ : framebuffer t opt parameter readonly_prop
+
+  method _DRAW_FRAMEBUFFER_BINDING_ : framebuffer t opt parameter readonly_prop
+
+  method _COPY_READ_BUFFER_BINDING_ : buffer t opt parameter readonly_prop
+
+  method _COPY_WRITE_BUFFER_BINDING_ : buffer t opt parameter readonly_prop
+
+  method _PIXEL_PACK_BUFFER_BINDING_ : buffer t opt parameter readonly_prop
+
+  method _PIXEL_UNPACK_BUFFER_BINDING_ : buffer t opt parameter readonly_prop
+
+  method _TRANSFORM_FEEDBACK_BINDING_ : transformFeedback t opt parameter readonly_prop
+
+  method _DRAW_BUFFER0_ : attachmentPoint parameter readonly_prop
+
+  method _DRAW_BUFFER1_ : attachmentPoint parameter readonly_prop
+
+  method _DRAW_BUFFER2_ : attachmentPoint parameter readonly_prop
+
+  method _DRAW_BUFFER3_ : attachmentPoint parameter readonly_prop
+
+  method _DRAW_BUFFER4_ : attachmentPoint parameter readonly_prop
+
+  method _DRAW_BUFFER5_ : attachmentPoint parameter readonly_prop
+
+  method _DRAW_BUFFER6_ : attachmentPoint parameter readonly_prop
+
+  method _DRAW_BUFFER7_ : attachmentPoint parameter readonly_prop
+
+  method _DRAW_BUFFER8_ : attachmentPoint parameter readonly_prop
+
+  method _DRAW_BUFFER9_ : attachmentPoint parameter readonly_prop
+
+  method _DRAW_BUFFER10_ : attachmentPoint parameter readonly_prop
+
+  method _DRAW_BUFFER11_ : attachmentPoint parameter readonly_prop
+
+  method _DRAW_BUFFER12_ : attachmentPoint parameter readonly_prop
+
+  method _DRAW_BUFFER13_ : attachmentPoint parameter readonly_prop
+
+  method _DRAW_BUFFER14_ : attachmentPoint parameter readonly_prop
+
+  method _DRAW_BUFFER15_ : attachmentPoint parameter readonly_prop
+
+  (** {3 Indexed parameters} *)
+
+  method _TRANSFORM_FEEDBACK_BUFFER_BINDING_ : buffer t opt indexedParameter readonly_prop
+
+  method _TRANSFORM_FEEDBACK_BUFFER_START_ : int indexedParameter readonly_prop
+
+  method _TRANSFORM_FEEDBACK_BUFFER_SIZE_ : int indexedParameter readonly_prop
+
+  method _UNIFORM_BUFFER_BINDING_ : buffer t opt indexedParameter readonly_prop
+
+  method _UNIFORM_BUFFER_START_ : int indexedParameter readonly_prop
+
+  method _UNIFORM_BUFFER_SIZE_ : int indexedParameter readonly_prop
+
+  (** {3 Internal format queries} *)
+
+  method _SAMPLES_IFP : Typed_array.int32Array t internalformatParam readonly_prop
+
+  (** {3 Program and vertex attribute parameters} *)
+
+  method _TRANSFORM_FEEDBACK_BUFFER_MODE_ :
+    transformFeedbackMode programParam readonly_prop
+
+  method _TRANSFORM_FEEDBACK_VARYINGS_ : int programParam readonly_prop
+
+  method _ACTIVE_UNIFORM_BLOCKS_ : int programParam readonly_prop
+
+  method _VERTEX_ATTRIB_ARRAY_INTEGER_ : bool t vertexAttribParam readonly_prop
+
+  method _VERTEX_ATTRIB_ARRAY_DIVISOR_ : int vertexAttribParam readonly_prop
+
+  (** {3 New uniform types} *)
+
+  method _UNSIGNED_INT_UT : uniformType readonly_prop
+
+  method _UNSIGNED_INT_VEC2_ : uniformType readonly_prop
+
+  method _UNSIGNED_INT_VEC3_ : uniformType readonly_prop
+
+  method _UNSIGNED_INT_VEC4_ : uniformType readonly_prop
+
+  method _FLOAT_MAT2x3_ : uniformType readonly_prop
+
+  method _FLOAT_MAT2x4_ : uniformType readonly_prop
+
+  method _FLOAT_MAT3x2_ : uniformType readonly_prop
+
+  method _FLOAT_MAT3x4_ : uniformType readonly_prop
+
+  method _FLOAT_MAT4x2_ : uniformType readonly_prop
+
+  method _FLOAT_MAT4x3_ : uniformType readonly_prop
+
+  method _SAMPLER_3D_ : uniformType readonly_prop
+
+  method _SAMPLER_2D_SHADOW_ : uniformType readonly_prop
+
+  method _SAMPLER_2D_ARRAY_ : uniformType readonly_prop
+
+  method _SAMPLER_2D_ARRAY_SHADOW_ : uniformType readonly_prop
+
+  method _SAMPLER_CUBE_SHADOW_ : uniformType readonly_prop
+
+  method _INT_SAMPLER_2D_ : uniformType readonly_prop
+
+  method _INT_SAMPLER_3D_ : uniformType readonly_prop
+
+  method _INT_SAMPLER_CUBE_ : uniformType readonly_prop
+
+  method _INT_SAMPLER_2D_ARRAY_ : uniformType readonly_prop
+
+  method _UNSIGNED_INT_SAMPLER_2D_ : uniformType readonly_prop
+
+  method _UNSIGNED_INT_SAMPLER_3D_ : uniformType readonly_prop
+
+  method _UNSIGNED_INT_SAMPLER_CUBE_ : uniformType readonly_prop
+
+  method _UNSIGNED_INT_SAMPLER_2D_ARRAY_ : uniformType readonly_prop
+
+  (** {3 Framebuffer introspection} *)
+
+  method _FRAMEBUFFER_ATTACHMENT_RED_SIZE_ : int attachParam readonly_prop
+
+  method _FRAMEBUFFER_ATTACHMENT_GREEN_SIZE_ : int attachParam readonly_prop
+
+  method _FRAMEBUFFER_ATTACHMENT_BLUE_SIZE_ : int attachParam readonly_prop
+
+  method _FRAMEBUFFER_ATTACHMENT_ALPHA_SIZE_ : int attachParam readonly_prop
+
+  method _FRAMEBUFFER_ATTACHMENT_DEPTH_SIZE_ : int attachParam readonly_prop
+
+  method _FRAMEBUFFER_ATTACHMENT_STENCIL_SIZE_ : int attachParam readonly_prop
+
+  method _FRAMEBUFFER_ATTACHMENT_COMPONENT_TYPE_ : componentType attachParam readonly_prop
+
+  method _FRAMEBUFFER_ATTACHMENT_COLOR_ENCODING_ : colorEncoding attachParam readonly_prop
+
+  method _FRAMEBUFFER_ATTACHMENT_TEXTURE_LAYER_ : int attachParam readonly_prop
+
+  method _FLOAT_CT : componentType readonly_prop
+
+  method _INT_CT : componentType readonly_prop
+
+  method _UNSIGNED_INT_CT : componentType readonly_prop
+
+  method _SIGNED_NORMALIZED_ : componentType readonly_prop
+
+  method _UNSIGNED_NORMALIZED_ : componentType readonly_prop
+
+  method _LINEAR_CE : colorEncoding readonly_prop
+
+  method _SRGB_CE : colorEncoding readonly_prop
+
+  method _DEPTH_STENCIL_ATTACHMENT_ : attachmentPoint readonly_prop
+
+  method _FRAMEBUFFER_DEFAULT_ : objectType readonly_prop
+
+  method _FRAMEBUFFER_INCOMPLETE_MULTISAMPLE_ : framebufferStatus readonly_prop
 end
 
 (** {2 Getting a WebGL2 context} *)
