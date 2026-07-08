@@ -91,8 +91,11 @@ jobs:
             os-name: Ubuntu
             ocaml-name: "5.4.0+32bit"
             ocaml-compiler: "ocaml-variants.5.4.0+options,ocaml-option-32bit"
-            skip-effects: false
-            skip-test: false
+            skip-effects: true # disabled for the same reason as `skip-test`
+            # On OCaml >= 5, `dune build @all` generates JS files larger than
+            # the 16 MB Buffer/string ceiling of 32-bit OCaml
+            # (js_of_ocaml.cma.js, the toplevel examples)
+            skip-test: true
             skip-doc: true
           - os: macos-latest
             os-name: MacOS
