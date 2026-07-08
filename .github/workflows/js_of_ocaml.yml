@@ -21,66 +21,48 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Build-only compiler coverage lives in the build workflow;
-        # every row here runs the test suite.
+        # 4.14 and 5.5 are tested on all three OSes; build-only compiler
+        # coverage lives in the build workflow.
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+        ocaml-compiler:
+          - "4.14"
+          - "5.5"
+        ocaml-name:
+          - ""
         include:
+          # Display names for the OSes
           - os: ubuntu-latest
             os-name: Ubuntu
-            ocaml-name: ""
-            ocaml-compiler: "4.14"
-            skip-doc: true
+          - os: macos-latest
+            os-name: MacOS
+          - os: windows-latest
+            os-name: Windows
+          # Extra configurations, Ubuntu-only
           - os: ubuntu-latest
             os-name: Ubuntu
             ocaml-name: "4.14.2+32bit"
             ocaml-compiler: "ocaml-variants.4.14.2+options,ocaml-option-32bit"
-            skip-doc: true
-          - os: macos-latest
-            os-name: Macos
-            ocaml-name: ""
-            ocaml-compiler: "4.14"
-            skip-doc: true
-          - os: windows-latest
-            os-name: Windows
-            ocaml-name: ""
-            ocaml-compiler: "4.14"
-            skip-doc: true
-          - os: ubuntu-latest
-            os-name: Ubuntu
-            ocaml-name: ""
-            ocaml-compiler: "5.5"
-            skip-doc: false
           - os: ubuntu-latest
             os-name: Ubuntu
             ocaml-name: "5.6+trunk"
             ocaml-compiler: "ocaml-variants.5.6.0+trunk"
-            # odoc is not installable against 5.6+trunk yet
-            skip-doc: true
           # Note this OCaml compiler is bytecode only
           - os: ubuntu-latest
             os-name: Ubuntu
             ocaml-name: ""
             ocaml-compiler: "5.1"
-            skip-doc: true
-          - os: macos-latest
-            os-name: MacOS
-            ocaml-name: ""
-            ocaml-compiler: "5.5"
-            skip-doc: true
-          - os: windows-latest
-            os-name: Windows
-            ocaml-name: ""
-            ocaml-compiler: "5.5"
-            skip-doc: true
           - os: ubuntu-latest
             os-name: Ubuntu
             ocaml-name: "OxCaml"
             ocaml-compiler: "ocaml-variants.5.2.0+ox"
-            skip-doc: true
 
     runs-on: ${{ matrix.os }}
 
     name:
-       ${{ matrix.ocaml-name != '' && matrix.ocaml-name || matrix.ocaml-compiler}} / ${{ matrix.os-name }} / Tests${{ (startsWith(matrix.ocaml-compiler, '5.') || startsWith(matrix.ocaml-compiler, 'ocaml-variants.5.')) && ' / Effects' || ''}}${{ ! matrix.skip-doc && ' / Docs' || ''}}
+       ${{ matrix.ocaml-name != '' && matrix.ocaml-name || matrix.ocaml-compiler}} / ${{ matrix.os-name }} / Tests${{ (startsWith(matrix.ocaml-compiler, '5.') || startsWith(matrix.ocaml-compiler, 'ocaml-variants.5.')) && ' / Effects' || ''}}${{ (matrix.os == 'ubuntu-latest' && matrix.ocaml-compiler == '5.5') && ' / Docs' || ''}}
 
 
     steps:
@@ -173,8 +155,10 @@ jobs:
       # chrome and published to gh-pages (ocsigen.org/js_of_ocaml/). Here we only
       # check that it compiles. The old `make doc` -> wikidoc -> html_of_wiki
       # pipeline has been retired.
+      # Documentation is checked once, on the latest release (odoc is not
+      # installable against trunk)
       - name: build doc (compile check)
-        if: ${{ !matrix.skip-doc }}
+        if: ${{ matrix.os == 'ubuntu-latest' && matrix.ocaml-compiler == '5.5' }}
         run: |
           opam install odoc yojson ocp-indent graphics higlo
           opam exec -- make doc
