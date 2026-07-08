@@ -105,6 +105,9 @@ jobs:
           opam pin add opam-core -n 2.5.1+ox
           opam pin add gen_js_api -n 1.1.2+ox
           opam pin add zarith -n 1.14+ox
+          # The solver would otherwise settle on sedlex 3.3+ox, which
+          # predates the Latin1 patterns ppx_css relies on
+          opam pin add sedlex -n 3.6+ox
 
       # Add some packages to the opam invariant;
       # opam makes wrong choices otherwise
