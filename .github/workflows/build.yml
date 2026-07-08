@@ -1,0 +1,74 @@
+name: build
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+  schedule:
+    # Prime the caches every Monday
+    - cron: 0 1 * * MON
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+# Build-only compiler coverage: check that every package of the repository
+# (js_of_ocaml and wasm_of_ocaml alike) still installs on these compilers.
+# The test suite runs elsewhere, on a narrower compiler range (see the
+# js_of_ocaml and wasm_of_ocaml workflows).
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        ocaml-name:
+          - ""
+        ocaml-compiler:
+          - "4.13"
+          - "5.0"
+          - "5.1"
+          - "5.2"
+          - "5.3"
+          - "5.4"
+        include:
+          # Build-only: on OCaml >= 5, running the tests generates JS files
+          # larger than the 16 MB Buffer/string ceiling of 32-bit OCaml
+          - ocaml-name: "5.4.0+32bit"
+            ocaml-compiler: "ocaml-variants.5.4.0+options,ocaml-option-32bit"
+
+    runs-on: ubuntu-latest
+
+    name: ${{ matrix.ocaml-name != '' && matrix.ocaml-name || matrix.ocaml-compiler }} / Ubuntu
+
+    steps:
+      - name: Update apt cache
+        run: sudo apt-get update
+
+      - name: Checkout tree
+        uses: actions/checkout@v7
+
+        # EJGA: Note that I tried to fix this upstream as depext is
+        # getting much better, but no luck yet, c.f:
+        # https://github.com/ocaml/opam-repository/pull/26626
+      - name: Install apt 32-bit dependencies
+        if: contains( matrix.ocaml-compiler, 'ocaml-option-32bit')
+        run: |
+          sudo apt-get install aptitude
+          sudo dpkg --add-architecture i386
+          sudo aptitude -o Acquire::Retries=30 update -q
+          # Note we also install the 64-bit versions here as opam will
+          # try to install them anyways, so we save an apt-roundtrip.
+          sudo aptitude -o Acquire::Retries=30 install gcc-multilib g++-multilib pkg-config libgmp-dev libgmp-dev:i386 libx11-dev libx11-dev:i386 libxft-dev libxft-dev:i386 -y
+
+      - name: Set-up OCaml ${{ matrix.ocaml-compiler }}
+        uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: ${{ matrix.ocaml-compiler }}
+
+      - name: Set-up Binaryen
+        uses: Aandreba/setup-binaryen@v1.0.0
+        with:
+          token: ${{ github.token }}
+
+      - run: opam install . --best-effort --solver builtin-mccs+glpk
