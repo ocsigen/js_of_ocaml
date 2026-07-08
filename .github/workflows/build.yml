@@ -1,7 +1,9 @@
 name: build
 
+# Not run on pull requests: installability across the compiler range is a
+# slow-moving signal, and skipping these jobs at PR time frees runner slots
+# so the long test jobs start sooner.
 on:
-  pull_request:
   push:
     branches:
       - master
@@ -11,7 +13,6 @@ on:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 # Build-only compiler coverage: check that every package of the repository
 # (js_of_ocaml and wasm_of_ocaml alike) still installs on these compilers.
