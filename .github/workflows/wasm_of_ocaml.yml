@@ -22,47 +22,50 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # 4.14 and 5.5 are tested on all three OSes; build-only compiler
+        # coverage lives in the build workflow. 5.5 exercises the toplevel
+        # cmi embedding on Windows: on OCaml >= 5.4 the expect tests fail
+        # if the virtual filesystem paths are wrong.
         os:
           - ubuntu-latest
-        os-name:
-           - Ubuntu
+          - macos-latest
+          - windows-latest
         ocaml-compiler:
           - "4.14"
-          - "5.0"
-          - "5.1"
-          - "5.2"
-          - "5.3"
-          - "5.4"
+          - "5.5"
+        ocaml-name:
+          - ""
         wasi:
           - false
         include:
-          - os: macos-latest
-            os-name: MacOS
-            ocaml-compiler: "5.3"
-            wasi: false
-          - os: windows-latest
-            os-name: Windows
-            # 5.5 exercises the toplevel cmi embedding on Windows: on
-            # OCaml >= 5.4 the expect tests fail if the virtual filesystem
-            # paths are wrong
-            ocaml-compiler: "5.5"
+          # Display names for the OSes
           - os: ubuntu-latest
             os-name: Ubuntu
+          - os: macos-latest
+            os-name: MacOS
+          - os: windows-latest
+            os-name: Windows
+          # Extra configurations, Ubuntu-only
+          - os: ubuntu-latest
+            os-name: Ubuntu
+            ocaml-name: "5.6+trunk"
             ocaml-compiler: "ocaml-variants.5.6.0+trunk"
             wasi: false
           - os: ubuntu-latest
             os-name: Ubuntu
+            ocaml-name: "OxCaml"
             ocaml-compiler: "ocaml-variants.5.2.0+ox"
             wasi: false
           - os: ubuntu-latest
             os-name: Ubuntu
-            ocaml-compiler: "5.3"
+            ocaml-name: ""
+            ocaml-compiler: "5.5"
             wasi: true
 
     runs-on: ${{ matrix.os }}
 
     name:
-       ${{ matrix.wasi && 'WASI / ' || '' }}${{ matrix.ocaml-compiler }} / ${{ matrix.os-name }}
+       ${{ matrix.wasi && 'WASI / ' || '' }}${{ matrix.ocaml-name != '' && matrix.ocaml-name || matrix.ocaml-compiler }} / ${{ matrix.os-name }}
 
     steps:
       - name: Update apt cache
@@ -105,7 +108,7 @@ jobs:
         if: ${{ endsWith(matrix.ocaml-compiler, '+ox') }}
 
       - name: Pin ppxlib
-        if: matrix.ocaml-compiler == 'ocaml-variants.5.6.0+trunk'
+        if: matrix.ocaml-name == '5.6+trunk'
         run: opam pin add -n ppxlib https://github.com/hhugo/ppxlib.git#support-5.6
 
       - name: Set-up Binaryen
@@ -154,13 +157,13 @@ jobs:
       # See https://github.com/libuv/libuv/issues/3622
 
       - name: Run tests with CPS effects
-        if: ${{ matrix.ocaml-compiler >= '5.' && ! matrix.wasi }}
+        if: ${{ (startsWith(matrix.ocaml-compiler, '5.') || startsWith(matrix.ocaml-compiler, 'ocaml-variants.5.')) && ! matrix.wasi }}
         continue-on-error: ${{ matrix.os == 'windows-latest' }}
         working-directory: ./wasm_of_ocaml
         run: opam exec -- dune build @runtest-wasm --profile with-effects
 
       - name: Run tests with native effects
-        if: ${{ matrix.ocaml-compiler >= '5.' && matrix.os != 'windows-latest' }}
+        if: ${{ (startsWith(matrix.ocaml-compiler, '5.') || startsWith(matrix.ocaml-compiler, 'ocaml-variants.5.')) && matrix.os != 'windows-latest' }}
         working-directory: ./wasm_of_ocaml
         run: opam exec -- dune build @runtest-wasm --profile with-native-effects
 
