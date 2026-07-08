@@ -1,4 +1,4 @@
-@children_order overview install quickstart javascript-interop ppx ppx-deriving rev-bindings errors lwt options compilation-modes linker tailcall effects runtime-representation browser-compat wasm_overview wasm_runtime build-toplevel debug performances contribute examples bindings library environment-variable runtime-files camlp4 api
+@children_order overview install quickstart javascript-interop ppx ppx-deriving rev-bindings errors lwt options compilation-modes linker tailcall effects runtime-representation browser-compat wasm_overview wasm_runtime build-toplevel debug performances contribute examples api
 
 {0 Js_of_ocaml}
 
