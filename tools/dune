@@ -20,9 +20,10 @@
 (executable
  (name ci_setup)
  (modules ci_setup ci_setup_config_mainstream ci_setup_config_oxcaml)
- ; opam-format is a depopt: only built when it is installed (CI installs
- ; it right before running ci_setup)
- (optional)
+ ; Requires opam-format, which is only a depopt. The janestreet CI
+ ; workflow installs it and sets BUILD_CI_SETUP; everywhere else the
+ ; executable is not built ((optional) would not shield @all).
+ (enabled_if %{env:BUILD_CI_SETUP=false})
  (libraries opam-format re unix))
 
 (executable

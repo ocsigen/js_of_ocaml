@@ -20,6 +20,8 @@ jobs:
       # variables to select the backend the inline tests run under.
       JS_OF_OCAML: ${{ matrix.backend == 'js' }}
       WASM_OF_OCAML: ${{ matrix.backend == 'wasm' }}
+      # Enable the build of tools/ci_setup.exe (needs opam-format)
+      BUILD_CI_SETUP: true
       OXCAML_OPAM_REPO_REF: d89747aa6e7b9f44d6cc844dca5b5e7c8a90716f
 
     strategy:
