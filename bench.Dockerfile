@@ -43,6 +43,9 @@ RUN opam install -y --deps-only ./js_of_ocaml-compiler.opam \
 # both for the bonsai bench build below and for `make bench` later on.
 ENV WASM_OF_OCAML=true
 
+# Enable the build of tools/ci_setup.exe (needs opam-format)
+ENV BUILD_CI_SETUP=true
+
 # Prepare partial render table benchmark
 COPY --chown=opam:opam dune-project ./
 COPY --chown=opam:opam tools ./tools
