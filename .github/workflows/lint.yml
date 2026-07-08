@@ -54,3 +54,21 @@ jobs:
           version: 2.4.8
       - name: Run biome
         run: biome ci
+
+  lint-wax:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update apt cache
+        run: sudo apt-get update
+      - name: Checkout tree
+        uses: actions/checkout@v7
+      - name: Set-up OCaml
+        uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: "5.5"
+      - name: Install wax
+        run: |
+          opam pin add --yes wax-lib https://github.com/vouillon/wax.git
+          opam pin add --yes wax https://github.com/vouillon/wax.git
+      - name: Convert Wasm runtime files to wax
+        run: opam exec -- ./tools/wat2wax.sh
