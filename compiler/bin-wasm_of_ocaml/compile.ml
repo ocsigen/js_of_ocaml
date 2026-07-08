@@ -97,7 +97,7 @@ let with_runtime_files ~runtime_wasm_files f =
       ~f:(fun file -> { Wat_preprocess.module_name = "env"; file; source = File })
       runtime_wasm_files
   in
-  Wat_preprocess.with_preprocessed_files ~variables:(preprocessor_variables ()) ~inputs f
+  Wax_link.with_preprocessed_files ~variables:(preprocessor_variables ()) ~inputs f
 
 let build_runtime ~runtime_file =
   let variables = preprocessor_variables () in
