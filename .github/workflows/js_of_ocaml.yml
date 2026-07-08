@@ -71,13 +71,13 @@ jobs:
           - os: macos-latest
             os-name: MacOS
             ocaml-name: ""
-            ocaml-compiler: "5.4.0"
+            ocaml-compiler: "5.5"
             skip-effects: true
             skip-doc: true
           - os: windows-latest
             os-name: Windows
             ocaml-name: ""
-            ocaml-compiler: "5.4.0"
+            ocaml-compiler: "5.5"
             skip-effects: false
             skip-doc: true
           - os: ubuntu-latest
