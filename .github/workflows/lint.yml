@@ -24,7 +24,7 @@ jobs:
       - name: Set-up OCaml
         uses: ocaml/setup-ocaml@v3
         with:
-          ocaml-compiler: "5.2"
+          ocaml-compiler: "5.5"
       - name: Set-up Binaryen
         uses: Aandreba/setup-binaryen@v1.0.0
         with:
@@ -40,7 +40,7 @@ jobs:
       - name: Set-up OCaml
         uses: ocaml/setup-ocaml@v3
         with:
-          ocaml-compiler: "5.2"
+          ocaml-compiler: "5.5"
       - uses: ocaml/setup-ocaml/lint-fmt@v3
 
   lint-runtime:
