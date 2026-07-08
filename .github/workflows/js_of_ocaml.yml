@@ -28,37 +28,31 @@ jobs:
             os-name: Ubuntu
             ocaml-name: ""
             ocaml-compiler: "4.14"
-            skip-effects: true
             skip-doc: true
           - os: ubuntu-latest
             os-name: Ubuntu
             ocaml-name: "4.14.2+32bit"
             ocaml-compiler: "ocaml-variants.4.14.2+options,ocaml-option-32bit"
-            skip-effects: true
             skip-doc: true
           - os: macos-latest
             os-name: Macos
             ocaml-name: ""
             ocaml-compiler: "4.14"
-            skip-effects: true
             skip-doc: true
           - os: windows-latest
             os-name: Windows
             ocaml-name: ""
             ocaml-compiler: "4.14"
-            skip-effects: true
             skip-doc: true
           - os: ubuntu-latest
             os-name: Ubuntu
             ocaml-name: ""
             ocaml-compiler: "5.5"
-            skip-effects: false
             skip-doc: false
           - os: ubuntu-latest
             os-name: Ubuntu
             ocaml-name: "5.6+trunk"
             ocaml-compiler: "ocaml-variants.5.6.0+trunk"
-            skip-effects: false
             # odoc is not installable against 5.6+trunk yet
             skip-doc: true
           # Note this OCaml compiler is bytecode only
@@ -66,31 +60,27 @@ jobs:
             os-name: Ubuntu
             ocaml-name: ""
             ocaml-compiler: "5.1"
-            skip-effects: false
             skip-doc: true
           - os: macos-latest
             os-name: MacOS
             ocaml-name: ""
             ocaml-compiler: "5.5"
-            skip-effects: true
             skip-doc: true
           - os: windows-latest
             os-name: Windows
             ocaml-name: ""
             ocaml-compiler: "5.5"
-            skip-effects: false
             skip-doc: true
           - os: ubuntu-latest
             os-name: Ubuntu
             ocaml-name: "OxCaml"
             ocaml-compiler: "ocaml-variants.5.2.0+ox"
-            skip-effects: false
             skip-doc: true
 
     runs-on: ${{ matrix.os }}
 
     name:
-       ${{ matrix.ocaml-name != '' && matrix.ocaml-name || matrix.ocaml-compiler}} / ${{ matrix.os-name }} / Tests${{ ! matrix.skip-effects && ' / Effects' || ''}}${{ ! matrix.skip-doc && ' / Docs' || ''}}
+       ${{ matrix.ocaml-name != '' && matrix.ocaml-name || matrix.ocaml-compiler}} / ${{ matrix.os-name }} / Tests${{ (startsWith(matrix.ocaml-compiler, '5.') || startsWith(matrix.ocaml-compiler, 'ocaml-variants.5.')) && ' / Effects' || ''}}${{ ! matrix.skip-doc && ' / Docs' || ''}}
 
 
     steps:
@@ -169,11 +159,12 @@ jobs:
           npm install
           opam exec -- make test-babel-downlevel
 
+      # Effect handlers require OCaml 5
       - run: opam exec -- dune build @all @runtest @runtest-js --profile with-effects
-        if: ${{ !matrix.skip-effects }}
+        if: ${{ startsWith(matrix.ocaml-compiler, '5.') || startsWith(matrix.ocaml-compiler, 'ocaml-variants.5.') }}
 
       - run: opam exec -- dune build @all @runtest @runtest-js --profile with-effects-double-translation
-        if: ${{ !matrix.skip-effects }}
+        if: ${{ startsWith(matrix.ocaml-compiler, '5.') || startsWith(matrix.ocaml-compiler, 'ocaml-variants.5.') }}
 
       - run: opam exec -- git diff --exit-code
 
