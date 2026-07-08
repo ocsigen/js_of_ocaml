@@ -33,7 +33,7 @@ jobs:
       - name: Set-up OCaml
         uses: ocaml/setup-ocaml@v3
         with:
-          ocaml-compiler: "5.4.0"
+          ocaml-compiler: "5.5"
 
       - name: Set-up Binaryen
         uses: Aandreba/setup-binaryen@v1.0.0
