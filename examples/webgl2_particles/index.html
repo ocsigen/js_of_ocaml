@@ -140,7 +140,8 @@ canvas {
     <h1>WebGL2 Particles</h1>
     <canvas id="canvas" height="600" width="600"></canvas>
     <div class="info">
-      <input id="count" type="range" min="1000" max="200000" step="1000" value="50000">
+      <!-- max and value are set from the OCaml side (max_particles) -->
+      <input id="count" type="range" min="1000" step="1000">
       <span id="count-label"></span> particles —
       speed <input id="speed" type="range" min="0" max="3" step="0.05" value="1">
       ×<span id="speed-label"></span> —

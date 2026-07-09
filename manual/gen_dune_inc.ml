@@ -146,35 +146,15 @@ let is_dir x =
   let len = String.length x in
   len > 0 && String.get x (len - 1) = '/'
 
-(* Collect filenames passed via --file in build_runtime_flags.
-   These files are embedded into the .bc.js and do not need to be installed. *)
-let extract_embedded_files sexps =
-  let files = ref [] in
-  let rec scan_list = function
-    | [] -> ()
-    | Atom "--file" :: Atom f :: rest ->
-        let len = String.length f in
-        let name =
-          if len > 7 && String.sub f 0 6 = "%{dep:" && f.[len - 1] = '}'
-          then String.sub f 6 (len - 7)
-          else f
-        in
-        files := name :: !files;
-        scan_list rest
-    | _ :: rest -> scan_list rest
-  in
-  let rec walk = function
-    | Atom _ -> ()
-    | List items ->
-        scan_list items;
-        List.iter walk items
-  in
-  List.iter walk sexps;
-  !files
-
 (* Scan ../examples/ for subdirectories with a dune file and extract their
    default alias deps. This avoids having to manually update this file
-   whenever a new example is added. *)
+   whenever a new example is added.
+
+   Note that files passed via --file in build_runtime_flags are copied like
+   any other dep: they used to be embedded into the .bc.js, but with
+   separate compilation the shared runtime is built without the
+   per-executable build_runtime_flags, so the examples fetch them over http
+   at run time. *)
 let discover_examples () : desc list =
   let examples_dir = "../../examples" in
   let entries = Sys.readdir examples_dir in
@@ -192,16 +172,6 @@ let discover_examples () : desc list =
         let content = read_file dune_path in
         let sexps = parse_sexps content in
         let file_deps = extract_default_alias_deps sexps in
-        let embedded = extract_embedded_files sexps in
-        let file_deps =
-          List.filter
-            (fun dep ->
-              let base =
-                if is_dir dep then String.sub dep 0 (String.length dep - 1) else dep
-              in
-              not (List.mem base embedded))
-            file_deps
-        in
         if file_deps <> [] then Some (dir, name, file_deps) else None
       else None)
 
