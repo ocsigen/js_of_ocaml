@@ -519,36 +519,6 @@ let target_is_wasm =
 
 let extra_drop_tag = if target_is_wasm then "js-only" else "wasm-only"
 
-let contains ~sub s =
-  let sub_len = String.length sub and n = String.length s in
-  let rec loop i =
-    if i + sub_len > n
-    then false
-    else if String.equal (String.sub s i sub_len) sub
-    then true
-    else loop (i + 1)
-  in
-  loop 0
-
-let replace_all ~sub ~by s =
-  let sub_len = String.length sub and n = String.length s in
-  if sub_len = 0
-  then s
-  else begin
-    let buf = Buffer.create n in
-    let i = ref 0 in
-    while !i < n do
-      if !i + sub_len <= n && String.equal (String.sub s !i sub_len) sub
-      then (
-        Buffer.add_string buf by;
-        i := !i + sub_len)
-      else (
-        Buffer.add_char buf s.[!i];
-        incr i)
-    done;
-    Buffer.contents buf
-  end
-
 let rec dune_files dir =
   Sys.readdir dir
   |> Array.to_list
@@ -561,15 +531,15 @@ let rec dune_files dir =
       else [])
 
 let () =
-  let anchor = "(inline_tests (flags " in
+  let anchor = Re.compile (Re.str "(inline_tests (flags ") in
   let by = Printf.sprintf "(inline_tests (flags -drop-tag %s " extra_drop_tag in
-  let already = "-drop-tag " ^ extra_drop_tag in
+  let already = Re.compile (Re.str ("-drop-tag " ^ extra_drop_tag)) in
   List.iter
     (fun f ->
       let contents = In_channel.(with_open_bin f @@ input_all) in
-      if contains ~sub:anchor contents && not (contains ~sub:already contents)
+      if Re.execp anchor contents && not (Re.execp already contents)
       then
         Out_channel.(
           with_open_bin f
-          @@ fun ch -> output_string ch (replace_all ~sub:anchor ~by contents)))
+          @@ fun ch -> output_string ch (Re.replace_string anchor ~by contents)))
     (dune_files (Filename.concat jane_root "lib"))
