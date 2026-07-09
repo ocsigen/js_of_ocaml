@@ -15,6 +15,9 @@
    dot_render))
  (js_of_ocaml
   (compilation_mode separate)
+  ;; dummy runtime file to opt out of dune's shared standalone runtime,
+  ;; which drops build_runtime_flags (ocaml/dune#15455)
+  (javascript_files force_unshared_runtime.js)
   (build_runtime_flags :standard --file %{dep:scene.json}))
  (preprocess
   (pps js_of_ocaml-ppx js_of_ocaml-ppx_deriving_json)))
