@@ -19,6 +19,8 @@ let target_is_wasm =
 let roots =
   [ "bonsai_web_components"; "string_dict"; "ppx_html"; "bonsai_bench"; "float_array" ]
 
+let additional_others = StringSet.of_list []
+
 let omitted_others = StringSet.of_list []
 
 let omitted_js = StringSet.of_list [ "basement"; "sexplib0" ]
@@ -345,6 +347,22 @@ let dependencies (_, { OpamFile.OPAM.depends; _ }) =
   |> List.map fst
   |> List.map OpamPackage.Name.to_string
 
+let latest_version pkg =
+  let dir = Filename.concat repo pkg in
+  let prefix = pkg ^ "." in
+  Sys.readdir dir
+  |> Array.to_list
+  |> List.filter (String.starts_with ~prefix)
+  |> List.sort (fun a b ->
+      let va =
+        String.sub a (String.length prefix) (String.length a - String.length prefix)
+      in
+      let vb =
+        String.sub b (String.length prefix) (String.length b - String.length prefix)
+      in
+      OpamVersionCompare.compare vb va)
+  |> List.hd
+
 let packages =
   repo
   |> Sys.readdir
@@ -352,14 +370,7 @@ let packages =
   |> List.map (fun s ->
       if String.contains s '.'
       then String.sub s 0 (String.index s '.'), read_opam_file s
-      else
-        ( s
-        , read_opam_file
-            (Filename.concat
-               s
-               (List.find
-                  (fun f -> String.starts_with ~prefix:s f)
-                  (Array.to_list (Sys.readdir (Filename.concat repo s))))) ))
+      else s, read_opam_file (Filename.concat s (latest_version s)))
 
 let rec traverse visited p =
   if StringSet.mem p visited
@@ -396,7 +407,10 @@ let pin nm =
 let pin_packages () = sync_exec pin (StringSet.elements do_pin)
 
 let install_others others =
-  let others = StringSet.elements (StringSet.diff others omitted_others) in
+  let others =
+    StringSet.elements
+      (StringSet.union (StringSet.diff others omitted_others) additional_others)
+  in
   ignore (Sys.command ("opam install -y " ^ String.concat " " others))
 
 let clone ?branch ?(depth = 1) nm src =
@@ -458,11 +472,14 @@ let () =
         if is_fixed nm || is_forked nm
         then None
         else
-          Some
-            (let _, opam = List.assoc nm packages in
-             let url = OpamUrl.to_string (Option.get (OpamFile.OPAM.get_url opam)) in
-             let tar_file = Filename.basename url in
-             String.sub tar_file 0 (String.index tar_file '.'))
+          let commit =
+            let _, opam = List.assoc nm packages in
+            let url = OpamUrl.to_string (Option.get (OpamFile.OPAM.get_url opam)) in
+            let tar_file = Filename.basename url in
+            String.sub tar_file 0 (String.index tar_file '.')
+          in
+          Format.eprintf "Cloning %s#%s@." nm commit;
+          Some commit
       in
       clone'
         ?branch

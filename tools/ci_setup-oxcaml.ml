@@ -9,6 +9,13 @@ let jane_root, wasmoo_root =
 
 let repo = Filename.concat jane_root "opam-repository/packages"
 
+(* Which backend this run targets, matching the generated [dune-workspace]
+   toggle. Used to emit backend-specific test expectations and tags. *)
+let target_is_wasm =
+  match Sys.getenv_opt "WASM_OF_OCAML" with
+  | Some ("true" | "1") -> true
+  | _ -> false
+
 let roots =
   [ "bonsai_web_components"
   ; "string_dict"
@@ -511,11 +518,6 @@ let () =
    generated [dune-workspace], keyed on [WASM_OF_OCAML]/[JS_OF_OCAML]), so we
    finish by dropping the tag reserved for the *other* backend: [wasm-only]
    when targeting js, [js-only] when targeting wasm. *)
-
-let target_is_wasm =
-  match Sys.getenv_opt "WASM_OF_OCAML" with
-  | Some ("true" | "1") -> true
-  | _ -> false
 
 let extra_drop_tag = if target_is_wasm then "js-only" else "wasm-only"
 
