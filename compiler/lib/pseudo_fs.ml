@@ -19,13 +19,18 @@
 
 open! Stdlib
 
+(* Virtual paths live in the unix-style pseudo filesystem of the runtime;
+   build them with '/' explicitly, since [Filename.concat] would introduce
+   '\\' when compiling on Windows. *)
+let virt_concat dir base = dir ^ "/" ^ base
+
 let expand_path exts real virt =
   let rec loop realfile virtfile acc =
     if try Sys.is_directory realfile with _ -> false
     then
       let l = Array.to_list (Sys.readdir realfile) |> List.sort ~cmp:String.compare in
       List.fold_left l ~init:acc ~f:(fun acc s ->
-          loop (Filename.concat realfile s) (Filename.concat virtfile s) acc)
+          loop (Filename.concat realfile s) (virt_concat virtfile s) acc)
     else
       let exmatch =
         try
@@ -76,7 +81,7 @@ let find_cmi paths base =
         | Some cmi -> Some (name, cmi)
         | None -> None)
   with
-  | Some (name, filename) -> Some (Filename.concat "/static/cmis" name, filename)
+  | Some (name, filename) -> Some (virt_concat "/static/cmis" name, filename)
   | None -> None
 
 let instr_of_name_content prim ~name ~content =

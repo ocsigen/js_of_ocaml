@@ -30,6 +30,11 @@
   API, plus a `fonts` property on `Dom_html.document` (#2255)
 
 ## Bug fixes
+* Compiler/Wasm runtime: fix toplevels built on Windows — the embedded cmi
+  paths were built with `Filename.concat`, putting `\` separators in the
+  unix-style virtual filesystem, and its lookups did not normalize the `\`
+  separators the program uses when running on Windows; loading Stdlib then
+  failed with `Env.Error` on OCaml >= 5.4 (#2397)
 * Compiler: only fuse `if (e) var x = e; else var x = e2` into
   `var x = e || e2` when the condition is effect-free; an effectful
   condition structurally equal to the branch (e.g. two calls to the same
