@@ -50,7 +50,10 @@ jobs:
             wasi: false
           - os: windows-latest
             os-name: Windows
-            ocaml-compiler: "5.3"
+            # 5.5 exercises the toplevel cmi embedding on Windows: on
+            # OCaml >= 5.4 the expect tests fail if the virtual filesystem
+            # paths are wrong
+            ocaml-compiler: "5.5"
             separate_compilation: true
             # Jane Street tests disabled for now (basement only works on Linux)
             jane_street_tests: false
