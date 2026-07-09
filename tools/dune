@@ -20,7 +20,7 @@
 (executable
  (name ci_setup)
  (modules ci_setup)
- (libraries opam-format unix))
+ (libraries opam-format re unix))
 
 (rule
  (target ci_setup.ml)
