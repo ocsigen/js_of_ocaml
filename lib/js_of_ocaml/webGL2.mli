@@ -181,6 +181,12 @@ class type renderingContext = object
   method bindBufferRange :
     bufferTarget -> uint -> buffer t -> intptr -> sizeiptr -> unit meth
 
+  method bindBufferBase_ : bufferTarget -> uint -> buffer t opt -> unit meth
+  (** [bindBufferBase] accepting [null], to release an indexed binding. *)
+
+  method bindBufferRange_ :
+    bufferTarget -> uint -> buffer t opt -> intptr -> sizeiptr -> unit meth
+
   method bufferData_withOffset :
        bufferTarget
     -> #Typed_array.arrayBufferView t
@@ -570,10 +576,22 @@ class type renderingContext = object
   method framebufferTextureLayer :
     fbTarget -> attachmentPoint -> texture t -> int -> int -> unit meth
 
+  method framebufferTextureLayer_ :
+    fbTarget -> attachmentPoint -> texture t opt -> int -> int -> unit meth
+  (** [framebufferTextureLayer] accepting [null], to detach the attachment. *)
+
   method invalidateFramebuffer : fbTarget -> attachmentPoint js_array t -> unit meth
 
   method invalidateSubFramebuffer :
     fbTarget -> attachmentPoint js_array t -> int -> int -> sizei -> sizei -> unit meth
+
+  method invalidateFramebuffer_default : fbTarget -> clearBuffer js_array t -> unit meth
+  (** [invalidateFramebuffer] for when the default framebuffer is bound, whose
+      attachments are named by {!_COLOR_CB}, {!_DEPTH_CB} and {!_STENCIL_CB}
+      rather than by {!type:attachmentPoint}. *)
+
+  method invalidateSubFramebuffer_default :
+    fbTarget -> clearBuffer js_array t -> int -> int -> sizei -> sizei -> unit meth
 
   method readBuffer : attachmentPoint -> unit meth
 
@@ -714,7 +732,9 @@ class type renderingContext = object
 
   method isSampler : sampler t -> bool t meth
 
-  method bindSampler : uint -> sampler t opt -> unit meth
+  method bindSampler : uint -> sampler t -> unit meth
+
+  method bindSampler_ : uint -> sampler t opt -> unit meth
 
   method samplerParameteri : 'a. sampler t -> 'a samplerParam -> 'a -> unit meth
 
@@ -745,6 +765,9 @@ class type renderingContext = object
   method isTransformFeedback : transformFeedback t -> bool t meth
 
   method bindTransformFeedback :
+    transformFeedbackTarget -> transformFeedback t -> unit meth
+
+  method bindTransformFeedback_ :
     transformFeedbackTarget -> transformFeedback t opt -> unit meth
 
   method beginTransformFeedback : beginMode -> unit meth
@@ -785,7 +808,9 @@ class type renderingContext = object
 
   method isVertexArray : vertexArrayObject t -> bool t meth
 
-  method bindVertexArray : vertexArrayObject t opt -> unit meth
+  method bindVertexArray : vertexArrayObject t -> unit meth
+
+  method bindVertexArray_ : vertexArrayObject t opt -> unit meth
 
   (** {2 5.14.16 Instanced and range drawing} *)
 
@@ -1163,7 +1188,9 @@ class type renderingContext = object
   method _SYNC_FENCE_ : syncObjectType readonly_prop
 
   method _TIMEOUT_IGNORED_ : number_t readonly_prop
-  (** The special timeout value ([-1]) for [clientWaitSync]/[waitSync]. *)
+  (** The special timeout value ([-1]), accepted only by [waitSync];
+      [clientWaitSync] timeouts are instead capped by
+      {!_MAX_CLIENT_WAIT_TIMEOUT_WEBGL_}. *)
 
   (** {3 Transform feedback} *)
 
@@ -1459,8 +1486,6 @@ class type renderingContext = object
   method _LINEAR_CE : colorEncoding readonly_prop
 
   method _SRGB_CE : colorEncoding readonly_prop
-
-  method _DEPTH_STENCIL_ATTACHMENT_ : attachmentPoint readonly_prop
 
   method _FRAMEBUFFER_DEFAULT_ : objectType readonly_prop
 

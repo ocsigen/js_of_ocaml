@@ -209,11 +209,7 @@ let read_model a =
       | Some (V (a, b, c)) -> vertex := (a, b, c) :: !vertex
       | Some (VN (a, b, c)) -> norm := (a, b, c) :: !norm)
     a;
-  if !face = []
-  then
-    alert
-      "could not load the model; note that this example must be served over http, see \
-       examples/README.md";
+  if !face = [] then alert "the model file could not be parsed (no faces found)";
   make_model
     (Array.of_list (List.rev !vertex))
     (Array.of_list (List.rev !norm))
@@ -224,7 +220,16 @@ let http_get url =
   >>= fun r ->
   let cod = r.XmlHttpRequest.code in
   let msg = r.XmlHttpRequest.content in
-  if cod = 0 || cod = 200 then Lwt.return msg else fst (Lwt.wait ())
+  (* [code = 0] with a non-empty body is a successful file:// load; anything
+     else (404, CORS-blocked file:// XHR, ...) is a failure *)
+  if cod = 200 || (cod = 0 && String.length msg > 0)
+  then Lwt.return msg
+  else
+    alert
+      "failed to load %s (HTTP code %d); note that this example must be served over \
+       http, see examples/README.md"
+      url
+      cod
 
 let getfile f =
   try Lwt.return (Sys_js.read_file ~name:f)
@@ -265,7 +270,7 @@ let start (pos, norm) =
   gl##uniform3fv_typed lightPos_loc lightPos;
   gl##uniform3fv_typed ambientLight_loc ambientLight;
   let vao = gl##createVertexArray in
-  gl##bindVertexArray (Opt.return vao);
+  gl##bindVertexArray vao;
   let pos_attr = gl##getAttribLocation prog (string "a_position") in
   gl##enableVertexAttribArray pos_attr;
   let array_buffer = gl##createBuffer in

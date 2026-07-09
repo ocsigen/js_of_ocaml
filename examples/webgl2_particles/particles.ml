@@ -106,14 +106,16 @@ let get_source src_id =
      the newline following the opening script tag *)
   string (String.trim (to_string script##.text))
 
-(* wire a range input to a label; [on_input] receives the slider value and
-   returns the label text *)
-let setup_slider slider_id label_id on_input =
+(* wire a range input to a label; [init] can configure the slider (bounds,
+   initial value) before use, [on_input] receives the slider value and returns
+   the label text *)
+let setup_slider ?(init = fun _ -> ()) slider_id label_id on_input =
   Opt.iter
     (Opt.bind
        (Dom_html.document##getElementById (string slider_id))
        Dom_html.CoerceTo.input)
     (fun slider ->
+      init slider;
       let label_text = Dom_html.document##createTextNode (Js.string "") in
       Opt.iter
         (Opt.bind
@@ -187,20 +189,20 @@ let start () =
   let stride = 4 * 4 in
   let make_vao buf =
     let vao = gl##createVertexArray in
-    gl##bindVertexArray (Opt.return vao);
+    gl##bindVertexArray vao;
     gl##bindBuffer gl##._ARRAY_BUFFER_ buf;
     gl##enableVertexAttribArray 0;
     gl##vertexAttribPointer 0 2 gl##._FLOAT _false stride 0;
     gl##enableVertexAttribArray 1;
     gl##vertexAttribPointer 1 2 gl##._FLOAT _false stride 8;
-    gl##bindVertexArray Opt.empty;
+    gl##bindVertexArray_ Opt.empty;
     vao
   in
   let make_tf buf =
     let tf = gl##createTransformFeedback in
-    gl##bindTransformFeedback gl##._TRANSFORM_FEEDBACK_ (Opt.return tf);
+    gl##bindTransformFeedback gl##._TRANSFORM_FEEDBACK_ tf;
     gl##bindBufferBase gl##._TRANSFORM_FEEDBACK_BUFFER_ 0 buf;
-    gl##bindTransformFeedback gl##._TRANSFORM_FEEDBACK_ Opt.empty;
+    gl##bindTransformFeedback_ gl##._TRANSFORM_FEEDBACK_ Opt.empty;
     tf
   in
   let buf_a = make_buffer () in
@@ -227,8 +229,17 @@ let start () =
   check_error gl;
   debug "ready";
   (* the sliders choose how many particles take part and how fast time runs *)
+  (* [max_particles] is the one load-bearing bound (the GPU buffers are sized
+     from it), so it is pushed onto the slider rather than duplicated in the
+     markup; the other sliders take their ranges from the HTML alone *)
   let nparticles = ref default_particles in
-  setup_slider "count" "count-label" (fun v ->
+  setup_slider
+    ~init:(fun slider ->
+      slider##.max := string (string_of_int max_particles);
+      slider##.value := string (string_of_int default_particles))
+    "count"
+    "count-label"
+    (fun v ->
       (match int_of_string_opt v with
       | Some n -> nparticles := max 1 (min max_particles n)
       | None -> ());
@@ -236,19 +247,19 @@ let start () =
   let speed = ref 1.0 in
   setup_slider "speed" "speed-label" (fun v ->
       (match float_of_string_opt v with
-      | Some s -> speed := max 0. (min 4. s)
+      | Some s -> speed := s
       | None -> ());
       Printf.sprintf "%.2f" !speed);
   let gravity = ref 0.35 in
   setup_slider "gravity" "gravity-label" (fun v ->
       (match float_of_string_opt v with
-      | Some g -> gravity := max 0. (min 5. g)
+      | Some g -> gravity := g
       | None -> ());
       Printf.sprintf "%.2f" !gravity);
   let damping = ref 0.999 in
   setup_slider "damping" "damping-label" (fun v ->
       (match float_of_string_opt v with
-      | Some d -> damping := max 0.9 (min 1.01 d)
+      | Some d -> damping := d
       | None -> ());
       Printf.sprintf "%.4f" !damping);
   let trail = ref 0.2 in
@@ -297,24 +308,24 @@ let start () =
     gl##uniform2f attractor_loc (Js.number_of_float ax) (Js.number_of_float ay);
     gl##uniform1f gravity_loc (Js.number_of_float !gravity);
     gl##uniform1f damping_loc (Js.number_of_float !damping);
-    gl##bindVertexArray (Opt.return read_vao);
-    gl##bindTransformFeedback gl##._TRANSFORM_FEEDBACK_ (Opt.return write_tf);
+    gl##bindVertexArray read_vao;
+    gl##bindTransformFeedback gl##._TRANSFORM_FEEDBACK_ write_tf;
     gl##enable gl##._RASTERIZER_DISCARD_;
     gl##beginTransformFeedback gl##._POINTS;
     gl##drawArrays gl##._POINTS 0 !nparticles;
     gl##endTransformFeedback;
     gl##disable gl##._RASTERIZER_DISCARD_;
-    gl##bindTransformFeedback gl##._TRANSFORM_FEEDBACK_ Opt.empty;
+    gl##bindTransformFeedback_ gl##._TRANSFORM_FEEDBACK_ Opt.empty;
     (* fade pass: dim the previous frame instead of clearing it *)
     gl##useProgram fade_prog;
-    gl##bindVertexArray Opt.empty;
+    gl##bindVertexArray_ Opt.empty;
     gl##blendFunc gl##._SRC_ALPHA_ gl##._ONE_MINUS_SRC_ALPHA_;
     gl##uniform1f fade_loc (Js.number_of_float (1. -. !trail));
     gl##drawArrays gl##._TRIANGLES 0 3;
     (* render pass: draw the freshly written buffer additively on top *)
     gl##useProgram render_prog;
     gl##blendFunc gl##._SRC_ALPHA_ gl##._ONE;
-    gl##bindVertexArray (Opt.return draw_vao);
+    gl##bindVertexArray draw_vao;
     gl##drawArrays gl##._POINTS 0 !nparticles;
     check_error gl;
     let now = get_time () in

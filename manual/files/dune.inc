@@ -15,8 +15,10 @@
  (deps
   ../../examples/boulderdash/boulderdash.bc.js
   ../../examples/boulderdash/index.html
+  ../../examples/boulderdash/maps.txt
+  (source_tree ../../examples/boulderdash/maps/)
   (source_tree ../../examples/boulderdash/sprites/))
- (action (bash "mkdir -p boulderdash && cp -r ../../examples/boulderdash/boulderdash.bc.js ../../examples/boulderdash/index.html ../../examples/boulderdash/sprites boulderdash")))
+ (action (bash "mkdir -p boulderdash && cp -r ../../examples/boulderdash/boulderdash.bc.js ../../examples/boulderdash/index.html ../../examples/boulderdash/maps.txt ../../examples/boulderdash/maps ../../examples/boulderdash/sprites boulderdash")))
 
 (rule
  (alias doc-manual)
@@ -31,8 +33,9 @@
  (targets (dir graph_viewer))
  (deps
   ../../examples/graph_viewer/viewer_js.bc.js
+  ../../examples/graph_viewer/scene.json
   ../../examples/graph_viewer/index.html)
- (action (bash "mkdir -p graph_viewer && cp -r ../../examples/graph_viewer/viewer_js.bc.js ../../examples/graph_viewer/index.html graph_viewer")))
+ (action (bash "mkdir -p graph_viewer && cp -r ../../examples/graph_viewer/viewer_js.bc.js ../../examples/graph_viewer/scene.json ../../examples/graph_viewer/index.html graph_viewer")))
 
 (rule
  (alias doc-manual)
@@ -48,9 +51,12 @@
  (deps
   ../../examples/hyperbolic/hypertree.bc.js
   ../../examples/hyperbolic/index.html
+  ../../examples/hyperbolic/image_info.json
+  ../../examples/hyperbolic/messages.json
+  ../../examples/hyperbolic/tree.json
   (source_tree ../../examples/hyperbolic/icons/)
   (source_tree ../../examples/hyperbolic/thumbnails/))
- (action (bash "mkdir -p hyperbolic && cp -r ../../examples/hyperbolic/hypertree.bc.js ../../examples/hyperbolic/index.html ../../examples/hyperbolic/icons ../../examples/hyperbolic/thumbnails hyperbolic")))
+ (action (bash "mkdir -p hyperbolic && cp -r ../../examples/hyperbolic/hypertree.bc.js ../../examples/hyperbolic/index.html ../../examples/hyperbolic/image_info.json ../../examples/hyperbolic/messages.json ../../examples/hyperbolic/tree.json ../../examples/hyperbolic/icons ../../examples/hyperbolic/thumbnails hyperbolic")))
 
 (rule
  (alias doc-manual)
@@ -75,8 +81,9 @@
  (targets (dir webgl))
  (deps
   ../../examples/webgl/webgldemo.bc.js
+  ../../examples/webgl/monkey.model
   ../../examples/webgl/index.html)
- (action (bash "mkdir -p webgl && cp -r ../../examples/webgl/webgldemo.bc.js ../../examples/webgl/index.html webgl")))
+ (action (bash "mkdir -p webgl && cp -r ../../examples/webgl/webgldemo.bc.js ../../examples/webgl/monkey.model ../../examples/webgl/index.html webgl")))
 
 (rule
  (alias doc-manual)
