@@ -68,13 +68,21 @@
 
   const fs = isNode && require("node:fs");
 
+  const on_windows = isNode && globalThis.process.platform === "win32";
+
   // Virtual filesystem for embedded files (e.g. CMIs for toplevel)
   const virtual_files = new Map(); // path -> Uint8Array
   const virtual_dirs = new Set(); // directory paths
   const virtual_fds = new Map(); // fd -> { data, offset }
   let next_virtual_fd = 1000000;
 
+  // The virtual filesystem uses "/" as path separator. On Windows, the
+  // program manipulates paths with "\" (Sys.os_type is "Win32"), so
+  // normalize paths on registration and before each lookup.
+  const virtual_path = on_windows ? (p) => p.replaceAll("\\", "/") : (p) => p;
+
   function register_virtual_file(name, content) {
+    name = virtual_path(name);
     virtual_files.set(name, content);
     let dir = name;
     while (true) {
@@ -266,7 +274,6 @@
     );
   }
 
-  const on_windows = isNode && globalThis.process.platform === "win32";
   const on_arm64 = globalThis.process?.arch === "arm64";
 
   // See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error/stack
@@ -582,9 +589,10 @@
         access_flags.reduce((f, v, i) => (flags & (1 << i) ? f | v : f), 0),
       ),
     open: (p, flags, perm) => {
-      if (virtual_files.has(p) && !(flags & 2)) {
+      const vp = virtual_path(p);
+      if (virtual_files.has(vp) && !(flags & 2)) {
         const fd = next_virtual_fd++;
-        virtual_fds.set(fd, { data: virtual_files.get(p), offset: 0 });
+        virtual_fds.set(fd, { data: virtual_files.get(vp), offset: 0 });
         return fd;
       }
       return fs.openSync(
@@ -664,7 +672,8 @@
     readlink: (p) => fs.readlinkSync(p),
     unlink: (p) => fs.unlinkSync(p),
     read_dir: (p) => {
-      const prefix = p.endsWith("/") ? p : p + "/";
+      const vp = virtual_path(p);
+      const prefix = vp.endsWith("/") ? vp : vp + "/";
       const entries = new Set();
       for (const name of virtual_files.keys()) {
         if (name.startsWith(prefix)) {
@@ -699,18 +708,21 @@
     chmod: (p, perms) => fs.chmodSync(p, perms),
     fchmod: (p, perms) => fs.fchmodSync(p, perms),
     file_exists: (p) => {
-      if (virtual_files.has(p) || virtual_dirs.has(p)) return 1;
+      const vp = virtual_path(p);
+      if (virtual_files.has(vp) || virtual_dirs.has(vp)) return 1;
       return fs ? +fs.existsSync(p) : 0;
     },
     is_directory: (p) => {
-      if (virtual_dirs.has(p)) return 1;
-      if (virtual_files.has(p)) return 0;
+      const vp = virtual_path(p);
+      if (virtual_dirs.has(vp)) return 1;
+      if (virtual_files.has(vp)) return 0;
       // Follow symlinks, like native and the JS runtime (statSync, not lstat).
       return +fs.statSync(p).isDirectory();
     },
     is_file: (p) => {
-      if (virtual_files.has(p)) return 1;
-      if (virtual_dirs.has(p)) return 0;
+      const vp = virtual_path(p);
+      if (virtual_files.has(vp)) return 1;
+      if (virtual_dirs.has(vp)) return 0;
       // Follow symlinks, like native and the JS runtime (statSync, not lstat).
       return +fs.statSync(p).isFile();
     },
@@ -817,7 +829,7 @@
       for (const name of names) inst.exports[name + ".init"]();
     },
     register_file: (name, data) => register_virtual_file(name, data),
-    read_file: (name) => virtual_files.get(name) ?? null,
+    read_file: (name) => virtual_files.get(virtual_path(name)) ?? null,
   };
   const string_ops = {
     test: (v) => +(typeof v === "string"),
