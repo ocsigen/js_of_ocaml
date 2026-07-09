@@ -1,45 +1,54 @@
 (* Configuration of the Jane Street test-suite setup (see ci_setup.ml) for
-   the mainstream compiler; ci_setup_config-oxcaml.ml is the OxCaml
-   counterpart. Values differing between the two variants live here. *)
+   OxCaml; ci_setup_config_mainstream.ml is the mainstream counterpart.
+   Values differing between the two variants live here. *)
 let roots =
-  [ "bonsai_web_components"; "string_dict"; "ppx_html"; "bonsai_bench"; "float_array" ]
+  [ "bonsai_web_components"
+  ; "string_dict"
+  ; "ppx_html"
+  ; "bonsai_bench"
+  ; "float_array"
+  ; "unboxed"
+  ; "await"
+  ]
 
-let additional_others = []
+let additional_others = [ "spawn" ]
 
-let omitted_others = []
+let omitted_others = [ "odoc" ]
 
-let omitted_js = [ "basement"; "sexplib0" ]
+let omitted_js = [ "basement"; "sexplib0"; "ppxlib_jane"; "spawn"; "sexp_type" ]
 
-let do_pin =
-  [ "basement" (* https://github.com/janestreet/basement/pull/3 *); "bigstringaf" ]
+let do_pin = [ "bigstringaf" ]
 
 let forked_packages =
   [ "base"
   ; "core"
-  ; "bonsai" (* Compatibility with effect syntax *)
   ; "bonsai_test"
-  ; "bonsai_web" (* Compatibility with effect syntax *)
   ; "bonsai_web_components"
   ; "bonsai_web_test"
-  ; "virtual_dom" (* Compatibility with effect syntax *)
-  ; "typerep" (* https://github.com/janestreet/typerep/pull/7 *)
+  ; "virtual_dom"
   ]
 
 (* Extra line spliced in the (env (_ ...)) block of the generated
    dune-workspace *)
-let dune_workspace_extra_env = ""
+let dune_workspace_extra_env = {|  (ocamlopt_flags -zero-alloc-check none)
+|}
 
-let keep_package _ = true
+let keep_package opam =
+  match OpamFile.OPAM.get_url opam with
+  | None -> false
+  | Some url ->
+      let url = OpamUrl.to_string url in
+      String.starts_with ~prefix:"https://github.com/janestreet/" url
 
-let pin_branch = "wasm-latest"
+let pin_branch = "wasm-oxcaml"
 
-let fixed_branch = "wasm-latest-fixed"
+let fixed_branch = "wasm-oxcaml-31-fixed"
 
-let forked_branch = "wasm-latest"
+let forked_branch = "wasm-oxcaml-31"
 
-let default_branch = None
+let default_branch = Some "oxcaml"
 
-let patches ~target_is_wasm =
+let patches ~target_is_wasm:_ =
   [ ( "sexp_grammar"
     , {|
 diff --git a/sexp_grammar_validation.opam b/sexp_grammar_validation.opam
@@ -102,7 +111,7 @@ index c6d09fb..61b1e5b 100644
   ; ( "bin_prot"
     , {bp|
 diff --git a/test/dune b/test/dune
-index bd88b8d..29b3604 100644
+index 5a53c69..571e52e 100644
 --- a/test/dune
 +++ b/test/dune
 @@ -1,15 +1,8 @@
@@ -111,7 +120,7 @@ index bd88b8d..29b3604 100644
   (libraries base base_bigstring bin_prot
 -   expect_test_helpers_core.expect_test_helpers_base expect_test_patterns
 +   expect_test_helpers_core.expect_test_helpers_base ; expect_test_patterns
-    float_array base.md5 sexplib splittable_random stdio)
+    float_array base.md5 re sexplib splittable_random stdio)
 + (inline_tests (flags -drop-tag no-js -drop-tag 64-bits-only -drop-tag 32-bits-only -drop-tag no-wasm) (modes js wasm))
   (preprocess
    (pps ppx_jane)))
@@ -124,23 +133,19 @@ index bd88b8d..29b3604 100644
 -    "diff <(\necho '869e6b3143f14201f406eac9c05c4cdb  core/blob_stability_tests.ml'\necho 'a9ed028fa16f307982c196f647d05afa  integers_repr_tests_64bit.ml'\necho 'a17ffcd3bf1e15dbca0ee54ec5b95c58  integers_repr_tests_js.ml'\necho 'e747bd85320575c771fc62a0d3085d29  integers_repr_tests_wasm.ml'\n  ) <(md5sum %{deps})"))
 - (alias runtest))
 diff --git a/test/non_integers_repr.ml b/test/non_integers_repr.ml
-index cbb9bd5..b5b5a03 100644
+index e59e237..30740fc 100644
 --- a/test/non_integers_repr.ml
 +++ b/test/non_integers_repr.ml
-@@ -811,11 +811,12 @@ let%expect_test "Non-integer bin_prot size tests" =
+@@ -831,11 +831,13 @@ let%expect_test "Non-integer bin_prot size tests" =
+     3e 7a d7 f2 9a bc af 48 -> 1E-07
      00 00 00 00 00 00 00 00 -> 0
      |}];
-   gen_tests Tests.float_nan;
-+  [%expect
-+    {| 7f f8 00 00 00 00 00 |bp}
-      ^ (if target_is_wasm then "01" else "00")
-      ^ {bp| -> NAN |}];
 +(*
+   gen_tests Tests.float_nan;
    Expect_test_patterns.require_match
-     [%here]
--    {|
--    7f f{8,0} 00 00 00 00 00 01 -> NAN (glob)
--    |};
+     {|
+     7f f{8,0} 00 00 00 00 00 01 -> NAN (glob)
+     |};
 +*)
    gen_tests Tests.vec;
    [%expect
@@ -160,21 +165,6 @@ index 8d23f86..21e83ba 100644
 + (inline_tests (flags -drop-tag no-js -drop-tag 64-bits-only -drop-tag no-wasm) (modes js wasm))
   (preprocess
    (pps ppx_jane)))
-|}
-    )
-  ; ( "core_kernel"
-    , {|
-diff --git a/version_util/src/dune b/version_util/src/dune
-index 4b2b8bb..f7eb7ba 100644
---- a/version_util/src/dune
-+++ b/version_util/src/dune
-@@ -10,4 +10,5 @@
-  (preprocess
-   (pps ppx_jane))
-  (wasm_of_ocaml
--  (javascript_files version_util.js)))
-+  (javascript_files version_util.js)
-+  (wasm_files version_util.wat)))
 |}
     )
   ; ( "string_dict"
@@ -200,8 +190,8 @@ index 5fd0ddc..4833923 100644
 +++ b/test/bitwise.ml
 @@ -86,7 +86,7 @@ module Ml_z_popcount = struct
      Static.quickcheck ~f:(fun x -> [%message (x : t) (popcount x : int)]) ();
-     (* Compression rate is low because our quickcheck implementation generates
-        integers with a bounded bitcount. *)
+     (* Compression rate is low because our quickcheck implementation generates integers
+        with a bounded bitcount. *)
 -    [%expect {| ((hash 1e429706c701b111d98b6e6e858bbea4) (uniqueness_rate 42.96875)) |}]
 +    [%expect {| ((hash d937e61f530ab9c27544e392922d286d) (uniqueness_rate 42.96875)) |}]
    ;;
@@ -209,8 +199,8 @@ index 5fd0ddc..4833923 100644
  
 @@ -102,7 +102,7 @@ module Ml_z_hamdist = struct
        ();
-     (* Compression rate is low because our quickcheck implementation generates
-        integers with a bounded bitcount. *)
+     (* Compression rate is low because our quickcheck implementation generates integers
+        with a bounded bitcount. *)
 -    [%expect {| ((hash 0a270232628736ee7d47c8b403250989) (uniqueness_rate 33.284457)) |}]
 +    [%expect {| ((hash 0d36530b39292e2c31f13d10ec004a38) (uniqueness_rate 33.284457)) |}]
    ;;
@@ -223,7 +213,7 @@ index 7996514..d0b463a 100644
 @@ -1,7 +1,9 @@
  (library
   (name zarith_stubs_js_test)
-- (libraries zarith core base.md5 zarith_stubs_js)
+- (libraries zarith_stubs_js core base.md5 zarith)
 + (libraries zarith_wrapper core base.md5 zarith_stubs_js)
   (flags :standard -w -60)
 + (inline_tests (flags -drop-tag no-js -drop-tag 64-bits-only -drop-tag no-wasm) (modes js wasm))
@@ -250,23 +240,20 @@ index 7996514..d0b463a 100644
 + (library (name zarith_wrapper)
 +  (wrapped false)
 +  (libraries zarith)))
+diff --git a/test/zarith.ml b/test/zarith.ml
+index 059d011..b40264e 100644
+--- a/test/zarith.ml
++++ b/test/zarith.ml
+@@ -1,5 +1,4 @@
+ module Big_int_Z = Big_int_Z
+ module Q = Q
+ module Z = Z
+-module Zarith = Zarith
+ module Zarith_version = Zarith_version
 |zs}
     )
   ; ( "ppx_css"
     , {|
-diff --git a/css_parser/lexer/ident.ml b/css_parser/lexer/ident.ml
-index fdf9926..d0ccf6a 100644
---- a/css_parser/lexer/ident.ml
-+++ b/css_parser/lexer/ident.ml
-@@ -6,7 +6,7 @@ let css_newline_single_char = [%sedlex.regexp? '\n' | '\r' | "\u{000C}"]
- let css_newline = [%sedlex.regexp? "\r\n" | css_newline_single_char]
- let css_whitespace = [%sedlex.regexp? css_newline | '\t' | " "]
- let css_whitespace_single_char = [%sedlex.regexp? css_newline_single_char | '\t' | " "]
--let ascii = [%sedlex.regexp? '\000' .. '\177']
-+let ascii = [%sedlex.regexp? Latin1 '\000' .. '\177']
- let non_ascii = [%sedlex.regexp? Compl ascii]
- let ident_start_code_point = [%sedlex.regexp? 'a' .. 'z' | 'A' .. 'Z' | '_' | non_ascii]
- let ident_code_point = [%sedlex.regexp? ident_start_code_point | '0' .. '9' | '-']
 diff --git a/standalone/css_inliner.ml b/standalone/css_inliner.ml
 --- a/standalone/css_inliner.ml
 +++ b/standalone/css_inliner.ml

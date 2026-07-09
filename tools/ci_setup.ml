@@ -1,4 +1,39 @@
-module Config = Ci_setup_config
+(* The configuration values differing between the mainstream and OxCaml
+   ecosystems. The relevant variant is selected at runtime, based on the
+   compiler of the current switch. *)
+module type CONFIG = sig
+  val roots : string list
+
+  val additional_others : string list
+
+  val omitted_others : string list
+
+  val omitted_js : string list
+
+  val do_pin : string list
+
+  val forked_packages : string list
+
+  val dune_workspace_extra_env : string
+
+  val keep_package : OpamFile.OPAM.t -> bool
+
+  val pin_branch : string
+
+  val fixed_branch : string
+
+  val forked_branch : string
+
+  val default_branch : string option
+
+  val patches : target_is_wasm:bool -> (string * string) list
+end
+
+module Config =
+  (val match Sys.ocaml_release with
+       | { extra = Some (Plus, "ox"); _ } -> (module Ci_setup_config_oxcaml : CONFIG)
+       | _ -> (module Ci_setup_config_mainstream : CONFIG))
+
 module StringSet = Set.Make (String)
 
 (****)
@@ -109,7 +144,7 @@ let packages =
       if String.contains s '.'
       then String.sub s 0 (String.index s '.'), read_opam_file s
       else s, read_opam_file (Filename.concat s (latest_version s)))
-  |> List.filter Config.keep_package
+  |> List.filter (fun (_, (_, opam)) -> Config.keep_package opam)
 
 let rec traverse visited p =
   if StringSet.mem p visited
