@@ -150,11 +150,13 @@ let is_dir x =
    default alias deps. This avoids having to manually update this file
    whenever a new example is added.
 
-   Note that files passed via --file in build_runtime_flags are copied like
-   any other dep: they used to be embedded into the .bc.js, but with
-   separate compilation the shared runtime is built without the
-   per-executable build_runtime_flags, so the examples fetch them over http
-   at run time. *)
+   Files passed via --file in build_runtime_flags are copied like any other
+   dep. Whether they are additionally embedded into the .bc.js depends on
+   how the executable is built: since dune 3.23, separately-compiled
+   executables share a standalone runtime built without the per-executable
+   build_runtime_flags (see ocaml/dune#15455), in which case the example
+   falls back to fetching the file over http at run time. Shipping the
+   files makes the pages work in both cases. *)
 let discover_examples () : desc list =
   let examples_dir = "../../examples" in
   let entries = Sys.readdir examples_dir in
