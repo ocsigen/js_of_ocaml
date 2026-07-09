@@ -3663,29 +3663,6 @@ The entry point of this library is the module: [`Js_of_ocaml_tyxml`](./Js_of_oca
 
 ---
 
-# Binding a JS library
-
-This page has been merged into [JavaScript interop](./javascript-interop.md).
-
-
----
-
-# Camlp4 syntax extension
-
-The Camlp4 syntax extension is deprecated and no longer part of js\_of\_ocaml.
-
-Use the [PPX syntax extension](./ppx.md) instead.
-
-
----
-
-# Environment variables
-
-This page has been moved to [Command-line options](./options.md#env_vars).
-
-
----
-
 # Js\_of\_ocaml
 
 Js\_of\_ocaml is a compiler from OCaml bytecode programs to JavaScript. It makes it possible to run pure OCaml programs in JavaScript environments like browsers and Node.js. A companion compiler, *wasm\_of\_ocaml*, targets WebAssembly.
@@ -3710,20 +3687,6 @@ Js\_of\_ocaml is a compiler from OCaml bytecode programs to JavaScript. It makes
 ## API reference
 
 See the [API overview](./api.md) for the full list of modules, or jump to the main libraries: [`Js_of_ocaml.Js`](./Js_of_ocaml-Js.md), [`Js_of_ocaml.Dom_html`](./Js_of_ocaml-Dom_html.md), `Js_of_ocaml_lwt.Lwt_js_events`, `Js_of_ocaml_tyxml.Tyxml_js`.
-
-
----
-
-# Library overview
-
-This page has been merged into [JavaScript interop](./javascript-interop.md).
-
-
----
-
-# Runtime files
-
-This page has been moved to [Linking JavaScript code](./linker.md).
 
 
 ---

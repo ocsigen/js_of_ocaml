@@ -34,12 +34,7 @@
 - [js\_of\_ocaml-ppx\_deriving\_json index](js_of_ocaml-ppx_deriving_json/index.md)
 - [js\_of\_ocaml-toplevel index](js_of_ocaml-toplevel/index.md)
 - [js\_of\_ocaml-tyxml index](js_of_ocaml-tyxml/index.md)
-- [Binding a JS library](js_of_ocaml/bindings.md)
-- [Camlp4 syntax extension](js_of_ocaml/camlp4.md)
-- [Environment variables](js_of_ocaml/environment-variable.md)
 - [Js\_of\_ocaml](js_of_ocaml/index.md)
-- [Library overview](js_of_ocaml/library.md)
-- [Runtime files](js_of_ocaml/runtime-files.md)
 - [wasm\_of\_ocaml-compiler index](wasm_of_ocaml-compiler/index.md)
 
 ## API
