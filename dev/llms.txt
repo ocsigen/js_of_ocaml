@@ -869,6 +869,8 @@
 - [Class type `WebGL.renderingContext`](js_of_ocaml/Js_of_ocaml-WebGL-class-type-renderingContext.md)
 - [Class type `WebGL.shaderPrecisionFormat`](js_of_ocaml/Js_of_ocaml-WebGL-class-type-shaderPrecisionFormat.md)
 - [Module `Js_of_ocaml.WebGL`](js_of_ocaml/Js_of_ocaml-WebGL.md)
+- [Class type `WebGL2.renderingContext`](js_of_ocaml/Js_of_ocaml-WebGL2-class-type-renderingContext.md)
+- [Module `Js_of_ocaml.WebGL2`](js_of_ocaml/Js_of_ocaml-WebGL2.md)
 - [Class type `WebSockets.closeEvent`](js_of_ocaml/Js_of_ocaml-WebSockets-class-type-closeEvent.md)
 - [Class type `WebSockets.messageEvent`](js_of_ocaml/Js_of_ocaml-WebSockets-class-type-messageEvent.md)
 - [Class type `WebSockets.webSocket`](js_of_ocaml/Js_of_ocaml-WebSockets-class-type-webSocket.md)

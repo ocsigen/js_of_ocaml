@@ -185,6 +185,11 @@ module WebGL : sig ... end
 WebGL binding
 
 ```ocaml
+module WebGL2 : sig ... end
+```
+WebGL2 binding.
+
+```ocaml
 module WebSockets : sig ... end
 ```
 WebSocket binding

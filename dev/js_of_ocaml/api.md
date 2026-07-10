@@ -50,6 +50,7 @@ Browser APIs:
 [`Js_of_ocaml.ServiceWorker`](./Js_of_ocaml-ServiceWorker.md) Service Workers.
 [`Js_of_ocaml.Url`](./Js_of_ocaml-Url.md) This module provides functions for tampering with Url. It's main goal is to allow one to stay in the Ocaml realm without wandering into the Dom\_html.window\##.location object.
 [`Js_of_ocaml.WebGL`](./Js_of_ocaml-WebGL.md) WebGL binding
+[`Js_of_ocaml.WebGL2`](./Js_of_ocaml-WebGL2.md) WebGL2 binding.
 [`Js_of_ocaml.WebSockets`](./Js_of_ocaml-WebSockets.md) WebSocket binding
 [`Js_of_ocaml.Worker`](./Js_of_ocaml-Worker.md) Low-level bindgins to javascript Web Workers.
 [`Js_of_ocaml.XmlHttpRequest`](./Js_of_ocaml-XmlHttpRequest.md) XmlHttpRequest object.
