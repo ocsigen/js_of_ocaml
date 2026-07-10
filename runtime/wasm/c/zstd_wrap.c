@@ -97,23 +97,7 @@ static void *bump_alloc(size_t n) {
   return (void *)p;
 }
 
-/*
- * Under -mbulk-memory clang lowers __builtin_mem{cpy,move,set} to inline
- * memory.copy / memory.fill instructions, so these wrappers expand to a
- * single bulk-memory op plus a return — no recursive call to themselves.
- */
-void *memcpy(void *dst, const void *src, size_t n) {
-  __builtin_memcpy(dst, src, n);
-  return dst;
-}
-void *memmove(void *dst, const void *src, size_t n) {
-  __builtin_memmove(dst, src, n);
-  return dst;
-}
-void *memset(void *dst, int v, size_t n) {
-  __builtin_memset(dst, v, n);
-  return dst;
-}
+/* memcpy/memmove/memset and other freestanding libc stubs live in stubs.c. */
 
 void *malloc(size_t n) { return bump_alloc(n); }
 
@@ -138,13 +122,6 @@ void *realloc(void *old, size_t n) {
   if (p && old) __builtin_memcpy(p, old, n);
   return p;
 }
-
-/* Freestanding stubs for symbols clang may emit. */
-void __assert_fail(const char *a, const char *b, unsigned c, const char *d) {
-  (void)a; (void)b; (void)c; (void)d;
-  __builtin_trap();
-}
-void __stack_chk_fail(void) { __builtin_trap(); }
 
 /*
  * Streaming state and the two fixed chunk buffers exchanged with zstd.wat.
