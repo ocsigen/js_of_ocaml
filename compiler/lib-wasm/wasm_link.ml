@@ -1508,13 +1508,35 @@ module Scan = struct
       assert (get pos = 0);
       pos + 1
     in
+    (* An active element segment with an implicit table (kinds 0 and 4) names
+       table 0. When linking moves this module's table 0 to another output
+       index, rewrite the segment to its explicit-table form (kinds 2 and 6):
+       swap the [flag], insert the remapped index after it, and insert the
+       element type ([mid]: an elemkind or a reftype) that the explicit form
+       carries before the element vector. [pos] is the flag byte. (Unlike
+       [memarg], this needs no [report] of the LEB-width change: resize
+       bookkeeping feeds the source map, which describes only the instruction
+       stream, and a segment lives in the element section, never in a function
+       body.) *)
+    let active_elem ~flag ~mid element pos =
+      if table_map 0 = 0
+      then pos + 1 |> expr |> vector element
+      else (
+        flush' pos (pos + 1);
+        Buffer.add_char buf flag;
+        output_uint buf (table_map 0);
+        let after_expr = pos + 1 |> expr in
+        flush' after_expr after_expr;
+        Buffer.add_char buf mid;
+        after_expr |> vector element)
+    in
     let elem pos =
       match get pos with
-      | 0 -> pos + 1 |> expr |> vector funcidx
+      | 0 -> pos |> active_elem ~flag:'\x02' ~mid:'\x00' funcidx
       | 1 -> pos + 1 |> elemkind |> vector funcidx
       | 2 -> pos + 1 |> tableidx |> expr |> elemkind |> vector funcidx
       | 3 -> pos + 1 |> elemkind |> vector funcidx
-      | 4 -> pos + 1 |> expr |> vector expr
+      | 4 -> pos |> active_elem ~flag:'\x06' ~mid:'\x70' expr
       | 5 -> pos + 1 |> reftype |> vector expr
       | 6 -> pos + 1 |> tableidx |> expr |> reftype |> vector expr
       | 7 -> pos + 1 |> reftype |> vector expr
@@ -1526,7 +1548,17 @@ module Scan = struct
     in
     let data pos =
       match get pos with
-      | 0 -> pos + 1 |> expr |> bytes
+      | 0 ->
+          (* Active data segment with an implicit memory (kind 0) names memory 0;
+             rewrite to the explicit-memory form (kind 2) when linking moves this
+             module's memory 0 elsewhere. *)
+          if mem_map 0 = 0
+          then pos + 1 |> expr |> bytes
+          else (
+            flush' pos (pos + 1);
+            Buffer.add_char buf '\x02';
+            output_uint buf (mem_map 0);
+            pos + 1 |> expr |> bytes)
       | 1 -> pos + 1 |> bytes
       | 2 -> pos + 1 |> memidx |> expr |> bytes
       | c -> failwith (Printf.sprintf "Bad data segment 0x%02X" c)
