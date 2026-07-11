@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>test_shared_worker</title>
+  <style>
+    body {
+      font-family: monospace;
+      margin: 2em;
+    }
+
+    button {
+      font-family: monospace;
+      margin-right: 0.5em;
+    }
+
+    #log {
+      margin-top: 1em;
+      padding: 1em;
+      background: #f5f5f5;
+      border: 1px solid #ccc;
+      min-height: 200px;
+      overflow-y: auto;
+      max-height: 60vh;
+    }
+
+    #log div {
+      padding: 2px 0;
+    }
+  </style>
+  <script>
+    var isWasm = /[?&]wasm\b/.test(location.search);
+    (function () {
+      var s = document.createElement('script');
+      s.defer = true;
+      s.src = isWasm ? 'test_shared_worker.bc.wasm.js' : 'test_shared_worker.bc.js';
+      document.head.appendChild(s);
+    })();
+  </script>
+</head>
+
+<body>
+  <h2>SharedWorker and BroadcastChannel test</h2>
+  <p>
+    Open this page in several tabs. All tabs share a single worker: it
+    numbers connections, echoes messages with a shared counter, and announces
+    new connections on the broadcast channel. Broadcast messages are only
+    delivered to <em>other</em> tabs.
+  </p>
+  <p>
+    Mode: <strong><script>document.write(isWasm ? 'wasm' : 'js')</script></strong>
+    — <script>document.write(isWasm ? '<a href="test_shared_worker.html">switch to js</a>' : '<a href="test_shared_worker.html?wasm">switch to wasm</a>')</script>
+  </p>
+  <p>
+    <button type="button" id="send-worker">Send to shared worker</button>
+    <button type="button" id="send-broadcast">Broadcast to other tabs</button>
+  </p>
+  <div id="log"></div>
+</body>
+
+</html>
