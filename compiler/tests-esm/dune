@@ -4,4 +4,4 @@
  (libraries js_of_ocaml_compiler unix)
  (inline_tests)
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_expect_light)))
