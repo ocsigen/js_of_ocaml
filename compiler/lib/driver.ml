@@ -180,14 +180,6 @@ let effects_and_exact_calls
       Deadcode.f pure_fun p
     else Deadcode.f pure_fun p
   in
-  let p =
-    match Config.(Flag.lambda_lift_all (), target (), effects ()) with
-    | true, `JavaScript, `Disabled ->
-        let to_lift = all_functions p in
-        let p, _ = Lambda_lifting_simple.f ~to_lift p in
-        p
-    | _ -> p
-  in
   match Config.effects () with
   | `Cps | `Double_translation ->
       if debug () then Format.eprintf "Effects...@.";
@@ -211,6 +203,17 @@ let effects_and_exact_calls
           p
       in
       let shapes = collects_shapes ~shapes p in
+      (* Lift after the passes above: lifting forks the free variables of
+         lifted closures, so [info] no longer describes the lifted
+         program. *)
+      let p =
+        match Config.(Flag.lambda_lift_all (), target ()) with
+        | true, `JavaScript ->
+            let to_lift = all_functions p in
+            let p, _ = Lambda_lifting_simple.f ~to_lift p in
+            p
+        | _ -> p
+      in
       ( p
       , (Code.Var.Set.empty : Effects.trampolined_calls)
       , (Code.Var.Set.empty : Effects.in_cps)
