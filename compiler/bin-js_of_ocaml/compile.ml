@@ -263,6 +263,7 @@ let run
       (one : Parse_bytecode.one)
       ~check_sourcemap
       ~standalone
+      ~lifecycle_events
       ~shapes
       ~(source_map : Source_map.Encoding_spec.t option)
       ~link
@@ -282,6 +283,7 @@ let run
           let code = Code.prepend one.code instr in
           Driver.f
             ~standalone
+            ~lifecycle_events
             ~shapes
             ?profile
             ~link
@@ -306,6 +308,7 @@ let run
           let res =
             Driver.f
               ~standalone
+              ~lifecycle_events
               ~shapes
               ?profile
               ~link
@@ -342,6 +345,7 @@ let run
       ~check_sourcemap:true
       ~source_map
       ~standalone
+      ~lifecycle_events:false
       ~shapes
       ~link:`No
       output_file
@@ -372,6 +376,7 @@ let run
       ~check_sourcemap:false
       ~source_map
       ~standalone
+      ~lifecycle_events:false
       ~link:(`All_from runtime_files_from_cmdline)
       output_file
   in
@@ -409,6 +414,7 @@ let run
             ~check_sourcemap:false
             ~source_map
             ~standalone
+            ~lifecycle_events:false
             ~shapes
             ~link:`All
             output_file
@@ -456,6 +462,7 @@ let run
                 code
                 ~check_sourcemap:true
                 ~standalone
+                ~lifecycle_events:true
                 ~shapes
                 ~source_map
                 ~link:(if linkall then `All else `Needed)

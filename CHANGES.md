@@ -46,6 +46,10 @@
 * Runtime/wasm: dispatch `wasmoocaml:loaded` and `wasmoocaml:error`
   `CustomEvent`s on `globalThis` so that surrounding JavaScript can wait
   for the asynchronous Wasm instantiation to complete
+* Compiler: standalone executables now dispatch `jsoocaml:loaded` and
+  `jsoocaml:error` `CustomEvent`s on `globalThis`, mirroring the Wasm
+  lifecycle events, so that surrounding JavaScript can wait for the
+  program to run the same way with either backend
 
 ## Bug fixes
 * Compiler/Wasm runtime: fix toplevels built on Windows — the embedded cmi
