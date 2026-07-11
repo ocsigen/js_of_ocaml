@@ -849,14 +849,18 @@ module Read = struct
   let namemap contents = vec nameassoc contents.ch
 end
 
-(* Raised by the table-section scan when a table initializer reads a global that
-   linking resolves to a module-internal definition. Such a global is emitted
-   after the table section, so the initializer would forward-reference it and
-   the merged module would be invalid (a table initializer may only read an
-   imported global). Signalled through the [global] map: a resolved-import
-   global is set to the sentinel [-1] in the table scan's map, which
-   [global_map] turns into this exception. *)
-exception Table_init_reads_internal_global
+(* Raised by a constant-initializer scan (table or global section) when the
+   initializer reads a global that the merged module cannot legally reference at
+   that point --- a forward reference that would make the output invalid. The
+   offending global's *source* index (module-local) is carried so the catch site
+   can name the offending import. Signalled through the [global] map: the caller
+   sets the sentinel [-1] for every disallowed global, which [global_map] turns
+   into this exception. The two callers differ only in which globals they forbid:
+   the table scan rejects any global that linking internalises (a resolved
+   import, emitted after the whole table section); the global scan rejects only a
+   resolved import bound to a *later* module (whose definition follows this
+   module's globals in the output). *)
+exception Init_reads_forward_global of int
 
 module Scan = struct
   let debug = false
@@ -1041,11 +1045,11 @@ module Scan = struct
     let mem_map idx = maps.mem.(idx) in
     let memidx pos = rewrite mem_map pos in
     let global_map idx =
-      (* [-1] marks a global the table scan must reject (see
-         [Table_init_reads_internal_global]); a real map only holds valid
-         indices, so this never fires outside the table section. *)
+      (* [-1] marks a global a constant-initializer scan must reject (see
+         [Init_reads_forward_global]); a real map only holds valid indices, so
+         this never fires outside a table/global initializer scan. *)
       let v = maps.global.(idx) in
-      if v < 0 then raise Table_init_reads_internal_global;
+      if v < 0 then raise (Init_reads_forward_global idx);
       v
     in
     let globalidx pos = rewrite global_map pos in
@@ -2138,41 +2142,56 @@ let f ?(filter_export = fun _ -> true) files ~output_file =
   (* Global index maps, computed before the table section because a table's
      initializer expression may read a global ([(table ... (global.get $g))]);
      the global bodies themselves are emitted later, in section 6. This reads
-     each module's section-6 count but does not scan its bodies. *)
-  let global_mappings = Array.make (Array.length files) [||] in
+     each module's section-6 count but does not scan its bodies.
+
+     [build_mappings] is two-pass, so a global import resolving to a *later*
+     module maps correctly regardless of input order (unlike functions, globals
+     used to be laid out in a single forward pass that rejected such an import
+     outright). Whether the resulting forward reference is actually invalid
+     depends on *where* the global is read: only a constant initializer requires
+     its operands to precede it, so the check is deferred to the table/global
+     scans below rather than made here. *)
   let global_counts =
-    let current_offset = ref (get_exportable_info unresolved_imports Global) in
-    Array.mapi
-      ~f:(fun i { file; contents; _ } ->
-        let imports = get_exportable_info resolved_imports.(i) Global in
-        let import_count = Array.length imports in
-        let offset = !current_offset - import_count in
-        let count = if Read.find_section contents 6 then Read.uint contents.ch else 0 in
-        let map =
-          Array.init (import_count + count) ~f:(fun j ->
-              if j < import_count
-              then (
-                match imports.(j) with
-                | Unresolved j' -> j'
-                | Resolved (i', j') ->
-                    (if i' > i
-                     then
-                       let import = (get_exportable_info intfs.(i).imports Global).(j) in
-                       failwith
-                         (Printf.sprintf
-                            "In module %s, the import %s / %s refers to an export in a \
-                             later module %s"
-                            file
-                            import.module_
-                            import.name
-                            files.(i').file));
-                    global_mappings.(i').(j'))
-              else j + offset)
-        in
-        global_mappings.(i) <- map;
-        current_offset := !current_offset + count;
-        count)
+    Array.map
+      ~f:(fun { contents; _ } ->
+        if Read.find_section contents 6 then Read.uint contents.ch else 0)
       files
+  in
+  let global_mappings =
+    build_mappings resolved_imports unresolved_imports Global global_counts
+  in
+  (* A table or global initializer in module [i] read a global at source index
+     [idx] that the merged layout cannot place before it (signalled by
+     [Init_reads_forward_global]). [idx] is always a resolved global import here,
+     so name that import and the module its definition lands in. *)
+  let reject_forward_global kind i idx =
+    let import = (get_exportable_info intfs.(i).imports Global).(idx) in
+    let i' =
+      match (get_exportable_info resolved_imports.(i) Global).(idx) with
+      | Resolved (i', _) -> i'
+      | Unresolved _ -> assert false
+    in
+    failwith
+      (match kind with
+      | `Table ->
+          Printf.sprintf
+            "In module %s, a table initializer reads the global import %s / %s, which \
+             linking resolves to a definition in module %s. A table initializer may only \
+             read an imported global, so the linked module would be invalid."
+            files.(i).file
+            import.module_
+            import.name
+            files.(i').file
+      | `Global ->
+          Printf.sprintf
+            "In module %s, a global initializer reads the global import %s / %s, which \
+             linking resolves to a definition in the later module %s. A global \
+             initializer may only read a preceding global, so the linked module would be \
+             invalid."
+            files.(i).file
+            import.module_
+            import.name
+            files.(i').file)
   in
 
   (* 4: table *)
@@ -2183,32 +2202,31 @@ let f ?(filter_export = fun _ -> true) files ~output_file =
     (* A table initializer may only read an *imported* global; a global that
        linking internalises (a resolved import) would follow the table section
        in the output and make the initializer a forward reference --- an invalid
-       module. Mark resolved-import globals with [-1] so the table scan rejects
-       them ([Table_init_reads_internal_global]) rather than silently producing
-       an invalid module. *)
-    try
-      write_section_with_scan ~files ~out_ch ~buf ~id:4 ~scan:(fun i maps ->
-          let imports = get_exportable_info resolved_imports.(i) Global in
-          let import_count = Array.length imports in
-          let global =
-            Array.mapi
-              ~f:(fun j idx ->
-                if
-                  j < import_count
-                  &&
-                  match imports.(j) with
-                  | Resolved _ -> true
-                  | _ -> false
-                then -1
-                else idx)
-              global_mappings.(i)
-          in
-          Scan.table_section positions.(i) { maps with func = func_mappings.(i); global })
-    with Table_init_reads_internal_global ->
-      failwith
-        "A table initializer reads a global that linking resolves to a definition in \
-         another module. A table initializer may only read an imported global, so the \
-         linked module would be invalid."
+       module. Mark every resolved-import global with [-1] so a read raises
+       [Init_reads_forward_global] rather than silently producing an invalid
+       module. *)
+    write_section_with_scan ~files ~out_ch ~buf ~id:4 ~scan:(fun i maps ->
+        let imports = get_exportable_info resolved_imports.(i) Global in
+        let import_count = Array.length imports in
+        let global =
+          Array.mapi
+            ~f:(fun j idx ->
+              if
+                j < import_count
+                &&
+                match imports.(j) with
+                | Resolved _ -> true
+                | _ -> false
+              then -1
+              else idx)
+            global_mappings.(i)
+        in
+        let scan =
+          Scan.table_section positions.(i) { maps with func = func_mappings.(i); global }
+        in
+        fun buf s ~count pos ->
+          try scan buf s ~count pos
+          with Init_reads_forward_global idx -> reject_forward_global `Table i idx)
   in
   let table_mappings =
     build_mappings resolved_imports unresolved_imports Table table_counts
@@ -2264,17 +2282,39 @@ let f ?(filter_export = fun _ -> true) files ~output_file =
       if Read.find_section contents 6
       then
         let count = Read.uint contents.ch in
-        Scan.global_section
-          positions.(i)
-          { Scan.default_maps with
-            typ = contents.type_mapping
-          ; func = func_mappings.(i)
-          ; global = global_mappings.(i)
-          }
-          buf
-          contents.ch.buf
-          contents.ch.pos
-          ~count)
+        (* A global initializer may only read a *preceding* global. A global
+           import that linking resolves to a *later* module's definition would
+           follow this module's globals in the output, so mark it [-1] to reject
+           such a read ([Init_reads_forward_global]); a read of a non-forward
+           global never hits the sentinel. *)
+        let imports = get_exportable_info resolved_imports.(i) Global in
+        let import_count = Array.length imports in
+        let global =
+          Array.mapi
+            ~f:(fun j idx ->
+              if
+                j < import_count
+                &&
+                match imports.(j) with
+                | Resolved (i', _) -> i' > i
+                | Unresolved _ -> false
+              then -1
+              else idx)
+            global_mappings.(i)
+        in
+        try
+          Scan.global_section
+            positions.(i)
+            { Scan.default_maps with
+              typ = contents.type_mapping
+            ; func = func_mappings.(i)
+            ; global
+            }
+            buf
+            contents.ch.buf
+            contents.ch.pos
+            ~count
+        with Init_reads_forward_global idx -> reject_forward_global `Global i idx)
     files;
   add_section out_ch ~id:6 ~count:(Array.fold_left ~f:( + ) ~init:0 global_counts) buf;
   check_exports_against_imports
