@@ -1,6 +1,10 @@
 # dev
 
 ## Features/Changes
+* Lib: add `BroadcastChannel` and `SharedWorker` — bindings to the Broadcast
+  Channel API and to shared workers (the page-side `SharedWorker` constructors
+  with their options, and the worker-side `SharedWorkerGlobalScope` with a
+  `set_onconnect` helper) (#2400)
 * Lib: add `WebGL2` — bindings to the WebGL2 rendering context. The context
   inherits every method and constant of `WebGL`, and adds the WebGL2 objects
   (vertex array objects, queries, samplers, syncs, transform feedback), 3D and
