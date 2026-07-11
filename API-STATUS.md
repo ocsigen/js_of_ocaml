@@ -94,9 +94,9 @@ This document lists standard JavaScript/Web APIs and their support status in js_
 
 | API | jsoo | Brr | jsoo Module / Notes |
 |-----|------|-----|---------------------|
-| HTMLMediaElement (audio/video) | Partial | Yes | `Dom_html` (audioElement, videoElement) · Brr: `Brr_io.Media.El` |
-| Web Audio API | No | Yes | Brr: `Brr_webaudio` |
-| Media Capture (getUserMedia) | No | Yes | Brr: `Brr_io.Media.Devices` |
+| HTMLMediaElement (audio/video) | Yes | Yes | `Dom_html` (mediaElement, audioElement, videoElement, textTrack) · Brr: `Brr_io.Media.El` |
+| Web Audio API | Yes | Yes | `WebAudio` · Brr: `Brr_webaudio` |
+| Media Capture (getUserMedia) | Yes | Yes | `MediaCapture` · Brr: `Brr_io.Media.Devices` |
 | Media Source Extensions | No | No | |
 | WebRTC | No | No | |
 
@@ -181,14 +181,11 @@ Worker/iframe/window communication.
 | API | Issue | In Brr | Why |
 |-----|-------|--------|-----|
 | Broadcast Channel API | — | Yes | Cross-tab communication (sync auth state, shared data). Simple API. |
-| Web Audio API | — | Yes | Audio processing, games, music apps. Large API surface but well-defined. |
-| Media Capture (getUserMedia) | — | Yes | Video calls, camera/mic access. Growing use with remote work tooling. |
 | Encoding API (TextEncoder/TextDecoder) | — | Partial | Needed for binary protocol work and streaming text. Small surface. |
 | Shared Workers | — | Yes | Shared state across tabs. Niche but Brr covers it. |
 | IndexedDB | — | No | Client-side database for offline apps. Large API but important for data-heavy PWAs. |
 | Streams API | — | No | Modern data processing. Fetch response bodies are ReadableStreams. Increasingly foundational. |
 | History API (upgrade to full) | — | Yes | SPA routing depends on pushState/replaceState. Current binding is limited. |
-| HTMLMediaElement (upgrade to full) | — | Yes | Better audio/video control. Current binding only covers basic element types. |
 
 ### Tier 3 — Lower priority
 
