@@ -288,7 +288,7 @@ module Fragment = struct
 
   let script_to_module ~runtime_import p =
     let open! Javascript in
-    List.concat_map p ~f:(fun (annots, code_fragments) ->
+    List.concat_map p ~f:(fun (annots, code) ->
         (* Extract provides and requires from annotations *)
         let provides, requires =
           List.fold_left annots ~init:(None, []) ~f:(fun (prov, reqs) ((_, a), _pi) ->
@@ -321,7 +321,6 @@ module Fragment = struct
               let id = ident utf8 in
               [ Export (ExportNames [ id, utf8 ], Parse_info.zero), N ]
         in
-        let code = List.concat code_fragments in
         import_stmt @ code @ export_stmt)
 
   let parse_from_lex ~filename lex =

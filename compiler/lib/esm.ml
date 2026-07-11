@@ -83,7 +83,6 @@ type esm_module =
   ; exports : export_entry StringMap.t
   ; star_exports : ModuleId.t list (* export * from sources *)
   ; body : statement_list
-  ; has_default_export : bool
   }
 
 type module_graph =
@@ -115,8 +114,8 @@ let normalize_exports (stmts : statement_list) : statement_list =
   let default_utf8 = Utf8_string.of_string_exn "default" in
   List.concat_map stmts ~f:(fun (stmt, loc) ->
       match stmt with
-      | Export (k, pi) -> begin
-          match k with
+      | Export (k, pi) ->
+          begin match k with
           | ExportVar (k, decls) ->
               let ids =
                 List.concat_map decls ~f:(fun decl ->
@@ -152,7 +151,7 @@ let normalize_exports (stmts : statement_list) : statement_list =
           | CoverExportFrom _ -> assert false
           (* These export forms pass through unchanged *)
           | ExportNames _ | ExportFrom _ -> [ stmt, loc ]
-        end
+          end
       | _ -> [ stmt, loc ])
 
 (* Rename all declarations to fresh V identifiers using Js_traverse.rename_variable.
@@ -189,12 +188,13 @@ let extract_imports ~resolve (stmts : statement_list) : import_entry list =
           Some { source; bindings }
       | _ -> None)
 
-(* Extract exports from a module (called after normalize_exports and renaming) *)
+(* Extract exports from a module (called after normalize_exports and renaming).
+   Also returns synthetic imports created for [export * as name from]. *)
 let extract_exports ~resolve (stmts : statement_list) :
-    export_entry StringMap.t * ModuleId.t list * bool =
+    export_entry StringMap.t * ModuleId.t list * import_entry list =
   let exports = ref StringMap.empty in
   let star_exports = ref [] in
-  let has_default = ref false in
+  let extra_imports = ref [] in
   let add_export name entry = exports := StringMap.add name entry !exports in
   List.iter stmts ~f:(fun (stmt, _loc) ->
       match stmt with
@@ -203,7 +203,6 @@ let extract_exports ~resolve (stmts : statement_list) :
           (* After normalize_exports, all direct exports become ExportNames *)
           | ExportNames named_exports ->
               List.iter named_exports ~f:(fun (id, Utf8_string.Utf8 exported_name) ->
-                  if String.equal exported_name "default" then has_default := true;
                   add_export
                     exported_name
                     { exported_name; local_ident = id; kind = Export_var })
@@ -216,12 +215,15 @@ let extract_exports ~resolve (stmts : statement_list) :
               ; from = Utf8_string.Utf8 from_path
               ; _
               } ->
-              (* export * as name from 'module' *)
+              (* [export * as name from 'module'] is equivalent to
+                 [import * as fresh from 'module'; export { fresh as name }]:
+                 record a synthetic namespace import so that bundling
+                 materializes the namespace object. *)
               let source = resolve from_path in
               let local_ident = fresh_ident exported_name in
-              add_export
-                exported_name
-                { exported_name; local_ident; kind = Export_reexport (source, "*") }
+              extra_imports :=
+                { source; bindings = [ ImportNamespace local_ident ] } :: !extra_imports;
+              add_export exported_name { exported_name; local_ident; kind = Export_var }
           | ExportFrom { kind = Export_names named; from = Utf8_string.Utf8 from_path; _ }
             ->
               let source = resolve from_path in
@@ -245,16 +247,46 @@ let extract_exports ~resolve (stmts : statement_list) :
               assert false
           | CoverExportFrom _ -> assert false)
       | _ -> ());
-  !exports, List.rev !star_exports, !has_default
+  !exports, List.rev !star_exports, List.rev !extra_imports
+
+(* Rewrite exports whose local identifier is an import binding into proper
+   re-exports. [import { x } from './a.js'; export { x };] must resolve to the
+   defining identifier in './a.js': the import binding itself is erased at
+   bundle time, so an export referencing it would be an undefined variable.
+   Namespace bindings are kept as [Export_var]: the namespace object is
+   materialized as a real [const] at bundle time. *)
+let reexport_imported_bindings imports exports =
+  let import_bindings =
+    List.fold_left imports ~init:Code.Var.Map.empty ~f:(fun acc import ->
+        List.fold_left import.bindings ~init:acc ~f:(fun acc binding ->
+            match binding with
+            | ImportNamed (orig, V v) ->
+                Code.Var.Map.add v (Some (import.source, orig)) acc
+            | ImportDefault (V v) ->
+                Code.Var.Map.add v (Some (import.source, "default")) acc
+            | ImportNamespace (V v) -> Code.Var.Map.add v None acc
+            | ImportNamed (_, S _)
+            | ImportDefault (S _)
+            | ImportNamespace (S _)
+            | ImportSideEffect -> acc))
+  in
+  StringMap.map
+    (fun e ->
+      match e.kind, e.local_ident with
+      | Export_var, V v -> (
+          match Code.Var.Map.find_opt v import_bindings with
+          | Some (Some (source, orig)) -> { e with kind = Export_reexport (source, orig) }
+          | Some None (* namespace *) | None -> e)
+      | (Export_var | Export_fun | Export_class | Export_reexport _), _ -> e)
+    exports
 
 let analyze_module ~resolve id (program : program) : esm_module =
   (* Rename first - this also normalizes exports *)
   let renamed_program = rename_module_declarations program in
   (* Extract from renamed program - identifiers are already V variants *)
-  let exports, star_exports, has_default_export =
-    extract_exports ~resolve renamed_program
-  in
-  let imports = extract_imports ~resolve renamed_program in
+  let exports, star_exports, extra_imports = extract_exports ~resolve renamed_program in
+  let imports = extract_imports ~resolve renamed_program @ extra_imports in
+  let exports = reexport_imported_bindings imports exports in
   (* Extract body: filter out Import and Export statements *)
   let body =
     List.filter renamed_program ~f:(fun (stmt, _loc) ->
@@ -262,11 +294,85 @@ let analyze_module ~resolve id (program : program) : esm_module =
         | Import _ | Export _ -> false
         | _ -> true)
   in
-  { id; imports; exports; star_exports; body; has_default_export }
+  { id; imports; exports; star_exports; body }
 
 (* ========== Graph Construction ========== *)
 
-let rec build_graph ~parse ~resolve ~entry_points : module_graph =
+(* Topological sort of modules (dependencies before dependents) *)
+let topological_sort (graph : module_graph) : ModuleId.t list =
+  let components = ModuleSCC.connected_components_sorted_from_roots_to_leaf graph.deps in
+  (* Components are sorted from roots to leaves, we want leaves first *)
+  let sorted =
+    Array.fold_right components ~init:[] ~f:(fun component acc ->
+        match component with
+        | ModuleSCC.No_loop id -> id :: acc
+        | ModuleSCC.Has_loop ids ->
+            (* For cycles, add all modules in cycle order *)
+            List.rev_append ids acc)
+  in
+  (* Reverse to get dependency order (dependencies before dependents) *)
+  List.rev sorted
+
+(* Resolve export * from by copying exports from source modules.
+
+   Per the ES spec:
+   - The 'default' export is never re-exported by 'export *'
+   - A module's own explicit exports take precedence over 'export *'
+   - If the same name comes from multiple 'export *' sources, it should be
+     an ambiguous export error at link time
+
+   We use "first wins" semantics for conflicting star exports instead of
+   tracking ambiguous exports, which is a pragmatic simplification. *)
+let resolve_star_exports (graph : module_graph) : module_graph =
+  (* Get modules in topological order (dependencies first) *)
+  let sorted = topological_sort graph in
+  (* Process modules and accumulate resolved exports *)
+  let resolved_modules =
+    List.fold_left sorted ~init:graph.modules ~f:(fun modules id ->
+        match ModuleId.Map.find_opt id modules with
+        | None -> modules
+        | Some m ->
+            if List.is_empty m.star_exports
+            then modules
+            else
+              (* Collect exports from all star export sources *)
+              let additional_exports =
+                List.fold_left
+                  m.star_exports
+                  ~init:StringMap.empty
+                  ~f:(fun acc source_id ->
+                    match ModuleId.Map.find_opt source_id modules with
+                    | None -> acc
+                    | Some source_module ->
+                        (* Add all exports from source, except default *)
+                        StringMap.fold
+                          (fun name _export acc ->
+                            if String.equal name "default"
+                            then acc
+                            else if StringMap.mem name acc || StringMap.mem name m.exports
+                            then acc
+                            else
+                              (* Create a re-export entry *)
+                              let local_ident = fresh_ident name in
+                              StringMap.add
+                                name
+                                { exported_name = name
+                                ; local_ident
+                                ; kind = Export_reexport (source_id, name)
+                                }
+                                acc)
+                          source_module.exports
+                          acc)
+              in
+              (* Merge additional exports into module *)
+              let exports =
+                StringMap.union (fun _ a _ -> Some a) m.exports additional_exports
+              in
+              ModuleId.Map.add id { m with exports } modules)
+  in
+  { graph with modules = resolved_modules }
+
+let build_graph ~parse ~resolve ~entry_points : module_graph =
   let modules = ref ModuleId.Map.empty in
   let deps = ref ModuleId.Map.empty in
   let worklist = Queue.create () in
@@ -317,104 +423,39 @@ let rec build_graph ~parse ~resolve ~entry_points : module_graph =
   (* Resolve star exports *)
   resolve_star_exports graph
 
-(* Resolve export * from by copying exports from source modules.
-
-   Per the ES spec:
-   - The 'default' export is never re-exported by 'export *'
-   - A module's own explicit exports take precedence over 'export *'
-   - If the same name comes from multiple 'export *' sources, it should be
-     an ambiguous export error at link time
-
-   We use "first wins" semantics for conflicting star exports instead of
-   tracking ambiguous exports, which is a pragmatic simplification. *)
-and resolve_star_exports (graph : module_graph) : module_graph =
-  (* Get modules in topological order (dependencies first) *)
-  let sorted = topological_sort_for_star_exports graph in
-  (* Process modules and accumulate resolved exports *)
-  let resolved_modules =
-    List.fold_left sorted ~init:graph.modules ~f:(fun modules id ->
-        match ModuleId.Map.find_opt id modules with
-        | None -> modules
-        | Some m ->
-            if List.is_empty m.star_exports
-            then modules
-            else
-              (* Collect exports from all star export sources *)
-              let additional_exports =
-                List.fold_left
-                  m.star_exports
-                  ~init:StringMap.empty
-                  ~f:(fun acc source_id ->
-                    match ModuleId.Map.find_opt source_id modules with
-                    | None -> acc
-                    | Some source_module ->
-                        (* Add all exports from source, except default *)
-                        StringMap.fold
-                          (fun name _export acc ->
-                            if String.equal name "default"
-                            then acc
-                            else if StringMap.mem name acc || StringMap.mem name m.exports
-                            then acc
-                            else
-                              (* Create a re-export entry *)
-                              let local_ident = fresh_ident name in
-                              StringMap.add
-                                name
-                                { exported_name = name
-                                ; local_ident
-                                ; kind = Export_reexport (source_id, name)
-                                }
-                                acc)
-                          source_module.exports
-                          acc)
-              in
-              (* Merge additional exports into module *)
-              let exports =
-                StringMap.union (fun _ a _ -> Some a) m.exports additional_exports
-              in
-              ModuleId.Map.add id { m with exports } modules)
-  in
-  { graph with modules = resolved_modules }
-
-(* Simple topological sort for star export resolution *)
-and topological_sort_for_star_exports (graph : module_graph) : ModuleId.t list =
-  let components = ModuleSCC.connected_components_sorted_from_roots_to_leaf graph.deps in
-  Array.fold_right components ~init:[] ~f:(fun component acc ->
-      match component with
-      | ModuleSCC.No_loop id -> id :: acc
-      | ModuleSCC.Has_loop ids -> List.rev_append ids acc)
-  |> List.rev
-
-(* Topological sort of modules *)
-let topological_sort (graph : module_graph) : ModuleId.t list =
-  let components = ModuleSCC.connected_components_sorted_from_roots_to_leaf graph.deps in
-  (* Components are sorted from roots to leaves, we want leaves first *)
-  let sorted =
-    Array.fold_right components ~init:[] ~f:(fun component acc ->
-        match component with
-        | ModuleSCC.No_loop id -> id :: acc
-        | ModuleSCC.Has_loop ids ->
-            (* For cycles, add all modules in cycle order *)
-            List.rev_append ids acc)
-  in
-  (* Reverse to get dependency order (dependencies before dependents) *)
-  List.rev sorted
-
 (* Resolve re-exports to find the actual source identifier *)
-let rec resolve_reexport all_modules exp =
-  match exp.kind with
-  | Export_reexport (reexport_source, reexport_name) ->
-      let reexport_module =
-        match ModuleId.Map.find_opt reexport_source all_modules with
-        | Some m -> m
-        | None -> failwith ("Module not found: " ^ ModuleId.to_path reexport_source)
-      in
-      let reexport_exp =
-        match StringMap.find_opt reexport_name reexport_module.exports with
-        | Some e -> e
-        | None -> exp (* fallback - use original export *)
-      in
-      resolve_reexport all_modules reexport_exp
-  | Export_var | Export_fun | Export_class ->
-      (* Found the actual export - local_ident is already a V identifier *)
-      exp.local_ident
+let resolve_reexport all_modules exp =
+  let rec loop visited exp =
+    match exp.kind with
+    | Export_reexport (reexport_source, reexport_name) ->
+        if
+          List.exists visited ~f:(fun (source, name) ->
+              ModuleId.equal source reexport_source && String.equal name reexport_name)
+        then
+          failwith
+            (Printf.sprintf
+               "Cyclic re-export of '%s' in %s"
+               reexport_name
+               (ModuleId.to_path reexport_source))
+        else
+          let reexport_module =
+            match ModuleId.Map.find_opt reexport_source all_modules with
+            | Some m -> m
+            | None -> failwith ("Module not found: " ^ ModuleId.to_path reexport_source)
+          in
+          let reexport_exp =
+            match StringMap.find_opt reexport_name reexport_module.exports with
+            | Some e -> e
+            | None ->
+                failwith
+                  (Printf.sprintf
+                     "No export '%s' in %s"
+                     reexport_name
+                     (ModuleId.to_path reexport_source))
+          in
+          loop ((reexport_source, reexport_name) :: visited) reexport_exp
+    | Export_var | Export_fun | Export_class ->
+        (* Found the actual export - local_ident is already a V identifier *)
+        exp.local_ident
+  in
+  loop [] exp

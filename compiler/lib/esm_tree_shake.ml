@@ -19,12 +19,6 @@
 open! Stdlib
 open Javascript
 
-(* Collect free variables (unbound identifiers) in a statement *)
-let collect_free_vars stmt =
-  let free = new Js_traverse.free in
-  let _ = free#statement stmt in
-  free#get_free
-
 let collect_free_vars_expr expr =
   let free = new Js_traverse.free in
   let _ = free#expression expr in
@@ -48,7 +42,10 @@ let option_has ~f = function
 let rec expr_has_side_effects expr =
   match expr with
   | EVar _ | EStr _ | EBool _ | ENum _ | ERegexp _ | EPrivName _ -> false
-  | EFun _ | EArrow _ | EClass _ -> false
+  | EFun _ | EArrow _ -> false
+  (* Evaluating a class expression runs its [extends] clause, computed
+     property names and static blocks *)
+  | EClass (_, decl) -> class_decl_has_side_effects decl
   | EArr l ->
       List.exists l ~f:(function
         | ElementHole -> false
@@ -134,7 +131,7 @@ and property_name_has_side_effects pn =
   | PNI _ | PNS _ | PNN _ -> false
   | PComputed e -> expr_has_side_effects e
 
-let rec stmt_has_side_effects stmt =
+and stmt_has_side_effects stmt =
   match stmt with
   | Empty_statement | Debugger_statement -> false
   | Block l -> List.exists l ~f:(fun (s, _) -> stmt_has_side_effects s)
@@ -213,9 +210,7 @@ and class_element_name_has_side_effects name =
 type stmt_info =
   { idx : int
   ; defines : IdentSet.t
-  ; uses : IdentSet.t (* local uses within the module *)
-  ; import_uses : (Esm.ModuleId.t * string * Code.Var.t) list
-        (* (source, export_name, local_binding_var) *)
+  ; uses : IdentSet.t (* free variables: module-level bindings and import bindings *)
   ; has_side_effects : bool
   ; stmt : statement * location
   }
@@ -239,9 +234,9 @@ let build_import_map (imports : Esm.import_entry list) :
           | Esm.ImportNamespace (S _)
           | Esm.ImportSideEffect -> acc))
 
-(* Analyze a statement: extract defines, split uses into local vs import *)
-let analyze_stmt import_map idx (stmt, loc) : stmt_info =
-  let defines, all_uses, has_side_effects =
+(* Analyze a statement: extract defined and used module-level bindings *)
+let analyze_stmt idx (stmt, loc) : stmt_info =
+  let defines, uses, has_side_effects =
     match stmt with
     | Variable_statement (_, decls) ->
         let defines =
@@ -273,7 +268,9 @@ let analyze_stmt import_map idx (stmt, loc) : stmt_info =
         let uses = collect_free_vars_class_decl decl in
         let side_effects = class_decl_has_side_effects decl in
         defines, uses, side_effects
-    (* Statements that don't define module-level bindings *)
+    (* Compound statements define no lexical module-level binding, but any
+       [var] inside them (e.g. [if (c) var x = 1;]) hoists to module scope
+       and must count as defined by the statement. *)
     | Block _
     | Empty_statement
     | Expression_statement _
@@ -295,24 +292,12 @@ let analyze_stmt import_map idx (stmt, loc) : stmt_info =
     | Debugger_statement
     | Import _
     | Export _ ->
-        let uses = collect_free_vars stmt in
-        IdentSet.empty, uses, stmt_has_side_effects stmt
+        let free = new Js_traverse.free in
+        let (_ : statement) = free#statement stmt in
+        let hoisted = free#state.Js_traverse.def_var in
+        hoisted, free#get_free, stmt_has_side_effects stmt
   in
-  (* Split uses into local identifiers and import references.
-     import_uses is a list of (source_module, export_name, local_binding_var) *)
-  let local_uses, import_uses =
-    IdentSet.fold
-      (fun id (local_acc, import_acc) ->
-        match id with
-        | V v -> (
-            match Code.Var.Map.find_opt v import_map with
-            | Some (source, name) -> local_acc, (source, name, v) :: import_acc
-            | None -> IdentSet.add id local_acc, import_acc)
-        | S _ -> IdentSet.add id local_acc, import_acc)
-      all_uses
-      (IdentSet.empty, [])
-  in
-  { idx; defines; uses = local_uses; import_uses; has_side_effects; stmt = stmt, loc }
+  { idx; defines; uses; has_side_effects; stmt = stmt, loc }
 
 (* Work item for the fixpoint *)
 type work_item =
@@ -344,13 +329,14 @@ module VarSet = Set.Make (VarKey)
 
 let run (graph : Esm.module_graph) ~(entry_exports : StringSet.t Esm.ModuleId.Map.t) :
     Esm.module_graph =
+  (* Map, for each module, import binding vars to their (source, export name) *)
+  let import_maps : (Esm.ModuleId.t * string) Code.Var.Map.t Esm.ModuleId.Map.t =
+    Esm.ModuleId.Map.map (fun m -> build_import_map m.Esm.imports) graph.modules
+  in
   (* Analyze all statements in all modules, storing as arrays for O(1) access *)
   let module_stmts : stmt_info array Esm.ModuleId.Map.t =
     Esm.ModuleId.Map.map
-      (fun m ->
-        let import_map = build_import_map m.Esm.imports in
-        Array.of_list
-          (List.mapi m.Esm.body ~f:(fun idx stmt -> analyze_stmt import_map idx stmt)))
+      (fun m -> Array.of_list (List.mapi m.Esm.body ~f:analyze_stmt))
       graph.modules
   in
   (* Build map from (module, ident) -> stmt indices that define it *)
@@ -384,38 +370,32 @@ let run (graph : Esm.module_graph) ~(entry_exports : StringSet.t Esm.ModuleId.Ma
   let reached_modules = ref Esm.ModuleId.Set.empty in
   (* Worklist *)
   let worklist = Queue.create () in
+  (* Mark a module as reached (for side-effect preservation). A module is
+     reached when live code needs one of its bindings or when it is imported
+     (directly or through a re-export chain) by a reached module: importing a
+     module evaluates it, so its side effects must be preserved. *)
+  let mark_reached module_id =
+    if not (Esm.ModuleId.Set.mem module_id !reached_modules)
+    then begin
+      reached_modules := Esm.ModuleId.Set.add module_id !reached_modules;
+      Queue.push (MarkModuleReached module_id) worklist
+    end
+  in
   (* Mark a statement as live and enqueue its dependencies *)
   let mark_stmt_live module_id idx =
     let arr = Esm.ModuleId.Map.find module_id live_stmts in
     if not arr.(idx)
     then begin
       arr.(idx) <- true;
-      (* Mark module as reached (for side-effect propagation) *)
-      if not (Esm.ModuleId.Set.mem module_id !reached_modules)
-      then begin
-        reached_modules := Esm.ModuleId.Set.add module_id !reached_modules;
-        Queue.push (MarkModuleReached module_id) worklist
-      end;
+      mark_reached module_id;
       let stmts = Esm.ModuleId.Map.find module_id module_stmts in
       let info = stmts.(idx) in
-      (* Enqueue local dependencies *)
-      IdentSet.iter (fun id -> Queue.push (MarkIdent (module_id, id)) worklist) info.uses;
-      (* Enqueue import dependencies and mark import bindings as live *)
-      List.iter info.import_uses ~f:(fun (source, name, local_var) ->
-          (* Mark the local import binding as live *)
-          live_idents := VarSet.add (module_id, local_var) !live_idents;
-          if String.equal name "*"
-          then
-            (* Namespace import: need all exports from source *)
-            let source_module = Esm.ModuleId.Map.find source graph.modules in
-            StringMap.iter
-              (fun export_name _ ->
-                Queue.push (MarkExport (source, export_name)) worklist)
-              source_module.exports
-          else Queue.push (MarkExport (source, name)) worklist)
+      (* Enqueue dependencies (module-level bindings and import bindings) *)
+      IdentSet.iter (fun id -> Queue.push (MarkIdent (module_id, id)) worklist) info.uses
     end
   in
-  (* Mark an ident as live and find statements that define it *)
+  (* Mark an ident as live: mark the statements that define it, and if it is
+     an import binding, mark the corresponding export of the source module *)
   let mark_ident_live module_id id =
     match id with
     | V v ->
@@ -423,31 +403,52 @@ let run (graph : Esm.module_graph) ~(entry_exports : StringSet.t Esm.ModuleId.Ma
         then begin
           live_idents := VarSet.add (module_id, v) !live_idents;
           let def_map_for_module = Esm.ModuleId.Map.find module_id def_map in
-          match Code.Var.Map.find_opt v def_map_for_module with
+          (match Code.Var.Map.find_opt v def_map_for_module with
           | Some indices -> List.iter indices ~f:(mark_stmt_live module_id)
+          | None -> ());
+          match Code.Var.Map.find_opt v (Esm.ModuleId.Map.find module_id import_maps) with
+          | Some (source, "*") ->
+              (* Namespace import: need all exports from source *)
+              mark_reached source;
+              let source_module = Esm.ModuleId.Map.find source graph.modules in
+              StringMap.iter
+                (fun export_name _ ->
+                  Queue.push (MarkExport (source, export_name)) worklist)
+                source_module.Esm.exports
+          | Some (source, name) -> Queue.push (MarkExport (source, name)) worklist
           | None -> ()
         end
     | S _ -> ()
   in
-  (* Resolve an export to its source, following re-export chains *)
-  let rec resolve_export module_id export_name =
-    let m = Esm.ModuleId.Map.find module_id graph.modules in
-    match StringMap.find_opt export_name m.Esm.exports with
-    | None -> None
-    | Some export -> (
-        match export.kind with
-        | Esm.Export_reexport (source, orig_name) ->
-            let orig = if String.equal orig_name "*" then export_name else orig_name in
-            resolve_export source orig
-        | Esm.Export_var | Esm.Export_fun | Esm.Export_class ->
-            Some (module_id, export.local_ident))
+  (* Resolve an export to its source, following re-export chains. Every module
+     traversed is marked as reached (importing from it evaluates it) and every
+     intermediate export is marked live (bundling resolves through it). *)
+  let rec resolve_export ~visited module_id export_name =
+    if ExportSet.mem (module_id, export_name) visited
+    then None (* cyclic re-export *)
+    else begin
+      mark_reached module_id;
+      live_exports := ExportSet.add (module_id, export_name) !live_exports;
+      let m = Esm.ModuleId.Map.find module_id graph.modules in
+      match StringMap.find_opt export_name m.Esm.exports with
+      | None -> None
+      | Some export -> (
+          match export.kind with
+          | Esm.Export_reexport (source, orig_name) ->
+              resolve_export
+                ~visited:(ExportSet.add (module_id, export_name) visited)
+                source
+                orig_name
+          | Esm.Export_var | Esm.Export_fun | Esm.Export_class ->
+              Some (module_id, export.local_ident))
+    end
   in
   (* Mark an export as live *)
   let mark_export_live module_id export_name =
     if not (ExportSet.mem (module_id, export_name) !live_exports)
     then begin
       live_exports := ExportSet.add (module_id, export_name) !live_exports;
-      match resolve_export module_id export_name with
+      match resolve_export ~visited:ExportSet.empty module_id export_name with
       | Some (resolved_module, resolved_ident) ->
           Queue.push (MarkIdent (resolved_module, resolved_ident)) worklist
       | None -> ()
@@ -467,13 +468,7 @@ let run (graph : Esm.module_graph) ~(entry_exports : StringSet.t Esm.ModuleId.Ma
         List.iter m.Esm.imports ~f:(fun import ->
             List.iter import.Esm.bindings ~f:(fun binding ->
                 match binding with
-                | Esm.ImportSideEffect ->
-                    if not (Esm.ModuleId.Set.mem import.Esm.source !reached_modules)
-                    then begin
-                      reached_modules :=
-                        Esm.ModuleId.Set.add import.Esm.source !reached_modules;
-                      Queue.push (MarkModuleReached import.Esm.source) worklist
-                    end
+                | Esm.ImportSideEffect -> mark_reached import.Esm.source
                 | Esm.ImportNamed _ | Esm.ImportDefault _ | Esm.ImportNamespace _ -> ()))
   in
   (* Initialize: mark entry exports as live *)
@@ -503,20 +498,22 @@ let run (graph : Esm.module_graph) ~(entry_exports : StringSet.t Esm.ModuleId.Ma
     Esm.ModuleId.Map.mapi
       (fun module_id m ->
         let arr = Esm.ModuleId.Map.find module_id live_stmts in
-        (* Keep module only if it has live statements *)
-        if not (Array.exists ~f:(fun x -> x) arr)
+        (* Filter exports to only those that are live *)
+        let exports =
+          StringMap.filter
+            (fun name _ -> ExportSet.mem (module_id, name) !live_exports)
+            m.Esm.exports
+        in
+        (* Keep the module if it has live statements, or live exports:
+           a pure re-export module has an empty body but its export table
+           is still needed to resolve imports at bundle time. *)
+        if (not (Array.exists ~f:(fun x -> x) arr)) && StringMap.is_empty exports
         then None
         else
           let stmts = Esm.ModuleId.Map.find module_id module_stmts in
           let body =
             Array.fold_right stmts ~init:[] ~f:(fun info acc ->
                 if arr.(info.idx) then info.stmt :: acc else acc)
-          in
-          (* Filter exports to only those that are live *)
-          let exports =
-            StringMap.filter
-              (fun name _ -> ExportSet.mem (module_id, name) !live_exports)
-              m.Esm.exports
           in
           (* Filter imports to only those with live bindings *)
           let imports =

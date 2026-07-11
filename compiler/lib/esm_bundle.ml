@@ -139,11 +139,23 @@ let optimize_namespace_imports (m : Esm.esm_module) : Esm.esm_module =
     let collector = new collect_namespace_accesses namespace_var_set in
     collector#program m.body;
     let usage = collector#get_usage in
+    (* A namespace that is itself exported is used as a value by the export
+       statement (which is not part of [m.body]): it cannot be optimized. *)
+    let exported_vars =
+      StringMap.fold
+        (fun _ (e : Esm.export_entry) acc ->
+          match e.local_ident with
+          | V v -> Code.Var.Set.add v acc
+          | S _ -> acc)
+        m.exports
+        Code.Var.Set.empty
+    in
     (* Build a map from (namespace_var, field) -> fresh_ident for optimizable namespaces *)
     let field_idents : ident StringMap.t Code.Var.Map.t =
       Code.Var.Map.fold
         (fun v _source acc ->
           match Code.Var.Map.find_opt v usage with
+          | Some (Only_fields _) when Code.Var.Set.mem v exported_vars -> acc
           | Some (Only_fields fields) ->
               let field_map =
                 StringSet.fold
@@ -360,9 +372,9 @@ let merge_modules ~dest (modules : Esm.esm_module list) : program =
             then None (* Internal import - will be substituted *)
             else Some (generate_import_statement import, N)))
   in
-  (* Process each module: filter imports and apply substitutions *)
-  let body_stmts =
-    List.concat_map modules ~f:(fun m ->
+  (* Process each module: filter imports and build substitutions *)
+  let processed =
+    List.map modules ~f:(fun m ->
         (* Filter out imports from the destination module *)
         let internal_imports =
           List.filter m.Esm.imports ~f:(fun import ->
@@ -383,17 +395,37 @@ let merge_modules ~dest (modules : Esm.esm_module list) : program =
                       | None -> acc)
                   | _ -> acc))
         in
+        m, subst)
+  in
+  let body_stmts =
+    List.concat_map processed ~f:(fun (m, subst) ->
         apply_import_substitutions subst m.Esm.body)
   in
-  (* Collect all exports from all modules *)
+  (* Collect exports from all modules. An export may reference an import
+     binding from [dest]: substitute it like the body. Duplicate export names
+     across modules would be a JavaScript syntax error: keep the first one,
+     consistent with the "first wins" rule used for import resolution. *)
   let export_stmts =
-    List.concat_map modules ~f:(fun m ->
+    let seen = ref StringSet.empty in
+    List.concat_map processed ~f:(fun (m, subst) ->
         StringMap.fold
-          (fun _name export acc ->
-            let exported_name = Utf8_string.of_string_exn export.Esm.exported_name in
-            ( Export (ExportNames [ export.Esm.local_ident, exported_name ], Parse_info.zero)
-            , N )
-            :: acc)
+          (fun name export acc ->
+            if StringSet.mem name !seen
+            then acc
+            else begin
+              seen := StringSet.add name !seen;
+              let local_ident =
+                match export.Esm.local_ident with
+                | V v -> (
+                    match Code.Var.Map.find_opt v subst with
+                    | Some target -> target
+                    | None -> export.Esm.local_ident)
+                | S _ -> export.Esm.local_ident
+              in
+              let exported_name = Utf8_string.of_string_exn export.Esm.exported_name in
+              (Export (ExportNames [ local_ident, exported_name ], Parse_info.zero), N)
+              :: acc
+            end)
           m.Esm.exports
           [])
   in

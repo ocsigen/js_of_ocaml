@@ -1115,7 +1115,10 @@ export function main() { return C; }
   print_endline output;
   (* Count exports *)
   let export_count =
-    List.length (List.filter ~f:(fun line -> contains_substring line "export") (String.split_on_char ~sep:'\n' output))
+    List.length
+      (List.filter
+         ~f:(fun line -> contains_substring line "export")
+         (String.split_on_char ~sep:'\n' output))
   in
   Printf.printf "Total exports: %d\n" export_count;
   [%expect
@@ -1141,11 +1144,9 @@ let%expect_test "merge_modules preserves external imports" =
     then Esm.ModuleId.of_path "bundle.js"
     else Esm.ModuleId.of_path specifier
   in
-  let m1 =
-    analyze_js ~resolve "internal.js" {|
+  let m1 = analyze_js ~resolve "internal.js" {|
 export const foo = 42;
-|}
-  in
+|} in
   let m2 =
     analyze_js
       ~resolve
@@ -1224,3 +1225,189 @@ export function useB() { return helper(); }
 
     Number of helper functions: 2
     |}]
+
+let replace_substring ~sub ~by s =
+  (* Make error messages stable: drop temporary directory prefixes *)
+  let sub_len = String.length sub in
+  let len = String.length s in
+  let buf = Buffer.create len in
+  let i = ref 0 in
+  while !i < len do
+    if !i + sub_len <= len && String.equal (String.sub s ~pos:!i ~len:sub_len) sub
+    then begin
+      Buffer.add_string buf by;
+      incr i;
+      i := !i + sub_len - 1
+    end
+    else begin
+      Buffer.add_char buf s.[!i];
+      incr i
+    end
+  done;
+  Buffer.contents buf
+
+let print_bundle_result ~tree_shake entry =
+  match
+    Esm_bundle.bundle_modules
+      ~parse:parse_file
+      ~resolve
+      ~entry_points:[ entry ]
+      ~tree_shake
+  with
+  | bundled -> print_endline (bundle_to_string bundled)
+  | exception Failure msg ->
+      let msg = replace_substring ~sub:(test_dir ^ "/") ~by:"" msg in
+      Printf.printf "Failure: %s\n" msg
+
+let%expect_test "export * as namespace" =
+  with_test_dir
+  @@ fun ~write ->
+  let _a = write "a.js" {|
+export const x = 1;
+export function f() { return x; }
+|} in
+  let entry = write "star_as.js" {|export * as ns from './a.js';|} in
+  print_bundle_result ~tree_shake:false entry;
+  [%expect
+    {| const x = 1; function f(){return x;} const ns = {x: x, f: f}; export { ns }; |}]
+
+let%expect_test "re-export an imported binding" =
+  with_test_dir
+  @@ fun ~write ->
+  let _a = write "a.js" {|export const x = 1;|} in
+  let entry =
+    write "reexp.js" {|
+import { x } from './a.js';
+export { x };
+console.log(x);
+|}
+  in
+  print_bundle_result ~tree_shake:false entry;
+  [%expect {| const x = 1; console.log(x); export { x }; |}]
+
+let%expect_test "re-export an imported binding through a middle module" =
+  with_test_dir
+  @@ fun ~write ->
+  let _c = write "c.js" {|export const x = 1;|} in
+  let _b = write "b.js" {|
+import { x } from './c.js';
+export { x };
+|} in
+  let entry =
+    write "chain.js" {|
+import { x } from './b.js';
+export const y = x + 1;
+|}
+  in
+  print_bundle_result ~tree_shake:true entry;
+  [%expect {| const x = 1; const y = x + 1; export { y }; |}]
+
+let%expect_test "export a missing name is an error, not a hang" =
+  with_test_dir
+  @@ fun ~write ->
+  let _a = write "a.js" {|export const x = 1;|} in
+  let entry = write "missing.js" {|export { y } from './a.js';|} in
+  print_bundle_result ~tree_shake:false entry;
+  [%expect {| Failure: No export 'y' in a.js |}]
+
+let%expect_test "cyclic re-export is an error, not a hang" =
+  with_test_dir
+  @@ fun ~write ->
+  let a = write "cyca.js" {|export { x } from './cycb.js';|} in
+  let _b = write "cycb.js" {|export { x } from './cyca.js';|} in
+  print_bundle_result ~tree_shake:false a;
+  [%expect {| Failure: Cyclic re-export of 'x' in cycb.js |}]
+
+let%expect_test "tree shaking keeps vars hoisted out of compound statements" =
+  with_test_dir
+  @@ fun ~write ->
+  let entry =
+    write
+      "hoist.js"
+      {|
+var c = globalThis.flag;
+if (c) var y = 1;
+export function get() { return y; }
+|}
+  in
+  print_bundle_result ~tree_shake:true entry;
+  [%expect
+    {|
+    var c = globalThis.flag;
+    if(c) var y = 1;
+    function get(){return y;}
+    export { get };
+    |}]
+
+let%expect_test "tree shaking keeps class expressions with side effects" =
+  with_test_dir
+  @@ fun ~write ->
+  let entry =
+    write
+      "cls.js"
+      {|
+const unused = class extends globalThis.register() {};
+export const kept = 1;
+|}
+  in
+  print_bundle_result ~tree_shake:true entry;
+  [%expect
+    {|
+    const unused = class extends globalThis.register() {};
+    const kept = 1;
+    export { kept };
+    |}]
+
+let%expect_test "namespace not optimized when exported" =
+  with_test_dir
+  @@ fun ~write ->
+  let _a = write "a.js" {|export const x = 1;|} in
+  let entry =
+    write "nsexp.js" {|
+import * as ns from './a.js';
+console.log(ns.x);
+export { ns };
+|}
+  in
+  print_bundle_result ~tree_shake:false entry;
+  [%expect {| const x = 1; const ns = {x: x}; console.log(ns.x); export { ns }; |}]
+
+let%expect_test "tree shaking preserves side effects of re-exporting modules" =
+  with_test_dir
+  @@ fun ~write ->
+  let _c = write "c.js" {|export const x = 1;|} in
+  let _barrel =
+    write "barrel.js" {|
+globalThis.barrelEvaluated = true;
+export { x } from './c.js';
+|}
+  in
+  let entry =
+    write "usebarrel.js" {|
+import { x } from './barrel.js';
+export const y = x;
+|}
+  in
+  print_bundle_result ~tree_shake:true entry;
+  [%expect
+    {| const x = 1; globalThis.barrelEvaluated = true; const y = x; export { y }; |}]
+
+let%expect_test "bundle default export and import" =
+  with_test_dir
+  @@ fun ~write ->
+  let _a = write "a.js" {|export default function f() { return 1; }|} in
+  let entry = write "usedefault.js" {|
+import d from './a.js';
+export const r = d();
+|} in
+  print_bundle_result ~tree_shake:false entry;
+  [%expect {| function f(){return 1;} const r = f(); export { r }; |}]
+
+let%expect_test "merge_modules deduplicates conflicting export names" =
+  let resolve _ = failwith "no resolution needed" in
+  let m1 = analyze_js ~resolve "a.js" {|export function f() { return "from a"; }|} in
+  let m2 = analyze_js ~resolve "b.js" {|export function f() { return "from b"; }|} in
+  let merged = Esm_bundle.merge_modules ~dest:"bundle.js" [ m1; m2 ] in
+  print_endline (bundle_to_string merged);
+  [%expect
+    {| function f(){return "from a";} function f$0(){return "from b";} export { f }; |}]

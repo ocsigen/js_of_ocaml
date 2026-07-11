@@ -80,7 +80,6 @@ type esm_module =
   ; exports : export_entry StringMap.t  (** Map from exported name to export entry *)
   ; star_exports : ModuleId.t list  (** Sources of [export * from] statements *)
   ; body : Javascript.statement_list  (** Non-import/export statements *)
-  ; has_default_export : bool
   }
 
 type module_graph =
@@ -124,4 +123,7 @@ val topological_sort : module_graph -> ModuleId.t list
 
 val resolve_reexport : esm_module ModuleId.Map.t -> export_entry -> Javascript.ident
 (** [resolve_reexport modules export] follows re-export chains to find the
-    actual source identifier for an export. *)
+    actual source identifier for an export.
+
+    Raises [Failure] if a re-exported name does not exist in its source
+    module or if the re-export chain is cyclic. *)
