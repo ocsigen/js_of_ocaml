@@ -1,6 +1,23 @@
 # dev
 
 ## Features/Changes
+* Lib: add `WebAudio` — bindings to the Web Audio API: `AudioContext` and
+  `OfflineAudioContext`, the audio node graph (buffer, oscillator and constant
+  sources, gain, delay, biquad and IIR filters, dynamics compressor, convolver,
+  wave shaper, channel splitter/merger, stereo and 3D panners, analyser, and
+  the media-element / media-stream source and destination nodes), `AudioParam`
+  automation, `AudioBuffer` and `decodeAudioData`, the `AudioListener` and
+  periodic waves (#2401)
+* Lib: add `MediaCapture` — bindings to the Media Capture and Streams API:
+  `MediaStream`, `MediaStreamTrack`, and `navigator.mediaDevices` with
+  `getUserMedia`, `getDisplayMedia`, `enumerateDevices` and typed track
+  constraints, settings and device info (#2401)
+* Lib: complete the `Dom_html.mediaElement` binding — `error` (`MediaError`),
+  `srcObject`, `crossOrigin`, `defaultMuted`, `defaultPlaybackRate`,
+  `preservesPitch`, `fastSeek`, text tracks (`textTracks`, `addTextTrack` and
+  the `TextTrack`/`TextTrackCue`/`TextTrackList` classes), the missing
+  `abort`/`error`/`progress`/`timeupdate` listeners, and
+  `getVideoPlaybackQuality` on `videoElement` (#2401)
 * Lib: add `WebGL2` — bindings to the WebGL2 rendering context. The context
   inherits every method and constant of `WebGL`, and adds the WebGL2 objects
   (vertex array objects, queries, samplers, syncs, transform feedback), 3D and

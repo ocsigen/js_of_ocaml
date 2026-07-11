@@ -44,6 +44,7 @@ Js_of_ocaml.Geolocation
 Js_of_ocaml.IntersectionObserver
 Js_of_ocaml.Intl
 Js_of_ocaml.Json
+Js_of_ocaml.MediaCapture
 Js_of_ocaml.MessageChannel
 Js_of_ocaml.MutationObserver
 Js_of_ocaml.Notification
@@ -54,6 +55,7 @@ Js_of_ocaml.Regexp
 Js_of_ocaml.ResizeObserver
 Js_of_ocaml.ServiceWorker
 Js_of_ocaml.Url
+Js_of_ocaml.WebAudio
 Js_of_ocaml.WebGL
 Js_of_ocaml.WebGL2
 Js_of_ocaml.WebSockets

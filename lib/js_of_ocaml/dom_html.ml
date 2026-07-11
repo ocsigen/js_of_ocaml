@@ -2748,6 +2748,80 @@ class type timeRanges = object
   method end_ : int -> number_t meth
 end
 
+class type mediaError = object
+  method code : int readonly_prop
+
+  method message : js_string t readonly_prop
+end
+
+class type textTrackCue = object ('self)
+  inherit eventTarget
+
+  method track : textTrack t opt readonly_prop
+
+  method id : js_string t prop
+
+  method startTime : number_t prop
+
+  method endTime : number_t prop
+
+  method pauseOnExit : bool t prop
+
+  method onenter : ('self t, event t) event_listener writeonly_prop
+
+  method onexit : ('self t, event t) event_listener writeonly_prop
+end
+
+and textTrackCueList = object
+  method length : int readonly_prop
+
+  method getCueById : js_string t -> textTrackCue t opt meth
+end
+
+and textTrack = object ('self)
+  inherit eventTarget
+
+  method id : js_string t readonly_prop
+
+  method kind : js_string t readonly_prop
+
+  method label : js_string t readonly_prop
+
+  method language : js_string t readonly_prop
+
+  method mode : js_string t prop
+
+  method cues : textTrackCueList t opt readonly_prop
+
+  method activeCues : textTrackCueList t opt readonly_prop
+
+  method addCue : textTrackCue t -> unit meth
+
+  method removeCue : textTrackCue t -> unit meth
+
+  method oncuechange : ('self t, event t) event_listener writeonly_prop
+end
+
+and textTrackList = object ('self)
+  inherit eventTarget
+
+  method length : int readonly_prop
+
+  method getTrackById : js_string t -> textTrack t opt meth
+
+  method onchange : ('self t, event t) event_listener writeonly_prop
+
+  method onaddtrack : ('self t, textTrackEvent t) event_listener writeonly_prop
+
+  method onremovetrack : ('self t, textTrackEvent t) event_listener writeonly_prop
+end
+
+and textTrackEvent = object
+  inherit event
+
+  method track : textTrack t opt readonly_prop
+end
+
 type networkState =
   | NETWORK_EMPTY
   | NETWORK_IDLE
@@ -2774,19 +2848,35 @@ class type mediaElement = object
 
   method pause : unit meth
 
+  method fastSeek : number_t -> unit meth
+
+  method addTextTrack : js_string t -> textTrack t meth
+
+  method addTextTrack_withLabel : js_string t -> js_string t -> textTrack t meth
+
+  method addTextTrack_full : js_string t -> js_string t -> js_string t -> textTrack t meth
+
   method autoplay : bool t prop
 
   method buffered : timeRanges t readonly_prop
 
   method controls : bool t prop
 
+  method crossOrigin : js_string t opt prop
+
   method currentSrc : js_string t readonly_prop
 
   method currentTime : number_t prop
 
+  method defaultMuted : bool t prop
+
+  method defaultPlaybackRate : number_t prop
+
   method duration : number_t readonly_prop
 
   method ended : bool t readonly_prop
+
+  method error : mediaError t opt readonly_prop
 
   method loop : bool t prop
 
@@ -2806,6 +2896,8 @@ class type mediaElement = object
 
   method preload : js_string t prop
 
+  method preservesPitch : bool t prop
+
   method readyState_int : int readonly_prop
 
   method readyState : readyState readonly_prop
@@ -2816,7 +2908,13 @@ class type mediaElement = object
 
   method src : js_string t prop
 
+  method srcObject : Unsafe.any opt prop
+
+  method textTracks : textTrackList t readonly_prop
+
   method volume : number_t prop
+
+  method onabort : ('self t, mediaEvent t) event_listener writeonly_prop
 
   method oncanplay : ('self t, mediaEvent t) event_listener writeonly_prop
 
@@ -2827,6 +2925,8 @@ class type mediaElement = object
   method onemptied : ('self t, mediaEvent t) event_listener writeonly_prop
 
   method onended : ('self t, mediaEvent t) event_listener writeonly_prop
+
+  method onerror : ('self t, mediaEvent t) event_listener writeonly_prop
 
   method onloadeddata : ('self t, mediaEvent t) event_listener writeonly_prop
 
@@ -2840,6 +2940,8 @@ class type mediaElement = object
 
   method onplaying : ('self t, mediaEvent t) event_listener writeonly_prop
 
+  method onprogress : ('self t, mediaEvent t) event_listener writeonly_prop
+
   method onratechange : ('self t, mediaEvent t) event_listener writeonly_prop
 
   method onseeked : ('self t, mediaEvent t) event_listener writeonly_prop
@@ -2850,6 +2952,8 @@ class type mediaElement = object
 
   method onsuspend : ('self t, mediaEvent t) event_listener writeonly_prop
 
+  method ontimeupdate : ('self t, mediaEvent t) event_listener writeonly_prop
+
   method onvolumechange : ('self t, mediaEvent t) event_listener writeonly_prop
 
   method onwaiting : ('self t, mediaEvent t) event_listener writeonly_prop
@@ -2857,6 +2961,14 @@ end
 
 class type audioElement = object
   inherit mediaElement
+end
+
+class type videoPlaybackQuality = object
+  method creationTime : number_t readonly_prop
+
+  method totalVideoFrames : int readonly_prop
+
+  method droppedVideoFrames : int readonly_prop
 end
 
 class type videoElement = object
@@ -2873,6 +2985,8 @@ class type videoElement = object
   method poster : js_string t prop
 
   method playsInline : bool t prop
+
+  method getVideoPlaybackQuality : videoPlaybackQuality t meth
 end
 
 type context = js_string t
