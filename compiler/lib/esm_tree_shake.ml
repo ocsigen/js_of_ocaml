@@ -299,6 +299,10 @@ let analyze_stmt idx (stmt, loc) : stmt_info =
   in
   { idx; defines; uses; has_side_effects; stmt = stmt, loc }
 
+let statement_info stmt_loc =
+  let { defines; uses; has_side_effects; _ } = analyze_stmt 0 stmt_loc in
+  defines, uses, has_side_effects
+
 (* Work item for the fixpoint *)
 type work_item =
   | MarkExport of Esm.ModuleId.t * string

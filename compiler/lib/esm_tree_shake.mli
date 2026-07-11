@@ -37,6 +37,14 @@
 
 open Stdlib
 
+val statement_info :
+     Javascript.statement * Javascript.location
+  -> Javascript.IdentSet.t * Javascript.IdentSet.t * bool
+(** [statement_info (stmt, loc)] returns [(defines, uses, has_side_effects)]
+    for a module-level statement: the bindings it defines (including [var]s
+    hoisted out of compound statements), its free variables, and whether
+    evaluating it may have side effects. *)
+
 val run :
   Esm.module_graph -> entry_exports:StringSet.t Esm.ModuleId.Map.t -> Esm.module_graph
 (** [run graph ~entry_exports] performs tree shaking on the module graph.

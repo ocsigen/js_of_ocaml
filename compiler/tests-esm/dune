@@ -1,6 +1,6 @@
 (library
  (name esm_bundle_tests)
- (modules esm_bundle)
+ (modules esm_bundle esm_runtime_test)
  (libraries js_of_ocaml_compiler unix)
  (inline_tests)
  (preprocess

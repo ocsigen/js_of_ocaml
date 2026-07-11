@@ -426,14 +426,65 @@ module Fragment = struct
     let lex = Parse_js.Lexer.of_string ~filename string in
     parse_from_lex ~filename lex
 
+  (* Runtime files written as ES modules: exports provide primitives,
+     imports are dependency edges. See [Esm_runtime]. *)
+  let parse_esm ~filename content =
+    let program =
+      try Parse_js.parse `Module (Parse_js.Lexer.of_string ~filename content)
+      with Parse_js.Parsing_error pi ->
+        error
+          "cannot parse file %S (from l:%d, c:%d)@."
+          filename
+          pi.Parse_info.line
+          pi.Parse_info.col
+    in
+    match Esm_runtime.split ~filename program with
+    | `No_exports body -> [ Always_include (Ok body) ]
+    | `Pieces pieces ->
+        List.map
+          pieces
+          ~f:(fun { Esm_runtime.exported; name; requires; code; parse_info } ->
+            let fragment =
+              Fragment
+                { provides =
+                    Some
+                      { parse_info
+                      ; name
+                      ; kind = `Mutable
+                      ; kind_arg = None
+                      ; arity = None
+                      ; named_values = Named_value.find_all code
+                      }
+                ; requires
+                ; version_constraint_ok = true
+                ; weakdef = false
+                ; always = false
+                ; has_macro = false
+                ; code = Ok code
+                ; conditions = StringMap.empty
+                ; fragment_target = None
+                ; aliases = StringSet.empty
+                ; deprecated = None
+                }
+            in
+            (* [analyze] checks that the piece defines its name, which only
+               holds for exported pieces with code (synthetic helper pieces
+               define renamed variables; forwarding pieces are empty). *)
+            if exported && not (List.is_empty code) then analyze fragment else fragment)
+
+  let is_esm_file filename = Filename.check_suffix filename ".mjs"
+
   let parse_file f =
     let file =
       match Findlib.find [] f with
       | Some file -> Fs.absolute_path file
       | None -> error "cannot find file '%s'. @." f
     in
-    let lex = Parse_js.Lexer.of_file file in
-    parse_from_lex ~filename:file lex
+    if is_esm_file file
+    then parse_esm ~filename:file (Fs.read_file file)
+    else
+      let lex = Parse_js.Lexer.of_file file in
+      parse_from_lex ~filename:file lex
 
   let pack = function
     | Always_include x -> Always_include (pack x)
