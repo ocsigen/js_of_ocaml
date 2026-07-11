@@ -163,7 +163,7 @@
       : f;
   }
 
-  const decoder = new TextDecoder("utf-8", { ignoreBOM: 1 });
+  const decoder = new TextDecoder("utf-8", { ignoreBOM: true });
   const encoder = new TextEncoder();
 
   function hash_int(h, d) {
