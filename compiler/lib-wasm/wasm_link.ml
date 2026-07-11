@@ -849,6 +849,15 @@ module Read = struct
   let namemap contents = vec nameassoc contents.ch
 end
 
+(* Raised by the table-section scan when a table initializer reads a global that
+   linking resolves to a module-internal definition. Such a global is emitted
+   after the table section, so the initializer would forward-reference it and
+   the merged module would be invalid (a table initializer may only read an
+   imported global). Signalled through the [global] map: a resolved-import
+   global is set to the sentinel [-1] in the table scan's map, which
+   [global_map] turns into this exception. *)
+exception Table_init_reads_internal_global
+
 module Scan = struct
   let debug = false
 
@@ -1031,7 +1040,14 @@ module Scan = struct
     let tableidx pos = rewrite table_map pos in
     let mem_map idx = maps.mem.(idx) in
     let memidx pos = rewrite mem_map pos in
-    let global_map idx = maps.global.(idx) in
+    let global_map idx =
+      (* [-1] marks a global the table scan must reject (see
+         [Table_init_reads_internal_global]); a real map only holds valid
+         indices, so this never fires outside the table section. *)
+      let v = maps.global.(idx) in
+      if v < 0 then raise Table_init_reads_internal_global;
+      v
+    in
     let globalidx pos = rewrite global_map pos in
     let elem_map idx = maps.elem.(idx) in
     let elemidx pos = rewrite elem_map pos in
@@ -1359,13 +1375,15 @@ module Scan = struct
       | c -> failwith (Printf.sprintf "Bad instruction 0xFB 0x%02X" c)
     and vector_instruction pos =
       if debug then Format.eprintf "  %d@." (get pos);
+      (* [uint32] already consumes the (LEB-encoded) SIMD sub-opcode, so each
+         arm starts at the immediate --- do not skip another byte. *)
       let pos, i = uint32 pos in
       match i with
       | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 92 | 93 (* v128.load / store *)
-        -> pos + 1 |> memarg |> instructions
+        -> pos |> memarg |> instructions
       | 84 | 85 | 86 | 87 | 88 | 89 | 90 | 91 (* v128.load/store_lane *) ->
-          pos + 1 |> memarg |> laneidx |> instructions
-      | 12 (* v128.const *) | 13 (* v128.shuffle *) -> pos + 17 |> instructions
+          pos |> memarg |> laneidx |> instructions
+      | 12 (* v128.const *) | 13 (* v128.shuffle *) -> pos + 16 |> instructions
       | 21
       | 22
       | 23
@@ -1379,7 +1397,7 @@ module Scan = struct
       | 31
       | 32
       | 33
-      | 34 (* xx.extract/replace_lane *) -> pos + 1 |> laneidx |> instructions
+      | 34 (* xx.extract/replace_lane *) -> pos |> laneidx |> instructions
       | ( 162
         | 165
         | 166
@@ -1401,7 +1419,7 @@ module Scan = struct
         | 238 ) as c -> failwith (Printf.sprintf "Bad instruction 0xFD 0x%02X" c)
       | c ->
           if c <= 275
-          then pos + 1 |> instructions
+          then pos |> instructions
           else failwith (Printf.sprintf "Bad instruction 0xFD 0x%02X" c)
     and atomic_instruction pos =
       if debug then Format.eprintf "  %d@." (get pos);
@@ -1419,7 +1437,7 @@ module Scan = struct
       | 72 | 73 | 74 | 75 | 76 | 77 | 78 (* xx.atomic.rmw.cmpxchg *) ->
           pos + 1 |> memarg |> instructions
       | 3 (* memory.fence *) ->
-          let c = get pos + 1 in
+          let c = get (pos + 1) in
           assert (c = 0);
           pos + 2 |> instructions
       | c -> failwith (Printf.sprintf "Bad instruction 0xFE 0x%02X" c)
@@ -1582,7 +1600,14 @@ type import_status =
   | Unresolved of int
 
 let check_limits export import =
-  export.min >= import.min
+  (* Beyond the min/max bounds, a memory or table type only matches an import
+     when the address type (i32 / i64) and the shared flag are the same ---
+     otherwise, e.g., an i32 memory would satisfy an i64 import. *)
+  (match export.index_type, import.index_type with
+    | `I32, `I32 | `I64, `I64 -> true
+    | (`I32 | `I64), _ -> false)
+  && Bool.(export.shared = import.shared)
+  && export.min >= import.min
   &&
   match export.max, import.max with
   | _, None -> true
@@ -2078,13 +2103,80 @@ let f ?(filter_export = fun _ -> true) files ~output_file =
          ~kind:Func
          ~get:(fun idx : importdesc -> Func func_types.(idx)));
 
+  (* Global index maps, computed before the table section because a table's
+     initializer expression may read a global ([(table ... (global.get $g))]);
+     the global bodies themselves are emitted later, in section 6. This reads
+     each module's section-6 count but does not scan its bodies. *)
+  let global_mappings = Array.make (Array.length files) [||] in
+  let global_counts =
+    let current_offset = ref (get_exportable_info unresolved_imports Global) in
+    Array.mapi
+      ~f:(fun i { file; contents; _ } ->
+        let imports = get_exportable_info resolved_imports.(i) Global in
+        let import_count = Array.length imports in
+        let offset = !current_offset - import_count in
+        let count = if Read.find_section contents 6 then Read.uint contents.ch else 0 in
+        let map =
+          Array.init (import_count + count) ~f:(fun j ->
+              if j < import_count
+              then (
+                match imports.(j) with
+                | Unresolved j' -> j'
+                | Resolved (i', j') ->
+                    (if i' > i
+                     then
+                       let import = (get_exportable_info intfs.(i).imports Global).(j) in
+                       failwith
+                         (Printf.sprintf
+                            "In module %s, the import %s / %s refers to an export in a \
+                             later module %s"
+                            file
+                            import.module_
+                            import.name
+                            files.(i').file));
+                    global_mappings.(i').(j'))
+              else j + offset)
+        in
+        global_mappings.(i) <- map;
+        current_offset := !current_offset + count;
+        count)
+      files
+  in
+
   (* 4: table *)
   let positions =
     Array.init (Array.length files) ~f:(fun _ -> Scan.create_position_data ())
   in
   let table_counts =
-    write_section_with_scan ~files ~out_ch ~buf ~id:4 ~scan:(fun i maps ->
-        Scan.table_section positions.(i) { maps with func = func_mappings.(i) })
+    (* A table initializer may only read an *imported* global; a global that
+       linking internalises (a resolved import) would follow the table section
+       in the output and make the initializer a forward reference --- an invalid
+       module. Mark resolved-import globals with [-1] so the table scan rejects
+       them ([Table_init_reads_internal_global]) rather than silently producing
+       an invalid module. *)
+    try
+      write_section_with_scan ~files ~out_ch ~buf ~id:4 ~scan:(fun i maps ->
+          let imports = get_exportable_info resolved_imports.(i) Global in
+          let import_count = Array.length imports in
+          let global =
+            Array.mapi
+              ~f:(fun j idx ->
+                if
+                  j < import_count
+                  &&
+                  match imports.(j) with
+                  | Resolved _ -> true
+                  | _ -> false
+                then -1
+                else idx)
+              global_mappings.(i)
+          in
+          Scan.table_section positions.(i) { maps with func = func_mappings.(i); global })
+    with Table_init_reads_internal_global ->
+      failwith
+        "A table initializer reads a global that linking resolves to a definition in \
+         another module. A table initializer may only read an imported global, so the \
+         linked module would be invalid."
   in
   let table_mappings =
     build_mappings resolved_imports unresolved_imports Table table_counts
@@ -2134,69 +2226,24 @@ let f ?(filter_export = fun _ -> true) files ~output_file =
       ~files
   in
 
-  (* 6: global *)
-  let global_mappings = Array.make (Array.length files) [||] in
-  let global_counts =
-    let current_offset = ref (get_exportable_info unresolved_imports Global) in
-    Array.mapi
-      ~f:(fun i { file; contents; _ } ->
-        let imports = get_exportable_info resolved_imports.(i) Global in
-        let import_count = Array.length imports in
-        let offset = !current_offset - import_count in
-        let build_map count =
-          let map =
-            Array.init
-              (Array.length imports + count)
-              ~f:(fun j ->
-                if j < import_count
-                then (
-                  match imports.(j) with
-                  | Unresolved j' -> j'
-                  | Resolved (i', j') ->
-                      (if i' > i
-                       then
-                         let import =
-                           (get_exportable_info intfs.(i).imports Global).(j)
-                         in
-                         failwith
-                           (Printf.sprintf
-                              "In module %s, the import %s / %s refers to an export in a \
-                               later module %s"
-                              file
-                              import.module_
-                              import.name
-                              files.(i').file));
-                      global_mappings.(i').(j'))
-                else j + offset)
-          in
-          global_mappings.(i) <- map;
-          map
-        in
-        let count =
-          if Read.find_section contents 6
-          then (
-            let count = Read.uint contents.ch in
-            let map = build_map count in
-            Scan.global_section
-              positions.(i)
-              { Scan.default_maps with
-                typ = contents.type_mapping
-              ; func = func_mappings.(i)
-              ; global = map
-              }
-              buf
-              contents.ch.buf
-              contents.ch.pos
-              ~count;
-            count)
-          else (
-            ignore (build_map 0);
-            0)
-        in
-        current_offset := !current_offset + count;
-        count)
-      files
-  in
+  (* 6: global (index maps already computed above) *)
+  Array.iteri
+    ~f:(fun i { contents; _ } ->
+      if Read.find_section contents 6
+      then
+        let count = Read.uint contents.ch in
+        Scan.global_section
+          positions.(i)
+          { Scan.default_maps with
+            typ = contents.type_mapping
+          ; func = func_mappings.(i)
+          ; global = global_mappings.(i)
+          }
+          buf
+          contents.ch.buf
+          contents.ch.pos
+          ~count)
+    files;
   add_section out_ch ~id:6 ~count:(Array.fold_left ~f:( + ) ~init:0 global_counts) buf;
   check_exports_against_imports
     ~intfs
@@ -2287,7 +2334,11 @@ let f ?(filter_export = fun _ -> true) files ~output_file =
   let elem_counts =
     write_section_with_scan ~files ~out_ch ~buf ~id:9 ~scan:(fun i maps ->
         Scan.elem_section
-          { maps with func = func_mappings.(i); global = global_mappings.(i) })
+          { maps with
+            func = func_mappings.(i)
+          ; table = table_mappings.(i)
+          ; global = global_mappings.(i)
+          })
   in
   let elem_mappings = build_simple_mappings ~counts:elem_counts in
 
