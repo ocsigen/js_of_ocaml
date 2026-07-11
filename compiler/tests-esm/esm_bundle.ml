@@ -29,7 +29,9 @@ let write_file path content =
   close_out oc
 
 let parse_file path =
-  let lexer = Parse_js.Lexer.of_file path in
+  (* Read the file contents instead of using [Lexer.of_file]: the latter keeps
+     the channel open, which prevents deleting the file on Windows. *)
+  let lexer = Parse_js.Lexer.of_string ~filename:path (Fs.read_file path) in
   Parse_js.parse `Module lexer
 
 let normalize_path path =
@@ -1256,7 +1258,16 @@ let print_bundle_result ~tree_shake entry =
   with
   | bundled -> print_endline (bundle_to_string bundled)
   | exception Failure msg ->
-      let msg = replace_substring ~sub:(test_dir ^ "/") ~by:"" msg in
+      (* Normalize separators and drop the temporary directory prefix so
+         that error messages are stable across platforms *)
+      let normalize_seps s =
+        String.map s ~f:(function
+          | '\\' -> '/'
+          | c -> c)
+      in
+      let msg = normalize_seps msg in
+      let msg = replace_substring ~sub:(normalize_seps test_dir ^ "/") ~by:"" msg in
+      let msg = replace_substring ~sub:"./" ~by:"" msg in
       Printf.printf "Failure: %s\n" msg
 
 let%expect_test "export * as namespace" =
