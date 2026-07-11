@@ -59,6 +59,7 @@ let program_to_string program =
 
 (* Load runtime files and link the code needed for [used] primitives *)
 let link_for ~used files =
+  Config.set_effects_backend `Disabled;
   Linker.reset ();
   Linker.load_files ~target_env:Target_env.Isomorphic files;
   let state = Linker.init () in
@@ -70,6 +71,30 @@ let link_for ~used files =
   List.iter output.Linker.always_required_codes ~f:(fun always ->
       print_string (program_to_string always.Linker.program));
   print_string (program_to_string output.Linker.runtime_code)
+
+(* Make error messages stable across platforms: normalize separators and
+   drop the temporary directory prefix *)
+let sanitize_message msg =
+  let normalize s =
+    String.map s ~f:(function
+      | '\\' -> '/'
+      | c -> c)
+  in
+  let msg = normalize msg in
+  let dir = normalize test_dir ^ "/" in
+  let dir_len = String.length dir in
+  let len = String.length msg in
+  let buf = Buffer.create len in
+  let i = ref 0 in
+  while !i < len do
+    if !i + dir_len <= len && String.equal (String.sub msg ~pos:!i ~len:dir_len) dir
+    then i := !i + dir_len
+    else begin
+      Buffer.add_char buf msg.[!i];
+      incr i
+    end
+  done;
+  Buffer.contents buf
 
 let%expect_test "unused exports and helpers are not linked" =
   with_test_dir
@@ -244,20 +269,7 @@ let%expect_test "unsupported constructs are errors" =
   let check name content =
     let f = write name content in
     try link_for ~used:StringSet.empty [ f ]
-    with Failure msg ->
-      (* Normalize separators and keep only the file's basename so the
-         message is stable across platforms *)
-      let msg =
-        String.map msg ~f:(function
-          | '\\' -> '/'
-          | c -> c)
-      in
-      let msg =
-        match String.rindex_opt msg '/' with
-        | Some i -> String.sub msg ~pos:(i + 1) ~len:(String.length msg - i - 1)
-        | None -> msg
-      in
-      Printf.printf "Failure: %s\n" msg
+    with Failure msg -> Printf.printf "Failure: %s\n" (sanitize_message msg)
   in
   check "default.mjs" {|export default function caml_x() {}|};
   check "ns.mjs" {|import * as ns from './x.mjs'; export const caml_x = ns;|};
@@ -270,3 +282,142 @@ let%expect_test "unsupported constructs are errors" =
     Failure: side.mjs: side-effect imports are not supported in runtime modules
     Failure: reexp.mjs: re-exports are not supported in runtime modules
     |}]
+
+let%expect_test "kind annotations on exported items" =
+  with_test_dir
+  @@ fun ~write ->
+  let f =
+    write
+      "runtime.mjs"
+      {|
+//Provides: caml_pure_prim pure
+export function caml_pure_prim(x) { return x + 1; }
+//Provides: caml_mutator_prim mutator
+export function caml_mutator_prim(a, x) { a[0] = x; return 0; }
+export function caml_default_prim(x) { return x; }
+|}
+  in
+  link_for
+    ~used:
+      (StringSet.of_list [ "caml_pure_prim"; "caml_mutator_prim"; "caml_default_prim" ])
+    [ f ];
+  let show name =
+    let kind =
+      match Primitive.kind name with
+      | `Pure -> "pure"
+      | `Mutable -> "mutable"
+      | `Mutator -> "mutator"
+    in
+    Printf.printf "%s: %s\n" name kind
+  in
+  show "caml_pure_prim";
+  show "caml_mutator_prim";
+  show "caml_default_prim";
+  [%expect
+    {|
+           function caml_default_prim(x){return x;}
+           function caml_mutator_prim(a, x){a[0] = x; return 0;}
+           function caml_pure_prim(x){return x + 1;}
+           caml_pure_prim: pure
+           caml_mutator_prim: mutator
+           caml_default_prim: mutable
+           |}]
+
+let%expect_test "conditional compilation with //If" =
+  with_test_dir
+  @@ fun ~write ->
+  let f =
+    write
+      "runtime.mjs"
+      {|
+//If: effects
+export function caml_x() { return "effects"; }
+//If: !effects
+export function caml_x() { return "no effects"; }
+|}
+  in
+  (* Effects are disabled in this test setup *)
+  link_for ~used:(StringSet.of_list [ "caml_x" ]) [ f ];
+  [%expect {| function caml_x(){return "no effects";} |}]
+
+let%expect_test "conditional helpers with //If" =
+  with_test_dir
+  @@ fun ~write ->
+  let f =
+    write
+      "runtime.mjs"
+      {|
+//If: effects
+const config = { effects: true };
+//If: !effects
+const config = { effects: false };
+//Provides: caml_get_config pure
+export function caml_get_config() { return config; }
+|}
+  in
+  link_for ~used:(StringSet.of_list [ "caml_get_config" ]) [ f ];
+  [%expect
+    {| const config = {effects: false}; function caml_get_config(){return config;} |}]
+
+let%expect_test "//Version constraints" =
+  with_test_dir
+  @@ fun ~write ->
+  let f =
+    write
+      "runtime.mjs"
+      {|
+//Version: < 3.00
+export function caml_v(x) { return "old"; }
+//Version: >= 3.00
+export function caml_v(x) { return "new"; }
+|}
+  in
+  link_for ~used:(StringSet.of_list [ "caml_v" ]) [ f ];
+  [%expect {| function caml_v(x){return "new";} |}]
+
+let%expect_test "conditional imports" =
+  with_test_dir
+  @@ fun ~write ->
+  let b = write "b.mjs" {|
+export function caml_b(x) { return x; }
+|} in
+  let a =
+    write
+      "a.mjs"
+      {|
+//If: effects
+import { caml_b } from './b.mjs';
+//If: effects
+export function caml_a(x) { return caml_b(x); }
+//If: !effects
+export function caml_a(x) { return 1; }
+|}
+  in
+  link_for ~used:(StringSet.of_list [ "caml_a" ]) [ a; b ];
+  [%expect {| function caml_a(x){return 1;} |}]
+
+let%expect_test "annotation errors" =
+  with_test_dir
+  @@ fun ~write ->
+  let check name content =
+    let f = write name content in
+    try link_for ~used:StringSet.empty [ f ]
+    with Failure msg -> Printf.printf "Failure: %s\n" (sanitize_message msg)
+  in
+  check
+    "requires.mjs"
+    {|
+//Requires: caml_x
+export function caml_r(x) { return caml_x(x); }
+|};
+  check
+    "unknown.mjs"
+    {|
+//Provides: caml_missing pure
+export function caml_present(x) { return x; }
+|};
+  [%expect
+    {|
+           Failure: requires.mjs:2: use import statements instead of //Requires in runtime modules
+           Failure: unknown.mjs: //Provides: caml_missing does not match any exported name
+           |}]

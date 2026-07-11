@@ -29,7 +29,16 @@
     re-exports, no side-effect imports). Linking is name-based, like for
     annotated runtime scripts: the import specifier (file path) is not used
     to locate code; the imported names must be provided by some other
-    runtime file. *)
+    runtime file.
+
+    Some annotation comments are still supported; they are processed by the
+    linker (see {!Linker.Fragment.parse_file}) before this module runs and
+    apply to the statements that follow them, until the next annotated
+    statement:
+    - [//Provides: name kind] specifies the kind of the exported [name]
+      (defaults to [mutable])
+    - [//If: flag], [//If: !flag] and [//Version: constraint] drop the
+      annotated statements when the condition does not hold *)
 
 type piece =
   { exported : bool  (** whether [name] is an export of the module *)

@@ -427,10 +427,24 @@ module Fragment = struct
     parse_from_lex ~filename lex
 
   (* Runtime files written as ES modules: exports provide primitives,
-     imports are dependency edges. See [Esm_runtime]. *)
+     imports are dependency edges. See [Esm_runtime].
+
+     Some annotations are still meaningful: they apply to the statements
+     that follow them (until the next annotated statement).
+     - [//Provides: name kind] specifies the kind of the exported [name]
+       (which defaults to [mutable])
+     - [//If: flag], [//Ifnot: flag] and [//Version: constraint] drop the
+       annotated statements when the condition does not hold
+     Dependencies are expressed with import statements, so [//Requires] is
+     rejected; so are the annotations tied to the fragment model
+     ([//Always], [//Weakdef], [//Alias], [//Deprecated]). *)
   let parse_esm ~filename content =
-    let program =
-      try Parse_js.parse `Module (Parse_js.Lexer.of_string ~filename content)
+    let groups =
+      try
+        let p, toks =
+          Parse_js.parse' `Module (Parse_js.Lexer.of_string ~filename content)
+        in
+        attach_annot p toks
       with Parse_js.Parsing_error pi ->
         error
           "cannot parse file %S (from l:%d, c:%d)@."
@@ -438,20 +452,74 @@ module Fragment = struct
           pi.Parse_info.line
           pi.Parse_info.col
     in
+    let kinds = ref StringMap.empty in
+    let program =
+      List.concat_map groups ~f:(fun (annots, stmts) ->
+          let keep =
+            List.for_all annots ~f:(fun ((_, a), pi) ->
+                match a with
+                | (`If name | `Ifnot name) when not (StringMap.mem name allowed_flags) ->
+                    Format.eprintf "Unknown flag %S in %s\n" name (loc pi);
+                    true
+                | `If name -> (StringMap.find name allowed_flags) ()
+                | `Ifnot name -> not ((StringMap.find name allowed_flags) ())
+                | `Version l -> version_match l
+                | `Provides _
+                | `Requires _
+                | `Weakdef
+                | `Always
+                | `Alias _
+                | `Deprecated _ -> true)
+          in
+          if not keep
+          then []
+          else begin
+            List.iter annots ~f:(fun ((_, a), pi) ->
+                match a with
+                | `Provides (name, kind, ka) ->
+                    kinds := StringMap.add name (kind, ka) !kinds
+                | `If _ | `Ifnot _ | `Version _ -> ()
+                | `Requires _ ->
+                    error
+                      "%s: use import statements instead of //Requires in runtime modules"
+                      (loc pi)
+                | `Weakdef | `Always | `Alias _ | `Deprecated _ ->
+                    error "%s: annotation not supported in runtime modules" (loc pi));
+            stmts
+          end)
+    in
+    let kind_of name =
+      match StringMap.find_opt name !kinds with
+      | Some (kind, kind_arg) -> kind, kind_arg
+      | None -> `Mutable, None
+    in
     match Esm_runtime.split ~filename program with
-    | `No_exports body -> [ Always_include (Ok body) ]
+    | `No_exports body ->
+        if not (StringMap.is_empty !kinds)
+        then error "%s: //Provides annotation in a module without exports" filename;
+        [ Always_include (Ok body) ]
     | `Pieces pieces ->
+        let exported_names =
+          List.fold_left pieces ~init:StringSet.empty ~f:(fun acc p ->
+              if p.Esm_runtime.exported then StringSet.add p.Esm_runtime.name acc else acc)
+        in
+        StringMap.iter
+          (fun name _ ->
+            if not (StringSet.mem name exported_names)
+            then error "%s: //Provides: %s does not match any exported name" filename name)
+          !kinds;
         List.map
           pieces
           ~f:(fun { Esm_runtime.exported; name; requires; code; parse_info } ->
+            let kind, kind_arg = kind_of name in
             let fragment =
               Fragment
                 { provides =
                     Some
                       { parse_info
                       ; name
-                      ; kind = `Mutable
-                      ; kind_arg = None
+                      ; kind
+                      ; kind_arg
                       ; arity = None
                       ; named_values = Named_value.find_all code
                       }
