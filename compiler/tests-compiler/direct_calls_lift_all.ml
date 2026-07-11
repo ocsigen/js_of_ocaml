@@ -214,3 +214,26 @@ let%expect_test "direct calls with --effects=cps" =
     //end
     |}]
 
+let%expect_test "lifted closure calling a free variable" =
+  (* The lifting pass forks the free variables of lifted closures; the
+     driver must not feed the resulting program to passes relying on
+     flow information computed before lifting. *)
+  compile_and_run
+    ~lambda_lift_all:true
+    {|
+      let l : (int -> int) list ref = ref [ (fun x -> x + 1) ]
+
+      let test1 () =
+        let g = List.hd !l in
+        let f x =
+          l := (fun y -> y + x) :: !l; (* prevent inlining; keep l live *)
+          g x
+        in
+        ignore (f 7);
+        ignore (f 8)
+
+      let () =
+        test1 ();
+        Printf.printf "len=%d\n" (List.length !l)
+|};
+  [%expect {| len=3 |}]

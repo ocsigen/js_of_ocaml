@@ -600,6 +600,7 @@ let compile_and_run
     ?(ocaml_flags = [])
     ?effects
     ?use_js_string
+    ?lambda_lift_all
     ?unix
     ?werror
     s =
@@ -616,6 +617,7 @@ let compile_and_run
           ~flags
           ?effects
           ?use_js_string
+          ?lambda_lift_all
           ?sourcemap:debug
           ?werror
           bytecode_file

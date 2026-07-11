@@ -93,6 +93,7 @@ val compile_and_run :
   -> ?ocaml_flags:string list
   -> ?effects:[ `Disabled | `Cps | `Double_translation ]
   -> ?use_js_string:bool
+  -> ?lambda_lift_all:bool
   -> ?unix:bool
   -> ?werror:bool
   -> string
