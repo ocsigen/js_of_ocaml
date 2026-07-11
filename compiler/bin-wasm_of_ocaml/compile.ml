@@ -775,7 +775,6 @@ let run
          @@ fun tmp_output_file ->
          let z = Zip.open_out tmp_output_file in
          let unit_data =
-           let tmp_buf = Buffer.create 10000 in
            List.fold_right
              ~f:(fun cmo cont l ->
                compile_cmo cmo
@@ -800,19 +799,22 @@ let run
                @@ fun tmp_wasm_file ->
                let l = List.rev l in
                let source_map =
-                 Wasm_link.f
-                   (List.map
-                      ~f:(fun (_, _, file, opt_source_map, _, _) ->
-                        { Wasm_link.module_name = "OCaml"
-                        ; file
-                        ; code = None
-                        ; opt_source_map =
-                            Option.map
-                              ~f:(fun f -> Source_map.Standard.of_file ~tmp_buf f)
-                              opt_source_map
-                        })
-                      l)
-                   ~output_file:tmp_wasm_file
+                 match
+                   Wax.Link.f
+                     (List.map
+                        ~f:(fun (_, _, file, opt_source_map, _, _) ->
+                          { Wax.Link.module_name = "OCaml"
+                          ; file
+                          ; code = None
+                          ; source_map = Option.map ~f:Fs.read_file opt_source_map
+                          })
+                        l)
+                     ~output_file:tmp_wasm_file
+                 with
+                 | Some s -> Source_map.of_string s
+                 | None ->
+                     Source_map.Standard
+                       (Source_map.Standard.empty ~inline_source_content:false)
                in
                Zip.add_file z ~name:"code.wasm" ~file:tmp_wasm_file;
                Zip.add_entry

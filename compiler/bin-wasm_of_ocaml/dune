@@ -5,6 +5,7 @@
  (libraries
   jsoo_cmdline
   wasm_of_ocaml-compiler
+  wax-lib
   cmdliner
   compiler-libs.common
   js_of_ocaml-compiler.runtime-files

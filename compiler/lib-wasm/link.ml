@@ -848,10 +848,10 @@ let link_to_module ~to_link ~files_to_link ~files ~enable_source_maps:_ ~dir =
       let ch, pos, len, _ = Zip.get_entry z ~name in
       Wasm_binary.read_interface (Wasm_binary.from_channel ~name ch pos len)
     in
-    ( { Wasm_link.module_name
+    ( { Wax.Link.module_name
       ; file
       ; code = Some (Zip.read_entry z ~name)
-      ; opt_source_map = None
+      ; source_map = None
       }
     , intf )
   in
@@ -861,10 +861,10 @@ let link_to_module ~to_link ~files_to_link ~files ~enable_source_maps:_ ~dir =
     process_file ~name:"runtime.wasm" ~module_name:"env" runtime_file
   in
   let prelude =
-    { Wasm_link.module_name = "OCaml"
+    { Wax.Link.module_name = "OCaml"
     ; file = runtime_file
     ; code = Some (Zip.read_entry z ~name:"prelude.wasm")
-    ; opt_source_map = None
+    ; source_map = None
     }
   in
   Zip.close_in z;
@@ -884,27 +884,22 @@ let link_to_module ~to_link ~files_to_link ~files ~enable_source_maps:_ ~dir =
   @@ fun start_module ->
   generate_start_function ~to_link ~out_file:start_module;
   let start =
-    { Wasm_link.module_name = "OCaml"
+    { Wax.Link.module_name = "OCaml"
     ; file = start_module
     ; code = None
-    ; opt_source_map = None
+    ; source_map = None
     }
   in
   Fs.with_intermediate_file (Filename.temp_file "stubs" ".wasm")
   @@ fun stubs_module ->
   generate_missing_primitives ~missing_primitives ~out_file:stubs_module;
   let missing_primitives =
-    { Wasm_link.module_name = "env"
-    ; file = stubs_module
-    ; code = None
-    ; opt_source_map = None
-    }
+    { Wax.Link.module_name = "env"; file = stubs_module; code = None; source_map = None }
   in
-  ignore
-    (Wasm_link.f
-       (runtime :: prelude :: missing_primitives :: start :: List.map ~f:fst lst)
-       ~filter_export:(fun nm -> String.equal nm "_start" || String.equal nm "memory")
-       ~output_file:(Filename.concat dir "code.wasm"))
+  let filter_export nm = String.equal nm "_start" || String.equal nm "memory" in
+  let out = Filename.concat dir "code.wasm" in
+  let inputs = runtime :: prelude :: missing_primitives :: start :: List.map ~f:fst lst in
+  ignore (Wax.Link.f inputs ~filter_export ~output_file:out : string option)
 
 let link ~output_file ~linkall ~enable_source_maps ~embedded_files ~files =
   if times () then Format.eprintf "linking@.";
@@ -1163,25 +1158,23 @@ let make_library ~linkall ~output_file ~enable_source_maps ~files =
   Fs.with_intermediate_file (Filename.temp_file "wasm" ".wasm")
   @@ fun tmp_wasm_file ->
   let output_sourcemap =
-    Wasm_link.f
-      (let tmp_buf = Buffer.create 10000 in
-       List.map
-         ~f:(fun file ->
-           let z' = Zip.open_in file in
-           { Wasm_link.module_name = "OCaml"
-           ; file
-           ; code = Some (Zip.read_entry z' ~name:"code.wasm")
-           ; opt_source_map =
-               (if enable_source_maps && Zip.has_entry z' ~name:"source_map.map"
-                then
-                  Some
-                    (Source_map.Standard.of_string
-                       ~tmp_buf
-                       (Zip.read_entry z' ~name:"source_map.map"))
-                else None)
-           })
-         files)
-      ~output_file:tmp_wasm_file
+    let inputs =
+      List.map
+        ~f:(fun file ->
+          let z' = Zip.open_in file in
+          { Wax.Link.module_name = "OCaml"
+          ; file
+          ; code = Some (Zip.read_entry z' ~name:"code.wasm")
+          ; source_map =
+              (if enable_source_maps && Zip.has_entry z' ~name:"source_map.map"
+               then Some (Zip.read_entry z' ~name:"source_map.map")
+               else None)
+          })
+        files
+    in
+    match Wax.Link.f inputs ~output_file:tmp_wasm_file with
+    | Some s -> Source_map.of_string s
+    | None -> Source_map.Standard (Source_map.Standard.empty ~inline_source_content:false)
   in
   Zip.add_file z ~name:"code.wasm" ~file:tmp_wasm_file;
   if enable_source_maps then add_source_map files z output_sourcemap;
