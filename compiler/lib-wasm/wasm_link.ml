@@ -813,7 +813,7 @@ module Read = struct
     let exports =
       let tbl = make_exportable_info [] in
       if find_section contents 7 then vec' (export tbl) contents.ch;
-      tbl
+      map_exportable_info (fun _ l -> List.rev l) tbl
     in
     { imports; exports }
 
