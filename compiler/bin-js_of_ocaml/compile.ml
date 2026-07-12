@@ -144,6 +144,8 @@ let run
     ; params
     ; static_env
     ; wrap_with_fun
+    ; esm
+    ; esm_runtime_path
     ; dynlink
     ; linkall
     ; target_env
@@ -268,6 +270,15 @@ let run
       ~link
       output_file =
     if check_sourcemap then check_debug one;
+    let esm : Driver.esm option =
+      if esm
+      then
+        (* Standalone programs and the runtime inline the runtime code; only
+           separately compiled units import it. *)
+        Some
+          { Driver.runtime_import = (if standalone then None else Some esm_runtime_path) }
+      else None
+    in
     let init_pseudo_fs = fs_external && standalone in
     let sm, shapes =
       match output_file with
@@ -282,6 +293,7 @@ let run
           let code = Code.prepend one.code instr in
           Driver.f
             ~standalone
+            ?esm
             ~shapes
             ?profile
             ~link
@@ -306,6 +318,7 @@ let run
           let res =
             Driver.f
               ~standalone
+              ?esm
               ~shapes
               ?profile
               ~link

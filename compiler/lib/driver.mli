@@ -35,8 +35,14 @@ val optimize_for_wasm :
   -> Code.program
   -> optimized_result * (Global_flow.state * Global_flow.info)
 
+type esm = { runtime_import : string option }
+(** Experimental ES module output. [runtime_import] is the module specifier
+    units use to import the runtime; [None] when the runtime is part of the
+    emitted program (whole-program compilation or the runtime itself). *)
+
 val f :
      ?standalone:bool
+  -> ?esm:esm
   -> ?wrap_with_fun:[ `Iife | `Anonymous | `Named of string ]
   -> ?profile:Profile.t
   -> ?shapes:bool
@@ -48,6 +54,7 @@ val f :
 
 val f' :
      ?standalone:bool
+  -> ?esm:esm
   -> ?wrap_with_fun:[ `Iife | `Anonymous | `Named of string ]
   -> ?profile:Profile.t
   -> link:[ `All | `All_from of string list | `Needed | `No ]
@@ -64,6 +71,7 @@ val from_string :
 
 val link_and_pack :
      ?standalone:bool
+  -> ?esm:esm
   -> ?wrap_with_fun:[ `Iife | `Anonymous | `Named of string ]
   -> ?link:[ `All | `All_from of string list | `Needed | `No ]
   -> Javascript.statement_list

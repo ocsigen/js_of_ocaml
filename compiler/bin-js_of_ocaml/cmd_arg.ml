@@ -63,6 +63,8 @@ type t =
   ; params : (string * string) list
   ; static_env : (string * string) list
   ; wrap_with_fun : [ `Iife | `Named of string | `Anonymous ]
+  ; esm : bool
+  ; esm_runtime_path : string
   ; target_env : Target_env.t
   ; shape_files : string list
   ; (* toplevel *)
@@ -99,6 +101,17 @@ let wrap_with_fun_conv =
       | `Iife -> "<Immediately Invoked Function Expression>")
   in
   Arg.conv (conv, printer)
+
+let esm_arg =
+  let doc = "Experimental: emit an ECMAScript module instead of a script." in
+  Arg.(value & flag & info [ "esm" ] ~doc)
+
+let esm_runtime_path_arg =
+  let doc =
+    "Experimental: module specifier used by separately compiled units to import the \
+     runtime (only meaningful together with '--esm')."
+  in
+  Arg.(value & opt string "./runtime.js" & info [ "esm-runtime-path" ] ~docv:"PATH" ~doc)
 
 let toplevel_section = "OPTIONS (TOPLEVEL)"
 
@@ -292,6 +305,8 @@ let options =
       toplevel
       export_file
       wrap_with_fun
+      esm
+      esm_runtime_path
       include_dirs
       fs_files
       fs_output
@@ -380,6 +395,8 @@ let options =
           ; profile
           ; static_env
           ; wrap_with_fun
+          ; esm
+          ; esm_runtime_path
           ; dynlink
           ; linkall
           ; target_env
@@ -413,6 +430,8 @@ let options =
       $ toplevel
       $ export_file
       $ wrap_with_function
+      $ esm_arg
+      $ esm_runtime_path_arg
       $ include_dirs
       $ fs_files
       $ fs_output
@@ -577,6 +596,8 @@ let options_runtime_only =
       set_param
       set_env
       wrap_with_fun
+      esm
+      esm_runtime_path
       fs_files
       fs_output
       fs_external
@@ -645,6 +666,8 @@ let options_runtime_only =
       ; profile = None
       ; static_env
       ; wrap_with_fun
+      ; esm
+      ; esm_runtime_path
       ; dynlink = false
       ; linkall = false
       ; target_env
@@ -676,6 +699,8 @@ let options_runtime_only =
       $ set_param
       $ set_env
       $ wrap_with_function
+      $ esm_arg
+      $ esm_runtime_path_arg
       $ fs_files
       $ fs_output
       $ fs_external

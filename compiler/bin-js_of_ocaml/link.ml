@@ -30,6 +30,9 @@ type t =
   ; linkall : bool
   ; mklib : bool
   ; dynlink : bool
+  ; esm : bool
+  ; bundle : bool
+  ; no_tree_shake : bool
   }
 
 let options =
@@ -82,6 +85,24 @@ let options =
     let doc = "Enable dynlink/toplevel support." in
     Arg.(value & flag & info [ "dynlink"; "toplevel" ] ~doc)
   in
+  let esm =
+    let doc =
+      "Experimental: link ECMAScript modules produced by 'js_of_ocaml --esm'. The output \
+       is an entry module importing every file in order; with '--bundle' the modules are \
+       merged into a single self-contained module instead."
+    in
+    Arg.(value & flag & info [ "esm" ] ~doc)
+  in
+  let bundle =
+    let doc =
+      "Experimental: bundle the modules into a single module (requires '--esm')."
+    in
+    Arg.(value & flag & info [ "bundle" ] ~doc)
+  in
+  let no_tree_shake =
+    let doc = "Experimental: disable tree shaking when bundling." in
+    Arg.(value & flag & info [ "no-tree-shake" ] ~doc)
+  in
   let build_t
       common
       no_sourcemap
@@ -94,7 +115,10 @@ let options =
       js_files
       linkall
       mklib
-      dynlink =
+      dynlink
+      esm
+      bundle
+      no_tree_shake =
     let chop_extension s = try Filename.chop_extension s with Invalid_argument _ -> s in
     let source_map =
       if (not no_sourcemap) && (sourcemap || sourcemap_inline_in_js)
@@ -129,6 +153,9 @@ let options =
       ; linkall
       ; mklib
       ; dynlink
+      ; esm
+      ; bundle
+      ; no_tree_shake
       }
   in
   let t =
@@ -145,9 +172,99 @@ let options =
       $ js_files
       $ linkall
       $ mklib
-      $ dynlink)
+      $ dynlink
+      $ esm
+      $ bundle
+      $ no_tree_shake)
   in
   Term.ret t
+
+(* ES module linking (experimental). Paths are used as module identifiers:
+   normalize them so that resolved import specifiers and command-line paths
+   agree on separators and [.]/[..] components. *)
+let normalize_path path =
+  let path =
+    if Sys.win32
+    then String.map path ~f:(fun c -> if Char.equal c '\\' then '/' else c)
+    else path
+  in
+  let parts = String.split_on_char ~sep:'/' path in
+  let rec normalize acc = function
+    | [] -> List.rev acc
+    | "." :: rest -> normalize acc rest
+    | ".." :: rest -> (
+        match acc with
+        | (".." | "") :: _ | [] -> normalize (".." :: acc) rest
+        | _ :: acc' -> normalize acc' rest)
+    | part :: rest -> normalize (part :: acc) rest
+  in
+  String.concat ~sep:"/" (normalize [] parts)
+
+let absolute_path path =
+  normalize_path
+    (if Filename.is_relative path then Filename.concat (Sys.getcwd ()) path else path)
+
+(* The specifier importing [path] from a module located in [dir]. *)
+let relative_specifier ~dir path =
+  let rec strip_common_prefix l1 l2 =
+    match l1, l2 with
+    | x :: r1, y :: r2 when String.equal x y -> strip_common_prefix r1 r2
+    | _ -> l1, l2
+  in
+  let dir_parts = String.split_on_char ~sep:'/' (absolute_path dir) in
+  let path_parts = String.split_on_char ~sep:'/' (absolute_path path) in
+  let dir_rest, path_rest = strip_common_prefix dir_parts path_parts in
+  let ups = List.map dir_rest ~f:(fun _ -> "..") in
+  let parts =
+    match ups with
+    | [] -> "." :: path_rest
+    | _ -> ups @ path_rest
+  in
+  String.concat ~sep:"/" parts
+
+let link_esm ~output_file ~files ~bundle ~tree_shake =
+  let output_dir =
+    match output_file with
+    | Some file -> Filename.dirname file
+    | None -> "."
+  in
+  let with_output f =
+    match output_file with
+    | None -> f stdout
+    | Some file -> Filename.gen_file file f
+  in
+  if not bundle
+  then
+    (* Emit an entry module importing each file in link order. ES semantics
+       guarantee the modules are evaluated in declaration order (post-order
+       depth-first), so the runtime imported by each unit runs first. *)
+    with_output (fun output ->
+        List.iter files ~f:(fun file ->
+            Printf.fprintf output "import %S;\n" (relative_specifier ~dir:output_dir file)))
+  else
+    let parse path =
+      let lexer = Parse_js.Lexer.of_string ~filename:path (Fs.read_file path) in
+      Parse_js.parse `Module lexer
+    in
+    let resolve ~from specifier =
+      if
+        Filename.is_relative specifier
+        && (String.starts_with ~prefix:"./" specifier
+           || String.starts_with ~prefix:"../" specifier)
+      then
+        let dir = Filename.dirname from in
+        let resolved = normalize_path (Filename.concat dir specifier) in
+        if Sys.file_exists resolved then Some resolved else None
+      else None
+    in
+    let entry_points = List.map files ~f:absolute_path in
+    let program = Esm_bundle.bundle_modules ~parse ~resolve ~entry_points ~tree_shake in
+    with_output (fun output ->
+        let pp = Pretty_print.to_out_channel output in
+        Driver.configure pp;
+        let program = Driver.name_variables program in
+        let (_ : Source_map.info) = Js_output.program pp program in
+        ())
 
 let f
     { common
@@ -157,6 +274,9 @@ let f
     ; js_files
     ; linkall
     ; mklib
+    ; esm
+    ; bundle
+    ; no_tree_shake
     ; dynlink =
         _
         (* TODO: when [dynlink] (i.e. --dynlink/--toplevel) is false, the linker
@@ -169,19 +289,22 @@ let f
   Config.set_target `JavaScript;
   Jsoo_cmdline.Arg.eval common;
   Linker.reset ();
-  let with_output f =
-    match output_file with
-    | None -> f stdout
-    | Some file -> Filename.gen_file file f
-  in
-  with_output (fun output ->
-      Link_js.link
-        ~output
-        ~linkall
-        ~mklib
-        ~files:js_files
-        ~source_map
-        ~resolve_sourcemap_url)
+  if esm
+  then link_esm ~output_file ~files:js_files ~bundle ~tree_shake:(not no_tree_shake)
+  else
+    let with_output f =
+      match output_file with
+      | None -> f stdout
+      | Some file -> Filename.gen_file file f
+    in
+    with_output (fun output ->
+        Link_js.link
+          ~output
+          ~linkall
+          ~mklib
+          ~files:js_files
+          ~source_map
+          ~resolve_sourcemap_url)
 
 let info =
   Info.make
