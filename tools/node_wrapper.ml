@@ -15,6 +15,23 @@ let extra_args_for_wasoo = [ "--experimental-wasm-wasmfx"; "--stack-size=10000" 
 
 let extra_args_for_jsoo = []
 
+(* [JSOO_ENGINE] (baked in at build time, see tools/dune) selects the engine
+   that runs the generated code. [node] and [bun] are JS hosts, used to run
+   both plain JavaScript and wasm; [wizard]/[wasmtime]/[wasmedge] are
+   standalone wasm VMs handled below. *)
+let engine = Node_wrapper_per_engine.engine
+
+let js_host =
+  match engine with
+  | "bun" -> "bun"
+  | _ -> "node"
+
+let is_node = String.equal js_host "node"
+
+(* The node-specific flags above are only understood by node, since other JS
+   hosts (bun uses JavaScriptCore) do not know them. *)
+let extra_args_for_wasoo = if is_node then extra_args_for_wasoo else []
+
 let env = Unix.environment ()
 
 let env =
@@ -51,7 +68,7 @@ let exe, args =
       let exe', argv =
         match argv with
         | file :: _ when Filename.check_suffix file ".wasm.js" -> (
-            match Node_wrapper_per_engine.engine with
+            match engine with
             | "wizard" -> "wizeng.x86-linux", wizard_args @ common_args file argv
             | "wizard-fast" -> "wizeng.x86-64-linux", wizard_args @ common_args file argv
             | "wizard-spc" ->
@@ -59,8 +76,8 @@ let exe, args =
                 , ("--mode=jit" :: wizard_args) @ common_args file argv )
             | "wasmtime" -> "wasmtime", wasmtime_args @ common_args file argv
             | "wasmedge" -> "wasmedge", wasmedge_args @ common_args file argv
-            | _ -> "node", extra_args_for_wasoo @ argv)
-        | _ -> "node", extra_args_for_jsoo @ argv
+            | _ -> js_host, extra_args_for_wasoo @ argv)
+        | _ -> js_host, extra_args_for_jsoo @ argv
       in
       exe', Array.of_list (exe :: argv)
   | [] -> assert false
