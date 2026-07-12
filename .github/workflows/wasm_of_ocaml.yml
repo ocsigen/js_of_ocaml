@@ -176,19 +176,19 @@ jobs:
         if: ${{ matrix.wasi }}
         working-directory: ./wasm_of_ocaml
         env:
-          WASM_ENGINE: wizard-fast
+          JSOO_ENGINE: wizard-fast
         run: opam exec -- dune build @runtest-wasm --profile wasi-with-native-effects
 
       - name: Run tests (WASI runtime - Wizard engine - SPC)
         if: ${{ matrix.wasi }}
         working-directory: ./wasm_of_ocaml
         env:
-          WASM_ENGINE: wizard-spc
+          JSOO_ENGINE: wizard-spc
         run: opam exec -- dune build @runtest-wasm --profile wasi-with-native-effects
 
       - name: Run tests (WASI runtime - wasmtime)
         if: ${{ matrix.wasi }}
         working-directory: ./wasm_of_ocaml
         env:
-          WASM_ENGINE: wasmtime
+          JSOO_ENGINE: wasmtime
         run: opam exec -- dune build @runtest-wasm --profile wasi
