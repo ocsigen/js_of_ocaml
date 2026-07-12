@@ -249,6 +249,7 @@ let shorthand = function
   | "native" -> Some ("backend", "native")
   | "node" -> Some ("host_engine", "node")
   | "quickjs" -> Some ("host_engine", "quickjs")
+  | "bun" -> Some ("host_engine", "bun")
   | "wasi" -> Some ("host_engine", "wasi")
   | "win32" -> Some ("os_type", "Win32")
   | "unix" -> Some ("os_type", "Unix")
