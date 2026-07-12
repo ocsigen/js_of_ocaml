@@ -313,6 +313,40 @@ let topological_sort (graph : module_graph) : ModuleId.t list =
   (* Reverse to get dependency order (dependencies before dependents) *)
   List.rev sorted
 
+(* Modules in ES evaluation order: post-order depth-first traversal from the
+   roots, following import declarations in order ([import] before
+   [export ... from]). This matches the evaluation order mandated by the
+   spec, which [topological_sort] does not: it orders independent sibling
+   modules by module id, not by import declaration order. Modules that are
+   part of a cycle are emitted where the depth-first traversal first
+   completes them, like the spec does. *)
+let evaluation_order (graph : module_graph) ~(roots : ModuleId.t list) : ModuleId.t list =
+  let visited = ref ModuleId.Set.empty in
+  let order = ref [] in
+  let rec visit id =
+    if not (ModuleId.Set.mem id !visited)
+    then begin
+      visited := ModuleId.Set.add id !visited;
+      (match ModuleId.Map.find_opt id graph.modules with
+      | None -> ()
+      | Some m ->
+          List.iter m.imports ~f:(fun { source; _ } -> visit source);
+          List.iter m.star_exports ~f:visit;
+          (* [export { x } from './a.js'] also requests './a.js'. The exports
+             map does not preserve declaration order; this only matters for
+             modules requested exclusively through re-exports. *)
+          StringMap.iter
+            (fun _ e ->
+              match e.kind with
+              | Export_reexport (source, _) -> visit source
+              | Export_var | Export_fun | Export_class -> ())
+            m.exports);
+      order := id :: !order
+    end
+  in
+  List.iter roots ~f:visit;
+  List.rev !order
+
 (* Resolve export * from by copying exports from source modules.
 
    Per the ES spec:

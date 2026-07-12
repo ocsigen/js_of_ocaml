@@ -121,6 +121,13 @@ val topological_sort : module_graph -> ModuleId.t list
 (** [topological_sort graph] returns modules in dependency order
     (dependencies before dependents). *)
 
+val evaluation_order : module_graph -> roots:ModuleId.t list -> ModuleId.t list
+(** [evaluation_order graph ~roots] returns the modules reachable from
+    [roots] in ES evaluation order: post-order depth-first traversal
+    following import declaration order. Unlike {!topological_sort}, the
+    relative order of independent sibling modules follows the import
+    declarations, as the ES spec mandates. *)
+
 val resolve_reexport : esm_module ModuleId.Map.t -> export_entry -> Javascript.ident
 (** [resolve_reexport modules export] follows re-export chains to find the
     actual source identifier for an export.

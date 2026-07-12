@@ -284,8 +284,8 @@ export function use() {
   print_endline output;
   [%expect
     {|
-    const bar = 2;
     const foo = 1;
+    const bar = 2;
     function use(){return foo + bar;}
     export { use };
     |}]
@@ -646,10 +646,10 @@ let%expect_test "three-way cyclic dependency" =
   [%expect
     {|
     Bundled 4 modules (with 3-way cycle)
-    const c = "c";
-    function fromC(){return c + b;}
     const b = "b";
     function fromB(){return b + a;}
+    const c = "c";
+    function fromC(){return c + b;}
     const a = "a";
     function fromA(){return a + c;}
     function main(){return fromA() + fromB() + fromC();}

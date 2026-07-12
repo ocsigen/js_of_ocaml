@@ -273,7 +273,7 @@ let apply_import_substitutions subst stmts =
   else (new substitute_imports subst)#program stmts
 
 let bundle (graph : Esm.module_graph) ~(entry_points : Esm.ModuleId.t list) : program =
-  let sorted = Esm.topological_sort graph in
+  let sorted = Esm.evaluation_order graph ~roots:entry_points in
   let body_stmts =
     List.concat_map sorted ~f:(fun id ->
         match Esm.ModuleId.Map.find_opt id graph.modules with
