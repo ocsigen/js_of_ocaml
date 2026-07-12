@@ -471,6 +471,10 @@ let run (graph : Esm.module_graph) ~(entry_exports : StringSet.t Esm.ModuleId.Ma
                 | Esm.ImportSideEffect -> mark_reached import.Esm.source
                 | Esm.ImportNamed _ | Esm.ImportDefault _ | Esm.ImportNamespace _ -> ()))
   in
+  (* Initialize: entry modules are evaluated, so their side effects (and,
+     transitively, the modules they import) are always preserved, even when
+     they export nothing. *)
+  Esm.ModuleId.Map.iter (fun module_id _ -> mark_reached module_id) entry_exports;
   (* Initialize: mark entry exports as live *)
   Esm.ModuleId.Map.iter
     (fun module_id exports ->
