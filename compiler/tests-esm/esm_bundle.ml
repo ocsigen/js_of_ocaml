@@ -95,7 +95,10 @@ let with_test_dir f =
     let path = Filename.concat test_dir name in
     write_file path content;
     files := path :: !files;
-    path
+    (* Return a normalized path: module ids are path strings, so entry points
+       must use the same separators as the paths produced by [resolve],
+       otherwise the module ordering differs between platforms. *)
+    normalize_path path
   in
   Fun.protect
     ~finally:(fun () ->
