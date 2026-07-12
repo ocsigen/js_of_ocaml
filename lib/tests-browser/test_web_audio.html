@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en" style="height: 100%;">
+
+<head>
+  <meta charset="utf-8">
+  <title>test_web_audio</title>
+  <style>
+    body {
+      font-family: monospace;
+      margin: 2em;
+    }
+
+    #log {
+      margin-top: 1em;
+      padding: 0.5em 1em;
+      background: #f5f5f5;
+      border: 1px solid #ccc;
+      min-height: 200px;
+      overflow-y: auto;
+      max-height: 60vh;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1.5em 26em 1fr;
+      align-items: baseline;
+      padding: 2px 0;
+    }
+
+    .mark {
+      font-weight: bold;
+      font-size: 1.1em;
+    }
+
+    .mark.pass {
+      color: #1a7f37;
+    }
+
+    .mark.fail {
+      color: #cf222e;
+    }
+
+    .label {
+      color: #1f2328;
+    }
+
+    .detail {
+      color: #57606a;
+    }
+
+    .summary {
+      margin-top: 1em;
+      padding: 0.5em 1em;
+      font-weight: bold;
+      border-radius: 4px;
+    }
+
+    .summary.pass {
+      background: #dafbe1;
+      color: #1a7f37;
+    }
+
+    .summary.fail {
+      background: #ffebe9;
+      color: #cf222e;
+    }
+
+    button {
+      font: inherit;
+      margin-right: 0.5em;
+      padding: 0.3em 0.8em;
+    }
+  </style>
+  <script>
+    var isWasm = /[?&]wasm\b/.test(location.search);
+    (function () {
+      var s = document.createElement('script');
+      s.defer = true;
+      s.src = isWasm ? 'test_web_audio.bc.wasm.js' : 'test_web_audio.bc.js';
+      document.head.appendChild(s);
+    })();
+  </script>
+</head>
+
+<body>
+  <h2>Web Audio / Media Capture test</h2>
+  <p>Exercises <code>WebAudio</code> (offline rendering, the node graph,
+     <code>AudioParam</code> scheduling), <code>MediaCapture</code>
+     (<code>MediaStream</code>/<code>MediaStreamTrack</code> via a
+     media-stream destination node, <code>mediaDevices</code>) and the new
+     <code>Dom_html.mediaElement</code> members (<code>srcObject</code>,
+     text tracks, <code>preservesPitch</code>, ...).</p>
+  <p>
+    Mode: <strong><script>document.write(isWasm ? 'wasm' : 'js')</script></strong>
+    — <script>document.write(isWasm ? '<a href="test_web_audio.html">switch to js</a>' : '<a href="test_web_audio.html?wasm">switch to wasm</a>')</script>
+  </p>
+  <p>
+    <button type="button" id="beep">Play a beep</button>
+    <button type="button" id="mic">Capture the microphone</button>
+    (both need a click; the second asks for permission)
+  </p>
+  <div id="log"></div>
+  <div id="summary" class="summary"></div>
+</body>
+
+</html>
