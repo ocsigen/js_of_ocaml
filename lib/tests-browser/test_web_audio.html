@@ -97,8 +97,12 @@
   <p>
     <button type="button" id="beep">Play a beep</button>
     <button type="button" id="mic">Capture the microphone</button>
-    (both need a click; the second asks for permission)
+    <button type="button" id="stop" disabled>Stop recording</button>
+    <!-- biome-ignore lint/a11y/useMediaCaption: plays back the user's own live microphone recording; no caption track can exist -->
+    <audio id="playback" controls></audio>
   </p>
+  <p>The capture button asks for permission and records until stopped; the
+     recording is then replayed through the audio element.</p>
   <div id="log"></div>
   <div id="summary" class="summary"></div>
 </body>
