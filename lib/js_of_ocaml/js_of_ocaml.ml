@@ -47,6 +47,7 @@ module Js_error = Js.Js_error
 module Json = Json
 module Jstable = Jstable
 module MediaCapture = MediaCapture
+module MediaRecorder = MediaRecorder
 module MessageChannel = MessageChannel
 module MutationObserver = MutationObserver
 module Notification = Notification
