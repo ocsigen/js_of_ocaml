@@ -1,0 +1,57 @@
+name: bun
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+  schedule:
+    # Prime the caches every Monday
+    - cron: 0 1 * * MON
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  bun:
+    name: bun / Ubuntu / Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Update apt cache
+        run: sudo apt-get update
+
+      - name: Checkout tree
+        uses: actions/checkout@v7
+
+      - name: Set-up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: latest
+
+      - name: Set-up bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Set-up OCaml
+        uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: "5.5"
+
+      - name: Set-up Binaryen
+        uses: Aandreba/setup-binaryen@v1.0.0
+        with:
+          token: ${{ github.token }}
+
+      - run: opam install . --deps-only --with-test
+
+      - run: opam install .
+
+      - run: opam exec -- make all
+
+      # Run the JS test suite with bun (JSOO_ENGINE=bun) in place of node.
+      - run: opam exec -- make tests-bun
+
+      # Run the wasm test suite with bun. bun's JSPI does not switch stacks,
+      # so effects use the CPS profile rather than the default JSPI mode.
+      - run: opam exec -- make tests-bun-wasm
