@@ -542,7 +542,7 @@ let%expect_test "in operator in arrow concise body" =
    reports different (or no) errors, so they are gated to non-quickjs engines. *)
 let%expect_test
     ("in operator in arrow concise body - parsing error"
-     [@when target_engine <> "quickjs"]) =
+     [@when target_engine <> "quickjs" && target_engine <> "bun"]) =
   (* Per ECMAScript spec, 'in' is disallowed in arrow concise body within for-loop initializer *)
   print
     ~report:true
@@ -555,7 +555,8 @@ let%expect_test
   [%expect {| cannot parse js (from l:2, c:24)@. |}]
 
 let%expect_test
-    ("in operator in nested arrow concise body" [@when target_engine <> "quickjs"]) =
+    ("in operator in nested arrow concise body"
+     [@when target_engine <> "quickjs" && target_engine <> "bun"]) =
   (* Nested arrows also propagate [~In] context through concise bodies *)
   print
     ~report:true
@@ -566,7 +567,9 @@ let%expect_test
  |};
   [%expect {| cannot parse js (from l:2, c:29)@. |}]
 
-let%expect_test ("declarations are not statements" [@when target_engine <> "quickjs"]) =
+let%expect_test
+    ("declarations are not statements"
+     [@when target_engine <> "quickjs" && target_engine <> "bun"]) =
   (* The body of an [if], a loop or a labelled statement is a Statement,
      which excludes declarations. *)
   let test s = print ~report:true ~compact:false ~invalid:true s in
@@ -824,7 +827,8 @@ const as = () => () => ts(void 0, void 0, void 0, function* () {})
   [%expect {|
     const as = ()=>()=>ts(void 0, void 0, void 0, function*(){}); |}]
 
-let%expect_test ("error reporting" [@when target_engine <> "quickjs"]) =
+let%expect_test
+    ("error reporting" [@when target_engine <> "quickjs" && target_engine <> "bun"]) =
   (try
      print ~invalid:true ~compact:false {|
     var x = 2;
@@ -985,7 +989,8 @@ let%expect_test "tokens" =
      9: 4:var, 8:s, 10:=, 12:tag, 15:`, 16:asd , 20:${, 23:test, 28:}, 29: te, 32:`, 0:;,
     11: 4:var, 8:s, 10:=, 12:`, 13:asd , 17:${, 20:f, 21:(, 22:`, 23:space , 29:${, 31:test, 35:}, 36: space, 42:`, 43:,, 45:32, 47:), 49:}, 50: te, 53:`, 0:;, |}]
 
-let%expect_test ("invalid ident" [@when target_engine <> "quickjs"]) =
+let%expect_test
+    ("invalid ident" [@when target_engine <> "quickjs" && target_engine <> "bun"]) =
   parse_print_token
     ~invalid:true
     {|
@@ -999,8 +1004,9 @@ let%expect_test ("invalid ident" [@when target_engine <> "quickjs"]) =
     cannot parse l:3:8@.
     |}]
 
-let%expect_test ("unicode escape with too many digits" [@when target_engine <> "quickjs"])
-    =
+let%expect_test
+    ("unicode escape with too many digits"
+     [@when target_engine <> "quickjs" && target_engine <> "bun"]) =
   parse_print_token
     ~invalid:true
     {|
@@ -1033,7 +1039,8 @@ let%expect_test "string" =
 (* The sources are checked out with CRLF line endings on Windows *)
 let clean s = Str.global_replace (Str.regexp "\r\n") "\n" s
 
-let%expect_test ("multiline string" [@when target_engine <> "quickjs"]) =
+let%expect_test
+    ("multiline string" [@when target_engine <> "quickjs" && target_engine <> "bun"]) =
   parse_print_token ~invalid:true (clean {|
     42;
     "
@@ -1077,7 +1084,9 @@ let%expect_test ("multiline string" [@when target_engine <> "quickjs"]) =
     |}];
   [%expect {||}]
 
-let%expect_test ("line terminators in strings" [@when target_engine <> "quickjs"]) =
+let%expect_test
+    ("line terminators in strings"
+     [@when target_engine <> "quickjs" && target_engine <> "bun"]) =
   (* A bare CR (and CRLF) in a string literal is an error like a bare LF, and
      U+2028 / U+2029 are allowed. All of them must advance the line count. *)
   parse_print_token ~invalid:true "42;\n\"a\rb\";\n42\n";
