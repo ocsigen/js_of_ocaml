@@ -1036,8 +1036,8 @@ let%expect_test "merge_modules removes self-imports" =
   let resolve specifier =
     (* Resolve ./a.js to bundle.js to simulate self-import *)
     if String.equal specifier "./a.js"
-    then Esm.ModuleId.of_path "bundle.js"
-    else Esm.ModuleId.of_path specifier
+    then Some (Esm.ModuleId.of_path "bundle.js")
+    else Some (Esm.ModuleId.of_path specifier)
   in
   let m1 = analyze_js ~resolve "a.js" {|
 export const foo = 42;
@@ -1070,8 +1070,8 @@ export function useFoo() { return foo + 1; }
 let%expect_test "merge_modules with default export" =
   let resolve specifier =
     if String.equal specifier "./a.js"
-    then Esm.ModuleId.of_path "bundle.js"
-    else Esm.ModuleId.of_path specifier
+    then Some (Esm.ModuleId.of_path "bundle.js")
+    else Some (Esm.ModuleId.of_path specifier)
   in
   let m1 =
     analyze_js ~resolve "a.js" {|
@@ -1154,8 +1154,8 @@ let%expect_test "merge_modules preserves external imports" =
   (* Test that imports from external modules (not dest) are preserved *)
   let resolve specifier =
     if String.equal specifier "./internal.js"
-    then Esm.ModuleId.of_path "bundle.js"
-    else Esm.ModuleId.of_path specifier
+    then Some (Esm.ModuleId.of_path "bundle.js")
+    else Some (Esm.ModuleId.of_path specifier)
   in
   let m1 = analyze_js ~resolve "internal.js" {|
 export const foo = 42;

@@ -91,11 +91,13 @@ type module_graph =
 (** {1 Module Analysis} *)
 
 val analyze_module :
-  resolve:(string -> ModuleId.t) -> ModuleId.t -> Javascript.program -> esm_module
+  resolve:(string -> ModuleId.t option) -> ModuleId.t -> Javascript.program -> esm_module
 (** [analyze_module ~resolve id program] analyzes a parsed JavaScript module
     and extracts its imports, exports, and body statements.
 
-    @param resolve Function to resolve import specifiers to module IDs
+    @param resolve Function to resolve import specifiers to module IDs.
+           Returning [None] marks the import as external: it takes no part in
+           the module graph and the import statement is kept in the body.
     @param id The module's identifier
     @param program The parsed JavaScript program
 *)

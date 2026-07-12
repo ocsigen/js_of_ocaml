@@ -163,29 +163,33 @@ let rename_module_declarations (stmts : statement_list) : statement_list =
 
 (* ========== Module Analysis ========== *)
 
-(* Extract imports from a module *)
+(* Extract imports from a module. Imports that [resolve] cannot resolve are
+   external (e.g. "node:module"): they take no part in the module graph and
+   the import statement is kept as-is in the module body. *)
 let extract_imports ~resolve (stmts : statement_list) : import_entry list =
   List.filter_map stmts ~f:(fun (stmt, _loc) ->
       match stmt with
-      | Import ({ from = Utf8_string.Utf8 from_path; kind; _ }, _) ->
-          let source = resolve from_path in
-          let bindings =
-            match kind with
-            | SideEffect -> [ ImportSideEffect ]
-            | Default id -> [ ImportDefault id ]
-            | DeferNamespace id | Namespace (None, id) -> [ ImportNamespace id ]
-            | Namespace (Some default_id, ns_id) ->
-                [ ImportDefault default_id; ImportNamespace ns_id ]
-            | Named (default_opt, named) -> (
-                let bindings =
-                  List.map named ~f:(fun (Utf8_string.Utf8 orig, local) ->
-                      ImportNamed (orig, local))
-                in
-                match default_opt with
-                | None -> bindings
-                | Some id -> ImportDefault id :: bindings)
-          in
-          Some { source; bindings }
+      | Import ({ from = Utf8_string.Utf8 from_path; kind; _ }, _) -> (
+          match resolve from_path with
+          | None -> None
+          | Some source ->
+              let bindings =
+                match kind with
+                | SideEffect -> [ ImportSideEffect ]
+                | Default id -> [ ImportDefault id ]
+                | DeferNamespace id | Namespace (None, id) -> [ ImportNamespace id ]
+                | Namespace (Some default_id, ns_id) ->
+                    [ ImportDefault default_id; ImportNamespace ns_id ]
+                | Named (default_opt, named) -> (
+                    let bindings =
+                      List.map named ~f:(fun (Utf8_string.Utf8 orig, local) ->
+                          ImportNamed (orig, local))
+                    in
+                    match default_opt with
+                    | None -> bindings
+                    | Some id -> ImportDefault id :: bindings)
+              in
+              Some { source; bindings })
       | _ -> None)
 
 (* Extract exports from a module (called after normalize_exports and renaming).
@@ -196,6 +200,12 @@ let extract_exports ~resolve (stmts : statement_list) :
   let star_exports = ref [] in
   let extra_imports = ref [] in
   let add_export name entry = exports := StringMap.add name entry !exports in
+  let resolve from_path =
+    match resolve from_path with
+    | Some source -> source
+    | None ->
+        failwith (Printf.sprintf "Cannot re-export from external module '%s'" from_path)
+  in
   List.iter stmts ~f:(fun (stmt, _loc) ->
       match stmt with
       | Export (export, _) -> (
@@ -287,11 +297,14 @@ let analyze_module ~resolve id (program : program) : esm_module =
   let exports, star_exports, extra_imports = extract_exports ~resolve renamed_program in
   let imports = extract_imports ~resolve renamed_program @ extra_imports in
   let exports = reexport_imported_bindings imports exports in
-  (* Extract body: filter out Import and Export statements *)
+  (* Extract body: filter out Import and Export statements. External imports
+     (not resolved to a module in the graph) are kept in the body. *)
   let body =
     List.filter renamed_program ~f:(fun (stmt, _loc) ->
         match stmt with
-        | Import _ | Export _ -> false
+        | Import ({ from = Utf8_string.Utf8 from_path; _ }, _) ->
+            Option.is_none (resolve from_path)
+        | Export _ -> false
         | _ -> true)
   in
   { id; imports; exports; star_exports; body }
@@ -422,9 +435,9 @@ let build_graph ~parse ~resolve ~entry_points : module_graph =
       let path = ModuleId.to_path id in
       let program = parse path in
       let resolve_for_module specifier =
-        match resolve ~from:path specifier with
-        | Some resolved_path -> ModuleId.of_path resolved_path
-        | None -> failwith (Printf.sprintf "Cannot resolve '%s' from '%s'" specifier path)
+        (* [None] means the import is external: it is kept as-is and takes no
+           part in the module graph. *)
+        Option.map (resolve ~from:path specifier) ~f:ModuleId.of_path
       in
       let esm = analyze_module ~resolve:resolve_for_module id program in
       modules := ModuleId.Map.add id esm !modules;
