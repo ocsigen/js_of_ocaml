@@ -26,6 +26,8 @@ let force_gc : unit -> unit =
   let f =
     Js.Unsafe.js_expr
       {|(function () {
+        // bun (JavaScriptCore) has no node:v8 setFlagsFromString; use Bun.gc.
+        if (typeof Bun !== "undefined") return function () { Bun.gc(true); };
         var v8 = require("node:v8");
         var vm = require("node:vm");
         v8.setFlagsFromString("--expose-gc");

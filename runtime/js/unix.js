@@ -230,21 +230,22 @@ function make_unix_err_args(code, syscall, path, errno) {
 //Provides: caml_strerror
 //Requires: unix_error
 function caml_strerror(errno) {
-  if (typeof require === "undefined") {
-    const code = unix_error[errno];
-    return code || "Unknown error " + errno;
+  const code = unix_error[errno];
+  // [getSystemErrorMap]/[getSystemErrorMessage] are node-only; bun
+  // (JavaScriptCore) exposes neither, so fall back to the error code.
+  if (typeof require !== "undefined") {
+    const util = require("node:util");
+    if (errno < 0) {
+      // negative (libuv) errno: only node has a message for these
+      if (util.getSystemErrorMessage) return util.getSystemErrorMessage(errno);
+    } else if (util.getSystemErrorMap) {
+      // no Iterator.prototype.find: it requires node >= 22
+      for (const e of util.getSystemErrorMap())
+        if (e[1][0] === code) return e[1][1];
+      // not every code is in libuv's error map
+    }
   }
-  const util = require("node:util");
-  if (errno >= 0) {
-    const code = unix_error[errno];
-    // no Iterator.prototype.find: it requires node >= 22
-    for (const e of util.getSystemErrorMap())
-      if (e[1][0] === code) return e[1][1];
-    // not every code is in libuv's error map
-    return code || "Unknown error " + errno;
-  } else {
-    return util.getSystemErrorMessage(errno);
-  }
+  return code || "Unknown error " + errno;
 }
 
 //Provides: caml_strerror
