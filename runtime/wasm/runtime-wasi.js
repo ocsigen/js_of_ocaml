@@ -35,7 +35,11 @@
     preopens: { ".": ".", "/tmp": "/tmp" },
     returnOnExit: false,
   });
-  const imports = wasi.getImportObject();
+  // [getImportObject] is node-only; bun's node:wasi shim lacks it, so fall
+  // back to building the import object from [wasiImport] (what node does).
+  const imports = wasi.getImportObject
+    ? wasi.getImportObject()
+    : { wasi_snapshot_preview1: wasi.wasiImport };
   function loadRelative(src) {
     const path = require("node:path");
     const f = path.join(path.dirname(require.main.filename), src);
