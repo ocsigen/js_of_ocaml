@@ -21,9 +21,9 @@
    The automatic part renders an oscillator through a gain with an
    OfflineAudioContext, routes a real-time context into a MediaStream
    (exercising the MediaCapture types without any permission prompt) and
-   checks the new mediaElement members. The two buttons need a user gesture:
-   one plays a short beep, the other asks for microphone access and prints
-   the captured track's settings. *)
+   checks the new mediaElement members. The buttons need a user gesture: one
+   plays a short beep, the others ask for microphone access, record it with a
+   MediaRecorder and replay the recording. *)
 
 open Js_of_ocaml
 
@@ -241,33 +241,104 @@ let beep () =
   in
   ()
 
-(* Needs a user gesture and permission: capture the microphone and print the
-   track settings. *)
+(* Microphone recording: [capture_microphone] records until [stop_recording];
+   the recorded blob is then replayed through the #playback audio element. *)
+
+let recorder : MediaRecorder.mediaRecorder Js.t option ref = ref None
+
+let set_button_disabled id disabled =
+  Js.Opt.iter
+    (Js.Opt.bind
+       (Dom_html.document##getElementById (Js.string id))
+       Dom_html.CoerceTo.button)
+    (fun b -> b##.disabled := Js.bool disabled)
+
+let playback_url : Js.js_string Js.t option ref = ref None
+
+let replay (blob : File.blob Js.t) =
+  match Dom_html.getElementById_coerce "playback" Dom_html.CoerceTo.audio with
+  | None -> ()
+  | Some el ->
+      (* Release the previous recording, if any. *)
+      Option.iter (fun u -> Dom_html.window##._URL##revokeObjectURL u) !playback_url;
+      let url = Dom_html.window##._URL##createObjectURL blob in
+      playback_url := Some url;
+      el##.src := url;
+      let _ : unit Promise.t =
+        Promise.catch
+          (fun e -> return (info "playback" (stringify (Promise.error_to_any e))))
+          (el##play
+          >>= fun () ->
+          info "playback" (Printf.sprintf "replaying %d recorded byte(s)" blob##.size);
+          return ())
+      in
+      ()
+
+(* Needs a user gesture and permission: capture the microphone, print the
+   track settings and start recording. *)
 let capture_microphone () =
-  let constraints = MediaCapture.empty_stream_constraints () in
-  constraints##.audio := Js._true;
-  let _ : unit Promise.t =
-    Promise.catch
-      (fun e -> return (info "getUserMedia" (stringify (Promise.error_to_any e))))
-      ((MediaCapture.mediaDevices ())##getUserMedia constraints
-      >>= fun stream ->
-      let tracks = stream##getAudioTracks in
-      Js.Optdef.iter (Js.array_get tracks 0) (fun track ->
-          let settings = track##getSettings in
-          let dims label v =
-            Js.Optdef.case v (fun () -> "") (fun v -> Printf.sprintf " %s=%d" label v)
-          in
-          info
-            "getUserMedia"
-            (Printf.sprintf
-               "label=%S%s%s"
-               (Js.to_string track##.label)
-               (dims "sampleRate" settings##.sampleRate)
-               (dims "channelCount" settings##.channelCount));
-          track##stop);
-      return ())
-  in
-  ()
+  if Option.is_some !recorder
+  then ()
+  else if not (MediaRecorder.is_supported ())
+  then info "getUserMedia" "MediaRecorder is not supported in this browser"
+  else begin
+    (* Disabled immediately: a second click while the permission prompt is
+       open would start a second capture pipeline. Re-enabled on failure and
+       when the recording stops. *)
+    set_button_disabled "mic" true;
+    let constraints = MediaCapture.empty_stream_constraints () in
+    constraints##.audio := Js._true;
+    let _ : unit Promise.t =
+      Promise.catch
+        (fun e ->
+          set_button_disabled "mic" false;
+          return (info "getUserMedia" (stringify (Promise.error_to_any e))))
+        ((MediaCapture.mediaDevices ())##getUserMedia constraints
+        >>= fun stream ->
+        let tracks = stream##getAudioTracks in
+        Js.Optdef.iter (Js.array_get tracks 0) (fun track ->
+            let settings = track##getSettings in
+            let dims label v =
+              Js.Optdef.case v (fun () -> "") (fun v -> Printf.sprintf " %s=%d" label v)
+            in
+            info
+              "getUserMedia"
+              (Printf.sprintf
+                 "label=%S%s%s"
+                 (Js.to_string track##.label)
+                 (dims "sampleRate" settings##.sampleRate)
+                 (dims "channelCount" settings##.channelCount)));
+        let r = new%js MediaRecorder.mediaRecorder stream in
+        recorder := Some r;
+        (* Without a timeslice the whole recording arrives as one blob when
+           the recorder is stopped. *)
+        r##.ondataavailable :=
+          Dom.handler (fun ev ->
+              replay ev##.data;
+              Js._true);
+        r##.onstop :=
+          Dom.handler (fun _ ->
+              (* Release the microphone. *)
+              let tracks = stream##getTracks in
+              for i = 0 to tracks##.length - 1 do
+                Js.Optdef.iter (Js.array_get tracks i) (fun t -> t##stop)
+              done;
+              recorder := None;
+              set_button_disabled "mic" false;
+              set_button_disabled "stop" true;
+              Js._true);
+        r##start;
+        info "recording" ("started, mimeType=" ^ Js.to_string r##.mimeType);
+        set_button_disabled "stop" false;
+        return ())
+    in
+    ()
+  end
+
+let stop_recording () =
+  match !recorder with
+  | Some r -> r##stop
+  | None -> ()
 
 let run () =
   check "WebAudio.is_supported" (WebAudio.is_supported ()) "";
@@ -286,6 +357,7 @@ let run () =
     return ()
   in
   on_click "beep" beep;
-  on_click "mic" capture_microphone
+  on_click "mic" capture_microphone;
+  on_click "stop" stop_recording
 
 let () = run ()

@@ -45,6 +45,7 @@ Js_of_ocaml.IntersectionObserver
 Js_of_ocaml.Intl
 Js_of_ocaml.Json
 Js_of_ocaml.MediaCapture
+Js_of_ocaml.MediaRecorder
 Js_of_ocaml.MessageChannel
 Js_of_ocaml.MutationObserver
 Js_of_ocaml.Notification

@@ -11,7 +11,8 @@
 * Lib: add `MediaCapture` — bindings to the Media Capture and Streams API:
   `MediaStream`, `MediaStreamTrack`, and `navigator.mediaDevices` with
   `getUserMedia`, `getDisplayMedia`, `enumerateDevices` and typed track
-  constraints, settings and device info (#2401)
+  constraints, settings and device info — and `MediaRecorder`, bindings to
+  the MediaStream Recording API (#2401)
 * Lib: complete the `Dom_html.mediaElement` binding — `error` (`MediaError`),
   `srcObject`, `crossOrigin`, `defaultMuted`, `defaultPlaybackRate`,
   `preservesPitch`, `fastSeek`, text tracks (`textTracks`, `addTextTrack` and

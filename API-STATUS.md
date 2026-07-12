@@ -97,6 +97,7 @@ This document lists standard JavaScript/Web APIs and their support status in js_
 | HTMLMediaElement (audio/video) | Yes | Yes | `Dom_html` (mediaElement, audioElement, videoElement, textTrack) · Brr: `Brr_io.Media.El` |
 | Web Audio API | Yes | Yes | `WebAudio` · Brr: `Brr_webaudio` |
 | Media Capture (getUserMedia) | Yes | Yes | `MediaCapture` · Brr: `Brr_io.Media.Devices` |
+| MediaStream Recording (MediaRecorder) | Yes | Yes | `MediaRecorder` · Brr: `Brr_io.Media.Recorder` |
 | Media Source Extensions | No | No | |
 | WebRTC | No | No | |
 
