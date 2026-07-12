@@ -314,6 +314,14 @@ let bundle_modules ~parse ~resolve ~entry_points ~tree_shake:do_tree_shake : pro
   let graph =
     if do_tree_shake
     then
+      (* Optimize namespace imports before shaking: a namespace import keeps
+         every export of the imported module alive, while the named imports
+         it optimizes into only keep the fields actually accessed. *)
+      let graph =
+        { graph with
+          modules = Esm.ModuleId.Map.map optimize_namespace_imports graph.modules
+        }
+      in
       let entry_exports =
         List.fold_left entry_ids ~init:Esm.ModuleId.Map.empty ~f:(fun acc id ->
             Esm.ModuleId.Map.add id StringSet.empty acc)
