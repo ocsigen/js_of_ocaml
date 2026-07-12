@@ -55,3 +55,6 @@ jobs:
       # Run the wasm test suite with bun. bun's JSPI does not switch stacks,
       # so effects use the CPS profile rather than the default JSPI mode.
       - run: opam exec -- make tests-bun-wasm
+
+      # Run the wasi test suite with bun (bun as the WASI host).
+      - run: opam exec -- make tests-bun-wasi
