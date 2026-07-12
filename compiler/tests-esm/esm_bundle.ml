@@ -35,7 +35,15 @@ let parse_file path =
   Parse_js.parse `Module lexer
 
 let normalize_path path =
-  (* Simple path normalization: remove . and .. components *)
+  (* Simple path normalization: remove . and .. components.
+     [Filename.concat] uses '\\' on Windows; unify separators so that the
+     components are actually split apart, otherwise cyclic imports keep
+     growing the path with ".\\" segments and never converge. *)
+  let path =
+    if Sys.win32
+    then String.map path ~f:(fun c -> if Char.equal c '\\' then '/' else c)
+    else path
+  in
   let parts = String.split_on_char ~sep:'/' path in
   let rec normalize acc = function
     | [] -> List.rev acc
