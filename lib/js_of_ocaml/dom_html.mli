@@ -1452,6 +1452,16 @@ and element = object
 
   method blur : unit meth
 
+  method setPointerCapture : int -> unit meth
+  (** Set the element as capture target for the pointer with this
+      [pointerId] (Pointer Events, [Element.setPointerCapture]). *)
+
+  method releasePointerCapture : int -> unit meth
+  (** Release a pointer capture previously set for this pointer id. *)
+
+  method hasPointerCapture : int -> bool t meth
+  (** Whether the element currently captures this pointer id. *)
+
   method requestFullscreen : unit Promise.t meth
 
   method requestPointerLock : unit Promise.t meth

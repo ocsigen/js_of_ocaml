@@ -1410,6 +1410,12 @@ and element = object
 
   method blur : unit meth
 
+  method setPointerCapture : int -> unit meth
+
+  method releasePointerCapture : int -> unit meth
+
+  method hasPointerCapture : int -> bool t meth
+
   method requestFullscreen : unit Promise.t meth
 
   method requestPointerLock : unit Promise.t meth
