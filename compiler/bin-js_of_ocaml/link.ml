@@ -254,28 +254,71 @@ let split_units content =
           else loop (Some unit_name) [ line ] (finish name acc chunks) rest
         else loop name (line :: acc) chunks rest
   in
-  let units =
-    match loop None [] [] lines with
-    | (None, _header) :: units -> units
-    | units -> units
+  match loop None [] [] lines with
+  | (None, _header) :: (_ :: _ as units) -> units
+  | units -> units
+
+(* Linker inputs: plain modules (no unit information, e.g. the runtime) and
+   compilation units. Units reference each other with [import X from
+   "./X.js"] specifiers where [X] is a unit name: the linker resolves those
+   by name, wherever the unit actually comes from. *)
+type input =
+  | Plain of string (* path *)
+  | Unit of
+      { name : string
+      ; file : string (* file the unit comes from *)
+      ; content : string
+      ; whole_file : bool (* the unit is the whole file, not a chunk *)
+      }
+
+let read_inputs files =
+  let inputs =
+    List.concat_map files ~f:(fun file ->
+        let content = Fs.read_file file in
+        match split_units content with
+        | [] | [ (None, _) ] -> [ Plain file ]
+        | [ (Some name, _) ] -> [ Unit { name; file; content; whole_file = true } ]
+        | units ->
+            List.map units ~f:(fun (name, chunk) ->
+                match name with
+                | Some name -> Unit { name; file; content = chunk; whole_file = false }
+                | None -> assert false))
   in
-  (* A file holding at most one unit is a valid module on its own. *)
-  match units with
-  | [] | [ _ ] -> `Single_module
-  | _ :: _ :: _ -> `Container units
+  let (_ : StringSet.t) =
+    List.fold_left inputs ~init:StringSet.empty ~f:(fun acc input ->
+        match input with
+        | Plain _ -> acc
+        | Unit { name; _ } ->
+            if StringSet.mem name acc
+            then failwith (Printf.sprintf "unit '%s' provided by several files" name)
+            else StringSet.add name acc)
+  in
+  inputs
+
+(* The unit name of an [import X from "./X.js"] specifier. *)
+let unit_of_specifier spec =
+  match String.drop_prefix ~prefix:"./" spec with
+  | Some rest when String.ends_with ~suffix:".js" rest && not (String.contains rest '/')
+    -> Some (String.sub rest ~pos:0 ~len:(String.length rest - 3))
+  | Some _ | None -> None
 
 let parse_string ~filename content =
   let lexer = Parse_js.Lexer.of_string ~filename content in
   Parse_js.parse `Module lexer
 
-(* Rebase the relative import specifiers of a unit extracted from a container
-   located in [src_dir] so that the unit can live in [dst_dir]. *)
-let rebase_imports ~src_dir ~dst_dir program =
+(* Rebase the relative import specifiers of a unit extracted from a file in
+   [src_dir] so that the unit can live in [dst_dir]. Imports of other units
+   are left alone: all units end up next to each other in [dst_dir]. *)
+let rebase_imports ~unit_names ~src_dir ~dst_dir program =
   List.map program ~f:(fun ((stmt : Javascript.statement), loc) ->
       match stmt with
       | Import (({ from = Utf8_string.Utf8 spec; _ } as import), pi)
-        when String.starts_with ~prefix:"./" spec || String.starts_with ~prefix:"../" spec
-        ->
+        when (String.starts_with ~prefix:"./" spec
+             || String.starts_with ~prefix:"../" spec)
+             &&
+             match unit_of_specifier spec with
+             | Some unit -> not (StringSet.mem unit unit_names)
+             | None -> true ->
           let target = normalize_path (Filename.concat src_dir spec) in
           let spec = relative_specifier ~dir:dst_dir target in
           ( Javascript.Import ({ import with from = Utf8_string.of_string_exn spec }, pi)
@@ -289,7 +332,7 @@ let print_program output program =
   let (_ : Source_map.info) = Js_output.program pp program in
   ()
 
-let link_esm ~output_file ~files ~bundle ~tree_shake =
+let link_esm ~output_file ~files ~bundle ~tree_shake ~linkall =
   let output_dir =
     match output_file with
     | Some file -> Filename.dirname file
@@ -300,71 +343,114 @@ let link_esm ~output_file ~files ~bundle ~tree_shake =
     | None -> f stdout
     | Some file -> Filename.gen_file file f
   in
+  let inputs = read_inputs files in
+  let unit_names =
+    List.fold_left inputs ~init:StringSet.empty ~f:(fun acc input ->
+        match input with
+        | Plain _ -> acc
+        | Unit { name; _ } -> StringSet.add name acc)
+  in
+  (* Units coming from a multi-unit container (.cma.js) behave like archive
+     members: they are linked only when another linked unit references them
+     (through an import), matching ocamlc. [--linkall] links them all. Units
+     given as standalone files and plain modules are always linked. *)
+  let root = function
+    | Plain _ -> true
+    | Unit { whole_file; _ } -> whole_file || linkall
+  in
   if not bundle
   then
-    (* Emit an entry module importing each file in link order. ES semantics
+    (* Emit an entry module importing each root in link order. ES semantics
        guarantee the modules are evaluated in declaration order (post-order
-       depth-first), so the runtime imported by each unit runs first.
-       Container files (.cma.js) are not importable: split them into one
-       module file per unit next to the entry. *)
+       depth-first), and each unit's own imports evaluate its dependencies
+       first. Units import each other as siblings ("./X.js"), so they must
+       all live in one directory: materialize them into the entry's
+       directory, except unit files already there under their unit name. *)
     let specifiers =
-      List.concat_map files ~f:(fun file ->
-          let content = Fs.read_file file in
-          match split_units content with
-          | `Single_module -> [ relative_specifier ~dir:output_dir file ]
-          | `Container units ->
-              let src_dir = Filename.dirname (absolute_path file) in
-              List.map units ~f:(fun (name, content) ->
-                  let name =
-                    match name with
-                    | Some name -> name
-                    | None -> assert false
-                  in
-                  let unit_file = Filename.concat output_dir (name ^ ".js") in
-                  let program =
-                    parse_string ~filename:file content
-                    |> rebase_imports ~src_dir ~dst_dir:output_dir
-                  in
-                  Filename.gen_file unit_file (fun out -> print_program out program);
-                  "./" ^ name ^ ".js"))
+      List.filter_map inputs ~f:(fun input ->
+          match input with
+          | Plain file -> Some (relative_specifier ~dir:output_dir file)
+          | Unit { name; file; content; whole_file } ->
+              let spec = "./" ^ name ^ ".js" in
+              let in_place =
+                whole_file
+                && String.equal
+                     (absolute_path file)
+                     (absolute_path (Filename.concat output_dir (name ^ ".js")))
+              in
+              if not in_place
+              then begin
+                let src_dir = Filename.dirname (absolute_path file) in
+                let program =
+                  parse_string ~filename:file content
+                  |> rebase_imports ~unit_names ~src_dir ~dst_dir:output_dir
+                in
+                Filename.gen_file
+                  (Filename.concat output_dir (name ^ ".js"))
+                  (fun out -> print_program out program)
+              end;
+              if root input then Some spec else None)
     in
     with_output (fun output ->
         List.iter specifiers ~f:(fun spec -> Printf.fprintf output "import %S;\n" spec))
   else
-    (* Split container files in memory: each unit becomes a module with a
-       synthetic id ('<path>!<unit>'); [Filename.dirname] still resolves
-       their relative imports against the container's directory. *)
+    (* Bundle in memory: each unit becomes a module with a synthetic id
+       ('<path>!<unit>'); [Filename.dirname] still resolves their relative
+       imports against the file's directory, and imports of other units are
+       resolved by unit name. *)
     let sections =
-      List.concat_map files ~f:(fun file ->
-          let path = absolute_path file in
-          let content = Fs.read_file file in
-          match split_units content with
-          | `Single_module -> [ path, content ]
-          | `Container units ->
-              List.mapi units ~f:(fun i (name, content) ->
-                  let name = Option.value name ~default:(string_of_int i) in
-                  Printf.sprintf "%s!%s" path name, content))
+      List.map inputs ~f:(fun input ->
+          match input with
+          | Plain file -> absolute_path file, None, Fs.read_file file
+          | Unit { name; file; content; whole_file } ->
+              let id =
+                if whole_file
+                then absolute_path file
+                else Printf.sprintf "%s!%s" (absolute_path file) name
+              in
+              id, Some name, content)
     in
     let sources = String.Hashtbl.create 64 in
-    List.iter sections ~f:(fun (id, content) -> String.Hashtbl.add sources id content);
+    let unit_ids = String.Hashtbl.create 64 in
+    List.iter sections ~f:(fun (id, name, content) ->
+        String.Hashtbl.add sources id content;
+        Option.iter name ~f:(fun name -> String.Hashtbl.add unit_ids name id));
     let parse path =
       match String.Hashtbl.find_opt sources path with
       | Some content -> parse_string ~filename:path content
       | None -> parse_string ~filename:path (Fs.read_file path)
     in
     let resolve ~from specifier =
-      if
-        Filename.is_relative specifier
-        && (String.starts_with ~prefix:"./" specifier
-           || String.starts_with ~prefix:"../" specifier)
-      then
-        let dir = Filename.dirname from in
-        let resolved = normalize_path (Filename.concat dir specifier) in
-        if Sys.file_exists resolved then Some resolved else None
-      else None
+      match unit_of_specifier specifier with
+      | Some unit when String.Hashtbl.mem unit_ids unit ->
+          String.Hashtbl.find_opt unit_ids unit
+      | Some _ | None ->
+          if
+            Filename.is_relative specifier
+            && (String.starts_with ~prefix:"./" specifier
+               || String.starts_with ~prefix:"../" specifier)
+          then
+            let dir = Filename.dirname from in
+            let resolved = normalize_path (Filename.concat dir specifier) in
+            if Sys.file_exists resolved then Some resolved else None
+          else None
     in
-    let entry_points = List.map sections ~f:fst in
+    let entry_points =
+      List.filter_map (List.combine inputs sections) ~f:(fun (input, (id, _, _)) ->
+          if root input then Some id else None)
+    in
     let program = Esm_bundle.bundle_modules ~parse ~resolve ~entry_points ~tree_shake in
+    (* The bundle of a linked program is itself a program: drop the export
+       statements the bundler generates for entry modules (each entry unit
+       exports its module block as [default]). The
+       JavaScript optimization passes ([Driver.simplify_js]) are not applied:
+       they do not all track the bindings introduced by [import] statements. *)
+    let program =
+      List.filter program ~f:(fun (stmt, _) ->
+          match (stmt : Javascript.statement) with
+          | Export _ -> false
+          | _ -> true)
+    in
     with_output (fun output -> print_program output program)
 
 let f
@@ -391,7 +477,8 @@ let f
   Jsoo_cmdline.Arg.eval common;
   Linker.reset ();
   if esm
-  then link_esm ~output_file ~files:js_files ~bundle ~tree_shake:(not no_tree_shake)
+  then
+    link_esm ~output_file ~files:js_files ~bundle ~tree_shake:(not no_tree_shake) ~linkall
   else
     let with_output f =
       match output_file with

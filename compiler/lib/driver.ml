@@ -351,44 +351,196 @@ let gen_missing js missing =
 
 let mark_start_of_generated_code = Debug.find ~even_if_quiet:true "mark-runtime-gen"
 
+(* Reference other compilation units through the module system instead of the
+   runtime's global table: every [caml_get_global("X")] call — the compiler
+   may inline it anywhere in an expression — becomes a binding introduced by
+   a default import of the unit's module, and the top-level
+   [caml_register_global(block, "X")] becomes [export default block].
+   Cross-unit references are then ES bindings, visible to tree shakers and
+   bundlers. Predefined exceptions are untouched: they use the distinct
+   [caml_get_global_predef]/[caml_register_global_predef] primitives and
+   still go through the runtime. *)
+let esm_import_units (js : Javascript.statement_list) : Javascript.statement_list =
+  let open Javascript in
+  let imported : Code.Var.t String.Hashtbl.t = String.Hashtbl.create 8 in
+  let var_for name =
+    match String.Hashtbl.find_opt imported name with
+    | Some v -> v
+    | None ->
+        let v = Code.Var.fresh_n name in
+        String.Hashtbl.add imported name v;
+        v
+  in
+  let get_global = function
+    | ECall
+        (EVar (S { name = Utf8 "caml_get_global"; _ }), _, [ Arg (EStr (Utf8 name)) ], _)
+      -> Some name
+    | _ -> None
+  in
+  (* Variables written outside their declaration: an import binding is not
+     assignable, so a declarator whose variable is reused later must be kept
+     as an alias of the import binding. Over-approximating is safe. *)
+  let assigned = ref Code.Var.Set.empty in
+  let add_assigned v = assigned := Code.Var.Set.add v !assigned in
+  let () =
+    let o =
+      object
+        inherit Js_traverse.iter as super
+
+        method! expression e =
+          (match e with
+          | EBin (op, EVar (V v), _) -> (
+              match op with
+              | Eq
+              | StarEq
+              | SlashEq
+              | ModEq
+              | PlusEq
+              | MinusEq
+              | LslEq
+              | AsrEq
+              | LsrEq
+              | BandEq
+              | BxorEq
+              | BorEq
+              | OrEq
+              | AndEq
+              | ExpEq
+              | CoalesceEq -> add_assigned v
+              | _ -> ())
+          | EUn ((IncrA | IncrB | DecrA | DecrB), EVar (V v)) -> add_assigned v
+          | EAssignTarget _ ->
+              (* Destructuring assignment: conservatively mark every
+                 identifier appearing in the target. *)
+              let o' =
+                object
+                  inherit Js_traverse.iter
+
+                  method! ident i =
+                    match i with
+                    | V v -> add_assigned v
+                    | S _ -> ()
+                end
+              in
+              o'#expression e
+          | _ -> ());
+          super#expression e
+
+        method! statement st =
+          (match st with
+          | ForIn_statement (Left (EVar (V v)), _, _)
+          | ForOf_statement (Left (EVar (V v)), _, _)
+          | ForAwaitOf_statement (Left (EVar (V v)), _, _) -> add_assigned v
+          | _ -> ());
+          super#statement st
+      end
+    in
+    o#program js
+  in
+  (* A top-level [var X = caml_get_global("X")] declarator directly becomes
+     the import binding: drop the declarator and bind its identifier in the
+     import statement, instead of aliasing a fresh binding. Only when the
+     variable is never written again: import bindings are constant. *)
+  let js =
+    List.filter_map js ~f:(fun (stmt, loc) ->
+        match stmt with
+        | Variable_statement (Var, decls) -> (
+            let decls =
+              List.filter decls ~f:(fun decl ->
+                  match decl with
+                  | DeclIdent (V v, Some (e, _)) when not (Code.Var.Set.mem v !assigned)
+                    -> (
+                      match get_global e with
+                      | Some name when not (String.Hashtbl.mem imported name) ->
+                          String.Hashtbl.add imported name v;
+                          false
+                      | Some _ | None -> true)
+                  | DeclIdent _ | DeclPattern _ -> true)
+            in
+            match decls with
+            | [] -> None
+            | _ :: _ -> Some (Variable_statement (Var, decls), loc))
+        | _ -> Some (stmt, loc))
+  in
+  (* Remaining occurrences may be inlined anywhere in an expression. *)
+  let mapper =
+    object
+      inherit Js_traverse.map as super
+
+      method! expression e =
+        match get_global e with
+        | Some name -> EVar (V (var_for name))
+        | None -> super#expression e
+    end
+  in
+  let js = mapper#program js in
+  let exported = ref false in
+  let js =
+    List.concat_map js ~f:(fun (stmt, loc) ->
+        match stmt with
+        | Expression_statement
+            (ECall
+               ( EVar (S { name = Utf8 "caml_register_global"; _ })
+               , _
+               , [ Arg e; Arg (EStr _) ]
+               , _ ))
+          when not !exported ->
+            exported := true;
+            [ Export (ExportDefaultExpression e, Parse_info.zero), loc ]
+        | _ -> [ stmt, loc ])
+  in
+  let imports =
+    List.map
+      (List.sort
+         ~cmp:(fun (a, _) (b, _) -> String.compare a b)
+         (String.Hashtbl.fold (fun name v acc -> (name, v) :: acc) imported []))
+      ~f:(fun (name, v) ->
+        ( Import
+            ( { from = Utf8_string.of_string_exn ("./" ^ name ^ ".js")
+              ; kind = Default (V v)
+              ; withClause = None
+              }
+            , Parse_info.zero )
+        , N ))
+  in
+  imports @ js
+
+(* Turn an optimized, separately compiled unit into an ES module: reference
+   other units through imports and bind the runtime primitives the unit uses
+   with a named import from the runtime module. Avoid a namespace import
+   ([import * as runtime]): named imports keep the output statically
+   analyzable (tree shaking, bundlers). This runs after [simplify_js]: the
+   JavaScript optimization passes do not all track the bindings introduced by
+   [import]/[export] statements. *)
+let esm_unitize ~runtime_import js =
+  let js = esm_import_units js in
+  let free = ref StringSet.empty in
+  let o = new Js_traverse.fast_freevar (fun s -> free := StringSet.add s !free) in
+  o#program js;
+  let provided = StringSet.union (Primitive.get_external ()) (Linker.list_all ()) in
+  let to_import = StringSet.inter !free provided in
+  if StringSet.is_empty to_import
+  then js
+  else
+    let open Javascript in
+    let named =
+      List.map (StringSet.elements to_import) ~f:(fun name ->
+          let name = Utf8_string.of_string_exn name in
+          name, ident name)
+    in
+    ( Import
+        ( { from = Utf8_string.of_string_exn runtime_import
+          ; kind = Named (None, named)
+          ; withClause = None
+          }
+        , Parse_info.zero )
+    , N )
+    :: js
+
 let link' ~esm ~export_runtime ~standalone ~link (js : Javascript.statement_list) :
     Linker.output =
   if (not export_runtime) && not standalone
-  then
-    let js =
-      match esm with
-      | Some { runtime_import = Some spec } ->
-          (* Separately compiled ESM unit: bind the runtime primitives the
-             unit uses with a named import from the runtime module. Avoid a
-             namespace import ([import * as runtime]): named imports keep the
-             output statically analyzable (tree shaking, bundlers). *)
-          let free = ref StringSet.empty in
-          let o = new Js_traverse.fast_freevar (fun s -> free := StringSet.add s !free) in
-          o#program js;
-          let provided =
-            StringSet.union (Primitive.get_external ()) (Linker.list_all ())
-          in
-          let to_import = StringSet.inter !free provided in
-          if StringSet.is_empty to_import
-          then js
-          else
-            let open Javascript in
-            let named =
-              List.map (StringSet.elements to_import) ~f:(fun name ->
-                  let name = Utf8_string.of_string_exn name in
-                  name, ident name)
-            in
-            ( Import
-                ( { from = Utf8_string.of_string_exn spec
-                  ; kind = Named (None, named)
-                  ; withClause = None
-                  }
-                , Parse_info.zero )
-            , N )
-            :: js
-      | Some { runtime_import = None } | None -> js
-    in
-    { runtime_code = js; always_required_codes = [] }
+  then { runtime_code = js; always_required_codes = [] }
   else
     let check_missing = standalone in
     let t = Timer.make () in
@@ -778,16 +930,24 @@ let configure formatter =
   let pretty = Config.Flag.pretty () in
   Pretty_print.set_compact formatter (not pretty)
 
-let link_and_pack ?(standalone = true) ?esm ?(wrap_with_fun = `Iife) ?(link = `No) p =
+let link_and_pack
+    ?(standalone = true)
+    ?esm
+    ?(check = true)
+    ?(wrap_with_fun = `Iife)
+    ?(link = `No)
+    p =
   let export_runtime =
     match link with
     | `All | `All_from _ -> true
     | `Needed | `No -> false
   in
-  p
-  |> link' ~esm ~export_runtime ~standalone ~link
-  |> pack ~esm:(Option.is_some esm) ~wrap_with_fun ~standalone
-  |> check_js
+  let p =
+    p
+    |> link' ~esm ~export_runtime ~standalone ~link
+    |> pack ~esm:(Option.is_some esm) ~wrap_with_fun ~standalone
+  in
+  if check then check_js p else p
 
 let optimize ~shapes ~profile ~keep_flow_data p =
   let deadcode_sentinel =
@@ -834,10 +994,24 @@ let full ~standalone ~esm ~wrap_with_fun ~shapes ~profile ~link ~source_map ~for
      plain (free) identifiers, bound by a named import from the runtime
      module, instead of going through an exported runtime object. *)
   let exported_runtime = (not standalone) && Option.is_none esm in
+  let esm_unit =
+    match esm with
+    | Some { runtime_import = Some _ } when not standalone -> true
+    | Some { runtime_import = _ } | None -> false
+  in
+  let esm_finalize js =
+    match esm with
+    | Some { runtime_import = Some spec } when not standalone ->
+        (* The primitive check runs here rather than in [link_and_pack]:
+           primitives are free variables until the runtime import is added. *)
+        check_js (esm_unitize ~runtime_import:spec js)
+    | Some { runtime_import = _ } | None -> js
+  in
   let emit formatter =
     generate ~exported_runtime ~wrap_with_fun ~warn_on_unhandled_effect:standalone
-    +> link_and_pack ~standalone ?esm ~wrap_with_fun ~link
+    +> link_and_pack ~standalone ?esm ~check:(not esm_unit) ~wrap_with_fun ~link
     +> simplify_js
+    +> esm_finalize
     +> name_variables
     +> output formatter ~source_map ()
   in
