@@ -222,6 +222,73 @@ let relative_specifier ~dir path =
   in
   String.concat ~sep:"/" parts
 
+(* A compiled .js file may hold several compilation units (a .cma): each unit
+   starts with a '//# unitInfo: Provides:' line. Such a file is a container,
+   not a valid module by itself — units may declare the same names (helpers,
+   import bindings) — and is only meant to be consumed by the linker, which
+   splits it back into one module per unit. *)
+let split_units content =
+  let unit_start = "//# unitInfo: Provides:" in
+  let lines = String.split_on_char ~sep:'\n' content in
+  let finish name acc chunks =
+    match acc with
+    | [] -> chunks
+    | _ -> (name, String.concat ~sep:"\n" (List.rev acc)) :: chunks
+  in
+  let rec loop name acc chunks = function
+    | [] -> List.rev (finish name acc chunks)
+    | line :: rest ->
+        if String.starts_with ~prefix:unit_start line
+        then
+          let unit_name =
+            String.trim
+              (String.sub
+                 line
+                 ~pos:(String.length unit_start)
+                 ~len:(String.length line - String.length unit_start))
+          in
+          (* An empty 'Provides:' is file-level metadata (e.g. the runtime,
+             which provides no OCaml unit), not a unit boundary. *)
+          if String.is_empty unit_name
+          then loop name (line :: acc) chunks rest
+          else loop (Some unit_name) [ line ] (finish name acc chunks) rest
+        else loop name (line :: acc) chunks rest
+  in
+  let units =
+    match loop None [] [] lines with
+    | (None, _header) :: units -> units
+    | units -> units
+  in
+  (* A file holding at most one unit is a valid module on its own. *)
+  match units with
+  | [] | [ _ ] -> `Single_module
+  | _ :: _ :: _ -> `Container units
+
+let parse_string ~filename content =
+  let lexer = Parse_js.Lexer.of_string ~filename content in
+  Parse_js.parse `Module lexer
+
+(* Rebase the relative import specifiers of a unit extracted from a container
+   located in [src_dir] so that the unit can live in [dst_dir]. *)
+let rebase_imports ~src_dir ~dst_dir program =
+  List.map program ~f:(fun ((stmt : Javascript.statement), loc) ->
+      match stmt with
+      | Import (({ from = Utf8_string.Utf8 spec; _ } as import), pi)
+        when String.starts_with ~prefix:"./" spec || String.starts_with ~prefix:"../" spec
+        ->
+          let target = normalize_path (Filename.concat src_dir spec) in
+          let spec = relative_specifier ~dir:dst_dir target in
+          ( Javascript.Import ({ import with from = Utf8_string.of_string_exn spec }, pi)
+          , loc )
+      | _ -> stmt, loc)
+
+let print_program output program =
+  let pp = Pretty_print.to_out_channel output in
+  Driver.configure pp;
+  let program = Driver.name_variables program in
+  let (_ : Source_map.info) = Js_output.program pp program in
+  ()
+
 let link_esm ~output_file ~files ~bundle ~tree_shake =
   let output_dir =
     match output_file with
@@ -237,14 +304,53 @@ let link_esm ~output_file ~files ~bundle ~tree_shake =
   then
     (* Emit an entry module importing each file in link order. ES semantics
        guarantee the modules are evaluated in declaration order (post-order
-       depth-first), so the runtime imported by each unit runs first. *)
+       depth-first), so the runtime imported by each unit runs first.
+       Container files (.cma.js) are not importable: split them into one
+       module file per unit next to the entry. *)
+    let specifiers =
+      List.concat_map files ~f:(fun file ->
+          let content = Fs.read_file file in
+          match split_units content with
+          | `Single_module -> [ relative_specifier ~dir:output_dir file ]
+          | `Container units ->
+              let src_dir = Filename.dirname (absolute_path file) in
+              List.map units ~f:(fun (name, content) ->
+                  let name =
+                    match name with
+                    | Some name -> name
+                    | None -> assert false
+                  in
+                  let unit_file = Filename.concat output_dir (name ^ ".js") in
+                  let program =
+                    parse_string ~filename:file content
+                    |> rebase_imports ~src_dir ~dst_dir:output_dir
+                  in
+                  Filename.gen_file unit_file (fun out -> print_program out program);
+                  "./" ^ name ^ ".js"))
+    in
     with_output (fun output ->
-        List.iter files ~f:(fun file ->
-            Printf.fprintf output "import %S;\n" (relative_specifier ~dir:output_dir file)))
+        List.iter specifiers ~f:(fun spec -> Printf.fprintf output "import %S;\n" spec))
   else
+    (* Split container files in memory: each unit becomes a module with a
+       synthetic id ('<path>!<unit>'); [Filename.dirname] still resolves
+       their relative imports against the container's directory. *)
+    let sections =
+      List.concat_map files ~f:(fun file ->
+          let path = absolute_path file in
+          let content = Fs.read_file file in
+          match split_units content with
+          | `Single_module -> [ path, content ]
+          | `Container units ->
+              List.mapi units ~f:(fun i (name, content) ->
+                  let name = Option.value name ~default:(string_of_int i) in
+                  Printf.sprintf "%s!%s" path name, content))
+    in
+    let sources = String.Hashtbl.create 64 in
+    List.iter sections ~f:(fun (id, content) -> String.Hashtbl.add sources id content);
     let parse path =
-      let lexer = Parse_js.Lexer.of_string ~filename:path (Fs.read_file path) in
-      Parse_js.parse `Module lexer
+      match String.Hashtbl.find_opt sources path with
+      | Some content -> parse_string ~filename:path content
+      | None -> parse_string ~filename:path (Fs.read_file path)
     in
     let resolve ~from specifier =
       if
@@ -257,14 +363,9 @@ let link_esm ~output_file ~files ~bundle ~tree_shake =
         if Sys.file_exists resolved then Some resolved else None
       else None
     in
-    let entry_points = List.map files ~f:absolute_path in
+    let entry_points = List.map sections ~f:fst in
     let program = Esm_bundle.bundle_modules ~parse ~resolve ~entry_points ~tree_shake in
-    with_output (fun output ->
-        let pp = Pretty_print.to_out_channel output in
-        Driver.configure pp;
-        let program = Driver.name_variables program in
-        let (_ : Source_map.info) = Js_output.program pp program in
-        ())
+    with_output (fun output -> print_program output program)
 
 let f
     { common
