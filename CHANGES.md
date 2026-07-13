@@ -93,6 +93,8 @@
   path form (ocaml/dune#15156) no longer breaks their expected output (#2384)
 * Lib: add `Element.setPointerCapture`/`releasePointerCapture`/`hasPointerCapture`
   bindings to `Dom_html.element` (#2403)
+* Lib: add `pointerEvent` bindings `getPredictedEvents`, `altitudeAngle` and
+  `azimuthAngle` (#2403)
 
 # 6.4.0 (2026-06-21) - Lille
 

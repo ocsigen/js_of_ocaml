@@ -931,11 +931,22 @@ and pointerEvent = object
 
   method twist : int readonly_prop
 
+  method altitudeAngle : number_t readonly_prop
+  (** Angle in radians between the pointer axis and the surface (Pointer
+      Events level 3). *)
+
+  method azimuthAngle : number_t readonly_prop
+  (** Angle in radians of the pointer projection on the surface (Pointer
+      Events level 3). *)
+
   method pointerType : js_string t readonly_prop
 
   method isPrimary : bool t readonly_prop
 
   method getCoalescedEvents : pointerEvent t js_array t meth
+
+  method getPredictedEvents : pointerEvent t js_array t meth
+  (** Predicted future pointer events, as computed by the browser. *)
 end
 
 and storageEvent = object

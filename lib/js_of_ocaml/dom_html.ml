@@ -912,11 +912,17 @@ and pointerEvent = object
 
   method twist : int readonly_prop
 
+  method altitudeAngle : number_t readonly_prop
+
+  method azimuthAngle : number_t readonly_prop
+
   method pointerType : js_string t readonly_prop
 
   method isPrimary : bool t readonly_prop
 
   method getCoalescedEvents : pointerEvent t js_array t meth
+
+  method getPredictedEvents : pointerEvent t js_array t meth
 end
 
 and storageEvent = object
