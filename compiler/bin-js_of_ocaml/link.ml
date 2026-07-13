@@ -442,15 +442,14 @@ let link_esm ~output_file ~files ~bundle ~tree_shake ~linkall =
     let program = Esm_bundle.bundle_modules ~parse ~resolve ~entry_points ~tree_shake in
     (* The bundle of a linked program is itself a program: drop the export
        statements the bundler generates for entry modules (each entry unit
-       exports its module block as [default]). The
-       JavaScript optimization passes ([Driver.simplify_js]) are not applied:
-       they do not all track the bindings introduced by [import] statements. *)
+       exports its module block as [default]). *)
     let program =
       List.filter program ~f:(fun (stmt, _) ->
           match (stmt : Javascript.statement) with
           | Export _ -> false
           | _ -> true)
     in
+    let program = Driver.simplify_js program in
     with_output (fun output -> print_program output program)
 
 let f

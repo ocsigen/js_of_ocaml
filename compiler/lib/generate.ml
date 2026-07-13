@@ -307,6 +307,11 @@ module Ctx = struct
     ; live : Deadcode.variable_uses
     ; share : Share.t
     ; exported_runtime : (Code.Var.t * bool ref) option
+    ; esm_unit_globals : (Code.Var.t String.Hashtbl.t * bool ref) option
+          (* When emitting a separately compiled unit as an ES module:
+             variables bound to other units by a default import (keyed by
+             unit name), and whether the unit's module block has been
+             exported. *)
     ; should_export : bool
     ; effect_warning : bool ref
     ; trampolined_calls : Effects.trampolined_calls
@@ -320,6 +325,7 @@ module Ctx = struct
   let initial
       ~warn_on_unhandled_effect
       ~exported_runtime
+      ~esm_unit_globals
       ~should_export
       ~deadcode_sentinel
       ~mutated_vars
@@ -334,6 +340,7 @@ module Ctx = struct
     ; live
     ; share
     ; exported_runtime
+    ; esm_unit_globals
     ; should_export
     ; effect_warning = ref (not warn_on_unhandled_effect)
     ; trampolined_calls
@@ -1818,6 +1825,56 @@ let rec translate_expr ctx loc x e level : (_ * J.statement_list) Expr_builder.t
 and translate_instr ctx expr_queue loc instr =
   let open Expr_builder in
   match instr with
+  (* When emitting a separately compiled unit as an ES module, other units
+     are referenced through the module system instead of the runtime's
+     global table: [caml_get_global] becomes a binding introduced by a
+     default import of the unit's module (emitted at the end of the
+     generation, see [f]) and [caml_register_global] becomes
+     [export default]. Predefined exceptions use the distinct [*_predef]
+     primitives and still go through the runtime. *)
+  | Let (x, Prim (Extern ("caml_get_global", _), [ Pc (NativeString name) ]))
+    when Option.is_some ctx.Ctx.esm_unit_globals -> (
+      let globals, _ =
+        match ctx.Ctx.esm_unit_globals with
+        | Some g -> g
+        | None -> assert false
+      in
+      let name =
+        match name with
+        | Byte s | Utf (Utf8 s) -> s
+      in
+      match String.Hashtbl.find_opt globals name with
+      | None ->
+          (* [x] is bound by the import statement. Even if the value is
+             unused, the import is emitted: importing a unit evaluates it,
+             like linking it does. *)
+          String.Hashtbl.add globals name x;
+          [], expr_queue
+      | Some y ->
+          flush_queue
+            expr_queue
+            loc
+            (let* loc = statement_loc loc in
+             return [ J.variable_declaration [ J.V x, (J.EVar (J.V y), loc) ], loc ]))
+  | Let (x, Prim (Extern ("caml_register_global", _), [ Pv v; Pc (NativeString _) ]))
+    when match ctx.Ctx.esm_unit_globals with
+         | Some (_, { contents = false }) -> true
+         | Some (_, { contents = true }) | None -> false ->
+      let () =
+        match ctx.Ctx.esm_unit_globals with
+        | Some (_, exported) -> exported := true
+        | None -> assert false
+      in
+      flush_queue
+        expr_queue
+        loc
+        (let* cv = access ~ctx v in
+         let* () = info mutator_p in
+         let* loc = statement_loc loc in
+         let export = J.Export (J.ExportDefaultExpression cv, Parse_info.zero), loc in
+         if ctx.Ctx.live.(Var.idx x) = 0
+         then return [ export ]
+         else return [ export; J.variable_declaration [ J.V x, (int 0, loc) ], loc ])
   | Assign (x, y) ->
       flush_queue
         expr_queue
@@ -2587,6 +2644,7 @@ let compile_program ctx pc =
 let f
     (p : Code.program)
     ~exported_runtime
+    ~esm_unit
     ~live_vars
     ~trampolined_calls
     ~in_cps
@@ -2602,10 +2660,14 @@ let f
   let exported_runtime =
     if exported_runtime then Some (Code.Var.fresh_n "runtime", ref false) else None
   in
+  let esm_unit_globals =
+    if esm_unit then Some (String.Hashtbl.create 8, ref false) else None
+  in
   let ctx =
     Ctx.initial
       ~warn_on_unhandled_effect
       ~exported_runtime
+      ~esm_unit_globals
       ~should_export
       ~deadcode_sentinel
       ~mutated_vars
@@ -2618,6 +2680,26 @@ let f
       share
   in
   let p = compile_program ctx p.start in
+  (* Bind the units referenced through [caml_get_global] with default
+     imports of their modules. *)
+  let p =
+    match esm_unit_globals with
+    | None -> p
+    | Some (globals, _) ->
+        let imports =
+          String.Hashtbl.fold (fun name v acc -> (name, v) :: acc) globals []
+          |> List.sort ~cmp:(fun (a, _) (b, _) -> String.compare a b)
+          |> List.map ~f:(fun (name, v) ->
+              ( J.Import
+                  ( { J.from = Utf8_string.of_string_exn ("./" ^ name ^ ".js")
+                    ; kind = J.Default (J.V v)
+                    ; withClause = None
+                    }
+                  , Parse_info.zero )
+              , J.N ))
+        in
+        imports @ p
+  in
   if times () then Format.eprintf "  code gen.: %a@." Timer.print t';
   p
 
