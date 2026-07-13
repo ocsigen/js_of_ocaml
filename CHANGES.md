@@ -91,6 +91,8 @@
   instead of `%{dep:...}` in the `md5`/`md5_nat`, `dump_sourcemap` and
   `check-prim` tests, which echo the path verbatim, so dune 3.24's leading-`./`
   path form (ocaml/dune#15156) no longer breaks their expected output (#2384)
+* Lib: add `Element.setPointerCapture`/`releasePointerCapture`/`hasPointerCapture`
+  bindings to `Dom_html.element` (#2403)
 
 # 6.4.0 (2026-06-21) - Lille
 
