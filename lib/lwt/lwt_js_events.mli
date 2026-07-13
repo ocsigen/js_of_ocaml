@@ -481,19 +481,19 @@ val transitioncancel :
 val load :
      ?use_capture:bool
   -> ?passive:bool
-  -> #Dom_html.imageElement Js.t
+  -> #Dom_html.element Js.t
   -> Dom_html.event Js.t Lwt.t
 
 val error :
      ?use_capture:bool
   -> ?passive:bool
-  -> #Dom_html.imageElement Js.t
+  -> #Dom_html.element Js.t
   -> Dom_html.event Js.t Lwt.t
 
 val abort :
      ?use_capture:bool
   -> ?passive:bool
-  -> #Dom_html.imageElement Js.t
+  -> #Dom_html.element Js.t
   -> Dom_html.event Js.t Lwt.t
 
 val canplay :
@@ -880,7 +880,7 @@ val loads :
      ?cancel_handler:bool
   -> ?use_capture:bool
   -> ?passive:bool
-  -> #Dom_html.imageElement Js.t
+  -> #Dom_html.element Js.t
   -> (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t)
   -> unit Lwt.t
 
@@ -888,7 +888,7 @@ val errors :
      ?cancel_handler:bool
   -> ?use_capture:bool
   -> ?passive:bool
-  -> #Dom_html.imageElement Js.t
+  -> #Dom_html.element Js.t
   -> (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t)
   -> unit Lwt.t
 
@@ -896,7 +896,7 @@ val aborts :
      ?cancel_handler:bool
   -> ?use_capture:bool
   -> ?passive:bool
-  -> #Dom_html.imageElement Js.t
+  -> #Dom_html.element Js.t
   -> (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t)
   -> unit Lwt.t
 

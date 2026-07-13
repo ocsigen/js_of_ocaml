@@ -41,6 +41,8 @@
   asynchronous toplevel originally contributed in the unmerged #435 (#66, #833)
 * Lib: add `FontFace` module — partial binding to the CSS Font Loading
   API, plus a `fonts` property on `Dom_html.document` (#2255)
+* Lib: `Lwt_js_events` `load`/`error`/`abort` and their `seq_loop` variants now
+  accept any element, not only images (#2404)
 
 ## Bug fixes
 * Compiler/Wasm runtime: fix toplevels built on Windows — the embedded cmi
