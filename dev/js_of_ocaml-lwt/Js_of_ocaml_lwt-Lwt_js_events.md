@@ -481,21 +481,21 @@ val transitioncancel :
 val load : 
   ?use_capture:bool ->
   ?passive:bool ->
-  Js_of_ocaml.Dom_html.imageElement Js_of_ocaml.Js.t ->
+  Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t ->
   Js_of_ocaml.Dom_html.event Js_of_ocaml.Js.t Lwt.t
 ```
 ```ocaml
 val error : 
   ?use_capture:bool ->
   ?passive:bool ->
-  Js_of_ocaml.Dom_html.imageElement Js_of_ocaml.Js.t ->
+  Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t ->
   Js_of_ocaml.Dom_html.event Js_of_ocaml.Js.t Lwt.t
 ```
 ```ocaml
 val abort : 
   ?use_capture:bool ->
   ?passive:bool ->
-  Js_of_ocaml.Dom_html.imageElement Js_of_ocaml.Js.t ->
+  Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t ->
   Js_of_ocaml.Dom_html.event Js_of_ocaml.Js.t Lwt.t
 ```
 ```ocaml
@@ -979,7 +979,7 @@ val loads :
   ?cancel_handler:bool ->
   ?use_capture:bool ->
   ?passive:bool ->
-  Js_of_ocaml.Dom_html.imageElement Js_of_ocaml.Js.t ->
+  Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t ->
   (Js_of_ocaml.Dom_html.event Js_of_ocaml.Js.t -> unit Lwt.t -> unit Lwt.t) ->
   unit Lwt.t
 ```
@@ -988,7 +988,7 @@ val errors :
   ?cancel_handler:bool ->
   ?use_capture:bool ->
   ?passive:bool ->
-  Js_of_ocaml.Dom_html.imageElement Js_of_ocaml.Js.t ->
+  Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t ->
   (Js_of_ocaml.Dom_html.event Js_of_ocaml.Js.t -> unit Lwt.t -> unit Lwt.t) ->
   unit Lwt.t
 ```
@@ -997,7 +997,7 @@ val aborts :
   ?cancel_handler:bool ->
   ?use_capture:bool ->
   ?passive:bool ->
-  Js_of_ocaml.Dom_html.imageElement Js_of_ocaml.Js.t ->
+  Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t ->
   (Js_of_ocaml.Dom_html.event Js_of_ocaml.Js.t -> unit Lwt.t -> unit Lwt.t) ->
   unit Lwt.t
 ```
