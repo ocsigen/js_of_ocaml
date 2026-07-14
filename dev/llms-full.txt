@@ -27667,6 +27667,21 @@ method focus_options : focusOptions Js_of_ocaml__.Js.t ->
 method blur : unit Js_of_ocaml__.Js.meth
 ```
 ```ocaml
+method setPointerCapture : int -> unit Js_of_ocaml__.Js.meth
+```
+Set the element as capture target for the pointer with this `pointerId` (Pointer Events, `Element.setPointerCapture`).
+
+```ocaml
+method releasePointerCapture : int -> unit Js_of_ocaml__.Js.meth
+```
+Release a pointer capture previously set for this pointer id.
+
+```ocaml
+method hasPointerCapture : int -> bool Js_of_ocaml__.Js.t Js_of_ocaml__.Js.meth
+```
+Whether the element currently captures this pointer id.
+
+```ocaml
 method requestFullscreen : unit Js_of_ocaml__.Promise.t Js_of_ocaml__.Js.meth
 ```
 ```ocaml
@@ -27929,6 +27944,21 @@ method focus_options : focusOptions Js_of_ocaml__.Js.t ->
 ```ocaml
 method blur : unit Js_of_ocaml__.Js.meth
 ```
+```ocaml
+method setPointerCapture : int -> unit Js_of_ocaml__.Js.meth
+```
+Set the element as capture target for the pointer with this `pointerId` (Pointer Events, `Element.setPointerCapture`).
+
+```ocaml
+method releasePointerCapture : int -> unit Js_of_ocaml__.Js.meth
+```
+Release a pointer capture previously set for this pointer id.
+
+```ocaml
+method hasPointerCapture : int -> bool Js_of_ocaml__.Js.t Js_of_ocaml__.Js.meth
+```
+Whether the element currently captures this pointer id.
+
 ```ocaml
 method requestFullscreen : unit Js_of_ocaml__.Promise.t Js_of_ocaml__.Js.meth
 ```
@@ -29961,6 +29991,21 @@ method focus_options : focusOptions Js_of_ocaml__.Js.t ->
 method blur : unit Js_of_ocaml__.Js.meth
 ```
 ```ocaml
+method setPointerCapture : int -> unit Js_of_ocaml__.Js.meth
+```
+Set the element as capture target for the pointer with this `pointerId` (Pointer Events, `Element.setPointerCapture`).
+
+```ocaml
+method releasePointerCapture : int -> unit Js_of_ocaml__.Js.meth
+```
+Release a pointer capture previously set for this pointer id.
+
+```ocaml
+method hasPointerCapture : int -> bool Js_of_ocaml__.Js.t Js_of_ocaml__.Js.meth
+```
+Whether the element currently captures this pointer id.
+
+```ocaml
 method requestFullscreen : unit Js_of_ocaml__.Promise.t Js_of_ocaml__.Js.meth
 ```
 ```ocaml
@@ -30353,6 +30398,21 @@ method focus_options : focusOptions Js_of_ocaml__.Js.t ->
 ```ocaml
 method blur : unit Js_of_ocaml__.Js.meth
 ```
+```ocaml
+method setPointerCapture : int -> unit Js_of_ocaml__.Js.meth
+```
+Set the element as capture target for the pointer with this `pointerId` (Pointer Events, `Element.setPointerCapture`).
+
+```ocaml
+method releasePointerCapture : int -> unit Js_of_ocaml__.Js.meth
+```
+Release a pointer capture previously set for this pointer id.
+
+```ocaml
+method hasPointerCapture : int -> bool Js_of_ocaml__.Js.t Js_of_ocaml__.Js.meth
+```
+Whether the element currently captures this pointer id.
+
 ```ocaml
 method requestFullscreen : unit Js_of_ocaml__.Promise.t Js_of_ocaml__.Js.meth
 ```
@@ -30869,6 +30929,21 @@ method focus_options : focusOptions Js_of_ocaml__.Js.t ->
 ```ocaml
 method blur : unit Js_of_ocaml__.Js.meth
 ```
+```ocaml
+method setPointerCapture : int -> unit Js_of_ocaml__.Js.meth
+```
+Set the element as capture target for the pointer with this `pointerId` (Pointer Events, `Element.setPointerCapture`).
+
+```ocaml
+method releasePointerCapture : int -> unit Js_of_ocaml__.Js.meth
+```
+Release a pointer capture previously set for this pointer id.
+
+```ocaml
+method hasPointerCapture : int -> bool Js_of_ocaml__.Js.t Js_of_ocaml__.Js.meth
+```
+Whether the element currently captures this pointer id.
+
 ```ocaml
 method requestFullscreen : unit Js_of_ocaml__.Promise.t Js_of_ocaml__.Js.meth
 ```
@@ -31653,6 +31728,21 @@ method focus_options : focusOptions Js_of_ocaml__.Js.t ->
 method blur : unit Js_of_ocaml__.Js.meth
 ```
 ```ocaml
+method setPointerCapture : int -> unit Js_of_ocaml__.Js.meth
+```
+Set the element as capture target for the pointer with this `pointerId` (Pointer Events, `Element.setPointerCapture`).
+
+```ocaml
+method releasePointerCapture : int -> unit Js_of_ocaml__.Js.meth
+```
+Release a pointer capture previously set for this pointer id.
+
+```ocaml
+method hasPointerCapture : int -> bool Js_of_ocaml__.Js.t Js_of_ocaml__.Js.meth
+```
+Whether the element currently captures this pointer id.
+
+```ocaml
 method requestFullscreen : unit Js_of_ocaml__.Promise.t Js_of_ocaml__.Js.meth
 ```
 ```ocaml
@@ -31951,6 +32041,21 @@ method focus_options : focusOptions Js_of_ocaml__.Js.t ->
 method blur : unit Js_of_ocaml__.Js.meth
 ```
 ```ocaml
+method setPointerCapture : int -> unit Js_of_ocaml__.Js.meth
+```
+Set the element as capture target for the pointer with this `pointerId` (Pointer Events, `Element.setPointerCapture`).
+
+```ocaml
+method releasePointerCapture : int -> unit Js_of_ocaml__.Js.meth
+```
+Release a pointer capture previously set for this pointer id.
+
+```ocaml
+method hasPointerCapture : int -> bool Js_of_ocaml__.Js.t Js_of_ocaml__.Js.meth
+```
+Whether the element currently captures this pointer id.
+
+```ocaml
 method requestFullscreen : unit Js_of_ocaml__.Promise.t Js_of_ocaml__.Js.meth
 ```
 ```ocaml
@@ -32213,6 +32318,21 @@ method focus_options : focusOptions Js_of_ocaml__.Js.t ->
 ```ocaml
 method blur : unit Js_of_ocaml__.Js.meth
 ```
+```ocaml
+method setPointerCapture : int -> unit Js_of_ocaml__.Js.meth
+```
+Set the element as capture target for the pointer with this `pointerId` (Pointer Events, `Element.setPointerCapture`).
+
+```ocaml
+method releasePointerCapture : int -> unit Js_of_ocaml__.Js.meth
+```
+Release a pointer capture previously set for this pointer id.
+
+```ocaml
+method hasPointerCapture : int -> bool Js_of_ocaml__.Js.t Js_of_ocaml__.Js.meth
+```
+Whether the element currently captures this pointer id.
+
 ```ocaml
 method requestFullscreen : unit Js_of_ocaml__.Promise.t Js_of_ocaml__.Js.meth
 ```
@@ -33118,6 +33238,21 @@ method focus_options : focusOptions Js_of_ocaml__.Js.t ->
 ```ocaml
 method blur : unit Js_of_ocaml__.Js.meth
 ```
+```ocaml
+method setPointerCapture : int -> unit Js_of_ocaml__.Js.meth
+```
+Set the element as capture target for the pointer with this `pointerId` (Pointer Events, `Element.setPointerCapture`).
+
+```ocaml
+method releasePointerCapture : int -> unit Js_of_ocaml__.Js.meth
+```
+Release a pointer capture previously set for this pointer id.
+
+```ocaml
+method hasPointerCapture : int -> bool Js_of_ocaml__.Js.t Js_of_ocaml__.Js.meth
+```
+Whether the element currently captures this pointer id.
+
 ```ocaml
 method requestFullscreen : unit Js_of_ocaml__.Promise.t Js_of_ocaml__.Js.meth
 ```
@@ -34050,6 +34185,21 @@ method focus_options : focusOptions Js_of_ocaml__.Js.t ->
 method blur : unit Js_of_ocaml__.Js.meth
 ```
 ```ocaml
+method setPointerCapture : int -> unit Js_of_ocaml__.Js.meth
+```
+Set the element as capture target for the pointer with this `pointerId` (Pointer Events, `Element.setPointerCapture`).
+
+```ocaml
+method releasePointerCapture : int -> unit Js_of_ocaml__.Js.meth
+```
+Release a pointer capture previously set for this pointer id.
+
+```ocaml
+method hasPointerCapture : int -> bool Js_of_ocaml__.Js.t Js_of_ocaml__.Js.meth
+```
+Whether the element currently captures this pointer id.
+
+```ocaml
 method requestFullscreen : unit Js_of_ocaml__.Promise.t Js_of_ocaml__.Js.meth
 ```
 ```ocaml
@@ -34536,6 +34686,21 @@ method focus_options : focusOptions Js_of_ocaml__.Js.t ->
 method blur : unit Js_of_ocaml__.Js.meth
 ```
 ```ocaml
+method setPointerCapture : int -> unit Js_of_ocaml__.Js.meth
+```
+Set the element as capture target for the pointer with this `pointerId` (Pointer Events, `Element.setPointerCapture`).
+
+```ocaml
+method releasePointerCapture : int -> unit Js_of_ocaml__.Js.meth
+```
+Release a pointer capture previously set for this pointer id.
+
+```ocaml
+method hasPointerCapture : int -> bool Js_of_ocaml__.Js.t Js_of_ocaml__.Js.meth
+```
+Whether the element currently captures this pointer id.
+
+```ocaml
 method requestFullscreen : unit Js_of_ocaml__.Promise.t Js_of_ocaml__.Js.meth
 ```
 ```ocaml
@@ -34824,6 +34989,21 @@ method focus_options : focusOptions Js_of_ocaml__.Js.t ->
 method blur : unit Js_of_ocaml__.Js.meth
 ```
 ```ocaml
+method setPointerCapture : int -> unit Js_of_ocaml__.Js.meth
+```
+Set the element as capture target for the pointer with this `pointerId` (Pointer Events, `Element.setPointerCapture`).
+
+```ocaml
+method releasePointerCapture : int -> unit Js_of_ocaml__.Js.meth
+```
+Release a pointer capture previously set for this pointer id.
+
+```ocaml
+method hasPointerCapture : int -> bool Js_of_ocaml__.Js.t Js_of_ocaml__.Js.meth
+```
+Whether the element currently captures this pointer id.
+
+```ocaml
 method requestFullscreen : unit Js_of_ocaml__.Promise.t Js_of_ocaml__.Js.meth
 ```
 ```ocaml
@@ -34920,6 +35100,16 @@ method tiltY : int Js_of_ocaml__.Js.readonly_prop
 method twist : int Js_of_ocaml__.Js.readonly_prop
 ```
 ```ocaml
+method altitudeAngle : Js_of_ocaml__.Js.number_t Js_of_ocaml__.Js.readonly_prop
+```
+Angle in radians between the pointer axis and the surface (Pointer Events level 3\).
+
+```ocaml
+method azimuthAngle : Js_of_ocaml__.Js.number_t Js_of_ocaml__.Js.readonly_prop
+```
+Angle in radians of the pointer projection on the surface (Pointer Events level 3\).
+
+```ocaml
 method pointerType : Js_of_ocaml__.Js.js_string Js_of_ocaml__.Js.t
                        Js_of_ocaml__.Js.readonly_prop
 ```
@@ -34932,6 +35122,13 @@ method getCoalescedEvents : pointerEvent Js_of_ocaml__.Js.t
                               Js_of_ocaml__.Js.t
                               Js_of_ocaml__.Js.meth
 ```
+```ocaml
+method getPredictedEvents : pointerEvent Js_of_ocaml__.Js.t
+                              Js_of_ocaml__.Js.js_array
+                              Js_of_ocaml__.Js.t
+                              Js_of_ocaml__.Js.meth
+```
+Predicted future pointer events, as computed by the browser.
 
 
 ---
@@ -35145,6 +35342,21 @@ method focus_options : focusOptions Js_of_ocaml__.Js.t ->
 ```ocaml
 method blur : unit Js_of_ocaml__.Js.meth
 ```
+```ocaml
+method setPointerCapture : int -> unit Js_of_ocaml__.Js.meth
+```
+Set the element as capture target for the pointer with this `pointerId` (Pointer Events, `Element.setPointerCapture`).
+
+```ocaml
+method releasePointerCapture : int -> unit Js_of_ocaml__.Js.meth
+```
+Release a pointer capture previously set for this pointer id.
+
+```ocaml
+method hasPointerCapture : int -> bool Js_of_ocaml__.Js.t Js_of_ocaml__.Js.meth
+```
+Whether the element currently captures this pointer id.
+
 ```ocaml
 method requestFullscreen : unit Js_of_ocaml__.Promise.t Js_of_ocaml__.Js.meth
 ```
@@ -36129,6 +36341,21 @@ method focus_options : focusOptions Js_of_ocaml__.Js.t ->
 ```ocaml
 method blur : unit Js_of_ocaml__.Js.meth
 ```
+```ocaml
+method setPointerCapture : int -> unit Js_of_ocaml__.Js.meth
+```
+Set the element as capture target for the pointer with this `pointerId` (Pointer Events, `Element.setPointerCapture`).
+
+```ocaml
+method releasePointerCapture : int -> unit Js_of_ocaml__.Js.meth
+```
+Release a pointer capture previously set for this pointer id.
+
+```ocaml
+method hasPointerCapture : int -> bool Js_of_ocaml__.Js.t Js_of_ocaml__.Js.meth
+```
+Whether the element currently captures this pointer id.
+
 ```ocaml
 method requestFullscreen : unit Js_of_ocaml__.Promise.t Js_of_ocaml__.Js.meth
 ```
@@ -37127,6 +37354,21 @@ method focus_options : focusOptions Js_of_ocaml__.Js.t ->
 ```ocaml
 method blur : unit Js_of_ocaml__.Js.meth
 ```
+```ocaml
+method setPointerCapture : int -> unit Js_of_ocaml__.Js.meth
+```
+Set the element as capture target for the pointer with this `pointerId` (Pointer Events, `Element.setPointerCapture`).
+
+```ocaml
+method releasePointerCapture : int -> unit Js_of_ocaml__.Js.meth
+```
+Release a pointer capture previously set for this pointer id.
+
+```ocaml
+method hasPointerCapture : int -> bool Js_of_ocaml__.Js.t Js_of_ocaml__.Js.meth
+```
+Whether the element currently captures this pointer id.
+
 ```ocaml
 method requestFullscreen : unit Js_of_ocaml__.Promise.t Js_of_ocaml__.Js.meth
 ```

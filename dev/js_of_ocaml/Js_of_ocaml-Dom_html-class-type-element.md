@@ -199,6 +199,21 @@ method focus_options : focusOptions Js_of_ocaml__.Js.t ->
 method blur : unit Js_of_ocaml__.Js.meth
 ```
 ```ocaml
+method setPointerCapture : int -> unit Js_of_ocaml__.Js.meth
+```
+Set the element as capture target for the pointer with this `pointerId` (Pointer Events, `Element.setPointerCapture`).
+
+```ocaml
+method releasePointerCapture : int -> unit Js_of_ocaml__.Js.meth
+```
+Release a pointer capture previously set for this pointer id.
+
+```ocaml
+method hasPointerCapture : int -> bool Js_of_ocaml__.Js.t Js_of_ocaml__.Js.meth
+```
+Whether the element currently captures this pointer id.
+
+```ocaml
 method requestFullscreen : unit Js_of_ocaml__.Promise.t Js_of_ocaml__.Js.meth
 ```
 ```ocaml
