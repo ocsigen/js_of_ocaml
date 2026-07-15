@@ -705,7 +705,8 @@ if (typeof module === 'object' && module.exports) {
           let lex = Parse_js.Lexer.of_string s in
           Parse_js.parse `Script lex
         in
-        e @ (if lifecycle_events then wrap_with_lifecycle_events js else js)
+        let js = if lifecycle_events then wrap_with_lifecycle_events js else js in
+        e @ js
   in
   if times () then Format.eprintf "  packing: %a@." Timer.print t;
   js
