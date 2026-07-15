@@ -59,8 +59,7 @@
  (deps
   args
   (glob_files *.wat)
-  libc.wasm
-  c-impl.wasm)
+  libc.wasm)
  (action
   (run
    ../../compiler/bin-wasm_of_ocaml/wasmoo_link_wasm.exe
@@ -71,7 +70,6 @@
    --allowed-imports=wasi_snapshot_preview1,OCaml
    %{target}
    libc:libc.wasm
-   c:c-impl.wasm
    %{read-lines:args})))
 
 (rule
@@ -79,8 +77,7 @@
  (deps
   args
   (glob_files *.wat)
-  libc.wasm
-  c-impl.wasm)
+  libc.wasm)
  (action
   (run
    ../../compiler/bin-wasm_of_ocaml/wasmoo_link_wasm.exe
@@ -90,7 +87,6 @@
    --enable=wasi
    %{target}
    libc:libc.wasm
-   c:c-impl.wasm
    %{read-lines:args})))
 
 (rule
@@ -103,49 +99,56 @@
    %{target}
    (run ocaml %{deps}))))
 
-; libc.wasm and c-impl.wasm are compiled from C sources with the wasi-sdk,
-; which we run via docker. Normal builds use the committed .wasm files as-is and
-; never need docker: the source directories ('libc', 'c') are marked vendored so
-; dune excludes their rebuild rules from @all. After editing the corresponding
-; sources, regenerate the .wasm on demand (docker required) with one of:
+; libc.wasm and c-impl.wasm are compiled from the C sources in 'c' with the
+; wasi-sdk, which we run via docker. Normal builds use the committed .wasm files
+; as-is and never need docker: the source directory is marked vendored so dune
+; excludes its rebuild rules from @all. After editing the sources, regenerate
+; the .wasm on demand (docker required) with one of:
 ;   dune build @runtime/wasm/recompile-libc
 ;   dune build @runtime/wasm/recompile-c
 
-(vendored_dirs libc c)
+(vendored_dirs c)
 
 (alias
  (name recompile-libc)
- (deps libc/libc.wasm))
+ (deps c/libc.wasm))
 
 (alias
  (name recompile-c)
  (deps c/c-impl.wasm))
 
-; The zstd decoder and the blake2b hash are linked together into a single
-; module (c-impl.wasm) so they share one linear memory: Safari does not support
-; modules with several memories.  The scratch memory that jsstring.wat exports
-; as caml_buffer is imported from this same module too, keeping the whole
-; non-wasi runtime down to a single memory.
+; The runtime must not declare more than one linear memory: Safari (and hence
+; Bun, which runs on JavaScriptCore) does not support modules with several
+; memories.  Both runtimes therefore link a single C module that owns the one
+; memory, which jsstring.wat / zstd.wat / blake2.wat import.
 ;
-; --global-base=65536 with --no-stack-first places all of this module's static
-; data, shadow stack and heap at or above 64 KiB, leaving the first page free
-; for jsstring.wat's buffer (which addresses linear memory from offset 0).
+; * Non-wasi runtime: c-impl.wasm, a freestanding build of the zstd decoder and
+;   the blake2b hash.  --global-base=65536 with --no-stack-first places all of
+;   its static data, shadow stack and heap at or above 64 KiB, leaving the first
+;   page free for jsstring.wat's caml_buffer (which addresses memory from 0).
+;   zstd_wrap.c supplies its own bump allocator over this private memory, and
+;   the zstd/blake2 wrappers rely on stubs.c for memcpy and friends.
 ;
-; The zstd and blake2 wrappers each dropped their private copies of memcpy and
-; friends; the shared copies now live in stubs.c.  Flags reconciled from the two
-; former builds: -Oz (both were size-tuned; the merged module is the same size
-; as the two separate ones), -fno-builtin and -DZSTD_* (harmless for blake2),
-; and -Dvolatile= — blake2 needs it to inline secure_zero_memory's memset to a
-; memory.fill, and zstd's only 'volatile' uses are disabled asm and unused
-; sanitizer prototypes, so stripping it there changes nothing.
+; * Wasi runtime: libc.wasm, which links the same zstd/blake2 wrappers together
+;   with libc.c against the real wasi-sdk libc, so they share libc's single
+;   memory and use its malloc/free (JSOO_WASI_LIBC selects that path in
+;   zstd_wrap.c).  stubs.c is not needed here (libc provides memcpy etc.), and
+;   jsstring.wat uses wasi_memory.wat's malloc-backed scratch rather than the
+;   caml_buffer page, so no --global-base juggling is required.
+;
+; Shared flags for the zstd/blake2 wrappers: -Oz (size-tuned), -fno-builtin and
+; -DZSTD_* (harmless for blake2 and libc.c), and -Dvolatile= — blake2 needs it
+; to inline secure_zero_memory's memset to a memory.fill, and zstd's only
+; 'volatile' uses are disabled asm and unused sanitizer prototypes, so stripping
+; it there changes nothing.
 
 (subdir
  c
+ ; Depend on (universe) so an explicit 'dune build @runtime/wasm/recompile-{c,libc}'
+ ; always reruns docker, picking up an updated wasi-sdk image or wasm-opt even
+ ; when the sources are unchanged.
  (rule
   (target c-impl.wasm)
-  ; Depend on (universe) so an explicit 'dune build @runtime/wasm/recompile-c'
-  ; always reruns docker, picking up an updated wasi-sdk image or wasm-opt even
-  ; when the sources are unchanged.
   (deps
    zstddeclib.c
    zstd_wrap.c
@@ -184,9 +187,9 @@
       -DZSTD_DISABLE_ASM
       -Dvolatile=
       -Wl,--no-entry
-      ; Export name must not clash with libc.wasm's "memory" export when both
-      ; are linked into the wasi runtime (wasm-merge flattens export names).
-      -Wl,--export-memory=linear_memory
+      ; Export the memory (as "memory", the default name), imported from the "c"
+      ; module by jsstring.wat / zstd.wat / blake2.wat.
+      -Wl,--export-memory
       -Wl,--no-stack-first
       -Wl,--global-base=65536
       zstddeclib.c
@@ -194,6 +197,53 @@
       blake2b-ref.c
       blake2_wrap.c
       stubs.c
+      -o
+      -)
+     (run wasm-opt -Oz --strip-debug --strip-dwarf - -o -)))))
+ ; The wasi runtime's single C module: libc.c plus the zstd/blake2 wrappers,
+ ; linked against the real wasi-sdk libc (default libs, startup, one memory
+ ; exported as "memory").  JSOO_WASI_LIBC makes zstd_wrap.c use libc malloc/free
+ ; instead of its bump allocator; stubs.c is omitted (libc provides memcpy etc.).
+ (rule
+  (target libc.wasm)
+  (deps
+   libc.c
+   zstddeclib.c
+   zstd_wrap.c
+   blake2b-ref.c
+   blake2_wrap.c
+   blake2.h
+   blake2-impl.h
+   (universe))
+  (mode
+   (promote
+    (into ..)))
+  (action
+   (with-stdout-to
+    %{target}
+    (pipe-stdout
+     (run
+      docker
+      run
+      -v
+      .:/src
+      -w
+      /src
+      ghcr.io/webassembly/wasi-sdk
+      /opt/wasi-sdk/bin/clang
+      -Oz
+      -flto
+      -fno-builtin
+      -DNDEBUG
+      -DZSTD_NO_TRACE
+      -DZSTD_DISABLE_ASM
+      -Dvolatile=
+      -DJSOO_WASI_LIBC
+      libc.c
+      zstddeclib.c
+      zstd_wrap.c
+      blake2b-ref.c
+      blake2_wrap.c
       -o
       -)
      (run wasm-opt -Oz --strip-debug --strip-dwarf - -o -))))))

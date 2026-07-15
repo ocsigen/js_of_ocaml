@@ -55,7 +55,7 @@
    ;; owned by c-impl.wasm (see runtime/wasm/dune): that module keeps all of its
    ;; own data above the first 64 KiB page, which we use here from offset 0.
    ;; Re-exported as "caml_buffer" for the JS runtime (runtime.js).
-   (import "c" "linear_memory" (memory 1))
+   (import "c" "memory" (memory 1))
    (export "caml_buffer" (memory 0))
 
    (type $bytes (array (mut i8)))
