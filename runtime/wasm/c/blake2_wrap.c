@@ -34,32 +34,7 @@
 
 #include "blake2.h"
 
-/*
- * Under -mbulk-memory clang lowers __builtin_mem{cpy,move,set} to inline
- * memory.copy / memory.fill instructions, so these wrappers expand to a
- * single bulk-memory op plus a return — no recursive call to themselves.
- * They're needed because LLVM's loop-idiom-recognize pass still emits
- * libcalls to memset/memcpy that we have to resolve under -nodefaultlibs.
- */
-void *memcpy(void *dst, const void *src, size_t n) {
-  __builtin_memcpy(dst, src, n);
-  return dst;
-}
-void *memmove(void *dst, const void *src, size_t n) {
-  __builtin_memmove(dst, src, n);
-  return dst;
-}
-void *memset(void *dst, int v, size_t n) {
-  __builtin_memset(dst, v, n);
-  return dst;
-}
-
-/* Freestanding stubs for symbols clang may emit. */
-void __assert_fail(const char *a, const char *b, unsigned c, const char *d) {
-  (void)a; (void)b; (void)c; (void)d;
-  __builtin_trap();
-}
-void __stack_chk_fail(void) { __builtin_trap(); }
+/* memcpy/memset and other freestanding libc stubs live in stubs.c. */
 
 /* Sizes — must match the constants in runtime/wasm/blake2.wat. */
 #define BLAKE2_STATE_SIZE 248

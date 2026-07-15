@@ -21,21 +21,21 @@
    (import "fail" "caml_failwith" (func $caml_failwith (param (ref eq))))
    (import "marshal" "caml_intern_decompress_input"
       (global $caml_intern_decompress_input (mut (ref null $decompress))))
-   (import "zstd" "zstd_memory" (memory 2))
-   (import "zstd" "zstd_reset" (func $zstd_reset))
-   (import "zstd" "zstd_alloc" (func $zstd_alloc (param i32) (result i32)))
-   (import "zstd" "zstd_decompress"
+   (import "c" "linear_memory" (memory 2))
+   (import "c" "zstd_reset" (func $zstd_reset))
+   (import "c" "zstd_alloc" (func $zstd_alloc (param i32) (result i32)))
+   (import "c" "zstd_decompress"
       (func $zstd_decompress (param i32 i32 i32 i32) (result i32)))
-   (import "zstd" "zstd_window_size"
+   (import "c" "zstd_window_size"
       (func $window_size (param i32 i32) (result i32)))
-   (import "zstd" "zstd_in_buf" (func $in_buf (result i32)))
-   (import "zstd" "zstd_in_cap" (func $in_cap (result i32)))
-   (import "zstd" "zstd_out_buf" (func $out_buf (result i32)))
-   (import "zstd" "zstd_stream_init" (func $stream_init (result i32)))
-   (import "zstd" "zstd_stream_set_input" (func $stream_set_input (param i32)))
-   (import "zstd" "zstd_stream_run" (func $stream_run (result i32)))
-   (import "zstd" "zstd_out_produced" (func $out_produced (result i32)))
-   (import "zstd" "zstd_in_done" (func $in_done (result i32)))
+   (import "c" "zstd_in_buf" (func $in_buf (result i32)))
+   (import "c" "zstd_in_cap" (func $in_cap (result i32)))
+   (import "c" "zstd_out_buf" (func $out_buf (result i32)))
+   (import "c" "zstd_stream_init" (func $stream_init (result i32)))
+   (import "c" "zstd_stream_set_input" (func $stream_set_input (param i32)))
+   (import "c" "zstd_stream_run" (func $stream_run (result i32)))
+   (import "c" "zstd_out_produced" (func $out_produced (result i32)))
+   (import "c" "zstd_in_done" (func $in_done (result i32)))
 
    (type $bytes (array (mut i8)))
    (type $decompress
