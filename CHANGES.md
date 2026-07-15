@@ -63,6 +63,10 @@
   destructuring defaults (`catch ({x = someVar})`) in the free-variable
   analysis; the short-name allocator could otherwise reuse the name of
   the referenced variable, making the default read the wrong one (#2393)
+* Wasm: link the zstd and blake2 C runtimes into a single module sharing one
+  linear memory, which jsstring.wat's scratch buffer now also imports, so the
+  non-wasi runtime declares a single memory instead of three. Safari does not
+  support modules with several memories (#2382)
 * Wasm: embed cmis when building a toplevel with separate compilation.
   `wasm_of_ocaml --toplevel` now reports `toplevel=true` in its build config
   and honors the flag when it comes through `--apply-build-config`, so dune

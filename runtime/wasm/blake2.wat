@@ -18,18 +18,18 @@
 (module
 (@if (>= $ocaml_version (5 2 0))
 (@then
-   (import "blake2" "blake2_memory" (memory 1))
-   (import "blake2" "blake2_state_buf" (func $state_buf (result i32)))
-   (import "blake2" "blake2_key_buf"   (func $key_buf   (result i32)))
-   (import "blake2" "blake2_out_buf"   (func $out_buf   (result i32)))
-   (import "blake2" "blake2_chunk_buf" (func $chunk_buf (result i32)))
-   (import "blake2" "blake2_chunk_buf_size"
+   (import "c" "linear_memory" (memory 1))
+   (import "c" "blake2_state_buf" (func $state_buf (result i32)))
+   (import "c" "blake2_key_buf"   (func $key_buf   (result i32)))
+   (import "c" "blake2_out_buf"   (func $out_buf   (result i32)))
+   (import "c" "blake2_chunk_buf" (func $chunk_buf (result i32)))
+   (import "c" "blake2_chunk_buf_size"
       (func $chunk_buf_size (result i32)))
-   (import "blake2" "blake2_init"
+   (import "c" "blake2_init"
       (func $blake2_init (param i32 i32)))
-   (import "blake2" "blake2_update"
+   (import "c" "blake2_update"
       (func $blake2_update (param i32)))
-   (import "blake2" "blake2_finalize"
+   (import "c" "blake2_finalize"
       (func $blake2_finalize (param i32)))
 
    (type $bytes (array (mut i8)))
