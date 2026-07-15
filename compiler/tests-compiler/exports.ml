@@ -50,6 +50,22 @@ let%expect_test "static eval of string get" =
                 ( Expression_statement
                     (ECall (EFun (name, (k, param, body, loc1)), ANormal, a, l))
                 , loc ))
+      | Try_statement (body, _, _), loc -> (
+          (* Standalone executables are wrapped in a try/catch dispatching
+             lifecycle events; look for the program inside it. *)
+          let body =
+            List.filter_map
+              (fun st ->
+                match st with
+                | Function_declaration _, _
+                | Expression_statement (ECall (EFun _, _, _, _)), _ -> clean_statement st
+                | _ -> None)
+              body
+          in
+          match body with
+          | [] -> None
+          | [ st ] -> Some st
+          | sts -> Some (Block sts, loc))
       | _, _ -> Some st
     in
     List.filter_map clean_statement program

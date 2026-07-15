@@ -534,7 +534,11 @@ let output formatter ~source_map () js =
   if times () then Format.eprintf "  write: %a@." Timer.print t;
   sm
 
-let pack ~wrap_with_fun ~standalone { Linker.runtime_code = js; always_required_codes } =
+let pack
+    ~wrap_with_fun
+    ~standalone
+    ~lifecycle_events
+    { Linker.runtime_code = js; always_required_codes } =
   let module J = Javascript in
   let t = Timer.make () in
   if times () then Format.eprintf "Start Optimizing js...@.";
@@ -628,6 +632,35 @@ let pack ~wrap_with_fun ~standalone { Linker.runtime_code = js; always_required_
   in
   let runtime_js = wrap_in_iife ~use_strict:(Config.Flag.strictmode ()) js in
   let js = always_required_js @ [ runtime_js ] in
+  (* Dispatch lifecycle events on [globalThis], mirroring the Wasm
+     launcher ([runtime/wasm/runtime.js]), so that surrounding JavaScript
+     can wait for the program the same way with either backend. *)
+  let wrap_with_lifecycle_events js =
+    let s =
+      {|
+try {
+  0;
+  if (typeof globalThis.dispatchEvent === 'function'
+      && typeof CustomEvent === 'function') {
+    globalThis.dispatchEvent(new CustomEvent('jsoocaml:loaded'));
+  }
+} catch (jsoo_lifecycle_error) {
+  if (typeof globalThis.dispatchEvent === 'function'
+      && typeof CustomEvent === 'function') {
+    globalThis.dispatchEvent(
+      new CustomEvent('jsoocaml:error',
+                      { detail: { error: jsoo_lifecycle_error } }));
+  }
+  throw jsoo_lifecycle_error;
+}
+|}
+    in
+    let lex = Parse_js.Lexer.of_string s in
+    match Parse_js.parse `Script lex with
+    | [ (J.Try_statement (_placeholder :: on_loaded, catch_clause, None), loc) ] ->
+        [ J.Try_statement (js @ on_loaded, catch_clause, None), loc ]
+    | _ -> assert false
+  in
   let js =
     match wrap_with_fun, standalone with
     | `Named name, (true | false) ->
@@ -672,6 +705,7 @@ if (typeof module === 'object' && module.exports) {
           let lex = Parse_js.Lexer.of_string s in
           Parse_js.parse `Script lex
         in
+        let js = if lifecycle_events then wrap_with_lifecycle_events js else js in
         e @ js
   in
   if times () then Format.eprintf "  packing: %a@." Timer.print t;
@@ -694,7 +728,12 @@ let configure formatter =
   let pretty = Config.Flag.pretty () in
   Pretty_print.set_compact formatter (not pretty)
 
-let link_and_pack ?(standalone = true) ?(wrap_with_fun = `Iife) ?(link = `No) p =
+let link_and_pack
+    ?(standalone = true)
+    ?(wrap_with_fun = `Iife)
+    ?(lifecycle_events = false)
+    ?(link = `No)
+    p =
   let export_runtime =
     match link with
     | `All | `All_from _ -> true
@@ -702,7 +741,7 @@ let link_and_pack ?(standalone = true) ?(wrap_with_fun = `Iife) ?(link = `No) p 
   in
   p
   |> link' ~export_runtime ~standalone ~link
-  |> pack ~wrap_with_fun ~standalone
+  |> pack ~wrap_with_fun ~standalone ~lifecycle_events
   |> check_js
 
 let optimize ~shapes ~profile ~keep_flow_data p =
@@ -744,12 +783,21 @@ let optimize_for_wasm ~shapes ~profile p =
     | Some data -> data
     | None -> Global_flow.f ~fast:false optimized_code.program )
 
-let full ~standalone ~wrap_with_fun ~shapes ~profile ~link ~source_map ~formatter p =
+let full
+    ~standalone
+    ~wrap_with_fun
+    ~lifecycle_events
+    ~shapes
+    ~profile
+    ~link
+    ~source_map
+    ~formatter
+    p =
   let optimized_code, _ = optimize ~shapes ~profile ~keep_flow_data:false p in
   let exported_runtime = not standalone in
   let emit formatter =
     generate ~exported_runtime ~wrap_with_fun ~warn_on_unhandled_effect:standalone
-    +> link_and_pack ~standalone ~wrap_with_fun ~link
+    +> link_and_pack ~standalone ~wrap_with_fun ~lifecycle_events ~link
     +> simplify_js
     +> name_variables
     +> output formatter ~source_map ()
@@ -767,20 +815,39 @@ let full ~standalone ~wrap_with_fun ~shapes ~profile ~link ~source_map ~formatte
 
 let full_no_source_map ~formatter ~shapes ~standalone ~wrap_with_fun ~profile ~link p =
   let (_ : Source_map.info * _) =
-    full ~shapes ~standalone ~wrap_with_fun ~profile ~link ~source_map:false ~formatter p
+    full
+      ~shapes
+      ~standalone
+      ~wrap_with_fun
+      ~lifecycle_events:false
+      ~profile
+      ~link
+      ~source_map:false
+      ~formatter
+      p
   in
   ()
 
 let f
     ?(standalone = true)
     ?(wrap_with_fun = `Iife)
+    ?(lifecycle_events = false)
     ?(profile = Profile.O1)
     ?(shapes = false)
     ~link
     ~source_map
     ~formatter
     p =
-  full ~standalone ~wrap_with_fun ~shapes ~profile ~link ~source_map ~formatter p
+  full
+    ~standalone
+    ~wrap_with_fun
+    ~lifecycle_events
+    ~shapes
+    ~profile
+    ~link
+    ~source_map
+    ~formatter
+    p
 
 let f'
     ?(standalone = true)
