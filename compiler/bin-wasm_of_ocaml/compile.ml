@@ -124,10 +124,9 @@ let build_runtime ~runtime_file =
             ; file = module_name ^ ".wat"
             ; source = Contents contents
             })
-          ((if Config.Flag.wasi ()
-            then ("libc", Runtime_files.wasi_libc) :: Runtime_files.wat_files
-            else Runtime_files.wat_files)
-          @ Runtime_files.wasm_files)
+          (if Config.Flag.wasi ()
+           then ("libc", Runtime_files.wasi_libc) :: Runtime_files.wat_files
+           else Runtime_files.wat_files @ Runtime_files.wasm_files)
       in
       Runtime.build
         ~link_options:[ "-g" ]
