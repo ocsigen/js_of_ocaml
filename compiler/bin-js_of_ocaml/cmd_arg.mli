@@ -36,6 +36,8 @@ type t =
       | `Named of string
       | `Anonymous
       ]
+  ; esm : bool
+  ; esm_runtime_path : string
   ; target_env : Target_env.t
   ; shape_files : string list
   ; (* toplevel *)

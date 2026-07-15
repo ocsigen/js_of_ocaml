@@ -1,6 +1,10 @@
 # dev
 
 ## Features/Changes
+* Compiler: experimental ECMAScript module output: `js_of_ocaml compile --esm`
+  and `build-runtime --esm` emit ES modules (units import the runtime instead
+  of reading `globalThis.jsoo_runtime`); `js_of_ocaml link --esm` links them
+  into an entry module, or a single tree-shaken module with `--bundle` (#2402)
 * Lib: add `WebGL2` — bindings to the WebGL2 rendering context. The context
   inherits every method and constant of `WebGL`, and adds the WebGL2 objects
   (vertex array objects, queries, samplers, syncs, transform feedback), 3D and

@@ -21,6 +21,7 @@
 val f :
      Code.program
   -> exported_runtime:bool
+  -> esm_unit:bool
   -> live_vars:Deadcode.variable_uses
   -> trampolined_calls:Effects.trampolined_calls
   -> in_cps:Effects.in_cps

@@ -32,6 +32,11 @@ type optimized_result =
   ; shapes : Shape.t StringMap.t
   }
 
+(* Experimental ES module output. [runtime_import] is the module specifier
+   units use to import the runtime; [None] when the runtime is part of the
+   emitted program (whole-program compilation or the runtime itself). *)
+type esm = { runtime_import : string option }
+
 let should_export = function
   | `Iife -> false
   | `Named _ | `Anonymous -> true
@@ -243,6 +248,7 @@ let o3 = loop 30 "round" (round Profile.O3) 1 +> print
 
 let generate
     ~exported_runtime
+    ~esm_unit
     ~wrap_with_fun
     ~warn_on_unhandled_effect
     { program; variable_uses; trampolined_calls; deadcode_sentinel; in_cps; shapes = _ } =
@@ -251,6 +257,7 @@ let generate
   Generate.f
     program
     ~exported_runtime
+    ~esm_unit
     ~live_vars:variable_uses
     ~trampolined_calls
     ~in_cps
@@ -346,7 +353,36 @@ let gen_missing js missing =
 
 let mark_start_of_generated_code = Debug.find ~even_if_quiet:true "mark-runtime-gen"
 
-let link' ~export_runtime ~standalone ~link (js : Javascript.statement_list) :
+(* Bind the runtime primitives a separately compiled ES module unit uses
+   with a named import from the runtime module. Avoid a namespace import
+   ([import * as runtime]): named imports keep the output statically
+   analyzable (tree shaking, bundlers). This runs at the end of the
+   pipeline, once the set of free variables is final. *)
+let esm_unitize ~runtime_import js =
+  let free = ref StringSet.empty in
+  let o = new Js_traverse.fast_freevar (fun s -> free := StringSet.add s !free) in
+  o#program js;
+  let provided = StringSet.union (Primitive.get_external ()) (Linker.list_all ()) in
+  let to_import = StringSet.inter !free provided in
+  if StringSet.is_empty to_import
+  then js
+  else
+    let open Javascript in
+    let named =
+      List.map (StringSet.elements to_import) ~f:(fun name ->
+          let name = Utf8_string.of_string_exn name in
+          name, ident name)
+    in
+    ( Import
+        ( { from = Utf8_string.of_string_exn runtime_import
+          ; kind = Named (None, named)
+          ; withClause = None
+          }
+        , Parse_info.zero )
+    , N )
+    :: js
+
+let link' ~esm ~export_runtime ~standalone ~link (js : Javascript.statement_list) :
     Linker.output =
   if (not export_runtime) && not standalone
   then { runtime_code = js; always_required_codes = [] }
@@ -417,6 +453,15 @@ let link' ~export_runtime ~standalone ~link (js : Javascript.statement_list) :
         let open Javascript in
         match Linker.all linkinfos with
         | [] -> js
+        | all when Option.is_some esm ->
+            (* The runtime is emitted as an ES module: export the primitives
+               by name instead of publishing them on [globalThis.jsoo_runtime]. *)
+            let names =
+              List.map all ~f:(fun name ->
+                  let name = Utf8_string.of_string_exn name in
+                  ident name, name)
+            in
+            (Export (ExportNames names, Parse_info.zero), N) :: js
         | all ->
             let all =
               List.map all ~f:(fun name ->
@@ -534,7 +579,11 @@ let output formatter ~source_map () js =
   if times () then Format.eprintf "  write: %a@." Timer.print t;
   sm
 
-let pack ~wrap_with_fun ~standalone { Linker.runtime_code = js; always_required_codes } =
+let pack
+    ~esm
+    ~wrap_with_fun
+    ~standalone
+    { Linker.runtime_code = js; always_required_codes } =
   let module J = Javascript in
   let t = Timer.make () in
   if times () then Format.eprintf "Start Optimizing js...@.";
@@ -626,8 +675,37 @@ let pack ~wrap_with_fun ~standalone { Linker.runtime_code = js; always_required_
       ~f:(fun { Linker.program; filename = _; requires = _ } ->
         wrap_in_iife ~use_strict:false program)
   in
-  let runtime_js = wrap_in_iife ~use_strict:(Config.Flag.strictmode ()) js in
-  let js = always_required_js @ [ runtime_js ] in
+  let runtime_js =
+    if esm
+    then (
+      (* ES modules provide their own (strict) top-level scope: emit the
+         program unwrapped so that imports/exports stay at the top level. The
+         program body is generated as a function body; drop the trailing
+         [return], which is illegal at the top level of a module. *)
+      let js =
+        match List.rev js with
+        | (J.Return_statement (None, _), _) :: rev -> List.rev rev
+        | _ -> js
+      in
+      (* The runtime uses CommonJS' [require] to load node modules; it is not
+         available in module scope. Shim it when needed. *)
+      let free = ref StringSet.empty in
+      let o = new Js_traverse.fast_freevar (fun s -> free := StringSet.add s !free) in
+      o#program js;
+      if StringSet.mem "require" !free
+      then
+        let lex =
+          Parse_js.Lexer.of_string
+            {|
+import { createRequire } from "node:module";
+const require = createRequire(import.meta.url);
+|}
+        in
+        Parse_js.parse `Module lex @ js
+      else js)
+    else [ wrap_in_iife ~use_strict:(Config.Flag.strictmode ()) js ]
+  in
+  let js = always_required_js @ runtime_js in
   let js =
     match wrap_with_fun, standalone with
     | `Named name, (true | false) ->
@@ -648,6 +726,9 @@ if (typeof module === 'object' && module.exports) {
         js @ export_node
     | `Anonymous, _ -> js
     | `Iife, false -> js
+    | `Iife, true when esm ->
+        (* Modern environments only: no need for the globalThis polyfill. *)
+        js
     | `Iife, true ->
         let e =
           let s =
@@ -694,16 +775,24 @@ let configure formatter =
   let pretty = Config.Flag.pretty () in
   Pretty_print.set_compact formatter (not pretty)
 
-let link_and_pack ?(standalone = true) ?(wrap_with_fun = `Iife) ?(link = `No) p =
+let link_and_pack
+    ?(standalone = true)
+    ?esm
+    ?(check = true)
+    ?(wrap_with_fun = `Iife)
+    ?(link = `No)
+    p =
   let export_runtime =
     match link with
     | `All | `All_from _ -> true
     | `Needed | `No -> false
   in
-  p
-  |> link' ~export_runtime ~standalone ~link
-  |> pack ~wrap_with_fun ~standalone
-  |> check_js
+  let p =
+    p
+    |> link' ~esm ~export_runtime ~standalone ~link
+    |> pack ~esm:(Option.is_some esm) ~wrap_with_fun ~standalone
+  in
+  if check then check_js p else p
 
 let optimize ~shapes ~profile ~keep_flow_data p =
   let deadcode_sentinel =
@@ -744,13 +833,34 @@ let optimize_for_wasm ~shapes ~profile p =
     | Some data -> data
     | None -> Global_flow.f ~fast:false optimized_code.program )
 
-let full ~standalone ~wrap_with_fun ~shapes ~profile ~link ~source_map ~formatter p =
+let full ~standalone ~esm ~wrap_with_fun ~shapes ~profile ~link ~source_map ~formatter p =
   let optimized_code, _ = optimize ~shapes ~profile ~keep_flow_data:false p in
-  let exported_runtime = not standalone in
+  (* In ESM mode, separately compiled units reference runtime primitives as
+     plain (free) identifiers, bound by a named import from the runtime
+     module, instead of going through an exported runtime object. *)
+  let exported_runtime = (not standalone) && Option.is_none esm in
+  let esm_unit =
+    match esm with
+    | Some { runtime_import = Some _ } when not standalone -> true
+    | Some { runtime_import = _ } | None -> false
+  in
+  let esm_finalize js =
+    match esm with
+    | Some { runtime_import = Some spec } when not standalone ->
+        (* The primitive check runs here rather than in [link_and_pack]:
+           primitives are free variables until the runtime import is added. *)
+        check_js (esm_unitize ~runtime_import:spec js)
+    | Some { runtime_import = _ } | None -> js
+  in
   let emit formatter =
-    generate ~exported_runtime ~wrap_with_fun ~warn_on_unhandled_effect:standalone
-    +> link_and_pack ~standalone ~wrap_with_fun ~link
+    generate
+      ~exported_runtime
+      ~esm_unit
+      ~wrap_with_fun
+      ~warn_on_unhandled_effect:standalone
+    +> link_and_pack ~standalone ?esm ~check:(not esm_unit) ~wrap_with_fun ~link
     +> simplify_js
+    +> esm_finalize
     +> name_variables
     +> output formatter ~source_map ()
   in
@@ -765,14 +875,25 @@ let full ~standalone ~wrap_with_fun ~shapes ~profile ~link ~source_map ~formatte
     shapes_v;
   emit formatter optimized_code, shapes_v
 
-let full_no_source_map ~formatter ~shapes ~standalone ~wrap_with_fun ~profile ~link p =
+let full_no_source_map ~formatter ~shapes ~standalone ~esm ~wrap_with_fun ~profile ~link p
+    =
   let (_ : Source_map.info * _) =
-    full ~shapes ~standalone ~wrap_with_fun ~profile ~link ~source_map:false ~formatter p
+    full
+      ~shapes
+      ~standalone
+      ~esm
+      ~wrap_with_fun
+      ~profile
+      ~link
+      ~source_map:false
+      ~formatter
+      p
   in
   ()
 
 let f
     ?(standalone = true)
+    ?esm
     ?(wrap_with_fun = `Iife)
     ?(profile = Profile.O1)
     ?(shapes = false)
@@ -780,16 +901,25 @@ let f
     ~source_map
     ~formatter
     p =
-  full ~standalone ~wrap_with_fun ~shapes ~profile ~link ~source_map ~formatter p
+  full ~standalone ~esm ~wrap_with_fun ~shapes ~profile ~link ~source_map ~formatter p
 
 let f'
     ?(standalone = true)
+    ?esm
     ?(wrap_with_fun = `Iife)
     ?(profile = Profile.O1)
     ~link
     formatter
     p =
-  full_no_source_map ~formatter ~shapes:false ~standalone ~wrap_with_fun ~profile ~link p
+  full_no_source_map
+    ~formatter
+    ~shapes:false
+    ~standalone
+    ~esm
+    ~wrap_with_fun
+    ~profile
+    ~link
+    p
 
 let from_string ~prims ~debug s formatter =
   let p = Parse_bytecode.from_string ~prims ~debug s in
@@ -797,6 +927,7 @@ let from_string ~prims ~debug s formatter =
     ~formatter
     ~shapes:false
     ~standalone:false
+    ~esm:None
     ~wrap_with_fun:`Anonymous
     ~profile:O1
     ~link:`No

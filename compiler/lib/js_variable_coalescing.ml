@@ -149,12 +149,20 @@ let mark_captured_variables pass_stats captured_vars f =
 (* Collect local variables in the current function *)
 let collect_locals captured_vars params stmts =
   let locals = ref Var.Set.empty in
+  (* Variables exported by name are live bindings: importers observe every
+     later update, so their slot can never be reused. *)
+  let exported = ref Var.Set.empty in
   let add i =
     match i with
     | V v -> if not (Var.Tbl.get captured_vars v) then locals := Var.Set.add v !locals
     | S _ -> ()
   in
   let add_list ids = List.iter ids ~f:add in
+  let add_exported i =
+    match i with
+    | V v -> exported := Var.Set.add v !exported
+    | S _ -> ()
+  in
   let visitor =
     object
       inherit Js_traverse.iter as super
@@ -162,6 +170,25 @@ let collect_locals captured_vars params stmts =
       method! fun_decl _ = () (* Do not descend into nested functions *)
 
       method! statement s =
+        (match s with
+        | Export (e, _) -> (
+            match e with
+            | ExportNames l -> List.iter l ~f:(fun (i, _) -> add_exported i)
+            | ExportVar (_, decls) ->
+                List.iter decls ~f:(fun d ->
+                    List.iter (bound_idents_of_variable_declaration d) ~f:add_exported)
+            | ExportFun (i, _)
+            | ExportClass (i, _)
+            | ExportDefaultFun (Some i, _)
+            | ExportDefaultClass (Some i, _) -> add_exported i
+            | ExportDefaultFun (None, _)
+            | ExportDefaultClass (None, _)
+            | ExportDefaultExpression _
+            (* A default-exported expression is evaluated once: not a live
+               binding, the variables it uses stay coalescable. *)
+            | ExportFrom _
+            | CoverExportFrom _ -> ())
+        | _ -> ());
         (match s with
         | Variable_statement (Var, decls) ->
             List.iter decls ~f:(fun d ->
@@ -194,9 +221,10 @@ let collect_locals captured_vars params stmts =
   in
   add_list (bound_idents_of_params params);
   visitor#statements stmts;
+  let locals = Var.Set.diff !locals !exported in
   (* In pretty mode, only coalesce compiler-generated variables to preserve
      user-defined variable names for readability. *)
-  if Config.Flag.pretty () then Var.Set.filter Var.generated_name !locals else !locals
+  if Config.Flag.pretty () then Var.Set.filter Var.generated_name locals else locals
 
 (* Liveness Analysis *)
 
@@ -531,7 +559,29 @@ let build_cfg stmts candidates param_vars =
         let body_entry = visit_stmt context exit body in
         let u, _ = expr_use_def e in
         add_node (Use u) [ body_entry ]
-    | Import (_, _) | Export (_, _) -> exit
+    | Import (_, _) ->
+        (* Import bindings are not coalescing candidates (they are constant
+           and not [var]-declared): nothing to record. *)
+        exit
+    | Export (e, _) -> (
+        match e with
+        | ExportDefaultExpression e ->
+            let u, _ = expr_use_def e in
+            add_node (Use u) [ exit ]
+        | ExportNames l ->
+            (* Excluded from candidates; recorded for robustness. *)
+            let u =
+              List.fold_left l ~init:Var.Set.empty ~f:(fun acc (i, _) ->
+                  add_var candidates i acc)
+            in
+            add_node (Use u) [ exit ]
+        | ExportVar _
+        | ExportFun _
+        | ExportClass _
+        | ExportDefaultFun _
+        | ExportDefaultClass _
+        | ExportFrom _
+        | CoverExportFrom _ -> exit)
   (* Visits a statement that owns its own break/continue context: iteration
      statements ([while]/[do-while]/[for]/[for-in]/[for-of]/[for-await-of])
      and [switch]. [labels] are the labels (possibly empty) under which this
