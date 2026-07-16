@@ -43,6 +43,16 @@
   API, plus a `fonts` property on `Dom_html.document` (#2255)
 * Lib: `Lwt_js_events` `load`/`error`/`abort` and their `seq_loop` variants now
   accept any element, not only images (#2404)
+* Runtime/wasm: move primitives out of the monolithic `runtime/wasm/runtime.js`
+  into `runtime/js/wasm.js`, linked on demand through the JS linker
+  (`//If: wasm`), so they are dropped from the output when the program does not
+  use them. Moved: `format_float`, the output-channel registry, the
+  `gmtime`/`localtime`/`times` allocators (the WAT side now reads the record
+  fields from a plain JS array, as the graphics helpers do), and the filesystem
+  operations (including `stat`/`lstat`/`fstat`, whose records are likewise built
+  on the WAT side from a plain JS array). The virtual-filesystem tables stay in
+  `runtime.js` and are passed to the file operations through a `get_vfs`
+  binding; `runtime.js` no longer references `node:fs` directly (#2409)
 
 ## Bug fixes
 * Compiler/Wasm runtime: fix toplevels built on Windows — the embedded cmi

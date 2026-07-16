@@ -38,7 +38,7 @@
       (func $blit_memory_to_string (param i32 i32) (result (ref $bytes))))
 )
 (@else
-   (import "bindings" "format_float"
+   (import "js" "format_float"
       (func $format_float
          (param i32) (param i32) (param i32) (param f64) (result anyref)))
    (import "bindings" "identity"

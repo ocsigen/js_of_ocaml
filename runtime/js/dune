@@ -27,6 +27,7 @@
   stdlib.js
   toplevel.js
   unix.js
+  wasm.js
   weak.js
   domain.js
   prng.js

@@ -58,31 +58,38 @@
       (func $caml_sys_resolve_path (param (ref eq)) (result i32 i32 i32)))
 )
 (@else
-   (import "bindings" "open"
-      (func $open_fn (param anyref) (param i32) (param i32) (result i32)))
-   (import "bindings" "close" (func $close (param i32)))
-   (import "bindings" "write"
+   ;; The virtual-filesystem tables live in the runtime.js closure; the file
+   ;; operations that consult them (open, close, read, file_size) take the vfs
+   ;; object as an extra first parameter, obtained per call through $get_vfs.
+   (import "bindings" "get_vfs" (func $get_vfs (result (ref extern))))
+   (import "js" "open"
+      (func $open_fn
+         (param (ref extern)) (param anyref) (param i32) (param i32)
+         (result i32)))
+   (import "js" "close" (func $close (param (ref extern)) (param i32)))
+   (import "js" "write"
       (func $write
          (param i32) (param (ref extern)) (param i32) (param i32) (param i64)
          (result i32)))
-   (import "bindings" "write"
+   (import "js" "write"
       (func $write'
          (param i32) (param (ref extern)) (param i32) (param i32)
          (param nullexternref) (result i32)))
-   (import "bindings" "read"
+   (import "js" "read"
       (func $read
-         (param i32) (param (ref extern)) (param i32) (param i32) (param i64)
-         (result i32)))
-   (import "bindings" "read"
+         (param (ref extern)) (param i32) (param (ref extern)) (param i32)
+         (param i32) (param i64) (result i32)))
+   (import "js" "read"
       (func $read'
-         (param i32) (param (ref extern)) (param i32) (param i32)
-         (param nullexternref) (result i32)))
-   (import "bindings" "file_size" (func $file_size (param i32) (result i64)))
-   (import "bindings" "register_channel"
+         (param (ref extern)) (param i32) (param (ref extern)) (param i32)
+         (param i32) (param nullexternref) (result i32)))
+   (import "js" "file_size"
+      (func $file_size_js (param (ref extern)) (param i32) (result i64)))
+   (import "js" "register_channel"
       (func $register_channel (param (ref eq))))
-   (import "bindings" "unregister_channel"
+   (import "js" "unregister_channel"
       (func $unregister_channel (param (ref eq))))
-   (import "bindings" "channel_list" (func $channel_list (result anyref)))
+   (import "js" "channel_list" (func $channel_list (result anyref)))
    (import "jslib" "caml_js_fun_call"
       (func $caml_js_fun_call
          (param (ref eq)) (param (ref eq)) (result (ref eq))))
@@ -308,6 +315,11 @@
          (call $ta_subarray (local.get $ta) (local.get $i)
             (i32.add (local.get $i) (local.get $len)))
          (local.get $j)))
+
+   ;; file_size consults the vfs; wrap it so its callers, some of which are
+   ;; shared with the WASI backend, keep passing just the fd.
+   (func $file_size (param $fd i32) (result i64)
+      (call $file_size_js (call $get_vfs) (local.get $fd)))
 ))
 
    (type $block (array (mut (ref eq))))
@@ -514,7 +526,7 @@
       (try
          (do
             (local.set $fd
-               (call $open_fn
+               (call $open_fn (call $get_vfs)
                   (call $unwrap
                      (call $caml_jsstring_of_string (local.get $path)))
                   (local.get $flags)
@@ -546,7 +558,7 @@
       (call $release_fd_offset (local.get $fd))
       (try
          (do
-            (call $close (local.get $fd)))
+            (call $close (call $get_vfs) (local.get $fd)))
          (catch $javascript_exception
             (call $caml_handle_sys_error)))
       (ref.i31 (i32.const 0)))
@@ -708,7 +720,7 @@
 (@else
             (try
                (do
-                  (call $close (local.get $fd)))
+                  (call $close (call $get_vfs) (local.get $fd)))
                (catch $javascript_exception
                   ;; ignore exception
                   (drop)))
@@ -770,14 +782,14 @@
                (if (result i32)
                    (struct.get $fd_offset $seeked (local.get $fd_offset))
                   (then
-                     (call $read
+                     (call $read (call $get_vfs)
                         (local.get $fd)
                         (struct.get $channel $buffer (local.get $ch))
                         (local.get $pos)
                         (local.get $len)
                         (local.get $offset)))
                   (else
-                     (call $read'
+                     (call $read' (call $get_vfs)
                         (local.get $fd)
                         (struct.get $channel $buffer (local.get $ch))
                         (local.get $pos)

@@ -48,7 +48,7 @@
 (@else
    (import "fail" "javascript_exception"
       (tag $javascript_exception (param externref)))
-   (import "bindings" "write" (func $write (param i32) (param anyref)))
+   (import "js" "write" (func $write (param i32) (param anyref)))
    (import "bindings" "exit" (func $exit (param i32)))
 ))
 

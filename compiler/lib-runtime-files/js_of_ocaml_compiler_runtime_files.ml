@@ -51,6 +51,7 @@ let runtime =
     ; sys
     ; str
     ; unix
+    ; wasm
     ; weak
     ; domain
     ; prng

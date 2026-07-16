@@ -85,51 +85,63 @@
 )
 (@else
    (import "bindings" "gettimeofday" (func $gettimeofday (result f64)))
-   (import "bindings" "times" (func $times (result (ref eq))))
-   (import "bindings" "gmtime" (func $gmtime (param f64) (result (ref eq))))
-   (import "bindings" "localtime"
-      (func $localtime (param f64) (result (ref eq))))
+   (import "js" "times" (func $times (result (ref extern))))
+   (import "js" "gmtime" (func $gmtime (param f64) (result (ref extern))))
+   (import "js" "localtime"
+      (func $localtime (param f64) (result (ref extern))))
+   ;; Read the fields of the JS arrays returned by $times / $gmtime / $localtime.
+   (import "bindings" "array_get"
+      (func $array_get (param (ref extern)) (param i32) (result anyref)))
+   (import "bindings" "identity" (func $to_int (param anyref) (result i32)))
+   (import "bindings" "identity" (func $to_float (param anyref) (result f64)))
    (import "bindings" "mktime"
       (func $mktime
          (param i32) (param i32) (param i32) (param i32) (param i32) (param i32)
          (result f64)))
-   (import "bindings" "utimes" (func $utimes (param anyref f64 f64)))
-   (import "bindings" "stat" (func $stat (param anyref i32) (result (ref eq))))
-   (import "bindings" "lstat" (func $lstat (param anyref i32) (result (ref eq))))
-   (import "bindings" "fstat"
-      (func $fstat (param (ref eq) i32) (result (ref eq))))
-   (import "bindings" "chmod" (func $chmod (param anyref (ref eq))))
-   (import "bindings" "fchmod" (func $fchmod (param (ref eq) (ref eq))))
-   (import "bindings" "rename" (func $rename (param anyref) (param anyref)))
+   (import "js" "utimes" (func $utimes (param anyref f64 f64)))
+   ;; stat/lstat/fstat return the fields as a JS array; $alloc_stat (below)
+   ;; reads it and builds the OCaml record.
+   (import "js" "stat" (func $stat (param anyref) (result (ref extern))))
+   (import "js" "lstat" (func $lstat (param anyref) (result (ref extern))))
+   (import "js" "fstat" (func $fstat (param (ref eq)) (result (ref extern))))
+   (import "js" "chmod" (func $chmod (param anyref (ref eq))))
+   (import "js" "fchmod" (func $fchmod (param (ref eq) (ref eq))))
+   (import "js" "rename" (func $rename (param anyref) (param anyref)))
    (import "bindings" "getcwd" (func $getcwd (result anyref)))
    (import "bindings" "chdir" (func $chdir (param anyref)))
-   (import "bindings" "mkdir" (func $mkdir (param anyref) (param i32)))
-   (import "bindings" "opendir" (func $opendir (param anyref) (result anyref)))
-   (import "bindings" "readdir" (func $readdir (param anyref) (result anyref)))
-   (import "bindings" "closedir" (func $closedir (param anyref)))
-   (import "bindings" "rmdir" (func $rmdir (param anyref)))
-   (import "bindings" "link" (func $link (param anyref anyref)))
-   (import "bindings" "symlink" (func $symlink (param anyref anyref i32)))
-   (import "bindings" "readlink" (func $readlink (param anyref) (result anyref)))
-   (import "bindings" "unlink" (func $unlink (param anyref)))
-   (import "bindings" "truncate" (func $truncate (param anyref (ref eq))))
-   (import "bindings" "truncate" (func $truncate_64 (param anyref f64)))
-   (import "bindings" "ftruncate" (func $ftruncate (param (ref eq) (ref eq))))
-   (import "bindings" "ftruncate" (func $ftruncate_64 (param (ref eq) f64)))
-   (import "bindings" "file_size" (func $file_size (param i32) (result i64)))
-   (import "bindings" "access" (func $access (param anyref) (param i32)))
-   (import "bindings" "open"
-      (func $open_fn (param anyref) (param i32) (param i32) (result i32)))
-   (import "bindings" "write"
+   (import "js" "mkdir" (func $mkdir (param anyref) (param i32)))
+   (import "js" "opendir" (func $opendir (param anyref) (result anyref)))
+   (import "js" "readdir" (func $readdir (param anyref) (result anyref)))
+   (import "js" "closedir" (func $closedir (param anyref)))
+   (import "js" "rmdir" (func $rmdir (param anyref)))
+   (import "js" "link" (func $link (param anyref anyref)))
+   (import "js" "symlink" (func $symlink (param anyref anyref i32)))
+   (import "js" "readlink" (func $readlink (param anyref) (result anyref)))
+   (import "js" "unlink" (func $unlink (param anyref)))
+   (import "js" "truncate" (func $truncate (param anyref (ref eq))))
+   (import "js" "truncate" (func $truncate_64 (param anyref f64)))
+   (import "js" "ftruncate" (func $ftruncate (param (ref eq) (ref eq))))
+   (import "js" "ftruncate" (func $ftruncate_64 (param (ref eq) f64)))
+   ;; VFS-touching operations take the vfs object (from $get_vfs) as an extra
+   ;; first parameter, supplied at each call site.
+   (import "bindings" "get_vfs" (func $get_vfs (result (ref extern))))
+   (import "js" "file_size"
+      (func $file_size (param (ref extern) i32) (result i64)))
+   (import "js" "access" (func $access (param anyref) (param i32)))
+   (import "js" "open"
+      (func $open_fn (param (ref extern) anyref i32 i32) (result i32)))
+   (import "js" "write"
       (func $write (param i32 (ref extern) i32 i32 i64) (result i32)))
-   (import "bindings" "write"
+   (import "js" "write"
       (func $write' (param i32 (ref extern) i32 i32 nullexternref) (result i32)))
-   (import "bindings" "read"
-      (func $read (param i32 (ref extern) i32 i32 i64) (result i32)))
-   (import "bindings" "read"
-      (func $read' (param i32 (ref extern) i32 i32 nullexternref) (result i32)))
-   (import "bindings" "fsync" (func $fsync (param (ref eq))))
-   (import "bindings" "close" (func $close (param (ref eq))))
+   (import "js" "read"
+      (func $read (param (ref extern) i32 (ref extern) i32 i32 i64) (result i32)))
+   (import "js" "read"
+      (func $read'
+         (param (ref extern) i32 (ref extern) i32 i32 nullexternref)
+         (result i32)))
+   (import "js" "fsync" (func $fsync (param (ref eq))))
+   (import "js" "close" (func $close (param (ref extern) (ref eq))))
    (import "bindings" "isatty"
       (func $isatty (param (ref eq)) (result (ref eq))))
    (import "bindings" "getuid" (func $getuid (result i32)))
@@ -519,14 +531,15 @@
          (f64.const 0) (f64.const 0) (f64.const 0)))
 )
 (@else
-   (func (export "caml_alloc_times")
-      (param $u f64) (param $s f64) (result (ref eq))
+   (func $alloc_times (param $a (ref extern)) (result (ref eq))
       (array.new_fixed $float_array 4
-         (local.get $u) (local.get $s) (f64.const 0) (f64.const 0)))
+         (call $to_float (call $array_get (local.get $a) (i32.const 0)))
+         (call $to_float (call $array_get (local.get $a) (i32.const 1)))
+         (f64.const 0) (f64.const 0)))
 
    (func (export "unix_times") (export "caml_unix_times")
       (param (ref eq)) (result (ref eq))
-      (return_call $times))
+      (return_call $alloc_times (call $times)))
 ))
 
 (@if $wasi
@@ -545,20 +558,17 @@
             (i32.load offset=32 (local.get $tm))))))
 )
 (@else
-   (func (export "caml_alloc_tm")
-      (param $sec i32) (param $min i32) (param $hour i32) (param $mday i32)
-      (param $mon i32) (param $year i32) (param $wday i32) (param $yday i32)
-      (param $isdst i32) (result (ref eq))
+   (func $alloc_tm (param $a (ref extern)) (result (ref eq))
       (array.new_fixed $block 10 (ref.i31 (i32.const 0))
-         (ref.i31 (local.get $sec))
-         (ref.i31 (local.get $min))
-         (ref.i31 (local.get $hour))
-         (ref.i31 (local.get $mday))
-         (ref.i31 (local.get $mon))
-         (ref.i31 (local.get $year))
-         (ref.i31 (local.get $wday))
-         (ref.i31 (local.get $yday))
-         (ref.i31 (local.get $isdst))))
+         (ref.i31 (call $to_int (call $array_get (local.get $a) (i32.const 0))))
+         (ref.i31 (call $to_int (call $array_get (local.get $a) (i32.const 1))))
+         (ref.i31 (call $to_int (call $array_get (local.get $a) (i32.const 2))))
+         (ref.i31 (call $to_int (call $array_get (local.get $a) (i32.const 3))))
+         (ref.i31 (call $to_int (call $array_get (local.get $a) (i32.const 4))))
+         (ref.i31 (call $to_int (call $array_get (local.get $a) (i32.const 5))))
+         (ref.i31 (call $to_int (call $array_get (local.get $a) (i32.const 6))))
+         (ref.i31 (call $to_int (call $array_get (local.get $a) (i32.const 7))))
+         (ref.i31 (call $to_int (call $array_get (local.get $a) (i32.const 8))))))
 ))
 
 (@if $wasi
@@ -580,8 +590,9 @@
 (@else
    (func (export "caml_unix_gmtime") (export "unix_gmtime")
       (param $t (ref eq)) (result (ref eq))
-      (call $gmtime
-         (struct.get $float 0 (ref.cast (ref $float) (local.get $t)))))
+      (return_call $alloc_tm
+         (call $gmtime
+            (struct.get $float 0 (ref.cast (ref $float) (local.get $t))))))
 ))
 
 (@if $wasi
@@ -603,8 +614,9 @@
 (@else
    (func (export "caml_unix_localtime") (export "unix_localtime")
       (param $t (ref eq)) (result (ref eq))
-      (call $localtime
-         (struct.get $float 0 (ref.cast (ref $float) (local.get $t)))))
+      (return_call $alloc_tm
+         (call $localtime
+            (struct.get $float 0 (ref.cast (ref $float) (local.get $t))))))
 ))
 
 (@if $wasi
@@ -712,7 +724,7 @@
             (f64.const 1000)))
       (array.new_fixed $block 3 (ref.i31 (i32.const 0))
          (struct.new $float (local.get $t))
-         (call $localtime (local.get $t))))
+         (call $alloc_tm (call $localtime (local.get $t)))))
 ))
 
 (@if $wasi
@@ -822,31 +834,32 @@
          (struct.new $float
             (f64.mul (f64.const 1e-9)
                (f64.convert_i64_s (i64.load offset=56 (local.get $p)))))))
-))
-
-   (func (export "caml_alloc_stat")
-      (param $large i32)
-      (param $dev i32) (param $ino i32) (param $kind i32) (param $perm i32)
-      (param $nlink i32) (param $uid i32) (param $gid i32) (param $rdev i32)
-      (param $size i64) (param $atime f64) (param $mtime f64) (param $ctime f64)
-      (result (ref eq))
+)
+(@else
+   (func $alloc_stat (param $large i32) (param $a (ref extern)) (result (ref eq))
+      (local $size i64)
+      (local.set $size
+         (i64.trunc_sat_f64_s (call $to_float (call $array_get (local.get $a)
+            (i32.const 8)))))
       (array.new_fixed $block 13 (ref.i31 (i32.const 0))
-         (ref.i31 (local.get $dev))
-         (ref.i31 (local.get $ino))
-         (ref.i31 (local.get $kind))
-         (ref.i31 (local.get $perm))
-         (ref.i31 (local.get $nlink))
-         (ref.i31 (local.get $uid))
-         (ref.i31 (local.get $gid))
-         (ref.i31 (local.get $rdev))
+         (ref.i31 (call $to_int (call $array_get (local.get $a) (i32.const 0))))
+         (ref.i31 (call $to_int (call $array_get (local.get $a) (i32.const 1))))
+         (ref.i31 (call $to_int (call $array_get (local.get $a) (i32.const 2))))
+         (ref.i31 (call $to_int (call $array_get (local.get $a) (i32.const 3))))
+         (ref.i31 (call $to_int (call $array_get (local.get $a) (i32.const 4))))
+         (ref.i31 (call $to_int (call $array_get (local.get $a) (i32.const 5))))
+         (ref.i31 (call $to_int (call $array_get (local.get $a) (i32.const 6))))
+         (ref.i31 (call $to_int (call $array_get (local.get $a) (i32.const 7))))
          (if (result (ref eq)) (local.get $large)
-            (then
-               (call $caml_copy_int64 (local.get $size)))
-            (else
-               (ref.i31 (i32.wrap_i64 (local.get $size)))))
-         (struct.new $float (local.get $atime))
-         (struct.new $float (local.get $mtime))
-         (struct.new $float (local.get $ctime))))
+            (then (call $caml_copy_int64 (local.get $size)))
+            (else (ref.i31 (i32.wrap_i64 (local.get $size)))))
+         (struct.new $float
+            (call $to_float (call $array_get (local.get $a) (i32.const 9))))
+         (struct.new $float
+            (call $to_float (call $array_get (local.get $a) (i32.const 10))))
+         (struct.new $float
+            (call $to_float (call $array_get (local.get $a) (i32.const 11))))))
+))
 
 (@if $wasi
 (@then
@@ -920,9 +933,10 @@
       (param $path (ref eq)) (result (ref eq))
       (try (result (ref eq))
          (do
-            (call $stat
-               (call $unwrap (call $caml_jsstring_of_string (local.get $path)))
-               (i32.const 0)))
+            (call $alloc_stat (i32.const 0)
+               (call $stat
+                  (call $unwrap
+                     (call $caml_jsstring_of_string (local.get $path))))))
          (catch $javascript_exception
             (call $caml_unix_error (ref.null eq))
             (ref.i31 (i32.const 0)))))
@@ -931,9 +945,10 @@
       (param $path (ref eq)) (result (ref eq))
       (try (result (ref eq))
          (do
-            (call $stat
-               (call $unwrap (call $caml_jsstring_of_string (local.get $path)))
-               (i32.const 1)))
+            (call $alloc_stat (i32.const 1)
+               (call $stat
+                  (call $unwrap
+                     (call $caml_jsstring_of_string (local.get $path))))))
          (catch $javascript_exception
             (call $caml_unix_error (ref.null eq))
             (ref.i31 (i32.const 0)))))
@@ -942,9 +957,10 @@
       (param $path (ref eq)) (result (ref eq))
       (try (result (ref eq))
          (do
-            (call $lstat
-               (call $unwrap (call $caml_jsstring_of_string (local.get $path)))
-               (i32.const 0)))
+            (call $alloc_stat (i32.const 0)
+               (call $lstat
+                  (call $unwrap
+                     (call $caml_jsstring_of_string (local.get $path))))))
          (catch $javascript_exception
             (call $caml_unix_error (ref.null eq))
             (ref.i31 (i32.const 0)))))
@@ -953,9 +969,10 @@
       (param $path (ref eq)) (result (ref eq))
       (try (result (ref eq))
          (do
-            (call $lstat
-               (call $unwrap (call $caml_jsstring_of_string (local.get $path)))
-               (i32.const 1)))
+            (call $alloc_stat (i32.const 1)
+               (call $lstat
+                  (call $unwrap
+                     (call $caml_jsstring_of_string (local.get $path))))))
          (catch $javascript_exception
             (call $caml_unix_error (ref.null eq))
             (ref.i31 (i32.const 0)))))
@@ -964,7 +981,7 @@
       (param $fd (ref eq)) (result (ref eq))
       (try (result (ref eq))
          (do
-            (call $fstat (local.get $fd) (i32.const 0)))
+            (call $alloc_stat (i32.const 0) (call $fstat (local.get $fd))))
          (catch $javascript_exception
             (call $caml_unix_error (ref.null eq))
             (ref.i31 (i32.const 0)))))
@@ -973,7 +990,7 @@
       (param $fd (ref eq)) (result (ref eq))
       (try (result (ref eq))
          (do
-            (call $fstat (local.get $fd) (i32.const 1)))
+            (call $alloc_stat (i32.const 1) (call $fstat (local.get $fd))))
          (catch $javascript_exception
             (call $caml_unix_error (ref.null eq))
             (ref.i31 (i32.const 0)))))
@@ -1941,7 +1958,7 @@
       (try
          (do
             (local.set $fd
-               (call $open_fn
+               (call $open_fn (call $get_vfs)
                   (call $unwrap
                      (call $caml_jsstring_of_string (local.get $path)))
                   (local.get $flags)
@@ -2195,7 +2212,8 @@
       ;; [O_APPEND]: every write goes to the end of the file, regardless of the
       ;; current offset.
       (if (struct.get $fd_offset $append (local.get $fd_offset))
-         (then (local.set $offset (call $file_size (local.get $fd)))))
+         (then
+            (local.set $offset (call $file_size (call $get_vfs) (local.get $fd)))))
       (loop $loop
          (if (i32.gt_u (local.get $len) (i32.const 0))
             (then
@@ -2252,7 +2270,8 @@
       ;; [O_APPEND]: every write goes to the end of the file, regardless of the
       ;; current offset.
       (if (struct.get $fd_offset $append (local.get $fd_offset))
-         (then (local.set $offset (call $file_size (local.get $fd)))))
+         (then
+            (local.set $offset (call $file_size (call $get_vfs) (local.get $fd)))))
       (if (i32.gt_u (local.get $len) (i32.const 0))
          (then
             (local.set $numbytes
@@ -2306,10 +2325,10 @@
                (if (result i32)
                    (struct.get $fd_offset $seeked (local.get $fd_offset))
                   (then
-                     (call $read (local.get $fd) (local.get $buf)
+                     (call $read (call $get_vfs) (local.get $fd) (local.get $buf)
                         (i32.const 0) (local.get $len) (local.get $offset)))
                   (else
-                     (call $read' (local.get $fd) (local.get $buf)
+                     (call $read' (call $get_vfs) (local.get $fd) (local.get $buf)
                         (i32.const 0) (local.get $len) (ref.null noextern))))))
          (catch $javascript_exception
             (call $caml_unix_error (ref.null eq))))
@@ -2340,7 +2359,8 @@
       ;; [O_APPEND]: every write goes to the end of the file, regardless of the
       ;; current offset.
       (if (struct.get $fd_offset $append (local.get $fd_offset))
-         (then (local.set $offset (call $file_size (local.get $fd)))))
+         (then
+            (local.set $offset (call $file_size (call $get_vfs) (local.get $fd)))))
       (loop $loop
          (if (i32.gt_u (local.get $len) (i32.const 0))
             (then
@@ -2391,10 +2411,10 @@
                (if (result i32)
                    (struct.get $fd_offset $seeked (local.get $fd_offset))
                   (then
-                     (call $read (local.get $fd) (local.get $buf)
+                     (call $read (call $get_vfs) (local.get $fd) (local.get $buf)
                         (local.get $pos) (local.get $len) (local.get $offset)))
                   (else
-                     (call $read' (local.get $fd) (local.get $buf)
+                     (call $read' (call $get_vfs) (local.get $fd) (local.get $buf)
                         (local.get $pos) (local.get $len)
                         (ref.null noextern))))))
          (catch $javascript_exception
@@ -2450,7 +2470,7 @@
       (else (if (ref.eq (local.get $cmd) (ref.i31 (i32.const 2)))
          (then
             (local.set $offset
-               (i64.add (call $file_size (local.get $fd))
+               (i64.add (call $file_size (call $get_vfs) (local.get $fd))
                   (local.get $offset)))))))
       (if (i64.lt_s (local.get $offset) (i64.const 0))
          (then
@@ -2542,7 +2562,7 @@
          (ref.cast (ref $block)
             (try (result (ref eq))
                (do
-                  (call $fstat (local.get $fd) (i32.const 0)))
+                  (call $alloc_stat (i32.const 0) (call $fstat (local.get $fd))))
                (catch $javascript_exception
                   (call $caml_unix_error
                      (call $channel_of_descr_name (local.get $out)))
@@ -2594,7 +2614,7 @@
       (call $release_fd_offset (i31.get_u (ref.cast (ref i31) (local.get $fd))))
       (try
          (do
-            (call $close (local.get $fd)))
+            (call $close (call $get_vfs) (local.get $fd)))
          (catch $javascript_exception
             (call $caml_unix_error (ref.null eq))))
       (ref.i31 (i32.const 0)))

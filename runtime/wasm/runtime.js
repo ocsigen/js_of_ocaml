@@ -66,30 +66,32 @@
     Uint8ClampedArray,
   ];
 
-  const fs = isNode && require("node:fs");
-
   const on_windows = isNode && globalThis.process.platform === "win32";
 
-  // Virtual filesystem for embedded files (e.g. CMIs for toplevel)
-  const virtual_files = new Map(); // path -> Uint8Array
-  const virtual_dirs = new Set(); // directory paths
-  const virtual_fds = new Map(); // fd -> { data, offset }
-  let next_virtual_fd = 1000000;
-
-  // The virtual filesystem uses "/" as path separator. On Windows, the
-  // program manipulates paths with "\" (Sys.os_type is "Win32"), so
-  // normalize paths on registration and before each lookup.
-  const virtual_path = on_windows ? (p) => p.replaceAll("\\", "/") : (p) => p;
+  // Virtual filesystem for embedded files (e.g. CMIs for toplevel). The tables
+  // live here (they are populated from [args.files] below); the file
+  // operations that consult them live in runtime/js/wasm.js and receive this
+  // object through the [get_vfs] binding.
+  const vfs = {
+    files: new Map(), // path -> Uint8Array
+    dirs: new Set(), // directory paths
+    fds: new Map(), // fd -> { data, offset }
+    next_fd: 1000000,
+    // The virtual filesystem uses "/" as path separator. On Windows, the
+    // program manipulates paths with "\" (Sys.os_type is "Win32"), so
+    // normalize paths on registration and before each lookup.
+    path: on_windows ? (p) => p.replaceAll("\\", "/") : (p) => p,
+  };
 
   function register_virtual_file(name, content) {
-    name = virtual_path(name);
-    virtual_files.set(name, content);
+    name = vfs.path(name);
+    vfs.files.set(name, content);
     let dir = name;
     while (true) {
       const i = dir.lastIndexOf("/");
       if (i <= 0) break;
       dir = dir.slice(0, i);
-      virtual_dirs.add(dir);
+      vfs.dirs.add(dir);
     }
   }
 
@@ -100,56 +102,6 @@
         Uint8Array.from(atob(data), (c) => c.charCodeAt(0)),
       );
     }
-  }
-
-  const fs_cst = fs?.constants;
-
-  const access_flags = fs
-    ? [fs_cst.R_OK, fs_cst.W_OK, fs_cst.X_OK, fs_cst.F_OK]
-    : [];
-
-  const open_flags = fs
-    ? [
-        fs_cst.O_RDONLY,
-        fs_cst.O_WRONLY,
-        fs_cst.O_RDWR,
-        fs_cst.O_APPEND,
-        fs_cst.O_CREAT,
-        fs_cst.O_TRUNC,
-        fs_cst.O_EXCL,
-        fs_cst.O_NONBLOCK,
-        fs_cst.O_NOCTTY,
-        fs_cst.O_DSYNC,
-        fs_cst.O_SYNC,
-      ]
-    : [];
-
-  var out_channels = {
-    map: new WeakMap(),
-    set: new Set(),
-    finalization: new FinalizationRegistry((ref) =>
-      out_channels.set.delete(ref),
-    ),
-  };
-
-  function register_channel(ch) {
-    const ref = new WeakRef(ch);
-    out_channels.map.set(ch, ref);
-    out_channels.set.add(ref);
-    out_channels.finalization.register(ch, ref, ch);
-  }
-
-  function unregister_channel(ch) {
-    const ref = out_channels.map.get(ch);
-    if (ref) {
-      out_channels.map.delete(ch);
-      out_channels.set.delete(ref);
-      out_channels.finalization.unregister(ch);
-    }
-  }
-
-  function channel_list() {
-    return [...out_channels.set].map((ref) => ref.deref()).filter((ch) => ch);
   }
 
   var start_fiber;
@@ -238,40 +190,6 @@
   for (const l of getenv("OCAMLRUNPARAM")?.split(",") || []) {
     if (l === "b") record_backtrace_flag = 1;
     if (l.startsWith("b=")) record_backtrace_flag = +l.slice(2) ? 1 : 0;
-  }
-
-  function alloc_stat(s, large) {
-    var kind;
-    if (s.isFile()) {
-      kind = 0;
-    } else if (s.isDirectory()) {
-      kind = 1;
-    } else if (s.isCharacterDevice()) {
-      kind = 2;
-    } else if (s.isBlockDevice()) {
-      kind = 3;
-    } else if (s.isSymbolicLink()) {
-      kind = 4;
-    } else if (s.isFIFO()) {
-      kind = 5;
-    } else if (s.isSocket()) {
-      kind = 6;
-    }
-    return caml_alloc_stat(
-      large,
-      s.dev,
-      s.ino | 0,
-      kind,
-      s.mode & 0o7777,
-      s.nlink,
-      s.uid,
-      s.gid,
-      s.rdev,
-      BigInt(s.size),
-      s.atimeMs / 1000,
-      s.mtimeMs / 1000,
-      s.ctimeMs / 1000,
-    );
   }
 
   const on_arm64 = globalThis.process?.arch === "arm64";
@@ -410,232 +328,11 @@
       function (...args) {
         return f(args);
       },
-    format_float: (prec, conversion, pad, x) => {
-      // Exact decimal expansion through BigInt, for precisions beyond
-      // toFixed/toExponential's limit of 100 and for %f of values >= 1e21
-      function decompose(x) {
-        // x (finite, >= 0) is m * 2^e
-        var dv = new DataView(new ArrayBuffer(8));
-        dv.setFloat64(0, x);
-        var hi = dv.getUint32(0),
-          lo = dv.getUint32(4);
-        var eb = (hi >>> 20) & 0x7ff;
-        var m = (BigInt(hi & 0xfffff) << 32n) | BigInt(lo);
-        if (eb === 0) return [m, -1074];
-        return [m | (1n << 52n), eb - 1075];
-      }
-      function exact_scaled(x, k) {
-        // round_half_even(x * 10^k) as a BigInt
-        var d = decompose(x);
-        var num = d[0],
-          den = 1n;
-        if (k >= 0) num *= 10n ** BigInt(k);
-        else den = 10n ** BigInt(-k);
-        if (d[1] >= 0) num <<= BigInt(d[1]);
-        else den <<= BigInt(-d[1]);
-        var q = num / den,
-          r2 = (num % den) * 2n;
-        if (r2 > den || (r2 === den && q & 1n)) q += 1n;
-        return q;
-      }
-      function exact_fixed(x, prec) {
-        // toFixed, exactly
-        var q = exact_scaled(x, prec).toString();
-        if (prec === 0) return q;
-        if (q.length <= prec) q = "0".repeat(prec + 1 - q.length) + q;
-        return q.slice(0, q.length - prec) + "." + q.slice(q.length - prec);
-      }
-      function exact_exponential(x, prec) {
-        // toExponential, exactly
-        if (x === 0) return (prec > 0 ? "0." + "0".repeat(prec) : "0") + "e+0";
-        var e10 = Math.floor(Math.log10(x));
-        for (;;) {
-          // we want round(x * 10^(prec - e10)) to have exactly prec + 1
-          // digits; the estimate of e10 is off by at most one (and
-          // rounding can add a digit), so adjust and retry
-          var s = exact_scaled(x, prec - e10).toString();
-          if (s.length === prec + 1) {
-            var m = prec > 0 ? s.charAt(0) + "." + s.slice(1) : s;
-            return m + "e" + (e10 < 0 ? "-" : "+") + Math.abs(e10);
-          }
-          e10 += s.length - (prec + 1);
-        }
-      }
-      function toExponential(x, prec) {
-        return prec > 100 ? exact_exponential(x, prec) : x.toExponential(prec);
-      }
-      function toFixed(x, dp) {
-        if (dp > 100 || x >= 1e21) return exact_fixed(x, dp);
-        return x.toFixed(dp);
-      }
-      switch (conversion) {
-        case 0:
-          var s = toExponential(x, prec);
-          // exponent should be at least two digits
-          var i = s.length;
-          if (s.charAt(i - 3) === "e")
-            s = s.slice(0, i - 1) + "0" + s.slice(i - 1);
-          break;
-        case 1:
-          s = toFixed(x, prec);
-          break;
-        case 2:
-          prec = prec ? prec : 1;
-          s = toExponential(x, prec - 1);
-          var j = s.indexOf("e");
-          var exp = +s.slice(j + 1);
-          if (exp < -4 || x >= 1e21 || x.toFixed(0).length > prec) {
-            // remove trailing zeroes
-            var i = j - 1;
-            while (s.charAt(i) === "0") i--;
-            if (s.charAt(i) === ".") i--;
-            s = s.slice(0, i + 1) + s.slice(j);
-            i = s.length;
-            if (s.charAt(i - 3) === "e")
-              s = s.slice(0, i - 1) + "0" + s.slice(i - 1);
-            break;
-          } else {
-            var p = prec;
-            if (exp < 0) {
-              p -= exp + 1;
-              s = toFixed(x, p);
-            } else while (((s = toFixed(x, p)), s.length > prec + 1)) p--;
-            if (p) {
-              // remove trailing zeroes
-              var i = s.length - 1;
-              while (s.charAt(i) === "0") i--;
-              if (s.charAt(i) === ".") i--;
-              s = s.slice(0, i + 1);
-            }
-          }
-          break;
-      }
-      return pad ? " " + s : s;
-    },
     gettimeofday: () => Date.now() / 1000,
-    times: () => {
-      if (globalThis.process?.cpuUsage) {
-        var t = globalThis.process.cpuUsage();
-        return caml_alloc_times(t.user / 1e6, t.system / 1e6);
-      } else {
-        var t = performance.now() / 1000;
-        return caml_alloc_times(t, 0);
-      }
-    },
-    gmtime: (t) => {
-      var d = new Date(t * 1000);
-      var d_num = d.getTime();
-      var januaryfirst = new Date(Date.UTC(d.getUTCFullYear(), 0, 1)).getTime();
-      var doy = Math.floor((d_num - januaryfirst) / 86400000);
-      return caml_alloc_tm(
-        d.getUTCSeconds(),
-        d.getUTCMinutes(),
-        d.getUTCHours(),
-        d.getUTCDate(),
-        d.getUTCMonth(),
-        d.getUTCFullYear() - 1900,
-        d.getUTCDay(),
-        doy,
-        false,
-      );
-    },
-    localtime: (t) => {
-      var d = new Date(t * 1000);
-      // tm_yday is the distance in days to January 1; compute it in UTC so
-      // that the one-hour DST shift of wall-clock arithmetic does not apply
-      var doy = Math.floor(
-        (Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) -
-          Date.UTC(d.getFullYear(), 0, 1)) /
-          86400000,
-      );
-      var jan = new Date(d.getFullYear(), 0, 1);
-      var jul = new Date(d.getFullYear(), 6, 1);
-      var stdTimezoneOffset = Math.max(
-        jan.getTimezoneOffset(),
-        jul.getTimezoneOffset(),
-      );
-      var isdst = d.getTimezoneOffset() < stdTimezoneOffset;
-      // Europe/Dublin uses "negative DST": the IANA database marks winter
-      // (GMT) as the daylight deviation from its summer standard (IST), so
-      // the native runtime reports tm_isdst inverted from the offset
-      // heuristic. The offsets alone cannot distinguish it from
-      // Europe/London, so match it by name (guarded to the GMT/+1 signature
-      // to avoid the Intl lookup for every other zone).
-      if (
-        stdTimezoneOffset === 0 &&
-        jan.getTimezoneOffset() !== jul.getTimezoneOffset() &&
-        globalThis.Intl?.DateTimeFormat?.().resolvedOptions().timeZone ===
-          "Europe/Dublin"
-      )
-        isdst = !isdst;
-      return caml_alloc_tm(
-        d.getSeconds(),
-        d.getMinutes(),
-        d.getHours(),
-        d.getDate(),
-        d.getMonth(),
-        d.getFullYear() - 1900,
-        d.getDay(),
-        doy,
-        isdst,
-      );
-    },
     mktime: (year, month, day, h, m, s) =>
       new Date(year, month, day, h, m, s).getTime(),
     random_seed: () => crypto.getRandomValues(new Int32Array(12)),
-    access: (p, flags) =>
-      fs.accessSync(
-        p,
-        access_flags.reduce((f, v, i) => (flags & (1 << i) ? f | v : f), 0),
-      ),
-    open: (p, flags, perm) => {
-      const vp = virtual_path(p);
-      if (virtual_files.has(vp) && !(flags & 2)) {
-        const fd = next_virtual_fd++;
-        virtual_fds.set(fd, { data: virtual_files.get(vp), offset: 0 });
-        return fd;
-      }
-      return fs.openSync(
-        p,
-        open_flags.reduce((f, v, i) => (flags & (1 << i) ? f | v : f), 0),
-        perm,
-      );
-    },
-    close: (fd) => {
-      if (virtual_fds.has(fd)) {
-        virtual_fds.delete(fd);
-        return;
-      }
-      fs.closeSync(fd);
-    },
-    write: (fd, b, o, l, p) =>
-      fs
-        ? fs.writeSync(fd, b, o, l, p === null ? p : Number(p))
-        : (console[fd === 2 ? "error" : "log"](
-            typeof b === "string" ? b : decoder.decode(b.slice(o, o + l)),
-          ),
-          l),
-    read: (fd, b, o, l, p) => {
-      const vf = virtual_fds.get(fd);
-      if (vf) {
-        const pos = p === null ? vf.offset : Number(p);
-        const n = Math.min(l, vf.data.length - pos);
-        if (n <= 0) return 0;
-        b.set(vf.data.subarray(pos, pos + n), o);
-        vf.offset = pos + n;
-        return n;
-      }
-      return fs.readSync(fd, b, o, l, p);
-    },
-    fsync: (fd) => fs.fsyncSync(fd),
-    file_size: (fd) => {
-      const vf = virtual_fds.get(fd);
-      if (vf) return BigInt(vf.data.length);
-      return fs.fstatSync(fd, { bigint: true }).size;
-    },
-    register_channel,
-    unregister_channel,
-    channel_list,
+    get_vfs: () => vfs,
     exit: (n) => isNode && globalThis.process.exit(n),
     argv: () => (isNode ? globalThis.process.argv.slice(1) : ["a.out"]),
     on_windows: +on_windows,
@@ -665,97 +362,6 @@
     time: () => performance.now(),
     getcwd: () => (isNode ? globalThis.process.cwd() : "/static"),
     chdir: (x) => globalThis.process.chdir(x),
-    mkdir: (p, m) => fs.mkdirSync(p, m),
-    rmdir: (p) => fs.rmdirSync(p),
-    link: (d, s) => fs.linkSync(d, s),
-    symlink: (t, p, kind) => fs.symlinkSync(t, p, [null, "file", "dir"][kind]),
-    readlink: (p) => fs.readlinkSync(p),
-    unlink: (p) => fs.unlinkSync(p),
-    read_dir: (p) => {
-      const vp = virtual_path(p);
-      const prefix = vp.endsWith("/") ? vp : vp + "/";
-      const entries = new Set();
-      for (const name of virtual_files.keys()) {
-        if (name.startsWith(prefix)) {
-          const rest = name.slice(prefix.length);
-          const slash = rest.indexOf("/");
-          entries.add(slash < 0 ? rest : rest.slice(0, slash));
-        }
-      }
-      if (fs) {
-        try {
-          for (const e of fs.readdirSync(p)) entries.add(e);
-        } catch (e) {
-          if (entries.size === 0) throw e;
-        }
-      }
-      return [...entries];
-    },
-    // node's Dir.readSync does not report "." and ".."; native does
-    opendir: (p) => ({ dir: fs.opendirSync(p), dots: [".", ".."] }),
-    readdir: (d) => {
-      if (d.dots.length > 0) return d.dots.shift();
-      var n = d.dir.readSync()?.name;
-      return n === undefined ? null : n;
-    },
-    closedir: (d) => {
-      d.dots = []; // a read on the closed handle must fail, not return "." / ".."
-      d.dir.closeSync();
-    },
-    stat: (p, l) => alloc_stat(fs.statSync(p), l),
-    lstat: (p, l) => alloc_stat(fs.lstatSync(p), l),
-    fstat: (fd, l) => alloc_stat(fs.fstatSync(fd), l),
-    chmod: (p, perms) => fs.chmodSync(p, perms),
-    fchmod: (p, perms) => fs.fchmodSync(p, perms),
-    file_exists: (p) => {
-      const vp = virtual_path(p);
-      if (virtual_files.has(vp) || virtual_dirs.has(vp)) return 1;
-      return fs ? +fs.existsSync(p) : 0;
-    },
-    is_directory: (p) => {
-      const vp = virtual_path(p);
-      if (virtual_dirs.has(vp)) return 1;
-      if (virtual_files.has(vp)) return 0;
-      // Follow symlinks, like native and the JS runtime (statSync, not lstat).
-      return +fs.statSync(p).isDirectory();
-    },
-    is_file: (p) => {
-      const vp = virtual_path(p);
-      if (virtual_files.has(vp)) return 1;
-      if (virtual_dirs.has(vp)) return 0;
-      // Follow symlinks, like native and the JS runtime (statSync, not lstat).
-      return +fs.statSync(p).isFile();
-    },
-    utimes: (p, a, m) => fs.utimesSync(p, a, m),
-    truncate: (p, l) => fs.truncateSync(p, l),
-    ftruncate: (fd, l) => fs.ftruncateSync(fd, l),
-    rename: (o, n) => {
-      var n_stat;
-      if (
-        on_windows &&
-        (n_stat = fs.statSync(n, { throwIfNoEntry: false })) &&
-        fs.statSync(o, { throwIfNoEntry: false })?.isDirectory()
-      ) {
-        if (n_stat.isDirectory()) {
-          if (!n.startsWith(o))
-            try {
-              fs.rmdirSync(n);
-            } catch {}
-        } else {
-          var e = new Error(
-            `ENOTDIR: not a directory, rename '${o}' -> '${n}'`,
-          );
-          throw Object.assign(e, {
-            errno: -20,
-            code: "ENOTDIR",
-            syscall: "rename",
-            path: n,
-          });
-        }
-      }
-      fs.renameSync(o, n);
-    },
-    tmpdir: () => require("node:os").tmpdir(),
     start_fiber: (x) => start_fiber(x),
     suspend_fiber: make_suspending((f, env) => new Promise((k) => f(k, env))),
     resume_fiber: (k, v) => k(v),
@@ -828,8 +434,6 @@
       const names = decoder.decode(entries.link_order).split("\x00");
       for (const name of names) inst.exports[name + ".init"]();
     },
-    register_file: (name, data) => register_virtual_file(name, data),
-    read_file: (name) => virtual_files.get(virtual_path(name)) ?? null,
   };
   const string_ops = {
     test: (v) => +(typeof v === "string"),
@@ -918,9 +522,6 @@
 
   var {
     caml_callback,
-    caml_alloc_times,
-    caml_alloc_tm,
-    caml_alloc_stat,
     caml_start_fiber,
     caml_handle_uncaught_exception,
     caml_buffer,
