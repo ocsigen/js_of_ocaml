@@ -186,8 +186,8 @@
       (func $caml_ml_open_descriptor_in (param (ref eq)) (result (ref eq))))
    (import "io" "caml_ml_open_descriptor_out"
       (func $caml_ml_open_descriptor_out (param (ref eq)) (result (ref eq))))
-   (import "bindings" "ta_new" (func $ta_new (param i32) (result (ref extern))))
-   (import "bindings" "dv_make"
+   (import "js" "ta_new" (func $ta_new (param i32) (result (ref extern))))
+   (import "js" "dv_make"
       (func $dv_make (param (ref extern)) (result (ref extern))))
    (import "bigarray" "caml_blit_dataview_to_bytes"
       (func $caml_blit_dataview_to_bytes

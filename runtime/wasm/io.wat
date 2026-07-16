@@ -95,19 +95,19 @@
          (param (ref eq)) (param (ref eq)) (result (ref eq))))
    (import "jslib" "caml_jsbytes_of_string"
       (func $caml_jsbytes_of_string (param (ref eq)) (result (ref eq))))
-   (import "bindings" "ta_new" (func $ta_new (param i32) (result (ref extern))))
-   (import "bindings" "ta_copy"
+   (import "js" "ta_new" (func $ta_new (param i32) (result (ref extern))))
+   (import "js" "ta_copy"
       (func $ta_copy (param (ref extern)) (param i32) (param i32) (param i32)))
-   (import "bindings" "ta_subarray"
+   (import "js" "ta_subarray"
       (func $ta_subarray
          (param (ref extern)) (param i32) (param i32) (result (ref extern))))
-   (import "bindings" "ta_set"
+   (import "js" "ta_set"
       (func $ta_set (param (ref extern)) (param (ref extern)) (param i32)))
-   (import "bindings" "dv_make"
+   (import "js" "dv_make"
       (func $dv_make (param (ref extern)) (result (ref extern))))
-   (import "bindings" "dv_get_ui8"
+   (import "js" "dv_get_ui8"
       (func $dv_get_ui8 (param externref i32) (result i32)))
-   (import "bindings" "dv_set_i8"
+   (import "js" "dv_set_i8"
       (func $dv_set_i8 (param externref i32 i32)))
    (import "sys" "caml_handle_sys_error"
       (func $caml_handle_sys_error (param externref)))

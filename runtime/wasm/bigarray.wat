@@ -576,66 +576,66 @@
    (global $littleEndian i32 (i32.const 1))
 )
 (@else
-   (import "bindings" "ta_create"
+   (import "js" "ta_create"
       (func $ta_create (param i32) (param i32) (result (ref extern))))
-   (import "bindings" "ta_normalize"
+   (import "js" "ta_normalize"
       (func $ta_normalize (param (ref extern)) (result (ref extern))))
-   (import "bindings" "ta_kind"
+   (import "js" "ta_kind"
       (func $ta_kind (param (ref extern)) (result i32)))
-   (import "bindings" "ta_length"
+   (import "js" "ta_length"
       (func $ta_length (param (ref extern)) (result i32)))
-   (import "bindings" "ta_fill"
+   (import "js" "ta_fill"
       (func $ta_fill_int (param (ref extern)) (param i32)))
-   (import "bindings" "ta_fill"
+   (import "js" "ta_fill"
       (func $ta_fill_float (param (ref extern)) (param f64)))
-   (import "bindings" "ta_blit"
+   (import "js" "ta_blit"
       (func $ta_blit (param (ref extern)) (param (ref extern))))
-   (import "bindings" "ta_subarray"
+   (import "js" "ta_subarray"
       (func $ta_subarray
          (param (ref extern)) (param i32) (param i32) (result (ref extern))))
-   (import "bindings" "dv_make"
+   (import "js" "dv_make"
       (func $dv_make (param (ref extern)) (result (ref extern))))
-   (import "bindings" "dv_get_f64"
+   (import "js" "dv_get_f64"
       (func $dv_get_f64 (param externref i32 i32) (result f64)))
-   (import "bindings" "dv_get_f32"
+   (import "js" "dv_get_f32"
       (func $dv_get_f32 (param externref i32 i32) (result f32)))
-   (import "bindings" "dv_get_i64"
+   (import "js" "dv_get_i64"
       (func $dv_get_i64 (param externref i32 i32) (result i64)))
-   (import "bindings" "dv_get_i32"
+   (import "js" "dv_get_i32"
       (func $dv_get_i32 (param externref i32 i32) (result i32)))
-   (import "bindings" "dv_get_i16"
+   (import "js" "dv_get_i16"
       (func $dv_get_i16 (param externref i32 i32) (result i32)))
-   (import "bindings" "dv_get_ui16"
+   (import "js" "dv_get_ui16"
       (func $dv_get_ui16 (param externref i32 i32) (result i32)))
-   (import "bindings" "dv_get_i8"
+   (import "js" "dv_get_i8"
       (func $dv_get_i8 (param externref i32) (result i32)))
-   (import "bindings" "dv_get_ui8"
+   (import "js" "dv_get_ui8"
       (func $dv_get_ui8 (param externref i32) (result i32)))
-   (import "bindings" "dv_set_f64"
+   (import "js" "dv_set_f64"
       (func $dv_set_f64 (param externref i32 f64 i32)))
-   (import "bindings" "dv_set_f32"
+   (import "js" "dv_set_f32"
       (func $dv_set_f32 (param externref i32 f32 i32)))
-   (import "bindings" "dv_set_i64"
+   (import "js" "dv_set_i64"
       (func $dv_set_i64 (param externref i32 i64 i32)))
-   (import "bindings" "dv_set_i32"
+   (import "js" "dv_set_i32"
       (func $dv_set_i32 (param externref i32 i32 i32)))
-   (import "bindings" "dv_set_i16"
+   (import "js" "dv_set_i16"
       (func $dv_set_i16 (param externref i32 i32 i32)))
-   (import "bindings" "dv_set_i8"
+   (import "js" "dv_set_i8"
       (func $dv_set_i8 (param externref i32 i32)))
-   (import "bindings" "dv_get_i64"
+   (import "js" "dv_get_i64"
       (func $dv_get_i64_unaligned (param externref i32 i32) (result i64)))
-   (import "bindings" "dv_get_i32"
+   (import "js" "dv_get_i32"
       (func $dv_get_i32_unaligned (param externref i32 i32) (result i32)))
-   (import "bindings" "dv_get_ui16"
+   (import "js" "dv_get_ui16"
       (func $dv_get_ui16_unaligned (param externref i32 i32) (result i32)))
-   (import "bindings" "dv_set_i64"
+   (import "js" "dv_set_i64"
       (func $dv_set_i64_unaligned (param externref i32 i64 i32)))
-   (import "bindings" "dv_set_i32"
+   (import "js" "dv_set_i32"
       (func $dv_set_i32_unaligned (param externref i32 i32 i32)))
-   (import "bindings" "dv_set_i16"
+   (import "js" "dv_set_i16"
       (func $dv_set_i16_unaligned (param externref i32 i32 i32)))
-   (import "bindings" "littleEndian" (global $littleEndian i32))
+   (import "js" "littleEndian" (global $littleEndian i32))
 ))
 
    (type $block (array (mut (ref eq))))

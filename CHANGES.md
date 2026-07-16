@@ -58,7 +58,9 @@
   references `node:fs` directly. Also moved a batch of self-contained
   primitives: `gettimeofday`/`mktime`/`time`/`random_seed`, the `weak_*` and
   string-hashing helpers, the Unix `system`/`isatty`/`get*id` calls, the `map_*`
-  helpers and `chdir` (#2409)
+  helpers and `chdir`, and the typed-array / `DataView` helpers (`ta_*`, `dv_*`,
+  `littleEndian`) used by bigarray/bigstring/marshal — including the `dv_*`
+  imports the compiler emits for specialised bigarray access (#2409)
 
 ## Bug fixes
 * Compiler/Wasm runtime: fix toplevels built on Windows — the embedded cmi

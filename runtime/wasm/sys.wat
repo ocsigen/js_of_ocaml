@@ -50,9 +50,9 @@
       (func $caml_invalid_argument (param (ref eq))))
 )
 (@else
-   (import "bindings" "ta_length"
+   (import "js" "ta_length"
       (func $ta_length (param (ref extern)) (result i32)))
-   (import "bindings" "ta_get_i32"
+   (import "js" "ta_get_i32"
       (func $ta_get_i32 (param (ref extern)) (param i32) (result i32)))
    (import "js" "random_seed" (func $random_seed (result (ref extern))))
    (import "jslib" "unwrap" (func $unwrap (param (ref eq)) (result anyref)))

@@ -913,3 +913,200 @@ function map_delete(m, x) {
 function chdir(x) {
   return globalThis.process.chdir(x);
 }
+
+// ---- Typed arrays and DataViews (bigarray/bigstring/marshal) ----
+
+//Provides: wasm_typed_arrays
+//If: wasm
+var wasm_typed_arrays = [
+  Float32Array,
+  Float64Array,
+  Int8Array,
+  Uint8Array,
+  Int16Array,
+  Uint16Array,
+  Int32Array,
+  Int32Array,
+  Int32Array,
+  Int32Array,
+  Float32Array,
+  Float64Array,
+  Uint8Array,
+  Uint16Array,
+  Uint8ClampedArray,
+];
+
+// See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error/stack
+//Provides: wasm_isV8
+//If: wasm
+var wasm_isV8 = new Error().stack?.includes("\n    at ") ?? false;
+
+//Provides: wasm_dv_call
+//If: wasm
+var wasm_dv_call = Function.prototype.call;
+
+//Provides: wasm_DV
+//If: wasm
+var wasm_DV = DataView.prototype;
+
+//Provides: ta_create
+//Requires: wasm_typed_arrays
+//If: wasm
+function ta_create(k, sz) {
+  return new wasm_typed_arrays[k](sz);
+}
+
+//Provides: ta_normalize
+//If: wasm
+function ta_normalize(a) {
+  return a instanceof Uint32Array
+    ? new Int32Array(a.buffer, a.byteOffset, a.length)
+    : a;
+}
+
+//Provides: ta_kind
+//Requires: wasm_typed_arrays
+//If: wasm
+function ta_kind(a) {
+  return wasm_typed_arrays.findIndex((c) => a instanceof c);
+}
+
+//Provides: ta_length
+//If: wasm
+function ta_length(a) {
+  return a.length;
+}
+
+//Provides: ta_get_i32
+//If: wasm
+function ta_get_i32(a, i) {
+  return a[i];
+}
+
+//Provides: ta_fill
+//If: wasm
+function ta_fill(a, v) {
+  return a.fill(v);
+}
+
+//Provides: ta_blit
+//If: wasm
+function ta_blit(s, d) {
+  return d.set(s);
+}
+
+//Provides: ta_subarray
+//If: wasm
+function ta_subarray(a, i, j) {
+  return a.subarray(i, j);
+}
+
+//Provides: ta_set
+//If: wasm
+function ta_set(a, b, i) {
+  return a.set(b, i);
+}
+
+//Provides: ta_new
+//If: wasm
+function ta_new(len) {
+  return new Uint8Array(len);
+}
+
+//Provides: ta_copy
+//If: wasm
+function ta_copy(ta, t, s, e) {
+  return ta.copyWithin(t, s, e);
+}
+
+//Provides: ta_bytes
+//If: wasm
+function ta_bytes(a) {
+  return new Uint8Array(a.buffer, a.byteOffset, a.length * a.BYTES_PER_ELEMENT);
+}
+
+//Provides: dv_make
+//If: wasm
+function dv_make(a) {
+  return new DataView(a.buffer, a.byteOffset, a.byteLength);
+}
+
+//Provides: dv_get_f64
+//Requires: wasm_dv_call, wasm_DV
+//If: wasm
+var dv_get_f64 = wasm_dv_call.bind(wasm_DV.getFloat64);
+
+//Provides: dv_get_f32
+//Requires: wasm_dv_call, wasm_DV
+//If: wasm
+var dv_get_f32 = wasm_dv_call.bind(wasm_DV.getFloat32);
+
+//Provides: dv_get_i64
+//Requires: wasm_dv_call, wasm_DV
+//If: wasm
+var dv_get_i64 = wasm_dv_call.bind(wasm_DV.getBigInt64);
+
+//Provides: dv_get_i32
+//Requires: wasm_dv_call, wasm_DV, wasm_isV8
+//If: wasm
+// 2026-03-16: using call.bind is faster in V8 which recognize the primitive
+// and generate inlined call, but calling a JavaScript function is currently
+// faster in other engines which does not have this optimization yet. Use
+// benchmarks/bench_dv_getint32.js for performance comparisons.
+var dv_get_i32 = wasm_isV8
+  ? wasm_dv_call.bind(wasm_DV.getInt32)
+  : (x, y, z) => x.getInt32(y, z);
+
+//Provides: dv_get_i16
+//Requires: wasm_dv_call, wasm_DV
+//If: wasm
+var dv_get_i16 = wasm_dv_call.bind(wasm_DV.getInt16);
+
+//Provides: dv_get_ui16
+//Requires: wasm_dv_call, wasm_DV
+//If: wasm
+var dv_get_ui16 = wasm_dv_call.bind(wasm_DV.getUint16);
+
+//Provides: dv_get_i8
+//Requires: wasm_dv_call, wasm_DV
+//If: wasm
+var dv_get_i8 = wasm_dv_call.bind(wasm_DV.getInt8);
+
+//Provides: dv_get_ui8
+//Requires: wasm_dv_call, wasm_DV
+//If: wasm
+var dv_get_ui8 = wasm_dv_call.bind(wasm_DV.getUint8);
+
+//Provides: dv_set_f64
+//Requires: wasm_dv_call, wasm_DV
+//If: wasm
+var dv_set_f64 = wasm_dv_call.bind(wasm_DV.setFloat64);
+
+//Provides: dv_set_f32
+//Requires: wasm_dv_call, wasm_DV
+//If: wasm
+var dv_set_f32 = wasm_dv_call.bind(wasm_DV.setFloat32);
+
+//Provides: dv_set_i64
+//Requires: wasm_dv_call, wasm_DV
+//If: wasm
+var dv_set_i64 = wasm_dv_call.bind(wasm_DV.setBigInt64);
+
+//Provides: dv_set_i32
+//Requires: wasm_dv_call, wasm_DV
+//If: wasm
+var dv_set_i32 = wasm_dv_call.bind(wasm_DV.setInt32);
+
+//Provides: dv_set_i16
+//Requires: wasm_dv_call, wasm_DV
+//If: wasm
+var dv_set_i16 = wasm_dv_call.bind(wasm_DV.setInt16);
+
+//Provides: dv_set_i8
+//Requires: wasm_dv_call, wasm_DV
+//If: wasm
+var dv_set_i8 = wasm_dv_call.bind(wasm_DV.setInt8);
+
+//Provides: littleEndian
+//If: wasm
+var littleEndian = new Uint8Array(new Uint32Array([1]).buffer)[0];

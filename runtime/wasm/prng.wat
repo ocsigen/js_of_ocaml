@@ -27,11 +27,11 @@
    (global $littleEndian i32 (i32.const 1))
 )
 (@else
-   (import "bindings" "dv_get_i64"
+   (import "js" "dv_get_i64"
       (func $dv_get_i64 (param externref i32 i32) (result i64)))
-   (import "bindings" "dv_set_i64"
+   (import "js" "dv_set_i64"
       (func $dv_set_i64 (param externref i32 i64 i32)))
-   (import "bindings" "littleEndian" (global $littleEndian i32))
+   (import "js" "littleEndian" (global $littleEndian i32))
 ))
 
    (func (export "caml_lxm_next") (param $v (ref eq)) (result i64)

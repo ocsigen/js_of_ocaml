@@ -56,20 +56,20 @@
       (func $dv_set_i8 (param (ref extern) i32 i32)))
 )
 (@else
-   (import "bindings" "ta_create"
+   (import "js" "ta_create"
       (func $ta_create (param i32) (param anyref) (result anyref)))
-   (import "bindings" "dv_get_i32"
+   (import "js" "dv_get_i32"
       (func $dv_get_i32_unaligned (param externref i32 i32) (result i32)))
-   (import "bindings" "dv_get_ui8"
+   (import "js" "dv_get_ui8"
       (func $dv_get_ui8 (param externref i32) (result i32)))
-   (import "bindings" "dv_set_i8"
+   (import "js" "dv_set_i8"
       (func $dv_set_i8 (param externref i32 i32)))
-   (import "bindings" "ta_subarray"
+   (import "js" "ta_subarray"
       (func $ta_subarray
          (param (ref extern)) (param i32) (param i32) (result (ref extern))))
-   (import "bindings" "ta_set"
+   (import "js" "ta_set"
       (func $ta_set (param (ref extern)) (param (ref extern)) (param i32)))
-   (import "bindings" "ta_bytes"
+   (import "js" "ta_bytes"
       (func $ta_bytes (param anyref) (result anyref)))
 ))
    (import "hash" "caml_hash_mix_int"

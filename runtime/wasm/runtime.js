@@ -48,24 +48,6 @@
     fmod: (x, y) => x % y,
   };
 
-  const typed_arrays = [
-    Float32Array,
-    Float64Array,
-    Int8Array,
-    Uint8Array,
-    Int16Array,
-    Uint16Array,
-    Int32Array,
-    Int32Array,
-    Int32Array,
-    Int32Array,
-    Float32Array,
-    Float64Array,
-    Uint8Array,
-    Uint16Array,
-    Uint8ClampedArray,
-  ];
-
   const on_windows = isNode && globalThis.process.platform === "win32";
 
   // Virtual filesystem for embedded files (e.g. CMIs for toplevel). The tables
@@ -133,12 +115,6 @@
 
   const on_arm64 = globalThis.process?.arch === "arm64";
 
-  // See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error/stack
-  const isV8 = new Error().stack?.includes("\n    at ") ?? false;
-
-  const call = Function.prototype.call;
-  const DV = DataView.prototype;
-
   const bindings = {
     jstag:
       WebAssembly.JSTag ||
@@ -186,43 +162,6 @@
         start += read;
       }
     },
-    ta_create: (k, sz) => new typed_arrays[k](sz),
-    ta_normalize: (a) =>
-      a instanceof Uint32Array
-        ? new Int32Array(a.buffer, a.byteOffset, a.length)
-        : a,
-    ta_kind: (a) => typed_arrays.findIndex((c) => a instanceof c),
-    ta_length: (a) => a.length,
-    ta_get_i32: (a, i) => a[i],
-    ta_fill: (a, v) => a.fill(v),
-    ta_blit: (s, d) => d.set(s),
-    ta_subarray: (a, i, j) => a.subarray(i, j),
-    ta_set: (a, b, i) => a.set(b, i),
-    ta_new: (len) => new Uint8Array(len),
-    ta_copy: (ta, t, s, e) => ta.copyWithin(t, s, e),
-    ta_bytes: (a) =>
-      new Uint8Array(a.buffer, a.byteOffset, a.length * a.BYTES_PER_ELEMENT),
-    dv_make: (a) => new DataView(a.buffer, a.byteOffset, a.byteLength),
-    dv_get_f64: call.bind(DV.getFloat64),
-    dv_get_f32: call.bind(DV.getFloat32),
-    dv_get_i64: call.bind(DV.getBigInt64),
-    // 2026-03-16: using call.bind is faster in V8 which recognize the
-    // primitive and generate inlined call, but calling a JavaScript
-    // function is currently faster in other engines which does not
-    // have this optimization yet. Use benchmarks/bench_dv_getint32.js
-    // for performance comparisons.
-    dv_get_i32: isV8 ? call.bind(DV.getInt32) : (x, y, z) => x.getInt32(y, z),
-    dv_get_i16: call.bind(DV.getInt16),
-    dv_get_ui16: call.bind(DV.getUint16),
-    dv_get_i8: call.bind(DV.getInt8),
-    dv_get_ui8: call.bind(DV.getUint8),
-    dv_set_f64: call.bind(DV.setFloat64),
-    dv_set_f32: call.bind(DV.setFloat32),
-    dv_set_i64: call.bind(DV.setBigInt64),
-    dv_set_i32: call.bind(DV.setInt32),
-    dv_set_i16: call.bind(DV.setInt16),
-    dv_set_i8: call.bind(DV.setInt8),
-    littleEndian: new Uint8Array(new Uint32Array([1]).buffer)[0],
     wrap_callback: (f) =>
       function (...args) {
         if (args.length === 0) {

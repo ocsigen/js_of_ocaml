@@ -1478,7 +1478,7 @@ module Bigarray = struct
     else
       let* le =
         register_import
-          ~import_module:"bindings"
+          ~import_module:"js"
           ~name:"littleEndian"
           (Global { mut = false; typ = I32 })
       in
@@ -1528,7 +1528,7 @@ module Bigarray = struct
     let* little_endian = little_endian () in
     let* f =
       register_import
-        ~import_module:(if Config.Flag.wasi () then "env" else "bindings")
+        ~import_module:(if Config.Flag.wasi () then "env" else "js")
         ~name
         (Fun
            { W.params =
@@ -1609,7 +1609,7 @@ module Bigarray = struct
     let* little_endian = little_endian () in
     let* f =
       register_import
-        ~import_module:(if Config.Flag.wasi () then "env" else "bindings")
+        ~import_module:(if Config.Flag.wasi () then "env" else "js")
         ~name
         (Fun
            { W.params =
