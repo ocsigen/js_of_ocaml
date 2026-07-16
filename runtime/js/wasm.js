@@ -706,3 +706,179 @@ function load_wasmo(state, zipBytes) {
   const names = decoder.decode(entries.link_order).split("\x00");
   for (const name of names) inst.exports[name + ".init"]();
 }
+
+// ---- Assorted self-contained primitives ----
+
+//Provides: gettimeofday
+//If: wasm
+function gettimeofday() {
+  return Date.now() / 1000;
+}
+
+//Provides: mktime
+//If: wasm
+function mktime(year, month, day, h, m, s) {
+  return new Date(year, month, day, h, m, s).getTime();
+}
+
+//Provides: random_seed
+//If: wasm
+function random_seed() {
+  return crypto.getRandomValues(new Int32Array(12));
+}
+
+//Provides: time
+//If: wasm
+function time() {
+  return performance.now();
+}
+
+//Provides: weak_new
+//If: wasm
+function weak_new(v) {
+  return new WeakRef(v);
+}
+
+//Provides: weak_deref
+//If: wasm
+function weak_deref(w) {
+  var v = w.deref();
+  return v === undefined ? null : v;
+}
+
+//Provides: weak_map_new
+//If: wasm
+function weak_map_new() {
+  return new WeakMap();
+}
+
+//Provides: system
+//If: wasm
+function system(c) {
+  var res = require("node:child_process").spawnSync(c, {
+    shell: true,
+    stdio: "inherit",
+  });
+  if (res.error) throw res.error;
+  return res.signal ? 255 : res.status;
+}
+
+//Provides: isatty
+//If: wasm
+// In a browser there is no tty and no [require]; report false instead of
+// throwing on the undefined [require].
+function isatty(fd) {
+  return globalThis.process?.versions?.node
+    ? +require("node:tty").isatty(fd)
+    : 0;
+}
+
+//Provides: getuid
+//If: wasm
+function getuid() {
+  return globalThis.process?.getuid ? globalThis.process.getuid() : 1;
+}
+
+//Provides: geteuid
+//If: wasm
+function geteuid() {
+  return globalThis.process?.geteuid ? globalThis.process.geteuid() : 1;
+}
+
+//Provides: getgid
+//If: wasm
+function getgid() {
+  return globalThis.process?.getgid ? globalThis.process.getgid() : 1;
+}
+
+//Provides: getegid
+//If: wasm
+function getegid() {
+  return globalThis.process?.getegid ? globalThis.process.getegid() : 1;
+}
+
+//Provides: log
+//If: wasm
+function log(x) {
+  console.log(x);
+}
+
+//Provides: wrap_fun_arguments
+//If: wasm
+function wrap_fun_arguments(f) {
+  return (...args) => f(args);
+}
+
+//Provides: wasm_hash_int
+//If: wasm
+function wasm_hash_int(h, d) {
+  d = Math.imul(d, 0xcc9e2d51 | 0);
+  d = (d << 15) | (d >>> 17); // ROTL32(d, 15);
+  d = Math.imul(d, 0x1b873593);
+  h ^= d;
+  h = (h << 13) | (h >>> 19); //ROTL32(h, 13);
+  return (((h + (h << 2)) | 0) + (0xe6546b64 | 0)) | 0;
+}
+
+//Provides: wasm_jsstring_is_bytes
+//If: wasm
+function wasm_jsstring_is_bytes(s) {
+  // Whether every code unit fits in a byte, i.e. no code point above U+00FF.
+  for (var i = 0; i < s.length; i++) if (s.charCodeAt(i) > 0xff) return false;
+  return true;
+}
+
+//Provides: wasm_hash_mix_jsbytes
+//Requires: wasm_hash_int
+//If: wasm
+function wasm_hash_mix_jsbytes(h, s) {
+  // Mix a byte string four code units per word, like the JS runtime.
+  var len = s.length,
+    i,
+    w;
+  for (i = 0; i + 4 <= len; i += 4) {
+    w =
+      s.charCodeAt(i) |
+      (s.charCodeAt(i + 1) << 8) |
+      (s.charCodeAt(i + 2) << 16) |
+      (s.charCodeAt(i + 3) << 24);
+    h = wasm_hash_int(h, w);
+  }
+  w = 0;
+  switch (len & 3) {
+    // biome-ignore lint/suspicious/noFallthroughSwitchClause: falls through
+    case 3:
+      w = s.charCodeAt(i + 2) << 16;
+    // falls through
+    // biome-ignore lint/suspicious/noFallthroughSwitchClause: falls through
+    case 2:
+      w |= s.charCodeAt(i + 1) << 8;
+    // falls through
+    case 1:
+      w |= s.charCodeAt(i);
+      h = wasm_hash_int(h, w);
+  }
+  return h ^ len;
+}
+
+//Provides: hash_string
+//Requires: wasm_hash_int, wasm_jsstring_is_bytes, wasm_hash_mix_jsbytes
+//If: wasm
+function hash_string(h, s) {
+  // A string whose code units all fit in a byte (every ASCII string, all of
+  // Latin-1) is mixed as bytes, leaving its hash unchanged and matching the
+  // JS runtime.
+  if (wasm_jsstring_is_bytes(s)) return wasm_hash_mix_jsbytes(h, s);
+  // Genuine Unicode text: mix two 16-bit code units per word, so no
+  // information is lost (packing them four per word at byte offsets would
+  // overlap their high bits).
+  var len = s.length,
+    i,
+    w;
+  for (i = 0; i + 2 <= len; i += 2) {
+    w = s.charCodeAt(i) | (s.charCodeAt(i + 1) << 16);
+    h = wasm_hash_int(h, w);
+  }
+  if (len & 1) h = wasm_hash_int(h, s.charCodeAt(i));
+  return h ^ len;
+}

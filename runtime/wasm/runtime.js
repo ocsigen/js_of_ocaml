@@ -118,67 +118,6 @@
   const decoder = new TextDecoder("utf-8", { ignoreBOM: 1 });
   const encoder = new TextEncoder();
 
-  function hash_int(h, d) {
-    d = Math.imul(d, 0xcc9e2d51 | 0);
-    d = (d << 15) | (d >>> 17); // ROTL32(d, 15);
-    d = Math.imul(d, 0x1b873593);
-    h ^= d;
-    h = (h << 13) | (h >>> 19); //ROTL32(h, 13);
-    return (((h + (h << 2)) | 0) + (0xe6546b64 | 0)) | 0;
-  }
-  function jsstring_is_bytes(s) {
-    // Whether every code unit fits in a byte, i.e. no code point above U+00FF.
-    for (var i = 0; i < s.length; i++) if (s.charCodeAt(i) > 0xff) return false;
-    return true;
-  }
-  function caml_hash_mix_jsbytes(h, s) {
-    // Mix a byte string four code units per word, like the JS runtime.
-    var len = s.length,
-      i,
-      w;
-    for (i = 0; i + 4 <= len; i += 4) {
-      w =
-        s.charCodeAt(i) |
-        (s.charCodeAt(i + 1) << 8) |
-        (s.charCodeAt(i + 2) << 16) |
-        (s.charCodeAt(i + 3) << 24);
-      h = hash_int(h, w);
-    }
-    w = 0;
-    switch (len & 3) {
-      // biome-ignore lint/suspicious/noFallthroughSwitchClause: falls through
-      case 3:
-        w = s.charCodeAt(i + 2) << 16;
-      // falls through
-      // biome-ignore lint/suspicious/noFallthroughSwitchClause: falls through
-      case 2:
-        w |= s.charCodeAt(i + 1) << 8;
-      // falls through
-      case 1:
-        w |= s.charCodeAt(i);
-        h = hash_int(h, w);
-    }
-    return h ^ len;
-  }
-  function hash_string(h, s) {
-    // A string whose code units all fit in a byte (every ASCII string, all of
-    // Latin-1) is mixed as bytes, leaving its hash unchanged and matching the
-    // JS runtime.
-    if (jsstring_is_bytes(s)) return caml_hash_mix_jsbytes(h, s);
-    // Genuine Unicode text: mix two 16-bit code units per word, so no
-    // information is lost (packing them four per word at byte offsets would
-    // overlap their high bits).
-    var len = s.length,
-      i,
-      w;
-    for (i = 0; i + 2 <= len; i += 2) {
-      w = s.charCodeAt(i) | (s.charCodeAt(i + 1) << 16);
-      h = hash_int(h, w);
-    }
-    if (len & 1) h = hash_int(h, s.charCodeAt(i));
-    return h ^ len;
-  }
-
   function getenv(n) {
     if (isNode && globalThis.process.env[n] !== undefined)
       return globalThis.process.env[n];
@@ -324,14 +263,6 @@
         args.unshift(this);
         return caml_callback(f, args.length, args, 2);
       },
-    wrap_fun_arguments: (f) =>
-      function (...args) {
-        return f(args);
-      },
-    gettimeofday: () => Date.now() / 1000,
-    mktime: (year, month, day, h, m, s) =>
-      new Date(year, month, day, h, m, s).getTime(),
-    random_seed: () => crypto.getRandomValues(new Int32Array(12)),
     get_vfs: () => vfs,
     exit: (n) => isNode && globalThis.process.exit(n),
     argv: () => (isNode ? globalThis.process.argv.slice(1) : ["a.out"]),
@@ -340,37 +271,11 @@
     getenv,
     backtrace_status: () => record_backtrace_flag,
     record_backtrace: (b) => (record_backtrace_flag = b),
-    system: (c) => {
-      var res = require("node:child_process").spawnSync(c, {
-        shell: true,
-        stdio: "inherit",
-      });
-      if (res.error) throw res.error;
-      return res.signal ? 255 : res.status;
-    },
-    // In a browser there is no tty and no [require]; report false instead of
-    // throwing on the undefined [require].
-    isatty: (fd) => (isNode ? +require("node:tty").isatty(fd) : 0),
-    getuid: () =>
-      globalThis.process?.getuid ? globalThis.process.getuid() : 1,
-    geteuid: () =>
-      globalThis.process?.geteuid ? globalThis.process.geteuid() : 1,
-    getgid: () =>
-      globalThis.process?.getgid ? globalThis.process.getgid() : 1,
-    getegid: () =>
-      globalThis.process?.getegid ? globalThis.process.getegid() : 1,
-    time: () => performance.now(),
     getcwd: () => (isNode ? globalThis.process.cwd() : "/static"),
     chdir: (x) => globalThis.process.chdir(x),
     start_fiber: (x) => start_fiber(x),
     suspend_fiber: make_suspending((f, env) => new Promise((k) => f(k, env))),
     resume_fiber: (k, v) => k(v),
-    weak_new: (v) => new WeakRef(v),
-    weak_deref: (w) => {
-      var v = w.deref();
-      return v === undefined ? null : v;
-    },
-    weak_map_new: () => new WeakMap(),
     map_new: () => new Map(),
     map_get: (m, x) => {
       var v = m.get(x);
@@ -378,8 +283,6 @@
     },
     map_set: (m, x, v) => m.set(x, v),
     map_delete: (m, x) => m.delete(x),
-    hash_string,
-    log: (x) => console.log(x),
     // The dynamic-linking loaders (in runtime/js/wasm.js) instantiate new
     // modules against these; expose them through a single accessor.
     get_link_state: () => ({ imports, options }),

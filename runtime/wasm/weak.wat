@@ -34,11 +34,11 @@
       (local.get $r))
 )
 (@else
-   (import "bindings" "weak_new"
+   (import "js" "weak_new"
       (func $weak_new (param (ref eq)) (result anyref)))
-   (import "bindings" "weak_deref"
+   (import "js" "weak_deref"
       (func $weak_deref (param anyref) (result eqref)))
-   (import "bindings" "weak_map_new" (func $weak_map_new (result (ref any))))
+   (import "js" "weak_map_new" (func $weak_map_new (result (ref any))))
    (import "bindings" "map_get"
       (func $map_get (param (ref any)) (param (ref eq)) (result anyref)))
    (import "bindings" "map_set"

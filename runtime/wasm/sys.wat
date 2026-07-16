@@ -54,7 +54,7 @@
       (func $ta_length (param (ref extern)) (result i32)))
    (import "bindings" "ta_get_i32"
       (func $ta_get_i32 (param (ref extern)) (param i32) (result i32)))
-   (import "bindings" "random_seed" (func $random_seed (result (ref extern))))
+   (import "js" "random_seed" (func $random_seed (result (ref extern))))
    (import "jslib" "unwrap" (func $unwrap (param (ref eq)) (result anyref)))
    (import "jslib" "wrap" (func $wrap (param anyref) (result (ref eq))))
    (import "jslib" "caml_jsstring_of_string"
@@ -69,11 +69,11 @@
    (import "bindings" "argv" (func $argv_fn (result (ref extern))))
    (import "bindings" "on_windows" (global $on_windows i32))
    (import "bindings" "on_arm64" (global $on_arm64 i32))
-   (import "bindings" "isatty"
+   (import "js" "isatty"
       (func $isatty (param (ref eq)) (result (ref eq))))
-   (import "bindings" "system" (func $system (param anyref) (result (ref eq))))
+   (import "js" "system" (func $system (param anyref) (result (ref eq))))
    (import "bindings" "getenv" (func $getenv (param anyref) (result anyref)))
-   (import "bindings" "time" (func $time (result f64)))
+   (import "js" "time" (func $time (result f64)))
    (import "fail" "javascript_exception"
       (tag $javascript_exception (param externref)))
    (import "jsstring" "jsstring_test"

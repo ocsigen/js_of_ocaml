@@ -40,7 +40,7 @@
       (func $encodeStringToUTF8Array
          (param externref) (result (ref $bytes))))
 
-   (import "bindings" "hash_string"
+   (import "js" "hash_string"
       (func $hash_string (param i32) (param anyref) (result i32)))
    (import "bindings" "read_string"
       (func $read_string (param i32) (result anyref)))

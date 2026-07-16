@@ -84,7 +84,7 @@
       (func $caml_string_concat (param (ref eq) (ref eq)) (result (ref eq))))
 )
 (@else
-   (import "bindings" "gettimeofday" (func $gettimeofday (result f64)))
+   (import "js" "gettimeofday" (func $gettimeofday (result f64)))
    (import "js" "times" (func $times (result (ref extern))))
    (import "js" "gmtime" (func $gmtime (param f64) (result (ref extern))))
    (import "js" "localtime"
@@ -94,7 +94,7 @@
       (func $array_get (param (ref extern)) (param i32) (result anyref)))
    (import "bindings" "identity" (func $to_int (param anyref) (result i32)))
    (import "bindings" "identity" (func $to_float (param anyref) (result f64)))
-   (import "bindings" "mktime"
+   (import "js" "mktime"
       (func $mktime
          (param i32) (param i32) (param i32) (param i32) (param i32) (param i32)
          (result f64)))
@@ -142,12 +142,12 @@
          (result i32)))
    (import "js" "fsync" (func $fsync (param (ref eq))))
    (import "js" "close" (func $close (param (ref extern) (ref eq))))
-   (import "bindings" "isatty"
+   (import "js" "isatty"
       (func $isatty (param (ref eq)) (result (ref eq))))
-   (import "bindings" "getuid" (func $getuid (result i32)))
-   (import "bindings" "geteuid" (func $geteuid (result i32)))
-   (import "bindings" "getgid" (func $getgid (result i32)))
-   (import "bindings" "getegid" (func $getegid (result i32)))
+   (import "js" "getuid" (func $getuid (result i32)))
+   (import "js" "geteuid" (func $geteuid (result i32)))
+   (import "js" "getgid" (func $getgid (result i32)))
+   (import "js" "getegid" (func $getegid (result i32)))
    (import "js" "unix_error" (global $unix_error_js (ref any)))
    (import "js" "caml_strerror"
       (func $caml_strerror (param i32) (result (ref any))))

@@ -55,7 +55,10 @@
   tables stay in `runtime.js` and are passed to the file operations through a
   `get_vfs` binding; the import object and instantiation options likewise stay
   and reach the loaders through `get_link_state`; `runtime.js` no longer
-  references `node:fs` directly (#2409)
+  references `node:fs` directly. Also moved a batch of self-contained
+  primitives: `gettimeofday`/`mktime`/`time`/`random_seed`, the `weak_*` and
+  string-hashing helpers, and the Unix `system`/`isatty`/`get*id` calls
+  (#2409)
 
 ## Bug fixes
 * Compiler/Wasm runtime: fix toplevels built on Windows — the embedded cmi

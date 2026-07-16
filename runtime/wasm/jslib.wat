@@ -79,7 +79,7 @@
          (param i32) (param (ref eq)) (result anyref)))
    (import "bindings" "wrap_meth_callback_unsafe"
       (func $wrap_meth_callback_unsafe (param (ref eq)) (result anyref)))
-   (import "bindings" "wrap_fun_arguments"
+   (import "js" "wrap_fun_arguments"
       (func $wrap_fun_arguments (param anyref) (result anyref)))
    (import "fail" "caml_failwith_tag"
       (func $caml_failwith_tag (result (ref eq))))
