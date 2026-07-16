@@ -882,3 +882,34 @@ function hash_string(h, s) {
   if (len & 1) h = wasm_hash_int(h, s.charCodeAt(i));
   return h ^ len;
 }
+
+//Provides: map_new
+//If: wasm
+function map_new() {
+  return new Map();
+}
+
+//Provides: map_get
+//If: wasm
+function map_get(m, x) {
+  var v = m.get(x);
+  return v === undefined ? null : v;
+}
+
+//Provides: map_set
+//If: wasm
+function map_set(m, x, v) {
+  return m.set(x, v);
+}
+
+//Provides: map_delete
+//If: wasm
+function map_delete(m, x) {
+  return m.delete(x);
+}
+
+//Provides: chdir
+//If: wasm
+function chdir(x) {
+  return globalThis.process.chdir(x);
+}

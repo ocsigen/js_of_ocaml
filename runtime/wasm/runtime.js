@@ -272,17 +272,9 @@
     backtrace_status: () => record_backtrace_flag,
     record_backtrace: (b) => (record_backtrace_flag = b),
     getcwd: () => (isNode ? globalThis.process.cwd() : "/static"),
-    chdir: (x) => globalThis.process.chdir(x),
     start_fiber: (x) => start_fiber(x),
     suspend_fiber: make_suspending((f, env) => new Promise((k) => f(k, env))),
     resume_fiber: (k, v) => k(v),
-    map_new: () => new Map(),
-    map_get: (m, x) => {
-      var v = m.get(x);
-      return v === undefined ? null : v;
-    },
-    map_set: (m, x, v) => m.set(x, v),
-    map_delete: (m, x) => m.delete(x),
     // The dynamic-linking loaders (in runtime/js/wasm.js) instantiate new
     // modules against these; expose them through a single accessor.
     get_link_state: () => ({ imports, options }),

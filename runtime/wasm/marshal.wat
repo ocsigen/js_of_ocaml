@@ -109,10 +109,10 @@
          (i32.add (local.get $i) (i32.const 1))))
 )
 (@else
-   (import "bindings" "map_new" (func $map_new (result (ref any))))
-   (import "bindings" "map_get"
+   (import "js" "map_new" (func $map_new (result (ref any))))
+   (import "js" "map_get"
       (func $map_get (param (ref any)) (param (ref eq)) (result i31ref)))
-   (import "bindings" "map_set"
+   (import "js" "map_set"
       (func $map_set (param (ref any)) (param (ref eq)) (param (ref i31))))
 ))
 

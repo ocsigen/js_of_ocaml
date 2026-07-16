@@ -108,7 +108,7 @@
    (import "js" "fchmod" (func $fchmod (param (ref eq) (ref eq))))
    (import "js" "rename" (func $rename (param anyref) (param anyref)))
    (import "bindings" "getcwd" (func $getcwd (result anyref)))
-   (import "bindings" "chdir" (func $chdir (param anyref)))
+   (import "js" "chdir" (func $chdir (param anyref)))
    (import "js" "mkdir" (func $mkdir (param anyref) (param i32)))
    (import "js" "opendir" (func $opendir (param anyref) (result anyref)))
    (import "js" "readdir" (func $readdir (param anyref) (result anyref)))

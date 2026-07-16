@@ -39,9 +39,9 @@
    (import "js" "weak_deref"
       (func $weak_deref (param anyref) (result eqref)))
    (import "js" "weak_map_new" (func $weak_map_new (result (ref any))))
-   (import "bindings" "map_get"
+   (import "js" "map_get"
       (func $map_get (param (ref any)) (param (ref eq)) (result anyref)))
-   (import "bindings" "map_set"
+   (import "js" "map_set"
       (func $map_set (param (ref any)) (param (ref eq)) (param (ref any))))
    (import "jslib" "unwrap" (func $unwrap (param (ref eq)) (result anyref)))
    (import "jslib" "wrap" (func $wrap (param anyref) (result (ref eq))))

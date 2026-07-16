@@ -56,7 +56,7 @@
 (@else
    (import "bindings" "on_windows" (global $on_windows i32))
    (import "bindings" "getcwd" (func $getcwd (result anyref)))
-   (import "bindings" "chdir" (func $chdir (param anyref)))
+   (import "js" "chdir" (func $chdir (param anyref)))
    (import "js" "mkdir" (func $mkdir (param anyref) (param i32)))
    (import "js" "rmdir" (func $rmdir (param anyref)))
    (import "js" "unlink" (func $unlink (param anyref)))

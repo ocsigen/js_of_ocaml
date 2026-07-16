@@ -287,14 +287,14 @@
       (i64.const 0))
 )
 (@else
-   (import "bindings" "map_new" (func $map_new (result (ref extern))))
-   (import "bindings" "map_get"
+   (import "js" "map_new" (func $map_new (result (ref extern))))
+   (import "js" "map_get"
       (func $map_get
          (param (ref extern)) (param i32) (result (ref null $fd_offset))))
-   (import "bindings" "map_set"
+   (import "js" "map_set"
       (func $map_set
          (param (ref extern)) (param i32) (param (ref $fd_offset))))
-   (import "bindings" "map_delete"
+   (import "js" "map_delete"
       (func $map_delete (param (ref extern)) (param i32)))
 
    (func $ta_blit_from_buffer
