@@ -50,9 +50,12 @@
   `gmtime`/`localtime`/`times` allocators (the WAT side now reads the record
   fields from a plain JS array, as the graphics helpers do), and the filesystem
   operations (including `stat`/`lstat`/`fstat`, whose records are likewise built
-  on the WAT side from a plain JS array). The virtual-filesystem tables stay in
-  `runtime.js` and are passed to the file operations through a `get_vfs`
-  binding; `runtime.js` no longer references `node:fs` directly (#2409)
+  on the WAT side from a plain JS array), and the dynamic-linking loaders
+  (`load_module`/`load_wasmo`/`register_fragments`). The virtual-filesystem
+  tables stay in `runtime.js` and are passed to the file operations through a
+  `get_vfs` binding; the import object and instantiation options likewise stay
+  and reach the loaders through `get_link_state`; `runtime.js` no longer
+  references `node:fs` directly (#2409)
 
 ## Bug fixes
 * Compiler/Wasm runtime: fix toplevels built on Windows — the embedded cmi

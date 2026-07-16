@@ -639,3 +639,70 @@ function lstat(p) {
 function fstat(fd) {
   return wasm_stat(wasm_fs.fstatSync(fd));
 }
+
+// ---- Dynamic linking ----
+// These instantiate new Wasm modules against the runtime's import object and
+// options, which live in the runtime.js closure and are handed over through
+// the get_link_state binding ({ imports, options }).
+
+//Provides: register_fragments
+//If: wasm
+function register_fragments(state, unitName, fragmentsSource) {
+  // biome-ignore lint/security/noGlobalEval: ..
+  const frags = eval?.(fragmentsSource);
+  state.imports[unitName + ".fragments"] = frags;
+}
+
+//Provides: load_module
+//If: wasm
+function load_module(state, wasmBytes) {
+  const module = new WebAssembly.Module(wasmBytes, state.options);
+  const inst = new WebAssembly.Instance(module, state.imports);
+  Object.assign(state.imports.OCaml, inst.exports);
+  return inst.exports["_dynlink.init"]();
+}
+
+//Provides: load_wasmo
+//If: wasm
+function load_wasmo(state, zipBytes) {
+  const decoder = new TextDecoder("utf-8", { ignoreBOM: 1 });
+  // Parse ZIP to extract code.wasm and link_order (uncompressed ZIP)
+  const dv = new DataView(
+    zipBytes.buffer,
+    zipBytes.byteOffset,
+    zipBytes.byteLength,
+  );
+  const len = zipBytes.byteLength;
+  // Find End of Central Directory record (search backwards)
+  let eocdOff = len - 22;
+  while (eocdOff >= 0 && dv.getUint32(eocdOff, true) !== 0x06054b50) eocdOff--;
+  if (eocdOff < 0) throw new Error("Invalid ZIP: EOCD not found");
+  const cdOff = dv.getUint32(eocdOff + 16, true);
+  const cdEntries = dv.getUint16(eocdOff + 10, true);
+  // Scan central directory for code.wasm and link_order
+  const entries = {};
+  let off = cdOff;
+  for (let i = 0; i < cdEntries; i++) {
+    if (dv.getUint32(off, true) !== 0x02014b50)
+      throw new Error("Invalid ZIP: bad CD entry");
+    const nameLen = dv.getUint16(off + 28, true);
+    const extraLen = dv.getUint16(off + 30, true);
+    const commentLen = dv.getUint16(off + 32, true);
+    const localOff = dv.getUint32(off + 42, true);
+    const name = decoder.decode(
+      zipBytes.subarray(off + 46, off + 46 + nameLen),
+    );
+    const size = dv.getUint32(off + 24, true);
+    const localNameLen = dv.getUint16(localOff + 26, true);
+    const localExtraLen = dv.getUint16(localOff + 28, true);
+    const dataOff = localOff + 30 + localNameLen + localExtraLen;
+    entries[name] = zipBytes.subarray(dataOff, dataOff + size);
+    off += 46 + nameLen + extraLen + commentLen;
+  }
+  if (!entries["code.wasm"]) throw new Error("code.wasm not found in .wasmo");
+  const module = new WebAssembly.Module(entries["code.wasm"], state.options);
+  const inst = new WebAssembly.Instance(module, state.imports);
+  Object.assign(state.imports.OCaml, inst.exports);
+  const names = decoder.decode(entries.link_order).split("\x00");
+  for (const name of names) inst.exports[name + ".init"]();
+}

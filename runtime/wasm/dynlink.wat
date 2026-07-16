@@ -22,12 +22,15 @@
    (import "jslib" "wrap" (func $wrap (param anyref) (result (ref eq))))
    (import "jslib" "caml_jsstring_of_string"
       (func $caml_jsstring_of_string (param (ref eq)) (result (ref eq))))
-   (import "bindings" "load_module"
-      (func $load_module (param anyref) (result anyref)))
-   (import "bindings" "load_wasmo"
-      (func $load_wasmo (param anyref)))
-   (import "bindings" "register_fragments"
-      (func $register_fragments (param anyref) (param anyref)))
+   ;; The loaders instantiate modules against the runtime's imports/options,
+   ;; obtained through $get_link_state and passed as an extra first parameter.
+   (import "bindings" "get_link_state" (func $get_link_state (result (ref extern))))
+   (import "js" "load_module"
+      (func $load_module (param (ref extern)) (param anyref) (result anyref)))
+   (import "js" "load_wasmo"
+      (func $load_wasmo (param (ref extern)) (param anyref)))
+   (import "js" "register_fragments"
+      (func $register_fragments (param (ref extern)) (param anyref) (param anyref)))
    (import "fail" "javascript_exception"
       (tag $javascript_exception (param externref)))
    (import "stdlib" "link_info"
@@ -41,20 +44,20 @@
    (func (export "caml_wasm_load_module")
       (param $str (ref eq)) (result (ref eq))
       (call $wrap
-         (call $load_module
+         (call $load_module (call $get_link_state)
             (call $unwrap
                (call $caml_uint8_array_of_string (local.get $str))))))
 
    (func (export "caml_wasm_load_wasmo")
       (param $str (ref eq)) (result (ref eq))
-      (call $load_wasmo
+      (call $load_wasmo (call $get_link_state)
          (call $unwrap
             (call $caml_uint8_array_of_string (local.get $str))))
       (ref.i31 (i32.const 0)))
 
    (func (export "caml_wasm_register_fragments")
       (param $unit_name (ref eq)) (param $source (ref eq)) (result (ref eq))
-      (call $register_fragments
+      (call $register_fragments (call $get_link_state)
          (call $unwrap (call $caml_jsstring_of_string (local.get $unit_name)))
          (call $unwrap (call $caml_jsstring_of_string (local.get $source))))
       (ref.i31 (i32.const 0)))
