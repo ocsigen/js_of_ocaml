@@ -43,7 +43,7 @@ val parse : [ `Script | `Module ] -> Lexer.t -> Javascript.program
 val parse' :
      [ `Script | `Module ]
   -> Lexer.t
-  -> ((Js_token.Annot.t * Parse_info.t) list * Javascript.program) list
+  -> (Lexing.position * (Javascript.statement * Javascript.location)) list
      * (Js_token.t * Loc.t) list
 
 val parse_expr : Lexer.t -> Javascript.expression
