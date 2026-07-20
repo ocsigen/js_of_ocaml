@@ -367,3 +367,21 @@ In this model, the opaque `value` is an index (handle) into a WebAssembly `Table
 * **Cons:**
   * **Lookup Overhead:** Every access to an OCaml value (e.g. retrieving fields, converting scalars, passing parameters) requires resolving the index in the Wasm Table, adding performance overhead.
   * **Mandatory Root Tracking:** The `CAMLparam` / `CAMLlocal` / `CAMLreturn` macros **cannot be no-ops**. They must actively register and unregister table indices with a root tracker to prevent Wasm Table slots from leaking or being garbage collected, incurring significant C-side overhead.
+
+---
+
+## Part 8: Desired WebAssembly Extensions
+
+The strict sandbox and memory boundaries of WebAssembly GC currently force trade-offs between compatibility and performance (such as the linear memory bump-allocator and the JS event-loop double-hop for finalizers). 
+
+To natively support the semantics required by languages with heavy C-interop like OCaml, we identify the following two realistically implementable WebAssembly extensions that would dramatically simplify the architecture:
+
+### 1. External Memory Pressure Hints (`gc.adjust_external_memory`)
+* **The Problem:** The Wasm/JS garbage collector heuristic only sees the byte size of the small Wasm GC handle. It is completely blind to the megabytes of Wasm linear memory that a Custom Block or Bigarray might conceptually "retain". This leads to out-of-memory (OOM) crashes because the GC does not feel enough pressure to run a sweep.
+* **The Extension:** Introduce a lightweight WebAssembly GC instruction, e.g., `gc.adjust_external_memory (param i32)`. This would allow a Wasm module to explicitly inform the host engine's GC heuristic about the hidden weight of a GC object. 
+* **Realism:** Highly realistic. Major JavaScript engines already implement this exact mechanism internally for C++ bindings (e.g., V8's `v8::Isolate::AdjustAmountOfExternalAllocatedMemory`). Exposing it to WebAssembly simply surfaces an existing engine capability.
+
+### 2. Predictable / Post-Sweep Wasm Finalizers
+* **The Problem:** Relying on JavaScript's `FinalizationRegistry` forces finalization to wait for the JavaScript event loop to yield, which is dangerously late for linear memory management.
+* **The Extension:** While executing arbitrary Wasm code *synchronously during* a GC pause is a non-starter for engine developers (due to security and deadlock risks), the Wasm specification could introduce a **post-sweep finalization queue**. Wasm engines could guarantee that registered Wasm finalization callbacks are executed immediately after the GC phase completes, before returning control to the main Wasm/JS event loop.
+* **Realism:** Realistic. It avoids the dangers of GC-pause execution while eliminating the arbitrary, unbounded latency introduced by JavaScript microtasks. Combined with `gc.adjust_external_memory`, this would guarantee that heavy linear memory resources are cleaned up safely and predictably.
