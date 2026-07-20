@@ -113,6 +113,14 @@ The WAT stub imports C functions, translates signatures between `(ref eq)` and `
    (func (export "caml_int_val") (param $v externref) (result i32)
       (i31.get_s (ref.cast (ref i31) (any.convert_extern (local.get $v)))))
 
+   ;; Val_double: f64 -> externref
+   (func (export "caml_val_double") (param $d f64) (result externref)
+      (extern.convert_any (struct.new $float (local.get $d))))
+
+   ;; Double_val: externref -> f64
+   (func (export "caml_double_val") (param $v externref) (result f64)
+      (struct.get $float $f (ref.cast (ref $float) (any.convert_extern (local.get $v)))))
+
    ;; Field Access: returns field (i + 1) because index 0 is reserved for the tag
    (func (export "caml_field") (param $v externref) (param $i i32) (result externref)
       (extern.convert_any
@@ -128,6 +136,9 @@ The WAT stub imports C functions, translates signatures between `(ref eq)` and `
          (any.convert_extern (local.get $w))))
 
    ;; String Copying: Copy GC bytes into C linear memory, returns pointer
+   ;; WARNING: This manual implementation allocates via malloc but has no automatic way 
+   ;; of freeing it, causing permanent leaks unless explicitly freed by the C side.
+   ;; The streamlined compiler design solves this using a scoped bump allocator.
    (func (export "caml_string_val") (param $v externref) (result i32)
       (local $len i32) (local $addr i32) (local $i i32) (local $bytes_ref (ref $bytes))
       (local.set $bytes_ref (ref.cast (ref $bytes) (any.convert_extern (local.get $v))))
@@ -228,11 +239,18 @@ Because C code written for the OCaml C-ABI expects strings to be managed by the 
 - This safely provides C with a temporary linear memory pointer without causing memory leaks.
 
 ### 2. GC Roots and `CAMLparam` / `CAMLlocal`
-WebAssembly GC automatically traces `externref` variables that are held on the Wasm execution stack or within locals. Therefore, the `caml/mlvalues.h` header for WebAssembly will redefine the `CAMLparam`, `CAMLlocal`, and `CAMLreturn` macros as **empty no-ops**. This drastically simplifies C compilation and completely eliminates manual GC root tracking overhead.
+WebAssembly GC automatically traces `externref` variables that are held on the Wasm execution stack or within Wasm locals. Therefore, GC root tracking for function local variables is handled natively.
+However, to manage the scope of temporary allocations (like the bump allocator stack pointer), we implement a **hybrid scoping strategy**:
+- **Macro Redefinitions:** The `caml/mlvalues.h` header will redefine `CAMLparam` to record the current bump allocator stack pointer, and `CAMLreturn` / `CAMLreturn0` to restore it. This enables fine-grained, frame-local cleanup of transient strings and bytes.
+- **Wrapper Safety Net:** Redefining the macros does not protect against functions that omit `CAMLparam`/`CAMLreturn` entirely (e.g., short utility functions). To guarantee leak-free execution, the compiler-generated external Wasm-to-C wrapper will also save the bump pointer before calling the C function and restore it as a safety-net reset after the function returns.
 
 ### 3. Callbacks and Exceptions
 Operations like invoking closures (`caml_callback`) and raising exceptions (`caml_failwith`) do not require new Wasm GC stubs. These functions are already implemented natively within the `wasm_of_ocaml` runtime (`runtime/wasm/`). 
 The C module simply imports these existing functions from the Wasm runtime environment. When C code calls `caml_callback(closure_val, arg_val)`, it passes the `externref` arguments to the runtime, which handles the Wasm GC unboxing and execution automatically.
+
+**Exception Safety Caveat:**
+Because `wasm_of_ocaml` raises exceptions via native WebAssembly Exceptions, throwing an exception propagates through the Wasm stack. If a Wasm exception propagates through a C function, standard C compiled with Clang does not catch it. Any cleanup blocks, `free()` calls, or resource releases in the C function will be bypassed, leading to resource leaks.
+* *Best Practice:* Inside C bindings that allocate linear memory resources or modify global state, developers should call OCaml callbacks using `caml_callback_exn` instead of `caml_callback`. This allows the C code to catch the exception value, release local resources, and then explicitly re-raise the exception.
 
 ---
 
@@ -248,10 +266,15 @@ To implement finalization, the runtime relies on the host JavaScript `Finalizati
 2. **Reconstruction:** When the JS callback fires, it receives these `i32` pointers. Because standard C finalization functions expect an `externref` (`value v`), the JS runtime **allocates a dummy Wasm GC object** containing these exact same pointers.
 3. **Execution:** This dummy object is cast to an `externref` and passed to the C `finalize` function. The C code successfully reads the linear memory pointer via `Data_custom_val(v)`, frees the memory, and returns. The dummy object is then quickly garbage collected. This completely hides the underlying JavaScript limitations from the C code.
 
-### 2. The Memory Pressure Disconnect (Warning)
-While `FinalizationRegistry` works as a best-effort mechanism, developers must be warned about **memory pressure**. 
-The JS engine's garbage collector manages the small Wasm GC objects, but it is unaware of the potentially massive Wasm linear memory allocations they represent. A Wasm module can easily exhaust its linear memory (triggering an OOM crash) before the JS engine feels enough memory pressure to run a GC sweep and trigger the finalizers. 
-When targeting WebAssembly with C bindings, developers should ideally provide explicit resource-release functions rather than relying strictly on the GC to clean up heavy linear memory allocations.
+### 2. The Memory Pressure Disconnect & GC Double-Hop (Warning)
+While `FinalizationRegistry` works as a best-effort mechanism, developers must be warned about **severe memory pressure risks** due to the **GC double-hop delay**:
+1. When a Wasm GC object wrapping a linear memory allocation becomes garbage, the Wasm engine's GC must run first to collect it.
+2. The Wasm GC then schedules a cleanup task in the JS host's `FinalizationRegistry`.
+3. The JavaScript event loop must cycle and run the registered finalization callback.
+4. Only then does the JS callback execute the Wasm linear memory `$free` call.
+
+Because the Wasm/JS engine's GC is unaware of the potentially massive Wasm linear memory allocations represented by tiny Wasm GC handles, it may not trigger sweeps frequently enough. A Wasm module can easily exhaust its linear memory (triggering an OOM crash) before the double-hop finalizer cycle runs.
+* *Requirement:* When targeting WebAssembly with C bindings, developers should explicitly call resource-release functions (e.g. `caml_ba_free` or custom free stubs) rather than relying on finalizers to clean up heavy allocations.
 
 ---
 
@@ -278,6 +301,19 @@ While the architecture outlined above aims for maximum compatibility, there are 
 ### 1. The `Bytes` Mutation Problem
 In standard OCaml, C code is allowed to mutate `Bytes` objects in place via `Bytes_val(v)`. Because our Wasm GC auto-stubs copy the string/bytes buffer into a temporary linear memory bump allocator, any mutations the C code makes are applied to that temporary copy and lost when the function returns.
 - **Proposed Mitigation:** Introduce an explicit `caml_mark_bytes_dirty(v)` macro to the WebAssembly C-API. If C code modifies a buffer, it must call this macro to signal the wrapper to copy the linear memory bytes back into the Wasm GC array after the C function returns.
+- **Design Justification:** Although an automatic copy-back could be implemented, it would impose a significant performance penalty on every `Bytes_val` call, even when bytes are only read (which is the most common use case). Keeping this macro manual is a deliberate, performance-conscious choice.
+
+### 1.5. WebAssembly Reference Types (`value`) in Linear Memory
+Because OCaml's `value` type is compiled to WebAssembly's `externref` (`__externref_t`), it is subject to a fundamental physical constraint of WebAssembly: **reference types cannot be stored in linear memory**.
+* **Struct fields & Arrays:** Standard C bindings that define structures containing OCaml values (e.g. `struct MyStruct { value v; }`) or declare static arrays of values (e.g. `value my_array[10];`) will fail to compile.
+* **Address of Globals:** Code using `caml_register_global_root(&my_global_var)` is invalid if `my_global_var` is a Wasm global. Wasm globals reside outside linear memory and their addresses cannot be taken.
+* **Workaround:** For bindings that absolutely require storing OCaml values in static structures or malloc'd memory, developers must use a handle/registry mapping system:
+  ```c
+  typedef int32_t caml_root; // Safe to store in linear memory
+  caml_root caml_acquire_root(value v); // Allocates a handle in a Wasm table
+  value caml_resolve_root(caml_root r); // Resolves handle back to externref
+  void caml_release_root(caml_root r); // Releases handle
+  ```
 
 ### 2. `Field` and `Byte` as L-Values
 According to the OCaml C-ABI, expressions like `Field(v, n)` and `Byte(v, n)` are valid C l-values (e.g., `Field(v, 0) = x;`). 
