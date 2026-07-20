@@ -174,6 +174,7 @@ let run
   let toplevel = Config.Flag.toplevel () in
   let include_cmis = toplevel && not no_cmis in
   Linker.reset ();
+  Generate.reset ();
   (match output_file with
   | `Stdout, _ -> ()
   | `Name name, _ when debug_mem () -> Debug.start_profiling name
