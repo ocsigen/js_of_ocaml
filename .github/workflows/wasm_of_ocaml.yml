@@ -78,7 +78,7 @@ jobs:
           path: wasm_of_ocaml
 
       - name: Set-up Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: ${{ matrix.os == 'windows-latest' && 'latest' || 'v26.0.0-v8-canary20260216631fb6e5ef' }}
 
