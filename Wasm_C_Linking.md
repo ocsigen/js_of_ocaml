@@ -301,7 +301,8 @@ While the architecture outlined above aims for maximum compatibility, there are 
 ### 1. The `Bytes` Mutation Problem
 In standard OCaml, C code is allowed to mutate `Bytes` objects in place via `Bytes_val(v)`. Because our Wasm GC auto-stubs copy the string/bytes buffer into a temporary linear memory bump allocator, any mutations the C code makes are applied to that temporary copy and lost when the function returns.
 - **Proposed Mitigation:** Introduce an explicit `caml_mark_bytes_dirty(v)` macro to the WebAssembly C-API. If C code modifies a buffer, it must call this macro to signal the wrapper to copy the linear memory bytes back into the Wasm GC array after the C function returns.
-- **Design Justification:** Although an automatic copy-back could be implemented, it would impose a significant performance penalty on every `Bytes_val` call, even when bytes are only read (which is the most common use case). Keeping this macro manual is a deliberate, performance-conscious choice.
+- **Design Justification & Example:** Although an automatic copy-back could be implemented, it would impose a significant performance penalty on every `Bytes_val` call, even when bytes are only read (which is the most common use case). Keeping this macro manual is a deliberate, performance-conscious choice.
+  * *Real-world Case:* The `mpfr__sprintf` function in the `mlgmpidl` library (`mpfr.idl`) takes a `[string]char *STR` parameter and formats a float in place. Under the simple copy-alloc model, these formatted values would be silently discarded unless the developer explicitly marks the buffer dirty.
 
 ### 1.5. WebAssembly Reference Types (`value`) in Linear Memory
 Because OCaml's `value` type is compiled to WebAssembly's `externref` (`__externref_t`), it is subject to a fundamental physical constraint of WebAssembly: **reference types cannot be stored in linear memory**.
@@ -329,5 +330,39 @@ OCaml 5 introduces Multicore support, but the current WebAssembly GC specificati
 ### 5. Bigarrays and Linear Memory
 Traditionally, JS-based runtimes implement Bigarrays as independent JavaScript `TypedArray`s. However, C code compiled to WebAssembly can only dereference pointers within its own specific Wasm linear memory.
 - **The Design Shift:** To support passing Bigarrays to C without incurring massive copying overhead, `wasm_of_ocaml` must implement `Bigarray.create` by allocating space directly within the imported Wasm linear memory (using `$malloc`). `Caml_ba_data_val(v)` then simply yields this `i32` linear memory pointer.
+  * *Real-world Case:* The `mpz__import` and `mpz__export` functions in `mlgmpidl`'s `mpz.idl` use the `[bigarray]` attribute to transfer digit arrays directly. Under Wasm GC, these stubs rely on `Caml_ba_data_val` to obtain direct linear memory pointers to the arrays.
 - **Limitation 1 (Memory Pressure):** Like custom blocks, these massive linear memory allocations are tied to small Wasm GC objects. Relying on the JavaScript GC to collect the Wasm GC object and trigger the finalizer to `$free` the array is dangerous and can easily lead to linear memory exhaustion.
 - **Limitation 2 (JavaScript Interop):** Existing projects often pass Bigarrays to JavaScript APIs (like WebGL). Moving Bigarrays into the Wasm linear memory means JS code must now access them by creating `TypedArray` views over the exported Wasm `memory.buffer`. If the Wasm memory dynamically grows, these JS `ArrayBuffer` views become detached and must be carefully recreated by the interop layer.
+
+---
+
+## Part 7: Architectural Models for `value` Representation
+
+To support C bindings, the design of the Wasm-C interface must choose between two distinct strategies for representing OCaml's `value` type on the C compiler side. This choice impacts performance, root-tracking overhead, and compatibility with standard OCaml C APIs (such as `caml_named_value` and global root registration).
+
+### Model A: Reference Representation (Proposed)
+```c
+typedef __externref_t value;
+```
+In this model, the opaque `value` is directly compiled to a WebAssembly GC reference (`externref`).
+
+* **Pros:**
+  * **Zero lookup overhead:** Passing values between OCaml and C is a direct register/stack operation.
+  * **Automatic Local Root Tracking:** Since C local variables of type `value` are compiled directly to WebAssembly locals, they are automatically tracked by the engine's Wasm GC. The macros `CAMLparam` / `CAMLlocal` / `CAMLreturn` are completely empty no-ops for root-tracking.
+* **Cons:**
+  * **No Linear Memory Storage:** Reference types cannot reside in linear memory. C structures containing fields of type `value` or static arrays of type `value` will fail to compile.
+  * **Invalid Pointer Types (`value *`):** You cannot take the address of a local variable of type `value` (`&v`), nor can you have pointers like `value *`.
+  * **Incompatible APIs:** Functions like `const value * caml_named_value(const char *)` and `caml_register_global_root(value *)` cannot compile because they require `value *` pointers.
+
+### Model B: Handle Representation (Alternative)
+```c
+typedef int32_t value;
+```
+In this model, the opaque `value` is an index (handle) into a WebAssembly `Table` that holds the actual GC references.
+
+* **Pros:**
+  * **Full Pointer Compatibility:** Since `value` is a standard `int32_t`, you can safely define pointers to values (`value *`), store values in linear memory structures, and define static/global arrays of values.
+  * **Compatible APIs:** Legacy functions like `caml_named_value` and `caml_register_global_root` compile and execute as-is without code changes, since they can dereference `value *` pointers in linear memory.
+* **Cons:**
+  * **Lookup Overhead:** Every access to an OCaml value (e.g. retrieving fields, converting scalars, passing parameters) requires resolving the index in the Wasm Table, adding performance overhead.
+  * **Mandatory Root Tracking:** The `CAMLparam` / `CAMLlocal` / `CAMLreturn` macros **cannot be no-ops**. They must actively register and unregister table indices with a root tracker to prevent Wasm Table slots from leaking or being garbage collected, incurring significant C-side overhead.
