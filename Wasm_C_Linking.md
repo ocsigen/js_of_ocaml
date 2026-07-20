@@ -306,9 +306,10 @@ In standard OCaml, C code is allowed to mutate `Bytes` objects in place via `Byt
 
 ### 1.5. WebAssembly Reference Types (`value`) in Linear Memory
 Because OCaml's `value` type is compiled to WebAssembly's `externref` (`__externref_t`), it is subject to a fundamental physical constraint of WebAssembly: **reference types cannot be stored in linear memory**.
-* **Struct fields & Arrays:** Standard C bindings that define structures containing OCaml values (e.g. `struct MyStruct { value v; }`) or declare static arrays of values (e.g. `value my_array[10];`) will fail to compile.
+* **Struct fields & Arrays:** Standard C bindings that define structures containing OCaml values (e.g. `struct MyStruct { value v; }`) or declare C arrays of values (e.g. `value my_array[10];`) will fail to compile.
+* **Function Arguments (`value *`):** Because arrays of values cannot exist in linear memory (including the C stack), **you cannot pass arrays of values to functions via `value *`**. This permanently breaks core OCaml APIs like `caml_callbackN(value closure, int arg_count, value *args)`.
 * **Address of Globals:** Code using `caml_register_global_root(&my_global_var)` is invalid if `my_global_var` is a Wasm global. Wasm globals reside outside linear memory and their addresses cannot be taken.
-* **Workaround:** For bindings that absolutely require storing OCaml values in static structures or malloc'd memory, developers must use a handle/registry mapping system:
+* **Workaround:** For bindings that absolutely require storing OCaml values in static structures, passing arrays to callbacks, or registering global roots, developers must use a handle/registry mapping system:
   ```c
   typedef int32_t caml_root; // Safe to store in linear memory
   caml_root caml_acquire_root(value v); // Allocates a handle in a Wasm table
@@ -352,7 +353,7 @@ In this model, the opaque `value` is directly compiled to a WebAssembly GC refer
 * **Cons:**
   * **No Linear Memory Storage:** Reference types cannot reside in linear memory. C structures containing fields of type `value` or static arrays of type `value` will fail to compile.
   * **Invalid Pointer Types (`value *`):** You cannot take the address of a local variable of type `value` (`&v`), nor can you have pointers like `value *`.
-  * **Incompatible APIs:** Functions like `const value * caml_named_value(const char *)` and `caml_register_global_root(value *)` cannot compile because they require `value *` pointers.
+  * **Incompatible APIs:** Functions like `caml_callbackN(value closure, int arg_count, value *args)`, `const value * caml_named_value(const char *)`, and `caml_register_global_root(value *)` cannot compile because they require `value *` pointers (which are illegal under Wasm GC).
 
 ### Model B: Handle Representation (Alternative)
 ```c
