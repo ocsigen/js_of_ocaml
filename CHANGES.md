@@ -1,6 +1,7 @@
 # dev
 
 ## Features/Changes
+* Compiler: add optional full lambda lifting for the Javascript compiler (#1886)
 * Lib: add `WebGL2` — bindings to the WebGL2 rendering context. The context
   inherits every method and constant of `WebGL`, and adds the WebGL2 objects
   (vertex array objects, queries, samplers, syncs, transform feedback), 3D and
