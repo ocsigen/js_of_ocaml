@@ -103,8 +103,8 @@ function caml_memprof_is_sampling(_unit) {
 }
 
 //Provides: caml_memprof_participate
-//Version: >= 5.2, < 5.3
-//OxCaml
+//Version: >= 5.2
+//If: oxcaml
 function caml_memprof_participate(_config) {
   return 0;
 }
@@ -159,15 +159,15 @@ function caml_get_major_credit(_n) {
 //Provides: caml_gc_tweak_get
 //Requires: caml_invalid_argument
 //Version: >= 5.5
-//OxCaml
+//If: oxcaml
 function caml_gc_tweak_get(_name) {
   caml_invalid_argument("Gc.Tweak: parameter not found");
 }
 
 //Provides: caml_gc_tweak_get
 //Requires: caml_invalid_argument
-//Version: >= 5.2, < 5.3
-//OxCaml
+//Version: >= 5.2, < 5.5
+//If: oxcaml
 function caml_gc_tweak_get(_name) {
   caml_invalid_argument("Gc.Tweak: parameter not found");
 }
@@ -181,8 +181,8 @@ function caml_gc_tweak_set(_name, _v) {
 
 //Provides: caml_gc_tweak_set
 //Requires: caml_invalid_argument
-//Version: >= 5.2, < 5.3
-//OxCaml
+//Version: >= 5.2, < 5.5
+//If: oxcaml
 function caml_gc_tweak_set(_name, _value) {
   caml_invalid_argument("Gc.Tweak: parameter not found");
 }
@@ -194,8 +194,8 @@ function caml_gc_tweak_list_active(_unit) {
 }
 
 //Provides: caml_gc_tweak_list_active
-//Version: >= 5.2, < 5.3
-//OxCaml
+//Version: >= 5.2, < 5.5
+//If: oxcaml
 function caml_gc_tweak_list_active(_unit) {
   return 0;
 }
