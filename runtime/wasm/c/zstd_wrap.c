@@ -18,16 +18,16 @@
  */
 
 /*
- * Thin wrapper around the freestanding build of zstddeclib.c.
+ * Thin wrapper around zstddeclib.c.
  *
- * The amalgamation defines ZSTD_DEPS_NEED_MALLOC, so it calls malloc / free
- * / calloc / realloc through the C library.  We're built with -nostdlib, so
- * we supply those names ourselves using a bump allocator backed by the tail
- * of linear memory, rewound at the start of each decompression.
+ * The amalgamation defines ZSTD_DEPS_NEED_MALLOC, so it calls malloc / free /
+ * calloc / realloc through the C library.  How those are provided depends on
+ * the build (see the allocator section below): the freestanding c-impl.wasm
+ * supplies a bump allocator over its private linear memory, whereas the WASI
+ * libc.wasm uses the real libc allocator over the shared linear memory.
  *
- * wasm linear memory, once grown, is never released back to the host, so we
- * keep the high-water mark small in two complementary ways; zstd.wat picks
- * one per call by comparing out_len against the frame's declared window
+ * Either way zstd.wat picks one of two decode paths per call, comparing
+ * out_len against the frame's declared window
  * (zstd_window_size):
  *
  *  - out_len <= window: one-shot (zstd_decompress).  Decode straight into an
@@ -77,6 +77,18 @@ extern size_t ZSTD_decompress(void *dst, size_t dstCapacity, const void *src,
 extern size_t ZSTD_getFrameHeader(ZSTD_FrameHeader *zfhPtr, const void *src,
                                   size_t srcSize);
 extern unsigned ZSTD_isError(size_t code);
+extern size_t ZSTD_freeDStream(ZSTD_DStream *zds); /* accepts NULL */
+
+#ifndef JSOO_WASI_LIBC
+
+/*
+ * Freestanding build (c-impl.wasm): the amalgamation calls malloc / free /
+ * calloc / realloc, which we supply ourselves with a bump allocator backed by
+ * the tail of linear memory.  Rewinding bump_cur to __heap_base (see
+ * zstd_reset / zstd_stream_init) bulk-frees everything from the previous
+ * decode, so free() is a no-op.  memcpy/memset and the other freestanding libc
+ * stubs live in stubs.c.
+ */
 
 extern unsigned char __heap_base;
 
@@ -95,24 +107,6 @@ static void *bump_alloc(size_t n) {
   }
   bump_cur = end;
   return (void *)p;
-}
-
-/*
- * Under -mbulk-memory clang lowers __builtin_mem{cpy,move,set} to inline
- * memory.copy / memory.fill instructions, so these wrappers expand to a
- * single bulk-memory op plus a return — no recursive call to themselves.
- */
-void *memcpy(void *dst, const void *src, size_t n) {
-  __builtin_memcpy(dst, src, n);
-  return dst;
-}
-void *memmove(void *dst, const void *src, size_t n) {
-  __builtin_memmove(dst, src, n);
-  return dst;
-}
-void *memset(void *dst, int v, size_t n) {
-  __builtin_memset(dst, v, n);
-  return dst;
 }
 
 void *malloc(size_t n) { return bump_alloc(n); }
@@ -139,12 +133,19 @@ void *realloc(void *old, size_t n) {
   return p;
 }
 
-/* Freestanding stubs for symbols clang may emit. */
-void __assert_fail(const char *a, const char *b, unsigned c, const char *d) {
-  (void)a; (void)b; (void)c; (void)d;
-  __builtin_trap();
-}
-void __stack_chk_fail(void) { __builtin_trap(); }
+#else
+
+/*
+ * WASI build (libc.wasm): the amalgamation uses the real libc malloc / free,
+ * which share the single linear memory with the rest of the runtime, so we
+ * must reclaim explicitly what the bump allocator's rewind used to reclaim.
+ * zstd_alloc records the one-shot buffers so the next zstd_reset can free them,
+ * and zstd_stream_init frees the previous streaming context.
+ */
+
+#include <stdlib.h>
+
+#endif
 
 /*
  * Streaming state and the two fixed chunk buffers exchanged with zstd.wat.
@@ -180,11 +181,47 @@ int zstd_window_size(int src, int src_len) {
 
 /* One-shot path (small values). */
 
+#ifndef JSOO_WASI_LIBC
+
 __attribute__((export_name("zstd_reset")))
 void zstd_reset(void) { bump_cur = (uintptr_t)&__heap_base; }
 
 __attribute__((export_name("zstd_alloc")))
 void *zstd_alloc(size_t n) { return bump_alloc(n); }
+
+#else
+
+/*
+ * The one-shot path allocates an input and an output buffer through
+ * zstd_alloc; ZSTD_decompress creates and frees its own context internally.
+ * We track those buffers (at most two live at once) and free them, along with
+ * any leftover streaming context, on the next zstd_reset / zstd_stream_init —
+ * matching the bump allocator's rewind-frees-everything semantics.
+ */
+#define ZSTD_MAX_TRANSIENT 2
+static void *g_transient[ZSTD_MAX_TRANSIENT];
+static int g_transient_n;
+
+static void release_transient(void) {
+  for (int i = 0; i < g_transient_n; i++) free(g_transient[i]);
+  g_transient_n = 0;
+  if (g_zds) {
+    ZSTD_freeDStream(g_zds);
+    g_zds = 0;
+  }
+}
+
+__attribute__((export_name("zstd_reset")))
+void zstd_reset(void) { release_transient(); }
+
+__attribute__((export_name("zstd_alloc")))
+void *zstd_alloc(size_t n) {
+  void *p = malloc(n);
+  if (p && g_transient_n < ZSTD_MAX_TRANSIENT) g_transient[g_transient_n++] = p;
+  return p;
+}
+
+#endif
 
 __attribute__((export_name("zstd_decompress")))
 size_t zstd_decompress(void *dst, size_t dstCap, const void *src,
@@ -206,7 +243,11 @@ int zstd_out_buf(void) { return (int)(uintptr_t)g_out; }
 /* Rewind the arena and start a fresh frame.  Returns -1 on failure. */
 __attribute__((export_name("zstd_stream_init")))
 int zstd_stream_init(void) {
+#ifndef JSOO_WASI_LIBC
   bump_cur = (uintptr_t)&__heap_base;
+#else
+  release_transient();
+#endif
   g_zds = ZSTD_createDStream();
   if (!g_zds) return -1;
   if (ZSTD_isError(ZSTD_initDStream(g_zds))) return -1;

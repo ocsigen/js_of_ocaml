@@ -51,6 +51,13 @@
    (import "bindings" "append_string"
       (func $append_string (param anyref) (param anyref) (result anyref)))
 
+   ;; Scratch buffer for string conversion.  We share the single linear memory
+   ;; owned by c-impl.wasm (see runtime/wasm/dune): that module keeps all of its
+   ;; own data above the first 64 KiB page, which we use here from offset 0.
+   ;; Re-exported as "caml_buffer" for the JS runtime (runtime.js).
+   (import "c" "memory" (memory 1))
+   (export "caml_buffer" (memory 0))
+
    (type $bytes (array (mut i8)))
    (type $wstring (array (mut i16)))
 
@@ -180,8 +187,6 @@
       (return_call $string_of_jsstring_fallback (local.get $s)))
 
    ;; Fallback implementation of string conversion functions
-
-   (memory (export "caml_buffer") 1)
 
    (global $buffer_size i32 (i32.const 65536))
 
