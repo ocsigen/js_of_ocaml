@@ -1,6 +1,11 @@
 # dev
 
 ## Features/Changes
+* Compiler: add `Source_map.Index.to_standard`, which flattens an index source
+  map into a single standard one. Sources, names and source contents are
+  concatenated (without deduplication) and the encoded mappings are stitched
+  together in a single streaming pass, without decoding them into the
+  structured form or re-sorting them (#2394)
 * Lib: add `WebGL2` — bindings to the WebGL2 rendering context. The context
   inherits every method and constant of `WebGL`, and adds the WebGL2 objects
   (vertex array objects, queries, samplers, syncs, transform feedback), 3D and

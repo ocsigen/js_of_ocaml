@@ -268,6 +268,189 @@ module Mappings = struct
        [ori_line] and [gen_line] are 1 based. *)
     readline 1 0 []
 
+  (* State of an encoder that concatenates several already-encoded mappings
+     (the sections of an index map) into a single standard mapping, without
+     ever building the decoded [map list]. It records the absolute value of the
+     fields last written, so that the next segment can be emitted as a delta. *)
+  type concat_state =
+    { mutable out_line : int
+          (* current generated line (0-based = number of ';' emitted) *)
+    ; mutable out_col : int (* generated column of the last segment on the current line *)
+    ; mutable at_line_start : bool (* no segment emitted yet on the current line *)
+    ; mutable ori_source : int
+    ; mutable ori_line : int
+    ; mutable ori_col : int
+    ; mutable ori_name : int
+    }
+
+  (* The initial values match the reference used by {!decode_exn}, so that the
+     first section is re-emitted essentially unchanged (up to its offset). *)
+  let concat_state () =
+    { out_line = 0
+    ; out_col = 0
+    ; at_line_start = true
+    ; ori_source = 0
+    ; ori_line = 1
+    ; ori_col = 0
+    ; ori_name = 0
+    }
+
+  (* Update [st] for a single segment expressed in the global frame, writing the
+     re-encoded segment to [buf] only when [emit] is set. The state is updated
+     identically whether or not we emit, so that after blitting a run of
+     segments verbatim (see {!append_section}) [st] still describes the last
+     segment exactly. Sections are assumed to be ordered by generated position,
+     so we only ever move forward. [kind] is one of the immediate (unboxed) tags
+     [`Gen], [`Ori] and [`Ori_name]; the origin fields are ignored for [`Gen]. *)
+  let concat_emit
+      st
+      buf
+      ~emit
+      ~gen_line
+      ~gen_col
+      ~ori_source
+      ~ori_line
+      ~ori_col
+      ~ori_name
+      kind =
+    while st.out_line < gen_line do
+      if emit then Buffer.add_char buf ';';
+      st.out_line <- st.out_line + 1;
+      st.out_col <- 0;
+      st.at_line_start <- true
+    done;
+    let need_comma = not st.at_line_start in
+    st.at_line_start <- false;
+    if emit
+    then (
+      if need_comma then Buffer.add_char buf ',';
+      Vlq64.encode buf (gen_col - st.out_col));
+    st.out_col <- gen_col;
+    match kind with
+    | `Gen -> ()
+    | `Ori | `Ori_name -> (
+        if emit
+        then (
+          Vlq64.encode buf (ori_source - st.ori_source);
+          Vlq64.encode buf (ori_line - st.ori_line);
+          Vlq64.encode buf (ori_col - st.ori_col));
+        st.ori_source <- ori_source;
+        st.ori_line <- ori_line;
+        st.ori_col <- ori_col;
+        match kind with
+        | `Ori_name ->
+            if emit then Vlq64.encode buf (ori_name - st.ori_name);
+            st.ori_name <- ori_name
+        | `Gen | `Ori -> ())
+
+  (* Append the encoded mapping [Uninterpreted str] to [buf], as one section of
+     an index map placed at generated position [gen_line_offset]/[gen_col_offset]
+     and whose source and name indices are shifted by [sources_offset] and
+     [names_offset] (because the sources and names of all sections are
+     concatenated).
+
+     Thanks to the delta encoding we can mostly blit the section verbatim. The
+     shifts (the generated offset and the source/name offsets) and the running
+     values carried over from the previous section only affect the *first*
+     occurrence of each field: adding a constant to every absolute value leaves
+     all deltas unchanged except the first. So we re-encode a short prefix of
+     the section — up to the first segment that carries an origin, and the first
+     one that carries a name — and then blit the remaining bytes unchanged.
+
+     We still read the VLQ numbers of the whole section (the origin fields are
+     stored as deltas accumulating across the whole map, so the running values
+     [st] carries to the next section are the running sums of this one), but the
+     tail is neither decoded into a [map list], nor sorted, nor re-encoded. *)
+  let append_section
+      st
+      buf
+      (Uninterpreted str)
+      ~gen_line_offset
+      ~gen_col_offset
+      ~sources_offset
+      ~names_offset =
+    let len = String.length str in
+    let input = { Vlq64.string = str; pos = 0; len } in
+    (* Running values within the section, relative to the section's own base
+       (the same base as {!decode_exn}). [line] is 0-based. *)
+    let line = ref 0 in
+    let gen_col = ref 0 in
+    let ori_source = ref 0 in
+    let ori_line = ref 1 in
+    let ori_col = ref 0 in
+    let ori_name = ref 0 in
+    let at_sep pos =
+      pos >= len
+      ||
+      match str.[pos] with
+      | ';' | ',' -> true
+      | _ -> false
+    in
+    (* While [emit] is set we re-encode; once every field has had its first
+       occurrence rebased we blit [str.\[blit_start .. blit_end)] verbatim.
+       [blit_end] tracks the end of the last real segment, so trailing
+       separators (which [st] does not account for) are dropped. *)
+    let emit = ref true in
+    let seen_ori = ref false in
+    let seen_name = ref false in
+    let blit_start = ref (-1) in
+    let blit_end = ref (-1) in
+    while input.Vlq64.pos < len do
+      match str.[input.Vlq64.pos] with
+      | ';' ->
+          input.Vlq64.pos <- input.Vlq64.pos + 1;
+          incr line;
+          gen_col := 0
+      | ',' -> input.Vlq64.pos <- input.Vlq64.pos + 1
+      | _ ->
+          gen_col := !gen_col + Vlq64.decode input;
+          let kind =
+            if at_sep input.Vlq64.pos
+            then `Gen
+            else begin
+              ori_source := !ori_source + Vlq64.decode input;
+              ori_line := !ori_line + Vlq64.decode input;
+              ori_col := !ori_col + Vlq64.decode input;
+              seen_ori := true;
+              if at_sep input.Vlq64.pos
+              then `Ori
+              else begin
+                ori_name := !ori_name + Vlq64.decode input;
+                seen_name := true;
+                `Ori_name
+              end
+            end
+          in
+          (* Move into the global frame: the generated line is shifted by the
+             section offset, the column offset only applies to the section's
+             first line, and source/name indices are shifted by the
+             concatenation offsets. Original lines and columns are untouched. *)
+          concat_emit
+            st
+            buf
+            ~emit:!emit
+            ~gen_line:(gen_line_offset + !line)
+            ~gen_col:(!gen_col + if !line = 0 then gen_col_offset else 0)
+            ~ori_source:(!ori_source + sources_offset)
+            ~ori_line:!ori_line
+            ~ori_col:!ori_col
+            ~ori_name:(!ori_name + names_offset)
+            kind;
+          if !emit
+          then (
+            if
+              (* Switch to blitting once the first origin and the first name have
+               been rebased (a [`Gen]-only or name-free section is fully
+               re-encoded, which is still correct). *)
+              !seen_ori && !seen_name
+            then (
+              emit := false;
+              blit_start := input.Vlq64.pos))
+          else blit_end := input.Vlq64.pos
+    done;
+    if !blit_start >= 0 && !blit_end > !blit_start
+    then Buffer.add_substring buf str !blit_start (!blit_end - !blit_start)
+
   let invariant ~names:_ ~sources:_ (Uninterpreted str) =
     (* We can't check much without decoding (which is expensive) *)
     (* Just do very simple checks *)
@@ -706,6 +889,68 @@ module Index = struct
         | Some _ -> invalid_arg "Source_map.Index.of_json: `sections` is not an array"
         | None -> invalid_arg "Source_map.Index.of_json: no `sections` field")
     | _ -> invalid_arg "Source_map.Index.of_json"
+
+  (* Flatten an index map into a single standard map. The sections' sources,
+     names and source contents are simply concatenated (no deduplication) and
+     the mappings are stitched together directly in their encoded form, without
+     decoding them into a [map list] (see {!Mappings.append_section}). *)
+  let to_standard { version = _; file; sections } : Standard.t =
+    let buf = Buffer.create 1024 in
+    let st = Mappings.concat_state () in
+    let rec loop sections ~sources_offset ~names_offset ~acc =
+      match sections with
+      | [] -> acc
+      | { offset = { Offset.gen_line; gen_column }; map } :: rest ->
+          let { Standard.version = _
+              ; file = _
+              ; sourceroot = _
+              ; sources
+              ; sources_content
+              ; names
+              ; mappings
+              ; ignore_list
+              } =
+            map
+          in
+          Mappings.append_section
+            st
+            buf
+            mappings
+            ~gen_line_offset:gen_line
+            ~gen_col_offset:gen_column
+            ~sources_offset
+            ~names_offset;
+          let sources_rev, names_rev, contents_rev, any_content, ignore_rev = acc in
+          let contents_rev, any_content =
+            match sources_content with
+            | Some c -> List.rev_append c contents_rev, true
+            | None ->
+                ( List.rev_append (List.map sources ~f:(fun _ -> None)) contents_rev
+                , any_content )
+          in
+          loop
+            rest
+            ~sources_offset:(sources_offset + List.length sources)
+            ~names_offset:(names_offset + List.length names)
+            ~acc:
+              ( List.rev_append sources sources_rev
+              , List.rev_append names names_rev
+              , contents_rev
+              , any_content
+              , List.rev_append ignore_list ignore_rev )
+    in
+    let sources_rev, names_rev, contents_rev, any_content, ignore_rev =
+      loop sections ~sources_offset:0 ~names_offset:0 ~acc:([], [], [], false, [])
+    in
+    { Standard.version = 3
+    ; file
+    ; sourceroot = None
+    ; sources = List.rev sources_rev
+    ; sources_content = (if any_content then Some (List.rev contents_rev) else None)
+    ; names = List.rev names_rev
+    ; mappings = Mappings.of_string_unsafe (Buffer.contents buf)
+    ; ignore_list = List.rev ignore_rev
+    }
 
   let rewrite_paths m =
     { m with

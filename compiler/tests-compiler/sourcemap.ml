@@ -168,3 +168,180 @@ let%expect_test _ =
     sb:20:20 -> 3:3
     sa2:5:5 -> 23:3
     |}]
+
+(* [Index.to_standard] flattens an index map into a single standard map,
+   concatenating sources/names and stitching the encoded mappings together. *)
+let print_standard (sm : Source_map.Standard.t) =
+  let sources = Array.of_list sm.sources in
+  let names = Array.of_list sm.names in
+  Printf.printf "sources: %s\n" (String.concat ~sep:"," sm.sources);
+  Printf.printf "names: %s\n" (String.concat ~sep:"," sm.names);
+  Printf.printf "ignore_list: %s\n" (String.concat ~sep:"," sm.ignore_list);
+  Printf.printf
+    "sources_content: %s\n"
+    (match sm.sources_content with
+    | None -> "none"
+    | Some l -> Printf.sprintf "%d entries" (List.length l));
+  print_endline (Source_map.Mappings.to_string sm.mappings);
+  List.iter (Source_map.Mappings.decode_exn sm.mappings) ~f:(fun (m : Source_map.map) ->
+      match m with
+      | Gen { gen_line; gen_col } -> Printf.printf "null -> %d:%d\n" gen_line gen_col
+      | Gen_Ori { gen_line; gen_col; ori_source; ori_line; ori_col } ->
+          Printf.printf
+            "%s:%d:%d -> %d:%d\n"
+            sources.(ori_source)
+            ori_line
+            ori_col
+            gen_line
+            gen_col
+      | Gen_Ori_Name { gen_line; gen_col; ori_source; ori_line; ori_col; ori_name } ->
+          Printf.printf
+            "%s:%d:%d(%s) -> %d:%d\n"
+            sources.(ori_source)
+            ori_line
+            ori_col
+            names.(ori_name)
+            gen_line
+            gen_col)
+
+let%expect_test "index to standard (line offsets)" =
+  let gen_ori (gen_line, gen_col) (ori_line, ori_col) ori_source : Source_map.map =
+    Gen_Ori { gen_line; gen_col; ori_source; ori_line; ori_col }
+  in
+  let gen_ori_name (gen_line, gen_col) (ori_line, ori_col) ori_source ori_name :
+      Source_map.map =
+    Gen_Ori_Name { gen_line; gen_col; ori_source; ori_line; ori_col; ori_name }
+  in
+  let section (gen_line, gen_column) sources names mappings : Source_map.Index.section =
+    { offset = { gen_line; gen_column }
+    ; map =
+        { (Source_map.Standard.empty ~inline_source_content:false) with
+          sources
+        ; names
+        ; mappings = Source_map.Mappings.encode mappings
+        }
+    }
+  in
+  let idx : Source_map.Index.t =
+    { version = 3
+    ; file = Some "out.js"
+    ; sections =
+        [ section
+            (0, 0)
+            [ "a.ml"; "b.ml" ]
+            [ "x" ]
+            [ gen_ori (1, 0) (10, 4) 0; gen_ori_name (2, 2) (20, 6) 1 0 ]
+        ; section
+            (10, 0)
+            [ "c.ml" ]
+            [ "y"; "z" ]
+            [ gen_ori (1, 0) (5, 0) 0; gen_ori_name (1, 8) (6, 1) 0 1 ]
+        ]
+    }
+  in
+  print_standard (Source_map.Index.to_standard idx);
+  [%expect
+    {|
+    sources: a.ml,b.ml,c.ml
+    names: x,y,z
+    ignore_list:
+    sources_content: none
+    AASI;ECUEA;;;;;;;;;ACfN,QACCE
+    a.ml:10:4 -> 1:0
+    b.ml:20:6(x) -> 2:2
+    c.ml:5:0 -> 11:0
+    c.ml:6:1(z) -> 11:8
+    |}]
+
+(* A section whose first name appears only after several origin-only segments
+   spread over several lines: the blitted tail then crosses line boundaries and
+   carries origin deltas, exercising the prefix/blit split. *)
+let%expect_test "index to standard (blitted tail)" =
+  let gen_ori (gen_line, gen_col) (ori_line, ori_col) ori_source : Source_map.map =
+    Gen_Ori { gen_line; gen_col; ori_source; ori_line; ori_col }
+  in
+  let gen_ori_name (gen_line, gen_col) (ori_line, ori_col) ori_source ori_name :
+      Source_map.map =
+    Gen_Ori_Name { gen_line; gen_col; ori_source; ori_line; ori_col; ori_name }
+  in
+  let section (gen_line, gen_column) sources names mappings : Source_map.Index.section =
+    { offset = { gen_line; gen_column }
+    ; map =
+        { (Source_map.Standard.empty ~inline_source_content:false) with
+          sources
+        ; names
+        ; mappings = Source_map.Mappings.encode mappings
+        }
+    }
+  in
+  let idx : Source_map.Index.t =
+    { version = 3
+    ; file = None
+    ; sections =
+        [ section (0, 0) [ "a.ml" ] [ "n0" ] [ gen_ori (1, 0) (1, 0) 0 ]
+        ; section
+            (5, 0)
+            [ "b.ml"; "c.ml" ]
+            [ "n1"; "n2" ]
+            [ gen_ori (1, 0) (10, 0) 0
+            ; gen_ori (2, 2) (11, 4) 1
+            ; gen_ori (3, 0) (12, 0) 0
+            ; gen_ori_name (3, 4) (12, 8) 1 0
+            ; gen_ori_name (4, 0) (20, 1) 1 1
+            ]
+        ]
+    }
+  in
+  print_standard (Source_map.Index.to_standard idx);
+  [%expect
+    {|
+    sources: a.ml,b.ml,c.ml
+    names: n0,n1,n2
+    ignore_list:
+    sources_content: none
+    AAAA;;;;;ACSA;ECCI;ADCJ,ICAQC;AAQPC
+    a.ml:1:0 -> 1:0
+    b.ml:10:0 -> 6:0
+    c.ml:11:4 -> 7:2
+    b.ml:12:0 -> 8:0
+    c.ml:12:8(n1) -> 8:4
+    c.ml:20:1(n2) -> 9:0
+    |}]
+
+(* Sections stacked on a single generated line via column offsets, as produced
+   by [Wasm_source_map.concatenate]. *)
+let%expect_test "index to standard (column offsets)" =
+  let gen_ori (gen_line, gen_col) (ori_line, ori_col) ori_source : Source_map.map =
+    Gen_Ori { gen_line; gen_col; ori_source; ori_line; ori_col }
+  in
+  let section (gen_line, gen_column) sources mappings : Source_map.Index.section =
+    { offset = { gen_line; gen_column }
+    ; map =
+        { (Source_map.Standard.empty ~inline_source_content:false) with
+          sources
+        ; mappings = Source_map.Mappings.encode mappings
+        }
+    }
+  in
+  let idx : Source_map.Index.t =
+    { version = 3
+    ; file = None
+    ; sections =
+        [ section (0, 0) [ "a.ml" ] [ gen_ori (1, 0) (1, 0) 0; gen_ori (1, 4) (1, 7) 0 ]
+        ; section (0, 100) [ "b.ml" ] [ gen_ori (1, 0) (3, 2) 0; gen_ori (1, 8) (3, 9) 0 ]
+        ]
+    }
+  in
+  print_standard (Source_map.Index.to_standard idx);
+  [%expect
+    {|
+    sources: a.ml,b.ml
+    names:
+    ignore_list:
+    sources_content: none
+    AAAA,IAAO,gGCEL,QAAO
+    a.ml:1:0 -> 1:0
+    a.ml:1:7 -> 1:4
+    b.ml:3:2 -> 1:100
+    b.ml:3:9 -> 1:108
+    |}]
