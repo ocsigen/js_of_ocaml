@@ -54,7 +54,9 @@
    ;; Scratch buffer for string conversion.  We share the single linear memory
    ;; owned by c-impl.wasm (see runtime/wasm/dune): that module keeps all of its
    ;; own data above the first 64 KiB page, which we use here from offset 0.
-   ;; Re-exported as "caml_buffer" for the JS runtime (runtime.js).
+   ;; Re-exported as "caml_buffer" for the JS runtime (runtime.js), together
+   ;; with the size of the page we own: everything above belongs to the C code,
+   ;; which may also grow the memory.
    (import "c" "memory" (memory 1))
    (export "caml_buffer" (memory 0))
 
@@ -188,7 +190,7 @@
 
    ;; Fallback implementation of string conversion functions
 
-   (global $buffer_size i32 (i32.const 65536))
+   (global $buffer_size (export "caml_buffer_size") i32 (i32.const 65536))
 
    (func $write_to_buffer
       (param $s (ref $bytes)) (param $pos i32) (param $len i32)

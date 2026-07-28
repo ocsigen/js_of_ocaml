@@ -166,6 +166,20 @@
   const decoder = new TextDecoder("utf-8", { ignoreBOM: 1 });
   const encoder = new TextEncoder();
 
+  // View on the scratch area used to convert between OCaml and JavaScript
+  // strings: the first caml_buffer_size bytes of the linear memory owned by
+  // the C runtime module (see jsstring.wat).  The C code's own data sits above
+  // the scratch area, so the view must stop there; that code can also grow the
+  // memory, which detaches the ArrayBuffer, so the view is created on demand.
+  // A detached buffer has length 0, and so does the initial dummy view, so a
+  // single length check covers both the first use and each growth.
+  var scratch = new Uint8Array(0);
+  function scratch_buffer() {
+    if (scratch.byteLength === 0)
+      scratch = new Uint8Array(caml_buffer.buffer, 0, caml_buffer_size.value);
+    return scratch;
+  }
+
   function hash_int(h, d) {
     d = Math.imul(d, 0xcc9e2d51 | 0);
     d = (d << 15) | (d >>> 17); // ROTL32(d, 15);
@@ -311,9 +325,9 @@
     array_length: (a) => a.length,
     array_get: (a, i) => a[i],
     array_set: (a, i, v) => (a[i] = v),
-    read_string: (l) => decoder.decode(new Uint8Array(buffer, 0, l)),
+    read_string: (l) => decoder.decode(scratch_buffer().subarray(0, l)),
     read_string_stream: (l, stream) =>
-      decoder.decode(new Uint8Array(buffer, 0, l), { stream }),
+      decoder.decode(scratch_buffer().subarray(0, l), { stream }),
     append_string: (s1, s2) => s1 + s2,
     write_string: (s) => {
       var start = 0,
@@ -321,7 +335,7 @@
       for (;;) {
         const { read, written } = encoder.encodeInto(
           s.slice(start),
-          out_buffer,
+          scratch_buffer(),
         );
         len -= read;
         if (!len) return written;
@@ -924,12 +938,10 @@
     caml_start_fiber,
     caml_handle_uncaught_exception,
     caml_buffer,
+    caml_buffer_size,
     caml_extract_bytes,
     _initialize,
   } = wasmModule.instance.exports;
-
-  var buffer = caml_buffer?.buffer;
-  var out_buffer = buffer && new Uint8Array(buffer, 0, buffer.length);
 
   start_fiber = make_promising(caml_start_fiber);
   var _initialize = make_promising(_initialize);

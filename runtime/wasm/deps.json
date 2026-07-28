@@ -1,7 +1,15 @@
 [
   {
     "name": "root",
-    "reaches": ["init", "exn", "mem", "bytes", "bytes_get", "bytes_set"],
+    "reaches": [
+      "init",
+      "exn",
+      "mem",
+      "mem_size",
+      "bytes",
+      "bytes_get",
+      "bytes_set"
+    ],
     "root": true
   },
   {
@@ -15,6 +23,10 @@
   {
     "name": "mem",
     "export": "caml_buffer"
+  },
+  {
+    "name": "mem_size",
+    "export": "caml_buffer_size"
   },
   {
     "name": "bytes",
