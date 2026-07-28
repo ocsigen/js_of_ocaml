@@ -25,6 +25,7 @@ rule main = parse
   | "Requires" {TRequires}
   | "Version" {TVersion}
   | "Weakdef" {TWeakdef}
+  | "Inline" {TInline}
   | "Always" {TAlways}
   | "If" {TIf}
   | "Alias" {TAlias}

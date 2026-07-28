@@ -46,6 +46,8 @@ module Num : sig
 
   val equal : t -> t -> bool
 
+  val is_int : t -> bool
+
   (** Arithmetic *)
 
   val add : t -> t -> t
@@ -189,6 +191,11 @@ end = struct
   let equal a b = String.equal a b
 
   let hash a = String.hash a
+
+  let is_int s =
+    String.for_all s ~f:(function
+      | '0' .. '9' | '-' -> true
+      | _ -> false)
 
   let neg s =
     match String.drop_prefix s ~prefix:"-" with

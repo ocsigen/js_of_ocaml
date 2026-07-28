@@ -46,6 +46,7 @@ type t =
   | `Provides of string * kind * kind_arg list option
   | `Version of ((int -> int -> bool) * string) list
   | `Weakdef
+  | `Inline
   | `Always
   | `Alias of string
   | `Deprecated of string

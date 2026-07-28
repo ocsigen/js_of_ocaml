@@ -73,6 +73,7 @@ let () =
           Js_of_ocaml_compiler.Build_info.set_values keys setup;
           List.iter Js_of_ocaml_compiler.Target_env.all ~f:(fun target_env ->
               Js_of_ocaml_compiler.Linker.reset ();
+              Js_of_ocaml_compiler.Generate.reset ();
               List.iter fragments ~f:(fun (filename, frags) ->
                   Js_of_ocaml_compiler.Linker.load_fragments ~target_env ~filename frags);
               let linkinfos = Js_of_ocaml_compiler.Linker.init () in

@@ -26,6 +26,7 @@ let () =
     (Build_info.parse_config_string (Jsoo_runtime.Sys.Config.build_config ()));
   Linker.reset ();
   List.iter aliases ~f:(fun (a, b) -> Primitive.alias a b);
+  Generate.reset ();
   (* this needs to stay synchronized with toplevel.js *)
   let toplevel_compile (s : string) (debug : Instruct.debug_event list array) :
       unit -> J.t =
