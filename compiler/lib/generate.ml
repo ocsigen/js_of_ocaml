@@ -1773,6 +1773,38 @@ let rec translate_expr ctx loc x e level : (_ * J.statement_list) Expr_builder.t
             let* cy = access' ~ctx b in
             let* () = info mutator_p in
             return (maybe_bool ctx x (J.EBin (J.InstanceOf, cx, cy)))
+        | Extern ("%phys_equal", _), [ a; b ] ->
+            let* cx = access' ~ctx a in
+            let* cy = access' ~ctx b in
+            (* [Object.is] is only needed to distinguish -0. from +0. and to
+               make [nan == nan] reflexive, i.e. for floats.  When an operand is
+               an integer constant both operands are immediates (OCaml [==] is
+               monomorphic), so the cheaper [===] is equivalent. *)
+            let e =
+              match a, b with
+              | Pc (Int _), _ | _, Pc (Int _) -> J.EBin (J.EqEqEq, cx, cy)
+              | _ ->
+                  J.call
+                    (J.dot (s_var "Object") (Utf8_string.of_string_exn "is"))
+                    [ cx; cy ]
+                    loc
+            in
+            return (maybe_bool ctx x e)
+        | Extern ("%not_phys_equal", _), [ a; b ] ->
+            let* cx = access' ~ctx a in
+            let* cy = access' ~ctx b in
+            let e =
+              match a, b with
+              | Pc (Int _), _ | _, Pc (Int _) -> J.EBin (J.NotEqEq, cx, cy)
+              | _ ->
+                  J.EUn
+                    ( J.Not
+                    , J.call
+                        (J.dot (s_var "Object") (Utf8_string.of_string_exn "is"))
+                        [ cx; cy ]
+                        loc )
+            in
+            return (maybe_bool ctx x e)
         | Extern (name_orig, _), l -> (
             let name = Primitive.resolve name_orig in
             match internal_prim name with

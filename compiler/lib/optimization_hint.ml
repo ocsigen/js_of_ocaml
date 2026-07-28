@@ -100,6 +100,7 @@ type t =
   | Hint_arraylength of array_kind
   | Hint_closures of closure_hint list
   | Hint_ccall of ccall
+  | Hint_physical_comparison
 
 let print_ccall f h =
   match h with
@@ -211,3 +212,4 @@ let print f h =
            print_closure_hint)
         l
   | Hint_ccall h -> print_ccall f h
+  | Hint_physical_comparison -> Format.fprintf f "physical_comparison"

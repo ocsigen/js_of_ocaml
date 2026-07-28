@@ -100,6 +100,7 @@ type t =
   | Hint_arraylength of array_kind
   | Hint_closures of closure_hint list
   | Hint_ccall of ccall
+  | Hint_physical_comparison
 
 val print_ccall : Format.formatter -> ccall -> unit
 
