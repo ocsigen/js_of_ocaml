@@ -24,9 +24,9 @@
       [@if os_type <> "Win32"]
     ]}
     The supported predicates are [ocaml_version], [ast_version], [oxcaml],
-    [arch_sixtyfour] and [os_type] (a string, e.g. "Unix" / "Win32" / "Cygwin"),
-    combined
-    with the usual comparison and boolean operators (see
+    [introspect], [arch_sixtyfour] and
+    [os_type] (a string, e.g. "Unix" / "Win32" / "Cygwin"),
+    combined with the usual comparison and boolean operators (see
     {!Ppx_light_predicate.Predicate}). They can be placed
     on module (Pstr_module),
     toplevel bindings (Pstr_value, Pstr_primitive)
