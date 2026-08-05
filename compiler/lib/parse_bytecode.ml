@@ -2858,6 +2858,8 @@ and compile infos pc state (instrs : instr list) =
                  ( Extern ("%with_stack_bind", None)
                  , [ Pv valuec; Pv exnc; Pv effc; Pv dyn; Pv bind; Pv f; Pv arg ] ) )
           :: instrs)
+    | NEXT_RESERVED_BITS ->
+      compile infos (pc + 2) state instrs
     | EVENT | BREAK | FIRST_UNIMPLEMENTED_OP -> assert false)
 
 (****)
