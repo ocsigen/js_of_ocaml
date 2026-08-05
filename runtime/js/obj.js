@@ -340,3 +340,32 @@ function caml_int_as_pointer(i) {
   if (i === 0) return null;
   caml_failwith("%int_as_pointer is not supported in javascript.");
 }
+
+//Provides: caml_compiler_block_descs_ref
+var caml_compiler_block_descs_ref = [0];
+
+//Provides: caml_compiler_block_descs
+//Requires: caml_compiler_block_descs_ref
+function caml_compiler_block_descs(_unit) {
+  return caml_compiler_block_descs_ref;
+}
+
+//Provides: caml_obj_reserved_bits
+function caml_obj_reserved_bits(_unit) {
+  return 0;
+}
+
+//Provides: caml_obj_get_reserved
+function caml_obj_get_reserved(_obj) {
+  return 0;
+}
+
+//Provides: caml_obj_set_reserved
+function caml_obj_set_reserved(_obj, _bits) {
+  return 0;
+}
+
+//Provides: caml_read_bdsc_section
+function caml_read_bdsc_section(_unit) {
+  return 0;
+}
