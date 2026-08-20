@@ -19,11 +19,13 @@
    (import "obj" "caml_callback_1"
       (func $caml_callback_1
          (param (ref eq)) (param (ref eq)) (result (ref eq))))
+   (import "fail" "caml_failwith" (func $caml_failwith (param (ref eq))))
    (import "fail" "ocaml_exception" (tag $ocaml_exception (param (ref eq))))
    (import "sync" "caml_ml_mutex_unlock"
       (func $caml_ml_mutex_unlock (param (ref eq)) (result (ref eq))))
 
    (type $block (array (mut (ref eq))))
+   (type $bytes (array (mut i8)))
 
    (func (export "caml_atomic_cas")
       (param $ref (ref eq)) (param $o (ref eq)) (param $n (ref eq))
@@ -319,6 +321,13 @@
    (func (export "caml_domain_count")
       (param (ref eq)) (result (ref eq))
       (ref.i31 (i32.const 1)))
+
+   (@string $tick_not_implemented "[Domain.Tick] not implemented")
+
+   (func (export "caml_domain_set_tick_interval_usec_bytecode")
+      (param $interval (ref eq)) (result (ref eq))
+      (call $caml_failwith (global.get $tick_not_implemented))
+      (ref.i31 (i32.const 0)))
 
    (func (export "caml_atomic_add_field")
       (param $ref (ref eq)) (param $field (ref eq)) (param $i (ref eq))
