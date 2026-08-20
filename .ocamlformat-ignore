@@ -1,0 +1,2 @@
+# OxCaml syntax that ocamlformat cannot parse
+compiler/tests-wasm_of_ocaml/gh2093_oxcaml.ml
