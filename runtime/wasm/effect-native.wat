@@ -297,17 +297,6 @@
             (cont.new $continuation (ref.func $initial_cont)))
          (local.get $f) (local.get $v)))
 
-   (func (export "%with_stack_bind")
-      (param $value (ref eq)) (param $exn (ref eq)) (param $effect (ref eq))
-      (param $dyn (ref eq)) (param $bind (ref eq))
-      (param $f (ref eq)) (param $v (ref eq))
-      (result (ref eq))
-      (return_call $resume_fiber
-         (struct.new $fiber
-            (local.get $value) (local.get $exn) (local.get $effect)
-            (cont.new $continuation (ref.func $initial_cont)))
-         (local.get $f) (local.get $v)))
-
    ;; There is no tick source, so the fiber is never preempted: the tick
    ;; handler is dropped and this behaves like [%with_stack].
    (func (export "%with_stack_preemptible")
