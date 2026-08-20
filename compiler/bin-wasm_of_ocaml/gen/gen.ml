@@ -78,10 +78,11 @@ let check_js_file fname =
 let default_flags = []
 
 let interesting_runtimes =
-  [ [ "effects", `S "jspi"; "wasi", `B false ]
-  ; [ "effects", `S "cps"; "wasi", `B false ]
-  ; [ "effects", `S "disabled"; "wasi", `B true ]
-  ; [ "effects", `S "cps"; "wasi", `B true ]
+  [ [ "effects", `S "jspi"; "wasi", `B false; "portable-int", `B false ]
+  ; [ "effects", `S "jspi"; "wasi", `B false; "portable-int", `B true ]
+  ; [ "effects", `S "cps"; "wasi", `B false; "portable-int", `B false ]
+  ; [ "effects", `S "disabled"; "wasi", `B true; "portable-int", `B false ]
+  ; [ "effects", `S "cps"; "wasi", `B true; "portable-int", `B false ]
   ]
 
 let defaults = [ "effects", "disabled" ]

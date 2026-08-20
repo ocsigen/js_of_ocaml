@@ -87,6 +87,8 @@ module Flag : sig
   val enable : string -> unit
 
   val disable : string -> unit
+
+  val portable_int : unit -> bool
 end
 
 (** This module contains parameters that may be modified through command-line flags. *)

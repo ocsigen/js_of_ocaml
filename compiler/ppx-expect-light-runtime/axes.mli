@@ -37,6 +37,10 @@ val ocaml_version : int list
 val oxcaml : bool
 (** Whether the compiler is the OxCaml flavour. *)
 
+val int_size_64 : bool
+(** Whether OCaml ints are 63-bit ([Sys.int_size >= 63]): native 64-bit and
+    portable-int wasm, as opposed to js and default wasm. *)
+
 val version_compare : int list -> int list -> int
 (** Lexicographic comparison of version components, like
     {!Ppx_light_predicate.Predicate.Version.compare}. *)

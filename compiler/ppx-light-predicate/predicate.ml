@@ -326,6 +326,7 @@ let rec reify_bool (t : t) : expression =
   match t with
   | Bool (_, b) -> Ast_builder.Default.ebool ~loc b
   | Ident (_, "oxcaml") -> [%expr Ppx_expect_light_runtime.Axes.oxcaml]
+  | Ident (_, "int_size_64") -> [%expr Ppx_expect_light_runtime.Axes.int_size_64]
   | Ident (_, name) -> (
       match shorthand name with
       | Some (axis, value) -> reify_cmp loc "=" (Ident (loc, axis)) (String (loc, value))
