@@ -1,0 +1,14 @@
+; The test source is gated on OxCaml by ppx_optcomp_light.
+
+(library
+ (name jsoo_unyielding_expect_tests)
+ (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
+ (inline_tests
+  (deps
+   %{bin:node}
+   (file %{project_root}/compiler/bin-js_of_ocaml/js_of_ocaml.exe)
+   (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
+ (flags
+  (:standard -open Jsoo_compiler_expect_tests_helper))
+ (preprocess
+  (pps ppx_optcomp_light ppx_expect_light)))

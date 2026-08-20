@@ -42,6 +42,11 @@ module Flag : sig
 
   val effects : unit -> bool
 
+  val oxcaml_use_unyielding_debuginfo_for_effect_cps : unit -> bool
+  (** Whether to take advantage of the per-call-site "unyielding call"
+      information recorded in bytecode debug events by the OxCaml compiler.
+      Only used with the double-translation effects backend. *)
+
   val genprim : unit -> bool
 
   val strictmode : unit -> bool

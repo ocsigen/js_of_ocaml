@@ -21,12 +21,20 @@ open! Util
 
 [@@@if ocaml_version >= (5, 0, 0)]
 
+(* The program uses the legacy [Effect.perform], which OxCaml does not track
+   in its unyielding-call information. *)
+let flags =
+  if Js_of_ocaml_compiler.Config.oxcaml
+  then [ "--disable"; "oxcaml-use-unyielding-debuginfo-for-effect-cps" ]
+  else []
+
 (* [make] does not perform any effect, but it is applied to more arguments
    than it takes, and the closure it returns does. The call is not exact,
    since [g] may be one of two functions of different arities. The call point
    must be in CPS, and so must be the function it belongs to. *)
 let%expect_test "over-application of a function without CPS version" =
   compile_and_run
+    ~flags
     ~effects:`Double_translation
     {|
     [@@@alert "-unsafe_effects"] (* OxCaml warns about [Effect.perform] *)
