@@ -89,6 +89,7 @@ let preprocessor_variables () =
            | `Double_translation -> assert false)
         |> Build_info.string_of_effects_backend) )
   ; "wasi", Wat_preprocess.Bool (Config.Flag.wasi ())
+  ; "portable-int", Wat_preprocess.Bool (Config.Flag.portable_int ())
   ]
 
 let with_runtime_files ~runtime_wasm_files f =
@@ -409,8 +410,8 @@ let run
     ; export_file
     ; fs_files
     } =
-  Config.set_target `Wasm;
   Jsoo_cmdline.Arg.eval common;
+  Config.set_target `Wasm;
   Config.set_effects_backend effects;
   Jsoo_cmdline.Build_config.process
     `Wasm

@@ -223,6 +223,7 @@ module Fragment = struct
             | `JavaScript -> false
             | `Wasm -> true )
       ; ("introspect", fun () -> Config.introspect)
+      ; "portable-int", Config.Flag.portable_int
       ]
 
   type t =
