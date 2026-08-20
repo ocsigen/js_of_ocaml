@@ -27,6 +27,11 @@
    (import "string" "caml_bytes_equal"
       (func $caml_bytes_equal
          (param (ref eq)) (param (ref eq)) (result (ref eq))))
+   (@if $portable-int
+   (@then
+      (import "portableint" "bool_val"
+         (func $bool_val (param (ref eq)) (result i32)))
+   ))
 
    (type $bytes (array (mut i8)))
    (type $compare
@@ -116,6 +121,16 @@
       (block $not_found
          (local.set $l (br_on_null $not_found (global.get $custom_operations)))
          (loop $loop
+            (@if $portable-int
+            (@then
+               (if (call $bool_val
+                  (call $caml_bytes_equal (local.get $id)
+                     (struct.get $custom_operations $id
+                        (struct.get $custom_operations_list $ops (local.get $l)))))
+                  (then
+                     (return
+                        (struct.get $custom_operations_list $ops (local.get $l))))))
+            (@else
             (if (i31.get_u
                    (ref.cast (ref i31)
                        (call $caml_bytes_equal (local.get $id)
@@ -125,6 +140,7 @@
                (then
                   (return
                      (struct.get $custom_operations_list $ops (local.get $l)))))
+            ))
             (local.set $l
                (br_on_null $not_found
                   (struct.get $custom_operations_list $next (local.get $l))))

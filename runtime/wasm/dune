@@ -37,6 +37,26 @@
    %{read-lines:args})))
 
 (rule
+ (target runtime-jspi-portable-int.wasm)
+ (deps
+  binaryen-version-check
+  args
+  c-impl.wasm
+  (glob_files *.wat))
+ (action
+  (run
+   ../../compiler/bin-wasm_of_ocaml/wasmoo_link_wasm.exe
+   --binaryen=-g
+   --binaryen-opt=-O3
+   --set=effects=jspi
+   --disable=wasi
+   --enable=portable-int
+   --allowed-imports=bindings,Math,js,wasm:js-string,wasm:text-encoder,wasm:text-decoder
+   %{target}
+   c:c-impl.wasm
+   %{read-lines:args})))
+
+(rule
  (target runtime-cps.wasm)
  (deps
   binaryen-version-check

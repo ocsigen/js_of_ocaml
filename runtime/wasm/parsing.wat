@@ -29,6 +29,11 @@
    (import "float" "caml_format_float"
       (func $caml_format_float
          (param (ref eq)) (param (ref eq)) (result (ref eq))))
+   (@if $portable-int
+   (@then
+      (import "portableint" "bool_val"
+         (func $bool_val (param (ref eq)) (result i32)))
+   ))
 
    (type $float (struct (field $f f64)))
    (type $block (array (mut (ref eq))))
@@ -175,7 +180,11 @@
                (call $token_name
                   (array.get $block (local.get $tables)
                      (global.get $tbl_names_const))
+                  ;; [$tok] is a parameter and never set here, so the [$output]
+                  ;; calls cannot have invalidated the [ref.test] above.
+                  ;; lint-ignore-start manual-portability-handling-unsafe
                   (i31.get_u (ref.cast (ref i31) (local.get $tok)))))
+                  ;; lint-ignore-end manual-portability-handling-unsafe
             (call $output_nl))
          (else
             (call $output (global.get $State))
@@ -260,6 +269,8 @@
          (ref.cast (ref $bytes)
             (array.get $block (local.get $tables) (global.get $tbl_dgoto_field))))
       (local.set $env (ref.cast (ref $block) (local.get $venv)))
+      ;; Parser command from [Parsing], a constant constructor; always an [i31].
+      ;; lint-ignore-start manual-portability-handling-unsafe
       (local.set $cmd (i31.get_s (ref.cast (ref i31) (local.get $vcmd))))
       (local.set $sp
          (i31.get_s
@@ -273,6 +284,7 @@
          (i31.get_s
             (ref.cast (ref i31)
                (array.get $block (local.get $env) (global.get $env_errflag)))))
+         ;; lint-ignore-end manual-portability-handling-unsafe
       (block $exit
        (loop $next
         (block $default
@@ -303,10 +315,13 @@
                         (local.set $cmd (global.get $reduce))
                         (br $next)))
                   (if (i32.ge_s
+                         ;; Parser table or [parser_env] field, written by [Parsing]; always an [i31].
+                         ;; lint-ignore-start manual-portability-handling-unsafe
                          (i31.get_s
                             (ref.cast (ref i31)
                                (array.get $block (local.get $env)
                                   (global.get $env_curr_char))))
+                         ;; lint-ignore-end manual-portability-handling-unsafe
                          (i32.const 0))
                      (then
                         (local.set $cmd (global.get $testshift))
@@ -334,6 +349,8 @@
                        (array.set $block (local.get $env) (global.get $env_lval)
                           (array.get $block (local.get $arg) (i32.const 1)))
                        (br $cont)))
+                    ;; Constant-constructor token; always an [i31].
+                    ;; lint-ignore-start manual-portability-handling-unsafe
                     (array.set $block (local.get $env)
                        (global.get $env_curr_char)
                        (array.get $block
@@ -343,6 +360,7 @@
                           (i32.add
                              (i31.get_u (ref.cast (ref i31) (local.get $varg)))
                              (i32.const 1))))
+                    ;; lint-ignore-end manual-portability-handling-unsafe
                     (array.set $block (local.get $env) (global.get $env_lval)
                        (ref.i31 (i32.const 0))))
                  (if (global.get $caml_parser_trace)
@@ -354,19 +372,25 @@
                    (call $get (local.get $tbl_sindex) (local.get $state)))
                 (local.set $n2
                     (i32.add (local.get $n1)
+                       ;; Parser table or [parser_env] field, written by [Parsing]; always an [i31].
+                       ;; lint-ignore-start manual-portability-handling-unsafe
                        (i31.get_s
                           (ref.cast (ref i31)
                              (array.get $block (local.get $env)
                                 (global.get $env_curr_char))))))
+                       ;; lint-ignore-end manual-portability-handling-unsafe
                 (if (i32.and
                        (i32.ne (local.get $n1) (i32.const 0))
                        (i32.ge_s (local.get $n2) (i32.const 0)))
                    (then
                       (if (i32.le_s (local.get $n2)
+                             ;; Parser table or [parser_env] field, written by [Parsing]; always an [i31].
+                             ;; lint-ignore-start manual-portability-handling-unsafe
                              (i31.get_s
                                 (ref.cast (ref i31)
                                    (array.get $block (local.get $tables)
                                       (global.get $tbl_tablesize)))))
+                             ;; lint-ignore-end manual-portability-handling-unsafe
                          (then
                             (if (ref.eq
                                    (ref.i31
@@ -381,19 +405,25 @@
                    (call $get (local.get $tbl_rindex) (local.get $state)))
                 (local.set $n2
                    (i32.add (local.get $n1)
+                      ;; Parser table or [parser_env] field, written by [Parsing]; always an [i31].
+                      ;; lint-ignore-start manual-portability-handling-unsafe
                       (i31.get_s
                          (ref.cast (ref i31)
                             (array.get $block (local.get $env)
                                (global.get $env_curr_char))))))
+                      ;; lint-ignore-end manual-portability-handling-unsafe
                 (if (i32.and
                        (i32.ne (local.get $n1) (i32.const 0))
                        (i32.ge_s (local.get $n2) (i32.const 0)))
                    (then
                       (if (i32.le_s (local.get $n2)
+                             ;; Parser table or [parser_env] field, written by [Parsing]; always an [i31].
+                             ;; lint-ignore-start manual-portability-handling-unsafe
                              (i31.get_s
                                 (ref.cast (ref i31)
                                    (array.get $block (local.get $tables)
                                       (global.get $tbl_tablesize)))))
+                             ;; lint-ignore-end manual-portability-handling-unsafe
                          (then
                             (if (ref.eq
                                    (ref.i31
@@ -418,6 +448,8 @@
                      (local.set $errflag (i32.const 3))
                      (loop $loop2
                        (local.set $state1
+                          ;; Parser table or [parser_env] field, written by [Parsing]; always an [i31].
+                          ;; lint-ignore-start manual-portability-handling-unsafe
                           (i31.get_s
                              (ref.cast (ref i31)
                                 (array.get $block
@@ -425,6 +457,7 @@
                                       (array.get $block (local.get $env)
                                          (global.get $env_s_stack)))
                                    (i32.add (local.get $sp) (i32.const 1))))))
+                          ;; lint-ignore-end manual-portability-handling-unsafe
                        (local.set $n1
                           (call $get (local.get $tbl_sindex)
                              (local.get $state1)))
@@ -435,10 +468,13 @@
                               (i32.ge_s (local.get $n2) (i32.const 0)))
                           (then
                              (if (i32.le_s (local.get $n2)
+                                    ;; Parser table or [parser_env] field, written by [Parsing]; always an [i31].
+                                    ;; lint-ignore-start manual-portability-handling-unsafe
                                     (i31.get_s
                                        (ref.cast (ref i31)
                                           (array.get $block (local.get $tables)
                                              (global.get $tbl_tablesize)))))
+                                    ;; lint-ignore-end manual-portability-handling-unsafe
                                 (then
                                    (if (i32.eq
                                           (call $get (local.get $tbl_check)
@@ -463,10 +499,13 @@
                              (call $output_int (local.get $state1))
                              (call $output_nl)))
                        (if (i32.le_s (local.get $sp)
+                              ;; Parser table or [parser_env] field, written by [Parsing]; always an [i31].
+                              ;; lint-ignore-start manual-portability-handling-unsafe
                               (i31.get_s
                                  (ref.cast (ref i31)
                                     (array.get $block (local.get $env)
                                        (global.get $env_stackbase)))))
+                              ;; lint-ignore-end manual-portability-handling-unsafe
                           (then
                              (if (global.get $caml_parser_trace)
                                 (then
@@ -514,10 +553,13 @@
                 (call $get (local.get $tbl_table) (local.get $n2)))
              (local.set $sp (i32.add (local.get $sp) (i32.const 1)))
              (if (i32.ge_s (local.get $sp)
+                    ;; Parser table or [parser_env] field, written by [Parsing]; always an [i31].
+                    ;; lint-ignore-start manual-portability-handling-unsafe
                     (i31.get_s
                        (ref.cast (ref i31)
                            (array.get $block (local.get $env)
                               (global.get $env_stacksize)))))
+                    ;; lint-ignore-end manual-portability-handling-unsafe
                 (then
                    (local.set $res (global.get $GROW_STACKS_1))
                    (br $exit))))
@@ -566,6 +608,8 @@
               (i32.add (local.get $sp) (i32.sub (i32.const 1) (local.get $m))))
            (local.set $m (call $get (local.get $tbl_lhs) (local.get $n)))
            (local.set $state1
+              ;; Parser table or [parser_env] field, written by [Parsing]; always an [i31].
+              ;; lint-ignore-start manual-portability-handling-unsafe
               (i31.get_s
                  (ref.cast (ref i31)
                     (array.get $block
@@ -573,6 +617,7 @@
                           (array.get $block (local.get $env)
                              (global.get $env_s_stack)))
                        (local.get $sp)))))
+              ;; lint-ignore-end manual-portability-handling-unsafe
            (local.set $n1 (call $get (local.get $tbl_gindex) (local.get $m)))
            (local.set $n2 (i32.add (local.get $n1) (local.get $state1)))
            (block $cont
@@ -581,10 +626,13 @@
                      (i32.ge_s (local.get $n2) (i32.const 0)))
                  (then
                     (if (i32.le_s (local.get $n2)
+                           ;; Parser table or [parser_env] field, written by [Parsing]; always an [i31].
+                           ;; lint-ignore-start manual-portability-handling-unsafe
                            (i31.get_s
                               (ref.cast (ref i31)
                                  (array.get $block (local.get $tables)
                                     (global.get $tbl_tablesize)))))
+                           ;; lint-ignore-end manual-portability-handling-unsafe
                        (then
                           (if (i32.eq
                                  (call $get (local.get $tbl_check)
@@ -598,10 +646,13 @@
               (local.set $state
                  (call $get (local.get $tbl_dgoto) (local.get $m))))
            (if (i32.ge_s (local.get $sp)
+                  ;; Parser table or [parser_env] field, written by [Parsing]; always an [i31].
+                  ;; lint-ignore-start manual-portability-handling-unsafe
                   (i31.get_s
                      (ref.cast (ref i31)
                         (array.get $block (local.get $env)
                            (global.get $env_stacksize)))))
+                  ;; lint-ignore-end manual-portability-handling-unsafe
               (then
                  (local.set $res (global.get $GROW_STACKS_2))
                  (br $exit))))
@@ -621,9 +672,12 @@
             (i32.add (local.get $sp) (i32.const 1))
             (local.get $varg))
          (local.set $asp
+            ;; Parser table or [parser_env] field, written by [Parsing]; always an [i31].
+            ;; lint-ignore-start manual-portability-handling-unsafe
             (i31.get_s
                (ref.cast (ref i31)
                   (array.get $block (local.get $env) (global.get $env_asp)))))
+            ;; lint-ignore-end manual-portability-handling-unsafe
          (array.set $block
             (ref.cast (ref $block)
                (array.get $block (local.get $env)
@@ -663,7 +717,13 @@
    (func (export "caml_set_parser_trace") (param $v (ref eq)) (result (ref eq))
       (local $oldflag i32)
       (local.set $oldflag (global.get $caml_parser_trace))
+      (@if $portable-int
+      (@then
+         (global.set $caml_parser_trace
+            (call $bool_val (local.get $v))))
+      (@else
       (global.set $caml_parser_trace
          (i31.get_s (ref.cast (ref i31) (local.get $v))))
+      ))
       (ref.i31 (local.get $oldflag)))
 )

@@ -25,7 +25,6 @@
 (@else
    (import "bindings" "jstag" (tag $javascript_exception (param externref)))
 ))
-
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
 

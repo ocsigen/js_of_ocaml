@@ -16,6 +16,11 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
+   (@if $portable-int
+   (@then
+      (import "portableint" "int_val_32_exn"
+         (func $int_val_32_exn (param (ref eq)) (param (ref eq)) (result i32)))
+   ))
 (@if (not $wasi)
 (@then
    (import "stdlib" "caml_global_data"
@@ -48,6 +53,8 @@
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
 
+   (@string $realloc_global "Toplevel.realloc_global")
+
    (func (export "caml_terminfo_rows")
       (param (ref eq)) (result (ref eq))
       (ref.i31 (i32.const 0)))
@@ -62,7 +69,13 @@
       (local $new (ref $block))
       (local.set $new_len
          (i32.add
+            (@if $portable-int
+            (@then
+               (call $int_val_32_exn (local.get $len)
+                  (global.get $realloc_global)))
+            (@else
             (i31.get_u (ref.cast (ref i31) (local.get $len)))
+            ))
             (i32.const 2)))
       (if (i32.gt_u (local.get $new_len)
                      (array.len (global.get $caml_global_data)))
