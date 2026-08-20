@@ -348,7 +348,7 @@ type constant =
   | Int of Targetint.t
   | Int32 of Int32.t
   | Int64 of Int64.t
-  | NativeInt of Int32.t (* Native ints are 32bit on all known backends *)
+  | NativeInt of Targetnativeint.t
   | Tuple of int * constant array * array_or_not
   | Null_
 
@@ -374,7 +374,7 @@ module Constant = struct
     | Int a, Int b -> Some (Targetint.equal a b)
     | Int32 a, Int32 b -> Some (Int32.equal a b)
     | Int64 a, Int64 b -> Some (Int64.equal a b)
-    | NativeInt a, NativeInt b -> Some (Int32.equal a b)
+    | NativeInt a, NativeInt b -> Some (Targetnativeint.equal a b)
     | Float_array a, Float_array b ->
         Some
           (Array.equal
@@ -553,7 +553,7 @@ module Print = struct
     | Int i -> Format.fprintf f "%s" (Targetint.to_string i)
     | Int32 i -> Format.fprintf f "%ldl" i
     | Int64 i -> Format.fprintf f "%LdL" i
-    | NativeInt i -> Format.fprintf f "%ldn" i
+    | NativeInt i -> Format.fprintf f "%s" (Targetnativeint.to_string i)
     | Tuple (tag, a, _) -> (
         Format.fprintf f "<%d>" tag;
         match Array.length a with
