@@ -167,9 +167,7 @@ let effect_primitive_or_application = function
             | "%perform"
             | "%reperform"
             | "%with_stack"
-            | "%with_stack_bind"
-            | "%with_stack_preemptible"
-            | "%with_stack_bind_preemptible" )
+            | "%with_stack_preemptible" )
           , _ )
       , _ )
   | Apply _ -> true
@@ -699,32 +697,6 @@ let cps_block ~st ~k ~orig_pc block =
               ~check:true
               ~f
               [ arg; k' ])
-    | Prim
-        (Extern ("%with_stack_bind", _), [ Pv hv; Pv hx; Pv hf; Pv _; Pv _; Pv f; Pv arg ])
-    | Prim
-        ( Extern ("%with_stack_bind_preemptible", _)
-        , [ Pv hv; Pv hx; Pv hf; Pv _; Pv _; Pv _; Pv f; Pv arg ] ) ->
-        Some
-          (fun ~k ->
-            let stack = Var.fresh_n "stack" in
-            let k' = Var.fresh_n "cont" in
-            tail_call
-              ~st
-              ~instrs:
-                [ Let
-                    ( stack
-                    , Prim (Extern ("caml_alloc_stack", None), [ Pv hv; Pv hx; Pv hf ]) )
-                ; Let
-                    ( k'
-                    , Prim
-                        (Extern ("caml_resume_stack", None), [ Pv stack; Pv stack; Pv k ])
-                    )
-                ]
-              ~exact:(call_exact st.flow_info f 1)
-              ~in_cps:true
-              ~check:true
-              ~f
-              [ arg; k' ])
     | Prim (Extern ("%perform", _), [ Pv effect_ ]) -> perform_effect ~effect_ None
     | Prim (Extern ("%reperform", _), [ Pv effect_; continuation; tail ]) ->
         perform_effect ~effect_ (Some (continuation, tail))
@@ -814,17 +786,6 @@ let rewrite_direct_block ~st ~cps_needed ~closure_info ~pc block =
           , Prim
               (Extern ("%with_stack_preemptible", _), [ Pv hv; Pv hx; Pv hf; _; f; arg ])
           ) ->
-          let stack = Var.fresh_n "stack" in
-          [ Let (stack, Prim (Extern ("caml_alloc_stack", None), [ Pv hv; Pv hx; Pv hf ]))
-          ; Let (x, Prim (Extern ("caml_resume", None), [ f; arg; Pv stack; Pv stack ]))
-          ]
-      | Let
-          (x, Prim (Extern ("%with_stack_bind", _), [ Pv hv; Pv hx; Pv hf; _; _; f; arg ]))
-      | Let
-          ( x
-          , Prim
-              ( Extern ("%with_stack_bind_preemptible", _)
-              , [ Pv hv; Pv hx; Pv hf; _; _; _; f; arg ] ) ) ->
           let stack = Var.fresh_n "stack" in
           [ Let (stack, Prim (Extern ("caml_alloc_stack", None), [ Pv hv; Pv hx; Pv hf ]))
           ; Let (x, Prim (Extern ("caml_resume", None), [ f; arg; Pv stack; Pv stack ]))
@@ -1140,9 +1101,7 @@ let rewrite_toplevel_instr (p, cps_needed, accu) instr =
                  | "%perform"
                  | "%reperform"
                  | "%with_stack"
-                 | "%with_stack_bind"
-                 | "%with_stack_preemptible"
-                 | "%with_stack_bind_preemptible" )
+                 | "%with_stack_preemptible" )
                , _ )
            , _ ) as e) ) -> wrap_primitive ~cps_needed p x e accu
   | _ -> p, cps_needed, [ instr ] :: accu
