@@ -1,5 +1,8 @@
 (test
- (modes js) ; No env support in wasm_of_ocaml yet
+ ; wasm_of_ocaml accepts --setenv, but only feeds it to the static evaluator; it has no
+ ; runtime environment to answer the lookups in this test, which go through a function
+ ; parameter and so cannot be constant-folded.
+ (modes js)
  (js_of_ocaml
   (javascript_files setup.js)
   (flags :standard --setenv JSOO_C=from-jsoo-args))
