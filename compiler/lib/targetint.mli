@@ -16,6 +16,8 @@ val to_float : t -> float
 
 val to_int32 : t -> int32
 
+val to_int64 : t -> int64
+
 (* of *)
 
 val of_string_exn : string -> t
@@ -24,9 +26,15 @@ val of_int_exn : int -> t
 
 val of_int32_exn : int32 -> t
 
+val of_int64_exn : int64 -> t
+
 val of_int32_truncate : int32 -> t
 
+val of_int64_truncate : int64 -> t
+
 val of_int32_warning_on_overflow : int32 -> t
+
+val of_int64_warning_on_overflow : int64 -> t
 
 val of_nativeint_warning_on_overflow : nativeint -> t
 

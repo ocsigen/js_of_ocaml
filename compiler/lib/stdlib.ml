@@ -271,6 +271,16 @@ end
 
 let ( @ ) = List.append
 
+let warn_overflow name ~to_dec ~to_hex ?(to_hex_truncated = to_hex) i truncated =
+  Warning.warn
+    `Integer_overflow
+    "%s 0x%s (%s) truncated to 0x%s (%s); the generated code might be incorrect.@."
+    name
+    (to_hex i)
+    (to_dec i)
+    (to_hex_truncated truncated)
+    (to_dec truncated)
+
 module Int32 = struct
   include Int32
 
@@ -286,20 +296,10 @@ module Int32 = struct
 
   external ( >= ) : int32 -> int32 -> bool = "%greaterequal"
 
-  let warn_overflow name ~to_dec ~to_hex i i32 =
-    Warning.warn
-      `Integer_overflow
-      "%s 0x%s (%s) truncated to 0x%lx (%ld); the generated code might be incorrect.@."
-      name
-      (to_hex i)
-      (to_dec i)
-      i32
-      i32
-
   let convert_warning_on_overflow name ~to_int32 ~of_int32 ~equal ~to_dec ~to_hex x =
     let i32 = to_int32 x in
     let x' = of_int32 i32 in
-    if not (equal x' x) then warn_overflow name ~to_dec ~to_hex x i32;
+    if not (equal x' x) then warn_overflow name ~to_dec ~to_hex x x';
     i32
 
   let of_nativeint_warning_on_overflow n =
@@ -393,6 +393,46 @@ module Int64 = struct
   external ( > ) : int64 -> int64 -> bool = "%greaterthan"
 
   external ( >= ) : int64 -> int64 -> bool = "%greaterequal"
+
+  let convert_warning_on_overflow
+      name
+      ~to_int64
+      ~of_int64
+      ~equal
+      ~to_dec
+      ~to_hex
+      ?to_hex_truncated
+      x =
+    let i64 = to_int64 x in
+    let x' = of_int64 i64 in
+    if not (equal x' x) then warn_overflow name ~to_dec ~to_hex ?to_hex_truncated x x';
+    i64
+
+  let of_nativeint_warning_on_overflow n =
+    convert_warning_on_overflow
+      "native integer"
+      ~to_int64:Int64.of_nativeint
+      ~of_int64:Int64.to_nativeint
+      ~equal:Nativeint.equal
+      ~to_dec:(Printf.sprintf "%nd")
+      ~to_hex:(Printf.sprintf "%nx")
+      n
+
+  let high x = to_int32 (shift_right_logical x 32)
+
+  let leading_zeros x =
+    let h = high x in
+    if Int32.equal h 0l
+    then 32 + Int32.leading_zeros (to_int32 x)
+    else Int32.leading_zeros h
+
+  let trailing_zeros x =
+    let l = to_int32 x in
+    if Int32.equal l 0l
+    then 32 + Int32.trailing_zeros (high x)
+    else Int32.trailing_zeros l
+
+  let popcount x = Int32.popcount (to_int32 x) + Int32.popcount (high x)
 end
 
 module Option = struct
