@@ -41,7 +41,20 @@
  (enabled_if
   (and
    (>= %{ocaml_version} 5)
+   (not %{oxcaml_supported})
    (<> %{profile} wasi)))
+ (wasm_of_ocaml
+  (compilation_mode whole_program)
+  (flags :standard)))
+
+; Same test written against the OxCaml Effect.Safe API.
+
+(tests
+ (names gh2093_oxcaml)
+ (modes wasm)
+ (build_if %{oxcaml_supported})
+ (enabled_if
+  (<> %{profile} wasi))
  (wasm_of_ocaml
   (compilation_mode whole_program)
   (flags :standard)))
