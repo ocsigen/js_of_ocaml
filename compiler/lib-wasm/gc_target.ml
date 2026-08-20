@@ -1138,7 +1138,11 @@ module Constant = struct
         let* e = Memory.make_int32 ~kind:`Int32 (return (W.Const (I32 i))) in
         return (Const, e)
     | NativeInt i ->
-        let* e = Memory.make_int32 ~kind:`Nativeint (return (W.Const (I32 i))) in
+        let* e =
+          Memory.make_int32
+            ~kind:`Nativeint
+            (return (W.Const (I32 (Targetnativeint.to_int32 i))))
+        in
         return (Const, e)
     | Null_ ->
         let* var =
@@ -1153,7 +1157,8 @@ module Constant = struct
     | ((Float32 f) [@if oxcaml]) when unboxed ->
         return (W.Const (F32 (Int64.float_of_bits f)))
     | Int64 i when unboxed -> return (W.Const (I64 i))
-    | (Int32 i | NativeInt i) when unboxed -> return (W.Const (I32 i))
+    | Int32 i when unboxed -> return (W.Const (I32 i))
+    | NativeInt i when unboxed -> return (W.Const (I32 (Targetnativeint.to_int32 i)))
     | _ -> (
         let* const, c = translate_rec c in
         match const with

@@ -152,7 +152,7 @@ type constant =
   | Int of Targetint.t
   | Int32 of Int32.t  (** Only produced when compiling to WebAssembly. *)
   | Int64 of Int64.t
-  | NativeInt of Int32.t  (** Only produced when compiling to WebAssembly. *)
+  | NativeInt of Targetnativeint.t
   | Tuple of int * constant array * array_or_not
   | Null_
 

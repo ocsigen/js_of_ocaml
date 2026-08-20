@@ -490,7 +490,7 @@ let specialize_instrs ~target opt_count info l =
         | Let (x, Prim (Extern ("caml_make_unboxed_nativeint_vect_bytecode", _), [ y ]))
           ->
             incr opt_count;
-            aux info checks r (make_vect x y (NativeInt 0l) acc)
+            aux info checks r (make_vect x y (NativeInt Targetnativeint.zero) acc)
         | Let (x, Prim (Extern ("caml_make_unboxed_float32_vect_bytecode", _), [ y ])) ->
             incr opt_count;
             aux info checks r (make_vect x y (Float32 0L) acc)

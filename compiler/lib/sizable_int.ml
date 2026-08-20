@@ -104,6 +104,12 @@ module type S = sig
   val ( <> ) : t -> t -> bool
 
   val unsigned_lt : t -> t -> bool
+
+  val bits_of_float : float -> t
+
+  val float_of_bits : t -> float
+
+  val of_float : float -> t
 end
 
 module type Arg = sig
@@ -314,4 +320,10 @@ module Make (Arg : Arg) : S = struct
   external ( >= ) : int64 -> int64 -> bool = "%greaterequal"
 
   let unsigned_lt n m = Int64.(sub n min_int < sub m min_int)
+
+  external bits_of_float : float -> int64 = "caml_int64_bits_of_float"
+
+  external float_of_bits : int64 -> float = "caml_int64_float_of_bits"
+
+  external of_float : float -> int64 = "caml_int64_of_float"
 end

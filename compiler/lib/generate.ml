@@ -714,7 +714,8 @@ let rec constant_rec ~ctx x level instrs =
           in
           Mlvalue.Block.make ~tag ~args:l, instrs)
   | Int i -> targetint i, instrs
-  | Int32 i | NativeInt i -> targetint (Targetint.of_int32_exn i), instrs
+  | Int32 i -> targetint (Targetint.of_int32_exn i), instrs
+  | NativeInt i -> targetint (Targetint.of_int64_exn (Targetnativeint.to_int64 i)), instrs
   | Null_ -> s_var "null", instrs
 
 let constant ~ctx x level =
