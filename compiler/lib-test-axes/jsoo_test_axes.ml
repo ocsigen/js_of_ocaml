@@ -40,6 +40,8 @@ let wasi = String.equal host_engine "wasi"
    libraries. The native stub of this library is never called. *)
 external effects_ : unit -> string = "caml_jsoo_flags_effects"
 
+let int_size_64 = Sys.int_size >= 63
+
 let effects =
   match Sys.backend_type with
   | Native | Bytecode -> "native"

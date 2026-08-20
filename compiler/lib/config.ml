@@ -136,6 +136,8 @@ module Flag = struct
   let wasi = o ~name:"wasi" ~default:false
 
   let split_toplevel = o ~name:"split-toplevel" ~default:true
+
+  let portable_int = o ~name:"portable-int" ~default:false
 end
 
 module Param = struct
@@ -292,11 +294,16 @@ let target () =
   | (`JavaScript | `Wasm) as t -> t
 
 let set_target (t : [ `JavaScript | `Wasm ]) =
-  (match t with
-  | `JavaScript ->
+  (match t, Flag.portable_int () with
+  | `JavaScript, false ->
       Targetint.set_num_bits 32;
       Targetnativeint.set_num_bits 32
-  | `Wasm ->
+  | `JavaScript, true ->
+      failwith "Portable int representation is incompatible with JavaScript"
+  | `Wasm, false ->
+      Targetint.set_num_bits 31;
+      Targetnativeint.set_num_bits 32
+  | `Wasm, true ->
       Targetint.set_num_bits 31;
       Targetnativeint.set_num_bits 32);
   target_ := (t :> [ `JavaScript | `Wasm | `None ])

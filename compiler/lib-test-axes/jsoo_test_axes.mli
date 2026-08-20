@@ -38,6 +38,10 @@ val bun : bool
 val wasi : bool
 (** [host_engine = "wasi"] *)
 
+val int_size_64 : bool
+(** Whether OCaml ints are 63-bit ([Sys.int_size >= 63]): native 64-bit and
+    portable-int wasm, as opposed to js and default wasm. *)
+
 val effects : string
 (** The [--effects] mode the test was compiled with: ["disabled"], ["cps"],
     ["double-translation"] or ["jspi"]; ["native"] for a native test. *)

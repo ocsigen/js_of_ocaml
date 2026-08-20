@@ -30,6 +30,7 @@
    --binaryen-opt=-O3
    --set=effects=jspi
    --disable=wasi
+   --disable=portable_int
    --allowed-imports=bindings,Math,js,wasm:js-string,wasm:text-encoder,wasm:text-decoder
    %{target}
    c:c-impl.wasm
@@ -49,6 +50,7 @@
    --binaryen-opt=-O3
    --set=effects=cps
    --disable=wasi
+   --disable=portable_int
    --allowed-imports=bindings,Math,js,wasm:js-string,wasm:text-encoder,wasm:text-decoder
    %{target}
    c:c-impl.wasm
@@ -68,6 +70,7 @@
    --binaryen-opt=-O3
    --set=effects=double-translation
    --disable=wasi
+   --disable=portable_int
    --allowed-imports=bindings,Math,js,wasm:js-string,wasm:text-encoder,wasm:text-decoder
    %{target}
    c:c-impl.wasm
@@ -86,6 +89,7 @@
    --binaryen-opt=-O3
    --set=effects=disabled
    --enable=wasi
+   --disable=portable_int
    --allowed-imports=wasi_snapshot_preview1,OCaml
    %{target}
    libc:libc.wasm
@@ -104,6 +108,7 @@
    --binaryen-opt=-O3
    --set=effects=cps
    --enable=wasi
+   --disable=portable_int
    %{target}
    libc:libc.wasm
    %{read-lines:args})))
@@ -121,6 +126,7 @@
    --binaryen-opt=-O3
    --set=effects=double-translation
    --enable=wasi
+   --disable=portable_int
    %{target}
    libc:libc.wasm
    %{read-lines:args})))
