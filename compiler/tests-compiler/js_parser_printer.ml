@@ -51,6 +51,7 @@ let print ?(debuginfo = true) ?(report = false) ?(invalid = false) ~compact sour
     let parsed = Parse_js.parse `Module lexed in
     (if debuginfo then Config.Flag.enable else Config.Flag.disable) "debuginfo";
     let _ = Js_output.program pp parsed in
+    Config.Flag.disable "debuginfo";
     let s = Buffer.contents buffer in
     print_endline s;
     (let lexed = Parse_js.Lexer.of_string ~filename:"fake" s in
