@@ -305,10 +305,9 @@ let eval_prim ~target x =
         when Int32.equal i (Targetint.to_int32 (Targetint.of_int32_truncate i)) ->
           Some (Int (Targetint.of_int32_truncate i))
       | "caml_checked_int64_to_int", [ Int64 i ]
-        when let j = Int64.to_int32 i in
-             Int64.equal i (Int64.of_int32 j)
-             && Int32.equal j (Targetint.to_int32 (Targetint.of_int32_truncate j)) ->
-          Some (Int (Targetint.of_int32_truncate (Int64.to_int32 i)))
+        when let j = Targetint.of_int64_truncate i in
+             Int64.equal i (Targetint.to_int64 j) ->
+          Some (Int (Targetint.of_int64_truncate i))
       | "caml_nativeint_of_int", [ Int i ] -> nativeint (Targetint.to_int32 i)
       (* int64 *)
       | "caml_int64_bits_of_float", [ Float f ] -> int64 f
