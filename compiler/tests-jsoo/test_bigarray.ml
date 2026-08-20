@@ -334,6 +334,14 @@ let%expect_test "hash" =
     314148ee nativeint 300 |}]
 [@@if ocaml_version >= (5, 2, 0)]
 
+let%expect_test ("indices wider than 32 bits fail the bounds check" [@when int_size_64]) =
+  let a = Bigarray.Array1.create Bigarray.int Bigarray.c_layout 10 in
+  a.{3} <- 42;
+  let huge = (1 lsl 32) + 3 + Random.int 1 in
+  (try Printf.printf "%d\n" a.{huge}
+   with Invalid_argument _ -> print_endline "bounds error");
+  [%expect {| bounds error |}]
+
 let%expect_test "float16 equality with nan" =
   (* nan <> nan, so structural equality on a bigarray containing a nan
      must be false (the comparison is unordered), while [compare] uses

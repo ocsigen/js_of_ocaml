@@ -467,11 +467,21 @@
 
    (func (export "caml_sys_const_word_size")
       (param (ref eq)) (result (ref eq))
+      (@if $portable_int
+      (@then
+         (ref.i31 (i32.const 64)))
+      (@else
       (ref.i31 (i32.const 32)))
+      ))
 
    (func (export "caml_sys_const_int_size")
       (param (ref eq)) (result (ref eq))
+      (@if $portable_int
+      (@then
+         (ref.i31 (i32.const 63)))
+      (@else
       (ref.i31 (i32.const 31)))
+      ))
 
    (func (export "caml_sys_const_max_wosize")
       (param (ref eq)) (result (ref eq))
