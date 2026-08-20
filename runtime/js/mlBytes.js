@@ -141,6 +141,41 @@ function caml_string_get(s, i) {
   return caml_string_unsafe_get(s, i);
 }
 
+//Provides: caml_string_geti8
+//Requires: caml_string_unsafe_get, caml_string_bound_error
+//Requires: caml_ml_string_length
+//Version: >= 5.2
+//If: oxcaml
+function caml_string_geti8(s, i) {
+  if (i >>> 0 >= caml_ml_string_length(s)) caml_string_bound_error();
+  return (caml_string_unsafe_get(s, i) << 24) >> 24;
+}
+
+//Provides: caml_bytes_geti8
+//Requires: caml_bytes_unsafe_get, caml_bytes_bound_error
+//Version: >= 5.2
+//If: oxcaml
+function caml_bytes_geti8(s, i) {
+  if (i >>> 0 >= s.l) caml_bytes_bound_error();
+  return (caml_bytes_unsafe_get(s, i) << 24) >> 24;
+}
+
+//Provides: caml_string_geti16
+//Requires: caml_string_get16
+//Version: >= 5.2
+//If: oxcaml
+function caml_string_geti16(s, i) {
+  return (caml_string_get16(s, i) << 16) >> 16;
+}
+
+//Provides: caml_bytes_geti16
+//Requires: caml_bytes_get16
+//Version: >= 5.2
+//If: oxcaml
+function caml_bytes_geti16(s, i) {
+  return (caml_bytes_get16(s, i) << 16) >> 16;
+}
+
 //Provides: caml_string_get16
 //Requires: caml_string_bound_error
 //Requires: caml_ml_string_length
@@ -270,6 +305,17 @@ function caml_string_set(_s, _i, _c) {
 function caml_string_set(s, i, c) {
   if (i >>> 0 >= s.l) caml_string_bound_error();
   return caml_string_unsafe_set(s, i, c);
+}
+
+//Provides: caml_bytes_set8
+//Requires: caml_bytes_bound_error, caml_bytes_unsafe_set
+//Version: >= 5.2
+//If: oxcaml
+function caml_bytes_set8(s, i, i8) {
+  if (i >>> 0 >= s.l) caml_bytes_bound_error();
+  var b1 = 0xff & i8;
+  caml_bytes_unsafe_set(s, i + 0, b1);
+  return 0;
 }
 
 //Provides: caml_bytes_set16

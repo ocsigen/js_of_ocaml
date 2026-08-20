@@ -488,6 +488,24 @@ function caml_ba_uint8_get16u(ba, i0) {
   return b1 | (b2 << 8);
 }
 
+//Provides: caml_ba_uint8_geti8
+//Requires: caml_array_bound_error
+//Version: >= 5.2
+//If: oxcaml
+function caml_ba_uint8_geti8(ba, i0) {
+  var ofs = ba.offset(i0);
+  if (ofs >= ba.data.length) caml_array_bound_error();
+  return (ba.get(ofs) << 24) >> 24;
+}
+
+//Provides: caml_ba_uint8_geti16
+//Requires: caml_ba_uint8_get16
+//Version: >= 5.2
+//If: oxcaml
+function caml_ba_uint8_geti16(ba, i0) {
+  return (caml_ba_uint8_get16(ba, i0) << 16) >> 16;
+}
+
 //Provides: caml_ba_uint8_get16
 //Requires: caml_array_bound_error
 function caml_ba_uint8_get16(ba, i0) {
@@ -584,6 +602,17 @@ function caml_ba_uint8_set16u(ba, i0, v) {
   var ofs = ba.offset(i0);
   ba.set(ofs + 0, v & 0xff);
   ba.set(ofs + 1, (v >>> 8) & 0xff);
+  return 0;
+}
+
+//Provides: caml_ba_uint8_set8
+//Requires: caml_array_bound_error
+//Version: >= 5.2
+//If: oxcaml
+function caml_ba_uint8_set8(ba, i0, v) {
+  var ofs = ba.offset(i0);
+  if (ofs >= ba.data.length) caml_array_bound_error();
+  ba.set(ofs + 0, v & 0xff);
   return 0;
 }
 
