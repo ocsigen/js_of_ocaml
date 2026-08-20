@@ -86,3 +86,50 @@ function caml_deepen_idx_bytecode(idx_prefix, idx_suffix) {
   }
   return block;
 }
+
+// We are reasonably sure that only the [ptr] primitives below actually need
+// to check for the error cases currently handled in the [idx] primitives.
+// Checking only in the [ptr] primitives would improve the performance of the
+// [idx] primitives in isolation.
+// TODO: Consider making the change described above.
+
+///////////// Pointers
+// In bytecode, a pointer is an unboxed pair of a base value and a block
+// index. Unboxed products are represented as blocks in bytecode, so a
+// pointer arrives as a single tag-0 block [0, base, idx], and
+// reading/writing through it is exactly reading/writing at the block index.
+// External pointers carry no base: they are represented as the block index
+// alone, and behave like pointers whose base is [Null] (represented as
+// [null] in JSOO).
+
+//Provides: caml_get_ptr_bytecode mutable (mutable)
+//Requires: caml_get_idx_bytecode
+//Version: >= 5.2
+//If: oxcaml
+function caml_get_ptr_bytecode(ptr) {
+  return caml_get_idx_bytecode(ptr[1], ptr[2]);
+}
+
+//Provides: caml_set_ptr_bytecode (mutable, mutable)
+//Requires: caml_set_idx_bytecode
+//Version: >= 5.2
+//If: oxcaml
+function caml_set_ptr_bytecode(ptr, v) {
+  return caml_set_idx_bytecode(ptr[1], ptr[2], v);
+}
+
+//Provides: caml_get_ext_ptr_bytecode mutable (mutable)
+//Requires: caml_get_idx_bytecode
+//Version: >= 5.2
+//If: oxcaml
+function caml_get_ext_ptr_bytecode(idx) {
+  return caml_get_idx_bytecode(null, idx);
+}
+
+//Provides: caml_set_ext_ptr_bytecode (mutable, mutable)
+//Requires: caml_set_idx_bytecode
+//Version: >= 5.2
+//If: oxcaml
+function caml_set_ext_ptr_bytecode(idx, v) {
+  return caml_set_idx_bytecode(null, idx, v);
+}

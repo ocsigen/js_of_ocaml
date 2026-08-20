@@ -253,8 +253,12 @@ caml_bigstring_memcmp
 caml_hash_mix_bigstring
 
 From +block_index.js:
+caml_get_ext_ptr_bytecode
 caml_get_idx_bytecode
+caml_get_ptr_bytecode
+caml_set_ext_ptr_bytecode
 caml_set_idx_bytecode
+caml_set_ptr_bytecode
 
 From +domain.js:
 caml_domain_set_tick_interval_usec_bytecode
