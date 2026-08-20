@@ -164,6 +164,9 @@ let effect_primitive_or_application = function
   | Prim
       ( Extern
           ( ( "%resume"
+            | "%continue"
+            | "%discontinue"
+            | "%discontinue_with_backtrace"
             | "%perform"
             | "%reperform"
             | "%with_stack"
@@ -649,6 +652,31 @@ let cps_block ~st ~k ~orig_pc block =
           let x = Var.fresh () in
           [ Let (x, e) ], Return x)
     in
+    let discontinue_effect ~stack ~exn ~tail ~force_attach_backtrace =
+      Some
+        (fun ~k ->
+          let k' = Var.fresh_n "cont" in
+          let exn' = Var.fresh_n "exn" in
+          let exn_handler = Var.fresh_n "raise" in
+          let force = if force_attach_backtrace then Targetint.one else Targetint.zero in
+          tail_call
+            ~st
+            ~instrs:
+              [ Let
+                  (k', Prim (Extern ("caml_resume_stack", None), [ Pv stack; tail; Pv k ]))
+              ; Let
+                  ( exn'
+                  , Prim
+                      ( Extern ("caml_maybe_attach_backtrace", None)
+                      , [ Pv exn; Pc (Int force) ] ) )
+              ; Let (exn_handler, Prim (Extern ("caml_pop_trap", None), []))
+              ]
+            ~exact:true
+            ~in_cps:false
+            ~check:false
+            ~f:exn_handler
+            [ exn' ])
+    in
     match e with
     | Apply { f; args; exact } when Var.Set.mem x st.cps_needed ->
         Some
@@ -697,6 +725,40 @@ let cps_block ~st ~k ~orig_pc block =
               ~check:true
               ~f
               [ arg; k' ])
+    | Prim (Extern ("%continue", _), [ Pv stack; Pv value; tail ]) ->
+        (* Resume the stack and return [value] at the perform site: this
+           amounts to calling the low-level continuation of the resumed
+           stack with [value]. *)
+        Some
+          (fun ~k ->
+            let k' = Var.fresh_n "cont" in
+            tail_call
+              ~st
+              ~instrs:
+                [ Let
+                    ( k'
+                    , Prim (Extern ("caml_resume_stack", None), [ Pv stack; tail; Pv k ])
+                    )
+                ]
+              ~exact:true
+              ~in_cps:false
+              ~check:false
+              ~f:k'
+              [ value ])
+    | Prim (Extern ("%discontinue", _), [ Pv stack; Pv exn; tail ]) ->
+        (* Resume the stack and raise [exn] at the perform site: after
+           [caml_resume_stack] has installed the resumed fibers, the
+           innermost exception handler is the one of the resumed stack, so
+           we pop it and invoke it, as for [Raise]. *)
+        discontinue_effect ~stack ~exn ~tail ~force_attach_backtrace:true
+    | Prim (Extern ("%discontinue_with_backtrace", _), [ Pv stack; Pv exn; Pv _; tail ])
+      ->
+        (* As [%discontinue], except that it reraises: raw backtraces carry no
+           information in js_of_ocaml (restoring one is a no-op), so the
+           provided backtrace is ignored, and, as for a reraise, we keep any
+           JS error already attached to the exception instead of forcing a
+           fresh one. *)
+        discontinue_effect ~stack ~exn ~tail ~force_attach_backtrace:false
     | Prim (Extern ("%perform", _), [ Pv effect_ ]) -> perform_effect ~effect_ None
     | Prim (Extern ("%reperform", _), [ Pv effect_; continuation; tail ]) ->
         perform_effect ~effect_ (Some (continuation, tail))
@@ -774,6 +836,18 @@ let rewrite_direct_block ~st ~cps_needed ~closure_info ~pc block =
           ]
       | Let (x, Prim (Extern ("%resume", _), [ stack; f; arg; tail ])) ->
           [ Let (x, Prim (Extern ("caml_resume", None), [ f; arg; stack; tail ])) ]
+      | Let (x, Prim (Extern ("%continue", _), [ stack; value; tail ])) ->
+          [ Let (x, Prim (Extern ("caml_continue", None), [ stack; value; tail ])) ]
+      | Let (x, Prim (Extern ("%discontinue", _), [ stack; exn; tail ])) ->
+          [ Let (x, Prim (Extern ("caml_discontinue", None), [ stack; exn; tail ])) ]
+      | Let (x, Prim (Extern ("%discontinue_with_backtrace", _), [ stack; exn; bt; tail ]))
+        ->
+          [ Let
+              ( x
+              , Prim
+                  ( Extern ("caml_discontinue_with_backtrace", None)
+                  , [ stack; exn; bt; tail ] ) )
+          ]
       | Let (x, Prim (Extern ("%perform", _), [ effect_ ])) ->
           (* In direct-style code, we just raise [Effect.Unhandled]. *)
           [ Let (x, Prim (Extern ("caml_raise_unhandled", None), [ effect_ ])) ]
@@ -788,7 +862,7 @@ let rewrite_direct_block ~st ~cps_needed ~closure_info ~pc block =
           ) ->
           let stack = Var.fresh_n "stack" in
           [ Let (stack, Prim (Extern ("caml_alloc_stack", None), [ Pv hv; Pv hx; Pv hf ]))
-          ; Let (x, Prim (Extern ("caml_resume", None), [ f; arg; Pv stack; Pv stack ]))
+          ; Let (x, Prim (Extern ("caml_run_stack", None), [ f; arg; Pv stack; Pv stack ]))
           ]
       | Let (x, Prim (Extern ("caml_assume_no_perform", _), [ Pv f ])) ->
           (* We just need to call [f] in direct style. *)
@@ -929,7 +1003,7 @@ let cps_transform ~live_vars ~flow_info ~cps_needed p =
                 translation to the block map at a fresh address. Otherwise,
                 just replace the original block.
              2. If we double-translate, keep the direct-style block but modify function
-                definitions to add the CPS version where needed, and turn uses of %resume
+                definitions to add the CPS version where needed, and turn uses of %continue
                 and %perform into switchings to CPS. *)
           let transform_block =
             if function_needs_cps && double_translate ()
@@ -1098,6 +1172,9 @@ let rewrite_toplevel_instr (p, cps_needed, accu) instr =
       , (Prim
            ( Extern
                ( ( "%resume"
+                 | "%continue"
+                 | "%discontinue"
+                 | "%discontinue_with_backtrace"
                  | "%perform"
                  | "%reperform"
                  | "%with_stack"

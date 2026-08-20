@@ -1844,6 +1844,9 @@ let rec translate_expr ctx loc x e level : (_ * J.statement_list) Expr_builder.t
         | Extern ("caml_alloc_dummy_function", _), _ -> assert false
         | ( Extern
               ( ( "%resume"
+                | "%continue"
+                | "%discontinue"
+                | "%discontinue_with_backtrace"
                 | "%perform"
                 | "%reperform"
                 | "%with_stack"

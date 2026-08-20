@@ -325,6 +325,44 @@
             (local.get $head) (local.get $tail)
             (struct.new $pair (local.get $f) (local.get $v)))))
 
+   (func $resume_identity
+      (param $x (ref eq)) (param (ref eq)) (result (ref eq))
+      (local.get $x))
+
+   (global $resume_identity_closure (ref $closure)
+      (struct.new $closure (ref.func $resume_identity)))
+
+   (func $resume_raise
+      (param $exn (ref eq)) (param (ref eq)) (result (ref eq))
+      (throw $ocaml_exception (local.get $exn)))
+
+   (global $resume_raise_closure (ref $closure)
+      (struct.new $closure (ref.func $resume_raise)))
+
+   ;; Resume the continuation, returning [$v] to the perform site.
+   (func (export "%continue")
+      (param $head (ref eq)) (param $v (ref eq)) (param $tail (ref eq))
+      (result (ref eq))
+      (return_call $resume_prim
+         (local.get $head) (global.get $resume_identity_closure)
+         (local.get $v) (local.get $tail)))
+
+   ;; Resume the continuation, raising [$exn] at the perform site.
+   (func (export "%discontinue")
+      (param $head (ref eq)) (param $exn (ref eq)) (param $tail (ref eq))
+      (result (ref eq))
+      (return_call $resume_prim
+         (local.get $head) (global.get $resume_raise_closure)
+         (local.get $exn) (local.get $tail)))
+
+   ;; As %discontinue; backtraces are not supported, so [$bt] is ignored.
+   (func (export "%discontinue_with_backtrace")
+      (param $head (ref eq)) (param $exn (ref eq)) (param $bt (ref eq))
+      (param $tail (ref eq)) (result (ref eq))
+      (return_call $resume_prim
+         (local.get $head) (global.get $resume_raise_closure)
+         (local.get $exn) (local.get $tail)))
+
    ;; Perform
 
    (type $call_handler_env

@@ -984,6 +984,15 @@ let is_immutable _instr infos pc =
   | Some Optimization_hint.Hint_immutable_block -> Immutable
   | _ -> Maybe_mutable
 
+(* Decode the operands of the CONTINUE / DISCONTINUE /
+   DISCONTINUE_WITH_BACKTRACE bytecode instructions (and their tail-call
+   variants). [accu] holds the continuation, and the payload (the value to
+   return, or the exception to raise, possibly followed by a backtrace) is
+   on the stack. The bytecode interpreter is responsible for unpacking the
+   continuation into a stack pointer and a [last_fiber]. We mimic that
+   unpacking at the IR level so that the rest of the pipeline can work with
+   the [%continue stack value tail] / [%discontinue stack exn tail] /
+   [%discontinue_with_backtrace stack exn bt tail] primitives. *)
 (* Decode the operands of the RESUME / RESUMETERM bytecode instructions.
    In OxCaml, %resume takes a continuation directly: [accu] holds the
    continuation, and the bytecode interpreter is responsible for unpacking it
@@ -1020,6 +1029,19 @@ let read_resume_args state =
   in
   state, [], stack, func, arg, tail
 [@@if not oxcaml]
+
+let read_cont state ~nargs =
+  let cont = State.accu state in
+  let args = Array.init nargs ~f:(fun i -> State.peek i state) in
+  let state = State.pop nargs state in
+  let last = Var.fresh_n "last" in
+  let stack = Var.fresh_n "stack" in
+  let prelude =
+    [ Let (last, Field (cont, 1, Non_float))
+    ; Let (stack, Prim (Extern ("caml_continuation_use_noexc", None), [ Pv cont ]))
+    ]
+  in
+  state, prelude, stack, args, Pv last
 
 let rec compile_block blocks joins hints debug_data code pc state : unit =
   match Addr.Map.find_opt pc !tagged_blocks with
@@ -2751,6 +2773,116 @@ and compile infos pc state (instrs : instr list) =
             Var.print
             arg;
         ( Let (x, Prim (Extern ("%resume", None), [ Pv stack; Pv func; Pv arg; tail ]))
+          :: List.rev_append prelude instrs
+        , Return x
+        , state )
+    | CONTINUE ->
+        let state, prelude, stack, args, tail = read_cont state ~nargs:1 in
+        let value = args.(0) in
+        let x, state = State.fresh_var state in
+        if debug_parser ()
+        then
+          Format.printf
+            "%a = continue(%a, %a)@."
+            Var.print
+            x
+            Var.print
+            stack
+            Var.print
+            value;
+        compile
+          infos
+          (pc + 1)
+          state
+          (Let (x, Prim (Extern ("%continue", None), [ Pv stack; Pv value; tail ]))
+          :: List.rev_append prelude instrs)
+    | CONTINUETERM ->
+        let state, prelude, stack, args, tail = read_cont state ~nargs:1 in
+        let value = args.(0) in
+        let x, state = State.fresh_var state in
+        if debug_parser ()
+        then Format.printf "return continue(%a, %a)@." Var.print stack Var.print value;
+        ( Let (x, Prim (Extern ("%continue", None), [ Pv stack; Pv value; tail ]))
+          :: List.rev_append prelude instrs
+        , Return x
+        , state )
+    | DISCONTINUE ->
+        let state, prelude, stack, args, tail = read_cont state ~nargs:1 in
+        let exn = args.(0) in
+        let x, state = State.fresh_var state in
+        if debug_parser ()
+        then
+          Format.printf
+            "%a = discontinue(%a, %a)@."
+            Var.print
+            x
+            Var.print
+            stack
+            Var.print
+            exn;
+        compile
+          infos
+          (pc + 1)
+          state
+          (Let (x, Prim (Extern ("%discontinue", None), [ Pv stack; Pv exn; tail ]))
+          :: List.rev_append prelude instrs)
+    | DISCONTINUETERM ->
+        let state, prelude, stack, args, tail = read_cont state ~nargs:1 in
+        let exn = args.(0) in
+        let x, state = State.fresh_var state in
+        if debug_parser ()
+        then Format.printf "return discontinue(%a, %a)@." Var.print stack Var.print exn;
+        ( Let (x, Prim (Extern ("%discontinue", None), [ Pv stack; Pv exn; tail ]))
+          :: List.rev_append prelude instrs
+        , Return x
+        , state )
+    | DISCONTINUE_WITH_BACKTRACE ->
+        let state, prelude, stack, args, tail = read_cont state ~nargs:2 in
+        let exn = args.(0) in
+        let bt = args.(1) in
+        let x, state = State.fresh_var state in
+        if debug_parser ()
+        then
+          Format.printf
+            "%a = discontinue_with_backtrace(%a, %a, %a)@."
+            Var.print
+            x
+            Var.print
+            stack
+            Var.print
+            exn
+            Var.print
+            bt;
+        compile
+          infos
+          (pc + 1)
+          state
+          (Let
+             ( x
+             , Prim
+                 ( Extern ("%discontinue_with_backtrace", None)
+                 , [ Pv stack; Pv exn; Pv bt; tail ] ) )
+          :: List.rev_append prelude instrs)
+    | DISCONTINUE_WITH_BACKTRACETERM ->
+        let state, prelude, stack, args, tail = read_cont state ~nargs:2 in
+        let exn = args.(0) in
+        let bt = args.(1) in
+        let x, state = State.fresh_var state in
+        if debug_parser ()
+        then
+          Format.printf
+            "return discontinue_with_backtrace(%a, %a, %a)@."
+            Var.print
+            stack
+            Var.print
+            exn
+            Var.print
+            bt;
+        ( Let
+            ( x
+            , Prim
+                ( Extern ("%discontinue_with_backtrace", None)
+                , [ Pv stack; Pv exn; Pv bt; tail ] ) )
           :: List.rev_append prelude instrs
         , Return x
         , state )
