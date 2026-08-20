@@ -28,9 +28,9 @@
       (func $caml_deserialize_int_4 (param (ref eq)) (result i32)))
    (import "hash" "caml_hash_mix_int"
       (func $caml_hash_mix_int (param i32) (param i32) (result i32)))
-   (import "int32" "caml_copy_nativeint"
+   (import "nativeint" "caml_copy_nativeint"
       (func $caml_copy_nativeint (param i32) (result (ref eq))))
-   (import "int32" "Nativeint_val"
+   (import "nativeint" "Nativeint_val"
       (func $Nativeint_val (param (ref eq)) (result i32)))
 
    (type $bytes (array (mut i8)))
