@@ -340,6 +340,9 @@
    (@if $portable-int
       (@then
          (export "caml_portability_int64_cmp" (func $int64_cmp))
+         (export "caml_portability_int64_hash" (func $int64_hash))
+         (export "caml_portability_int64_serialize" (func $int64_serialize))
+         (export "caml_portability_int64_deserialize" (func $int64_deserialize))
          (export "caml_portability_int64_dup" (func $int64_dup))
    ))
 )

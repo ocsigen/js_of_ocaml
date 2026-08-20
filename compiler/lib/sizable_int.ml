@@ -209,9 +209,17 @@ module Make (Arg : Arg) : S = struct
 
   let shift_op f x y =
     let offset = offset () in
-    (* Limit the shift offset to [0, 31], this works for both 31 and 32
-      bit integers *)
-    unwrap offset (f (wrap offset x) (y land 0x1f))
+    let mask =
+      if
+        num_bits () > 32
+        (* Limit the shift offset to [0, 63], this works for both 63 and 64
+        bit integers *)
+      then 0x3f
+      (* Limit the shift offset to [0, 31], this works for both 31 and 32
+        bit integers *)
+      else 0x1f
+    in
+    unwrap offset (f (wrap offset x) (y land mask))
 
   let shift_left = shift_op Int64.shift_left
 
@@ -321,9 +329,18 @@ module Make (Arg : Arg) : S = struct
 
   let unsigned_lt n m = Int64.(sub n min_int < sub m min_int)
 
-  external bits_of_float : float -> int64 = "caml_int64_bits_of_float"
+  let bits_of_float f =
+    if Stdlib.( > ) (num_bits ()) 32
+    then Int64.bits_of_float f
+    else Int64.of_int32 (Int32.bits_of_float f)
 
-  external float_of_bits : int64 -> float = "caml_int64_float_of_bits"
+  let float_of_bits x =
+    if Stdlib.( > ) (num_bits ()) 32
+    then Int64.float_of_bits x
+    else Int32.float_of_bits (Int64.to_int32 x)
 
-  external of_float : float -> int64 = "caml_int64_of_float"
+  let of_float f =
+    if Stdlib.( > ) (num_bits ()) 32
+    then Int64.of_float f
+    else Int64.of_int32 (Int32.of_float f)
 end

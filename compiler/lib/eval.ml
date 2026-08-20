@@ -349,9 +349,8 @@ let eval_prim ~target x =
       | "caml_int64_shift_right_unsigned", _ -> int64_shiftop l Int64.shift_right_logical
       | "caml_int64_compare", [ Int64 i; Int64 j ] ->
           Some (Int (Targetint.of_int_exn (Int64.compare i j)))
-      | "caml_int64_to_int", [ Int64 i ] ->
-          Some (Int (Targetint.of_int32_truncate (Int64.to_int32 i)))
-      | "caml_int64_of_int", [ Int i ] -> int64 (Int64.of_int32 (Targetint.to_int32 i))
+      | "caml_int64_to_int", [ Int64 i ] -> Some (Int (Targetint.of_int64_truncate i))
+      | "caml_int64_of_int", [ Int i ] -> int64 (Targetint.to_int64 i)
       | "caml_int64_to_int32", [ Int64 i ] -> int32 (Int64.to_int32 i)
       | "caml_int64_of_int32", [ Int32 i ] -> int64 (Int64.of_int32 i)
       | "caml_int64_to_nativeint", [ Int64 i ] ->
@@ -370,7 +369,9 @@ let eval_prim ~target x =
           match get_static_env s with
           | Some env -> Some (String env)
           | None -> None)
-      | "caml_sys_const_word_size", [ _ ] -> Some (Int (Targetint.of_int_exn 32))
+      | "caml_sys_const_word_size", [ _ ] ->
+          Some
+            (Int (Targetint.of_int_exn (if Config.Flag.portable_int () then 64 else 32)))
       | "caml_sys_const_int_size", [ _ ] ->
           Some (Int (Targetint.of_int_exn (Targetint.num_bits ())))
       | "caml_sys_const_big_endian", [ _ ] -> Some (Int Targetint.zero)

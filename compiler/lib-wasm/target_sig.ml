@@ -166,6 +166,56 @@ module type S = sig
     val as_block : expression -> expression
   end
 
+  module Value64 : sig
+    val val_int : expression -> expression
+
+    val int_val : expression -> expression
+
+    val check_is_not_zero : expression -> expression
+    (** Returns an int32 value *)
+
+    val check_is_int : expression -> expression
+    (** Returns an int32 value *)
+
+    val not : expression -> expression
+
+    val lt : expression -> expression -> expression
+
+    val le : expression -> expression -> expression
+
+    val js_eqeqeq : negate:bool -> expression -> expression -> expression
+
+    val phys_eq : expression -> expression -> expression
+
+    val phys_neq : expression -> expression -> expression
+
+    val ult : expression -> expression -> expression
+
+    val int_add : expression -> expression -> expression
+
+    val int_sub : expression -> expression -> expression
+
+    val int_mul : expression -> expression -> expression
+
+    val int_div : expression -> expression -> expression
+
+    val int_mod : expression -> expression -> expression
+
+    val int_neg : expression -> expression
+
+    val int_or : expression -> expression -> expression
+
+    val int_and : expression -> expression -> expression
+
+    val int_xor : expression -> expression -> expression
+
+    val int_lsl : expression -> expression -> expression
+
+    val int_lsr : expression -> expression -> expression
+
+    val int_asr : expression -> expression -> expression
+  end
+
   module Constant : sig
     val translate : unboxed:bool -> Code.constant -> expression
   end

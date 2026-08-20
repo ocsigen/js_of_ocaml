@@ -22,6 +22,19 @@
 
    (type $bytes (array (mut i8)))
 
+   (import "fail" "int_val_32_exn"
+      (func $int_val_32_exn (param (ref eq)) (param (ref eq)) (result i32)))
+   (import "portableint" "bool_val"
+      (func $bool_val (param (ref eq)) (result i32)))
+   (@if $portable-int
+   (@then
+      (import "portableint" "checked_portable_int_val_32"
+         (func $length_val (param (ref eq)) (result i32)))
+      (import "portableint" "portable_int_val_32"
+         (func $portable_int_val_32 (param (ref eq)) (result i32)))
+   ))
+
+
    (export "caml_bytes_equal" (func $caml_string_equal))
    (func $caml_string_equal (export "caml_string_equal")
       (param $p1 (ref eq)) (param $p2 (ref eq)) (result (ref eq))
@@ -124,7 +137,12 @@
    (func (export "caml_create_bytes") (export "caml_create_local_bytes")
       (param $len (ref eq)) (result (ref eq))
       (local $l i32)
+      (@if $portable-int
+      (@then
+         (local.set $l (call $length_val (local.get $len))))
+      (@else
       (local.set $l (i31.get_s (ref.cast (ref i31) (local.get $len))))
+      ))
       (if (i32.lt_s (local.get $l) (i32.const 0))
          (then (call $caml_invalid_argument (global.get $Bytes_create))))
       (array.new $bytes (i32.const 0) (local.get $l)))
@@ -136,10 +154,22 @@
       (param $n (ref eq)) (result (ref eq))
       (array.copy $bytes $bytes
          (ref.cast (ref $bytes) (local.get $v2))
+         (@if $portable-int
+         (@then (call $int_val_32_exn (local.get $i2) (global.get $bytes_blit)))
+         (@else
          (i31.get_s (ref.cast (ref i31) (local.get $i2)))
+         ))
          (ref.cast (ref $bytes) (local.get $v1))
+         (@if $portable-int
+         (@then (call $int_val_32_exn (local.get $i1) (global.get $bytes_blit)))
+         (@else
          (i31.get_s (ref.cast (ref i31) (local.get $i1)))
+         ))
+         (@if $portable-int
+         (@then (call $int_val_32_exn (local.get $n) (global.get $bytes_blit)))
+         (@else
          (i31.get_s (ref.cast (ref i31) (local.get $n))))
+         ))
       (ref.i31 (i32.const 0)))
 
    (func (export "caml_fill_bytes")
@@ -147,9 +177,23 @@
       (param $len (ref eq)) (param $init (ref eq))
       (result (ref eq))
       (array.fill $bytes (ref.cast (ref $bytes) (local.get $v))
+         (@if $portable-int
+         (@then (call $int_val_32_exn (local.get $offset)
+                   (global.get $bytes_fill)))
+         (@else
          (i31.get_u (ref.cast (ref i31) (local.get $offset)))
+         ))
+         (@if $portable-int
+         (@then (call $portable_int_val_32 (local.get $init)))
+         (@else
          (i31.get_u (ref.cast (ref i31) (local.get $init)))
+         ))
+         (@if $portable-int
+         (@then (call $int_val_32_exn (local.get $len)
+                   (global.get $bytes_fill)))
+         (@else
          (i31.get_u (ref.cast (ref i31) (local.get $len))))
+         ))
       (ref.i31 (i32.const 0)))
 
    (export "caml_string_geti8" (func $caml_bytes_geti8))

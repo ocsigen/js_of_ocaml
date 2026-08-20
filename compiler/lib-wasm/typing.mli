@@ -18,9 +18,18 @@
 
 module Integer : sig
   type kind =
-    | Ref
-    | Normalized
-    | Unnormalized
+    | Ref (* (ref eq) pointing to i31 | $ocaml_large_int *)
+    | Large_normalized (* unboxed i64 with bit-63 = bit-62, uses Arith64 *)
+    | Large_unnormalized (* unboxed i64 with bit-63 arbitrary, uses Arith64 *)
+    | Small_normalized (* unboxed i32 with bit-31 = bit-30, uses Arith *)
+    | Small_unnormalized
+  (* unboxed i32 with bit-31 arbitrary, uses Arith *)
+
+  val kind_of_targetint : Targetint.t -> kind
+
+  val max_i31s : int64 lazy_t
+
+  val min_i31s : int64 lazy_t
 end
 
 type boxed_number =
