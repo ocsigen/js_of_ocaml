@@ -27,7 +27,7 @@
       (func $caml_copy_int32 (param i32) (result (ref eq))))
    (import "int32" "Int32_val"
       (func $Int32_val (param (ref eq)) (result i32)))
-   (import "int32" "caml_copy_nativeint"
+   (import "nativeint" "caml_copy_nativeint"
       (func $caml_copy_nativeint (param i32) (result (ref eq))))
    (import "int64" "caml_copy_int64"
       (func $caml_copy_int64 (param i64) (result (ref eq))))

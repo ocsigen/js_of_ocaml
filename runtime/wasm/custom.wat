@@ -18,7 +18,7 @@
 (module
    (import "float32" "float32_ops" (global $float32_ops (ref $custom_operations)))
    (import "int32" "int32_ops" (global $int32_ops (ref $custom_operations)))
-   (import "int32" "nativeint_ops"
+   (import "nativeint" "nativeint_ops"
       (global $nativeint_ops (ref $custom_operations)))
    (import "int64" "int64_ops" (global $int64_ops (ref $custom_operations)))
    (import "bigarray" "bigarray_ops"
