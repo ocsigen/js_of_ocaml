@@ -304,14 +304,20 @@ let indexing_primitives l =
 let getters =
   indexing_primitives
     [ "caml_array_get"
+    ; "caml_string_geti8"
+    ; "caml_string_geti16"
     ; "caml_string_get16"
     ; "caml_string_get32"
     ; "caml_string_get64"
     ; "caml_string_getf32"
+    ; "caml_bytes_geti8"
+    ; "caml_bytes_geti16"
     ; "caml_bytes_get16"
     ; "caml_bytes_get32"
     ; "caml_bytes_get64"
     ; "caml_bytes_getf32"
+    ; "caml_ba_uint8_geti8"
+    ; "caml_ba_uint8_geti16"
     ; "caml_ba_uint8_get16"
     ; "caml_ba_uint8_get32"
     ; "caml_ba_uint8_get64"
@@ -321,10 +327,12 @@ let getters =
 let setters =
   indexing_primitives
     [ "caml_array_set"
+    ; "caml_bytes_set8"
     ; "caml_bytes_set16"
     ; "caml_bytes_set32"
     ; "caml_bytes_set64"
     ; "caml_bytes_setf32"
+    ; "caml_ba_uint8_set8"
     ; "caml_ba_uint8_set16"
     ; "caml_ba_uint8_set32"
     ; "caml_ba_uint8_set64"
