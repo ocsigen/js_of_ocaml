@@ -17,6 +17,7 @@
 
 (module
    (import "fail" "caml_invalid_argument" (func $caml_invalid_argument (param (ref eq))))
+   (import "obj" "null" (global $null_value (ref eq)))
 
    (type $block (array (mut (ref eq))))
    (type $string (array (mut i8)))
@@ -33,7 +34,7 @@
    ;; Iterates through the positions, indexing into nested blocks.
    ;; Special case: if base is a float array (all-float record), box the result.
    ;; Raises if [idx] has a non-zero tag (an "invalid" index).
-   (func (export "caml_get_idx_bytecode")
+   (func $caml_get_idx_bytecode (export "caml_get_idx_bytecode")
       (param $base (ref eq)) (param $idx (ref eq)) (result (ref eq))
       (local $idx_block (ref $block))
       (local $depth i32)
@@ -90,7 +91,7 @@
    ;; Traverses to the parent block, then sets the final field.
    ;; Special case: if base is a float array (all-float record), unbox the value.
    ;; Raises if [idx] has a non-zero tag (an "invalid" index).
-   (func (export "caml_set_idx_bytecode")
+   (func $caml_set_idx_bytecode (export "caml_set_idx_bytecode")
       (param $base (ref eq)) (param $idx (ref eq)) (param $v (ref eq))
       (result (ref eq))
       (local $idx_block (ref $block))
@@ -153,6 +154,44 @@
          (i32.add (local.get $pos) (i32.const 1))
          (local.get $v))
       (ref.i31 (i32.const 0)))
+
+   ;; In bytecode, a pointer is an unboxed pair of a base value and a block
+   ;; index. Unboxed products are represented as blocks in bytecode, so a
+   ;; pointer arrives as a single tag-0 block [0; base; idx], and
+   ;; reading/writing through it is exactly reading/writing at the block
+   ;; index. External pointers carry no base: they are represented as the
+   ;; block index alone, and behave like pointers whose base is [Null].
+
+   ;; caml_get_ptr_bytecode : ptr -> result
+   (func (export "caml_get_ptr_bytecode")
+      (param $ptr (ref eq)) (result (ref eq))
+      (local $b (ref $block))
+      (local.set $b (ref.cast (ref $block) (local.get $ptr)))
+      (return_call $caml_get_idx_bytecode
+         (array.get $block (local.get $b) (i32.const 1))
+         (array.get $block (local.get $b) (i32.const 2))))
+
+   ;; caml_set_ptr_bytecode : ptr -> value -> unit
+   (func (export "caml_set_ptr_bytecode")
+      (param $ptr (ref eq)) (param $v (ref eq)) (result (ref eq))
+      (local $b (ref $block))
+      (local.set $b (ref.cast (ref $block) (local.get $ptr)))
+      (return_call $caml_set_idx_bytecode
+         (array.get $block (local.get $b) (i32.const 1))
+         (array.get $block (local.get $b) (i32.const 2))
+         (local.get $v)))
+
+   ;; caml_get_ext_ptr_bytecode : idx -> result
+   (func (export "caml_get_ext_ptr_bytecode")
+      (param $idx (ref eq)) (result (ref eq))
+      (return_call $caml_get_idx_bytecode
+         (global.get $null_value) (local.get $idx)))
+
+   ;; caml_set_ext_ptr_bytecode : idx -> value -> unit
+   (func (export "caml_set_ext_ptr_bytecode")
+      (param $idx (ref eq)) (param $v (ref eq)) (result (ref eq))
+      (return_call $caml_set_idx_bytecode
+         (global.get $null_value) (local.get $idx) (local.get $v)))
 
    ;; caml_deepen_idx_bytecode : idx_prefix -> idx_suffix -> idx
    ;; Concatenates two block indices into a new one.
