@@ -16,6 +16,17 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
+   (@if $portable-int
+   (@then
+      (import "portableint" "int_val_32_exn"
+         (func $int_val_32_exn (param (ref eq)) (param (ref eq)) (result i32)))
+      (import "portableint" "portable_int_val"
+         (func $portable_int_val (param (ref eq)) (result i64)))
+      (import "portableint" "portable_int_val_32"
+         (func $portable_int_val_32 (param (ref eq)) (result i32)))
+      (import "portableint" "checked_portable_int_val_32"
+         (func $size_val (param (ref eq)) (result i32)))
+   ))
    (import "fail" "caml_invalid_argument"
       (func $caml_invalid_argument (param (ref eq))))
 
@@ -24,10 +35,25 @@
    (type $float (struct (field $f f64)))
    (type $float_array (array (mut f64)))
 
+   (@string $Array_blit "Array.blit")
+   (@string $Array_sub "Array.sub")
+   (@string $Array_fill "Array.fill")
+
    (@string $Array_make "Array.make")
 
    (global $empty_array (ref eq)
       (array.new_fixed $block 1 (ref.i31 (i32.const 0))))
+
+   (@if $portable-int
+   (@then
+      (func $nonneg_int_val_exn
+         (param $v (ref eq)) (param $msg (ref eq)) (result i32)
+         (local $i i64)
+         (local.set $i (call $portable_int_val (local.get $v)))
+         (if (i64.ge_u (local.get $i) (i64.const 0x80000000))
+            (then (call $caml_invalid_argument (local.get $msg))))
+         (i32.wrap_i64 (local.get $i)))
+   ))
 
    (func $caml_make_vect
       (export "caml_make_vect") (export "caml_array_make")
@@ -35,7 +61,11 @@
       (param $n (ref eq)) (param $v (ref eq)) (result (ref eq))
       (local $sz i32) (local $b (ref $block)) (local $f f64)
       (local $fv (ref $float))
+      (@if $portable-int
+      (@then (local.set $sz (call $size_val (local.get $n))))
+      (@else
       (local.set $sz (i31.get_s (ref.cast (ref i31) (local.get $n))))
+      ))
       (if (i32.ge_u (local.get $sz) (i32.const 0xfffffff))
          (then (call $caml_invalid_argument (global.get $Array_make))))
       (if (i32.eqz (local.get $sz)) (then (return (global.get $empty_array))))
@@ -59,7 +89,11 @@
    (func (export "caml_floatarray_make")
       (param $n (ref eq)) (param $v (ref eq)) (result (ref eq))
       (local $sz i32) (local $f f64)
+      (@if $portable-int
+      (@then (local.set $sz (call $size_val (local.get $n))))
+      (@else
       (local.set $sz (i31.get_s (ref.cast (ref i31) (local.get $n))))
+      ))
       (if (i32.ge_u (local.get $sz) (i32.const 0x7ffffff))
          (then (call $caml_invalid_argument (global.get $Array_make))))
       (if (i32.eqz (local.get $sz)) (then (return (global.get $empty_array))))
@@ -73,7 +107,15 @@
       (export "caml_array_create_float") (export "caml_floatarray_create_local")
       (param $n (ref eq)) (result (ref eq))
       (local $sz i32)
+      (@if $portable-int
+      (@then (local.set $sz (call $size_val (local.get $n))))
+      (@else
+      (@if $portable-int
+      (@then (local.set $sz (call $size_val (local.get $n))))
+      (@else
       (local.set $sz (i31.get_s (ref.cast (ref i31) (local.get $n))))
+      ))
+      ))
       (if (i32.ge_u (local.get $sz) (i32.const 0x7ffffff))
          (then (call $caml_invalid_argument (global.get $Array_make))))
       (if (i32.eqz (local.get $sz)) (then (return (global.get $empty_array))))
@@ -107,15 +149,30 @@
    (func (export "caml_floatarray_unsafe_get")
       (param $a (ref eq)) (param $i (ref eq)) (result (ref eq))
       (struct.new $float
+         (@if $portable-int
+         (@then
+            ;; Unsafe accessors truncate, as they do natively.
+            (array.get $float_array (ref.cast (ref $float_array) (local.get $a))
+               (call $portable_int_val_32 (local.get $i))))
+         (@else
          (array.get $float_array (ref.cast (ref $float_array) (local.get $a))
             (i31.get_s (ref.cast (ref i31) (local.get $i))))))
+         ))
 
    (func (export "caml_floatarray_unsafe_set")
       (param $a (ref eq)) (param $i (ref eq)) (param $v (ref eq))
       (result (ref eq))
+      (@if $portable-int
+      (@then
+         ;; Unsafe accessors truncate, as they do natively.
+         (array.set $float_array (ref.cast (ref $float_array) (local.get $a))
+            (call $portable_int_val_32 (local.get $i))
+            (struct.get $float 0 (ref.cast (ref $float) (local.get $v)))))
+      (@else
       (array.set $float_array (ref.cast (ref $float_array) (local.get $a))
          (i31.get_s (ref.cast (ref i31) (local.get $i)))
          (struct.get $float 0 (ref.cast (ref $float) (local.get $v))))
+      ))
       (ref.i31 (i32.const 0)))
 
    (func (export "caml_array_sub") (export "caml_array_sub_local")
@@ -123,7 +180,13 @@
       (result (ref eq))
       (local $a1 (ref $block)) (local $a2 (ref $block)) (local $len i32)
       (local $fa1 (ref $float_array)) (local $fa2 (ref $float_array))
+      (@if $portable-int
+      (@then
+         (local.set $len (call $nonneg_int_val_exn (local.get $vlen)
+                            (global.get $Array_sub))))
+      (@else
       (local.set $len (i31.get_u (ref.cast (ref i31) (local.get $vlen))))
+      ))
       (if (i32.eqz (local.get $len)) (then (return (global.get $empty_array))))
       (drop (block $not_block (result (ref eq))
          (local.set $a1
@@ -132,18 +195,36 @@
                            (i32.add (local.get $len) (i32.const 1))))
          (array.set $block (local.get $a2) (i32.const 0)
             (array.get $block (local.get $a1) (i32.const 0)))
+         (@if $portable-int
+         (@then
+            (array.copy $block $block
+               (local.get $a2) (i32.const 1) (local.get $a1)
+               (i32.add (call $nonneg_int_val_exn (local.get $i)
+                           (global.get $Array_sub))
+                  (i32.const 1))
+               (local.get $len)))
+         (@else
          (array.copy $block $block
             (local.get $a2) (i32.const 1) (local.get $a1)
             (i32.add (i31.get_u (ref.cast (ref i31) (local.get $i)))
                (i32.const 1))
             (local.get $len))
+         ))
          (return (local.get $a2))))
       (local.set $fa1 (ref.cast (ref $float_array) (local.get $a)))
       (local.set $fa2 (array.new $float_array (f64.const 0) (local.get $len)))
+      (@if $portable-int
+      (@then
+         (array.copy $float_array $float_array
+            (local.get $fa2) (i32.const 0) (local.get $fa1)
+            (call $nonneg_int_val_exn (local.get $i) (global.get $Array_sub))
+            (local.get $len)))
+      (@else
       (array.copy $float_array $float_array
          (local.get $fa2) (i32.const 0) (local.get $fa1)
          (i31.get_u (ref.cast (ref i31) (local.get $i)))
          (local.get $len))
+      ))
       (local.get $fa2))
 
    (func (export "caml_floatarray_sub")
@@ -151,14 +232,28 @@
       (result (ref eq))
       (local $len i32)
       (local $fa1 (ref $float_array)) (local $fa2 (ref $float_array))
+      (@if $portable-int
+      (@then
+         (local.set $len (call $nonneg_int_val_exn (local.get $vlen)
+                            (global.get $Array_sub))))
+      (@else
       (local.set $len (i31.get_u (ref.cast (ref i31) (local.get $vlen))))
+      ))
       (if (i32.eqz (local.get $len)) (then (return (global.get $empty_array))))
       (local.set $fa1 (ref.cast (ref $float_array) (local.get $a)))
       (local.set $fa2 (array.new $float_array (f64.const 0) (local.get $len)))
+      (@if $portable-int
+      (@then
+         (array.copy $float_array $float_array
+            (local.get $fa2) (i32.const 0) (local.get $fa1)
+            (call $nonneg_int_val_exn (local.get $i) (global.get $Array_sub))
+            (local.get $len)))
+      (@else
       (array.copy $float_array $float_array
          (local.get $fa2) (i32.const 0) (local.get $fa1)
          (i31.get_u (ref.cast (ref i31) (local.get $i)))
          (local.get $len))
+      ))
       (local.get $fa2))
 
    (func $caml_floatarray_dup (param $a (ref $float_array)) (result (ref eq))
@@ -417,7 +512,26 @@
       (param $vlen (ref eq))
       (result (ref eq))
       (local $len i32)
+      (@if $portable-int
+      (@then
+         (local.set $len (call $int_val_32_exn (local.get $vlen)
+                            (global.get $Array_blit))))
+      (@else
       (local.set $len (i31.get_s (ref.cast (ref i31) (local.get $vlen))))
+      ))
+      (@if $portable-int
+      (@then
+         (if (local.get $len)
+            (then
+               (array.copy $float_array $float_array
+                  (ref.cast (ref $float_array) (local.get $a2))
+                  (call $int_val_32_exn (local.get $i2)
+                     (global.get $Array_blit))
+                  (ref.cast (ref $float_array) (local.get $a1))
+                  (call $int_val_32_exn (local.get $i1)
+                     (global.get $Array_blit))
+                  (local.get $len)))))
+      (@else
       (if (local.get $len)
          (then
             (array.copy $float_array $float_array
@@ -426,6 +540,7 @@
                (ref.cast (ref $float_array) (local.get $a1))
                (i31.get_s (ref.cast (ref i31) (local.get $i1)))
                (local.get $len))))
+      ))
       (ref.i31 (i32.const 0)))
 
    (func (export "caml_array_blit")
@@ -434,7 +549,32 @@
       (param $vlen (ref eq))
       (result (ref eq))
       (local $len i32)
+      (@if $portable-int
+      (@then
+         (local.set $len (call $int_val_32_exn (local.get $vlen)
+                            (global.get $Array_blit))))
+      (@else
       (local.set $len (i31.get_s (ref.cast (ref i31) (local.get $vlen))))
+      ))
+      (@if $portable-int
+      (@then
+         (if (local.get $len)
+            (then
+               (if (ref.test (ref $float_array) (local.get $a1))
+                  (then
+                     (return_call $caml_floatarray_blit
+                        (local.get $a1) (local.get $i1)
+                        (local.get $a2) (local.get $i2) (local.get $vlen)))
+                  (else
+                     (array.copy $block $block
+                        (ref.cast (ref $block) (local.get $a2))
+                        (i32.add
+                           (call $int_val_32_exn (local.get $i2) (global.get $Array_blit)) (i32.const 1))
+                        (ref.cast (ref $block) (local.get $a1))
+                        (i32.add
+                           (call $int_val_32_exn (local.get $i1) (global.get $Array_blit)) (i32.const 1))
+                        (local.get $len)))))))
+      (@else
       (if (local.get $len)
          (then
             (if (ref.test (ref $float_array) (local.get $a1))
@@ -453,36 +593,65 @@
                         (i31.get_s
                            (ref.cast (ref i31) (local.get $i1))) (i32.const 1))
                      (local.get $len))))))
+      ))
       (ref.i31 (i32.const 0)))
 
    (func (export "caml_array_fill")
       (param $a (ref eq)) (param $i (ref eq)) (param $vlen (ref eq))
       (param $v (ref eq)) (result (ref eq))
       (local $len i32)
+      (local $pos i32)
+
+      (@if $portable-int
+      (@then
+         (local.set $len  (call $nonneg_int_val_exn (local.get $vlen) (global.get $Array_fill))))
+      (@else
       (local.set $len (i31.get_u (ref.cast (ref i31) (local.get $vlen))))
-      (if $done (local.get $len)
-         (then
-            (drop (block $not_block (result (ref eq))
-               (array.fill $block
-                  (br_on_cast_fail $not_block (ref eq) (ref $block)
-                     (local.get $a))
-                  (i32.add (i31.get_u (ref.cast (ref i31) (local.get $i)))
-                     (i32.const 1))
-                  (local.get $v)
-                  (local.get $len))
-               (br $done)))
-            (array.fill $float_array
-               (ref.cast (ref $float_array) (local.get $a))
-               (i31.get_u (ref.cast (ref i31) (local.get $i)))
-               (struct.get $float 0 (ref.cast (ref $float) (local.get $v)))
-               (local.get $len))))
+      ))
+      (local.set $pos
+         (@if $portable-int
+         (@then (call $nonneg_int_val_exn (local.get $i) (global.get $Array_fill)))
+         (@else (i31.get_u (ref.cast (ref i31) (local.get $i))))
+         ))
+         (if $done (local.get $len)
+            (then
+               (drop (block $not_block (result (ref eq))
+                  (array.fill $block
+                     (br_on_cast_fail $not_block (ref eq) (ref $block)
+                        (local.get $a))
+                     (i32.add (local.get $pos) (i32.const 1))
+                     (local.get $v)
+                     (local.get $len))
+                  (br $done)))
+               (array.fill $float_array
+                  (ref.cast (ref $float_array) (local.get $a))
+                  (local.get $pos)
+                  (struct.get $float 0 (ref.cast (ref $float) (local.get $v)))
+                  (local.get $len))))
       (ref.i31 (i32.const 0)))
 
    (func (export "caml_floatarray_fill")
       (param $a (ref eq)) (param $i (ref eq)) (param $vlen (ref eq))
       (param $v (ref eq)) (result (ref eq))
       (local $len i32)
+      (@if $portable-int
+      (@then
+         (local.set $len (call $nonneg_int_val_exn (local.get $vlen)
+                            (global.get $Array_fill))))
+      (@else
       (local.set $len (i31.get_u (ref.cast (ref i31) (local.get $vlen))))
+      ))
+      (@if $portable-int
+      (@then
+         (if (local.get $len)
+            (then
+               (array.fill $float_array
+                  (ref.cast (ref $float_array) (local.get $a))
+                  (call $nonneg_int_val_exn (local.get $i)
+                     (global.get $Array_fill))
+                  (struct.get $float 0 (ref.cast (ref $float) (local.get $v)))
+                  (local.get $len)))))
+      (@else
       (if (local.get $len)
          (then
             (array.fill $float_array
@@ -490,5 +659,6 @@
                (i31.get_u (ref.cast (ref i31) (local.get $i)))
                (struct.get $float 0 (ref.cast (ref $float) (local.get $v)))
                (local.get $len))))
+      ))
       (ref.i31 (i32.const 0)))
 )

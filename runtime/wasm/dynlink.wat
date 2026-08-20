@@ -89,10 +89,13 @@
       (param (ref eq)) (result (ref eq))
       (local $idx i32)
       (local.set $idx
+         ;; Field of the runtime's own link info; always an [i31].
+         ;; lint-ignore-start manual-portability-handling-unsafe
          (i31.get_u
             (ref.cast (ref i31)
                (array.get $block (global.get $link_info)
                   (global.get $LINK_INFO_PRIM_COUNT)))))
+         ;; lint-ignore-end manual-portability-handling-unsafe
       (array.set $block (global.get $link_info)
          (global.get $LINK_INFO_PRIM_COUNT)
          (ref.i31 (i32.add (local.get $idx) (i32.const 1))))

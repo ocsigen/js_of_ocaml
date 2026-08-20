@@ -22,6 +22,11 @@
 ;; JS implementation's use of doubles.
 
 (module
+   (@if $portable-int
+   (@then
+      (import "portableint" "int_val_32_exn"
+         (func $int_val_32_exn (param (ref eq)) (param (ref eq)) (result i32)))
+   ))
    (import "marshal" "caml_serialize_int_4"
       (func $caml_serialize_int_4 (param (ref eq)) (param i32)))
    (import "marshal" "caml_deserialize_int_4"
@@ -40,6 +45,8 @@
    (import "nativeint" "Nativeint_val"
       (func $Nativeint_val (param (ref eq)) (result i32)))
    ))
+
+   (@string $nat_arg "Nat: integer argument out of range")
 
    (type $bytes (array (mut i8)))
    (type $compare
@@ -91,7 +98,11 @@
       (struct.get $nat $dat (ref.cast (ref $nat) (local.get $v))))
 
    (func $int (param $v (ref eq)) (result i32)
+      (@if $portable-int
+      (@then (call $int_val_32_exn (local.get $v) (global.get $nat_arg)))
+      (@else
       (i31.get_s (ref.cast (ref i31) (local.get $v))))
+      ))
 
    (@if $portable-int
    (@then

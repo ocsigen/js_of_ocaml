@@ -16,6 +16,11 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
+   (@if $portable-int
+   (@then
+      (import "portableint" "bool_val"
+         (func $bool_val (param (ref eq)) (result i32)))
+   ))
    (type $bytes (array (mut i8)))
 
 (@if (not $wasi)
@@ -83,6 +88,11 @@
       (func $wrap_fun_arguments (param anyref) (result anyref)))
    (import "fail" "caml_failwith_tag"
       (func $caml_failwith_tag (result (ref eq))))
+   (@if $portable-int
+   (@then
+      (import "portableint" "int_val_32_exn"
+         (func $int_val_32_exn (param (ref eq)) (param (ref eq)) (result i32)))
+   ))
    (import "fail" "javascript_exception"
       (tag $javascript_exception (param externref)))
    (import "stdlib" "caml_named_value"
@@ -160,7 +170,11 @@
 
    (func (export "caml_js_from_bool") (param $v (ref eq)) (result (ref eq))
       (struct.new $js
+         (@if $portable-int
+         (@then (call $from_bool (call $bool_val (local.get $v))))
+         (@else
          (call $from_bool (i31.get_s (ref.cast (ref i31) (local.get $v))))))
+         ))
 
    (func (export "caml_js_to_int32") (param $v (ref eq)) (result (ref eq))
       (return_call $caml_copy_int32
@@ -409,8 +423,11 @@
    (func (export "caml_js_wrap_callback_strict")
       (param $n (ref eq)) (param $f (ref eq)) (result (ref eq))
       (return_call $wrap
+         ;; Callback arity, a small constant; always an [i31].
+         ;; lint-ignore-start manual-portability-handling-unsafe
          (call $wrap_callback_strict
             (i31.get_u (ref.cast (ref i31) (local.get $n))) (local.get $f))))
+         ;; lint-ignore-end manual-portability-handling-unsafe
 
    (func (export "caml_js_wrap_callback_unsafe")
       (param $f (ref eq)) (result (ref eq))
@@ -427,8 +444,11 @@
    (func (export "caml_js_wrap_meth_callback_strict")
       (param $n (ref eq)) (param $f (ref eq)) (result (ref eq))
       (return_call $wrap
+         ;; Callback arity, a small constant; always an [i31].
+         ;; lint-ignore-start manual-portability-handling-unsafe
          (call $wrap_meth_callback_strict
             (i31.get_u (ref.cast (ref i31) (local.get $n))) (local.get $f))))
+         ;; lint-ignore-end manual-portability-handling-unsafe
 
    (func (export "caml_js_wrap_meth_callback_unsafe")
       (param $f (ref eq)) (result (ref eq))
@@ -495,8 +515,20 @@
          (struct.new $js
             (call $jsstring_of_subbytes
                (ref.cast (ref $bytes) (local.get $s))
+               (@if $portable-int
+               (@then
+                  (call $int_val_32_exn (local.get $i)
+                     (global.get $jsstring_of_substring)))
+               (@else
                (i31.get_u (ref.cast (ref i31) (local.get $i)))
+               ))
+               (@if $portable-int
+               (@then
+                  (call $int_val_32_exn (local.get $l)
+                     (global.get $jsstring_of_substring)))
+               (@else
                (i31.get_u (ref.cast (ref i31) (local.get $l)))))))
+               ))
 
    (func $caml_jsbytes_of_bytes (export "caml_jsbytes_of_string")
       (param $vs (ref eq)) (result (ref eq))
@@ -656,6 +688,8 @@
                      (local.get $l)))
                (br $loop))))
       (local.get $l))
+
+   (@string $jsstring_of_substring "caml_jsstring_of_substring")
 
    (@string $jsError "jsError")
 

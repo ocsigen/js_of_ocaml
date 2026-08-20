@@ -16,6 +16,13 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
+   (@if $portable-int
+   (@then
+      (import "portableint" "int_val_32_exn"
+         (func $int_val_32_exn (param (ref eq)) (param (ref eq)) (result i32)))
+      (import "portableint" "bool_val"
+         (func $bool_val (param (ref eq)) (result i32)))
+   ))
    (import "hash" "caml_string_hash"
       (func $caml_string_hash
          (param (ref eq)) (param (ref eq)) (result (ref eq))))
@@ -73,6 +80,11 @@
 
    (@string $predef_prefix "predef:")
 
+   (@if $portable-int
+   (@then
+      (@string $global_index "Global index out of range")
+   ))
+
    ;; Build a symbol key: for predefs, prepend "predef:" to the name.
    ;; For compunits (is_predef=0), return name unchanged.
    (func $make_symbol_key (param $is_predef i32) (param $name (ref $bytes))
@@ -102,6 +114,12 @@
             (local.set $a
                (br_on_cast_fail $tail (ref null $assoc) (ref $assoc)
                   (local.get $l)))
+            (@if $portable-int
+            (@then
+               (if (call $bool_val (call $caml_string_equal (local.get $s) (struct.get $assoc 0 (local.get $a))))
+                  (then
+                     (return (local.get $a)))))
+            (@else
             (if (i31.get_u
                    (ref.cast (ref i31)
                        (call $caml_string_equal
@@ -109,6 +127,7 @@
                           (struct.get $assoc 0 (local.get $a)))))
                (then
                   (return (local.get $a))))
+            ))
             (local.set $l (struct.get $assoc 2 (local.get $a)))
             (br $loop))
          (unreachable)))
@@ -121,6 +140,8 @@
                (br_on_null $not_found
                   (call $assoc_find
                      (local.get $s)
+                     ;; [caml_string_hash] always returns its result as an [i31].
+                     ;; lint-ignore-start manual-portability-handling-unsafe
                      (array.get $assoc_array (global.get $named_value_table)
                         (i32.rem_u
                            (i31.get_s
@@ -128,6 +149,7 @@
                                  (call $caml_string_hash
                                     (ref.i31 (i32.const 0)) (local.get $s))))
                            (global.get $Named_value_size))))))))
+                     ;; lint-ignore-end manual-portability-handling-unsafe
       (return (ref.null eq)))
 
    (func (export "caml_register_named_value")
@@ -136,10 +158,13 @@
       (local $next (ref null $assoc))
       (local.set $h
          (i32.rem_u
+            ;; [caml_string_hash] always returns its result as an [i31].
+            ;; lint-ignore-start manual-portability-handling-unsafe
             (i31.get_s
                (ref.cast (ref i31)
                   (call $caml_string_hash
                      (ref.i31 (i32.const 0)) (local.get $name))))
+            ;; lint-ignore-end manual-portability-handling-unsafe
             (global.get $Named_value_size)))
       (local.set $next
          (array.get $assoc_array
@@ -164,10 +189,13 @@
       (local $r (ref null $assoc)) (local $a (ref $assoc)) (local $cur (ref $assoc))
       (local.set $h
          (i32.rem_u
+            ;; [caml_string_hash] always returns its result as an [i31].
+            ;; lint-ignore-start manual-portability-handling-unsafe
             (i31.get_s
                (ref.cast (ref i31)
                   (call $caml_string_hash
                      (ref.i31 (i32.const 0)) (local.get $name))))
+            ;; lint-ignore-end manual-portability-handling-unsafe
             (global.get $Named_value_size)))
       (local.set $r
          (array.get $assoc_array
@@ -175,6 +203,15 @@
       (block $done
          (local.set $a (br_on_null $done (local.get $r)))
          ;; Head of the bucket matches: drop it.
+         (@if $portable-int
+         (@then
+            (if (call $bool_val (call $caml_string_equal (local.get $name) (struct.get $assoc 0 (local.get $a))))
+               (then
+                  (array.set $assoc_array
+                     (global.get $named_value_table) (local.get $h)
+                     (struct.get $assoc 2 (local.get $a)))
+                  (br $done))))
+         (@else
          (if (i31.get_u
                 (ref.cast (ref i31)
                     (call $caml_string_equal
@@ -185,11 +222,20 @@
                   (global.get $named_value_table) (local.get $h)
                   (struct.get $assoc 2 (local.get $a)))
                (br $done)))
+         ))
          ;; $a is the previous (kept) node; scan its successors so the
          ;; unlink can update the predecessor's next pointer.
          (loop $loop
             (local.set $cur
                (br_on_null $done (struct.get $assoc 2 (local.get $a))))
+            (@if $portable-int
+            (@then
+               (if (call $bool_val (call $caml_string_equal (local.get $name) (struct.get $assoc 0 (local.get $cur))))
+                  (then
+                     (struct.set $assoc 2 (local.get $a)
+                        (struct.get $assoc 2 (local.get $cur)))
+                     (br $done))))
+            (@else
             (if (i31.get_u
                    (ref.cast (ref i31)
                        (call $caml_string_equal
@@ -199,6 +245,7 @@
                   (struct.set $assoc 2 (local.get $a)
                      (struct.get $assoc 2 (local.get $cur)))
                   (br $done)))
+            ))
             (local.set $a (local.get $cur))
             (br $loop)))
       (ref.i31 (i32.const 0)))
@@ -294,9 +341,12 @@
                      (ref.cast (ref $block)
                         (array.get $block (local.get $arr) (local.get $j))))
                   (local.set $idx
+                     ;; Symtable index from the linker symbols array; always an [i31].
+                     ;; lint-ignore-start manual-portability-handling-unsafe
                      (i31.get_u
                         (ref.cast (ref i31)
                            (array.get $block (local.get $pair) (i32.const 2)))))
+                     ;; lint-ignore-end manual-portability-handling-unsafe
                   (if (i32.gt_s (local.get $idx) (local.get $max))
                      (then (local.set $max (local.get $idx))))
                   ;; Build key from global_name
@@ -317,11 +367,14 @@
                   ;; Insert into symbol hash table
                   (local.set $h
                      (i32.rem_u
+                        ;; [caml_string_hash] always returns its result as an [i31].
+                        ;; lint-ignore-start manual-portability-handling-unsafe
                         (i31.get_s
                            (ref.cast (ref i31)
                               (call $caml_string_hash
                                  (ref.i31 (i32.const 0))
                                  (local.get $name))))
+                        ;; lint-ignore-end manual-portability-handling-unsafe
                         (global.get $symbol_table_size)))
                   (array.set $assoc_array
                      (global.get $symbol_table) (local.get $h)
@@ -358,6 +411,8 @@
          (call $make_symbol_key (local.get $kind)
             (ref.cast (ref $bytes) (local.get $name))))
       (block $not_found
+         ;; Symtable indices and [caml_string_hash] results are always [i31]s.
+         ;; lint-ignore-start manual-portability-handling-unsafe
          (return
             (i31.get_u
                (ref.cast (ref i31)
@@ -374,14 +429,21 @@
                                           (ref.i31 (i32.const 0))
                                           (local.get $key))))
                                  (global.get $symbol_table_size))))))))))
+         ;; lint-ignore-end manual-portability-handling-unsafe
       (i32.const -1))
 
    (func (export "caml_register_global_by_index")
       (param $v (ref eq)) (param $idx (ref eq)) (result (ref eq))
       (local $i i32)
       ;; caml_global_data is a $block: index 0 is the tag, data starts at 1
+      (@if $portable-int
+      (@then
+         (local.set $i
+            (i32.add (call $int_val_32_exn (local.get $idx) (global.get $global_index)) (i32.const 1))))
+      (@else
       (local.set $i
          (i32.add (i31.get_u (ref.cast (ref i31) (local.get $idx))) (i32.const 1)))
+      ))
       (if (i32.ge_u (local.get $i) (array.len (global.get $caml_global_data)))
          (then
             (call $grow_global_data (local.get $i))))
@@ -400,6 +462,8 @@
          (then
             (local.set $i
                (i32.add
+                  ;; Symtable index from the dynlink reloc callback; always an [i31].
+                  ;; lint-ignore-start manual-portability-handling-unsafe
                   (i31.get_u
                      (ref.cast (ref i31)
                         (call $caml_callback_1
@@ -408,6 +472,7 @@
                            (array.new_fixed $block 2
                               (ref.i31 (local.get $is_predef))
                               (local.get $name)))))
+                  ;; lint-ignore-end manual-portability-handling-unsafe
                   (i32.const 1))))
          (else
             ;; 2. static symbols array (set by linker in link_info)

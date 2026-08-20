@@ -1,6 +1,9 @@
 # dev
 
 ## Features/Changes
+* Compiler/Wasm: add `--enable portable-int`, an experimental mode where OCaml
+  integers are 63-bit and `nativeint` is 64-bit as on native 64-bit
+  platforms; integers that do not fit in 31 bits are boxed
 * Compiler: with `--effects={cps,double-translation}`, specialize calls to
   known functions using the global flow analysis before the CPS transformation
   (#2456)

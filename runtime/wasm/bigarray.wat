@@ -16,6 +16,11 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
+   (@if $portable-int
+   (@then
+      (import "portableint" "int_val_32_exn"
+         (func $int_val_32_exn (param (ref eq)) (param (ref eq)) (result i32)))
+   ))
    (import "fail" "caml_bound_error" (func $caml_bound_error))
    (import "fail" "caml_raise_out_of_memory" (func $caml_raise_out_of_memory))
    (import "fail" "caml_invalid_argument"
@@ -1407,6 +1412,8 @@
 
    (@string $ba_create_bad_dims "Bigarray.create: bad number of dimensions")
    (@string $ba_create_negative_dim "Bigarray.create: negative dimension")
+   (@string $ba_create_kind "Bigarray.create: invalid kind")
+   (@string $ba_create_layout "Bigarray.create: invalid layout")
 
    (func (export "caml_ba_create")
       (param $vkind (ref eq)) (param $layout (ref eq)) (param $d (ref eq))
@@ -1414,7 +1421,13 @@
       (local $vdim (ref $block))
       (local $ba_data (ref extern)) (local $ba_dim (ref $int_array))
       (local $ba_kind i32) (local $ba_num_dims i32) (local $i i32) (local $n i32)
+      (@if $portable-int
+      (@then
+         (local.set $ba_kind (call $int_val_32_exn (local.get $vkind)
+                                (global.get $ba_create_kind))))
+      (@else
       (local.set $ba_kind (i31.get_s (ref.cast (ref i31) (local.get $vkind))))
+      ))
       (local.set $vdim (ref.cast (ref $block) (local.get $d)))
       (local.set $ba_num_dims (i32.sub (array.len (local.get $vdim)) (i32.const 1)))
       (if (i32.gt_u (local.get $ba_num_dims) (global.get $CAML_BA_MAX_NUM_DIMS))
@@ -1448,6 +1461,18 @@
       (local.set $ba_data
          (call $caml_ba_create_buffer (local.get $ba_kind)
             (call $caml_ba_get_size (local.get $ba_dim))))
+      (@if $portable-int
+      (@then
+         (struct.new $bigarray
+            (global.get $bigarray_ops)
+            (local.get $ba_data)
+            (call $dv_make (local.get $ba_data))
+            (local.get $ba_dim)
+            (local.get $ba_num_dims)
+            (local.get $ba_kind)
+            (call $int_val_32_exn (local.get $layout)
+               (global.get $ba_create_layout))))
+      (@else
       (struct.new $bigarray
          (global.get $bigarray_ops)
          (local.get $ba_data)
@@ -1456,6 +1481,7 @@
          (local.get $ba_num_dims)
          (local.get $ba_kind)
          (i31.get_s (ref.cast (ref i31) (local.get $layout)))))
+      ))
 
    (@string $ta_unsupported_kind "Typed_array.to_genarray: unsupported kind")
    (@string $ta_too_large "Typed_array.to_genarray: too large")
@@ -1781,7 +1807,13 @@
       (local.set $dim
          (struct.get $bigarray $ba_dim
             (ref.cast (ref $bigarray) (local.get $vba))))
+      (@if $portable-int
+      (@then
+         (local.set $i (call $int_val_32_exn (local.get $vi)
+                          (global.get $Bigarray_dim))))
+      (@else
       (local.set $i (i31.get_s (ref.cast (ref i31) (local.get $vi))))
+      ))
       (if (i32.ge_u (local.get $i) (array.len (local.get $dim)))
          (then (call $caml_invalid_argument (global.get $Bigarray_dim))))
       (@if $portable-int
@@ -1801,11 +1833,10 @@
       (local $ba (ref $bigarray))
       (local $i i32)
       (local.set $ba (ref.cast (ref $bigarray) (local.get $vba)))
-      (@if $portable-int
-      (@then
-         (local.set $i (call $caml_ba_index_val (local.get $vi))))
-      (@else
-      (local.set $i (i31.get_u (ref.cast (ref i31) (local.get $vi))))
+      (local.set $i
+        (@if $portable-int
+        (@then (call $caml_ba_index_val (local.get $vi)))
+        (@else (i31.get_u (ref.cast (ref i31) (local.get $vi))))
       ))
       (if (struct.get_u $bigarray $ba_layout (local.get $ba))
          (then (local.set $i (i32.sub (local.get $i) (i32.const 1)))))
@@ -1820,11 +1851,10 @@
       (local $ba (ref $bigarray))
       (local $i i32)
       (local.set $ba (ref.cast (ref $bigarray) (local.get $vba)))
-      (@if $portable-int
-      (@then
-         (local.set $i (call $caml_ba_index_val (local.get $vi))))
-      (@else
-      (local.set $i (i31.get_u (ref.cast (ref i31) (local.get $vi))))
+      (local.set $i
+        (@if $portable-int
+        (@then (call $caml_ba_index_val (local.get $vi)))
+        (@else (i31.get_u (ref.cast (ref i31) (local.get $vi))))
       ))
       (if (struct.get_u $bigarray $ba_layout (local.get $ba))
          (then (local.set $i (i32.sub (local.get $i) (i32.const 1)))))
@@ -1845,17 +1875,15 @@
       (local $offset i32)
       (local $dim (ref $int_array))
       (local.set $ba (ref.cast (ref $bigarray) (local.get $vba)))
-      (@if $portable-int
-      (@then
-         (local.set $i (call $caml_ba_index_val (local.get $vi))))
-      (@else
-      (local.set $i (i31.get_u (ref.cast (ref i31) (local.get $vi))))
+      (local.set $i
+        (@if $portable-int
+        (@then (call $caml_ba_index_val (local.get $vi)))
+        (@else (i31.get_u (ref.cast (ref i31) (local.get $vi))))
       ))
-      (@if $portable-int
-      (@then
-         (local.set $j (call $caml_ba_index_val (local.get $vj))))
-      (@else
-      (local.set $j (i31.get_u (ref.cast (ref i31) (local.get $vj))))
+      (local.set $j
+        (@if $portable-int
+        (@then (call $caml_ba_index_val (local.get $vj)))
+        (@else (i31.get_u (ref.cast (ref i31) (local.get $vj))))
       ))
       (local.set $dim (struct.get $bigarray $ba_dim (local.get $ba)))
       (if (struct.get_u $bigarray $ba_layout (local.get $ba))
@@ -2726,6 +2754,7 @@
        (return (ref.i31 (i32.const 0))))
 
    (@string $dim_mismatch "Bigarray.blit: dimension mismatch")
+   (@string $ba_change_layout "Bigarray.change_layout")
 
    (func (export "caml_ba_blit")
       (param $vsrc (ref eq)) (param $vdst (ref eq)) (result (ref eq))
@@ -2821,7 +2850,13 @@
       (local $ba_layout i32) (local $ba_num_dims i32) (local $i i32)
       (local $dim (ref $int_array)) (local $ba_dim (ref $int_array))
       (local.set $b (ref.cast (ref $bigarray) (local.get $vb)))
+      (@if $portable-int
+      (@then
+         (local.set $ba_layout (call $int_val_32_exn (local.get $vlayout)
+                                  (global.get $ba_change_layout))))
+      (@else
       (local.set $ba_layout (i31.get_s (ref.cast (ref i31) (local.get $vlayout))))
+      ))
       (if (result (ref eq))
           (i32.ne (struct.get_u $bigarray $ba_layout (local.get $b))
              (local.get $ba_layout))

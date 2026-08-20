@@ -16,6 +16,13 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
+   (@if $portable-int
+   (@then
+      (import "portableint" "int_val_32_exn"
+         (func $int_val_32_exn (param (ref eq)) (param (ref eq)) (result i32)))
+      (import "portableint" "portable_int_val_31"
+         (func $portable_int_val_31 (param (ref eq)) (result i32)))
+   ))
    (import "jslib" "wrap" (func $wrap (param anyref) (result (ref eq))))
    (import "jslib" "unwrap" (func $unwrap (param (ref eq)) (result anyref)))
    (import "jslib" "caml_js_get"
@@ -78,8 +85,15 @@
    (type $bytes (array (mut i8)))
 
 
-   (import "portableint" "val_int_32"
-      (func $val_int_32 (param i32) (result (ref eq))))
+   (@if $portable-int
+   (@then
+      (import "portableint" "val_int_32"
+         (func $val_int_32 (param i32) (result (ref eq))))
+   )
+   (@else
+      (func $val_int_32 (param $i i32) (result (ref eq))
+         (ref.i31 (local.get $i)))
+   ))
 
    (@string $bigstring_pos "Bigstring: position out of range")
    (@string $bigstring_len "Bigstring: length out of range")
@@ -387,22 +401,14 @@
       (local $mask i32) (local $word i32) (local $xored i32)
       (@if $portable-int
       (@then
-         (local.set $c (call $int_val_32_sat (local.get $vc))))
-      (@else
-      (local.set $c (i31.get_s (ref.cast (ref i31) (local.get $vc))))
-      ))
-      (@if $portable-int
-      (@then
+         (local.set $c (call $portable_int_val_31 (local.get $vc)))
          (local.set $pos
-            (call $int_val_32_exn (local.get $vpos) (global.get $bigstring_pos))))
-      (@else
-      (local.set $pos (i31.get_s (ref.cast (ref i31) (local.get $vpos))))
-      ))
-      (@if $portable-int
-      (@then
+            (call $int_val_32_exn (local.get $vpos) (global.get $bigstring_pos)))
          (local.set $len
             (call $int_val_32_exn (local.get $vlen) (global.get $bigstring_len))))
       (@else
+      (local.set $c (i31.get_s (ref.cast (ref i31) (local.get $vc))))
+      (local.set $pos (i31.get_s (ref.cast (ref i31) (local.get $vpos))))
       (local.set $len (i31.get_s (ref.cast (ref i31) (local.get $vlen))))
       ))
       (local.set $v (call $caml_ba_get_view (local.get $s)))
@@ -458,22 +464,14 @@
       (local $mask i32) (local $word i32) (local $xored i32)
       (@if $portable-int
       (@then
-         (local.set $c (call $int_val_32_sat (local.get $vc))))
-      (@else
-      (local.set $c (i31.get_s (ref.cast (ref i31) (local.get $vc))))
-      ))
-      (@if $portable-int
-      (@then
+         (local.set $c (call $portable_int_val_31 (local.get $vc)))
          (local.set $pos
-            (call $int_val_32_exn (local.get $vpos) (global.get $bigstring_pos))))
-      (@else
-      (local.set $pos (i31.get_s (ref.cast (ref i31) (local.get $vpos))))
-      ))
-      (@if $portable-int
-      (@then
+            (call $int_val_32_exn (local.get $vpos) (global.get $bigstring_pos)))
          (local.set $len
             (call $int_val_32_exn (local.get $vlen) (global.get $bigstring_len))))
       (@else
+      (local.set $c (i31.get_s (ref.cast (ref i31) (local.get $vc))))
+      (local.set $pos (i31.get_s (ref.cast (ref i31) (local.get $vpos))))
       (local.set $len (i31.get_s (ref.cast (ref i31) (local.get $vlen))))
       ))
       (local.set $v (call $caml_ba_get_view (local.get $s)))

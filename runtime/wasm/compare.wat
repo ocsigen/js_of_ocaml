@@ -448,9 +448,15 @@
                            (ref.eq (local.get $v1) (local.get $v2)))
                         (return
                            (i32.sub
+                              ;; Object ids come from the [caml_set_oo_id] counter, so they fit in 32 bits.
+                              ;; lint-ignore-start manual-portability-handling-unsafe
                               (i31.get_s (ref.cast (ref i31) (local.get $v1)))
+                              ;; lint-ignore-end manual-portability-handling-unsafe
+                              ;; Object ids come from the [caml_set_oo_id] counter, so they fit in 32 bits.
+                              ;; lint-ignore-start manual-portability-handling-unsafe
                               (i31.get_s
                                  (ref.cast (ref i31) (local.get $v2)))))))
+                              ;; lint-ignore-end manual-portability-handling-unsafe
                   (local.set $s1 (array.len (local.get $b1)))
                   (local.set $s2 (array.len (local.get $b2)))
                   ;; compare size first
@@ -556,6 +562,8 @@
                                  (struct.get $custom 0 (local.get $c2))))
                      (then
                         (return
+                           ;; [caml_string_compare] always returns its result as an [i31].
+                           ;; lint-ignore-start manual-portability-handling-unsafe
                            (i31.get_s
                               (ref.cast (ref i31)
                                  (call $caml_string_compare
@@ -565,6 +573,7 @@
                                     (struct.get $custom_operations $id
                                        (struct.get $custom 0
                                           (local.get $c2)))))))))
+                           ;; lint-ignore-end manual-portability-handling-unsafe
                   (block $not_comparable
                      (local.set $res
                         (call_ref $compare
@@ -625,11 +634,17 @@
                (ref.i31 (i32.const 0)))) ;; fall through
             ;; heterogeneous comparison
             (local.set $t1
+               ;; Tags fit in 8 bits, so [caml_obj_tag] always returns an [i31].
+               ;; lint-ignore-start manual-portability-handling-unsafe
                (i31.get_u
                   (ref.cast (ref i31) (call $caml_obj_tag (local.get $v1)))))
+               ;; lint-ignore-end manual-portability-handling-unsafe
             (local.set $t2
+               ;; Tags fit in 8 bits, so [caml_obj_tag] always returns an [i31].
+               ;; lint-ignore-start manual-portability-handling-unsafe
                (i31.get_u
                   (ref.cast (ref i31) (call $caml_obj_tag (local.get $v2)))))
+               ;; lint-ignore-end manual-portability-handling-unsafe
             (if (i32.eq (local.get $t1) (global.get $forward_tag))
                (then
                   (local.set $v1

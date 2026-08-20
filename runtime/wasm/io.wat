@@ -16,6 +16,21 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
+   (@if $portable-int
+   (@then
+      (import "portableint" "bool_val"
+         (func $bool_val (param (ref eq)) (result i32)))
+      (import "portableint" "int_val_32_exn"
+         (func $int_val_32_exn (param (ref eq)) (param (ref eq)) (result i32)))
+      (import "portableint" "portable_int_val_32"
+         (func $portable_int_val_32 (param (ref eq)) (result i32)))
+      (import "portableint" "portable_int_val"
+         (func $portable_int_val (param (ref eq)) (result i64)))
+      (import "portableint" "val_portable_int"
+         (func $val_portable_int (param i64) (result (ref eq))))
+      (import "portableint" "val_int_32"
+         (func $val_int_32 (param i32) (result (ref eq))))
+   ))
    (import "fail" "caml_raise_end_of_file" (func $caml_raise_end_of_file))
    (import "fail" "caml_raise_sys_error"
       (func $caml_raise_sys_error (param (ref eq))))
@@ -310,6 +325,9 @@
          (local.get $j)))
 ))
 
+   (@string $io_pos "Channel position out of range")
+   (@string $io_len "Channel length out of range")
+
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
    (type $offset_array (array (mut i64)))
@@ -454,11 +472,14 @@
                (br_on_cast_fail $done (ref eq) (ref $block) (local.get $vflags)))
             (local.set $flags
                (i32.or (local.get $flags)
+                  ;; A constant constructor from the caller's flag list; always an [i31].
+                  ;; lint-ignore-start manual-portability-handling-unsafe
                   (array.get_u $open_flags (local.get $tbl)
                      (i31.get_u
                         (ref.cast (ref i31)
                            (array.get $block
                               (local.get $cons) (i32.const 1)))))))
+                  ;; lint-ignore-end manual-portability-handling-unsafe
             (local.set $vflags
                (array.get $block (local.get $cons) (i32.const 2)))
             (br $loop))))
@@ -518,7 +539,11 @@
                   (call $unwrap
                      (call $caml_jsstring_of_string (local.get $path)))
                   (local.get $flags)
+                  (@if $portable-int
+                  (@then (call $portable_int_val_32 (local.get $perm)))
+                  (@else
                   (i31.get_u (ref.cast (ref i31) (local.get $perm))))))
+                  ))
          (catch $javascript_exception
             (call $caml_handle_sys_error)))
       ;; Like native [O_APPEND], the offset starts at 0; writes reposition to
@@ -542,7 +567,11 @@
 (@else
    (func (export "caml_sys_close") (param $vfd (ref eq)) (result (ref eq))
       (local $fd i32) (local $res i32)
+      (@if $portable-int
+      (@then (local.set $fd (call $portable_int_val_32 (local.get $vfd))))
+      (@else
       (local.set $fd (i31.get_u (ref.cast (ref i31) (local.get $vfd))))
+      ))
       (call $release_fd_offset (local.get $fd))
       (try
          (do
@@ -627,7 +656,11 @@
       (struct.new $channel
          (global.get $channel_ops)
          (call $custom_next_id)
+         (@if $portable-int
+         (@then (call $portable_int_val_32 (local.get $fd)))
+         (@else
          (i31.get_u (ref.cast (ref i31) (local.get $fd)))
+         ))
          (local.get $buffer)
          (call $dv_make (local.get $buffer))
          (i32.const 0)
@@ -649,7 +682,11 @@
          (struct.new $channel
             (global.get $channel_ops)
             (call $custom_next_id)
+            (@if $portable-int
+            (@then (call $portable_int_val_32 (local.get $fd)))
+            (@else
             (i31.get_u (ref.cast (ref i31) (local.get $fd)))
+            ))
             (local.get $buffer)
             (call $dv_make (local.get $buffer))
             (i32.const 0)
@@ -974,8 +1011,20 @@
       (local $buf (ref extern))
       (local.set $ch (ref.cast (ref $channel) (local.get $vch)))
       (local.set $s (ref.cast (ref $bytes) (local.get $vs)))
+      (@if $portable-int
+      (@then
+         (local.set $pos (call $int_val_32_exn (local.get $vpos)
+                            (global.get $io_pos))))
+      (@else
       (local.set $pos (i31.get_u (ref.cast (ref i31) (local.get $vpos))))
+      ))
+      (@if $portable-int
+      (@then
+         (local.set $len (call $int_val_32_exn (local.get $vlen)
+                            (global.get $io_len))))
+      (@else
       (local.set $len (i31.get_u (ref.cast (ref i31) (local.get $vlen))))
+      ))
       (local.set $buf (struct.get $channel $buffer_view (local.get $ch)))
       (local.set $curr (struct.get $channel $curr (local.get $ch)))
       (local.set $avail
@@ -1030,19 +1079,36 @@
       (local.set $res
          (i32.or (local.get $res)
             (i32.shl (call $caml_getch (local.get $ch)) (i32.const 8))))
+      (@if $portable-int
+      (@then
+         (return
+            (call $val_int_32
+               (i32.or (local.get $res) (call $caml_getch (local.get $ch))))))
+      (@else
       (return
-         (ref.i31 (i32.or (local.get $res) (call $caml_getch (local.get $ch))))))
+         (ref.i31 (i32.or (local.get $res) (call $caml_getch (local.get $ch)))))
+      )))
 
    (func (export "caml_ml_pos_in")
       (param $vch (ref eq)) (result (ref eq))
       (local $ch (ref $channel))
       (local.set $ch (ref.cast (ref $channel) (local.get $vch)))
+      (@if $portable-int
+      (@then
+         (call $val_portable_int
+            (i64.sub (call $caml_ml_get_channel_offset (local.get $ch))
+               (i64.extend_i32_s
+                  (i32.sub
+                     (struct.get $channel $max (local.get $ch))
+                     (struct.get $channel $curr (local.get $ch)))))))
+      (@else
       (ref.i31
          (i32.sub
             (i32.wrap_i64 (call $caml_ml_get_channel_offset (local.get $ch)))
             (i32.sub
               (struct.get $channel $max (local.get $ch))
               (struct.get $channel $curr (local.get $ch))))))
+      ))
 
    (func (export "caml_ml_pos_in_64")
       (param $vch (ref eq)) (result (ref eq))
@@ -1059,10 +1125,17 @@
       (param $vch (ref eq)) (result (ref eq))
       (local $ch (ref $channel))
       (local.set $ch (ref.cast (ref $channel) (local.get $vch)))
+      (@if $portable-int
+      (@then
+         (call $val_portable_int
+            (i64.add (call $caml_ml_get_channel_offset (local.get $ch))
+               (i64.extend_i32_s (struct.get $channel $curr (local.get $ch))))))
+      (@else
       (ref.i31
          (i32.add
             (i32.wrap_i64 (call $caml_ml_get_channel_offset (local.get $ch)))
-            (struct.get $channel $curr (local.get $ch)))))
+            (struct.get $channel $curr (local.get $ch))))
+      )))
 
    (func (export "caml_ml_pos_out_64")
       (param $vch (ref eq)) (result (ref eq))
@@ -1127,8 +1200,12 @@
    (func (export "caml_ml_seek_in")
       (param $ch (ref eq)) (param $dest (ref eq)) (result (ref eq))
       (return_call $caml_seek_in (ref.cast (ref $channel) (local.get $ch))
+         (@if $portable-int
+         (@then (call $portable_int_val (local.get $dest)))
+         (@else
          (i64.extend_i32_s
             (i31.get_s (ref.cast (ref i31) (local.get $dest))))))
+         ))
 
    (func (export "caml_ml_seek_in_64")
       (param $ch (ref eq)) (param $dest (ref eq)) (result (ref eq))
@@ -1160,8 +1237,12 @@
       (local.set $fd_offset
          (call $get_fd_offset (struct.get $channel $fd (local.get $ch))))
       (local.set $offset
+         (@if $portable-int
+         (@then (call $portable_int_val (local.get $voffset)))
+         (@else
          (i64.extend_i32_s
             (i31.get_s (ref.cast (ref i31) (local.get $voffset)))))
+         ))
       (if (i64.lt_s (local.get $offset) (i64.const 0))
          (then (call $caml_raise_sys_error (@string "Invalid argument"))))
       (struct.set $fd_offset $offset (local.get $fd_offset) (local.get $offset))
@@ -1516,8 +1597,20 @@
       (param $ch (ref eq)) (param $s (ref eq)) (param $vpos (ref eq))
       (param $vlen (ref eq)) (result (ref eq))
       (local $pos i32) (local $len i32) (local $written i32)
+      (@if $portable-int
+      (@then
+         (local.set $pos (call $int_val_32_exn (local.get $vpos)
+                            (global.get $io_pos))))
+      (@else
       (local.set $pos (i31.get_u (ref.cast (ref i31) (local.get $vpos))))
+      ))
+      (@if $portable-int
+      (@then
+         (local.set $len (call $int_val_32_exn (local.get $vlen)
+                            (global.get $io_len))))
+      (@else
       (local.set $len (i31.get_u (ref.cast (ref i31) (local.get $vlen))))
+      ))
       (loop $loop
          (if (i32.gt_u (local.get $len) (i32.const 0))
             (then
@@ -1546,7 +1639,11 @@
    (func (export "caml_ml_output_char")
       (param $ch (ref eq)) (param $c (ref eq)) (result (ref eq))
       (call $caml_putch (ref.cast (ref $channel) (local.get $ch))
+         (@if $portable-int
+         (@then (call $portable_int_val_32 (local.get $c)))
+         (@else
          (i31.get_u (ref.cast (ref i31) (local.get $c))))
+         ))
       (call $caml_flush_if_unbuffered (local.get $ch))
       (ref.i31 (i32.const 0)))
 
@@ -1554,7 +1651,11 @@
       (param $vch (ref eq)) (param $vn (ref eq)) (result (ref eq))
       (local $ch (ref $channel)) (local $n i32)
       (local.set $ch (ref.cast (ref $channel) (local.get $vch)))
+      (@if $portable-int
+      (@then (local.set $n (call $portable_int_val_32 (local.get $vn))))
+      (@else
       (local.set $n (i31.get_u (ref.cast (ref i31) (local.get $vn))))
+      ))
       (call $caml_putch (local.get $ch)
          (i32.shr_u (local.get $n) (i32.const 24)))
       (call $caml_putch (local.get $ch)
@@ -1575,6 +1676,16 @@
       (param $vch (ref eq)) (param $mode (ref eq)) (result (ref eq))
       (local $ch (ref $channel))
       (local.set $ch (ref.cast (ref $channel) (local.get $vch)))
+      (@if $portable-int
+      (@then
+         (if (call $bool_val (local.get $mode))
+            (then
+               (struct.set $channel $unbuffered (local.get $ch) (i32.const 0)))
+            (else
+               (struct.set $channel $unbuffered (local.get $ch) (i32.const 1))
+               (if (i32.ne (struct.get $channel $fd (local.get $ch)) (i32.const -1))
+                  (then (call $caml_flush (local.get $ch)))))))
+      (@else
       (if (i31.get_s (ref.cast (ref i31) (local.get $mode)))
          (then
             (struct.set $channel $unbuffered (local.get $ch) (i32.const 0)))
@@ -1582,13 +1693,20 @@
             (struct.set $channel $unbuffered (local.get $ch) (i32.const 1))
             (if (i32.ne (struct.get $channel $fd (local.get $ch)) (i32.const -1))
                (then (call $caml_flush (local.get $ch))))))
+      ))
       (ref.i31 (i32.const 0)))
 
    (func (export "caml_ml_channel_size") (param $vch (ref eq)) (result (ref eq))
+      (@if $portable-int
+      (@then
+         (call $val_portable_int
+            (call $file_size (call $caml_ml_get_channel_fd (local.get $vch)))))
+      (@else
       ;; ZZZ check for overflow
       (ref.i31
          (i32.wrap_i64
             (call $file_size (call $caml_ml_get_channel_fd (local.get $vch))))))
+      ))
 
    (func (export "caml_ml_channel_size_64") (param $vch (ref eq)) (result (ref eq))
       (call $caml_copy_int64
@@ -1631,8 +1749,20 @@
       (param $vlen (ref eq)) (result (ref eq))
       (local $d (ref extern)) (local $pos i32) (local $len i32)
       (local.set $d (call $caml_ba_get_data (local.get $a)))
+      (@if $portable-int
+      (@then
+         (local.set $pos (call $int_val_32_exn (local.get $vpos)
+                            (global.get $io_pos))))
+      (@else
       (local.set $pos (i31.get_u (ref.cast (ref i31) (local.get $vpos))))
+      ))
+      (@if $portable-int
+      (@then
+         (local.set $len (call $int_val_32_exn (local.get $vlen)
+                            (global.get $io_len))))
+      (@else
       (local.set $len (i31.get_u (ref.cast (ref i31) (local.get $vlen))))
+      ))
       (call $caml_really_putblock_typed_array
          (local.get $ch)
          (local.get $d)
@@ -1645,8 +1775,20 @@
       (param $vlen (ref eq)) (result (ref eq))
       (local $d (ref extern)) (local $pos i32) (local $len i32)
       (local.set $d (call $caml_ba_get_data (local.get $a)))
+      (@if $portable-int
+      (@then
+         (local.set $pos (call $int_val_32_exn (local.get $vpos)
+                            (global.get $io_pos))))
+      (@else
       (local.set $pos (i31.get_u (ref.cast (ref i31) (local.get $vpos))))
+      ))
+      (@if $portable-int
+      (@then
+         (local.set $len (call $int_val_32_exn (local.get $vlen)
+                            (global.get $io_len))))
+      (@else
       (local.set $len (i31.get_u (ref.cast (ref i31) (local.get $vlen))))
+      ))
       (ref.i31
          (call $caml_getblock_typed_array
             (local.get $ch) (local.get $d) (local.get $pos) (local.get $len))))
