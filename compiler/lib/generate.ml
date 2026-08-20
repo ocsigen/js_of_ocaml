@@ -1841,7 +1841,9 @@ let rec translate_expr ctx loc x e level : (_ * J.statement_list) Expr_builder.t
                 | "%perform"
                 | "%reperform"
                 | "%with_stack"
-                | "%with_stack_bind" )
+                | "%with_stack_bind"
+                | "%with_stack_preemptible"
+                | "%with_stack_bind_preemptible" )
               , _ )
           , _ ) ->
             assert (not (cps_transform ()));
