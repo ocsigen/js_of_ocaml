@@ -2767,7 +2767,26 @@
                (br $loop))))
       (return (i32.const 0)))
 
-   (func (export "caml_ba_uint8_get16")
+   (func (export "caml_ba_uint8_geti8")
+      (param $vba (ref eq)) (param $i i32) (result i32)
+      (local $ba (ref $bigarray))
+      (local $view (ref extern))
+      (local.set $ba (ref.cast (ref $bigarray) (local.get $vba)))
+      (local.set $view (struct.get $bigarray $ba_view (local.get $ba)))
+      (if (i32.lt_s (local.get $i) (i32.const 0))
+         (then (call $caml_bound_error)))
+      (if (i32.ge_u (local.get $i)
+             (array.get $int_array
+                (struct.get $bigarray $ba_dim (local.get $ba))
+                (i32.const 0)))
+         (then (call $caml_bound_error)))
+      (i32.extend8_s (call $dv_get_ui8 (local.get $view) (local.get $i))))
+
+   (func (export "caml_ba_uint8_geti16")
+      (param $vba (ref eq)) (param $i i32) (result i32)
+      (i32.extend16_s (call $caml_ba_uint8_get16 (local.get $vba) (local.get $i))))
+
+   (func $caml_ba_uint8_get16 (export "caml_ba_uint8_get16")
       (param $vba (ref eq)) (param $i i32) (result i32)
       (local $ba (ref $bigarray))
       (local $view (ref extern))
@@ -2841,6 +2860,23 @@
       (local.set $view (struct.get $bigarray $ba_view (local.get $ba)))
       (call $dv_get_i64_unaligned
          (local.get $view) (local.get $i) (i32.const 1)))
+
+   (func (export "caml_ba_uint8_set8")
+      (param $vba (ref eq)) (param $i i32) (param $d i32)
+      (result (ref eq))
+      (local $ba (ref $bigarray))
+      (local $view (ref extern))
+      (local.set $ba (ref.cast (ref $bigarray) (local.get $vba)))
+      (local.set $view (struct.get $bigarray $ba_view (local.get $ba)))
+      (if (i32.lt_s (local.get $i) (i32.const 0))
+         (then (call $caml_bound_error)))
+      (if (i32.ge_u (local.get $i)
+             (array.get $int_array
+                (struct.get $bigarray $ba_dim (local.get $ba))
+                (i32.const 0)))
+         (then (call $caml_bound_error)))
+      (call $dv_set_i8 (local.get $view) (local.get $i) (local.get $d))
+      (ref.i31 (i32.const 0)))
 
    (func (export "caml_ba_uint8_set16")
       (param $vba (ref eq)) (param $i i32) (param $d i32)
