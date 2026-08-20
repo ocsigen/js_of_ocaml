@@ -110,7 +110,9 @@ let block_deps ~info ~vars ~tail_deps ~deps ~blocks ~fun_name pc =
                     | "%reperform"
                     | "%resume"
                     | "%with_stack"
-                    | "%with_stack_bind" )
+                    | "%with_stack_bind"
+                    | "%with_stack_preemptible"
+                    | "%with_stack_bind_preemptible" )
                   , _ )
               , _ ) ) -> (
           add_var vars x;
@@ -220,7 +222,13 @@ let cps_needed ~info ~in_mutual_recursion ~rev_deps ~below st x =
   | Expr
       (Prim
          ( Extern
-             ( ("%perform" | "%reperform" | "%resume" | "%with_stack" | "%with_stack_bind")
+             ( ( "%perform"
+               | "%reperform"
+               | "%resume"
+               | "%with_stack"
+               | "%with_stack_bind"
+               | "%with_stack_preemptible"
+               | "%with_stack_bind_preemptible" )
              , _ )
          , _ )) ->
       (* Effects primitives are in CPS *)
