@@ -18,6 +18,9 @@
 (module
    (@if $portable-int
    (@then
+      (import "fail" "caml_invalid_argument"
+         (func $caml_invalid_argument (param (ref eq))))
+
       (type $ocaml_large_int (struct (field i64)))
 
       (func $is_ocaml_portable_int (export "is_ocaml_portable_int")
@@ -44,6 +47,12 @@
                 (i64.const 0x80000000))
             (then (ref.i31 (i32.wrap_i64 (local.get $l))))
             (else (struct.new $ocaml_large_int (local.get $l)))))
+
+      (func (export "portable_int_val_31") (param $v (ref eq)) (result i32)
+         (i32.shr_s
+            (i32.shl (i32.wrap_i64 (call $portable_int_val (local.get $v)))
+               (i32.const 1))
+            (i32.const 1)))
 
       (func $portable_int_val_32 (export "portable_int_val_32")
          (param $v (ref eq)) (result i32)
@@ -77,9 +86,53 @@
             (else
                (struct.new $ocaml_large_int
                   (i64.extend_i32_s (local.get $i))))))
-   )
-   (@else
-      (func (export "val_int_32") (param $i i32) (result (ref eq))
-         (ref.i31 (local.get $i)))
+
+      (func $bool_val (export "bool_val") (param $v (ref eq)) (result i32)
+         (i64.ne (call $portable_int_val (local.get $v)) (i64.const 0)))
+
+      (func (export "phys_eq") (param $v1 (ref eq)) (param $v2 (ref eq))
+         (result i32)
+         (if (ref.eq (local.get $v1) (local.get $v2))
+            (then (return (i32.const 1))))
+         (if (i32.eqz (ref.test (ref $ocaml_large_int) (local.get $v1)))
+            (then (return (i32.const 0))))
+         (if (i32.eqz (ref.test (ref $ocaml_large_int) (local.get $v2)))
+            (then (return (i32.const 0))))
+         (i64.eq
+            (struct.get $ocaml_large_int 0
+               (ref.cast (ref $ocaml_large_int) (local.get $v1)))
+            (struct.get $ocaml_large_int 0
+               (ref.cast (ref $ocaml_large_int) (local.get $v2)))))
+
+      ;; Saturating extract: clamps to [-2^31, 2^31-1].
+      (func (export "int_val_32_sat") (param $v (ref eq)) (result i32)
+         (local $l i64)
+         (local.set $l (call $portable_int_val (local.get $v)))
+         (if (i64.lt_s (local.get $l) (i64.const -0x80000000))
+            (then (return (i32.const 0x80000000))))
+         (if (i64.gt_s (local.get $l) (i64.const 0x7fffffff))
+            (then (return (i32.const 0x7fffffff))))
+         (i32.wrap_i64 (local.get $l)))
+
+      (func (export "int_val_32_exn")
+         (param $v (ref eq)) (param $msg (ref eq)) (result i32)
+         (local $l i64)
+         (local.set $l (call $portable_int_val (local.get $v)))
+         (if (i64.ne (local.get $l)
+                (i64.extend_i32_s (i32.wrap_i64 (local.get $l))))
+            (then (call $caml_invalid_argument (local.get $msg))))
+         (i32.wrap_i64 (local.get $l)))
+
+      (func (export "int_val_31_exn")
+         (param $v (ref eq)) (param $msg (ref eq)) (result i32)
+         (local $l i64)
+         (local.set $l (call $portable_int_val (local.get $v)))
+         (if (i64.ne (local.get $l)
+                (i64.extend_i32_s
+                   (i32.shr_s
+                      (i32.shl (i32.wrap_i64 (local.get $l)) (i32.const 1))
+                      (i32.const 1))))
+            (then (call $caml_invalid_argument (local.get $msg))))
+         (i32.wrap_i64 (local.get $l)))
    ))
 )

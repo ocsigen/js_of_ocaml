@@ -19,6 +19,11 @@
    (import "fail" "caml_invalid_argument"
       (func $caml_invalid_argument (param (ref eq))))
    (import "fail" "caml_failwith" (func $caml_failwith (param (ref eq))))
+   (@if $portable-int
+   (@then
+      (import "portableint" "int_val_32_exn"
+         (func $int_val_32_exn (param (ref eq)) (param (ref eq)) (result i32)))
+   ))
 
    (type $bytes (array (mut i8)))
    (type $block (array (mut (ref eq))))
@@ -106,13 +111,21 @@
          (ref.cast (ref $bytes)
             (array.get $block (local.get $re) (i32.const 3))))
       (local.set $numgroups
+         ;; [$re] is the regexp program [Str] compiled itself, whose fields
+         ;; are all small ints, so always [i31]s. The other "see above" in
+         ;; this file refer to this comment.
+         ;; lint-ignore-start manual-portability-handling-unsafe
          (i31.get_s
             (ref.cast (ref i31)
                (array.get $block (local.get $re) (i32.const 4)))))
+         ;; lint-ignore-end manual-portability-handling-unsafe
       (local.set $numregisters
+         ;; [Str]'s own program data; see above.
+         ;; lint-ignore-start manual-portability-handling-unsafe
          (i31.get_s
             (ref.cast (ref i31)
                (array.get $block (local.get $re) (i32.const 5)))))
+         ;; lint-ignore-end manual-portability-handling-unsafe
       (local.set $group_start
          (array.new $int_array (i32.const -1) (local.get $numgroups)))
       (local.set $group_end
@@ -128,10 +141,13 @@
          (block $backtrack
           (block $prefix_match
            (local.set $instr
+              ;; [Str]'s own program data; see above.
+              ;; lint-ignore-start manual-portability-handling-unsafe
               (i31.get_s
                  (ref.cast (ref i31)
                     (array.get $block (local.get $prog)
                        (local.get $pc)))))
+              ;; lint-ignore-end manual-portability-handling-unsafe
            (local.set $pc
               (i32.add (local.get $pc) (i32.const 1)))
            (block $CHECKPROGRESS
@@ -517,7 +533,13 @@
       (local $pos i32) (local $len i32)
       (local $res (ref eq))
       (local.set $s (ref.cast (ref $bytes) (local.get $vs)))
+      (@if $portable-int
+      (@then
+         (local.set $pos (call $int_val_32_exn (local.get $vpos)
+                            (global.get $search_forward))))
+      (@else
       (local.set $pos (i31.get_s (ref.cast (ref i31) (local.get $vpos))))
+      ))
       (local.set $len (array.len (local.get $s)))
       (if (i32.gt_u (local.get $pos) (local.get $len))
          (then (call $caml_invalid_argument (global.get $search_forward))))
@@ -542,7 +564,13 @@
       (local $pos i32) (local $len i32)
       (local $res (ref eq))
       (local.set $s (ref.cast (ref $bytes) (local.get $vs)))
+      (@if $portable-int
+      (@then
+         (local.set $pos (call $int_val_32_exn (local.get $vpos)
+                            (global.get $search_backward))))
+      (@else
       (local.set $pos (i31.get_s (ref.cast (ref i31) (local.get $vpos))))
+      ))
       (local.set $len (array.len (local.get $s)))
       (if (i32.gt_u (local.get $pos) (local.get $len))
          (then
@@ -568,7 +596,13 @@
       (local $pos i32) (local $len i32)
       (local $res (ref eq))
       (local.set $s (ref.cast (ref $bytes) (local.get $vs)))
+      (@if $portable-int
+      (@then
+         (local.set $pos (call $int_val_32_exn (local.get $vpos)
+                            (global.get $string_match))))
+      (@else
       (local.set $pos (i31.get_s (ref.cast (ref i31) (local.get $vpos))))
+      ))
       (local.set $len (array.len (local.get $s)))
       (if (i32.gt_u (local.get $pos) (local.get $len))
          (then (call $caml_invalid_argument (global.get $string_match))))
@@ -590,7 +624,13 @@
       (local $pos i32) (local $len i32)
       (local $res (ref eq))
       (local.set $s (ref.cast (ref $bytes) (local.get $vs)))
+      (@if $portable-int
+      (@then
+         (local.set $pos (call $int_val_32_exn (local.get $vpos)
+                            (global.get $string_partial_match))))
+      (@else
       (local.set $pos (i31.get_s (ref.cast (ref i31) (local.get $vpos))))
+      ))
       (local.set $len (array.len (local.get $s)))
       (if (i32.gt_u (local.get $pos) (local.get $len))
          (then
@@ -648,15 +688,21 @@
                       (array.len (local.get $groups)))
                   (then (call $caml_failwith (global.get $unmatched_group))))
                (local.set $start
+                  ;; [Str]'s own program data; see above.
+                  ;; lint-ignore-start manual-portability-handling-unsafe
                   (i31.get_s
                      (ref.cast (ref i31)
                         (array.get $block (local.get $groups)
                            (i32.add (local.get $c) (i32.const 1))))))
+                  ;; lint-ignore-end manual-portability-handling-unsafe
                (local.set $end
+                  ;; [Str]'s own program data; see above.
+                  ;; lint-ignore-start manual-portability-handling-unsafe
                   (i31.get_s
                      (ref.cast (ref i31)
                         (array.get $block (local.get $groups)
                            (i32.add (local.get $c) (i32.const 2))))))
+                  ;; lint-ignore-end manual-portability-handling-unsafe
                (if (i32.eq (local.get $start) (i32.const -1))
                   (then (call $caml_failwith (global.get $unmatched_group))))
                (local.set $len
@@ -701,15 +747,21 @@
                       (array.len (local.get $groups)))
                   (then (call $caml_failwith (global.get $unmatched_group))))
                (local.set $start
+                  ;; [Str]'s own program data; see above.
+                  ;; lint-ignore-start manual-portability-handling-unsafe
                   (i31.get_s
                      (ref.cast (ref i31)
                         (array.get $block (local.get $groups)
                            (i32.add (local.get $c) (i32.const 1))))))
+                  ;; lint-ignore-end manual-portability-handling-unsafe
                (local.set $end
+                  ;; [Str]'s own program data; see above.
+                  ;; lint-ignore-start manual-portability-handling-unsafe
                   (i31.get_s
                      (ref.cast (ref i31)
                         (array.get $block (local.get $groups)
                            (i32.add (local.get $c) (i32.const 2))))))
+                  ;; lint-ignore-end manual-portability-handling-unsafe
                (local.set $len (i32.sub (local.get $end) (local.get $start)))
                (array.copy $bytes $bytes
                   (local.get $res) (local.get $j)

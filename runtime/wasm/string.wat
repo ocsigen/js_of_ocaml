@@ -22,12 +22,12 @@
 
    (type $bytes (array (mut i8)))
 
-   (import "fail" "int_val_32_exn"
-      (func $int_val_32_exn (param (ref eq)) (param (ref eq)) (result i32)))
-   (import "portableint" "bool_val"
-      (func $bool_val (param (ref eq)) (result i32)))
    (@if $portable-int
    (@then
+      (import "portableint" "int_val_32_exn"
+         (func $int_val_32_exn (param (ref eq)) (param (ref eq)) (result i32)))
+      (import "portableint" "bool_val"
+         (func $bool_val (param (ref eq)) (result i32)))
       (import "portableint" "checked_portable_int_val_32"
          (func $length_val (param (ref eq)) (result i32)))
       (import "portableint" "portable_int_val_32"
@@ -61,9 +61,15 @@
    (export "caml_bytes_notequal" (func $caml_string_notequal))
    (func $caml_string_notequal (export "caml_string_notequal")
       (param $p1 (ref eq)) (param $p2 (ref eq)) (result (ref eq))
+      (@if $portable-int
+      (@then
+         (return
+            (ref.i31 (i32.eqz (call $bool_val (call $caml_string_equal (local.get $p1) (local.get $p2)))))))
+      (@else
       (return
          (ref.i31 (i32.eqz (i31.get_u (ref.cast (ref i31)
             (call $caml_string_equal (local.get $p1) (local.get $p2))))))))
+      ))
 
    (func $string_compare
       (param $p1 (ref eq)) (param $p2 (ref eq)) (result i32)
@@ -146,6 +152,9 @@
       (if (i32.lt_s (local.get $l) (i32.const 0))
          (then (call $caml_invalid_argument (global.get $Bytes_create))))
       (array.new $bytes (i32.const 0) (local.get $l)))
+
+   (@string $bytes_blit "Bytes.blit")
+   (@string $bytes_fill "Bytes.fill")
 
    (export "caml_blit_bytes" (func $caml_blit_string))
    (func $caml_blit_string (export "caml_blit_string")

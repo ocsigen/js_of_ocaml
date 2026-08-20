@@ -16,6 +16,19 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
+   (@if $portable-int
+   (@then
+      (import "portableint" "int_val_32_exn"
+         (func $int_val_32_exn (param (ref eq)) (param (ref eq)) (result i32)))
+      (import "portableint" "is_ocaml_portable_int"
+         (func $is_ocaml_portable_int (param (ref eq)) (result i32)))
+      (import "portableint" "portable_int_val"
+         (func $portable_int_val (param (ref eq)) (result i64)))
+      (import "portableint" "val_portable_int"
+         (func $val_portable_int (param i64) (result (ref eq))))
+      (import "portableint" "val_int_32"
+         (func $val_int_32 (param i32) (result (ref eq))))
+   ))
    (import "fail" "caml_failwith" (func $caml_failwith (param (ref eq))))
    (import "fail" "caml_invalid_argument"
       (func $caml_invalid_argument (param (ref eq))))
@@ -70,11 +83,16 @@
                (if (ref.eq (array.get $block (local.get $keys) (local.get $i))
                       (local.get $k))
                   (then
+                     ;; The values of this map are not OCaml ints: they are
+                     ;; sharing positions the marshaller itself stores with
+                     ;; [$map_set], which takes a [(ref i31)].
+                     ;; lint-ignore-start manual-portability-handling-unsafe
                      (return
                         (ref.cast (ref i31)
                            (array.get $block
                               (struct.get $map $values (local.get $m))
                               (local.get $i))))))
+                     ;; lint-ignore-end manual-portability-handling-unsafe
                (local.set $i (i32.add (local.get $i) (i32.const 1)))
                (br $loop))))
       (ref.null i31))
@@ -126,7 +144,13 @@
       (local $s (ref $intern_state))
       (local $h (ref $marshal_header))
       (local.set $str (ref.cast (ref $bytes) (local.get $vstr)))
+      (@if $portable-int
+      (@then
+         (local.set $ofs (call $int_val_32_exn (local.get $vofs)
+                            (global.get $input_val_from_string))))
+      (@else
       (local.set $ofs (i31.get_u (ref.cast (ref i31) (local.get $vofs))))
+      ))
       (local.set $s
          (call $get_intern_state (local.get $str) (local.get $ofs)))
       (local.set $h
@@ -237,7 +261,7 @@
    (global $CODE_INT8 i32 (i32.const 0x00))
    (global $CODE_INT16 i32 (i32.const 0x01))
    (global $CODE_INT32 i32 (i32.const 0x02))
-   ;; CODE_INT64 = 0x03 (decoded via the br_table in $intern_rec; unsupported)
+   (global $CODE_INT64 i32 (i32.const 0x03))
    (global $CODE_SHARED8 i32 (i32.const 0x04))
    (global $CODE_SHARED16 i32 (i32.const 0x05))
    (global $CODE_SHARED32 i32 (i32.const 0x06))
@@ -718,11 +742,30 @@
                              (local.set $ofs (call $read8u (local.get $s)))
                              (br $read_shared))
                             ;; INT64
+                            (@if $portable-int
+                            (@then
+                               (local.set $v
+                                  (call $val_portable_int
+                                     (i64.or
+                                        (i64.shl
+                                           (i64.extend_i32_u
+                                              (call $read32 (local.get $s)))
+                                           (i64.const 32))
+                                        (i64.extend_i32_u
+                                           (call $read32 (local.get $s)))))))
+                            (@else
                             (call $caml_failwith
                                (global.get $integer_too_large))
+                            ))
                             (br $done))
                            ;; INT32
+                           (@if $portable-int
+                           (@then
+                              (local.set $v
+                                 (call $val_int_32 (call $read32 (local.get $s)))))
+                           (@else
                            (local.set $v (ref.i31 (call $read32 (local.get $s))))
+                           ))
                            (br $done))
                           ;; INT16
                           (local.set $v (ref.i31 (call $read16s (local.get $s))))
@@ -784,10 +827,13 @@
              ;; Predefined exception slots have a negative ID
              ;; and should not be refreshed
              (if (i32.le_s (i32.const 0)
+                    ;; An object id, allocated by [CamlinternalOO]; always an [i31].
+                    ;; lint-ignore-start manual-portability-handling-unsafe
                     (i31.get_s
                        (ref.cast (ref i31)
                           (array.get $block (local.get $dest)
                              (i32.const 2)))))
+                    ;; lint-ignore-end manual-portability-handling-unsafe
                  (then
                     (drop (call $caml_set_oo_id (local.get $dest)))))))
         (br $loop)))
@@ -895,10 +941,19 @@
       (param $buf (ref eq)) (param $ofs (ref eq)) (result (ref eq))
       (local $s (ref $intern_state))
       (local $magic i32) (local $header_len i32) (local $data_len i32)
+      (@if $portable-int
+      (@then
+         (local.set $s
+            (call $get_intern_state
+               (ref.cast (ref $bytes) (local.get $buf))
+               (call $int_val_32_exn (local.get $ofs)
+                  (global.get $marshal_data_size)))))
+      (@else
       (local.set $s
          (call $get_intern_state
             (ref.cast (ref $bytes) (local.get $buf))
             (i31.get_u (ref.cast (ref i31) (local.get $ofs)))))
+      ))
       (local.set $magic (call $read32 (local.get $s)))
       (if (i32.eq (local.get $magic) (global.get $Intext_magic_number_big))
          (then (call $fail_too_large (global.get $marshal_data_size))))
@@ -932,6 +987,7 @@
       (struct
          ;; Flags
          (field $no_sharing i32)
+         (field $compat_32 i32)
          (field $user_provided_output i32)
          ;; Header information
          (field $obj_counter (mut i32))
@@ -952,6 +1008,7 @@
       (result (ref $extern_state))
       (local $b (ref $block))
       (local $no_sharing i32)
+      (local $compat_32 i32)
       (loop $parse_flags
          (drop (block $done (result (ref eq))
             (local.set $b
@@ -959,10 +1016,14 @@
             (if (ref.eq (array.get $block (local.get $b) (i32.const 1))
                    (ref.i31 (i32.const 0)))
                (then (local.set $no_sharing (i32.const 1))))
+            (if (ref.eq (array.get $block (local.get $b) (i32.const 1))
+                   (ref.i31 (i32.const 2)))
+               (then (local.set $compat_32 (i32.const 1))))
             (local.set $flags (array.get $block (local.get $b) (i32.const 2)))
             (br $parse_flags))))
       (struct.new $extern_state
          (local.get $no_sharing)
+         (local.get $compat_32)
          (local.get $user_provided_output)
          (i32.const 0)
          (i32.const 0)
@@ -975,6 +1036,12 @@
          (local.get $output)))
 
    (@string $buffer_overflow "Marshal.to_buffer: buffer overflow")
+
+   (@if $portable-int
+   (@then
+      (@string $integer_not_32_bit
+         "output_value: integer cannot be read back on 32-bit platform")
+   ))
 
    (global $SIZE_EXTERN_OUTPUT_BLOCK i32 (i32.const 8100))
 
@@ -1075,6 +1142,23 @@
       (array.set $bytes (local.get $buf) (local.get $pos) (local.get $c))
       (call $store32 (local.get $buf) (i32.add (local.get $pos) (i32.const 1))
          (local.get $v)))
+
+   (@if $portable-int
+   (@then
+      (func $writecode64
+         (param $s (ref $extern_state)) (param $c i32) (param $v i64)
+         (local $pos i32) (local $buf (ref $bytes))
+         (local.set $pos
+            (call $reserve_extern_output (local.get $s) (i32.const 9)))
+         (local.set $buf (struct.get $extern_state $buf (local.get $s)))
+         (array.set $bytes (local.get $buf) (local.get $pos) (local.get $c))
+         (call $store32 (local.get $buf)
+            (i32.add (local.get $pos) (i32.const 1))
+            (i32.wrap_i64 (i64.shr_u (local.get $v) (i64.const 32))))
+         (call $store32 (local.get $buf)
+            (i32.add (local.get $pos) (i32.const 5))
+            (i32.wrap_i64 (local.get $v))))
+   ))
 
    (func $writeblock
       (param $s (ref $extern_state)) (param $str (ref $bytes))
@@ -1335,6 +1419,19 @@
                   (br_on_cast_fail $not_int (ref eq) (ref i31) (local.get $v)))
                (call $extern_int (local.get $s) (i31.get_s (local.get $iv)))
                (br $next_item)))
+            (@if $portable-int
+            (@then
+               (if (call $is_ocaml_portable_int (local.get $v))
+                  (then
+                     (if (struct.get $extern_state $compat_32 (local.get $s))
+                        (then
+                           (call $caml_failwith
+                              (global.get $integer_not_32_bit))))
+                     (call $writecode64 (local.get $s)
+                        (global.get $CODE_INT64)
+                        (call $portable_int_val (local.get $v)))
+                     (br $next_item)))
+            ))
             (drop (block $not_block (result (ref eq))
                (local.set $blk
                   (br_on_cast_fail $not_block (ref eq) (ref $block)
@@ -1552,8 +1649,20 @@
       (local $r_1 (ref $bytes))
       (local $blk (ref $output_block))
       (local.set $dat (ref.cast (ref $bytes) (local.get $vbuf)))
+      (@if $portable-int
+      (@then
+         (local.set $pos (call $int_val_32_exn (local.get $vpos)
+                            (global.get $input_value))))
+      (@else
       (local.set $pos (i31.get_u (ref.cast (ref i31) (local.get $vpos))))
+      ))
+      (@if $portable-int
+      (@then
+         (local.set $len (call $int_val_32_exn (local.get $vlen)
+                            (global.get $input_value))))
+      (@else
       (local.set $len (i31.get_u (ref.cast (ref i31) (local.get $vlen))))
+      ))
       (local.set $blk
          (struct.new $output_block
             (ref.null $output_block)
