@@ -674,7 +674,9 @@ let eval_instr update_count inline_constant ~target info i =
                 | "%perform"
                 | "%reperform"
                 | "%with_stack"
-                | "%with_stack_bind" )
+                | "%with_stack_bind"
+                | "%with_stack_preemptible"
+                | "%with_stack_bind_preemptible" )
               , _ )
           , _ ) ) ->
       [ i ] (* We need that the arguments to this primitives remain variables *)
