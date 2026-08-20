@@ -157,6 +157,31 @@ let fold_children g f x acc =
   g.G.iter_children (fun y -> acc := f y !acc) x;
   !acc
 
+(* Whether [x] is a call point that the OCaml compiler proved unable to perform
+   an effect. Such a call never needs to be in CPS: even in CPS context, we can
+   call the direct-style version of the callee, no matter which function ends
+   up being called. The exception is calls to mutually recursive functions:
+   they are CPS-transformed for tail optimization, and the trampoline used for
+   their direct-style version (see [Generate_closure]) expects whole recursive
+   groups to be transformed consistently, so we keep such call points in CPS. *)
+let is_unyielding_call ~info ~in_mutual_recursion x =
+  double_translate ()
+  &&
+  match info.Global_flow.info_defs.(Var.idx x) with
+  | Expr (Apply { f; yielding = Unyielding; _ }) -> (
+      match Var.Tbl.get info.Global_flow.info_approximation f with
+      | Top -> true
+      | Values { known; others = _ } ->
+          not (Var.Set.exists (fun g -> Var.Set.mem g in_mutual_recursion) known))
+  | Expr (Apply { yielding = Unknown; _ }) ->
+      (* This analysis should never see [Unknown]; only passes afterwards should ever emit
+         it *)
+      assert false
+  | Expr
+      ( Apply { yielding = May_yield; _ }
+      | Closure _ | Prim _ | Block _ | Constant _ | Field _ | Special _ )
+  | Phi _ -> false
+
 (* Whether [x] may run below an effect handler, that is, whether its
    stack frame may be captured by a continuation. A function may run
    below an effect handler if it escapes (fiber bodies and effect
@@ -191,51 +216,52 @@ let cps_needed ~info ~in_mutual_recursion ~rev_deps ~below st x =
   (* Mutually recursive functions are turned into CPS for tail
      optimization (JavaScript only, see [cps_for_tail_calls]) *)
   (Var.Set.mem x in_mutual_recursion
-  ||
-  let idx = Var.idx x in
-  fold_children rev_deps (fun y acc -> acc || Var.Tbl.get st y) x false
-  ||
-  match info.Global_flow.info_defs.(idx) with
-  | Expr (Apply { f; args; exact; _ }) -> (
-      (* If we don't know all possible functions at a call point, it
+  || (not (is_unyielding_call ~info ~in_mutual_recursion x))
+     &&
+     let idx = Var.idx x in
+     fold_children rev_deps (fun y acc -> acc || Var.Tbl.get st y) x false
+     ||
+     match info.Global_flow.info_defs.(idx) with
+     | Expr (Apply { f; args; exact; _ }) -> (
+         (* If we don't know all possible functions at a call point, it
          must be in CPS *)
-      match Var.Tbl.get info.Global_flow.info_approximation f with
-      | Top -> true
-      | Values { known; others } ->
-          others
-          || (not exact)
-             &&
-             (* Likewise if a function may be applied to too many
+         match Var.Tbl.get info.Global_flow.info_approximation f with
+         | Top -> true
+         | Values { known; others } ->
+             others
+             || (not exact)
+                &&
+                (* Likewise if a function may be applied to too many
                    arguments: the closure it returns is then applied
                    to the remaining arguments *)
-             let nargs = List.length args in
-             Var.Set.exists
-               (fun g ->
-                 match info.Global_flow.info_defs.(Var.idx g) with
-                 | Expr (Closure (params, _, _)) -> List.length params < nargs
-                 | _ -> true)
-               known)
-  | Expr (Closure _) ->
-      (not (double_translate ()))
-      &&
-      (* If a function escapes, it must be in CPS *)
-      Var.ISet.mem info.Global_flow.info_may_escape x
-  | Expr
-      (Prim
-         ( Extern
-             ( ( "%perform"
-               | "%reperform"
-               | "%resume"
-               | "%continue"
-               | "%discontinue"
-               | "%discontinue_with_backtrace"
-               | "%with_stack"
-               | "%with_stack_preemptible" )
-             , _ )
-         , _ )) ->
-      (* Effects primitives are in CPS *)
-      true
-  | Expr (Prim _ | Block _ | Constant _ | Field _ | Special _) | Phi _ -> false)
+                let nargs = List.length args in
+                Var.Set.exists
+                  (fun g ->
+                    match info.Global_flow.info_defs.(Var.idx g) with
+                    | Expr (Closure (params, _, _)) -> List.length params < nargs
+                    | _ -> true)
+                  known)
+     | Expr (Closure _) ->
+         (not (double_translate ()))
+         &&
+         (* If a function escapes, it must be in CPS *)
+         Var.ISet.mem info.Global_flow.info_may_escape x
+     | Expr
+         (Prim
+            ( Extern
+                ( ( "%perform"
+                  | "%reperform"
+                  | "%resume"
+                  | "%continue"
+                  | "%discontinue"
+                  | "%discontinue_with_backtrace"
+                  | "%with_stack"
+                  | "%with_stack_preemptible" )
+                , _ )
+            , _ )) ->
+         (* Effects primitives are in CPS *)
+         true
+     | Expr (Prim _ | Block _ | Constant _ | Field _ | Special _) | Phi _ -> false)
 
 module SCC = Strongly_connected_components.Make (Var)
 

@@ -26,6 +26,10 @@ let%expect_test "" =
   let program =
     compile_and_parse
       ~effects:`Double_translation
+        (* The OxCaml compiler proves the call to [f] unyielding, which would
+         keep [wrap] in direct style only; disable this so that the test still
+         exercises the CPS translation of the exception handler. *)
+      ~flags:[ "--disable"; "oxcaml-use-unyielding-debuginfo-for-effect-cps" ]
       {|
 exception Nested of exn
 let wrap f =
