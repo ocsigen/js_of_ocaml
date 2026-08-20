@@ -347,7 +347,7 @@ let tail_call ~st ?(instrs = []) ~exact ~in_cps ~check ~f args =
   let ret = Var.fresh () in
   if check then st.trampolined_calls := Var.Set.add ret !(st.trampolined_calls);
   if in_cps then st.in_cps := Var.Set.add ret !(st.in_cps);
-  instrs @ [ Let (ret, Apply { f; args; exact }) ], Return ret
+  instrs @ [ Let (ret, Apply { f; args; exact; yielding = Unknown }) ], Return ret
 
 let cps_branch ~st ~src (pc, args) =
   match Addr.Set.mem pc st.blocks_to_transform with
@@ -555,7 +555,7 @@ let rewrite_instr ~st (instr : instr) : instr =
                 ( Extern ("caml_alloc_dummy_function", None)
                 , [ size; Pc (Int (Targetint.succ a)) ] ) )
       | _ -> assert false)
-  | Let (x, Apply { f; args; exact }) when not (Var.Set.mem x st.cps_needed) ->
+  | Let (x, Apply { f; args; exact; yielding }) when not (Var.Set.mem x st.cps_needed) ->
       if double_translate ()
       then
         let exact =
@@ -565,12 +565,12 @@ let rewrite_instr ~st (instr : instr) : instr =
           || Var.idx f < Var.Tbl.length st.flow_info.info_approximation
              && Global_flow.exact_call st.flow_info f (List.length args)
         in
-        Let (x, Apply { f; args; exact })
+        Let (x, Apply { f; args; exact; yielding })
       else (
         (* At the moment, we turn into CPS any function not called with
          the right number of parameter *)
         assert (Global_flow.exact_call st.flow_info f (List.length args));
-        Let (x, Apply { f; args; exact = true }))
+        Let (x, Apply { f; args; exact = true; yielding }))
   | Let (_, e) when effect_primitive_or_application e ->
       (* For the CPS target, applications of CPS functions and effect primitives require
          more work (allocating a continuation and/or modifying end-of-block branches) and
@@ -592,7 +592,14 @@ let cps_instr ~st (instr : instr) : instr list =
          Otherwise, the runtime primitive is used. *)
       let unit = Var.fresh_n "unit" in
       [ Let (unit, Constant (Int Targetint.zero))
-      ; Let (x, Apply { exact = call_exact st.flow_info f 1; f; args = [ unit ] })
+      ; Let
+          ( x
+          , Apply
+              { exact = call_exact st.flow_info f 1
+              ; f
+              ; args = [ unit ]
+              ; yielding = Unknown
+              } )
       ]
   | _ -> [ rewrite_instr ~st instr ]
 
@@ -678,7 +685,15 @@ let cps_block ~st ~k ~orig_pc block =
             [ exn' ])
     in
     match e with
-    | Apply { f; args; exact } when Var.Set.mem x st.cps_needed ->
+    | Apply
+        { f
+        ; args
+        ; exact
+        ; (* [yielding] is ignored: the re-emitted tail call runs after
+                 [Partial_cps_analysis], the only pass that reads [yielding]. *)
+          yielding = _
+        }
+      when Var.Set.mem x st.cps_needed ->
         Some
           (fun ~k ->
             let exact = exact || call_exact st.flow_info f (List.length args) in
@@ -869,7 +884,9 @@ let rewrite_direct_block ~st ~cps_needed ~closure_info ~pc block =
           let unit = Var.fresh_n "unit" in
           let unit_val = Int Targetint.zero in
           let exact = call_exact st.flow_info f 1 in
-          [ Let (unit, Constant unit_val); Let (x, Apply { exact; f; args = [ unit ] }) ]
+          [ Let (unit, Constant unit_val)
+          ; Let (x, Apply { exact; f; args = [ unit ]; yielding = Unknown })
+          ]
       | (Let _ | Assign _ | Set_field _ | Offset_ref _ | Array_set _ | Event _) as instr
         -> [ instr ]
     in
