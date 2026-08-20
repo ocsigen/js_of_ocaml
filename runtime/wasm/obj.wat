@@ -16,6 +16,15 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
+   (@if $portable_int
+   (@then
+      (import "portableint" "portable_int_val"
+         (func $portable_int_val (param (ref eq)) (result i64)))
+      (import "portableint" "int_val_32_exn"
+         (func $int_val_32_exn (param (ref eq)) (param (ref eq)) (result i32)))
+      (import "portableint" "is_ocaml_portable_int"
+         (func $is_ocaml_portable_int (param (ref eq)) (result i32)))
+   ))
    (import "fail" "caml_failwith" (func $caml_failwith (param (ref eq))))
    (import "array" "caml_check_array_length"
       (func $caml_check_array_length (param i32)))
@@ -134,6 +143,18 @@
    (global $double_array_tag (export "double_array_tag") i32 (i32.const 254))
    (global $custom_tag i32 (i32.const 255))
 
+   (@string $obj_meth "CamlinternalOO.method")
+
+   (@if $portable_int
+   (@then
+      (func $array_index_or_size (param $v (ref eq)) (result i32)
+         (local $n i64)
+         (local.set $n (call $portable_int_val (local.get $v)))
+         (if (i64.gt_u (local.get $n) (i64.const 0xfffffffe))
+            (then (local.set $n (i64.const 0xfffffffe))))
+         (i32.wrap_i64 (local.get $n)))
+   ))
+
    (func (export "caml_obj_is_stack")
       (param (ref eq)) (result (ref eq))
       (ref.i31 (i32.const 0)))
@@ -165,16 +186,24 @@
          (else (ref.test (ref $closure_last_arg) (local.get $v)))))
 
    (func (export "caml_alloc_dummy") (param $size (ref eq)) (result (ref eq))
-      (call $caml_check_array_length
-         (i31.get_u (ref.cast (ref i31) (local.get $size))))
+      (local $sz i32)
+      (@if $portable_int
+      (@then (local.set $sz (call $array_index_or_size (local.get $size))))
+      (@else
+      (local.set $sz (i31.get_u (ref.cast (ref i31) (local.get $size))))
+      ))
+      (call $caml_check_array_length (local.get $sz))
       (array.new $block (ref.i31 (i32.const 0))
-                 (i32.add (i31.get_u (ref.cast (ref i31) (local.get $size)))
-                          (i32.const 1))))
+                 (i32.add (local.get $sz) (i32.const 1))))
 
    (func (export "caml_alloc_dummy_float")
       (param $size (ref eq)) (result (ref eq))
       (local $sz i32)
+      (@if $portable_int
+      (@then (local.set $sz (call $array_index_or_size (local.get $size))))
+      (@else
       (local.set $sz (i31.get_u (ref.cast (ref i31) (local.get $size))))
+      ))
       (call $caml_check_float_array_length (local.get $sz))
       (if (i32.eqz (local.get $sz))
          (then
@@ -183,11 +212,15 @@
 
    (func (export "caml_alloc_dummy_mixed")
       (param $size (ref eq)) (param (ref eq)) (result (ref eq))
-      (call $caml_check_array_length
-         (i31.get_u (ref.cast (ref i31) (local.get $size))))
+      (local $sz i32)
+      (@if $portable_int
+      (@then (local.set $sz (call $array_index_or_size (local.get $size))))
+      (@else
+      (local.set $sz (i31.get_u (ref.cast (ref i31) (local.get $size))))
+      ))
+      (call $caml_check_array_length (local.get $sz))
       (array.new $block (ref.i31 (i32.const 0))
-                 (i32.add (i31.get_u (ref.cast (ref i31) (local.get $size)))
-                          (i32.const 1))))
+                 (i32.add (local.get $sz) (i32.const 1))))
 
    (func $caml_update_dummy (export "caml_update_dummy")
       (param $dummy (ref eq)) (param $newval (ref eq)) (result (ref eq))
@@ -254,7 +287,10 @@
       (local $tg i32)
       (local $b (ref $block))
       (local.set $tg
+         ;; Tags fit in 8 bits, so [caml_obj_tag] always returns an [i31].
+         ;; lint-ignore-start manual-portability-handling-unsafe
          (i31.get_s (ref.cast (ref i31) (call $caml_obj_tag (local.get $newval)))))
+         ;; lint-ignore-end manual-portability-handling-unsafe
       (block $update
          (br_if $update (i32.eq (local.get $tg) (global.get $lazy_tag)))
          (br_if $update (i32.eq (local.get $tg) (global.get $forcing_tag)))
@@ -276,8 +312,14 @@
       (if (ref.eq (local.get $v) (global.get $null_value))
          (then (return (global.get $null_value))))
       ;; Handle immediate integers
+      (@if $portable_int
+      (@then
+         (if (call $is_ocaml_portable_int (local.get $v))
+            (then (return (local.get $v)))))
+      (@else
       (if (ref.test (ref i31) (local.get $v))
          (then (return (local.get $v))))
+      ))
       (drop (block $not_block (result (ref eq))
          (local.set $orig (br_on_cast_fail $not_block (ref eq) (ref $block)
             (local.get $v)))
@@ -330,14 +372,28 @@
       (local $res (ref $block))
       (local $n i32)
       ;; TODO: fail for values that are not represented as an array
+      (@if $portable_int
+      (@then
+         (local.set $n (call $array_index_or_size (local.get $size))))
+      (@else
       (local.set $n (i31.get_s (ref.cast (ref i31) (local.get $size))))
+      ))
       ;; Float arrays have a dedicated representation; a generic block
       ;; would trap on the first float-array primitive.
+      (@if $portable_int
+      (@then
+         (if (i64.eq (call $portable_int_val (local.get $tg))
+                     (i64.extend_i32_u (global.get $double_array_tag)))
+            (then
+               (call $caml_check_float_array_length (local.get $n))
+               (return (array.new $float_array (f64.const 0) (local.get $n))))))
+      (@else
       (if (i32.eq (i31.get_s (ref.cast (ref i31) (local.get $tg)))
                   (global.get $double_array_tag))
          (then
             (call $caml_check_float_array_length (local.get $n))
             (return (array.new $float_array (f64.const 0) (local.get $n)))))
+      ))
       (call $caml_check_array_length (local.get $n))
       (local.set $res
          (array.new $block
@@ -350,8 +406,14 @@
       (param $v (ref eq)) (result (ref eq))
       (if (ref.eq (local.get $v) (global.get $null_value))
          (then (return (ref.i31 (i32.const 1010)))))
+      (@if $portable_int
+      (@then
+         (if (call $is_ocaml_portable_int (local.get $v))
+            (then (return (ref.i31 (i32.const 1000))))))
+      (@else
       (if (ref.test (ref i31) (local.get $v))
          (then (return (ref.i31 (i32.const 1000)))))
+      ))
       (drop (block $not_block (result (ref eq))
          (return
             (array.get $block
@@ -423,8 +485,14 @@
       (local $b (ref $block))
       (local $i i32)
       (local.set $b (ref.cast (ref $block) (local.get $v)))
+      (@if $portable_int
+      (@then
+         (local.set $i
+            (i32.add (call $array_index_or_size (local.get $vi)) (i32.const 1))))
+      (@else
       (local.set $i
          (i32.add (i31.get_u (ref.cast (ref i31) (local.get $vi))) (i32.const 1)))
+      ))
       (if (result (ref eq))
           (ref.eq
             (array.get $block (local.get $b) (local.get $i)) (local.get $old))
@@ -439,6 +507,16 @@
 
    (func (export "caml_obj_raw_field")
       (param $o (ref eq)) (param $i (ref eq)) (result (ref eq))
+      (@if $portable_int
+      (@then
+         (if (ref.test (ref $block) (local.get $o))
+            (then
+               (return
+                  (array.get $block (ref.cast (ref $block) (local.get $o))
+                     (i32.add
+                        (call $array_index_or_size (local.get $i))
+                        (i32.const 1)))))))
+      (@else
       (if (ref.test (ref $block) (local.get $o))
          (then
             (return
@@ -446,17 +524,28 @@
                   (i32.add
                      (i31.get_u (ref.cast (ref i31) (local.get $i)))
                      (i32.const 1))))))
+      ))
       (ref.i31 (i32.const 0)))
 
    (func (export "caml_obj_set_raw_field")
       (param $o (ref eq)) (param $i (ref eq)) (param $v (ref eq))
       (result (ref eq))
+      (@if $portable_int
+      (@then
+         (if (ref.test (ref $block) (local.get $o))
+            (then
+               (array.set $block (ref.cast (ref $block) (local.get $o))
+                  (i32.add (call $array_index_or_size (local.get $i))
+                           (i32.const 1))
+                  (local.get $v)))))
+      (@else
       (if (ref.test (ref $block) (local.get $o))
          (then
             (array.set $block (ref.cast (ref $block) (local.get $o))
                (i32.add (i31.get_u (ref.cast (ref i31) (local.get $i)))
                         (i32.const 1))
                (local.get $v))))
+      ))
       (ref.i31 (i32.const 0)))
 
    (@string $not_implemented "Obj.add_offset is not supported")
@@ -509,7 +598,13 @@
          (ref.cast (ref $block)
             (array.get $block
                (ref.cast (ref $block) (local.get $obj)) (i32.const 1))))
+      (@if $portable_int
+      (@then
+         (local.set $cacheid (call $int_val_32_exn (local.get $vcacheid)
+                                (global.get $obj_meth))))
+      (@else
       (local.set $cacheid (i31.get_u (ref.cast (ref i31) (local.get $vcacheid))))
+      ))
       (local.set $ofs
          (array.get $int_array (global.get $method_cache) (local.get $cacheid)))
       (if (i32.lt_u (local.get $ofs) (array.len (local.get $meths)))
@@ -521,14 +616,23 @@
                      (array.get $block
                         (local.get $meths)
                         (i32.sub (local.get $ofs) (i32.const 1))))))))
+      (@if $portable_int
+      (@then
+         (local.set $tg (call $int_val_32_exn (local.get $vtag)
+                           (global.get $obj_meth))))
+      (@else
       (local.set $tg (i31.get_s (ref.cast (ref i31) (local.get $vtag))))
+      ))
       (local.set $li (i32.const 3))
       (local.set $hi
          (i32.add
             (i32.shl
+               ;; Slot of the compiler-built method table; always an [i31].
+               ;; lint-ignore-start manual-portability-handling-unsafe
                (i31.get_u
                   (ref.cast (ref i31)
                      (array.get $block (local.get $meths) (i32.const 1))))
+               ;; lint-ignore-end manual-portability-handling-unsafe
                (i32.const 1))
             (i32.const 1)))
       (loop $loop
@@ -540,11 +644,14 @@
                           (i32.const 1)))
                (if (i32.lt_s
                       (local.get $tg)
+                      ;; Slot of the compiler-built method table; always an [i31].
+                      ;; lint-ignore-start manual-portability-handling-unsafe
                       (i31.get_s
                          (ref.cast (ref i31)
                             (array.get $block
                                (local.get $meths)
                                (i32.add (local.get $mi) (i32.const 1))))))
+                      ;; lint-ignore-end manual-portability-handling-unsafe
                   (then
                      (local.set $hi (i32.sub (local.get $mi) (i32.const 2))))
                   (else
@@ -565,14 +672,23 @@
          (ref.cast (ref $block)
             (array.get $block
                (ref.cast (ref $block) (local.get $obj)) (i32.const 1))))
+      (@if $portable_int
+      (@then
+         (local.set $tg (call $int_val_32_exn (local.get $vtag)
+                           (global.get $obj_meth))))
+      (@else
       (local.set $tg (i31.get_s (ref.cast (ref i31) (local.get $vtag))))
+      ))
       (local.set $li (i32.const 3))
       (local.set $hi
          (i32.add
             (i32.shl
+               ;; Slot of the compiler-built method table; always an [i31].
+               ;; lint-ignore-start manual-portability-handling-unsafe
                (i31.get_u
                   (ref.cast (ref i31)
                      (array.get $block (local.get $meths) (i32.const 1))))
+               ;; lint-ignore-end manual-portability-handling-unsafe
                (i32.const 1))
             (i32.const 1)))
       (loop $loop
@@ -584,11 +700,14 @@
                           (i32.const 1)))
                (if (i32.lt_s
                       (local.get $tg)
+                      ;; Slot of the compiler-built method table; always an [i31].
+                      ;; lint-ignore-start manual-portability-handling-unsafe
                       (i31.get_s
                          (ref.cast (ref i31)
                             (array.get $block
                                (local.get $meths)
                                (i32.add (local.get $mi) (i32.const 1))))))
+                      ;; lint-ignore-end manual-portability-handling-unsafe
                   (then
                      (local.set $hi (i32.sub (local.get $mi) (i32.const 2))))
                   (else

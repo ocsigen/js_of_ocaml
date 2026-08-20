@@ -79,6 +79,7 @@ let default_flags = []
 
 let interesting_runtimes =
   [ [ "effects", `S "jspi"; "wasi", `B false; "portable_int", `B false ]
+  ; [ "effects", `S "jspi"; "wasi", `B false; "portable_int", `B true ]
   ; [ "effects", `S "cps"; "wasi", `B false; "portable_int", `B false ]
   ; [ "effects", `S "double-translation"; "wasi", `B false; "portable_int", `B false ]
   ; [ "effects", `S "disabled"; "wasi", `B true; "portable_int", `B false ]

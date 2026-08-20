@@ -25,6 +25,9 @@
 * Compiler: split switches with more than 256 cases (instead of 60), or whose
   case values span more than 1000, which the JavaScriptCore interpreter
   compiles to a sequence of tests (#2612)
+* Compiler/Wasm: add `--enable portable-int`, an experimental mode where OCaml
+  integers are 63-bit and `nativeint` is 64-bit as on native 64-bit
+  platforms; integers that do not fit in 31 bits are boxed
 
 ## Bug fixes
 * Runtime/Wasm: add the system constants needed with `--disable staticeval`

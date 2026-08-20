@@ -164,7 +164,10 @@
       (local.set $tbl (ref.cast (ref $block) (local.get $vtbl)))
       (local.set $lexbuf (ref.cast (ref $block) (local.get $vlexbuf)))
       (local.set $state
+         ;; Lexer start state passed by [Lexing]; always an [i31].
+         ;; lint-ignore-start manual-portability-handling-unsafe
          (i31.get_s (ref.cast (ref i31) (local.get $start_state))))
+         ;; lint-ignore-end manual-portability-handling-unsafe
       (local.set $buffer
          (ref.cast (ref $bytes)
             (array.get $block (local.get $lexbuf) (global.get $lex_buffer))))
@@ -204,14 +207,20 @@
                   (global.get $lex_last_action)
                   (ref.i31 (local.get $backtrk)))))
          (if (i32.ge_s
+                ;; Lexer tables and lexbuf fields, written by [Lexing]; always an [i31].
+                ;; lint-ignore-start manual-portability-handling-unsafe
                 (i31.get_s
                    (ref.cast (ref i31)
                       (array.get $block (local.get $lexbuf)
                          (global.get $lex_curr_pos))))
+                ;; lint-ignore-end manual-portability-handling-unsafe
+                ;; Lexer tables and lexbuf fields, written by [Lexing]; always an [i31].
+                ;; lint-ignore-start manual-portability-handling-unsafe
                 (i31.get_s
                    (ref.cast (ref i31)
                       (array.get $block (local.get $lexbuf)
                          (global.get $lex_buffer_len)))))
+                ;; lint-ignore-end manual-portability-handling-unsafe
             (then
                (if (ref.eq
                       (array.get $block (local.get $lexbuf)
@@ -224,10 +233,13 @@
                      (local.set $c (i32.const 256)))))
             (else
                (local.set $pos
+                  ;; Lexer tables and lexbuf fields, written by [Lexing]; always an [i31].
+                  ;; lint-ignore-start manual-portability-handling-unsafe
                   (i31.get_u
                      (ref.cast (ref i31)
                         (array.get $block (local.get $lexbuf)
                            (global.get $lex_curr_pos)))))
+                  ;; lint-ignore-end manual-portability-handling-unsafe
                (local.set $c
                   (array.get_u $bytes (local.get $buffer) (local.get $pos)))
                (array.set $block (local.get $lexbuf) (global.get $lex_curr_pos)
@@ -321,7 +333,10 @@
       (local.set $tbl (ref.cast (ref $block) (local.get $vtbl)))
       (local.set $lexbuf (ref.cast (ref $block) (local.get $vlexbuf)))
       (local.set $state
+         ;; Lexer start state passed by [Lexing]; always an [i31].
+         ;; lint-ignore-start manual-portability-handling-unsafe
          (i31.get_s (ref.cast (ref i31) (local.get $start_state))))
+         ;; lint-ignore-end manual-portability-handling-unsafe
       (local.set $buffer
          (ref.cast (ref $bytes)
             (array.get $block (local.get $lexbuf) (global.get $lex_buffer))))
@@ -382,14 +397,20 @@
                   (global.get $lex_last_action)
                   (ref.i31 (local.get $backtrk)))))
          (if (i32.ge_s
+                ;; Lexer tables and lexbuf fields, written by [Lexing]; always an [i31].
+                ;; lint-ignore-start manual-portability-handling-unsafe
                 (i31.get_s
                    (ref.cast (ref i31)
                       (array.get $block (local.get $lexbuf)
                          (global.get $lex_curr_pos))))
+                ;; lint-ignore-end manual-portability-handling-unsafe
+                ;; Lexer tables and lexbuf fields, written by [Lexing]; always an [i31].
+                ;; lint-ignore-start manual-portability-handling-unsafe
                 (i31.get_s
                    (ref.cast (ref i31)
                       (array.get $block (local.get $lexbuf)
                          (global.get $lex_buffer_len)))))
+                ;; lint-ignore-end manual-portability-handling-unsafe
             (then
                (if (ref.eq
                       (array.get $block (local.get $lexbuf)
@@ -402,10 +423,13 @@
                      (local.set $c (i32.const 256)))))
             (else
                (local.set $pos
+                  ;; Lexer tables and lexbuf fields, written by [Lexing]; always an [i31].
+                  ;; lint-ignore-start manual-portability-handling-unsafe
                   (i31.get_u
                      (ref.cast (ref i31)
                         (array.get $block (local.get $lexbuf)
                            (global.get $lex_curr_pos)))))
+                  ;; lint-ignore-end manual-portability-handling-unsafe
                (local.set $c
                   (array.get_u $bytes (local.get $buffer) (local.get $pos)))
                (array.set $block (local.get $lexbuf) (global.get $lex_curr_pos)

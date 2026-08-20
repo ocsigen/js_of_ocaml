@@ -16,6 +16,11 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
+   (@if $portable_int
+   (@then
+      (import "portableint" "int_val_32_exn"
+         (func $int_val_32_exn (param (ref eq)) (param (ref eq)) (result i32)))
+   ))
 (@if $wasi
 (@then
    (type $path_op (func (param i32 i32 i32) (result i32)))
@@ -195,6 +200,17 @@
       (func $caml_copy_int64  (param i64) (result (ref eq))))
    (import "int64" "Int64_val"
       (func $Int64_val (param (ref eq)) (result i64)))
+   (@if $portable_int
+   (@then
+      (import "portableint" "portable_int_val_31"
+         (func $portable_int_val_31 (param (ref eq)) (result i32)))
+      (import "portableint" "portable_int_val_32"
+         (func $portable_int_val_32 (param (ref eq)) (result i32)))
+      (import "portableint" "portable_int_val"
+         (func $portable_int_val (param (ref eq)) (result i64)))
+      (import "portableint" "val_portable_int"
+         (func $val_portable_int (param i64) (result (ref eq))))
+   ))
 
    (type $bytes (array (mut i8)))
    (type $block (array (mut (ref eq))))
@@ -213,6 +229,9 @@
 
    (@string $unix_error_not_initialized
       "Exception Unix.Unix_error not initialized, please link unix.cma")
+
+   (@string $unix_pos "Unix: position out of range")
+   (@string $unix_len "Unix: length out of range")
 
    (func $get_unix_error_exn (result (ref eq))
       (local $exn eqref)
@@ -383,6 +402,9 @@
             ;; A known variant with no WASI errno equivalent (EWOULDBLOCK, ...)
             ;; is reported by its name, like the JS runtime, rather than as
             ;; "Unknown error -1". EUNKNOWNERR(n) (a block) still falls through.
+            ;; This [ref.test] guards no cast, only whether [$n] was set above.
+            ;; Both operands are pure, so there is nothing to short-circuit.
+            ;; lint-ignore-start manual-portability-handling-unsafe
             (if (i32.and (ref.test (ref i31) (local.get $err))
                          (i32.lt_u (local.get $n)
                             (array.len (global.get $error_names))))
@@ -390,6 +412,7 @@
                   (return
                      (array.get $block (global.get $error_names)
                         (local.get $n)))))
+            ;; lint-ignore-end manual-portability-handling-unsafe
             (return_call $caml_string_concat
                (@string "Unknown error ")
                (call $caml_format_int (@string "%d")
@@ -468,12 +491,20 @@
             (then
                (i31.get_u (ref.cast (ref i31) (local.get $err))))
             (else
-               (i32.sub (i32.const 0)
-                  (i31.get_u
-                     (ref.cast (ref i31)
-                        (array.get $block
-                           (ref.cast (ref $block) (local.get $err))
-                           (i32.const 1))))))))
+               (@if $portable_int
+               (@then
+                  (i32.sub (i32.const 0)
+                     (call $portable_int_val_32 (array.get $block
+                                 (ref.cast (ref $block) (local.get $err))
+                                 (i32.const 1)))))
+               (@else
+                  (i32.sub (i32.const 0)
+                     (i31.get_u
+                        (ref.cast (ref i31)
+                           (array.get $block
+                              (ref.cast (ref $block) (local.get $err))
+                              (i32.const 1))))))))
+                  ))
       (return_call $caml_string_of_jsstring
          (call $value_of_js (call $caml_strerror (local.get $errno)))))
 ))
@@ -692,30 +723,51 @@
       (param $v (ref eq)) (result (ref eq))
       (local $tm (ref $block)) (local $t f64)
       (local.set $tm (ref.cast (ref $block) (local.get $v)))
-      (local.set $t
-         (f64.div
-            (call $mktime
-               (i32.add
+      (@if $portable_int
+      (@then
+         (local.set $t
+            (f64.div
+               (call $mktime
+                  (i32.add
+                     (call $portable_int_val_32
+                           (array.get $block (local.get $tm) (i32.const 6)))
+                     (i32.const 1900))
+                  (call $portable_int_val_32
+                        (array.get $block (local.get $tm) (i32.const 5)))
+                  (call $portable_int_val_32
+                        (array.get $block (local.get $tm) (i32.const 4)))
+                  (call $portable_int_val_32
+                        (array.get $block (local.get $tm) (i32.const 3)))
+                  (call $portable_int_val_32
+                        (array.get $block (local.get $tm) (i32.const 2)))
+                  (call $portable_int_val_32
+                        (array.get $block (local.get $tm) (i32.const 1))))
+               (f64.const 1000))))
+      (@else
+         (local.set $t
+            (f64.div
+               (call $mktime
+                  (i32.add
+                     (i31.get_s
+                        (ref.cast (ref i31)
+                          (array.get $block (local.get $tm) (i32.const 6))))
+                     (i32.const 1900))
                   (i31.get_s
                      (ref.cast (ref i31)
-                       (array.get $block (local.get $tm) (i32.const 6))))
-                  (i32.const 1900))
-               (i31.get_s
-                  (ref.cast (ref i31)
-                     (array.get $block (local.get $tm) (i32.const 5))))
-               (i31.get_s
-                  (ref.cast (ref i31)
-                     (array.get $block (local.get $tm) (i32.const 4))))
-               (i31.get_s
-                  (ref.cast (ref i31)
-                     (array.get $block (local.get $tm) (i32.const 3))))
-               (i31.get_s
-                  (ref.cast (ref i31)
-                     (array.get $block (local.get $tm) (i32.const 2))))
-               (i31.get_s
-                  (ref.cast (ref i31)
-                     (array.get $block (local.get $tm) (i32.const 1)))))
-            (f64.const 1000)))
+                        (array.get $block (local.get $tm) (i32.const 5))))
+                  (i31.get_s
+                     (ref.cast (ref i31)
+                        (array.get $block (local.get $tm) (i32.const 4))))
+                  (i31.get_s
+                     (ref.cast (ref i31)
+                        (array.get $block (local.get $tm) (i32.const 3))))
+                  (i31.get_s
+                     (ref.cast (ref i31)
+                        (array.get $block (local.get $tm) (i32.const 2))))
+                  (i31.get_s
+                     (ref.cast (ref i31)
+                        (array.get $block (local.get $tm) (i32.const 1)))))
+               (f64.const 1000)))))
       (array.new_fixed $block 3 (ref.i31 (i32.const 0))
          (struct.new $float (local.get $t))
          (call $localtime (local.get $t))))
@@ -850,7 +902,11 @@
             (then
                (call $caml_copy_int64 (local.get $size)))
             (else
+               (@if $portable_int
+               (@then (call $val_portable_int (local.get $size)))
+               (@else
                (ref.i31 (i32.wrap_i64 (local.get $size)))))
+               ))
          (struct.new $float (local.get $atime))
          (struct.new $float (local.get $mtime))
          (struct.new $float (local.get $ctime))))
@@ -1172,10 +1228,17 @@
       (param $name (ref eq)) (param $perm (ref eq)) (result (ref eq))
       (try
          (do
-            (call $mkdir
-               (call $js_of_value
-                  (call $caml_jsstring_of_string (local.get $name)))
-               (i31.get_u (ref.cast (ref i31) (local.get $perm)))))
+            (@if $portable_int
+            (@then
+               (call $mkdir
+                  (call $js_of_value
+                     (call $caml_jsstring_of_string (local.get $name)))
+                  (call $portable_int_val_32 (local.get $perm))))
+            (@else
+               (call $mkdir
+                  (call $js_of_value
+                     (call $caml_jsstring_of_string (local.get $name)))
+                  (i31.get_u (ref.cast (ref i31) (local.get $perm)))))))
          (catch $javascript_exception
             (call $caml_unix_error (ref.null eq))))
       (ref.i31 (i32.const 0)))
@@ -1625,6 +1688,17 @@
       (param $to_dir (ref eq)) (param $t (ref eq)) (param $p (ref eq))
       (result (ref eq))
       (local $kind i32)
+      (@if $portable_int
+      (@then
+         (if (ref.test (ref $block) (local.get $to_dir))
+            (then
+               (local.set $kind
+                  (i32.add (i32.const 1)
+                     (call $portable_int_val_31
+                        (array.get $block
+                           (ref.cast (ref $block) (local.get $to_dir))
+                           (i32.const 1))))))))
+      (@else
       (if (ref.test (ref $block) (local.get $to_dir))
          (then
             (local.set $kind
@@ -1634,6 +1708,7 @@
                         (array.get $block
                            (ref.cast (ref $block) (local.get $to_dir))
                            (i32.const 1))))))))
+      ))
       (try
          (do
             (call $symlink
@@ -1957,12 +2032,21 @@
             (global.get $unix_open_flags) (local.get $vflags)))
       (try
          (do
-            (local.set $fd
-               (call $open_fn
-                  (call $js_of_value
-                     (call $caml_jsstring_of_string (local.get $path)))
-                  (local.get $flags)
-                  (i31.get_u (ref.cast (ref i31) (local.get $perm))))))
+            (@if $portable_int
+            (@then
+               (local.set $fd
+                  (call $open_fn
+                     (call $js_of_value
+                        (call $caml_jsstring_of_string (local.get $path)))
+                     (local.get $flags)
+                     (call $portable_int_val_32 (local.get $perm)))))
+            (@else
+               (local.set $fd
+                  (call $open_fn
+                     (call $js_of_value
+                        (call $caml_jsstring_of_string (local.get $path)))
+                     (local.get $flags)
+                     (i31.get_u (ref.cast (ref i31) (local.get $perm))))))))
          (catch $javascript_exception
             (call $caml_unix_error (ref.null eq))))
       ;; Like native [O_APPEND], the offset starts at 0; writes reposition to
@@ -2200,10 +2284,26 @@
       (local $written i32) (local $n i32)
       (local $fd_offset (ref $fd_offset))
       (local $offset i64)
+      (@if $portable_int
+      (@then (local.set $fd (call $portable_int_val_32 (local.get $vfd))))
+      (@else
       (local.set $fd (i31.get_u (ref.cast (ref i31) (local.get $vfd))))
+      ))
       (local.set $s (ref.cast (ref $bytes) (local.get $vbuf)))
+      (@if $portable_int
+      (@then
+         (local.set $pos (call $int_val_32_exn (local.get $vpos)
+                            (global.get $unix_pos))))
+      (@else
       (local.set $pos (i31.get_u (ref.cast (ref i31) (local.get $vpos))))
+      ))
+      (@if $portable_int
+      (@then
+         (local.set $len (call $int_val_32_exn (local.get $vlen)
+                            (global.get $unix_len))))
+      (@else
       (local.set $len (i31.get_u (ref.cast (ref i31) (local.get $vlen))))
+      ))
       (local.set $buf (call $get_io_buffer))
       (local.set $buf_view (ref.as_non_null (global.get $io_buffer_view)))
       (local.set $fd_offset (call $get_fd_offset (local.get $fd)))
@@ -2257,10 +2357,26 @@
       (local $n i32)
       (local $fd_offset (ref $fd_offset))
       (local $offset i64)
+      (@if $portable_int
+      (@then (local.set $fd (call $portable_int_val_32 (local.get $vfd))))
+      (@else
       (local.set $fd (i31.get_u (ref.cast (ref i31) (local.get $vfd))))
+      ))
       (local.set $s (ref.cast (ref $bytes) (local.get $vbuf)))
+      (@if $portable_int
+      (@then
+         (local.set $pos (call $int_val_32_exn (local.get $vpos)
+                            (global.get $unix_pos))))
+      (@else
       (local.set $pos (i31.get_u (ref.cast (ref i31) (local.get $vpos))))
+      ))
+      (@if $portable_int
+      (@then
+         (local.set $len (call $int_val_32_exn (local.get $vlen)
+                            (global.get $unix_len))))
+      (@else
       (local.set $len (i31.get_u (ref.cast (ref i31) (local.get $vlen))))
+      ))
       (local.set $buf (call $get_io_buffer))
       (local.set $buf_view (ref.as_non_null (global.get $io_buffer_view)))
       (local.set $fd_offset (call $get_fd_offset (local.get $fd)))
@@ -2306,9 +2422,25 @@
       (local $buf (ref extern)) (local $buf_view (ref extern))
       (local $pos i32) (local $len i32) (local $n i32)
       (local $fd_offset (ref $fd_offset)) (local $offset i64)
+      (@if $portable_int
+      (@then (local.set $fd (call $portable_int_val_32 (local.get $vfd))))
+      (@else
       (local.set $fd (i31.get_u (ref.cast (ref i31) (local.get $vfd))))
+      ))
+      (@if $portable_int
+      (@then
+         (local.set $pos (call $int_val_32_exn (local.get $vpos)
+                            (global.get $unix_pos))))
+      (@else
       (local.set $pos (i31.get_u (ref.cast (ref i31) (local.get $vpos))))
+      ))
+      (@if $portable_int
+      (@then
+         (local.set $len (call $int_val_32_exn (local.get $vlen)
+                            (global.get $unix_len))))
+      (@else
       (local.set $len (i31.get_u (ref.cast (ref i31) (local.get $vlen))))
+      ))
       (if (i32.gt_u (local.get $len) (global.get $IO_BUFFER_SIZE))
          (then
             (local.set $len (global.get $IO_BUFFER_SIZE))))
@@ -2347,10 +2479,26 @@
       (local $pos i32) (local $len i32) (local $n i32) (local $written i32)
       (local $fd_offset (ref $fd_offset))
       (local $offset i64)
+      (@if $portable_int
+      (@then (local.set $fd (call $portable_int_val_32 (local.get $vfd))))
+      (@else
       (local.set $fd (i31.get_u (ref.cast (ref i31) (local.get $vfd))))
+      ))
       (local.set $buf (call $caml_ba_get_data (local.get $vbuf)))
+      (@if $portable_int
+      (@then
+         (local.set $pos (call $int_val_32_exn (local.get $vpos)
+                            (global.get $unix_pos))))
+      (@else
       (local.set $pos (i31.get_u (ref.cast (ref i31) (local.get $vpos))))
+      ))
+      (@if $portable_int
+      (@then
+         (local.set $len (call $int_val_32_exn (local.get $vlen)
+                            (global.get $unix_len))))
+      (@else
       (local.set $len (i31.get_u (ref.cast (ref i31) (local.get $vlen))))
+      ))
       (local.set $fd_offset (call $get_fd_offset (local.get $fd)))
       (local.set $offset
          (struct.get $fd_offset $offset (local.get $fd_offset)))
@@ -2395,10 +2543,26 @@
       (local $fd i32) (local $buf (ref extern))
       (local $pos i32) (local $len i32) (local $n i32)
       (local $fd_offset (ref $fd_offset)) (local $offset i64)
+      (@if $portable_int
+      (@then (local.set $fd (call $portable_int_val_32 (local.get $vfd))))
+      (@else
       (local.set $fd (i31.get_u (ref.cast (ref i31) (local.get $vfd))))
+      ))
       (local.set $buf (call $caml_ba_get_data (local.get $vbuf)))
+      (@if $portable_int
+      (@then
+         (local.set $pos (call $int_val_32_exn (local.get $vpos)
+                            (global.get $unix_pos))))
+      (@else
       (local.set $pos (i31.get_u (ref.cast (ref i31) (local.get $vpos))))
+      ))
+      (@if $portable_int
+      (@then
+         (local.set $len (call $int_val_32_exn (local.get $vlen)
+                            (global.get $unix_len))))
+      (@else
       (local.set $len (i31.get_u (ref.cast (ref i31) (local.get $vlen))))
+      ))
       (local.set $fd_offset (call $get_fd_offset (local.get $fd)))
       (local.set $offset
          (struct.get $fd_offset $offset (local.get $fd_offset)))
@@ -2453,7 +2617,11 @@
       (param $vfd (ref eq)) (param $offset i64) (param $cmd (ref eq))
       (result i64)
       (local $fd i32) (local $fd_offset (ref $fd_offset))
+      (@if $portable_int
+      (@then (local.set $fd (call $portable_int_val_32 (local.get $vfd))))
+      (@else
       (local.set $fd (i31.get_u (ref.cast (ref i31) (local.get $vfd))))
+      ))
       (local.set $fd_offset
          (block $non_null (result (ref $fd_offset))
             (br_on_non_null $non_null
@@ -2481,13 +2649,22 @@
    (func (export "unix_lseek") (export "caml_unix_lseek")
       (param $fd (ref eq)) (param $ofs (ref eq)) (param $cmd (ref eq))
       (result (ref eq))
+      (@if $portable_int
+      (@then
+         (call $val_portable_int
+            (call $lseek
+               (local.get $fd)
+               (call $portable_int_val (local.get $ofs))
+               (local.get $cmd))))
+      (@else
       (ref.i31
          (i32.wrap_i64
             (call $lseek
                (local.get $fd)
                (i64.extend_i32_s
                   (i31.get_s (ref.cast (ref i31) (local.get $ofs))))
-               (local.get $cmd)))))
+               (local.get $cmd))))
+      )))
 
    (func (export "unix_lseek_64") (export "caml_unix_lseek_64")
       (param $fd (ref eq)) (param $ofs (ref eq)) (param $cmd (ref eq))
@@ -2565,9 +2742,12 @@
                      (call $channel_of_descr_name (local.get $out)))
                   (ref.i31 (i32.const 0))))))
       (local.set $kind
+         ;; [st_kind] from our own [fstat] result; always an [i31].
+         ;; lint-ignore-start manual-portability-handling-unsafe
          (i31.get_u
             (ref.cast (ref i31)
                (array.get $block (local.get $s) (i32.const 3)))))
+         ;; lint-ignore-end manual-portability-handling-unsafe
       (block $ok
          (block $bad
             (br_table $ok $bad $ok $bad $bad $ok (local.get $kind)))
@@ -2608,7 +2788,12 @@
 (@else
    (func (export "unix_close") (export "caml_unix_close")
       (param $fd (ref eq)) (result (ref eq))
+      (@if $portable_int
+      (@then
+         (call $release_fd_offset (call $portable_int_val_32 (local.get $fd))))
+      (@else
       (call $release_fd_offset (i31.get_u (ref.cast (ref i31) (local.get $fd))))
+      ))
       (try
          (do
             (call $close (local.get $fd)))

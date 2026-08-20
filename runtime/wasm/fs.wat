@@ -99,6 +99,11 @@
       (func $register_file (param externref) (param externref)))
    (import "bindings" "read_file"
       (func $read_file (param externref) (result externref)))
+   (@if $portable_int
+   (@then
+      (import "portableint" "portable_int_val_32"
+         (func $portable_int_val_32 (param (ref eq)) (result i32)))
+   ))
 
    (type $bytes (array (mut i8)))
    (type $block (array (mut (ref eq))))
@@ -494,10 +499,17 @@
       (param $name (ref eq)) (param $perm (ref eq)) (result (ref eq))
       (try
          (do
-            (call $mkdir
-               (call $js_of_value
-                  (call $caml_jsstring_of_string (local.get $name)))
-               (i31.get_u (ref.cast (ref i31) (local.get $perm)))))
+            (@if $portable_int
+            (@then
+               (call $mkdir
+                  (call $js_of_value
+                     (call $caml_jsstring_of_string (local.get $name)))
+                  (call $portable_int_val_32 (local.get $perm))))
+            (@else
+               (call $mkdir
+                  (call $js_of_value
+                     (call $caml_jsstring_of_string (local.get $name)))
+                  (i31.get_u (ref.cast (ref i31) (local.get $perm)))))))
          (catch $javascript_exception
             (call $caml_handle_sys_error)))
       (ref.i31 (i32.const 0)))
