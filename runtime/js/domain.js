@@ -48,6 +48,36 @@ function caml_domain_tls_get(_unit) {
   return caml_domain_tls;
 }
 
+//Provides: caml_dynamic_make
+//If: oxcaml
+function caml_dynamic_make(_unit) {
+  // [header, empty]
+  return [0, 0];
+}
+
+//Provides: caml_dynamic_get
+//If: oxcaml
+function caml_dynamic_get(dynamic) {
+  var stack = dynamic[1];
+  return stack === 0 ? null : stack[1];
+}
+
+//Provides: caml_dynamic_push
+//If: oxcaml
+function caml_dynamic_push(dynamic, value) {
+  // stack <- [header, head, tail]
+  dynamic[1] = [0, value, dynamic[1]];
+  return 0;
+}
+
+//Provides: caml_dynamic_pop
+//If: oxcaml
+function caml_dynamic_pop(dynamic) {
+  // stack <- tail
+  dynamic[1] = dynamic[1][2];
+  return 0;
+}
+
 //Provides: caml_atomic_load
 //Version: >= 5
 function caml_atomic_load(ref) {
