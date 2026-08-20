@@ -104,10 +104,18 @@
       (func $caml_copy_int32 (param i32) (result (ref eq))))
    (import "int32" "Int32_val"
       (func $Int32_val (param (ref eq)) (result i32)))
+   (@if $portable-int
+   (@then
+      (import "nativeint" "caml_copy_nativeint"
+         (func $caml_copy_nativeint (param i64) (result (ref eq))))
+      (import "nativeint" "Nativeint_val"
+         (func $Nativeint_val (param (ref eq)) (result i64))))
+   (@else
    (import "nativeint" "caml_copy_nativeint"
       (func $caml_copy_nativeint (param i32) (result (ref eq))))
    (import "nativeint" "Nativeint_val"
       (func $Nativeint_val (param (ref eq)) (result i32)))
+   ))
 
    (type $block (array (mut (ref eq))))
    (type $float (struct (field $f f64)))
@@ -162,11 +170,24 @@
       (return_call $wrap (call $from_int32 (call $Int32_val (local.get $v)))))
 
    (func (export "caml_js_to_nativeint") (param $v (ref eq)) (result (ref eq))
+      (@if $portable-int
+      (@then
+         (return_call $caml_copy_nativeint
+            (i64.extend_i32_s (call $to_int32 (call $unwrap (local.get $v))))))
+      (@else
       (return_call $caml_copy_nativeint
          (call $to_int32 (call $unwrap (local.get $v)))))
+      ))
 
    (func (export "caml_js_from_nativeint") (param $v (ref eq)) (result (ref eq))
+      (@if $portable-int
+      (@then
+         (return_call $wrap
+            (call $from_int32 (i32.wrap_i64 (call $Nativeint_val (local.get $v))))))
+      (@else
       (return_call $wrap (call $from_int32 (call $Nativeint_val (local.get $v)))))
+      ))
+
 
   (func (export "caml_js_pure_expr")
      (param $f (ref eq)) (result (ref eq))

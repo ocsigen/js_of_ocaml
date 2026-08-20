@@ -253,7 +253,7 @@ let set_target (t : [ `JavaScript | `Wasm ]) =
       Targetnativeint.set_num_bits 32
   | `Wasm, true ->
       Targetint.set_num_bits 31;
-      Targetnativeint.set_num_bits 32);
+      Targetnativeint.set_num_bits 64);
   target_ := (t :> [ `JavaScript | `Wasm | `None ])
 
 type effects_backend =

@@ -956,11 +956,14 @@ module Memory = struct
     let* ty = Type.int32_type in
     wasm_struct_get ty (wasm_cast ty e) 1
 
-  let make_int64 e =
+  let make_int64 ~kind e =
     let* custom_operations = Type.custom_operations_type in
     let* int64_ops =
       register_import
-        ~name:"int64_ops"
+        ~name:
+          (match kind with
+          | `Int64 -> "int64_ops"
+          | `Nativeint -> "nativeint_ops")
         (Global
            { mut = false; typ = Ref { nullable = false; typ = Type custom_operations } })
     in
@@ -968,17 +971,25 @@ module Memory = struct
     let* e = e in
     return (W.StructNew (ty, [ GlobalGet int64_ops; e ]))
 
-  let box_int64 e = make_int64 e
+  let box_int64 e = make_int64 ~kind:`Int64 e
 
   let unbox_int64 e =
     let* ty = Type.int64_type in
     wasm_struct_get ty (wasm_cast ty e) 1
 
-  let box_nativeint e = make_int32 ~kind:`Nativeint e
+  let box_nativeint e =
+    if Config.Flag.portable_int ()
+    then make_int64 ~kind:`Nativeint e
+    else make_int32 ~kind:`Nativeint e
 
   let unbox_nativeint e =
-    let* ty = Type.int32_type in
-    wasm_struct_get ty (wasm_cast ty e) 1
+    if Config.Flag.portable_int ()
+    then
+      let* ty = Type.int64_type in
+      wasm_struct_get ty (wasm_cast ty e) 1
+    else
+      let* ty = Type.int32_type in
+      wasm_struct_get ty (wasm_cast ty e) 1
 end
 
 module Constant = struct
@@ -1132,18 +1143,27 @@ module Constant = struct
           , W.ArrayNewFixed
               (ty, List.map ~f:(fun f -> W.Const (F64 (Int64.float_of_bits f))) l) )
     | Int64 i ->
-        let* e = Memory.make_int64 (return (W.Const (I64 i))) in
+        let* e = Memory.make_int64 ~kind:`Int64 (return (W.Const (I64 i))) in
         return (Const, e)
     | Int32 i ->
         let* e = Memory.make_int32 ~kind:`Int32 (return (W.Const (I32 i))) in
         return (Const, e)
     | NativeInt i ->
-        let* e =
-          Memory.make_int32
-            ~kind:`Nativeint
-            (return (W.Const (I32 (Targetnativeint.to_int32 i))))
-        in
-        return (Const, e)
+        if Config.Flag.portable_int ()
+        then
+          let* e =
+            Memory.make_int64
+              ~kind:`Nativeint
+              (return (W.Const (I64 (Targetnativeint.to_int64 i))))
+          in
+          return (Const, e)
+        else
+          let* e =
+            Memory.make_int32
+              ~kind:`Nativeint
+              (return (W.Const (I32 (Targetnativeint.to_int32 i))))
+          in
+          return (Const, e)
     | Null_ ->
         let* var =
           register_import ~name:"null" (Global { mut = false; typ = Type.value })
@@ -1158,6 +1178,8 @@ module Constant = struct
         return (W.Const (F32 (Int64.float_of_bits f)))
     | Int64 i when unboxed -> return (W.Const (I64 i))
     | Int32 i when unboxed -> return (W.Const (I32 i))
+    | NativeInt i when unboxed && Config.Flag.portable_int () ->
+        return (W.Const (I64 (Targetnativeint.to_int64 i)))
     | NativeInt i when unboxed -> return (W.Const (I32 (Targetnativeint.to_int32 i)))
     | _ -> (
         let* const, c = translate_rec c in
@@ -1536,6 +1558,7 @@ module Bigarray = struct
       | Int16_signed -> "dv_get_i16", I32, 1, Fun.id
       | Int16_unsigned -> "dv_get_ui16", I32, 1, Fun.id
       | Int32 -> "dv_get_i32", I32, 2, Fun.id
+      | Nativeint when Config.Flag.portable_int () -> "dv_get_i64", I64, 3, Fun.id
       | Nativeint -> "dv_get_i32", I32, 2, Fun.id
       | Int64 -> "dv_get_i64", I64, 3, Fun.id
       | Int -> "dv_get_i32", I32, 2, Fun.id
@@ -1614,6 +1637,7 @@ module Bigarray = struct
       | Int8_signed | Int8_unsigned -> "dv_set_i8", I32, 0, Fun.id
       | Int16_signed | Int16_unsigned -> "dv_set_i16", I32, 1, Fun.id
       | Int32 -> "dv_set_i32", I32, 2, Fun.id
+      | Nativeint when Config.Flag.portable_int () -> "dv_set_i64", I64, 3, Fun.id
       | Nativeint -> "dv_set_i32", I32, 2, Fun.id
       | Int64 -> "dv_set_i64", I64, 3, Fun.id
       | Int -> "dv_set_i32", I32, 2, Fun.id

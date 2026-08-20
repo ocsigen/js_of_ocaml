@@ -28,10 +28,18 @@
       (func $caml_deserialize_int_4 (param (ref eq)) (result i32)))
    (import "hash" "caml_hash_mix_int"
       (func $caml_hash_mix_int (param i32) (param i32) (result i32)))
+   (@if $portable-int
+   (@then
+      (import "nativeint" "caml_copy_nativeint"
+         (func $caml_copy_nativeint (param i64) (result (ref eq))))
+      (import "nativeint" "Nativeint_val"
+         (func $Nativeint_val (param (ref eq)) (result i64))))
+   (@else
    (import "nativeint" "caml_copy_nativeint"
       (func $caml_copy_nativeint (param i32) (result (ref eq))))
    (import "nativeint" "Nativeint_val"
       (func $Nativeint_val (param (ref eq)) (result i32)))
+   ))
 
    (type $bytes (array (mut i8)))
    (type $compare
@@ -229,15 +237,30 @@
    (func (export "set_digit_nat_native")
       (param $nat (ref eq)) (param $ofs (ref eq)) (param $digit (ref eq))
       (result (ref eq))
+      (@if $portable-int
+      (@then
+         (array.set $digits (call $get_data (local.get $nat))
+            (call $int (local.get $ofs))
+            (i32.wrap_i64 (call $Nativeint_val (local.get $digit)))))
+      (@else
       (array.set $digits (call $get_data (local.get $nat))
          (call $int (local.get $ofs)) (call $Nativeint_val (local.get $digit)))
+      ))
       (ref.i31 (i32.const 0)))
 
    (func (export "nth_digit_nat_native")
       (param $nat (ref eq)) (param $ofs (ref eq)) (result (ref eq))
+      (@if $portable-int
+      (@then
+         (return_call $caml_copy_nativeint
+            (i64.extend_i32_s
+               (array.get $digits (call $get_data (local.get $nat))
+                  (call $int (local.get $ofs))))))
+      (@else
       (return_call $caml_copy_nativeint
          (array.get $digits (call $get_data (local.get $nat))
             (call $int (local.get $ofs)))))
+      ))
 
    (func (export "num_digits_nat")
       (param $nat (ref eq)) (param $ofs (ref eq)) (param $len (ref eq))
