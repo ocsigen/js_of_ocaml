@@ -325,6 +325,44 @@
             (local.get $head) (local.get $tail)
             (struct.new $pair (local.get $f) (local.get $v)))))
 
+   (func $resume_identity
+      (param $x (ref eq)) (param (ref eq)) (result (ref eq))
+      (local.get $x))
+
+   (global $resume_identity_closure (ref $closure)
+      (struct.new $closure (ref.func $resume_identity)))
+
+   (func $resume_raise
+      (param $exn (ref eq)) (param (ref eq)) (result (ref eq))
+      (throw $ocaml_exception (local.get $exn)))
+
+   (global $resume_raise_closure (ref $closure)
+      (struct.new $closure (ref.func $resume_raise)))
+
+   ;; Resume the continuation, returning [$v] to the perform site.
+   (func (export "%continue")
+      (param $head (ref eq)) (param $v (ref eq)) (param $tail (ref eq))
+      (result (ref eq))
+      (return_call $resume_prim
+         (local.get $head) (global.get $resume_identity_closure)
+         (local.get $v) (local.get $tail)))
+
+   ;; Resume the continuation, raising [$exn] at the perform site.
+   (func (export "%discontinue")
+      (param $head (ref eq)) (param $exn (ref eq)) (param $tail (ref eq))
+      (result (ref eq))
+      (return_call $resume_prim
+         (local.get $head) (global.get $resume_raise_closure)
+         (local.get $exn) (local.get $tail)))
+
+   ;; As %discontinue; backtraces are not supported, so [$bt] is ignored.
+   (func (export "%discontinue_with_backtrace")
+      (param $head (ref eq)) (param $exn (ref eq)) (param $bt (ref eq))
+      (param $tail (ref eq)) (result (ref eq))
+      (return_call $resume_prim
+         (local.get $head) (global.get $resume_raise_closure)
+         (local.get $exn) (local.get $tail)))
+
    ;; Perform
 
    (type $call_handler_env
@@ -1135,7 +1173,7 @@
       (global.set $cps_fiber_stack (local.get $saved))
       (throw $ocaml_exception (local.get $exn)))
 
-   (func (export "caml_resume")
+   (func (export "caml_run_stack") (export "caml_resume")
       (param $f (ref eq)) (param $arg (ref eq)) (param $stack (ref eq))
       (param $last (ref eq)) (result (ref eq))
       ;; Run [f arg] on the given stack
@@ -1156,6 +1194,53 @@
             (catch $ocaml_exception)
             (catch $javascript_exception
                (call $caml_wrap_exception))))
+      (return_call $dt_handle_exception (local.get $saved) (local.get $exn)))
+
+   (func (export "caml_continue")
+      (param $stack (ref eq)) (param $value (ref eq)) (param $last (ref eq))
+      (result (ref eq))
+      ;; Return [value] to the perform site on the resumed stack
+      (local $saved (ref $cps_fiber)) (local $k (ref eq))
+      (local $res (ref eq)) (local $exn (ref eq))
+      (local.set $saved (global.get $cps_fiber_stack))
+      (global.set $cps_fiber_stack (call $dt_fresh_fiber))
+      (local.set $k
+         (call $caml_resume_stack
+            (local.get $stack) (local.get $last) (global.get $identity_closure)))
+      (local.set $exn
+         (try (result (ref eq))
+            (do
+               (local.set $res
+                  (call $call_continuation (local.get $k) (local.get $value)))
+               (global.set $cps_fiber_stack (local.get $saved))
+               (return (local.get $res)))
+            (catch $ocaml_exception)
+            (catch $javascript_exception
+               (call $caml_wrap_exception))))
+      (return_call $dt_handle_exception (local.get $saved) (local.get $exn)))
+
+   (func (export "caml_discontinue")
+      (param $stack (ref eq)) (param $exn (ref eq)) (param $last (ref eq))
+      (result (ref eq))
+      ;; Raise [exn] at the perform site on the resumed stack
+      (local $saved (ref $cps_fiber))
+      (local.set $saved (global.get $cps_fiber_stack))
+      (global.set $cps_fiber_stack (call $dt_fresh_fiber))
+      (drop
+         (call $caml_resume_stack
+            (local.get $stack) (local.get $last) (global.get $identity_closure)))
+      (return_call $dt_handle_exception (local.get $saved) (local.get $exn)))
+
+   (func (export "caml_discontinue_with_backtrace")
+      (param $stack (ref eq)) (param $exn (ref eq)) (param $bt (ref eq))
+      (param $last (ref eq)) (result (ref eq))
+      ;; Restoring a raw backtrace is a no-op in wasm_of_ocaml
+      (local $saved (ref $cps_fiber))
+      (local.set $saved (global.get $cps_fiber_stack))
+      (global.set $cps_fiber_stack (call $dt_fresh_fiber))
+      (drop
+         (call $caml_resume_stack
+            (local.get $stack) (local.get $last) (global.get $identity_closure)))
       (return_call $dt_handle_exception (local.get $saved) (local.get $exn)))
 
    (func (export "caml_raise_unhandled") (param $eff (ref eq)) (result (ref eq))
