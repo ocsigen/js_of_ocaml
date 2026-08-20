@@ -31,6 +31,12 @@
    (@then
       (import "nativeint" "caml_copy_nativeint"
          (func $caml_copy_nativeint (param i64) (result (ref eq))))
+      (import "portableint" "portable_int_val"
+         (func $portable_int_val (param (ref eq)) (result i64)))
+      (import "portableint" "val_portable_int"
+         (func $val_portable_int (param i64) (result (ref eq))))
+      (import "portableint" "checked_portable_int_val_32"
+         (func $caml_ba_index_val (param (ref eq)) (result i32)))
       (import "nativeint" "Nativeint_val"
          (func $Nativeint_val (param (ref eq)) (result i64))))
    (@else
@@ -1102,6 +1108,21 @@
                             (br $loop))))
                    (br $done)))))
           ;; int
+          (@if $portable-int
+           (@then
+             ;; int: portable
+             (call $caml_serialize_int_1 (local.get $s) (i32.const 1))
+             (local.set $len (i32.shl (local.get $len) (i32.const 3)))
+             (loop $loop
+                (if (i32.lt_u (local.get $i) (local.get $len))
+                   (then
+                      (call $caml_serialize_int_8 (local.get $s)
+                         (call $dv_get_i64 (local.get $view) (local.get $i)
+                            (global.get $littleEndian)))
+                      (local.set $i (i32.add (local.get $i) (i32.const 8)))
+                      (br $loop))))
+             (br $done)))
+          ;; int
           (call $caml_serialize_int_1 (local.get $s) (i32.const 0)))
           ;; fallthrough
          ;; int32
@@ -1275,6 +1296,32 @@
                                   (local.set $i (i32.add (local.get $i) (i32.const 8)))
                                   (br $loop))))))
                    (br $done)))))
+          (@if $portable-int
+          (@then
+            ;; int: portable
+            (local.set $len (i32.shl (local.get $len) (i32.const 3)))
+            (if (call $caml_deserialize_uint_1 (local.get $s))
+               (then
+                  (loop $loop
+                     (if (i32.lt_u (local.get $i) (local.get $len))
+                        (then
+                           (call $dv_set_i64 (local.get $ba_view) (local.get $i)
+                              (call $caml_deserialize_int_8 (local.get $s))
+                              (global.get $littleEndian))
+                           (local.set $i (i32.add (local.get $i) (i32.const 8)))
+                           (br $loop)))))
+               (else
+                  ;; data written with 32-bit OCaml ints: sign-extend
+                  (loop $loop
+                     (if (i32.lt_u (local.get $i) (local.get $len))
+                        (then
+                           (call $dv_set_i64 (local.get $ba_view) (local.get $i)
+                              (i64.extend_i32_s
+                                 (call $caml_deserialize_int_4 (local.get $s)))
+                              (global.get $littleEndian))
+                           (local.set $i (i32.add (local.get $i) (i32.const 8)))
+                           (br $loop))))))
+            (br $done)))
           ;; int
           (if (call $caml_deserialize_uint_1 (local.get $s))
              (then (call $caml_failwith (global.get $intern_overflow)))))
@@ -1379,10 +1426,17 @@
          (if (i32.lt_u (local.get $i) (local.get $ba_num_dims))
             (then
                (local.set $n
+                  (@if $portable-int
+                  (@then
+                     (call $caml_ba_index_val
+                        (array.get $block (local.get $vdim)
+                           (i32.add (local.get $i) (i32.const 1)))))
+                  (@else
                   (i31.get_s
                      (ref.cast (ref i31)
                         (array.get $block (local.get $vdim)
                            (i32.add (local.get $i) (i32.const 1))))))
+                  ))
                (if (i32.lt_s (local.get $n) (i32.const 0))
                   (then
                      (call $caml_invalid_argument
@@ -1540,11 +1594,19 @@
                      (global.get $littleEndian))))
                ))
               ;; int
+              (@if $portable-int
+              (@then
+                 (return_call $val_portable_int
+                    (call $dv_get_i64
+                       (local.get $view) (i32.shl (local.get $i) (i32.const 3))
+                       (global.get $littleEndian))))
+              (@else
               (return
                  (ref.i31
                     (call $dv_get_i32
                        (local.get $view) (i32.shl (local.get $i) (i32.const 2))
                        (global.get $littleEndian)))))
+              ))
              ;; int64
              (return_call $caml_copy_int64
                 (call $dv_get_i64
@@ -1661,10 +1723,18 @@
             ))
             (return))
            ;; int
+           (@if $portable-int
+           (@then
+              (call $dv_set_i64
+                 (local.get $view) (i32.shl (local.get $i) (i32.const 3))
+                 (call $portable_int_val (local.get $v))
+                 (global.get $littleEndian)))
+           (@else
            (call $dv_set_i32
               (local.get $view) (i32.shl (local.get $i) (i32.const 2))
               (i31.get_s (ref.cast (ref i31) (local.get $v)))
               (global.get $littleEndian))
+            ))
            (return))
           ;; int64
           (call $dv_set_i64
@@ -1675,12 +1745,20 @@
          ;; int16/ uint16
          (call $dv_set_i16
             (local.get $view) (i32.shl (local.get $i) (i32.const 1))
+            (@if $portable-int
+            (@then (i32.wrap_i64 (call $portable_int_val (local.get $v))))
+            (@else
             (i31.get_s (ref.cast (ref i31) (local.get $v)))
+            ))
             (global.get $littleEndian))
          (return))
         ;; int8 / uint8
         (call $dv_set_i8 (local.get $view) (local.get $i)
+           (@if $portable-int
+           (@then (i32.wrap_i64 (call $portable_int_val (local.get $v))))
+           (@else
            (i31.get_s (ref.cast (ref i31) (local.get $v))))
+           ))
         (return))
        ;; float64
        (call $dv_set_f64 (local.get $view) (i32.shl (local.get $i) (i32.const 3))
@@ -1706,7 +1784,14 @@
       (local.set $i (i31.get_s (ref.cast (ref i31) (local.get $vi))))
       (if (i32.ge_u (local.get $i) (array.len (local.get $dim)))
          (then (call $caml_invalid_argument (global.get $Bigarray_dim))))
+      (@if $portable-int
+      (@then
+         (call $val_portable_int
+            (i64.extend_i32_s
+               (array.get $int_array (local.get $dim) (local.get $i)))))
+      (@else
       (ref.i31 (array.get $int_array (local.get $dim) (local.get $i))))
+      ))
 
    (func (export "caml_ba_dim_1") (param $vba (ref eq)) (result (ref eq))
       (return_call $caml_ba_dim (local.get $vba) (ref.i31 (i32.const 0))))
@@ -1716,7 +1801,12 @@
       (local $ba (ref $bigarray))
       (local $i i32)
       (local.set $ba (ref.cast (ref $bigarray) (local.get $vba)))
+      (@if $portable-int
+      (@then
+         (local.set $i (call $caml_ba_index_val (local.get $vi))))
+      (@else
       (local.set $i (i31.get_u (ref.cast (ref i31) (local.get $vi))))
+      ))
       (if (struct.get_u $bigarray $ba_layout (local.get $ba))
          (then (local.set $i (i32.sub (local.get $i) (i32.const 1)))))
       (if (i32.ge_u (local.get $i)
@@ -1730,7 +1820,12 @@
       (local $ba (ref $bigarray))
       (local $i i32)
       (local.set $ba (ref.cast (ref $bigarray) (local.get $vba)))
+      (@if $portable-int
+      (@then
+         (local.set $i (call $caml_ba_index_val (local.get $vi))))
+      (@else
       (local.set $i (i31.get_u (ref.cast (ref i31) (local.get $vi))))
+      ))
       (if (struct.get_u $bigarray $ba_layout (local.get $ba))
          (then (local.set $i (i32.sub (local.get $i) (i32.const 1)))))
       (if (i32.ge_u (local.get $i)
@@ -1750,8 +1845,18 @@
       (local $offset i32)
       (local $dim (ref $int_array))
       (local.set $ba (ref.cast (ref $bigarray) (local.get $vba)))
+      (@if $portable-int
+      (@then
+         (local.set $i (call $caml_ba_index_val (local.get $vi))))
+      (@else
       (local.set $i (i31.get_u (ref.cast (ref i31) (local.get $vi))))
+      ))
+      (@if $portable-int
+      (@then
+         (local.set $j (call $caml_ba_index_val (local.get $vj))))
+      (@else
       (local.set $j (i31.get_u (ref.cast (ref i31) (local.get $vj))))
+      ))
       (local.set $dim (struct.get $bigarray $ba_dim (local.get $ba)))
       (if (struct.get_u $bigarray $ba_layout (local.get $ba))
          (then
@@ -1786,8 +1891,18 @@
       (local $offset i32)
       (local $dim (ref $int_array))
       (local.set $ba (ref.cast (ref $bigarray) (local.get $vba)))
+      (@if $portable-int
+      (@then
+         (local.set $i (call $caml_ba_index_val (local.get $vi))))
+      (@else
       (local.set $i (i31.get_u (ref.cast (ref i31) (local.get $vi))))
+      ))
+      (@if $portable-int
+      (@then
+         (local.set $j (call $caml_ba_index_val (local.get $vj))))
+      (@else
       (local.set $j (i31.get_u (ref.cast (ref i31) (local.get $vj))))
+      ))
       (local.set $dim (struct.get $bigarray $ba_dim (local.get $ba)))
       (if (struct.get_u $bigarray $ba_layout (local.get $ba))
          (then
@@ -1829,9 +1944,24 @@
       (local $offset i32)
       (local $dim (ref $int_array))
       (local.set $ba (ref.cast (ref $bigarray) (local.get $vba)))
+      (@if $portable-int
+      (@then
+         (local.set $i (call $caml_ba_index_val (local.get $vi))))
+      (@else
       (local.set $i (i31.get_u (ref.cast (ref i31) (local.get $vi))))
+      ))
+      (@if $portable-int
+      (@then
+         (local.set $j (call $caml_ba_index_val (local.get $vj))))
+      (@else
       (local.set $j (i31.get_u (ref.cast (ref i31) (local.get $vj))))
+      ))
+      (@if $portable-int
+      (@then
+         (local.set $k (call $caml_ba_index_val (local.get $vk))))
+      (@else
       (local.set $k (i31.get_u (ref.cast (ref i31) (local.get $vk))))
+      ))
       (local.set $dim (struct.get $bigarray $ba_dim (local.get $ba)))
       (if (struct.get_u $bigarray $ba_layout (local.get $ba))
          (then
@@ -1882,9 +2012,24 @@
       (local $offset i32)
       (local $dim (ref $int_array))
       (local.set $ba (ref.cast (ref $bigarray) (local.get $vba)))
+      (@if $portable-int
+      (@then
+         (local.set $i (call $caml_ba_index_val (local.get $vi))))
+      (@else
       (local.set $i (i31.get_u (ref.cast (ref i31) (local.get $vi))))
+      ))
+      (@if $portable-int
+      (@then
+         (local.set $j (call $caml_ba_index_val (local.get $vj))))
+      (@else
       (local.set $j (i31.get_u (ref.cast (ref i31) (local.get $vj))))
+      ))
+      (@if $portable-int
+      (@then
+         (local.set $k (call $caml_ba_index_val (local.get $vk))))
+      (@else
       (local.set $k (i31.get_u (ref.cast (ref i31) (local.get $vk))))
+      ))
       (local.set $dim (struct.get $bigarray $ba_dim (local.get $ba)))
       (if (struct.get_u $bigarray $ba_layout (local.get $ba))
          (then
@@ -2200,10 +2345,18 @@
                   (then
                      (local.set $idx
                         (i32.sub
+                           (@if $portable-int
+                             (@then
+                                 (call $caml_ba_index_val
+                                    (array.get $block (local.get $index)
+                                       (i32.add (local.get $i)
+                                          (i32.const 1)))))
+                             (@else
                            (i31.get_s
                               (ref.cast (ref i31)
                                  (array.get $block (local.get $index)
                                     (i32.add (local.get $i) (i32.const 1)))))
+                           ))
                            (i32.const 1)))
                      (local.set $l
                         (array.get $int_array (local.get $dim) (local.get $i)))
@@ -2222,10 +2375,17 @@
                (if (i32.lt_s (local.get $i) (local.get $num_dims))
                   (then
                      (local.set $idx
+                        (@if $portable-int
+                          (@then (call $caml_ba_index_val
+                                   (array.get $block (local.get $index)
+                                      (i32.add (local.get $i)
+                                         (i32.const 1)))))
+                        (@else
                         (i31.get_s
                            (ref.cast (ref i31)
                               (array.get $block (local.get $index)
                                  (i32.add (local.get $i) (i32.const 1))))))
+                        ))
                      (local.set $l
                         (array.get $int_array (local.get $dim) (local.get $i)))
                      (if (i32.ge_u (local.get $idx) (local.get $l))
@@ -2284,6 +2444,15 @@
             (loop $loop
                (if (i32.lt_u (local.get $i) (local.get $num_inds))
                   (then
+                     (@if $portable-int
+                     (@then
+                        (array.set $int_array (local.get $index)
+                           (i32.sub (i32.add (local.get $num_dims) (local.get $i))
+                              (local.get $num_inds))
+                           (call $caml_ba_index_val
+                              (array.get $block (local.get $ind)
+                                 (i32.add (local.get $i) (i32.const 1))))))
+                     (@else
                      (array.set $int_array (local.get $index)
                         (i32.sub (i32.add (local.get $num_dims) (local.get $i))
                            (local.get $num_inds))
@@ -2291,6 +2460,7 @@
                            (ref.cast (ref i31)
                               (array.get $block (local.get $ind)
                                  (i32.add (local.get $i) (i32.const 1))))))
+                     ))
                      (local.set $i (i32.add (local.get $i) (i32.const 1)))
                      (br $loop))))
             (local.set $offset
@@ -2305,12 +2475,21 @@
             (loop $loop
                (if (i32.lt_u (local.get $i) (local.get $num_inds))
                   (then
+                     (@if $portable-int
+                     (@then
+                        (array.set $int_array (local.get $index)
+                           (local.get $i)
+                           (call $caml_ba_index_val
+                              (array.get $block (local.get $ind)
+                                 (i32.add (local.get $i) (i32.const 1))))))
+                     (@else
                      (array.set $int_array (local.get $index)
                         (local.get $i)
                         (i31.get_u
                            (ref.cast (ref i31)
                               (array.get $block (local.get $ind)
                                  (i32.add (local.get $i) (i32.const 1))))))
+                     ))
                      (local.set $i (i32.add (local.get $i) (i32.const 1)))
                      (br $loop))))
             (local.set $offset
@@ -2350,8 +2529,18 @@
       (local $dim (ref $int_array)) (local $ba_dim (ref $int_array))
       (local $ba_data (ref extern))
       (local.set $ba (ref.cast (ref $bigarray) (local.get $vba)))
+      (@if $portable-int
+      (@then
+         (local.set $ofs (call $caml_ba_index_val (local.get $vofs))))
+      (@else
       (local.set $ofs (i31.get_s (ref.cast (ref i31) (local.get $vofs))))
+      ))
+      (@if $portable-int
+      (@then
+         (local.set $len (call $caml_ba_index_val (local.get $vlen))))
+      (@else
       (local.set $len (i31.get_s (ref.cast (ref i31) (local.get $vlen))))
+      ))
       (local.set $ba_num_dims (struct.get_u $bigarray $ba_num_dims (local.get $ba)))
       (local.set $dim (struct.get $bigarray $ba_dim (local.get $ba)))
       (local.set $mul (i32.const 1))
@@ -2516,8 +2705,20 @@
          ))
          (return (ref.i31 (i32.const 0))))
         ;; int
+        (@if $portable-int
+        (@then
+           (if (i32.eq (struct.get_u $bigarray $ba_kind (local.get $ba))
+                  (i32.const 8))
+              (then
+                 (call $caml_ba_fill_i64 (local.get $ba)
+                    (call $portable_int_val (local.get $v))))
+              (else
+                 (call $ta_fill_int (local.get $dat)
+                    (i32.wrap_i64 (call $portable_int_val (local.get $v)))))))
+        (@else
         (call $ta_fill_int (local.get $dat)
            (i31.get_s (ref.cast (ref i31) (local.get $v))))
+        ))
         (return (ref.i31 (i32.const 0))))
        ;; float
        (call $ta_fill_float (local.get $dat)
@@ -2577,10 +2778,17 @@
          (if (i32.lt_u (local.get $i) (local.get $ba_num_dims))
             (then
                (local.set $d
+                  (@if $portable-int
+                  (@then
+                     (call $caml_ba_index_val
+                        (array.get $block (local.get $vdim)
+                           (i32.add (local.get $i) (i32.const 1)))))
+                  (@else
                   (i31.get_s
                      (ref.cast (ref i31)
                         (array.get $block (local.get $vdim)
                            (i32.add (local.get $i) (i32.const 1))))))
+                  ))
                (if (i32.lt_s (local.get $d) (i32.const 0))
                   (then
                      (call $caml_invalid_argument (global.get $negative_dim))))

@@ -42,14 +42,34 @@ let can_unbox_return_value fun_info f =
 module Integer = struct
   type kind =
     | Ref
-    | Normalized
-    | Unnormalized
+    | Large_normalized
+    | Large_unnormalized
+    | Small_normalized
+    | Small_unnormalized
+
+  let max_i31s = lazy (Targetint.to_int64 (Lazy.force Targetint.max_i31s))
+
+  let min_i31s = lazy (Targetint.to_int64 (Lazy.force Targetint.min_i31s))
 
   let join r r' =
     match r, r' with
-    | Unnormalized, _ | _, Unnormalized -> Unnormalized
     | Ref, Ref -> Ref
-    | _ -> Normalized
+    | Ref, (Small_normalized | Small_unnormalized)
+    | (Small_normalized | Small_unnormalized), Ref
+      when Config.Flag.portable_int () -> Large_normalized
+    | Large_unnormalized, _ | _, Large_unnormalized -> Large_unnormalized
+    | Large_normalized, _ | _, Large_normalized -> Large_normalized
+    | Small_unnormalized, _ | _, Small_unnormalized -> Small_unnormalized
+    | Small_normalized, _ | _, Small_normalized -> Small_normalized
+
+  let kind_of_targetint i =
+    if Config.Flag.portable_int ()
+    then
+      let n = Targetint.to_int64 i in
+      if Int64.(n >= Lazy.force min_i31s && n <= Lazy.force max_i31s)
+      then Small_normalized
+      else Large_normalized
+    else Small_normalized
 end
 
 type boxed_number =
@@ -212,8 +232,10 @@ module Domain = struct
           "int{%s}"
           (match k with
           | Ref -> "ref"
-          | Normalized -> "normalized"
-          | Unnormalized -> "unnormalized")
+          | Large_normalized -> "large_normalized"
+          | Large_unnormalized -> "large_unnormalized"
+          | Small_normalized -> "small_normalized"
+          | Small_unnormalized -> "small_unnormalized")
     | Number (n, b) ->
         Format.fprintf
           f
@@ -317,7 +339,7 @@ type st =
 
 let rec constant_type (c : constant) =
   match c with
-  | Int _ -> Int Normalized
+  | Int i -> Int (Integer.kind_of_targetint i)
   | Int32 _ -> Number (Int32, Unboxed)
   | Int64 _ -> Number (Int64, Unboxed)
   | NativeInt _ -> Number (Nativeint, Unboxed)
@@ -336,8 +358,11 @@ let bigarray_element_type (kind : Optimization_hint.Bigarray.kind) =
   match kind with
   | Float16 | Float32 | Float64 -> Number (Float, Unboxed)
   | Float32_t -> Number (Float32, Unboxed)
-  | Int8_signed | Int8_unsigned | Int16_signed | Int16_unsigned -> Int Normalized
-  | Int -> Int Unnormalized
+  | Int8_signed | Int8_unsigned | Int16_signed | Int16_unsigned -> Int Small_normalized
+  | Int ->
+      if Config.Flag.portable_int ()
+      then Int Large_unnormalized
+      else Int Small_unnormalized
   | Int32 -> Number (Int32, Unboxed)
   | Int64 -> Number (Int64, Unboxed)
   | Nativeint -> Number (Nativeint, Unboxed)
@@ -353,16 +378,18 @@ let primitive_types = String.Hashtbl.create 16
 
 let prim_type ~st ~approx prim hint args =
   match prim with
+  | "%int_and" when Config.Flag.portable_int () -> Int Large_unnormalized
   | "%int_and" -> (
       match List.map ~f:(fun x -> arg_type ~approx x) args with
-      | [ (Bot | Int (Ref | Normalized)); _ ] | [ _; (Bot | Int (Ref | Normalized)) ] ->
-          Int Normalized
-      | _ -> Int Unnormalized)
+      | [ (Bot | Int (Ref | Small_normalized)); _ ]
+      | [ _; (Bot | Int (Ref | Small_normalized)) ] -> Int Small_normalized
+      | _ -> Int Small_unnormalized)
+  | ("%int_or" | "%int_xor") when Config.Flag.portable_int () -> Int Large_unnormalized
   | "%int_or" | "%int_xor" -> (
       match List.map ~f:(fun x -> arg_type ~approx x) args with
-      | [ (Bot | Int (Ref | Normalized)); (Bot | Int (Ref | Normalized)) ] ->
-          Int Normalized
-      | _ -> Int Unnormalized)
+      | [ (Bot | Int (Ref | Small_normalized)); (Bot | Int (Ref | Small_normalized)) ] ->
+          Int Small_normalized
+      | _ -> Int Small_unnormalized)
   | "caml_ba_create" -> (
       match args with
       | [ Pc (Int kind); Pc (Int layout); _ ] ->
@@ -397,7 +424,7 @@ let propagate st approx x : Domain.t =
   match st.global_flow_state.defs.(Var.idx x) with
   | Phi { known; others; unit } -> (
       let res = Domain.join_set ~others (fun y -> Var.Tbl.get approx y) known in
-      let res = if unit then Domain.join (Int Unnormalized) res else res in
+      let res = if unit then Domain.join (Int Small_normalized) res else res in
       let res =
         if Var.ISet.mem st.boxed_function_parameters x then Domain.box res else res
       in
@@ -458,7 +485,7 @@ let propagate st approx x : Domain.t =
           | Top -> Top)
       | Prim (Array_get, _) -> Top
       | Prim ((Vectlength _ | Not | IsInt | Eq | Neq | Lt | Le | Ult), _) ->
-          Int Normalized
+          Int Small_normalized
       | Prim (Extern (prim, hint), args) -> prim_type ~st ~approx prim hint args
       | Special _ -> Top
       | Apply { f; args; _ } -> (
@@ -677,7 +704,7 @@ let f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinel p =
     }
   in
   let types = solver st in
-  Var.Tbl.set types deadcode_sentinel (Int Normalized);
+  Var.Tbl.set types deadcode_sentinel (Int Small_normalized);
   box_numbers p st types;
   if times () then Format.eprintf "  type analysis: %a@." Timer.print t;
   if debug ()
