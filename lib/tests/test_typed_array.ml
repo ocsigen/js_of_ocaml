@@ -147,6 +147,17 @@ let%expect_test "float64" =
   test Setup.Float64 [| Float.neg_infinity; -1.; 0.; 1.; Float.infinity |];
   [%expect {||}]
 
+let%expect_test "float arrays from JS arrays" =
+  let input = [| -1.; -1.; 3.; -1.; -1.; 3. |] in
+  let js_input = Js.array (Array.map Js.float input) in
+  let float32 = new%js float32Array_fromArray js_input in
+  let float64 = new%js float64Array_fromArray js_input in
+  if not (array_of_ta Setup.Float32 float32 = input)
+  then print_endline "float32Array_fromArray doesn't match its input";
+  if not (array_of_ta Setup.Float64 float64 = input)
+  then print_endline "float64Array_fromArray doesn't match its input";
+  [%expect {||}]
+
 let%expect_test "int8" =
   test Setup.Int8 [| -128; -1; 0; 1; 127 |];
   [%expect {||}]
