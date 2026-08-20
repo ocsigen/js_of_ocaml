@@ -177,7 +177,12 @@ and rewrite_body
         ~var_depth
         ~acc_instr:
           (* Replace closure with application of the lifter function *)
-          (Let (f, Apply { f = f''; args = List.map ~f:fst s; exact = true }) :: acc_instr)
+          (Let
+             ( f
+             , Apply
+                 { f = f''; args = List.map ~f:fst s; exact = true; yielding = Unknown }
+             )
+          :: acc_instr)
         ~depth
         rem
   | Let (cname, Closure (params, (pc', args), cloc)) :: rem ->
@@ -298,7 +303,14 @@ and rewrite_body
             in
             ( (program, functions, lifters)
             , rev_decl
-              @ Let (tuple, Apply { f = f_tuple; args = List.map ~f:fst s; exact = true })
+              @ Let
+                  ( tuple
+                  , Apply
+                      { f = f_tuple
+                      ; args = List.map ~f:fst s
+                      ; exact = true
+                      ; yielding = Unknown
+                      } )
                 :: acc_instr )
         | _ :: _ ->
             (* No need to lift the accumulated closures: just keep their definitions

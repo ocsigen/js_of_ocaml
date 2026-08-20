@@ -55,6 +55,20 @@ module Debug : sig
 
   val find_locs : t -> int -> (string option * Instruct.debug_event) list
 
+  val call_yielding_kind :
+    t -> call:[ `Tail | `Non_tail ] -> pc:Code.Addr.t -> nargs:int -> yielding_kind
+  (** Whether the debug events contain an [Event_unyielding_call nargs] event
+      for the call at [pc], i.e. the OCaml compiler has proven that the call
+      cannot perform an effect. For a non-tail call ([call = `Non_tail]), the
+      event is located at the return address (the pc following the apply
+      instruction); for a tail call ([call = `Tail]), at the pc of the appterm
+      instruction itself. Since a return address is the pc of the following
+      instruction -- which can itself be a call -- the event must correspond to
+      the right kind of call, and its number of arguments must match, for the
+      information to apply. Returns [May_yield] unless the current
+      configuration makes use of this information (see
+      [Config.Flag.oxcaml_use_unyielding_debuginfo_for_effect_cps]). *)
+
   val event_location :
        position:position
     -> source:string option
@@ -127,6 +141,11 @@ end = struct
     ; names : bool
     ; enabled : bool
     ; include_cmis : bool
+    ; unyielding_info : bool
+          (* Whether unyielding-call events should be collected and used (see
+             [call_yielding_kind]) *)
+    ; unyielding_calls : ([ `Tail | `Non_tail ] * int) Int.Hashtbl.t
+          (* pc -> (kind of call, number of arguments) *)
     }
 
   type position =
@@ -137,17 +156,28 @@ end = struct
 
   let enabled t = t.enabled
 
-  let dbg_section_needed t = t.names || t.enabled || t.include_cmis
+  let dbg_section_needed t = t.names || t.enabled || t.include_cmis || t.unyielding_info
 
   let relocate_event orig ev = ev.ev_pos <- (orig + ev.ev_pos) / 4
 
   let create ~include_cmis enabled =
     let names = enabled || Config.Flag.pretty () in
+    let unyielding_info =
+      (* This information allows emitting direct-style calls in CPS context, so
+         it is only of use when double translation is enabled. *)
+      Config.Flag.oxcaml_use_unyielding_debuginfo_for_effect_cps ()
+      &&
+      match Config.effects () with
+      | `Double_translation -> true
+      | `Disabled | `Cps | `Jspi | `Native -> false
+    in
     { events_by_pc = Int.Hashtbl.create 17
     ; units = UnitTable.create 17
     ; names
     ; enabled
     ; include_cmis
+    ; unyielding_info
+    ; unyielding_calls = Int.Hashtbl.create 17
     }
 
   let find_ml_in_paths paths name =
@@ -156,62 +186,102 @@ end = struct
     | Some _ as x -> x
     | None -> Fs.find_in_path paths (name ^ ".ml")
 
+  let event_unyielding_call ev =
+    match ev.ev_info with
+    | Event_unyielding_call nargs ->
+        (* Distinguish the pseudo markers placed at the instruction of a tail
+           call from the events at the return address of a non-tail call: tail
+           markers are pseudo events created with [Event_none], whereas a
+           non-tail call's [Event_after] either keeps its kind or is weakened
+           to a pseudo event with an [Event_parent] representation (see
+           [Bytegen.weaken_event]). The return address of a call is the pc of
+           the next instruction, which can itself be a call; requiring the
+           kinds to match (in [call_yielding_kind]) prevents attributing an
+           event to the wrong call. *)
+        let call =
+          match ev.ev_kind, ev.ev_repr with
+          | Event_pseudo, Event_none -> `Tail
+          | Event_pseudo, (Event_parent _ | Event_child _)
+          | (Event_before | Event_after _), _ -> `Non_tail
+        in
+        Some (call, nargs)
+    | Event_function | Event_return _ | Event_other -> None
+  [@@if oxcaml]
+
+  let event_unyielding_call (_ : debug_event) = None [@@if not oxcaml]
+
   let read_event
       ~paths
       ~crcs
       ~orig
-      { events_by_pc; units; names; enabled; include_cmis = _ }
+      { events_by_pc
+      ; units
+      ; names
+      ; enabled
+      ; include_cmis
+      ; unyielding_info
+      ; unyielding_calls
+      }
       ev =
-    let pos_fname =
-      match ev.ev_loc.Location.loc_start.Lexing.pos_fname with
-      | "_none_" -> None
-      | x -> Some x
-    in
-    let ev_module = ev.ev_module in
-    let unit =
-      try UnitTable.find units (ev_module, pos_fname)
-      with Not_found ->
-        let crc = String.Hashtbl.find_opt crcs ev_module |> Option.join in
-        let source : path option =
-          (* First search the source based on [pos_fname] because the
-             filename of the source might be unreleased to the
-             module name. (e.g. pos_fname = list.ml, module = Stdlib__list) *)
-          let from_pos_fname =
-            match pos_fname with
-            | None -> None
-            | Some pos_fname -> (
-                match Fs.find_in_path paths pos_fname with
-                | Some _ as x -> x
-                | None -> Fs.find_in_path paths (Filename.basename pos_fname))
-          in
-          match from_pos_fname with
-          | None -> find_ml_in_paths paths ev_module
-          | Some _ as x -> x
-        in
-        let source =
-          match source with
-          | None -> None
-          | Some source -> Some (Fs.absolute_path source)
-        in
-        if debug_sourcemap ()
-        then
-          Format.eprintf
-            "module:%s - source:%s - name:%s\n%!"
-            ev_module
-            (match source with
-            | None -> "NONE"
-            | Some x -> x)
-            (match pos_fname with
-            | None -> "NONE"
-            | Some x -> x);
-        let u = { module_name = ev_module; crc; source; paths } in
-        UnitTable.add units (ev_module, pos_fname) u;
-        u
-    in
     relocate_event orig ev;
-    if enabled || names
-    then Int.Hashtbl.add events_by_pc ev.ev_pos { event = ev; source = unit.source };
-    ()
+    (if unyielding_info
+     then
+       match event_unyielding_call ev with
+       | Some info -> Int.Hashtbl.replace unyielding_calls ev.ev_pos info
+       | None -> ());
+    (* The unit table is also used to locate the [.cmi] files to embed when
+       compiling a toplevel, so it must be filled even when no event is
+       recorded. *)
+    if enabled || names || include_cmis
+    then
+      let pos_fname =
+        match ev.ev_loc.Location.loc_start.Lexing.pos_fname with
+        | "_none_" -> None
+        | x -> Some x
+      in
+      let ev_module = ev.ev_module in
+      let unit =
+        try UnitTable.find units (ev_module, pos_fname)
+        with Not_found ->
+          let crc = String.Hashtbl.find_opt crcs ev_module |> Option.join in
+          let source : path option =
+            (* First search the source based on [pos_fname] because the
+               filename of the source might be unreleased to the
+               module name. (e.g. pos_fname = list.ml, module = Stdlib__list) *)
+            let from_pos_fname =
+              match pos_fname with
+              | None -> None
+              | Some pos_fname -> (
+                  match Fs.find_in_path paths pos_fname with
+                  | Some _ as x -> x
+                  | None -> Fs.find_in_path paths (Filename.basename pos_fname))
+            in
+            match from_pos_fname with
+            | None -> find_ml_in_paths paths ev_module
+            | Some _ as x -> x
+          in
+          let source =
+            match source with
+            | None -> None
+            | Some source -> Some (Fs.absolute_path source)
+          in
+          if debug_sourcemap ()
+          then
+            Format.eprintf
+              "module:%s - source:%s - name:%s\n%!"
+              ev_module
+              (match source with
+              | None -> "NONE"
+              | Some x -> x)
+              (match pos_fname with
+              | None -> "NONE"
+              | Some x -> x);
+          let u = { module_name = ev_module; crc; source; paths } in
+          UnitTable.add units (ev_module, pos_fname) u;
+          u
+      in
+      if enabled || names
+      then Int.Hashtbl.add events_by_pc ev.ev_pos { event = ev; source = unit.source }
 
   let read_event_list =
     let rewrite_path path =
@@ -319,6 +389,23 @@ end = struct
     match find_locs t pc with
     | [] -> None
     | (source, event) :: _ -> Some (event_location ~position ~source ~event)
+
+  (* [unyielding_calls] is only populated when [t.unyielding_info] is set, so
+     this always returns [May_yield] when the information is unwanted.
+     Requiring the kind of call and the number of arguments to match protects
+     against associating an event with the wrong instruction (the return
+     address of a non-tail call may be the pc of a tail call, and vice
+     versa). *)
+  let call_yielding_kind { unyielding_calls; _ } ~call ~pc ~nargs =
+    match Int.Hashtbl.find_opt unyielding_calls pc with
+    | Some (call', n) ->
+        let same_call_kind =
+          match call, call' with
+          | `Tail, `Tail | `Non_tail, `Non_tail -> true
+          | `Tail, `Non_tail | `Non_tail, `Tail -> false
+        in
+        if same_call_kind && n = nargs then Unyielding else May_yield
+    | None -> May_yield
 
   type summary =
     { is_empty : bool
@@ -1147,17 +1234,36 @@ and compile infos pc state (instrs : instr list) =
             if debug_parser () then Format.eprintf "Ignored allocation event@.";
             instrs
         | ( { ev_kind = Event_pseudo | Event_after _; ev_info = Event_return _; _ }
-          , (Let (_, (Apply _ | Prim _)) as i) :: rem ) ->
+          , (Let (_, (Apply _ | Prim _)) as i) :: rem )
+        | (( { ev_kind = Event_pseudo | Event_after _
+             ; ev_info = Event_unyielding_call _
+             ; _
+             }
+           , (Let (_, Apply _) as i) :: rem )
+           [@if oxcaml]) ->
             (* Event after a call. If it is followed by another event,
-               it may have been weaken to a pseudo-event but was kept
-               for stack traces *)
+               it may have been weakened to a pseudo-event but kept
+               for stack traces. For calls that have been proven not to
+               perform an effect, the event at the return address
+               carries [Event_unyielding_call] instead of
+               [Event_return]. *)
             if debug_parser () then Format.eprintf "Added event across call@.";
             push_event After source event (i :: push_event Before source event rem)
         | { ev_kind = Event_pseudo; ev_info = Event_function; _ }, [] ->
             (* At beginning of function *)
             if debug_parser () then Format.eprintf "Added event at function start@.";
             push_event Before source event instrs
-        | { ev_kind = Event_after _ | Event_pseudo; ev_info = Event_return _; _ }, _ ->
+        | { ev_kind = Event_after _ | Event_pseudo; ev_info = Event_return _; _ }, _
+        | (( { ev_kind = Event_after _ | Event_pseudo
+             ; ev_info = Event_unyielding_call _
+             ; _
+             }
+           , _ )
+           [@if oxcaml]) ->
+            (* This also ignores pseudo events marking unyielding tail
+               calls, which are located at the pc of the appterm
+               instruction itself; they are consulted separately, when
+               translating the appterm instruction. *)
             if debug_parser ()
             then
               Format.eprintf "Ignored useless event (beginning of a block after a call)@.";
@@ -1173,7 +1279,9 @@ and compile infos pc state (instrs : instr list) =
             if debug_parser () then Format.eprintf "added event@.";
             push_event Before source event instrs
         | { ev_kind = Event_after _; ev_info = Event_function; _ }, _
-        | { ev_kind = Event_before; ev_info = Event_return _; _ }, _ ->
+        | { ev_kind = Event_before; ev_info = Event_return _; _ }, _
+        | (({ ev_kind = Event_before; ev_info = Event_unyielding_call _; _ }, _)
+           [@if oxcaml]) ->
             (* Nonsensical events *)
             assert false)
   in
@@ -1290,7 +1398,11 @@ and compile infos pc state (instrs : instr list) =
         let f = State.accu state in
         let x, state = State.fresh_var state in
         let args, state = State.grab n state in
-
+        (* For non-tail calls, unyielding-call events are located at the return
+           address, that is, the pc following the apply instruction. *)
+        let yielding =
+          Debug.call_yielding_kind infos.debug ~call:`Non_tail ~pc:(pc + 2) ~nargs:n
+        in
         if debug_parser ()
         then (
           Format.printf "%a = %a(" Var.print x Var.print f;
@@ -1303,25 +1415,29 @@ and compile infos pc state (instrs : instr list) =
           infos
           (pc + 2)
           (State.pop 3 state)
-          (Let (x, Apply { f; args; exact = false }) :: instrs)
+          (Let (x, Apply { f; args; exact = false; yielding }) :: instrs)
     | APPLY1 ->
         let f = State.accu state in
         let x, state = State.fresh_var state in
         let y = State.peek 0 state in
-
+        let yielding =
+          Debug.call_yielding_kind infos.debug ~call:`Non_tail ~pc:(pc + 1) ~nargs:1
+        in
         if debug_parser ()
         then Format.printf "%a = %a(%a)@." Var.print x Var.print f Var.print y;
         compile
           infos
           (pc + 1)
           (State.pop 1 state)
-          (Let (x, Apply { f; args = [ y ]; exact = false }) :: instrs)
+          (Let (x, Apply { f; args = [ y ]; exact = false; yielding }) :: instrs)
     | APPLY2 ->
         let f = State.accu state in
         let x, state = State.fresh_var state in
         let y = State.peek 0 state in
         let z = State.peek 1 state in
-
+        let yielding =
+          Debug.call_yielding_kind infos.debug ~call:`Non_tail ~pc:(pc + 1) ~nargs:2
+        in
         if debug_parser ()
         then
           Format.printf
@@ -1338,14 +1454,16 @@ and compile infos pc state (instrs : instr list) =
           infos
           (pc + 1)
           (State.pop 2 state)
-          (Let (x, Apply { f; args = [ y; z ]; exact = false }) :: instrs)
+          (Let (x, Apply { f; args = [ y; z ]; exact = false; yielding }) :: instrs)
     | APPLY3 ->
         let f = State.accu state in
         let x, state = State.fresh_var state in
         let y = State.peek 0 state in
         let z = State.peek 1 state in
         let t = State.peek 2 state in
-
+        let yielding =
+          Debug.call_yielding_kind infos.debug ~call:`Non_tail ~pc:(pc + 1) ~nargs:3
+        in
         if debug_parser ()
         then
           Format.printf
@@ -1364,12 +1482,14 @@ and compile infos pc state (instrs : instr list) =
           infos
           (pc + 1)
           (State.pop 3 state)
-          (Let (x, Apply { f; args = [ y; z; t ]; exact = false }) :: instrs)
+          (Let (x, Apply { f; args = [ y; z; t ]; exact = false; yielding }) :: instrs)
     | APPTERM ->
         let n = getu code (pc + 1) in
         let f = State.accu state in
         let l, state = State.grab n state in
-
+        (* For tail calls, unyielding-call events are located at the pc of the
+           appterm instruction itself. *)
+        let yielding = Debug.call_yielding_kind infos.debug ~call:`Tail ~pc ~nargs:n in
         if debug_parser ()
         then (
           Format.printf "return %a(" Var.print f;
@@ -1379,26 +1499,33 @@ and compile infos pc state (instrs : instr list) =
           done;
           Format.printf ")@.");
         let x, state = State.fresh_var state in
-        Let (x, Apply { f; args = l; exact = false }) :: instrs, Return x, state
+        Let (x, Apply { f; args = l; exact = false; yielding }) :: instrs, Return x, state
     | APPTERM1 ->
         let f = State.accu state in
         let x = State.peek 0 state in
+        let yielding = Debug.call_yielding_kind infos.debug ~call:`Tail ~pc ~nargs:1 in
         if debug_parser () then Format.printf "return %a(%a)@." Var.print f Var.print x;
         let y, state = State.fresh_var state in
-        Let (y, Apply { f; args = [ x ]; exact = false }) :: instrs, Return y, state
+        ( Let (y, Apply { f; args = [ x ]; exact = false; yielding }) :: instrs
+        , Return y
+        , state )
     | APPTERM2 ->
         let f = State.accu state in
         let x = State.peek 0 state in
         let y = State.peek 1 state in
+        let yielding = Debug.call_yielding_kind infos.debug ~call:`Tail ~pc ~nargs:2 in
         if debug_parser ()
         then Format.printf "return %a(%a, %a)@." Var.print f Var.print x Var.print y;
         let z, state = State.fresh_var state in
-        Let (z, Apply { f; args = [ x; y ]; exact = false }) :: instrs, Return z, state
+        ( Let (z, Apply { f; args = [ x; y ]; exact = false; yielding }) :: instrs
+        , Return z
+        , state )
     | APPTERM3 ->
         let f = State.accu state in
         let x = State.peek 0 state in
         let y = State.peek 1 state in
         let z = State.peek 2 state in
+        let yielding = Debug.call_yielding_kind infos.debug ~call:`Tail ~pc ~nargs:3 in
         if debug_parser ()
         then
           Format.printf
@@ -1412,7 +1539,9 @@ and compile infos pc state (instrs : instr list) =
             Var.print
             z;
         let t, state = State.fresh_var state in
-        Let (t, Apply { f; args = [ x; y; z ]; exact = false }) :: instrs, Return t, state
+        ( Let (t, Apply { f; args = [ x; y; z ]; exact = false; yielding }) :: instrs
+        , Return t
+        , state )
     | RETURN ->
         let x = State.accu state in
 
