@@ -36,6 +36,13 @@
       (func $jsstring_test (param anyref) (result i32)))
    (import "jsstring" "jsstring_compare"
       (func $jsstring_compare (param anyref) (param anyref) (result i32)))
+   (@if $portable-int
+   (@then
+      (import "portableint" "is_ocaml_portable_int"
+         (func $is_ocaml_portable_int (param (ref eq)) (result i32)))
+      (import "portableint" "portable_int_val"
+         (func $portable_int_val (param (ref eq)) (result i64)))
+   ))
 
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
@@ -232,6 +239,7 @@
       (local $c1 (ref $custom)) (local $c2 (ref $custom))
       (local $js1 anyref) (local $js2 anyref)
       (local $res i32)
+      (local $l1 i64) (local $l2 i64)
       (loop $loop
          (block $next_item
             (if (local.get $total)
@@ -244,6 +252,89 @@
                      (else (return (i32.const -1))))))
             (if (ref.eq (local.get $v2) (global.get $null_value))
                (then (return (i32.const 1))))
+            (@if $portable-int
+            (@then
+               (if (call $is_ocaml_portable_int (local.get $v1))
+                  (then
+                     (br_if $next_item (ref.eq (local.get $v1) (local.get $v2)))
+                     (if (call $is_ocaml_portable_int (local.get $v2))
+                        (then
+                           ;; v1 and v2 are both (possibly boxed) integers
+                           (local.set $l1 (call $portable_int_val (local.get $v1)))
+                           (local.set $l2 (call $portable_int_val (local.get $v2)))
+                           (local.set $res
+                              (i32.sub
+                                 (i64.gt_s (local.get $l1) (local.get $l2))
+                                 (i64.lt_s (local.get $l1) (local.get $l2))))
+                           (br_if $next_item (i32.eqz (local.get $res)))
+                           (return (local.get $res))))
+                     ;; check for forward tag
+                     (drop (block $v2_not_forward (result (ref eq))
+                        (local.set $b2
+                           (br_on_cast_fail $v2_not_forward (ref eq) (ref $block)
+                              (local.get $v2)))
+                        (local.set $t2
+                           (i31.get_u
+                              (ref.cast (ref i31)
+                                 (array.get $block (local.get $b2)
+                                    (i32.const 0)))))
+                        (if (i32.eq (local.get $t2) (global.get $forward_tag))
+                           (then
+                              (local.set $v2
+                                 (array.get $block (local.get $b2) (i32.const 1)))
+                              (br $loop)))
+                        (ref.i31 (i32.const 1))))
+                     (block $v2_not_comparable
+                        (drop (block $v2_not_custom (result (ref eq))
+                           (local.set $c2
+                               (br_on_cast_fail $v2_not_custom (ref eq)
+                                  (ref $custom) (local.get $v2)))
+                           (local.set $res
+                              (call_ref $compare
+                                 (local.get $v1) (local.get $v2)
+                                 (local.get $total)
+                                 (br_on_null $v2_not_comparable
+                                    (struct.get $custom_operations $compare_ext
+                                       (struct.get $custom 0 (local.get $c2))))))
+                           (br_if $next_item (i32.eqz (local.get $res)))
+                           (return (local.get $res)))))
+                     ;; v1 long < v2 block
+                     (return (i32.const -1))))
+               (if (call $is_ocaml_portable_int (local.get $v2))
+                  (then
+                     ;; check for forward tag
+                     (drop (block $v1_not_forward (result (ref eq))
+                        (local.set $b1
+                           (br_on_cast_fail $v1_not_forward (ref eq) (ref $block)
+                              (local.get $v1)))
+                        (local.set $t1
+                           (i31.get_u (ref.cast (ref i31)
+                                         (array.get $block (local.get $b1)
+                                            (i32.const 0)))))
+                        (if (i32.eq (local.get $t1) (global.get $forward_tag))
+                           (then
+                              (local.set $v1
+                                 (array.get $block (local.get $b1) (i32.const 1)))
+                              (br $loop)))
+                        (ref.i31 (i32.const 1))))
+                     (block $v1_not_comparable
+                        (drop (block $v1_not_custom (result (ref eq))
+                           (local.set $c1
+                               (br_on_cast_fail
+                                  $v1_not_custom (ref eq) (ref $custom)
+                                  (local.get $v1)))
+                           (local.set $res
+                              (call_ref $compare
+                                 (local.get $v1) (local.get $v2)
+                                 (local.get $total)
+                                 (br_on_null $v1_not_comparable
+                                    (struct.get $custom_operations $compare_ext
+                                       (struct.get $custom 0 (local.get $c1))))))
+                           (br_if $next_item (i32.eqz (local.get $res)))
+                           (return (local.get $res)))))
+                     ;; v1 block > v1 long
+                     (return (i32.const 1)))))
+            (@else
             (drop (block $v1_is_not_int (result (ref eq))
                (local.set $i1
                   (br_on_cast_fail $v1_is_not_int (ref eq) (ref i31)
@@ -320,6 +411,7 @@
                         (return (local.get $res)))))
                   ;; v1 block > v1 long
                   (return (i32.const 1))))
+            ))
             (drop (block $heterogeneous (result (ref eq))
                (drop (block $v1_not_block (result (ref eq))
                   (local.set $b1
