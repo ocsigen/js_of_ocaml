@@ -146,6 +146,15 @@
                (local.get $effect))))
       (local.get $continuation))
 
+   (@string $update_tick_handler_not_implemented
+      "caml_continuation_update_tick_handler_noexc not implemented")
+
+   (func (export "caml_continuation_update_tick_handler_noexc")
+      (param $continuation (ref eq)) (param $htick (ref eq)) (result (ref eq))
+      (call $caml_failwith
+         (global.get $update_tick_handler_not_implemented))
+      (ref.i31 (i32.const 0)))
+
    (func (export "caml_get_continuation_callstack")
       (param (ref eq) (ref eq)) (result (ref eq))
       (array.new_fixed $block 1 (ref.i31 (i32.const 0))))

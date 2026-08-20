@@ -335,6 +335,14 @@ function caml_continuation_update_handler_noexc(cont, hval, hexn, heff) {
   return cont;
 }
 
+//Provides: caml_continuation_update_tick_handler_noexc
+//Requires: caml_failwith
+//Version: >= 5.2
+//If: oxcaml
+function caml_continuation_update_tick_handler_noexc(_cont, _htick) {
+  caml_failwith("caml_continuation_update_tick_handler_noexc not implemented");
+}
+
 //Provides: caml_get_continuation_callstack
 //Version: >= 5.0
 function caml_get_continuation_callstack() {
