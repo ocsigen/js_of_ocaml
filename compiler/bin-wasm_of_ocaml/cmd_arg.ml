@@ -63,6 +63,7 @@ type t =
   ; sourcemap_root : string option
   ; sourcemap_don't_inline_content : bool
   ; params : (string * string) list
+  ; static_env : (string * string) list
   ; include_dirs : string list
   ; effects : Config.effects_backend
   ; shape_files : string list
@@ -93,6 +94,23 @@ let set_param =
   let printer = Arg.conv_printer pair in
   let c = Arg.conv (parser, printer) in
   Arg.(value & opt_all (list c) [] & info [ "set" ] ~docv:"PARAM=VALUE" ~doc)
+
+(* Unlike js_of_ocaml's [--setenv], this only feeds the compile-time static evaluator
+   (see [Eval.set_static_env]); it does not also seed a runtime environment. Calls to
+   [Sys.getenv]/[Sys.getenv_opt] that the optimiser can fold are replaced by the value,
+   but any call it cannot fold still behaves as if the variable were unset. This is
+   enough for the [FORCE_DROP_INLINE_TEST]/[FORCE_DROP_BENCH] deadcode-elimination idiom,
+   which reads the variable exactly once from a top-level [let]. *)
+let set_env =
+  let doc =
+    "Set environment variable statically. Note: for wasm_of_ocaml this only affects \
+     static evaluation (and hence deadcode elimination); it does not set the variable \
+     for lookups that survive to runtime."
+  in
+  Arg.(
+    value
+    & opt_all (list (pair ~sep:'=' string string)) []
+    & info [ "setenv" ] ~docv:"PARAM=VALUE" ~doc)
 
 let toplevel_section = "OPTIONS (TOPLEVEL)"
 
@@ -193,6 +211,7 @@ let options () =
   let build_t
       common
       set_param
+      set_env
       include_dirs
       fs_files
       profile
@@ -245,12 +264,14 @@ let options () =
               | None -> "a.out.js", false)
         in
         let params : (string * string) list = List.flatten set_param in
+        let static_env : (string * string) list = List.flatten set_env in
         let enable_source_maps = (not no_sourcemap) && sourcemap in
         let include_dirs = normalize_include_dirs include_dirs in
         let effects = normalize_effects effects common in
         `Ok
           { common
           ; params
+          ; static_env
           ; include_dirs
           ; profile
           ; output_file
@@ -275,6 +296,7 @@ let options () =
       const build_t
       $ Lazy.force Jsoo_cmdline.Arg.t
       $ set_param
+      $ set_env
       $ include_dirs
       $ fs_files
       $ profile
@@ -351,6 +373,7 @@ let options_runtime_only () =
   let build_t
       common
       set_param
+      set_env
       include_dirs
       sourcemap
       no_sourcemap
@@ -363,6 +386,7 @@ let options_runtime_only () =
       build_config
       apply_build_config =
     let params : (string * string) list = List.flatten set_param in
+    let static_env : (string * string) list = List.flatten set_env in
     let enable_source_maps = (not no_sourcemap) && sourcemap in
     let include_dirs = normalize_include_dirs include_dirs in
     let effects = normalize_effects effects common in
@@ -378,6 +402,7 @@ let options_runtime_only () =
     `Ok
       { common
       ; params
+      ; static_env
       ; include_dirs
       ; profile = None
       ; output_file = output_file, true
@@ -402,6 +427,7 @@ let options_runtime_only () =
       const build_t
       $ Lazy.force Jsoo_cmdline.Arg.t
       $ set_param
+      $ set_env
       $ include_dirs
       $ sourcemap
       $ no_sourcemap

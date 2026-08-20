@@ -30,6 +30,7 @@ type t =
   ; sourcemap_root : string option
   ; sourcemap_don't_inline_content : bool
   ; params : (string * string) list
+  ; static_env : (string * string) list
   ; include_dirs : string list
   ; effects : Config.effects_backend
   ; shape_files : string list

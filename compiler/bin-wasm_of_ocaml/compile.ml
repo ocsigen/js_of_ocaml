@@ -395,6 +395,7 @@ let run
     ; output_file
     ; enable_source_maps
     ; params
+    ; static_env
     ; include_dirs
     ; sourcemap_root
     ; sourcemap_don't_inline_content
@@ -434,6 +435,7 @@ let run
   let output_file = fst output_file in
   if debug_mem () then Debug.start_profiling output_file;
   List.iter params ~f:(fun (s, v) -> Config.Param.set s v);
+  List.iter static_env ~f:(fun (s, v) -> Eval.set_static_env s v);
   let t = Timer.make () in
   let include_dirs =
     List.filter_map (include_dirs @ [ "+stdlib/" ]) ~f:(fun d -> Findlib.find [] d)
