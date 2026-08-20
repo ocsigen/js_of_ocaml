@@ -77,6 +77,13 @@
 
    (type $bytes (array (mut i8)))
 
+
+   (import "portableint" "val_int_32"
+      (func $val_int_32 (param i32) (result (ref eq))))
+
+   (@string $bigstring_pos "Bigstring: position out of range")
+   (@string $bigstring_len "Bigstring: length out of range")
+
    (func (export "caml_hash_mix_bigstring")
       (param $h i32) (param $b (ref eq)) (result i32)
       (local $view (ref extern))
@@ -154,10 +161,28 @@
       (local $v1 (ref extern)) (local $v2 (ref extern))
       (local $w1 i32) (local $w2 i32) (local $xored i32)
       (local.set $v1 (call $caml_ba_get_view (local.get $s1)))
+      (@if $portable-int
+      (@then
+         (local.set $pos1
+            (call $int_val_32_exn (local.get $vpos1) (global.get $bigstring_pos))))
+      (@else
       (local.set $pos1 (i31.get_s (ref.cast (ref i31) (local.get $vpos1))))
+      ))
       (local.set $v2 (call $caml_ba_get_view (local.get $s2)))
+      (@if $portable-int
+      (@then
+         (local.set $pos2
+            (call $int_val_32_exn (local.get $vpos2) (global.get $bigstring_pos))))
+      (@else
       (local.set $pos2 (i31.get_s (ref.cast (ref i31) (local.get $vpos2))))
+      ))
+      (@if $portable-int
+      (@then
+         (local.set $len
+            (call $int_val_32_exn (local.get $vlen) (global.get $bigstring_len))))
+      (@else
       (local.set $len (i31.get_s (ref.cast (ref i31) (local.get $vlen))))
+      ))
       ;; Main loop: compare 4 bytes at a time
       (block $done
          (loop $loop
@@ -242,10 +267,28 @@
       (local $s2 (ref $bytes))
       (local $w1 i32) (local $w2 i32) (local $xored i32) (local $j i32)
       (local.set $v1 (call $caml_ba_get_view (local.get $s1)))
+      (@if $portable-int
+      (@then
+         (local.set $pos1
+            (call $int_val_32_exn (local.get $vpos1) (global.get $bigstring_pos))))
+      (@else
       (local.set $pos1 (i31.get_s (ref.cast (ref i31) (local.get $vpos1))))
+      ))
       (local.set $s2 (ref.cast (ref $bytes) (local.get $vs2)))
+      (@if $portable-int
+      (@then
+         (local.set $pos2
+            (call $int_val_32_exn (local.get $vpos2) (global.get $bigstring_pos))))
+      (@else
       (local.set $pos2 (i31.get_s (ref.cast (ref i31) (local.get $vpos2))))
+      ))
+      (@if $portable-int
+      (@then
+         (local.set $len
+            (call $int_val_32_exn (local.get $vlen) (global.get $bigstring_len))))
+      (@else
       (local.set $len (i31.get_s (ref.cast (ref i31) (local.get $vlen))))
+      ))
       ;; Main loop: compare 4 bytes at a time
       (block $done
          (loop $loop
@@ -342,9 +385,26 @@
       (local $pos i32) (local $len i32) (local $c i32)
       (local $v (ref extern))
       (local $mask i32) (local $word i32) (local $xored i32)
+      (@if $portable-int
+      (@then
+         (local.set $c (call $int_val_32_sat (local.get $vc))))
+      (@else
       (local.set $c (i31.get_s (ref.cast (ref i31) (local.get $vc))))
+      ))
+      (@if $portable-int
+      (@then
+         (local.set $pos
+            (call $int_val_32_exn (local.get $vpos) (global.get $bigstring_pos))))
+      (@else
       (local.set $pos (i31.get_s (ref.cast (ref i31) (local.get $vpos))))
+      ))
+      (@if $portable-int
+      (@then
+         (local.set $len
+            (call $int_val_32_exn (local.get $vlen) (global.get $bigstring_len))))
+      (@else
       (local.set $len (i31.get_s (ref.cast (ref i31) (local.get $vlen))))
+      ))
       (local.set $v (call $caml_ba_get_view (local.get $s)))
       ;; Create mask: c | (c<<8) | (c<<16) | (c<<24)
       (local.set $mask
@@ -366,14 +426,14 @@
                (then
                   ;; Found a match in this word, find exact position (little-endian)
                   (if (i32.eqz (i32.and (local.get $xored) (i32.const 0xFF)))
-                     (then (return (ref.i31 (local.get $pos)))))
+                     (then (return_call $val_int_32 (local.get $pos))))
                   (if (i32.eqz (i32.and (local.get $xored) (i32.const 0xFF00)))
                      (then
-                        (return (ref.i31 (i32.add (local.get $pos) (i32.const 1))))))
+                        (return_call $val_int_32 (i32.add (local.get $pos) (i32.const 1)))))
                   (if (i32.eqz (i32.and (local.get $xored) (i32.const 0xFF0000)))
                      (then
-                        (return (ref.i31 (i32.add (local.get $pos) (i32.const 2))))))
-                  (return (ref.i31 (i32.add (local.get $pos) (i32.const 3))))))
+                        (return_call $val_int_32 (i32.add (local.get $pos) (i32.const 2)))))
+                  (return_call $val_int_32 (i32.add (local.get $pos) (i32.const 3)))))
             (local.set $pos (i32.add (local.get $pos) (i32.const 4)))
             (local.set $len (i32.sub (local.get $len) (i32.const 4)))
             (br $loop)))
@@ -384,7 +444,7 @@
                (if (i32.eq (local.get $c)
                       (call $dv_get_ui8 (local.get $v) (local.get $pos)))
                   (then
-                     (return (ref.i31 (local.get $pos)))))
+                     (return_call $val_int_32 (local.get $pos))))
                (local.set $len (i32.sub (local.get $len) (i32.const 1)))
                (local.set $pos (i32.add (local.get $pos) (i32.const 1)))
                (br $loop))))
@@ -396,9 +456,26 @@
       (local $pos i32) (local $len i32) (local $c i32) (local $cur i32)
       (local $v (ref extern))
       (local $mask i32) (local $word i32) (local $xored i32)
+      (@if $portable-int
+      (@then
+         (local.set $c (call $int_val_32_sat (local.get $vc))))
+      (@else
       (local.set $c (i31.get_s (ref.cast (ref i31) (local.get $vc))))
+      ))
+      (@if $portable-int
+      (@then
+         (local.set $pos
+            (call $int_val_32_exn (local.get $vpos) (global.get $bigstring_pos))))
+      (@else
       (local.set $pos (i31.get_s (ref.cast (ref i31) (local.get $vpos))))
+      ))
+      (@if $portable-int
+      (@then
+         (local.set $len
+            (call $int_val_32_exn (local.get $vlen) (global.get $bigstring_len))))
+      (@else
       (local.set $len (i31.get_s (ref.cast (ref i31) (local.get $vlen))))
+      ))
       (local.set $v (call $caml_ba_get_view (local.get $s)))
       ;; cur points to last byte to check
       (local.set $cur
@@ -426,14 +503,14 @@
                   (then
                      ;; Found match, check from highest byte (cur) to lowest (cur-3)
                      (if (i32.eqz (i32.and (local.get $xored) (i32.const 0xFF000000)))
-                        (then (return (ref.i31 (local.get $cur)))))
+                        (then (return_call $val_int_32 (local.get $cur))))
                      (if (i32.eqz (i32.and (local.get $xored) (i32.const 0xFF0000)))
                         (then
-                           (return (ref.i31 (i32.sub (local.get $cur) (i32.const 1))))))
+                           (return_call $val_int_32 (i32.sub (local.get $cur) (i32.const 1)))))
                      (if (i32.eqz (i32.and (local.get $xored) (i32.const 0xFF00)))
                         (then
-                           (return (ref.i31 (i32.sub (local.get $cur) (i32.const 2))))))
-                     (return (ref.i31 (i32.sub (local.get $cur) (i32.const 3))))))
+                           (return_call $val_int_32 (i32.sub (local.get $cur) (i32.const 2)))))
+                     (return_call $val_int_32 (i32.sub (local.get $cur) (i32.const 3)))))
                (local.set $cur (i32.sub (local.get $cur) (i32.const 4)))
                (br $loop))))
       ;; Handle remaining 0-3 bytes at the beginning
@@ -443,7 +520,7 @@
                (if (i32.eq (local.get $c)
                       (call $dv_get_ui8 (local.get $v) (local.get $cur)))
                   (then
-                     (return (ref.i31 (local.get $cur)))))
+                     (return_call $val_int_32 (local.get $cur))))
                (local.set $cur (i32.sub (local.get $cur) (i32.const 1)))
                (br $loop))))
       (ref.i31 (i32.const -1)))
@@ -469,9 +546,27 @@
 
       (local.set $v1 (call $caml_ba_get_view (local.get $vs1)))
       (local.set $v2 (call $caml_ba_get_view (local.get $vs2)))
+      (@if $portable-int
+      (@then
+         (local.set $pos1
+            (call $int_val_32_exn (local.get $vpos1) (global.get $bigstring_pos))))
+      (@else
       (local.set $pos1 (i31.get_s (ref.cast (ref i31) (local.get $vpos1))))
+      ))
+      (@if $portable-int
+      (@then
+         (local.set $pos2
+            (call $int_val_32_exn (local.get $vpos2) (global.get $bigstring_pos))))
+      (@else
       (local.set $pos2 (i31.get_s (ref.cast (ref i31) (local.get $vpos2))))
+      ))
+      (@if $portable-int
+      (@then
+         (local.set $len
+            (call $int_val_32_exn (local.get $vlen) (global.get $bigstring_len))))
+      (@else
       (local.set $len (i31.get_s (ref.cast (ref i31) (local.get $vlen))))
+      ))
       ;; Main loop: compare 4 bytes at a time
       (block $done
          (loop $loop
@@ -578,10 +673,28 @@
       (local $s1 (ref $bytes))
       (local $d2 (ref extern))
       (local.set $s1 (ref.cast (ref $bytes) (local.get $str1)))
+      (@if $portable-int
+      (@then
+         (local.set $pos1
+            (call $int_val_32_exn (local.get $vpos1) (global.get $bigstring_pos))))
+      (@else
       (local.set $pos1 (i31.get_s (ref.cast (ref i31) (local.get $vpos1))))
+      ))
       (local.set $d2 (call $caml_ba_get_view (local.get $ba2)))
+      (@if $portable-int
+      (@then
+         (local.set $pos2
+            (call $int_val_32_exn (local.get $vpos2) (global.get $bigstring_pos))))
+      (@else
       (local.set $pos2 (i31.get_s (ref.cast (ref i31) (local.get $vpos2))))
+      ))
+      (@if $portable-int
+      (@then
+         (local.set $len
+            (call $int_val_32_exn (local.get $vlen) (global.get $bigstring_len))))
+      (@else
       (local.set $len (i31.get_s (ref.cast (ref i31) (local.get $vlen))))
+      ))
       (call $caml_blit_bytes_to_dataview
          (local.get $s1) (local.get $pos1)
          (local.get $d2) (local.get $pos2)
@@ -596,10 +709,28 @@
       (local $d1 (ref extern))
       (local $s2 (ref $bytes))
       (local.set $d1 (call $caml_ba_get_view (local.get $ba1)))
+      (@if $portable-int
+      (@then
+         (local.set $pos1
+            (call $int_val_32_exn (local.get $vpos1) (global.get $bigstring_pos))))
+      (@else
       (local.set $pos1 (i31.get_s (ref.cast (ref i31) (local.get $vpos1))))
+      ))
       (local.set $s2 (ref.cast (ref $bytes) (local.get $str2)))
+      (@if $portable-int
+      (@then
+         (local.set $pos2
+            (call $int_val_32_exn (local.get $vpos2) (global.get $bigstring_pos))))
+      (@else
       (local.set $pos2 (i31.get_s (ref.cast (ref i31) (local.get $vpos2))))
+      ))
+      (@if $portable-int
+      (@then
+         (local.set $len
+            (call $int_val_32_exn (local.get $vlen) (global.get $bigstring_len))))
+      (@else
       (local.set $len (i31.get_s (ref.cast (ref i31) (local.get $vlen))))
+      ))
       (call $caml_blit_dataview_to_bytes
          (local.get $d1) (local.get $pos1)
          (local.get $s2) (local.get $pos2)
@@ -614,10 +745,28 @@
       (local $d1 (ref extern))
       (local $d2 (ref extern))
       (local.set $d1 (call $caml_ba_get_data (local.get $ba1)))
+      (@if $portable-int
+      (@then
+         (local.set $pos1
+            (call $int_val_32_exn (local.get $vpos1) (global.get $bigstring_pos))))
+      (@else
       (local.set $pos1 (i31.get_s (ref.cast (ref i31) (local.get $vpos1))))
+      ))
       (local.set $d2 (call $caml_ba_get_data (local.get $ba2)))
+      (@if $portable-int
+      (@then
+         (local.set $pos2
+            (call $int_val_32_exn (local.get $vpos2) (global.get $bigstring_pos))))
+      (@else
       (local.set $pos2 (i31.get_s (ref.cast (ref i31) (local.get $vpos2))))
+      ))
+      (@if $portable-int
+      (@then
+         (local.set $len
+            (call $int_val_32_exn (local.get $vlen) (global.get $bigstring_len))))
+      (@else
       (local.set $len (i31.get_s (ref.cast (ref i31) (local.get $vlen))))
+      ))
       (call $ta_set (local.get $d2)
          (call $ta_subarray (local.get $d1)
             (local.get $pos1) (i32.add (local.get $pos1) (local.get $len)))
