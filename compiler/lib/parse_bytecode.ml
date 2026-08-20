@@ -2858,6 +2858,96 @@ and compile infos pc state (instrs : instr list) =
                  ( Extern ("%with_stack_bind", None)
                  , [ Pv valuec; Pv exnc; Pv effc; Pv dyn; Pv bind; Pv f; Pv arg ] ) )
           :: instrs)
+    | WITH_STACK_PREEMPTIBLE ->
+        let valuec = State.accu state in
+        let exnc = State.peek 0 state in
+        let effc = State.peek 1 state in
+        let tickc = State.peek 2 state in
+        let f = State.peek 3 state in
+        let arg = State.peek 4 state in
+        let state = State.pop 5 state in
+        let x, state = State.fresh_var state in
+
+        if debug_parser ()
+        then
+          Format.printf
+            "%a = with_stack_preemptible(%a, %a, %a, %a, %a, %a)@."
+            Var.print
+            x
+            Var.print
+            valuec
+            Var.print
+            exnc
+            Var.print
+            effc
+            Var.print
+            tickc
+            Var.print
+            f
+            Var.print
+            arg;
+        compile
+          infos
+          (pc + 1)
+          state
+          (Let
+             ( x
+             , Prim
+                 ( Extern ("%with_stack_preemptible", None)
+                 , [ Pv valuec; Pv exnc; Pv effc; Pv tickc; Pv f; Pv arg ] ) )
+          :: instrs)
+    | WITH_STACK_BIND_PREEMPTIBLE ->
+        let valuec = State.accu state in
+        let exnc = State.peek 0 state in
+        let effc = State.peek 1 state in
+        let tickc = State.peek 2 state in
+        let dyn = State.peek 3 state in
+        let bind = State.peek 4 state in
+        let f = State.peek 5 state in
+        let arg = State.peek 6 state in
+        let state = State.pop 7 state in
+        let x, state = State.fresh_var state in
+
+        if debug_parser ()
+        then
+          Format.printf
+            "%a = with_stack_bind_preemptible(%a, %a, %a, %a, %a, %a, %a, %a)@."
+            Var.print
+            x
+            Var.print
+            valuec
+            Var.print
+            exnc
+            Var.print
+            effc
+            Var.print
+            tickc
+            Var.print
+            dyn
+            Var.print
+            bind
+            Var.print
+            f
+            Var.print
+            arg;
+        compile
+          infos
+          (pc + 1)
+          state
+          (Let
+             ( x
+             , Prim
+                 ( Extern ("%with_stack_bind_preemptible", None)
+                 , [ Pv valuec
+                   ; Pv exnc
+                   ; Pv effc
+                   ; Pv tickc
+                   ; Pv dyn
+                   ; Pv bind
+                   ; Pv f
+                   ; Pv arg
+                   ] ) )
+          :: instrs)
     | EVENT | BREAK | FIRST_UNIMPLEMENTED_OP -> assert false)
 
 (****)

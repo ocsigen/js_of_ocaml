@@ -542,6 +542,41 @@
          (struct.new $resume_state
             (local.get $stack) (local.get $stack)
             (struct.new $pair (local.get $f) (local.get $v)))))
+
+   (func (export "%with_stack_preemptible")
+      (param $value (ref eq)) (param $exn (ref eq)) (param $effect (ref eq))
+      (param $tick (ref eq))
+      (param $f (ref eq)) (param $v (ref eq))
+      (result (ref eq))
+      (local $stack (ref $fiber))
+      (local.set $stack
+         (struct.new $fiber
+            (local.get $value) (local.get $exn) (local.get $effect)
+            (global.get $initial_cont_closure)
+            (ref.null $fiber)))
+      (return_call $capture_continuation
+         (ref.func $do_resume)
+         (struct.new $resume_state
+            (local.get $stack) (local.get $stack)
+            (struct.new $pair (local.get $f) (local.get $v)))))
+
+   (func (export "%with_stack_bind_preemptible")
+      (param $value (ref eq)) (param $exn (ref eq)) (param $effect (ref eq))
+      (param $tick (ref eq))
+      (param $dyn (ref eq)) (param $bind (ref eq))
+      (param $f (ref eq)) (param $v (ref eq))
+      (result (ref eq))
+      (local $stack (ref $fiber))
+      (local.set $stack
+         (struct.new $fiber
+            (local.get $value) (local.get $exn) (local.get $effect)
+            (global.get $initial_cont_closure)
+            (ref.null $fiber)))
+      (return_call $capture_continuation
+         (ref.func $do_resume)
+         (struct.new $resume_state
+            (local.get $stack) (local.get $stack)
+            (struct.new $pair (local.get $f) (local.get $v)))))
 ))
 
 (@if (= $effects "cps")
