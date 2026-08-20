@@ -59,8 +59,14 @@ let of_cmo (cmo : Ocaml_compiler.Cmo_format.t) =
       | `Disabled | `Jspi | `Native -> true
       | `Cps | `Double_translation -> false)
     && List.exists (Cmo_format.primitives cmo) ~f:(function
-      | "%resume" | "%reperform" | "%perform" | "%with_stack" | "%with_stack_preemptible"
-        -> true
+      | "%resume"
+      | "%continue"
+      | "%discontinue"
+      | "%discontinue_with_backtrace"
+      | "%reperform"
+      | "%perform"
+      | "%with_stack"
+      | "%with_stack_preemptible" -> true
       | _ -> false)
   in
   let force_link = Cmo_format.force_link cmo in

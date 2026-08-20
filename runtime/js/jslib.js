@@ -84,7 +84,7 @@ function caml_stack_check_depth() {
 // recursive function under --effects=double-translation. Sets up a stack
 // budget, runs the inner direct body, then loops on caml_trampoline_return
 // bounce objects until a plain value comes back. Mirrors the CPS-side
-// trampoline (see caml_callback / caml_resume): each iteration starts with
+// trampoline (see caml_callback / caml_resume_run): each iteration starts with
 // a fresh stack budget and dispatches the bounce target directly (the
 // joo_tramp is always the inner direct closure of an SCC member, never a
 // paired wrapper, so plain apply is correct).

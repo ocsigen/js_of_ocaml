@@ -388,12 +388,12 @@ function jsoo_effect_not_supported() {
   caml_failwith("Effect handlers are not supported");
 }
 
-//Provides: caml_resume
+//Provides: caml_resume_run
 //Requires:caml_stack_depth, caml_call_gen_cps, caml_current_stack, caml_wrap_exception, caml_resume_stack
 //If: effects
 //If: doubletranslate
 //Version: >= 5.0
-function caml_resume(f, arg, stack, last) {
+function caml_resume_run(stack, last, mk_res) {
   var saved_stack_depth = caml_stack_depth;
   var saved_current_stack = caml_current_stack;
   try {
@@ -401,8 +401,7 @@ function caml_resume(f, arg, stack, last) {
     var k = caml_resume_stack(stack, last, function (x) {
       return x;
     });
-    /* Note: f is not an ordinary function but a (direct-style, CPS) closure pair */
-    var res = { joo_tramp: f, joo_args: [arg, k], joo_direct: 0 };
+    var res = mk_res(k);
     do {
       /* Avoids trampolining too often while still avoiding stack overflow. See
          [caml_callback]. */
@@ -428,6 +427,78 @@ function caml_resume(f, arg, stack, last) {
     caml_stack_depth = saved_stack_depth;
     caml_current_stack = saved_current_stack;
   }
+}
+
+//Provides: caml_run_stack
+//Alias: caml_resume
+//Requires: caml_resume_run
+//If: effects
+//If: doubletranslate
+//Version: >= 5.0
+function caml_run_stack(f, arg, stack, last) {
+  /* Run [f arg] on a freshly allocated stack (the with_stack family). */
+  return caml_resume_run(stack, last, function (k) {
+    /* Note: f is not an ordinary function but a (direct-style, CPS) closure pair */
+    return { joo_tramp: f, joo_args: [arg, k], joo_direct: 0 };
+  });
+}
+
+//Provides: caml_continue
+//Requires: caml_resume_run
+//If: effects
+//If: doubletranslate
+//Version: >= 5.0
+//If: oxcaml
+function caml_continue(stack, value, last) {
+  /* Return [value] to the perform site on the resumed stack, by calling the
+     low-level continuation of the resumed stack with it. */
+  return caml_resume_run(stack, last, function (k) {
+    return { joo_tramp: k, joo_args: [value], joo_direct: 1 };
+  });
+}
+
+//Provides: caml_discontinue
+//Requires: caml_resume_run, caml_maybe_attach_backtrace
+//If: effects
+//If: doubletranslate
+//Version: >= 5.0
+//If: oxcaml
+function caml_discontinue(stack, exn, last) {
+  /* Raise [exn] at the perform site on the resumed stack: the throw is
+     caught by the trampoline loop in [caml_resume_run] and dispatched to the
+     innermost exception handler of the resumed stack. */
+  return caml_resume_run(stack, last, function (_k) {
+    return {
+      joo_tramp: function (e) {
+        throw caml_maybe_attach_backtrace(e, 1);
+      },
+      joo_args: [exn],
+      joo_direct: 1,
+    };
+  });
+}
+
+//Provides: caml_discontinue_with_backtrace
+//Requires: caml_resume_run, caml_maybe_attach_backtrace, caml_restore_raw_backtrace
+//If: effects
+//If: doubletranslate
+//Version: >= 5.0
+//If: oxcaml
+function caml_discontinue_with_backtrace(stack, exn, bt, last) {
+  /* As [caml_discontinue], except that it reraises: restoring a raw
+     backtrace is a no-op in js_of_ocaml, and, as for a reraise, we keep any
+     JS error already attached to the exception instead of forcing a fresh
+     one. */
+  caml_restore_raw_backtrace(exn, bt);
+  return caml_resume_run(stack, last, function (_k) {
+    return {
+      joo_tramp: function (e) {
+        throw caml_maybe_attach_backtrace(e, 0);
+      },
+      joo_args: [exn],
+      joo_direct: 1,
+    };
+  });
 }
 
 //Provides: caml_cps_closure
