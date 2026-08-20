@@ -501,11 +501,20 @@
          (block $no_length
             (if (i32.eq (local.get $code) (global.get $CODE_CUSTOM_FIXED))
                (then
+                  (@if $portable-int
+                  (@then
+                     (local.set $expected_size
+                        (struct.get $fixed_length $bsize_64
+                           (br_on_null $no_length
+                              (struct.get $custom_operations $fixed_length
+                                 (local.get $ops))))))
+                  (@else
                   (local.set $expected_size
                      (struct.get $fixed_length $bsize_32
                         (br_on_null $no_length
                            (struct.get $custom_operations $fixed_length
                               (local.get $ops))))))
+                  ))
             (else
                (if (i32.eq (local.get $code) (global.get $CODE_CUSTOM_LEN))
                   (then

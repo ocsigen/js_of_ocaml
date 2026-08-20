@@ -16,9 +16,6 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
-   (import "ints" "parse_int"
-      (func $parse_int
-         (param (ref eq)) (param i32) (param (ref eq)) (result i32)))
    (import "fail" "caml_failwith" (func $caml_failwith (param (ref eq))))
    (import "marshal" "caml_serialize_int_1"
       (func $caml_serialize_int_1 (param (ref eq)) (param i32)))
@@ -28,6 +25,37 @@
       (func $caml_deserialize_uint_1 (param (ref eq)) (result i32)))
    (import "marshal" "caml_deserialize_int_4"
       (func $caml_deserialize_int_4 (param (ref eq)) (result i32)))
+   (@if $portable-int
+   (@then
+      (import "ints" "parse_sign_and_base"
+         (func $parse_sign_and_base
+            (param (ref $bytes)) (result i32 i32 i32 i32)))
+      (import "int64" "caml_i64_of_digits"
+         (func $caml_i64_of_digits
+            (param i32) (param i32) (param i32) (param (ref $bytes)) (param i32)
+            (param (ref eq)) (result i64)))
+      (import "int64" "caml_int64_compare"
+         (func $caml_int64_compare (param i64) (param i64) (result i32)))
+      (import "int64" "caml_int64_format"
+         (func $caml_int64_format (param (ref eq)) (param (ref eq)) (result (ref eq))))
+      (import "int64" "caml_portability_int64_cmp"
+         (func $int64_cmp (param (ref eq)) (param (ref eq)) (param i32) (result i32)))
+      (import "int64" "caml_portability_int64_dup"
+         (func $int64_dup (param (ref eq)) (result (ref eq))))
+      (import "int64" "Int64_val"
+         (func $Int64_val (param (ref eq)) (result i64)))
+      (import "int64" "caml_int64_bswap"
+         (func $caml_int64_bswap (param i64) (result i64)))
+
+      (import "marshal" "caml_serialize_int_8"
+         (func $caml_serialize_int_8 (param (ref eq)) (param i64)))
+      (import "marshal" "caml_deserialize_int_8"
+         (func $caml_deserialize_int_8 (param (ref eq)) (result i64)))
+   )
+   (@else
+   (import "ints" "parse_int"
+      (func $parse_int
+         (param (ref eq)) (param i32) (param (ref eq)) (result i32)))
    (import "int32" "int32_cmp"
       (func $int32_cmp
          (param (ref eq)) (param (ref eq)) (param i32) (result i32)))
@@ -44,6 +72,7 @@
    (import "int32" "caml_int32_format"
       (func $caml_int32_format
          (param (ref eq)) (param (ref eq)) (result (ref eq))))
+   ))
 
    (type $bytes (array (mut i8)))
    (type $compare
@@ -70,6 +99,61 @@
    (type $int32
       (sub final $custom (struct (field (ref $custom_operations)) (field i32))))
 
+   (@if $portable-int
+   (@then
+      (type $int64
+         (sub final $custom (struct (field (ref $custom_operations)) (field i64))))
+
+      (func (export "Nativeint_val") (param $v (ref eq)) (result i64)
+         (return_call $Int64_val (local.get $v)))
+      (func (export "caml_nativeint_bswap") (param $i i64) (result i64)
+         (return_call $caml_int64_bswap (local.get $i)))
+      (func (export "caml_nativeint_compare")
+         (param $i1 i64) (param $i2 i64) (result i32)
+         (return_call $caml_int64_compare (local.get $i1) (local.get $i2)))
+
+      (func $nativeint_serialize
+         (param $s (ref eq)) (param $v (ref eq)) (result i32) (result i32)
+         (local $l i64)
+         (local.set $l
+            (struct.get $int64 1 (ref.cast (ref $int64) (local.get $v))))
+         (if (i64.eq (local.get $l)
+                (i64.extend_i32_s (i32.wrap_i64 (local.get $l))))
+            (then
+               (call $caml_serialize_int_1 (local.get $s) (i32.const 1))
+               (call $caml_serialize_int_4 (local.get $s)
+                  (i32.wrap_i64 (local.get $l))))
+            (else
+               (call $caml_serialize_int_1 (local.get $s) (i32.const 2))
+               (call $caml_serialize_int_8 (local.get $s) (local.get $l))))
+         (i32.const 4) (i32.const 8))
+
+      (func $nativeint_hash (param $v (ref eq)) (result i32)
+         (local $n i64)
+         (local.set $n
+            (struct.get $int64 1 (ref.cast (ref $int64) (local.get $v))))
+         ;; C runtime hashes nativeint as an intnat: ints.c nativeint_hash
+         ;; returns (n >> 32) ^ (n >> 63) ^ n, and hash.c then truncates the
+         ;; custom hash result to its low 32 bits before mixing.
+         (i32.wrap_i64
+            (i64.xor
+               (i64.xor (i64.shr_s (local.get $n) (i64.const 32))
+                        (i64.shr_s (local.get $n) (i64.const 63)))
+               (local.get $n))))
+
+
+      (global $nativeint_ops (export "nativeint_ops") (ref $custom_operations)
+      (struct.new $custom_operations
+         (@string "_n")
+         (ref.func $int64_cmp)
+         (ref.null $compare)
+         (ref.func $nativeint_hash)
+         (struct.new $fixed_length (i32.const 4) (i32.const 8))
+         (ref.func $nativeint_serialize)
+         (ref.func $nativeint_deserialize)
+         (ref.func $int64_dup)))
+   )
+   (@else
    (export "Nativeint_val" (func $Int32_val))
 
    (export "caml_nativeint_bswap" (func $caml_int32_bswap))
@@ -93,7 +177,53 @@
          (ref.func $nativeint_serialize)
          (ref.func $nativeint_deserialize)
          (ref.func $int32_dup)))
+   ))
 
+
+   (@if $portable-int
+   (@then
+      (@string $ill_formed "input_value: ill-formed native integer")
+
+      (func $nativeint_deserialize
+         (param $s (ref eq)) (result (ref eq)) (result i32)
+         (local $tag i32) (local $l i64)
+         (local.set $tag (call $caml_deserialize_uint_1 (local.get $s)))
+         (if (i32.eq (local.get $tag) (i32.const 1))
+            (then
+               (local.set $l
+                  (i64.extend_i32_s
+                     (call $caml_deserialize_int_4 (local.get $s)))))
+            (else
+               (if (i32.eq (local.get $tag) (i32.const 2))
+                  (then
+                     (local.set $l
+                        (call $caml_deserialize_int_8 (local.get $s))))
+                  (else
+                     (call $caml_failwith (global.get $ill_formed))))))
+         (struct.new $int64 (global.get $nativeint_ops) (local.get $l))
+         (i32.const 8))
+
+      (func $caml_copy_nativeint (export "caml_copy_nativeint")
+         (param $i i64) (result (ref eq))
+         (struct.new $int64 (global.get $nativeint_ops) (local.get $i)))
+
+      (func (export "caml_nativeint_of_string")
+         (param $v (ref eq)) (result (ref eq))
+         (local $s (ref $bytes))
+         (local $i i32) (local $signedness i32) (local $sign i32)
+         (local $base i32)
+         (local.set $s (ref.cast (ref $bytes) (local.get $v)))
+         (call $parse_sign_and_base (local.get $s))
+         (local.set $base)
+         (local.set $sign)
+         (local.set $signedness)
+         (local.set $i)
+         (return_call $caml_copy_nativeint
+            (call $caml_i64_of_digits (local.get $base)
+               (local.get $signedness) (local.get $sign)
+               (local.get $s) (local.get $i)
+               (global.get $NATIVEINT_ERRMSG)))))
+   (@else
    (@string $integer_too_large "input_value: native integer value too large")
 
    (func $nativeint_deserialize
@@ -107,9 +237,14 @@
    (func $caml_copy_nativeint (export "caml_copy_nativeint")
       (param $i i32) (result (ref eq))
       (struct.new $int32 (global.get $nativeint_ops) (local.get $i)))
+   ))
 
    (@string $NATIVEINT_ERRMSG "Nativeint.of_string")
 
+   (@if $portable-int
+   (@then
+      (export "caml_nativeint_format" (func $caml_int64_format)))
+   (@else
    (func (export "caml_nativeint_of_string")
       (param $v (ref eq)) (result (ref eq))
       (return_call $caml_copy_nativeint
@@ -118,4 +253,5 @@
 
    (export "caml_nativeint_format" (func $caml_int32_format))
 
+   ))
 )
