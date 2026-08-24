@@ -23,7 +23,7 @@
    ;; combined libc.wasm ("libc") for wasi.
    (@if $wasi
    (@then
-      (import "libc" "memory" (memory 1))
+      (import "libc" "memory" (memory $mem 1))
       (import "libc" "blake2_state_buf" (func $state_buf (result i32)))
       (import "libc" "blake2_key_buf"   (func $key_buf   (result i32)))
       (import "libc" "blake2_out_buf"   (func $out_buf   (result i32)))
@@ -37,7 +37,7 @@
       (import "libc" "blake2_finalize"
          (func $blake2_finalize (param i32))))
    (@else
-      (import "c" "memory" (memory 1))
+      (import "c" "memory" (memory $mem 1))
       (import "c" "blake2_state_buf" (func $state_buf (result i32)))
       (import "c" "blake2_key_buf"   (func $key_buf   (result i32)))
       (import "c" "blake2_out_buf"   (func $out_buf   (result i32)))
@@ -68,7 +68,7 @@
       (block $done
          (loop $cont
             (br_if $done (i32.eq (local.get $i) (local.get $len)))
-            (i32.store8
+            (i32.store8 $mem
                (i32.add (local.get $dst) (local.get $i))
                (array.get_u $bytes (local.get $src)
                   (i32.add (local.get $src_ofs) (local.get $i))))
@@ -85,7 +85,7 @@
             (br_if $done (i32.eq (local.get $i) (local.get $len)))
             (array.set $bytes (local.get $dst)
                (i32.add (local.get $dst_ofs) (local.get $i))
-               (i32.load8_u
+               (i32.load8_u $mem
                   (i32.add (local.get $src) (local.get $i))))
             (local.set $i (i32.add (local.get $i) (i32.const 1)))
             (br $cont))))
