@@ -116,9 +116,9 @@ module Flag = struct
   let wasi = o ~name:"wasi" ~default:false
 
   (* Wasm-specific: representation of numbers *)
-  let untagging = o ~name:"untagging" ~default:false
+  let untagging = o ~name:"untagging" ~default:true
 
-  let unboxing = o ~name:"unboxing" ~default:true
+  let unboxing = o ~name:"unboxing" ~default:false
 end
 
 module Param = struct
