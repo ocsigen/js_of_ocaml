@@ -72,6 +72,7 @@ jobs:
           opam exec -- wodoc build --config doc/wodoc
           --menu https://ocsigen.org/doc/menu.html
           --out "$PWD/_doc-site/dev" --label dev
+          --strict-refs
 
       - name: Deploy to gh-pages (replace only dev/, keep the rest)
         uses: JamesIves/github-pages-deploy-action@v4
