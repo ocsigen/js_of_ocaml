@@ -219,11 +219,11 @@
   <span><span class="optlabel">?param</span>:string <span class="arrow">&#45;&gt;</span></span>
   <span><span class="optlabel">?prefix</span>:string <span class="arrow">&#45;&gt;</span></span>
   <span>string <span class="arrow">&#45;&gt;</span></span>
-  <span><span class="type-var">'b</span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div><div class="spec-doc"><p><code>call ~timeout ~param url</code> do a jsonp call using <code>url</code>. It uses the named query parameter <code>param</code> (default &quot;callback&quot;) to pass the name of the callback. It uses <code>prefix</code> to generate random string for callback name. If a timeout is given and there are no answer before <code>timeout</code> seconds, the lwt thread will be cancelled.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-call_custom_url"><code><span><span class="keyword">val</span> call_custom_url : 
+  <span><span class="type-var">'b</span> <a href="../../../../../lwt/dev/lwt/Lwt/index.html#val-t">Lwt.t</a></span></span></code></div><div class="spec-doc"><p><code>call ~timeout ~param url</code> do a jsonp call using <code>url</code>. It uses the named query parameter <code>param</code> (default &quot;callback&quot;) to pass the name of the callback. It uses <code>prefix</code> to generate random string for callback name. If a timeout is given and there are no answer before <code>timeout</code> seconds, the lwt thread will be cancelled.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-call_custom_url"><code><span><span class="keyword">val</span> call_custom_url : 
   <span><span class="optlabel">?timeout</span>:float <span class="arrow">&#45;&gt;</span></span>
   <span><span class="optlabel">?prefix</span>:string <span class="arrow">&#45;&gt;</span></span>
   <span><span>(<span>string <span class="arrow">&#45;&gt;</span></span> string)</span> <span class="arrow">&#45;&gt;</span></span>
-  <span><span class="type-var">'b</span> <span class="xref-unresolved">Lwt</span>.t</span></span></code></div><div class="spec-doc"><p><code>call_custom_url ~timeout make_url</code>. Same as <code>call</code> but let you build your own url given a callback name</p></div></div></div>
+  <span><span class="type-var">'b</span> <a href="../../../../../lwt/dev/lwt/Lwt/index.html#val-t">Lwt.t</a></span></span></code></div><div class="spec-doc"><p><code>call_custom_url ~timeout make_url</code>. Same as <code>call</code> but let you build your own url given a callback name</p></div></div></div>
       </article>
     </div>
   </div>
