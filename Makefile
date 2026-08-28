@@ -23,9 +23,12 @@ tests-bun-wasm:
 
 # Run the wasi test suite under bun. Needs bun >= 1.4 (earlier versions have
 # wasi random_get/filesystem bugs) and a single-memory runtime (bun has no
-# multi-memory support).
+# multi-memory support). The BBQ wasm JIT is disabled because it segfaults
+# on `i31.get_s (br_on_null ...)` of a ref-typed block result (as in
+# $extern_lookup_position in runtime/wasm/marshal.wat).
 tests-bun-wasi:
-	JSOO_ENGINE=bun WASM_OF_OCAML=true dune build @runtest-wasm --profile wasi
+	JSOO_ENGINE=bun WASM_OF_OCAML=true BUN_JSC_useBBQJIT=0 \
+	  dune build @runtest-wasm --profile wasi
 
 # Validates the Babel downleveling recipe documented in
 # manual/browser-compat.wiki. Requires `npm install` at the repo root
