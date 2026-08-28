@@ -28,6 +28,11 @@ val host_engine : string
     process, otherwise [target_engine] (the js/wasm process is hosted by it).
     The [node]/[quickjs]/[wasi] predicate shorthands resolve to this. *)
 
+val wasi_host : string
+(** The engine hosting the WASI runtime, from [JSOO_ENGINE] (["node"] when
+    unset, like the node wrapper); [""] when the test does not run under WASI,
+    so [wasi_host = "bun"] implies [wasi]. *)
+
 val os_type : string
 (** [Sys.os_type]. *)
 

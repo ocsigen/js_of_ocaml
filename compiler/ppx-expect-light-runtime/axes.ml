@@ -41,6 +41,16 @@ let host_engine =
   | Native | Bytecode -> "native"
   | Other _ -> target_engine
 
+(* The engine hosting the WASI runtime ([JSOO_ENGINE], like the node wrapper);
+   [""] when not running under WASI, so [wasi_host = "bun"] implies [wasi]. *)
+let wasi_host =
+  if String.equal host_engine "wasi"
+  then
+    match Sys.getenv_opt "JSOO_ENGINE" with
+    | Some e when not (String.equal e "") -> e
+    | _ -> "node"
+  else ""
+
 let os_type = Sys.os_type
 
 let ocaml_version =
