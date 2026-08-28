@@ -222,3 +222,10 @@ let%expect_test ("decoder: lead with bad continuation, mixed runs" [@when not qu
     ASCII after truncated 3-byte [e4 b8 41] -> [U+FFFD U+0041]
     valid then truncated [c3 a9 e4 b8] -> [U+00E9 U+FFFD]
     |}]
+
+let%expect_test "OCaml-to-JavaScript conversion preserves a leading BOM" =
+  let input = Bytes.of_string "\000\xbb\xbftext" in
+  Bytes.set input 0 '\xef';
+  let converted = Js.string (Bytes.unsafe_to_string input) in
+  print_endline (codepoints_of_jsstring converted);
+  [%expect {| U+FEFF U+0074 U+0065 U+0078 U+0074 |}]

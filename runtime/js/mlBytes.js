@@ -482,7 +482,7 @@ var jsoo_text_decoder_fallback = {
 //Requires: jsoo_text_decoder_fallback
 var jsoo_text_decoder =
   typeof TextDecoder !== "undefined"
-    ? new TextDecoder()
+    ? new TextDecoder("utf-8", { ignoreBOM: true })
     : jsoo_text_decoder_fallback;
 
 //Provides: caml_bytes_of_utf16_jsstring
