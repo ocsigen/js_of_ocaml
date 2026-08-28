@@ -161,7 +161,9 @@ let link_and_optimize
     (* Check that Binaryen supports the necessary sourcemaps options (requires
        version >= 118) *)
     match opt_sourcemap with
-    | Some _ when Sys.command "wasm-merge -osm foo 2> /dev/null" <> 0 -> None
+    | Some _
+      when Sys.command (Printf.sprintf "wasm-merge -osm foo 2> %s" Filename.null) <> 0 ->
+        None
     | Some _ | None -> opt_sourcemap
   in
   let enable_source_maps = Option.is_some opt_sourcemap_file in
