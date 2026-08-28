@@ -46,6 +46,11 @@
 * Compiler/Wasm: emit a sourcemap mapping at the very start of each function,
   since the Chrome profiler attributes the samples within a function to its
   start offset (#2417)
+* Lib (breaking): `Typed_array.float32Array_fromArray` and
+  `float64Array_fromArray` now take a `number_t js_array t` instead of a
+  `float js_array t`. The previous type was wrong for wasm_of_ocaml, where
+  OCaml floats are not JavaScript numbers; existing callers must build their
+  array from `Js.number_of_float` elements (#2416)
 
 ## Bug fixes
 * Compiler/Wasm: sourcemaps were silently disabled on Windows: the detection
