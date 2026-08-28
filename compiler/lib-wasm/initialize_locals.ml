@@ -255,4 +255,9 @@ let f ~param_names ~locals instrs =
     then instrs
     else rewrite_instructions local_types instrs
   in
-  locals, initializations @ instrs
+  (* Keep the event marking the start of the function, if any, first, since
+     the sourcemap generation relies on the function body starting with this
+     event. *)
+  match instrs with
+  | (Wasm_ast.Event _ as e) :: rem -> locals, e :: (initializations @ rem)
+  | _ -> locals, initializations @ instrs

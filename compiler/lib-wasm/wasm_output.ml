@@ -1055,6 +1055,15 @@ end = struct
     in
     output_vec
       (with_size (fun ch (name, param_names, locals, body) ->
+           (* Emit a mapping at the very start of the function, before the
+              declaration of its local variables. This is the position V8
+              reports for the function in CPU profiles, and Binaryen
+              propagates a mapping at this position as the function's prolog
+              location. *)
+           (match body with
+           | Event Parse_info.{ src = Some src; line; col; _ } :: _ ->
+               push_event ch ~src ~line ~col
+           | _ -> ());
            let current_local_names = Code.Var.Hashtbl.create 8 in
            let idx =
              List.fold_left

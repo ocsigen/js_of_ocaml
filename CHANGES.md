@@ -43,6 +43,9 @@
   API, plus a `fonts` property on `Dom_html.document` (#2255)
 * Lib: `Lwt_js_events` `load`/`error`/`abort` and their `seq_loop` variants now
   accept any element, not only images (#2404)
+* Compiler/Wasm: emit a sourcemap mapping at the very start of each function,
+  since the Chrome profiler attributes the samples within a function to its
+  start offset (#2417)
 
 ## Bug fixes
 * Compiler/Wasm: sourcemaps were silently disabled on Windows: the detection
