@@ -82,6 +82,9 @@
 ))
    (import "io" "caml_channel_descriptor"
       (func $caml_channel_descriptor (param (ref eq)) (result (ref eq))))
+   (import "string" "caml_string_equal"
+      (func $caml_string_equal
+         (param (ref eq)) (param (ref eq)) (result (ref eq))))
 
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
@@ -94,6 +97,43 @@
       (call $exit (i31.get_s (ref.cast (ref i31) (local.get $code))))
       ;; Fallback: try to exit through an exception
       (throw $ocaml_exit))
+
+   ;; Environment variables set at compile time (--setenv): the compiler
+   ;; prepends calls to caml_set_static_env to the program, and lookups
+   ;; consult these bindings before the actual environment.
+   (type $env_entry
+      (struct
+         (field $name (ref eq))
+         (field $value (ref eq))
+         (field $next (ref null $env_entry))))
+
+   (global $static_env (mut (ref null $env_entry)) (ref.null $env_entry))
+
+   (func (export "caml_set_static_env")
+      (param $name (ref eq)) (param $value (ref eq)) (result (ref eq))
+      (global.set $static_env
+         (struct.new $env_entry
+            (local.get $name) (local.get $value) (global.get $static_env)))
+      (ref.i31 (i32.const 0)))
+
+   (func $static_getenv (param $name (ref eq)) (result eqref)
+      (local $e (ref null $env_entry))
+      (local $entry (ref $env_entry))
+      (local.set $e (global.get $static_env))
+      (block $done
+         (loop $loop
+            (br_if $done (ref.is_null (local.get $e)))
+            (local.set $entry (ref.as_non_null (local.get $e)))
+            (if (i31.get_u
+                   (ref.cast (ref i31)
+                      (call $caml_string_equal
+                         (struct.get $env_entry $name (local.get $entry))
+                         (local.get $name))))
+               (then
+                  (return (struct.get $env_entry $value (local.get $entry)))))
+            (local.set $e (struct.get $env_entry $next (local.get $entry)))
+            (br $loop)))
+      (ref.null eq))
 
 (@if $wasi
 (@then
@@ -131,7 +171,7 @@
             (global.set $environment_data (local.get $dat))
             (global.set $environment_count (i32.load (local.get $buffer))))))
 
-   (func $caml_getenv
+   (func $sys_getenv
       (param $name (ref eq)) (result eqref)
       (local $var (ref $bytes)) (local $i i32) (local $j i32)
       (local $len i32) (local $s i32) (local $c i32)
@@ -185,7 +225,7 @@
       (ref.null eq))
 )
 (@else
-   (func $caml_getenv
+   (func $sys_getenv
       (param $name (ref eq)) (result eqref)
       (local $res anyref)
       (local.set $res
@@ -195,6 +235,13 @@
          (then (return (ref.null eq))))
       (return_call $caml_string_of_jsstring (call $wrap (local.get $res))))
 ))
+
+   (func $caml_getenv (param $name (ref eq)) (result eqref)
+      (local $res eqref)
+      (local.set $res (call $static_getenv (local.get $name)))
+      (if (i32.eqz (ref.is_null (local.get $res)))
+         (then (return (local.get $res))))
+      (return_call $sys_getenv (local.get $name)))
 
    (func (export "caml_sys_getenv") (export "caml_sys_unsafe_getenv")
       (param $name (ref eq)) (result (ref eq))

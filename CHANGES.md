@@ -51,6 +51,8 @@
   `float js_array t`. The previous type was wrong for wasm_of_ocaml, where
   OCaml floats are not JavaScript numbers; existing callers must build their
   array from `Js.number_of_float` elements (#2416)
+* Compiler/wasm: add `--setenv`, matching js_of_ocaml: the variable is set both
+  for the static evaluator and for `Sys.getenv` lookups at runtime (#2415)
 
 ## Bug fixes
 * Compiler/Wasm: sourcemaps were silently disabled on Windows: the detection

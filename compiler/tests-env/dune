@@ -1,14 +1,39 @@
+; The JavaScript launcher makes variables from globalThis.jsoo_env visible
+; to the program. This does not apply when running directly on a Wasm
+; engine (WASM_ENGINE set to wasmtime or wizard): no JavaScript runs, so
+; the test_wasi variant below is used instead.
+
 (test
- ; wasm_of_ocaml accepts --setenv, but only feeds it to the static evaluator; it has no
- ; runtime environment to answer the lookups in this test, which go through a function
- ; parameter and so cannot be constant-folded.
- (modes js)
+ (name test)
+ (modules test)
+ (modes js wasm)
+ (enabled_if
+  (= %{env:WASM_ENGINE=node} node))
  (js_of_ocaml
+  (javascript_files setup.js)
+  (flags :standard --setenv JSOO_C=from-jsoo-args))
+ (wasm_of_ocaml
   (javascript_files setup.js)
   (flags :standard --setenv JSOO_C=from-jsoo-args))
  (action
   (setenv
    JSOO_B
    from-env
-   (run node %{test})))
- (name test))
+   (run node %{test}))))
+
+(rule
+ (copy test.ml test_wasi.ml))
+
+(test
+ (name test_wasi)
+ (modules test_wasi)
+ (modes wasm)
+ (enabled_if
+  (<> %{env:WASM_ENGINE=node} node))
+ (wasm_of_ocaml
+  (flags :standard --setenv JSOO_C=from-jsoo-args))
+ (action
+  (setenv
+   JSOO_B
+   from-env
+   (run node %{test}))))
