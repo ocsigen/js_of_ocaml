@@ -35,7 +35,10 @@
     preopens: { ".": ".", "/tmp": "/tmp" },
     returnOnExit: false,
   });
-  const imports = wasi.getImportObject();
+  // Bun's WASI implementation does not provide getImportObject()
+  const imports = wasi.getImportObject
+    ? wasi.getImportObject()
+    : { wasi_snapshot_preview1: wasi.wasiImport };
   function loadRelative(src) {
     const path = require("node:path");
     const f = path.join(path.dirname(require.main.filename), src);
