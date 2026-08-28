@@ -95,18 +95,8 @@ let set_param =
   let c = Arg.conv (parser, printer) in
   Arg.(value & opt_all (list c) [] & info [ "set" ] ~docv:"PARAM=VALUE" ~doc)
 
-(* Unlike js_of_ocaml's [--setenv], this only feeds the compile-time static evaluator
-   (see [Eval.set_static_env]); it does not also seed a runtime environment. Calls to
-   [Sys.getenv]/[Sys.getenv_opt] that the optimiser can fold are replaced by the value,
-   but any call it cannot fold still behaves as if the variable were unset. This is
-   enough for the [FORCE_DROP_INLINE_TEST]/[FORCE_DROP_BENCH] deadcode-elimination idiom,
-   which reads the variable exactly once from a top-level [let]. *)
 let set_env =
-  let doc =
-    "Set environment variable statically. Note: for wasm_of_ocaml this only affects \
-     static evaluation (and hence deadcode elimination); it does not set the variable \
-     for lookups that survive to runtime."
-  in
+  let doc = "Set environment variable statically." in
   Arg.(
     value
     & opt_all (list (pair ~sep:'=' string string)) []

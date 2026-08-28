@@ -31,7 +31,10 @@
   const wasi = new WASI({
     version: "preview1",
     args: argv.slice(1),
-    env,
+    // Variables set through globalThis.jsoo_env are visible as well, with
+    // the process environment taking precedence, like with the non-WASI
+    // runtime.
+    env: { ...globalThis.jsoo_env, ...env },
     preopens: { ".": ".", "/tmp": "/tmp" },
     returnOnExit: false,
   });

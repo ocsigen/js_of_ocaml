@@ -499,10 +499,23 @@ let run
     | Some p -> p
     | None -> Profile.O1
   in
+  let env_instr () =
+    List.map static_env ~f:(fun (k, v) ->
+        Primitive.add_external "caml_set_static_env";
+        Code.(
+          Let
+            ( Var.fresh ()
+            , Prim (Extern ("caml_set_static_env", None), [ Pc (String k); Pc (String v) ])
+            )))
+  in
   let output (one : Parse_bytecode.one) ~unit_name ~wat_file ~file ~opt_source_map_file =
     check_debug one;
-    let code = one.code in
     let standalone = Option.is_none unit_name in
+    (* Seed the runtime environment with the --setenv bindings, so that
+       lookups that are not statically evaluated still see them. As in
+       js_of_ocaml, this is done in each compilation unit, so that it also
+       works with separate compilation. *)
+    let code = Code.prepend one.code (env_instr ()) in
     let ( Driver.
             { program
             ; variable_uses
