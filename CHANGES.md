@@ -43,6 +43,11 @@
   API, plus a `fonts` property on `Dom_html.document` (#2255)
 * Lib: `Lwt_js_events` `load`/`error`/`abort` and their `seq_loop` variants now
   accept any element, not only images (#2404)
+* Lib (breaking): `Typed_array.float32Array_fromArray` and
+  `float64Array_fromArray` now take a `number_t js_array t` instead of a
+  `float js_array t`. The previous type was wrong for wasm_of_ocaml, where
+  OCaml floats are not JavaScript numbers; existing callers must build their
+  array from `Js.number_of_float` elements (#2416)
 
 ## Bug fixes
 * Compiler/Wasm runtime: fix toplevels built on Windows — the embedded cmi
