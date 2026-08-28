@@ -1,3 +1,3 @@
 sourcemap for code.wasm.map
-function (no mapping at start): b.ml:1:10 -- b.ml:1:15
-function (no mapping at start): blackbox.ml:1:0 -- test_bc.ml:3:35
+function: b.ml:1:10 -- b.ml:1:15
+function: blackbox.ml:1:0 -- test_bc.ml:3:35
