@@ -167,7 +167,7 @@ val uint32Array_inBuffer : (arrayBuffer t -> int -> int -> uint32Array t) constr
 
 val float32Array : (int -> float32Array t) constr
 
-val float32Array_fromArray : (float js_array t -> float32Array t) constr
+val float32Array_fromArray : (number_t js_array t -> float32Array t) constr
 
 val float32Array_fromTypedArray : (float32Array t -> float32Array t) constr
 
@@ -177,7 +177,7 @@ val float32Array_inBuffer : (arrayBuffer t -> int -> int -> float32Array t) cons
 
 val float64Array : (int -> float64Array t) constr
 
-val float64Array_fromArray : (float js_array t -> float64Array t) constr
+val float64Array_fromArray : (number_t js_array t -> float64Array t) constr
 
 val float64Array_fromTypedArray : (float64Array t -> float64Array t) constr
 
