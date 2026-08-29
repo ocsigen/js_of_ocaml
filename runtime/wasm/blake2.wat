@@ -18,19 +18,38 @@
 (module
 (@if (>= $ocaml_version (5 2 0))
 (@then
-   (import "blake2" "blake2_memory" (memory 1))
-   (import "blake2" "blake2_state_buf" (func $state_buf (result i32)))
-   (import "blake2" "blake2_key_buf"   (func $key_buf   (result i32)))
-   (import "blake2" "blake2_out_buf"   (func $out_buf   (result i32)))
-   (import "blake2" "blake2_chunk_buf" (func $chunk_buf (result i32)))
-   (import "blake2" "blake2_chunk_buf_size"
-      (func $chunk_buf_size (result i32)))
-   (import "blake2" "blake2_init"
-      (func $blake2_init (param i32 i32)))
-   (import "blake2" "blake2_update"
-      (func $blake2_update (param i32)))
-   (import "blake2" "blake2_finalize"
-      (func $blake2_finalize (param i32)))
+   ;; The buffers and algorithm primitives come from the single C module that
+   ;; owns the linear memory: c-impl.wasm ("c") for the non-wasi runtime, the
+   ;; combined libc.wasm ("libc") for wasi.
+   (@if $wasi
+   (@then
+      (import "libc" "memory" (memory $mem 1))
+      (import "libc" "blake2_state_buf" (func $state_buf (result i32)))
+      (import "libc" "blake2_key_buf"   (func $key_buf   (result i32)))
+      (import "libc" "blake2_out_buf"   (func $out_buf   (result i32)))
+      (import "libc" "blake2_chunk_buf" (func $chunk_buf (result i32)))
+      (import "libc" "blake2_chunk_buf_size"
+         (func $chunk_buf_size (result i32)))
+      (import "libc" "blake2_init"
+         (func $blake2_init (param i32 i32)))
+      (import "libc" "blake2_update"
+         (func $blake2_update (param i32)))
+      (import "libc" "blake2_finalize"
+         (func $blake2_finalize (param i32))))
+   (@else
+      (import "c" "memory" (memory $mem 1))
+      (import "c" "blake2_state_buf" (func $state_buf (result i32)))
+      (import "c" "blake2_key_buf"   (func $key_buf   (result i32)))
+      (import "c" "blake2_out_buf"   (func $out_buf   (result i32)))
+      (import "c" "blake2_chunk_buf" (func $chunk_buf (result i32)))
+      (import "c" "blake2_chunk_buf_size"
+         (func $chunk_buf_size (result i32)))
+      (import "c" "blake2_init"
+         (func $blake2_init (param i32 i32)))
+      (import "c" "blake2_update"
+         (func $blake2_update (param i32)))
+      (import "c" "blake2_finalize"
+         (func $blake2_finalize (param i32)))))
 
    (type $bytes (array (mut i8)))
 
@@ -49,7 +68,7 @@
       (block $done
          (loop $cont
             (br_if $done (i32.eq (local.get $i) (local.get $len)))
-            (i32.store8
+            (i32.store8 $mem
                (i32.add (local.get $dst) (local.get $i))
                (array.get_u $bytes (local.get $src)
                   (i32.add (local.get $src_ofs) (local.get $i))))
@@ -66,7 +85,7 @@
             (br_if $done (i32.eq (local.get $i) (local.get $len)))
             (array.set $bytes (local.get $dst)
                (i32.add (local.get $dst_ofs) (local.get $i))
-               (i32.load8_u
+               (i32.load8_u $mem
                   (i32.add (local.get $src) (local.get $i))))
             (local.set $i (i32.add (local.get $i) (i32.const 1)))
             (br $cont))))
