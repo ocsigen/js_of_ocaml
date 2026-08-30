@@ -27,3 +27,44 @@
  (enabled_if
   (= %{profile} dev))
  (libraries js_of_ocaml-compiler))
+
+(executable
+ (name test_bc)
+ (modules test_bc)
+ (modes byte)
+ (libraries testlib))
+
+(rule
+ (copy test.ml test_bc.ml))
+
+(executable
+ (name dump_sourcemap_wasm)
+ (modules dump_sourcemap_wasm)
+ (libraries js_of_ocaml-compiler))
+
+(rule
+ (target dump_sourcemap_wasm.output)
+ (enabled_if
+  (= %{profile} dev))
+ (action
+  (progn
+   (run
+    %{bin:wasm_of_ocaml}
+    --source-map
+    --disable
+    inline
+    --source-map-root
+    /my/sourceRoot
+    %{dep:test_bc.bc}
+    -o
+    test_wasm.js)
+   (with-stdout-to
+    %{target}
+    (run %{dep:dump_sourcemap_wasm.exe} test_wasm.assets)))))
+
+(rule
+ (alias runtest-wasm)
+ (enabled_if
+  (= %{profile} dev))
+ (action
+  (diff dump_sourcemap_wasm.expected dump_sourcemap_wasm.output)))
