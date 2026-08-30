@@ -45,6 +45,9 @@
   accept any element, not only images (#2404)
 
 ## Bug fixes
+* Compiler/Wasm: sourcemaps were silently disabled on Windows: the detection
+  of Binaryen's sourcemap support used Unix redirection syntax, so it always
+  concluded that sourcemaps were unsupported (#2418)
 * Compiler/Wasm runtime: fix toplevels built on Windows — the embedded cmi
   paths were built with `Filename.concat`, putting `\` separators in the
   unix-style virtual filesystem, and its lookups did not normalize the `\`
