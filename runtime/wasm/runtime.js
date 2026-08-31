@@ -22,6 +22,18 @@
 
   const isNode = globalThis.process?.versions?.node;
 
+  // A shared worker can receive connect events while the wasm module is
+  // still being instantiated: the worker's event loop runs between the
+  // script's synchronous evaluation and the end of the asynchronous
+  // start-up, and nothing listens to these events yet. Capture them and
+  // dispatch them again once the program has started.
+  const isSharedWorker =
+    globalThis.SharedWorkerGlobalScope &&
+    globalThis instanceof globalThis.SharedWorkerGlobalScope;
+  const pendingConnects = [];
+  const captureConnect = (event) => pendingConnects.push(event);
+  if (isSharedWorker) globalThis.addEventListener("connect", captureConnect);
+
   const math = {
     cos: Math.cos,
     sin: Math.sin,
@@ -944,4 +956,16 @@
     );
   }
   await _initialize();
+  if (isSharedWorker) {
+    globalThis.removeEventListener("connect", captureConnect);
+    for (const event of pendingConnects) {
+      globalThis.dispatchEvent(
+        new globalThis.MessageEvent("connect", {
+          data: event.data,
+          origin: event.origin,
+          ports: event.ports,
+        }),
+      );
+    }
+  }
 };

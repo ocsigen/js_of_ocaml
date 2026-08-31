@@ -22,6 +22,7 @@
     {b This library is provided by the [js_of_ocaml] opam package.} *)
 
 module Abort = Abort
+module BroadcastChannel = BroadcastChannel
 module CSS = CSS
 module Cache = Cache
 module Clipboard = Clipboard
@@ -55,6 +56,7 @@ module Promise = Promise
 module ResizeObserver = ResizeObserver
 module Regexp = Regexp
 module ServiceWorker = ServiceWorker
+module SharedWorker = SharedWorker
 module Sys_js = Sys_js
 module Typed_array = Typed_array
 module Url = Url
