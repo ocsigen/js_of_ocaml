@@ -249,6 +249,7 @@ let shorthand = function
   | "native" -> Some ("backend", "native")
   | "node" -> Some ("host_engine", "node")
   | "quickjs" -> Some ("host_engine", "quickjs")
+  | "bun" -> Some ("host_engine", "bun")
   | "wasi" -> Some ("host_engine", "wasi")
   | "win32" -> Some ("os_type", "Win32")
   | "unix" -> Some ("os_type", "Unix")
@@ -263,6 +264,7 @@ let reify_string (t : t) : expression =
   | Ident (_, "backend") -> [%expr Ppx_expect_light_runtime.Axes.backend]
   | Ident (_, "host_engine") -> [%expr Ppx_expect_light_runtime.Axes.host_engine]
   | Ident (_, "target_engine") -> [%expr Ppx_expect_light_runtime.Axes.target_engine]
+  | Ident (_, "wasi_host") -> [%expr Ppx_expect_light_runtime.Axes.wasi_host]
   | Ident (_, "effects") ->
       (* [caml_jsoo_flags_effects] is a js/wasm-only primitive (its native stub
          aborts). Emitting the [external] here, at the use site, keeps the
@@ -299,8 +301,10 @@ let kind_of (t : t) : kind =
   match t with
   | Ident (_, "ocaml_version") -> K_version
   | Tuple _ -> K_version
-  | Ident (_, ("os_type" | "backend" | "host_engine" | "target_engine" | "effects")) ->
-      K_string
+  | Ident
+      ( _
+      , ("os_type" | "backend" | "host_engine" | "target_engine" | "wasi_host" | "effects")
+      ) -> K_string
   | String _ -> K_string
   | Int _ -> K_int
   | _ -> K_unknown

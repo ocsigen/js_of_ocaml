@@ -236,12 +236,16 @@ let run_javascript file =
     ~cmd:(Format.sprintf "%s %s" node (Filetype.path_of_js_file file))
     ()
 
-(* QuickJS has no [--check] equivalent; under that profile, skip the
-   parse-only validation entirely rather than emulating it. *)
+(* QuickJS has no [--check] equivalent, and bun's [--check] executes the
+   file instead of doing a parse-only check; under those runtimes, skip the
+   validation entirely rather than emulating it. *)
 let check_supported =
   match Sys.getenv_opt "JSOO_TEST_ENGINE" with
   | Some "quickjs" -> false
-  | _ -> true
+  | _ -> (
+      match Sys.getenv_opt "JSOO_ENGINE" with
+      | Some "bun" -> false
+      | _ -> true)
 
 let check_javascript file =
   if check_supported

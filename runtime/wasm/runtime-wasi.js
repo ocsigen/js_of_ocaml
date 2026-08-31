@@ -35,7 +35,25 @@
     preopens: { ".": ".", "/tmp": "/tmp" },
     returnOnExit: false,
   });
-  const imports = wasi.getImportObject();
+  // Bun's WASI implementation does not provide getImportObject()
+  let imports;
+  if (wasi.getImportObject) {
+    imports = wasi.getImportObject();
+  } else {
+    const wasiImport = wasi.wasiImport;
+    if (wasi.FD_MAP instanceof Map) {
+      // Bun's fd_prestat_get / fd_prestat_dir_name wrongly report every
+      // open fd as a preopened directory, which corrupts our preopen
+      // table; restrict them to actual preopens (fds with a fakePath).
+      const EBADF = 8;
+      for (const name of ["fd_prestat_get", "fd_prestat_dir_name"]) {
+        const f = wasiImport[name];
+        wasiImport[name] = (fd, ...args) =>
+          wasi.FD_MAP.get(fd)?.fakePath === undefined ? EBADF : f(fd, ...args);
+      }
+    }
+    imports = { wasi_snapshot_preview1: wasiImport };
+  }
   function loadRelative(src) {
     const path = require("node:path");
     const f = path.join(path.dirname(module.filename), src);

@@ -24,6 +24,18 @@
  (libraries unix))
 
 (tests
+ (names jsstring_buffer)
+ (modes wasm)
+ (libraries compiler-libs.common js_of_ocaml)
+ ; Compressed marshalling requires OCaml 5.2 and is not available under OxCaml.
+ ; The buffer this exercises is specific to the non-wasi runtime.
+ (build_if
+  (and
+   (>= %{ocaml_version} 5.2)
+   (not %{oxcaml_supported})
+   (<> %{env:JSOO_TEST_ENGINE=node} wasi))))
+
+(tests
  (names gh2093)
  (modes wasm)
  (enabled_if
