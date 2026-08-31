@@ -1,5 +1,10 @@
 (executables
- (names test_beforeunload test_wheel test_fetch test_font_face)
+ (names
+  test_beforeunload
+  test_wheel
+  test_fetch
+  test_font_face
+  test_web_audio)
  (libraries js_of_ocaml)
  (modes js wasm)
  (preprocess
@@ -17,6 +22,8 @@
   test_fetch.html
   test_font_face.bc.js
   test_font_face.html
+  test_web_audio.bc.js
+  test_web_audio.html
   BebasNeue-Regular.ttf))
 
 (alias
@@ -31,4 +38,6 @@
   test_fetch.html
   test_font_face.bc.wasm.js
   test_font_face.html
+  test_web_audio.bc.wasm.js
+  test_web_audio.html
   BebasNeue-Regular.ttf))
