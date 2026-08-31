@@ -53,6 +53,11 @@ type t
 
 val var_type : t -> Code.Var.t -> typ
 
+val inferred_var_type : t -> Code.Var.t -> typ
+(** Type inferred by the analysis, disregarding the [untagging] and
+    [unboxing] flags. This is the type that describes the value
+    actually computed by the code generator. *)
+
 val return_type : t -> Code.Var.t -> typ
 
 val reset : unit -> unit

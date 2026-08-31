@@ -221,15 +221,12 @@ module Generate (Target : Target_sig.S) = struct
     match from, into with
     | Int Unnormalized, Int Normalized -> Arith.((e lsl const 1l) asr const 1l)
     | Int (Normalized | Unnormalized), Int (Normalized | Unnormalized) -> e
-    (* Dummy value *)
-    | Int (Unnormalized | Normalized), Number ((Int32 | Nativeint), Unboxed) ->
-        return (W.Const (I32 0l))
-    | Int (Unnormalized | Normalized), Number (Int64, Unboxed) ->
-        return (W.Const (I64 0L))
-    | Int (Unnormalized | Normalized), Number (Float, Unboxed) ->
-        return (W.Const (F64 0.))
-    | Int (Unnormalized | Normalized), Number (Float32, Unboxed) ->
-        return (W.Const (F32 0.))
+    (* Dummy value: an integer is never used as a number, so this can
+       only happen for dead code. *)
+    | Int _, Number ((Int32 | Nativeint), Unboxed) -> return (W.Const (I32 0l))
+    | Int _, Number (Int64, Unboxed) -> return (W.Const (I64 0L))
+    | Int _, Number (Float, Unboxed) -> return (W.Const (F64 0.))
+    | Int _, Number (Float32, Unboxed) -> return (W.Const (F32 0.))
     | _, Int (Normalized | Unnormalized) -> Value.int_val e
     | Int (Unnormalized | Normalized), _ -> Value.val_int e
     | Number (_, Unboxed), Number (_, Unboxed) -> e
@@ -1717,9 +1714,18 @@ module Generate (Target : Target_sig.S) = struct
     | Number (Float32, Unboxed) -> Some F32
     | _ -> None
 
-  let box_number_if_needed ctx x e =
+  (* The code generator computes some values in an optimized
+     representation (an unboxed number, or an untagged integer) while a
+     weaker representation may have been chosen for the variable they
+     are bound to: either because the boxed value is used somewhere, or
+     because the corresponding optimization has been turned off. *)
+  let adjust_repr ctx x e =
     match Typing.var_type ctx.types x with
     | Number (n, Boxed) as into -> convert ~from:(Number (n, Unboxed)) ~into e
+    | Int Ref -> (
+        match Typing.inferred_var_type ctx.types x with
+        | Int (Normalized | Unnormalized) -> Value.val_int e
+        | _ -> e)
     | _ -> e
 
   let rec translate_expr ctx context x e =
@@ -1792,7 +1798,7 @@ module Generate (Target : Target_sig.S) = struct
         Memory.float_array_get
           (load_and_box ctx y)
           (return (W.Const (I32 (Int32.of_int n))))
-        |> box_number_if_needed ctx x
+        |> adjust_repr ctx x
     | Closure _ ->
         Closure.translate
           ~context:ctx.global_context
@@ -1800,13 +1806,20 @@ module Generate (Target : Target_sig.S) = struct
           ~cps:(Var.Set.mem x ctx.in_cps)
           ~no_code_pointer:(Call_graph_analysis.direct_calls_only ctx.fun_info x)
           x
-    | Constant c ->
-        Constant.translate
-          ~unboxed:
-            (match Typing.var_type ctx.types x with
-            | Number (_, Unboxed) -> true
-            | _ -> false)
-          c
+    | Constant c -> (
+        let into = Typing.var_type ctx.types x in
+        let e =
+          Constant.translate
+            ~unboxed:
+              (match into with
+              | Number (_, Unboxed) -> true
+              | _ -> false)
+            c
+        in
+        (* Integer constants are always translated to an untagged integer. *)
+        match c, into with
+        | Int _, Int Ref -> Value.val_int e
+        | _ -> e)
     | Special (Alias_prim _) -> assert false
     | Prim (Extern ("caml_alloc_dummy_function", _), [ _; Pc (Int arity) ]) ->
         (* Removed in OCaml 5.2 *)
@@ -1901,64 +1914,71 @@ module Generate (Target : Target_sig.S) = struct
            let* name_str = Constant.translate ~unboxed:false (String name) in
            instr (W.Drop (W.Call (f, [ v; name_str ]))))
           Value.unit
-    | Prim (Not, [ x ]) -> Value.not (transl_prim_arg ctx ~typ:int_u x)
-    | Prim (Lt, [ x; y ]) -> translate_int_comparison ctx Arith.( < ) x y
-    | Prim (Le, [ x; y ]) -> translate_int_comparison ctx Arith.( <= ) x y
-    | Prim (Ult, [ x; y ]) -> translate_int_comparison ctx Arith.ult x y
-    | Prim (Eq, [ x; y ]) -> translate_int_equality ctx ~negate:false x y
-    | Prim (Neq, [ x; y ]) -> translate_int_equality ctx ~negate:true x y
+    | Prim (Not, [ y ]) ->
+        Value.not (transl_prim_arg ctx ~typ:int_u y) |> adjust_repr ctx x
+    | Prim (Lt, [ y; z ]) ->
+        translate_int_comparison ctx Arith.( < ) y z |> adjust_repr ctx x
+    | Prim (Le, [ y; z ]) ->
+        translate_int_comparison ctx Arith.( <= ) y z |> adjust_repr ctx x
+    | Prim (Ult, [ y; z ]) ->
+        translate_int_comparison ctx Arith.ult y z |> adjust_repr ctx x
+    | Prim (Eq, [ y; z ]) ->
+        translate_int_equality ctx ~negate:false y z |> adjust_repr ctx x
+    | Prim (Neq, [ y; z ]) ->
+        translate_int_equality ctx ~negate:true y z |> adjust_repr ctx x
     | Prim (Array_get, [ x; y ]) ->
         Memory.array_get (transl_prim_arg ctx x) (transl_prim_arg ctx ~typ:int_n y)
     | Prim (Extern ("caml_array_unsafe_get", _), [ x; y ]) ->
         Memory.gen_array_get (transl_prim_arg ctx x) (transl_prim_arg ctx ~typ:int_n y)
-    | Prim (p, l) -> (
-        match p with
-        | Extern (name, hint) when String.Hashtbl.mem internal_primitives name ->
-            let _, _, _, f = String.Hashtbl.find internal_primitives name in
-            f ctx context hint l |> box_number_if_needed ctx x
-        | Extern (name, _) when String.Hashtbl.mem specialized_primitives name ->
-            let ((_, arg_typ, _) as typ) =
-              String.Hashtbl.find specialized_primitives name
-            in
-            let* f = register_import ~name (Fun (specialized_primitive_type typ)) in
-            let rec loop acc arg_typ l =
-              match arg_typ, l with
-              | [], [] -> return (W.Call (f, List.rev acc))
-              | repr :: rem, x :: r ->
-                  let* x = transl_prim_arg ctx ?typ:(repr_type repr) x in
-                  loop (x :: acc) rem r
-              | [], _ :: _ | _ :: _, [] -> assert false
-            in
-            loop [] arg_typ l |> box_number_if_needed ctx x
-        | _ -> (
-            let l = List.map ~f:(fun x -> transl_prim_arg ctx x) l in
-            match p, l with
-            | Extern (name, _), l ->
-                let* f =
-                  register_import ~name (Fun (Type.primitive_type (List.length l)))
-                in
-                let rec loop acc l =
-                  match l with
-                  | [] -> return (W.Call (f, List.rev acc))
-                  | x :: r ->
-                      let* x = x in
-                      loop (x :: acc) r
-                in
-                loop [] l
-            | IsInt, [ x ] -> Value.is_int x
-            | Vectlength kind, [ x ] -> (
-                match kind with
-                | Generic -> Memory.gen_array_length x
-                | Value -> Memory.array_length x
-                | Float ->
-                    (* We use a generic array for empty float arrays. *)
-                    let y = Var.fresh () in
-                    let* cond = Memory.check_is_float_array (tee y x) in
-                    let* ift = Memory.float_array_length (load y) in
-                    let* iff = Arith.const 0l in
-                    return (W.IfExpr (I32, cond, ift, iff)))
-            | (Not | Lt | Le | Eq | Neq | Ult | Array_get | IsInt | Vectlength _), _ ->
-                assert false))
+    | Prim (p, l) ->
+        (match p with
+          | Extern (name, hint) when String.Hashtbl.mem internal_primitives name ->
+              let _, _, _, f = String.Hashtbl.find internal_primitives name in
+              f ctx context hint l
+          | Extern (name, _) when String.Hashtbl.mem specialized_primitives name ->
+              let ((_, arg_typ, _) as typ) =
+                String.Hashtbl.find specialized_primitives name
+              in
+              let* f = register_import ~name (Fun (specialized_primitive_type typ)) in
+              let rec loop acc arg_typ l =
+                match arg_typ, l with
+                | [], [] -> return (W.Call (f, List.rev acc))
+                | repr :: rem, x :: r ->
+                    let* x = transl_prim_arg ctx ?typ:(repr_type repr) x in
+                    loop (x :: acc) rem r
+                | [], _ :: _ | _ :: _, [] -> assert false
+              in
+              loop [] arg_typ l
+          | _ -> (
+              let l = List.map ~f:(fun x -> transl_prim_arg ctx x) l in
+              match p, l with
+              | Extern (name, _), l ->
+                  let* f =
+                    register_import ~name (Fun (Type.primitive_type (List.length l)))
+                  in
+                  let rec loop acc l =
+                    match l with
+                    | [] -> return (W.Call (f, List.rev acc))
+                    | x :: r ->
+                        let* x = x in
+                        loop (x :: acc) r
+                  in
+                  loop [] l
+              | IsInt, [ x ] -> Value.is_int x
+              | Vectlength kind, [ x ] -> (
+                  match kind with
+                  | Generic -> Memory.gen_array_length x
+                  | Value -> Memory.array_length x
+                  | Float ->
+                      (* We use a generic array for empty float arrays. *)
+                      let y = Var.fresh () in
+                      let* cond = Memory.check_is_float_array (tee y x) in
+                      let* ift = Memory.float_array_length (load y) in
+                      let* iff = Arith.const 0l in
+                      return (W.IfExpr (I32, cond, ift, iff)))
+              | (Not | Lt | Le | Eq | Neq | Ult | Array_get | IsInt | Vectlength _), _ ->
+                  assert false))
+        |> adjust_repr ctx x
 
   and translate_instr ctx context i =
     match i with

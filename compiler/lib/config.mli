@@ -84,6 +84,15 @@ module Flag : sig
 
   val wasi : unit -> bool
 
+  val untagging : unit -> bool
+  (** Wasm-specific: keep integers untagged (as [i32] values) rather than as
+      tagged [(ref i31)] values, avoiding conversions between the 31-bit and
+      32-bit representations *)
+
+  val unboxing : unit -> bool
+  (** Wasm-specific: keep numbers (floats, int32, int64, nativeint) unboxed
+      rather than always boxing them *)
+
   val enable : string -> unit
 
   val disable : string -> unit

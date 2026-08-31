@@ -1,6 +1,10 @@
 # dev
 
 ## Features/Changes
+* Wasm: add two options to turn off the optimized representations of
+  numbers, for benchmarking purposes: `--disable untagging` keeps
+  integers tagged as `(ref i31)` values, and `--disable unboxing`
+  keeps floats, int32, int64 and nativeint boxed (#XXXX)
 * Lib: add `WebGL2` — bindings to the WebGL2 rendering context. The context
   inherits every method and constant of `WebGL`, and adds the WebGL2 objects
   (vertex array objects, queries, samplers, syncs, transform feedback), 3D and
