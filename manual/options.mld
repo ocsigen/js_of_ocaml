@@ -91,12 +91,17 @@ The [--file] flag is also supported by wasm_of_ocaml.
 
 {2 Resolution order}
 
-When OCaml code calls [Sys.getenv], js_of_ocaml resolves variables in this order:
+When OCaml code calls [Sys.getenv], variables are resolved in this order:
 
 + If the variable was set at compile time with [--setenv VAR=value], return it
 + If running in Node.js, check [process.env]
 + Check [globalThis.jsoo_env] (useful for setting variables in browsers)
 + Raise [Not_found]
+
+With wasm_of_ocaml targeting WASI, lookups fall back to the environment
+provided by the WASI host. The Node.js launcher builds this environment
+from [process.env] and [globalThis.jsoo_env], the former taking
+precedence.
 
 {2 Browser example}
 

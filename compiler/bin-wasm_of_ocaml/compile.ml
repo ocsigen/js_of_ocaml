@@ -395,6 +395,7 @@ let run
     ; output_file
     ; enable_source_maps
     ; params
+    ; static_env
     ; include_dirs
     ; sourcemap_root
     ; sourcemap_don't_inline_content
@@ -434,6 +435,7 @@ let run
   let output_file = fst output_file in
   if debug_mem () then Debug.start_profiling output_file;
   List.iter params ~f:(fun (s, v) -> Config.Param.set s v);
+  List.iter static_env ~f:(fun (s, v) -> Eval.set_static_env s v);
   let t = Timer.make () in
   let include_dirs =
     List.filter_map (include_dirs @ [ "+stdlib/" ]) ~f:(fun d -> Findlib.find [] d)
@@ -497,10 +499,23 @@ let run
     | Some p -> p
     | None -> Profile.O1
   in
+  let env_instr () =
+    List.map static_env ~f:(fun (k, v) ->
+        Primitive.add_external "caml_set_static_env";
+        Code.(
+          Let
+            ( Var.fresh ()
+            , Prim (Extern ("caml_set_static_env", None), [ Pc (String k); Pc (String v) ])
+            )))
+  in
   let output (one : Parse_bytecode.one) ~unit_name ~wat_file ~file ~opt_source_map_file =
     check_debug one;
-    let code = one.code in
     let standalone = Option.is_none unit_name in
+    (* Seed the runtime environment with the --setenv bindings, so that
+       lookups that are not statically evaluated still see them. As in
+       js_of_ocaml, this is done in each compilation unit, so that it also
+       works with separate compilation. *)
+    let code = Code.prepend one.code (env_instr ()) in
     let ( Driver.
             { program
             ; variable_uses

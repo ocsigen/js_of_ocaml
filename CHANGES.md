@@ -43,6 +43,8 @@
   API, plus a `fonts` property on `Dom_html.document` (#2255)
 * Lib: `Lwt_js_events` `load`/`error`/`abort` and their `seq_loop` variants now
   accept any element, not only images (#2404)
+* Compiler/wasm: add `--setenv`, matching js_of_ocaml: the variable is set both
+  for the static evaluator and for `Sys.getenv` lookups at runtime (#2415)
 
 ## Bug fixes
 * Compiler/Wasm runtime: fix toplevels built on Windows — the embedded cmi
