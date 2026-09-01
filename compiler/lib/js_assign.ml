@@ -445,8 +445,14 @@ let program' (module Strategy : Strategy) p =
     o#program p
   in
   (* The program top level anchors its own [var]s and has no enclosing scope
-     to record them, so it is a [Var_scope] (never skipped). *)
-  mapper#record_block Var_scope;
+     to record them. Use [Params] (never skipped) so that both def_var and
+     def_local get names allocated:
+     - For ESM: module-level var/let/const all need names allocated
+     - For scripts: also safe because top-level var declarations are in def_var,
+       and using Params ensures they're included ([Var_scope] would only
+       include def_local under the Preserve strategy).
+     The empty params list means no parameter name preferences are recorded. *)
+  mapper#record_block (Params { list = []; rest = None });
   let freevar =
     IdentSet.fold
       (fun ident acc ->
