@@ -620,4 +620,22 @@
          (then
             (call $caml_failwith (global.get $int_as_pointer_not_implemented))))
       (global.get $null_value))
+
+   ;; Approximation: return a new reference for each call
+   (func (export "caml_compiler_block_descs")
+      (param (ref eq)) (result (ref eq))
+      (array.new_fixed $block 1 (ref.i31 (i32.const 0))))
+
+   (func (export "caml_obj_reserved_bits") (param (ref eq)) (result (ref eq))
+      (ref.i31 (i32.const 0)))
+
+   (func (export "caml_obj_get_reserved") (param (ref eq)) (result (ref eq))
+      (ref.i31 (i32.const 0)))
+
+   (func (export "caml_obj_set_reserved") (param (ref eq) (ref eq)) (result (ref eq))
+      (ref.i31 (i32.const 0)))
+
+   (func (export "caml_read_bdsc_section") (param (ref eq)) (result (ref eq))
+      (ref.i31 (i32.const 0)))
+
 )
