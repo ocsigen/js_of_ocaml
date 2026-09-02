@@ -27,6 +27,8 @@ let stats = Debug.find "stats"
 
 let debug_stats = Debug.find "stats-debug"
 
+let debug_static_eval = Debug.find "static-eval"
+
 let static_env = String.Hashtbl.create 17
 
 let clear_static_env () = String.Hashtbl.clear static_env
@@ -136,6 +138,20 @@ let nativeint_binop (l : constant list) (f : int32 -> int32 -> int32) : constant
 let nativeint_shiftop (l : constant list) (f : int32 -> int -> int32) : constant option =
   match l with
   | [ NativeInt i; Int j ] -> Some (NativeInt (f i (Targetint.to_int_exn j)))
+  | _ -> None
+
+let eval_comparison op args =
+  match args with
+  | [ Int i; Int j ] -> bool (op (Targetint.compare i j) 0)
+  | [ Int32 i; Int32 j ] -> bool (op (Int32.compare i j) 0)
+  | [ Int64 i; Int64 j ] -> bool (op (Int64.compare i j) 0)
+  | [ NativeInt i; NativeInt j ] -> bool (op (Int32.compare i j) 0)
+  | [ Float f; Float g ] ->
+      let f = Int64.float_of_bits f in
+      let g = Int64.float_of_bits g in
+      if Float.is_nan f || Float.is_nan g
+      then bool false
+      else bool (op (Float.compare f g) 0)
   | _ -> None
 
 let quiet_nan n = Int64.logor n 0x00_08_00_00_00_00_00_00L
@@ -362,6 +378,22 @@ let eval_prim ~target x =
           Some (Int (Targetint.of_int_exn (Targetint.num_bits ())))
       | "caml_sys_const_big_endian", [ _ ] -> Some (Int Targetint.zero)
       | "caml_sys_const_naked_pointers_checked", [ _ ] -> Some (Int Targetint.zero)
+      | "caml_sys_const_runtime5", [ _ ] -> Some (Int Targetint.one)
+      | "caml_obj_dup", [ x ] -> (
+          match x with
+          | NativeString _
+          | Float _
+          | Float32 _
+          | Int _
+          | Int32 _
+          | Int64 _
+          | NativeInt _
+          | Null_ -> Some x
+          | String _ | Float_array _ | Tuple _ -> None)
+      | "caml_greaterthan", args -> eval_comparison ( > ) args
+      | "caml_greaterequal", args -> eval_comparison ( >= ) args
+      | "caml_lessthan", args -> eval_comparison ( < ) args
+      | "caml_lessequal", args -> eval_comparison ( <= ) args
       | _ -> None)
   | _ -> None
 
@@ -531,7 +563,289 @@ let constant_equal a b =
   | (String _ | NativeString _), _ -> false
   | (Float_array _ | Tuple _), _ -> false
 
-let eval_instr update_count inline_constant ~target info i =
+(* Abstract value computed while statically evaluating a function body. A
+   [Val_block] is a freshly allocated block whose fields are all constants; it
+   is kept distinct from [Val_constant (Tuple ...)] because re-emitting it at
+   the call site must produce a fresh allocation (see [emit_value]). *)
+type value =
+  | Val_constant of constant
+  | Val_block of int * constant array * array_or_not * mutability
+
+(* Maximum number of basic blocks visited while statically evaluating a single
+   call. This bounds the work per call site and guarantees termination in the
+   presence of loops and recursion. *)
+let static_eval_fuel = 50
+
+let rec eval_block ~fuel ~info ~blocks ~target ~env pc args =
+  if !fuel <= 0
+  then None
+  else (
+    decr fuel;
+    let block = Addr.Map.find pc blocks in
+    let env =
+      List.fold_left2
+        ~f:(fun env x x' ->
+          match resolve ~info ~env (Pv x') with
+          | None -> Var.Map.remove x env
+          | Some c -> Var.Map.add x c env)
+        block.params
+        args
+        ~init:env
+    in
+    match eval_block_body ~fuel ~info ~blocks ~target ~env block.body with
+    | None -> None
+    | Some env -> (
+        if debug_static_eval ()
+        then Format.eprintf "static eval: branch %a@." Code.Print.last block.branch;
+        match block.branch with
+        | Return x -> resolve ~info ~env (Pv x)
+        | Branch (pc', args') -> eval_block ~fuel ~info ~blocks ~target ~env pc' args'
+        | Cond (x, (pc1, args1), (pc2, args2)) -> (
+            match resolve ~info ~env (Pv x) with
+            | Some (Val_constant (Int i)) when Targetint.is_zero i ->
+                eval_block ~fuel ~info ~blocks ~target ~env pc2 args2
+            | Some (Val_constant (Int _ | Tuple _) | Val_block _) ->
+                eval_block ~fuel ~info ~blocks ~target ~env pc1 args1
+            | _ -> None)
+        | Switch (x, conts) -> (
+            match resolve ~info ~env (Pv x) with
+            | Some (Val_constant (Int i)) ->
+                let idx = Targetint.to_int_exn i in
+                if idx >= 0 && idx < Array.length conts
+                then
+                  let pc', args' = conts.(idx) in
+                  eval_block ~fuel ~info ~blocks ~target ~env pc' args'
+                else None
+            | _ -> None)
+        | Raise _ | Stop | Pushtrap _ | Poptrap _ -> None))
+
+and resolve ~info ~env ?(eq = constant_equal) a =
+  match
+    match a with
+    | Pv x -> Var.Map.find_opt x env
+    | _ -> None
+  with
+  | Some _ as v -> v
+  | None -> (
+      match the_const_of ~eq info a with
+      | None -> None
+      | Some c -> Some (Val_constant c))
+
+and eval_block_body ~fuel ~info ~blocks ~target ~env instrs =
+  (if debug_static_eval ()
+   then
+     match instrs with
+     | i :: _ -> Format.eprintf "static eval: instr %a@." Code.Print.instr i
+     | [] -> ());
+  match instrs with
+  | [] -> Some env
+  | Event _ :: rem -> eval_block_body ~fuel ~info ~blocks ~target ~env rem
+  | Let (x, Prim (Extern (("caml_equal" | "caml_notequal") as prim), [ y; z ])) :: rem
+    -> (
+      let eq e1 e2 =
+        match Code.Constant.ocaml_equal e1 e2 with
+        | None -> false
+        | Some e -> e
+      in
+      match resolve ~info ~env ~eq y, resolve ~info ~env ~eq z with
+      | Some (Val_constant e1), Some (Val_constant e2) -> (
+          match Code.Constant.ocaml_equal e1 e2 with
+          | None -> None
+          | Some c ->
+              let c =
+                match prim with
+                | "caml_equal" -> c
+                | "caml_notequal" -> not c
+                | _ -> assert false
+              in
+              eval_block_body
+                ~fuel
+                ~info
+                ~blocks
+                ~target
+                ~env:(Var.Map.add x (Val_constant (bool' c)) env)
+                rem)
+      | _ -> None)
+  | Let (x, Prim (IsInt, [ y ])) :: rem -> (
+      let res =
+        match is_int info y with
+        | Y -> Some true
+        | N -> Some false
+        | Unknown -> (
+            match resolve ~info ~env y with
+            | Some (Val_constant (Int _)) -> Some true
+            | Some (Val_constant _ | Val_block _) -> Some false
+            | None -> None)
+      in
+      match res with
+      | None -> None
+      | Some b ->
+          eval_block_body
+            ~fuel
+            ~info
+            ~blocks
+            ~target
+            ~env:(Var.Map.add x (Val_constant (bool' b)) env)
+            rem)
+  | Let (x, Prim (Extern "caml_obj_tag", [ y ])) :: rem -> (
+      match resolve ~info ~env y with
+      | Some (Val_constant (Tuple (tag, _, _))) | Some (Val_block (tag, _, _, _)) ->
+          eval_block_body
+            ~fuel
+            ~info
+            ~blocks
+            ~target
+            ~env:(Var.Map.add x (Val_constant (Int (Targetint.of_int_exn tag))) env)
+            rem
+      | _ -> None)
+  | (Let (x, Prim (prim, prim_args)) as i) :: rem -> (
+      let prim_args' = List.map prim_args ~f:(fun a -> resolve ~info ~env a) in
+      if List.exists prim_args' ~f:Option.is_none
+      then (
+        if debug_static_eval ()
+        then (
+          (* One character per argument: 'x' if it resolved to a value, '?'
+             otherwise (the latter is why this primitive cannot be evaluated). *)
+          Format.eprintf "static eval: %a not evaluated, args " Code.Print.instr i;
+          List.iter prim_args' ~f:(fun a ->
+              Format.eprintf "%s" (if Option.is_some a then "x" else "?"));
+          Format.eprintf "@.");
+        None)
+      else
+        let is_const =
+          List.for_all prim_args' ~f:(function
+            | Some (Val_constant _) -> true
+            | _ -> false)
+        in
+        if not is_const
+        then None
+        else
+          let prim_args'' =
+            List.map prim_args' ~f:(function
+              | Some (Val_constant c) -> c
+              | _ -> assert false)
+          in
+          let res = eval_prim ~target (prim, prim_args'') in
+          match res with
+          | None ->
+              if debug_static_eval ()
+              then
+                Format.eprintf
+                  "static eval: %a not evaluated (primitive not foldable)@."
+                  Code.Print.instr
+                  i;
+              None
+          | Some c ->
+              eval_block_body
+                ~fuel
+                ~info
+                ~blocks
+                ~target
+                ~env:(Var.Map.add x (Val_constant c) env)
+                rem)
+  | Let (x, Constant c) :: rem ->
+      eval_block_body
+        ~fuel
+        ~info
+        ~blocks
+        ~target
+        ~env:(Var.Map.add x (Val_constant c) env)
+        rem
+  | Let (x, Apply { f; args; _ }) :: rem -> (
+      match get_approx info (fun g -> Flow.Info.def info g) None (fun _ _ -> None) f with
+      | Some (Closure (params, (pc, args'), _)) when List.compare_lengths args params = 0
+        ->
+          let args = List.map args ~f:(fun x -> resolve ~info ~env (Pv x)) in
+          if List.for_all args ~f:Option.is_some
+          then
+            let callee_env =
+              List.fold_left2
+                ~f:(fun s x v -> Var.Map.add x (Option.get v) s)
+                params
+                args
+                ~init:Var.Map.empty
+            in
+            match eval_block ~fuel ~info ~blocks ~target ~env:callee_env pc args' with
+            | Some v ->
+                eval_block_body ~fuel ~info ~blocks ~target ~env:(Var.Map.add x v env) rem
+            | None -> None
+          else None
+      | _ -> None)
+  | Let (x, Block (tag, fields, array_or_not, mutability)) :: rem ->
+      let fields = Array.map ~f:(fun x -> resolve ~info ~env (Pv x)) fields in
+      if
+        (* Only track small blocks: a large block would be expensive to
+           re-materialise at the call site (one allocation per field, see
+           [emit_value]) and rarely pays off. *)
+        Array.length fields > 3
+        || Array.exists fields ~f:(function
+          | Some (Val_constant _) -> false
+          | _ -> true)
+      then None
+      else
+        let fields =
+          Array.map fields ~f:(function
+            | Some (Val_constant c) -> c
+            | _ -> assert false)
+        in
+        eval_block_body
+          ~fuel
+          ~info
+          ~blocks
+          ~target
+          ~env:(Var.Map.add x (Val_block (tag, fields, array_or_not, mutability)) env)
+          rem
+  | Let (x, Field (y, i, _)) :: rem -> (
+      match resolve ~info ~env (Pv y) with
+      | Some (Val_block (_, fields, _, _)) when i < Array.length fields ->
+          eval_block_body
+            ~fuel
+            ~info
+            ~blocks
+            ~target
+            ~env:(Var.Map.add x (Val_constant fields.(i)) env)
+            rem
+      | Some (Val_constant (Tuple (_, fields, _))) when i < Array.length fields ->
+          eval_block_body
+            ~fuel
+            ~info
+            ~blocks
+            ~target
+            ~env:(Var.Map.add x (Val_constant fields.(i)) env)
+            rem
+      | _ -> None)
+  | ( Let (_, (Closure _ | Special _))
+    | Assign _ | Set_field _ | Offset_ref _ | Array_set _ )
+    :: _ -> None
+
+let is_small_value v =
+  let is_small_constant (c : constant) =
+    match c with
+    | Float _ | Float32 _ | Int _ | Int32 _ | Int64 _ | NativeInt _ | Null_ -> true
+    | Float_array _ | Tuple _ | NativeString _ | String _ -> false
+  in
+  match v with
+  | Val_constant c -> is_small_constant c
+  | Val_block (_, fields, _, _) -> Array.for_all ~f:is_small_constant fields
+
+let emit_value update_count x v =
+  match v with
+  | Val_constant c -> [ Let (x, Constant c) ]
+  | Val_block (tag, fields, array_or_not, mutability) ->
+      (* Bind each field to a fresh variable, then allocate the block from those
+         variables. Instructions and variables are accumulated in reverse and
+         reversed once, to avoid the quadratic cost of appending at the end. *)
+      let rev_instrs, rev_vars =
+        Array.fold_left fields ~init:([], []) ~f:(fun (instrs, vars) c ->
+            let v = Code.Var.fresh () in
+            incr update_count;
+            Let (v, Constant c) :: instrs, v :: vars)
+      in
+      let vars = Array.of_list (List.rev rev_vars) in
+      incr update_count;
+      List.rev (Let (x, Block (tag, vars, array_or_not, mutability)) :: rev_instrs)
+
+let eval_instr update_count inline_constant ~target info ~blocks i =
   match i with
   | Let (x, Prim (Extern ((("caml_equal" | "caml_notequal") as prim), _), [ y; z ])) -> (
       let eq e1 e2 =
@@ -717,7 +1031,7 @@ let eval_instr update_count inline_constant ~target info i =
                                 Pc c
                             | Some (Int32 _ | NativeInt _ | NativeString _), `Wasm ->
                                 (* Avoid duplicating the constant here as it would cause an
-                               allocation *)
+                                   allocation *)
                                 arg
                             | Some ((Int32 _ | NativeInt _) as c), `JavaScript ->
                                 incr inline_constant;
@@ -731,9 +1045,47 @@ let eval_instr update_count inline_constant ~target info i =
                                 Pc c
                             | Some _, _
                             (* do not be duplicated other constant as
-                            they're not represented with constant in javascript. *)
+                               they're not represented with constant in javascript. *)
                             | None, _ -> arg)) ) )
           ])
+  | Let (x, Apply { f; args; _ }) -> (
+      match get_approx info (fun g -> Flow.Info.def info g) None (fun _ _ -> None) f with
+      | Some (Closure (params, (pc, args'), _)) when List.compare_lengths args params = 0
+        ->
+          let args =
+            List.map args ~f:(fun x -> the_const_of ~eq:constant_equal info (Pv x))
+          in
+          if List.for_all args ~f:Option.is_some
+          then (
+            if debug_static_eval ()
+            then
+              Format.eprintf
+                "static eval: trying %a (all arguments constant)@."
+                Code.Var.print
+                f;
+            let env =
+              List.fold_left2
+                ~f:(fun s x v -> Var.Map.add x (Val_constant (Option.get v)) s)
+                params
+                args
+                ~init:Var.Map.empty
+            in
+            let fuel = ref static_eval_fuel in
+            match eval_block ~fuel ~info ~blocks ~target ~env pc args' with
+            | Some v when is_small_value v ->
+                if debug_static_eval ()
+                then Format.eprintf "static eval: %a folded@." Code.Var.print x;
+                let res_instrs = emit_value update_count x v in
+                (match v with
+                | Val_constant c -> Flow.Info.update_def info x (Constant c)
+                (* For a block we leave the flow info untouched: [x] is now bound
+                   to a fresh allocation rather than a constant, and recording it
+                   does not enable further folding. *)
+                | Val_block _ -> ());
+                res_instrs
+            | _ -> [ i ])
+          else [ i ]
+      | _ -> [ i ])
   | _ -> [ i ]
 
 type cond_of =
@@ -866,7 +1218,7 @@ let eval update_count update_branch inline_constant ~target info blocks =
       let body =
         List.concat_map
           block.body
-          ~f:(eval_instr update_count inline_constant ~target info)
+          ~f:(eval_instr update_count inline_constant ~blocks ~target info)
       in
       let branch = eval_branch update_branch info block.branch in
       { block with Code.body; Code.branch })

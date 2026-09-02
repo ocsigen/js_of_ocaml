@@ -29,7 +29,7 @@ let%expect_test _ =
     let fun1 () =
       let rec odd x = if x = 0 then false else even (x - 1)
       and even x = if x = 0 then true else odd (x - 1) in
-      assert (odd 1 <> even 1);
+      assert (odd 5000 <> even 5000);
       try
         ignore (odd 5000);
         log_success ()
@@ -61,8 +61,8 @@ let%expect_test _ =
               : caml_trampoline_return(odd$0, [0, _b_]);
      }
      function even(x){return caml_trampoline(even$0(0, x));}
-     var _b_ = even(1);
-     if(odd(1) === _b_)
+     var _b_ = even(5000);
+     if(odd(5000) === _b_)
       throw caml_maybe_attach_backtrace([0, Assert_failure, _a_], 1);
      try{odd(5000); _b_ = log_success(0); return _b_;}
      catch(exn){return caml_call1(log_failure, cst_too_much_recursion);}
@@ -79,7 +79,7 @@ let%expect_test _ =
     let fun1 () =
       let rec odd x = if x = 0 then false else even (x - 1)
       and even x = if x = 0 then true else odd (x - 1) in
-      assert (odd 1 <> even 1);
+      assert (odd 5000 <> even 5000);
       try
         ignore (odd 5000);
         log_success ()
@@ -103,8 +103,8 @@ let%expect_test _ =
       return 0 === x ? 1 : caml_trampoline_return(odd$0, [0, x - 1 | 0]);
      }
      function even(x){return caml_trampoline(even$0(x));}
-     var _b_ = even(1);
-     if(odd(1) === _b_)
+     var _b_ = even(5000);
+     if(odd(5000) === _b_)
       throw caml_maybe_attach_backtrace([0, Assert_failure, _a_], 1);
      try{odd(5000); _b_ = log_success(0); return _b_;}
      catch(exn){return caml_call1(log_failure, cst_too_much_recursion);}
