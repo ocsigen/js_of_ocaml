@@ -147,6 +147,16 @@ let collects_shapes ~shapes (p : Code.program) =
     map)
   else StringMap.empty
 
+let all_functions p =
+  let open Code in
+  fold_closures
+    p
+    (fun name _ _ _ acc ->
+      match name with
+      | Some name -> Var.Set.add name acc
+      | None -> acc)
+    Var.Set.empty
+
 let effects_and_exact_calls
     ~keep_flow_data
     ~deadcode_sentinel
@@ -193,6 +203,17 @@ let effects_and_exact_calls
           p
       in
       let shapes = collects_shapes ~shapes p in
+      (* Lift after the passes above: lifting forks the free variables of
+         lifted closures, so [info] no longer describes the lifted
+         program. *)
+      let p =
+        match Config.(Flag.lambda_lift_all (), target ()) with
+        | true, `JavaScript ->
+            let to_lift = all_functions p in
+            let p, _ = Lambda_lifting_simple.f ~to_lift p in
+            p
+        | _ -> p
+      in
       ( p
       , (Code.Var.Set.empty : Effects.trampolined_calls)
       , (Code.Var.Set.empty : Effects.in_cps)
