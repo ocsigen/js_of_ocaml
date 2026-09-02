@@ -38,6 +38,7 @@ val optimize_for_wasm :
 val f :
      ?standalone:bool
   -> ?wrap_with_fun:[ `Iife | `Anonymous | `Named of string ]
+  -> ?lifecycle_events:bool
   -> ?profile:Profile.t
   -> ?shapes:bool
   -> link:[ `All | `All_from of string list | `Needed | `No ]
@@ -65,6 +66,7 @@ val from_string :
 val link_and_pack :
      ?standalone:bool
   -> ?wrap_with_fun:[ `Iife | `Anonymous | `Named of string ]
+  -> ?lifecycle_events:bool
   -> ?link:[ `All | `All_from of string list | `Needed | `No ]
   -> Javascript.statement_list
   -> Javascript.statement_list
