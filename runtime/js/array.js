@@ -234,7 +234,7 @@ function caml_array_create_float(len) {
 //Provides: caml_array_create_float const (const)
 //Requires: caml_array_bound_error
 //Version: >= 5.2, < 5.3
-//OxCaml
+//If: oxcaml
 function caml_array_create_float(len) {
   if (len >>> 0 >= ((0x7fffffff / 8) | 0)) caml_array_bound_error();
   var len = (len + 1) | 0;

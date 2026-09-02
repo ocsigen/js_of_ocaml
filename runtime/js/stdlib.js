@@ -356,8 +356,8 @@ function caml_maybe_print_stats(_unit) {
 
 //Provides: caml_with_async_exns
 //Requires: caml_callback
-//Version: >= 5.2, < 5.3
-//OxCaml
+//Version: >= 5.2
+//If: oxcaml
 function caml_with_async_exns(body_callback) {
   return caml_callback(body_callback, [0]);
 }

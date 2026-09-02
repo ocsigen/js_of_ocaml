@@ -135,8 +135,8 @@ function caml_int_of_string(s) {
 //Provides: caml_parse_small_int
 //Requires: caml_ml_string_length, caml_string_unsafe_get
 //Requires: caml_parse_sign_and_base, caml_parse_digit, caml_failwith
-//Version: >= 5.2, < 5.3
-//OxCaml
+//Version: >= 5.2
+//If: oxcaml
 function caml_parse_small_int(err_msg, width, s) {
   var r = caml_parse_sign_and_base(s);
   var i = r[0],
@@ -175,16 +175,16 @@ function caml_parse_small_int(err_msg, width, s) {
 
 //Provides: caml_int8_of_string (const)
 //Requires: caml_parse_small_int
-//Version: >= 5.2, < 5.3
-//OxCaml
+//Version: >= 5.2
+//If: oxcaml
 function caml_int8_of_string(s) {
   return caml_parse_small_int("Int8.of_string", 8, s);
 }
 
 //Provides: caml_int16_of_string (const)
 //Requires: caml_parse_small_int
-//Version: >= 5.2, < 5.3
-//OxCaml
+//Version: >= 5.2
+//If: oxcaml
 function caml_int16_of_string(s) {
   return caml_parse_small_int("Int16.of_string", 16, s);
 }
