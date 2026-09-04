@@ -279,3 +279,6 @@
 (ocamlyacc parser_1307)
 
 (ocamllex lexer_1307)
+
+(cram
+ (deps %{bin:js_of_ocaml}))

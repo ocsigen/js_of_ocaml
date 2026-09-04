@@ -59,3 +59,12 @@
 (tests
  (names string_interning)
  (modes wasm))
+
+; The programs compiled here run Wasm code and rely on Node's module
+; resolution (`require`, `require.main`). QuickJS provides neither, so these
+; tests are skipped under the `quickjs` profile.
+
+(cram
+ (deps %{bin:wasm_of_ocaml})
+ (enabled_if
+  (<> %{profile} quickjs)))
