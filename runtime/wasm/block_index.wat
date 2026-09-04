@@ -18,6 +18,12 @@
 (module
    (import "fail" "caml_invalid_argument" (func $caml_invalid_argument (param (ref eq))))
    (import "obj" "null" (global $null_value (ref eq)))
+   (import "bigarray" "caml_ba_get_1"
+      (func $caml_ba_get_1
+         (param (ref eq)) (param (ref eq)) (result (ref eq))))
+   (import "bigarray" "caml_ba_set_1"
+      (func $caml_ba_set_1
+         (param (ref eq)) (param (ref eq)) (param (ref eq)) (result (ref eq))))
 
    (type $block (array (mut (ref eq))))
    (type $string (array (mut i8)))
@@ -29,14 +35,54 @@
    (data $invalid_set_idx
       "caml_set_idx_bytecode: attempted to write to an invalid index")
 
+   ;; Indices with a non-zero tag are special --- the tag tells us how to
+   ;; perform the indexing:
+   ;;
+   ;; - A tag-1 block whose only field is the number of times the pointer has
+   ;;   been advanced represents a known-invalid index. Reads/writes from/to
+   ;;   such an index raise.
+   ;; - A tag-2 (resp. tag-3, tag-4) block [tag; offset] represents an index
+   ;;   to position [offset] of a string (resp. bytes, bigarray). The tag
+   ;;   tells us how to perform the indexing into the base value.
+
+   ;; string_like_get : tag -> base -> idx -> result
+   ;; Reads through a string-like (tag-2, tag-3, or tag-4) index
+   ;; [tag; offset].
+   (func $string_like_get
+      (param $kind i32) (param $base (ref eq)) (param $idx_block (ref $block))
+      (result (ref eq))
+      (local $offset (ref eq))
+      (local.set $offset
+         (array.get $block (local.get $idx_block) (i32.const 1)))
+      (if (i32.eq (local.get $kind) (i32.const 4))
+         (then
+            (return_call $caml_ba_get_1
+               (local.get $base) (local.get $offset))))
+      ;; Strings and bytes have the same representation. Unlike in the JS
+      ;; runtime, we cannot dispatch to [caml_string_unsafe_get] or
+      ;; [caml_bytes_unsafe_get] here: on WASM those primitives are inlined
+      ;; by the compiler (see [generate.ml]) rather than defined as runtime
+      ;; functions, so we inline the same [array.get_u] they compile to. (The
+      ;; runtime's [caml_bytes_geti8] is not suitable: it sign-extends and
+      ;; bounds-checks.)
+      (ref.i31
+         (array.get_u $string
+            (ref.cast (ref $string) (local.get $base))
+            ;; Offset field of a runtime-built string-like index; always an
+            ;; [i31].
+            (i31.get_s (ref.cast (ref i31) (local.get $offset))))))
+
    ;; caml_get_idx_bytecode : base -> idx -> result
    ;; idx is a block (tag 0) of integer field positions.
    ;; Iterates through the positions, indexing into nested blocks.
    ;; Special case: if base is a float array (all-float record), box the result.
-   ;; Raises if [idx] has a non-zero tag (an "invalid" index).
+   ;; The tag of a string-like (tag-2, tag-3, tag-4) index tells us how to
+   ;; index into [base].
+   ;; Raises if [idx] has any other non-zero tag (an "invalid" index).
    (func $caml_get_idx_bytecode (export "caml_get_idx_bytecode")
       (param $base (ref eq)) (param $idx (ref eq)) (result (ref eq))
       (local $idx_block (ref $block))
+      (local $kind i32)
       (local $depth i32)
       (local $i i32)
       (local $pos i32)
@@ -45,13 +91,20 @@
       (local.set $idx_block (ref.cast (ref $block) (local.get $idx)))
       (local.set $depth
          (i32.sub (array.len (local.get $idx_block)) (i32.const 1)))
-      ;; Invalid (non-zero-tag) index: raise.
-      (if (i32.ne
-              (i31.get_s
-                 (ref.cast (ref i31)
-                    (array.get $block (local.get $idx_block) (i32.const 0))))
-              (i32.const 0))
+      (local.set $kind
+         (i31.get_s
+            (ref.cast (ref i31)
+               (array.get $block (local.get $idx_block) (i32.const 0)))))
+      (if (i32.ne (local.get $kind) (i32.const 0))
          (then
+            ;; String-like (tag-2, tag-3, tag-4) index: read from [base] as
+            ;; directed by the tag.
+            (if (i32.and (i32.ge_s (local.get $kind) (i32.const 2))
+                   (i32.le_s (local.get $kind) (i32.const 4)))
+               (then
+                  (return_call $string_like_get
+                     (local.get $kind) (local.get $base) (local.get $idx_block))))
+            ;; Invalid index: raise.
             (call $caml_invalid_argument
                (array.new_data $string $invalid_get_idx
                   (i32.const 0) (i32.const 62)))))
@@ -86,15 +139,42 @@
                (br $loop))))
       (local.get $res))
 
+   ;; string_like_set : tag -> base -> idx -> value -> unit
+   ;; Writes through a string-like (tag-3 or tag-4) index [tag; offset].
+   (func $string_like_set
+      (param $kind i32) (param $base (ref eq)) (param $idx_block (ref $block))
+      (param $v (ref eq))
+      (result (ref eq))
+      (local $offset (ref eq))
+      (local.set $offset
+         (array.get $block (local.get $idx_block) (i32.const 1)))
+      (if (i32.eq (local.get $kind) (i32.const 4))
+         (then
+            (return_call $caml_ba_set_1
+               (local.get $base) (local.get $offset) (local.get $v))))
+      ;; [caml_bytes_unsafe_set] is compiler-inlined on WASM (see the note in
+      ;; [string_like_get] above), so we inline the same [array.set].
+      (array.set $string
+         (ref.cast (ref $string) (local.get $base))
+         ;; The offset field of a runtime-built string-like index is always an
+         ;; [i31], and [$v] is a byte, so it always fits in an [i31].
+         (i31.get_s (ref.cast (ref i31) (local.get $offset)))
+         (i31.get_s (ref.cast (ref i31) (local.get $v))))
+      (ref.i31 (i32.const 0)))
+
    ;; caml_set_idx_bytecode : base -> idx -> value -> unit
    ;; idx is a block (tag 0) of integer field positions.
    ;; Traverses to the parent block, then sets the final field.
    ;; Special case: if base is a float array (all-float record), unbox the value.
-   ;; Raises if [idx] has a non-zero tag (an "invalid" index).
+   ;; The tag of a string-like (tag-3, tag-4) index tells us how to index
+   ;; into [base]. Writing through a tag-2 (string) index is invalid: strings
+   ;; are immutable.
+   ;; Raises if [idx] has any other non-zero tag (an "invalid" index).
    (func $caml_set_idx_bytecode (export "caml_set_idx_bytecode")
       (param $base (ref eq)) (param $idx (ref eq)) (param $v (ref eq))
       (result (ref eq))
       (local $idx_block (ref $block))
+      (local $kind i32)
       (local $depth i32)
       (local $i i32)
       (local $pos i32)
@@ -103,13 +183,21 @@
       (local.set $idx_block (ref.cast (ref $block) (local.get $idx)))
       (local.set $depth
          (i32.sub (array.len (local.get $idx_block)) (i32.const 1)))
-      ;; Invalid (non-zero-tag) index: raise.
-      (if (i32.ne
-              (i31.get_s
-                 (ref.cast (ref i31)
-                    (array.get $block (local.get $idx_block) (i32.const 0))))
-              (i32.const 0))
+      (local.set $kind
+         (i31.get_s
+            (ref.cast (ref i31)
+               (array.get $block (local.get $idx_block) (i32.const 0)))))
+      (if (i32.ne (local.get $kind) (i32.const 0))
          (then
+            ;; Writable string-like (tag-3, tag-4) index: write to [base] as
+            ;; directed by the tag.
+            (if (i32.and (i32.ge_s (local.get $kind) (i32.const 3))
+                   (i32.le_s (local.get $kind) (i32.const 4)))
+               (then
+                  (return_call $string_like_set
+                     (local.get $kind) (local.get $base) (local.get $idx_block)
+                     (local.get $v))))
+            ;; Invalid index: raise.
             (call $caml_invalid_argument
                (array.new_data $string $invalid_set_idx
                   (i32.const 0) (i32.const 61)))))
@@ -195,6 +283,9 @@
 
    ;; caml_deepen_idx_bytecode : idx_prefix -> idx_suffix -> idx
    ;; Concatenates two block indices into a new one.
+   ;; Deepening a non-block (invalid or string-like) prefix is only meaningful
+   ;; if the suffix is the identity (empty) index; otherwise, produces an
+   ;; invalid index.
    (func (export "caml_deepen_idx_bytecode")
       (param $idx_prefix (ref eq)) (param $idx_suffix (ref eq))
       (result (ref eq))
@@ -209,6 +300,19 @@
          (i32.sub (array.len (local.get $prefix)) (i32.const 1)))
       (local.set $suffix_depth
          (i32.sub (array.len (local.get $suffix)) (i32.const 1)))
+      (if (i32.ne
+              (i31.get_s
+                 (ref.cast (ref i31)
+                    (array.get $block (local.get $prefix) (i32.const 0))))
+              (i32.const 0))
+         (then
+            (if (i32.eqz (local.get $suffix_depth))
+               (then (return (local.get $idx_prefix))))
+            ;; Invalid index [1; 0]
+            (return
+               (array.new_fixed $block 2
+                  (ref.i31 (i32.const 1))
+                  (ref.i31 (i32.const 0))))))
       ;; Allocate result block: tag 0, size = prefix_depth + suffix_depth
       (local.set $result
          (array.new $block (ref.i31 (i32.const 0))

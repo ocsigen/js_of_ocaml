@@ -25,55 +25,100 @@
 // For more information on block indices and their bytecode representation, see
 // https://github.com/oxcaml/oxcaml/blob/main/jane/doc/extensions/_03-unboxed-types/03-block-indices.md#representation-of-block-indices
 //
-// We additionally adopt the convention in JSOO that some known-invalid indices
-// are represented as a tag-1 block whose only field is the number of times the
-// pointer has been advanced. Reads/writes from/to such an index raise.
+// We additionally adopt the convention in JSOO that indices with a non-zero
+// tag are special:
+//
+// - A tag-1 block whose only field is the number of times the pointer has
+//   been advanced represents a known-invalid index. Reads/writes from/to
+//   such an index raise.
+// - A tag-2 (resp. tag-3, tag-4) block [tag, offset] represents an index to
+//   position [offset] of a string (resp. bytes, bigarray). The tag tells us
+//   how to perform the indexing into the base value.
 //
 // Our motivation for permitting a representation of these invalid indices is
 // that pointers should generally be safe to create and manipulate, and the
 // only points of unsafety should be reads and writes.
+//
+// Our motivation for permitting string-like indices is to allow slices backed
+// by strings, bytes, and bigstrings on JSOO, as they are on native.
 
 //Provides: caml_get_idx_bytecode mutable (mutable, const)
 //Requires: caml_invalid_argument
+//Requires: caml_string_unsafe_get, caml_bytes_unsafe_get, caml_ba_get_1
 //Version: >= 5.2
 //If: oxcaml
 function caml_get_idx_bytecode(base, idx) {
-  if (TAG(idx) !== 0) {
-    caml_invalid_argument(
-      "caml_get_idx_bytecode: attempted to read from an invalid index",
-    );
+  switch (TAG(idx)) {
+    case 0: {
+      var depth = idx.length - 1;
+      var res = base;
+      for (var i = 1; i <= depth; i++) {
+        res = res[idx[i] + 1];
+      }
+      return res;
+    }
+    // The tag of a string-like index tells us how to index into the base
+    // value (see the note on block indices above).
+    case 2:
+      return caml_string_unsafe_get(base, idx[1]);
+    case 3:
+      return caml_bytes_unsafe_get(base, idx[1]);
+    case 4:
+      return caml_ba_get_1(base, idx[1]);
+    default:
+      caml_invalid_argument(
+        "caml_get_idx_bytecode: attempted to read from an invalid index",
+      );
   }
-  var depth = idx.length - 1;
-  var res = base;
-  for (var i = 1; i <= depth; i++) {
-    res = res[idx[i] + 1];
-  }
-  return res;
 }
 
 //Provides: caml_set_idx_bytecode (mutable, const, mutable)
 //Requires: caml_invalid_argument
+//Requires: caml_bytes_unsafe_set, caml_ba_set_1
 //Version: >= 5.2
 //If: oxcaml
 function caml_set_idx_bytecode(base, idx, v) {
-  if (TAG(idx) !== 0) {
-    caml_invalid_argument(
-      "caml_set_idx_bytecode: attempted to write to an invalid index",
-    );
+  switch (TAG(idx)) {
+    case 0: {
+      var depth = idx.length - 1;
+      var dst = base;
+      for (var i = 1; i < depth; i++) {
+        dst = dst[idx[i] + 1];
+      }
+      dst[idx[depth] + 1] = v;
+      return 0;
+    }
+    // The tag of a string-like index tells us how to index into the base
+    // value (see the note on block indices above). Note that writing through
+    // a tag-2 (string) index is invalid: strings are immutable.
+    case 3:
+      caml_bytes_unsafe_set(base, idx[1], v);
+      return 0;
+    case 4:
+      caml_ba_set_1(base, idx[1], v);
+      return 0;
+    default:
+      caml_invalid_argument(
+        "caml_set_idx_bytecode: attempted to write to an invalid index",
+      );
   }
-  var depth = idx.length - 1;
-  var dst = base;
-  for (var i = 1; i < depth; i++) {
-    dst = dst[idx[i] + 1];
-  }
-  dst[idx[depth] + 1] = v;
-  return 0;
 }
 
 //Provides: caml_deepen_idx_bytecode const (const, const)
 //Version: >= 5.2
 //If: oxcaml
 function caml_deepen_idx_bytecode(idx_prefix, idx_suffix) {
+  if (TAG(idx_prefix) !== 0) {
+    // Deepening a non-block (invalid or string-like) index is only meaningful
+    // if the suffix is the identity (empty) index.
+    if (idx_suffix.length === 1) return idx_prefix;
+    else {
+      var idx = new Array(2);
+      idx[0] = 1; // Invalid index
+      idx[1] = 0;
+      return idx;
+    }
+  }
   var prefix_depth = idx_prefix.length - 1;
   var suffix_depth = idx_suffix.length - 1;
   var block = new Array(1 + prefix_depth + suffix_depth);
