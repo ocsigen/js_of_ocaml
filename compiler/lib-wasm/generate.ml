@@ -2541,7 +2541,12 @@ module Generate (Target : Target_sig.S) = struct
         ~f:(fun f ->
           match f with
           | W.Function ({ name; _ } as f) when Code.Var.equal name toplevel_name ->
-              W.Function { f with body = global_context.init_code @ f.body }
+              (* [init_code] is stored in reverse execution order: reverse it
+                 so that initialization code runs in registration order. In
+                 particular, code patching interned strings into other
+                 constants must run after the globals holding these strings
+                 have been set. *)
+              W.Function { f with body = List.rev global_context.init_code @ f.body }
           | _ -> f)
         functions
     in

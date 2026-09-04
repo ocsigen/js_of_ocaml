@@ -69,6 +69,10 @@
 * Lib: the native stubs generated for the JavaScript primitives are now weak
   symbols, so that libraries which link (but do not run) JavaScript primitives
   in native code can override them with dummy implementations (#2435)
+* Compiler/Wasm: intern string constants: equal string constants now share a
+  single value, which reduces the size of the generated code. Sharing is
+  program-wide with whole-program compilation, and per compilation unit with
+  separate compilation (#2436)
 
 ## Bug fixes
 * Runtime: convert unit names to OCaml strings before calling the toplevel
