@@ -1074,23 +1074,49 @@ module Constant = struct
           (Const_named ("str_" ^ s), W.StructNew (ty, [ AnyConvertExtern (GlobalGet x) ]))
     | String s ->
         let* ty = Type.string_type in
-        if String.length s >= string_length_threshold
-        then
-          let name = Code.Var.fresh_n "string" in
-          let* () = register_data_segment name s in
-          return
-            ( Mutated
-            , W.ArrayNewData
-                (ty, name, Const (I32 0l), Const (I32 (Int32.of_int (String.length s))))
-            )
-        else
-          let l =
-            String.fold_right
-              ~f:(fun c r -> W.Const (I32 (Int32.of_int (Char.code c))) :: r)
-              s
-              ~init:[]
-          in
-          return (Const_named ("str_" ^ s), W.ArrayNewFixed (ty, l))
+        (* Equal string constants are interned.
+
+           [array.new_data] is not a constant expression, so a long string is
+           held in a global that is mutable at the Wasm level and written once
+           by initialization code; it is nonetheless registered as constant.
+           This is sound as long as string constants are never mutated, which
+           they should not be since OCaml strings are immutable. *)
+        let long = String.length s >= string_length_threshold in
+        let typ = W.Ref { nullable = false; typ = Type ty } in
+        let* x =
+          intern_string s (fun () ->
+              let x = Code.Var.fresh_n ("str_" ^ s) in
+              if long
+              then
+                let segment = Code.Var.fresh_n "string_data" in
+                let* () = register_data_segment segment s in
+                let* default = array_placeholder ty in
+                let* () = register_global ~constant:true x { mut = true; typ } default in
+                let* () =
+                  register_init_code
+                    (instr
+                       (W.GlobalSet
+                          ( x
+                          , W.ArrayNewData
+                              ( ty
+                              , segment
+                              , Const (I32 0l)
+                              , Const (I32 (Int32.of_int (String.length s))) ) )))
+                in
+                return x
+              else
+                let l =
+                  String.fold_right
+                    ~f:(fun c r -> W.Const (I32 (Int32.of_int (Char.code c))) :: r)
+                    s
+                    ~init:[]
+                in
+                let* () =
+                  register_global x { mut = false; typ } (W.ArrayNewFixed (ty, l))
+                in
+                return x)
+        in
+        return ((if long then Mutated else Const), W.GlobalGet x)
     | Float f ->
         let* ty = Type.float_type in
         return (Const, W.StructNew (ty, [ Const (F64 (Int64.float_of_bits f)) ]))
@@ -1135,17 +1161,21 @@ module Constant = struct
             let* b = is_small_constant c in
             if b then return c else store_in_global c
         | Const_named name -> store_in_global ~name c
-        | Mutated ->
-            let name = Code.Var.fresh_n "const" in
-            let* () =
-              register_global
-                ~constant:true
-                name
-                { mut = true; typ = Type.value }
-                (W.RefI31 (Const (I32 0l)))
-            in
-            let* () = register_init_code (instr (W.GlobalSet (name, c))) in
-            return (W.GlobalGet name))
+        | Mutated -> (
+            match c with
+            (* Long string constants are already held in a global. *)
+            | W.GlobalGet _ -> return c
+            | _ ->
+                let name = Code.Var.fresh_n "const" in
+                let* () =
+                  register_global
+                    ~constant:true
+                    name
+                    { mut = true; typ = Type.value }
+                    (W.RefI31 (Const (I32 0l)))
+                in
+                let* () = register_init_code (instr (W.GlobalSet (name, c))) in
+                return (W.GlobalGet name)))
 end
 
 module Closure = struct

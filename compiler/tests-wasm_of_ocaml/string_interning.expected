@@ -1,0 +1,6 @@
+long length: 64
+long1 == long2: true
+short1 == short2: true
+nested contents ok: true
+nested shared: true
+n: 17
