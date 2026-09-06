@@ -2125,7 +2125,7 @@ struct
             if static
             then (
               PP.string f "static";
-              PP.space f);
+              PP.non_breaking_space f);
             method_ f class_element_name n m;
             PP.end_group f
         | CEField (decorators, static, n, i) ->
@@ -2134,7 +2134,7 @@ struct
             if static
             then (
               PP.string f "static";
-              PP.space f);
+              PP.non_breaking_space f);
             class_element_name f n;
             (match i with
             | None -> ()
@@ -2152,7 +2152,7 @@ struct
             if static
             then (
               PP.string f "static";
-              PP.space f);
+              PP.non_breaking_space f);
             PP.string f "accessor";
             PP.space f;
             class_element_name f n;
@@ -2169,7 +2169,7 @@ struct
         | CEStaticBLock l ->
             PP.start_group f 0;
             PP.string f "static";
-            PP.space f;
+            PP.non_breaking_space f;
             block f l;
             PP.end_group f);
         if not last then PP.break f);
