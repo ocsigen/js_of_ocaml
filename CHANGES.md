@@ -55,6 +55,11 @@
   for the static evaluator and for `Sys.getenv` lookups at runtime (#2415)
 
 ## Bug fixes
+* Compiler: keep `static` on the same line as the class element it modifies.
+  In compact mode the separator was a newline, and Safari 17 reads `static`
+  alone on a line as a field name rather than a modifier, so every static
+  class field became an instance field; `Int64.of_string` then threw on
+  `MlInt64.UNSIGNED_MAX` (#2420)
 * Compiler/Wasm: sourcemaps were silently disabled on Windows: the detection
   of Binaryen's sourcemap support used Unix redirection syntax, so it always
   concluded that sourcemaps were unsupported (#2418)

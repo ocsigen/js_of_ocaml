@@ -682,8 +682,7 @@ class x extends p {
        var s =  /*<<fake:8:12>>*/ super[d];
        var s =  /*<<fake:9:12>>*/ super.d;
        /*<<fake:6:4>>*/ }
-      static
-      bar(){
+      static bar(){
        var s =  /*<<fake:14:12>>*/ super[d];
        var s =  /*<<fake:15:12>>*/ super.d;
        /*<<fake:12:11>>*/ }
