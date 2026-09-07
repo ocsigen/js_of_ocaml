@@ -417,6 +417,56 @@ let dummy_loc = Loc.create Lexer.dummy_pos Lexer.dummy_pos
 
 let dummy_ident = Js_token.T_IDENTIFIER (Utf8_string.of_string_exn "<DUMMY>", "<DUMMY>")
 
+(* Tokens that can be parsed as a plain identifier (see [identifier] in
+   the grammar), as produced by the lexer. [yield] and [await] are included
+   since they are only turned into keywords by [normalize_token], later. *)
+let is_identifier_like = function
+  | Js_token.T_IDENTIFIER _
+  | T_ACCESSOR
+  | T_AS
+  | T_ASYNC
+  | T_FROM
+  | T_GET
+  | T_META
+  | T_OF
+  | T_SET
+  | T_TARGET
+  | T_DEFER
+  | T_USING
+  | T_YIELD
+  | T_AWAIT -> true
+  | _ -> false
+
+(* [async] and [using] are contextual keywords. Unlike [return] or
+   [throw], only a few of their continuations are restricted by
+   [no LineTerminator here]; any other token simply means that they are
+   used as plain identifiers, and no semicolon must be inserted:
+
+   - [async [no LineTerminator here] function ...]
+   - [async [no LineTerminator here] AsyncArrowBindingIdentifier =>]
+   - [async [no LineTerminator here] ClassElementName (...)] (methods)
+   - [using [no LineTerminator here] BindingList]
+
+   [prev] is the contextual keyword just offered to the parser; [tok] is
+   the next token. We distinguish the expression context from class
+   bodies by checking whether [prev] could be followed by [.], which is
+   only the case when it is being parsed as an expression. *)
+let restricted_after_contextual_keyword t prev tok =
+  let expression_context = acceptable t Js_token.T_PERIOD in
+  match prev, tok with
+  | Js_token.T_ASYNC, _ when expression_context -> (
+      match tok with
+      | Js_token.T_FUNCTION -> true
+      | _ -> is_identifier_like tok)
+  | T_ASYNC, _ -> (
+      (* class element: [async] is a field name unless directly followed
+         by a method name; [async (...) {}] is a method named [async]. *)
+      match tok with
+      | Js_token.T_LPAREN | T_ASSIGN | T_SEMICOLON | T_RCURLY -> false
+      | _ -> true)
+  | T_USING, _ -> expression_context && is_identifier_like tok
+  | _ -> false
+
 let rec offer_one t (lexbuf : Lexer.t) =
   let tok, loc = Lexer.token lexbuf in
   match tok with
@@ -456,16 +506,18 @@ let rec offer_one t (lexbuf : Lexer.t) =
               , _
               , _ )
           , ((T_SEMICOLON | T_VIRTUAL_SEMICOLON) as tok) ) -> tok, loc
-        | ( Some
-              ( (T_RETURN | T_CONTINUE | T_BREAK | T_THROW | T_YIELD | T_ASYNC | T_USING)
-              , _
-              , _ )
-          , _ )
+        | Some ((T_RETURN | T_CONTINUE | T_BREAK | T_THROW | T_YIELD), _, _), _
           when nl_separated h loc && acceptable t T_VIRTUAL_SEMICOLON ->
             (* restricted token can also appear as regular identifier such
                as in [x.return]. In such case, feeding a virtual semicolon
                could trigger a parser error. Here, we first checkpoint
                that a virtual semicolon is acceptable. *)
+            Lexer.rollback lexbuf;
+            semicolon, dummy_loc
+        | Some (((T_ASYNC | T_USING) as prev), _, _), _
+          when restricted_after_contextual_keyword t prev tok
+               && nl_separated h loc
+               && acceptable t T_VIRTUAL_SEMICOLON ->
             Lexer.rollback lexbuf;
             semicolon, dummy_loc
         | _, ((T_DIV | T_DIV_ASSIGN) as tok) ->

@@ -24,6 +24,12 @@
   asynchronous toplevel originally contributed in the unmerged #435 (#66, #833)
 
 ## Bug fixes
+* Compiler: fix automatic semicolon insertion after `async` and `using` used
+  as plain identifiers: a line break was treated as a statement boundary
+  (e.g. `x = async\n+ 1` became `x = async; + 1`), and some inputs failed to
+  parse (e.g. `var async\n= 1`). A semicolon is now only inserted before the
+  restricted continuations (`function`, an arrow parameter, a class element
+  name, a `using` binding) (#2422)
 * Toplevel: keep the `/static/cmis` directory on the load path across
   `Toploop.initialize_toplevel_env`, so libraries whose cmis are loaded at
   runtime stay resolvable; previously the directory was registered only while
