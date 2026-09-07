@@ -42,10 +42,14 @@
      [throw], [break], [continue], [yield], postfix [++]/[--], [async],
      [using]) check for a line terminator explicitly.
 
-   - The [Yield]/[Await] grammar parameters are two mutable flags. When the
-     flag is off, the corresponding keyword token is turned into an
-     identifier; when on, an escaped identifier spelling the keyword is
-     turned into the keyword. The [In] parameter is threaded as [~no_in]. *)
+   - The [Yield], [Await] and [In] grammar parameters of ECMA-262 are
+     threaded through the parsing functions as the labelled arguments
+     [~yield], [~await] and [~no_in], following the spec: a function
+     parameterized by [Yield, Await] in the grammar takes [~yield ~await].
+     The lexer always produces the keyword tokens [T_YIELD] and [T_AWAIT];
+     when the corresponding parameter is off, they are accepted as
+     identifiers. (An escaped spelling such as [yi\u0065ld] is lexed as a
+     plain identifier.) *)
 
 let debug = Debug.find "js-parser"
 
@@ -186,11 +190,9 @@ type t =
   ; mutable prev_end : Lexing.position (* end of the last consumed token *)
   ; mutable prev_line_end : int (* line of the end of the last consumed token *)
   ; mutable prev_real : int (* index of the last consumed token *)
-  ; mutable yield : bool (* [yield] is a keyword *)
-  ; mutable await : bool (* [await] is a keyword *)
   }
 
-let create lexbuf ~yield ~await =
+let create lexbuf =
   { lexbuf
   ; toks = Array.make 64 (Js_token.T_EOF, dummy_loc)
   ; len = 0
@@ -198,8 +200,6 @@ let create lexbuf ~yield ~await =
   ; prev_end = dummy_pos
   ; prev_line_end = -1
   ; prev_real = -1
-  ; yield
-  ; await
   }
 
 let push t tok =
@@ -232,15 +232,7 @@ let rec cur_raw t =
     cur_raw t)
   else x
 
-let normalize t (tok : Js_token.t) =
-  match tok with
-  | T_IDENTIFIER (_, "yield") when t.yield -> Js_token.T_YIELD
-  | T_IDENTIFIER (_, "await") when t.await -> T_AWAIT
-  | T_YIELD when not t.yield -> token_to_ident T_YIELD
-  | T_AWAIT when not t.await -> token_to_ident T_AWAIT
-  | tok -> tok
-
-let cur t = normalize t (fst (cur_raw t))
+let cur t = fst (cur_raw t)
 
 let cur_loc t = snd (cur_raw t)
 
@@ -255,7 +247,7 @@ let peek t n =
     if is_comment tok
     then find (i + 1) n
     else if n = 1
-    then normalize t tok, loc
+    then tok, loc
     else find (i + 1) (n - 1)
   in
   find (t.pos + 1) n
@@ -333,32 +325,20 @@ let reset t m =
   t.prev_line_end <- m.m_prev_line_end;
   t.prev_real <- m.m_prev_real
 
-let with_context t ~yield ~await f =
-  let yield' = t.yield and await' = t.await in
-  t.yield <- yield;
-  t.await <- await;
-  match f () with
-  | x ->
-      t.yield <- yield';
-      t.await <- await';
-      x
-  | exception e ->
-      t.yield <- yield';
-      t.await <- await';
-      raise e
-
 let all_tokens t = Array.to_list (Array.sub t.toks ~pos:0 ~len:t.len)
 
 (****)
 
 (* Identifiers *)
 
-(* Identifier: identifiers and contextual keywords. [yield] and [await]
-   have already been turned into identifiers by [normalize] when they are
-   not keywords in the current context. *)
-let ident_of_token (tok : Js_token.t) =
+(* IdentifierReference[Yield, Await] / LabelIdentifier[Yield, Await]:
+   identifiers and contextual keywords, plus [yield] and [await] when they
+   are not keywords in the current context. *)
+let ident_of_token ~yield ~await (tok : Js_token.t) =
   match tok with
   | T_IDENTIFIER (name, _) -> Some name
+  | T_YIELD when not yield -> Some (utf8_s "yield")
+  | T_AWAIT when not await -> Some (utf8_s "await")
   | T_ACCESSOR
   | T_AS
   | T_ASYNC
@@ -372,7 +352,7 @@ let ident_of_token (tok : Js_token.t) =
   | T_DEFER -> Some (utf8_s (Js_token.to_string tok))
   | _ -> None
 
-let is_identifier tok = Option.is_some (ident_of_token tok)
+let is_identifier ~yield ~await tok = Option.is_some (ident_of_token ~yield ~await tok)
 
 (* IdentifierName: identifiers and reserved words *)
 let identifier_name_of_token (tok : Js_token.t) =
@@ -437,22 +417,18 @@ let identifier_name_of_token (tok : Js_token.t) =
   | T_PUBLIC -> Some (utf8_s (Js_token.to_string tok))
   | _ -> None
 
-let parse_identifier t =
-  match ident_of_token (cur t) with
+let parse_identifier t ~yield ~await =
+  match ident_of_token ~yield ~await (cur t) with
   | Some name ->
       let pos = start_pos t in
       advance t;
       var pos name
   | None -> error t
 
-(* BindingIdentifier also accepts [yield] and [await] *)
-let parse_binding_identifier t =
-  match cur t with
-  | (T_YIELD | T_AWAIT) as tok ->
-      let pos = start_pos t in
-      advance t;
-      var pos (utf8_s (Js_token.to_string tok))
-  | _ -> parse_identifier t
+(* BindingIdentifier[Yield, Await] accepts [yield] and [await] whatever the
+   context; that they are not allowed in some contexts is an early error,
+   which is not checked. *)
+let parse_binding_identifier t = parse_identifier t ~yield:false ~await:false
 
 let parse_identifier_name t =
   match identifier_name_of_token (cur t) with
@@ -579,70 +555,69 @@ let async_function_ahead t =
 
 (* Expressions *)
 
-let rec parse_expression t ~no_in =
-  let e = parse_assignment t ~no_in in
+let rec parse_expression t ~yield ~await ~no_in =
+  let e = parse_assignment t ~yield ~await ~no_in in
   let rec loop e =
     match cur t with
     | T_COMMA ->
         advance t;
-        let e2 = parse_assignment t ~no_in in
+        let e2 = parse_assignment t ~yield ~await ~no_in in
         loop (ESeq (e, e2))
     | _ -> e
   in
   loop e
 
-and parse_assignment t ~no_in =
+and parse_assignment t ~yield ~await ~no_in =
   match cur t with
-  | T_YIELD -> parse_yield t ~no_in
-  | tok when is_identifier tok && Poly.equal (peek_tok t 1) Js_token.T_ARROW ->
+  | T_YIELD when yield -> parse_yield t ~yield ~await ~no_in
+  | tok when is_identifier ~yield ~await tok && Poly.equal (peek_tok t 1) Js_token.T_ARROW
+    ->
       (* x => body *)
       let pos = start_pos t in
-      let i = parse_identifier t in
+      let i = parse_identifier t ~yield ~await in
       expect t T_ARROW;
       let body, concise = parse_arrow_body t ~no_in ~async:false in
       EArrow ((no_fun, list [ param' i ], body, p pos), concise, AUnknown)
   | T_ASYNC -> (
       match peek t 1 with
-      | T_OF, _ -> parse_assignment_rest t ~no_in
-      | tok, loc when is_identifier tok && same_line (cur_loc t) loc ->
+      | T_OF, _ -> parse_assignment_rest t ~yield ~await ~no_in
+      | tok, loc when is_identifier ~yield ~await tok && same_line (cur_loc t) loc ->
           (* async x => body *)
           let pos = start_pos t in
           advance t;
-          with_context t ~yield:false ~await:true (fun () ->
-              let i = parse_identifier t in
-              expect t T_ARROW;
-              let body, concise = parse_arrow_body t ~no_in ~async:true in
-              EArrow
-                ( ({ async = true; generator = false }, list [ param' i ], body, p pos)
-                , concise
-                , AUnknown ))
-      | _ -> parse_assignment_rest t ~no_in)
-  | _ -> parse_assignment_rest t ~no_in
+          let i = parse_identifier t ~yield ~await:true in
+          expect t T_ARROW;
+          let body, concise = parse_arrow_body t ~no_in ~async:true in
+          EArrow
+            ( ({ async = true; generator = false }, list [ param' i ], body, p pos)
+            , concise
+            , AUnknown )
+      | _ -> parse_assignment_rest t ~yield ~await ~no_in)
+  | _ -> parse_assignment_rest t ~yield ~await ~no_in
 
-and parse_assignment_rest t ~no_in =
-  let lhs = parse_conditional t ~no_in in
+and parse_assignment_rest t ~yield ~await ~no_in =
+  let lhs = parse_conditional t ~yield ~await ~no_in in
   match assignment_op (cur t) with
   | Some op ->
       advance t;
-      let rhs = parse_assignment t ~no_in in
+      let rhs = parse_assignment t ~yield ~await ~no_in in
       EBin (op, assignment_target_of_expr (Some op) lhs, rhs)
   | None -> lhs
 
 and parse_arrow_body t ~no_in ~async =
-  with_context t ~yield:false ~await:async (fun () ->
-      match cur t with
-      | T_LCURLY ->
-          advance t;
-          let body = parse_function_body t in
-          expect t T_RCURLY;
-          body, false
-      | _ ->
-          let pos = start_pos t in
-          let e = parse_assignment t ~no_in in
-          let stop = t.prev_end in
-          [ Return_statement (Some e, p stop), p pos ], true)
+  match cur t with
+  | T_LCURLY ->
+      advance t;
+      let body = parse_function_body t ~yield:false ~await:async in
+      expect t T_RCURLY;
+      body, false
+  | _ ->
+      let pos = start_pos t in
+      let e = parse_assignment t ~yield:false ~await:async ~no_in in
+      let stop = t.prev_end in
+      [ Return_statement (Some e, p stop), p pos ], true
 
-and parse_yield t ~no_in =
+and parse_yield t ~yield ~await ~no_in =
   advance t;
   if newline_before t
   then EYield { delegate = false; expr = None }
@@ -650,75 +625,75 @@ and parse_yield t ~no_in =
     match cur t with
     | T_MULT ->
         advance t;
-        let e = parse_assignment t ~no_in in
+        let e = parse_assignment t ~yield ~await ~no_in in
         EYield { delegate = true; expr = Some e }
     | tok when starts_expression tok ->
-        let e = parse_assignment t ~no_in in
+        let e = parse_assignment t ~yield ~await ~no_in in
         EYield { delegate = false; expr = Some e }
     | _ -> EYield { delegate = false; expr = None }
 
-and parse_conditional t ~no_in =
-  let c = parse_short_circuit t ~no_in in
+and parse_conditional t ~yield ~await ~no_in =
+  let c = parse_short_circuit t ~yield ~await ~no_in in
   match cur t with
   | T_PLING ->
       advance t;
-      let e1 = parse_assignment t ~no_in:false in
+      let e1 = parse_assignment t ~yield ~await ~no_in:false in
       expect t T_COLON;
-      let e2 = parse_assignment t ~no_in in
+      let e2 = parse_assignment t ~yield ~await ~no_in in
       ECond (c, e1, e2)
   | _ -> c
 
 (* ShortCircuitExpression: a [??] chain or a [||]/[&&] chain, not both *)
-and parse_short_circuit t ~no_in =
-  let e = parse_binary t ~no_in ~min_prec:3 in
+and parse_short_circuit t ~yield ~await ~no_in =
+  let e = parse_binary t ~yield ~await ~no_in ~min_prec:3 in
   match cur t with
   | T_PLING_PLING ->
       let rec loop e =
         match cur t with
         | T_PLING_PLING ->
             advance t;
-            let e2 = parse_binary t ~no_in ~min_prec:3 in
+            let e2 = parse_binary t ~yield ~await ~no_in ~min_prec:3 in
             loop (EBin (Coalesce, e, e2))
         | T_OR | T_AND -> error t
         | _ -> e
       in
       loop e
   | T_OR | T_AND -> (
-      let e = parse_binary_rest t ~no_in ~min_prec:1 e in
+      let e = parse_binary_rest t ~yield ~await ~no_in ~min_prec:1 e in
       match cur t with
       | T_PLING_PLING -> error t
       | _ -> e)
   | _ -> e
 
-and parse_binary t ~no_in ~min_prec =
-  let e = parse_exponentiation t in
-  parse_binary_rest t ~no_in ~min_prec e
+and parse_binary t ~yield ~await ~no_in ~min_prec =
+  let e = parse_exponentiation t ~yield ~await in
+  parse_binary_rest t ~yield ~await ~no_in ~min_prec e
 
-and parse_binary_rest t ~no_in ~min_prec e =
+and parse_binary_rest t ~yield ~await ~no_in ~min_prec e =
   match binary_op ~no_in (cur t) with
   | Some (op, prec) when prec >= min_prec ->
       advance t;
-      let e2 = parse_binary t ~no_in ~min_prec:(prec + 1) in
-      parse_binary_rest t ~no_in ~min_prec (EBin (op, e, e2))
+      let e2 = parse_binary t ~yield ~await ~no_in ~min_prec:(prec + 1) in
+      parse_binary_rest t ~yield ~await ~no_in ~min_prec (EBin (op, e, e2))
   | _ -> e
 
-and parse_exponentiation t =
-  let e, is_unary = parse_unary t in
+and parse_exponentiation t ~yield ~await =
+  let e, is_unary = parse_unary t ~yield ~await in
   match cur t with
   | T_EXP ->
       (* [-a ** b] is a syntax error *)
       if is_unary then error t;
       advance t;
-      let e2 = parse_exponentiation t in
+      let e2 = parse_exponentiation t ~yield ~await in
       EBin (Exp, e, e2)
   | _ -> e
 
 (* Also returns whether the expression is a unary operator application
    (which cannot be the base of [**]) *)
-and parse_unary t =
+and parse_unary t ~yield ~await =
   let unop op =
     advance t;
-    let e, _ = parse_unary t in
+    let e, _ = parse_unary t ~yield ~await in
     EUn (op, e), true
   in
   match cur t with
@@ -729,17 +704,17 @@ and parse_unary t =
   | T_MINUS -> unop Neg
   | T_BIT_NOT -> unop Bnot
   | T_NOT -> unop Not
-  | T_AWAIT -> unop Await
+  | T_AWAIT when await -> unop Await
   | T_INCR | T_INCR_NB ->
       advance t;
-      let e, _ = parse_unary t in
+      let e, _ = parse_unary t ~yield ~await in
       EUn (IncrB, e), false
   | T_DECR | T_DECR_NB ->
       advance t;
-      let e, _ = parse_unary t in
+      let e, _ = parse_unary t ~yield ~await in
       EUn (DecrB, e), false
   | _ -> (
-      let e = parse_lhs t in
+      let e = parse_lhs t ~yield ~await in
       (* Postfix operators: the lexer produces [T_INCR_NB] when there is no
          line terminator before [++] *)
       match cur t with
@@ -752,39 +727,40 @@ and parse_unary t =
       | _ -> e, false)
 
 (* LeftHandSideExpression *)
-and parse_lhs t =
+and parse_lhs t ~yield ~await =
   let start = start_pos t in
   match cur t with
   | T_ASYNC when Poly.equal (peek_tok t 1) Js_token.T_LPAREN && next_on_same_line t -> (
       (* [async (...)] is either a call or an async arrow function head. *)
-      let async = parse_identifier t in
+      let async = parse_identifier t ~yield ~await in
       let m = mark t in
-      let args = parse_arguments t in
+      let args = parse_arguments t ~yield ~await in
       match cur t with
       | T_ARROW when not (newline_before t) ->
           reset t m;
-          with_context t ~yield:false ~await:true (fun () ->
-              expect t T_LPAREN;
-              let params = parse_formal_parameters t in
-              expect t T_RPAREN;
-              expect t T_ARROW;
-              let body, concise = parse_arrow_body t ~no_in:false ~async:true in
-              EArrow
-                ( ({ async = true; generator = false }, params, body, p start)
-                , concise
-                , AUnknown ))
+          expect t T_LPAREN;
+          let params = parse_formal_parameters t ~yield:false ~await:true in
+          expect t T_RPAREN;
+          expect t T_ARROW;
+          let body, concise = parse_arrow_body t ~no_in:false ~async:true in
+          EArrow
+            ( ({ async = true; generator = false }, params, body, p start)
+            , concise
+            , AUnknown )
       | _ ->
           parse_suffixes
             t
+            ~yield
+            ~await
             ~start
             ~allow_call:true
             (ECall (EVar async, ANormal, args, p start)))
   | _ ->
-      let e = parse_primary t in
-      parse_suffixes t ~start ~allow_call:true e
+      let e = parse_primary t ~yield ~await in
+      parse_suffixes t ~yield ~await ~start ~allow_call:true e
 
 (* Member accesses, calls, optional chains and tagged templates *)
-and parse_suffixes t ~start ~allow_call e =
+and parse_suffixes t ~yield ~await ~start ~allow_call e =
   (* Location of calls: the start of the expression or, inside an optional
      chain, the position of the last [?.] *)
   let loc_start = ref start in
@@ -802,25 +778,25 @@ and parse_suffixes t ~start ~allow_call e =
             loop (EDot (e, ANormal, n)))
     | T_LBRACKET ->
         advance t;
-        let i = parse_expression t ~no_in:false in
+        let i = parse_expression t ~yield ~await ~no_in:false in
         expect t T_RBRACKET;
         loop (EAccess (e, ANormal, i))
     | T_BACKQUOTE ->
-        let tpl = parse_template t in
+        let tpl = parse_template t ~yield ~await in
         loop (ECallTemplate (e, tpl, p !loc_start))
     | T_LPAREN when allow_call ->
-        let args = parse_arguments t in
+        let args = parse_arguments t ~yield ~await in
         loop (ECall (e, ANormal, args, p !loc_start))
     | T_PLING_PERIOD when allow_call -> (
         loc_start := start_pos t;
         advance t;
         match cur t with
         | T_LPAREN ->
-            let args = parse_arguments t in
+            let args = parse_arguments t ~yield ~await in
             loop (ECall (e, ANullish, args, p !loc_start))
         | T_LBRACKET ->
             advance t;
-            let i = parse_expression t ~no_in:false in
+            let i = parse_expression t ~yield ~await ~no_in:false in
             expect t T_RBRACKET;
             loop (EAccess (e, ANullish, i))
         | T_POUND ->
@@ -835,7 +811,7 @@ and parse_suffixes t ~start ~allow_call e =
   in
   loop e
 
-and parse_new t =
+and parse_new t ~yield ~await =
   let pos = start_pos t in
   expect t T_NEW;
   match cur t with
@@ -847,17 +823,19 @@ and parse_new t =
       let callee_pos = start_pos t in
       let callee =
         match cur t with
-        | T_NEW -> parse_new t
-        | _ -> parse_primary t
+        | T_NEW -> parse_new t ~yield ~await
+        | _ -> parse_primary t ~yield ~await
       in
-      let callee = parse_suffixes t ~start:callee_pos ~allow_call:false callee in
+      let callee =
+        parse_suffixes t ~yield ~await ~start:callee_pos ~allow_call:false callee
+      in
       match cur t with
       | T_LPAREN ->
-          let args = parse_arguments t in
+          let args = parse_arguments t ~yield ~await in
           ENew (callee, Some args, p pos)
       | _ -> ENew (callee, None, p pos))
 
-and parse_primary t =
+and parse_primary t ~yield ~await =
   let pos = start_pos t in
   match cur t with
   | (T_THIS | T_NULL | T_SUPER) as tok ->
@@ -880,34 +858,34 @@ and parse_primary t =
   | T_STRING (s, _) ->
       advance t;
       EStr s
-  | T_BACKQUOTE -> ETemplate (parse_template t)
+  | T_BACKQUOTE -> ETemplate (parse_template t ~yield ~await)
   | T_DIV | T_DIV_ASSIGN ->
       relex_regexp t;
-      parse_primary t
+      parse_primary t ~yield ~await
   | T_REGEXP (Utf8 s, flags) ->
       advance t;
       ERegexp (s, if String.equal flags "" then None else Some flags)
-  | T_LBRACKET -> parse_array_literal t
-  | T_LCURLY -> parse_object_literal t
-  | T_LPAREN -> parse_parenthesized t
+  | T_LBRACKET -> parse_array_literal t ~yield ~await
+  | T_LCURLY -> parse_object_literal t ~yield ~await
+  | T_LPAREN -> parse_parenthesized t ~yield ~await
   | T_FUNCTION -> parse_function_expression t ~pos ~async:false
   | T_ASYNC when async_function_ahead t ->
       advance t;
       parse_function_expression t ~pos ~async:true
   | T_CLASS | T_AT ->
-      let decorators = parse_decorators t in
-      let name, decl = parse_class t ~decorators ~name:`Optional in
+      let decorators = parse_decorators t ~yield ~await in
+      let name, decl = parse_class t ~yield ~await ~decorators ~name:`Optional in
       EClass (name, decl)
   | T_POUND ->
       advance t;
       let n = parse_identifier_name t in
       EPrivName n
-  | T_NEW -> parse_new t
-  | tok when is_identifier tok -> EVar (parse_identifier t)
+  | T_NEW -> parse_new t ~yield ~await
+  | tok when is_identifier ~yield ~await tok -> EVar (parse_identifier t ~yield ~await)
   | _ -> error t
 
 (* CoverParenthesizedExpressionAndArrowParameterList *)
-and parse_parenthesized t =
+and parse_parenthesized t ~yield ~await =
   let pos = start_pos t in
   let m = mark t in
   expect t T_LPAREN;
@@ -915,7 +893,7 @@ and parse_parenthesized t =
     (* [...] binding, only valid as arrow parameters *)
     let ellipsis_pos = start_pos t in
     expect t T_ELLIPSIS;
-    ignore (parse_binding_element t);
+    ignore (parse_binding_element t ~yield ~await);
     expect t T_RPAREN;
     `Cover (early_error (pi ellipsis_pos))
   in
@@ -937,21 +915,21 @@ and parse_parenthesized t =
                   `Expr e
               | T_ELLIPSIS -> cover_rest ()
               | _ ->
-                  let e2 = parse_assignment t ~no_in:false in
+                  let e2 = parse_assignment t ~yield ~await ~no_in:false in
                   loop (ESeq (e, e2)))
           | T_RPAREN ->
               advance t;
               `Expr e
           | _ -> error t
         in
-        loop (parse_assignment t ~no_in:false)
+        loop (parse_assignment t ~yield ~await ~no_in:false)
   in
   match cur t with
   | T_ARROW when not (newline_before t) ->
       (* Arrow function: re-parse the parenthesized tokens as parameters *)
       reset t m;
       expect t T_LPAREN;
-      let params = parse_formal_parameters t in
+      let params = parse_formal_parameters t ~yield ~await in
       expect t T_RPAREN;
       expect t T_ARROW;
       let body, concise = parse_arrow_body t ~no_in:false ~async:false in
@@ -961,7 +939,7 @@ and parse_parenthesized t =
       | `Expr e -> e
       | `Cover e -> CoverParenthesizedExpressionAndArrowParameterList e)
 
-and parse_arguments t =
+and parse_arguments t ~yield ~await =
   expect t T_LPAREN;
   let rec loop acc =
     match cur t with
@@ -973,8 +951,8 @@ and parse_arguments t =
           match cur t with
           | T_ELLIPSIS ->
               advance t;
-              ArgSpread (parse_assignment t ~no_in:false)
-          | _ -> Arg (parse_assignment t ~no_in:false)
+              ArgSpread (parse_assignment t ~yield ~await ~no_in:false)
+          | _ -> Arg (parse_assignment t ~yield ~await ~no_in:false)
         in
         match cur t with
         | T_COMMA ->
@@ -987,7 +965,7 @@ and parse_arguments t =
   in
   loop []
 
-and parse_template t =
+and parse_template t ~yield ~await =
   expect t T_BACKQUOTE;
   let rec loop acc =
     match cur t with
@@ -996,7 +974,7 @@ and parse_template t =
         loop (TStr (utf8_s s) :: acc)
     | T_DOLLARCURLY ->
         advance t;
-        let e = parse_expression t ~no_in:false in
+        let e = parse_expression t ~yield ~await ~no_in:false in
         expect t T_RCURLY;
         loop (TExp e :: acc)
     | T_BACKQUOTE ->
@@ -1006,7 +984,7 @@ and parse_template t =
   in
   loop []
 
-and parse_array_literal t =
+and parse_array_literal t ~yield ~await =
   expect t T_LBRACKET;
   let rec loop acc =
     match cur t with
@@ -1021,8 +999,8 @@ and parse_array_literal t =
           match cur t with
           | T_ELLIPSIS ->
               advance t;
-              ElementSpread (parse_assignment t ~no_in:false)
-          | _ -> Element (parse_assignment t ~no_in:false)
+              ElementSpread (parse_assignment t ~yield ~await ~no_in:false)
+          | _ -> Element (parse_assignment t ~yield ~await ~no_in:false)
         in
         match cur t with
         | T_COMMA ->
@@ -1035,7 +1013,7 @@ and parse_array_literal t =
   in
   EArr (loop [])
 
-and parse_property_name t =
+and parse_property_name t ~yield ~await =
   match cur t with
   | T_STRING (s, _) ->
       advance t;
@@ -1045,12 +1023,12 @@ and parse_property_name t =
       PNN (Num.of_string_unsafe raw)
   | T_LBRACKET ->
       advance t;
-      let e = parse_assignment t ~no_in:false in
+      let e = parse_assignment t ~yield ~await ~no_in:false in
       expect t T_RBRACKET;
       PComputed e
   | _ -> PNI (parse_identifier_name t)
 
-and parse_object_literal t =
+and parse_object_literal t ~yield ~await =
   expect t T_LCURLY;
   let rec loop acc =
     match cur t with
@@ -1058,7 +1036,7 @@ and parse_object_literal t =
         advance t;
         List.rev acc
     | _ -> (
-        let prop = parse_property_definition t in
+        let prop = parse_property_definition t ~yield ~await in
         match cur t with
         | T_COMMA ->
             advance t;
@@ -1070,20 +1048,20 @@ and parse_object_literal t =
   in
   EObj (loop [])
 
-and parse_property_definition t =
+and parse_property_definition t ~yield ~await =
   let pos = start_pos t in
   match cur t with
   | T_ELLIPSIS ->
       advance t;
-      PropertySpread (parse_assignment t ~no_in:false)
+      PropertySpread (parse_assignment t ~yield ~await ~no_in:false)
   | T_GET when not (keyword_is_name t) ->
       advance t;
-      let name = parse_property_name t in
+      let name = parse_property_name t ~yield ~await in
       PropertyMethod
         (name, MethodGet (parse_method_rest t ~pos ~async:false ~generator:false))
   | T_SET when not (keyword_is_name t) ->
       advance t;
-      let name = parse_property_name t in
+      let name = parse_property_name t ~yield ~await in
       PropertyMethod
         (name, MethodSet (parse_method_rest t ~pos ~async:false ~generator:false))
   | T_ASYNC when (not (keyword_is_name t)) && next_on_same_line t ->
@@ -1095,19 +1073,19 @@ and parse_property_definition t =
             true
         | _ -> false
       in
-      let name = parse_property_name t in
+      let name = parse_property_name t ~yield ~await in
       PropertyMethod (name, Method (parse_method_rest t ~pos ~async:true ~generator))
   | T_MULT ->
       advance t;
-      let name = parse_property_name t in
+      let name = parse_property_name t ~yield ~await in
       PropertyMethod (name, Method (parse_method_rest t ~pos ~async:false ~generator:true))
   | tok -> (
-      let ident = ident_of_token tok in
-      let name = parse_property_name t in
+      let ident = ident_of_token ~yield ~await tok in
+      let name = parse_property_name t ~yield ~await in
       match cur t, ident with
       | T_COLON, _ ->
           advance t;
-          Property (name, parse_assignment t ~no_in:false)
+          Property (name, parse_assignment t ~yield ~await ~no_in:false)
       | T_LPAREN, _ ->
           PropertyMethod
             (name, Method (parse_method_rest t ~pos ~async:false ~generator:false))
@@ -1117,20 +1095,19 @@ and parse_property_definition t =
       | T_ASSIGN, Some i ->
           let eq_pos = start_pos t in
           advance t;
-          let e = parse_assignment t ~no_in:false in
+          let e = parse_assignment t ~yield ~await ~no_in:false in
           CoverInitializedName (early_error (pi eq_pos), var pos i, (e, p eq_pos))
       | _ -> error t)
 
 (* Parameters and body of a method, after its name *)
 and parse_method_rest t ~pos ~async ~generator =
-  with_context t ~yield:generator ~await:async (fun () ->
-      expect t T_LPAREN;
-      let params = parse_formal_parameters t in
-      expect t T_RPAREN;
-      expect t T_LCURLY;
-      let body = parse_function_body t in
-      expect t T_RCURLY;
-      { async; generator }, params, body, p pos)
+  expect t T_LPAREN;
+  let params = parse_formal_parameters t ~yield:generator ~await:async in
+  expect t T_RPAREN;
+  expect t T_LCURLY;
+  let body = parse_function_body t ~yield:generator ~await:async in
+  expect t T_RCURLY;
+  { async; generator }, params, body, p pos
 
 (****)
 
@@ -1145,21 +1122,23 @@ and parse_function_expression t ~pos ~async =
         true
     | _ -> false
   in
-  with_context t ~yield:generator ~await:async (fun () ->
-      let name =
-        match cur t with
-        | T_LPAREN -> None
-        | _ -> Some (parse_identifier t)
-      in
-      expect t T_LPAREN;
-      let params = parse_formal_parameters t in
-      expect t T_RPAREN;
-      expect t T_LCURLY;
-      let body = parse_function_body t in
-      expect t T_RCURLY;
-      EFun (name, ({ async; generator }, params, body, p pos)))
+  (* Unlike a declaration, the name of a function expression is in the
+     scope of the function itself: BindingIdentifier[+Yield] for a
+     generator, BindingIdentifier[+Await] for an async function. *)
+  let name =
+    match cur t with
+    | T_LPAREN -> None
+    | _ -> Some (parse_identifier t ~yield:generator ~await:async)
+  in
+  expect t T_LPAREN;
+  let params = parse_formal_parameters t ~yield:generator ~await:async in
+  expect t T_RPAREN;
+  expect t T_LCURLY;
+  let body = parse_function_body t ~yield:generator ~await:async in
+  expect t T_RCURLY;
+  EFun (name, ({ async; generator }, params, body, p pos))
 
-and parse_function_declaration t ~pos ~async =
+and parse_function_declaration t ~yield ~await ~pos ~async =
   expect t T_FUNCTION;
   let generator =
     match cur t with
@@ -1168,40 +1147,39 @@ and parse_function_declaration t ~pos ~async =
         true
     | _ -> false
   in
-  let name = parse_identifier t in
-  with_context t ~yield:generator ~await:async (fun () ->
-      expect t T_LPAREN;
-      let params = parse_formal_parameters t in
-      expect t T_RPAREN;
-      expect t T_LCURLY;
-      let body = parse_function_body t in
-      (* For compatibility with the previous parser, plain function
-         declarations are located at their closing brace. *)
-      let pos = if async || generator then pos else start_pos t in
-      expect t T_RCURLY;
-      name, ({ async; generator }, params, body, p pos))
+  let name = parse_identifier t ~yield ~await in
+  expect t T_LPAREN;
+  let params = parse_formal_parameters t ~yield:generator ~await:async in
+  expect t T_RPAREN;
+  expect t T_LCURLY;
+  let body = parse_function_body t ~yield:generator ~await:async in
+  (* For compatibility with the previous parser, plain function
+     declarations are located at their closing brace. *)
+  let pos = if async || generator then pos else start_pos t in
+  expect t T_RCURLY;
+  name, ({ async; generator }, params, body, p pos)
 
-and parse_function_body t =
+and parse_function_body t ~yield ~await =
   let rec loop acc =
     match cur t with
     | T_RCURLY | T_EOF -> List.rev acc
     | _ ->
-        let s = parse_statement_list_item t ~module_:false in
+        let s = parse_statement_list_item t ~yield ~await ~module_:false in
         loop (s :: acc)
   in
   loop []
 
 (* Parses up to, but not including, the closing parenthesis *)
-and parse_formal_parameters t =
+and parse_formal_parameters t ~yield ~await =
   let rec loop acc =
     match cur t with
     | T_RPAREN -> { list = List.rev acc; rest = None }
     | T_ELLIPSIS ->
         advance t;
-        let rest = parse_single_name_binding t in
+        let rest = parse_single_name_binding t ~yield ~await in
         { list = List.rev acc; rest = Some rest }
     | _ -> (
-        let param = parse_binding_element t in
+        let param = parse_binding_element t ~yield ~await in
         match cur t with
         | T_COMMA ->
             advance t;
@@ -1211,34 +1189,34 @@ and parse_formal_parameters t =
   in
   loop []
 
-and parse_binding_element t =
-  let b = parse_single_name_binding t in
-  let init = parse_initializer_opt t ~no_in:false in
+and parse_binding_element t ~yield ~await =
+  let b = parse_single_name_binding t ~yield ~await in
+  let init = parse_initializer_opt t ~yield ~await ~no_in:false in
   b, init
 
-and parse_single_name_binding t =
+and parse_single_name_binding t ~yield ~await =
   match cur t with
-  | T_LBRACKET | T_LCURLY -> BindingPattern (parse_binding_pattern t)
-  | _ -> BindingIdent (parse_identifier t)
+  | T_LBRACKET | T_LCURLY -> BindingPattern (parse_binding_pattern t ~yield ~await)
+  | _ -> BindingIdent (parse_identifier t ~yield ~await)
 
-and parse_initializer_opt t ~no_in =
+and parse_initializer_opt t ~yield ~await ~no_in =
   match cur t with
-  | T_ASSIGN -> Some (parse_initializer t ~no_in)
+  | T_ASSIGN -> Some (parse_initializer t ~yield ~await ~no_in)
   | _ -> None
 
-and parse_initializer t ~no_in =
+and parse_initializer t ~yield ~await ~no_in =
   let pos = start_pos t in
   expect t T_ASSIGN;
-  let e = parse_assignment t ~no_in in
+  let e = parse_assignment t ~yield ~await ~no_in in
   e, p pos
 
-and parse_binding_pattern t =
+and parse_binding_pattern t ~yield ~await =
   match cur t with
-  | T_LCURLY -> parse_object_binding_pattern t
-  | T_LBRACKET -> parse_array_binding_pattern t
+  | T_LCURLY -> parse_object_binding_pattern t ~yield ~await
+  | T_LBRACKET -> parse_array_binding_pattern t ~yield ~await
   | _ -> error t
 
-and parse_object_binding_pattern t =
+and parse_object_binding_pattern t ~yield ~await =
   expect t T_LCURLY;
   let rec loop acc =
     match cur t with
@@ -1247,21 +1225,22 @@ and parse_object_binding_pattern t =
         { list = List.rev acc; rest = None }
     | T_ELLIPSIS ->
         advance t;
-        let rest = parse_identifier t in
+        let rest = parse_identifier t ~yield ~await in
         expect t T_RCURLY;
         { list = List.rev acc; rest = Some rest }
     | _ -> (
         let prop =
           match cur t with
-          | tok when is_identifier tok && not (Poly.equal (peek_tok t 1) Js_token.T_COLON)
-            ->
-              let i = parse_identifier t in
-              let init = parse_initializer_opt t ~no_in:false in
+          | tok
+            when is_identifier ~yield ~await tok
+                 && not (Poly.equal (peek_tok t 1) Js_token.T_COLON) ->
+              let i = parse_identifier t ~yield ~await in
+              let init = parse_initializer_opt t ~yield ~await ~no_in:false in
               Prop_ident (Prop_and_ident i, init)
           | _ ->
-              let name = parse_property_name t in
+              let name = parse_property_name t ~yield ~await in
               expect t T_COLON;
-              let e = parse_binding_element t in
+              let e = parse_binding_element t ~yield ~await in
               Prop_binding (name, e)
         in
         match cur t with
@@ -1275,7 +1254,7 @@ and parse_object_binding_pattern t =
   in
   ObjectBinding (loop [])
 
-and parse_array_binding_pattern t =
+and parse_array_binding_pattern t ~yield ~await =
   expect t T_LBRACKET;
   let rec loop acc =
     match cur t with
@@ -1287,11 +1266,11 @@ and parse_array_binding_pattern t =
         loop (None :: acc)
     | T_ELLIPSIS ->
         advance t;
-        let rest = parse_single_name_binding t in
+        let rest = parse_single_name_binding t ~yield ~await in
         expect t T_RBRACKET;
         { list = List.rev acc; rest = Some rest }
     | _ -> (
-        let e = parse_binding_element t in
+        let e = parse_binding_element t ~yield ~await in
         match cur t with
         | T_COMMA ->
             advance t;
@@ -1307,7 +1286,7 @@ and parse_array_binding_pattern t =
 
 (* Classes *)
 
-and parse_decorators t =
+and parse_decorators t ~yield ~await =
   let rec loop acc =
     match cur t with
     | T_AT ->
@@ -1317,7 +1296,7 @@ and parse_decorators t =
           match cur t with
           | T_LPAREN ->
               advance t;
-              let e = parse_expression t ~no_in:false in
+              let e = parse_expression t ~yield ~await ~no_in:false in
               expect t T_RPAREN;
               e
           | _ -> (
@@ -1335,10 +1314,10 @@ and parse_decorators t =
                         member (EDot (e, ANormal, n)))
                 | _ -> e
               in
-              let e = member (EVar (parse_identifier t)) in
+              let e = member (EVar (parse_identifier t ~yield ~await)) in
               match cur t with
               | T_LPAREN ->
-                  let args = parse_arguments t in
+                  let args = parse_arguments t ~yield ~await in
                   ECall (e, ANormal, args, p pos)
               | _ -> e)
         in
@@ -1347,7 +1326,7 @@ and parse_decorators t =
   in
   loop []
 
-and parse_class t ~decorators ~name =
+and parse_class t ~yield ~await ~decorators ~name =
   expect t T_CLASS;
   let name =
     match name, cur t with
@@ -1358,22 +1337,22 @@ and parse_class t ~decorators ~name =
     match cur t with
     | T_EXTENDS ->
         advance t;
-        Some (parse_lhs t)
+        Some (parse_lhs t ~yield ~await)
     | _ -> None
   in
   expect t T_LCURLY;
-  let body = parse_class_body t in
+  let body = parse_class_body t ~yield ~await in
   expect t T_RCURLY;
   name, { decorators; extends; body }
 
-and parse_class_element_name t =
+and parse_class_element_name t ~yield ~await =
   match cur t with
   | T_POUND ->
       advance t;
       PrivName (parse_identifier_name t)
-  | _ -> PropName (parse_property_name t)
+  | _ -> PropName (parse_property_name t ~yield ~await)
 
-and parse_class_body t =
+and parse_class_body t ~yield ~await =
   let rec loop acc =
     match cur t with
     | T_RCURLY -> List.rev acc
@@ -1383,13 +1362,11 @@ and parse_class_body t =
     | T_STATIC when Poly.equal (peek_tok t 1) Js_token.T_LCURLY ->
         advance t;
         advance t;
-        let body =
-          with_context t ~yield:false ~await:true (fun () -> parse_function_body t)
-        in
+        let body = parse_function_body t ~yield:false ~await:true in
         expect t T_RCURLY;
         loop (CEStaticBLock body :: acc)
     | _ ->
-        let decorators = parse_decorators t in
+        let decorators = parse_decorators t ~yield ~await in
         let static =
           match cur t with
           | T_STATIC when not (keyword_is_name t) ->
@@ -1401,14 +1378,14 @@ and parse_class_body t =
           match cur t with
           | T_ACCESSOR when not (keyword_is_name t) ->
               advance t;
-              let name = parse_class_element_name t in
-              let init = parse_initializer_opt t ~no_in:false in
+              let name = parse_class_element_name t ~yield ~await in
+              let init = parse_initializer_opt t ~yield ~await ~no_in:false in
               consume_semicolon t;
               CEAccessor (decorators, static, name, init)
           | _ -> (
               let pos = start_pos t in
               let meth ~async ~generator kind =
-                let name = parse_class_element_name t in
+                let name = parse_class_element_name t ~yield ~await in
                 let m = parse_method_rest t ~pos ~async ~generator in
                 CEMethod (decorators, static, name, kind m)
               in
@@ -1434,13 +1411,13 @@ and parse_class_body t =
                   advance t;
                   meth ~async:false ~generator:true (fun m -> Method m)
               | _ -> (
-                  let name = parse_class_element_name t in
+                  let name = parse_class_element_name t ~yield ~await in
                   match cur t with
                   | T_LPAREN ->
                       let m = parse_method_rest t ~pos ~async:false ~generator:false in
                       CEMethod (decorators, static, name, Method m)
                   | _ ->
-                      let init = parse_initializer_opt t ~no_in:false in
+                      let init = parse_initializer_opt t ~yield ~await ~no_in:false in
                       consume_semicolon t;
                       CEField (decorators, static, name, init)))
         in
@@ -1452,30 +1429,30 @@ and parse_class_body t =
 
 (* Statements *)
 
-and parse_block t =
+and parse_block t ~yield ~await =
   expect t T_LCURLY;
-  let body = parse_function_body t in
+  let body = parse_function_body t ~yield ~await in
   expect t T_RCURLY;
   body
 
 (* A statement in a position where declarations are not allowed
    (e.g. the body of an [if]) *)
-and parse_statement t =
+and parse_statement t ~yield ~await =
   match cur t with
   | T_FUNCTION | T_CLASS | T_LET | T_CONST | T_AT -> error t
-  | _ -> parse_statement_list_item t ~module_:false
+  | _ -> parse_statement_list_item t ~yield ~await ~module_:false
 
-and parse_variable_declaration_list t ~no_in =
+and parse_variable_declaration_list t ~yield ~await ~no_in =
   let rec loop acc =
     let d =
       match cur t with
       | T_LBRACKET | T_LCURLY ->
-          let pat = parse_binding_pattern t in
-          let init = parse_initializer t ~no_in in
+          let pat = parse_binding_pattern t ~yield ~await in
+          let init = parse_initializer t ~yield ~await ~no_in in
           DeclPattern (pat, init)
       | _ ->
-          let i = parse_identifier t in
-          let init = parse_initializer_opt t ~no_in in
+          let i = parse_identifier t ~yield ~await in
+          let init = parse_initializer_opt t ~yield ~await ~no_in in
           DeclIdent (i, init)
     in
     match cur t with
@@ -1488,19 +1465,19 @@ and parse_variable_declaration_list t ~no_in =
 
 (* [using] / [await using] declarations only bind identifiers (never
    [of]), and only when the first binding is on the same line as [using]. *)
-and using_declaration_ahead t ~await =
-  let n = if await then 1 else 0 in
+and using_declaration_ahead t ~yield ~await ~await_using =
+  let n = if await_using then 1 else 0 in
   (match cur t with
-    | T_AWAIT -> await && Poly.equal (peek_tok t 1) Js_token.T_USING
-    | T_USING -> not await
+    | T_AWAIT -> await_using && Poly.equal (peek_tok t 1) Js_token.T_USING
+    | T_USING -> not await_using
     | _ -> false)
   &&
-  let using_loc = if await then snd (peek t 1) else cur_loc t in
+  let using_loc = if await_using then snd (peek t 1) else cur_loc t in
   match peek t (n + 1) with
   | T_OF, _ -> false
-  | tok, loc -> is_identifier tok && same_line using_loc loc
+  | tok, loc -> is_identifier ~yield ~await tok && same_line using_loc loc
 
-and parse_using_declaration t ~no_in =
+and parse_using_declaration t ~yield ~await ~no_in =
   let kind =
     match cur t with
     | T_AWAIT ->
@@ -1512,8 +1489,8 @@ and parse_using_declaration t ~no_in =
         Using
   in
   let rec loop acc =
-    let i = parse_identifier t in
-    let init = parse_initializer_opt t ~no_in in
+    let i = parse_identifier t ~yield ~await in
+    let init = parse_initializer_opt t ~yield ~await ~no_in in
     let d = DeclIdent (i, init) in
     match cur t with
     | T_COMMA ->
@@ -1523,19 +1500,19 @@ and parse_using_declaration t ~no_in =
   in
   loop []
 
-and parse_statement_list_item t ~module_ =
+and parse_statement_list_item t ~yield ~await ~module_ =
   let pos = start_pos t in
   let stmt s = s, p pos in
   match cur t with
-  | T_LCURLY -> stmt (Block (parse_block t))
+  | T_LCURLY -> stmt (Block (parse_block t ~yield ~await))
   | T_VAR ->
       advance t;
-      let l = parse_variable_declaration_list t ~no_in:false in
+      let l = parse_variable_declaration_list t ~yield ~await ~no_in:false in
       consume_semicolon t;
       stmt (Variable_statement (Var, l))
   | (T_LET | T_CONST) as tok ->
       advance t;
-      let l = parse_variable_declaration_list t ~no_in:false in
+      let l = parse_variable_declaration_list t ~yield ~await ~no_in:false in
       consume_semicolon t;
       stmt
         (Variable_statement
@@ -1543,12 +1520,12 @@ and parse_statement_list_item t ~module_ =
              | T_LET -> Let
              | _ -> Const)
            , l ))
-  | T_USING when using_declaration_ahead t ~await:false ->
-      let kind, l = parse_using_declaration t ~no_in:false in
+  | T_USING when using_declaration_ahead t ~yield ~await ~await_using:false ->
+      let kind, l = parse_using_declaration t ~yield ~await ~no_in:false in
       consume_semicolon t;
       stmt (Variable_statement (kind, l))
-  | T_AWAIT when using_declaration_ahead t ~await:true ->
-      let kind, l = parse_using_declaration t ~no_in:false in
+  | T_AWAIT when await && using_declaration_ahead t ~yield ~await ~await_using:true ->
+      let kind, l = parse_using_declaration t ~yield ~await ~no_in:false in
       consume_semicolon t;
       stmt (Variable_statement (kind, l))
   | T_SEMICOLON ->
@@ -1557,42 +1534,42 @@ and parse_statement_list_item t ~module_ =
   | T_IF ->
       advance t;
       expect t T_LPAREN;
-      let c = parse_expression t ~no_in:false in
+      let c = parse_expression t ~yield ~await ~no_in:false in
       expect t T_RPAREN;
-      let s1 = parse_statement t in
+      let s1 = parse_statement t ~yield ~await in
       let s2 =
         match cur t with
         | T_ELSE ->
             advance t;
-            Some (parse_statement t)
+            Some (parse_statement t ~yield ~await)
         | _ -> None
       in
       stmt (If_statement (c, s1, s2))
   | T_DO ->
       advance t;
-      let body = parse_statement t in
+      let body = parse_statement t ~yield ~await in
       expect t T_WHILE;
       expect t T_LPAREN;
-      let c = parse_expression t ~no_in:false in
+      let c = parse_expression t ~yield ~await ~no_in:false in
       expect t T_RPAREN;
       consume_semicolon_opt t;
       stmt (Do_while_statement (body, c))
   | T_WHILE ->
       advance t;
       expect t T_LPAREN;
-      let c = parse_expression t ~no_in:false in
+      let c = parse_expression t ~yield ~await ~no_in:false in
       expect t T_RPAREN;
-      let body = parse_statement t in
+      let body = parse_statement t ~yield ~await in
       stmt (While_statement (c, body))
-  | T_FOR -> stmt (parse_for t)
+  | T_FOR -> stmt (parse_for t ~yield ~await)
   | T_CONTINUE ->
       advance t;
-      let label = parse_label_opt t in
+      let label = parse_label_opt t ~yield ~await in
       consume_semicolon t;
       stmt (Continue_statement label)
   | T_BREAK ->
       advance t;
-      let label = parse_label_opt t in
+      let label = parse_label_opt t ~yield ~await in
       consume_semicolon t;
       stmt (Break_statement label)
   | T_RETURN ->
@@ -1601,7 +1578,7 @@ and parse_statement_list_item t ~module_ =
         match cur t with
         | T_SEMICOLON | T_RCURLY | T_EOF -> None
         | _ when newline_before t -> None
-        | _ -> Some (parse_expression t ~no_in:false)
+        | _ -> Some (parse_expression t ~yield ~await ~no_in:false)
       in
       let stop = t.prev_end in
       consume_semicolon t;
@@ -1609,38 +1586,38 @@ and parse_statement_list_item t ~module_ =
   | T_WITH ->
       advance t;
       expect t T_LPAREN;
-      let e = parse_expression t ~no_in:false in
+      let e = parse_expression t ~yield ~await ~no_in:false in
       expect t T_RPAREN;
-      let body = parse_statement t in
+      let body = parse_statement t ~yield ~await in
       stmt (With_statement (e, body))
-  | T_SWITCH -> stmt (parse_switch t)
+  | T_SWITCH -> stmt (parse_switch t ~yield ~await)
   | T_THROW ->
       advance t;
       if newline_before t then error t;
-      let e = parse_expression t ~no_in:false in
+      let e = parse_expression t ~yield ~await ~no_in:false in
       consume_semicolon t;
       stmt (Throw_statement e)
-  | T_TRY -> stmt (parse_try t)
+  | T_TRY -> stmt (parse_try t ~yield ~await)
   | T_DEBUGGER ->
       advance t;
       consume_semicolon t;
       stmt Debugger_statement
   | T_FUNCTION ->
-      let name, decl = parse_function_declaration t ~pos ~async:false in
+      let name, decl = parse_function_declaration t ~yield ~await ~pos ~async:false in
       stmt (Function_declaration (name, decl))
   | T_ASYNC when async_function_ahead t ->
       advance t;
-      let name, decl = parse_function_declaration t ~pos ~async:true in
+      let name, decl = parse_function_declaration t ~yield ~await ~pos ~async:true in
       stmt (Function_declaration (name, decl))
   | T_CLASS ->
-      let name, decl = parse_class t ~decorators:[] ~name:`Required in
+      let name, decl = parse_class t ~yield ~await ~decorators:[] ~name:`Required in
       stmt (Class_declaration (Option.get name, decl))
   | T_AT -> (
-      let decorators = parse_decorators t in
+      let decorators = parse_decorators t ~yield ~await in
       match cur t with
       | T_EXPORT when module_ -> parse_export t ~pos ~decorators
       | _ ->
-          let name, decl = parse_class t ~decorators ~name:`Required in
+          let name, decl = parse_class t ~yield ~await ~decorators ~name:`Required in
           stmt (Class_declaration (Option.get name, decl)))
   | T_IMPORT
     when module_
@@ -1649,30 +1626,31 @@ and parse_statement_list_item t ~module_ =
          | T_LPAREN | T_PERIOD -> false
          | _ -> true -> parse_import t ~pos
   | T_EXPORT when module_ -> parse_export t ~pos ~decorators:[]
-  | tok when is_identifier tok && Poly.equal (peek_tok t 1) Js_token.T_COLON ->
-      let label = Label.of_string (Option.get (ident_of_token tok)) in
+  | tok when is_identifier ~yield ~await tok && Poly.equal (peek_tok t 1) Js_token.T_COLON
+    ->
+      let label = Label.of_string (Option.get (ident_of_token ~yield ~await tok)) in
       advance t;
       advance t;
-      let body = parse_statement t in
+      let body = parse_statement t ~yield ~await in
       stmt (Labelled_statement (label, body))
   | _ ->
-      let e = parse_expression t ~no_in:false in
+      let e = parse_expression t ~yield ~await ~no_in:false in
       consume_semicolon t;
       stmt (Expression_statement e)
 
-and parse_label_opt t =
+and parse_label_opt t ~yield ~await =
   match cur t with
-  | tok when is_identifier tok && not (newline_before t) ->
-      let label = Label.of_string (Option.get (ident_of_token tok)) in
+  | tok when is_identifier ~yield ~await tok && not (newline_before t) ->
+      let label = Label.of_string (Option.get (ident_of_token ~yield ~await tok)) in
       advance t;
       Some label
   | _ -> None
 
-and parse_for t =
+and parse_for t ~yield ~await =
   expect t T_FOR;
-  let await =
+  let for_await =
     match cur t with
-    | T_AWAIT ->
+    | T_AWAIT when await ->
         advance t;
         true
     | _ -> false
@@ -1680,18 +1658,18 @@ and parse_for t =
   expect t T_LPAREN;
   let for_in_of left =
     match cur t with
-    | T_IN when not await ->
+    | T_IN when not for_await ->
         advance t;
-        let e = parse_expression t ~no_in:false in
+        let e = parse_expression t ~yield ~await ~no_in:false in
         expect t T_RPAREN;
-        let body = parse_statement t in
+        let body = parse_statement t ~yield ~await in
         ForIn_statement (left, e, body)
     | T_OF ->
         advance t;
-        let e = parse_assignment t ~no_in:false in
+        let e = parse_assignment t ~yield ~await ~no_in:false in
         expect t T_RPAREN;
-        let body = parse_statement t in
-        if await
+        let body = parse_statement t ~yield ~await in
+        if for_await
         then ForAwaitOf_statement (left, e, body)
         else ForOf_statement (left, e, body)
     | _ -> error t
@@ -1701,38 +1679,40 @@ and parse_for t =
     let c =
       match cur t with
       | T_SEMICOLON -> None
-      | _ -> Some (parse_expression t ~no_in:false)
+      | _ -> Some (parse_expression t ~yield ~await ~no_in:false)
     in
     expect t T_SEMICOLON;
     let incr =
       match cur t with
       | T_RPAREN -> None
-      | _ -> Some (parse_expression t ~no_in:false)
+      | _ -> Some (parse_expression t ~yield ~await ~no_in:false)
     in
     expect t T_RPAREN;
-    let body = parse_statement t in
+    let body = parse_statement t ~yield ~await in
     For_statement (init, c, incr, body)
   in
   (* [for (kind binding in/of ...)] or [for (kind declarations; ...)] *)
   let declaration kind =
     let binding =
       match cur t with
-      | T_LBRACKET | T_LCURLY -> BindingPattern (parse_binding_pattern t)
-      | _ -> BindingIdent (parse_identifier t)
+      | T_LBRACKET | T_LCURLY -> BindingPattern (parse_binding_pattern t ~yield ~await)
+      | _ -> BindingIdent (parse_identifier t ~yield ~await)
     in
     match cur t with
     | T_IN | T_OF -> for_in_of (Right (kind, binding))
     | _ ->
         let first =
           match binding with
-          | BindingIdent i -> DeclIdent (i, parse_initializer_opt t ~no_in:true)
-          | BindingPattern pat -> DeclPattern (pat, parse_initializer t ~no_in:true)
+          | BindingIdent i ->
+              DeclIdent (i, parse_initializer_opt t ~yield ~await ~no_in:true)
+          | BindingPattern pat ->
+              DeclPattern (pat, parse_initializer t ~yield ~await ~no_in:true)
         in
         let l =
           match cur t with
           | T_COMMA ->
               advance t;
-              first :: parse_variable_declaration_list t ~no_in:true
+              first :: parse_variable_declaration_list t ~yield ~await ~no_in:true
           | _ -> [ first ]
         in
         for_rest (Right (kind, l))
@@ -1755,16 +1735,16 @@ and parse_for t =
         let _, loc = cur_raw t in
         t.toks.(t.pos) <- token_to_ident T_OF, loc
     | _ -> ());
-    let i = parse_identifier t in
+    let i = parse_identifier t ~yield ~await in
     match cur t with
     | T_IN | T_OF -> for_in_of (Right (kind, BindingIdent i))
     | _ ->
-        let init = parse_initializer_opt t ~no_in:true in
+        let init = parse_initializer_opt t ~yield ~await ~no_in:true in
         let l =
           match cur t with
           | T_COMMA ->
               advance t;
-              let _, l = parse_using_declaration_rest t ~kind in
+              let _, l = parse_using_declaration_rest t ~yield ~await ~kind in
               DeclIdent (i, init) :: l
           | _ -> [ DeclIdent (i, init) ]
         in
@@ -1781,22 +1761,24 @@ and parse_for t =
   | T_CONST ->
       advance t;
       declaration Const
-  | T_USING when using_declaration_ahead t ~await:false -> using_declaration ()
+  | T_USING when using_declaration_ahead t ~yield ~await ~await_using:false ->
+      using_declaration ()
   | T_AWAIT
-    when using_declaration_ahead t ~await:true
-         || Poly.equal (peek_tok t 1) Js_token.T_USING
-            && Poly.equal (peek_tok t 2) Js_token.T_OF
-            && Poly.equal (peek_tok t 3) Js_token.T_OF -> using_declaration ()
+    when await
+         && (using_declaration_ahead t ~yield ~await ~await_using:true
+            || Poly.equal (peek_tok t 1) Js_token.T_USING
+               && Poly.equal (peek_tok t 2) Js_token.T_OF
+               && Poly.equal (peek_tok t 3) Js_token.T_OF) -> using_declaration ()
   | _ -> (
-      let e = parse_expression t ~no_in:true in
+      let e = parse_expression t ~yield ~await ~no_in:true in
       match cur t with
       | T_IN | T_OF -> for_in_of (Left (assignment_target_of_expr None e))
       | _ -> for_rest (Left (Some e)))
 
-and parse_using_declaration_rest t ~kind =
+and parse_using_declaration_rest t ~yield ~await ~kind =
   let rec loop acc =
-    let i = parse_identifier t in
-    let init = parse_initializer_opt t ~no_in:true in
+    let i = parse_identifier t ~yield ~await in
+    let init = parse_initializer_opt t ~yield ~await ~no_in:true in
     let d = DeclIdent (i, init) in
     match cur t with
     | T_COMMA ->
@@ -1806,22 +1788,22 @@ and parse_using_declaration_rest t ~kind =
   in
   loop []
 
-and parse_switch t =
+and parse_switch t ~yield ~await =
   expect t T_SWITCH;
   expect t T_LPAREN;
-  let e = parse_expression t ~no_in:false in
+  let e = parse_expression t ~yield ~await ~no_in:false in
   expect t T_RPAREN;
   expect t T_LCURLY;
   let rec statements acc =
     match cur t with
     | T_CASE | T_DEFAULT | T_RCURLY | T_EOF -> List.rev acc
-    | _ -> statements (parse_statement_list_item t ~module_:false :: acc)
+    | _ -> statements (parse_statement_list_item t ~yield ~await ~module_:false :: acc)
   in
   let rec clauses before default after =
     match cur t with
     | T_CASE -> (
         advance t;
-        let e = parse_expression t ~no_in:false in
+        let e = parse_expression t ~yield ~await ~no_in:false in
         expect t T_COLON;
         let l = statements [] in
         match default with
@@ -1842,9 +1824,9 @@ and parse_switch t =
   in
   clauses [] None []
 
-and parse_try t =
+and parse_try t ~yield ~await =
   expect t T_TRY;
-  let b = parse_block t in
+  let b = parse_block t ~yield ~await in
   let c =
     match cur t with
     | T_CATCH -> (
@@ -1852,12 +1834,12 @@ and parse_try t =
         match cur t with
         | T_LPAREN ->
             advance t;
-            let param = parse_binding_element t in
+            let param = parse_binding_element t ~yield ~await in
             expect t T_RPAREN;
-            let b = parse_block t in
+            let b = parse_block t ~yield ~await in
             Some (Some param, b)
         | _ ->
-            let b = parse_block t in
+            let b = parse_block t ~yield ~await in
             Some (None, b))
     | _ -> None
   in
@@ -1865,7 +1847,7 @@ and parse_try t =
     match cur t with
     | T_FINALLY ->
         advance t;
-        Some (parse_block t)
+        Some (parse_block t ~yield ~await)
     | _ -> None
   in
   (match c, f with
@@ -1928,11 +1910,9 @@ and parse_module_export_name t =
       advance t;
       `String, s, pos
   | tok ->
-      let is_ident =
-        is_identifier tok
-        || Poly.equal tok Js_token.T_YIELD
-        || Poly.equal tok Js_token.T_AWAIT
-      in
+      (* Whether it could be an ImportedBinding (a BindingIdentifier, which
+         accepts [yield] and [await]) *)
+      let is_ident = is_identifier ~yield:false ~await:false tok in
       let name = parse_identifier_name t in
       (if is_ident then `Ident else `Reserved), name, pos
 
@@ -2033,6 +2013,8 @@ and parse_export_clause t =
   loop []
 
 and parse_export t ~pos ~decorators =
+  (* Exports are module top-level items: [~Yield, +Await] *)
+  let yield = false and await = true in
   expect t T_EXPORT;
   let export k = Export (k, pi pos), p pos in
   let export_from kind =
@@ -2054,8 +2036,8 @@ and parse_export t ~pos ~decorators =
       in
       match cur t with
       | T_CLASS | T_AT ->
-          let decorators = parse_decorators t in
-          let name, decl = parse_class t ~decorators ~name:`Optional in
+          let decorators = parse_decorators t ~yield ~await in
+          let name, decl = parse_class t ~yield ~await ~decorators ~name:`Optional in
           consume_semicolon_opt t;
           export (ExportDefaultClass (name, decl))
       | T_FUNCTION -> default_fun ~async:false
@@ -2063,7 +2045,7 @@ and parse_export t ~pos ~decorators =
           advance t;
           default_fun ~async:true
       | _ ->
-          let e = parse_assignment t ~no_in:false in
+          let e = parse_assignment t ~yield ~await ~no_in:false in
           consume_semicolon t;
           export (ExportDefaultExpression e))
   | T_MULT -> (
@@ -2095,16 +2077,16 @@ and parse_export t ~pos ~decorators =
           export k)
   | T_VAR ->
       advance t;
-      let l = parse_variable_declaration_list t ~no_in:false in
+      let l = parse_variable_declaration_list t ~yield ~await ~no_in:false in
       consume_semicolon t;
       export (ExportVar (Var, l))
   | T_LET | T_CONST | T_USING | T_AWAIT | T_FUNCTION | T_ASYNC | T_CLASS | T_AT -> (
       let s, _ =
         match cur t, decorators with
         | T_CLASS, _ :: _ ->
-            let name, decl = parse_class t ~decorators ~name:`Required in
+            let name, decl = parse_class t ~yield ~await ~decorators ~name:`Required in
             Class_declaration (Option.get name, decl), N
-        | _ -> parse_statement_list_item t ~module_:false
+        | _ -> parse_statement_list_item t ~yield ~await ~module_:false
       in
       match s with
       | Variable_statement (k, l) -> export (ExportVar (k, l))
@@ -2115,13 +2097,15 @@ and parse_export t ~pos ~decorators =
 
 (****)
 
+(* Script : StatementList[~Yield, ~Await, ~Return]
+   Module : ModuleItemList, whose items are [~Yield, +Await] *)
 let parse_program t ~module_ =
   let rec loop acc =
     match cur t with
     | T_EOF -> List.rev acc
     | _ ->
         let pos = start_pos t in
-        let s = parse_statement_list_item t ~module_ in
+        let s = parse_statement_list_item t ~yield:false ~await:module_ ~module_ in
         loop ((pos, s) :: acc)
   in
   loop []
@@ -2152,12 +2136,12 @@ let fail_early =
 let check_program p = List.iter p ~f:(function _, p -> fail_early#program [ p ])
 
 let parse_aux script_or_module lex =
-  let module_, await =
+  let module_ =
     match script_or_module with
-    | `Script -> false, false
-    | `Module -> true, true
+    | `Script -> false
+    | `Module -> true
   in
-  let t = create lex ~yield:false ~await in
+  let t = create lex in
   let p =
     try parse_program t ~module_
     with Parsing_error _ as e ->
@@ -2212,8 +2196,8 @@ let parse script_or_module lex =
   List.map p ~f:(fun (_, x) -> x)
 
 let parse_expr lex =
-  let t = create lex ~yield:false ~await:false in
-  let e = parse_expression t ~no_in:false in
+  let t = create lex in
+  let e = parse_expression t ~yield:false ~await:false ~no_in:false in
   expect t T_EOF;
   fail_early#expression e;
   e
