@@ -51,6 +51,9 @@
   context. The `webgl` example now uses WebGL2, and a new `webgl2_particles`
   example demonstrates a GPU particle system driven by transform feedback
   (#1226)
+* Compiler: replace the Menhir-based JavaScript parser with a hand-written
+  recursive-descent parser; it also rejects `throw` followed by a line
+  terminator hidden in a comment, as required by the spec
 * Lib: add `Crypto` — bindings to the Web Crypto API (`crypto`,
   `getRandomValues`, `randomUUID`, and the Promise-typed `SubtleCrypto`), with a
   typed `params` variant (one constructor per algorithm) and
