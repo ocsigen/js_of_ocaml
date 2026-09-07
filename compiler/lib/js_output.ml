@@ -2125,6 +2125,8 @@ struct
             if static
             then (
               PP.string f "static";
+              (* [static] is not a restricted token, but JavaScriptCore up to Safari 17
+                 reads a line break after it as a field named [static] *)
               PP.non_breaking_space f);
             method_ f class_element_name n m;
             PP.end_group f
