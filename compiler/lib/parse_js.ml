@@ -30,11 +30,14 @@
 
    - Every token, including comments, is recorded in an array. This gives
      the parser arbitrary lookahead, provides the token list returned by
-     [parse'], and allows the arrow-function cover grammar to be handled by
-     re-parsing: a parenthesized expression is first parsed as an
-     expression, and if it turns out to be followed by [=>], the parser
-     rewinds to the opening parenthesis and parses formal parameters
-     instead.
+     [parse'], and allows the arrow-function cover grammars
+     (CoverParenthesizedExpressionAndArrowParameterList and
+     CoverCallExpressionAndAsyncArrowHead) to be handled by re-parsing: a
+     parenthesized expression or an [async (...)] call is first parsed as
+     an expression, recording the span of tokens it covers. If, at the
+     AssignmentExpression level, the expression is exactly that cover and
+     is followed by [=>], the parser rewinds to the start of the cover and
+     parses formal parameters instead.
 
    - Automatic semicolon insertion (ASI) follows ECMA-262 12.10: a
      semicolon is inserted before [}], at end of input, or when the
@@ -190,6 +193,10 @@ type t =
   ; mutable prev_end : Lexing.position (* end of the last consumed token *)
   ; mutable prev_line_end : int (* line of the end of the last consumed token *)
   ; mutable prev_real : int (* index of the last consumed token *)
+  ; mutable cover_start : int
+  ; mutable cover_end : int
+        (* Indices of the first and last tokens of the last
+           parenthesized expression or [async (...)] call *)
   }
 
 let create lexbuf =
@@ -200,6 +207,8 @@ let create lexbuf =
   ; prev_end = dummy_pos
   ; prev_line_end = -1
   ; prev_real = -1
+  ; cover_start = -1
+  ; cover_end = -1
   }
 
 let push t tok =
@@ -253,6 +262,11 @@ let peek t n =
   find (t.pos + 1) n
 
 let peek_tok t n = fst (peek t n)
+
+(* Index of the current token *)
+let cur_index t =
+  ignore (cur_raw t);
+  t.pos
 
 let advance t =
   let _, loc = cur_raw t in
@@ -570,9 +584,11 @@ let rec parse_expression t ~yield ~await ~no_in =
 and parse_assignment t ~yield ~await ~no_in =
   match cur t with
   | T_YIELD when yield -> parse_yield t ~yield ~await ~no_in
-  | tok when is_identifier ~yield ~await tok && Poly.equal (peek_tok t 1) Js_token.T_ARROW
-    ->
-      (* x => body *)
+  | tok
+    when is_identifier ~yield ~await tok
+         && Poly.equal (peek_tok t 1) Js_token.T_ARROW
+         && next_on_same_line t ->
+      (* x => body; no line terminator before [=>] *)
       let pos = start_pos t in
       let i = parse_identifier t ~yield ~await in
       expect t T_ARROW;
@@ -586,23 +602,64 @@ and parse_assignment t ~yield ~await ~no_in =
           let pos = start_pos t in
           advance t;
           let i = parse_identifier t ~yield ~await:true in
+          if newline_before t then error t;
           expect t T_ARROW;
           let body, concise = parse_arrow_body t ~no_in ~async:true in
           EArrow
             ( ({ async = true; generator = false }, list [ param' i ], body, p pos)
             , concise
             , AUnknown )
+      | T_LPAREN, loc when same_line (cur_loc t) loc ->
+          parse_cover_or_arrow t ~yield ~await ~no_in
       | _ -> parse_assignment_rest t ~yield ~await ~no_in)
+  | T_LPAREN -> parse_cover_or_arrow t ~yield ~await ~no_in
   | _ -> parse_assignment_rest t ~yield ~await ~no_in
 
 and parse_assignment_rest t ~yield ~await ~no_in =
   let lhs = parse_conditional t ~yield ~await ~no_in in
+  parse_assignment_operator t ~yield ~await ~no_in lhs
+
+and parse_assignment_operator t ~yield ~await ~no_in lhs =
   match assignment_op (cur t) with
   | Some op ->
       advance t;
       let rhs = parse_assignment t ~yield ~await ~no_in in
       EBin (op, assignment_target_of_expr (Some op) lhs, rhs)
   | None -> lhs
+
+(* An expression starting with [(] or [async (]: either an arrow function
+   or an expression starting with a parenthesized expression or a call. The
+   expression is parsed first; if it turns out to be exactly a cover
+   followed by [=>], it is re-parsed as arrow parameters. *)
+and parse_cover_or_arrow t ~yield ~await ~no_in =
+  let pos = start_pos t in
+  let m = mark t in
+  let e = parse_conditional t ~yield ~await ~no_in in
+  match cur t with
+  | T_ARROW
+    when (not (newline_before t)) && t.cover_start = m.m_pos && t.cover_end = t.prev_real
+    ->
+      reset t m;
+      let async =
+        match cur t with
+        | T_ASYNC ->
+            advance t;
+            true
+        | _ -> false
+      in
+      expect t T_LPAREN;
+      (* ArrowFormalParameters[?Yield, ?Await], or [~Yield, +Await] after
+         [async] *)
+      let params =
+        if async
+        then parse_formal_parameters t ~yield:false ~await:true
+        else parse_formal_parameters t ~yield ~await
+      in
+      expect t T_RPAREN;
+      expect t T_ARROW;
+      let body, concise = parse_arrow_body t ~no_in ~async in
+      EArrow (({ async; generator = false }, params, body, p pos), concise, AUnknown)
+  | _ -> parse_assignment_operator t ~yield ~await ~no_in e
 
 and parse_arrow_body t ~no_in ~async =
   match cur t with
@@ -730,31 +787,21 @@ and parse_unary t ~yield ~await =
 and parse_lhs t ~yield ~await =
   let start = start_pos t in
   match cur t with
-  | T_ASYNC when Poly.equal (peek_tok t 1) Js_token.T_LPAREN && next_on_same_line t -> (
-      (* [async (...)] is either a call or an async arrow function head. *)
+  | T_ASYNC when Poly.equal (peek_tok t 1) Js_token.T_LPAREN && next_on_same_line t ->
+      (* CoverCallExpressionAndAsyncArrowHead: parsed as a call; see
+         [parse_cover_or_arrow] *)
+      let cover_start = cur_index t in
       let async = parse_identifier t ~yield ~await in
-      let m = mark t in
       let args = parse_arguments t ~yield ~await in
-      match cur t with
-      | T_ARROW when not (newline_before t) ->
-          reset t m;
-          expect t T_LPAREN;
-          let params = parse_formal_parameters t ~yield:false ~await:true in
-          expect t T_RPAREN;
-          expect t T_ARROW;
-          let body, concise = parse_arrow_body t ~no_in:false ~async:true in
-          EArrow
-            ( ({ async = true; generator = false }, params, body, p start)
-            , concise
-            , AUnknown )
-      | _ ->
-          parse_suffixes
-            t
-            ~yield
-            ~await
-            ~start
-            ~allow_call:true
-            (ECall (EVar async, ANormal, args, p start)))
+      t.cover_start <- cover_start;
+      t.cover_end <- t.prev_real;
+      parse_suffixes
+        t
+        ~yield
+        ~await
+        ~start
+        ~allow_call:true
+        (ECall (EVar async, ANormal, args, p start))
   | _ ->
       let e = parse_primary t ~yield ~await in
       parse_suffixes t ~yield ~await ~start ~allow_call:true e
@@ -884,10 +931,10 @@ and parse_primary t ~yield ~await =
   | tok when is_identifier ~yield ~await tok -> EVar (parse_identifier t ~yield ~await)
   | _ -> error t
 
-(* CoverParenthesizedExpressionAndArrowParameterList *)
+(* CoverParenthesizedExpressionAndArrowParameterList, parsed as an
+   expression; see [parse_cover_or_arrow] *)
 and parse_parenthesized t ~yield ~await =
-  let pos = start_pos t in
-  let m = mark t in
+  let cover_start = cur_index t in
   expect t T_LPAREN;
   let cover_rest () =
     (* [...] binding, only valid as arrow parameters *)
@@ -924,20 +971,11 @@ and parse_parenthesized t ~yield ~await =
         in
         loop (parse_assignment t ~yield ~await ~no_in:false)
   in
-  match cur t with
-  | T_ARROW when not (newline_before t) ->
-      (* Arrow function: re-parse the parenthesized tokens as parameters *)
-      reset t m;
-      expect t T_LPAREN;
-      let params = parse_formal_parameters t ~yield ~await in
-      expect t T_RPAREN;
-      expect t T_ARROW;
-      let body, concise = parse_arrow_body t ~no_in:false ~async:false in
-      EArrow ((no_fun, params, body, p pos), concise, AUnknown)
-  | _ -> (
-      match res with
-      | `Expr e -> e
-      | `Cover e -> CoverParenthesizedExpressionAndArrowParameterList e)
+  t.cover_start <- cover_start;
+  t.cover_end <- t.prev_real;
+  match res with
+  | `Expr e -> e
+  | `Cover e -> CoverParenthesizedExpressionAndArrowParameterList e
 
 and parse_arguments t ~yield ~await =
   expect t T_LPAREN;
