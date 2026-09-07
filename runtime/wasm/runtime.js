@@ -163,7 +163,7 @@
       : f;
   }
 
-  const decoder = new TextDecoder("utf-8", { ignoreBOM: true });
+  const decoder = new TextDecoder("utf-8", { ignoreBOM: 1 });
   const encoder = new TextEncoder();
 
   // View on the scratch area used to convert between OCaml and JavaScript
