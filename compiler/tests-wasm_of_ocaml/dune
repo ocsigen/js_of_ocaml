@@ -15,6 +15,12 @@
  (modes wasm))
 
 (tests
+ (names split_toplevel)
+ (modes wasm)
+ (wasm_of_ocaml
+  (flags :standard --set toplevel_split_size=5)))
+
+(tests
  (names marshal_fixes)
  (modes js wasm))
 

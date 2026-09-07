@@ -1,6 +1,12 @@
 # dev
 
 ## Features/Changes
+* Compiler/Wasm: split the toplevel function into smaller functions.
+  The toplevel function of a large program can be huge, which makes Wasm
+  engines (and Binaryen) slow to optimize it, or even makes them fail. Runs
+  of instructions across which no local variable is live are outlined into
+  separate functions; the `split-toplevel` flag and the
+  `toplevel_split_size` parameter control this (#2423)
 * Lib: add `WebGL2` — bindings to the WebGL2 rendering context. The context
   inherits every method and constant of `WebGL`, and adds the WebGL2 objects
   (vertex array objects, queries, samplers, syncs, transform feedback), 3D and

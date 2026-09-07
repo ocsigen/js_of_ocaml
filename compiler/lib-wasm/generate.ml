@@ -2537,12 +2537,28 @@ module Generate (Target : Target_sig.S) = struct
         []
     in
     let functions =
-      List.map
+      List.concat_map
         ~f:(fun f ->
           match f with
-          | W.Function ({ name; _ } as f) when Code.Var.equal name toplevel_name ->
-              W.Function { f with body = global_context.init_code @ f.body }
-          | _ -> f)
+          | W.Function ({ name; locals; body; _ } as f)
+            when Code.Var.equal name toplevel_name ->
+              let body = global_context.init_code @ body in
+              if Config.Flag.split_toplevel ()
+              then
+                let locals, body, pieces = Split_toplevel.f ~name ~locals body in
+                W.Function { f with locals; body }
+                :: List.map
+                     ~f:(fun f ->
+                       match f with
+                       | W.Function ({ param_names; locals; body; _ } as f) ->
+                           let locals, body =
+                             post_process_function_body ~param_names ~locals body
+                           in
+                           W.Function { f with locals; body }
+                       | _ -> f)
+                     pieces
+              else [ W.Function { f with body } ]
+          | _ -> [ f ])
         functions
     in
     global_context.init_code <- [];
