@@ -1387,3 +1387,45 @@ let%expect_test "in operator in conditional then-branch needs no parentheses" =
     x=/*<<fake:1:11>>*/c?z="a"in
     b:d;;);
     |}]
+
+(* [async] and [using] are contextual keywords: they only introduce a
+   restricted production when followed by specific tokens ([function], [*],
+   arrow parameters, a class element name, a binding).  Used as plain
+   identifiers, a line break after them must not trigger ASI. *)
+let%expect_test "async/using identifiers followed by a line break" =
+  let test s = print ~debuginfo:false ~report:true ~compact:false s in
+  test {|
+var async = 1;
+var x = async
++ 1;
+|};
+  [%expect {| var async = 1; var x = async; + 1; |}];
+  test {|
+var async
+= 1;
+|};
+  [%expect {| cannot parse js (from l:3, c:0)@. |}];
+  test {|
+var async = { f() { return 1 } };
+var x = async
+.f();
+|};
+  [%expect {| cannot parse js (from l:4, c:0)@. |}];
+  test {|
+var async = (a) => a;
+var x = async
+(2);
+|};
+  [%expect {| var async = a=>a; var x = async; 2; |}];
+  test {|
+var using = 1;
+var x = using
++ 1;
+|};
+  [%expect {| var using = 1; var x = using; + 1; |}];
+  test {|
+var using = (a) => a;
+var x = using
+(2);
+|};
+  [%expect {| var using = a=>a; var x = using; 2; |}]
