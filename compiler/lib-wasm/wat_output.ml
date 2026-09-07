@@ -666,7 +666,7 @@ let field ctx st f =
          mapping emitted at the very start of the function by [Wasm_output]. *)
       (match body with
         | Event Parse_info.{ src = Some src; col; line; _ } :: _ ->
-            [ Comment (Format.sprintf "@ %s:%d:%d" src line col) ]
+            [ Comment ("@ " ^ Format.sprintf "%s:%d:%d" src line col) ]
         | _ -> [])
       @ [ funct ctx st name exported_name typ signature param_names locals body ]
   | Global { name; exported_name; typ; init } ->
