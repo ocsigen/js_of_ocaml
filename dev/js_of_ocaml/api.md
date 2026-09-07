@@ -1,10 +1,8 @@
-
 # API reference
 
 The Js\_of\_ocaml distribution ships several opam packages, each providing one or more libraries. This page lists the public modules of every package; see the [documentation home](./index.md) for the manual.
 
 The top-level module of each library also states, in its own documentation, which opam package provides it.
-
 
 ## `js_of_ocaml` — the base library
 
@@ -13,7 +11,7 @@ Provided by the `js_of_ocaml` opam package (library `js_of_ocaml`).
 Core runtime and JavaScript values:
 
 [`Js_of_ocaml.Js`](./Js_of_ocaml-Js.md) Javascript binding
-[`Js_of_ocaml.Js_error`](./Js_of_ocaml-Js-Js_error.md) 
+[`Js_of_ocaml.Js_error`](./Js_of_ocaml-Js-Js_error.md)
 [`Js_of_ocaml.Jstable`](./Js_of_ocaml-Jstable.md) A minimal table implementation specialized for Js.js\_string keys. This is faster than regular OCaml hashtables.
 [`Js_of_ocaml.Sys_js`](./Js_of_ocaml-Sys_js.md) Javascript specific Sys functions.
 [`Js_of_ocaml.Typed_array`](./Js_of_ocaml-Typed_array.md) Typed Array binding
@@ -34,7 +32,7 @@ Browser APIs:
 [`Js_of_ocaml.Fetch`](./Js_of_ocaml-Fetch.md) Fetch API.
 [`Js_of_ocaml.File`](./Js_of_ocaml-File.md) File API
 [`Js_of_ocaml.FontFace`](./Js_of_ocaml-FontFace.md) CSS Font Loading API binding.
-[`Js_of_ocaml.Form`](./Js_of_ocaml-Form.md) 
+[`Js_of_ocaml.Form`](./Js_of_ocaml-Form.md)
 [`Js_of_ocaml.Geolocation`](./Js_of_ocaml-Geolocation.md) Geolocation API
 [`Js_of_ocaml.IntersectionObserver`](./Js_of_ocaml-IntersectionObserver.md) The Intersection Observer API provides a way to asynchronously observe changes in the intersection of a target element with an ancestor element or with a top-level document's viewport.
 [`Js_of_ocaml.Intl`](./Js_of_ocaml-Intl.md) Internationalization API
@@ -57,7 +55,7 @@ Browser APIs:
 The same opam package also provides the `js_of_ocaml.deriving` library — the runtime used by the code that `[@@deriving json]` generates:
 
 [`Deriving_Json`](./Deriving_Json.md) Typesafe IO (based on the deriving library).
-[`Deriving_Json_lexer`](./Deriving_Json_lexer.md) 
+[`Deriving_Json_lexer`](./Deriving_Json_lexer.md)
 
 ## `js_of_ocaml-lwt` — Lwt support
 
@@ -73,7 +71,6 @@ Provided by the `js_of_ocaml-lwt` opam package (library `js_of_ocaml-lwt`).
 ## `js_of_ocaml-ppx_deriving_json` — JSON derivation syntax
 
 Provided by the `js_of_ocaml-ppx_deriving_json` opam package. This is the PPX that derives JSON serializers (`[@@deriving json]`); the generated code relies on the [`Deriving_Json`](./Deriving_Json.md) runtime from the `js_of_ocaml` package above. See [the manual](./ppx-deriving.md) for usage.
-
 
 ## `js_of_ocaml-tyxml` — TyXML support
 

@@ -1,4 +1,3 @@
-
 # Class type `Dom_html.element`
 
 Properties common to all HTML elements

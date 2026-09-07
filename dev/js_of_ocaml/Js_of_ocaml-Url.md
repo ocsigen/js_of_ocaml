@@ -1,4 +1,3 @@
-
 # Module `Js_of_ocaml.Url`
 
 This module provides functions for tampering with Url. It's main goal is to allow one to stay in the Ocaml realm without wandering into the [`Dom_html.window`](./Js_of_ocaml-Dom_html-class-type-window.md)\##.location object.

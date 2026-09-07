@@ -1,4 +1,3 @@
-
 # Module `Stdlib.String`
 
 ```ocaml

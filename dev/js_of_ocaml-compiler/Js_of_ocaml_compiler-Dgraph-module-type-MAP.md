@@ -1,4 +1,3 @@
-
 # Module type `Dgraph.MAP`
 
 ```ocaml

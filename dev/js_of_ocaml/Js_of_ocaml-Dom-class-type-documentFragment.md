@@ -1,4 +1,3 @@
-
 # Class type `Dom.documentFragment`
 
 Specification of `DocumentFragment` objects.

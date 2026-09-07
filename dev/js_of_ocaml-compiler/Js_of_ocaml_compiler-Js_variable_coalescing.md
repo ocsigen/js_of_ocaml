@@ -1,4 +1,3 @@
-
 # Module `Js_of_ocaml_compiler.Js_variable_coalescing`
 
 Liveness analysis and variable coalescing for JavaScript generation.

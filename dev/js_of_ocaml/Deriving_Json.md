@@ -1,4 +1,3 @@
-
 # Module `Deriving_Json`
 
 Typesafe IO (based on the *deriving* library).

@@ -1,4 +1,3 @@
-
 # Module `Js_of_ocaml_toplevel_protocol.Wrapped_intf`
 
 ```ocaml

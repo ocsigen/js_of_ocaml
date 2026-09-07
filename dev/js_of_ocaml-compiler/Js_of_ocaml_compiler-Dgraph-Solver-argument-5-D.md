@@ -1,4 +1,3 @@
-
 # Parameter `Solver.D`
 
 ```ocaml

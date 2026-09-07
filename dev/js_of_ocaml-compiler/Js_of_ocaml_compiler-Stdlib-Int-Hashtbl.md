@@ -1,4 +1,3 @@
-
 # Module `Int.Hashtbl`
 
 ```ocaml

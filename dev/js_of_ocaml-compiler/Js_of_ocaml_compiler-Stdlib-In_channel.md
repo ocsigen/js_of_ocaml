@@ -1,4 +1,3 @@
-
 # Module `Stdlib.In_channel`
 
 ```ocaml

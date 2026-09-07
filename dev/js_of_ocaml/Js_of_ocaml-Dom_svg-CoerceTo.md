@@ -1,6 +1,4 @@
-
 # Module `Dom_svg.CoerceTo`
-
 
 ### Coercion functions
 

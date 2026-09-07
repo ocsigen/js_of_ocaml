@@ -1,10 +1,8 @@
-
 # Module `Js_of_ocaml.Dom_html`
 
 DOM HTML binding
 
 This is a partial binding to the DOM HTML API.
-
 
 ### CSS style declaration
 
@@ -486,7 +484,6 @@ class type  selection = object ... end
 ```
 Information on current selection
 
-
 ### Document objects
 
 ```ocaml
@@ -521,7 +518,6 @@ val getElementById_coerce : string -> (element Js.t -> 'a Js.opt) -> 'a option
 val getElementById : string -> element Js.t
 ```
 `getElementById id` returns the element with the id `id` in the current document. It raises `Not_found` if there are no such element
-
 
 ### Window objects
 
@@ -705,7 +701,6 @@ val createCustomEvent :
 ```
 See `Dom.createCustomEvent`
 
-
 ### Mouse event helper functions
 
 ```ocaml
@@ -729,7 +724,6 @@ val getDocumentScroll : unit -> float * float
 ```
 Viewport top/left position
 
-
 ### Key event helper functions
 
 ```ocaml
@@ -741,7 +735,6 @@ Use `Keyboard_code` when you want to identify a key that the user pressed. This 
 module Keyboard_key : sig ... end
 ```
 Use `Keyboard_key` when you want to identify the character that the user typed. This should only be invoked on keypress events, not keydown or keyup events.
-
 
 ### Helper functions for creating HTML elements
 
@@ -1274,7 +1267,6 @@ val js_array_of_collection :
   element Js.t Js.js_array Js.t
 ```
 Convert a `Dom_html.collection` to a Js array
-
 
 ### Deprecated function.
 

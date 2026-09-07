@@ -1,4 +1,3 @@
-
 # Class type `Js.js_string`
 
 Specification of Javascript string objects.

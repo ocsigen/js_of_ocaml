@@ -1,4 +1,3 @@
-
 # Module `Js.Optdef`
 
 Standard functions for manipulating possibly undefined values.

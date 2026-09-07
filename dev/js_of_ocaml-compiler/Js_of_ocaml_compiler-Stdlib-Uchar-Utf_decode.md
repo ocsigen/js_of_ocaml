@@ -1,4 +1,3 @@
-
 # Module `Uchar.Utf_decode`
 
 ```ocaml

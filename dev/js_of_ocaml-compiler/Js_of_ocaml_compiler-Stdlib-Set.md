@@ -1,4 +1,3 @@
-
 # Module `Stdlib.Set`
 
 ```ocaml

@@ -1,4 +1,3 @@
-
 # Class type `Dom_svg.langSpace`
 
 deprecated Merged into SVGElement in SVG 2. Use lang/xml:lang attributes.

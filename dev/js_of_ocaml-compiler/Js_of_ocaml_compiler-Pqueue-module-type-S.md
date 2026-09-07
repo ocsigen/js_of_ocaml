@@ -1,4 +1,3 @@
-
 # Module type `Pqueue.S`
 
 ```ocaml

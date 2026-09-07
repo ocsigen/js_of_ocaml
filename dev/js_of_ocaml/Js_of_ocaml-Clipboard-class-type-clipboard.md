@@ -1,4 +1,3 @@
-
 # Class type `Clipboard.clipboard`
 
 ```ocaml

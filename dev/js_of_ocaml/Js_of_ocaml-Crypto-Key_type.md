@@ -1,4 +1,3 @@
-
 # Module `Crypto.Key_type`
 
 The `KeyType` of a [`cryptoKey`](./Js_of_ocaml-Crypto-class-type-cryptoKey.md).

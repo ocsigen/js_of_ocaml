@@ -1,6 +1,4 @@
-
 # Js\_of\_ocaml
-
 
 ## Overview
 
@@ -21,7 +19,6 @@ There is also a compiler targeting WebAssembly provided by the `wasm_of_ocaml` p
 
 **Note**: All code examples in this manual use Js\_of\_ocaml's ppx syntax. It is possible to use Js\_of\_ocaml purely as a compiler while using a different package (e.g., gen\_js\_api, brr) to provide bindings to the browser APIs.
 
-
 ## Installation
 
 The easiest way to install js\_of\_ocaml is to use opam:
@@ -30,7 +27,6 @@ The easiest way to install js\_of\_ocaml is to use opam:
 opam install js_of_ocaml js_of_ocaml-ppx js_of_ocaml-lwt
 ```
 For alternatives, see [Installation](./install.md).
-
 
 ## Usage
 
@@ -47,21 +43,17 @@ js_of_ocaml cubes.byte
 ```
 **Note**: Generated JavaScript files are UTF-8 encoded.
 
-
 ### With dune
 
 Dune has native support for js\_of\_ocaml. It supports both standard and separate compilation of JavaScript files. See the [dune documentation](https://dune.readthedocs.io/en/latest/jsoo.html).
-
 
 ### With ocamlbuild (legacy)
 
 Js\_of\_ocaml provides an ocamlbuild plugin. See [js\_of\_ocaml-ocamlbuild](https://github.com/ocsigen/js_of_ocaml-ocamlbuild).
 
-
 ### Toplevel
 
 You can find an OCaml toplevel running in the browser [here](files/toplevel/index.html). See [Building a toplevel](./build-toplevel.md) to create your own.
-
 
 ## Supported features
 
@@ -84,11 +76,9 @@ Tail calls are not optimized in general. However, mutually recursive functions a
 - Trampolines are used otherwise
 See [tailcall optimization](./tailcall.md) for more details.
 
-
 ### Effect handlers
 
 Effect handlers are fully supported with the `--effects=..` flag. Effect support is disabled by default since effects are not widely used and the generated code can be slower, larger, and less readable. See [effect handlers](./effects.md) for details.
-
 
 ### Data representation
 

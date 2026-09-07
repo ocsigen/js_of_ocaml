@@ -1,4 +1,3 @@
-
 # Class type `File.progressEventTarget`
 
 ```ocaml

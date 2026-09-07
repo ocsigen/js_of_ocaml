@@ -1,4 +1,3 @@
-
 # Class type `Worker.errorEvent`
 
 ```ocaml

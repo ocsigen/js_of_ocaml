@@ -1,8 +1,6 @@
-
 # Tail call optimization
 
 Tail call optimization (TCO) support in JavaScript depends on the VM. JavaScriptCore (Safari, Bun) implements TCO, but V8 (Chrome, Node.js) and SpiderMonkey (Firefox) do not. To ensure portable stack safety, js\_of\_ocaml optimizes common tail call patterns.
-
 
 ## What gets optimized
 
@@ -12,7 +10,6 @@ Tail call optimization (TCO) support in JavaScript depends on the VM. JavaScript
 | Mutually recursive tail calls | Compiled with a trampoline |
 | Other tail calls | Not optimized (may overflow) |
 To optimize other tail calls, try `--effects=cps` or `--effects=double-translation`. This partially transforms the code to continuation-passing style, but has a performance cost. See [effect handlers](./effects.md).
-
 
 ## Self-recursive functions
 
@@ -74,7 +71,6 @@ function odd(n){return caml_trampoline(odd$0(0, n));}
 ```
 **Note**: The generated code doesn't return to the trampoline on every call (controlled by the `tc_depth` parameter, default 50\). This balances stack safety with performance.
 
-
 ## Patterns not optimized
 
 These patterns are **not** optimized and may cause stack overflows with deep recursion:
@@ -98,11 +94,9 @@ let bind x f =
 ```
 For these patterns, you can try `--effects=cps`.
 
-
 ## Tuning
 
 The trampoline depth can be adjusted with `--set tc_depth=N` (default: 50\). Higher values improve performance but increase stack usage.
-
 
 ## See also
 

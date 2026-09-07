@@ -1,13 +1,12 @@
-
 # Module `Js_of_ocaml.Cache`
 
 Cache API: persistent storage of [`Fetch`](./Js_of_ocaml-Fetch.md) `Request`/`Response` pairs.
 
 Available from [`Dom_html.window`](./Js_of_ocaml-Dom_html-class-type-window.md) and from [`ServiceWorker`](./Js_of_ocaml-ServiceWorker.md) contexts; the Cache API requires a secure context. The methods are Promise-typed — see [`Promise`](./Js_of_ocaml-Promise.md).
 
-see [https://developer.mozilla.org/en-US/docs/Web/API/Cache](https://developer.mozilla.org/en-US/docs/Web/API/Cache) 
-see [https://developer.mozilla.org/en-US/docs/Web/API/CacheStorage](https://developer.mozilla.org/en-US/docs/Web/API/CacheStorage) 
-see [https://w3c.github.io/ServiceWorker/\#cache-interface](https://w3c.github.io/ServiceWorker/#cache-interface) 
+see [https://developer.mozilla.org/en-US/docs/Web/API/Cache](https://developer.mozilla.org/en-US/docs/Web/API/Cache)
+see [https://developer.mozilla.org/en-US/docs/Web/API/CacheStorage](https://developer.mozilla.org/en-US/docs/Web/API/CacheStorage)
+see [https://w3c.github.io/ServiceWorker/\#cache-interface](https://w3c.github.io/ServiceWorker/#cache-interface)
 ```ocaml
 class type  queryOptions = object ... end
 ```

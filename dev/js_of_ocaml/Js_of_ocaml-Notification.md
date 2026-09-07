@@ -1,4 +1,3 @@
-
 # Module `Js_of_ocaml.Notification`
 
 Notifications API.
@@ -19,8 +18,8 @@ A code example:
                        (Js.string "Title") options))
          (Notification.request_permission ()))
 ```
-see [https://developer.mozilla.org/en-US/docs/Web/API/Notifications\_API](https://developer.mozilla.org/en-US/docs/Web/API/Notifications_API) 
-see [https://notifications.spec.whatwg.org/](https://notifications.spec.whatwg.org/) 
+see [https://developer.mozilla.org/en-US/docs/Web/API/Notifications\_API](https://developer.mozilla.org/en-US/docs/Web/API/Notifications_API)
+see [https://notifications.spec.whatwg.org/](https://notifications.spec.whatwg.org/)
 ```ocaml
 class type  notificationAction = object ... end
 ```

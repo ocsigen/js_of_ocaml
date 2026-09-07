@@ -1,8 +1,6 @@
-
 # Command-line options
 
 This page documents the command-line options for the `js_of_ocaml` compiler. Most of these options also apply to `wasm_of_ocaml`. Differences are noted where applicable.
-
 
 ## General options
 
@@ -52,7 +50,6 @@ For **wasm\_of\_ocaml** (default: `jspi`):
 - **`native`** \- WebAssembly stack switching (wasm\_of\_ocaml only). Available, behind the `--experimental-wasm-wasmfx` flag, in Chrome 148 or higher, or in a recent Node.js canary release (V8 version 14\.7.100 or higher).
 - **`disabled`** \- No effect handler support
 See [Effect handlers](./effects.md) for details.
-
 
 ## Source maps
 
@@ -111,7 +108,6 @@ globalThis.jsoo_env = {
 | `--linkall` | Link all compilation units and primitives |
 See [Building a toplevel](./build-toplevel.md) for details.
 
-
 ## Compilation modes
 
 | --- | --- |
@@ -123,9 +119,7 @@ See [Building a toplevel](./build-toplevel.md) for details.
 | `--custom-header <text>` | Add custom header (e.g., `#!/usr/bin/env node`) |
 See [Compilation modes](./compilation-modes.md) for details.
 
-
 ## Optimizations
-
 
 ### Optimization profiles
 
@@ -151,7 +145,6 @@ js_of_ocaml --opt 3 program.byte
 ## Enable/Disable options
 
 Use `--enable <opt>` or `--disable <opt>` to control these flags:
-
 
 ### Output formatting
 
@@ -233,7 +226,6 @@ Use `--debug <section>` to enable debug output for compiler internals:
 
 `times`, `stats`, `deadcode`, `globaldeadcode`, `inlining`, `constant-sinking`, `gen`, `linker`, `sourcemap`, `flow`, `parser`, `var-coalescing`
 
-
 ## Subcommands
 
 The `js_of_ocaml` command has several subcommands:
@@ -270,7 +262,6 @@ Additional options:
 js_of_ocaml build-runtime -o runtime.js
 ```
 Accepts the same `--enable`/`--disable` options as the main command.
-
 
 ### Build-fs command
 

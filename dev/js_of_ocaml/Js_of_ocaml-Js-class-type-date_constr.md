@@ -1,4 +1,3 @@
-
 # Class type `Js.date_constr`
 
 Specification of the date constructor, considered as an object.

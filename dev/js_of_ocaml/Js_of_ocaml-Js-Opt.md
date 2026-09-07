@@ -1,4 +1,3 @@
-
 # Module `Js.Opt`
 
 Standard functions for manipulating possibly null values.

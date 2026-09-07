@@ -1,4 +1,3 @@
-
 # Class type `Js.json`
 
 Specification of Javascript JSON object.

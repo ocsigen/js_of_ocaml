@@ -1,4 +1,3 @@
-
 # Parameter `Json_ref.A`
 
 ```ocaml

@@ -1,4 +1,3 @@
-
 # Class type `Fetch.requestInit`
 
 Initializer for [`request`](./Js_of_ocaml-Fetch-class-type-request.md) (and [`fetch_with_init`](./Js_of_ocaml-Fetch.md#val-fetch_with_init)). All fields are optional; create an empty record with [`empty_request_init`](./Js_of_ocaml-Fetch.md#val-empty_request_init) and populate the ones you need.

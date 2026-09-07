@@ -1,13 +1,10 @@
-
 # Wasm\_of\_ocaml
-
 
 ## Overview
 
 Wasm\_of\_ocaml is a compiler from OCaml bytecode programs to WebAssembly. It provides an alternative way to run pure OCaml programs in JavaScript environments like browsers and Node.js.
 
 The compiler is provided by the `wasm_of_ocaml-compiler` package. The [Js\_of\_ocaml libraries](./overview.md) are compatible with this compiler.
-
 
 ## Installation
 
@@ -17,7 +14,6 @@ The easiest way to install wasm\_of\_ocaml is to use opam:
 opam install wasm_of_ocaml-compiler js_of_ocaml js_of_ocaml-ppx js_of_ocaml-lwt
 ```
 Binaryen version 119 or later is required. The opam command above will install it automatically if needed.
-
 
 ## Usage
 
@@ -34,11 +30,9 @@ wasm_of_ocaml cubes.byte
 ```
 This produces a JavaScript loading script `cubes.js` and a directory `cubes.assets` containing the Wasm code.
 
-
 ### With dune
 
 Dune has native support for wasm\_of\_ocaml (starting with dune 3\.17.0). It supports both standard and separate compilation. See the [dune documentation](https://dune.readthedocs.io/en/latest/wasmoo.html).
-
 
 ## Supported features
 
@@ -71,7 +65,6 @@ The CPS transformation is not the default since the generated code is slower, la
 
 The native implementation is based on the WebAssembly typed continuations proposal (stack switching). It provides the best performance but requires a runtime with support for the WasmFX extension (currently available, behind the `--experimental-wasm-wasmfx` flag, in Chrome 148 or higher, or in a recent Node.js canary release (V8 version 14\.7.100 or higher)).
 
-
 ## WASI support
 
 You can produce a WASI binary by running `wasm_of_ocaml` with the `--enable wasi` flag. At the moment, `wasm_of_ocaml` supports WASI 0\.1. Features from the Sys and Unix modules are available whenever they're supported by the WASI API.
@@ -81,7 +74,6 @@ The binaries produced by `wasm_of_ocaml` require the GC and exception-handling p
 When native effect handlers are used (`--effects native`), the binaries additionally require the stack-switching proposal. It is supported by Node.js and by the Wizard engine (with the `--ext:stack-switching` flag), but not by Wasmtime.
 
 For now, the output remains the same as without the `--enable wasi` flag: a JavaScript file `foo.js` and a directory `foo.assets` containing the Wasm code `code.wasm`. The JavaScript file can be used to run the WASI binary with `node`, while the Wasm code can be run directly by other Wasm engines.
-
 
 ### Limitations
 
@@ -99,20 +91,17 @@ Js\_of\_ocaml lets you bind code with JavaScript libraries by linking `.js` file
 
 If a js\_of\_ocaml project uses `external` primitives defined in companion `.js` files, you need to implement the same primitives in Wasm modules to build with wasm\_of\_ocaml.
 
-
 ## Toplevel
 
 Wasm\_of\_ocaml can compile an OCaml toplevel (REPL) to WebAssembly. The toplevel dynamically compiles OCaml bytecode to Wasm and instantiates it in the browser.
 
 See [Toplevel and Dynlink](./build-toplevel.md) for build instructions.
 
-
 ## Dynlink
 
 OCaml's `Dynlink` module is supported. Plugin `.cmo` files are compiled on the fly to WebAssembly and instantiated at runtime.
 
 See [Toplevel and Dynlink](./build-toplevel.md) for build instructions.
-
 
 ## Pseudo filesystem
 

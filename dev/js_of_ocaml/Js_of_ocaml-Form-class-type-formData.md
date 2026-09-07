@@ -1,4 +1,3 @@
-
 # Class type `Form.formData`
 
 ```ocaml

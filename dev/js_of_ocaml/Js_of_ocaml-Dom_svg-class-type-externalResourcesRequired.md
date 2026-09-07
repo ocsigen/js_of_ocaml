@@ -1,4 +1,3 @@
-
 # Class type `Dom_svg.externalResourcesRequired`
 
 deprecated Removed in SVG 2.

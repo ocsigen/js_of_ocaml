@@ -1,13 +1,10 @@
-
 # Examples
 
 This page showcases js\_of\_ocaml projects, from simple demos to real-world applications.
 
-
 ## Demos
 
 These demos are included in the js\_of\_ocaml repository:
-
 
 ### Graphics & Visualization
 
@@ -35,7 +32,6 @@ These demos are included in the js\_of\_ocaml repository:
 ## In the wild
 
 Real-world projects built with js\_of\_ocaml:
-
 
 ### Emulators and games
 

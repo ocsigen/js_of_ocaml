@@ -1,4 +1,3 @@
-
 # Module type `Deriving_Json.Json_min`
 
 ```ocaml

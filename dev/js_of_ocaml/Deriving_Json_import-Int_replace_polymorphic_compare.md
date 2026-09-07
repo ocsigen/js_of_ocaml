@@ -1,4 +1,3 @@
-
 # Module `Deriving_Json_import.Int_replace_polymorphic_compare`
 
 ```ocaml

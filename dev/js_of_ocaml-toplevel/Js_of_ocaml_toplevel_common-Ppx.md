@@ -1,4 +1,3 @@
-
 # Module `Js_of_ocaml_toplevel_common.Ppx`
 
 One can add a ppx rewriter to a toplevel by registering it

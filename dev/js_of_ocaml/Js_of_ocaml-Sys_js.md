@@ -1,8 +1,6 @@
-
 # Module `Js_of_ocaml.Sys_js`
 
 Javascript specific Sys functions.
-
 
 ### Io.
 
@@ -15,7 +13,6 @@ Set a callback to be called when an out\_channel flush its buffer. `set_channel_
 val set_channel_filler : Stdlib.in_channel -> (unit -> string) -> unit
 ```
 Set a callback to be called when an in\_channel wants to fill its buffer. `set_channel_filler chan cb` install the called `cb` for `chan` in\_channel. The string returned by `cb` will be appended to the channel buffer.
-
 
 ### Pseudo filesystem.
 
@@ -49,7 +46,6 @@ Register a file to a Pseudo Filesystem. `create_file ~name ~content` register th
 val update_file : name:string -> content:string -> unit
 ```
 Update a file in the Pseudo Filesystem. `update_file ~name ~content` update the file `name` with content `content`
-
 
 ### Information.
 

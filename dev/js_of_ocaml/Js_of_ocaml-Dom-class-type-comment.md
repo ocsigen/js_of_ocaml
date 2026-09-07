@@ -1,4 +1,3 @@
-
 # Class type `Dom.comment`
 
 Specification of `Comment` objects

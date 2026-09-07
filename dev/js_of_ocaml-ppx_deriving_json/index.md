@@ -1,6 +1,4 @@
-
 # js\_of\_ocaml-ppx\_deriving\_json index
-
 
 ## Library js\_of\_ocaml-ppx\_deriving\_json
 

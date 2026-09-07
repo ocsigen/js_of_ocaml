@@ -1,4 +1,3 @@
-
 # Module `Flow_lexer.Lex_result`
 
 ```ocaml

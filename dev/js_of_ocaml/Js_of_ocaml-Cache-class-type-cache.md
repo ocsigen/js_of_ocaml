@@ -1,4 +1,3 @@
-
 # Class type `Cache.cache`
 
 A single named [`Cache`](./Js_of_ocaml-Cache.md) instance, obtained from [`cacheStorage`](./Js_of_ocaml-Cache-class-type-cacheStorage.md).

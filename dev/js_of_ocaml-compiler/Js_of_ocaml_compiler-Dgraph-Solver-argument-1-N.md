@@ -1,4 +1,3 @@
-
 # Parameter `Solver.N`
 
 ```ocaml

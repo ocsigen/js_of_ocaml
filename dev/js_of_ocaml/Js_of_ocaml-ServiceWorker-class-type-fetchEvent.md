@@ -1,4 +1,3 @@
-
 # Class type `ServiceWorker.fetchEvent`
 
 The event passed to the worker's `fetch` handler.

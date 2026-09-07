@@ -1,4 +1,3 @@
-
 # Class type `Dom_html.touchList`
 
 ```ocaml

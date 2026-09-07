@@ -1,4 +1,3 @@
-
 # Class type `Shared._object`
 
 ```ocaml

@@ -1,4 +1,3 @@
-
 # Class type `MessageChannel.messageChannel`
 
 ```ocaml

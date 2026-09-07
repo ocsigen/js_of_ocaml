@@ -1,4 +1,3 @@
-
 # Class type `Dom.collection`
 
 Specification of `HTMLCollection` objects. Returned by `Element.children`, `getElementsByTagName`, `getElementsByClassName`, etc. Always live, contains only elements, and adds a `namedItem` lookup.

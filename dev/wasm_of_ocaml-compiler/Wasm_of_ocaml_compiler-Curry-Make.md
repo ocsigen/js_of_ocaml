@@ -1,6 +1,4 @@
-
 # Module `Curry.Make`
-
 
 ## Parameters
 

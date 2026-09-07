@@ -1,10 +1,8 @@
-
 # Module `Js_of_ocaml.Js`
 
 Javascript binding
 
 This module provides types and functions to interoperate with Javascript values, and gives access to Javascript standard objects.
-
 
 ### Dealing with `null` and `undefined` values.
 
@@ -53,7 +51,6 @@ module Optdef : OPT with type 'a t = 'a optdef
 ```
 Standard functions for manipulating possibly undefined values.
 
-
 ### Types for specifying method and properties of Javascript objects
 
 ```ocaml
@@ -91,14 +88,12 @@ type 'a optdef_prop = < get : 'a optdef ; set : 'a -> unit > gen_prop
 ```
 Type of read/write properties that may be undefined: you can set them to a value of some type `t`, but if you read them, you will get a value of type `t optdef` (that may be `undefined`).
 
-
 ### Object constructors
 
 ```ocaml
 type +'a constr
 ```
 A value of type `(t1 -> ... -> tn -> t Js.t) Js.constr` is a Javascript constructor expecting *n* arguments of types `t1` to `tn` and returning a Javascript object of type `t Js.t`. Use the syntax extension `new%js c e1 ... en` to build an object using constructor `c` and arguments `e1` to `en`.
-
 
 ### Callbacks to OCaml
 
@@ -122,7 +117,6 @@ val wrap_meth_callback : ('b -> 'a) -> ('b, 'a) meth_callback
 ```
 Wrap an OCaml function so that it can be invoked from Javascript. The first parameter of the function will be bound to the value of the `this` implicit parameter.
 
-
 ### Javascript comparisons
 
 ```ocaml
@@ -134,7 +128,6 @@ Javascript `==` equality operator.
 val strict_equals : _ t -> _ t -> bool
 ```
 Javascript `===` equality operator.
-
 
 ### Javascript standard objects
 
@@ -369,7 +362,6 @@ val _JSON : json t
 ```
 JSON object
 
-
 ### Standard Javascript functions
 
 ```ocaml
@@ -414,7 +406,6 @@ Parse a string as an integer. Raises `Failure "parseInt"` if the string does not
 val parseFloat : js_string t -> number_t
 ```
 Parse a string as a floating-point number. Raises `Failure "parseFloat"` if the string does not start with a number.
-
 
 ### Conversion functions between Javascript and OCaml types
 
@@ -498,7 +489,6 @@ val to_nativeint : number_t -> nativeint
 ```
 Conversion of Javascript numbers to OCaml native integers. The given floating-point number is truncated to an integer.
 
-
 ### Convenience coercion functions
 
 ```ocaml
@@ -528,14 +518,12 @@ val instanceof : _ t -> _ constr -> bool
 ```
 Tests whether a Javascript object is an instance of a given class.
 
-
 ### Debugging operations.
 
 ```ocaml
 val debugger : unit -> unit
 ```
 Invokes any available debugging functionality. If no debugging functionality is available, it has no effect. In practice, it will insert a "debugger;" statement in the generated javascript.
-
 
 ### Export functionality.
 
@@ -566,7 +554,6 @@ export_all
 module Unsafe : sig ... end
 ```
 Unsafe Javascript operations
-
 
 ### Deprecated functions and types.
 

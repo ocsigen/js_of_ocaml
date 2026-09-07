@@ -1,4 +1,3 @@
-
 # Class type `Dom.namedNodeMap`
 
 Specification of `NamedNodeMap` objects.

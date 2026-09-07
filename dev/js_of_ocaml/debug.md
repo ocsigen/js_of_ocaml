@@ -1,16 +1,12 @@
-
 # Debugging
 
 This page explains how to debug OCaml programs compiled to JavaScript.
 
-
 ## Compiler flags
-
 
 ### OCaml flags
 
 Use `-g` when compiling and linking OCaml bytecode. Js\_of\_ocaml will attempt to preserve variable names.
-
 
 ### Js\_of\_ocaml flags
 
@@ -43,16 +39,13 @@ js_of_ocaml --source-map program.byte
 ```
 This generates `program.js` and `program.js.map`.
 
-
 ## Breakpoints
-
 
 ### In browser developer tools
 
 Open browser developer tools (F12), navigate to the Sources panel, and set breakpoints in your OCaml files (when using source maps) or JavaScript files.
 
 See the [Chrome DevTools documentation](https://developer.chrome.com/docs/devtools/javascript) for details.
-
 
 ### Programmatic breakpoints
 
@@ -65,9 +58,7 @@ let my_function x =
 ```
 Note: Browsers only pause at `debugger` statements when developer tools are open.
 
-
 ## Debugging in Node.js
-
 
 ### Using \--inspect
 
@@ -91,7 +82,6 @@ Debugger listening on ws://127.0.0.1:9229/...
 
 ## Stack traces
 
-
 ### Attaching JavaScript backtraces
 
 To get JavaScript stack traces attached to OCaml exceptions:
@@ -105,7 +95,6 @@ Or compile with:
 js_of_ocaml --enable with-js-error program.byte
 ```
 See [Error handling](./errors.md#stack_traces) for details.
-
 
 ## Chrome DevTools tips
 

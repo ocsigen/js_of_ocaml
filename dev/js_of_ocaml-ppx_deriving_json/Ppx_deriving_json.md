@@ -1,4 +1,3 @@
-
 # Module `Ppx_deriving_json`
 
 ```ocaml

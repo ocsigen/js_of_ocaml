@@ -1,8 +1,6 @@
-
 # Runtime representation
 
 This page describes how OCaml values are represented at runtime in JavaScript. Understanding this is useful for debugging, writing JavaScript primitives, and understanding compatibility limitations.
-
 
 ## Overview
 
@@ -47,11 +45,9 @@ OCaml floats are JavaScript numbers directly.
 - Marshalled floats cannot be unmarshalled by the native OCaml runtime
 **Rounding difference**: JavaScript rounds ties away from zero, while native OCaml (libc) rounds ties to even.
 
-
 ## Booleans
 
 OCaml booleans are represented as the numbers 0 (`false`) and 1 (`true`), not JavaScript's `true` and `false`. See [type conversions](./javascript-interop.md#conversions) for converting between them.
-
 
 ## Bytes
 
@@ -62,7 +58,6 @@ OCaml bytes are always represented as MlBytes objects with:
 - `c` — contents (a JavaScript string or array of bytes)
 The contents can be a JavaScript string (more memory efficient) or an array of bytes (for mutation). The runtime converts between these as needed.
 
-
 ## Strings
 
 OCaml strings can be represented as:
@@ -71,7 +66,6 @@ OCaml strings can be represented as:
 - An MlBytes object (above)
 **Important**: Even when represented as a JavaScript string, it encodes a sequence of bytes, not UTF-16 text. Each character's code point represents one byte (0-255). Assuming the bytes are UTF-8 encoded text, use `Js.string` to convert to a native UTF-16 JavaScript string. To convert back, use `Js.to_string`. See [conversions](./javascript-interop.md#conversions).
 
-
 ## Blocks, arrays, records, modules
 
 OCaml heap-allocated values (arrays, tuples, records, variant constructors with arguments) are represented as JavaScript arrays where:
@@ -79,7 +73,6 @@ OCaml heap-allocated values (arrays, tuples, records, variant constructors with 
 - Index 0 contains the block tag
 - Remaining indices contain the fields
 For example, `Some 42` becomes `[0, 42]` (tag 0, one field).
-
 
 ## Variants
 
@@ -99,11 +92,9 @@ type t =
 
 Note that `nativeint` is 32 bits in js\_of\_ocaml (matching JavaScript's bitwise operations), not the platform's native word size.
 
-
 ## Int64
 
 `Int64.t` values are represented as MlInt64 objects, which store the value as three numbers: two 24-bit integers (lo, mi) and one 16-bit integer (hi), since JavaScript numbers cannot represent the full 64-bit range precisely.
-
 
 ## Bigarray
 
@@ -135,11 +126,9 @@ For example, `Not_found` is just its identity object, while `Failure "oops"` bec
 
 **Note**: OCaml exceptions are not JavaScript `Error` objects. When an OCaml exception propagates to JavaScript code, it appears as an array, not an `Error`. See [error handling](./errors.md) for how to work with exceptions across the OCaml/JavaScript boundary.
 
-
 ## Objects
 
 OCaml objects (from the object-oriented layer) are implemented using JavaScript arrays. They have nothing to do with JavaScript objects. Use the [PPX syntax](./ppx.md) (`object%js`) to create JavaScript objects.
-
 
 ## Compatibility considerations
 

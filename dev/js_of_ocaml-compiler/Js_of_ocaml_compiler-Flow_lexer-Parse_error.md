@@ -1,4 +1,3 @@
-
 # Module `Flow_lexer.Parse_error`
 
 ```ocaml

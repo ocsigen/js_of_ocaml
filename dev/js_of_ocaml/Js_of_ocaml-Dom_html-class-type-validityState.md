@@ -1,4 +1,3 @@
-
 # Class type `Dom_html.validityState`
 
 Result of the constraint validation API on form-associated elements.

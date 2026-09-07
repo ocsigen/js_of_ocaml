@@ -1,4 +1,3 @@
-
 # Class type `Notification.notificationOptions`
 
 Initializer for [`notification`](./Js_of_ocaml-Notification-class-type-notification.md). All fields are optional; create an empty record with [`empty_options`](./Js_of_ocaml-Notification.md#val-empty_options) and populate the ones you need.

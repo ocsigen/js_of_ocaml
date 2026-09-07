@@ -1,4 +1,3 @@
-
 # Module `Js_of_ocaml.Worker`
 
 Low-level bindgins to javascript Web Workers.

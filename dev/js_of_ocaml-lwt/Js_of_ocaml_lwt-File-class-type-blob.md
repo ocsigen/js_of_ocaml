@@ -1,4 +1,3 @@
-
 # Class type `File.blob`
 
 ```ocaml

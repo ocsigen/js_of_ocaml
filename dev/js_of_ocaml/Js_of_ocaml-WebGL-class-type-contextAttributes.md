@@ -1,4 +1,3 @@
-
 # Class type `WebGL.contextAttributes`
 
 5\.2 WebGLContextAttributes

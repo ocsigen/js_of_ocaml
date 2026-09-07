@@ -1,17 +1,14 @@
-
 # Effect handlers
 
 Js\_of\_ocaml supports effect handlers with the `--effects=cps` flag. This is based on partially transforming the program to continuation-passing style. As a consequence, [tail calls](./tailcall.md) can be fully optimized (when CPS transformed).
 
 This is not the default because the generated code can be slower, larger, and less readable. The transformation uses an analysis to detect parts of the code that cannot involve effects and keeps them in direct style. The analysis is especially effective on monomorphic code but less effective when higher-order functions are heavily used (`Lwt`, `Async`, `Incremental`).
 
-
 ## Double translation mode
 
 An alternative CPS transform is provided with `--effects=double-translation`. It keeps a direct-style version of the transformed functions in addition to the CPS version. The choice of running the CPS version is delayed to run time.
 
 Since CPS code is usually slower, this can avoid performance degradations. You can also ensure that some code runs in direct style using [`Jsoo_runtime.Effect.assume_no_perform`](./../js_of_ocaml-compiler/Jsoo_runtime-Effect.md#val-assume_no_perform).
-
 
 ## Wasm\_of\_ocaml
 
@@ -41,7 +38,6 @@ To enable effects for the entire workspace, add this to a `dune` or `dune-worksp
    (build_runtime_flags (:standard --effects=double-translation)))))
 ```
 This setup supports both separate and whole program compilation.
-
 
 ### Per-executable setup
 

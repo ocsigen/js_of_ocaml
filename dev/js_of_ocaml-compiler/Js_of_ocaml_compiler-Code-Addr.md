@@ -1,4 +1,3 @@
-
 # Module `Code.Addr`
 
 ```ocaml

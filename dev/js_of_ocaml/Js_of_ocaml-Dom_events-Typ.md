@@ -1,4 +1,3 @@
-
 # Module `Dom_events.Typ`
 
 ```ocaml

@@ -1,4 +1,3 @@
-
 # Class type `WebGL2.renderingContext`
 
 ```ocaml
@@ -650,7 +649,6 @@ method readPixels_withOffset : int ->
 ```
 `readPixels` writing into the view starting at element `dstOffset`.
 
-
 ### 5\.14.9 Multiple render targets
 
 ```ocaml
@@ -1074,7 +1072,6 @@ method uniformMatrix4x3fv : [ `mat4x3 ] uniformLocation Js_of_ocaml__.Js.t ->
 ```
 
 ### New constants
-
 
 #### Buffer targets and usages
 
@@ -1569,7 +1566,6 @@ method _TIMEOUT_IGNORED_ : Js_of_ocaml__.Js.number_t
 ```
 The special timeout value (`-1`), accepted only by `waitSync`; `clientWaitSync` timeouts are instead capped by `_MAX_CLIENT_WAIT_TIMEOUT_WEBGL_`.
 
-
 #### Transform feedback
 
 ```ocaml
@@ -1644,7 +1640,6 @@ method _UNIFORM_BLOCK_REFERENCED_BY_FRAGMENT_SHADER_ : bool Js_of_ocaml__.Js.t
 method _INVALID_INDEX_ : uint Js_of_ocaml__.Js.readonly_prop
 ```
 Returned by `getUniformIndices`/`getUniformBlockIndex` for unknown names (the value is `0xFFFFFFFF`, which does not fit a 32-bit OCaml `int`; only use it for equality tests).
-
 
 #### New pixel store parameters
 

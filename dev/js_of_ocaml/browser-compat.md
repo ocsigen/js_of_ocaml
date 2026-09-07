@@ -1,10 +1,8 @@
-
 # Targeting older browsers
 
 Js\_of\_ocaml's generated code and runtime target **ECMAScript 2020 (ES2020)**. Out of the box, the output runs on Node.js 18+, QuickJS-NG, and any evergreen browser released since early 2020 (Chrome 80+, Firefox 74+, Safari 13\.4+, Edge 80+).
 
 If you need to support an older engine, you can post-process the generated JavaScript with [Babel](https://babeljs.io) and ship polyfills with [core-js](https://github.com/zloirock/core-js). Js\_of\_ocaml has no built-in downleveling.
-
 
 ## Transpiling with Babel
 
@@ -37,7 +35,6 @@ npx babel program.js -o program.es5.js
 ```
 The resulting `program.es5.js` imports polyfills from `core-js` with `require("core-js/modules/...")` calls. Before shipping to a browser you need to bundle it so those imports are resolved and inlined.
 
-
 ## Bundling
 
 Any JavaScript bundler will work; [esbuild](https://esbuild.github.io) is a small, zero-config option:
@@ -52,7 +49,6 @@ The runtime contains a few `require("node:*")` calls (filesystem, tty, etc.) gua
 [`--target`](https://esbuild.github.io/api/#target) is needed even when Babel has lowered the input: esbuild's own IIFE wrapper and CommonJS helpers use arrow functions and other post-ES5 syntax, and `--target` is what tells it to lower those too. Set it to the lowest syntax level your browserslist query implies.
 
 Ship `program.bundle.js` as a single script; no additional polyfills are required at load time.
-
 
 ## With dune
 

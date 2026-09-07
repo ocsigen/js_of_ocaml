@@ -1,4 +1,3 @@
-
 # Module `Js_of_ocaml_toplevel_protocol.Worker_msg`
 
 Types of the messages exchanged with a toplevel in a Web Worker.

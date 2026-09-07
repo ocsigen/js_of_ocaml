@@ -1,4 +1,3 @@
-
 # Module `_.Math`
 
 ```ocaml

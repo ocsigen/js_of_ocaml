@@ -1,4 +1,3 @@
-
 # Class type `Js.date`
 
 Specification of Javascript date objects.

@@ -1,27 +1,24 @@
-
 # Toplevel and Dynlink
 
 This page explains how to build an OCaml toplevel (REPL) that runs in the browser, and how to use dynamic linking to load bytecode at runtime.
 
 Both js\_of\_ocaml and wasm\_of\_ocaml support these features.
 
-
 ## Building a toplevel
 
 A toplevel is an interactive OCaml environment (like `ocaml` or `utop`). Js\_of\_ocaml and wasm\_of\_ocaml can compile a toplevel to JavaScript or WebAssembly, allowing it to run in the browser. See the [live demo](files/toplevel/index.html).
-
 
 ### With js\_of\_ocaml
 
 1. Initialize the toplevel in your OCaml code using `Js_of_ocaml_toplevel.Direct.initialize`
 1. Build your bytecode with debug info and linkall:
-   
+
    ```
    ocamlfind ocamlc -g -linkall -package js_of_ocaml-toplevel \
     -linkpkg toplevel.ml -o toplevel.byte
    ```
 1. Compile to JavaScript with the `--toplevel` flag:
-   
+
    ```
    js_of_ocaml --toplevel toplevel.byte -o toplevel.js
    ```
@@ -30,14 +27,14 @@ A toplevel is an interactive OCaml environment (like `ocaml` or `utop`). Js\_of\
 
 1. Initialize the toplevel in your OCaml code using `Js_of_ocaml_toplevel.Direct.initialize`
 1. Build your bytecode with debug info and linkall, linking `wasm_of_ocaml-compiler.dynlink` and `js_of_ocaml-toplevel.common`:
-   
+
    ```
    ocamlfind ocamlc -g -linkall -package wasm_of_ocaml-compiler.dynlink \
     -package js_of_ocaml-toplevel.common -package compiler-libs.toplevel \
     -linkpkg toplevel.ml -o toplevel.byte
    ```
 1. Compile to WebAssembly with the `--toplevel` flag:
-   
+
    ```
    wasm_of_ocaml --toplevel toplevel.byte -o toplevel.js
    ```
@@ -83,7 +80,6 @@ js_of_ocaml main.byte -o main.js
 ```
 The `toplevel/examples/lwt_toplevel_worker` sources are a complete example, with a banner, input history, an examples sidebar, and a Cancel button that interrupts a stuck computation.
 
-
 ### Limiting available modules
 
 By default, all linked modules are available in the toplevel. To limit this, use `--export FILE` where `FILE` lists compilation unit names (one per line).
@@ -96,23 +92,21 @@ js_of_ocaml --toplevel --export units.txt toplevel.byte
 ```
 The `--export` flag works the same way with wasm\_of\_ocaml.
 
-
 ## Using the Dynlink library
 
 OCaml's `Dynlink` module lets you load bytecode files at runtime. This works in both js\_of\_ocaml and wasm\_of\_ocaml with some setup.
-
 
 ### With js\_of\_ocaml
 
 1. Link `js_of_ocaml-compiler.dynlink` in your program (initializes dynlink support)
 1. Build your bytecode with debug info and linkall:
-   
+
    ```
    ocamlfind ocamlc -g -linkall -package dynlink \
     -package js_of_ocaml-compiler.dynlink -linkpkg main.ml -o main.byte
    ```
 1. Compile to JavaScript with the `--dynlink` flag:
-   
+
    ```
    js_of_ocaml --dynlink main.byte -o main.js
    ```
@@ -121,18 +115,17 @@ OCaml's `Dynlink` module lets you load bytecode files at runtime. This works in 
 
 1. Link `wasm_of_ocaml-compiler.dynlink` in your program (initializes dynlink support)
 1. Build your bytecode with debug info and linkall:
-   
+
    ```
    ocamlfind ocamlc -g -linkall -package dynlink \
     -package wasm_of_ocaml-compiler.dynlink -linkpkg main.ml -o main.byte
    ```
 1. Compile to WebAssembly with the `--dynlink` flag:
-   
+
    ```
    wasm_of_ocaml --dynlink main.byte -o main.js
    ```
 Plugin `.cmo` files are compiled on the fly to WebAssembly and instantiated at runtime.
-
 
 ### Example
 
@@ -173,7 +166,6 @@ node ./main.js
 
 By default, `Dynlink.loadfile` compiles `.cmo` and `.cma` files on the fly. You can also precompile plugins ahead of time for faster loading.
 
-
 ### With js\_of\_ocaml
 
 Use `js_of_ocaml` to compile a `.cmo` or `.cma` file to JavaScript:
@@ -212,7 +204,6 @@ Then load the precompiled file using `Wasm_of_ocaml_compiler_dynlink.loadfile`:
 let () = Wasm_of_ocaml_compiler_dynlink.loadfile "./plugin.wasmo"
 ```
 This skips the on-the-fly bytecode-to-Wasm compilation step, which can significantly reduce loading time for large plugins.
-
 
 ## See also
 

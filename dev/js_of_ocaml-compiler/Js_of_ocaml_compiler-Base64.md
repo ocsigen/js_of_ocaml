@@ -1,4 +1,3 @@
-
 # Module `Js_of_ocaml_compiler.Base64`
 
 Base64 RFC4648 implementation.

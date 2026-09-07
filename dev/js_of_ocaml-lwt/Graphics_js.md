@@ -1,4 +1,3 @@
-
 # Module `Graphics_js`
 
 Javascript binding for Graphics lib
@@ -243,14 +242,12 @@ val set_context : context -> unit
 ```
 Set the current context
 
-
 ### Mouse and keyboard events
 
 ```ocaml
 val loop : event list -> (status -> unit) -> unit
 ```
 Loops forever and listen to the given events. Those events automatically returns a status record, which is used by the function given in argument.
-
 
 ### Mouse and keyboard polling
 

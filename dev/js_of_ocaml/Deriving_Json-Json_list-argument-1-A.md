@@ -1,4 +1,3 @@
-
 # Parameter `Json_list.A`
 
 ```ocaml

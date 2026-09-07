@@ -1,4 +1,3 @@
-
 # Class type `Dom_svg.svg_error`
 
 deprecated Removed in SVG 2.

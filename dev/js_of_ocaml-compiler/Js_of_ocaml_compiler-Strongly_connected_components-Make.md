@@ -1,6 +1,4 @@
-
 # Module `Strongly_connected_components.Make`
-
 
 ## Parameters
 

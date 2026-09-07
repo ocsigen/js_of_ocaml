@@ -1,4 +1,3 @@
-
 # Module `Js_of_ocaml.Json`
 
 Unsafe IO. (See [`Deriving_Json`](./Deriving_Json.md) for typesafe IO)

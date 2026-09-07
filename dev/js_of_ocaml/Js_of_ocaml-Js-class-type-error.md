@@ -1,4 +1,3 @@
-
 # Class type `Js.error`
 
 Specification of Javascript error object.

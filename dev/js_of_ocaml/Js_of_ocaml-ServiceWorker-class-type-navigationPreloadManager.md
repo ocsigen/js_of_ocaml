@@ -1,4 +1,3 @@
-
 # Class type `ServiceWorker.navigationPreloadManager`
 
 Manages navigation preloading for a [`serviceWorkerRegistration`](./Js_of_ocaml-ServiceWorker-class-type-serviceWorkerRegistration.md), exposed as its `navigationPreload`.

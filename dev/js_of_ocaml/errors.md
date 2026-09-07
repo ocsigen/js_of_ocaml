@@ -1,8 +1,6 @@
-
 # Error handling between OCaml and JavaScript
 
 This page explains how exceptions propagate between OCaml and JavaScript code, and how to properly handle errors in both directions.
-
 
 ## Catching JavaScript exceptions in OCaml
 
@@ -76,13 +74,11 @@ try {
 ```
 For better JavaScript interoperability, raise JavaScript errors instead of OCaml exceptions
 
-
 ## Stack traces for OCaml exceptions
 
 By default, OCaml exceptions don't carry JavaScript stack traces. This makes debugging difficult since you can't see where an exception originated in browser DevTools or Node.js.
 
 The solution is to attach a JavaScript `Error` object to an OCaml exception. JavaScript `Error` objects capture the call stack at the point of creation, so attaching one to an OCaml exception preserves the stack trace for debugging.
-
 
 ### Manual attachment
 
@@ -98,7 +94,6 @@ let process data =
     raise exn
 ```
 The `~force:false` parameter only attaches a new error if one isn't already present. Use `~force:true` to always attach a fresh stack trace.
-
 
 ### Extracting attached errors
 
@@ -122,7 +117,7 @@ Automatic attachment is enabled when:
 
 1. `Printexc.backtrace_status() = true`, **and**
 2. Either:
-   
+
    - The environment variable `OCAMLRUNPARAM` contains `b=1`, or
    - The program was compiled with `--enable with-js-error`
 Example with environment variable:

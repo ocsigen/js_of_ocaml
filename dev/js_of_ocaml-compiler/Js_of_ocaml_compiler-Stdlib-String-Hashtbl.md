@@ -1,4 +1,3 @@
-
 # Module `String.Hashtbl`
 
 ```ocaml

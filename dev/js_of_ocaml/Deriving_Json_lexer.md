@@ -1,4 +1,3 @@
-
 # Module `Deriving_Json_lexer`
 
 ```ocaml

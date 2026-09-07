@@ -1,4 +1,3 @@
-
 # Module `Tyxml_js.Util`
 
 ```ocaml

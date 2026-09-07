@@ -1,4 +1,3 @@
-
 # Module `Stdlib.Utf8_string_map`
 
 ```ocaml

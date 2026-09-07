@@ -1,4 +1,3 @@
-
 # Class type `Crypto.cryptoKeyPair`
 
 ```ocaml

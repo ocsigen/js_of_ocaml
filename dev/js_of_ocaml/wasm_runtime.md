@@ -1,4 +1,3 @@
-
 # Writing Wasm primitives
 
 User-defined primitives can be implemented by writing Wasm modules. These modules (`.wat` for text modules and `.wasm` for binary modules) can be passed on the command-line.
@@ -6,7 +5,6 @@ User-defined primitives can be implemented by writing Wasm modules. These module
 With dune, use the option `(wasm_of_ocaml (wasm_files ...))` to specify these runtime files.
 
 It still makes sense to link JavaScript files to specify the possible side-effects of some primitives (see [JavaScript primitives](./linker.md)), or to implement some functionalities in JavaScript. With dune, use `(wasm_of_ocaml (javascript_files ...))` to specify these files.
-
 
 ## Data representation
 
@@ -95,7 +93,6 @@ To use JavaScript functions in your Wasm primitives, import them using the `js` 
 (import "js" "add" (func $add (param f64) (param f64) (result f64)))
 ```
 The [js\_of\_ocaml linker](./linker.md) is used to include them in the generated code.
-
 
 ## Interfacing with JavaScript
 

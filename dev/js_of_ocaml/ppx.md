@@ -1,8 +1,6 @@
-
 # PPX syntax extension
 
 The `js_of_ocaml-ppx` package provides syntax for working with JavaScript values from OCaml. This page is a **syntax reference**; see [JavaScript interop](./javascript-interop.md) for conceptual background on types, conversions, and when to use each approach.
-
 
 ## Installation
 
@@ -123,7 +121,6 @@ args : t1, t2, ..., tn
              obj##meth args : u
 ```
 **Note**: Partial application is not allowed. You must provide all arguments.
-
 
 ## Using constructors
 

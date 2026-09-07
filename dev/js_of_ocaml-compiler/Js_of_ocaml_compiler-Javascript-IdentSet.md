@@ -1,4 +1,3 @@
-
 # Module `Javascript.IdentSet`
 
 ```ocaml

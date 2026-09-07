@@ -1,4 +1,3 @@
-
 # Module `Symtable.GlobalMap`
 
 ```ocaml

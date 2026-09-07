@@ -1,4 +1,3 @@
-
 # Module `Id.Map`
 
 ```ocaml

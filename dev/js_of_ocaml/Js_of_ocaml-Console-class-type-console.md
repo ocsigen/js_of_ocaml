@@ -1,4 +1,3 @@
-
 # Class type `Console.console`
 
 ```ocaml

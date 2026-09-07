@@ -1,4 +1,3 @@
-
 # Module `Js_of_ocaml_tyxml.Tyxml_js`
 
 Tyxml interface. Example of use for HTML:

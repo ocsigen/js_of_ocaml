@@ -1,4 +1,3 @@
-
 # Module `Jsoo_runtime.For_compatibility_only`
 
 ```ocaml

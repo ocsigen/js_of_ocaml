@@ -1,4 +1,3 @@
-
 # Class type `Js.math`
 
 Specification of Javascript math object.

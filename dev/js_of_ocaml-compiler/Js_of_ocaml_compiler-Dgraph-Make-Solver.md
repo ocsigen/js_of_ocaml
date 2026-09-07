@@ -1,6 +1,4 @@
-
 # Module `Make.Solver`
-
 
 ## Parameters
 

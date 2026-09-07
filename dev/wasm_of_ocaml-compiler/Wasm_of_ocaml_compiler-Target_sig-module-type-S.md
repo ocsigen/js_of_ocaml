@@ -1,4 +1,3 @@
-
 # Module type `Target_sig.S`
 
 ```ocaml

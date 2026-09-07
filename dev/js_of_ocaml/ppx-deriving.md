@@ -1,10 +1,8 @@
-
 # JSON derivation
 
 The `js_of_ocaml-ppx_deriving_json` package provides a PPX deriver for serializing OCaml values to JSON.
 
 **Important**: The serialization format follows js\_of\_ocaml's [internal representation](./runtime-representation.md). It is designed for communication between a js\_of\_ocaml program and a server-side OCaml application, not for interacting with third-party APIs.
-
 
 ## Installation
 

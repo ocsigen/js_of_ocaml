@@ -1,4 +1,3 @@
-
 # Class type `ServiceWorker.serviceWorkerContainer`
 
 The page-facing entry point, exposed as `navigator.serviceWorker` (see [`container`](./Js_of_ocaml-ServiceWorker.md#val-container)). Inherits `EventTarget`.

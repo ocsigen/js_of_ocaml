@@ -1,4 +1,3 @@
-
 # Module `Js_of_ocaml.Console`
 
 Console API (debugging console).

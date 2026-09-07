@@ -1,6 +1,4 @@
-
 # js\_of\_ocaml-tyxml index
-
 
 ## Library js\_of\_ocaml-tyxml
 

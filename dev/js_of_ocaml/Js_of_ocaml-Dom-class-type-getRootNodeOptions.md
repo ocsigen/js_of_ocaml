@@ -1,4 +1,3 @@
-
 # Class type `Dom.getRootNodeOptions`
 
 ```ocaml

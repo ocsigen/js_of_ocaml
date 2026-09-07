@@ -1,4 +1,3 @@
-
 # Class type `Dom.element`
 
 Specification of `Element` objects.

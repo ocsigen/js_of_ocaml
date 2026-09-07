@@ -1,4 +1,3 @@
-
 # Module `Js_of_ocaml.Clipboard`
 
 Clipboard API.
@@ -13,8 +12,8 @@ A code example:
          (fun () -> Console.console##log (Js.string "copied"))
          ((Clipboard.clipboard ())##writeText (Js.string "Hello!")))
 ```
-see [https://developer.mozilla.org/en-US/docs/Web/API/Clipboard\_API](https://developer.mozilla.org/en-US/docs/Web/API/Clipboard_API) 
-see [https://w3c.github.io/clipboard-apis/](https://w3c.github.io/clipboard-apis/) 
+see [https://developer.mozilla.org/en-US/docs/Web/API/Clipboard\_API](https://developer.mozilla.org/en-US/docs/Web/API/Clipboard_API)
+see [https://w3c.github.io/clipboard-apis/](https://w3c.github.io/clipboard-apis/)
 ```ocaml
 class type  clipboardItem = object ... end
 ```

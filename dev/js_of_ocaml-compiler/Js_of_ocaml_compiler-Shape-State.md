@@ -1,4 +1,3 @@
-
 # Module `Shape.State`
 
 ```ocaml

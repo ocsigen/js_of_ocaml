@@ -1,6 +1,4 @@
-
 # Installation
-
 
 ## Requirements
 
@@ -26,9 +24,7 @@ The generated JavaScript works with:
 - QuickJS-NG
 **Note**: `Stdlib.Weak` and `Stdlib.Ephemeron` require `WeakRef` support (ECMAScript 2021\), available in all modern browsers and Node.js 14\.6+.
 
-
 ## Install from opam
-
 
 ### Basic installation
 
@@ -66,7 +62,6 @@ opam install wasm_of_ocaml-compiler
 **Additional requirement**: Binaryen 119 or later must be installed on your system. See [Binaryen installation](https://github.com/WebAssembly/binaryen).
 
 See [wasm\_of\_ocaml](./wasm_overview.md) for usage.
-
 
 ## See also
 

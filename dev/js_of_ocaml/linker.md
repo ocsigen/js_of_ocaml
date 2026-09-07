@@ -1,15 +1,12 @@
-
 # JavaScript primitives
 
 This page covers how to link JavaScript files with js\_of\_ocaml, including writing primitives and discovering runtime files.
-
 
 ## Overview
 
 The js\_of\_ocaml compiler accepts JavaScript files on the command-line. The main purpose is to provide (external) primitives needed by the bytecode program.
 
 Most primitives from the standard library are already implemented and loaded by default.
-
 
 ## Passing JavaScript files
 
@@ -24,7 +21,6 @@ js_of_ocaml myruntime.js program.byte
 OCaml libraries often require JavaScript runtime files. The js\_of\_ocaml compiler does not automatically locate these files \- They must be passed explicitly on the command line.
 
 Runtime files are discovered using Findlib's `jsoo_runtime` variable.
-
 
 ### List required runtime files
 
@@ -51,11 +47,9 @@ $ js_of_ocaml $(ocamlfind query -format "%+(jsoo_runtime)" -r $LIBS | grep -v "^
 ```
 With **dune**, this is handled automatically.
 
-
 ## Writing JavaScript primitives
 
 User-defined primitives need to be implemented in a separate JavaScript file. See [runtime representation](./runtime-representation.md) for how OCaml values are represented in JavaScript. Primitives should be annotated with additional information.
-
 
 ### Annotation syntax
 
@@ -96,7 +90,6 @@ function primitive_name(arg1, arg2) {
 
 All JavaScript code after a `//Provides` annotation belongs to that primitive, until the next `//Provides`.
 
-
 ### Example: custom primitive
 
 ```
@@ -117,7 +110,6 @@ let () = my_log "Hello from OCaml!"
 
 ## Declaring runtime files in packages
 
-
 ### Using jsoo\_runtime
 
 In your package's META file, use the `jsoo_runtime` variable:
@@ -130,7 +122,6 @@ package "sublib" (
 )
 ```
 Files should be comma-separated and relative to the package directory. By convention, use **runtime.js** for single files.
-
 
 ### Dune integration
 
@@ -167,7 +158,6 @@ When using linkopts, special path syntax is supported:
 - `+package/file.js` \- Resolves to `${LIBDIR}/package/file.js`
 - `+file.js` \- Resolves to js\_of\_ocaml-compiler's lib directory
 **Note**: Dune generates META files compatible with both approaches but only uses `jsoo_runtime` internally.
-
 
 ## See also
 

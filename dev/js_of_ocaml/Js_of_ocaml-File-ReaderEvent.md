@@ -1,4 +1,3 @@
-
 # Module `File.ReaderEvent`
 
 ```ocaml

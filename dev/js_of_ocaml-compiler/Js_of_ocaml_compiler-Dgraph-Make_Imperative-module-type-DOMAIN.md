@@ -1,4 +1,3 @@
-
 # Module type `Make_Imperative.DOMAIN`
 
 ```ocaml

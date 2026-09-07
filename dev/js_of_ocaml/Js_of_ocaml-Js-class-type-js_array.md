@@ -1,4 +1,3 @@
-
 # Class type `Js.js_array`
 
 Specification of Javascript regular arrays. Use `Js.array_get` and `Js.array_set` to access and set array elements.

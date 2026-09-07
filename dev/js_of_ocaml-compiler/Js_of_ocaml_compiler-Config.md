@@ -1,4 +1,3 @@
-
 # Module `Js_of_ocaml_compiler.Config`
 
 ```ocaml
@@ -8,7 +7,6 @@ module Flag : sig ... end
 module Param : sig ... end
 ```
 This module contains parameters that may be modified through command-line flags.
-
 
 ### Parameters that are constant across a program run
 

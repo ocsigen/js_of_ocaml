@@ -1,4 +1,3 @@
-
 # Performance
 
 We have compared the running time of OCaml programs executed natively, interpreted by the bytecode interpreter, and executed by a JavaScript engine after compilation by Js\_of\_ocaml.
@@ -6,7 +5,6 @@ We have compared the running time of OCaml programs executed natively, interpret
 With a state-of-the-art JavaScript engine (such as Google's V8 and Mozilla's SpiderMonkey), programs often run faster when compiled to JavaScript than with the OCaml bytecode interpreter.
 
 Benchmarks were run in November 2022 with engines available in Ubuntu 22\.04 (V8: 8\.4.371.19-node.16, SpiderMonkey: JavaScript-C91.10.0).
-
 
 ## Execution time
 
@@ -24,12 +22,10 @@ Most of the time, the generated JavaScript code is smaller than the bytecode fil
 
 The size gain can be much larger for programs that rely on external libraries, thanks to dead code elimination.
 
-
 ## Comparison with handwritten JavaScript
 
 ![Relative execution times](files/performances/nativejs.png)
 Comparing execution times between handwritten JavaScript and generated code shows that results are implementation-dependent.
-
 
 ## Compiler optimization levels
 

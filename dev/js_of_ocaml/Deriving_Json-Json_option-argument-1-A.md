@@ -1,4 +1,3 @@
-
 # Parameter `Json_option.A`
 
 ```ocaml

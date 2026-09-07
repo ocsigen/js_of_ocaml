@@ -1,8 +1,6 @@
-
 # Export OCaml code to JavaScript
 
 This page explains how to make OCaml values (functions, objects, constants) accessible from JavaScript code.
-
 
 ## Basic export with `Js.export`
 
@@ -76,7 +74,6 @@ factorial(5);      // 120
 ## Type considerations
 
 Exported functions are automatically wrapped with [Js.wrap\_callback](./Js_of_ocaml-Js.md#val-wrap_callback). However, you must convert OCaml values to their JavaScript equivalents (strings with `Js.string`, booleans with `Js.bool`, etc.). See [type conversions](./javascript-interop.md#conversions) for the full list.
-
 
 ## Handling callbacks from JavaScript
 

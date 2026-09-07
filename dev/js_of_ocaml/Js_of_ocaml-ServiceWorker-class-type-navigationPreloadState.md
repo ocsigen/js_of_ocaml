@@ -1,4 +1,3 @@
-
 # Class type `ServiceWorker.navigationPreloadState`
 
 The state of a registration's navigation preload, as resolved by [`navigationPreloadManager`](./Js_of_ocaml-ServiceWorker-class-type-navigationPreloadManager.md)`##getState`.

@@ -1,4 +1,3 @@
-
 # Class type `WebSockets.webSocket`
 
 ```ocaml

@@ -1,4 +1,3 @@
-
 # Module `Stdlib.Int32`
 
 ```ocaml

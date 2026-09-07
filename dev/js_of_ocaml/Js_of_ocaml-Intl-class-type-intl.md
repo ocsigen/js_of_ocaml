@@ -1,4 +1,3 @@
-
 # Class type `Intl.intl`
 
 ```ocaml

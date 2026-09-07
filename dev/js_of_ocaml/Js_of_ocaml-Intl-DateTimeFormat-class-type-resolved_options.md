@@ -1,4 +1,3 @@
-
 # Class type `DateTimeFormat.resolved_options`
 
 ```ocaml

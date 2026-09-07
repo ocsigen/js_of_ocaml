@@ -1,4 +1,3 @@
-
 # Class type `ServiceWorker.registrationOptions`
 
 Options for [`serviceWorkerContainer`](./Js_of_ocaml-ServiceWorker-class-type-serviceWorkerContainer.md)`##register_withOptions`. Create an empty record with [`empty_registration_options`](./Js_of_ocaml-ServiceWorker.md#val-empty_registration_options).

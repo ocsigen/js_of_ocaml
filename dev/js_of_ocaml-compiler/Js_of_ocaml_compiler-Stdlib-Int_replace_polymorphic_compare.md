@@ -1,4 +1,3 @@
-
 # Module `Stdlib.Int_replace_polymorphic_compare`
 
 ```ocaml

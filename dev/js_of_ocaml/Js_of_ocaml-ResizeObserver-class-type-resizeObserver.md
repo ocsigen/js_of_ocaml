@@ -1,4 +1,3 @@
-
 # Class type `ResizeObserver.resizeObserver`
 
 ```ocaml

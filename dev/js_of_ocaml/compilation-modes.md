@@ -1,4 +1,3 @@
-
 # Compilation modes
 
 Js\_of\_ocaml supports two compilation modes:
@@ -15,7 +14,6 @@ Js\_of\_ocaml supports two compilation modes:
 | Runtime speed | Faster (cross-module optimizations) | Slower |
 **Recommendation**: Use separate compilation during development for fast iteration, and whole program compilation for production releases.
 
-
 ## Whole program compilation
 
 This is the simplest mode. Compile your bytecode executable directly:
@@ -27,11 +25,9 @@ Some libraries require additional runtime files. See [JavaScript primitives](./l
 
 The compiler performs global dead-code elimination and cross-module optimizations, producing smaller and faster output.
 
-
 ## Separate compilation
 
 Separate compilation involves three steps: build the runtime, compile units, and link.
-
 
 ### 1\. Build the runtime
 
@@ -39,7 +35,6 @@ Separate compilation involves three steps: build the runtime, compile units, and
 js_of_ocaml build-runtime -o runtime.js
 ```
 Some libraries require additional runtime files. See [JavaScript primitives](./linker.md#finding_runtime) for how to discover them.
-
 
 ### 2\. Compile units and libraries
 
@@ -58,7 +53,6 @@ js_of_ocaml link runtime.js stdlib.js mylib.js mymodule.js std_exit.js -o progra
 ```
 **Note**: Unlike OCaml linking, you must explicitly include `stdlib.js` and `std_exit.js`.
 
-
 ## Dune integration
 
 Dune handles compilation mode automatically based on the build profile:
@@ -76,7 +70,6 @@ Or configure the default in `dune-project` or `dune-workspace`.
 
 See [dune documentation](https://dune.readthedocs.io/en/latest/jsoo.html) for details.
 
-
 ## Source maps with separate compilation
 
 For source maps in separate compilation mode, use inline source maps:
@@ -85,7 +78,6 @@ For source maps in separate compilation mode, use inline source maps:
 js_of_ocaml --source-map-inline mymodule.cmo
 ```
 The `link` command will merge source maps automatically.
-
 
 ## See also
 

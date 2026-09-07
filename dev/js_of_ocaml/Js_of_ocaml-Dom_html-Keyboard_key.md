@@ -1,4 +1,3 @@
-
 # Module `Dom_html.Keyboard_key`
 
 Use `Keyboard_key` when you want to identify the character that the user typed. This should only be invoked on keypress events, not keydown or keyup events.

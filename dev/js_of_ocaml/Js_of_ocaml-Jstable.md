@@ -1,4 +1,3 @@
-
 # Module `Js_of_ocaml.Jstable`
 
 A minimal table implementation specialized for [`Js.js_string`](./Js_of_ocaml-Js-class-type-js_string.md) keys. This is faster than regular OCaml hashtables.

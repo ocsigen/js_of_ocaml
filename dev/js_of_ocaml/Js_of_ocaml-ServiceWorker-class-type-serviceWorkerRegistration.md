@@ -1,4 +1,3 @@
-
 # Class type `ServiceWorker.serviceWorkerRegistration`
 
 A registration of a service worker against a scope. Inherits `EventTarget`.

@@ -1,6 +1,4 @@
-
 # Module `Dgraph.Make`
-
 
 ## Parameters
 

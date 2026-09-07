@@ -1,4 +1,3 @@
-
 # Class type `Dom.attr`
 
 Specification of `Attr` objects.

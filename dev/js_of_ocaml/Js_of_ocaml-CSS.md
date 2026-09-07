@@ -1,4 +1,3 @@
-
 # Module `Js_of_ocaml.CSS`
 
 This module contains a few types and values to ease the use of CSS properties and such. If you think a feature is missing, consider sending a patch or an RFE to the mailing list.

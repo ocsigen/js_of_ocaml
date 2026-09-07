@@ -1,4 +1,3 @@
-
 # Module `Js_of_ocaml_compiler.Compiler_version`
 
 ```ocaml

@@ -1,4 +1,3 @@
-
 # Module `Linker.Fragment`
 
 ```ocaml

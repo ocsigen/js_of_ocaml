@@ -1,8 +1,6 @@
-
 # JavaScript interoperability
 
 This page explains how to interact with JavaScript from OCaml using the Js\_of\_ocaml library.
-
 
 ## Introduction
 
@@ -13,7 +11,6 @@ OCaml and JavaScript represent values differently, for example:
 - OCaml arrays have a tag element; JavaScript arrays don't
 - OCaml objects don't map to JavaScript objects
 Js\_of\_ocaml (the lib) provides a typed interface to bridge these differences safely.
-
 
 ### Alternatives
 
@@ -30,7 +27,6 @@ For example, `Js.js_string Js.t` represents a JavaScript string, and `< length :
 
 To work with these values (access properties, call methods), you need the [PPX syntax extension](./ppx.md) which provides operators like `##.` and `##`.
 
-
 ## Conversions
 
 OCaml and JavaScript represent basic types differently (see [runtime representation](./runtime-representation.md)). For example, OCaml strings are byte sequences while JavaScript strings are UTF-16. When passing values between OCaml and JavaScript code, you must convert them explicitly.
@@ -45,7 +41,6 @@ The conversion functions follow a consistent naming pattern:
 - Reading JavaScript values back into OCaml
 - Working with DOM APIs (which use JavaScript types)
 **Exception**: OCaml integers can be used directly—no conversion needed.
-
 
 ### Summary
 
@@ -145,7 +140,6 @@ For instance, a JavaScript object with a `data` property and an `appendData` met
 | `'a Js.optdef_prop` | Optional property (may be `undefined`) |
 The [PPX syntax](./ppx.md) rely on these info to provide type safe access to properties and method.
 
-
 ### Example
 
 Given a JavaScript object:
@@ -179,7 +173,6 @@ This enables:
 - **Reserved ocaml keywords**: `_type` refers to JavaScript's `type`
 - **Method overloading**: `foo_int` and `foo_string` both refer to `foo`
 **Warning**: This mangling is a common source of bugs. If you write `obj##.some_property`, it accesses the JavaScript property `some` (not `some_property`). To access `some_property`, use `obj##._some_property_` or `obj##.some_property_`.
-
 
 #### Examples
 
@@ -270,7 +263,6 @@ let v = (Js.Unsafe.js_expr "window")##.document
 ```
 Be careful: both [Js.Unsafe.global](./Js_of_ocaml-Js-Unsafe.md#val-global) and [Js.Unsafe.js\_expr](./Js_of_ocaml-Js-Unsafe.md#val-js_expr) are untyped. Verify the library documentation before writing type annotations.
 
-
 ### Untyped property access
 
 When a property is missing from the OCaml interface, use [Js.Unsafe.coerce](./Js_of_ocaml-Js-Unsafe.md#val-coerce) for untyped access:
@@ -286,7 +278,6 @@ let value = (Js.Unsafe.coerce obj)##.someProp
 ## Handling null and undefined
 
 JavaScript has two "missing value" types: `null` and `undefined`. Js\_of\_ocaml represents these with distinct types.
-
 
 ### Js.Opt for nullable values (`null`)
 
@@ -341,7 +332,6 @@ There are three ways to call JavaScript functions, depending on how `this` shoul
 
 At the moment, there is no syntactic sugar for calling Javascript functions.
 
-
 ### Standalone functions with `fun_call`
 
 Use [Js.Unsafe.fun\_call](./Js_of_ocaml-Js-Unsafe.md#val-fun_call) for functions where `this` doesn't matter:
@@ -390,11 +380,9 @@ external my_primitive : int -> int -> int = "my_js_function"
 ```
 This calls the JavaScript function `my_js_function` directly, without the overhead of `Js.Unsafe` wrappers. See [writing JavaScript primitives](./linker.md#writing_primitives) for how to define such functions.
 
-
 ## Passing OCaml functions to JavaScript
 
 When JavaScript code needs to call back into OCaml (e.g., event handlers, async callbacks), you must wrap OCaml functions appropriately.
-
 
 ### Basic callbacks with `Js.wrap_callback`
 
@@ -408,7 +396,6 @@ let set_timeout f ms =
 let () = set_timeout (fun () -> print_endline "Hello!") 1000
 ```
 [Js.wrap\_callback](./Js_of_ocaml-Js.md#val-wrap_callback) handles partial application: if JavaScript calls the function with fewer arguments than expected, the result is a partially applied function.
-
 
 ### Callbacks with `this` binding
 
@@ -484,7 +471,6 @@ let get_optional_method obj =
 
 JavaScript APIs often use union types (e.g., `string | Node`). Since OCaml requires a single type, use an opaque type with runtime checking.
 
-
 ### Using `instanceof` for object types
 
 ```ocaml
@@ -548,13 +534,11 @@ let value : 'a = Json.unsafe_input json
 ```
 For type-safe JSON handling, use [ppx\_deriving\_json](./ppx-deriving.md).
 
-
 ## Accessing runtime values
 
 JavaScript values declared with `//Provides:` in runtime files can be accessed from OCaml. There are two approaches depending on whether you're accessing a function or a non-function value.
 
 See [writing JavaScript primitives](./linker.md#writing_primitives) for more about the `//Provides:` syntax.
-
 
 ### Functions: use `external`
 
@@ -571,7 +555,6 @@ let result = my_add 1 2  (* calls the JS function directly *)
 ```
 This is efficient and integrates naturally with OCaml code.
 
-
 ### Non-function values: use `runtime_value`
 
 For JavaScript **objects, constants, or other non-function values**, use [Js.Unsafe.runtime\_value](./Js_of_ocaml-Js-Unsafe.md#val-runtime_value):
@@ -585,7 +568,6 @@ let config : < debug : bool Js.t Js.prop; version : int Js.prop > Js.t =
   Js.Unsafe.runtime_value "myConfig"
 ```
 **Important**: The argument must be a string literal, not a variable.
-
 
 ## See also
 

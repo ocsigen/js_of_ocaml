@@ -1,4 +1,3 @@
-
 # Class type `PerformanceObserver.performanceObserver`
 
 ```ocaml

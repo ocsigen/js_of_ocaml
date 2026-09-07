@@ -1,4 +1,3 @@
-
 # Module `Js_of_ocaml_tyxml.Tyxml_cast`
 
 Cast to and from Tyxml types

@@ -1,4 +1,3 @@
-
 # Class type `FontFace.fontFace`
 
 ```ocaml

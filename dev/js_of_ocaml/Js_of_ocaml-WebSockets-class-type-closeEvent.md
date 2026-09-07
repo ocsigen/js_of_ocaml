@@ -1,4 +1,3 @@
-
 # Class type `WebSockets.closeEvent`
 
 ```ocaml

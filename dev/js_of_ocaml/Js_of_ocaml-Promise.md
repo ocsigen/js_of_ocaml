@@ -1,17 +1,14 @@
-
 # Module `Js_of_ocaml.Promise`
 
 Bindings to the JavaScript `Promise` API.
 
 A value of type `'a t` represents a JavaScript promise that, when fulfilled, resolves with a value of OCaml type `'a`.
 
-
 ### Type safety
 
 Native JavaScript promises automatically flatten any thenable returned from a handler or passed to `Promise.resolve`. That means a JavaScript `Promise` can never resolve with another `Promise` as its value, which is unsound at the OCaml type level for, say, `'a t t`.
 
 These bindings work around that by wrapping thenable values in a small container before resolving and unwrapping on the way out; non-thenable values are passed through unchanged so the common case pays no allocation. As a result, `'a t` values always resolve with a value of OCaml type `'a`, even when `'a` is itself `'_ t`.
-
 
 ### Interop with raw JavaScript promises
 
@@ -25,7 +22,6 @@ type error
 ```
 The reason a promise was rejected. JavaScript allows rejecting with any value (not necessarily an `Error`), so [`error`](./#type-error) is opaque; use [`error_to_any`](./#val-error_to_any) to inspect it and [`error_of_any`](./#val-error_of_any) to construct one.
 
-
 ## Errors
 
 ```ocaml
@@ -38,7 +34,6 @@ val error_to_any : error -> Js.Unsafe.any
 val error_of_exn : exn -> error
 ```
 Use an OCaml exception as a rejection reason.
-
 
 ## Building promises
 
@@ -61,7 +56,6 @@ val make : (resolve:('a -> unit) -> reject:(error -> unit) -> unit) -> 'a t
 val with_resolvers : unit -> 'a t * ('a -> unit) * (error -> unit)
 ```
 `with_resolvers ()` returns `(p, resolve, reject)` where `p` is a fresh promise that is settled by calling `resolve x` (to fulfill with `x`) or `reject e` (to reject with `e`). Bound to the `Promise.withResolvers()` static method (ES2024).
-
 
 ## Chaining
 
@@ -92,7 +86,6 @@ val bind : ('a -> 'b t) -> 'a t -> 'b t
 ```
 Alias for [`then_`](./#val-then_).
 
-
 ## Combinators
 
 ```ocaml
@@ -115,7 +108,6 @@ val race : 'a t list -> 'a t
 ```
 `race ps` settles like the first promise in `ps` to settle, fulfilled or rejected.
 
-
 ## Unsafe interop
 
 ```ocaml
@@ -127,7 +119,6 @@ Expose the underlying JavaScript promise. The resolved value may be the internal
 val of_any : Js.Unsafe.any -> 'a t
 ```
 Treat a foreign JavaScript promise as a `'a t`. The returned value is only sound if the underlying promise actually resolves with a value of type `'a`; raw foreign values are passed through [`then_`](./#val-then_) unchanged.
-
 
 ## Capability detection
 

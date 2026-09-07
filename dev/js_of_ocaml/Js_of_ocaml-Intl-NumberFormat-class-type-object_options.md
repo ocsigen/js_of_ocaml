@@ -1,4 +1,3 @@
-
 # Class type `NumberFormat.object_options`
 
 ```ocaml

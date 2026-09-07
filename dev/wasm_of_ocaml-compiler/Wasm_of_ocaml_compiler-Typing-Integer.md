@@ -1,4 +1,3 @@
-
 # Module `Typing.Integer`
 
 ```ocaml

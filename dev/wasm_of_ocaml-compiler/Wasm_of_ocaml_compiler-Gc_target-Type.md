@@ -1,4 +1,3 @@
-
 # Module `Gc_target.Type`
 
 ```ocaml

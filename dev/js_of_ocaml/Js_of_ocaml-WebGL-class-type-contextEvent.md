@@ -1,4 +1,3 @@
-
 # Class type `WebGL.contextEvent`
 
 ```ocaml

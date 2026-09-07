@@ -1,4 +1,3 @@
-
 # Class type `Js.regExp`
 
 Specification of Javascript regular expression objects.

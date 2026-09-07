@@ -1,4 +1,3 @@
-
 # Module `XmlHttpRequest.Event`
 
 ```ocaml

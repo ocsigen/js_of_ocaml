@@ -1,4 +1,3 @@
-
 # Class `Js_traverse.fast_freevar`
 
 ```ocaml

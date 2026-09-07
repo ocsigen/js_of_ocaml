@@ -1,4 +1,3 @@
-
 # Class type `Typed_array.arrayBufferView`
 
 ```ocaml

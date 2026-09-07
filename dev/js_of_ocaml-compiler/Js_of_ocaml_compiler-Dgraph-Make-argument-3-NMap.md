@@ -1,4 +1,3 @@
-
 # Parameter `Make.NMap`
 
 ```ocaml

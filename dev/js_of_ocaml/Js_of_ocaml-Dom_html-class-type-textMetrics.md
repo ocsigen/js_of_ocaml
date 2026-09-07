@@ -1,4 +1,3 @@
-
 # Class type `Dom_html.textMetrics`
 
 ```ocaml

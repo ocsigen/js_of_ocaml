@@ -1,4 +1,3 @@
-
 # Class type `ServiceWorker.client`
 
 A client (a `Window`, worker or shared worker) controlled by the worker.

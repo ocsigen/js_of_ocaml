@@ -1,4 +1,3 @@
-
 # Module `Parse_js.Lexer`
 
 ```ocaml

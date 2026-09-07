@@ -1,4 +1,3 @@
-
 # Module `Js_of_ocaml_lwt.Lwt_js_events`
 
 Programming mouse or keyboard events handlers using Lwt
@@ -133,7 +132,6 @@ val limited_loop :
   unit Lwt.t
 ```
 Same as func\_limited\_loop but take time instead of function By default elapsed\_time \= 0\.1s \= 100ms \*
-
 
 ### Predefined functions for some types of events
 

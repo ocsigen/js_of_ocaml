@@ -1,4 +1,3 @@
-
 # Module `Dom_html.Event`
 
 Event types: `mousedown`, `keypress`, ...

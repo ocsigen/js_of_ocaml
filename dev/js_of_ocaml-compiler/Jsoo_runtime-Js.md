@@ -1,4 +1,3 @@
-
 # Module `Jsoo_runtime.Js`
 
 ```ocaml

@@ -1,4 +1,3 @@
-
 # Class type `Performance.performanceMeasureOptions`
 
 ```ocaml

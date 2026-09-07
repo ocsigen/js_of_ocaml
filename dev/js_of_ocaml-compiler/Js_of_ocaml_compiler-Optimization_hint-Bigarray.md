@@ -1,4 +1,3 @@
-
 # Module `Optimization_hint.Bigarray`
 
 ```ocaml

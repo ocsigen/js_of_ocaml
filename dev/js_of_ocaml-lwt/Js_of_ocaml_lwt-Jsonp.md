@@ -1,4 +1,3 @@
-
 # Module `Js_of_ocaml_lwt.Jsonp`
 
 This module provides helpers to perform JSONP calls

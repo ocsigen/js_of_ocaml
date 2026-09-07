@@ -1,6 +1,4 @@
-
 # Module `Make_Imperative.Solver`
-
 
 ## Parameters
 

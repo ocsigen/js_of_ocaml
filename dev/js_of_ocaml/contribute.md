@@ -1,6 +1,4 @@
-
 # Contributing to Js\_of\_ocaml
-
 
 ## Reporting issues
 
@@ -12,7 +10,6 @@ If you encounter a problem or have questions, please open a [GitHub issue](https
 4. Provide a minimal reproducible example if possible
 
 ## Development setup
-
 
 ### Install dependencies
 
@@ -38,7 +35,6 @@ dune build @all
 
 ## Code style
 
-
 ### OCaml
 
 Code is formatted with **ocamlformat 0\.29.0**. Run before committing:
@@ -59,7 +55,6 @@ make lint-js
 ## Documentation
 
 Code examples in the `.mli` doc-comments and the `manual/` pages are checked by the test suite: OCaml code blocks are type-checked against the real API, so examples cannot silently drift out of sync. An illustrative snippet that is not meant to compile can be marked to be only syntax-checked, or skipped entirely. See `manual/examples-check/` for the markers.
-
 
 ## Testing
 
@@ -94,7 +89,7 @@ Test directories:
 ## Project structure
 
 - `compiler/` \- Compiler implementation
-  
+
   - `lib/` \- Core compiler library
   - `lib-wasm/` \- WebAssembly backend
   - `bin-js_of_ocaml/` \- js\_of\_ocaml entry point

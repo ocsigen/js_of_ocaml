@@ -1,4 +1,3 @@
-
 # Module `Intl.DateTimeFormat`
 
 ```ocaml

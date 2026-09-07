@@ -1,4 +1,3 @@
-
 # Module `Wasm_of_ocaml_compiler.Tail_call`
 
 ```ocaml

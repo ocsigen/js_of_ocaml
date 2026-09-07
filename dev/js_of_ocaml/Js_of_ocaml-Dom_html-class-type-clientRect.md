@@ -1,4 +1,3 @@
-
 # Class type `Dom_html.clientRect`
 
 Rectangular box (used for element bounding boxes)

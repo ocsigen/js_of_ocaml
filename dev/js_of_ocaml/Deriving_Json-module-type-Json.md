@@ -1,4 +1,3 @@
-
 # Module type `Deriving_Json.Json`
 
 The signature of the JSON class.

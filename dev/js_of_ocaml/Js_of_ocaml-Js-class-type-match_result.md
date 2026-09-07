@@ -1,4 +1,3 @@
-
 # Class type `Js.match_result`
 
 Specification of match result objects

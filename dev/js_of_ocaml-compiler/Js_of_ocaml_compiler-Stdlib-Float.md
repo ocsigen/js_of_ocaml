@@ -1,4 +1,3 @@
-
 # Module `Stdlib.Float`
 
 ```ocaml

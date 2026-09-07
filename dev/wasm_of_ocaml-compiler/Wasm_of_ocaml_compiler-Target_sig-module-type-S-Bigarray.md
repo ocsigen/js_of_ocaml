@@ -1,4 +1,3 @@
-
 # Module `S.Bigarray`
 
 ```ocaml

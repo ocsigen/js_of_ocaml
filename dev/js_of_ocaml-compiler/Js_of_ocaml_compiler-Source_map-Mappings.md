@@ -1,4 +1,3 @@
-
 # Module `Source_map.Mappings`
 
 ```ocaml

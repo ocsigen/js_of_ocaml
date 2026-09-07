@@ -1,6 +1,4 @@
-
 # Module `Deriving_Json.Defaults`
-
 
 ## Parameters
 

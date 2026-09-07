@@ -1,4 +1,3 @@
-
 # Module type `Wrapped_intf.Wrapped`
 
 ```ocaml

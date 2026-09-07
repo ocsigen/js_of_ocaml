@@ -1,4 +1,3 @@
-
 # Class type `Notification.notificationAction`
 
 A single action shown alongside a (persistent) notification. Used both when building [`notificationOptions`](./Js_of_ocaml-Notification-class-type-notificationOptions.md) and when reading [`notification`](./Js_of_ocaml-Notification.md#val-notification)'s `actions`; the members are therefore read-write.

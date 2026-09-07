@@ -1,4 +1,3 @@
-
 # Module `Sys.Config`
 
 ```ocaml

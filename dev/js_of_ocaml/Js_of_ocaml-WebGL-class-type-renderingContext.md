@@ -1,4 +1,3 @@
-
 # Class type `WebGL.renderingContext`
 
 5\.13.1 Attributes

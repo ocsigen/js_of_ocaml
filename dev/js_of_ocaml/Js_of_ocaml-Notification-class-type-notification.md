@@ -1,4 +1,3 @@
-
 # Class type `Notification.notification`
 
 ```ocaml

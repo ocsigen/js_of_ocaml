@@ -1,4 +1,3 @@
-
 # Module `Js_of_ocaml_compiler.Strongly_connected_components`
 
 Kosaraju's algorithm for strongly connected components.

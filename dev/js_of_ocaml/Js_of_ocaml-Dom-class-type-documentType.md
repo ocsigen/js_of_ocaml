@@ -1,4 +1,3 @@
-
 # Class type `Dom.documentType`
 
 Specification of `DocumentType` objects.

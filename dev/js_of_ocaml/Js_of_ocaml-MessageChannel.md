@@ -1,12 +1,11 @@
-
 # Module `Js_of_ocaml.MessageChannel`
 
 Channel messaging: `MessageChannel`, `MessagePort` and `MessageEvent`.
 
-see [https://developer.mozilla.org/en-US/docs/Web/API/MessageChannel](https://developer.mozilla.org/en-US/docs/Web/API/MessageChannel) 
-see [https://developer.mozilla.org/en-US/docs/Web/API/MessagePort](https://developer.mozilla.org/en-US/docs/Web/API/MessagePort) 
-see [https://developer.mozilla.org/en-US/docs/Web/API/MessageEvent](https://developer.mozilla.org/en-US/docs/Web/API/MessageEvent) 
-see [https://html.spec.whatwg.org/multipage/web-messaging.html](https://html.spec.whatwg.org/multipage/web-messaging.html) 
+see [https://developer.mozilla.org/en-US/docs/Web/API/MessageChannel](https://developer.mozilla.org/en-US/docs/Web/API/MessageChannel)
+see [https://developer.mozilla.org/en-US/docs/Web/API/MessagePort](https://developer.mozilla.org/en-US/docs/Web/API/MessagePort)
+see [https://developer.mozilla.org/en-US/docs/Web/API/MessageEvent](https://developer.mozilla.org/en-US/docs/Web/API/MessageEvent)
+see [https://html.spec.whatwg.org/multipage/web-messaging.html](https://html.spec.whatwg.org/multipage/web-messaging.html)
 ```ocaml
 class type  messagePort = object ... end
 ```

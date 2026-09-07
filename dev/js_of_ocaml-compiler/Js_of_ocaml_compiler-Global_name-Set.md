@@ -1,4 +1,3 @@
-
 # Module `Global_name.Set`
 
 ```ocaml

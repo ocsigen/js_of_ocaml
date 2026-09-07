@@ -1,4 +1,3 @@
-
 # Lwt support
 
 The `js_of_ocaml-lwt` package provides integration between Lwt and browser APIs. It includes:
@@ -39,11 +38,9 @@ Lwt.pick [
 ```
 **Warning**: If you use `Lwt.pick` and your handlers take time, other event listeners will not be cancelled until the handler terminates. It is better to return immediately after launching long-running handlers.
 
-
 ## API reference
 
 See `Js_of_ocaml_lwt.Lwt_js_events` for the full API.
-
 
 ## See also
 

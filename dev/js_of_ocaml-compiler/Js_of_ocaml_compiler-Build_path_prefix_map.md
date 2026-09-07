@@ -1,4 +1,3 @@
-
 # Module `Js_of_ocaml_compiler.Build_path_prefix_map`
 
 Rewrite paths for reproducible builds

@@ -1,4 +1,3 @@
-
 # Class type `RelativeTimeFormat.object_options`
 
 ```ocaml

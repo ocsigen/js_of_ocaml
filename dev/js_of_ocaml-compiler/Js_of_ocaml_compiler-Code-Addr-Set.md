@@ -1,4 +1,3 @@
-
 # Module `Addr.Set`
 
 ```ocaml

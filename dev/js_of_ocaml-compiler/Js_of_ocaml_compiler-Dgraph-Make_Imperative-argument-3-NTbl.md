@@ -1,4 +1,3 @@
-
 # Parameter `Make_Imperative.NTbl`
 
 ```ocaml

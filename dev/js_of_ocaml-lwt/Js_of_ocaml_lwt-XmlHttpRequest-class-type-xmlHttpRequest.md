@@ -1,4 +1,3 @@
-
 # Class type `XmlHttpRequest.xmlHttpRequest`
 
 ```ocaml

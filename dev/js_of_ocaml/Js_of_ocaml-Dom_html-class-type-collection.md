@@ -1,4 +1,3 @@
-
 # Class type `Dom_html.collection`
 
 Collection of HTML elements. Alias for [`Dom.collection`](./Js_of_ocaml-Dom-class-type-collection.md).

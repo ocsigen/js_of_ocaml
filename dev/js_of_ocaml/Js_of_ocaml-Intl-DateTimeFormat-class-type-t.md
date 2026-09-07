@@ -1,4 +1,3 @@
-
 # Class type `DateTimeFormat.t`
 
 ```ocaml

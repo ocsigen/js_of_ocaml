@@ -1,4 +1,3 @@
-
 # Class type `Dom_svg.altGlyphItemElement`
 
 deprecated Removed in SVG 2. SVG fonts replaced by WOFF.

@@ -1,4 +1,3 @@
-
 # Parameter `MakeOf.C`
 
 ```ocaml

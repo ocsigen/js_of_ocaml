@@ -1,6 +1,4 @@
-
 # Module `Set.Make`
-
 
 ## Parameters
 

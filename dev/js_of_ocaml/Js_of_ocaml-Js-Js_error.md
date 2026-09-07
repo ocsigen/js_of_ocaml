@@ -1,4 +1,3 @@
-
 # Module `Js.Js_error`
 
 ```ocaml

@@ -1,8 +1,6 @@
-
 # Quick Start
 
 This guide walks you through creating your first js\_of\_ocaml application.
-
 
 ## Installation
 
@@ -18,7 +16,6 @@ Create a new directory and initialize a dune project:
 mkdir hello_jsoo && cd hello_jsoo
 ```
 Create the following files:
-
 
 ### dune-project
 
@@ -53,11 +50,9 @@ dune build
 ```
 This produces `_build/default/main.bc.js`.
 
-
 ## Run in browser
 
 Create an HTML file to load the JavaScript:
-
 
 ### index.html
 
@@ -74,7 +69,6 @@ Create an HTML file to load the JavaScript:
 ```
 Open `index.html` in a browser. You should see an alert with "Hello from OCaml!".
 
-
 ## Run in Node.js
 
 ```
@@ -89,7 +83,6 @@ let () = print_endline "Hello from OCaml!"
 ## DOM manipulation example
 
 Here's a more complete example that manipulates the DOM:
-
 
 ### main.ml
 
@@ -159,7 +152,6 @@ For faster iteration during development, use:
 dune build -w
 ```
 This watches for file changes and rebuilds automatically.
-
 
 ## Next steps
 

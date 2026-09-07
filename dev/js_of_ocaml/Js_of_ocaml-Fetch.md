@@ -1,10 +1,9 @@
-
 # Module `Js_of_ocaml.Fetch`
 
 Fetch API.
 
-see [https://developer.mozilla.org/en-US/docs/Web/API/Fetch\_API](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API) 
-see [https://fetch.spec.whatwg.org/](https://fetch.spec.whatwg.org/) 
+see [https://developer.mozilla.org/en-US/docs/Web/API/Fetch\_API](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API)
+see [https://fetch.spec.whatwg.org/](https://fetch.spec.whatwg.org/)
 
 ## Headers
 
@@ -18,7 +17,6 @@ val headers : headers Js.t Js.constr
 val headers_of_list : (string * string) list -> headers Js.t
 ```
 Build a `headers` object from a list of `(name, value)` pairs.
-
 
 ## Request
 
@@ -53,7 +51,6 @@ val request_of_request_with_init :
   (request Js.t -> requestInit Js.t -> request Js.t) Js.constr
 ```
 `new%js request_of_request_with_init r init` builds a request using `r` as a template, overriding fields set in `init`.
-
 
 ## Response
 

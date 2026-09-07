@@ -1,4 +1,3 @@
-
 # Module `S.Value`
 
 ```ocaml

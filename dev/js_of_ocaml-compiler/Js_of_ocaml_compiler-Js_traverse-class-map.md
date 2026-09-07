@@ -1,4 +1,3 @@
-
 # Class `Js_traverse.map`
 
 ```ocaml

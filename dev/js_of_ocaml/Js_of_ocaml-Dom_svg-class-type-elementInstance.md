@@ -1,4 +1,3 @@
-
 # Class type `Dom_svg.elementInstance`
 
 deprecated Removed in SVG 2.

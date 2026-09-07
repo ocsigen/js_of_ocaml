@@ -1,4 +1,3 @@
-
 # Module `Js_of_ocaml.ServiceWorker`
 
 Service Workers.
@@ -7,8 +6,8 @@ This module covers both sides of the API: the page-facing registration API ([`co
 
 Service Workers require a secure context. The Promise-typed members use [`Promise`](./Js_of_ocaml-Promise.md).
 
-see [https://developer.mozilla.org/en-US/docs/Web/API/Service\_Worker\_API](https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API) 
-see [https://w3c.github.io/ServiceWorker/](https://w3c.github.io/ServiceWorker/) 
+see [https://developer.mozilla.org/en-US/docs/Web/API/Service\_Worker\_API](https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API)
+see [https://w3c.github.io/ServiceWorker/](https://w3c.github.io/ServiceWorker/)
 ```ocaml
 class type  serviceWorker = object ... end
 ```
@@ -51,7 +50,6 @@ val container : unit -> serviceWorkerContainer Js.t Js.optdef
 val is_supported : unit -> bool
 ```
 Whether `navigator.serviceWorker` is available in the current environment.
-
 
 ## Service worker global scope
 

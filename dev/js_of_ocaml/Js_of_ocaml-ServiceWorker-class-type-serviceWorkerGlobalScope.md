@@ -1,4 +1,3 @@
-
 # Class type `ServiceWorker.serviceWorkerGlobalScope`
 
 The global scope of a running service worker (its `self`). Inherits `EventTarget`.

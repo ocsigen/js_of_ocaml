@@ -1,6 +1,4 @@
-
 # Module `Dgraph.Make_Imperative`
-
 
 ## Parameters
 

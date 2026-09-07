@@ -1,4 +1,3 @@
-
 # Module `Js_of_ocaml.WebGL2`
 
 WebGL2 binding.
@@ -6,7 +5,6 @@ WebGL2 binding.
 WebGL2 (`WebGL2RenderingContext`) is a strict superset of WebGL1, so the context [`renderingContext`](./Js_of_ocaml-WebGL2-class-type-renderingContext.md) inherits every method and constant of [`WebGL.renderingContext`](./Js_of_ocaml-WebGL-class-type-renderingContext.md) and adds the WebGL2 ones on top.
 
 Following the pragmatic style of [`WebGL`](./Js_of_ocaml-WebGL.md), the enumerations are kept as abstract types shared between related uses. In particular the many WebGL2 sized internal formats and the plain formats share the single type [`pixelFormat`](./#type-pixelFormat); the binding therefore does not enforce, at compile time, that the (internalformat, format, type) triples passed to e.g. [`renderingContext.texImage3D`](./Js_of_ocaml-WebGL2-class-type-renderingContext.md#method-texImage3D) are mutually coherent (WebGL itself is not type safe there).
-
 
 ### Types reused from WebGL1
 

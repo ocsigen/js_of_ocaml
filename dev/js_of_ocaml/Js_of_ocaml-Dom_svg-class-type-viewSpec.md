@@ -1,4 +1,3 @@
-
 # Class type `Dom_svg.viewSpec`
 
 deprecated Removed in SVG 2.

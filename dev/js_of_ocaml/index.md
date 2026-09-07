@@ -1,8 +1,6 @@
-
 # Js\_of\_ocaml
 
 Js\_of\_ocaml is a compiler from OCaml bytecode programs to JavaScript. It makes it possible to run pure OCaml programs in JavaScript environments like browsers and Node.js. A companion compiler, *wasm\_of\_ocaml*, targets WebAssembly.
-
 
 ## Manual
 

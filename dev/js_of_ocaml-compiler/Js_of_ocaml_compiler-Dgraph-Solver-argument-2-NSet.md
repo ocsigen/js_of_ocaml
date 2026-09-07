@@ -1,4 +1,3 @@
-
 # Parameter `Solver.NSet`
 
 ```ocaml

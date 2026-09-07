@@ -1,4 +1,3 @@
-
 # Module `Ocaml_compiler.Hint`
 
 ```ocaml

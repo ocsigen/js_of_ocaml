@@ -1,4 +1,3 @@
-
 # Module `Js_of_ocaml.Effect_js`
 
 Javascript-specific effect functions.

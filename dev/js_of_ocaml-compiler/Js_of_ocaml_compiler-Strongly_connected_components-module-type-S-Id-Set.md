@@ -1,4 +1,3 @@
-
 # Module `Id.Set`
 
 ```ocaml

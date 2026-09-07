@@ -1,10 +1,8 @@
-
 # Module `Js_of_ocaml.Dom`
 
 DOM binding
 
 This is a partial binding to the DOM Core API.
-
 
 ### DOM objects
 
@@ -89,7 +87,6 @@ Specification of `DocumentType` objects.
 class type 'element document = object ... end
 ```
 Specification of `Document` objects.
-
 
 ### Helper functions
 
@@ -294,7 +291,6 @@ val createCustomEvent :
   ('a, 'b) customEvent Js.t
 ```
 Create a custom event of given type.
-
 
 ### Other DOM objects
 

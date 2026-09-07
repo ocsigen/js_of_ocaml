@@ -1,4 +1,3 @@
-
 # Module type `Intl.Shared`
 
 ```ocaml

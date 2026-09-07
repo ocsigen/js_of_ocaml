@@ -1,4 +1,3 @@
-
 # Class type `File.fileReader`
 
 ```ocaml

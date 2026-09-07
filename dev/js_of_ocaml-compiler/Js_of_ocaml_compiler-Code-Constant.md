@@ -1,4 +1,3 @@
-
 # Module `Code.Constant`
 
 ```ocaml

@@ -1,4 +1,3 @@
-
 # Module `CSS.Color`
 
 All about CSS colors. MDC documentation here: https://developer.mozilla.org/en/CSS/color\_value . Specifications here: http://www.w3.org/TR/css3-color/\#svg-color .

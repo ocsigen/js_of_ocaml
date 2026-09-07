@@ -1,4 +1,3 @@
-
 # Class type `Geolocation.geolocation`
 
 ```ocaml

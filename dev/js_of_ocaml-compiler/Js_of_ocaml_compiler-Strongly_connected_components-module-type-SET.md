@@ -1,4 +1,3 @@
-
 # Module type `Strongly_connected_components.SET`
 
 ```ocaml

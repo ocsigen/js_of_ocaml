@@ -1,4 +1,3 @@
-
 # Module `Link.Wasm_binary`
 
 ```ocaml

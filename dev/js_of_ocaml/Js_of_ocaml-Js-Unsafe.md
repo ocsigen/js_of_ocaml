@@ -1,4 +1,3 @@
-
 # Module `Js.Unsafe`
 
 Unsafe Javascript operations
@@ -138,7 +137,6 @@ Javascript `==` equality operator.
 val strict_equals : _ -> _ -> bool
 ```
 Javascript `===` equality operator.
-
 
 #### Deprecated functions.
 

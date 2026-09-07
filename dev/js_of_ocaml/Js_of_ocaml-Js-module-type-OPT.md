@@ -1,4 +1,3 @@
-
 # Module type `Js.OPT`
 
 Signatures of a set of standard functions for manipulating optional values.

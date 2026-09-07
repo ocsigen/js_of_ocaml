@@ -7,7 +7,6 @@
 
 # Js\_of\_ocaml
 
-
 ## Overview
 
 Js\_of\_ocaml is a compiler from OCaml bytecode programs to JavaScript. It makes it possible to run pure OCaml programs in JavaScript environments like browsers and Node.js. It is easy to install as it works with an existing installation of OCaml, with no need to recompile any library. It comes with bindings for a large part of the browser APIs.
@@ -27,7 +26,6 @@ There is also a compiler targeting WebAssembly provided by the `wasm_of_ocaml` p
 
 **Note**: All code examples in this manual use Js\_of\_ocaml's ppx syntax. It is possible to use Js\_of\_ocaml purely as a compiler while using a different package (e.g., gen\_js\_api, brr) to provide bindings to the browser APIs.
 
-
 ## Installation
 
 The easiest way to install js\_of\_ocaml is to use opam:
@@ -36,7 +34,6 @@ The easiest way to install js\_of\_ocaml is to use opam:
 opam install js_of_ocaml js_of_ocaml-ppx js_of_ocaml-lwt
 ```
 For alternatives, see [Installation](./install.md).
-
 
 ## Usage
 
@@ -53,21 +50,17 @@ js_of_ocaml cubes.byte
 ```
 **Note**: Generated JavaScript files are UTF-8 encoded.
 
-
 ### With dune
 
 Dune has native support for js\_of\_ocaml. It supports both standard and separate compilation of JavaScript files. See the [dune documentation](https://dune.readthedocs.io/en/latest/jsoo.html).
-
 
 ### With ocamlbuild (legacy)
 
 Js\_of\_ocaml provides an ocamlbuild plugin. See [js\_of\_ocaml-ocamlbuild](https://github.com/ocsigen/js_of_ocaml-ocamlbuild).
 
-
 ### Toplevel
 
 You can find an OCaml toplevel running in the browser [here](files/toplevel/index.html). See [Building a toplevel](./build-toplevel.md) to create your own.
-
 
 ## Supported features
 
@@ -90,11 +83,9 @@ Tail calls are not optimized in general. However, mutually recursive functions a
 - Trampolines are used otherwise
 See [tailcall optimization](./tailcall.md) for more details.
 
-
 ### Effect handlers
 
 Effect handlers are fully supported with the `--effects=..` flag. Effect support is disabled by default since effects are not widely used and the generated code can be slower, larger, and less readable. See [effect handlers](./effects.md) for details.
-
 
 ### Data representation
 
@@ -115,7 +106,6 @@ See [runtime representation](./runtime-representation.md) for details.
 ---
 
 # Installation
-
 
 ## Requirements
 
@@ -141,9 +131,7 @@ The generated JavaScript works with:
 - QuickJS-NG
 **Note**: `Stdlib.Weak` and `Stdlib.Ephemeron` require `WeakRef` support (ECMAScript 2021\), available in all modern browsers and Node.js 14\.6+.
 
-
 ## Install from opam
-
 
 ### Basic installation
 
@@ -182,7 +170,6 @@ opam install wasm_of_ocaml-compiler
 
 See [wasm\_of\_ocaml](./wasm_overview.md) for usage.
 
-
 ## See also
 
 - [Quick start](./quickstart.md) — Get started with a simple example
@@ -194,7 +181,6 @@ See [wasm\_of\_ocaml](./wasm_overview.md) for usage.
 # Quick Start
 
 This guide walks you through creating your first js\_of\_ocaml application.
-
 
 ## Installation
 
@@ -210,7 +196,6 @@ Create a new directory and initialize a dune project:
 mkdir hello_jsoo && cd hello_jsoo
 ```
 Create the following files:
-
 
 ### dune-project
 
@@ -245,11 +230,9 @@ dune build
 ```
 This produces `_build/default/main.bc.js`.
 
-
 ## Run in browser
 
 Create an HTML file to load the JavaScript:
-
 
 ### index.html
 
@@ -266,7 +249,6 @@ Create an HTML file to load the JavaScript:
 ```
 Open `index.html` in a browser. You should see an alert with "Hello from OCaml!".
 
-
 ## Run in Node.js
 
 ```
@@ -281,7 +263,6 @@ let () = print_endline "Hello from OCaml!"
 ## DOM manipulation example
 
 Here's a more complete example that manipulates the DOM:
-
 
 ### main.ml
 
@@ -352,7 +333,6 @@ dune build -w
 ```
 This watches for file changes and rebuilds automatically.
 
-
 ## Next steps
 
 - [PPX syntax](./ppx.md) \- Learn the syntax for JavaScript interop
@@ -366,7 +346,6 @@ This watches for file changes and rebuilds automatically.
 
 This page explains how to interact with JavaScript from OCaml using the Js\_of\_ocaml library.
 
-
 ## Introduction
 
 OCaml and JavaScript represent values differently, for example:
@@ -376,7 +355,6 @@ OCaml and JavaScript represent values differently, for example:
 - OCaml arrays have a tag element; JavaScript arrays don't
 - OCaml objects don't map to JavaScript objects
 Js\_of\_ocaml (the lib) provides a typed interface to bridge these differences safely.
-
 
 ### Alternatives
 
@@ -393,7 +371,6 @@ For example, `Js.js_string Js.t` represents a JavaScript string, and `< length :
 
 To work with these values (access properties, call methods), you need the [PPX syntax extension](./ppx.md) which provides operators like `##.` and `##`.
 
-
 ## Conversions
 
 OCaml and JavaScript represent basic types differently (see [runtime representation](./runtime-representation.md)). For example, OCaml strings are byte sequences while JavaScript strings are UTF-16. When passing values between OCaml and JavaScript code, you must convert them explicitly.
@@ -408,7 +385,6 @@ The conversion functions follow a consistent naming pattern:
 - Reading JavaScript values back into OCaml
 - Working with DOM APIs (which use JavaScript types)
 **Exception**: OCaml integers can be used directly—no conversion needed.
-
 
 ### Summary
 
@@ -508,7 +484,6 @@ For instance, a JavaScript object with a `data` property and an `appendData` met
 | `'a Js.optdef_prop` | Optional property (may be `undefined`) |
 The [PPX syntax](./ppx.md) rely on these info to provide type safe access to properties and method.
 
-
 ### Example
 
 Given a JavaScript object:
@@ -542,7 +517,6 @@ This enables:
 - **Reserved ocaml keywords**: `_type` refers to JavaScript's `type`
 - **Method overloading**: `foo_int` and `foo_string` both refer to `foo`
 **Warning**: This mangling is a common source of bugs. If you write `obj##.some_property`, it accesses the JavaScript property `some` (not `some_property`). To access `some_property`, use `obj##._some_property_` or `obj##.some_property_`.
-
 
 #### Examples
 
@@ -633,7 +607,6 @@ let v = (Js.Unsafe.js_expr "window")##.document
 ```
 Be careful: both [Js.Unsafe.global](./Js_of_ocaml-Js-Unsafe.md#val-global) and [Js.Unsafe.js\_expr](./Js_of_ocaml-Js-Unsafe.md#val-js_expr) are untyped. Verify the library documentation before writing type annotations.
 
-
 ### Untyped property access
 
 When a property is missing from the OCaml interface, use [Js.Unsafe.coerce](./Js_of_ocaml-Js-Unsafe.md#val-coerce) for untyped access:
@@ -649,7 +622,6 @@ let value = (Js.Unsafe.coerce obj)##.someProp
 ## Handling null and undefined
 
 JavaScript has two "missing value" types: `null` and `undefined`. Js\_of\_ocaml represents these with distinct types.
-
 
 ### Js.Opt for nullable values (`null`)
 
@@ -704,7 +676,6 @@ There are three ways to call JavaScript functions, depending on how `this` shoul
 
 At the moment, there is no syntactic sugar for calling Javascript functions.
 
-
 ### Standalone functions with `fun_call`
 
 Use [Js.Unsafe.fun\_call](./Js_of_ocaml-Js-Unsafe.md#val-fun_call) for functions where `this` doesn't matter:
@@ -753,11 +724,9 @@ external my_primitive : int -> int -> int = "my_js_function"
 ```
 This calls the JavaScript function `my_js_function` directly, without the overhead of `Js.Unsafe` wrappers. See [writing JavaScript primitives](./linker.md#writing_primitives) for how to define such functions.
 
-
 ## Passing OCaml functions to JavaScript
 
 When JavaScript code needs to call back into OCaml (e.g., event handlers, async callbacks), you must wrap OCaml functions appropriately.
-
 
 ### Basic callbacks with `Js.wrap_callback`
 
@@ -771,7 +740,6 @@ let set_timeout f ms =
 let () = set_timeout (fun () -> print_endline "Hello!") 1000
 ```
 [Js.wrap\_callback](./Js_of_ocaml-Js.md#val-wrap_callback) handles partial application: if JavaScript calls the function with fewer arguments than expected, the result is a partially applied function.
-
 
 ### Callbacks with `this` binding
 
@@ -847,7 +815,6 @@ let get_optional_method obj =
 
 JavaScript APIs often use union types (e.g., `string | Node`). Since OCaml requires a single type, use an opaque type with runtime checking.
 
-
 ### Using `instanceof` for object types
 
 ```ocaml
@@ -911,13 +878,11 @@ let value : 'a = Json.unsafe_input json
 ```
 For type-safe JSON handling, use [ppx\_deriving\_json](./ppx-deriving.md).
 
-
 ## Accessing runtime values
 
 JavaScript values declared with `//Provides:` in runtime files can be accessed from OCaml. There are two approaches depending on whether you're accessing a function or a non-function value.
 
 See [writing JavaScript primitives](./linker.md#writing_primitives) for more about the `//Provides:` syntax.
-
 
 ### Functions: use `external`
 
@@ -934,7 +899,6 @@ let result = my_add 1 2  (* calls the JS function directly *)
 ```
 This is efficient and integrates naturally with OCaml code.
 
-
 ### Non-function values: use `runtime_value`
 
 For JavaScript **objects, constants, or other non-function values**, use [Js.Unsafe.runtime\_value](./Js_of_ocaml-Js-Unsafe.md#val-runtime_value):
@@ -949,7 +913,6 @@ let config : < debug : bool Js.t Js.prop; version : int Js.prop > Js.t =
 ```
 **Important**: The argument must be a string literal, not a variable.
 
-
 ## See also
 
 - [PPX syntax](./ppx.md) \- Syntax reference: `##.`, `##`, `new%js`, `object%js`
@@ -963,7 +926,6 @@ let config : < debug : bool Js.t Js.prop; version : int Js.prop > Js.t =
 # PPX syntax extension
 
 The `js_of_ocaml-ppx` package provides syntax for working with JavaScript values from OCaml. This page is a **syntax reference**; see [JavaScript interop](./javascript-interop.md) for conceptual background on types, conversions, and when to use each approach.
-
 
 ## Installation
 
@@ -1084,7 +1046,6 @@ args : t1, t2, ..., tn
              obj##meth args : u
 ```
 **Note**: Partial application is not allowed. You must provide all arguments.
-
 
 ## Using constructors
 
@@ -1219,7 +1180,6 @@ The `js_of_ocaml-ppx_deriving_json` package provides a PPX deriver for serializi
 
 **Important**: The serialization format follows js\_of\_ocaml's [internal representation](./runtime-representation.md). It is designed for communication between a js\_of\_ocaml program and a server-side OCaml application, not for interacting with third-party APIs.
 
-
 ## Installation
 
 ```
@@ -1278,7 +1238,6 @@ The deriver supports:
 # Export OCaml code to JavaScript
 
 This page explains how to make OCaml values (functions, objects, constants) accessible from JavaScript code.
-
 
 ## Basic export with `Js.export`
 
@@ -1352,7 +1311,6 @@ factorial(5);      // 120
 ## Type considerations
 
 Exported functions are automatically wrapped with [Js.wrap\_callback](./Js_of_ocaml-Js.md#val-wrap_callback). However, you must convert OCaml values to their JavaScript equivalents (strings with `Js.string`, booleans with `Js.bool`, etc.). See [type conversions](./javascript-interop.md#conversions) for the full list.
-
 
 ## Handling callbacks from JavaScript
 
@@ -1438,7 +1396,6 @@ let () =
 
 This page explains how exceptions propagate between OCaml and JavaScript code, and how to properly handle errors in both directions.
 
-
 ## Catching JavaScript exceptions in OCaml
 
 When JavaScript code throws an exception and it propagates to OCaml code, it is wrapped in the `Js_error.Exn` exception, which holds a value of type `Js_error.t`:
@@ -1511,13 +1468,11 @@ try {
 ```
 For better JavaScript interoperability, raise JavaScript errors instead of OCaml exceptions
 
-
 ## Stack traces for OCaml exceptions
 
 By default, OCaml exceptions don't carry JavaScript stack traces. This makes debugging difficult since you can't see where an exception originated in browser DevTools or Node.js.
 
 The solution is to attach a JavaScript `Error` object to an OCaml exception. JavaScript `Error` objects capture the call stack at the point of creation, so attaching one to an OCaml exception preserves the stack trace for debugging.
-
 
 ### Manual attachment
 
@@ -1533,7 +1488,6 @@ let process data =
     raise exn
 ```
 The `~force:false` parameter only attaches a new error if one isn't already present. Use `~force:true` to always attach a fresh stack trace.
-
 
 ### Extracting attached errors
 
@@ -1557,7 +1511,7 @@ Automatic attachment is enabled when:
 
 1. `Printexc.backtrace_status() = true`, **and**
 2. Either:
-   
+
    - The environment variable `OCAMLRUNPARAM` contains `b=1`, or
    - The program was compiled with `--enable with-js-error`
 Example with environment variable:
@@ -1581,7 +1535,6 @@ The Js\_of\_ocaml distribution ships several opam packages, each providing one o
 
 The top-level module of each library also states, in its own documentation, which opam package provides it.
 
-
 ## `js_of_ocaml` — the base library
 
 Provided by the `js_of_ocaml` opam package (library `js_of_ocaml`).
@@ -1589,7 +1542,7 @@ Provided by the `js_of_ocaml` opam package (library `js_of_ocaml`).
 Core runtime and JavaScript values:
 
 [`Js_of_ocaml.Js`](./Js_of_ocaml-Js.md) Javascript binding
-[`Js_of_ocaml.Js_error`](./Js_of_ocaml-Js-Js_error.md) 
+[`Js_of_ocaml.Js_error`](./Js_of_ocaml-Js-Js_error.md)
 [`Js_of_ocaml.Jstable`](./Js_of_ocaml-Jstable.md) A minimal table implementation specialized for Js.js\_string keys. This is faster than regular OCaml hashtables.
 [`Js_of_ocaml.Sys_js`](./Js_of_ocaml-Sys_js.md) Javascript specific Sys functions.
 [`Js_of_ocaml.Typed_array`](./Js_of_ocaml-Typed_array.md) Typed Array binding
@@ -1610,7 +1563,7 @@ Browser APIs:
 [`Js_of_ocaml.Fetch`](./Js_of_ocaml-Fetch.md) Fetch API.
 [`Js_of_ocaml.File`](./Js_of_ocaml-File.md) File API
 [`Js_of_ocaml.FontFace`](./Js_of_ocaml-FontFace.md) CSS Font Loading API binding.
-[`Js_of_ocaml.Form`](./Js_of_ocaml-Form.md) 
+[`Js_of_ocaml.Form`](./Js_of_ocaml-Form.md)
 [`Js_of_ocaml.Geolocation`](./Js_of_ocaml-Geolocation.md) Geolocation API
 [`Js_of_ocaml.IntersectionObserver`](./Js_of_ocaml-IntersectionObserver.md) The Intersection Observer API provides a way to asynchronously observe changes in the intersection of a target element with an ancestor element or with a top-level document's viewport.
 [`Js_of_ocaml.Intl`](./Js_of_ocaml-Intl.md) Internationalization API
@@ -1633,7 +1586,7 @@ Browser APIs:
 The same opam package also provides the `js_of_ocaml.deriving` library — the runtime used by the code that `[@@deriving json]` generates:
 
 [`Deriving_Json`](./Deriving_Json.md) Typesafe IO (based on the deriving library).
-[`Deriving_Json_lexer`](./Deriving_Json_lexer.md) 
+[`Deriving_Json_lexer`](./Deriving_Json_lexer.md)
 
 ## `js_of_ocaml-lwt` — Lwt support
 
@@ -1649,7 +1602,6 @@ Provided by the `js_of_ocaml-lwt` opam package (library `js_of_ocaml-lwt`).
 ## `js_of_ocaml-ppx_deriving_json` — JSON derivation syntax
 
 Provided by the `js_of_ocaml-ppx_deriving_json` opam package. This is the PPX that derives JSON serializers (`[@@deriving json]`); the generated code relies on the [`Deriving_Json`](./Deriving_Json.md) runtime from the `js_of_ocaml` package above. See [the manual](./ppx-deriving.md) for usage.
-
 
 ## `js_of_ocaml-tyxml` — TyXML support
 
@@ -1710,11 +1662,9 @@ Lwt.pick [
 ```
 **Warning**: If you use `Lwt.pick` and your handlers take time, other event listeners will not be cancelled until the handler terminates. It is better to return immediately after launching long-running handlers.
 
-
 ## API reference
 
 See `Js_of_ocaml_lwt.Lwt_js_events` for the full API.
-
 
 ## See also
 
@@ -1727,7 +1677,6 @@ See `Js_of_ocaml_lwt.Lwt_js_events` for the full API.
 # Command-line options
 
 This page documents the command-line options for the `js_of_ocaml` compiler. Most of these options also apply to `wasm_of_ocaml`. Differences are noted where applicable.
-
 
 ## General options
 
@@ -1777,7 +1726,6 @@ For **wasm\_of\_ocaml** (default: `jspi`):
 - **`native`** \- WebAssembly stack switching (wasm\_of\_ocaml only). Available, behind the `--experimental-wasm-wasmfx` flag, in Chrome 148 or higher, or in a recent Node.js canary release (V8 version 14\.7.100 or higher).
 - **`disabled`** \- No effect handler support
 See [Effect handlers](./effects.md) for details.
-
 
 ## Source maps
 
@@ -1836,7 +1784,6 @@ globalThis.jsoo_env = {
 | `--linkall` | Link all compilation units and primitives |
 See [Building a toplevel](./build-toplevel.md) for details.
 
-
 ## Compilation modes
 
 | --- | --- |
@@ -1848,9 +1795,7 @@ See [Building a toplevel](./build-toplevel.md) for details.
 | `--custom-header <text>` | Add custom header (e.g., `#!/usr/bin/env node`) |
 See [Compilation modes](./compilation-modes.md) for details.
 
-
 ## Optimizations
-
 
 ### Optimization profiles
 
@@ -1876,7 +1821,6 @@ js_of_ocaml --opt 3 program.byte
 ## Enable/Disable options
 
 Use `--enable <opt>` or `--disable <opt>` to control these flags:
-
 
 ### Output formatting
 
@@ -1958,7 +1902,6 @@ Use `--debug <section>` to enable debug output for compiler internals:
 
 `times`, `stats`, `deadcode`, `globaldeadcode`, `inlining`, `constant-sinking`, `gen`, `linker`, `sourcemap`, `flow`, `parser`, `var-coalescing`
 
-
 ## Subcommands
 
 The `js_of_ocaml` command has several subcommands:
@@ -1996,7 +1939,6 @@ js_of_ocaml build-runtime -o runtime.js
 ```
 Accepts the same `--enable`/`--disable` options as the main command.
 
-
 ### Build-fs command
 
 ```
@@ -2023,7 +1965,6 @@ Js\_of\_ocaml supports two compilation modes:
 | Runtime speed | Faster (cross-module optimizations) | Slower |
 **Recommendation**: Use separate compilation during development for fast iteration, and whole program compilation for production releases.
 
-
 ## Whole program compilation
 
 This is the simplest mode. Compile your bytecode executable directly:
@@ -2035,11 +1976,9 @@ Some libraries require additional runtime files. See [JavaScript primitives](./l
 
 The compiler performs global dead-code elimination and cross-module optimizations, producing smaller and faster output.
 
-
 ## Separate compilation
 
 Separate compilation involves three steps: build the runtime, compile units, and link.
-
 
 ### 1\. Build the runtime
 
@@ -2047,7 +1986,6 @@ Separate compilation involves three steps: build the runtime, compile units, and
 js_of_ocaml build-runtime -o runtime.js
 ```
 Some libraries require additional runtime files. See [JavaScript primitives](./linker.md#finding_runtime) for how to discover them.
-
 
 ### 2\. Compile units and libraries
 
@@ -2066,7 +2004,6 @@ js_of_ocaml link runtime.js stdlib.js mylib.js mymodule.js std_exit.js -o progra
 ```
 **Note**: Unlike OCaml linking, you must explicitly include `stdlib.js` and `std_exit.js`.
 
-
 ## Dune integration
 
 Dune handles compilation mode automatically based on the build profile:
@@ -2084,7 +2021,6 @@ Or configure the default in `dune-project` or `dune-workspace`.
 
 See [dune documentation](https://dune.readthedocs.io/en/latest/jsoo.html) for details.
 
-
 ## Source maps with separate compilation
 
 For source maps in separate compilation mode, use inline source maps:
@@ -2093,7 +2029,6 @@ For source maps in separate compilation mode, use inline source maps:
 js_of_ocaml --source-map-inline mymodule.cmo
 ```
 The `link` command will merge source maps automatically.
-
 
 ## See also
 
@@ -2107,13 +2042,11 @@ The `link` command will merge source maps automatically.
 
 This page covers how to link JavaScript files with js\_of\_ocaml, including writing primitives and discovering runtime files.
 
-
 ## Overview
 
 The js\_of\_ocaml compiler accepts JavaScript files on the command-line. The main purpose is to provide (external) primitives needed by the bytecode program.
 
 Most primitives from the standard library are already implemented and loaded by default.
-
 
 ## Passing JavaScript files
 
@@ -2128,7 +2061,6 @@ js_of_ocaml myruntime.js program.byte
 OCaml libraries often require JavaScript runtime files. The js\_of\_ocaml compiler does not automatically locate these files \- They must be passed explicitly on the command line.
 
 Runtime files are discovered using Findlib's `jsoo_runtime` variable.
-
 
 ### List required runtime files
 
@@ -2155,11 +2087,9 @@ $ js_of_ocaml $(ocamlfind query -format "%+(jsoo_runtime)" -r $LIBS | grep -v "^
 ```
 With **dune**, this is handled automatically.
 
-
 ## Writing JavaScript primitives
 
 User-defined primitives need to be implemented in a separate JavaScript file. See [runtime representation](./runtime-representation.md) for how OCaml values are represented in JavaScript. Primitives should be annotated with additional information.
-
 
 ### Annotation syntax
 
@@ -2200,7 +2130,6 @@ function primitive_name(arg1, arg2) {
 
 All JavaScript code after a `//Provides` annotation belongs to that primitive, until the next `//Provides`.
 
-
 ### Example: custom primitive
 
 ```
@@ -2221,7 +2150,6 @@ let () = my_log "Hello from OCaml!"
 
 ## Declaring runtime files in packages
 
-
 ### Using jsoo\_runtime
 
 In your package's META file, use the `jsoo_runtime` variable:
@@ -2234,7 +2162,6 @@ package "sublib" (
 )
 ```
 Files should be comma-separated and relative to the package directory. By convention, use **runtime.js** for single files.
-
 
 ### Dune integration
 
@@ -2272,7 +2199,6 @@ When using linkopts, special path syntax is supported:
 - `+file.js` \- Resolves to js\_of\_ocaml-compiler's lib directory
 **Note**: Dune generates META files compatible with both approaches but only uses `jsoo_runtime` internally.
 
-
 ## See also
 
 - [Compilation modes](./compilation-modes.md)
@@ -2285,7 +2211,6 @@ When using linkopts, special path syntax is supported:
 
 Tail call optimization (TCO) support in JavaScript depends on the VM. JavaScriptCore (Safari, Bun) implements TCO, but V8 (Chrome, Node.js) and SpiderMonkey (Firefox) do not. To ensure portable stack safety, js\_of\_ocaml optimizes common tail call patterns.
 
-
 ## What gets optimized
 
 | --- | --- |
@@ -2294,7 +2219,6 @@ Tail call optimization (TCO) support in JavaScript depends on the VM. JavaScript
 | Mutually recursive tail calls | Compiled with a trampoline |
 | Other tail calls | Not optimized (may overflow) |
 To optimize other tail calls, try `--effects=cps` or `--effects=double-translation`. This partially transforms the code to continuation-passing style, but has a performance cost. See [effect handlers](./effects.md).
-
 
 ## Self-recursive functions
 
@@ -2356,7 +2280,6 @@ function odd(n){return caml_trampoline(odd$0(0, n));}
 ```
 **Note**: The generated code doesn't return to the trampoline on every call (controlled by the `tc_depth` parameter, default 50\). This balances stack safety with performance.
 
-
 ## Patterns not optimized
 
 These patterns are **not** optimized and may cause stack overflows with deep recursion:
@@ -2380,11 +2303,9 @@ let bind x f =
 ```
 For these patterns, you can try `--effects=cps`.
 
-
 ## Tuning
 
 The trampoline depth can be adjusted with `--set tc_depth=N` (default: 50\). Higher values improve performance but increase stack usage.
-
 
 ## See also
 
@@ -2400,13 +2321,11 @@ Js\_of\_ocaml supports effect handlers with the `--effects=cps` flag. This is ba
 
 This is not the default because the generated code can be slower, larger, and less readable. The transformation uses an analysis to detect parts of the code that cannot involve effects and keeps them in direct style. The analysis is especially effective on monomorphic code but less effective when higher-order functions are heavily used (`Lwt`, `Async`, `Incremental`).
 
-
 ## Double translation mode
 
 An alternative CPS transform is provided with `--effects=double-translation`. It keeps a direct-style version of the transformed functions in addition to the CPS version. The choice of running the CPS version is delayed to run time.
 
 Since CPS code is usually slower, this can avoid performance degradations. You can also ensure that some code runs in direct style using [`Jsoo_runtime.Effect.assume_no_perform`](./../js_of_ocaml-compiler/Jsoo_runtime-Effect.md#val-assume_no_perform).
-
 
 ## Wasm\_of\_ocaml
 
@@ -2437,7 +2356,6 @@ To enable effects for the entire workspace, add this to a `dune` or `dune-worksp
 ```
 This setup supports both separate and whole program compilation.
 
-
 ### Per-executable setup
 
 To enable effect handlers for specific executables:
@@ -2460,7 +2378,6 @@ To enable effect handlers for specific executables:
 # Runtime representation
 
 This page describes how OCaml values are represented at runtime in JavaScript. Understanding this is useful for debugging, writing JavaScript primitives, and understanding compatibility limitations.
-
 
 ## Overview
 
@@ -2505,11 +2422,9 @@ OCaml floats are JavaScript numbers directly.
 - Marshalled floats cannot be unmarshalled by the native OCaml runtime
 **Rounding difference**: JavaScript rounds ties away from zero, while native OCaml (libc) rounds ties to even.
 
-
 ## Booleans
 
 OCaml booleans are represented as the numbers 0 (`false`) and 1 (`true`), not JavaScript's `true` and `false`. See [type conversions](./javascript-interop.md#conversions) for converting between them.
-
 
 ## Bytes
 
@@ -2520,7 +2435,6 @@ OCaml bytes are always represented as MlBytes objects with:
 - `c` — contents (a JavaScript string or array of bytes)
 The contents can be a JavaScript string (more memory efficient) or an array of bytes (for mutation). The runtime converts between these as needed.
 
-
 ## Strings
 
 OCaml strings can be represented as:
@@ -2529,7 +2443,6 @@ OCaml strings can be represented as:
 - An MlBytes object (above)
 **Important**: Even when represented as a JavaScript string, it encodes a sequence of bytes, not UTF-16 text. Each character's code point represents one byte (0-255). Assuming the bytes are UTF-8 encoded text, use `Js.string` to convert to a native UTF-16 JavaScript string. To convert back, use `Js.to_string`. See [conversions](./javascript-interop.md#conversions).
 
-
 ## Blocks, arrays, records, modules
 
 OCaml heap-allocated values (arrays, tuples, records, variant constructors with arguments) are represented as JavaScript arrays where:
@@ -2537,7 +2450,6 @@ OCaml heap-allocated values (arrays, tuples, records, variant constructors with 
 - Index 0 contains the block tag
 - Remaining indices contain the fields
 For example, `Some 42` becomes `[0, 42]` (tag 0, one field).
-
 
 ## Variants
 
@@ -2557,11 +2469,9 @@ type t =
 
 Note that `nativeint` is 32 bits in js\_of\_ocaml (matching JavaScript's bitwise operations), not the platform's native word size.
 
-
 ## Int64
 
 `Int64.t` values are represented as MlInt64 objects, which store the value as three numbers: two 24-bit integers (lo, mi) and one 16-bit integer (hi), since JavaScript numbers cannot represent the full 64-bit range precisely.
-
 
 ## Bigarray
 
@@ -2593,11 +2503,9 @@ For example, `Not_found` is just its identity object, while `Failure "oops"` bec
 
 **Note**: OCaml exceptions are not JavaScript `Error` objects. When an OCaml exception propagates to JavaScript code, it appears as an array, not an `Error`. See [error handling](./errors.md) for how to work with exceptions across the OCaml/JavaScript boundary.
 
-
 ## Objects
 
 OCaml objects (from the object-oriented layer) are implemented using JavaScript arrays. They have nothing to do with JavaScript objects. Use the [PPX syntax](./ppx.md) (`object%js`) to create JavaScript objects.
-
 
 ## Compatibility considerations
 
@@ -2625,7 +2533,6 @@ Due to representation differences, some operations behave differently:
 Js\_of\_ocaml's generated code and runtime target **ECMAScript 2020 (ES2020)**. Out of the box, the output runs on Node.js 18+, QuickJS-NG, and any evergreen browser released since early 2020 (Chrome 80+, Firefox 74+, Safari 13\.4+, Edge 80+).
 
 If you need to support an older engine, you can post-process the generated JavaScript with [Babel](https://babeljs.io) and ship polyfills with [core-js](https://github.com/zloirock/core-js). Js\_of\_ocaml has no built-in downleveling.
-
 
 ## Transpiling with Babel
 
@@ -2658,7 +2565,6 @@ npx babel program.js -o program.es5.js
 ```
 The resulting `program.es5.js` imports polyfills from `core-js` with `require("core-js/modules/...")` calls. Before shipping to a browser you need to bundle it so those imports are resolved and inlined.
 
-
 ## Bundling
 
 Any JavaScript bundler will work; [esbuild](https://esbuild.github.io) is a small, zero-config option:
@@ -2673,7 +2579,6 @@ The runtime contains a few `require("node:*")` calls (filesystem, tty, etc.) gua
 [`--target`](https://esbuild.github.io/api/#target) is needed even when Babel has lowered the input: esbuild's own IIFE wrapper and CommonJS helpers use arrow functions and other post-ES5 syntax, and `--target` is what tells it to lower those too. Set it to the lowest syntax level your browserslist query implies.
 
 Ship `program.bundle.js` as a single script; no additional polyfills are required at load time.
-
 
 ## With dune
 
@@ -2705,13 +2610,11 @@ Assuming dune builds your program to `program.bc.js` (e.g. from an `(executable 
 
 # Wasm\_of\_ocaml
 
-
 ## Overview
 
 Wasm\_of\_ocaml is a compiler from OCaml bytecode programs to WebAssembly. It provides an alternative way to run pure OCaml programs in JavaScript environments like browsers and Node.js.
 
 The compiler is provided by the `wasm_of_ocaml-compiler` package. The [Js\_of\_ocaml libraries](./overview.md) are compatible with this compiler.
-
 
 ## Installation
 
@@ -2721,7 +2624,6 @@ The easiest way to install wasm\_of\_ocaml is to use opam:
 opam install wasm_of_ocaml-compiler js_of_ocaml js_of_ocaml-ppx js_of_ocaml-lwt
 ```
 Binaryen version 119 or later is required. The opam command above will install it automatically if needed.
-
 
 ## Usage
 
@@ -2738,11 +2640,9 @@ wasm_of_ocaml cubes.byte
 ```
 This produces a JavaScript loading script `cubes.js` and a directory `cubes.assets` containing the Wasm code.
 
-
 ### With dune
 
 Dune has native support for wasm\_of\_ocaml (starting with dune 3\.17.0). It supports both standard and separate compilation. See the [dune documentation](https://dune.readthedocs.io/en/latest/wasmoo.html).
-
 
 ## Supported features
 
@@ -2775,7 +2675,6 @@ The CPS transformation is not the default since the generated code is slower, la
 
 The native implementation is based on the WebAssembly typed continuations proposal (stack switching). It provides the best performance but requires a runtime with support for the WasmFX extension (currently available, behind the `--experimental-wasm-wasmfx` flag, in Chrome 148 or higher, or in a recent Node.js canary release (V8 version 14\.7.100 or higher)).
 
-
 ## WASI support
 
 You can produce a WASI binary by running `wasm_of_ocaml` with the `--enable wasi` flag. At the moment, `wasm_of_ocaml` supports WASI 0\.1. Features from the Sys and Unix modules are available whenever they're supported by the WASI API.
@@ -2785,7 +2684,6 @@ The binaries produced by `wasm_of_ocaml` require the GC and exception-handling p
 When native effect handlers are used (`--effects native`), the binaries additionally require the stack-switching proposal. It is supported by Node.js and by the Wizard engine (with the `--ext:stack-switching` flag), but not by Wasmtime.
 
 For now, the output remains the same as without the `--enable wasi` flag: a JavaScript file `foo.js` and a directory `foo.assets` containing the Wasm code `code.wasm`. The JavaScript file can be used to run the WASI binary with `node`, while the Wasm code can be run directly by other Wasm engines.
-
 
 ### Limitations
 
@@ -2803,20 +2701,17 @@ Js\_of\_ocaml lets you bind code with JavaScript libraries by linking `.js` file
 
 If a js\_of\_ocaml project uses `external` primitives defined in companion `.js` files, you need to implement the same primitives in Wasm modules to build with wasm\_of\_ocaml.
 
-
 ## Toplevel
 
 Wasm\_of\_ocaml can compile an OCaml toplevel (REPL) to WebAssembly. The toplevel dynamically compiles OCaml bytecode to Wasm and instantiates it in the browser.
 
 See [Toplevel and Dynlink](./build-toplevel.md) for build instructions.
 
-
 ## Dynlink
 
 OCaml's `Dynlink` module is supported. Plugin `.cmo` files are compiled on the fly to WebAssembly and instantiated at runtime.
 
 See [Toplevel and Dynlink](./build-toplevel.md) for build instructions.
-
 
 ## Pseudo filesystem
 
@@ -2842,7 +2737,6 @@ User-defined primitives can be implemented by writing Wasm modules. These module
 With dune, use the option `(wasm_of_ocaml (wasm_files ...))` to specify these runtime files.
 
 It still makes sense to link JavaScript files to specify the possible side-effects of some primitives (see [JavaScript primitives](./linker.md)), or to implement some functionalities in JavaScript. With dune, use `(wasm_of_ocaml (javascript_files ...))` to specify these files.
-
 
 ## Data representation
 
@@ -2932,7 +2826,6 @@ To use JavaScript functions in your Wasm primitives, import them using the `js` 
 ```
 The [js\_of\_ocaml linker](./linker.md) is used to include them in the generated code.
 
-
 ## Interfacing with JavaScript
 
 Functions defined in `runtime/wasm/jslib.wat` provide conversions between JavaScript and OCaml values, as well as JavaScript operations like property access and function calls:
@@ -2958,23 +2851,21 @@ This page explains how to build an OCaml toplevel (REPL) that runs in the browse
 
 Both js\_of\_ocaml and wasm\_of\_ocaml support these features.
 
-
 ## Building a toplevel
 
 A toplevel is an interactive OCaml environment (like `ocaml` or `utop`). Js\_of\_ocaml and wasm\_of\_ocaml can compile a toplevel to JavaScript or WebAssembly, allowing it to run in the browser. See the [live demo](files/toplevel/index.html).
-
 
 ### With js\_of\_ocaml
 
 1. Initialize the toplevel in your OCaml code using `Js_of_ocaml_toplevel.Direct.initialize`
 1. Build your bytecode with debug info and linkall:
-   
+
    ```
    ocamlfind ocamlc -g -linkall -package js_of_ocaml-toplevel \
     -linkpkg toplevel.ml -o toplevel.byte
    ```
 1. Compile to JavaScript with the `--toplevel` flag:
-   
+
    ```
    js_of_ocaml --toplevel toplevel.byte -o toplevel.js
    ```
@@ -2983,14 +2874,14 @@ A toplevel is an interactive OCaml environment (like `ocaml` or `utop`). Js\_of\
 
 1. Initialize the toplevel in your OCaml code using `Js_of_ocaml_toplevel.Direct.initialize`
 1. Build your bytecode with debug info and linkall, linking `wasm_of_ocaml-compiler.dynlink` and `js_of_ocaml-toplevel.common`:
-   
+
    ```
    ocamlfind ocamlc -g -linkall -package wasm_of_ocaml-compiler.dynlink \
     -package js_of_ocaml-toplevel.common -package compiler-libs.toplevel \
     -linkpkg toplevel.ml -o toplevel.byte
    ```
 1. Compile to WebAssembly with the `--toplevel` flag:
-   
+
    ```
    wasm_of_ocaml --toplevel toplevel.byte -o toplevel.js
    ```
@@ -3036,7 +2927,6 @@ js_of_ocaml main.byte -o main.js
 ```
 The `toplevel/examples/lwt_toplevel_worker` sources are a complete example, with a banner, input history, an examples sidebar, and a Cancel button that interrupts a stuck computation.
 
-
 ### Limiting available modules
 
 By default, all linked modules are available in the toplevel. To limit this, use `--export FILE` where `FILE` lists compilation unit names (one per line).
@@ -3049,23 +2939,21 @@ js_of_ocaml --toplevel --export units.txt toplevel.byte
 ```
 The `--export` flag works the same way with wasm\_of\_ocaml.
 
-
 ## Using the Dynlink library
 
 OCaml's `Dynlink` module lets you load bytecode files at runtime. This works in both js\_of\_ocaml and wasm\_of\_ocaml with some setup.
-
 
 ### With js\_of\_ocaml
 
 1. Link `js_of_ocaml-compiler.dynlink` in your program (initializes dynlink support)
 1. Build your bytecode with debug info and linkall:
-   
+
    ```
    ocamlfind ocamlc -g -linkall -package dynlink \
     -package js_of_ocaml-compiler.dynlink -linkpkg main.ml -o main.byte
    ```
 1. Compile to JavaScript with the `--dynlink` flag:
-   
+
    ```
    js_of_ocaml --dynlink main.byte -o main.js
    ```
@@ -3074,18 +2962,17 @@ OCaml's `Dynlink` module lets you load bytecode files at runtime. This works in 
 
 1. Link `wasm_of_ocaml-compiler.dynlink` in your program (initializes dynlink support)
 1. Build your bytecode with debug info and linkall:
-   
+
    ```
    ocamlfind ocamlc -g -linkall -package dynlink \
     -package wasm_of_ocaml-compiler.dynlink -linkpkg main.ml -o main.byte
    ```
 1. Compile to WebAssembly with the `--dynlink` flag:
-   
+
    ```
    wasm_of_ocaml --dynlink main.byte -o main.js
    ```
 Plugin `.cmo` files are compiled on the fly to WebAssembly and instantiated at runtime.
-
 
 ### Example
 
@@ -3126,7 +3013,6 @@ node ./main.js
 
 By default, `Dynlink.loadfile` compiles `.cmo` and `.cma` files on the fly. You can also precompile plugins ahead of time for faster loading.
 
-
 ### With js\_of\_ocaml
 
 Use `js_of_ocaml` to compile a `.cmo` or `.cma` file to JavaScript:
@@ -3166,7 +3052,6 @@ let () = Wasm_of_ocaml_compiler_dynlink.loadfile "./plugin.wasmo"
 ```
 This skips the on-the-fly bytecode-to-Wasm compilation step, which can significantly reduce loading time for large plugins.
 
-
 ## See also
 
 - [Command-line options](./options.md) — The `--toplevel` and `--dynlink` flags
@@ -3180,14 +3065,11 @@ This skips the on-the-fly bytecode-to-Wasm compilation step, which can significa
 
 This page explains how to debug OCaml programs compiled to JavaScript.
 
-
 ## Compiler flags
-
 
 ### OCaml flags
 
 Use `-g` when compiling and linking OCaml bytecode. Js\_of\_ocaml will attempt to preserve variable names.
-
 
 ### Js\_of\_ocaml flags
 
@@ -3220,16 +3102,13 @@ js_of_ocaml --source-map program.byte
 ```
 This generates `program.js` and `program.js.map`.
 
-
 ## Breakpoints
-
 
 ### In browser developer tools
 
 Open browser developer tools (F12), navigate to the Sources panel, and set breakpoints in your OCaml files (when using source maps) or JavaScript files.
 
 See the [Chrome DevTools documentation](https://developer.chrome.com/docs/devtools/javascript) for details.
-
 
 ### Programmatic breakpoints
 
@@ -3242,9 +3121,7 @@ let my_function x =
 ```
 Note: Browsers only pause at `debugger` statements when developer tools are open.
 
-
 ## Debugging in Node.js
-
 
 ### Using \--inspect
 
@@ -3268,7 +3145,6 @@ Debugger listening on ws://127.0.0.1:9229/...
 
 ## Stack traces
 
-
 ### Attaching JavaScript backtraces
 
 To get JavaScript stack traces attached to OCaml exceptions:
@@ -3282,7 +3158,6 @@ Or compile with:
 js_of_ocaml --enable with-js-error program.byte
 ```
 See [Error handling](./errors.md#stack_traces) for details.
-
 
 ## Chrome DevTools tips
 
@@ -3307,7 +3182,6 @@ With a state-of-the-art JavaScript engine (such as Google's V8 and Mozilla's Spi
 
 Benchmarks were run in November 2022 with engines available in Ubuntu 22\.04 (V8: 8\.4.371.19-node.16, SpiderMonkey: JavaScript-C91.10.0).
 
-
 ## Execution time
 
 ![Relative execution times](files/performances/time.png)
@@ -3324,12 +3198,10 @@ Most of the time, the generated JavaScript code is smaller than the bytecode fil
 
 The size gain can be much larger for programs that rely on external libraries, thanks to dead code elimination.
 
-
 ## Comparison with handwritten JavaScript
 
 ![Relative execution times](files/performances/nativejs.png)
 Comparing execution times between handwritten JavaScript and generated code shows that results are implementation-dependent.
-
 
 ## Compiler optimization levels
 
@@ -3360,7 +3232,6 @@ The performance impact of supporting effect handlers:
 
 # Contributing to Js\_of\_ocaml
 
-
 ## Reporting issues
 
 If you encounter a problem or have questions, please open a [GitHub issue](https://github.com/ocsigen/js_of_ocaml/issues/).
@@ -3371,7 +3242,6 @@ If you encounter a problem or have questions, please open a [GitHub issue](https
 4. Provide a minimal reproducible example if possible
 
 ## Development setup
-
 
 ### Install dependencies
 
@@ -3397,7 +3267,6 @@ dune build @all
 
 ## Code style
 
-
 ### OCaml
 
 Code is formatted with **ocamlformat 0\.29.0**. Run before committing:
@@ -3418,7 +3287,6 @@ make lint-js
 ## Documentation
 
 Code examples in the `.mli` doc-comments and the `manual/` pages are checked by the test suite: OCaml code blocks are type-checked against the real API, so examples cannot silently drift out of sync. An illustrative snippet that is not meant to compile can be marked to be only syntax-checked, or skipped entirely. See `manual/examples-check/` for the markers.
-
 
 ## Testing
 
@@ -3453,7 +3321,7 @@ Test directories:
 ## Project structure
 
 - `compiler/` \- Compiler implementation
-  
+
   - `lib/` \- Core compiler library
   - `lib-wasm/` \- WebAssembly backend
   - `bin-js_of_ocaml/` \- js\_of\_ocaml entry point
@@ -3477,11 +3345,9 @@ Test directories:
 
 This page showcases js\_of\_ocaml projects, from simple demos to real-world applications.
 
-
 ## Demos
 
 These demos are included in the js\_of\_ocaml repository:
-
 
 ### Graphics & Visualization
 
@@ -3509,7 +3375,6 @@ These demos are included in the js\_of\_ocaml repository:
 ## In the wild
 
 Real-world projects built with js\_of\_ocaml:
-
 
 ### Emulators and games
 
@@ -3556,26 +3421,21 @@ Using js\_of\_ocaml in a project? Open a [GitHub issue](https://github.com/ocsig
 
 # js\_of\_ocaml-compiler index
 
-
 ## Library js\_of\_ocaml-compiler
 
 The entry point of this library is the module: [`Js_of_ocaml_compiler`](./Js_of_ocaml_compiler.md).
-
 
 ## Library js\_of\_ocaml-compiler.dynlink
 
 The entry point of this library is the module: [`Js_of_ocaml_compiler_dynlink`](./Js_of_ocaml_compiler_dynlink.md).
 
-
 ## Library js\_of\_ocaml-compiler.findlib-support
 
 The entry point of this library is the module: [`Jsoo_findlib_support`](./Jsoo_findlib_support.md).
 
-
 ## Library js\_of\_ocaml-compiler.runtime
 
 The entry point of this library is the module: [`Jsoo_runtime`](./Jsoo_runtime.md).
-
 
 ## Library js\_of\_ocaml-compiler.runtime-files
 
@@ -3586,11 +3446,9 @@ The entry point of this library is the module: [`Js_of_ocaml_compiler_runtime_fi
 
 # js\_of\_ocaml-lwt index
 
-
 ## Library js\_of\_ocaml-lwt
 
 The entry point of this library is the module: [`Js_of_ocaml_lwt`](./Js_of_ocaml_lwt.md).
-
 
 ## Library js\_of\_ocaml-lwt.graphics
 
@@ -3601,11 +3459,9 @@ The entry point of this library is the module: [`Graphics_js`](./Graphics_js.md)
 
 # js\_of\_ocaml-ppx index
 
-
 ## Library js\_of\_ocaml-ppx
 
 The entry point of this library is the module: [`Ppx_js_rewriter`](./Ppx_js_rewriter.md).
-
 
 ## Library js\_of\_ocaml-ppx.as-lib
 
@@ -3616,7 +3472,6 @@ The entry point of this library is the module: [`Ppx_js`](./Ppx_js.md).
 
 # js\_of\_ocaml-ppx\_deriving\_json index
 
-
 ## Library js\_of\_ocaml-ppx\_deriving\_json
 
 The entry point of this library is the module: [`Ppx_deriving_json`](./Ppx_deriving_json.md).
@@ -3626,26 +3481,21 @@ The entry point of this library is the module: [`Ppx_deriving_json`](./Ppx_deriv
 
 # js\_of\_ocaml-toplevel index
 
-
 ## Library js\_of\_ocaml-toplevel
 
 The entry point of this library is the module: [`Js_of_ocaml_toplevel`](./Js_of_ocaml_toplevel.md).
-
 
 ## Library js\_of\_ocaml-toplevel.common
 
 The entry point of this library is the module: [`Js_of_ocaml_toplevel_common`](./Js_of_ocaml_toplevel_common.md).
 
-
 ## Library js\_of\_ocaml-toplevel.protocol
 
 The entry point of this library is the module: [`Js_of_ocaml_toplevel_protocol`](./Js_of_ocaml_toplevel_protocol.md).
 
-
 ## Library js\_of\_ocaml-toplevel.worker
 
 The entry point of this library is the module: [`Js_of_ocaml_toplevel_worker`](./Js_of_ocaml_toplevel_worker.md).
-
 
 ## Library js\_of\_ocaml-toplevel.worker\_lwt\_client
 
@@ -3655,7 +3505,6 @@ The entry point of this library is the module: [`Js_of_ocaml_toplevel_worker_lwt
 ---
 
 # js\_of\_ocaml-tyxml index
-
 
 ## Library js\_of\_ocaml-tyxml
 
@@ -3667,7 +3516,6 @@ The entry point of this library is the module: [`Js_of_ocaml_tyxml`](./Js_of_oca
 # Js\_of\_ocaml
 
 Js\_of\_ocaml is a compiler from OCaml bytecode programs to JavaScript. It makes it possible to run pure OCaml programs in JavaScript environments like browsers and Node.js. A companion compiler, *wasm\_of\_ocaml*, targets WebAssembly.
-
 
 ## Manual
 
@@ -3694,11 +3542,9 @@ See the [API overview](./api.md) for the full list of modules, or jump to the ma
 
 # wasm\_of\_ocaml-compiler index
 
-
 ## Library wasm\_of\_ocaml-compiler
 
 The entry point of this library is the module: [`Wasm_of_ocaml_compiler`](./Wasm_of_ocaml_compiler.md).
-
 
 ## Library wasm\_of\_ocaml-compiler.dynlink
 
@@ -5112,7 +4958,6 @@ module Param : sig ... end
 ```
 This module contains parameters that may be modified through command-line flags.
 
-
 ### Parameters that are constant across a program run
 
 These parameters should be set at most once at the beginning of the program.
@@ -5200,7 +5045,6 @@ val bot : t
 ---
 
 # Module `Make.Solver`
-
 
 ## Parameters
 
@@ -5297,7 +5141,6 @@ val bot : t
 
 # Module `Dgraph.Make`
 
-
 ## Parameters
 
 ```ocaml
@@ -5347,7 +5190,6 @@ val bot : t
 ---
 
 # Module `Make_Imperative.Solver`
-
 
 ## Parameters
 
@@ -5455,7 +5297,6 @@ val bot : t
 ---
 
 # Module `Dgraph.Make_Imperative`
-
 
 ## Parameters
 
@@ -5581,7 +5422,6 @@ val join : t -> t -> t
 ---
 
 # Module `Dgraph.Solver`
-
 
 ## Parameters
 
@@ -9793,7 +9633,6 @@ val compare : t -> t -> int
 
 # Module `Pqueue.Make`
 
-
 ## Parameters
 
 ```ocaml
@@ -13135,7 +12974,6 @@ val mapi : (int -> 'a -> 'b) -> 'a t -> 'b t
 
 # Module `Set.Make`
 
-
 ## Parameters
 
 ```ocaml
@@ -14832,7 +14670,6 @@ module Set : SET with type elt = t
 ---
 
 # Module `Strongly_connected_components.Make`
-
 
 ## Parameters
 
@@ -16559,14 +16396,12 @@ val set_context : context -> unit
 ```
 Set the current context
 
-
 ### Mouse and keyboard events
 
 ```ocaml
 val loop : event list -> (status -> unit) -> unit
 ```
 Loops forever and listen to the given events. Those events automatically returns a status record, which is used by the function given in argument.
-
 
 ### Mouse and keyboard polling
 
@@ -17031,7 +16866,6 @@ val limited_loop :
   unit Lwt.t
 ```
 Same as func\_limited\_loop but take time instead of function By default elapsed\_time \= 0\.1s \= 100ms \*
-
 
 ### Predefined functions for some types of events
 
@@ -18354,13 +18188,11 @@ val limited_onorientationchanges_or_onresizes :
 
 # Module `Js_of_ocaml_lwt.Promise`
 
-
 ### Type safety
 
 Native JavaScript promises automatically flatten any thenable returned from a handler or passed to `Promise.resolve`. That means a JavaScript `Promise` can never resolve with another `Promise` as its value, which is unsound at the OCaml type level for, say, `'a t t`.
 
 These bindings work around that by wrapping thenable values in a small container before resolving and unwrapping on the way out; non-thenable values are passed through unchanged so the common case pays no allocation. As a result, `'a t` values always resolve with a value of OCaml type `'a`, even when `'a` is itself `'_ t`.
-
 
 ### Interop with raw JavaScript promises
 
@@ -18374,7 +18206,6 @@ type error = Js_of_ocaml.Promise.error
 ```
 The reason a promise was rejected. JavaScript allows rejecting with any value (not necessarily an `Error`), so [`error`](./#type-error) is opaque; use [`error_to_any`](./#val-error_to_any) to inspect it and [`error_of_any`](./#val-error_of_any) to construct one.
 
-
 ## Errors
 
 ```ocaml
@@ -18387,7 +18218,6 @@ val error_to_any : error -> Js_of_ocaml.Js.Unsafe.any
 val error_of_exn : exn -> error
 ```
 Use an OCaml exception as a rejection reason.
-
 
 ## Building promises
 
@@ -18410,7 +18240,6 @@ val make : (resolve:('a -> unit) -> reject:(error -> unit) -> unit) -> 'a t
 val with_resolvers : unit -> 'a t * ('a -> unit) * (error -> unit)
 ```
 `with_resolvers ()` returns `(p, resolve, reject)` where `p` is a fresh promise that is settled by calling `resolve x` (to fulfill with `x`) or `reject e` (to reject with `e`). Bound to the `Promise.withResolvers()` static method (ES2024).
-
 
 ## Chaining
 
@@ -18441,7 +18270,6 @@ val bind : ('a -> 'b t) -> 'a t -> 'b t
 ```
 Alias for [`then_`](./#val-then_).
 
-
 ## Combinators
 
 ```ocaml
@@ -18464,7 +18292,6 @@ val race : 'a t list -> 'a t
 ```
 `race ps` settles like the first promise in `ps` to settle, fulfilled or rejected.
 
-
 ## Unsafe interop
 
 ```ocaml
@@ -18476,7 +18303,6 @@ Expose the underlying JavaScript promise. The resolved value may be the internal
 val of_any : Js_of_ocaml.Js.Unsafe.any -> 'a t
 ```
 Treat a foreign JavaScript promise as a `'a t`. The returned value is only sound if the underlying promise actually resolves with a value of type `'a`; raw foreign values are passed through [`then_`](./#val-then_) unchanged.
-
 
 ## Capability detection
 
@@ -19465,7 +19291,6 @@ val elt : Js_of_ocaml.Dom.node Js_of_ocaml.Js.t -> 'a elt
 
 # Module `Tyxml_cast.MakeOf`
 
-
 ## Parameters
 
 ```ocaml
@@ -19747,7 +19572,6 @@ val elt : 'a elt -> Js_of_ocaml.Dom.node Js_of_ocaml.Js.t
 ---
 
 # Module `Tyxml_cast.MakeTo`
-
 
 ## Parameters
 
@@ -22177,7 +22001,6 @@ val t : a t
 
 # Module `Deriving_Json.Defaults''`
 
-
 ## Parameters
 
 ```ocaml
@@ -22234,7 +22057,6 @@ val read_variant :
 
 # Module `Deriving_Json.Defaults'`
 
-
 ## Parameters
 
 ```ocaml
@@ -22281,7 +22103,6 @@ val read : Deriving_Json_lexer.lexbuf -> a
 ---
 
 # Module `Deriving_Json.Defaults`
-
 
 ## Parameters
 
@@ -22338,7 +22159,6 @@ val from_string : string -> a
 ---
 
 # Module `Deriving_Json.Json_array`
-
 
 ## Parameters
 
@@ -22540,7 +22360,6 @@ val from_string : string -> a
 
 # Module `Deriving_Json.Json_list`
 
-
 ## Parameters
 
 ```ocaml
@@ -22621,7 +22440,6 @@ val from_string : string -> a
 
 # Module `Deriving_Json.Json_option`
 
-
 ## Parameters
 
 ```ocaml
@@ -22677,7 +22495,6 @@ val from_string : string -> a
 ---
 
 # Module `Deriving_Json.Json_ref`
-
 
 ## Parameters
 
@@ -23469,8 +23286,8 @@ AbortController / AbortSignal.
 
 A general-purpose cancellation primitive used by [`Fetch`](./Js_of_ocaml-Fetch.md), event listener registration, `Streams`, and custom asynchronous code.
 
-see [https://developer.mozilla.org/en-US/docs/Web/API/AbortController](https://developer.mozilla.org/en-US/docs/Web/API/AbortController) 
-see [https://dom.spec.whatwg.org/\#interface-abortcontroller](https://dom.spec.whatwg.org/#interface-abortcontroller) 
+see [https://developer.mozilla.org/en-US/docs/Web/API/AbortController](https://developer.mozilla.org/en-US/docs/Web/API/AbortController)
+see [https://dom.spec.whatwg.org/\#interface-abortcontroller](https://dom.spec.whatwg.org/#interface-abortcontroller)
 ```ocaml
 class type  signal = object ... end
 ```
@@ -24001,9 +23818,9 @@ Cache API: persistent storage of [`Fetch`](./Js_of_ocaml-Fetch.md) `Request`/`Re
 
 Available from [`Dom_html.window`](./Js_of_ocaml-Dom_html-class-type-window.md) and from [`ServiceWorker`](./Js_of_ocaml-ServiceWorker.md) contexts; the Cache API requires a secure context. The methods are Promise-typed — see [`Promise`](./Js_of_ocaml-Promise.md).
 
-see [https://developer.mozilla.org/en-US/docs/Web/API/Cache](https://developer.mozilla.org/en-US/docs/Web/API/Cache) 
-see [https://developer.mozilla.org/en-US/docs/Web/API/CacheStorage](https://developer.mozilla.org/en-US/docs/Web/API/CacheStorage) 
-see [https://w3c.github.io/ServiceWorker/\#cache-interface](https://w3c.github.io/ServiceWorker/#cache-interface) 
+see [https://developer.mozilla.org/en-US/docs/Web/API/Cache](https://developer.mozilla.org/en-US/docs/Web/API/Cache)
+see [https://developer.mozilla.org/en-US/docs/Web/API/CacheStorage](https://developer.mozilla.org/en-US/docs/Web/API/CacheStorage)
+see [https://w3c.github.io/ServiceWorker/\#cache-interface](https://w3c.github.io/ServiceWorker/#cache-interface)
 ```ocaml
 class type  queryOptions = object ... end
 ```
@@ -24104,8 +23921,8 @@ A code example:
          (fun () -> Console.console##log (Js.string "copied"))
          ((Clipboard.clipboard ())##writeText (Js.string "Hello!")))
 ```
-see [https://developer.mozilla.org/en-US/docs/Web/API/Clipboard\_API](https://developer.mozilla.org/en-US/docs/Web/API/Clipboard_API) 
-see [https://w3c.github.io/clipboard-apis/](https://w3c.github.io/clipboard-apis/) 
+see [https://developer.mozilla.org/en-US/docs/Web/API/Clipboard\_API](https://developer.mozilla.org/en-US/docs/Web/API/Clipboard_API)
+see [https://w3c.github.io/clipboard-apis/](https://w3c.github.io/clipboard-apis/)
 ```ocaml
 class type  clipboardItem = object ... end
 ```
@@ -24655,8 +24472,8 @@ A code example:
 ```
 Most of `SubtleCrypto` is exposed as object methods, mirroring the JavaScript surface: obtain the `subtle` object with [`subtle`](./#val-subtle) and call its methods with `##`.
 
-see [https://developer.mozilla.org/en-US/docs/Web/API/Web\_Crypto\_API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Crypto_API) 
-see [https://w3c.github.io/webcrypto/](https://w3c.github.io/webcrypto/) 
+see [https://developer.mozilla.org/en-US/docs/Web/API/Web\_Crypto\_API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Crypto_API)
+see [https://w3c.github.io/webcrypto/](https://w3c.github.io/webcrypto/)
 
 ## Common types
 
@@ -24708,7 +24525,6 @@ module Key_format : sig ... end
 ```
 A `KeyFormat` for importing and exporting keys.
 
-
 ## Keys
 
 ```ocaml
@@ -24721,7 +24537,6 @@ class type  cryptoKeyPair = object ... end
 type jsonWebKey = Js.Unsafe.any
 ```
 A key in `JsonWebKey` form (RFC 7517\): a plain JSON object whose members carry the key material (e.g. `kty`, `n`, `e` for RSA; `crv`, `x`, `y` for EC). Exposed as [`Js.Unsafe.any`](./Js_of_ocaml-Js-Unsafe.md#type-any): read its members with [`Js.Unsafe.get`](./Js_of_ocaml-Js-Unsafe.md#val-get), build one with [`Js.Unsafe.obj`](./Js_of_ocaml-Js-Unsafe.md#val-obj), and serialise/parse with the `JSON` global.
-
 
 ## Typed algorithm parameters
 
@@ -24803,7 +24618,6 @@ Build a JS `AlgorithmIdentifier` from typed [`params`](./#type-params).
 val of_algorithm : algorithm -> params
 ```
 Recover typed [`params`](./#type-params) from a JS `AlgorithmIdentifier` by dispatching on its `name`. Key-generation and import parameter objects are told apart from same-named operation parameters by which fields are present (e.g. `modulusLength` vs `hash` for RSA, `namedCurve` for EC, `iv`/`counter` vs `length` for AES). An unrecognised name maps to [`Other`](./#type-params.Other).
-
 
 ## SubtleCrypto
 
@@ -25714,7 +25528,6 @@ DOM binding
 
 This is a partial binding to the DOM Core API.
 
-
 ### DOM objects
 
 ```ocaml
@@ -25798,7 +25611,6 @@ Specification of `DocumentType` objects.
 class type 'element document = object ... end
 ```
 Specification of `Document` objects.
-
 
 ### Helper functions
 
@@ -26003,7 +25815,6 @@ val createCustomEvent :
   ('a, 'b) customEvent Js.t
 ```
 Create a custom event of given type.
-
 
 ### Other DOM objects
 
@@ -37856,7 +37667,6 @@ DOM HTML binding
 
 This is a partial binding to the DOM HTML API.
 
-
 ### CSS style declaration
 
 ```ocaml
@@ -38337,7 +38147,6 @@ class type  selection = object ... end
 ```
 Information on current selection
 
-
 ### Document objects
 
 ```ocaml
@@ -38372,7 +38181,6 @@ val getElementById_coerce : string -> (element Js.t -> 'a Js.opt) -> 'a option
 val getElementById : string -> element Js.t
 ```
 `getElementById id` returns the element with the id `id` in the current document. It raises `Not_found` if there are no such element
-
 
 ### Window objects
 
@@ -38556,7 +38364,6 @@ val createCustomEvent :
 ```
 See `Dom.createCustomEvent`
 
-
 ### Mouse event helper functions
 
 ```ocaml
@@ -38580,7 +38387,6 @@ val getDocumentScroll : unit -> float * float
 ```
 Viewport top/left position
 
-
 ### Key event helper functions
 
 ```ocaml
@@ -38592,7 +38398,6 @@ Use `Keyboard_code` when you want to identify a key that the user pressed. This 
 module Keyboard_key : sig ... end
 ```
 Use `Keyboard_key` when you want to identify the character that the user typed. This should only be invoked on keypress events, not keydown or keyup events.
-
 
 ### Helper functions for creating HTML elements
 
@@ -39126,7 +38931,6 @@ val js_array_of_collection :
 ```
 Convert a `Dom_html.collection` to a Js array
 
-
 ### Deprecated function.
 
 ```ocaml
@@ -39142,7 +38946,6 @@ deprecated \[since 2.6\] Use \[Dom\_html.window\##requestAnimationFrame\] instea
 ---
 
 # Module `Dom_svg.CoerceTo`
-
 
 ### Coercion functions
 
@@ -45263,8 +45066,8 @@ method headers : headers Js_of_ocaml__.Js.t Js_of_ocaml__.Js.writeonly_prop
 
 Fetch API.
 
-see [https://developer.mozilla.org/en-US/docs/Web/API/Fetch\_API](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API) 
-see [https://fetch.spec.whatwg.org/](https://fetch.spec.whatwg.org/) 
+see [https://developer.mozilla.org/en-US/docs/Web/API/Fetch\_API](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API)
+see [https://fetch.spec.whatwg.org/](https://fetch.spec.whatwg.org/)
 
 ## Headers
 
@@ -45278,7 +45081,6 @@ val headers : headers Js.t Js.constr
 val headers_of_list : (string * string) list -> headers Js.t
 ```
 Build a `headers` object from a list of `(name, value)` pairs.
-
 
 ## Request
 
@@ -45313,7 +45115,6 @@ val request_of_request_with_init :
   (request Js.t -> requestInit Js.t -> request Js.t) Js.constr
 ```
 `new%js request_of_request_with_init r init` builds a request using `r` as a template, overriding fields set in `init`.
-
 
 ## Response
 
@@ -45741,8 +45542,8 @@ CSS Font Loading API binding.
 
 This is a partial binding to the CSS Font Loading API.
 
-see [https://developer.mozilla.org/en-US/docs/Web/API/CSS\_Font\_Loading\_API](https://developer.mozilla.org/en-US/docs/Web/API/CSS_Font_Loading_API) 
-see [https://www.w3.org/TR/css-font-loading-3/](https://www.w3.org/TR/css-font-loading-3/) 
+see [https://developer.mozilla.org/en-US/docs/Web/API/CSS\_Font\_Loading\_API](https://developer.mozilla.org/en-US/docs/Web/API/CSS_Font_Loading_API)
+see [https://www.w3.org/TR/css-font-loading-3/](https://www.w3.org/TR/css-font-loading-3/)
 ```ocaml
 class type  fontFace = object ... end
 ```
@@ -47811,7 +47612,6 @@ val strict_equals : _ -> _ -> bool
 ```
 Javascript `===` equality operator.
 
-
 #### Deprecated functions.
 
 ```ocaml
@@ -48521,7 +48321,6 @@ Javascript binding
 
 This module provides types and functions to interoperate with Javascript values, and gives access to Javascript standard objects.
 
-
 ### Dealing with `null` and `undefined` values.
 
 ```ocaml
@@ -48569,7 +48368,6 @@ module Optdef : OPT with type 'a t = 'a optdef
 ```
 Standard functions for manipulating possibly undefined values.
 
-
 ### Types for specifying method and properties of Javascript objects
 
 ```ocaml
@@ -48607,14 +48405,12 @@ type 'a optdef_prop = < get : 'a optdef ; set : 'a -> unit > gen_prop
 ```
 Type of read/write properties that may be undefined: you can set them to a value of some type `t`, but if you read them, you will get a value of type `t optdef` (that may be `undefined`).
 
-
 ### Object constructors
 
 ```ocaml
 type +'a constr
 ```
 A value of type `(t1 -> ... -> tn -> t Js.t) Js.constr` is a Javascript constructor expecting *n* arguments of types `t1` to `tn` and returning a Javascript object of type `t Js.t`. Use the syntax extension `new%js c e1 ... en` to build an object using constructor `c` and arguments `e1` to `en`.
-
 
 ### Callbacks to OCaml
 
@@ -48638,7 +48434,6 @@ val wrap_meth_callback : ('b -> 'a) -> ('b, 'a) meth_callback
 ```
 Wrap an OCaml function so that it can be invoked from Javascript. The first parameter of the function will be bound to the value of the `this` implicit parameter.
 
-
 ### Javascript comparisons
 
 ```ocaml
@@ -48650,7 +48445,6 @@ Javascript `==` equality operator.
 val strict_equals : _ t -> _ t -> bool
 ```
 Javascript `===` equality operator.
-
 
 ### Javascript standard objects
 
@@ -48885,7 +48679,6 @@ val _JSON : json t
 ```
 JSON object
 
-
 ### Standard Javascript functions
 
 ```ocaml
@@ -48930,7 +48723,6 @@ Parse a string as an integer. Raises `Failure "parseInt"` if the string does not
 val parseFloat : js_string t -> number_t
 ```
 Parse a string as a floating-point number. Raises `Failure "parseFloat"` if the string does not start with a number.
-
 
 ### Conversion functions between Javascript and OCaml types
 
@@ -49014,7 +48806,6 @@ val to_nativeint : number_t -> nativeint
 ```
 Conversion of Javascript numbers to OCaml native integers. The given floating-point number is truncated to an integer.
 
-
 ### Convenience coercion functions
 
 ```ocaml
@@ -49044,14 +48835,12 @@ val instanceof : _ t -> _ constr -> bool
 ```
 Tests whether a Javascript object is an instance of a given class.
 
-
 ### Debugging operations.
 
 ```ocaml
 val debugger : unit -> unit
 ```
 Invokes any available debugging functionality. If no debugging functionality is available, it has no effect. In practice, it will insert a "debugger;" statement in the generated javascript.
-
 
 ### Export functionality.
 
@@ -49082,7 +48871,6 @@ export_all
 module Unsafe : sig ... end
 ```
 Unsafe Javascript operations
-
 
 ### Deprecated functions and types.
 
@@ -49262,10 +49050,10 @@ method onclose : ('self Js_of_ocaml__.Js.t,
 
 Channel messaging: `MessageChannel`, `MessagePort` and `MessageEvent`.
 
-see [https://developer.mozilla.org/en-US/docs/Web/API/MessageChannel](https://developer.mozilla.org/en-US/docs/Web/API/MessageChannel) 
-see [https://developer.mozilla.org/en-US/docs/Web/API/MessagePort](https://developer.mozilla.org/en-US/docs/Web/API/MessagePort) 
-see [https://developer.mozilla.org/en-US/docs/Web/API/MessageEvent](https://developer.mozilla.org/en-US/docs/Web/API/MessageEvent) 
-see [https://html.spec.whatwg.org/multipage/web-messaging.html](https://html.spec.whatwg.org/multipage/web-messaging.html) 
+see [https://developer.mozilla.org/en-US/docs/Web/API/MessageChannel](https://developer.mozilla.org/en-US/docs/Web/API/MessageChannel)
+see [https://developer.mozilla.org/en-US/docs/Web/API/MessagePort](https://developer.mozilla.org/en-US/docs/Web/API/MessagePort)
+see [https://developer.mozilla.org/en-US/docs/Web/API/MessageEvent](https://developer.mozilla.org/en-US/docs/Web/API/MessageEvent)
+see [https://html.spec.whatwg.org/multipage/web-messaging.html](https://html.spec.whatwg.org/multipage/web-messaging.html)
 ```ocaml
 class type  messagePort = object ... end
 ```
@@ -49683,8 +49471,8 @@ A code example:
                        (Js.string "Title") options))
          (Notification.request_permission ()))
 ```
-see [https://developer.mozilla.org/en-US/docs/Web/API/Notifications\_API](https://developer.mozilla.org/en-US/docs/Web/API/Notifications_API) 
-see [https://notifications.spec.whatwg.org/](https://notifications.spec.whatwg.org/) 
+see [https://developer.mozilla.org/en-US/docs/Web/API/Notifications\_API](https://developer.mozilla.org/en-US/docs/Web/API/Notifications_API)
+see [https://notifications.spec.whatwg.org/](https://notifications.spec.whatwg.org/)
 ```ocaml
 class type  notificationAction = object ... end
 ```
@@ -50087,13 +49875,11 @@ Bindings to the JavaScript `Promise` API.
 
 A value of type `'a t` represents a JavaScript promise that, when fulfilled, resolves with a value of OCaml type `'a`.
 
-
 ### Type safety
 
 Native JavaScript promises automatically flatten any thenable returned from a handler or passed to `Promise.resolve`. That means a JavaScript `Promise` can never resolve with another `Promise` as its value, which is unsound at the OCaml type level for, say, `'a t t`.
 
 These bindings work around that by wrapping thenable values in a small container before resolving and unwrapping on the way out; non-thenable values are passed through unchanged so the common case pays no allocation. As a result, `'a t` values always resolve with a value of OCaml type `'a`, even when `'a` is itself `'_ t`.
-
 
 ### Interop with raw JavaScript promises
 
@@ -50107,7 +49893,6 @@ type error
 ```
 The reason a promise was rejected. JavaScript allows rejecting with any value (not necessarily an `Error`), so [`error`](./#type-error) is opaque; use [`error_to_any`](./#val-error_to_any) to inspect it and [`error_of_any`](./#val-error_of_any) to construct one.
 
-
 ## Errors
 
 ```ocaml
@@ -50120,7 +49905,6 @@ val error_to_any : error -> Js.Unsafe.any
 val error_of_exn : exn -> error
 ```
 Use an OCaml exception as a rejection reason.
-
 
 ## Building promises
 
@@ -50143,7 +49927,6 @@ val make : (resolve:('a -> unit) -> reject:(error -> unit) -> unit) -> 'a t
 val with_resolvers : unit -> 'a t * ('a -> unit) * (error -> unit)
 ```
 `with_resolvers ()` returns `(p, resolve, reject)` where `p` is a fresh promise that is settled by calling `resolve x` (to fulfill with `x`) or `reject e` (to reject with `e`). Bound to the `Promise.withResolvers()` static method (ES2024).
-
 
 ## Chaining
 
@@ -50174,7 +49957,6 @@ val bind : ('a -> 'b t) -> 'a t -> 'b t
 ```
 Alias for [`then_`](./#val-then_).
 
-
 ## Combinators
 
 ```ocaml
@@ -50197,7 +49979,6 @@ val race : 'a t list -> 'a t
 ```
 `race ps` settles like the first promise in `ps` to settle, fulfilled or rejected.
 
-
 ## Unsafe interop
 
 ```ocaml
@@ -50209,7 +49990,6 @@ Expose the underlying JavaScript promise. The resolved value may be the internal
 val of_any : Js.Unsafe.any -> 'a t
 ```
 Treat a foreign JavaScript promise as a `'a t`. The returned value is only sound if the underlying promise actually resolves with a value of type `'a`; raw foreign values are passed through [`then_`](./#val-then_) unchanged.
-
 
 ## Capability detection
 
@@ -50956,8 +50736,8 @@ This module covers both sides of the API: the page-facing registration API ([`co
 
 Service Workers require a secure context. The Promise-typed members use [`Promise`](./Js_of_ocaml-Promise.md).
 
-see [https://developer.mozilla.org/en-US/docs/Web/API/Service\_Worker\_API](https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API) 
-see [https://w3c.github.io/ServiceWorker/](https://w3c.github.io/ServiceWorker/) 
+see [https://developer.mozilla.org/en-US/docs/Web/API/Service\_Worker\_API](https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API)
+see [https://w3c.github.io/ServiceWorker/](https://w3c.github.io/ServiceWorker/)
 ```ocaml
 class type  serviceWorker = object ... end
 ```
@@ -51000,7 +50780,6 @@ val container : unit -> serviceWorkerContainer Js.t Js.optdef
 val is_supported : unit -> bool
 ```
 Whether `navigator.serviceWorker` is available in the current environment.
-
 
 ## Service worker global scope
 
@@ -51061,7 +50840,6 @@ The service worker's global scope. Only meaningful when the current code is actu
 
 Javascript specific Sys functions.
 
-
 ### Io.
 
 ```ocaml
@@ -51073,7 +50851,6 @@ Set a callback to be called when an out\_channel flush its buffer. `set_channel_
 val set_channel_filler : Stdlib.in_channel -> (unit -> string) -> unit
 ```
 Set a callback to be called when an in\_channel wants to fill its buffer. `set_channel_filler chan cb` install the called `cb` for `chan` in\_channel. The string returned by `cb` will be appended to the channel buffer.
-
 
 ### Pseudo filesystem.
 
@@ -51107,7 +50884,6 @@ Register a file to a Pseudo Filesystem. `create_file ~name ~content` register th
 val update_file : name:string -> content:string -> unit
 ```
 Update a file in the Pseudo Filesystem. `update_file ~name ~content` update the file `name` with content `content`
-
 
 ### Information.
 
@@ -51561,7 +51337,7 @@ val float32Array : (int -> float32Array Js.t) Js.constr
 ```
 ```ocaml
 val float32Array_fromArray : 
-  (float Js.js_array Js.t -> float32Array Js.t) Js.constr
+  (Js.number_t Js.js_array Js.t -> float32Array Js.t) Js.constr
 ```
 ```ocaml
 val float32Array_fromTypedArray : 
@@ -51579,7 +51355,7 @@ val float64Array : (int -> float64Array Js.t) Js.constr
 ```
 ```ocaml
 val float64Array_fromArray : 
-  (float Js.js_array Js.t -> float64Array Js.t) Js.constr
+  (Js.number_t Js.js_array Js.t -> float64Array Js.t) Js.constr
 ```
 ```ocaml
 val float64Array_fromTypedArray : 
@@ -54752,7 +54528,6 @@ method readPixels_withOffset : int ->
 ```
 `readPixels` writing into the view starting at element `dstOffset`.
 
-
 ### 5\.14.9 Multiple render targets
 
 ```ocaml
@@ -55176,7 +54951,6 @@ method uniformMatrix4x3fv : [ `mat4x3 ] uniformLocation Js_of_ocaml__.Js.t ->
 ```
 
 ### New constants
-
 
 #### Buffer targets and usages
 
@@ -55671,7 +55445,6 @@ method _TIMEOUT_IGNORED_ : Js_of_ocaml__.Js.number_t
 ```
 The special timeout value (`-1`), accepted only by `waitSync`; `clientWaitSync` timeouts are instead capped by `_MAX_CLIENT_WAIT_TIMEOUT_WEBGL_`.
 
-
 #### Transform feedback
 
 ```ocaml
@@ -55746,7 +55519,6 @@ method _UNIFORM_BLOCK_REFERENCED_BY_FRAGMENT_SHADER_ : bool Js_of_ocaml__.Js.t
 method _INVALID_INDEX_ : uint Js_of_ocaml__.Js.readonly_prop
 ```
 Returned by `getUniformIndices`/`getUniformBlockIndex` for unknown names (the value is `0xFFFFFFFF`, which does not fit a 32-bit OCaml `int`; only use it for equality tests).
-
 
 #### New pixel store parameters
 
@@ -56240,7 +56012,6 @@ WebGL2 binding.
 WebGL2 (`WebGL2RenderingContext`) is a strict superset of WebGL1, so the context [`renderingContext`](./Js_of_ocaml-WebGL2-class-type-renderingContext.md) inherits every method and constant of [`WebGL.renderingContext`](./Js_of_ocaml-WebGL-class-type-renderingContext.md) and adds the WebGL2 ones on top.
 
 Following the pragmatic style of [`WebGL`](./Js_of_ocaml-WebGL.md), the enumerations are kept as abstract types shared between related uses. In particular the many WebGL2 sized internal formats and the plain formats share the single type [`pixelFormat`](./#type-pixelFormat); the binding therefore does not enforce, at compile time, that the (internalformat, format, type) triples passed to e.g. [`renderingContext.texImage3D`](./Js_of_ocaml-WebGL2-class-type-renderingContext.md#method-texImage3D) are mutually coherent (WebGL itself is not type safe there).
-
 
 ### Types reused from WebGL1
 
@@ -57958,7 +57729,6 @@ val entry_point :
 ---
 
 # Module `Curry.Make`
-
 
 ## Parameters
 

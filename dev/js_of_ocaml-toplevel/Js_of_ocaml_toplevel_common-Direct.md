@@ -1,4 +1,3 @@
-
 # Module `Js_of_ocaml_toplevel_common.Direct`
 
 Helper for Js\_of\_ocaml Toplevel.

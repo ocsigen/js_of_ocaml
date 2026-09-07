@@ -1,4 +1,3 @@
-
 # Module `Js_of_ocaml`
 
 Bindings to the browser and Node.js runtime.

@@ -1,4 +1,3 @@
-
 # Module `Url.Current`
 
 This module can be used to handle the Url associated to the current document.

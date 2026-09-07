@@ -1,4 +1,3 @@
-
 # Module `Dom_html.DomStringMap`
 
 Typed access to [`domStringMap`](./Js_of_ocaml-Dom_html.md#type-domStringMap) (the type of `Element.dataset`).

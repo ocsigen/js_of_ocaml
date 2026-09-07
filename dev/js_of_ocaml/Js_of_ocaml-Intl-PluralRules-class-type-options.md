@@ -1,4 +1,3 @@
-
 # Class type `PluralRules.options`
 
 ```ocaml

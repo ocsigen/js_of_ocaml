@@ -1,4 +1,3 @@
-
 # Class type `Dom_svg.locatable`
 
 deprecated Replaced by SVGGraphicsElement in SVG 2.

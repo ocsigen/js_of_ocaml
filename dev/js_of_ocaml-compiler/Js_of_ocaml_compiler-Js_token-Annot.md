@@ -1,4 +1,3 @@
-
 # Module `Js_token.Annot`
 
 ```ocaml

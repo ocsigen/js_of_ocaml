@@ -1,4 +1,3 @@
-
 # Class type `Fetch.headers`
 
 ```ocaml

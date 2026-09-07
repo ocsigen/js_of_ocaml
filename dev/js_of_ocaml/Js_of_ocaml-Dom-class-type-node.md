@@ -1,4 +1,3 @@
-
 # Class type `Dom.node`
 
 Specification of `Node` objects.

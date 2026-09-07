@@ -1,4 +1,3 @@
-
 # Module type `Set.S`
 
 ```ocaml

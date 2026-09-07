@@ -1,4 +1,3 @@
-
 # Class type `EventSource.eventSource`
 
 ```ocaml

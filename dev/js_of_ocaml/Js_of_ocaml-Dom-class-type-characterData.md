@@ -1,4 +1,3 @@
-
 # Class type `Dom.characterData`
 
 Specification of `CharacterData` objects.

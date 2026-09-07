@@ -1,4 +1,3 @@
-
 # Module `_.Memory`
 
 ```ocaml

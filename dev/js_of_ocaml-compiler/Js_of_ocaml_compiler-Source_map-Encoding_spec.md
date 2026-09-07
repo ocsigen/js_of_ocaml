@@ -1,4 +1,3 @@
-
 # Module `Source_map.Encoding_spec`
 
 ```ocaml

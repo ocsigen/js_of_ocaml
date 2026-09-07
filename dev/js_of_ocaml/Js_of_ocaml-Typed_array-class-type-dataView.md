@@ -1,4 +1,3 @@
-
 # Class type `Typed_array.dataView`
 
 ```ocaml

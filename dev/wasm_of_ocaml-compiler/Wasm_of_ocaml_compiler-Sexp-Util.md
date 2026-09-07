@@ -1,4 +1,3 @@
-
 # Module `Sexp.Util`
 
 ```ocaml

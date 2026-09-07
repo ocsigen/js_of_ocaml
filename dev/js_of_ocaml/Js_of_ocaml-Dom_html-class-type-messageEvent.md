@@ -1,4 +1,3 @@
-
 # Class type `Dom_html.messageEvent`
 
 The single shared binding for the DOM `MessageEvent` interface, reused by every "message" event source (`Worker`, `WebSocket`, `EventSource`, [`MessageChannel.messagePort`](./Js_of_ocaml-MessageChannel-class-type-messagePort.md), `BroadcastChannel` and `window.postMessage`). The type parameter `'target` is the type of the event target (the worker, socket, port, window, ... the listener is attached to) and `'data` is the type of the `data` payload.

@@ -1,4 +1,3 @@
-
 # Parameter `Json_array.A`
 
 ```ocaml

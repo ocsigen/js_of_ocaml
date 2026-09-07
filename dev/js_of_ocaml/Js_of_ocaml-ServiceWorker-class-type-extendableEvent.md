@@ -1,4 +1,3 @@
-
 # Class type `ServiceWorker.extendableEvent`
 
 Base class of events that may extend the service worker's lifetime via `waitUntil`.

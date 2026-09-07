@@ -1,4 +1,3 @@
-
 # Module `Js_of_ocaml.Crypto`
 
 Web Crypto API.
@@ -15,8 +14,8 @@ A code example:
 ```
 Most of `SubtleCrypto` is exposed as object methods, mirroring the JavaScript surface: obtain the `subtle` object with [`subtle`](./#val-subtle) and call its methods with `##`.
 
-see [https://developer.mozilla.org/en-US/docs/Web/API/Web\_Crypto\_API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Crypto_API) 
-see [https://w3c.github.io/webcrypto/](https://w3c.github.io/webcrypto/) 
+see [https://developer.mozilla.org/en-US/docs/Web/API/Web\_Crypto\_API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Crypto_API)
+see [https://w3c.github.io/webcrypto/](https://w3c.github.io/webcrypto/)
 
 ## Common types
 
@@ -68,7 +67,6 @@ module Key_format : sig ... end
 ```
 A `KeyFormat` for importing and exporting keys.
 
-
 ## Keys
 
 ```ocaml
@@ -81,7 +79,6 @@ class type  cryptoKeyPair = object ... end
 type jsonWebKey = Js.Unsafe.any
 ```
 A key in `JsonWebKey` form (RFC 7517\): a plain JSON object whose members carry the key material (e.g. `kty`, `n`, `e` for RSA; `crv`, `x`, `y` for EC). Exposed as [`Js.Unsafe.any`](./Js_of_ocaml-Js-Unsafe.md#type-any): read its members with [`Js.Unsafe.get`](./Js_of_ocaml-Js-Unsafe.md#val-get), build one with [`Js.Unsafe.obj`](./Js_of_ocaml-Js-Unsafe.md#val-obj), and serialise/parse with the `JSON` global.
-
 
 ## Typed algorithm parameters
 
@@ -163,7 +160,6 @@ Build a JS `AlgorithmIdentifier` from typed [`params`](./#type-params).
 val of_algorithm : algorithm -> params
 ```
 Recover typed [`params`](./#type-params) from a JS `AlgorithmIdentifier` by dispatching on its `name`. Key-generation and import parameter objects are told apart from same-named operation parameters by which fields are present (e.g. `modulusLength` vs `hash` for RSA, `namedCurve` for EC, `iv`/`counter` vs `length` for AES). An unrecognised name maps to [`Other`](./#type-params.Other).
-
 
 ## SubtleCrypto
 

@@ -1,4 +1,3 @@
-
 # Module `Javascript.Label`
 
 ```ocaml

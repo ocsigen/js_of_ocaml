@@ -1,4 +1,3 @@
-
 # Module `Worker_msg.Message_id`
 
 ```ocaml

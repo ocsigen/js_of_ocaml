@@ -1,4 +1,3 @@
-
 # Class type `Dom_svg.uriReference`
 
 ```ocaml

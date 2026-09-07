@@ -1,4 +1,3 @@
-
 # Class type `ServiceWorker.clientsQueryOptions`
 
 Options for `clients##matchAll_withOptions`. Create an empty record with [`empty_clients_query_options`](./Js_of_ocaml-ServiceWorker.md#val-empty_clients_query_options).

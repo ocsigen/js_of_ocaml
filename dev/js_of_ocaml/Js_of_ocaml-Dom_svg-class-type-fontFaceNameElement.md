@@ -1,4 +1,3 @@
-
 # Class type `Dom_svg.fontFaceNameElement`
 
 deprecated Removed in SVG 2. Use WOFF/WOFF2 fonts.

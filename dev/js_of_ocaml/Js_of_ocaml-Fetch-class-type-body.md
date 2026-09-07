@@ -1,4 +1,3 @@
-
 # Class type `Fetch.body`
 
 The body-reader methods are Promise-typed — see [`Promise`](./Js_of_ocaml-Promise.md).

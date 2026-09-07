@@ -1,4 +1,3 @@
-
 # Class type `Dom.nodeList`
 
 Specification of `NodeList` objects.

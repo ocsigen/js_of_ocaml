@@ -1,4 +1,3 @@
-
 # Class type `ServiceWorker.windowClient`
 
 A [`client`](./Js_of_ocaml-ServiceWorker-class-type-client.md) that is a top-level browsing context (a window/tab).

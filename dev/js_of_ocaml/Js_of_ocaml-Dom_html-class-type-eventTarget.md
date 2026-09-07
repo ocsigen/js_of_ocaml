@@ -1,4 +1,3 @@
-
 # Class type `Dom_html.eventTarget`
 
 Common properties of event target objects: `onclick`, `onkeypress`, ...

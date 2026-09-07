@@ -1,4 +1,3 @@
-
 # Module `Typed_array.Bytes`
 
 ```ocaml

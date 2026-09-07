@@ -1,4 +1,3 @@
-
 # Module `Code.Native_string`
 
 ```ocaml

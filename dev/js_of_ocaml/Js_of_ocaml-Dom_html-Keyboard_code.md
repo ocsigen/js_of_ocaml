@@ -1,4 +1,3 @@
-
 # Module `Dom_html.Keyboard_code`
 
 Use `Keyboard_code` when you want to identify a key that the user pressed. This should be invoked for keydown and keyup events, not keypress events.

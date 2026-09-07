@@ -1,4 +1,3 @@
-
 # Module `Tyxml_js.Of_dom`
 
 ```ocaml

@@ -1,4 +1,3 @@
-
 # Module `Js_of_ocaml_compiler.Parse_bytecode`
 
 ```ocaml

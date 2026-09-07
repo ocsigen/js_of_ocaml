@@ -1,4 +1,3 @@
-
 # Class type `MessageChannel.messagePort`
 
 One of the two endpoints of a [`messageChannel`](./Js_of_ocaml-MessageChannel-class-type-messageChannel.md). Messages posted on one port are delivered to the `message` listener of the other.

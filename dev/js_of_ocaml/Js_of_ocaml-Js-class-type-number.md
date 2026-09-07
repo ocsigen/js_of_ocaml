@@ -1,4 +1,3 @@
-
 # Class type `Js.number`
 
 ```ocaml

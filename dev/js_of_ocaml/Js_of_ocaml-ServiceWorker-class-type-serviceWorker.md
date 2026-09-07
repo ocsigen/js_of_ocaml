@@ -1,4 +1,3 @@
-
 # Class type `ServiceWorker.serviceWorker`
 
 A service worker, as seen from a controlled page. Inherits `EventTarget`.

@@ -1,4 +1,3 @@
-
 # Module `Js_of_ocaml.Form`
 
 This module provides functions to manipulate forms.

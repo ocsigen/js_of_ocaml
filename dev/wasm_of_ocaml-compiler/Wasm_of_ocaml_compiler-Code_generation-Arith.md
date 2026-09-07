@@ -1,4 +1,3 @@
-
 # Module `Code_generation.Arith`
 
 ```ocaml

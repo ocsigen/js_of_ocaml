@@ -1,4 +1,3 @@
-
 # Module `Var.Set`
 
 ```ocaml

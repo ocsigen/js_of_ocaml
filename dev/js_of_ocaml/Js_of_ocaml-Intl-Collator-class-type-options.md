@@ -1,4 +1,3 @@
-
 # Class type `Collator.options`
 
 ```ocaml

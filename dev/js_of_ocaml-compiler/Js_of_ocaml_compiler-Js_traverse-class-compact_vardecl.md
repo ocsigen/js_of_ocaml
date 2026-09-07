@@ -1,4 +1,3 @@
-
 # Class `Js_traverse.compact_vardecl`
 
 ```ocaml

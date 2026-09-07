@@ -1,4 +1,3 @@
-
 # Class type `ServiceWorker.clients`
 
 The worker's `clients` object, used to enumerate and message controlled clients.

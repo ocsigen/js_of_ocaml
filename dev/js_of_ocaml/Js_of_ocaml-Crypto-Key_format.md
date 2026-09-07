@@ -1,4 +1,3 @@
-
 # Module `Crypto.Key_format`
 
 A `KeyFormat` for importing and exporting keys.

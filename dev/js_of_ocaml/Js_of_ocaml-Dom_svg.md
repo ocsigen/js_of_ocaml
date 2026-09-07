@@ -1,4 +1,3 @@
-
 # Module `Js_of_ocaml.Dom_svg`
 
 DOM SVG binding

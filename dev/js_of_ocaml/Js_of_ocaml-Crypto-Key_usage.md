@@ -1,4 +1,3 @@
-
 # Module `Crypto.Key_usage`
 
 A `KeyUsage`: an operation a [`cryptoKey`](./Js_of_ocaml-Crypto-class-type-cryptoKey.md) may be used for.

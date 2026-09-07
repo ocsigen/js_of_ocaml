@@ -1,4 +1,3 @@
-
 # Module `Config.Flag`
 
 ```ocaml

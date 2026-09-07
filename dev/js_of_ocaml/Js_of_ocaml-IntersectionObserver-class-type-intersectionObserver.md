@@ -1,4 +1,3 @@
-
 # Class type `IntersectionObserver.intersectionObserver`
 
 ```ocaml

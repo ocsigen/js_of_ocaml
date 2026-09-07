@@ -1,4 +1,3 @@
-
 # Module `Js_of_ocaml_tyxml`
 
 TyXML support for Js\_of\_ocaml.

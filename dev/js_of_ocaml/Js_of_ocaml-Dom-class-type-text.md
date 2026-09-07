@@ -1,4 +1,3 @@
-
 # Class type `Dom.text`
 
 Specification of `Text` objects.

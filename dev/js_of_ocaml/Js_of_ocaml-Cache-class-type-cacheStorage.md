@@ -1,4 +1,3 @@
-
 # Class type `Cache.cacheStorage`
 
 The set of named [`Cache`](./Js_of_ocaml-Cache.md)s for the current origin, exposed as the global `caches` (see [`caches`](./Js_of_ocaml-Cache.md#val-caches)).

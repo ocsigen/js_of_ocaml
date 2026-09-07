@@ -1,4 +1,3 @@
-
 # Module `Js_of_ocaml.Typed_array`
 
 Typed Array binding
@@ -177,7 +176,7 @@ val float32Array : (int -> float32Array Js.t) Js.constr
 ```
 ```ocaml
 val float32Array_fromArray : 
-  (float Js.js_array Js.t -> float32Array Js.t) Js.constr
+  (Js.number_t Js.js_array Js.t -> float32Array Js.t) Js.constr
 ```
 ```ocaml
 val float32Array_fromTypedArray : 
@@ -195,7 +194,7 @@ val float64Array : (int -> float64Array Js.t) Js.constr
 ```
 ```ocaml
 val float64Array_fromArray : 
-  (float Js.js_array Js.t -> float64Array Js.t) Js.constr
+  (Js.number_t Js.js_array Js.t -> float64Array Js.t) Js.constr
 ```
 ```ocaml
 val float64Array_fromTypedArray : 

@@ -1,4 +1,3 @@
-
 # Module `Config.Param`
 
 This module contains parameters that may be modified through command-line flags.

@@ -1,4 +1,3 @@
-
 # Module `Stdlib.Poly`
 
 ```ocaml
