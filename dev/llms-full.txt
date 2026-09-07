@@ -1756,12 +1756,13 @@ Js\_of\_ocaml provides a pseudo filesystem for programs that read files at runti
 
 ### Resolution order
 
-When OCaml code calls `Sys.getenv`, js\_of\_ocaml resolves variables in this order:
+When OCaml code calls `Sys.getenv`, variables are resolved in this order:
 
 1. If the variable was set at compile time with `--setenv VAR=value`, return it
 2. If running in Node.js, check `process.env`
 3. Check `globalThis.jsoo_env` (useful for setting variables in browsers)
 4. Raise `Not_found`
+With wasm\_of\_ocaml targeting WASI, lookups fall back to the environment provided by the WASI host. The Node.js launcher builds this environment from `process.env` and `globalThis.jsoo_env`, the former taking precedence.
 
 ### Browser example
 
