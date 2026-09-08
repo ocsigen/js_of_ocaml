@@ -2,6 +2,8 @@
 
 ## Features/Changes
 * Compiler: require sedlex 3.8.1 (#2503)
+* Compiler: the JavaScript lexer updates its state in place rather than
+  allocating a new environment per token (#2512)
 * Compiler: with OCaml 5.6, use the optimization hints recorded in the bytecode
   (primitive types, immutable blocks, closures, immediates, ...) (#1721, #2488)
 * Compiler: with OCaml 5.6, use the bytecode hint on integer equality tests

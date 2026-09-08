@@ -22,24 +22,17 @@ module Lex_env : sig
   type t
 
   val create : Sedlexing.lexbuf -> t
-end
 
-module Lex_result : sig
-  type t
-
-  val token : t -> Js_token.t
-
-  val loc : t -> Loc.t
-
-  val errors : t -> (Loc.t * Parse_error.t) list
+  val take_errors : t -> (Loc.t * Parse_error.t) list
+  (** The errors of the last token, and forget them *)
 end
 
 val drop_line : Lex_env.t -> unit
 
-val regexp : Lex_env.t -> Lex_env.t * Lex_result.t
+val regexp : Lex_env.t -> Js_token.t * Loc.t
 
-val token : Lex_env.t -> Lex_env.t * Lex_result.t
+val token : Lex_env.t -> Js_token.t * Loc.t
 
-val lex : Lex_env.t -> Lex_env.t * Lex_result.t
+val lex : Lex_env.t -> Js_token.t * Loc.t
 
 val is_valid_identifier_name : string -> bool
