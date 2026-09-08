@@ -26,14 +26,10 @@ open Util
    inlined at two call sites, it is duplicated and the nested closure
    ends up with a smaller address than its parent, so it is processed
    first: the substitution must be followed transitively, otherwise
-   the generated code refers to the eliminated variable [y].
-
-   The compiler currently fails on this program; only the first line
-   of its error message is kept. *)
+   the generated code refers to the eliminated variable [y]. *)
 let%expect_test "substitution chains across nested closures" =
-  (try
-     compile_and_run
-       {|
+  compile_and_run
+    {|
     let f n =
       let g m =
         let r = ref 0 in
@@ -53,7 +49,5 @@ let%expect_test "substitution chains across nested closures" =
       let h1 = f 1 in
       let h2 = f 10 in
       Printf.printf "%d %d\n" (h1 5 ()) (h2 7 ())
-    |}
-   with Failure _ -> ());
-  print_endline (List.hd (String.split_on_char '\n' [%expect.output]));
-  [%expect {| Some variables escaped (#1). Use [--debug js_assign] for more info. |}]
+    |};
+  [%expect {| 7 18 |}]

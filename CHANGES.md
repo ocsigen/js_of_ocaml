@@ -106,6 +106,9 @@
   instead of letting the last one silently overwrite the others (#968)
 * Preserve leading BOMs when converting OCaml strings to JavaScript strings
   (#2414)
+* Compiler: fix reference unboxing when a variable read from an unboxed
+  reference is stored into another unboxed reference in a nested closure
+  (#2426)
 # 6.4.1 (2026-06-30) - Lille
 
 ## Bug fixes
