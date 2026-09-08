@@ -23,7 +23,7 @@ depends: [
   "sedlex" {>= "3.3"}
   "qcheck" {with-test}
   "menhir" {>= "20180523"}
-  "menhirLib"
+  "menhirLib" {with-test}
   "menhirSdk"
   "yojson" {>= "2.1"}
   "odoc" {with-doc}
