@@ -72,10 +72,14 @@ let with_temp_dir ~f =
   let dir = temp_file_name temp "jsoo-test" "" in
   Unix.mkdir dir 0o700;
   Sys.chdir dir;
-  let x = f () in
-  Sys.chdir old_cwd;
-  remove_dir dir;
-  x
+  (* Restore the working directory even when [f] fails (a failing
+     compilation, say): the expect runner resolves the source files it
+     corrects relative to it. *)
+  Fun.protect
+    ~finally:(fun () ->
+      Sys.chdir old_cwd;
+      remove_dir dir)
+    f
 
 module Filetype : Filetype_intf.S = struct
   type ocaml_text = string
