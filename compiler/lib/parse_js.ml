@@ -87,7 +87,7 @@ end = struct
   type t =
     { l : Sedlexing.lexbuf
     ; report_error : error -> unit
-    ; mutable env : Flow_lexer.Lex_env.t
+    ; env : Flow_lexer.Lex_env.t
     }
 
   let zero_pos = { Lexing.pos_fname = ""; pos_lnum = 1; pos_cnum = 0; pos_bol = 0 }
@@ -119,27 +119,21 @@ end = struct
     Option.iter filename ~f:(Sedlexing.set_filename l);
     create ?report_error l
 
-  let report_errors t res =
-    match Flow_lexer.Lex_result.errors res with
+  let report_errors t =
+    match Flow_lexer.Lex_env.take_errors t.env with
     | [] -> ()
     | l -> List.iter l ~f:t.report_error
 
   let token (t : t) =
-    let env, res = Flow_lexer.lex t.env in
-    t.env <- env;
-    let tok = Flow_lexer.Lex_result.token res in
-    let loc = Flow_lexer.Lex_result.loc res in
-    report_errors t res;
-    tok, loc
+    let res = Flow_lexer.lex t.env in
+    report_errors t;
+    res
 
   let lex_as_regexp (t : t) =
     Sedlexing.rollback t.l;
-    let env, res = Flow_lexer.regexp t.env in
-    t.env <- env;
-    let tok = Flow_lexer.Lex_result.token res in
-    let loc = Flow_lexer.Lex_result.loc res in
-    report_errors t res;
-    tok, loc
+    let res = Flow_lexer.regexp t.env in
+    report_errors t;
+    res
 end
 
 exception Parsing_error of Parse_info.t
