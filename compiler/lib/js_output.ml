@@ -2095,6 +2095,14 @@ struct
             PP.space f);
         PP.end_group f
 
+  and static_keyword f static =
+    if static
+    then (
+      PP.string f "static";
+      (* [static] is not a restricted token, but JavaScriptCore up to Safari 17
+         reads a line break after it as a field named [static] *)
+      PP.non_breaking_space f)
+
   and class_declaration f i x =
     PP.start_group f 0;
     decorator_list f x.decorators;
@@ -2122,21 +2130,13 @@ struct
         | CEMethod (decorators, static, n, m) ->
             PP.start_group f 0;
             decorator_list f decorators;
-            if static
-            then (
-              PP.string f "static";
-              (* [static] is not a restricted token, but JavaScriptCore up to Safari 17
-                 reads a line break after it as a field named [static] *)
-              PP.non_breaking_space f);
+            static_keyword f static;
             method_ f class_element_name n m;
             PP.end_group f
         | CEField (decorators, static, n, i) ->
             PP.start_group f 0;
             decorator_list f decorators;
-            if static
-            then (
-              PP.string f "static";
-              PP.non_breaking_space f);
+            static_keyword f static;
             class_element_name f n;
             (match i with
             | None -> ()
@@ -2151,10 +2151,7 @@ struct
         | CEAccessor (decorators, static, n, i) ->
             PP.start_group f 0;
             decorator_list f decorators;
-            if static
-            then (
-              PP.string f "static";
-              PP.non_breaking_space f);
+            static_keyword f static;
             PP.string f "accessor";
             PP.space f;
             class_element_name f n;
@@ -2171,7 +2168,7 @@ struct
         | CEStaticBLock l ->
             PP.start_group f 0;
             PP.string f "static";
-            PP.non_breaking_space f;
+            if not (PP.compact f) then PP.non_breaking_space f;
             block f l;
             PP.end_group f);
         if not last then PP.break f);
