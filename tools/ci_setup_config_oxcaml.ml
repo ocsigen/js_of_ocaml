@@ -55,16 +55,15 @@ diff --git a/sexp_grammar_validation.opam b/sexp_grammar_validation.opam
 new file mode 100644
 index 0000000..e69de29
 diff --git a/validation/src/dune b/validation/src/dune
-index 91933ec..849e4d7 100644
 --- a/validation/src/dune
 +++ b/validation/src/dune
 @@ -1,5 +1,6 @@
  (library
   (name sexp_grammar_validation)
 + (public_name sexp_grammar_validation)
-  (libraries bignum.bigint core
-    expect_test_helpers_core.expect_test_helpers_base sexp_grammar)
+  (libraries bignum.bigint core expect_test_helpers_base sexp_grammar)
   (preprocess
+   (pps ppx_jane)))
 |}
     )
   ; ( "bignum"
@@ -111,20 +110,19 @@ index c6d09fb..61b1e5b 100644
   ; ( "bin_prot"
     , {bp|
 diff --git a/test/dune b/test/dune
-index 5a53c69..571e52e 100644
 --- a/test/dune
 +++ b/test/dune
 @@ -1,15 +1,8 @@
  (library
   (name bin_prot_test)
-  (libraries base base_bigstring bin_prot
--   expect_test_helpers_core.expect_test_helpers_base expect_test_patterns
-+   expect_test_helpers_core.expect_test_helpers_base ; expect_test_patterns
-    float_array base.md5 re sexplib splittable_random stdio)
+  (libraries base base_bigstring bin_prot expect_test_helpers_base
+-   expect_test_patterns float_array base.md5 re sexplib splittable_random
+-   stdio)
++   float_array base.md5 re sexplib splittable_random stdio)
 + (inline_tests (flags -drop-tag no-js -drop-tag 64-bits-only -drop-tag 32-bits-only -drop-tag no-wasm) (modes js wasm))
   (preprocess
    (pps ppx_jane)))
--
+ 
 -(rule
 - (deps core/blob_stability_tests.ml integers_repr_tests_64bit.ml
 -   integers_repr_tests_js.ml integers_repr_tests_wasm.ml)
@@ -150,7 +148,7 @@ index e59e237..30740fc 100644
    gen_tests Tests.vec;
    [%expect
      {|
-    |bp}
+|bp}
     )
   ; ( "base_bigstring"
     , {|

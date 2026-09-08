@@ -17,7 +17,13 @@ jobs:
   build:
     env:
       WASM_OF_OCAML: true
-      OXCAML_OPAM_REPO_REF: d89747aa6e7b9f44d6cc844dca5b5e7c8a90716f
+      # This ref of the OxCaml opam repository installs OxCaml 5.2.0minus-38.
+      # Later releases (5.2.0minus-39, 5.2.0minus-40 and 5.4.0-ox1 to ox5) are
+      # broken for us: their cmi files contain 2^61-based Ldd rigid variable
+      # ids, which the 32-bit js_of_ocaml runtime cannot unmarshal
+      # ("input_value: integer too large"). Fixed in 5.4.0-ox6
+      # (oxcaml/oxcaml#6804).
+      OXCAML_OPAM_REPO_REF: 56f47e19a30880e0b743082edeb3a890fd497dbd
 
     strategy:
       fail-fast: false
