@@ -1,7 +1,7 @@
 open Js_of_ocaml
 open Js_of_ocaml_tyxml
 
-let text ~a_class:cl s = Tyxml_js.Html.(span ~a:[ a_class [ cl ] ] [ txt s ])
+let text ~a_class:cl str = Tyxml_js.Html.(span ~a:[ a_class [ cl ] ] [ txt str ])
 
 let ocaml = text
 
@@ -17,10 +17,10 @@ let highlight from_ to_ e =
         | `Last -> String.length x - 1
       in
       e##.innerHTML := Js.string "";
-      let span kind s =
-        if s <> ""
+      let span kind str =
+        if str <> ""
         then
-          let span = Tyxml_js.Html.(span ~a:[ a_class [ kind ] ] [ txt s ]) in
+          let span = Tyxml_js.Html.(span ~a:[ a_class [ kind ] ] [ txt str ]) in
           Dom.appendChild e (Tyxml_js.To_dom.of_element span)
       in
       span "normal" (String.sub x 0 from_);

@@ -1,11 +1,11 @@
 open Js_of_ocaml
 open Js_of_ocaml_tyxml
 
-let text ~a_class:cl s = Tyxml_js.Html.(span ~a:[ a_class [ cl ] ] [ txt s ])
+let text ~a_class:cl str = Tyxml_js.Html.(span ~a:[ a_class [ cl ] ] [ txt str ])
 
 let ocaml ~a_class:cl s =
   let tks = Higlo.Lang.parse ~lang:"ocaml" s in
-  let span' cl (s, _) = Tyxml_js.Html.(span ~a:[ a_class [ cl ] ] [ txt s ]) in
+  let span' cl (str, _) = Tyxml_js.Html.(span ~a:[ a_class [ cl ] ] [ txt str ]) in
   let make_span = function
     | Higlo.Lang.Bcomment s -> span' "comment" s
     | Higlo.Lang.Constant s -> span' "constant" s
