@@ -43,9 +43,7 @@ let rewrite_body unboxed_refs body ref_contents subst =
       ~f:(fun (ref_contents, subst, acc) i ->
         match i with
         | Let (x, Block (0, [| y |], (NotArray | Unknown), Maybe_mutable))
-          when Var.Set.mem x unboxed_refs ->
-            let y = try Var.Map.find y subst with Not_found -> y in
-            Var.Map.add x y ref_contents, subst, acc
+          when Var.Set.mem x unboxed_refs -> Var.Map.add x y ref_contents, subst, acc
         | Let (y, Field (x, 0, Non_float)) when Var.Map.mem x ref_contents ->
             ref_contents, Var.Map.add y (Var.Map.find x ref_contents) subst, acc
         | Offset_ref (x, n) when Var.Map.mem x ref_contents ->
@@ -61,7 +59,6 @@ let rewrite_body unboxed_refs body ref_contents subst =
                       ] ) )
               :: acc )
         | Set_field (x, 0, Non_float, y) when Var.Map.mem x ref_contents ->
-            let y = try Var.Map.find y subst with Not_found -> y in
             Var.Map.add x y ref_contents, subst, acc
         | Event _ -> (
             ( ref_contents
@@ -225,7 +222,19 @@ let f p =
   let p =
     if Var.Map.is_empty subst
     then p
-    else Subst.Excluding_Binders.program (Subst.from_map subst) p
+    else
+      (* The variable stored in a reference may itself have been
+         eliminated (it was read from another unboxed reference), possibly
+         in a function processed later, so follow the substitution
+         chain to its end. The chain is acyclic: each variable is
+         defined once and a stored variable is defined before the read
+         that eliminates it. *)
+      let rec resolve x =
+        match Var.Map.find_opt x subst with
+        | Some y -> resolve y
+        | None -> x
+      in
+      Subst.Excluding_Binders.program resolve p
   in
   if times () then Format.eprintf "  reference unboxing: %a@." Timer.print t;
   if stats ()
