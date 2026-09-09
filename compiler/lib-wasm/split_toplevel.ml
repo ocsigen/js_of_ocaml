@@ -31,11 +31,8 @@ enclosing label, no value left on the stack, ...), is outlined into
 a separate function and replaced by a call to that function. This is
 performed at every nesting level, innermost first.
 
-Liveness is computed in a very cheap but conservative way: a local is
-live at a program point if it is written somewhere textually before
-this point, and read somewhere textually after it. This is sound
-outside of loops, since the only backward jumps in Wasm code are
-branches to a [loop] label. So we never cut inside a loop.
+Liveness is computed by a backward analysis over the structured
+code. We never cut inside a loop.
 
 A branch escaping the outlined code (typically to the exception
 handler wrapping the whole toplevel, or to a merge node) is

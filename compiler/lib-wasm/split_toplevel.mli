@@ -28,5 +28,5 @@ val f :
     [f ~name ~locals body] outlines large runs of instructions of the
     body [body] of a parameterless function into separate functions.
     It returns the locals and body of the residual function, and the
-    new functions, which have not been post-processed yet (see
-    [Initialize_locals]). *)
+    new functions. Neither the residual body nor the new functions have
+    been post-processed (see [Initialize_locals]). *)
