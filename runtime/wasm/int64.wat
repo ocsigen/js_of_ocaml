@@ -24,6 +24,7 @@
       (func $parse_int_format
          (param (ref $bytes)) (result i32 i32 i32 i32 i32)))
    (import "fail" "caml_failwith" (func $caml_failwith (param (ref eq))))
+   (import "fail" "caml_raise_zero_divide" (func $caml_raise_zero_divide))
    (import "marshal" "caml_serialize_int_8"
       (func $caml_serialize_int_8 (param (ref eq)) (param i64)))
    (import "marshal" "caml_deserialize_int_8"
@@ -121,6 +122,14 @@
                       (i64.const 24))
             (i64.rotl (i64.and (local.get $i) (i64.const 0xFF000000FF000000))
                       (i64.const 8)))))
+
+   (func (export "caml_int64_unsigned_div") (param $x i64) (param $y i64) (result i64)
+      (if (i64.eqz (local.get $y)) (then (call $caml_raise_zero_divide)))
+      (i64.div_u (local.get $x) (local.get $y)))
+
+   (func (export "caml_int64_unsigned_mod") (param $x i64) (param $y i64) (result i64)
+      (if (i64.eqz (local.get $y)) (then (call $caml_raise_zero_divide)))
+      (i64.rem_u (local.get $x) (local.get $y)))
 
    (func (export "caml_int64_compare")
       (param $i1 i64) (param $i2 i64) (result i32)
