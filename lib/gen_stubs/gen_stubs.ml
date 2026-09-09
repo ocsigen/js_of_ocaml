@@ -19,9 +19,12 @@
 module String_set = Set.Make (String)
 
 let print_stub s =
+  (* The stubs are emitted as weak symbols so that libraries that need to link (but not
+     run) javascript primitives in native code can override them with dummy
+     implementations. *)
   Printf.printf
     {|
-void %s () {
+CAMLweakdef void %s () {
   caml_fatal_error("Unimplemented Javascript primitive %s!");
 }
 |}

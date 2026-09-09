@@ -58,6 +58,9 @@
   array from `Js.number_of_float` elements (#2416)
 * Compiler/wasm: add `--setenv`, matching js_of_ocaml: the variable is set both
   for the static evaluator and for `Sys.getenv` lookups at runtime (#2415)
+* Lib: the native stubs generated for the JavaScript primitives are now weak
+  symbols, so that libraries which link (but do not run) JavaScript primitives
+  in native code can override them with dummy implementations (#2435)
 
 ## Bug fixes
 * Runtime: convert unit names to OCaml strings before calling the toplevel
