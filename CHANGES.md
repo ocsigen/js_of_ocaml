@@ -73,6 +73,8 @@
   single value, which reduces the size of the generated code. Sharing is
   program-wide with whole-program compilation, and per compilation unit with
   separate compilation (#2436)
+* Runtime: specialize one- and two-argument partial applications in
+  double-translation mode, avoiding an extra `caml_call_gen` frame (#2437)
 
 ## Bug fixes
 * Runtime: convert unit names to OCaml strings before calling the toplevel
