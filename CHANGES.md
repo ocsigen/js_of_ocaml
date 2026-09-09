@@ -1,6 +1,9 @@
 # dev
 
 ## Features/Changes
+* Compiler: with `--effects={cps,double-translation}`, specialize calls to
+  known functions using the global flow analysis before the CPS transformation
+  (#2456)
 * Compiler: variable substitution (`Subst`) returns the original blocks,
   instructions and expressions when they are not affected, rather than
   rebuilding the whole program each time (#2447)

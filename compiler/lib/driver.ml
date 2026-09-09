@@ -159,6 +159,28 @@ let effects_and_exact_calls
     | _, (O2 | O3) -> false
     | _, O1 -> true
   in
+  let specialize_exact_calls info p =
+    Specialize.f
+      ~shape:(fun f ->
+        match Global_flow.function_arity info f with
+        | None -> Shape.top
+        | Some arity -> Shape.funct ~arity ~pure:false ~res:Shape.top)
+      ~set_shape:(fun _ _ -> ())
+      ~update_def:(fun x expr -> Global_flow.update_def info x expr)
+      p
+  in
+  let p =
+    (* Run exact call specialization before CPS (if it's enabled) so that the direct-style
+       code produced by double translation receives the optimization. Since specialization
+       rewrites the program and introduces fresh variables, the flow information used to
+       drive it is computed separately and dropped; [Global_flow.f] runs again below on
+       the rewritten program. *)
+    match Config.effects () with
+    | (`Cps | `Double_translation) when Config.Flag.optcall () ->
+        let _, info = Global_flow.f ~fast p in
+        specialize_exact_calls info p
+    | `Cps | `Double_translation | `Disabled | `Jspi | `Native -> p
+  in
   let global_flow_data = Global_flow.f ~fast p in
   let _, info = global_flow_data in
   let global_flow_data = if keep_flow_data then Some global_flow_data else None in
@@ -182,16 +204,7 @@ let effects_and_exact_calls
       in
       p, trampolined_calls, in_cps, None, shapes
   | `Disabled | `Jspi | `Native ->
-      let p =
-        Specialize.f
-          ~shape:(fun f ->
-            match Global_flow.function_arity info f with
-            | None -> Shape.top
-            | Some arity -> Shape.funct ~arity ~pure:false ~res:Shape.top)
-          ~set_shape:(fun _ _ -> ())
-          ~update_def:(fun x expr -> Global_flow.update_def info x expr)
-          p
-      in
+      let p = specialize_exact_calls info p in
       let shapes = collects_shapes ~shapes p in
       ( p
       , (Code.Var.Set.empty : Effects.trampolined_calls)
