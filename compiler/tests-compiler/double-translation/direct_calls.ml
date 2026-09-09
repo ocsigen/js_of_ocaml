@@ -149,6 +149,7 @@ let%expect_test "direct calls with --effects=double-translation" =
                 : runtime.caml_trampoline_return(f, [a0, a1, a2], 0);
        }
        var
+        dummy = 0,
         _a_ = [0, [4, 0, 0, 0, 0], caml_string_of_jsbytes("%d")],
         cst_a$0 = caml_string_of_jsbytes("a"),
         cst_a = caml_string_of_jsbytes("a"),
@@ -158,7 +159,7 @@ let%expect_test "direct calls with --effects=double-translation" =
        function test1(param){
         function f(g, x){
          l[1] = [0, function(param){return 0;}, l[1]];
-         try{caml_call1(g, 0); return;}
+         try{g(); return;}
          catch(e$0){
           var e = caml_wrap_exception(e$0);
           throw caml_maybe_attach_backtrace(e, 0);
@@ -173,7 +174,7 @@ let%expect_test "direct calls with --effects=double-translation" =
         function f$0(g, x){
          var _f_ = l[1];
          l[1] = [0, _c_(), _f_];
-         try{caml_call1(g, x); return;}
+         try{g(x); return;}
          catch(e$0){
           var e = caml_wrap_exception(e$0);
           throw caml_maybe_attach_backtrace(e, 0);
@@ -231,8 +232,8 @@ let%expect_test "direct calls with --effects=double-translation" =
          function f(x){return x + 1 | 0;}
          return [0, , f];
         }
-        var M1 = F(), M2 = F(), _e_ = caml_call1(M2[2], 2);
-        return [0, caml_call1(M1[2], 1), _e_];
+        var M1 = F(), M2 = F(), _e_ = M2[2].call(null, 2);
+        return [0, M1[2].call(null, 1), _e_];
        }
        function f(){
         function f$0(x){return caml_call2(Stdlib_Printf[2], _a_, x);}
@@ -256,8 +257,8 @@ let%expect_test "direct calls with --effects=double-translation" =
        }
        function test4$0(x){
         var F$0 = F(), M1 = F$0(), M2 = F$0();
-        caml_call1(M1[2], 1);
-        return caml_call1(M2[2], 2);
+        M1[2].call(null, 1);
+        return M2[2].call(null, 2);
        }
        function test4$1(x, cont){
         var F$0 = F(), M1 = F$0(), M2 = F$0();
