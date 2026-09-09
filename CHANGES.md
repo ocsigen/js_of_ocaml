@@ -55,6 +55,8 @@
   for the static evaluator and for `Sys.getenv` lookups at runtime (#2415)
 
 ## Bug fixes
+* Runtime: convert unit names to OCaml strings before calling the toplevel
+  relocation callback when `use-js-string` is disabled (#2429)
 * Compiler/Wasm: fix specialized generic bigarray accesses
   (`Bigarray.Genarray.get`/`set` with a locally allocated index array): the
   tag offset of the index array was accounted for twice, so each index was
