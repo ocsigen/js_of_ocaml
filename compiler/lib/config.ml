@@ -114,6 +114,11 @@ module Flag = struct
   let toplevel = o ~name:"toplevel" ~default:false
 
   let wasi = o ~name:"wasi" ~default:false
+
+  (* Wasm-specific: representation of numbers *)
+  let untagging = o ~name:"untagging" ~default:true
+
+  let unboxing = o ~name:"unboxing" ~default:false
 end
 
 module Param = struct

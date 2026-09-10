@@ -721,7 +721,20 @@ let f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinel p =
     ();
   { types; return_types }
 
-let var_type info x = Var.Tbl.get info.types x
+(* The [untagging] and [unboxing] flags make it possible to turn off
+   the optimized representations of integers and numbers. We do not
+   change the analysis itself: we just weaken the types it computes
+   when they are queried by the code generator, which then falls back
+   to the default representations. *)
+let downgrade t =
+  match t with
+  | Int (Normalized | Unnormalized) when not (Config.Flag.untagging ()) -> Int Ref
+  | Number (n, Unboxed) when not (Config.Flag.unboxing ()) -> Number (n, Boxed)
+  | Top | Int _ | Number _ | Tuple _ | Bigarray _ | Null | Bot -> t
+
+let inferred_var_type info x = Var.Tbl.get info.types x
+
+let var_type info x = downgrade (Var.Tbl.get info.types x)
 
 let return_type info f =
-  Var.Hashtbl.find_opt info.return_types f |> Option.value ~default:Top
+  Var.Hashtbl.find_opt info.return_types f |> Option.value ~default:Top |> downgrade
