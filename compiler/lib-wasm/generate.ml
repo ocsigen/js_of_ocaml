@@ -1505,7 +1505,7 @@ module Generate (Target : Target_sig.S) = struct
             , List.mapi
                 ~f:(fun i _ ->
                   Value.int_val
-                    (Memory.array_get (load indices) (Arith.const (Int32.of_int (i + 1)))))
+                    (Memory.array_get (load indices) (Arith.const (Int32.of_int i))))
                 (Array.to_list l) )
       | _, None | _, Some (_, (Expr _ | Phi _)) -> None
     in
