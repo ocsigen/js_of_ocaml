@@ -64,7 +64,7 @@ This document lists standard JavaScript/Web APIs and their support status in js_
 |-----|------|-----|---------------------|
 | Web Workers | Yes | Yes | `Worker` · Brr: `Brr_webworkers.Worker` |
 | Service Workers | Yes | Yes | `ServiceWorker` · Brr: `Brr_webworkers.Service_worker` |
-| Shared Workers | No | Yes | Brr: `Brr_webworkers.Worker.Shared` |
+| Shared Workers | Yes | Yes | `SharedWorker` · Brr: `Brr_webworkers.Worker.Shared` |
 
 ## File & Binary Data
 
@@ -156,7 +156,7 @@ This document lists standard JavaScript/Web APIs and their support status in js_
 | Web Components (Custom Elements, Shadow DOM) | Partial | No | `Dom_html` (Shadow DOM — `attachShadow`, `shadowRoot`, `assignedSlot`, `slot`); Custom Elements not bound |
 | Web Crypto API | Yes | Yes | `Crypto` · Brr: `Brr_webcrypto` |
 | Notifications API | Yes | Yes | `Notification` · Brr: `Brr_io.Notification` |
-| Broadcast Channel API | No | Yes | Brr: `Brr_io.Message.Broadcast_channel` |
+| Broadcast Channel API | Yes | Yes | `BroadcastChannel` · Brr: `Brr_io.Message.Broadcast_channel` |
 | AbortController / AbortSignal | Yes | Yes | `Abort` · Brr: `Brr.Abort` |
 
 ---
@@ -180,11 +180,9 @@ Worker/iframe/window communication.
 
 | API | Issue | In Brr | Why |
 |-----|-------|--------|-----|
-| Broadcast Channel API | — | Yes | Cross-tab communication (sync auth state, shared data). Simple API. |
 | Web Audio API | — | Yes | Audio processing, games, music apps. Large API surface but well-defined. |
 | Media Capture (getUserMedia) | — | Yes | Video calls, camera/mic access. Growing use with remote work tooling. |
 | Encoding API (TextEncoder/TextDecoder) | — | Partial | Needed for binary protocol work and streaming text. Small surface. |
-| Shared Workers | — | Yes | Shared state across tabs. Niche but Brr covers it. |
 | IndexedDB | — | No | Client-side database for offline apps. Large API but important for data-heavy PWAs. |
 | Streams API | — | No | Modern data processing. Fetch response bodies are ReadableStreams. Increasingly foundational. |
 | History API (upgrade to full) | — | Yes | SPA routing depends on pushState/replaceState. Current binding is limited. |
@@ -205,5 +203,5 @@ Worker/iframe/window communication.
 
 ### Suggested implementation order
 
-1. **Broadcast Channel** — small API that fills out the
-   remaining communication gaps.
+1. **Encoding API** — small surface, needed for binary protocol
+   work and streaming text.
