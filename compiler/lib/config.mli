@@ -84,6 +84,8 @@ module Flag : sig
 
   val wasi : unit -> bool
 
+  val lambda_lift_all : unit -> bool
+
   val enable : string -> unit
 
   val disable : string -> unit
