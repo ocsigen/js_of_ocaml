@@ -37,6 +37,32 @@
    %{target}
    (run node %{dep:test_toplevel.js}))))
 
+; Same, but with `use-js-string` disabled: the toplevel relocation callback
+; expects OCaml strings, whose representation depends on this option.
+
+(rule
+ (targets test_toplevel_no_js_string.js)
+ (action
+  (run
+   %{bin:js_of_ocaml}
+   --toplevel
+   --disable
+   use-js-string
+   -w
+   no-missing-effects-backend
+   %{dep:test_toplevel.bc}
+   -o
+   %{targets})))
+
+(rule
+ (target test_toplevel_no_js_string.js.actual)
+ (enabled_if
+  (>= %{ocaml_version} 5.2))
+ (action
+  (with-stdout-to
+   %{target}
+   (run node %{dep:test_toplevel_no_js_string.js}))))
+
 (rule
  (alias runtest-js)
  (enabled_if
@@ -44,7 +70,8 @@
  (action
   (progn
    (diff test_toplevel.expected test_toplevel.bc.js.actual)
-   (diff test_toplevel.expected test_toplevel.js.actual))))
+   (diff test_toplevel.expected test_toplevel.js.actual)
+   (diff test_toplevel.expected test_toplevel_no_js_string.js.actual))))
 
 (executables
  (names test_toplevel_wasm)
@@ -119,4 +146,5 @@
  (action
   (progn
    (diff test_toplevel-5.2.expected test_toplevel.bc.js.actual)
-   (diff test_toplevel-5.2.expected test_toplevel.js.actual))))
+   (diff test_toplevel-5.2.expected test_toplevel.js.actual)
+   (diff test_toplevel-5.2.expected test_toplevel_no_js_string.js.actual))))
