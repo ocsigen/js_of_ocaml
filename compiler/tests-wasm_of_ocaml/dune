@@ -45,3 +45,13 @@
  (wasm_of_ocaml
   (compilation_mode whole_program)
   (flags :standard)))
+
+(tests
+ (names bigarray_generic)
+ (modes wasm)
+ ; Generic bigarray accesses are only specialized when the type analysis knows
+ ; the kind and layout of the bigarray, which requires whole-program
+ ; compilation.
+ (wasm_of_ocaml
+  (compilation_mode whole_program)
+  (flags :standard)))
