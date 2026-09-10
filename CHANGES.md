@@ -125,6 +125,8 @@
 * Compiler: report JavaScript syntax errors (runtime files, `jsoo_minify`,
   `wasm_of_ocaml`) as `file:line:col`, followed by the offending line; columns
   start from 1 in all error messages, as editors expect (#2464, #2491)
+* Compiler/Wasm: store more long-lived toplevel variables in globals; fix a
+  crash when one of them is assigned in a `try` body (#2516)
 
 ## Bug fixes
 * Compiler/Wasm: fix several bugs of the Wasm linker (instruction decoding,
