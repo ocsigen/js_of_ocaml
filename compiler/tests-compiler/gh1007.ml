@@ -375,29 +375,24 @@ let ()  = M.run ()
      var i = 0;
      for(;;){
       var
-       odd =
-         function(n){
-          if(2 < n >>> 0) return 1 - (1 - even$0(n - 1 | 0));
-          switch(n){
-            case 0:
-             return 0;
-            case 1:
-             return 1 - (1 - even$0(0));
-            default: return 1 - (1 - even$0(1));
-          }
-         },
        even =
          function(n){
-          if(2 < n >>> 0) return 1 - (1 - odd$0(n - 1 | 0));
-          switch(n){
-            case 0:
-             return 1;
-            case 1:
-             return 1 - (1 - odd$0(0));
-            default: return 1 - (1 - odd$0(1));
-          }
+          if(2 >= n >>> 0)
+           switch(n){case 0: return 1;case 1: return 0;default: return 1;}
+          var n$0 = n - 1 | 0;
+          if(2 < n$0 >>> 0)
+           var _a_ = 1 - (1 - even$0(n$0 - 1 | 0));
+          else
+           switch(n$0){
+             case 0:
+              _a_ = 0; break;
+             case 1:
+              _a_ = 1; break;
+             default: _a_ = 0;
+           }
+          return 1 - (1 - _a_);
          };
-      let odd$0 = odd, even$0 = even;
+      let even$0 = even;
       if(even(i)) caml_call1(Stdlib[42], cst);
       _a_ = i + 1 | 0;
       if(4 === i) return 0;
