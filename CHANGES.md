@@ -55,6 +55,11 @@
   for the static evaluator and for `Sys.getenv` lookups at runtime (#2415)
 
 ## Bug fixes
+* Compiler/Wasm: fix specialized generic bigarray accesses
+  (`Bigarray.Genarray.get`/`set` with a locally allocated index array): the
+  tag offset of the index array was accounted for twice, so each index was
+  read one field too far, returning a wrong value or accessing the array out
+  of bounds (#2427)
 * Compiler: keep `static` on the same line as the class element it modifies.
   In compact mode the separator was a newline, and Safari 17 reads `static`
   alone on a line as a field name rather than a modifier, so every static
