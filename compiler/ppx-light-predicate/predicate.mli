@@ -31,10 +31,12 @@
       64]); compile-time only.
     - [oxcaml] — whether the compiler is the OxCaml flavour.
     - [os_type] — [Sys.os_type] ("Unix" / "Win32" / "Cygwin").
-    - [backend] / [host_engine] / [target_engine] / [effects] — runtime only
-      (see {!reify}). [host_engine] is the engine the test process runs on
-      ("native" for a native test); [target_engine] is the engine a generated
-      program runs under (from [JSOO_TEST_ENGINE]). [effects] is the js_of_ocaml
+    - [backend] / [host_engine] / [target_engine] / [wasi_host] / [effects] —
+      runtime only (see {!reify}). [host_engine] is the engine the test process
+      runs on ("native" for a native test); [target_engine] is the engine a
+      generated program runs under (from [JSOO_TEST_ENGINE]); [wasi_host] is
+      the engine hosting the WASI runtime (from [JSOO_ENGINE], [""] outside
+      WASI). [effects] is the js_of_ocaml
       [--effects] mode ("disabled" / "cps" / "double-translation" / "jspi").
 
     plus the runtime-only shorthands [js], [wasm], [native], [node], [quickjs],
@@ -76,7 +78,7 @@ val eval_compile_time : t -> bool
 val reify : loc:Location.t -> t -> expression
 (** Reify the predicate into an OCaml expression of type [bool] that evaluates it
     at runtime against [Ppx_expect_light_runtime.Axes]. Supports [ocaml_version],
-    [os_type], [oxcaml], [backend], [host_engine], [target_engine], [effects]
-    and the runtime shorthands. Raises
+    [os_type], [oxcaml], [backend], [host_engine], [target_engine], [wasi_host],
+    [effects] and the runtime shorthands. Raises
     {!Invalid} on constructs that are only meaningful at compile time (e.g.
     [ast_version]). *)

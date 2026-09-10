@@ -12,6 +12,21 @@ tests-wasm:
 tests-quickjs:
 	dune build @runtest @runtest-js --profile=quickjs
 
+# Run the test suites using bun in place of node (bun must be on PATH).
+tests-bun:
+	JSOO_ENGINE=bun dune build @runtest @runtest-js
+
+# bun (JavaScriptCore) exposes the JSPI API but does not actually switch
+# stacks, so the default (JSPI) effects mode cannot run there; use CPS effects.
+tests-bun-wasm:
+	JSOO_ENGINE=bun WASM_OF_OCAML=true dune build @runtest-wasm --profile with-effects
+
+# Run the wasi test suite under bun. Needs bun >= 1.4 (earlier versions have
+# wasi random_get/filesystem bugs) and a single-memory runtime (bun has no
+# multi-memory support).
+tests-bun-wasi:
+	JSOO_ENGINE=bun WASM_OF_OCAML=true dune build @runtest-wasm --profile wasi
+
 # Validates the Babel downleveling recipe documented in
 # manual/browser-compat.wiki. Requires `npm install` at the repo root
 # for @babel/cli, @babel/preset-env, core-js, and es-check.
@@ -52,4 +67,4 @@ clean:
 bench:
 	$(MAKE) -C benchmarks bench
 
-.PHONY: all tests tests-wasm tests-quickjs test runtest runtests doc clean bench
+.PHONY: all tests tests-wasm tests-quickjs tests-bun tests-bun-wasm tests-bun-wasi test runtest runtests doc clean bench
