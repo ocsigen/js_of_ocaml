@@ -110,6 +110,8 @@ module Generate (Target : Target_sig.S) = struct
       ; "caml_int32_compare", (`Pure, [ Int32; Int32 ], Int Normalized)
       ; "caml_nativeint_compare", (`Pure, [ Nativeint; Nativeint ], Int Normalized)
       ; "caml_int64_compare", (`Pure, [ Int64; Int64 ], Int Normalized)
+      ; "caml_string_geti8", (`Mutator, [ Value; Int Normalized ], Int Normalized)
+      ; "caml_string_geti16", (`Mutator, [ Value; Int Normalized ], Int Normalized)
       ; "caml_string_get16", (`Mutator, [ Value; Int Normalized ], Int Normalized)
       ; "caml_string_get16u", (`Mutator, [ Value; Int Normalized ], Int Normalized)
       ; "caml_string_get32", (`Mutator, [ Value; Int Normalized ], Int32)
@@ -118,6 +120,8 @@ module Generate (Target : Target_sig.S) = struct
       ; "caml_string_get64u", (`Mutator, [ Value; Int Normalized ], Int64)
       ; "caml_string_getf32", (`Mutator, [ Value; Int Normalized ], Float32)
       ; "caml_string_getf32u", (`Mutator, [ Value; Int Normalized ], Float32)
+      ; "caml_bytes_geti8", (`Mutator, [ Value; Int Normalized ], Int Normalized)
+      ; "caml_bytes_geti16", (`Mutator, [ Value; Int Normalized ], Int Normalized)
       ; "caml_bytes_get16", (`Mutator, [ Value; Int Normalized ], Int Normalized)
       ; "caml_bytes_get16u", (`Mutator, [ Value; Int Normalized ], Int Normalized)
       ; "caml_bytes_get32", (`Mutator, [ Value; Int Normalized ], Int32)
@@ -126,6 +130,7 @@ module Generate (Target : Target_sig.S) = struct
       ; "caml_bytes_get64u", (`Mutator, [ Value; Int Normalized ], Int64)
       ; "caml_bytes_getf32", (`Mutator, [ Value; Int Normalized ], Float32)
       ; "caml_bytes_getf32u", (`Mutator, [ Value; Int Normalized ], Float32)
+      ; "caml_bytes_set8", (`Mutator, [ Value; Int Normalized; Int Unnormalized ], Value)
       ; "caml_bytes_set16", (`Mutator, [ Value; Int Normalized; Int Unnormalized ], Value)
       ; "caml_bytes_set16u", (`Mutator, [ Value; Int Normalized; Int Unnormalized ], Value)
       ; "caml_bytes_set32", (`Mutator, [ Value; Int Normalized; Int32 ], Value)
@@ -135,6 +140,8 @@ module Generate (Target : Target_sig.S) = struct
       ; "caml_bytes_setf32", (`Mutator, [ Value; Int Normalized; Float32 ], Value)
       ; "caml_bytes_setf32u", (`Mutator, [ Value; Int Normalized; Float32 ], Value)
       ; "caml_lxm_next", (`Mutable, [ Value ], Int64)
+      ; "caml_ba_uint8_geti8", (`Mutator, [ Value; Int Normalized ], Int Normalized)
+      ; "caml_ba_uint8_geti16", (`Mutator, [ Value; Int Normalized ], Int Normalized)
       ; "caml_ba_uint8_get16", (`Mutator, [ Value; Int Normalized ], Int Normalized)
       ; "caml_ba_uint8_get16u", (`Mutator, [ Value; Int Normalized ], Int Normalized)
       ; "caml_ba_uint8_get32", (`Mutator, [ Value; Int Normalized ], Int32)
@@ -143,6 +150,8 @@ module Generate (Target : Target_sig.S) = struct
       ; "caml_ba_uint8_get64u", (`Mutator, [ Value; Int Normalized ], Int64)
       ; "caml_ba_uint8_getf32", (`Mutator, [ Value; Int Normalized ], Float32)
       ; "caml_ba_uint8_getf32u", (`Mutator, [ Value; Int Normalized ], Float32)
+      ; ( "caml_ba_uint8_set8"
+        , (`Mutator, [ Value; Int Normalized; Int Unnormalized ], Value) )
       ; ( "caml_ba_uint8_set16"
         , (`Mutator, [ Value; Int Normalized; Int Unnormalized ], Value) )
       ; ( "caml_ba_uint8_set16u"

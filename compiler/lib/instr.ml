@@ -176,6 +176,8 @@ type t =
   | MAKE_FAUX_MIXEDBLOCK
   | WITH_STACK
   | WITH_STACK_BIND
+  | WITH_STACK_PREEMPTIBLE
+  | WITH_STACK_BIND_PREEMPTIBLE
   | FIRST_UNIMPLEMENTED_OP
 
 let equal (a : t) b = Poly.equal a b
@@ -370,6 +372,8 @@ let ops =
      ; MAKE_FAUX_MIXEDBLOCK, if_oxcaml KBinary, "MAKE_FAUX_MIXEDBLOCK"
      ; WITH_STACK, if_oxcaml KNullaryCall, "WITH_STACK"
      ; WITH_STACK_BIND, if_oxcaml KNullaryCall, "WITH_STACK_BIND"
+     ; WITH_STACK_PREEMPTIBLE, if_oxcaml KNullaryCall, "WITH_STACK_PREEMPTIBLE"
+     ; WITH_STACK_BIND_PREEMPTIBLE, if_oxcaml KNullaryCall, "WITH_STACK_BIND_PREEMPTIBLE"
      ; FIRST_UNIMPLEMENTED_OP, K_will_not_happen, "FIRST_UNIMPLEMENTED_OP"
     |]
   in
