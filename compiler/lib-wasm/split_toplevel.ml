@@ -42,7 +42,11 @@ performs the corresponding branch. The locals live at the branch
 target must then hold the same values in both functions, which is
 only guaranteed when they have not been written before the branch
 (see [check_branch]). A [return] is handled the same way (the
-toplevel function always returns unit).
+toplevel function always returns unit). Exceptions propagate through
+the call to the outlined function; this is fine since an exception
+handler can only read locals defined before the corresponding [try]
+block, and such locals are live at the start of the outlined code
+if they are read by the handler.
 *)
 
 open! Stdlib
