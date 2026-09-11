@@ -1,6 +1,11 @@
 # dev
 
 ## Features/Changes
+* Compiler/Runtime: support building with Introcaml, an OCaml fork with
+  runtime introspection: parse the `NEXT_RESERVED_BITS` instruction and the
+  extended `Const_block`, skip the reserved header bits in marshaled data, and
+  provide stubs for the new primitives, gated by the `introspect` flag in
+  `//If:` directives and wasm `(@if $introspect ...)` blocks (#2409)
 * Lib: add `WebGL2` — bindings to the WebGL2 rendering context. The context
   inherits every method and constant of `WebGL`, and adds the WebGL2 objects
   (vertex array objects, queries, samplers, syncs, transform feedback), 3D and

@@ -190,10 +190,10 @@ let rec eval_value (t : t) : value =
   | Ident (_, "os_type") -> V_string Sys.os_type
   | Ident (_, "arch_sixtyfour") -> V_bool (Sys.word_size = 64)
   | Ident (_, "introspect") ->
-    let introspection_enabled = false in
-    ignore introspection_enabled;
-    let open! Sys in
-    V_bool introspection_enabled
+      let introspection_enabled = false in
+      ignore introspection_enabled;
+      let open! Sys in
+      V_bool introspection_enabled
   | Ident (loc, _) -> raise (Invalid loc)
   | Bool (_, b) -> V_bool b
   | Int (_, i) -> V_int i

@@ -262,3 +262,13 @@ let effects () =
 
 let set_effects_backend (backend : effects_backend) =
   effects_ := (backend :> [ `None | effects_backend ])
+
+(****)
+
+let oxcaml = true [@@if oxcaml]
+
+let oxcaml = false [@@if not oxcaml]
+
+let introspect = true [@@if introspect]
+
+let introspect = false [@@if not introspect]
