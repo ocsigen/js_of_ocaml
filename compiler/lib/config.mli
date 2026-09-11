@@ -68,6 +68,11 @@ module Flag : sig
 
   val safe_string : unit -> bool
 
+  val introspection : unit -> bool
+  (** Introcaml: attach their descriptor to allocated blocks and embed the
+      block descriptors, so that [Introspect] can print values. Only enabled
+      by default when the compiler supports introspection. *)
+
   val use_js_string : unit -> bool
 
   val check_magic : unit -> bool

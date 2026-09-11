@@ -6,6 +6,11 @@
   extended `Const_block`, skip the reserved header bits in marshaled data, and
   provide stubs for the new primitives, gated by the `introspect` flag in
   `//If:` directives and wasm `(@if $introspect ...)` blocks (#2409)
+* Compiler/Runtime: with Introcaml, support runtime introspection
+  (`Introspect.Print` and friends) in JavaScript: blocks carrying a
+  descriptor are allocated as instances of an `Array` subclass holding the
+  descriptor index, and the block descriptors of the program are embedded;
+  can be disabled with `--disable introspection` (#2409)
 * Lib: add `WebGL2` — bindings to the WebGL2 rendering context. The context
   inherits every method and constant of `WebGL`, and adds the WebGL2 objects
   (vertex array objects, queries, samplers, syncs, transform feedback), 3D and
