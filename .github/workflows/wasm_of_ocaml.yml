@@ -142,6 +142,11 @@ jobs:
             > "$DIR/oxcaml-dune-patches.opam"
           opam pin add oxcaml-dune-patches "$DIR" -k path -n -y
 
+      # wax-lib is not released on opam yet; pin it so wasm_of_ocaml-compiler's
+      # dependency on it resolves.
+      - name: Pin wax-lib
+        run: opam pin add -n wax-lib https://github.com/vouillon/wax.git
+
       - name: Install wasm_of_ocaml and its test dependencies
         working-directory: ./wasm_of_ocaml
         run: |
