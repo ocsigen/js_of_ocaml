@@ -72,7 +72,7 @@ class macro_mapper ~flags =
                   | J.Arg e -> J.Element (m#expression e)
                   | J.ArgSpread _ -> assert false)
               in
-              Mlvalue.Block.make ~tag ~args
+              Mlvalue.Block.make ~tag ~args ()
           | "TAG", [ J.Arg e ] -> Mlvalue.Block.tag (m#expression e)
           | "LENGTH", [ J.Arg e ] -> Mlvalue.Array.length (m#expression e)
           | "FIELD", [ J.Arg e; J.Arg (J.ENum n) ] ->

@@ -83,7 +83,8 @@ let f (p : program) =
         | Let (_, Apply { f = fv; args; _ }) ->
             mark_var not_bool_only worklist fv;
             List.iter args ~f:(mark_var not_bool_only worklist)
-        | Let (_, Block (_, a, _, _)) -> Array.iter a ~f:(mark_var not_bool_only worklist)
+        | Let (_, Block (_, a, _, _, _)) ->
+            Array.iter a ~f:(mark_var not_bool_only worklist)
         | Let (_, Field (x, _, _)) -> mark_var not_bool_only worklist x
         | Let (_, Closure (_, cont, _)) -> add_cont_edges cont
         | Let (_, (Constant _ | Special _)) -> ()

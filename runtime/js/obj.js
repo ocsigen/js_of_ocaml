@@ -343,35 +343,81 @@ function caml_int_as_pointer(i) {
 
 //Provides: caml_compiler_block_descs_ref
 //If: introspect
-var caml_compiler_block_descs_ref = [0];
+var caml_compiler_block_descs_ref = [0, 0];
 
 //Provides: caml_compiler_block_descs
-//If: introspect
 //Requires: caml_compiler_block_descs_ref
+//If: introspect
 function caml_compiler_block_descs(_unit) {
   return caml_compiler_block_descs_ref;
 }
 
+//Provides: caml_register_block_descs
+//Requires: caml_compiler_block_descs_ref
+//If: introspect
+// Prepend the descriptors of a program or a compilation unit to the list
+// [Introspect.Desc.compiler_descriptors ()] watches: it registers the new
+// prefix, up to the list it has already seen.
+function caml_register_block_descs(descs) {
+  var elts = [];
+  for (var l = descs; l !== 0; l = l[2]) elts.push(l[1]);
+  var res = caml_compiler_block_descs_ref[1];
+  for (var i = elts.length - 1; i >= 0; i--) res = [0, elts[i], res];
+  caml_compiler_block_descs_ref[1] = res;
+  return 0;
+}
+
 //Provides: caml_obj_reserved_bits
 //If: introspect
+// Must match [Config.reserved_header_bits] of the compiler that produced
+// the bytecode: descriptor indices are hashes truncated to that many bits.
 function caml_obj_reserved_bits(_unit) {
-  return 0;
+  return 22;
+}
+
+//Provides: caml_block_classes
+//If: introspect
+var caml_block_classes = new Map();
+
+//Provides: caml_block_class
+//Requires: caml_block_classes
+//If: introspect
+// Blocks with a descriptor are instances of an Array subclass which carries
+// the descriptor index, so that the objects themselves are left untouched.
+function caml_block_class(desc) {
+  var cls = caml_block_classes.get(desc);
+  if (cls === undefined) {
+    cls = class extends Array {
+      static desc = desc;
+    };
+    caml_block_classes.set(desc, cls);
+  }
+  return cls;
 }
 
 //Provides: caml_obj_get_reserved
 //If: introspect
-function caml_obj_get_reserved(_obj) {
+function caml_obj_get_reserved(obj) {
+  if (obj instanceof Array) {
+    var desc = obj.constructor.desc;
+    if (desc !== undefined) return desc;
+  }
   return 0;
 }
 
 //Provides: caml_obj_set_reserved
+//Requires: caml_block_class
 //If: introspect
-function caml_obj_set_reserved(_obj, _bits) {
-  return 0;
+function caml_obj_set_reserved(obj, desc) {
+  if (!(obj instanceof Array) || obj.length < 2) return 0;
+  Object.setPrototypeOf(obj, caml_block_class(desc).prototype);
+  return 1;
 }
 
 //Provides: caml_read_bdsc_section
 //If: introspect
+// The descriptors of the program are registered with
+// [caml_register_block_descs] instead.
 function caml_read_bdsc_section(_unit) {
   return 0;
 }

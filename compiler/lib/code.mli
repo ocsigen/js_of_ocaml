@@ -132,6 +132,11 @@ type array_or_not =
   | NotArray
   | Unknown
 
+type block_desc = int
+(** Introspection metadata attached to a block: the reserved header bits
+    Introcaml associates to the block's descriptor (see [Introspect.Desc]).
+    [0] when there is none. *)
+
 module Native_string : sig
   type t = private
     | Byte of string
@@ -154,7 +159,7 @@ type constant =
   | Int32 of Int32.t  (** Only produced when compiling to WebAssembly. *)
   | Int64 of Int64.t
   | NativeInt of Int32.t  (** Only produced when compiling to WebAssembly. *)
-  | Tuple of int * constant array * array_or_not
+  | Tuple of int * constant array * array_or_not * block_desc
   | Null_
 
 module Constant : sig
@@ -194,7 +199,7 @@ type expr =
       ; args : Var.t list
       ; exact : bool (* if true, then # of arguments = # of parameters *)
       }
-  | Block of int * Var.t array * array_or_not * mutability
+  | Block of int * Var.t array * array_or_not * mutability * block_desc
   | Field of Var.t * int * field_type
   | Closure of
       Var.t list * cont * (Optimization_hint.closure_hint option * Parse_info.t option)

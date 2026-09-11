@@ -1008,7 +1008,7 @@ module Constant = struct
   let rec translate_rec c =
     match c with
     | Code.Int i -> return (Const, W.RefI31 (Const (I32 (Targetint.to_int32 i))))
-    | Tuple (tag, a, _) ->
+    | Tuple (tag, a, _, _) ->
         let* ty = Type.block_type in
         let* l =
           Array.fold_left

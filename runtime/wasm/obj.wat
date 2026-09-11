@@ -623,10 +623,13 @@
 
 (@if $introspect
 (@then
-   ;; Approximation: return a new reference for each call
+   ;; A reference cell holding the (empty) list of block descriptors
+   (global $caml_compiler_block_descs (ref eq)
+      (array.new_fixed $block 2 (ref.i31 (i32.const 0)) (ref.i31 (i32.const 0))))
+
    (func (export "caml_compiler_block_descs")
       (param (ref eq)) (result (ref eq))
-      (array.new_fixed $block 1 (ref.i31 (i32.const 0))))
+      (global.get $caml_compiler_block_descs))
 
    (func (export "caml_obj_reserved_bits") (param (ref eq)) (result (ref eq))
       (ref.i31 (i32.const 0)))
