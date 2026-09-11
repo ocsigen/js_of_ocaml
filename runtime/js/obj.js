@@ -342,30 +342,36 @@ function caml_int_as_pointer(i) {
 }
 
 //Provides: caml_compiler_block_descs_ref
+//If: introspect
 var caml_compiler_block_descs_ref = [0];
 
 //Provides: caml_compiler_block_descs
+//If: introspect
 //Requires: caml_compiler_block_descs_ref
 function caml_compiler_block_descs(_unit) {
   return caml_compiler_block_descs_ref;
 }
 
 //Provides: caml_obj_reserved_bits
+//If: introspect
 function caml_obj_reserved_bits(_unit) {
   return 0;
 }
 
 //Provides: caml_obj_get_reserved
+//If: introspect
 function caml_obj_get_reserved(_obj) {
   return 0;
 }
 
 //Provides: caml_obj_set_reserved
+//If: introspect
 function caml_obj_set_reserved(_obj, _bits) {
   return 0;
 }
 
 //Provides: caml_read_bdsc_section
+//If: introspect
 function caml_read_bdsc_section(_unit) {
   return 0;
 }

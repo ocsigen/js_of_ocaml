@@ -138,3 +138,12 @@ type effects_backend =
 val effects : unit -> effects_backend
 
 val set_effects_backend : effects_backend -> unit
+
+(** {2 Build-time properties of the compiler} *)
+
+val oxcaml : bool
+(** Whether the compiler was built with OxCaml. *)
+
+val introspect : bool
+(** Whether the compiler was built with an OCaml supporting introspection
+    (Introcaml), see the [introspect] flag in [//If:] runtime directives. *)

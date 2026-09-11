@@ -621,6 +621,8 @@
             (call $caml_failwith (global.get $int_as_pointer_not_implemented))))
       (global.get $null_value))
 
+(@if $introspect
+(@then
    ;; Approximation: return a new reference for each call
    (func (export "caml_compiler_block_descs")
       (param (ref eq)) (result (ref eq))
@@ -637,5 +639,5 @@
 
    (func (export "caml_read_bdsc_section") (param (ref eq)) (result (ref eq))
       (ref.i31 (i32.const 0)))
-
+))
 )
