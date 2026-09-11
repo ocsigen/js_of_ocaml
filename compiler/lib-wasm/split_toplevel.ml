@@ -38,8 +38,11 @@ A branch escaping the outlined code (typically to the exception
 handler wrapping the whole toplevel, or to a merge node) is
 supported when it carries no value: the outlined function then
 returns an integer code indicating how it exited, and the call site
-performs the corresponding branch. A [return] is handled the same
-way (the toplevel function always returns unit).
+performs the corresponding branch. The locals live at the branch
+target must then hold the same values in both functions, which is
+only guaranteed when they have not been written before the branch
+(see [check_branch]). A [return] is handled the same way (the
+toplevel function always returns unit).
 *)
 
 open! Stdlib
@@ -162,6 +165,9 @@ and write_instructions st l = List.iter ~f:(fun i -> write_instruction st i) l
 type liveness =
   { mutable pos : int
   ; cuts : unit Int.Hashtbl.t
+  ; blocked_branches : unit Int.Hashtbl.t
+        (* Positions of the branches that cannot be emulated by an
+           exit code (see [check_branch]) *)
   ; first_write : int Code.Var.Hashtbl.t
   ; count : int (* total number of positions *)
   }
@@ -171,6 +177,7 @@ type env =
   ; exn_live : Code.Var.Set.t
         (* Locals live when an exception is raised: they are live when
            reaching the enclosing exception handlers *)
+  ; loop_end : int option (* End position of the outermost enclosing loop *)
   }
 
 let untick st = st.pos <- st.pos - 1
@@ -178,6 +185,26 @@ let untick st = st.pos <- st.pos - 1
 let label env i = List.nth env.labels i
 
 let push_label env live = { env with labels = live :: env.labels }
+
+(* Whether [x] is written somewhere textually before position [pos]. *)
+let written_before st x pos =
+  match Code.Var.Hashtbl.find_opt st.first_write x with
+  | Some w -> w < pos
+  | None -> false
+
+(* When a branch escapes an outlined function, the function returns an
+   exit code and the caller performs the branch. The locals live at
+   the branch target are then those of the caller, which are not
+   updated by the outlined function. So the branch can only be
+   emulated this way if these locals have not been written before the
+   branch (they then hold their default value in both functions).
+   Inside a loop, a write anywhere in the loop may be executed before
+   the branch. We record the position of the branches for which this
+   does not hold; they will not be outlined. *)
+let check_branch st env lbl ~end_pos =
+  let limit = Option.value env.loop_end ~default:end_pos in
+  if Code.Var.Set.exists (fun x -> written_before st x limit) (label env lbl)
+  then Int.Hashtbl.replace st.blocked_branches st.pos ()
 
 (* [live_expression env e live] returns the locals live before
    evaluating [e], given the locals [live] live after. Subexpressions
@@ -218,7 +245,7 @@ let rec live_expression st env e live =
           ~init:env.exn_live
           catches
       in
-      live_instructions st { labels = live :: env.labels; exn_live } l live
+      live_instructions st { env with labels = live :: env.labels; exn_live } l live
   | Seq (l, e') -> live_instructions st env l (live_expression st env e' live)
   | IfExpr (_, e1, e2, e3) ->
       let env' = push_label env live in
@@ -232,6 +259,7 @@ and live_expressions st env l live =
   List.fold_right ~f:(fun e live -> live_expression st env e live) l ~init:live
 
 and live_instruction st env i live =
+  let end_pos = st.pos + st.count in
   untick st;
   let live =
     match i with
@@ -261,6 +289,8 @@ and live_instruction st env i live =
         (* Iterate to a fixpoint. Positions inside the loop do not
            matter (we never cut inside a loop) but the counter must
            end up at the right place. *)
+        let loop_end = Some (Option.value env.loop_end ~default:end_pos) in
+        let env = { env with loop_end } in
         let pos = st.pos in
         let rec fixpoint live_in =
           st.pos <- pos;
@@ -288,6 +318,26 @@ and live_instruction st env i live =
         live_expression st env e1 (live_expression st env e2 live)
   in
   untick st;
+  (match i with
+  | Br (lbl, None) | Br_if (lbl, _) -> check_branch st env lbl ~end_pos
+  | Drop _ | LocalSet _ | GlobalSet _
+  | Br (_, Some _)
+  | Br_table _
+  | Throw _
+  | Return _
+  | Return_call _
+  | Return_call_ref _
+  | Rethrow _
+  | Unreachable
+  | Nop
+  | Event _
+  | Block _
+  | Loop _
+  | If _
+  | CallInstr _
+  | ArraySet _
+  | StructSet _
+  | Push _ -> ());
   Code.Var.Set.union live env.exn_live
 
 and live_instructions st env l live =
@@ -301,33 +351,37 @@ and live_instructions st env l live =
       (* Discard the locals which are not written before this
          position *)
       let live =
-        Code.Var.Set.filter
-          (fun x ->
-            match Code.Var.Hashtbl.find_opt st.first_write x with
-            | Some w -> w < st.pos + st.count
-            | None -> false)
-          live
+        Code.Var.Set.filter (fun x -> written_before st x (st.pos + st.count)) live
       in
       record live;
       live)
     l
     ~init:live
 
-(* Returns the number of positions, and an array indicating at which
-   positions no local is live. *)
+(* Returns the number of positions, an array indicating at which
+   positions no local is live, and an array indicating the positions
+   of the branches that cannot be outlined. *)
 let compute_liveness body =
   let wst = { wpos = 0; first_write = Code.Var.Hashtbl.create 256 } in
   write_instructions wst body;
   let count = wst.wpos in
   let st =
-    { pos = 0; cuts = Int.Hashtbl.create 1024; first_write = wst.first_write; count }
+    { pos = 0
+    ; cuts = Int.Hashtbl.create 1024
+    ; blocked_branches = Int.Hashtbl.create 16
+    ; first_write = wst.first_write
+    ; count
+    }
   in
-  let env = { labels = []; exn_live = Code.Var.Set.empty } in
+  let env = { labels = []; exn_live = Code.Var.Set.empty; loop_end = None } in
   ignore (live_instructions st env body Code.Var.Set.empty);
   assert (st.pos = -count);
-  let cuts = Array.make (count + 1) false in
-  Int.Hashtbl.iter (fun p () -> cuts.(p + count) <- true) st.cuts;
-  count, cuts
+  let to_array tbl =
+    let a = Array.make (count + 1) false in
+    Int.Hashtbl.iter (fun p () -> a.(p + count) <- true) tbl;
+    a
+  in
+  count, to_array st.cuts, to_array st.blocked_branches
 
 (****)
 
@@ -585,6 +639,7 @@ and collect_instructions c depth l =
 type state =
   { mutable position : int
   ; cuts : bool array (* positions where no local is live *)
+  ; blocked_branches : bool array (* positions of branches that cannot be outlined *)
   ; local_types : W.value_type Code.Var.Hashtbl.t
   ; name : Code.Var.t
   ; mutable functions : W.module_field list
@@ -653,6 +708,13 @@ let outline st body exits =
                  (BinOp (I32 Eq, LocalGet r, Const (I32 (Int32.of_int (i + 1))))))
              exits)
   @ epilogue
+
+(* A branch at position [p] to label [lbl] either exits the outlined
+   code with an exit code, or blocks outlining (see [check_branch]). *)
+let branch_info st p lbl i =
+  if st.blocked_branches.(p)
+  then { i with blocked = add_label lbl i.blocked }
+  else { i with exits = add_exit (Br_exit lbl) i.exits }
 
 let rec rewrite_expression st ~in_loop e =
   match e with
@@ -785,6 +847,7 @@ and rewrite_expressions st ~in_loop l =
   List.rev l, i
 
 and rewrite_instruction st ~in_loop i =
+  let p = st.position in
   st.position <- st.position + 1;
   let res =
     match i with
@@ -797,13 +860,13 @@ and rewrite_instruction st ~in_loop i =
     | GlobalSet (x, e) ->
         let e, i = rewrite_expression st ~in_loop e in
         GlobalSet (x, e), node i
-    | Br (lbl, None) -> i, { leaf with exits = [ Br_exit lbl ] }
+    | Br (lbl, None) -> i, branch_info st p lbl leaf
     | Br (lbl, Some e) ->
         let e, i = rewrite_expression st ~in_loop e in
         Br (lbl, Some e), node { i with blocked = add_label lbl i.blocked }
     | Br_if (lbl, e) ->
         let e, i = rewrite_expression st ~in_loop e in
-        Br_if (lbl, e), node { i with exits = add_exit (Br_exit lbl) i.exits }
+        Br_if (lbl, e), node (branch_info st p lbl i)
     | Br_table (e, l, lbl) ->
         let e, i = rewrite_expression st ~in_loop e in
         ( Br_table (e, l, lbl)
@@ -955,10 +1018,10 @@ and split st items p_end =
 (****)
 
 let f ~name ~locals body =
-  let count, cuts = compute_liveness body in
+  let count, cuts, blocked_branches = compute_liveness body in
   let local_types = Code.Var.Hashtbl.create 256 in
   List.iter ~f:(fun (x, ty) -> Code.Var.Hashtbl.add local_types x ty) locals;
-  let st = { position = 0; cuts; local_types; name; functions = [] } in
+  let st = { position = 0; cuts; blocked_branches; local_types; name; functions = [] } in
   let body, info = rewrite_instructions st ~in_loop:false body in
   assert (st.position = count);
   if debug ()

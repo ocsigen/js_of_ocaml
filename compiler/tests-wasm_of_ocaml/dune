@@ -15,7 +15,7 @@
  (modes wasm))
 
 (tests
- (names split_toplevel)
+ (names split_toplevel split_toplevel_switch)
  (modes wasm)
  (wasm_of_ocaml
   (flags :standard --set toplevel_split_size=5)))
