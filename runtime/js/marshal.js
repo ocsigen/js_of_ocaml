@@ -344,6 +344,11 @@ function caml_input_value_from_reader(reader) {
   var obj_counter = 0;
   function intern_rec(reader) {
     var code = reader.read8u();
+    if (code === 0x1a /*cst.CODE_RESERVED_BITS*/) {
+      // Introcaml: reserved header bits of the next block; ignored
+      reader.read32u();
+      code = reader.read8u();
+    }
     if (code >= 0x40 /*cst.PREFIX_SMALL_INT*/) {
       if (code >= 0x80 /*cst.PREFIX_SMALL_BLOCK*/) {
         var tag = code & 0xf;
