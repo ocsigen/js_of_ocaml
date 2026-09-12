@@ -20,7 +20,11 @@ bench:
 	$(MAKE) microbenchmarks
 	$(MAKE) -C benchmark-fiat-crypto bench
 	$(MAKE) -C benchmark-ocamlc bench
-	$(MAKE) -C benchmark-partial-render-table bench
+	if [ -d ../../janestreet ]; then \
+	  $(MAKE) -C benchmark-partial-render-table bench; \
+	else \
+	  echo "Skipping partial render table benchmark (no ../../janestreet checkout)"; \
+	fi
 	$(MAKE) -C benchmark-camlboy bench
 	$(MAKE) -C benchmark-others bench
 
