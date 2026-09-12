@@ -620,4 +620,27 @@
          (then
             (call $caml_failwith (global.get $int_as_pointer_not_implemented))))
       (global.get $null_value))
+
+(@if $introspect
+(@then
+   ;; A reference cell holding the (empty) list of block descriptors
+   (global $caml_compiler_block_descs (ref eq)
+      (array.new_fixed $block 2 (ref.i31 (i32.const 0)) (ref.i31 (i32.const 0))))
+
+   (func (export "caml_compiler_block_descs")
+      (param (ref eq)) (result (ref eq))
+      (global.get $caml_compiler_block_descs))
+
+   (func (export "caml_obj_reserved_bits") (param (ref eq)) (result (ref eq))
+      (ref.i31 (i32.const 0)))
+
+   (func (export "caml_obj_get_reserved") (param (ref eq)) (result (ref eq))
+      (ref.i31 (i32.const 0)))
+
+   (func (export "caml_obj_set_reserved") (param (ref eq) (ref eq)) (result (ref eq))
+      (ref.i31 (i32.const 0)))
+
+   (func (export "caml_read_bdsc_section") (param (ref eq)) (result (ref eq))
+      (ref.i31 (i32.const 0)))
+))
 )

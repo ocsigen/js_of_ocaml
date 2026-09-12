@@ -107,6 +107,10 @@ module Cmo_format : sig
   val hints_pos : t -> int
 
   val hints_size : t -> int
+
+  val block_descs : t -> Obj.t option
+  (** Introcaml: the block descriptors of the unit ([Block_desc.library]),
+      [None] when the compiler has no introspection support. *)
 end
 
 module Hint : sig

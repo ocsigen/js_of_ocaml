@@ -219,15 +219,15 @@ let expr_deps blocks st x e =
             | Pv v, `Const -> do_escape st Escape_constant v
             | Pv v, `Shallow_const -> (
                 match st.defs.(Var.idx v) with
-                | Expr (Block (_, a, _, _)) ->
+                | Expr (Block (_, a, _, _, _)) ->
                     Array.iter a ~f:(fun x -> do_escape st Escape x)
                 | _ -> do_escape st Escape v)
             | Pv v, `Object_literal -> (
                 match st.defs.(Var.idx v) with
-                | Expr (Block (_, a, _, _)) ->
+                | Expr (Block (_, a, _, _, _)) ->
                     Array.iter a ~f:(fun x ->
                         match st.defs.(Var.idx x) with
-                        | Expr (Block (_, [| _k; v |], _, _)) -> do_escape st Escape v
+                        | Expr (Block (_, [| _k; v |], _, _, _)) -> do_escape st Escape v
                         | _ -> do_escape st Escape x)
                 | _ -> do_escape st Escape v)
             | Pv v, `Mutable -> do_escape st Escape v);
@@ -363,7 +363,7 @@ module Domain = struct
     then (
       st.may_escape.(idx) <- s;
       match st.defs.(idx) with
-      | Expr (Block (_, a, _, mut)) -> (
+      | Expr (Block (_, a, _, mut, _)) -> (
           Array.iter ~f:(fun y -> variable_escape ~update ~st ~approx s y) a;
           match s, mut with
           | Escape, Maybe_mutable ->
@@ -420,7 +420,7 @@ module Domain = struct
         Var.Set.iter
           (fun x ->
             match st.defs.(Var.idx x) with
-            | Expr (Block (_, _, _, Maybe_mutable)) -> (
+            | Expr (Block (_, _, _, Maybe_mutable, _)) -> (
                 match st.mutable_fields.(Var.idx x), mutable_fields with
                 | _, No_field -> ()
                 | No_field, _ ->
@@ -435,7 +435,7 @@ module Domain = struct
                     st.mutable_fields.(Var.idx x) <- All_fields;
                     update ~children:true x
                 | All_fields, _ -> ())
-            | Expr (Block (_, _, _, Immutable)) | Expr (Closure _) -> ()
+            | Expr (Block (_, _, _, Immutable, _)) | Expr (Closure _) -> ()
             | Phi _ | Expr _ -> assert false)
           known
 end
@@ -461,7 +461,7 @@ let propagate st ~update approx x =
                 ~approx
                 (fun z ->
                   match st.defs.(Var.idx z) with
-                  | Expr (Block (t, a, _, _))
+                  | Expr (Block (t, a, _, _, _))
                     when n < Array.length a
                          &&
                          match tags with
@@ -502,7 +502,7 @@ let propagate st ~update approx x =
                   ~others
                   (fun z ->
                     match st.defs.(Var.idx z) with
-                    | Expr (Block (_, lst, _, _)) ->
+                    | Expr (Block (_, lst, _, _, _)) ->
                         let m =
                           match st.mutable_fields.(Var.idx z) with
                           | No_field -> false

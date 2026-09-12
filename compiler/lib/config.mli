@@ -68,6 +68,11 @@ module Flag : sig
 
   val safe_string : unit -> bool
 
+  val introspection : unit -> bool
+  (** Introcaml: attach their descriptor to allocated blocks and embed the
+      block descriptors, so that [Introspect] can print values. Only enabled
+      by default when the compiler supports introspection. *)
+
   val use_js_string : unit -> bool
 
   val check_magic : unit -> bool
@@ -138,3 +143,12 @@ type effects_backend =
 val effects : unit -> effects_backend
 
 val set_effects_backend : effects_backend -> unit
+
+(** {2 Build-time properties of the compiler} *)
+
+val oxcaml : bool
+(** Whether the compiler was built with OxCaml. *)
+
+val introspect : bool
+(** Whether the compiler was built with an OCaml supporting introspection
+    (Introcaml), see the [introspect] flag in [//If:] runtime directives. *)

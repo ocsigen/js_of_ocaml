@@ -257,6 +257,7 @@
    (global $CODE_CUSTOM i32 (i32.const 0x12))
    (global $CODE_CUSTOM_LEN i32 (i32.const 0x18))
    (global $CODE_CUSTOM_FIXED i32 (i32.const 0x19))
+   (global $CODE_RESERVED_BITS i32 (i32.const 0x1A))
    (global $CODE_NULL i32 (i32.const 0x1F))
 
    (type $intern_state
@@ -590,6 +591,11 @@
            (block $read_double_array
             (block $read_shared
              (local.set $code (call $read8u (local.get $s)))
+             (if (i32.eq (local.get $code) (global.get $CODE_RESERVED_BITS))
+                (then
+                   ;; Introcaml: reserved header bits of the next block; ignored
+                   (drop (call $read32 (local.get $s)))
+                   (local.set $code (call $read8u (local.get $s)))))
              (if (i32.ge_u (local.get $code) (global.get $PREFIX_SMALL_INT))
                 (then
                    (if (i32.ge_u (local.get $code) (global.get $PREFIX_SMALL_BLOCK))

@@ -1498,7 +1498,7 @@ module Generate (Target : Target_sig.S) = struct
           | Pv indices -> Some (indices, ctx.global_flow_info.info_defs.(Var.idx indices))
           | Pc _ -> None )
       with
-      | Bigarray { kind; layout; _ }, Some (indices, Expr (Block (_, l, _, _))) ->
+      | Bigarray { kind; layout; _ }, Some (indices, Expr (Block (_, l, _, _, _))) ->
           Some
             ( kind
             , layout
@@ -1775,7 +1775,7 @@ module Generate (Target : Target_sig.S) = struct
           in
           let* args = expression_list (fun x -> load_and_box ctx x) args in
           return (W.Call (apply, args @ [ closure ]))
-    | Block (tag, a, _, _) ->
+    | Block (tag, a, _, _, _) ->
         if tag = 254
         then
           Memory.allocate_float_array

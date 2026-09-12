@@ -217,6 +217,7 @@ module Fragment = struct
             match Config.target () with
             | `JavaScript -> false
             | `Wasm -> true )
+      ; ("introspect", fun () -> Config.introspect)
       ]
 
   type t =

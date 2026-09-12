@@ -36,6 +36,7 @@
       ("native" for a native test); [target_engine] is the engine a generated
       program runs under (from [JSOO_TEST_ENGINE]). [effects] is the js_of_ocaml
       [--effects] mode ("disabled" / "cps" / "double-translation" / "jspi").
+    - [introspect] — whether the compiler was built with introspection support
 
     plus the runtime-only shorthands [js], [wasm], [native], [node], [quickjs],
     [wasi], [win32], [unix], [cygwin] ([node]/[quickjs]/[wasi] resolve to
