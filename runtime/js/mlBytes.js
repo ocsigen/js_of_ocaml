@@ -894,6 +894,64 @@ function caml_bytes_of_jsbytes(s) {
   return new MlBytes(0, s, s.length);
 }
 
+// The compiler emits large binary string constants as base64 literals
+// (without padding), since base64 is far more compact than "\xNN" escapes.
+// They are decoded by [caml_string_of_base64] (OCaml strings) and
+// [caml_jsbytes_of_base64] (JS strings of bytes, code units 0..255).
+
+//Provides: jsoo_base64_decode
+// [atob], for engines lacking it (e.g. QuickJS).
+function jsoo_base64_decode(s) {
+  // Value of a character of the alphabet A-Z a-z 0-9 + /
+  function sextet(c) {
+    if (c >= 97) return c - 71; // a-z
+    if (c >= 65) return c - 65; // A-Z
+    if (c >= 48) return c + 4; // 0-9
+    return c === 43 ? 62 : 63; // + /
+  }
+  var len = s.length;
+  while (len > 0 && s.charCodeAt(len - 1) === 61 /* '=' */) len--;
+  var out = new Array((len * 3) >> 2);
+  var acc = 0;
+  var bits = 0;
+  var j = 0;
+  for (var i = 0; i < len; i++) {
+    acc = (acc << 6) | sextet(s.charCodeAt(i));
+    bits += 6;
+    if (bits >= 8) {
+      bits -= 8;
+      out[j++] = String.fromCharCode((acc >> bits) & 0xff);
+    }
+  }
+  return out.join("");
+}
+
+//Provides: caml_jsbytes_of_base64 const
+//Requires: jsoo_base64_decode
+function caml_jsbytes_of_base64(s) {
+  return typeof globalThis.atob === "function"
+    ? globalThis.atob(s)
+    : jsoo_base64_decode(s);
+}
+
+//Provides: caml_string_of_base64 const
+//Requires: caml_jsbytes_of_base64
+//If: js-string
+function caml_string_of_base64(s) {
+  return caml_jsbytes_of_base64(s);
+}
+
+//Provides: caml_string_of_base64 const
+//Requires: caml_jsbytes_of_base64, caml_string_of_jsbytes
+//Requires: caml_string_of_uint8_array
+//If: !js-string
+function caml_string_of_base64(s) {
+  // Decode straight into the byte-array representation when possible.
+  if (typeof Uint8Array.fromBase64 === "function")
+    return caml_string_of_uint8_array(Uint8Array.fromBase64(s));
+  return caml_string_of_jsbytes(caml_jsbytes_of_base64(s));
+}
+
 // The section below should be used when use-js-string=false
 
 //Provides: caml_string_unsafe_get const
