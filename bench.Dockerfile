@@ -6,8 +6,18 @@ RUN sudo apt-get update \
       pkg-config libgmp-dev jq time
 
 RUN sudo ln -sf /usr/bin/opam-2.3 /usr/bin/opam
-RUN opam remote add origin https://github.com/ocaml/opam-repository.git \
+RUN opam remote add origin https://github.com/ocaml/opam-repository.git --all --set-default \
  && opam update
+
+# Build the benchmarks with Introcaml (OCaml 5.5 with introspection) to
+# measure its impact. Override for a baseline, e.g.
+#   docker build --build-arg OCAML_COMPILER=ocaml-base-compiler.5.5.0 ...
+# Note: the Jane Street v0.18 preview packages (bonsai, ppx_template, ...)
+# require ppxlib < 0.36 and thus OCaml < 5.4, so the partial render table
+# benchmark is not built here and bin_prot comes from the v0.17 release.
+ARG OCAML_COMPILER=ocaml-variants.5.5.0+introcaml1
+RUN opam switch create bench "$OCAML_COMPILER" \
+ && opam clean
 
 # Install node
 ENV NODE_VERSION=v24.0.0-v8-canary2025030537242e55ac
@@ -23,40 +33,21 @@ RUN curl -Lq https://github.com/WebAssembly/binaryen/releases/download/$BINARYEN
   | tar zxf -
 ENV PATH="/bench-dir/$BINARYEN/bin:$PATH"
 
-# Jane Street opam packages
-RUN mkdir janestreet \
- && cd janestreet \
- && git clone --depth 20 https://github.com/janestreet/opam-repository \
- && cd opam-repository \
- && git checkout 2819773f29b6f6c14b918eae3cb40c8ff6b22d0e \
- && opam remote add js .
-
 # Install dependencies
 WORKDIR /bench-dir/js_of_ocaml
 COPY --chown=opam:opam js_of_ocaml-compiler.opam .
 RUN opam install -y --deps-only ./js_of_ocaml-compiler.opam \
- && opam install opam-format stringext uucp cstruct \
- && opam pin add ppxlib -n 0.35.0 \
+ && opam pin add -n bigstringaf https://github.com/ocaml-wasm/bigstringaf.git#wasm-latest \
+ && opam install stringext uucp cstruct bigstringaf \
+ && opam pin add ppxlib -n 0.38.0 \
  && opam clean
 
-# Enable the wasm_of_ocaml backend in the ci_setup-generated dune-workspace,
-# both for the bonsai bench build below and for `make bench` later on.
+# Enable the wasm_of_ocaml backend in the dune-workspace for `make bench`.
 ENV WASM_OF_OCAML=true
 
-# Enable the build of tools/ci_setup.exe (needs opam-format)
-ENV BUILD_CI_SETUP=true
-
-# Prepare partial render table benchmark
-COPY --chown=opam:opam dune-project ./
-COPY --chown=opam:opam tools ./tools
-RUN opam exec -- dune exec tools/ci_setup.exe ../janestreet . \
- && (opam exec -- dune build --root ../janestreet --profile release lib/bonsai_web_components/partial_render_table/bench/bin/main.bc-for-jsoo || true) \
- && opam remove js_of_ocaml-compiler ojs \
+# Bin_prot packages (v0.17: no wasm runtime, see above)
+RUN opam install ppx_bin_prot \
  && opam clean
-
-# Bin_prot packages
-RUN opam pin add -n https://github.com/janestreet/bin_prot.git#125e336faacd2e2e8c7a1fed2231bde1cebfebdd \
- && opam install ppx_bin_prot
 
 # Copy sources
 COPY --chown=opam:opam . ./

@@ -10,7 +10,11 @@ bench:
 	dune build --profile release --root .
 	node _build/default/bench.bc.js 400000
 	$(MAKE) perform COMPILER=js_of_ocaml SCRIPT=_build/default/bench.bc.js KIND=js
-	$(MAKE) perform COMPILER=wasm_of_ocaml SCRIPT=_build/default/bench.bc.wasm.js KIND=wasm
+	if [ -f "$$(opam var bin_prot:lib)/runtime.wat" ]; then \
+	  $(MAKE) perform COMPILER=wasm_of_ocaml SCRIPT=_build/default/bench.bc.wasm.js KIND=wasm; \
+	else \
+	  echo "Skipping wasm_of_ocaml (bin_prot has no wasm runtime)"; \
+	fi
 	@date -u +"%FT%TZ - $(NAME)/$(SUBNAME): done"
 
 perform:
