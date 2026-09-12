@@ -1,6 +1,14 @@
 # dev
 
 ## Features/Changes
+* Compiler: emit large binary string constants (ocamllex/ocamlyacc/menhir
+  tables, embedded files, marshaled data, ...) as base64 literals decoded once
+  at initialisation, rather than as `\xNN`-escaped string literals. Each
+  non-printable byte costs four characters when escaped but only 4/3 in
+  base64, so generated code embedding binary data gets noticeably smaller
+  (e.g. -14% on the toplevel example). Decoding uses `atob`, or
+  `Uint8Array.fromBase64` when `use-js-string` is disabled, with a JavaScript
+  fallback for engines lacking them (#2432)
 * Lib: add `WebGL2` — bindings to the WebGL2 rendering context. The context
   inherits every method and constant of `WebGL`, and adds the WebGL2 objects
   (vertex array objects, queries, samplers, syncs, transform feedback), 3D and

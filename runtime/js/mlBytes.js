@@ -894,6 +894,56 @@ function caml_bytes_of_jsbytes(s) {
   return new MlBytes(0, s, s.length);
 }
 
+//Provides: caml_jsbytes_of_base64 const
+// Decode a base64 literal (without padding) into a JS string of bytes
+// (code units 0..255). The compiler emits large binary string constants this
+// way, since base64 is far more compact than "\xNN" escapes.
+function caml_jsbytes_of_base64(s) {
+  if (typeof globalThis.atob === "function") return globalThis.atob(s);
+  // Fallback for engines without atob (e.g. QuickJS).
+  var alphabet =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+  var lookup = caml_jsbytes_of_base64.lookup;
+  if (!lookup) {
+    lookup = new Uint8Array(128);
+    for (var i = 0; i < 64; i++) lookup[alphabet.charCodeAt(i)] = i;
+    caml_jsbytes_of_base64.lookup = lookup;
+  }
+  var len = s.length;
+  while (len > 0 && s.charCodeAt(len - 1) === 61 /* '=' */) len--;
+  var out = new Array((len * 3) >> 2);
+  var acc = 0;
+  var bits = 0;
+  var j = 0;
+  for (var i = 0; i < len; i++) {
+    acc = (acc << 6) | lookup[s.charCodeAt(i)];
+    bits += 6;
+    if (bits >= 8) {
+      bits -= 8;
+      out[j++] = String.fromCharCode((acc >> bits) & 0xff);
+    }
+  }
+  return out.join("");
+}
+
+//Provides: caml_string_of_base64 const
+//Requires: caml_jsbytes_of_base64
+//If: js-string
+function caml_string_of_base64(s) {
+  return caml_jsbytes_of_base64(s);
+}
+
+//Provides: caml_string_of_base64 const
+//Requires: caml_jsbytes_of_base64, caml_string_of_jsbytes
+//Requires: caml_string_of_uint8_array
+//If: !js-string
+function caml_string_of_base64(s) {
+  // Decode straight into the byte-array representation when possible.
+  if (typeof Uint8Array.fromBase64 === "function")
+    return caml_string_of_uint8_array(Uint8Array.fromBase64(s));
+  return caml_string_of_jsbytes(caml_jsbytes_of_base64(s));
+}
+
 // The section below should be used when use-js-string=false
 
 //Provides: caml_string_unsafe_get const
