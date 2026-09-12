@@ -65,6 +65,97 @@ type application_description =
   ; in_cps : bool
   }
 
+(* String constants.
+
+   A string constant is emitted either as a JavaScript string literal or,
+   for large binary strings, as a base64 literal decoded once at
+   initialisation. A byte outside the printable ASCII range costs four
+   characters when escaped ("\\xNN") but only 4/3 characters in base64, so
+   large binary strings (lexer and parser tables, embedded files, ...)
+   are much smaller in base64.
+
+   How a constant is emitted is decided here and nowhere else: the pass
+   counting occurrences ([Share.get]) and code generation
+   ([string_constant]) both go through [String_constant.of_string] and
+   [String_constant.of_native_string], so they cannot disagree. *)
+module String_constant = struct
+  (* What the generated expression evaluates to *)
+  type target =
+    | Ocaml_string (* an OCaml [string]; depends on [use-js-string] *)
+    | Js_string (* a JavaScript string, for [NativeString] *)
+
+  type encoding =
+    | Utf_literal (* valid UTF-8, printed as is *)
+    | Byte_literal (* bytes above 127 are printed as "\\xNN" *)
+    | Base64 (* bound in the shared header, where it is decoded once *)
+
+  type t =
+    { target : target
+    ; encoding : encoding
+    ; contents : string
+    }
+
+  (* Sizes below are estimates, in characters of generated code. They
+     only decide which encoding is smaller: a wrong estimate costs a few
+     bytes, never correctness. *)
+
+  (* Follows [str_js_byte] and [Js_output.pp_string] *)
+  let escaped_size s =
+    let l = String.length s in
+    let n = ref 2 in
+    for i = 0 to l - 1 do
+      n :=
+        !n
+        +
+        match s.[i] with
+        | '\000' when i = l - 1 || not (Char.is_digit s.[i + 1]) -> 2
+        | '\b' | '\t' | '\n' | '\011' | '\012' | '\r' | '\\' | '"' -> 2
+        | '\000' .. '\031' | '\127' .. '\255' -> 4
+        | _ -> 1
+    done;
+    !n
+
+  let base64_size s = 2 + (((String.length s * 4) + 2) / 3)
+
+  (* Fixed cost of a base64 string: a variable of the shared header and
+     a call to the decoding primitive. Short strings stay literals. *)
+  let base64_overhead = 24
+
+  let use_base64 s = escaped_size s > base64_size s + base64_overhead
+
+  let of_string s =
+    let encoding =
+      if use_base64 s
+      then Base64
+      else if String.is_ascii s
+      then Utf_literal
+      else Byte_literal
+    in
+    { target = Ocaml_string; encoding; contents = s }
+
+  let of_native_string (s : Code.Native_string.t) =
+    match s with
+    | Utf (Utf8 s) -> { target = Js_string; encoding = Utf_literal; contents = s }
+    | Byte s ->
+        let encoding = if use_base64 s then Base64 else Byte_literal in
+        { target = Js_string; encoding; contents = s }
+
+  let base64_prim target =
+    match target with
+    | Ocaml_string -> "caml_string_of_base64"
+    | Js_string -> "caml_jsbytes_of_base64"
+
+  (* The runtime primitive, if any, turning the JavaScript literal into
+     the target. It is applied at each occurrence of a literal, and once
+     in the shared header for a base64 string. *)
+  let conversion_prim { target; encoding; _ } =
+    match encoding, target with
+    | Base64, _ -> Some (base64_prim target)
+    | (Utf_literal | Byte_literal), Js_string -> None
+    | (Utf_literal | Byte_literal), Ocaml_string ->
+        if Config.Flag.use_js_string () then None else Some "caml_string_of_jsbytes"
+end
+
 module Share = struct
   module AppMap = Map.Make (struct
     type t = application_description
@@ -82,9 +173,23 @@ module Share = struct
           if c <> 0 then c else Bool.compare in_cps b.in_cps
   end)
 
+  module Base64Map = Map.Make (struct
+    type t = String_constant.target * string
+
+    let rank (target : String_constant.target) =
+      match target with
+      | Ocaml_string -> 0
+      | Js_string -> 1
+
+    let compare (t1, s1) (t2, s2) =
+      let c = Int.compare (rank t1) (rank t2) in
+      if c <> 0 then c else String.compare s1 s2
+  end)
+
   type 'a aux =
     { byte_strings : 'a StringMap.t
     ; utf_strings : 'a StringMap.t
+    ; base64_strings : 'a Base64Map.t
     ; applies : 'a AppMap.t
     ; prims : 'a StringMap.t
     }
@@ -93,6 +198,7 @@ module Share = struct
     { prims = StringMap.empty
     ; byte_strings = StringMap.empty
     ; utf_strings = StringMap.empty
+    ; base64_strings = Base64Map.empty
     ; applies = AppMap.empty
     }
 
@@ -135,23 +241,30 @@ module Share = struct
       applies = AppMap.update i (fun n -> Some (Option.value ~default:0 n + 1)) t.applies
     }
 
-  let add_code_string s share =
-    let share =
-      if String.is_ascii s then add_utf_string s share else add_byte_string s share
-    in
-    if Config.Flag.use_js_string ()
-    then share
-    else add_prim "caml_string_of_jsbytes" share
+  let add_base64_string key t =
+    { t with
+      base64_strings =
+        Base64Map.update
+          key
+          (fun n -> Some (Option.value ~default:0 n + 1))
+          t.base64_strings
+    }
 
-  let add_code_native_string (s : Code.Native_string.t) share =
-    match s with
-    | Utf (Utf8 s) -> add_utf_string s share
-    | Byte s -> add_byte_string s share
+  let add_string_constant (c : String_constant.t) t =
+    let t =
+      match String_constant.conversion_prim c with
+      | None -> t
+      | Some prim -> add_prim prim t
+    in
+    match c.encoding with
+    | Utf_literal -> add_utf_string c.contents t
+    | Byte_literal -> add_byte_string c.contents t
+    | Base64 -> add_base64_string (c.target, c.contents) t
 
   let rec get_constant c t =
     match c with
-    | String s -> add_code_string s t
-    | NativeString s -> add_code_native_string s t
+    | String s -> add_string_constant (String_constant.of_string s) t
+    | NativeString s -> add_string_constant (String_constant.of_native_string s) t
     | Tuple (_, args, _) -> Array.fold_left args ~init:t ~f:(fun t c -> get_constant c t)
     | _ -> t
 
@@ -253,6 +366,19 @@ module Share = struct
               let v = J.V x in
               t.vars <- { t.vars with utf_strings = StringMap.add s v t.vars.utf_strings };
               J.EVar v)
+
+  (* Base64 strings are always bound to a variable of the shared header,
+     whatever [alias_strings] and their number of occurrences, so that
+     they are decoded only once. *)
+  let get_base64_string key t =
+    match Base64Map.find_opt key t.vars.base64_strings with
+    | Some v -> J.EVar v
+    | None ->
+        let x = Var.fresh_n "cst_base64" in
+        let v = J.V x in
+        t.vars <-
+          { t.vars with base64_strings = Base64Map.add key v t.vars.base64_strings };
+        J.EVar v
 
   let get_prim gen s t =
     let s = Primitive.resolve s in
@@ -451,6 +577,9 @@ let str_js_byte s =
   let s = Buffer.contents b in
   J.EStr (Utf8_string.of_string_exn s)
 
+let str_js_base64 s =
+  J.EStr (Utf8_string.of_string_exn (Base64.encode_string ~pad:false s))
+
 let str_js_utf8 s =
   let b = Buffer.create (String.length s) in
   String.iter s ~f:(function
@@ -509,20 +638,24 @@ let ocaml_string ~ctx ~loc s =
     let p = Share.get_prim (runtime_fun ctx) "caml_string_of_jsbytes" ctx.Ctx.share in
     J.call p [ s ] loc
 
+let string_constant ~ctx (c : String_constant.t) =
+  let share = ctx.Ctx.share in
+  let convert e =
+    match String_constant.conversion_prim c with
+    | None -> e
+    | Some prim -> J.call (Share.get_prim (runtime_fun ctx) prim share) [ e ] J.N
+  in
+  match c.encoding with
+  | Utf_literal -> convert (Share.get_utf_string str_js_utf8 c.contents share)
+  | Byte_literal -> convert (Share.get_byte_string str_js_byte c.contents share)
+  | Base64 ->
+      (* Converted in the shared header, see [generate_shared_value] *)
+      Share.get_base64_string (c.target, c.contents) share
+
 let rec constant_rec ~ctx x level instrs =
   match x with
-  | String s ->
-      let e =
-        if String.is_ascii s
-        then Share.get_utf_string str_js_byte s ctx.Ctx.share
-        else Share.get_byte_string str_js_byte s ctx.Ctx.share
-      in
-      let e = ocaml_string ~ctx ~loc:J.N e in
-      e, instrs
-  | NativeString s -> (
-      match s with
-      | Byte x -> Share.get_byte_string str_js_byte x ctx.Ctx.share, instrs
-      | Utf (Utf8 x) -> Share.get_utf_string str_js_utf8 x ctx.Ctx.share, instrs)
+  | String s -> string_constant ~ctx (String_constant.of_string s), instrs
+  | NativeString s -> string_constant ~ctx (String_constant.of_native_string s), instrs
   | Float f -> float_const f, instrs
   | Float32 f -> float_const f, instrs
   | Float_array a ->
@@ -2541,27 +2674,46 @@ and collect_closures loc l =
   | _ -> [], [], [], l, loc
 
 let generate_shared_value ctx =
+  let share = ctx.Ctx.share in
+  (* The bindings are computed in this order, as each step can affect the
+     following ones: decoding base64 strings may alias the decoding
+     primitives, and referring to primitives may require the runtime. *)
+  let base64_strings =
+    List.map
+      (Share.Base64Map.bindings share.Share.vars.Share.base64_strings)
+      ~f:(fun ((target, s), v) ->
+        let prim = String_constant.base64_prim target in
+        let decode = Share.get_prim (runtime_fun ctx) prim share in
+        v, (J.call decode [ str_js_base64 s ] J.N, J.U))
+  in
+  let prims =
+    List.map (StringMap.bindings share.Share.vars.Share.prims) ~f:(fun (s, v) ->
+        v, (runtime_fun ctx s, J.U))
+  in
+  let runtime =
+    match ctx.Ctx.exported_runtime with
+    | None -> []
+    | Some (_, { contents = false }) -> []
+    | Some (v, _) ->
+        [ ( J.V v
+          , ( J.dot
+                (s_var Global_constant.global_object)
+                (Utf8_string.of_string_exn "jsoo_runtime")
+            , J.U ) )
+        ]
+  in
+  let byte_strings =
+    List.map (StringMap.bindings share.Share.vars.Share.byte_strings) ~f:(fun (s, v) ->
+        v, (str_js_byte s, J.U))
+  in
+  let utf_strings =
+    List.map (StringMap.bindings share.Share.vars.Share.utf_strings) ~f:(fun (s, v) ->
+        v, (str_js_utf8 s, J.U))
+  in
+  (* Primitives are declared before the base64 strings they decode *)
   let strings =
     ( J.variable_declaration
-        ((match ctx.Ctx.exported_runtime with
-           | None -> []
-           | Some (_, { contents = false }) -> []
-           | Some (v, _) ->
-               [ ( J.V v
-                 , ( J.dot
-                       (s_var Global_constant.global_object)
-                       (Utf8_string.of_string_exn "jsoo_runtime")
-                   , J.U ) )
-               ])
-        @ List.map
-            (StringMap.bindings ctx.Ctx.share.Share.vars.Share.byte_strings)
-            ~f:(fun (s, v) -> v, (str_js_byte s, J.U))
-        @ List.map
-            (StringMap.bindings ctx.Ctx.share.Share.vars.Share.utf_strings)
-            ~f:(fun (s, v) -> v, (str_js_utf8 s, J.U))
-        @ List.map
-            (StringMap.bindings ctx.Ctx.share.Share.vars.Share.prims)
-            ~f:(fun (s, v) -> v, (runtime_fun ctx s, J.U)))
+        (runtime @ byte_strings @ utf_strings @ prims @ base64_strings)
     , J.U )
   in
   if not (Config.Flag.inline_callgen ())
