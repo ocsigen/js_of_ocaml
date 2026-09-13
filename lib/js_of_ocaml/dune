@@ -6,7 +6,7 @@
   (language c)
   (names js_of_ocaml_stubs))
  (preprocess
-  (pps ppx_js_internal)))
+  (pps ppx_js_internal ppx_optcomp_light)))
 
 (rule
  (targets js_of_ocaml_stubs.c)

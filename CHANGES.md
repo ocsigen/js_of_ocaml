@@ -10,7 +10,12 @@
   (`Introspect.Print` and friends) in JavaScript: blocks carrying a
   descriptor are allocated as instances of an `Array` subclass holding the
   descriptor index, and the block descriptors of the program are embedded;
-  can be disabled with `--disable introspection` (#2409)
+  can be disabled with `--disable introspection` (#2430)
+* Lib: add `Devtools.register_formatters`, which installs a custom formatter
+  in `globalThis.devtoolsFormatters`: when the compiler is built with
+  Introcaml, Chrome DevTools then displays OCaml values in OCaml syntax
+  (`Circle ({x = 0; name = "o"}, 1)`), expandable to their fields by
+  name; JavaScript values embedded in them are left to the console (#2430)
 * Lib: add `WebGL2` — bindings to the WebGL2 rendering context. The context
   inherits every method and constant of `WebGL`, and adds the WebGL2 objects
   (vertex array objects, queries, samplers, syncs, transform feedback), 3D and

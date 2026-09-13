@@ -113,6 +113,17 @@ Useful settings in Chrome DevTools (Settings > Experiments):
 - {b Display variable values inline while debugging} - Shows values next to variables
 - {b Resolve variable names} - Maps minified names back to original names
 
+{2 Displaying OCaml values}
+
+When the compiler is built with Introcaml (an OCaml fork with runtime
+introspection), OCaml values carry a description of their type at runtime.
+Calling {{!Js_of_ocaml.Devtools.register_formatters}Devtools.register_formatters}
+installs a custom formatter so that values logged with [Console] or inspected
+in the debugger are displayed in OCaml syntax, e.g.
+[Circle ({x = 0; name = "o"}, 1)] rather than [Array(3)], and expand to their
+fields by name. Custom formatters must be enabled in DevTools
+(Settings > Preferences > Console > Enable custom formatters).
+
 {1 See also}
 
 - {{!page-"errors"}Error handling} - Exception handling between OCaml and JavaScript

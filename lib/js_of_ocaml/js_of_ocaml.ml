@@ -27,6 +27,7 @@ module Cache = Cache
 module Clipboard = Clipboard
 module Console = Console
 module Crypto = Crypto
+module Devtools = Devtools
 module Dom = Dom
 module Dom_events = Dom_events
 module Dom_html = Dom_html
