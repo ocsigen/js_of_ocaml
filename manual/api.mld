@@ -69,6 +69,13 @@ Deriving_Json
 Deriving_Json_lexer
 }
 
+and the [js_of_ocaml.devtools] library, which displays OCaml values in the
+browser developer tools when the compiler is built with Introcaml:
+
+{!modules:
+Js_of_ocaml_devtools
+}
+
 {1 [js_of_ocaml-lwt] — Lwt support}
 
 Provided by the [js_of_ocaml-lwt] opam package (library [js_of_ocaml-lwt]).
