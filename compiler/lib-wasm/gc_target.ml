@@ -1008,7 +1008,7 @@ module Constant = struct
   let rec translate_rec c =
     match c with
     | Code.Int i -> return (Const, W.RefI31 (Const (I32 (Targetint.to_int32 i))))
-    | Tuple (tag, a, _) ->
+    | Tuple (tag, a, _, _) ->
         let* ty = Type.block_type in
         let* l =
           Array.fold_left
@@ -1097,7 +1097,7 @@ module Constant = struct
     | Float32 f ->
         let* e = Memory.make_float32 (return (W.Const (F32 (Int64.float_of_bits f)))) in
         return (Const, e)
-    | Float_array l ->
+    | Float_array (l, _) ->
         let l = Array.to_list l in
         let* ty = Type.float_array_type in
         (*ZZZ Boxed array? *)

@@ -394,7 +394,7 @@ let is_int info x =
         (fun x ->
           match Flow.Info.def info x with
           | Some (Constant (Int _)) -> Y
-          | Some (Block (_, _, _, _) | Constant _) -> N
+          | Some (Block (_, _, _, _, _) | Constant _) -> N
           | None | Some _ -> Unknown)
         Unknown
         (fun u v ->
@@ -413,7 +413,7 @@ let the_tag_of info x get equal =
         info
         (fun x ->
           match Flow.Info.def info x with
-          | Some (Block (j, _, _, mut)) ->
+          | Some (Block (j, _, _, mut, _)) ->
               if Flow.Info.possibly_mutable info x
               then (
                 assert (
@@ -422,7 +422,7 @@ let the_tag_of info x get equal =
                   | Immutable -> false);
                 None)
               else get j
-          | Some (Constant (Tuple (j, _, _))) -> get j
+          | Some (Constant (Tuple (j, _, _, _))) -> get j
           | None | Some _ -> None)
         None
         (fun u v ->
@@ -430,7 +430,7 @@ let the_tag_of info x get equal =
           | Some i, Some j when equal i j -> u
           | _ -> None)
         x
-  | Pc (Tuple (j, _, _)) -> get j
+  | Pc (Tuple (j, _, _, _)) -> get j
   | _ -> None
 
 let the_cont_of info x (a : cont array) =
@@ -664,7 +664,7 @@ let eval_instr update_count inline_constant ~target info i =
       in
       incr update_count;
       [ Let (jsoo, Constant (String backend_name))
-      ; Let (x, Block (0, [| jsoo |], NotArray, Immutable))
+      ; Let (x, Block (0, [| jsoo |], NotArray, Immutable, 0))
       ]
   | Let
       ( _
@@ -759,7 +759,7 @@ let the_cond_of info x =
              | NativeString _
              | Float_array _
              | Int64 _ )) -> Non_zero
-      | Some (Block (_, _, _, _)) -> Non_zero
+      | Some (Block (_, _, _, _, _)) -> Non_zero
       | Some (Field _ | Closure _ | Prim _ | Apply _ | Special _) -> Unknown
       | None -> Unknown)
     Unknown
@@ -806,7 +806,7 @@ let rec do_not_raise pc visited rewrite blocks =
         | Assign _ -> ()
         | Let (_, e) -> (
             match e with
-            | Block (_, _, _, _) | Field (_, _, _) | Constant _ | Closure _ -> ()
+            | Block (_, _, _, _, _) | Field (_, _, _) | Constant _ | Closure _ -> ()
             | Apply _ -> raise May_raise
             | Special _ -> ()
             | Prim (Extern (name, _), _) when Primitive.is_pure name -> ()

@@ -110,13 +110,13 @@ let specialize_instr opt_count ~target info i =
       try
         let a =
           match the_def_of info a with
-          | Some (Block (_, a, _, _)) -> a
+          | Some (Block (_, a, _, _, _)) -> a
           | _ -> raise Exit
         in
         let a =
           Array.map a ~f:(fun x ->
               match the_def_of info (Pv x) with
-              | Some (Block (_, [| k; v |], _, _)) ->
+              | Some (Block (_, [| k; v |], _, _, _)) ->
                   let k =
                     match the_string_of info (Pv k) with
                     | Some s when String.is_valid_utf_8 s ->
@@ -124,7 +124,7 @@ let specialize_instr opt_count ~target info i =
                     | Some _ | None -> raise Exit
                   in
                   [ k; Pv v ]
-              | Some (Constant (Tuple (0, [| String k; v |], (NotArray | Unknown))))
+              | Some (Constant (Tuple (0, [| String k; v |], (NotArray | Unknown), _)))
                 when String.is_valid_utf_8 k ->
                   [ Pc (NativeString (Native_string.of_string k)); Pc v ]
               | Some _ | None -> raise Exit)

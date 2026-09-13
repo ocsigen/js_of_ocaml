@@ -269,7 +269,7 @@ and rewrite_body
                     current_contiguous
                     ~f:(fun f' (_, params, pc, args, cloc) ->
                       Let (f', Closure (params, (pc, args), cloc)))
-                  @ [ Let (tuple, Block (0, Array.of_list f's, NotArray, Immutable)) ]
+                  @ [ Let (tuple, Block (0, Array.of_list f's, NotArray, Immutable, 0)) ]
               ; branch = Return tuple
               }
             in

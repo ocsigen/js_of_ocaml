@@ -243,7 +243,8 @@ let update_deps st { blocks; _ } =
     (fun _ block ->
       List.iter block.body ~f:(fun i ->
           match i with
-          | Let (x, Block (_, lst, _, _)) -> Array.iter ~f:(fun y -> add_dep st x y) lst
+          | Let (x, Block (_, lst, _, _, _)) ->
+              Array.iter ~f:(fun y -> add_dep st x y) lst
           | Let
               ( x
               , Prim
@@ -323,7 +324,7 @@ let rec constant_type (c : constant) =
   | NativeInt _ -> Number (Nativeint, Unboxed)
   | Float _ -> Number (Float, Unboxed)
   | Float32 _ -> Number (Float32, Unboxed)
-  | Tuple (_, a, _) -> Tuple (Array.map ~f:(fun c' -> Domain.box (constant_type c')) a)
+  | Tuple (_, a, _, _) -> Tuple (Array.map ~f:(fun c' -> Domain.box (constant_type c')) a)
   | Null_ -> Null
   | _ -> Top
 
@@ -411,7 +412,7 @@ let propagate st approx x : Domain.t =
       match e with
       | Constant c -> constant_type c
       | Closure _ -> Top
-      | Block (_, lst, _, _) ->
+      | Block (_, lst, _, _, _) ->
           Tuple
             (Array.mapi
                ~f:(fun i y ->
@@ -438,7 +439,7 @@ let propagate st approx x : Domain.t =
                 ~others
                 (fun z ->
                   match st.global_flow_state.defs.(Var.idx z) with
-                  | Expr (Block (_, lst, _, _)) ->
+                  | Expr (Block (_, lst, _, _, _)) ->
                       let m =
                         match st.global_flow_state.mutable_fields.(Var.idx z) with
                         | No_field -> false
@@ -613,7 +614,7 @@ let box_numbers p st types =
                         | None -> true
                         | Some (g, _) -> not (can_unbox_parameters st.fun_info g)
                       then List.iter ~f:box args
-                  | Block (tag, lst, _, _) -> if tag <> 254 then Array.iter ~f:box lst
+                  | Block (tag, lst, _, _, _) -> if tag <> 254 then Array.iter ~f:box lst
                   | Prim (Extern (s, _), args) ->
                       if
                         not
