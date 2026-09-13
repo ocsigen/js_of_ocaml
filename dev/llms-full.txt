@@ -4985,6 +4985,18 @@ val effects : unit -> effects_backend
 val set_effects_backend : effects_backend -> unit
 ```
 
+### Build-time properties of the compiler
+
+```ocaml
+val oxcaml : bool
+```
+Whether the compiler was built with OxCaml.
+
+```ocaml
+val introspect : bool
+```
+Whether the compiler was built with an OCaml supporting introspection (Introcaml), see the `introspect` flag in `//If:` runtime directives.
+
 
 ---
 
@@ -6686,6 +6698,7 @@ type t =
   | MAKE_FAUX_MIXEDBLOCK
   | WITH_STACK
   | WITH_STACK_BIND
+  | NEXT_RESERVED_BITS
   | FIRST_UNIMPLEMENTED_OP
 ```
 ```ocaml

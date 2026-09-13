@@ -33,3 +33,15 @@ val effects : unit -> effects_backend
 ```ocaml
 val set_effects_backend : effects_backend -> unit
 ```
+
+### Build-time properties of the compiler
+
+```ocaml
+val oxcaml : bool
+```
+Whether the compiler was built with OxCaml.
+
+```ocaml
+val introspect : bool
+```
+Whether the compiler was built with an OCaml supporting introspection (Introcaml), see the `introspect` flag in `//If:` runtime directives.
