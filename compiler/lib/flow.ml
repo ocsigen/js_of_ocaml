@@ -111,7 +111,7 @@ let expr_deps blocks vars deps defs x e =
   | Closure (l, cont, _) ->
       List.iter l ~f:(fun x -> add_param_def vars defs x);
       cont_deps blocks vars deps defs cont
-  | Block (_, a, _, _) -> Array.iter a ~f:(fun y -> add_dep deps x y)
+  | Block (_, a, _, _, _) -> Array.iter a ~f:(fun y -> add_dep deps x y)
   | Field (y, _, _) -> add_dep deps x y
 
 let program_deps { blocks; _ } =
@@ -163,7 +163,7 @@ let propagate1 deps defs st x =
             var_set_lift
               (fun z ->
                 match defs.(Var.idx z) with
-                | Expr (Block (_, a, _, _)) when n < Array.length a ->
+                | Expr (Block (_, a, _, _, _)) when n < Array.length a ->
                     let t = a.(n) in
                     add_dep deps x t;
                     Var.Tbl.get st t
@@ -204,7 +204,7 @@ let rec block_escape st x =
       then (
         Code.Var.ISet.add st.may_escape y;
         match st.defs.(Var.idx y) with
-        | Expr (Block (_, l, _, mut)) ->
+        | Expr (Block (_, l, _, mut, _)) ->
             (match mut with
             | Immutable -> ()
             | Maybe_mutable -> Code.Var.ISet.add st.possibly_mutable y);
@@ -245,24 +245,24 @@ let expr_escape st _x e =
             | Pv v, `Shallow_const -> (
                 match st.defs.(Var.idx v) with
                 | Expr (Constant (Tuple _)) -> ()
-                | Expr (Block (_, a, _, _)) ->
+                | Expr (Block (_, a, _, _, _)) ->
                     Array.iter a ~f:(fun x -> block_escape st x)
                 | Expr
                     (Prim
                        ( Extern (("caml_make_array" | "caml_array_of_uniform_array"), _)
                        , [ Pv y ] )) -> (
                     match st.defs.(Var.idx y) with
-                    | Expr (Block (_, a, _, _)) ->
+                    | Expr (Block (_, a, _, _, _)) ->
                         Array.iter a ~f:(fun x -> block_escape st x)
                     | _ -> assert false)
                 | _ -> block_escape st v)
             | Pv v, `Object_literal -> (
                 match st.defs.(Var.idx v) with
                 | Expr (Constant (Tuple _)) -> ()
-                | Expr (Block (_, a, _, _)) ->
+                | Expr (Block (_, a, _, _, _)) ->
                     Array.iter a ~f:(fun x ->
                         match st.defs.(Var.idx x) with
-                        | Expr (Block (_, [| _k; v |], _, _)) -> block_escape st v
+                        | Expr (Block (_, [| _k; v |], _, _, _)) -> block_escape st v
                         | Expr (Constant _) -> ()
                         | _ -> block_escape st x)
                 | _ -> block_escape st v)
@@ -311,7 +311,7 @@ let propagate2 defs known_origins possibly_mutable st x =
              || Var.Set.exists
                   (fun z ->
                     match defs.(Var.idx z) with
-                    | Expr (Block (_, a, _, _)) ->
+                    | Expr (Block (_, a, _, _, _)) ->
                         n >= Array.length a
                         || Var.ISet.mem possibly_mutable z
                         || Var.Tbl.get st a.(n)
@@ -437,11 +437,11 @@ let the_native_string_of info x =
 
 let the_block_contents_of info x =
   match the_def_of info x with
-  | Some (Block (_, a, _, _)) -> Some a
+  | Some (Block (_, a, _, _, _)) -> Some a
   | Some (Prim (Extern (("caml_make_array" | "caml_array_of_uniform_array"), _), [ x ]))
     -> (
       match the_def_of info x with
-      | Some (Block (_, a, _, _)) -> Some a
+      | Some (Block (_, a, _, _, _)) -> Some a
       | _ -> None)
   | _ -> None
 
@@ -456,7 +456,7 @@ let direct_approx (info : Info.t) x =
           then None
           else
             match info.info_defs.(Var.idx z) with
-            | Expr (Block (_, a, _, _)) when n < Array.length a -> Some a.(n)
+            | Expr (Block (_, a, _, _, _)) when n < Array.length a -> Some a.(n)
             | _ -> None)
         None
         (fun u v ->
@@ -615,7 +615,7 @@ let the_shape_of ~return_values ~pure ~blocks info =
     | Some s -> shape_to_prop s
     | None -> (
         match info.Info.info_defs.(Var.idx x) with
-        | Expr (Block (_, a, _, Immutable)) ->
+        | Expr (Block (_, a, _, Immutable, _)) ->
             if not blocks
             then PTop
             else

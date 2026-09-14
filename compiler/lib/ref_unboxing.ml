@@ -42,7 +42,7 @@ let rewrite_body unboxed_refs body ref_contents subst =
     List.fold_left
       ~f:(fun (ref_contents, subst, acc) i ->
         match i with
-        | Let (x, Block (0, [| y |], (NotArray | Unknown), Maybe_mutable))
+        | Let (x, Block (0, [| y |], (NotArray | Unknown), Maybe_mutable, _))
           when Var.Set.mem x unboxed_refs -> Var.Map.add x y ref_contents, subst, acc
         | Let (y, Field (x, 0, Non_float)) when Var.Map.mem x ref_contents ->
             ref_contents, Var.Map.add y (Var.Map.find x ref_contents) subst, acc
@@ -107,7 +107,7 @@ let rewrite_function p ~unboxed_refs pc subst =
         List.fold_left
           ~f:(fun s i ->
             match i with
-            | Let (x, Block (0, [| _ |], (NotArray | Unknown), Maybe_mutable))
+            | Let (x, Block (0, [| _ |], (NotArray | Unknown), Maybe_mutable, _))
               when Var.Hashtbl.mem unboxed_refs x -> Var.Set.add x s
             | _ -> s)
           ~init:refs
@@ -169,7 +169,7 @@ let f p =
       List.iter
         ~f:(fun i ->
           match i with
-          | Let (x, Block (0, [| _ |], (NotArray | Unknown), Maybe_mutable)) ->
+          | Let (x, Block (0, [| _ |], (NotArray | Unknown), Maybe_mutable, _)) ->
               Freevars.iter_instr_free_vars discard i;
               Var.Hashtbl.replace candidates x depth
           | Let (_, Closure (_, (pc', _), _)) ->

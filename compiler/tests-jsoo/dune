@@ -76,7 +76,8 @@
    test_promise
    test_lwt_promise
    test_weak_gc
-   toplevel_sections))
+   toplevel_sections
+   test_introspect))
  (libraries unix compiler-libs.common js_of_ocaml-compiler str)
  ; bigarray_stubs backs test_bigarray; its symbols are disjoint from
  ; jsoo_runtime_stubs and the C is version-agnostic.
@@ -87,6 +88,19 @@
   (deps
    (sandbox preserve_file_kind))
   (modes js wasm best))
+ (preprocess
+  (pps ppx_optcomp_light ppx_expect_light)))
+
+; Introcaml-only (the tests are gated by [@@@if introspect]): polymorphic
+; printing through Introspect. Not run on wasm, which has no introspection
+; support and where Obj.size on a float traps.
+
+(library
+ (name jsoo_testsuite_introspect)
+ (modules test_introspect)
+ (libraries unix compiler-libs.common js_of_ocaml-compiler)
+ (inline_tests
+  (modes js best))
  (preprocess
   (pps ppx_optcomp_light ppx_expect_light)))
 
