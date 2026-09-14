@@ -34,9 +34,23 @@ let is_block e = type_of_is_number J.NotEqEq e
 let is_immediate e = type_of_is_number J.EqEqEq e
 
 module Block = struct
-  let make ~tag ~args =
-    let tag_elt = J.Element (J.ENum (J.Num.of_targetint (Targetint.of_int_exn tag))) in
-    J.EArr (tag_elt :: args)
+  let make ?cls ~tag ~args () =
+    let tag_num = J.ENum (J.Num.of_targetint (Targetint.of_int_exn tag)) in
+    match cls with
+    | None -> J.EArr (J.Element tag_num :: args)
+    | Some cls ->
+        (* Introcaml: a block with a descriptor is an instance of an Array
+           subclass carrying the descriptor; the constructor is always given
+           at least two arguments (the tag and a field), so this cannot be
+           mistaken for [new Array(length)]. *)
+        let args =
+          List.map args ~f:(function
+            | J.Element e -> J.Arg e
+            | J.ElementHole ->
+                J.Arg (J.EVar (J.ident (Utf8_string.of_string_exn "undefined")))
+            | J.ElementSpread e -> J.ArgSpread e)
+        in
+        J.ENew (cls, Some (J.Arg tag_num :: args), J.N)
 
   let tag e = J.EAccess (e, ANormal, zero)
 

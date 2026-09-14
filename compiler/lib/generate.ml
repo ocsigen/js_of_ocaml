@@ -87,6 +87,7 @@ module Share = struct
     ; utf_strings : 'a StringMap.t
     ; applies : 'a AppMap.t
     ; prims : 'a StringMap.t
+    ; block_classes : 'a IntMap.t
     }
 
   let empty_aux =
@@ -94,6 +95,7 @@ module Share = struct
     ; byte_strings = StringMap.empty
     ; utf_strings = StringMap.empty
     ; applies = AppMap.empty
+    ; block_classes = IntMap.empty
     }
 
   type t =
@@ -152,7 +154,8 @@ module Share = struct
     match c with
     | String s -> add_code_string s t
     | NativeString s -> add_code_native_string s t
-    | Tuple (_, args, _) -> Array.fold_left args ~init:t ~f:(fun t c -> get_constant c t)
+    | Tuple (_, args, _, _) ->
+        Array.fold_left args ~init:t ~f:(fun t c -> get_constant c t)
     | _ -> t
 
   let add_args args t =
@@ -271,6 +274,18 @@ module Share = struct
               t.vars <- { t.vars with prims = StringMap.add s v t.vars.prims };
               J.EVar v)
       | Some _ -> gen s
+
+  (* Introcaml: the Array subclass used to allocate blocks with descriptor
+     [desc]; one variable per descriptor, initialized at the start of the
+     program with [caml_block_class] *)
+  let get_block_class desc t =
+    match IntMap.find_opt desc t.vars.block_classes with
+    | Some v -> J.EVar v
+    | None ->
+        let x = Var.fresh_n (Printf.sprintf "desc_%x" desc) in
+        let v = J.V x in
+        t.vars <- { t.vars with block_classes = IntMap.add desc v t.vars.block_classes };
+        J.EVar v
 
   let get_apply gen desc t =
     if not t.alias_apply
@@ -525,10 +540,17 @@ let rec constant_rec ~ctx x level instrs =
       | Utf (Utf8 x) -> Share.get_utf_string str_js_utf8 x ctx.Ctx.share, instrs)
   | Float f -> float_const f, instrs
   | Float32 f -> float_const f, instrs
-  | Float_array a ->
+  | Float_array (a, desc) ->
+      let cls =
+        if desc = 0 || not (Config.Flag.introspection ())
+        then None
+        else Some (Share.get_block_class desc ctx.Ctx.share)
+      in
       ( Mlvalue.Array.make
+          ?cls
           ~tag:Obj.double_array_tag
           ~args:(Array.to_list (Array.map a ~f:(fun x -> J.Element (float_const x))))
+          ()
       , instrs )
   | Int64 i ->
       let p =
@@ -538,10 +560,10 @@ let rec constant_rec ~ctx x level instrs =
       and mi = int (Int64.to_int (Int64.logand (Int64.shift_right i 24) 0xffffffL))
       and hi = int (Int64.to_int (Int64.logand (Int64.shift_right i 48) 0xffffL)) in
       J.call p [ lo; mi; hi ] J.N, instrs
-  | Tuple (tag, a, _) -> (
+  | Tuple (tag, a, _, desc) -> (
       let constant_max_depth = Config.Param.constant_max_depth () in
       let rec detect_list n acc = function
-        | Tuple (0, [| x; l |], _) -> detect_list (succ n) (x :: acc) l
+        | Tuple (0, [| x; l |], _, _) -> detect_list (succ n) (x :: acc) l
         | Int maybe_zero when Targetint.is_zero maybe_zero ->
             if n > constant_max_depth then Some acc else None
         | _ -> None
@@ -579,7 +601,12 @@ let rec constant_rec ~ctx x level instrs =
                   | _ -> J.Element js :: acc, instrs)
             else List.map ~f:(fun x -> J.Element x) (List.rev l), instrs
           in
-          Mlvalue.Block.make ~tag ~args:l, instrs)
+          let cls =
+            if desc = 0 || not (Config.Flag.introspection ())
+            then None
+            else Some (Share.get_block_class desc ctx.Ctx.share)
+          in
+          Mlvalue.Block.make ?cls ~tag ~args:l (), instrs)
   | Int i -> targetint i, instrs
   | Int32 i | NativeInt i -> targetint (Targetint.of_int32_exn i), instrs
   | Null_ -> s_var "null", instrs
@@ -1503,7 +1530,7 @@ let rec translate_expr ctx loc x e level : (_ * J.statement_list) Expr_builder.t
       let* args = list_map (access ~ctx) args in
       let* f = access ~ctx f in
       return (apply_fun ctx f args exact trampolined in_cps loc, [])
-  | Block (tag, a, array_or_not, _mut) ->
+  | Block (tag, a, array_or_not, _mut, desc) ->
       let* contents =
         list_map
           (fun x ->
@@ -1519,10 +1546,15 @@ let rec translate_expr ctx loc x e level : (_ * J.statement_list) Expr_builder.t
             return cx)
           (Array.to_list a)
       in
+      let cls =
+        if desc = 0 || not (Config.Flag.introspection ())
+        then None
+        else Some (Share.get_block_class desc ctx.Ctx.share)
+      in
       let x =
         match array_or_not with
-        | Array -> Mlvalue.Array.make ~tag ~args:contents
-        | NotArray | Unknown -> Mlvalue.Block.make ~tag ~args:contents
+        | Array -> Mlvalue.Array.make ?cls ~tag ~args:contents ()
+        | NotArray | Unknown -> Mlvalue.Block.make ?cls ~tag ~args:contents ()
       in
       return (x, [])
   | Field (x, n, _) ->
@@ -2561,7 +2593,16 @@ let generate_shared_value ctx =
             ~f:(fun (s, v) -> v, (str_js_utf8 s, J.U))
         @ List.map
             (StringMap.bindings ctx.Ctx.share.Share.vars.Share.prims)
-            ~f:(fun (s, v) -> v, (runtime_fun ctx s, J.U)))
+            ~f:(fun (s, v) -> v, (runtime_fun ctx s, J.U))
+        @ List.map
+            (IntMap.bindings ctx.Ctx.share.Share.vars.Share.block_classes)
+            ~f:(fun (desc, v) ->
+              ( v
+              , ( J.call
+                    (runtime_fun ctx "caml_block_class")
+                    [ J.ENum (J.Num.of_targetint (Targetint.of_int_exn desc)) ]
+                    J.N
+                , J.U ) )))
     , J.U )
   in
   if not (Config.Flag.inline_callgen ())

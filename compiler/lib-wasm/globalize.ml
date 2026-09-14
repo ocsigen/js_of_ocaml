@@ -74,7 +74,7 @@ let traverse_expression x e st =
   match e with
   | Code.Apply { f; args; _ } ->
       st |> use f |> fun st -> List.fold_left ~f:(fun st x -> use x st) ~init:st args
-  | Block (_, a, _, _) -> Array.fold_right ~f:use a ~init:st
+  | Block (_, a, _, _, _) -> Array.fold_right ~f:use a ~init:st
   | Field (x, _, _) -> st |> use x
   | Closure _ ->
       List.fold_left
@@ -110,7 +110,7 @@ let available x st = Code.Var.Set.mem x st.globals || Code.Var.Set.mem x st.cons
 
 let propagate_instruction st i =
   match i with
-  | Code.Let (x, Block (_, a, _, _)) when not (Code.Var.Set.mem x st.globals) ->
+  | Code.Let (x, Block (_, a, _, _, _)) when not (Code.Var.Set.mem x st.globals) ->
       (* Globalize a block when most of its fields are available
          (global or constant). Available fields go into the global's
          initializer; the rest are patched via [array.set] in the

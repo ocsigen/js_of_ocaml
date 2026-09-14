@@ -166,7 +166,7 @@ let effect_primitive_or_application = function
           (("%resume" | "%perform" | "%reperform" | "%with_stack" | "%with_stack_bind"), _)
       , _ )
   | Apply _ -> true
-  | Block (_, _, _, _)
+  | Block (_, _, _, _, _)
   | Field (_, _, _)
   | Closure (_, _, _)
   | Constant _

@@ -19,6 +19,16 @@
 
 open! Stdlib
 
+(****)
+
+let oxcaml = true [@@if oxcaml]
+
+let oxcaml = false [@@if not oxcaml]
+
+let introspect = true [@@if introspect]
+
+let introspect = false [@@if not introspect]
+
 module Flag = struct
   let optims = ref []
 
@@ -92,6 +102,8 @@ module Flag = struct
   let inline_callgen = o ~name:"callgen" ~default:false
 
   let safe_string = o ~name:"safestring" ~default:true
+
+  let introspection = o ~name:"introspection" ~default:introspect
 
   let use_js_string = o ~name:"use-js-string" ~default:true
 
@@ -262,13 +274,3 @@ let effects () =
 
 let set_effects_backend (backend : effects_backend) =
   effects_ := (backend :> [ `None | effects_backend ])
-
-(****)
-
-let oxcaml = true [@@if oxcaml]
-
-let oxcaml = false [@@if not oxcaml]
-
-let introspect = true [@@if introspect]
-
-let introspect = false [@@if not introspect]
