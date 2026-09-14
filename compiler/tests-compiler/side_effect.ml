@@ -89,7 +89,6 @@ let%expect_test _ =
         if(yes){caml_call2(Stdlib_Printf[2], _a_, label); i[1]++;}
         return 0;
        }
-       side_effect(0, caml_string_of_jsbytes("this is only to avoid inlining"));
        var
         _b_ =
           [0,

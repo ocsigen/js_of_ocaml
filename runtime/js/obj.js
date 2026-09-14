@@ -30,7 +30,7 @@ function caml_update_dummy(x, y) {
   return 0;
 }
 
-//Provides: caml_alloc_dummy_infix
+//Provides: caml_alloc_dummy_infix pure
 //Requires: caml_call_gen
 //Version: < 5.4
 function caml_alloc_dummy_infix() {
@@ -39,7 +39,7 @@ function caml_alloc_dummy_infix() {
   };
 }
 
-//Provides: caml_alloc_dummy_lazy
+//Provides: caml_alloc_dummy_lazy pure
 //Version: >= 5.4
 function caml_alloc_dummy_lazy(_unit) {
   return [0, 0];

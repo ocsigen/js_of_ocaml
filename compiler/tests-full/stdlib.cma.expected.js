@@ -13308,7 +13308,7 @@
              i) /*<<stack.ml:65:48>>*/ ;
    }
    function of_seq(g){
-    var s =  /*<<stack.ml:68:10>>*/ create(0);
+    var s =  /*<<stack.ml:68:10>>*/ [0, 0, 0];
      /*<<stack.ml:69:2>>*/ add_seq(s, g);
      /*<<stack.ml:69:13>>*/ return s;
     /*<<stack.ml:70:3>>*/ }
@@ -13519,7 +13519,7 @@
              i) /*<<queue.ml:168:48>>*/ ;
    }
    function of_seq(g){
-    var q =  /*<<queue.ml:171:10>>*/ create(0);
+    var q =  /*<<queue.ml:171:10>>*/ [0, 0, 0, 0];
      /*<<queue.ml:172:2>>*/ add_seq(q, g);
      /*<<queue.ml:172:13>>*/ return q;
     /*<<queue.ml:173:3>>*/ }
