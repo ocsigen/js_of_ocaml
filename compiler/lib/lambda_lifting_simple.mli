@@ -50,4 +50,8 @@ val f : to_lift:Var.Set.t -> program -> program * Var.t Var.Map.t
       fib 42
 
       [fib_l] is the lifted version of [fib], [fib'] is the lifting closure.
+
+      Note that putting a function's name in [to_lift] is not a guarantee that
+      it will be lambda-lifted: a function may end up unlifted if it has no
+      free variables.
       *)
