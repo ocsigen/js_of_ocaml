@@ -19,7 +19,7 @@
 
 module Jsoo = Js_of_ocaml_compiler
 
-let print_macro_transformed source =
+let print_macro_transformed ~flags source =
   Util.with_temp_dir ~f:(fun () ->
       let buffer = Buffer.create (String.length source) in
       let pp = Jsoo.Pretty_print.to_buffer buffer in
@@ -30,13 +30,14 @@ let print_macro_transformed source =
         |> Util.Filetype.write_js ~name:"test.js"
       in
       let parsed = Util.parse_js source in
-      let transformed, _ = Jsoo.Macro.f ~flags:false parsed in
+      let transformed, _ = Jsoo.Macro.f ~flags parsed in
       let (_ : Jsoo.Source_map.info) = Jsoo.Js_output.program pp transformed in
       print_endline (Buffer.contents buffer))
 
-let print_macro_transformed source =
+let print_macro_transformed ?(flags = false) source =
   Jsoo.Targetint.set_num_bits 32;
-  try print_macro_transformed source with Failure s -> Format.printf "failure: %s%!" s
+  try print_macro_transformed ~flags source
+  with Failure s -> Format.printf "failure: %s%!" s
 
 let%expect_test "BLOCK()" =
   print_macro_transformed "BLOCK()";
@@ -83,11 +84,17 @@ let%expect_test "BLOCK(0779, a)" =
   [%expect {| [779, a]; |}]
 
 let%expect_test "TAG(a)" =
+  (* Expanded at link time, as it depends on the [introspection] flag *)
   print_macro_transformed "TAG(a)";
+  [%expect {| TAG(a); |}];
+  print_macro_transformed ~flags:true "TAG(a)";
   [%expect {| a[0]; |}]
 
 let%expect_test "SET_TAG(a, b)" =
+  (* Expanded at link time, as it depends on the [introspection] flag *)
   print_macro_transformed "SET_TAG(a, b)";
+  [%expect {| SET_TAG(a, b); |}];
+  print_macro_transformed ~flags:true "SET_TAG(a, b)";
   [%expect {| a[0] = b; |}]
 
 let%expect_test "SET_TAG(a)" =

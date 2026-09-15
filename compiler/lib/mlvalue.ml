@@ -35,28 +35,34 @@ let is_block e = type_of_is_number J.NotEqEq e
 
 let is_immediate e = type_of_is_number J.EqEqEq e
 
+(* Introcaml: a block descriptor is stored in the header word, above the
+   tag, so that blocks remain plain arrays: [x[0] = tag | (desc << 8)]. The
+   descriptor is at most [caml_obj_reserved_bits] (22) bits wide, so the
+   header stays a small integer. *)
+let desc_shift = 8
+
+let header ~tag ~desc =
+  int
+    (if Config.Flag.introspection ()
+     then tag lor (Code.Block_desc.to_int desc lsl desc_shift)
+     else tag)
+
 module Block = struct
-  let make ?cls ~tag ~args () =
-    let tag_num = int tag in
-    match cls with
-    | None -> J.EArr (J.Element tag_num :: args)
-    | Some cls ->
-        (* Introcaml: a block with a descriptor is an instance of an Array
-           subclass carrying the descriptor; the constructor is always given
-           at least two arguments (the tag and a field), so this cannot be
-           mistaken for [new Array(length)]. *)
-        let args =
-          List.map args ~f:(function
-            | J.Element e -> J.Arg e
-            | J.ElementHole ->
-                J.Arg (J.EVar (J.ident (Utf8_string.of_string_exn "undefined")))
-            | J.ElementSpread e -> J.ArgSpread e)
-        in
-        J.ENew (cls, Some (J.Arg tag_num :: args), J.N)
+  let make ~tag ~desc ~args = J.EArr (J.Element (header ~tag ~desc) :: args)
 
-  let tag e = J.EAccess (e, ANormal, zero)
+  let tag e =
+    let hd = J.EAccess (e, ANormal, zero) in
+    if Config.Flag.introspection ()
+    then J.EBin (J.Band, hd, int ((1 lsl desc_shift) - 1))
+    else hd
 
-  let set_tag e tag = J.EBin (J.Eq, J.EAccess (e, ANormal, zero), tag)
+  let set_tag e tag =
+    let hd = J.EAccess (e, ANormal, zero) in
+    if Config.Flag.introspection ()
+    then
+      let desc = J.EBin (J.Band, hd, int (-(1 lsl desc_shift))) in
+      J.EBin (J.Eq, hd, J.EBin (J.Bor, desc, tag))
+    else J.EBin (J.Eq, hd, tag)
 
   let field e idx = J.EAccess (e, ANormal, int (idx + 1))
 end

@@ -19,27 +19,28 @@
 
 module Block : sig
   val make :
-       ?cls:Javascript.expression
-    -> tag:int
+       tag:int
+    -> desc:Code.Block_desc.t
     -> args:Javascript.element list
-    -> unit
     -> Javascript.expression
+  (** Introcaml: with introspection enabled, [desc] is stored in the header
+      word, above the tag. *)
 
   val tag : Javascript.expression -> Javascript.expression
+  (** The tag of a block, without the descriptor bits. *)
 
   val set_tag : Javascript.expression -> Javascript.expression -> Javascript.expression
-  (** [set_tag e tag] updates the tag of block [e] in place. [e] may be
-      evaluated more than once. *)
+  (** [set_tag e tag] updates the tag of block [e] in place, keeping its
+      descriptor. [e] may be evaluated more than once. *)
 
   val field : Javascript.expression -> int -> Javascript.expression
 end
 
 module Array : sig
   val make :
-       ?cls:Javascript.expression
-    -> tag:int
+       tag:int
+    -> desc:Code.Block_desc.t
     -> args:Javascript.element list
-    -> unit
     -> Javascript.expression
 
   val length : Javascript.expression -> Javascript.expression

@@ -24,7 +24,7 @@ type m =
   | Count of int ref
 
 (* Macros which depend on the compiler flags, so expanded at link time *)
-let link_time_names = [ "FLAG"; "CONFIG"; "BUILD_CONFIG" ]
+let link_time_names = [ "FLAG"; "CONFIG"; "BUILD_CONFIG"; "TAG"; "SET_TAG" ]
 
 class macro_mapper ~flags =
   object (m)
@@ -70,10 +70,13 @@ class macro_mapper ~flags =
                   | J.Arg e -> J.Element (m#expression e)
                   | J.ArgSpread _ -> assert false)
               in
-              Mlvalue.Block.make ~tag ~args ()
-          | "TAG", [ J.Arg e ] -> Mlvalue.Block.tag (m#expression e)
+              Mlvalue.Block.make ~tag ~desc:Code.Block_desc.none ~args
+          | "TAG", [ J.Arg e ] ->
+              (* Depends on the [introspection] flag *)
+              at_link_time (fun () -> Mlvalue.Block.tag (m#expression e))
           | "SET_TAG", [ J.Arg e; J.Arg tag ] ->
-              Mlvalue.Block.set_tag (m#expression e) (m#expression tag)
+              at_link_time (fun () ->
+                  Mlvalue.Block.set_tag (m#expression e) (m#expression tag))
           | "LENGTH", [ J.Arg e ] -> Mlvalue.Array.length (m#expression e)
           | "FIELD", [ J.Arg e; J.Arg (J.ENum n) ] ->
               let idx = Targetint.to_int_exn (J.Num.to_targetint n) in
