@@ -18,8 +18,8 @@
  *)
 
 (* Introcaml only: polymorphic printing through [Introspect] works in
-   JavaScript, where blocks carry their descriptor through their constructor.
-   Not run on wasm, which has no support yet. *)
+   JavaScript, where blocks carry their descriptor in their header word, above
+   the tag. Not run on wasm, which has no support yet. *)
 [@@@if introspect]
 
 type color =
@@ -63,6 +63,7 @@ let%expect_test "allocated values" =
   p (Ok 1, (Error "e" : (int, string) result));
   p (fun x -> x);
   p [| 1; 2 |];
+  (* [Obj.dup] allocates afresh: the copy has no descriptor, as in native *)
   p (Obj.obj (Obj.dup (Obj.repr { x = 1; name = "p" })) : point);
   [%expect
     {|
@@ -71,7 +72,7 @@ let%expect_test "allocated values" =
     (Ok 1, Error "e")
     <closure>
     [|1; 2|]
-    {x = 1; name = "p"}
+    (1, "p")
     |}]
 
 let%expect_test "reserved bits" =
@@ -100,3 +101,69 @@ let%expect_test "float blocks" =
     (Obj.get_reserved (Obj.repr (Array.map (fun x -> x +. 1.) [| 1.5 |])) = 0)
     (Obj.get_reserved (Obj.repr { fa = 1.5; fb = 2.5 }) <> 0);
   [%expect {| true true true false |}]
+
+(* The descriptor lives above the tag in the header word: it must not leak
+   into tag reads, structural comparison or hashing. Blocks built by the
+   runtime carry no descriptor. *)
+let%expect_test "descriptor is invisible to tag, compare and hash" =
+  let literal = [| 1; 2 |] in
+  let built = Array.map Fun.id literal in
+  Printf.printf
+    "%d %d %b %b %b %b\n"
+    (Obj.tag (Obj.repr (Some 5)))
+    (Obj.tag (Obj.repr literal))
+    (Obj.get_reserved (Obj.repr literal) <> 0)
+    (Obj.get_reserved (Obj.repr built) = 0)
+    (literal = built && compare literal built = 0)
+    (Hashtbl.hash literal = Hashtbl.hash built);
+  [%expect {| 0 0 true true true true |}]
+
+let%expect_test "set_reserved" =
+  let v = Obj.repr (Array.map Fun.id [| 1; 2 |]) in
+  let desc = Obj.get_reserved (Obj.repr [| 1; 2 |]) in
+  let set = Obj.set_reserved v desc in
+  Printf.printf
+    "%b %b %d %b %b\n"
+    set
+    (Obj.get_reserved v = desc)
+    (Obj.tag v)
+    (Obj.set_reserved (Obj.repr 3) desc)
+    (Obj.set_reserved (Obj.repr [||]) desc);
+  p (Obj.obj v : int array);
+  [%expect {|
+    true true 0 false false
+    [|1; 2|]
+    |}]
+
+(* Lazy values change tag in place; the descriptor survives. *)
+let%expect_test "lazy" =
+  let l = lazy (Sys.opaque_identity 1 + 2) in
+  let set = Obj.set_reserved (Obj.repr l) 42 in
+  let forced = Lazy.force l in
+  Printf.printf
+    "%b %d %d %d\n"
+    set
+    forced
+    (Obj.get_reserved (Obj.repr l))
+    (Obj.tag (Obj.repr l));
+  [%expect {| true 3 42 250 |}]
+
+let%expect_test "marshal" =
+  let v = Circle ({ x = 0; name = "o" }, 1), [ 1.5; 2.5 ], [| 1.5; 2.5 |] in
+  let roundtrip flags = Marshal.from_string (Marshal.to_string v flags) 0 in
+  let dropped, kept = roundtrip [], roundtrip [ Marshal.Reserved_bits ] in
+  let d (a, _, _) = Obj.get_reserved (Obj.repr a) in
+  let fa (_, _, a) = Obj.get_reserved (Obj.repr a) in
+  Printf.printf
+    "%b %b %b %b %b\n"
+    (d dropped = 0)
+    (d kept = d v)
+    (fa kept = fa v)
+    (dropped = v)
+    (kept = v);
+  p kept;
+  [%expect
+    {|
+    true true true true true
+    (Circle ({x = 0; name = "o"}, 1), [1.5; 2.5], [|1.5; 2.5|])
+    |}]

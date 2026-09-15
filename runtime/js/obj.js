@@ -27,9 +27,6 @@ function caml_update_dummy(x, y) {
   }
   var i = y.length;
   while (i--) x[i] = y[i];
-  // Take over the block descriptor of y (see caml_block_class)
-  if (y.constructor !== Array)
-    Object.setPrototypeOf(x, Object.getPrototypeOf(y));
   return 0;
 }
 
@@ -133,9 +130,9 @@ function caml_obj_dup(x) {
   if (x === null) return null;
   if (typeof x === "number") return x;
   var r = x.slice();
-  // Keep the block descriptor (see caml_block_class), which slice drops
-  if (x.constructor !== Array)
-    Object.setPrototypeOf(r, Object.getPrototypeOf(x));
+  // A fresh block carries no descriptor, as in the native runtime
+  // (see caml_obj_get_reserved)
+  if (Array.isArray(r)) r[0] &= 255;
   return r;
 }
 
@@ -386,48 +383,23 @@ function caml_obj_reserved_bits(_unit) {
   return 22;
 }
 
-//Provides: caml_block_classes
-//If: introspect
-var caml_block_classes = new Map();
-
-//Provides: caml_block_class
-//Requires: caml_block_classes
-//If: introspect
-// Blocks with a descriptor are instances of an Array subclass which carries
-// the descriptor index, so that the objects themselves are left untouched.
-// Derived arrays (slice, concat, map...) are plain arrays: they are either
-// blocks allocated by the runtime, which carry no descriptor, or JavaScript
-// arrays handed to foreign code (caml_js_from_array).
-function caml_block_class(desc) {
-  var cls = caml_block_classes.get(desc);
-  if (cls === undefined) {
-    cls = class extends Array {
-      static desc = desc;
-      static get [Symbol.species]() {
-        return Array;
-      }
-    };
-    caml_block_classes.set(desc, cls);
-  }
-  return cls;
-}
-
 //Provides: caml_obj_get_reserved
 //If: introspect
+// The reserved header bits of a block (its descriptor index) are stored in
+// the header word, above the tag: [x[0] = tag | (bits << 8)]. With 22 bits,
+// the header fits in 30 bits and remains a small integer. Blocks allocated by the
+// runtime have none.
 function caml_obj_get_reserved(obj) {
-  if (Array.isArray(obj)) {
-    var desc = obj.constructor.desc;
-    if (desc !== undefined) return desc;
-  }
+  if (Array.isArray(obj) && obj[0] === obj[0] >>> 0) return obj[0] >>> 8;
   return 0;
 }
 
 //Provides: caml_obj_set_reserved
-//Requires: caml_block_class
 //If: introspect
-function caml_obj_set_reserved(obj, desc) {
-  if (!Array.isArray(obj) || obj.length < 2) return 0;
-  Object.setPrototypeOf(obj, caml_block_class(desc).prototype);
+function caml_obj_set_reserved(obj, bits) {
+  if (!Array.isArray(obj) || obj.length < 2 || obj[0] !== obj[0] >>> 0)
+    return 0;
+  obj[0] = (obj[0] & 255) | ((bits & 0x3fffff) << 8);
   return 1;
 }
 

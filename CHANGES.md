@@ -1,18 +1,3 @@
-# dev
-
-## Features/Changes
-* Compiler/Runtime: with Introcaml, support runtime introspection
-  (`Introspect.Print` and friends) in JavaScript: blocks carrying a
-  descriptor are allocated as instances of an `Array` subclass holding the
-  descriptor index, and the block descriptors of the program are embedded;
-  can be disabled with `--disable introspection` (#2430)
-* Lib: add the `js_of_ocaml.devtools` library, whose
-  `Js_of_ocaml_devtools.register_formatters` installs a custom formatter in
-  `globalThis.devtoolsFormatters`: when the compiler is built with Introcaml,
-  Chrome DevTools then displays OCaml values in OCaml syntax
-  (`Circle ({x = 0; name = "o"}, 1)`), expandable to their fields by name;
-  JavaScript values embedded in them are left to the console (#2430)
-
 # 6.5.0~beta2 - Lille
 
 ## Features/Changes
@@ -27,6 +12,11 @@
   (#2342, #2463)
 * Compiler/Runtime: support building with Introcaml (OCaml fork with runtime
   introspection), gated by the `introspect` flag (#2409)
+* Compiler/Runtime: with Introcaml, support runtime introspection
+  (`Introspect.Print` and friends) in JavaScript: the descriptor of a block
+  is stored in its header word above the tag (`tag | (desc << 8)`), the
+  block descriptors of the program are embedded, and `Marshal.Reserved_bits`
+  is honored; can be disabled with `--disable introspection` (#2433)
 
 ### Compiler
 * Compiler: require sedlex 3.8.1 (#2503)
@@ -121,6 +111,12 @@
   deprecated (#2378)
 * Lib: the native stubs of the JavaScript primitives are weak symbols, so
   that they can be overridden (#2435)
+* Lib: add the `js_of_ocaml.devtools` library, whose
+  `Js_of_ocaml_devtools.register_formatters` installs a custom formatter in
+  `globalThis.devtoolsFormatters`: when the compiler is built with Introcaml,
+  Chrome DevTools then displays OCaml values in OCaml syntax
+  (`Circle ({x = 0; name = "o"}, 1)`), expandable to their fields by name;
+  JavaScript values embedded in them are left to the console (#2433)
 
 ### Toplevel
 * Toplevel: new `Wrapped` and `Async` APIs, and `protocol`, `worker` and

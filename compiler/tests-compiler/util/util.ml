@@ -19,6 +19,10 @@
 open Js_of_ocaml_compiler.Stdlib
 module Jsoo = Js_of_ocaml_compiler
 
+(* Keep in-process code generation (e.g. the macro tests) identical whether or
+   not the compiler supports introspection (Introcaml) *)
+let () = Jsoo.Config.Flag.disable "introspection"
+
 let exe =
   match Sys.os_type with
   | "Cygwin" | "Win32" -> fun x -> x ^ ".exe"
