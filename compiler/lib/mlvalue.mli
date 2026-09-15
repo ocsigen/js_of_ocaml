@@ -19,23 +19,24 @@
 
 module Block : sig
   val make :
-       ?cls:Javascript.expression
-    -> tag:int
+       tag:int
+    -> desc:Code.block_desc
     -> args:Javascript.element list
-    -> unit
     -> Javascript.expression
+  (** Introcaml: with introspection enabled, [desc] is stored in the header
+      word, above the tag. *)
 
   val tag : Javascript.expression -> Javascript.expression
+  (** The tag of a block, without the descriptor bits. *)
 
   val field : Javascript.expression -> int -> Javascript.expression
 end
 
 module Array : sig
   val make :
-       ?cls:Javascript.expression
-    -> tag:int
+       tag:int
+    -> desc:Code.block_desc
     -> args:Javascript.element list
-    -> unit
     -> Javascript.expression
 
   val length : Javascript.expression -> Javascript.expression

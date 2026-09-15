@@ -95,7 +95,7 @@ function caml_parse_engine(tables, env, cmd, arg) {
   function print_token(state, tok) {
     var token, kind;
     if (Array.isArray(tok)) {
-      token = token_name(tables[tbl_names_block], tok[0]);
+      token = token_name(tables[tbl_names_block], tok[0] & 255);
       if (typeof tok[1] === "number") kind = "" + tok[1];
       else if (typeof tok[1] === "string") kind = tok[1];
       else if (tok[1] instanceof MlBytes) kind = caml_jsbytes_of_string(tok[1]);
@@ -155,7 +155,8 @@ function caml_parse_engine(tables, env, cmd, arg) {
       // biome-ignore lint/suspicious/noFallthroughSwitchClause: falls through
       case 1: //TOKEN_READ:
         if (Array.isArray(arg)) {
-          env[env_curr_char] = tables[tbl_transl_block][arg[0] + 1];
+          // The token's tag, without the block descriptor above it
+          env[env_curr_char] = tables[tbl_transl_block][(arg[0] & 255) + 1];
           env[env_lval] = arg[1];
         } else {
           env[env_curr_char] = tables[tbl_transl_const][arg + 1];

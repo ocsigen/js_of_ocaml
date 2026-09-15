@@ -202,7 +202,9 @@ function caml_hash(count, limit, seed, obj) {
         num--;
       }
     } else if (Array.isArray(v) && v[0] === (v[0] | 0)) {
-      switch (v[0]) {
+      // Ignore the block descriptor above the tag (see caml_obj_get_reserved)
+      var tag = v[0] & 255;
+      switch (tag) {
         case 248:
           // Object
           h = caml_hash_mix_int(h, v[2]);
@@ -224,13 +226,12 @@ function caml_hash(count, limit, seed, obj) {
           }
           break;
         default:
-          if (caml_is_continuation_tag(v[0])) {
+          if (caml_is_continuation_tag(tag)) {
             /* All continuations hash to the same value,
              since we have no idea how to distinguish them. */
             break;
           }
-          var tag = ((v.length - 1) << 10) | v[0];
-          h = caml_hash_mix_int(h, tag);
+          h = caml_hash_mix_int(h, ((v.length - 1) << 10) | tag);
           for (i = 1, len = v.length; i < len; i++) {
             if (wr >= sz) break;
             queue[wr++] = v[i];

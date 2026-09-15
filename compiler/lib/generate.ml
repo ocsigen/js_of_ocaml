@@ -87,7 +87,6 @@ module Share = struct
     ; utf_strings : 'a StringMap.t
     ; applies : 'a AppMap.t
     ; prims : 'a StringMap.t
-    ; block_classes : 'a IntMap.t
     }
 
   let empty_aux =
@@ -95,7 +94,6 @@ module Share = struct
     ; byte_strings = StringMap.empty
     ; utf_strings = StringMap.empty
     ; applies = AppMap.empty
-    ; block_classes = IntMap.empty
     }
 
   type t =
@@ -274,18 +272,6 @@ module Share = struct
               t.vars <- { t.vars with prims = StringMap.add s v t.vars.prims };
               J.EVar v)
       | Some _ -> gen s
-
-  (* Introcaml: the Array subclass used to allocate blocks with descriptor
-     [desc]; one variable per descriptor, initialized at the start of the
-     program with [caml_block_class] *)
-  let get_block_class desc t =
-    match IntMap.find_opt desc t.vars.block_classes with
-    | Some v -> J.EVar v
-    | None ->
-        let x = Var.fresh_n (Printf.sprintf "desc_%x" desc) in
-        let v = J.V x in
-        t.vars <- { t.vars with block_classes = IntMap.add desc v t.vars.block_classes };
-        J.EVar v
 
   let get_apply gen desc t =
     if not t.alias_apply
@@ -541,16 +527,10 @@ let rec constant_rec ~ctx x level instrs =
   | Float f -> float_const f, instrs
   | Float32 f -> float_const f, instrs
   | Float_array (a, desc) ->
-      let cls =
-        if desc = 0 || not (Config.Flag.introspection ())
-        then None
-        else Some (Share.get_block_class desc ctx.Ctx.share)
-      in
       ( Mlvalue.Array.make
-          ?cls
           ~tag:Obj.double_array_tag
+          ~desc
           ~args:(Array.to_list (Array.map a ~f:(fun x -> J.Element (float_const x))))
-          ()
       , instrs )
   | Int64 i ->
       let p =
@@ -601,12 +581,7 @@ let rec constant_rec ~ctx x level instrs =
                   | _ -> J.Element js :: acc, instrs)
             else List.map ~f:(fun x -> J.Element x) (List.rev l), instrs
           in
-          let cls =
-            if desc = 0 || not (Config.Flag.introspection ())
-            then None
-            else Some (Share.get_block_class desc ctx.Ctx.share)
-          in
-          Mlvalue.Block.make ?cls ~tag ~args:l (), instrs)
+          Mlvalue.Block.make ~tag ~desc ~args:l, instrs)
   | Int i -> targetint i, instrs
   | Int32 i | NativeInt i -> targetint (Targetint.of_int32_exn i), instrs
   | Null_ -> s_var "null", instrs
@@ -1546,15 +1521,10 @@ let rec translate_expr ctx loc x e level : (_ * J.statement_list) Expr_builder.t
             return cx)
           (Array.to_list a)
       in
-      let cls =
-        if desc = 0 || not (Config.Flag.introspection ())
-        then None
-        else Some (Share.get_block_class desc ctx.Ctx.share)
-      in
       let x =
         match array_or_not with
-        | Array -> Mlvalue.Array.make ?cls ~tag ~args:contents ()
-        | NotArray | Unknown -> Mlvalue.Block.make ?cls ~tag ~args:contents ()
+        | Array -> Mlvalue.Array.make ~tag ~desc ~args:contents
+        | NotArray | Unknown -> Mlvalue.Block.make ~tag ~desc ~args:contents
       in
       return (x, [])
   | Field (x, n, _) ->
@@ -2593,16 +2563,7 @@ let generate_shared_value ctx =
             ~f:(fun (s, v) -> v, (str_js_utf8 s, J.U))
         @ List.map
             (StringMap.bindings ctx.Ctx.share.Share.vars.Share.prims)
-            ~f:(fun (s, v) -> v, (runtime_fun ctx s, J.U))
-        @ List.map
-            (IntMap.bindings ctx.Ctx.share.Share.vars.Share.block_classes)
-            ~f:(fun (desc, v) ->
-              ( v
-              , ( J.call
-                    (runtime_fun ctx "caml_block_class")
-                    [ J.ENum (J.Num.of_targetint (Targetint.of_int_exn desc)) ]
-                    J.N
-                , J.U ) )))
+            ~f:(fun (s, v) -> v, (runtime_fun ctx s, J.U)))
     , J.U )
   in
   if not (Config.Flag.inline_callgen ())

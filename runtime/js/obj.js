@@ -27,9 +27,6 @@ function caml_update_dummy(x, y) {
   }
   var i = y.length;
   while (i--) x[i] = y[i];
-  // Take over the block descriptor of y (see caml_block_class)
-  if (y.constructor !== Array)
-    Object.setPrototypeOf(x, Object.getPrototypeOf(y));
   return 0;
 }
 
@@ -61,7 +58,8 @@ function caml_update_dummy_lazy(dummy, newval) {
       break;
     default:
       dummy[1] = newval;
-      dummy[0] = 250;
+      // Forward, keeping the block descriptor (see caml_obj_get_reserved)
+      dummy[0] = (dummy[0] & -256) | 250;
       break;
   }
   return 0;
@@ -93,7 +91,9 @@ function caml_obj_uniquely_reachable_words(_x) {
 //Requires: caml_is_ml_bytes, caml_is_ml_string
 function caml_obj_tag(x) {
   if (x === null) return 1010;
-  else if (Array.isArray(x) && x[0] === x[0] >>> 0) return x[0];
+  // The header word holds the tag and, above it, the block descriptor
+  // (see caml_obj_get_reserved)
+  else if (Array.isArray(x) && x[0] === x[0] >>> 0) return x[0] & 255;
   else if (caml_is_ml_bytes(x)) return 252;
   else if (caml_is_ml_string(x)) return 252;
   else if (x instanceof Function || typeof x === "function") return 247;
@@ -104,7 +104,7 @@ function caml_obj_tag(x) {
 //Provides: caml_obj_set_tag (mutable, const)
 //Version: < 5.0
 function caml_obj_set_tag(x, tag) {
-  x[0] = tag;
+  x[0] = (x[0] & -256) | tag;
   return 0;
 }
 //Provides: caml_obj_block const (const,const)
@@ -130,9 +130,9 @@ function caml_obj_dup(x) {
   if (x === null) return null;
   if (typeof x === "number") return x;
   var r = x.slice();
-  // Keep the block descriptor (see caml_block_class), which slice drops
-  if (x.constructor !== Array)
-    Object.setPrototypeOf(r, Object.getPrototypeOf(x));
+  // A fresh block carries no descriptor, as in the native runtime
+  // (see caml_obj_get_reserved)
+  if (Array.isArray(r)) r[0] &= 255;
   return r;
 }
 
@@ -148,7 +148,7 @@ function caml_obj_truncate(x, s) {
 //Provides: caml_obj_make_forward
 //Version: < 5.0
 function caml_obj_make_forward(b, v) {
-  b[0] = 250;
+  b[0] = (b[0] & -256) | 250;
   b[1] = v;
   return 0;
 }
@@ -261,8 +261,9 @@ function caml_obj_add_offset(_v, _offset) {
 //Provides: caml_obj_update_tag
 //Version: >= 5.0
 function caml_obj_update_tag(b, o, n) {
-  if (b[0] === o) {
-    b[0] = n;
+  // Keep the block descriptor (see caml_obj_get_reserved)
+  if ((b[0] & 255) === o) {
+    b[0] = (b[0] & -256) | n;
     return 1;
   }
   return 0;
@@ -383,48 +384,23 @@ function caml_obj_reserved_bits(_unit) {
   return 22;
 }
 
-//Provides: caml_block_classes
-//If: introspect
-var caml_block_classes = new Map();
-
-//Provides: caml_block_class
-//Requires: caml_block_classes
-//If: introspect
-// Blocks with a descriptor are instances of an Array subclass which carries
-// the descriptor index, so that the objects themselves are left untouched.
-// Derived arrays (slice, concat, map...) are plain arrays: they are either
-// blocks allocated by the runtime, which carry no descriptor, or JavaScript
-// arrays handed to foreign code (caml_js_from_array).
-function caml_block_class(desc) {
-  var cls = caml_block_classes.get(desc);
-  if (cls === undefined) {
-    cls = class extends Array {
-      static desc = desc;
-      static get [Symbol.species]() {
-        return Array;
-      }
-    };
-    caml_block_classes.set(desc, cls);
-  }
-  return cls;
-}
-
 //Provides: caml_obj_get_reserved
 //If: introspect
+// The reserved header bits of a block (its descriptor index) are stored in
+// the header word, above the tag: [x[0] = tag | (bits << 8)]. They fit in
+// 30 bits, so the header remains a small integer. Blocks allocated by the
+// runtime have none.
 function caml_obj_get_reserved(obj) {
-  if (Array.isArray(obj)) {
-    var desc = obj.constructor.desc;
-    if (desc !== undefined) return desc;
-  }
+  if (Array.isArray(obj) && obj[0] === obj[0] >>> 0) return obj[0] >>> 8;
   return 0;
 }
 
 //Provides: caml_obj_set_reserved
-//Requires: caml_block_class
 //If: introspect
-function caml_obj_set_reserved(obj, desc) {
-  if (!Array.isArray(obj) || obj.length < 2) return 0;
-  Object.setPrototypeOf(obj, caml_block_class(desc).prototype);
+function caml_obj_set_reserved(obj, bits) {
+  if (!Array.isArray(obj) || obj.length < 2 || obj[0] !== obj[0] >>> 0)
+    return 0;
+  obj[0] = (obj[0] & 255) | ((bits & 0x3fffff) << 8);
   return 1;
 }
 

@@ -7,10 +7,10 @@
   provide stubs for the new primitives, gated by the `introspect` flag in
   `//If:` directives and wasm `(@if $introspect ...)` blocks (#2409)
 * Compiler/Runtime: with Introcaml, support runtime introspection
-  (`Introspect.Print` and friends) in JavaScript: blocks carrying a
-  descriptor are allocated as instances of an `Array` subclass holding the
-  descriptor index, and the block descriptors of the program are embedded;
-  can be disabled with `--disable introspection` (#2430)
+  (`Introspect.Print` and friends) in JavaScript: the descriptor of a block
+  is stored in its header word above the tag (`tag | (desc << 8)`), the
+  block descriptors of the program are embedded, and `Marshal.Reserved_bits`
+  is honored; can be disabled with `--disable introspection` (#2430)
 * Lib: add the `js_of_ocaml.devtools` library, whose
   `Js_of_ocaml_devtools.register_formatters` installs a custom formatter in
   `globalThis.devtoolsFormatters`: when the compiler is built with Introcaml,

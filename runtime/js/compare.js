@@ -25,9 +25,10 @@ function caml_compare_val_tag(a) {
     return 252; // string_tag
   else if (caml_is_ml_string(a))
     return 1252; // ocaml string (if different from bytes)
-  else if (Array.isArray(a) && a[0] === a[0] >>> 0 && a[0] <= 255) {
-    // Look like an ocaml block
-    var tag = a[0] | 0;
+  else if (Array.isArray(a) && a[0] === a[0] >>> 0 && a[0] < 0x40000000) {
+    // Look like an ocaml block: the header word holds the tag and, above
+    // it, the block descriptor (see caml_obj_get_reserved)
+    var tag = a[0] & 255;
     // ignore double_array_tag because we cannot accurately set
     // this tag when we create an array of float.
     return tag === 254 ? 0 : tag;

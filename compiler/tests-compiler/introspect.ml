@@ -19,9 +19,8 @@
 
 open! Util
 
-(* Introcaml only: blocks carrying a descriptor are allocated as instances of
-   an Array subclass holding the descriptor index, one class per descriptor,
-   shared across the compilation unit. *)
+(* Introcaml only: the descriptor of a block is stored in its header word,
+   above the tag ([tag | (desc << 8)]), and tag reads mask it off. *)
 [@@@if introspect]
 
 let%expect_test "blocks with a descriptor" =
@@ -36,6 +35,9 @@ let%expect_test "blocks with a descriptor" =
       let mk_ref x = ref x
       let mk_float_array x = [| x; x |]
       let mk_list x = [ x; x ]
+      type t = A of int | B of int * int | C of int
+      let tag_of x = match x with A n -> n | B (n, _) -> n | C n -> n + 1
+      let is_some x = match x with Some _ -> true | None -> false
     |}
   in
   print_fun_decl program (Some "mk_point");
@@ -44,21 +46,31 @@ let%expect_test "blocks with a descriptor" =
   print_fun_decl program (Some "mk_ref");
   print_fun_decl program (Some "mk_float_array");
   print_fun_decl program (Some "mk_list");
+  print_fun_decl program (Some "tag_of");
+  print_fun_decl program (Some "is_some");
   [%expect
     {|
-           function mk_point(x, y){return new desc_18f60e(0, x, y);}
-           //end
-           function mk_pair(x, y){return new desc_2b23e6(0, x, y);}
-           //end
-           function mk_option(x){return new desc_c189a(0, x);}
-           //end
-           function mk_ref(x){return new desc_1d76a5(0, x);}
-           //end
-           function mk_float_array(x){return new desc_2eed5d(0, x, x);}
-           //end
-           function mk_list(x){return new desc_26ea38(0, x, new desc_26ea38(0, x, 0));}
-           //end
-           |}]
+    function mk_point(x, y){return [418778624, x, y];}
+    //end
+    function mk_pair(x, y){return [723772928, x, y];}
+    //end
+    function mk_option(x){return [202938880, x];}
+    //end
+    function mk_ref(x){return [494314752, x];}
+    //end
+    function mk_float_array(x){return [787307776, x, x];}
+    //end
+    function mk_list(x){return [652883968, x, [652883968, x, 0]];}
+    //end
+    function tag_of(x){
+     if(2 === (x[0] & 255)){var n$0 = x[1]; return n$0 + 1 | 0;}
+     var n = x[1];
+     return n;
+    }
+    //end
+    function is_some(x){return x ? 1 : 0;}
+    //end
+    |}]
 
 let%expect_test "blocks without a descriptor" =
   let program =

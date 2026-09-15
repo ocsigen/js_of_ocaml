@@ -259,7 +259,9 @@ function caml_build_symbols(symb) {
   if (symb) {
     for (var i = 1; i < symb.length; i++) {
       var gn = symb[i][1];
-      var is_predef = gn[0];
+      // Glob_predef vs Glob_compunit; ignore the block descriptor above the
+      // tag (see caml_obj_get_reserved)
+      var is_predef = gn[0] & 255;
       var name = caml_jsstring_of_string(gn[1]);
       var idx = symb[i][2];
       max = Math.max(max, idx);
