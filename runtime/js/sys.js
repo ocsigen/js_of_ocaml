@@ -55,11 +55,13 @@ function caml_is_special_exception(exn) {
 //Requires: MlBytes, caml_is_special_exception
 function caml_format_exception(exn) {
   var r = "";
-  if (exn[0] === 0) {
+  // Ignore the block descriptor above the tag (see caml_obj_get_reserved)
+  var tag = exn[0] & 255;
+  if (tag === 0) {
     r += exn[1][1];
     if (
       exn.length === 3 &&
-      exn[2][0] === 0 &&
+      (exn[2][0] & 255) === 0 &&
       caml_is_special_exception(exn[1])
     ) {
       var bucket = exn[2];
@@ -80,7 +82,7 @@ function caml_format_exception(exn) {
       } else r += "_";
     }
     r += ")";
-  } else if (exn[0] === 248) {
+  } else if (tag === 248) {
     r += exn[1];
   }
   return r;
@@ -89,7 +91,7 @@ function caml_format_exception(exn) {
 //Provides: caml_fatal_uncaught_exception
 //Requires: caml_named_value, caml_format_exception, caml_callback
 function caml_fatal_uncaught_exception(err) {
-  if (Array.isArray(err) && (err[0] === 0 || err[0] === 248)) {
+  if (Array.isArray(err) && ((err[0] & 255) === 0 || (err[0] & 255) === 248)) {
     var handler = caml_named_value("Printexc.handle_uncaught_exception");
     if (handler) caml_callback(handler, [err, false]);
     else {

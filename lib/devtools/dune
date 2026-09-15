@@ -1,0 +1,7 @@
+(library
+ (name js_of_ocaml_devtools)
+ (public_name js_of_ocaml.devtools)
+ (synopsis "Browser developer tools integration: Introcaml values in DevTools")
+ (libraries js_of_ocaml-compiler.runtime)
+ (preprocess
+  (pps ppx_optcomp_light)))

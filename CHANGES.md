@@ -6,6 +6,17 @@
   extended `Const_block`, skip the reserved header bits in marshaled data, and
   provide stubs for the new primitives, gated by the `introspect` flag in
   `//If:` directives and wasm `(@if $introspect ...)` blocks (#2409)
+* Compiler/Runtime: with Introcaml, support runtime introspection
+  (`Introspect.Print` and friends) in JavaScript: the descriptor of a block
+  is stored in its header word above the tag (`tag | (desc << 8)`), the
+  block descriptors of the program are embedded, and `Marshal.Reserved_bits`
+  is honored; can be disabled with `--disable introspection` (#2430)
+* Lib: add the `js_of_ocaml.devtools` library, whose
+  `Js_of_ocaml_devtools.register_formatters` installs a custom formatter in
+  `globalThis.devtoolsFormatters`: when the compiler is built with Introcaml,
+  Chrome DevTools then displays OCaml values in OCaml syntax
+  (`Circle ({x = 0; name = "o"}, 1)`), expandable to their fields by name;
+  JavaScript values embedded in them are left to the console (#2430)
 * Lib: add `WebGL2` — bindings to the WebGL2 rendering context. The context
   inherits every method and constant of `WebGL`, and adds the WebGL2 objects
   (vertex array objects, queries, samplers, syncs, transform feedback), 3D and

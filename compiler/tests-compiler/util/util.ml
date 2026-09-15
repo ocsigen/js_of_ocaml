@@ -19,6 +19,10 @@
 open Js_of_ocaml_compiler.Stdlib
 module Jsoo = Js_of_ocaml_compiler
 
+(* Keep in-process code generation (e.g. the macro tests) identical whether or
+   not the compiler supports introspection (Introcaml) *)
+let () = Jsoo.Config.Flag.disable "introspection"
+
 let exe =
   match Sys.os_type with
   | "Cygwin" | "Win32" -> fun x -> x ^ ".exe"
@@ -309,6 +313,11 @@ let compile_to_javascript
       ; (if use_js_string
          then [ "--enable=use-js-string" ]
          else [ "--disable=use-js-string" ])
+      ; (* Keep the snapshots identical whether or not the compiler supports
+           introspection (Introcaml), unless a test enables it explicitly *)
+        (if List.exists flags ~f:(fun f -> String.equal f "--enable=introspection")
+         then []
+         else [ "--disable=introspection" ])
       ; (* The qjs runtime needs +fs_quickjs.js for host-fs access. The
            dune env stanza adds it for in-tree builds, but
            [compile_and_run] invokes [js_of_ocaml.exe] as a subprocess

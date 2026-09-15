@@ -344,16 +344,18 @@ function caml_input_value_from_reader(reader) {
   var obj_counter = 0;
   function intern_rec(reader) {
     var code = reader.read8u();
+    // Introcaml: reserved header bits of the next block, stored above its
+    // tag in the header word (see caml_obj_get_reserved)
+    var reserved = 0;
     if (code === 0x1a /*cst.CODE_RESERVED_BITS*/) {
-      // Introcaml: reserved header bits of the next block; ignored
-      reader.read32u();
+      reserved = (reader.read32u() & 0x3fffff) << 8;
       code = reader.read8u();
     }
     if (code >= 0x40 /*cst.PREFIX_SMALL_INT*/) {
       if (code >= 0x80 /*cst.PREFIX_SMALL_BLOCK*/) {
         var tag = code & 0xf;
         var size = (code >> 4) & 0x7;
-        var v = [tag];
+        var v = [tag | reserved];
         if (size === 0) return v;
         if (intern_obj_table) intern_obj_table[obj_counter++] = v;
         if (tag === 248) objects.push(v);
@@ -394,7 +396,7 @@ function caml_input_value_from_reader(reader) {
             var tag = header & 0xff;
             // unsigned: bit 31 of the header is set for sizes >= 2^21
             var size = header >>> 10;
-            var v = [tag];
+            var v = [tag | reserved];
             if (size === 0) return v;
             if (intern_obj_table) intern_obj_table[obj_counter++] = v;
             if (tag === 248) objects.push(v);
@@ -428,7 +430,7 @@ function caml_input_value_from_reader(reader) {
           case 0x0e: //cst.CODE_DOUBLE_ARRAY8_LITTLE:
             var len = reader.read8u();
             var v = new Array(len + 1);
-            v[0] = 254;
+            v[0] = 254 | reserved;
             var t = new Array(8);
             if (intern_obj_table) intern_obj_table[obj_counter++] = v;
             for (var i = 1; i <= len; i++) {
@@ -439,7 +441,7 @@ function caml_input_value_from_reader(reader) {
           case 0x0d: //cst.CODE_DOUBLE_ARRAY8_BIG:
             var len = reader.read8u();
             var v = new Array(len + 1);
-            v[0] = 254;
+            v[0] = 254 | reserved;
             var t = new Array(8);
             if (intern_obj_table) intern_obj_table[obj_counter++] = v;
             for (var i = 1; i <= len; i++) {
@@ -450,7 +452,7 @@ function caml_input_value_from_reader(reader) {
           case 0x07: //cst.CODE_DOUBLE_ARRAY32_LITTLE:
             var len = reader.read32u();
             var v = new Array(len + 1);
-            v[0] = 254;
+            v[0] = 254 | reserved;
             if (intern_obj_table) intern_obj_table[obj_counter++] = v;
             var t = new Array(8);
             for (var i = 1; i <= len; i++) {
@@ -461,7 +463,7 @@ function caml_input_value_from_reader(reader) {
           case 0x0f: //cst.CODE_DOUBLE_ARRAY32_BIG:
             var len = reader.read32u();
             var v = new Array(len + 1);
-            v[0] = 254;
+            v[0] = 254 | reserved;
             if (intern_obj_table) intern_obj_table[obj_counter++] = v;
             var t = new Array(8);
             for (var i = 1; i <= len; i++) {
@@ -678,7 +680,9 @@ var caml_output_val = (function () {
     flags = caml_list_to_js_array(flags);
 
     var no_sharing = flags.indexOf(0 /*Marshal.No_sharing*/) !== -1,
-      closures = flags.indexOf(1 /*Marshal.Closures*/) !== -1;
+      closures = flags.indexOf(1 /*Marshal.Closures*/) !== -1,
+      // Introcaml: preserve the reserved header bits (block descriptors)
+      reserved_bits = flags.indexOf(4 /*Marshal.Reserved_bits*/) !== -1;
     /* Marshal.Compat_32 is redundant since integers are 32-bit anyway */
 
     if (closures)
@@ -689,6 +693,14 @@ var caml_output_val = (function () {
     var writer = new Writer();
     var stack = [];
     var intern_obj_table = no_sharing ? null : new MlObjectTable();
+
+    // Introcaml: emit the reserved header bits of a block, as the native
+    // runtime does with Marshal.Reserved_bits
+    function write_reserved(v) {
+      var reserved = v[0] >>> 8;
+      if (reserved_bits && reserved !== 0)
+        writer.write_code(32, 0x1a /*cst.CODE_RESERVED_BITS*/, reserved);
+    }
 
     function memo(v) {
       if (no_sharing) return false;
@@ -738,11 +750,12 @@ var caml_output_val = (function () {
         }
         writer.size_32 += 2 + ((sz_32_64[0] + 3) >> 2);
         writer.size_64 += 2 + ((sz_32_64[1] + 7) >> 3);
-      } else if (Array.isArray(v) && v[0] === 254) {
+      } else if (Array.isArray(v) && (v[0] & 255) === 254) {
         // float array (Double_array_tag): emit a CODE_DOUBLE_ARRAY
         // block (raw doubles) like the native runtime, so other
         // runtimes can read it
         if (memo(v)) return;
+        write_reserved(v);
         var nfloats = v.length - 1;
         if (nfloats < 0x100)
           writer.write_code(8, 0x0e /*cst.CODE_DOUBLE_ARRAY8_LITTLE*/, nfloats);
@@ -759,16 +772,20 @@ var caml_output_val = (function () {
         writer.size_32 += 1 + nfloats * 2;
         writer.size_64 += 1 + nfloats;
       } else if (Array.isArray(v) && v[0] === (v[0] | 0)) {
-        if (v[0] === 251) {
+        // The header word holds the tag and, above it, the block descriptor
+        // (see caml_obj_get_reserved)
+        var tag = v[0] & 255;
+        if (tag === 251) {
           caml_failwith("output_value: abstract value (Abstract)");
         }
-        if (caml_is_continuation_tag(v[0]))
+        if (caml_is_continuation_tag(tag))
           caml_invalid_argument("output_value: continuation value");
         if (v.length > 1 && memo(v)) return;
-        if (v[0] < 16 && v.length - 1 < 8)
+        if (v.length > 1) write_reserved(v);
+        if (tag < 16 && v.length - 1 < 8)
           writer.write(
             8,
-            0x80 /*cst.PREFIX_SMALL_BLOCK*/ + v[0] + ((v.length - 1) << 4),
+            0x80 /*cst.PREFIX_SMALL_BLOCK*/ + tag + ((v.length - 1) << 4),
           );
         else {
           if (v.length - 1 >= 0x400000 /* 2^22 */)
@@ -778,7 +795,7 @@ var caml_output_val = (function () {
           writer.write_code(
             32,
             0x08 /*cst.CODE_BLOCK32*/,
-            ((v.length - 1) << 10) | v[0],
+            ((v.length - 1) << 10) | tag,
           );
         }
         writer.size_32 += v.length;

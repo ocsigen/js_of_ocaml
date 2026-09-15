@@ -58,7 +58,8 @@ function caml_update_dummy_lazy(dummy, newval) {
       break;
     default:
       dummy[1] = newval;
-      dummy[0] = 250;
+      // Forward, keeping the block descriptor (see caml_obj_get_reserved)
+      dummy[0] = (dummy[0] & -256) | 250;
       break;
   }
   return 0;
@@ -90,7 +91,9 @@ function caml_obj_uniquely_reachable_words(_x) {
 //Requires: caml_is_ml_bytes, caml_is_ml_string
 function caml_obj_tag(x) {
   if (x === null) return 1010;
-  else if (Array.isArray(x) && x[0] === x[0] >>> 0) return x[0];
+  // The header word holds the tag and, above it, the block descriptor
+  // (see caml_obj_get_reserved)
+  else if (Array.isArray(x) && x[0] === x[0] >>> 0) return x[0] & 255;
   else if (caml_is_ml_bytes(x)) return 252;
   else if (caml_is_ml_string(x)) return 252;
   else if (x instanceof Function || typeof x === "function") return 247;
@@ -101,7 +104,7 @@ function caml_obj_tag(x) {
 //Provides: caml_obj_set_tag (mutable, const)
 //Version: < 5.0
 function caml_obj_set_tag(x, tag) {
-  x[0] = tag;
+  x[0] = (x[0] & -256) | tag;
   return 0;
 }
 //Provides: caml_obj_block const (const,const)
@@ -125,7 +128,12 @@ function caml_obj_with_tag(tag, x) {
 //Provides: caml_obj_dup mutable (mutable)
 function caml_obj_dup(x) {
   if (x === null) return null;
-  return typeof x === "number" ? x : x.slice();
+  if (typeof x === "number") return x;
+  var r = x.slice();
+  // A fresh block carries no descriptor, as in the native runtime
+  // (see caml_obj_get_reserved)
+  if (Array.isArray(r)) r[0] &= 255;
+  return r;
 }
 
 //Provides: caml_obj_truncate (mutable, const)
@@ -140,7 +148,7 @@ function caml_obj_truncate(x, s) {
 //Provides: caml_obj_make_forward
 //Version: < 5.0
 function caml_obj_make_forward(b, v) {
-  b[0] = 250;
+  b[0] = (b[0] & -256) | 250;
   b[1] = v;
   return 0;
 }
@@ -253,8 +261,9 @@ function caml_obj_add_offset(_v, _offset) {
 //Provides: caml_obj_update_tag
 //Version: >= 5.0
 function caml_obj_update_tag(b, o, n) {
-  if (b[0] === o) {
-    b[0] = n;
+  // Keep the block descriptor (see caml_obj_get_reserved)
+  if ((b[0] & 255) === o) {
+    b[0] = (b[0] & -256) | n;
     return 1;
   }
   return 0;
@@ -343,35 +352,62 @@ function caml_int_as_pointer(i) {
 
 //Provides: caml_compiler_block_descs_ref
 //If: introspect
-var caml_compiler_block_descs_ref = [0];
+var caml_compiler_block_descs_ref = [0, 0];
 
 //Provides: caml_compiler_block_descs
-//If: introspect
 //Requires: caml_compiler_block_descs_ref
+//If: introspect
 function caml_compiler_block_descs(_unit) {
   return caml_compiler_block_descs_ref;
 }
 
+//Provides: caml_register_block_descs
+//Requires: caml_compiler_block_descs_ref
+//If: introspect
+// Prepend the descriptors of a program or a compilation unit to the list
+// [Introspect.Desc.compiler_descriptors ()] watches: it registers the new
+// prefix, up to the list it has already seen.
+function caml_register_block_descs(descs) {
+  var elts = [];
+  for (var l = descs; l !== 0; l = l[2]) elts.push(l[1]);
+  var res = caml_compiler_block_descs_ref[1];
+  for (var i = elts.length - 1; i >= 0; i--) res = [0, elts[i], res];
+  caml_compiler_block_descs_ref[1] = res;
+  return 0;
+}
+
 //Provides: caml_obj_reserved_bits
 //If: introspect
+// Must match [Config.reserved_header_bits] of the compiler that produced
+// the bytecode: descriptor indices are hashes truncated to that many bits.
 function caml_obj_reserved_bits(_unit) {
-  return 0;
+  return 22;
 }
 
 //Provides: caml_obj_get_reserved
 //If: introspect
-function caml_obj_get_reserved(_obj) {
+// The reserved header bits of a block (its descriptor index) are stored in
+// the header word, above the tag: [x[0] = tag | (bits << 8)]. They fit in
+// 30 bits, so the header remains a small integer. Blocks allocated by the
+// runtime have none.
+function caml_obj_get_reserved(obj) {
+  if (Array.isArray(obj) && obj[0] === obj[0] >>> 0) return obj[0] >>> 8;
   return 0;
 }
 
 //Provides: caml_obj_set_reserved
 //If: introspect
-function caml_obj_set_reserved(_obj, _bits) {
-  return 0;
+function caml_obj_set_reserved(obj, bits) {
+  if (!Array.isArray(obj) || obj.length < 2 || obj[0] !== obj[0] >>> 0)
+    return 0;
+  obj[0] = (obj[0] & 255) | ((bits & 0x3fffff) << 8);
+  return 1;
 }
 
 //Provides: caml_read_bdsc_section
 //If: introspect
+// The descriptors of the program are registered with
+// [caml_register_block_descs] instead.
 function caml_read_bdsc_section(_unit) {
   return 0;
 }

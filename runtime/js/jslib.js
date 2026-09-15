@@ -227,7 +227,7 @@ function caml_maybe_attach_backtrace(exn, force) {
 //Requires: caml_global_data
 function caml_exn_with_js_backtrace(exn, force) {
   //never reraise for constant exn
-  if (!exn.js_error || force || exn[0] === 248)
+  if (!exn.js_error || force || (exn[0] & 255) === 248)
     exn.js_error = new globalThis.Error("Js exception containing backtrace");
   return exn;
 }

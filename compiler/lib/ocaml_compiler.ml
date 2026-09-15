@@ -41,11 +41,13 @@ let rec constant_of_const c : Code.constant =
   | Const_immstring s -> String s
   | Const_float_array sl ->
       let l = List.map ~f:(fun f -> Int64.bits_of_float (float_of_string f)) sl in
-      Float_array (Array.of_list l)
-  | ((Const_block (tag, l)) [@if not introspect])
-  | ((Const_block (tag, l, _)) [@if introspect]) ->
+      Float_array (Array.of_list l, 0)
+  | ((Const_block (tag, l)) [@if not introspect]) ->
       let l = Array.of_list (List.map l ~f:constant_of_const) in
-      Tuple (tag, l, Unknown)
+      Tuple (tag, l, Unknown, 0)
+  | ((Const_block (tag, l, bdesc)) [@if introspect]) ->
+      let l = Array.of_list (List.map l ~f:constant_of_const) in
+      Tuple (tag, l, Unknown, Block_desc.index bdesc)
 [@@if not oxcaml]
 
 let rec constant_of_const c : Code.constant =
@@ -72,10 +74,10 @@ let rec constant_of_const c : Code.constant =
   | Const_immstring s -> String s
   | Const_float_array sl | Const_float_block sl ->
       let l = List.map ~f:(fun f -> Int64.bits_of_float (float_of_string f)) sl in
-      Float_array (Array.of_list l)
+      Float_array (Array.of_list l, 0)
   | Const_block (tag, l) | Const_mixed_block (tag, _, l) ->
       let l = Array.of_list (List.map l ~f:constant_of_const) in
-      Tuple (tag, l, Unknown)
+      Tuple (tag, l, Unknown, 0)
   | Const_null -> Null_
 [@@if oxcaml]
 
@@ -381,8 +383,15 @@ module Compilation_unit_descr = struct
 end
 [@@if oxcaml]
 
+let cmo_block_descs (t : Compilation_unit_descr.t) = Some (Obj.repr t.cu_block_descs)
+[@@if introspect]
+
+let cmo_block_descs (_ : Compilation_unit_descr.t) = None [@@if not introspect]
+
 module Cmo_format = struct
   type t = Cmo_format.compilation_unit
+
+  let block_descs = cmo_block_descs
 
   let name (t : t) = Global_name.Compunit t.cu_name [@@if ocaml_version < (5, 2, 0)]
 
@@ -459,6 +468,8 @@ module Cmo_format = struct
   let hints_pos _ = 0
 
   let hints_size _ = 0
+
+  let block_descs = cmo_block_descs
 end
 [@@if oxcaml]
 

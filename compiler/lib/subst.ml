@@ -29,7 +29,7 @@ module Excluding_Binders = struct
     | Constant _ -> e
     | Apply { f; args; exact } ->
         Apply { f = s f; args = List.map args ~f:(fun x -> s x); exact }
-    | Block (n, a, k, mut) -> Block (n, Array.map a ~f:(fun x -> s x), k, mut)
+    | Block (n, a, k, mut, d) -> Block (n, Array.map a ~f:(fun x -> s x), k, mut, d)
     | Field (x, n, typ) -> Field (s x, n, typ)
     | Closure (l, pc, loc) -> Closure (l, subst_cont s pc, loc)
     | Special _ -> e
@@ -116,7 +116,7 @@ module Including_Binders = struct
     match e with
     | Constant _ -> e
     | Apply { f; args; exact } -> Apply { f = s f; args = List.map args ~f:s; exact }
-    | Block (n, a, k, mut) -> Block (n, Array.map a ~f:s, k, mut)
+    | Block (n, a, k, mut, d) -> Block (n, Array.map a ~f:s, k, mut, d)
     | Field (x, n, typ) -> Field (s x, n, typ)
     | Closure (l, pc, loc) -> Closure (List.map l ~f:s, subst_cont s pc, loc)
     | Special _ -> e
@@ -163,7 +163,7 @@ module Including_Binders = struct
       match e with
       | Constant _ -> e
       | Apply { f; args; exact } -> Apply { f = s f; args = List.map args ~f:s; exact }
-      | Block (n, a, k, mut) -> Block (n, Array.map a ~f:s, k, mut)
+      | Block (n, a, k, mut, d) -> Block (n, Array.map a ~f:s, k, mut, d)
       | Field (x, n, typ) -> Field (s x, n, typ)
       | Closure (l, pc, loc) -> Closure (List.map l ~f:s, subst_cont m s pc, loc)
       | Special _ -> e

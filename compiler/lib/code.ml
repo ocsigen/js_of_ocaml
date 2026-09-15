@@ -323,6 +323,11 @@ type array_or_not =
   | NotArray
   | Unknown
 
+type block_desc = int
+(** Introspection metadata attached to a block: the reserved header bits
+    Introcaml associates to the block's descriptor (see [Introspect.Desc]).
+    [0] when there is none. *)
+
 module Native_string = struct
   type t =
     | Byte of string
@@ -344,12 +349,12 @@ type constant =
   | NativeString of Native_string.t
   | Float of Int64.t
   | Float32 of Int64.t
-  | Float_array of Int64.t array
+  | Float_array of Int64.t array * block_desc
   | Int of Targetint.t
   | Int32 of Int32.t
   | Int64 of Int64.t
   | NativeInt of Int32.t (* Native ints are 32bit on all known backends *)
-  | Tuple of int * constant array * array_or_not
+  | Tuple of int * constant array * array_or_not * block_desc
   | Null_
 
 module Constant = struct
@@ -359,7 +364,7 @@ module Constant = struct
     match a, b with
     | String a, String b -> Some (String.equal a b)
     | NativeString a, NativeString b -> Some (Native_string.equal a b)
-    | Tuple (ta, a, _), Tuple (tb, b, _) ->
+    | Tuple (ta, a, _, _), Tuple (tb, b, _, _) ->
         if ta <> tb || Array.length a <> Array.length b
         then Some false
         else
@@ -375,7 +380,7 @@ module Constant = struct
     | Int32 a, Int32 b -> Some (Int32.equal a b)
     | Int64 a, Int64 b -> Some (Int64.equal a b)
     | NativeInt a, NativeInt b -> Some (Int32.equal a b)
-    | Float_array a, Float_array b ->
+    | Float_array (a, _), Float_array (b, _) ->
         Some
           (Array.equal
              (fun f g -> Float.ieee_equal (Int64.float_of_bits f) (Int64.float_of_bits g))
@@ -389,8 +394,8 @@ module Constant = struct
     | String _, NativeString _ | NativeString _, String _ -> None
     | Int _, Float _ | Float _, Int _ -> None
     | Int _, Float32 _ | Float32 _, Int _ -> None
-    | Tuple ((0 | 254), _, _), Float_array _ -> None
-    | Float_array _, Tuple ((0 | 254), _, _) -> None
+    | Tuple ((0 | 254), _, _, _), Float_array _ -> None
+    | Float_array _, Tuple ((0 | 254), _, _, _) -> None
     | ( Tuple _
       , ( String _
         | NativeString _
@@ -440,13 +445,13 @@ module Constant = struct
         | Tuple _
         | Float_array _ ) ) -> Some false
     | ( Float _
-      , (Float32 _ | String _ | NativeString _ | Float_array _ | Int64 _ | Tuple (_, _, _))
-      ) -> Some false
+      , ( Float32 _ | String _ | NativeString _ | Float_array _ | Int64 _
+        | Tuple (_, _, _, _) ) ) -> Some false
     | ( Float32 _
-      , (Float _ | String _ | NativeString _ | Float_array _ | Int64 _ | Tuple (_, _, _))
-      ) -> Some false
+      , ( Float _ | String _ | NativeString _ | Float_array _ | Int64 _
+        | Tuple (_, _, _, _) ) ) -> Some false
     | ( (Int _ | Int32 _ | NativeInt _)
-      , (String _ | NativeString _ | Float_array _ | Int64 _ | Tuple (_, _, _)) ) ->
+      , (String _ | NativeString _ | Float_array _ | Int64 _ | Tuple (_, _, _, _)) ) ->
         Some false
     | Null_, _ | _, Null_ -> Some false
     (* Note: the following cases should not occur when compiling to Javascript *)
@@ -482,7 +487,7 @@ type expr =
       ; args : Var.t list
       ; exact : bool
       }
-  | Block of int * Var.t array * array_or_not * mutability
+  | Block of int * Var.t array * array_or_not * mutability * block_desc
   | Field of Var.t * int * field_type
   | Closure of
       Var.t list * cont * (Optimization_hint.closure_hint option * Parse_info.t option)
@@ -543,7 +548,8 @@ module Print = struct
     | NativeString (Utf (Utf8 s)) -> Format.fprintf f "%Sj" s
     | Float fl -> Format.fprintf f "%.12g" (Int64.float_of_bits fl)
     | Float32 fl -> Format.fprintf f "%.9g" (Int64.float_of_bits fl)
-    | Float_array a ->
+    | Float_array (a, desc) ->
+        if desc <> 0 then Format.fprintf f "#%x" desc;
         Format.fprintf f "[|";
         for i = 0 to Array.length a - 1 do
           if i > 0 then Format.fprintf f ", ";
@@ -554,8 +560,9 @@ module Print = struct
     | Int32 i -> Format.fprintf f "%ldl" i
     | Int64 i -> Format.fprintf f "%LdL" i
     | NativeInt i -> Format.fprintf f "%ldn" i
-    | Tuple (tag, a, _) -> (
+    | Tuple (tag, a, _, desc) -> (
         Format.fprintf f "<%d>" tag;
+        if desc <> 0 then Format.fprintf f "#%x" desc;
         match Array.length a with
         | 0 -> ()
         | 1 ->
@@ -639,7 +646,7 @@ module Print = struct
         if exact
         then Format.fprintf f "%a!(%a)" Var.print g var_list args
         else Format.fprintf f "%a(%a)" Var.print g var_list args
-    | Block (t, a, _, mut) ->
+    | Block (t, a, _, mut, desc) ->
         Format.fprintf
           f
           "%s{tag=%d"
@@ -647,6 +654,7 @@ module Print = struct
           | Immutable -> "imm"
           | Maybe_mutable -> "")
           t;
+        if desc <> 0 then Format.fprintf f "; desc=%x" desc;
         for i = 0 to Array.length a - 1 do
           Format.fprintf f "; %d = %a" i Var.print a.(i)
         done;
@@ -1084,7 +1092,7 @@ let invariant ({ blocks; start; _ } as p) =
     in
     let check_expr = function
       | Apply _ -> ()
-      | Block (_, _, _, _) -> ()
+      | Block (_, _, _, _, _) -> ()
       | Field (_, _, _) -> ()
       | Closure (l, cont, _) ->
           List.iter l ~f:define;

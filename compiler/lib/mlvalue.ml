@@ -33,12 +33,24 @@ let is_block e = type_of_is_number J.NotEqEq e
 
 let is_immediate e = type_of_is_number J.EqEqEq e
 
-module Block = struct
-  let make ~tag ~args =
-    let tag_elt = J.Element (J.ENum (J.Num.of_targetint (Targetint.of_int_exn tag))) in
-    J.EArr (tag_elt :: args)
+(* Introcaml: a block descriptor is stored in the header word, above the
+   tag, so that blocks remain plain arrays: [x[0] = tag | (desc << 8)]. The
+   descriptor is at most [caml_obj_reserved_bits] (22) bits wide, so the
+   header stays a small integer. *)
+let desc_shift = 8
 
-  let tag e = J.EAccess (e, ANormal, zero)
+let header ~tag ~desc =
+  let n = if Config.Flag.introspection () then tag lor (desc lsl desc_shift) else tag in
+  J.ENum (J.Num.of_targetint (Targetint.of_int_exn n))
+
+module Block = struct
+  let make ~tag ~desc ~args = J.EArr (J.Element (header ~tag ~desc) :: args)
+
+  let tag e =
+    let hd = J.EAccess (e, ANormal, zero) in
+    if Config.Flag.introspection ()
+    then J.EBin (J.Band, hd, J.ENum (J.Num.of_targetint (Targetint.of_int_exn 255)))
+    else hd
 
   let field e idx =
     let adjusted = J.ENum (J.Num.of_targetint (Targetint.of_int_exn (idx + 1))) in
