@@ -31,9 +31,9 @@
    (import "fail" "ocaml_exception" (tag $ocaml_exception (param (ref eq))))
    (import "fail" "javascript_exception"
       (tag $javascript_exception (param externref)))
-   (import "stdlib" "caml_main_wrapper"
-      (global $caml_main_wrapper (mut (ref null $wrapper_func))))
    (import "effect" "effect_allowed" (global $effect_allowed (mut i32)))
+   (import "effect" "caml_continuation_use_noexc"
+      (func $caml_continuation_use_noexc (param (ref eq)) (result (ref eq))))
 (@if $wasi
 (@then
    ;; Never actually called since there is no JavaScript exception
@@ -108,35 +108,18 @@
    (global $raise_unhandled_closure (ref $closure)
       (struct.new $closure (ref.func $raise_unhandled)))
 
-   (type $thunk (func (result (ref eq))))
-   (type $wrapper_func (func (param (ref $thunk))))
-   (type $func_closure (struct (field $func (ref $thunk))))
-
-   (func $wrapper_cont
-      (param $f (ref eq)) (param (ref eq)) (result (ref eq))
-      (return_call_ref $thunk
-         (local.get $f)
-         (struct.get $func_closure 0
-            (ref.cast (ref $func_closure) (local.get $f)))))
-
-   (func $unhandled_effect_wrapper (param $func (ref $thunk))
-      (local $continuation (ref $continuation))
-      (local $f (ref eq)) (local $v (ref eq))
-      (local.set $continuation (cont.new $continuation (ref.func $wrapper_cont)))
-      (local.set $f (struct.new $func_closure (local.get $func)))
-      (local.set $v (ref.i31 (i32.const 0)))
-      (loop $loop
-         (block $handle_effect (result (ref eq) (ref $continuation))
-            (resume $continuation (on $effect $handle_effect)
-               (local.get $f) (local.get $v) (local.get $continuation))
-            (return))
-         (local.set $continuation)
-         (local.set $v)
-         (local.set $f (global.get $raise_unhandled_closure))
-         (br $loop)))
-
+   ;; A suspend with no enclosing handler traps, so we cannot let
+   ;; %perform suspend blindly. In this mode, $effect_allowed tells
+   ;; whether a $resume_fiber frame is directly above us with no
+   ;; JavaScript frame in between: it is 0 at toplevel, set to 1 by
+   ;; $resume_fiber while a fiber runs, and reset to 0 by the
+   ;; JavaScript callback wrappers (runtime.js) around each call into
+   ;; OCaml, since suspending across a JavaScript frame is not
+   ;; possible. Effects performed while it is 0 raise Effect.Unhandled,
+   ;; as in the native OCaml runtime when crossing C frames.
+   ;; caml_assume_no_perform also sets it to 0.
    (func $init
-      (global.set $caml_main_wrapper (ref.func $unhandled_effect_wrapper)))
+      (global.set $effect_allowed (i32.const 0)))
 
    (start $init)
 
@@ -151,12 +134,17 @@
       (local $res (ref eq))
       (local $exn (ref eq))
       (local $val (ref eq)) (local $continuation (ref $continuation))
+      (local $saved_effect_allowed i32)
       (if (ref.eq (local.get $vfiber) (ref.i31 (i32.const 0)))
          (then
             (call $caml_raise_constant
                (ref.as_non_null
                   (call $caml_named_value (global.get $already_resumed))))))
       (local.set $fiber (ref.cast (ref $fiber) (local.get $vfiber)))
+      ;; Effects are handled while the fiber runs; the handlers below
+      ;; run in the enclosing context, so restore the flag on each exit
+      (local.set $saved_effect_allowed (global.get $effect_allowed))
+      (global.set $effect_allowed (i32.const 1))
       (local.set $exn
          (block $handle_exception (result (ref eq))
                (block $handle_effect (result (ref eq) (ref $continuation))
@@ -173,6 +161,7 @@
                         (catch $ocaml_exception
                            (br $handle_exception))))
                   ;; handle return
+                  (global.set $effect_allowed (local.get $saved_effect_allowed))
                   (return_call_ref $function_1 (local.get $res)
                      (local.tee $f
                         (struct.get $fiber $value (local.get $fiber)))
@@ -181,6 +170,7 @@
             (local.set $continuation)
             (local.set $val)
             ;; handle effect
+            (global.set $effect_allowed (local.get $saved_effect_allowed))
             (struct.set $fiber $continuation (local.get $fiber)
                (local.get $continuation))
 (@if (< $ocaml_version (5 6 0))
@@ -210,6 +200,7 @@
                   (ref.cast (ref $closure_2) (local.get $f))))
 ))))
       ;; handle exception
+      (global.set $effect_allowed (local.get $saved_effect_allowed))
       (return_call_ref $function_1 (local.get $exn)
          (local.tee $f
             (struct.get $fiber $exn (local.get $fiber)))
@@ -227,6 +218,14 @@
       (param $eff (ref eq)) (param $continuation (ref eq)) (param $_tail (ref eq))
       (result (ref eq))
       (local $res_0 (ref eq)) (local $res_1 (ref eq))
+      (if (i32.eqz (global.get $effect_allowed))
+         (then
+            ;; No enclosing handler: raise Effect.Unhandled inside the
+            ;; inner fiber, at the point where the effect was performed
+            (return_call $resume_fiber
+               (call $caml_continuation_use_noexc (local.get $continuation))
+               (global.get $raise_unhandled_closure)
+               (local.get $eff))))
       (suspend $effect (local.get $eff))
       (local.set $res_1)
       (local.set $res_0)
