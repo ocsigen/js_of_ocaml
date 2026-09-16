@@ -144,9 +144,9 @@
 
    (@string $already_resumed "Effect.Continuation_already_resumed")
 
-   (func $resume_fiber (export "%resume")
+   (func $resume_fiber
       (param $vfiber (ref eq)) (param $f (ref eq)) (param $v (ref eq))
-      (param $tail (ref eq)) (result (ref eq))
+      (result (ref eq))
       (local $fiber (ref $fiber))
       (local $res (ref eq))
       (local $exn (ref eq))
@@ -190,10 +190,9 @@
                (array.new_fixed $block 3 (ref.i31 (global.get $cont_tag))
                   (local.get $fiber)
                   (local.get $fiber))
-               (if (result (ref eq))
-                     (ref.eq (local.get $tail) (ref.i31 (i32.const 0)))
-                  (then (local.get $fiber))
-                  (else (local.get $tail)))
+               ;; last_fiber: only ever handed back to %reperform, which
+               ;; ignores it (no stack relinking is needed here)
+               (local.get $fiber)
                (local.tee $f
                   (struct.get $fiber $effect (local.get $fiber)))
                (struct.get $closure_3 1
@@ -216,47 +215,29 @@
             (struct.get $fiber $exn (local.get $fiber)))
          (struct.get $closure 0 (ref.cast (ref $closure) (local.get $f)))))
 
+   (func (export "%resume")
+      (param $vfiber (ref eq)) (param $f (ref eq)) (param $v (ref eq))
+      (param $_tail (ref eq)) (result (ref eq))
+      (return_call $resume_fiber
+         (local.get $vfiber) (local.get $f) (local.get $v)))
+
    ;; Perform
 
-(@if (< $ocaml_version (5 6 0))
-(@then
-   (func (export "%reperform")
-      (param $eff (ref eq)) (param $continuation (ref eq)) (param $tail (ref eq))
-      (result (ref eq))
-      (local $res_0 (ref eq)) (local $res_1 (ref eq))
-      (suspend $effect (local.get $eff))
-      (local.set $res_1)
-      (local.set $res_0)
-      (return_call $resume_fiber
-         (ref.as_non_null
-            (array.get $block
-               (ref.cast (ref $block) (local.get $continuation))
-               (i32.const 1)))
-         (local.get $res_0)
-         (local.get $res_1)
-         (local.get $tail)))
-)
-(@else
    (func (export "%reperform")
       (param $eff (ref eq)) (param $continuation (ref eq)) (param $_tail (ref eq))
       (result (ref eq))
-      (local $tail (ref eq))
       (local $res_0 (ref eq)) (local $res_1 (ref eq))
-      (local.set $tail
-         (array.get $block (ref.cast (ref $block) (local.get $continuation))
-            (i32.const 2)))
       (suspend $effect (local.get $eff))
       (local.set $res_1)
       (local.set $res_0)
+      ;; Forward the resumption to the inner fiber
       (return_call $resume_fiber
          (ref.as_non_null
             (array.get $block
                (ref.cast (ref $block) (local.get $continuation))
                (i32.const 1)))
          (local.get $res_0)
-         (local.get $res_1)
-         (local.get $tail)))
-))
+         (local.get $res_1)))
 
    (func (export "%perform") (param $eff (ref eq)) (result (ref eq))
       (local $res_0 (ref eq)) (local $res_1 (ref eq))
@@ -295,8 +276,7 @@
          (struct.new $fiber
             (local.get $value) (local.get $exn) (local.get $effect)
             (cont.new $continuation (ref.func $initial_cont)))
-         (local.get $f) (local.get $v)
-         (ref.i31 (i32.const 0))))
+         (local.get $f) (local.get $v)))
 
    (func (export "%with_stack_bind")
       (param $value (ref eq)) (param $exn (ref eq)) (param $effect (ref eq))
@@ -307,7 +287,6 @@
          (struct.new $fiber
             (local.get $value) (local.get $exn) (local.get $effect)
             (cont.new $continuation (ref.func $initial_cont)))
-         (local.get $f) (local.get $v)
-         (ref.i31 (i32.const 0))))
+         (local.get $f) (local.get $v)))
 ))
 )
