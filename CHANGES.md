@@ -60,6 +60,12 @@
   for the static evaluator and for `Sys.getenv` lookups at runtime (#2415)
 
 ## Bug fixes
+* Runtime/Wasm: with `--effects=native`, performing an effect that no
+  handler can receive (at toplevel, inside a JavaScript callback, or when
+  every handler lets it through) now raises `Effect.Unhandled` instead of
+  failing with a runtime error. With `--effects=native` and
+  `--effects=jspi`, a handler installed inside `assume_no_perform` now
+  handles the effects performed in its body, as documented (#2434)
 * Runtime: convert unit names to OCaml strings before calling the toplevel
   relocation callback when `use-js-string` is disabled (#2429)
 * Compiler/Wasm: fix specialized generic bigarray accesses
