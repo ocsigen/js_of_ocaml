@@ -14,6 +14,8 @@ Interfacing OCaml and C in a WebAssembly GC environment is different from a trad
 2. **Type representation**: `wasm_of_ocaml` uses WebAssembly GC reference types (`eqref`, `$block`, `$bytes`) internally. C code compiled with Clang represents opaque host values as `externref` (`__externref_t`).
 3. **The Adapter Layer**: We bridge the gap using an alternative `caml/mlvalues.h` header on the C side and hand-written WebAssembly Text (WAT) stubs to convert types and copy buffers.
 
+The strict partitioning is the source of most constraints in this document, but it is also a safety property in its own right: unlike native OCaml, where a buffer overflow in a C stub corrupts the OCaml heap, a memory bug in the C code here is confined to the C module's linear memory. For programs embedding crufty or untrusted C libraries, this architecture is *safer* than the native one, not merely compatible with it.
+
 ```mermaid
 graph TD
     OCamlCode[OCaml Code] -->|wasm_of_ocaml| OCamlWasm[OCaml GC Wasm Module]
@@ -266,6 +268,18 @@ wasm_of_ocaml main.byte --link-c-file=my_bindings.c -o main.js
 ```
 Under the hood, the compiler CLI will find `clang` (from the WASI-SDK), run the compilation with the proper flags (LTO, Reference Types), and bundle everything via `wasm-merge` automatically. The flag must be accepted both by the whole-program `compile` subcommand and by the separate-compilation `link` subcommand (used by dune's dev profile), since primitive resolution happens at link time in the latter mode (see Part 5).
 
+### 4. Linking Multiple C Libraries in a Single Step
+
+When a program uses several C-backed libraries, merging independently compiled C Wasm modules with `wasm-merge` yields duplicate symbols: two copies of libc, two `malloc`s, two heaps that cannot exchange pointers. The toolchain integration should therefore collect *all* C sources and archives and perform a **single clang / `wasm-ld` link**, restoring ordinary C linking semantics — one allocator, cross-library calls, a deduplicated libc. Keeping one module per library remains a deliberate option for isolation (the multi-memory proposal makes it principled), but it must be a choice, not an accident of the pipeline.
+
+### 5. Build System Integration (dune / findlib)
+
+A `--link-c-file` flag assumes the user lists C files by hand at link time, but the information already exists in build metadata: dune's `(foreign_stubs ...)` stanzas, and the `dllibs` and primitives recorded in `.cma` files. If dune (or a findlib convention) carried the C sources — or the compiled C Wasm module — alongside each library, linking a Wasm executable would pick up C stubs **transitively**, exactly like native linking does. Without this, "existing bindings compile out of the box" is only true for whoever writes the link command by hand; with it, `dune build` on an unmodified project just works. This is arguably the largest remaining gap between the design and real-world adoption.
+
+### 6. Portable Prebuilt Binding Artifacts
+
+A compiled C Wasm module is architecture-independent — unlike a native `.o`. A package like `zarith` can therefore build its C module (GMP included) once in CI and ship the blob in its opam package; downstream users need no WASI SDK and no clang. Native OCaml could never do this. It changes the distribution story from "every user needs a cross toolchain" to "only binding authors do".
+
 ---
 
 ## Part 3: ABI Compatibility and Runtime Integration
@@ -388,6 +402,12 @@ Traditionally, JS-based runtimes implement Bigarrays as independent JavaScript `
 - **Limitation 2 (JavaScript Interop):** Existing projects often pass Bigarrays to JavaScript APIs (like WebGL). Moving Bigarrays into the Wasm linear memory means JS code must now access them by creating `TypedArray` views over the exported Wasm `memory.buffer`. If the Wasm memory dynamically grows, these JS `ArrayBuffer` views become detached and must be carefully recreated by the interop layer.
 - **Limitation 3 (JS-to-OCaml Transfer):** Bigarrays created from existing JavaScript typed arrays (the `Typed_array` interop in the `js_of_ocaml` library) can no longer wrap the JS buffer in place; the data must be copied into linear memory.
 
+### 8. Porting and Debugging Tooling
+
+Two tools would substantially lower the porting cost created by the limitations above:
+- **A migration lint:** a small libclang-based checker that scans C stub sources for the patterns this Part forbids — `value` fields in structs or arrays, `value *` parameters, `Field(...) = x` l-values, `String_val` pointers stored beyond the call, `caml_register_global_root` — and produces a porting report. It converts "compile and decode errors one at a time" into "here are the seven things to fix in this library", and, run over opam, it would give empirical data on how much of the ecosystem fits the compatibility ABI as-is.
+- **A debug mode:** the design introduces new ways to go wrong silently — leaks through the finalizer double-hop (Part 4), dangling bump-allocator pointers (Section 5 above), mutations lost through a mistaken `caml_bytes_readonly` (Section 1). A debug variant of `--link-c-file` could track linear memory allocations owned by custom blocks and report leaks at exit, poison the bump region after each frame reset so that use-after-return traps instead of reading stale data, and enable the WASI SDK's ASan / UBSan for the C side. Porting effort goes where debugging is cheap.
+
 ---
 
 ## Part 7: Architectural Models for `value` Representation
@@ -444,3 +464,62 @@ To natively support the semantics required by languages with heavy C-interop lik
   * **At explicit polling checkpoints** (e.g. via a new `gc.poll_finalizers` instruction).
   * **At JSPI stack suspension/yield points** (when the execution stack is suspended, returning control to the JS event loop).
 * **Realism & Reentrancy Mitigation:** Realistic. By executing finalizers at these well-defined boundary states, the engine completely eliminates the risk of **reentrancy** (where a finalizer runs in the middle of an active Wasm function and breaks state invariants), while guaranteeing that finalization still runs promptly even in long-lived or suspended Web Worker contexts.
+
+---
+
+## Part 9: Extending the Design to the JavaScript Target (`js_of_ocaml`)
+
+Most of this design is target-independent. The C-facing surface is just an ABI: an opaque `value`, a set of `caml_*` helpers imported from the `stubs` module, and copy-in/copy-out for strings and bytes. Nothing in that contract requires the helpers to be implemented in Wasm GC — they can equally be implemented in JavaScript, making the same C bindings work with `js_of_ocaml`.
+
+### 1. A Target-Independent C ABI
+
+The key decision is to freeze the C-side ABI — the alternative `caml/mlvalues.h` and the `stubs` import interface — as **target-independent**, with two implementations of the `stubs` module:
+- the WAT implementation of Part 1, merged in by `wasm_of_ocaml`;
+- a JavaScript implementation, supplied at instantiation time by `js_of_ocaml`.
+
+The **same compiled `c_module.wasm`** then works for both targets. Libraries like `zarith` or `mlgmpidl` get a single porting story, instead of the hand-written JavaScript runtime reimplementations they require today.
+
+### 2. Why the JavaScript Side Is Simpler
+
+- **`externref` is a JS value.** In a Wasm module instantiated from JavaScript, `__externref_t` holds arbitrary JS values with zero conversion cost at the boundary. The `extern.convert_any` / `any.convert_extern` machinery of the WAT stubs disappears entirely.
+- **Trivial helpers.** `js_of_ocaml` blocks are JS arrays with the tag at index 0 — the same layout convention as the Wasm GC representation. So `caml_field(v, i)` is `v[i + 1]`, `caml_tag_val(v)` is `v[0]`, and `caml_val_double` is the identity. The bump allocator and the `Bytes_val` copy-back (Part 6) are a few lines of JS operating on the C module's exported memory.
+- **Existing runtime machinery transfers.** `caml_callback`, `caml_failwith`, custom blocks (`FinalizationRegistry` is directly at hand), and export scanning for primitive resolution (Part 5) all carry over. JS exceptions propagate through Wasm C frames with the same "cleanup is skipped" caveat as Part 3.
+- **Representation edges are absorbed by the helpers.** JS strings vs `MlBytes`, `MlInt64` for int64, etc. are handled inside the helper implementations, invisible to the C side.
+
+### 3. Costs Specific to the JavaScript Target
+
+1. **Startup becomes asynchronous.** `js_of_ocaml` output today runs synchronously at load; instantiating the C module requires `WebAssembly.instantiate` (synchronous compilation is size-restricted on browser main threads). Using `--link-c-file` on the JS target therefore implies a `wasm_of_ocaml`-style asynchronous launcher plus an assets story for the `.wasm` file. This is opt-in, but it changes the output shape (bundlers, CSP `wasm-unsafe-eval`).
+2. **Boundary-crossing overhead.** On the Wasm GC target, the stubs are merged and inlined by `wasm-opt`; on the JS target, every `Field` / `Int_val` is a Wasm-to-JS call. These calls are cheap in modern engines but not free — a chatty binding will feel it.
+3. **Bigarrays are actually less disruptive.** The design shift of Part 6 applies, but `js_of_ocaml` Bigarrays are already `TypedArray`s, so backing them with views over the C module's `memory.buffer` mostly preserves existing JS interop (modulo the detach-on-grow caveat).
+
+### 4. Design Consequence
+
+Even if the `js_of_ocaml` backend comes later, the ABI should be designed for it *now*: keep the header and the `stubs` import interface free of anything specific to Wasm GC. The design as specified in Parts 1–7 already satisfies this constraint.
+
+---
+
+## Part 10: Retargeting Stub Generators (camlidl, ctypes)
+
+The compatibility ABI of Parts 1–8 exists for bindings that *cannot* be regenerated: hand-written C stubs. But a large share of the ecosystem's bindings are generated — camlidl for `mlgmpidl` (and Apron behind it), ctypes for much of the rest. For those, retargeting the generator is a complementary second tier, and strictly better than faithfully emulating the C API, because the generator has information the compatibility layer must guess at.
+
+### 1. What Generators Know That the ABI Layer Doesn't
+
+- **Directionality.** camlidl's IDL has `in` / `out` attributes; ctypes' `typ` GADT states exactly how each argument crosses the boundary. This dissolves the `Bytes` mutation problem (Part 6) at the root: no heuristic copy-back, no read-only opt-out — the generated stub copies in, out, or both, exactly as declared. The `mpfr__sprintf` case (`[string] char *STR`) is precisely one where the IDL already says what the compatibility layer cannot know.
+- **Full signatures.** The generator can emit a wrapper that converts Wasm GC values straight to C ABI scalars (`i32`, `f64`, linear memory pointers) and calls the *target library function* directly — skipping the intermediate C stub and its `externref` round-trips entirely. None of Part 6's restrictions apply: the generated stub never stores a `value` in linear memory, has no l-value macros, and holds no dangling interior pointers.
+
+One caveat on the performance claim: after `wasm-merge` + `wasm-opt -O3`, the imported helpers are inlined into the clang-compiled stubs anyway, so the win from direct generation is mostly *avoiding copies and allocations*, not avoiding calls.
+
+### 2. ctypes: the Natural Fit for Direct Wasm Generation
+
+`cstubs` stub generation is a fold over a first-class signature description — no C parsing involved — so emitting WAT (or feeding the compiler's own wrapper generator, Part 2) instead of C is architecturally clean. ctypes' memory model also transfers well: `Ctypes.ptr` becomes an `i32` into the C module's linear memory, `allocate` / `allocate_n` become `malloc`, and structs and arrays already live in "foreign" memory conceptually. Two further observations:
+
+- **`Foreign` without libffi:** the C module's exports are dynamically callable from JavaScript, so a JS-side trampoline can interpret the `typ` descriptor at runtime. Slow, but it provides a working dynamic-binding path — and it works unchanged on the JavaScript target of Part 9.
+- **`funptr`:** OCaml closures used as C function pointers need per-signature trampolines placed in the funcref table. The signatures are static in `cstubs` mode, so the trampolines are generable.
+
+### 3. The Catch: the C Calling Convention
+
+Stub generators emit C in the first place because clang owns the ABI. For scalar and pointer arguments — the overwhelming majority — the wasm32 C ABI is trivial and a WAT stub can call the library function directly. But struct-by-value, unions, and varargs (again, `mpfr_sprintf`) have ABI rules one does not want to reimplement. The realistic design is therefore **hybrid**: the generator emits WAT for plain signatures and falls back to a thin generated C shim (compiled through the Part 2 clang integration) where the ABI demands it. Integration is cheap either way — `wasmoo_link_wasm` already accepts named WAT modules as inputs, so the generator's output is just one more `NAME:FILE` argument.
+
+### 4. Practicalities
+
+camlidl is a small, essentially dormant codebase, so a Wasm backend means maintaining a fork — but it directly unlocks `mlgmpidl` and Apron. ctypes is actively maintained and the bigger ecosystem win, so upstreaming a backend is plausible. camlidl is the tactical move; ctypes is the strategic one.
