@@ -23,12 +23,10 @@ type value =
 
 val value_equal : value -> value -> bool
 
-val f : variables:(string * value) list -> filename:string -> contents:string -> string
-
 type source =
-  | Binary  (** Binary file (skipped by the preprocessor) *)
+  | Binary  (** Binary file (assembled already, passed through) *)
   | File  (** Not read yet *)
-  | Contents of string  (** File contents to preprocess *)
+  | Contents of string  (** File contents to assemble *)
 
 type input =
   { module_name : string
@@ -43,3 +41,11 @@ val with_preprocessed_files :
   -> inputs:input list
   -> (Binaryen.link_input list -> 'a)
   -> 'a
+(** Preprocess and assemble runtime modules using the Wax toolchain.
+
+    Each text input (WAT or Wax, by extension) has its conditional
+    annotations specialized against [variables], its exported functions named
+    (when [name-wasm-functions] is set), and is assembled to a WebAssembly
+    binary temporary file. Binary inputs are passed through unchanged. The
+    resulting files are handed to [action] as {!Binaryen.link_input}s, suitable
+    for [wasm-merge] (which accepts both binary and text inputs). *)

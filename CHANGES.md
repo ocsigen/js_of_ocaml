@@ -58,6 +58,16 @@
   array from `Js.number_of_float` elements (#2416)
 * Compiler/wasm: add `--setenv`, matching js_of_ocaml: the variable is set both
   for the static evaluator and for `Sys.getenv` lookups at runtime (#2415)
+* Compiler/wasm: preprocess and assemble the runtime files with the Wax
+  toolchain instead of the in-house Wasm text preprocessor. Wax resolves the
+  `(@if ...)` annotations, names the exported functions and assembles each
+  module to a WebAssembly binary before `wasm-merge` links them; a runtime file
+  may now be written in the Wax language as well, by extension. Each module is
+  validated as it is assembled, so a type error, a bad stack shape or a wrong
+  arity in a runtime file is reported against its source rather than reaching
+  Binaryen or the engine. This adds a dependency on `wax-lib`, and removes the
+  `wasm_of_ocaml preprocess` command (and its `pp` alias), which exposed the
+  preprocessor that is now gone (#2373)
 
 ## Bug fixes
 * Runtime: convert unit names to OCaml strings before calling the toplevel

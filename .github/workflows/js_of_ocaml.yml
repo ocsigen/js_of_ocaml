@@ -121,6 +121,10 @@ jobs:
         with:
           token: ${{ github.token }}
 
+      # wax-lib is not released on opam yet.
+      - name: Pin wax-lib
+        run: opam pin add -n wax-lib https://github.com/vouillon/wax.git
+
       - run: opam install . --deps-only --with-test
         # Install the test dependencies
 
