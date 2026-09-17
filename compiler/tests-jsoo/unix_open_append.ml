@@ -3,7 +3,10 @@
    Unix-like hosts only. *)
 [@@@if os_type <> "Win32"]
 
-let%expect_test "openfile O_APPEND offset" =
+(* Bun's WASI shim tracks file offsets in JS but does not advance them on
+   append writes (and treats offset 0 as unset), so lseek reports stale
+   offsets there; skip until this is fixed upstream. *)
+let%expect_test ("openfile O_APPEND offset" [@when wasi_host <> "bun"]) =
   (* [Unix.openfile [O_APPEND]] must match native semantics:
      - the file offset starts at 0 right after opening (it is *not* moved to
        EOF at open time -- [lseek _ SEEK_CUR] returns 0), and
@@ -45,7 +48,9 @@ let%expect_test "openfile O_APPEND offset" =
     rdwr open: 0
     |}]
 
-let%expect_test "O_RDWR O_APPEND shares one offset between read and write" =
+let%expect_test
+    ("O_RDWR O_APPEND shares one offset between read and write"
+     [@when wasi_host <> "bun"]) =
   (* read and write share a single file offset. An appending write moves that
      shared offset to EOF (as native does before each write), so a read after
      a write resumes from the new EOF -- it does not keep an independent read
