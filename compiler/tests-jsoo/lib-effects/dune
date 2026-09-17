@@ -26,6 +26,8 @@
    assume_no_perform
    assume_no_perform_unhandled
    assume_no_perform_nested_handler
+   assume_no_perform_nested_perform
+   perform_in_callback
    deep_state
    test_finalise))
  (preprocess
@@ -77,3 +79,39 @@
  (modes js)
  (preprocess
   (pps ppx_js_internal)))
+
+; Effects performed where no handler can be reached must raise
+; Effect.Unhandled; a handler installed inside assume_no_perform works.
+
+(tests
+ (names assume_no_perform_nested_perform)
+ (modules assume_no_perform_nested_perform)
+ (build_if
+  (>= %{ocaml_version} 5))
+ (libraries jsoo_runtime)
+ (action
+  (ignore-outputs
+   (with-accepted-exit-codes
+    0
+    (run node %{test}))))
+ (modes js wasm))
+
+(tests
+ (names perform_in_callback)
+ (modules perform_in_callback)
+ (build_if
+  (>= %{ocaml_version} 5))
+ ; Not with JSPI: callbacks do not run on a promising stack, so no effect
+ ; handler can be installed inside one. Not under WASI: no JavaScript.
+ (enabled_if
+  (or
+   (= %{profile} with-native-effects)
+   (= %{profile} with-effects)
+   (= %{profile} with-effects-double-translation)))
+ (libraries js_of_ocaml)
+ (action
+  (ignore-outputs
+   (with-accepted-exit-codes
+    0
+    (run node %{test}))))
+ (modes js wasm))

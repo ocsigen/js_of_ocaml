@@ -35,6 +35,24 @@ Wasm_of_ocaml provides three effect handler implementations:
   [--experimental-wasm-wasmfx] flag, in Chrome 148 or higher, or in a recent
   Node.js canary release (V8 version 14.7.100 or higher)).
 
+{2:wasm_js_frames Effects and JavaScript frames}
+
+As with C frames in the native OCaml runtime, an effect cannot be performed
+across a JavaScript frame. When OCaml code calls into JavaScript, which then
+calls back into OCaml (for instance through a callback registered with
+{!Js_of_ocaml.Js.wrap_callback}), performing an effect inside the callback
+raises [Effect.Unhandled], even if a handler is installed on the other side of
+the JavaScript frame. A handler installed inside the callback works as usual
+with [--effects=cps] and [--effects=native].
+
+With [--effects=jspi], effect handlers cannot be used inside JavaScript
+callbacks at all: JSPI can only suspend Wasm code that runs on its own stack,
+which is the case for the main program and for fibers, but not for code
+entered from JavaScript through a callback. Installing a handler inside a
+callback (for instance with [Effect.Deep.try_with]) fails with a
+[Failure "SuspendError: ..."] exception. Use [--effects=cps] or
+[--effects=native] if callbacks need effect handlers.
+
 {1:dune Dune integration}
 
 Dune is aware of the [--effects] option. You can add it to the

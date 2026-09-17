@@ -388,8 +388,7 @@
          (struct.get $continuation $cont_func (local.get $k1))))
 
    (func (export "%perform") (param $eff (ref eq)) (result (ref eq))
-      (if (i32.or (i32.eqz (global.get $effect_allowed))
-             (ref.is_null (struct.get $fiber $next (global.get $stack))))
+      (if (ref.is_null (struct.get $fiber $next (global.get $stack)))
          (then
             (return_call $raise_unhandled
                (local.get $eff) (ref.i31 (i32.const 0)))))
@@ -542,6 +541,37 @@
          (struct.new $resume_state
             (local.get $stack) (local.get $stack)
             (struct.new $pair (local.get $f) (local.get $v)))))
+
+   (func (export "caml_assume_no_perform") (param $f (ref eq)) (result (ref eq))
+      (local $saved_stack (ref $fiber))
+      (local $res (ref eq))
+      (local $exn (ref eq))
+      ;; Run [f] on a fresh root fiber: an effect performed directly in
+      ;; [f] sees no handler and raises Effect.Unhandled, while a handler
+      ;; installed inside [f] pushes onto this root and works as usual.
+      ;; The root's continuation is filled in by $push_stack when needed.
+      (local.set $saved_stack (global.get $stack))
+      (global.set $stack
+         (struct.new $fiber
+            (ref.i31 (i32.const 0))
+            (ref.i31 (i32.const 0))
+            (ref.i31 (i32.const 0))
+            (global.get $initial_cont_closure)
+            (ref.null $fiber)))
+      (local.set $res
+         (try (result (ref eq))
+            (do
+               (call $caml_callback_1 (local.get $f) (ref.i31 (i32.const 0))))
+            (catch $ocaml_exception
+               (local.set $exn)
+               (global.set $stack (local.get $saved_stack))
+               (throw $ocaml_exception (local.get $exn)))
+            (catch $javascript_exception
+               (local.set $exn (call $caml_wrap_exception))
+               (global.set $stack (local.get $saved_stack))
+               (throw $ocaml_exception (local.get $exn)))))
+      (global.set $stack (local.get $saved_stack))
+      (local.get $res))
 ))
 
 (@if (= $effects "cps")
@@ -952,6 +982,8 @@
          (ref.null $cps_fiber)))
 ))
 
+(@if (not (and (= $effects "jspi") (not $wasi)))
+(@then
    (func (export "caml_assume_no_perform") (param $f (ref eq)) (result (ref eq))
       (local $saved_effect_allowed i32)
       (local $res (ref eq))
@@ -972,4 +1004,5 @@
                (throw $ocaml_exception (local.get $exn)))))
       (global.set $effect_allowed (local.get $saved_effect_allowed))
       (local.get $res))
+))
 )

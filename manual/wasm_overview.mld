@@ -85,6 +85,11 @@ runtime with support for the WasmFX extension (currently available, behind the
 [--experimental-wasm-wasmfx] flag, in Chrome 148 or higher, or in a recent
 Node.js canary release (V8 version 14.7.100 or higher)).
 
+Effects cannot be performed across JavaScript frames. Moreover, with
+[--effects=jspi], effect handlers cannot be installed inside JavaScript
+callbacks, since JSPI can only suspend Wasm code running on its own stack.
+See {{!page-"effects".wasm_js_frames}Effects and JavaScript frames}.
+
 {1:wasi WASI support}
 
 You can produce a WASI binary by running [wasm_of_ocaml] with the [--enable wasi]
