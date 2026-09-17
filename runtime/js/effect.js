@@ -323,8 +323,8 @@ function caml_continuation_use_and_update_handler_noexc(
 }
 
 //Provides: caml_continuation_update_handler_noexc
-//Version: >= 5.2, < 5.3
-//OxCaml
+//Version: >= 5.2
+//If: oxcaml
 function caml_continuation_update_handler_noexc(cont, hval, hexn, heff) {
   var stack = cont[1];
   if (stack === 0) return cont;
@@ -333,6 +333,14 @@ function caml_continuation_update_handler_noexc(cont, hval, hexn, heff) {
   last.h[2] = hexn;
   last.h[3] = heff;
   return cont;
+}
+
+//Provides: caml_continuation_update_tick_handler_noexc
+//Requires: caml_failwith
+//Version: >= 5.2
+//If: oxcaml
+function caml_continuation_update_tick_handler_noexc(_cont, _htick) {
+  caml_failwith("caml_continuation_update_tick_handler_noexc not implemented");
 }
 
 //Provides: caml_get_continuation_callstack

@@ -146,6 +146,15 @@
                (local.get $effect))))
       (local.get $continuation))
 
+   (@string $update_tick_handler_not_implemented
+      "caml_continuation_update_tick_handler_noexc not implemented")
+
+   (func (export "caml_continuation_update_tick_handler_noexc")
+      (param $continuation (ref eq)) (param $htick (ref eq)) (result (ref eq))
+      (call $caml_failwith
+         (global.get $update_tick_handler_not_implemented))
+      (ref.i31 (i32.const 0)))
+
    (func (export "caml_get_continuation_callstack")
       (param (ref eq) (ref eq)) (result (ref eq))
       (array.new_fixed $block 1 (ref.i31 (i32.const 0))))
@@ -528,6 +537,41 @@
 
    (func (export "%with_stack_bind")
       (param $value (ref eq)) (param $exn (ref eq)) (param $effect (ref eq))
+      (param $dyn (ref eq)) (param $bind (ref eq))
+      (param $f (ref eq)) (param $v (ref eq))
+      (result (ref eq))
+      (local $stack (ref $fiber))
+      (local.set $stack
+         (struct.new $fiber
+            (local.get $value) (local.get $exn) (local.get $effect)
+            (global.get $initial_cont_closure)
+            (ref.null $fiber)))
+      (return_call $capture_continuation
+         (ref.func $do_resume)
+         (struct.new $resume_state
+            (local.get $stack) (local.get $stack)
+            (struct.new $pair (local.get $f) (local.get $v)))))
+
+   (func (export "%with_stack_preemptible")
+      (param $value (ref eq)) (param $exn (ref eq)) (param $effect (ref eq))
+      (param $tick (ref eq))
+      (param $f (ref eq)) (param $v (ref eq))
+      (result (ref eq))
+      (local $stack (ref $fiber))
+      (local.set $stack
+         (struct.new $fiber
+            (local.get $value) (local.get $exn) (local.get $effect)
+            (global.get $initial_cont_closure)
+            (ref.null $fiber)))
+      (return_call $capture_continuation
+         (ref.func $do_resume)
+         (struct.new $resume_state
+            (local.get $stack) (local.get $stack)
+            (struct.new $pair (local.get $f) (local.get $v)))))
+
+   (func (export "%with_stack_bind_preemptible")
+      (param $value (ref eq)) (param $exn (ref eq)) (param $effect (ref eq))
+      (param $tick (ref eq))
       (param $dyn (ref eq)) (param $bind (ref eq))
       (param $f (ref eq)) (param $v (ref eq))
       (result (ref eq))
