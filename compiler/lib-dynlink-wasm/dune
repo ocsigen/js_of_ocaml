@@ -10,3 +10,13 @@
   js_of_ocaml-compiler
   js_of_ocaml-compiler.runtime
   compiler-libs.bytecomp))
+
+(rule
+ (targets stubs.c)
+ (deps
+  (glob_files *.ml))
+ (mode promote)
+ (action
+  (with-stdout-to
+   %{targets}
+   (run ../../lib/gen_stubs/gen_stubs.exe %{deps}))))

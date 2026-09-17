@@ -1,24 +1,29 @@
-#include <caml/mlvalues.h>
-#include <caml/fail.h>
+#include <caml/misc.h>
 
-CAMLprim value wasm_toplevel_init_compile(value f) {
-  caml_failwith("wasm_toplevel_init_compile: only available in wasm_of_ocaml");
+void caml_wasm_load_module () {
+  caml_fatal_error("Unimplemented Javascript primitive caml_wasm_load_module!");
 }
-CAMLprim value wasm_get_bytecode_sections(value unit) {
-  caml_failwith("wasm_get_bytecode_sections: only available in wasm_of_ocaml");
+
+void caml_wasm_load_wasmo () {
+  caml_fatal_error("Unimplemented Javascript primitive caml_wasm_load_wasmo!");
 }
-CAMLprim value wasm_toplevel_init_reloc(value f) {
-  caml_failwith("wasm_toplevel_init_reloc: only available in wasm_of_ocaml");
+
+void caml_wasm_register_fragments () {
+  caml_fatal_error("Unimplemented Javascript primitive caml_wasm_register_fragments!");
 }
-CAMLprim value caml_wasm_load_module(value bytes) {
-  caml_failwith("caml_wasm_load_module: only available in wasm_of_ocaml");
+
+void wasm_get_bytecode_sections () {
+  caml_fatal_error("Unimplemented Javascript primitive wasm_get_bytecode_sections!");
 }
-CAMLprim value caml_wasm_load_wasmo(value bytes) {
-  caml_failwith("caml_wasm_load_wasmo: only available in wasm_of_ocaml");
+
+void wasm_get_runtime_aliases () {
+  caml_fatal_error("Unimplemented Javascript primitive wasm_get_runtime_aliases!");
 }
-CAMLprim value caml_wasm_register_fragments(value unit_name, value source) {
-  caml_failwith("caml_wasm_register_fragments: only available in wasm_of_ocaml");
+
+void wasm_toplevel_init_compile () {
+  caml_fatal_error("Unimplemented Javascript primitive wasm_toplevel_init_compile!");
 }
-CAMLprim value wasm_get_runtime_aliases(value unit) {
-  caml_failwith("wasm_get_runtime_aliases: only available in wasm_of_ocaml");
+
+void wasm_toplevel_init_reloc () {
+  caml_fatal_error("Unimplemented Javascript primitive wasm_toplevel_init_reloc!");
 }
