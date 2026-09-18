@@ -29,6 +29,7 @@
   unix.js
   weak.js
   domain.js
+  dynamic.js
   prng.js
   sync.js
   runtime_events.js))
