@@ -19,6 +19,7 @@ let%expect_test _ =
     +block_index.js
     +compare.js
     +domain.js
+    +dynamic.js
     +dynlink.js
     +effect.js
     +fail.js
@@ -67,6 +68,7 @@ let%expect_test _ =
     +block_index.js
     +compare.js
     +domain.js
+    +dynamic.js
     +effect.js
     +fail.js
     +float32.js

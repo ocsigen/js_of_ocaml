@@ -54,6 +54,7 @@ let runtime =
     ; unix
     ; weak
     ; domain
+    ; dynamic
     ; prng
     ; sync
     ; effect_

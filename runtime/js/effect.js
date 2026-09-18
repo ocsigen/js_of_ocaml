@@ -47,12 +47,18 @@ additional parameter which is the current low-level continuation.
 
 //Provides: caml_current_stack
 //If: effects
-// This has the shape {k, x, h, e} where
+// This has the shape {k, x, h, e, p, d, t} where
 // - h is a triple of handlers (see effect.ml)
 // - k is the low level continuation
 // - x is the exception stack
 // - e is the fiber stack of the parent fiber.
-var caml_current_stack = { k: 0, x: 0, h: 0, e: 0 };
+// - p is only set on the fibers installed by caml_callback and
+//   caml_resume_run: the fiber that was current when the callback started or
+//   when direct-style code resumed a stack. Effects cannot cross it (hence e
+//   is 0), but dynamic bindings are looked up through it (see dynamic.js).
+// - d is the chain of dynamic bindings of this fiber (see dynamic.js)
+// - t is whether this fiber is a task (see dynamic.js)
+var caml_current_stack = { k: 0, x: 0, h: 0, e: 0, p: 0, d: null, t: false };
 
 //Provides: caml_push_trap
 //Requires: caml_current_stack
@@ -286,6 +292,9 @@ function caml_alloc_stack(hv, hx, hf) {
     x: { h: caml_alloc_stack_hexn, t: 0 },
     h: handlers,
     e: 0,
+    p: 0,
+    d: null,
+    t: false,
   };
 }
 
@@ -397,7 +406,18 @@ function caml_resume_run(stack, last, mk_res) {
   var saved_stack_depth = caml_stack_depth;
   var saved_current_stack = caml_current_stack;
   try {
-    caml_current_stack = { k: 0, x: 0, h: 0, e: 0 };
+    // Direct-style code resuming a stack is ordinary OCaml control flow, so
+    // the resumed fibers must still see the dynamic bindings of the fiber
+    // this code runs on (see also [caml_callback]).
+    caml_current_stack = {
+      k: 0,
+      x: 0,
+      h: 0,
+      e: 0,
+      p: saved_current_stack,
+      d: null,
+      t: false,
+    };
     var k = caml_resume_stack(stack, last, function (x) {
       return x;
     });
