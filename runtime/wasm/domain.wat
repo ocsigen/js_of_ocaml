@@ -20,7 +20,6 @@
       (func $caml_callback_1
          (param (ref eq)) (param (ref eq)) (result (ref eq))))
    (import "fail" "caml_failwith" (func $caml_failwith (param (ref eq))))
-   (import "obj" "null" (global $null_value (ref eq)))
    (import "fail" "ocaml_exception" (tag $ocaml_exception (param (ref eq))))
    (import "sync" "caml_ml_mutex_unlock"
       (func $caml_ml_mutex_unlock (param (ref eq)) (result (ref eq))))
@@ -224,54 +223,6 @@
 
    (func (export "caml_domain_tls_get") (param (ref eq)) (result (ref eq))
       (global.get $caml_domain_tls))
-
-   (func (export "caml_dynamic_make") (param (ref eq)) (result (ref eq))
-      ;; [header, empty]
-      (array.new_fixed $block 2
-         (ref.i31 (i32.const 0))
-         (ref.i31 (i32.const 0))))
-
-   (func (export "caml_dynamic_get")
-      (param $dynamic (ref eq)) (result (ref eq))
-      (local $stack (ref eq))
-      (local.set $stack
-         (array.get $block
-            (ref.cast (ref $block) (local.get $dynamic))
-            (i32.const 1)))
-      (if (result (ref eq))
-         (ref.eq (local.get $stack) (ref.i31 (i32.const 0)))
-         (then (global.get $null_value))
-         (else
-            (array.get $block
-               (ref.cast (ref $block) (local.get $stack))
-               (i32.const 1)))))
-
-   (func (export "caml_dynamic_push")
-      (param $dynamic (ref eq)) (param $value (ref eq)) (result (ref eq))
-      (local $d (ref $block))
-      (local $stack (ref eq))
-      (local.set $d (ref.cast (ref $block) (local.get $dynamic)))
-      (local.set $stack (array.get $block (local.get $d) (i32.const 1)))
-      ;; stack <- [header, head, tail]
-      (array.set $block (local.get $d) (i32.const 1)
-         (array.new_fixed $block 3
-            (ref.i31 (i32.const 0))
-            (local.get $value)
-            (local.get $stack)))
-      (ref.i31 (i32.const 0)))
-
-   (func (export "caml_dynamic_pop")
-      (param $dynamic (ref eq)) (result (ref eq))
-      (local $d (ref $block))
-      (local $stack (ref $block))
-      (local.set $d (ref.cast (ref $block) (local.get $dynamic)))
-      (local.set $stack
-         (ref.cast (ref $block)
-            (array.get $block (local.get $d) (i32.const 1))))
-      ;; stack <- tail
-      (array.set $block (local.get $d) (i32.const 1)
-         (array.get $block (local.get $stack) (i32.const 2)))
-      (ref.i31 (i32.const 0)))
 
    (global $domain_unique_token (ref eq)
       (array.new_fixed $block 1 (ref.i31 (i32.const 0))))
