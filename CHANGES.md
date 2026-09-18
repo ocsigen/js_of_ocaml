@@ -61,6 +61,8 @@
 * Lib: the native stubs generated for the JavaScript primitives are now weak
   symbols, so that libraries which link (but do not run) JavaScript primitives
   in native code can override them with dummy implementations (#2435)
+* Runtime: specialize one- and two-argument partial applications in
+  double-translation mode, avoiding an extra `caml_call_gen` frame (#2437)
 
 ## Bug fixes
 * Runtime: convert unit names to OCaml strings before calling the toplevel
