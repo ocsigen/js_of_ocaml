@@ -55,3 +55,7 @@
  (wasm_of_ocaml
   (compilation_mode whole_program)
   (flags :standard)))
+
+(tests
+ (names string_interning)
+ (modes wasm))
