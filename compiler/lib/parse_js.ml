@@ -55,7 +55,16 @@
      The lexer always produces the keyword tokens [T_YIELD] and [T_AWAIT];
      when the corresponding parameter is off, they are accepted as
      identifiers. (An escaped spelling such as [yi\u0065ld] is lexed as a
-     plain identifier.) *)
+     plain identifier.)
+
+   - [ctx] also tells whether the code is strict mode code: a module, a
+     class, or code following a [use strict] directive. The words that
+     are only reserved in strict mode ([let], [static], [implements],
+     [interface], [package], [private], [protected], [public]) are
+     identifiers elsewhere. This is the only effect of strict mode on the
+     parser: the other restrictions are early errors, which are not
+     checked. A directive does not apply retroactively to the name and
+     the parameters of its function. *)
 
 let debug = Debug.find "js-parser"
 
@@ -582,28 +591,49 @@ let comma_list_rest t ~close ~rest f = comma_list_gen t ~close ~rest:(Some rest)
 (****)
 
 (* The [Yield] and [Await] grammar parameters: whether [yield] and [await]
-   are keywords rather than identifiers *)
+   are keywords rather than identifiers. [strict] tells whether this is
+   strict mode code (a module, a class, or code following a [use strict]
+   directive), where a few more words are reserved. *)
 type ctx =
   { yield : bool
   ; await : bool
+  ; strict : bool
   }
 
-let no_ctx = { yield = false; await = false }
+let no_ctx = { yield = false; await = false; strict = false }
+
+let strict_ctx = { yield = false; await = false; strict = true }
 
 (* Inside the parameters and the body of a function *)
-let function_ctx { async; generator } = { yield = generator; await = async }
+let function_ctx ctx { async; generator } =
+  { yield = generator; await = async; strict = ctx.strict }
+
+(* Directive prologues: the string literal statements at the beginning of
+   a script or of a function body *)
+let is_directive (s, _) =
+  match s with
+  | Expression_statement (EStr _) -> true
+  | _ -> false
+
+let is_use_strict (s, _) =
+  match s with
+  | Expression_statement (EStr (Utf8 "use strict")) -> true
+  | _ -> false
 
 (* Identifiers *)
 
 (* IdentifierReference[Yield, Await] / LabelIdentifier[Yield, Await]:
    identifiers and contextual keywords, plus [yield] and [await] when they
-   are not keywords in the current context. *)
+   are not keywords in the current context, and the words that are only
+   reserved in strict mode ([let], [static], ...) in sloppy mode. *)
 let ident_of_token ctx (tok : Js_token.t) =
   match tok with
   | T_IDENTIFIER (name, _) -> Some name
   | T_YIELD when not ctx.yield -> Some (utf8_s "yield")
   | T_AWAIT when not ctx.await -> Some (utf8_s "await")
   | _ when Js_token.is_contextual_keyword tok -> Some (utf8_s (Js_token.to_string tok))
+  | _ when (not ctx.strict) && Js_token.is_strict_mode_reserved_word tok ->
+      Some (utf8_s (Js_token.to_string tok))
   | _ -> None
 
 let is_identifier ctx tok = Option.is_some (ident_of_token ctx tok)
@@ -628,7 +658,8 @@ let parse_identifier t ctx =
 (* BindingIdentifier[Yield, Await] accepts [yield] and [await] whatever the
    context; that they are not allowed in some contexts is an early error,
    which is not checked. *)
-let parse_binding_identifier t = parse_identifier t no_ctx
+let parse_binding_identifier t ctx =
+  parse_identifier t (if ctx.strict then strict_ctx else no_ctx)
 
 (* IdentifierName *)
 let parse_identifier_name t =
@@ -676,7 +707,7 @@ let starts_expression (tok : Js_token.t) =
   | T_TYPEOF
   | T_VOID
   | T_DELETE -> true
-  | _ -> Js_token.is_contextual_keyword tok
+  | _ -> Js_token.is_contextual_keyword tok || Js_token.is_strict_mode_reserved_word tok
 
 let assignment_op (tok : Js_token.t) =
   match tok with
@@ -781,6 +812,12 @@ let parse_member_access t e access =
   then EDotPrivate (e, access, parse_identifier_name t)
   else EDot (e, access, parse_identifier_name t)
 
+(* A lexical declaration cannot bind [let] *)
+let check_lexical_binding t kind =
+  match kind, cur t with
+  | (Let | Const | Using | AwaitUsing), T_LET -> error t
+  | _ -> ()
+
 let variable_kind (tok : Js_token.t) =
   match tok with
   | T_VAR -> Var
@@ -821,7 +858,7 @@ and parse_assignment_expression t ctx ~no_in =
       let pos = start_pos t in
       let i = parse_identifier t ctx in
       expect t T_ARROW;
-      let body, concise = parse_concise_body t ~no_in ~async:false in
+      let body, concise = parse_concise_body t ctx ~no_in ~async:false in
       EArrow ((no_fun, list [ param' i ], body, p pos), concise, AUnknown)
   | T_ASYNC -> (
       match peek t 1 with
@@ -833,7 +870,7 @@ and parse_assignment_expression t ctx ~no_in =
           let i = parse_identifier t { ctx with await = true } in
           if newline_before t then error t;
           expect t T_ARROW;
-          let body, concise = parse_concise_body t ~no_in ~async:true in
+          let body, concise = parse_concise_body t ctx ~no_in ~async:true in
           EArrow
             ( ({ async = true; generator = false }, list [ param' i ], body, p pos)
             , concise
@@ -875,11 +912,11 @@ and parse_cover_or_arrow t ctx ~no_in =
          [async] *)
       let params =
         if async
-        then parse_formal_parameters t { yield = false; await = true }
+        then parse_formal_parameters t { ctx with yield = false; await = true }
         else parse_formal_parameters t ctx
       in
       expect t T_ARROW;
-      let body, concise = parse_concise_body t ~no_in ~async in
+      let body, concise = parse_concise_body t ctx ~no_in ~async in
       EArrow (({ async; generator = false }, params, body, p pos), concise, AUnknown)
   | _ ->
       release t;
@@ -887,10 +924,10 @@ and parse_cover_or_arrow t ctx ~no_in =
 
 (* ConciseBody : { FunctionBody } | ExpressionBody
    Also returns whether the body is an expression. *)
-and parse_concise_body t ~no_in ~async =
-  let ctx = { yield = false; await = async } in
+and parse_concise_body t ctx ~no_in ~async =
+  let ctx = { yield = false; await = async; strict = ctx.strict } in
   match cur t with
-  | T_LCURLY -> parse_block t ctx, false
+  | T_LCURLY -> parse_function_block t ctx, false
   | _ ->
       let pos = start_pos t in
       let e = parse_assignment_expression t ctx ~no_in in
@@ -1118,10 +1155,10 @@ and parse_primary_expression t ctx =
   | T_LBRACKET -> parse_array_literal t ctx
   | T_LCURLY -> parse_object_literal t ctx
   | T_LPAREN -> parse_cover_parenthesized_expression t ctx
-  | T_FUNCTION -> parse_function_expression t ~pos ~async:false
+  | T_FUNCTION -> parse_function_expression t ctx ~pos ~async:false
   | T_ASYNC when async_function_ahead t ->
       advance t;
-      parse_function_expression t ~pos ~async:true
+      parse_function_expression t ctx ~pos ~async:true
   | T_CLASS | T_AT ->
       let decorators = parse_decorator_list t ctx in
       let name, decl = parse_class_expression t ctx ~decorators in
@@ -1249,7 +1286,7 @@ and parse_property_definition t ctx =
     match parse_method_modifier t with
     | Some (kind, meth) ->
         let name = parse_property_name t ctx in
-        PropertyMethod (name, meth (parse_function_rest t ~pos kind))
+        PropertyMethod (name, meth (parse_function_rest t ctx ~pos kind))
     | None -> (
         let ident = ident_of_token ctx (cur t) in
         let name = parse_property_name t ctx in
@@ -1257,7 +1294,8 @@ and parse_property_definition t ctx =
         | T_COLON, _ ->
             advance t;
             Property (name, parse_assignment_expression t ctx ~no_in:false)
-        | T_LPAREN, _ -> PropertyMethod (name, Method (parse_function_rest t ~pos no_fun))
+        | T_LPAREN, _ ->
+            PropertyMethod (name, Method (parse_function_rest t ctx ~pos no_fun))
         | (T_COMMA | T_RCURLY), Some i ->
             (* shorthand property *)
             Property (PNI i, EVar (ident_unsafe i))
@@ -1269,10 +1307,10 @@ and parse_property_definition t ctx =
         | _ -> error t)
 
 (* Parameters and body of a function or method, after its name *)
-and parse_function_rest t ~pos kind =
-  let ctx = function_ctx kind in
+and parse_function_rest t ctx ~pos kind =
+  let ctx = function_ctx ctx kind in
   let params = parse_formal_parameters t ctx in
-  let body = parse_block t ctx in
+  let body = parse_function_block t ctx in
   kind, params, body, p pos
 
 (****)
@@ -1280,7 +1318,7 @@ and parse_function_rest t ~pos kind =
 (* Functions *)
 
 (* FunctionExpression and its generator and async variants, after [async] *)
-and parse_function_expression t ~pos ~async =
+and parse_function_expression t ctx ~pos ~async =
   expect t T_FUNCTION;
   let kind = { async; generator = accept t T_MULT } in
   (* Unlike a declaration, the name of a function expression is in the
@@ -1289,19 +1327,19 @@ and parse_function_expression t ~pos ~async =
   let name =
     match cur t with
     | T_LPAREN -> None
-    | _ -> Some (parse_identifier t (function_ctx kind))
+    | _ -> Some (parse_identifier t (function_ctx ctx kind))
   in
-  EFun (name, parse_function_rest t ~pos kind)
+  EFun (name, parse_function_rest t ctx ~pos kind)
 
 (* FunctionDeclaration and its generator and async variants, after [async] *)
 and parse_function_declaration t ctx ~pos ~async =
   expect t T_FUNCTION;
   let kind = { async; generator = accept t T_MULT } in
   let name = parse_identifier t ctx in
-  let body_ctx = function_ctx kind in
+  let body_ctx = function_ctx ctx kind in
   let params = parse_formal_parameters t body_ctx in
   expect t T_LCURLY;
-  let body = parse_function_body t body_ctx in
+  let body = parse_function_body t body_ctx ~directives:true in
   (* For compatibility with the previous parser, plain function
      declarations are located at their closing brace. *)
   let pos = if async || kind.generator then pos else start_pos t in
@@ -1309,15 +1347,19 @@ and parse_function_declaration t ctx ~pos ~async =
   name, (kind, params, body, p pos)
 
 (* FunctionBody / StatementList, up to the closing brace *)
-and parse_function_body t ctx =
-  let rec loop acc =
+and parse_function_body t ctx ~directives =
+  let rec loop ctx prologue acc =
     match cur t with
     | T_RCURLY | T_EOF -> List.rev acc
     | _ ->
         let s = parse_statement_list_item t ctx in
-        loop (s :: acc)
+        let prologue = prologue && is_directive s in
+        let ctx =
+          if prologue && is_use_strict s then { ctx with strict = true } else ctx
+        in
+        loop ctx prologue (s :: acc)
   in
-  loop []
+  loop ctx directives []
 
 (* [( FormalParameters )] *)
 and parse_formal_parameters t ctx =
@@ -1431,12 +1473,14 @@ and parse_class_expression t ctx ~decorators =
   let name =
     match cur t with
     | T_EXTENDS | T_LCURLY -> None
-    | _ -> Some (parse_binding_identifier t)
+    | _ -> Some (parse_binding_identifier t strict_ctx)
   in
   name, parse_class_tail t ctx ~decorators
 
 (* ClassTail : ClassHeritage? { ClassBody } *)
 and parse_class_tail t ctx ~decorators =
+  (* All the parts of a class are strict mode code *)
+  let ctx = { ctx with strict = true } in
   let extends = opt t T_EXTENDS (fun () -> parse_left_hand_side_expression t ctx) in
   let body = between t T_LCURLY T_RCURLY (fun () -> parse_class_body t ctx) in
   { decorators; extends; body }
@@ -1459,7 +1503,9 @@ and parse_class_body t ctx =
         loop acc
     | T_STATIC when Poly.equal (peek_tok t 1) Js_token.T_LCURLY ->
         advance t;
-        loop (CEStaticBLock (parse_block t { yield = false; await = true }) :: acc)
+        loop
+          (CEStaticBLock (parse_block t { yield = false; await = true; strict = true })
+          :: acc)
     | _ ->
         let decorators = parse_decorator_list t ctx in
         let static =
@@ -1482,13 +1528,13 @@ and parse_class_body t ctx =
               match parse_method_modifier t with
               | Some (kind, meth) ->
                   let name = parse_class_element_name t ctx in
-                  let m = parse_function_rest t ~pos kind in
+                  let m = parse_function_rest t ctx ~pos kind in
                   CEMethod (decorators, static, name, meth m)
               | None -> (
                   let name = parse_class_element_name t ctx in
                   match cur t with
                   | T_LPAREN ->
-                      let m = parse_function_rest t ~pos no_fun in
+                      let m = parse_function_rest t ctx ~pos no_fun in
                       CEMethod (decorators, static, name, Method m)
                   | _ ->
                       let init = parse_initializer_opt t ctx ~no_in:false in
@@ -1506,14 +1552,22 @@ and parse_class_body t ctx =
 (* Block : { StatementList? } *)
 and parse_block t ctx =
   expect t T_LCURLY;
-  let body = parse_function_body t ctx in
+  let body = parse_function_body t ctx ~directives:false in
+  expect t T_RCURLY;
+  body
+
+(* [{ FunctionBody }], which can start with directives *)
+and parse_function_block t ctx =
+  expect t T_LCURLY;
+  let body = parse_function_body t ctx ~directives:true in
   expect t T_RCURLY;
   body
 
 (* VariableDeclarationList / BindingList: a destructuring pattern requires
    an initializer *)
-and parse_variable_declaration_list t ctx ~no_in =
+and parse_variable_declaration_list t ctx ~kind ~no_in =
   comma_list1 t (fun () ->
+      check_lexical_binding t kind;
       match cur t with
       | T_LBRACKET | T_LCURLY ->
           let pat = parse_binding_pattern t ctx in
@@ -1550,6 +1604,7 @@ and parse_using_kind t =
 (* The BindingList of a [using] declaration: identifiers only *)
 and parse_using_binding_list t ctx ~no_in =
   comma_list1 t (fun () ->
+      check_lexical_binding t Using;
       let i = parse_identifier t ctx in
       let init = parse_initializer_opt t ctx ~no_in in
       DeclIdent (i, init))
@@ -1577,10 +1632,21 @@ and parse_statement_list_item t ctx =
 
 and declaration_ahead t ctx =
   match cur t with
-  | T_FUNCTION | T_CLASS | T_AT | T_LET | T_CONST -> true
+  | T_FUNCTION | T_CLASS | T_AT | T_CONST -> true
+  | T_LET -> let_declaration_ahead t ctx
   | T_ASYNC -> async_function_ahead t
   | T_USING | T_AWAIT -> using_declaration_ahead t ctx
   | _ -> false
+
+(* [let] starts a declaration when followed by an identifier, [[] or [{].
+   Otherwise, it is an identifier (in sloppy mode). *)
+and let_declaration_ahead t ctx =
+  match peek_tok t 1 with
+  | T_LBRACKET | T_LCURLY -> true
+  | tok ->
+      (* A BindingIdentifier: [yield] and [await] are included, whatever
+         the context *)
+      is_identifier (if ctx.strict then strict_ctx else no_ctx) tok
 
 (* Declaration : HoistableDeclaration | ClassDeclaration | LexicalDeclaration *)
 and parse_declaration t ctx =
@@ -1608,15 +1674,16 @@ and parse_declaration t ctx =
 (* ClassDeclaration, whose name is required *)
 and parse_class_declaration t ctx ~decorators =
   expect t T_CLASS;
-  let name = parse_binding_identifier t in
+  let name = parse_binding_identifier t strict_ctx in
   Class_declaration (name, parse_class_tail t ctx ~decorators)
 
 (* [var], [let] or [const] declarations *)
 and parse_variable_statement t ctx tok =
   advance t;
-  let l = parse_variable_declaration_list t ctx ~no_in:false in
+  let kind = variable_kind tok in
+  let l = parse_variable_declaration_list t ctx ~kind ~no_in:false in
   consume_semicolon t;
-  Variable_statement (variable_kind tok, l)
+  Variable_statement (kind, l)
 
 (* Statement, which excludes declarations: they are not allowed as the
    body of an [if], a loop, [with] or a labelled statement. *)
@@ -1694,9 +1761,10 @@ and parse_statement t ctx =
       stmt (Labelled_statement (label, body))
   | T_FUNCTION | T_CLASS | T_AT -> error t
   | T_ASYNC when async_function_ahead t -> error t
+  | T_LET when Poly.equal (peek_tok t 1) Js_token.T_LBRACKET -> error t
   | _ ->
       (* ExpressionStatement, which cannot start with [function], [async
-         function] or [class] (above) *)
+         function], [class] or [let []] (above) *)
       let e = parse_expression t ctx ~no_in:false in
       consume_semicolon t;
       stmt (Expression_statement e)
@@ -1720,9 +1788,12 @@ and parse_for t ctx =
   expect t T_LPAREN;
   match cur t with
   | T_SEMICOLON -> parse_for_rest t ctx (Left None)
-  | (T_VAR | T_LET | T_CONST) as tok ->
+  | (T_VAR | T_CONST) as tok ->
       advance t;
       parse_for_declaration t ctx ~for_await (variable_kind tok)
+  | T_LET when let_declaration_ahead t ctx ->
+      advance t;
+      parse_for_declaration t ctx ~for_await Let
   | T_USING when using_declaration_ahead t ctx -> parse_for_using t ctx ~for_await
   | T_AWAIT
     when ctx.await
@@ -1732,9 +1803,12 @@ and parse_for t ctx =
                && Poly.equal (peek_tok t 3) Js_token.T_OF) ->
       (* [for (await using of of x)] declares [of] *)
       parse_for_using t ctx ~for_await
-  | _ -> (
+  | tok -> (
       let e = parse_expression t ctx ~no_in:true in
       match cur t with
+      | T_OF when Poly.equal tok Js_token.T_LET ->
+          (* [for ( [lookahead != let] LeftHandSideExpression of] *)
+          error t
       | T_IN | T_OF ->
           parse_for_in_of t ctx ~for_await (Left (assignment_target_of_expr None e))
       | _ -> parse_for_rest t ctx (Left (Some e)))
@@ -1742,6 +1816,7 @@ and parse_for t ctx =
 (* After [for ( var], [for ( let] or [for ( const]: a single binding followed
    by [in] or [of], or a list of declarations *)
 and parse_for_declaration t ctx ~for_await kind =
+  check_lexical_binding t kind;
   let binding = parse_binding t ctx in
   match cur t with
   | T_IN | T_OF -> parse_for_in_of t ctx ~for_await (Right (kind, binding))
@@ -1753,7 +1828,7 @@ and parse_for_declaration t ctx ~for_await kind =
       in
       let l =
         if accept t T_COMMA
-        then first :: parse_variable_declaration_list t ctx ~no_in:true
+        then first :: parse_variable_declaration_list t ctx ~kind ~no_in:true
         else [ first ]
       in
       parse_for_rest t ctx (Right (kind, l))
@@ -1767,6 +1842,7 @@ and parse_for_using t ctx ~for_await =
          list *)
       retag_current t (token_to_ident T_OF)
   | _ -> ());
+  check_lexical_binding t kind;
   let i = parse_identifier t ctx in
   match cur t with
   | T_IN | T_OF -> parse_for_in_of t ctx ~for_await (Right (kind, BindingIdent i))
@@ -1916,7 +1992,7 @@ and parse_module_export_name t =
   | tok ->
       (* Whether it could be an ImportedBinding (a BindingIdentifier, which
          accepts [yield] and [await]) *)
-      let is_ident = is_identifier no_ctx tok in
+      let is_ident = is_identifier strict_ctx tok in
       let name = parse_identifier_name t in
       (if is_ident then `Ident else `Reserved), name, pos
 
@@ -1924,7 +2000,7 @@ and parse_module_export_name t =
 and parse_name_space_import t =
   expect t T_MULT;
   expect t T_AS;
-  parse_binding_identifier t
+  parse_binding_identifier t strict_ctx
 
 (* NamedImports : { ImportSpecifier, ... } *)
 and parse_named_imports t =
@@ -1934,7 +2010,7 @@ and parse_named_imports t =
       match cur t, kind with
       | T_AS, _ ->
           advance t;
-          let id = parse_binding_identifier t in
+          let id = parse_binding_identifier t strict_ctx in
           name, id
       | _, `Ident -> name, var pos name
       | _ -> error t)
@@ -1958,7 +2034,7 @@ and parse_import_declaration t ~pos =
         let l = parse_named_imports t in
         Named (None, l), parse_from_clause t
     | _ -> (
-        let default = parse_binding_identifier t in
+        let default = parse_binding_identifier t strict_ctx in
         match cur t with
         | T_COMMA -> (
             advance t;
@@ -1987,7 +2063,7 @@ and parse_export_clause t =
 (* ExportDeclaration, with the decorators found before [export] *)
 and parse_export_declaration t ~pos ~decorators =
   (* Exports are module top-level items: [~Yield, +Await] *)
-  let ctx = { yield = false; await = true } in
+  let ctx = { yield = false; await = true; strict = true } in
   expect t T_EXPORT;
   let export k = Export (k, pi pos), p pos in
   let export_from kind =
@@ -2001,7 +2077,7 @@ and parse_export_declaration t ~pos ~decorators =
       advance t;
       let dpos = start_pos t in
       let default_fun ~async =
-        match parse_function_expression t ~pos:dpos ~async with
+        match parse_function_expression t ctx ~pos:dpos ~async with
         | EFun (name, decl) ->
             consume_semicolon_opt t;
             export (ExportDefaultFun (name, decl))
@@ -2068,8 +2144,9 @@ and parse_export_declaration t ~pos ~decorators =
    Module : ModuleItemList, whose items are [~Yield, +Await]
    Each item comes with the annotations that precede it. *)
 let parse_script_or_module t ~module_ =
-  let ctx = { yield = false; await = module_ } in
-  let rec loop acc =
+  (* Modules are strict mode code. A script can start with directives. *)
+  let ctx = { yield = false; await = module_; strict = module_ } in
+  let rec loop ctx prologue acc =
     match cur t with
     | T_EOF -> List.rev acc
     | _ ->
@@ -2077,9 +2154,13 @@ let parse_script_or_module t ~module_ =
         let s =
           if module_ then parse_module_item t ctx else parse_statement_list_item t ctx
         in
-        loop ((annots, s) :: acc)
+        let prologue = prologue && is_directive s in
+        let ctx =
+          if prologue && is_use_strict s then { ctx with strict = true } else ctx
+        in
+        loop ctx prologue ((annots, s) :: acc)
   in
-  loop []
+  loop ctx (not module_) []
 
 let fail_early =
   object (m)
