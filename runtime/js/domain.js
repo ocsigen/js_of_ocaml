@@ -312,6 +312,14 @@ function caml_domain_set_tick_interval_usec_bytecode(_interval_usec) {
   caml_failwith("[Domain.Tick] not implemented");
 }
 
+//Provides: caml_effective_tick_interval_usec_bytecode
+//Version: >= 5.2
+//If: oxcaml
+function caml_effective_tick_interval_usec_bytecode(_unit) {
+  // Preemption is not implemented: there is no tick
+  return 0;
+}
+
 //Provides: caml_atomic_load_field
 //Version: >= 5.2, < 5.4
 //If: oxcaml
