@@ -425,6 +425,18 @@ let is_contextual_keyword = function
   | T_USING -> true
   | _ -> false
 
+(* Reserved words that are only reserved in strict mode code *)
+let is_strict_mode_reserved_word = function
+  | T_LET
+  | T_STATIC
+  | T_IMPLEMENTS
+  | T_INTERFACE
+  | T_PACKAGE
+  | T_PRIVATE
+  | T_PROTECTED
+  | T_PUBLIC -> true
+  | _ -> false
+
 (* The tokens produced by [is_reserved] *)
 let is_reserved_word = function
   | T_BREAK

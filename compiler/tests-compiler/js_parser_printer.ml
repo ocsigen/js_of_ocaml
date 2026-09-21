@@ -1534,11 +1534,26 @@ let check kind src =
 
 let%expect_test "words reserved in strict mode only are identifiers in sloppy mode" =
   check `Script "var let = 1, static, implements, interface, package; let = 2";
-  [%expect {| error (l:1, c:4): unexpected `let`, expected an identifier |}];
+  [%expect
+    {|
+           var
+           let=1,static,implements,interface,package;(let=2);
+           |}];
   check `Script "var private, protected, public; public.x(static)";
-  [%expect {| error (l:1, c:4): unexpected `private`, expected an identifier |}];
+  [%expect
+    {|
+           var
+           private,protected,public;public.x(static);
+           |}];
   check `Script "for (var let in o) ; for (let in o) ; let: x; ({ let, static })";
-  [%expect {| error (l:1, c:9): unexpected `let`, expected an identifier |}];
+  [%expect
+    {|
+           for(var
+           let
+           in
+           o);for((let)in
+           o);\u{6c}et:x;({let:let,static:static});
+           |}];
   (* [let] followed by an identifier, [[] or [{] starts a declaration *)
   check `Script "let x = 1; let [a] = b; let {c} = d; let\ny = 2";
   [%expect
@@ -1549,27 +1564,31 @@ let%expect_test "words reserved in strict mode only are identifiers in sloppy mo
            |}];
   (* ... but declarations are not statements: [let] is then an identifier *)
   check `Script "if (a) let\nx = 1";
-  [%expect {| error (l:1, c:7): unexpected `let`, expected an identifier |}];
+  [%expect {| if(a)(let);x=1; |}];
   check `Script "if (a) let\n{}";
-  [%expect {| error (l:1, c:7): unexpected `let`, expected an identifier |}];
+  [%expect {| if(a)(let);{} |}];
   (* and an expression statement cannot start with [let []] *)
   check `Script "if (a) let [x] = y";
-  [%expect {| error (l:1, c:7): unexpected `let`, expected an identifier |}];
+  [%expect {| error (l:1, c:7): an expression statement cannot start with `let [` |}];
   (* [let] cannot start the left-hand side of [for ... of], nor be bound by
      a lexical declaration *)
   check `Script "for (let.a in x) ;";
-  [%expect {| error (l:1, c:8): unexpected `.`, expected an identifier |}];
+  [%expect {|
+           for((let.a)in
+           x);
+           |}];
   check `Script "for (let.a of x) ;";
-  [%expect {| error (l:1, c:8): unexpected `.`, expected an identifier |}];
+  [%expect
+    {| error (l:1, c:11): the left-hand side of `for ... of` cannot start with `let` |}];
   check `Script "let let = 1";
-  [%expect {| error (l:1, c:4): unexpected `let`, expected an identifier |}];
+  [%expect {| error (l:1, c:4): `let` cannot be declared by `let`, `const` or `using` |}];
   check `Script "for (const let of x) ;";
-  [%expect {| error (l:1, c:11): unexpected `let`, expected an identifier |}];
+  [%expect {| error (l:1, c:11): `let` cannot be declared by `let`, `const` or `using` |}];
   check `Script "async function f() { let\nawait 0 }";
   [%expect
     {| error (l:2, c:0): `await` is a reserved word in an async function or a module |}];
   check `Script "using\nlet = 1";
-  [%expect {| error (l:2, c:4): unexpected `=`, expected an identifier |}];
+  [%expect {| using;(let=1); |}];
   (* They are reserved in strict mode code: modules, classes, and after a
      [use strict] directive *)
   check `Module "var let = 1";
@@ -1581,9 +1600,19 @@ let%expect_test "words reserved in strict mode only are identifiers in sloppy mo
   check `Script "'use strict'; var let";
   [%expect {| error (l:1, c:18): unexpected `let`, expected an identifier |}];
   check `Script "function f() { 'use strict' + 1; var public } function g() { var let }";
-  [%expect {| error (l:1, c:37): unexpected `public`, expected an identifier |}];
+  [%expect
+    {|
+           function
+           f(){"use strict"+1;var
+           public}function
+           g(){var
+           let}
+           |}];
   check `Script "{ 'use strict'; var let }";
-  [%expect {| error (l:1, c:20): unexpected `let`, expected an identifier |}]
+  [%expect {|
+           {"use strict";var
+           let}
+           |}]
 
 let%expect_test "[async of] and [using of] in a for statement" =
   check `Script "for (async of => {}; ;) ;";
@@ -2075,15 +2104,26 @@ let%expect_test "directive prologue" =
   check `Script "'use strict'; var let = 1";
   [%expect {| error (l:1, c:18): unexpected `let`, expected an identifier |}];
   check `Script "'use\\x20strict'; var let = 1";
-  [%expect {| error (l:1, c:21): unexpected `let`, expected an identifier |}];
+  [%expect {|
+           "use\x20strict";var
+           let=1;
+           |}];
   check `Script "('use strict'); var let = 1";
   [%expect {| error (l:1, c:20): unexpected `let`, expected an identifier |}];
   check `Script "'use strict'.length; var let = 1";
-  [%expect {| error (l:1, c:25): unexpected `let`, expected an identifier |}];
+  [%expect {|
+           "use strict".length;var
+           let=1;
+           |}];
   check `Script "'a'; 'use strict'; var let = 1";
   [%expect {| error (l:1, c:23): unexpected `let`, expected an identifier |}];
   check `Script "var a; 'use strict'; var let = 1";
-  [%expect {| error (l:1, c:25): unexpected `let`, expected an identifier |}]
+  [%expect
+    {|
+           var
+           a;"use strict";var
+           let=1;
+           |}]
 
 let%expect_test "line terminator before =>" =
   check `Script "x\n=> y";
