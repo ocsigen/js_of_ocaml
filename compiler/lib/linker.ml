@@ -270,9 +270,9 @@ module Fragment = struct
           | _ -> "??"
         in
         error
-          "cannot parse file %S (orig:%S from l:%d, c:%d)@."
+          "cannot parse file %S (%sl:%d, c:%d)"
           filename
-          name
+          (if String.equal name filename then "" else Printf.sprintf "orig:%S from " name)
           pi.Parse_info.line
           pi.Parse_info.col
     in
