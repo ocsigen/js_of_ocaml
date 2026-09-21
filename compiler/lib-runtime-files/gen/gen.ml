@@ -48,7 +48,7 @@ let rec list_product l =
       let tail = list_product xs in
       List.concat_map values ~f:(fun v -> List.map tail ~f:(fun l -> (key, v) :: l))
 
-let () =
+let main () =
   Js_of_ocaml_compiler.Warning.werror := true;
   Js_of_ocaml_compiler.Warning.enable `Unused_js_variable;
   Js_of_ocaml_compiler.Config.set_target `JavaScript;
@@ -106,3 +106,11 @@ let %s = Js_of_ocaml_compiler.Builtins.register
             name
             content
             (Marshal.to_string fragments []))
+
+(* Report errors the way the compiler does, rather than as an uncaught
+   exception, which escapes the message *)
+let () =
+  try main ()
+  with Failure s ->
+    Format.eprintf "%s: Error: %s@." Sys.argv.(0) s;
+    exit 1
