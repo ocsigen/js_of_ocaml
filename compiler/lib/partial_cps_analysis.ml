@@ -62,7 +62,7 @@ let rec block_iter_last ~f l =
       f false i;
       block_iter_last ~f l
 
-let block_deps ~info ~vars ~tail_deps ~deps ~blocks ~fun_name pc =
+let block_deps ~info ~vars ~tail_deps ~deps ~enclosing ~blocks ~fun_name pc =
   let block = Addr.Map.find pc blocks in
   block_iter_last block.body ~f:(fun is_last i ->
       match i with
@@ -72,6 +72,7 @@ let block_deps ~info ~vars ~tail_deps ~deps ~blocks ~fun_name pc =
           | None -> ()
           | Some g -> (
               add_var vars g;
+              Var.Hashtbl.replace enclosing x g;
               (* If a call point is in CPS, then the englobing function
                  should be in CPS. Exception: without double translation,
                  a call proven unyielding by the OCaml compiler can remain
@@ -145,14 +146,14 @@ let block_deps ~info ~vars ~tail_deps ~deps ~blocks ~fun_name pc =
       | Let (_, (Prim _ | Block _ | Constant _ | Field _ | Special _))
       | Event _ | Assign _ | Set_field _ | Offset_ref _ | Array_set _ -> ())
 
-let program_deps ~info ~vars ~tail_deps ~deps p =
+let program_deps ~info ~vars ~tail_deps ~deps ~enclosing p =
   fold_closures
     p
     (fun fun_name _ (pc, _) _ () ->
       traverse
         { fold = Code.fold_children }
         (fun pc () ->
-          block_deps ~info ~vars ~tail_deps ~deps ~blocks:p.blocks ~fun_name pc)
+          block_deps ~info ~vars ~tail_deps ~deps ~enclosing ~blocks:p.blocks ~fun_name pc)
         pc
         p.blocks
         ())
@@ -177,11 +178,14 @@ let fold_children g f x acc =
 (* Whether [x] is a call point that the OCaml compiler proved unable to perform
    an effect. Such a call never needs to be in CPS: even in CPS context, we can
    call the direct-style version of the callee, no matter which function ends
-   up being called. The exception is calls to mutually recursive functions:
-   they are CPS-transformed for tail optimization, and the trampoline used for
-   their direct-style version (see [Generate_closure]) expects whole recursive
-   groups to be transformed consistently, so we keep such call points in CPS. *)
-let is_unyielding_call ~info ~in_mutual_recursion x =
+   up being called. The exception is calls between mutually recursive
+   functions: they are CPS-transformed for tail optimization, and the
+   trampoline used for their direct-style version (see [Generate_closure])
+   expects whole recursive groups to be transformed consistently, so we keep
+   such call points in CPS. Calls into a recursive group from a function
+   outside any group do not affect this consistency: keeping them in CPS
+   would only force the caller into CPS, without any benefit. *)
+let is_unyielding_call ~info ~in_mutual_recursion ~enclosing x =
   double_translate ()
   &&
   match info.Global_flow.info_defs.(Var.idx x) with
@@ -189,7 +193,14 @@ let is_unyielding_call ~info ~in_mutual_recursion x =
       match Var.Tbl.get info.Global_flow.info_approximation f with
       | Top -> true
       | Values { known; others = _ } ->
-          not (Var.Set.exists (fun g -> Var.Set.mem g in_mutual_recursion) known))
+          let caller_in_group =
+            match Var.Hashtbl.find_opt enclosing x with
+            | Some g -> Var.Set.mem g in_mutual_recursion
+            | None -> false
+          in
+          not
+            (caller_in_group
+            && Var.Set.exists (fun g -> Var.Set.mem g in_mutual_recursion) known))
   | Expr (Apply { yielding = Unknown; _ }) ->
       (* This analysis should never see [Unknown]; only passes afterwards should ever emit
          it *)
@@ -219,17 +230,18 @@ let is_unyielding_call ~info ~in_mutual_recursion x =
    The dependencies are the same as for [cps_needed], but the
    information flows in the opposite direction: from callers to
    callees. So this is solved on the reversed graph, reading [deps]. *)
-let below_handler ~info ~in_mutual_recursion ~deps st x =
+let below_handler ~info ~in_mutual_recursion ~enclosing ~deps st x =
   let from_callers () =
     fold_children deps (fun y acc -> acc || Var.Tbl.get st y) x false
   in
   match info.Global_flow.info_defs.(Var.idx x) with
   | Expr (Closure _) -> Var.ISet.mem info.Global_flow.info_may_escape x || from_callers ()
   | Expr (Apply _) ->
-      (not (is_unyielding_call ~info ~in_mutual_recursion x)) && from_callers ()
+      (not (is_unyielding_call ~info ~in_mutual_recursion ~enclosing x))
+      && from_callers ()
   | Expr (Prim _ | Block _ | Constant _ | Field _ | Special _) | Phi _ -> from_callers ()
 
-let cps_needed ~info ~in_mutual_recursion ~rev_deps ~below st x =
+let cps_needed ~info ~in_mutual_recursion ~enclosing ~rev_deps ~below st x =
   (match below with
     | None -> true
     | Some below -> Var.Tbl.get below x)
@@ -237,7 +249,7 @@ let cps_needed ~info ~in_mutual_recursion ~rev_deps ~below st x =
   (* Mutually recursive functions are turned into CPS for tail
      optimization (JavaScript only, see [cps_for_tail_calls]) *)
   (Var.Set.mem x in_mutual_recursion
-  || (not (is_unyielding_call ~info ~in_mutual_recursion x))
+  || (not (is_unyielding_call ~info ~in_mutual_recursion ~enclosing x))
      &&
      let idx = Var.idx x in
      fold_children rev_deps (fun y acc -> acc || Var.Tbl.get st y) x false
@@ -308,7 +320,8 @@ let f p info =
   let vars = Var.ISet.empty () in
   let deps = Array.make nv Var.Set.empty in
   let tail_deps = ref Var.Map.empty in
-  program_deps ~info ~vars ~tail_deps ~deps p;
+  let enclosing = Var.Hashtbl.create 1024 in
+  program_deps ~info ~vars ~tail_deps ~deps ~enclosing p;
   if times () then Format.eprintf "      fun analysis (initialize): %a@." Timer.print t1;
   let t2 = Timer.make () in
   let in_mutual_recursion =
@@ -324,10 +337,17 @@ let f p info =
   let rev_deps = G.invert () g in
   let below =
     if double_translate ()
-    then Some (Solver.f () rev_deps (below_handler ~info ~in_mutual_recursion ~deps:g))
+    then
+      Some
+        (Solver.f
+           ()
+           rev_deps
+           (below_handler ~info ~in_mutual_recursion ~enclosing ~deps:g))
     else None
   in
-  let res = Solver.f () g (cps_needed ~info ~in_mutual_recursion ~rev_deps ~below) in
+  let res =
+    Solver.f () g (cps_needed ~info ~in_mutual_recursion ~enclosing ~rev_deps ~below)
+  in
   if times () then Format.eprintf "      fun analysis (solve): %a@." Timer.print t3;
   let s = ref Var.Set.empty in
   Var.Tbl.iter (fun x v -> if v then s := Var.Set.add x !s) res;
