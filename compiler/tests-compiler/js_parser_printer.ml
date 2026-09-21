@@ -1784,19 +1784,20 @@ let%expect_test "decorators and export" =
            A{}
            |}];
   check `Module "@dec @a.b(1) export default class {}";
-  [%expect {|
-           export
+  [%expect
+    {|
+           @dec@a.b(1)export
            default
            class{}
            |}];
   check `Module "@dec export default class A {}";
-  [%expect
-    {|
-           export
-           default
-           class
-           A{}
-           |}];
+  [%expect {|
+    @dec
+    export
+    default
+    class
+    A{}
+    |}];
   check `Module "export default @dec class {}";
   [%expect
     {|
@@ -1807,49 +1808,21 @@ let%expect_test "decorators and export" =
            |}];
   (* ... but not both *)
   check `Module "@a export @b class A {}";
-  [%expect
-    {|
-           @b
-           export
-           class
-           A{}
-           |}];
+  [%expect {| cannot parse js (from l:1, c:10) |}];
   check `Module "@a export default @b class {}";
-  [%expect
-    {|
-           @b
-           export
-           default
-           class{}
-           |}];
+  [%expect {| cannot parse js (from l:1, c:18) |}];
   (* Only classes can be decorated *)
   check `Module "@dec export function f() {}";
-  [%expect {|
-           export
-           function
-           f(){}
-           |}];
+  [%expect {| cannot parse js (from l:1, c:12) |}];
   check `Module "@dec export default function () {}";
-  [%expect {|
-           export
-           default
-           function(){}
-           |}];
+  [%expect {| cannot parse js (from l:1, c:20) |}];
   check `Module "@dec export default 1";
-  [%expect {|
-           export
-           default
-           1;
-           |}];
+  [%expect {| cannot parse js (from l:1, c:20) |}];
   check `Module "@dec export var x";
-  [%expect {|
-           export
-           var
-           x;
-           |}];
+  [%expect {| cannot parse js (from l:1, c:12) |}];
   check `Module "@dec export { a }";
-  [%expect {| export{a}; |}];
+  [%expect {| cannot parse js (from l:1, c:12) |}];
   check `Module "@dec export * from 'm'";
-  [%expect {| export*from"m"; |}];
+  [%expect {| cannot parse js (from l:1, c:12) |}];
   check `Script "@dec function f() {}";
   [%expect {| cannot parse js (from l:1, c:5) |}]

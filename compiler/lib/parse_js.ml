@@ -2125,7 +2125,10 @@ and parse_export_clause t =
       let exported = if accept t T_AS then parse_module_export_name t else local in
       local, exported)
 
-(* ExportDeclaration, with the decorators found before [export] *)
+(* ExportDeclaration, with the decorators found before [export]. These are
+   only allowed in [DecoratorList export class] and
+   [DecoratorList export default class], where the class has no other
+   decorator. *)
 and parse_export_declaration t ~pos ~decorators =
   (* Exports are module top-level items: [~Yield, +Await] *)
   let ctx = { yield = false; await = true; strict = true } in
@@ -2137,8 +2140,19 @@ and parse_export_declaration t ~pos ~decorators =
     consume_semicolon t;
     export (ExportFrom { kind; from; withClause })
   in
-  match cur t with
-  | T_DEFAULT -> (
+  match cur t, decorators with
+  | T_CLASS, _ :: _ -> (
+      match parse_class_declaration t ctx ~decorators with
+      | Class_declaration (id, decl) -> export (ExportClass (id, decl))
+      | _ -> assert false)
+  | T_DEFAULT, _ :: _ ->
+      advance t;
+      if not (Poly.equal (cur t) Js_token.T_CLASS) then error t;
+      let name, decl = parse_class_expression t ctx ~decorators in
+      consume_semicolon_opt t;
+      export (ExportDefaultClass (name, decl))
+  | _, _ :: _ -> error t
+  | T_DEFAULT, [] -> (
       advance t;
       let dpos = start_pos t in
       let default_fun ~async =
@@ -2162,7 +2176,7 @@ and parse_export_declaration t ~pos ~decorators =
           let e = parse_assignment_expression t ctx ~no_in:false in
           consume_semicolon t;
           export (ExportDefaultExpression e))
-  | T_MULT ->
+  | T_MULT, [] ->
       advance t;
       let name =
         opt t T_AS (fun () ->
@@ -2170,7 +2184,7 @@ and parse_export_declaration t ~pos ~decorators =
             name)
       in
       export_from (Export_all name)
-  | T_LCURLY -> (
+  | T_LCURLY, [] -> (
       let names = parse_export_clause t in
       match cur t with
       | T_FROM ->
@@ -2189,12 +2203,11 @@ and parse_export_declaration t ~pos ~decorators =
             with Invalid pos -> CoverExportFrom (early_error (pi pos))
           in
           export k)
-  | tok -> (
+  | tok, [] -> (
       (* [export] VariableStatement or [export] Declaration *)
       let s =
-        match tok, decorators with
-        | T_CLASS, _ :: _ -> parse_class_declaration t ctx ~decorators
-        | T_VAR, _ -> parse_variable_statement t ctx T_VAR
+        match tok with
+        | T_VAR -> parse_variable_statement t ctx T_VAR
         | _ -> fst (parse_declaration t ctx)
       in
       match s with
