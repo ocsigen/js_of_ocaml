@@ -202,7 +202,9 @@ type expr =
             (* if [Unyielding], the OCaml compiler has proven that this call cannot
            perform an effect that would capture the current continuation
            (see [Instruct.Event_unyielding_call]). It is thus safe to call
-           the direct-style version of the function even in CPS context.
+           the direct-style version of the function even in CPS context, or
+           to run a CPS version of the function to completion from
+           direct-style code.
            [May_yield] is always a sound default. The flag applies only to this
            call; it says nothing about the call's result (which may be a
            closure that yields when later applied).
