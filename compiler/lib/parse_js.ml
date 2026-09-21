@@ -1085,7 +1085,7 @@ and parse_function_body t ctx =
     match cur t with
     | T_RCURLY | T_EOF -> List.rev acc
     | _ ->
-        let s = parse_statement_list_item t ctx ~module_:false in
+        let s = parse_statement_list_item t ctx in
         loop (s :: acc)
   in
   loop []
@@ -1265,13 +1265,6 @@ and parse_block t ctx =
   expect t T_RCURLY;
   body
 
-(* A statement in a position where declarations are not allowed
-   (e.g. the body of an [if]) *)
-and parse_statement t ctx =
-  match cur t with
-  | T_FUNCTION | T_CLASS | T_LET | T_CONST | T_AT -> error t
-  | _ -> parse_statement_list_item t ctx ~module_:false
-
 and parse_variable_declaration_list t ctx ~no_in =
   comma_list1 t (fun () ->
       match cur t with
@@ -1313,21 +1306,77 @@ and parse_using_bindings t ctx ~no_in =
       let init = parse_initializer_opt t ctx ~no_in in
       DeclIdent (i, init))
 
-and parse_statement_list_item t ctx ~module_ =
+(* ModuleItem : ImportDeclaration | ExportDeclaration | StatementListItem *)
+and parse_module_item t ctx =
+  let pos = start_pos t in
+  match cur t with
+  | T_IMPORT
+    when match peek_tok t 1 with
+         | T_LPAREN | T_PERIOD -> false (* [import(...)] and [import.meta] *)
+         | _ -> true -> parse_import t ~pos
+  | T_EXPORT -> parse_export t ~pos ~decorators:[]
+  | T_AT -> (
+      (* Decorators come before [export] *)
+      let decorators = parse_decorators t ctx in
+      match cur t with
+      | T_EXPORT -> parse_export t ~pos ~decorators
+      | _ -> parse_class_declaration t ctx ~decorators, p pos)
+  | _ -> parse_statement_list_item t ctx
+
+(* StatementListItem : Statement | Declaration *)
+and parse_statement_list_item t ctx =
+  if declaration_ahead t ctx then parse_declaration t ctx else parse_statement t ctx
+
+and declaration_ahead t ctx =
+  match cur t with
+  | T_FUNCTION | T_CLASS | T_AT | T_LET | T_CONST -> true
+  | T_ASYNC -> async_function_ahead t
+  | T_USING | T_AWAIT -> using_declaration_ahead t ctx
+  | _ -> false
+
+(* Declaration : HoistableDeclaration | ClassDeclaration | LexicalDeclaration *)
+and parse_declaration t ctx =
   let pos = start_pos t in
   let stmt s = s, p pos in
   match cur t with
-  | T_LCURLY -> stmt (Block (parse_block t ctx))
-  | (T_VAR | T_LET | T_CONST) as tok ->
-      advance t;
-      let l = parse_variable_declaration_list t ctx ~no_in:false in
-      consume_semicolon t;
-      stmt (Variable_statement (variable_kind tok, l))
+  | (T_LET | T_CONST) as tok -> stmt (parse_variable_statement t ctx tok)
   | (T_USING | T_AWAIT) when using_declaration_ahead t ctx ->
       let kind = parse_using_kind t in
       let l = parse_using_bindings t ctx ~no_in:false in
       consume_semicolon t;
       stmt (Variable_statement (kind, l))
+  | T_FUNCTION ->
+      let name, decl = parse_function_declaration t ctx ~pos ~async:false in
+      stmt (Function_declaration (name, decl))
+  | T_ASYNC when async_function_ahead t ->
+      advance t;
+      let name, decl = parse_function_declaration t ctx ~pos ~async:true in
+      stmt (Function_declaration (name, decl))
+  | T_CLASS | T_AT ->
+      let decorators = parse_decorators t ctx in
+      stmt (parse_class_declaration t ctx ~decorators)
+  | _ -> error t
+
+and parse_class_declaration t ctx ~decorators =
+  match parse_class t ctx ~decorators ~name:`Required with
+  | Some name, decl -> Class_declaration (name, decl)
+  | None, _ -> assert false
+
+(* [var], [let] or [const] declarations *)
+and parse_variable_statement t ctx tok =
+  advance t;
+  let l = parse_variable_declaration_list t ctx ~no_in:false in
+  consume_semicolon t;
+  Variable_statement (variable_kind tok, l)
+
+(* Statement, which excludes declarations: they are not allowed as the
+   body of an [if], a loop, [with] or a labelled statement. *)
+and parse_statement t ctx =
+  let pos = start_pos t in
+  let stmt s = s, p pos in
+  match cur t with
+  | T_LCURLY -> stmt (Block (parse_block t ctx))
+  | T_VAR -> stmt (parse_variable_statement t ctx T_VAR)
   | T_SEMICOLON ->
       advance t;
       stmt Empty_statement
@@ -1388,34 +1437,17 @@ and parse_statement_list_item t ctx ~module_ =
       advance t;
       consume_semicolon t;
       stmt Debugger_statement
-  | T_FUNCTION ->
-      let name, decl = parse_function_declaration t ctx ~pos ~async:false in
-      stmt (Function_declaration (name, decl))
-  | T_ASYNC when async_function_ahead t ->
-      advance t;
-      let name, decl = parse_function_declaration t ctx ~pos ~async:true in
-      stmt (Function_declaration (name, decl))
-  | T_CLASS | T_AT -> (
-      let decorators = parse_decorators t ctx in
-      match cur t with
-      | T_EXPORT when module_ -> parse_export t ~pos ~decorators
-      | _ ->
-          let name, decl = parse_class t ctx ~decorators ~name:`Required in
-          stmt (Class_declaration (Option.get name, decl)))
-  | T_IMPORT
-    when module_
-         &&
-         match peek_tok t 1 with
-         | T_LPAREN | T_PERIOD -> false
-         | _ -> true -> parse_import t ~pos
-  | T_EXPORT when module_ -> parse_export t ~pos ~decorators:[]
   | tok when is_identifier ctx tok && Poly.equal (peek_tok t 1) Js_token.T_COLON ->
       let label = Label.of_string (Option.get (ident_of_token ctx tok)) in
       advance t;
       advance t;
       let body = parse_statement t ctx in
       stmt (Labelled_statement (label, body))
+  | T_FUNCTION | T_CLASS | T_AT -> error t
+  | T_ASYNC when async_function_ahead t -> error t
   | _ ->
+      (* ExpressionStatement, which cannot start with [function], [async
+         function] or [class] (above) *)
       let e = parse_expression t ctx ~no_in:false in
       consume_semicolon t;
       stmt (Expression_statement e)
@@ -1532,7 +1564,7 @@ and parse_switch t ctx =
   let rec statements acc =
     match cur t with
     | T_CASE | T_DEFAULT | T_RCURLY | T_EOF -> List.rev acc
-    | _ -> statements (parse_statement_list_item t ctx ~module_:false :: acc)
+    | _ -> statements (parse_statement_list_item t ctx :: acc)
   in
   let rec clauses before default after =
     match cur t with
@@ -1745,33 +1777,34 @@ and parse_export t ~pos ~decorators =
             with Invalid pos -> CoverExportFrom (early_error (pi pos))
           in
           export k)
-  | T_VAR | T_LET | T_CONST | T_USING | T_AWAIT | T_FUNCTION | T_ASYNC | T_CLASS | T_AT
-    -> (
-      let s, _ =
-        match cur t, decorators with
-        | T_CLASS, _ :: _ ->
-            let name, decl = parse_class t ctx ~decorators ~name:`Required in
-            Class_declaration (Option.get name, decl), N
-        | _ -> parse_statement_list_item t ctx ~module_:false
+  | tok -> (
+      (* [export] VariableStatement or [export] Declaration *)
+      let s =
+        match tok, decorators with
+        | T_CLASS, _ :: _ -> parse_class_declaration t ctx ~decorators
+        | T_VAR, _ -> parse_variable_statement t ctx T_VAR
+        | _ -> fst (parse_declaration t ctx)
       in
       match s with
       | Variable_statement (k, l) -> export (ExportVar (k, l))
       | Function_declaration (id, decl) -> export (ExportFun (id, decl))
       | Class_declaration (id, decl) -> export (ExportClass (id, decl))
-      | _ -> error t)
-  | _ -> error t
+      | _ -> assert false)
 
 (****)
 
 (* Script : StatementList[~Yield, ~Await, ~Return]
    Module : ModuleItemList, whose items are [~Yield, +Await] *)
 let parse_program t ~module_ =
+  let ctx = { yield = false; await = module_ } in
   let rec loop acc =
     match cur t with
     | T_EOF -> List.rev acc
     | _ ->
         let pos = start_pos t in
-        let s = parse_statement_list_item t { yield = false; await = module_ } ~module_ in
+        let s =
+          if module_ then parse_module_item t ctx else parse_statement_list_item t ctx
+        in
         loop ((pos, s) :: acc)
   in
   loop []
