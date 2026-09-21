@@ -1,0 +1,74 @@
+name: Set-up OxCaml
+description: >
+  Install an OxCaml switch with opam. The OxCaml opam repository does not
+  yet provide a ppxlib for the 5.4 line, nor Jane Street libraries matching
+  it, so the action also pins ppxlib, ppxlib_ast and ppxlib_jane from the
+  copies vendored in the oxcaml repository, and sexplib0 from its mainstream
+  release.
+
+inputs:
+  ocaml-compiler:
+    description: The compiler package to install
+    default: ocaml-variants.5.4.0+ox
+  opam-repository-ref:
+    description: Git ref of https://github.com/oxcaml/opam-repository
+    default: f1bd228dda31430bf6271f0f9adb2e604c6957ca
+  oxcaml-ref:
+    description: >
+      Git ref of https://github.com/oxcaml/oxcaml providing external/ppxlib
+      and external/ppxlib_jane (branch rricard.ppxlib.compile, which builds
+      ppxlib as part of the oxcaml tree, until it is merged)
+    default: f8ad03f94e7a60f63ed323f9e78b3409878d23e6
+
+runs:
+  using: composite
+  steps:
+    - name: Set-up OxCaml ${{ inputs.ocaml-compiler }}
+      uses: ocaml/setup-ocaml@v3
+      with:
+        ocaml-compiler: ${{ inputs.ocaml-compiler }}
+        opam-repositories: |
+          default: https://github.com/ocaml/opam-repository.git
+          ox: https://github.com/oxcaml/opam-repository.git#${{ inputs.opam-repository-ref }}
+
+    - name: Checkout the ppxlib vendored in the oxcaml repository
+      uses: actions/checkout@v7
+      with:
+        repository: oxcaml/oxcaml
+        ref: ${{ inputs.oxcaml-ref }}
+        path: oxcaml-external
+        sparse-checkout: |
+          external/ppxlib
+          external/ppxlib_jane
+        sparse-checkout-cone-mode: true
+
+    - name: Pin ppxlib, ppxlib_ast and ppxlib_jane
+      shell: bash
+      run: |
+        set -eu
+        PPXLIB=oxcaml-external/external/ppxlib
+        PPXLIB_JANE=oxcaml-external/external/ppxlib_jane
+        # The vendored copy follows the tip of oxcaml. Drop the Pmod_hole
+        # constructor if the installed compiler does not have it yet.
+        if ! grep -q Pmod_hole "$(opam var lib)/ocaml/compiler-libs/parsetree.mli"
+        then
+          grep -rl Pmod_hole "$PPXLIB" "$PPXLIB_JANE" | xargs sed -i '/Pmod_hole/d'
+          sed -i '/^ *val hole : .*module_expr$/d' "$PPXLIB/ast/ast_helper_lite.mli"
+        fi
+        rm -f "$PPXLIB/ppxlib-bench.opam"
+        # The constraint of the vendored opam files predates OxCaml 5.4
+        sed -i -E 's/"ocaml" \{>= "4.04.1" & < "5.2.0" & != "5.1.0~alpha1"\}/"ocaml" {>= "4.04.1"}/' \
+          "$PPXLIB/ppxlib.opam" "$PPXLIB/ppxlib_ast.opam"
+        # A version accepted by the oxcaml-ppxlib-patches guard package
+        opam pin -n -y --with-version 0.33.0+ox2 "$PPXLIB"
+        opam pin -n -y ppxlib_jane "$PPXLIB_JANE"
+
+    - name: Pin a sexplib0 without a basement dependency
+      shell: bash
+      run: |
+        # The preview releases of sexplib0 depend on basement, whose public
+        # releases use primitives removed in OxCaml 5.4.0-ox7. The mainstream
+        # release has no such dependency; the version keeps the
+        # oxcaml-compiler constraint (sexplib0 >= v0.18~) satisfied.
+        opam pin add -n -y sexplib0.v0.18~preview.130.106+341 \
+          https://github.com/janestreet/sexplib0/archive/refs/tags/v0.17.0.tar.gz
