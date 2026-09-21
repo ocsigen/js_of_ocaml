@@ -154,10 +154,40 @@ let fold_children g f x acc =
   g.G.iter_children (fun y -> acc := f y !acc) x;
   !acc
 
-let cps_needed ~info ~in_mutual_recursion ~rev_deps st x =
+(* Whether [x] may run below an effect handler, that is, whether its
+   stack frame may be captured by a continuation. A function may run
+   below an effect handler if it escapes (fiber bodies and effect
+   handlers are passed to the [%with_stack] and [%resume] primitives,
+   so they escape), or if it is called from a call point that may
+   itself run below an effect handler, that is, a call point in a
+   function that may. Toplevel code never runs below an effect handler.
+
+   A function that never runs below an effect handler does not need a
+   CPS version. This is only used with double translation, where a
+   direct-style version of every function is available, so that a CPS
+   call point can always fall back to calling the direct-style version
+   of a callee that has no CPS version.
+
+   The dependencies are the same as for [cps_needed], but the
+   information flows in the opposite direction: from callers to
+   callees. So this is solved on the reversed graph, reading [deps]. *)
+let below_handler ~info ~deps st x =
+  let from_callers () =
+    fold_children deps (fun y acc -> acc || Var.Tbl.get st y) x false
+  in
+  match info.Global_flow.info_defs.(Var.idx x) with
+  | Expr (Closure _) -> Var.ISet.mem info.Global_flow.info_may_escape x || from_callers ()
+  | Expr (Apply _ | Prim _ | Block _ | Constant _ | Field _ | Special _) | Phi _ ->
+      from_callers ()
+
+let cps_needed ~info ~in_mutual_recursion ~rev_deps ~below st x =
+  (match below with
+    | None -> true
+    | Some below -> Var.Tbl.get below x)
+  &&
   (* Mutually recursive functions are turned into CPS for tail
-     optimization *)
-  Var.Set.mem x in_mutual_recursion
+     optimization (JavaScript only, see [cps_for_tail_calls]) *)
+  (Var.Set.mem x in_mutual_recursion
   ||
   let idx = Var.idx x in
   fold_children rev_deps (fun y acc -> acc || Var.Tbl.get st y) x false
@@ -182,7 +212,7 @@ let cps_needed ~info ~in_mutual_recursion ~rev_deps st x =
          , _ )) ->
       (* Effects primitives are in CPS *)
       true
-  | Expr (Prim _ | Block _ | Constant _ | Field _ | Special _) | Phi _ -> false
+  | Expr (Prim _ | Block _ | Constant _ | Field _ | Special _) | Phi _ -> false)
 
 module SCC = Strongly_connected_components.Make (Var)
 
@@ -222,7 +252,12 @@ let f p info =
     { G.domain = vars; iter_children = (fun f x -> Var.Set.iter f deps.(Var.idx x)) }
   in
   let rev_deps = G.invert () g in
-  let res = Solver.f () g (cps_needed ~info ~in_mutual_recursion ~rev_deps) in
+  let below =
+    if double_translate ()
+    then Some (Solver.f () rev_deps (below_handler ~info ~deps:g))
+    else None
+  in
+  let res = Solver.f () g (cps_needed ~info ~in_mutual_recursion ~rev_deps ~below) in
   if times () then Format.eprintf "      fun analysis (solve): %a@." Timer.print t3;
   let s = ref Var.Set.empty in
   Var.Tbl.iter (fun x v -> if v then s := Var.Set.add x !s) res;

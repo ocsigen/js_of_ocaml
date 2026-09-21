@@ -78,6 +78,8 @@
 * Compiler/Wasm: with `--effects=cps`, no longer turn mutually recursive
   functions into CPS: Wasm has proper tail calls, so this is only needed when
   targeting JavaScript (#2441)
+* Compiler: with `--effects=double-translation`, only generate a CPS version
+  of the functions that may run below an effect handler (#2441)
 
 ## Bug fixes
 * Runtime: convert unit names to OCaml strings before calling the toplevel
