@@ -553,6 +553,19 @@ let binary_op ~no_in (tok : Js_token.t) =
   | T_MOD -> Some (Mod, 10)
   | _ -> None
 
+(* Unary operators, other than [++] and [--] *)
+let unary_op ctx (tok : Js_token.t) =
+  match tok with
+  | T_DELETE -> Some Delete
+  | T_VOID -> Some Void
+  | T_TYPEOF -> Some Typeof
+  | T_PLUS -> Some Pl
+  | T_MINUS -> Some Neg
+  | T_BIT_NOT -> Some Bnot
+  | T_NOT -> Some Not
+  | T_AWAIT when ctx.await -> Some Await
+  | _ -> None
+
 let no_fun = { async = false; generator = false }
 
 (* After [get], [set], [async], [static] or [accessor] in an object
@@ -758,48 +771,43 @@ and parse_binary_rest t ctx ~no_in ~min_prec e =
       parse_binary_rest t ctx ~no_in ~min_prec (EBin (op, e, e2))
   | _ -> e
 
+(* ExponentiationExpression :
+     UnaryExpression | UpdateExpression ** ExponentiationExpression
+   The base of [**] cannot be a unary operator application: [-a ** b] is a
+   syntax error. *)
 and parse_exponentiation t ctx =
-  let e, is_unary = parse_unary t ctx in
+  let first = cur t in
+  let e = parse_unary t ctx in
   match cur t with
   | T_EXP ->
-      (* [-a ** b] is a syntax error *)
-      if is_unary then error t;
+      if Option.is_some (unary_op ctx first) then error t;
       advance t;
       let e2 = parse_exponentiation t ctx in
       EBin (Exp, e, e2)
   | _ -> e
 
-(* Also returns whether the expression is a unary operator application
-   (which cannot be the base of [**]) *)
+(* UnaryExpression, including UpdateExpression *)
 and parse_unary t ctx =
-  let unop ?(unary = true) op =
+  let unop op =
     advance t;
-    let e, _ = parse_unary t ctx in
-    EUn (op, e), unary
+    EUn (op, parse_unary t ctx)
   in
-  match cur t with
-  | T_DELETE -> unop Delete
-  | T_VOID -> unop Void
-  | T_TYPEOF -> unop Typeof
-  | T_PLUS -> unop Pl
-  | T_MINUS -> unop Neg
-  | T_BIT_NOT -> unop Bnot
-  | T_NOT -> unop Not
-  | T_AWAIT when ctx.await -> unop Await
-  | T_INCR | T_INCR_NB -> unop ~unary:false IncrB
-  | T_DECR | T_DECR_NB -> unop ~unary:false DecrB
-  | _ -> (
+  match unary_op ctx (cur t), cur t with
+  | Some op, _ -> unop op
+  | None, (T_INCR | T_INCR_NB) -> unop IncrB
+  | None, (T_DECR | T_DECR_NB) -> unop DecrB
+  | None, _ -> (
       let e = parse_lhs t ctx in
       (* Postfix operators: the lexer produces [T_INCR_NB] when there is no
          line terminator before [++] *)
       match cur t with
       | T_INCR_NB ->
           advance t;
-          EUn (IncrA, e), false
+          EUn (IncrA, e)
       | T_DECR_NB ->
           advance t;
-          EUn (DecrA, e), false
-      | _ -> e, false)
+          EUn (DecrA, e)
+      | _ -> e)
 
 (* LeftHandSideExpression *)
 and parse_lhs t ctx =
