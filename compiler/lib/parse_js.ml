@@ -786,8 +786,8 @@ let async_function_ahead t =
   | _ -> false
 
 (* The prefix of a MethodDefinition, in an object literal or a class body:
-   [get], [set], [async], [*] or [async *]. Returns the kind of function
-   and the constructor of the method. *)
+   [get], [set], [async], [*] or [async *]. Returns the kind of function,
+   the shape of its parameters and the constructor of the method. *)
 (* Likewise for [get], [set] and [accessor], which cannot be followed by
    [*]: a field named [get], then a generator method on the next line *)
 let accessor_keyword_is_name t =
@@ -797,18 +797,18 @@ let parse_method_modifier t =
   match cur t with
   | T_GET when not (accessor_keyword_is_name t) ->
       advance t;
-      Some (no_fun, fun m -> MethodGet m)
+      Some (no_fun, `Getter, fun m -> MethodGet m)
   | T_SET when not (accessor_keyword_is_name t) ->
       advance t;
-      Some (no_fun, fun m -> MethodSet m)
+      Some (no_fun, `Setter, fun m -> MethodSet m)
   | T_ASYNC when (not (keyword_is_name t)) && next_on_same_line t ->
       (* [async] on its own line is a property named [async] *)
       advance t;
       let generator = accept t T_MULT in
-      Some ({ async = true; generator }, fun m -> Method m)
+      Some ({ async = true; generator }, `Any, fun m -> Method m)
   | T_MULT ->
       advance t;
-      Some ({ async = false; generator = true }, fun m -> Method m)
+      Some ({ async = false; generator = true }, `Any, fun m -> Method m)
   | _ -> None
 
 (* After [.] or [?.]: [name] or [#name] *)
@@ -1103,6 +1103,33 @@ and parse_suffixes t ctx ~start ~allow_call e =
 and parse_index t ctx =
   between t T_LBRACKET T_RBRACKET (fun () -> parse_expression t ctx ~no_in:false)
 
+(* ImportCall : import ( AssignmentExpression ,? )
+              | import ( AssignmentExpression , AssignmentExpression ,? )
+   ImportMeta : import . meta
+   as well as the [import.source(...)] and [import.defer(...)] proposals *)
+and parse_import_expression t ctx ~pos =
+  expect t T_IMPORT;
+  let import = vartok pos T_IMPORT in
+  let call callee =
+    let args_pos = start_pos t in
+    match parse_arguments t ctx with
+    | ([ Arg _ ] | [ Arg _; Arg _ ]) as args -> ECall (callee, ANormal, args, p pos)
+    | _ -> raise (Parsing_error (pi args_pos))
+  in
+  match cur t with
+  | T_LPAREN -> call import
+  | T_PERIOD -> (
+      advance t;
+      match cur t with
+      | T_META ->
+          advance t;
+          EDot (import, ANormal, utf8_s "meta")
+      | (T_DEFER | T_IDENTIFIER (Utf8 "source", _)) as phase ->
+          advance t;
+          call (EDot (import, ANormal, utf8_s (Js_token.to_string phase)))
+      | _ -> error t)
+  | _ -> error t
+
 (* [new MemberExpression Arguments?] and [new.target] *)
 and parse_new t ctx =
   let pos = start_pos t in
@@ -1117,6 +1144,12 @@ and parse_new t ctx =
       let callee =
         match cur t with
         | T_NEW -> parse_new t ctx
+        | T_IMPORT
+          when not
+                 (Poly.equal (peek_tok t 1) Js_token.T_PERIOD
+                 && Poly.equal (peek_tok t 2) Js_token.T_META) ->
+            (* An import call is not a MemberExpression *)
+            error t
         | _ -> parse_primary_expression t ctx
       in
       let callee = parse_suffixes t ctx ~start:callee_pos ~allow_call:false callee in
@@ -1134,11 +1167,7 @@ and parse_primary_expression t ctx =
   | (T_THIS | T_NULL | T_SUPER) as tok ->
       advance t;
       vartok pos tok
-  | T_IMPORT -> (
-      advance t;
-      match cur t with
-      | T_PERIOD | T_LPAREN -> vartok pos T_IMPORT
-      | _ -> error t)
+  | T_IMPORT -> parse_import_expression t ctx ~pos
   | T_TRUE ->
       advance t;
       EBool true
@@ -1201,11 +1230,13 @@ and parse_cover_parenthesized_expression t ctx =
         let rec loop e =
           match cur t with
           | T_COMMA -> (
+              let comma_pos = start_pos t in
               advance t;
               match cur t with
               | T_RPAREN ->
+                  (* A trailing comma, only valid in arrow parameters *)
                   advance t;
-                  `Expr e
+                  `Cover (early_error (pi comma_pos))
               | T_ELLIPSIS -> cover_rest ()
               | _ ->
                   let e2 = parse_assignment_expression t ctx ~no_in:false in
@@ -1290,9 +1321,9 @@ and parse_property_definition t ctx =
   then PropertySpread (parse_assignment_expression t ctx ~no_in:false)
   else
     match parse_method_modifier t with
-    | Some (kind, meth) ->
+    | Some (kind, params, meth) ->
         let name = parse_property_name t ctx in
-        PropertyMethod (name, meth (parse_function_rest t ctx ~pos kind))
+        PropertyMethod (name, meth (parse_function_rest t ctx ~pos ~params kind))
     | None -> (
         let ident = ident_of_token ctx (cur t) in
         let name = parse_property_name t ctx in
@@ -1301,7 +1332,8 @@ and parse_property_definition t ctx =
             advance t;
             Property (name, parse_assignment_expression t ctx ~no_in:false)
         | T_LPAREN, _ ->
-            PropertyMethod (name, Method (parse_function_rest t ctx ~pos no_fun))
+            PropertyMethod
+              (name, Method (parse_function_rest t ctx ~pos ~params:`Any no_fun))
         | (T_COMMA | T_RCURLY), Some i ->
             (* shorthand property *)
             Property (PNI i, EVar (ident_unsafe i))
@@ -1313,9 +1345,23 @@ and parse_property_definition t ctx =
         | _ -> error t)
 
 (* Parameters and body of a function or method, after its name *)
-and parse_function_rest t ctx ~pos kind =
+and parse_function_rest t ctx ~pos ~params kind =
   let ctx = function_ctx ctx kind in
-  let params = parse_formal_parameters t ctx in
+  let params =
+    match params with
+    | `Any -> parse_formal_parameters t ctx
+    | `Getter ->
+        (* get ClassElementName ( ) *)
+        expect t T_LPAREN;
+        expect t T_RPAREN;
+        { list = []; rest = None }
+    | `Setter ->
+        (* PropertySetParameterList : FormalParameter *)
+        expect t T_LPAREN;
+        let param = parse_binding_element t ctx in
+        expect t T_RPAREN;
+        { list = [ param ]; rest = None }
+  in
   let body = parse_function_block t ctx in
   kind, params, body, p pos
 
@@ -1335,7 +1381,7 @@ and parse_function_expression t ctx ~pos ~async =
     | T_LPAREN -> None
     | _ -> Some (parse_identifier t (function_ctx ctx kind))
   in
-  EFun (name, parse_function_rest t ctx ~pos kind)
+  EFun (name, parse_function_rest t ctx ~pos ~params:`Any kind)
 
 (* FunctionDeclaration and its generator and async variants, after [async] *)
 and parse_function_declaration t ctx ~pos ~async =
@@ -1532,15 +1578,15 @@ and parse_class_body t ctx =
           | _ -> (
               let pos = start_pos t in
               match parse_method_modifier t with
-              | Some (kind, meth) ->
+              | Some (kind, params, meth) ->
                   let name = parse_class_element_name t ctx in
-                  let m = parse_function_rest t ctx ~pos kind in
+                  let m = parse_function_rest t ctx ~pos ~params kind in
                   CEMethod (decorators, static, name, meth m)
               | None -> (
                   let name = parse_class_element_name t ctx in
                   match cur t with
                   | T_LPAREN ->
-                      let m = parse_function_rest t ctx ~pos no_fun in
+                      let m = parse_function_rest t ctx ~pos ~params:`Any no_fun in
                       CEMethod (decorators, static, name, Method m)
                   | _ ->
                       let init = parse_initializer_opt t ctx ~no_in:false in
@@ -1953,9 +1999,11 @@ and parse_try_statement t ctx =
     opt t T_CATCH (fun () ->
         let param =
           opt t T_LPAREN (fun () ->
-              let param = parse_binding_element t ctx in
+              (* CatchParameter : BindingIdentifier | BindingPattern, with
+                 no initializer *)
+              let param = parse_binding t ctx in
               expect t T_RPAREN;
-              param)
+              param, None)
         in
         let b = parse_block t ctx in
         param, b)
