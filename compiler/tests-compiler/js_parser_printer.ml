@@ -1777,6 +1777,20 @@ let%expect_test "syntax error messages" =
       print_endline (Parse_info.Diagnostic.with_excerpt pi msg));
   [%expect {| line 1, column 5: unexpected `=`, expected an identifier |}]
 
+let%expect_test "template literals and optional chains" =
+  (* A tagged template cannot be part of an optional chain *)
+  check `Script "a?.b`t`";
+  [%expect {| a?.b`t`; |}];
+  check `Script "a?.b.c`t`";
+  [%expect {| a?.b.c`t`; |}];
+  check `Script "a?.(1)`t`";
+  [%expect {| a?.(1)`t`; |}];
+  check `Script "a?.`t`";
+  [%expect {| error (l:1, c:3): unexpected ```, expected a property name |}];
+  (* This is fine outside of the chain *)
+  check `Script "(a?.b)`t`; a`t`?.b; a.b`t`";
+  [%expect {| (a?.b)`t`;a`t`?.b;a.b`t`; |}]
+
 let%expect_test "decorators and export" =
   (* Decorators come either before [export] or before [class] *)
   check `Module "@dec export class A {}";
