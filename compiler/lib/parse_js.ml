@@ -393,6 +393,19 @@ let reset t m =
   t.prev_line_end <- m.m_prev_line_end;
   t.prev_real <- m.m_prev_real
 
+(* The annotations ([//Provides: ...]) among the comments between the last
+   consumed token and the current one *)
+let annots_before t =
+  let rec loop i acc =
+    if i <= t.prev_real
+    then acc
+    else
+      match t.toks.(i) with
+      | TAnnot a, loc -> loop (i - 1) ((a, pi (Loc.p1 loc)) :: acc)
+      | _ -> loop (i - 1) acc
+  in
+  loop (cur_index t - 1) []
+
 let all_tokens t = Array.to_list (Array.sub t.toks ~pos:0 ~len:t.len)
 
 (****)
@@ -1794,18 +1807,19 @@ and parse_export t ~pos ~decorators =
 (****)
 
 (* Script : StatementList[~Yield, ~Await, ~Return]
-   Module : ModuleItemList, whose items are [~Yield, +Await] *)
+   Module : ModuleItemList, whose items are [~Yield, +Await]
+   Each item comes with the annotations that precede it. *)
 let parse_program t ~module_ =
   let ctx = { yield = false; await = module_ } in
   let rec loop acc =
     match cur t with
     | T_EOF -> List.rev acc
     | _ ->
-        let pos = start_pos t in
+        let annots = annots_before t in
         let s =
           if module_ then parse_module_item t ctx else parse_statement_list_item t ctx
         in
-        loop ((pos, s) :: acc)
+        loop ((annots, s) :: acc)
   in
   loop []
 
@@ -1858,25 +1872,7 @@ let parse_aux script_or_module lex =
 
 let parse' script_or_module lex =
   let p, t = parse_aux script_or_module lex in
-  let toks = all_tokens t in
-  let take_annot_before =
-    let toks_r = ref toks in
-    let rec loop start_pos acc (toks : (Js_token.t * _) list) =
-      match toks with
-      | [] -> assert false
-      | (TAnnot a, loc) :: xs ->
-          loop start_pos ((a, Parse_info.t_of_pos (Loc.p1 loc)) :: acc) xs
-      | ((TComment _ | TCommentLineDirective _), _) :: xs -> loop start_pos acc xs
-      | (_, loc) :: xs ->
-          if Loc.cnum loc = start_pos.Lexing.pos_cnum
-          then (
-            toks_r := toks;
-            List.rev acc)
-          else loop start_pos [] xs
-    in
-    fun start_pos -> loop start_pos [] !toks_r
-  in
-  let p = List.map p ~f:(fun (start_pos, s) -> take_annot_before start_pos, s) in
+  (* Group the statements under the annotations they follow *)
   let groups =
     List.group p ~f:(fun a _pred ->
         match a with
@@ -1888,7 +1884,7 @@ let parse' script_or_module lex =
       | [] -> assert false
       | (annot, _) :: _ as l -> annot, List.map l ~f:snd)
   in
-  p, toks
+  p, all_tokens t
 
 let parse script_or_module lex =
   let p, _ = parse_aux script_or_module lex in
