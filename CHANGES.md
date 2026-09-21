@@ -101,6 +101,7 @@
   targeting JavaScript (#2441)
 * Compiler: with `--effects=double-translation`, only generate a CPS version
   of the functions that may run below an effect handler (#2441)
+* Compiler: support `--effects=double-translation` with wasm_of_ocaml (#2443)
 
 ## Bug fixes
 * Compiler: with `--effects=double-translation`, fix calls with too many

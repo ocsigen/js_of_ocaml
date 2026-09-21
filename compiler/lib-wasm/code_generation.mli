@@ -36,6 +36,7 @@ type context =
   ; mutable cps_apply_funs : Code.Var.t Stdlib.IntMap.t
   ; mutable curry_funs : Code.Var.t Stdlib.IntMap.t
   ; mutable cps_curry_funs : Code.Var.t Stdlib.IntMap.t
+  ; mutable pair_curry_funs : (Code.Var.t * Code.Var.t) Stdlib.IntMap.t
   ; mutable dummy_funs : Code.Var.t Stdlib.IntMap.t
   ; mutable cps_dummy_funs : Code.Var.t Stdlib.IntMap.t
   ; mutable init_code : Wasm_ast.instruction list
@@ -140,6 +141,8 @@ val add_var : ?typ:Wasm_ast.value_type -> Wasm_ast.var -> Wasm_ast.var t
 
 val define_var : Wasm_ast.var -> expression -> unit t
 
+val get_constant : Wasm_ast.var -> Wasm_ast.expression option t
+
 val is_small_constant : Wasm_ast.expression -> bool t
 
 val event : Parse_info.t -> unit t
@@ -198,6 +201,8 @@ val unit_name : string option t
 val need_apply_fun : cps:bool -> arity:int -> Code.Var.t t
 
 val need_curry_fun : cps:bool -> arity:int -> Code.Var.t t
+
+val need_pair_curry_fun : arity:int -> (Code.Var.t * Code.Var.t) t
 
 val need_dummy_fun : cps:bool -> arity:int -> Code.Var.t t
 

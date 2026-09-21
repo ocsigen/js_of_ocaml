@@ -53,6 +53,7 @@ For {b js_of_ocaml} (default: [disabled]):
 For {b wasm_of_ocaml} (default: [jspi]):
 - {b [jspi]} - JavaScript-Promise Integration (default). Available in Chrome 137, Node.js 25, and higher. Use [cps] for other browsers. Performing effects is slower than with [cps].
 - {b [cps]} - CPS transformation for effect support
+- {b [double-translation]} - Keep both direct and CPS versions; choose at runtime
 - {b [native]} - WebAssembly stack switching (wasm_of_ocaml only). Available, behind the [--experimental-wasm-wasmfx] flag, in Chrome 148 or higher, or in a recent Node.js canary release (V8 version 14.7.100 or higher).
 - {b [disabled]} - No effect handler support
 

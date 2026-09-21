@@ -162,6 +162,12 @@ jobs:
         working-directory: ./wasm_of_ocaml
         run: opam exec -- dune build @runtest-wasm --profile with-effects
 
+      - name: Run tests with double translation of effects
+        if: ${{ (startsWith(matrix.ocaml-compiler, '5.') || startsWith(matrix.ocaml-compiler, 'ocaml-variants.5.')) && ! matrix.wasi }}
+        continue-on-error: ${{ matrix.os == 'windows-latest' }}
+        working-directory: ./wasm_of_ocaml
+        run: opam exec -- dune build @runtest-wasm --profile with-effects-double-translation
+
       - name: Run tests with native effects
         if: ${{ (startsWith(matrix.ocaml-compiler, '5.') || startsWith(matrix.ocaml-compiler, 'ocaml-variants.5.')) && matrix.os != 'windows-latest' }}
         working-directory: ./wasm_of_ocaml

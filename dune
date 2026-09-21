@@ -31,8 +31,9 @@
    (build_runtime_flags
     (:standard --effects double-translation)))
   (wasm_of_ocaml
-   ;; Double transaction is not supported in wasm
-   (enabled_if false))
+   (compilation_mode separate)
+   (flags
+    (:standard --effects double-translation)))
   (binaries
    (tools/node_wrapper.exe as node)
    (tools/node_wrapper.exe as node.exe)))

@@ -22,6 +22,18 @@ open Code_generation
 
 type expression = Wasm_ast.expression Code_generation.t
 
+(* With double translation, functions are compiled in direct style, and the
+   functions that may be involved in the handling of effects also get a CPS
+   version. The closure of such a function is a direct-style closure extended
+   with the code pointers of the CPS version (see [Type.code_pointer_fields]):
+   its type is a subtype of the direct-style closure type, so direct-style
+   calls are unchanged, and a CPS call can test whether the function has a
+   CPS version (see [Memory.cps_call_or_direct]). *)
+let double_translation () =
+  match Config.effects () with
+  | `Double_translation -> true
+  | `Disabled | `Cps | `Jspi | `Native -> false
+
 module Type = struct
   let value = W.Ref { nullable = false; typ = Eq }
 
@@ -226,27 +238,71 @@ module Type = struct
     register_type (Printf.sprintf "function_%d" n) (fun () ->
         return { supertype = None; final = true; typ = W.Func (func_type n) })
 
-  let closure_common_fields ~cps =
-    let* fun_ty = function_type ~cps 1 in
-    return
-      [ { W.mut = false; typ = W.Value (Ref { nullable = false; typ = Type fun_ty }) } ]
+  let ref_field ty =
+    { W.mut = false; typ = W.Value (Ref { nullable = false; typ = Type ty }) }
 
-  let closure_type_1 ~cps =
+  (* The code pointers of a closure of the given arity: the code pointer used
+     when the function is applied to a single argument (partial application,
+     unless the arity is 1), and, when the arity is larger than 1, the code
+     pointer used when all arguments are provided at once. With double
+     translation, a closure with a CPS version is a direct-style closure
+     extended with the code pointers of its CPS version (see
+     [double_translation]). *)
+  let code_pointer_fields ~cps arity =
+    let fields ~cps =
+      match arity with
+      | 0 ->
+          let* fun_ty = function_type ~cps 0 in
+          return [ ref_field fun_ty ]
+      | 1 ->
+          let* fun_ty = function_type ~cps 1 in
+          return [ ref_field fun_ty ]
+      | _ ->
+          let* fun_ty = function_type ~cps 1 in
+          let* fun_ty' = function_type ~cps arity in
+          return [ ref_field fun_ty; ref_field fun_ty' ]
+    in
+    if cps && double_translation ()
+    then
+      let* l = fields ~cps:false in
+      let* l' = fields ~cps:true in
+      return (l @ l')
+    else fields ~cps
+
+  (* Wasm types are structural, but a type's identity includes its
+     supertype. With double translation, the closure type of a function of
+     arity 1 with a CPS version (code pointers of types [function_1] and
+     [function_2]) has the same fields as the closure type of arity 2: it is
+     made a subtype of [closure_last_arg] (which is itself only distinguished
+     from [closure] by its supertype) rather than of [closure], so that the
+     two are distinct and can be told apart at CPS call points. This is just
+     a way of getting a distinct type: it does not mean that such a closure
+     has a single argument left. That information is carried by
+     [cps_closure_last_arg], a subtype of [cps_closure], the same way
+     [closure_last_arg] is a subtype of [closure] in direct style. *)
+  let rec closure_type_1 ~cps =
     register_type
       (if cps then "cps_closure" else "closure")
       (fun () ->
-        let* fields = closure_common_fields ~cps in
-        return { supertype = None; final = false; typ = W.Struct fields })
+        let* fields = code_pointer_fields ~cps 1 in
+        let* supertype =
+          if cps && double_translation ()
+          then
+            let* ty = closure_last_arg_type ~cps:false in
+            return (Some ty)
+          else return None
+        in
+        return { supertype; final = false; typ = W.Struct fields })
 
-  let closure_last_arg_type ~cps =
+  and closure_last_arg_type ~cps =
     register_type
       (if cps then "cps_closure_last_arg" else "closure_last_arg")
       (fun () ->
         let* cl_typ = closure_type_1 ~cps in
-        let* fields = closure_common_fields ~cps in
+        let* fields = code_pointer_fields ~cps 1 in
         return { supertype = Some cl_typ; final = false; typ = W.Struct fields })
 
-  let closure_type ~usage ~cps arity =
+  let rec closure_type ~usage ~cps arity =
     if arity = 1
     then
       match usage with
@@ -257,37 +313,28 @@ module Type = struct
       register_type
         (if cps then "cps_closure_0" else "closure_0")
         (fun () ->
-          let* fun_ty' = function_type ~cps arity in
-          return
-            { supertype = None
-            ; final = false
-            ; typ =
-                W.Struct
-                  [ { mut = false
-                    ; typ = Value (Ref { nullable = false; typ = Type fun_ty' })
-                    }
-                  ]
-            })
+          let* fields = code_pointer_fields ~cps arity in
+          let* supertype =
+            if cps && double_translation ()
+            then
+              let* ty = closure_type ~usage ~cps:false arity in
+              return (Some ty)
+            else return None
+          in
+          return { supertype; final = false; typ = W.Struct fields })
     else
       register_type
         (if cps
          then Printf.sprintf "cps_closure_%d" arity
          else Printf.sprintf "closure_%d" arity)
         (fun () ->
-          let* cl_typ = closure_type_1 ~cps in
-          let* common = closure_common_fields ~cps in
-          let* fun_ty' = function_type ~cps arity in
-          return
-            { supertype = Some cl_typ
-            ; final = false
-            ; typ =
-                W.Struct
-                  (common
-                  @ [ { mut = false
-                      ; typ = Value (Ref { nullable = false; typ = Type fun_ty' })
-                      }
-                    ])
-            })
+          let* cl_typ =
+            if cps && double_translation ()
+            then closure_type ~usage:`Access ~cps:false arity
+            else closure_type_1 ~cps
+          in
+          let* fields = code_pointer_fields ~cps arity in
+          return { supertype = Some cl_typ; final = false; typ = W.Struct fields })
 
   let empty_closure_type () =
     register_type "empty_closure" (fun () ->
@@ -321,28 +368,11 @@ module Type = struct
             { supertype = None; final = true; typ = W.Struct (make_env_type env_type) }
         else
           let* cl_typ = closure_type ~usage:`Alloc ~cps arity in
-          let* common = closure_common_fields ~cps in
-          let* fun_ty' = function_type ~cps arity in
+          let* code_pointers = code_pointer_fields ~cps arity in
           return
             { supertype = Some cl_typ
             ; final = true
-            ; typ =
-                W.Struct
-                  ((if arity = 1
-                    then common
-                    else if arity = 0
-                    then
-                      [ { mut = false
-                        ; typ = Value (Ref { nullable = false; typ = Type fun_ty' })
-                        }
-                      ]
-                    else
-                      common
-                      @ [ { mut = false
-                          ; typ = Value (Ref { nullable = false; typ = Type fun_ty' })
-                          }
-                        ])
-                  @ make_env_type env_type)
+            ; typ = W.Struct (code_pointers @ make_env_type env_type)
             })
 
   let rec_env_type ~function_count ~env_type_id ~env_type =
@@ -388,21 +418,13 @@ module Type = struct
             }
         else
           let* cl_typ = closure_type ~usage:`Alloc ~cps arity in
-          let* common = closure_common_fields ~cps in
-          let* fun_ty' = function_type ~cps arity in
+          let* code_pointers = code_pointer_fields ~cps arity in
           return
             { supertype = Some cl_typ
             ; final = true
             ; typ =
                 W.Struct
-                  ((if arity = 1
-                    then common
-                    else
-                      common
-                      @ [ { mut = false
-                          ; typ = Value (Ref { nullable = false; typ = Type fun_ty' })
-                          }
-                        ])
+                  (code_pointers
                   @ [ { W.mut = false
                       ; typ = W.Value (Ref { nullable = false; typ = Type env_ty })
                       }
@@ -416,7 +438,7 @@ module Type = struct
        else Printf.sprintf "curry_%d_%d" arity m)
       (fun () ->
         let* cl_typ = closure_type ~usage:(if m = 2 then `Alloc else `Access) ~cps 1 in
-        let* common = closure_common_fields ~cps in
+        let* common = code_pointer_fields ~cps 1 in
         let* cl_ty =
           if m = arity
           then closure_type ~usage:`Alloc ~cps arity
@@ -443,21 +465,13 @@ module Type = struct
       (fun () ->
         let* cl_typ = closure_type ~cps ~usage:`Alloc arity in
         let* cl_typ' = closure_type ~cps ~usage:`Access arity in
-        let* common = closure_common_fields ~cps in
-        let* fun_ty' = function_type ~cps arity in
+        let* code_pointers = code_pointer_fields ~cps arity in
         return
           { supertype = Some cl_typ
           ; final = true
           ; typ =
               W.Struct
-                ((if arity = 1
-                  then common
-                  else
-                    common
-                    @ [ { mut = false
-                        ; typ = Value (Ref { nullable = false; typ = Type fun_ty' })
-                        }
-                      ])
+                (code_pointers
                 @ [ { W.mut = true
                     ; typ = W.Value (Ref { nullable = true; typ = Type cl_typ' })
                     }
@@ -864,13 +878,19 @@ module Memory = struct
 
   let set_field e idx e' = wasm_array_set e (Arith.const (Int32.of_int (idx + 1))) e'
 
-  let env_start ~no_code_pointer arity =
+  (* Index of the first field of the environment of a closure, that is, the
+     number of code pointers it holds (see [Type.code_pointer_fields]) *)
+  let env_start ~cps ~no_code_pointer arity =
     if no_code_pointer
     then 0
     else
-      match arity with
-      | 0 | 1 -> 1
-      | _ -> 2
+      let n =
+        match arity with
+        | 0 | 1 -> 1
+        | _ -> 2
+      in
+      (* The code pointers of both versions *)
+      if cps && double_translation () then 2 * n else n
 
   let load_function_pointer ~cps ~arity ?(skip_cast = false) closure =
     let arity = if cps then arity - 1 else arity in
@@ -878,7 +898,7 @@ module Memory = struct
     let* fun_ty = Type.function_type ~cps arity in
     let casted_closure = if skip_cast then closure else wasm_cast ty closure in
     let* e =
-      wasm_struct_get ty casted_closure (env_start ~no_code_pointer:false arity - 1)
+      wasm_struct_get ty casted_closure (env_start ~cps ~no_code_pointer:false arity - 1)
     in
     return (fun_ty, e)
 
@@ -892,7 +912,7 @@ module Memory = struct
         (wasm_struct_get
            ty
            (wasm_cast ty closure)
-           (env_start ~no_code_pointer:false arity))
+           (env_start ~cps ~no_code_pointer:false arity))
     in
     return (cl_typ, e)
 
@@ -916,6 +936,63 @@ module Memory = struct
             instr (W.Return (Some e))))
     in
     if_mismatch
+
+  (* With double translation, a CPS call to a function which is not known
+     statically. If the function has a CPS version (its closure is a
+     [cps_closure], see [Type.code_pointer_fields]), this version is called.
+     Otherwise, the function cannot perform an effect: its direct-style
+     version is called, and the result is passed to the continuation (the
+     last argument). This is also what happens for partial applications of
+     functions with a CPS version: the resulting closure has a CPS version
+     as well (see [Curry]). Both calls are in tail position and are turned
+     into tail calls (see [Tail_call]). So the result of this expression is
+     never actually produced: it can only be used when the result of the
+     call is immediately returned, which is always the case for CPS calls.
+     The call must be exact, unless there is a single argument (besides the
+     continuation). *)
+  let cps_call_or_direct ~arity f args =
+    assert (double_translation ());
+    let n = arity - 1 in
+    let k = List.nth args n in
+    let direct_args = List.filteri ~f:(fun i _ -> i < n) args in
+    let* pair_ty = Type.closure_type ~usage:`Access ~cps:true n in
+    block_expr
+      { params = []; result = [ Type.value ] }
+      (let* () =
+         drop
+           (block_expr
+              { params = []; result = [ Type.value ] }
+              (let p = Code.Var.fresh_n "f" in
+               let* closure =
+                 tee
+                   ~typ:(W.Ref { nullable = false; typ = Type pair_ty })
+                   p
+                   (let* f = load f in
+                    return
+                      (W.Br_on_cast_fail
+                         ( 0
+                         , { nullable = false; typ = Eq }
+                         , { nullable = false; typ = Type pair_ty }
+                         , f )))
+               in
+               let* ty, funct =
+                 load_function_pointer ~cps:true ~arity ~skip_cast:true (load p)
+               in
+               let* args = expression_list Fun.id args in
+               instr (W.Return (Some (W.Call_ref (ty, funct, args @ [ closure ]))))))
+       in
+       (* The function has no CPS version. Unless the function is applied
+          to a single argument, the call is exact, so the function has the
+          right arity. *)
+       let* res =
+         let* ty, funct = load_function_pointer ~cps:false ~arity:n (load f) in
+         let* args = expression_list Fun.id direct_args in
+         let* closure = load f in
+         return (W.Call_ref (ty, funct, args @ [ closure ]))
+       in
+       let* k_ty, k_funct = load_function_pointer ~cps:false ~arity:1 k in
+       let* k = k in
+       instr (W.Return (Some (W.Call_ref (k_ty, k_funct, [ res; k ])))))
 
   let make_float32 e =
     let* custom_operations = Type.custom_operations_type in
@@ -1190,7 +1267,11 @@ module Closure = struct
     | [ (g, _) ] -> Code.Var.equal f g
     | _ :: r -> is_last_fun r f
 
-  let translate ~context ~closures ~cps ~no_code_pointer f =
+  (* [cps_version] is the CPS version of [f], with double translation (see
+     [double_translation]); the closure then holds the code pointers of both
+     versions (unless [no_code_pointer], which then holds for both versions,
+     see [Call_graph_analysis]), and is shared by them. *)
+  let translate ~context ~closures ~cps ?cps_version ~no_code_pointer f =
     let info = Code.Var.Map.find f closures in
     let free_variables = get_free_variables ~context info in
     assert (
@@ -1198,31 +1279,45 @@ module Closure = struct
         (List.exists
            ~f:(fun x -> Code.Var.Set.mem x context.globalized_variables)
            free_variables));
+    let pair = Option.is_some cps_version in
+    (* Layout of the closure, see [Type.code_pointer_fields] *)
+    let cps_layout = cps || pair in
     let _, arity = List.find ~f:(fun (f', _) -> Code.Var.equal f f') info.functions in
     let arity = if cps then arity - 1 else arity in
-    let* curry_fun =
-      if arity > 1 && not no_code_pointer then need_curry_fun ~cps ~arity else return f
+    let* code_pointers =
+      if no_code_pointer
+      then return []
+      else
+        match cps_version with
+        | None ->
+            let* curry_fun = if arity > 1 then need_curry_fun ~cps ~arity else return f in
+            return
+              (match arity with
+              | 0 | 1 -> [ W.RefFunc f ]
+              | _ -> [ RefFunc curry_fun; RefFunc f ])
+        | Some g ->
+            assert (double_translation () && not cps);
+            let* curry_fun, cps_curry_fun =
+              if arity > 1 then need_pair_curry_fun ~arity else return (f, g)
+            in
+            return
+              (match arity with
+              | 0 | 1 -> [ W.RefFunc f; RefFunc g ]
+              | _ -> [ RefFunc curry_fun; RefFunc f; RefFunc cps_curry_fun; RefFunc g ])
     in
     if List.is_empty free_variables
     then
       let* typ =
         if no_code_pointer
         then Type.empty_closure_type ()
-        else Type.closure_type ~usage:`Alloc ~cps arity
+        else Type.closure_type ~usage:`Alloc ~cps:cps_layout arity
       in
       let name = Code.Var.fork f in
       let* () =
         register_global
           name
           { mut = false; typ = Type.value }
-          (W.StructNew
-             ( typ
-             , if no_code_pointer
-               then []
-               else
-                 match arity with
-                 | 0 | 1 -> [ W.RefFunc f ]
-                 | _ -> [ RefFunc curry_fun; RefFunc f ] ))
+          (W.StructNew (typ, code_pointers))
       in
       return (W.GlobalGet name)
     else
@@ -1238,18 +1333,11 @@ module Closure = struct
       match info.Closure_conversion.functions with
       | [] -> assert false
       | [ _ ] ->
-          let* typ = Type.env_type ~cps ~arity ~no_code_pointer ~env_type_id ~env_type in
+          let* typ =
+            Type.env_type ~cps:cps_layout ~arity ~no_code_pointer ~env_type_id ~env_type
+          in
           let* l = expression_list load free_variables in
-          return
-            (W.StructNew
-               ( typ
-               , (if no_code_pointer
-                  then []
-                  else
-                    match arity with
-                    | 0 | 1 -> [ W.RefFunc f ]
-                    | _ -> [ RefFunc curry_fun; RefFunc f ])
-                 @ l ))
+          return (W.StructNew (typ, code_pointers @ l))
       | (g, _) :: _ as functions ->
           let function_count = List.length functions in
           let* env_typ = Type.rec_env_type ~function_count ~env_type_id ~env_type in
@@ -1275,7 +1363,7 @@ module Closure = struct
           in
           let* typ =
             Type.rec_closure_type
-              ~cps
+              ~cps:cps_layout
               ~arity
               ~no_code_pointer
               ~function_count
@@ -1284,16 +1372,7 @@ module Closure = struct
           in
           let res =
             let* env = env in
-            return
-              (W.StructNew
-                 ( typ
-                 , (if no_code_pointer
-                    then []
-                    else
-                      match arity with
-                      | 0 | 1 -> [ W.RefFunc f ]
-                      | _ -> [ RefFunc curry_fun; RefFunc f ])
-                   @ [ env ] ))
+            return (W.StructNew (typ, code_pointers @ [ env ]))
           in
           if is_last_fun functions f
           then
@@ -1313,7 +1392,10 @@ module Closure = struct
               (load f)
           else res
 
-  let bind_environment ~context ~closures ~cps ~no_code_pointer f =
+  (* [pair] indicates that [f] is the direct-style version of a function with
+     a CPS version, so its closure holds the code pointers of both versions,
+     unless [no_code_pointer] (see [translate]). *)
+  let bind_environment ~context ~closures ~cps ?(pair = false) ~no_code_pointer f =
     let info = Code.Var.Map.find f closures in
     let free_variables = get_free_variables ~context info in
     if List.is_empty free_variables
@@ -1322,14 +1404,20 @@ module Closure = struct
       let* _ = add_var (Code.Var.fresh ()) in
       return ()
     else
+      let cps_layout = cps || pair in
       let env_type_id = Option.value ~default:(-1) info.id in
       let _, arity = List.find ~f:(fun (f', _) -> Code.Var.equal f f') info.functions in
       let arity = if cps then arity - 1 else arity in
-      let offset = Memory.env_start ~no_code_pointer arity in
+      let offset = Memory.env_start ~cps:cps_layout ~no_code_pointer arity in
       match info.Closure_conversion.functions with
       | [ _ ] ->
           let* typ =
-            Type.env_type ~cps ~arity ~no_code_pointer ~env_type_id ~env_type:[]
+            Type.env_type
+              ~cps:cps_layout
+              ~arity
+              ~no_code_pointer
+              ~env_type_id
+              ~env_type:[]
           in
           let* _ = add_var f in
           let env = Code.Var.fresh_n "env" in
@@ -1351,7 +1439,7 @@ module Closure = struct
           let function_count = List.length functions in
           let* typ =
             Type.rec_closure_type
-              ~cps
+              ~cps:cps_layout
               ~arity
               ~no_code_pointer
               ~function_count
@@ -1376,7 +1464,9 @@ module Closure = struct
                ~init:(0, return ())
                (List.map ~f:fst functions @ free_variables))
 
-  let curry_allocate ~cps ~arity m ~f ~closure ~arg =
+  (* [cps_f] is the CPS version of [f], for the partial application of a
+     function with a CPS version (double translation) *)
+  let curry_allocate ?cps_f ~cps ~arity m ~f ~closure ~arg =
     let* ty = Type.curry_type ~cps arity m in
     let* cl_ty =
       if m = arity
@@ -1385,7 +1475,14 @@ module Closure = struct
     in
     let* closure = Memory.wasm_cast cl_ty (load closure) in
     let* arg = load arg in
-    return (W.StructNew (ty, [ W.RefFunc f; closure; arg ]))
+    let code_pointers =
+      match cps_f with
+      | None -> [ W.RefFunc f ]
+      | Some g ->
+          assert (cps && double_translation ());
+          [ W.RefFunc f; RefFunc g ]
+    in
+    return (W.StructNew (ty, code_pointers @ [ closure; arg ]))
 
   let curry_load ~cps ~arity m closure =
     let m = m + 1 in
@@ -1396,7 +1493,7 @@ module Closure = struct
       else Type.curry_type ~cps arity (m + 1)
     in
     let cast e = if m = 2 then Memory.wasm_cast ty e else e in
-    let offset = Memory.env_start ~no_code_pointer:false 1 in
+    let offset = Memory.env_start ~cps ~no_code_pointer:false 1 in
     return
       ( Memory.wasm_struct_get ty (cast (load closure)) (offset + 1)
       , Memory.wasm_struct_get ty (cast (load closure)) offset
