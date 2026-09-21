@@ -58,6 +58,13 @@
 * Compiler: replace the Menhir-based JavaScript parser with a hand-written
   recursive-descent parser; it also rejects `throw` followed by a line
   terminator hidden in a comment, as required by the spec
+* Compiler: the JavaScript parser now accepts every valid program of test262
+  (`test/language`). In particular, `let`, `static`, `implements`, `interface`,
+  `package`, `private`, `protected` and `public` are accepted as identifiers
+  outside of strict mode code (modules, classes, code following a `use strict`
+  directive). It also rejects some invalid programs it used to accept: getters
+  and setters with the wrong number of parameters, an initializer in a `catch`
+  parameter, malformed `import(...)` calls, `for (async of ...)`
 * Lib: add `Crypto` — bindings to the Web Crypto API (`crypto`,
   `getRandomValues`, `randomUUID`, and the Promise-typed `SubtleCrypto`), with a
   typed `params` variant (one constructor per algorithm) and
