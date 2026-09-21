@@ -17,7 +17,6 @@ jobs:
   build:
     env:
       WASM_OF_OCAML: true
-      OXCAML_OPAM_REPO_REF: d89747aa6e7b9f44d6cc844dca5b5e7c8a90716f
 
     strategy:
       fail-fast: false
@@ -51,10 +50,12 @@ jobs:
             ocaml-name: "5.6+trunk"
             ocaml-compiler: "ocaml-variants.5.6.0+trunk"
             wasi: false
+          # OxCaml 5.4 (the bytecode of the OxCaml 5.2 releases is no longer
+          # supported)
           - os: ubuntu-latest
             os-name: Ubuntu
             ocaml-name: "OxCaml"
-            ocaml-compiler: "ocaml-variants.5.2.0+ox"
+            ocaml-compiler: "ocaml-variants.5.4.0+ox"
             wasi: false
           - os: ubuntu-latest
             os-name: Ubuntu
@@ -99,12 +100,9 @@ jobs:
         if: ${{ ! endsWith(matrix.ocaml-compiler, '+ox') }}
 
       - name: Set-up OxCaml ${{ matrix.ocaml-compiler }}
-        uses: ocaml/setup-ocaml@v3
+        uses: ./wasm_of_ocaml/.github/actions/setup-oxcaml
         with:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
-          opam-repositories: |
-            default: https://github.com/ocaml/opam-repository.git
-            ox: https://github.com/oxcaml/opam-repository.git#${{ env.OXCAML_OPAM_REPO_REF }}
         if: ${{ endsWith(matrix.ocaml-compiler, '+ox') }}
 
       - name: Pin ppxlib
@@ -125,22 +123,6 @@ jobs:
       - name: Pin wasm_of_ocaml
         working-directory: ./wasm_of_ocaml
         run: opam pin . -n --with-version 6.0.1+ox
-
-      # The with-native-effects profile relies on the wasm rules of
-      # dune >= 3.23 (keyed on `js_of_ocaml --build-config`) to build the
-      # runtime in the right effects mode; with an older dune the runtime
-      # is built with the default mode and linking fails. oxcaml-dune-patches
-      # pins dune <= 3.22.2+ox, so re-pin it with the dune version constraint
-      # stripped — opam re-checks dependency constraints on every install,
-      # so a one-shot --ignore-constraints-on flag isn't enough.
-      - name: Drop dune version constraint from oxcaml-dune-patches (OxCaml)
-        if: ${{ endsWith(matrix.ocaml-compiler, '+ox') }}
-        run: |
-          DIR=$(mktemp -d)
-          opam show --raw oxcaml-dune-patches \
-            | perl -0777 -pe 's/"dune"\s+\{build & \([^)]+\)\}/"dune" {build}/' \
-            > "$DIR/oxcaml-dune-patches.opam"
-          opam pin add oxcaml-dune-patches "$DIR" -k path -n -y
 
       - name: Install wasm_of_ocaml and its test dependencies
         working-directory: ./wasm_of_ocaml
