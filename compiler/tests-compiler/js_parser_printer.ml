@@ -1407,6 +1407,8 @@ let%expect_test "in operator in conditional then-branch needs no parentheses" =
     b:d;;);
     |}]
 
+(* Conformance with the ECMA-262 grammar. [check kind src] prints the
+   program parsed with the given goal, or the position of the syntax error. *)
 let check kind src =
   let lex = Parse_js.Lexer.of_string ~filename:"fake" src in
   match Parse_js.parse kind lex with
@@ -1422,6 +1424,170 @@ let check kind src =
         "cannot parse js (from l:%d, c:%d)\n"
         pi.Parse_info.line
         pi.Parse_info.col
+
+let%expect_test "words reserved in strict mode only are identifiers in sloppy mode" =
+  check `Script "var let = 1, static, implements, interface, package; let = 2";
+  [%expect {| cannot parse js (from l:1, c:4) |}];
+  check `Script "var private, protected, public; public.x(static)";
+  [%expect {| cannot parse js (from l:1, c:4) |}];
+  check `Script "for (var let in o) ; for (let in o) ; let: x; ({ let, static })";
+  [%expect {| cannot parse js (from l:1, c:9) |}];
+  (* [let] followed by an identifier, [[] or [{] starts a declaration *)
+  check `Script "let x = 1; let [a] = b; let {c} = d; let\ny = 2";
+  [%expect {|
+           let
+           x=1;let[a]=b;let{c}=d;let
+           y=2;
+           |}];
+  (* ... but declarations are not statements: [let] is then an identifier *)
+  check `Script "if (a) let\nx = 1";
+  [%expect {| cannot parse js (from l:1, c:7) |}];
+  check `Script "if (a) let\n{}";
+  [%expect {| cannot parse js (from l:1, c:7) |}];
+  (* and an expression statement cannot start with [let []] *)
+  check `Script "if (a) let [x] = y";
+  [%expect {| cannot parse js (from l:1, c:7) |}];
+  check `Script "using\nlet = 1";
+  [%expect {| cannot parse js (from l:2, c:4) |}];
+  (* They are reserved in strict mode code: modules, classes, and after a
+     [use strict] directive *)
+  check `Module "var let = 1";
+  [%expect {| cannot parse js (from l:1, c:4) |}];
+  check `Script "class C { m() { var static } }";
+  [%expect {| cannot parse js (from l:1, c:20) |}];
+  check `Script "function f() { 'use strict'; var public }";
+  [%expect {| cannot parse js (from l:1, c:33) |}];
+  check `Script "'use strict'; var let";
+  [%expect {| cannot parse js (from l:1, c:18) |}];
+  check `Script "function f() { 'use strict' + 1; var public } function g() { var let }";
+  [%expect {| cannot parse js (from l:1, c:37) |}];
+  check `Script "{ 'use strict'; var let }";
+  [%expect {| cannot parse js (from l:1, c:20) |}]
+
+let%expect_test "[async of] and [using of] in a for statement" =
+  check `Script "for (async of => {}; ;) ;";
+  [%expect {| cannot parse js (from l:1, c:14) |}];
+  check `Script "x = async of => 1";
+  [%expect {| cannot parse js (from l:1, c:10) |}];
+  (* [for (async of] is excluded by the grammar *)
+  check `Script "for (async of [1]) ;";
+  [%expect {| for((async)of[1]); |}];
+  check `Script "for ((async) of [1]) ; for (async.x of [1]) ;";
+  [%expect {| for((async)of[1]);for((async.x)of[1]); |}];
+  (* A [using] declaration of a variable named [of] *)
+  check `Script "for (using of = null;;) break;";
+  [%expect {| cannot parse js (from l:1, c:14) |}];
+  check `Script "for (using of x) ;";
+  [%expect {|
+           for(using
+           of
+           x);
+           |}]
+
+let%expect_test "a class field named get, set or accessor before a generator" =
+  check `Script "class C { get\n *a() {} }";
+  [%expect {| cannot parse js (from l:2, c:1) |}];
+  check `Script "class C { set\n *a() {} }";
+  [%expect {| cannot parse js (from l:2, c:1) |}];
+  check `Script "class C { accessor\n *a() {} }";
+  [%expect {| cannot parse js (from l:2, c:1) |}];
+  check `Script "class C { static\n *a() {} async\n *b() {} get\n c() {} }";
+  [%expect {|
+           class
+           C{static*a(){}async;*b(){}get
+           c(){}}
+           |}];
+  check `Script "class C { get *a() {} }";
+  [%expect {| cannot parse js (from l:1, c:14) |}];
+  check `Script "x = { get *a() {} }";
+  [%expect {| cannot parse js (from l:1, c:10) |}]
+
+let%expect_test "invalid programs" =
+  (* A trailing comma is only allowed in arrow parameters *)
+  check `Script "(a,)";
+  [%expect {| a; |}];
+  check `Script "(a, b,)";
+  [%expect {| a,b; |}];
+  check `Script "(a, b,) => 1";
+  [%expect {| (a,b)=>1; |}];
+  (* The parameter of [catch] has no initializer *)
+  check `Script "try {} catch (e = 1) {}";
+  [%expect {| try{}catch(e=1){} |}];
+  check `Script "try {} catch ([e = 1]) {}";
+  [%expect {| try{}catch([e=1]){} |}];
+  (* A getter has no parameter, a setter exactly one *)
+  check `Script "x = { get a(b) {} }";
+  [%expect {|
+           x={get
+           a(b){}};
+           |}];
+  check `Script "x = { set a() {} }";
+  [%expect {|
+           x={set
+           a(){}};
+           |}];
+  check `Script "x = { set a(b, c) {} }";
+  [%expect {|
+           x={set
+           a(b,c){}};
+           |}];
+  check `Script "x = { set a(...b) {} }";
+  [%expect {|
+           x={set
+           a(...b){}};
+           |}];
+  check `Script "x = { set a(b,) {} }";
+  [%expect {|
+           x={set
+           a(b){}};
+           |}];
+  check `Script "class C { get a(b) {} }";
+  [%expect {|
+           class
+           C{get
+           a(b){}}
+           |}];
+  check `Script "class C { static set #a(b, c) {} }";
+  [%expect {|
+           class
+           C{static set#a(b,c){}}
+           |}];
+  check `Script "x = { get a() {}, set a([b] = c) {}, get() {}, set(a, b) {} }";
+  [%expect {|
+           x={get
+           a(){},set
+           a([b]=c){},get(){},set(a,b){}};
+           |}]
+
+let%expect_test "import calls" =
+  check `Script "import('m'); import('m', { with: {} }); import('m',); import('m', o,)";
+  [%expect {| import("m");import("m",{with:{}});import("m");import("m",o); |}];
+  check
+    `Module
+    "import.meta.url; import.source('m'); import.defer('m'); new (import('m'))";
+  [%expect {| import.meta.url;import.source("m");import.defer("m");new(import("m")); |}];
+  check `Script "import()";
+  [%expect {| import(); |}];
+  check `Script "import(...a)";
+  [%expect {| import(...a); |}];
+  check `Script "import('a', 'b', 'c')";
+  [%expect {| import("a","b","c"); |}];
+  check `Script "new import('m')";
+  [%expect {|
+           new
+           import("m");
+           |}];
+  check `Script "new import.source('m')";
+  [%expect {|
+           new
+           import.source("m");
+           |}];
+  check `Script "import.foo";
+  [%expect {| import.foo; |}];
+  check `Script "import.source";
+  [%expect {| import.source; |}];
+  check `Script "typeof import";
+  [%expect {| cannot parse js (from l:1, c:13) |}]
 
 let%expect_test "parenthesized optional chains" =
   (* Parentheses delimit an optional chain: when [a] is null,
