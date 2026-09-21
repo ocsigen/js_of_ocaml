@@ -66,15 +66,32 @@ let block_deps ~info ~vars ~tail_deps ~deps ~blocks ~fun_name pc =
   let block = Addr.Map.find pc blocks in
   block_iter_last block.body ~f:(fun is_last i ->
       match i with
-      | Let (x, Apply { f; _ }) -> (
+      | Let (x, Apply { f; yielding; _ }) -> (
           add_var vars x;
           (match fun_name with
           | None -> ()
-          | Some g ->
+          | Some g -> (
               add_var vars g;
-              (* If a call point is in CPS, then the englobing
-                 function should be in CPS *)
-              add_dep deps g x);
+              (* If a call point is in CPS, then the englobing function
+                 should be in CPS. Exception: without double translation,
+                 a call proven unyielding by the OCaml compiler can remain
+                 in a direct-style function even if its callees are in
+                 CPS: it then runs the callee to completion (see
+                 [Effects.bridge_calls]). This is only done when all the
+                 callees are known: calls to unknown functions are
+                 typically calls to the argument of a higher-order function
+                 such as [List.iter], performed repeatedly; running the
+                 callee to completion each time would be costly, so the
+                 higher-order function remains in CPS, and its callers
+                 bridge a single call to it. With double translation, the
+                 direct-style version of the callee is used instead, and
+                 the call point is never in CPS (see [is_unyielding_call]),
+                 except for calls to mutually recursive functions, which
+                 do need the englobing function in CPS. *)
+              match yielding, Var.Tbl.get info.Global_flow.info_approximation f with
+              | Unyielding, Values { others = false; _ } when not (double_translate ()) ->
+                  ()
+              | (Unyielding | May_yield | Unknown), (Top | Values _) -> add_dep deps g x));
           match Var.Tbl.get info.Global_flow.info_approximation f with
           | Top -> ()
           | Values { known; others } ->
