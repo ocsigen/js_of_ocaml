@@ -208,6 +208,91 @@ module type Tbl = sig
   val make : size -> 'a -> 'a t
 end
 
+(* Worklist of the imperative solvers. All the nodes are initially
+   queued, in reverse postorder; a node is queued again (with [push])
+   each time the value of one of its predecessors changes, until a
+   fixpoint is reached. A node that is already in the queue is not
+   queued a second time, so the queue never holds more nodes than the
+   domain: we can use a circular buffer of a fixed size, rather than a
+   list and then a [Queue.t], which would both be promoted to the major
+   heap for large graphs. *)
+module Worklist
+    (N : sig
+      type t
+    end)
+    (NSet : ISet with type elt = N.t) : sig
+  type t
+
+  val create : NSet.t -> ((N.t -> unit) -> N.t -> unit) -> t
+  (** [create domain iter_children] queues all the nodes of [domain],
+      in reverse postorder of the graph defined by [iter_children]. *)
+
+  val length : t -> int
+
+  val is_empty : t -> bool
+
+  val pop : t -> N.t
+
+  val push : N.t -> t -> unit
+  (** Does nothing when the node is already in the queue, or is not in
+      the domain. *)
+end = struct
+  type t =
+    { data : N.t array
+    ; mutable head : int
+    ; mutable length : int
+    ; set : NSet.t (* Nodes of the domain which are not in the queue *)
+    }
+
+  let create domain iter_children =
+    (* [ISet] has no [cardinal] *)
+    let count = ref 0 in
+    let first = ref None in
+    NSet.iter
+      (fun x ->
+        if !count = 0 then first := Some x;
+        incr count)
+      domain;
+    let to_visit = NSet.copy domain in
+    match !first with
+    | None -> { data = [||]; head = 0; length = 0; set = to_visit }
+    | Some x ->
+        let data = Array.make !count x in
+        let pos = ref !count in
+        let rec traverse x =
+          if NSet.mem to_visit x
+          then (
+            NSet.remove to_visit x;
+            iter_children traverse x;
+            decr pos;
+            data.(!pos) <- x)
+        in
+        NSet.iter traverse domain;
+        assert (!pos = 0);
+        { data; head = 0; length = !count; set = to_visit }
+
+  let length w = w.length
+
+  let is_empty w = w.length = 0
+
+  let pop w =
+    let x = w.data.(w.head) in
+    let head = w.head + 1 in
+    w.head <- (if head = Array.length w.data then 0 else head);
+    w.length <- w.length - 1;
+    NSet.add w.set x;
+    x
+
+  let push x w =
+    if NSet.mem w.set x
+    then (
+      let size = Array.length w.data in
+      let i = w.head + w.length in
+      w.data.(if i >= size then i - size else i) <- x;
+      w.length <- w.length + 1;
+      NSet.remove w.set x)
+end
+
 module Make_Imperative
     (N : sig
       type t
@@ -242,23 +327,13 @@ struct
 
     let m = ref 0
 
-    type queue =
-      { queue : N.t Queue.t
-      ; set : NSet.t
-      }
+    module W = Worklist (N) (NSet)
 
-    let is_empty st = Queue.is_empty st.queue
+    let is_empty = W.is_empty
 
-    let pop st =
-      let x = Queue.pop st.queue in
-      NSet.add st.set x;
-      x
+    let pop = W.pop
 
-    let push x st =
-      if NSet.mem st.set x
-      then (
-        Queue.push x st.queue;
-        NSet.remove st.set x)
+    let push = W.push
 
     let rec iterate g ~update f v w =
       if is_empty w
@@ -274,21 +349,10 @@ struct
           g.iter_children (fun y -> push y w) x);
         iterate g ~update f v w
 
-    let rec traverse g to_visit lst x =
-      if NSet.mem to_visit x
-      then (
-        NSet.remove to_visit x;
-        incr n;
-        g.iter_children (fun y -> traverse g to_visit lst y) x;
-        lst := x :: !lst)
-
     let traverse_all g =
-      let lst = ref [] in
-      let to_visit = NSet.copy g.domain in
-      NSet.iter (fun x -> traverse g to_visit lst x) g.domain;
-      let queue = Queue.create () in
-      List.iter ~f:(fun x -> Queue.push x queue) !lst;
-      { queue; set = to_visit }
+      let w = W.create g.domain g.iter_children in
+      n := W.length w;
+      w
 
     let check g v f report =
       let update ~children:_ _ = () in
@@ -363,23 +427,13 @@ struct
     ; iter_children : (N.t -> A.t -> unit) -> N.t -> unit
     }
 
-  type queue =
-    { queue : N.t Queue.t
-    ; set : NSet.t
-    }
+  module W = Worklist (N) (NSet)
 
-  let is_empty st = Queue.is_empty st.queue
+  let is_empty = W.is_empty
 
-  let pop st =
-    let x = Queue.pop st.queue in
-    NSet.add st.set x;
-    x
+  let pop = W.pop
 
-  let push x st =
-    if NSet.mem st.set x
-    then (
-      Queue.push x st.queue;
-      NSet.remove st.set x)
+  let push = W.push
 
   let rec iterate g f ~state w =
     if not (is_empty w)
@@ -400,20 +454,7 @@ struct
           dep;
       iterate g f ~state w)
 
-  let rec traverse g to_visit lst x =
-    if NSet.mem to_visit x
-    then (
-      NSet.remove to_visit x;
-      g.iter_children (fun y _ -> traverse g to_visit lst y) x;
-      lst := x :: !lst)
-
-  let traverse_all g =
-    let lst = ref [] in
-    let to_visit = NSet.copy g.domain in
-    NSet.iter (fun x -> traverse g to_visit lst x) g.domain;
-    let queue = Queue.create () in
-    List.iter ~f:(fun x -> Queue.push x queue) !lst;
-    { queue; set = to_visit }
+  let traverse_all g = W.create g.domain (fun f x -> g.iter_children (fun y _ -> f y) x)
 
   let f ~state g f =
     let w = traverse_all g in
