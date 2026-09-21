@@ -88,6 +88,9 @@
 * Compiler: with `--effects=cps`, use OxCaml's unyielding-call information to
   keep functions in direct style, running their CPS callees to completion
   (#2440)
+* Compiler: with `--effects=double-translation`, an unyielding call into a
+  group of mutually recursive functions no longer forces the caller into CPS
+  when the caller is not part of the group (#2440)
 
 ### Wasm
 * Compiler/Wasm: intern string constants (program-wide with whole-program
