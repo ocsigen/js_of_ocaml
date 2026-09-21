@@ -140,6 +140,9 @@
   failing with a runtime error. With `--effects=native` and
   `--effects=jspi`, a handler installed inside `assume_no_perform` now
   handles the effects performed in its body, as documented (#2434)
+* Compiler: keep the decorators of `@dec export default class {}`, which were
+  silently dropped, and reject decorators before the other forms of `export`
+  (`@dec export function f() {}`, ...) or on both sides (`@a export @b class`)
 * Runtime: convert unit names to OCaml strings before calling the toplevel
   relocation callback when `use-js-string` is disabled (#2429)
 * Compiler/Wasm: don't run the program on a JSPI stack when `--effects=cps`
