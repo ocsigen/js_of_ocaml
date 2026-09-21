@@ -329,6 +329,11 @@
       (call $caml_failwith (global.get $tick_not_implemented))
       (ref.i31 (i32.const 0)))
 
+   ;; Preemption is not implemented: there is no tick
+   (func (export "caml_effective_tick_interval_usec_bytecode")
+      (param $unit (ref eq)) (result (ref eq))
+      (ref.i31 (i32.const 0)))
+
    (func (export "caml_atomic_add_field")
       (param $ref (ref eq)) (param $field (ref eq)) (param $i (ref eq))
       (result (ref eq))
