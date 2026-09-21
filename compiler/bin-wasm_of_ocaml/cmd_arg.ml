@@ -38,8 +38,9 @@ let trim_trailing_dir_sep s =
 
 let normalize_include_dirs dirs = List.map dirs ~f:trim_trailing_dir_sep
 
-let normalize_effects (effects : [ `Disabled | `Cps | `Jspi | `Native ] option) common :
-    Config.effects_backend =
+let normalize_effects
+    (effects : [ `Disabled | `Cps | `Double_translation | `Jspi | `Native ] option)
+    common : Config.effects_backend =
   match effects with
   | None ->
       (* For backward compatibility, consider that [--enable effects] alone means
@@ -49,7 +50,7 @@ let normalize_effects (effects : [ `Disabled | `Cps | `Jspi | `Native ] option) 
       else if List.mem ~eq:String.equal "wasi" common.Jsoo_cmdline.Arg.optim.enable
       then `Disabled
       else `Jspi
-  | Some ((`Disabled | `Cps | `Jspi | `Native) as e) -> e
+  | Some ((`Disabled | `Cps | `Double_translation | `Jspi | `Native) as e) -> e
 
 type t =
   { common : Jsoo_cmdline.Arg.t
@@ -191,7 +192,7 @@ let options () =
   let effects =
     let doc =
       "Select an implementation of effect handlers. [$(docv)] should be one of $(b,jspi) \
-       (the default), $(b,cps), $(b,native) or $(b,disabled)."
+       (the default), $(b,cps), $(b,double-translation), $(b,native) or $(b,disabled)."
     in
     Arg.(
       value
@@ -351,7 +352,7 @@ let options_runtime_only () =
   let effects =
     let doc =
       "Select an implementation of effect handlers. [$(docv)] should be one of $(b,jspi) \
-       (the default), $(b,cps), $(b,native) or $(b,disabled)."
+       (the default), $(b,cps), $(b,double-translation), $(b,native) or $(b,disabled)."
     in
     Arg.(
       value

@@ -114,6 +114,7 @@
 * Compiler: report JavaScript syntax errors (runtime files, `jsoo_minify`,
   `wasm_of_ocaml`) as `file:line:col`, followed by the offending line; columns
   start from 1 in all error messages, as editors expect (#2464, #2491)
+* Compiler: support `--effects=double-translation` with wasm_of_ocaml (#2443)
 
 ## Bug fixes
 * Runtime: `Str.string_partial_match` stops at a partial match (JS) and no
