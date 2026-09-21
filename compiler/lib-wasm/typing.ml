@@ -478,7 +478,14 @@ let propagate st approx x : Domain.t =
               Domain.join_set
                 ~others
                 (fun g ->
+                  let g, cont =
+                    Global_flow.called_version st.global_flow_info ~call:x g
+                  in
                   match st.global_flow_state.defs.(Var.idx g) with
+                  | Expr (Closure _) when cont ->
+                      (* Double translation: the result is passed to a
+                         continuation *)
+                      Top
                   | Expr (Closure (params, _, _))
                     when List.length args = List.length params ->
                       let res =
@@ -595,9 +602,9 @@ let box_numbers p st types =
       | Number (_, Unboxed) | Top -> (
           match st.global_flow_state.defs.(Var.idx y) with
           | Expr (Apply { f; _ }) -> (
-              match Global_flow.get_unique_closure st.global_flow_info f with
-              | None -> ()
-              | Some (g, _) ->
+              match Global_flow.get_unique_closure st.global_flow_info ~call:y f with
+              | None | Some (_, _, true) -> ()
+              | Some (g, _, false) ->
                   if can_unbox_return_value st.fun_info g
                   then
                     let s = Var.Map.find g st.global_flow_info.info_return_vals in
@@ -616,13 +623,15 @@ let box_numbers p st types =
           List.iter
             ~f:(fun i ->
               match i with
-              | Let (_, e) -> (
+              | Let (x, e) -> (
                   match e with
                   | Apply { f; args; _ } ->
                       if
-                        match Global_flow.get_unique_closure st.global_flow_info f with
+                        match
+                          Global_flow.get_unique_closure st.global_flow_info ~call:x f
+                        with
                         | None -> true
-                        | Some (g, _) -> not (can_unbox_parameters st.fun_info g)
+                        | Some (g, _, _) -> not (can_unbox_parameters st.fun_info g)
                       then List.iter ~f:box args
                   | Block (tag, lst, _, _) -> if tag <> 254 then Array.iter ~f:box lst
                   | Prim (Extern (s, _), args) ->

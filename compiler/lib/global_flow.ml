@@ -96,6 +96,13 @@ type state =
            This is to avoid repeated computations *)
   ; function_call_sites : Var.t list Var.Hashtbl.t
         (* Known call sites of each functions *)
+  ; cps_versions : Var.t Var.Hashtbl.t
+        (* Double translation: CPS version of functions with two versions,
+           which share their closure (see [Effects.rewrite_direct_block]) *)
+  ; cps_closures : (Var.t * Var.t) Var.Hashtbl.t
+        (* Double translation: the two versions of the function bound to a
+           variable by [caml_cps_closure] *)
+  ; cps_calls : Var.Set.t (* Variables bound to the result of a CPS call *)
   ; fast : bool
   }
 
@@ -132,6 +139,29 @@ let add_param_def st x =
   assert (is_undefined st.defs.(idx));
   if st.fast
   then st.defs.(idx) <- Phi { known = Var.Set.empty; others = true; unit = false }
+
+(* The version of function [g] which is called at call site [call], and
+   whether the last argument of the call is a continuation which is passed
+   the result of the call rather than passed to the function. With double
+   translation, a function with two versions is represented by its
+   direct-style version, and a CPS call calls its CPS version. A CPS call to
+   a function without CPS version calls it in direct style and passes the
+   result to the continuation. *)
+let called_version ~cps_calls ~cps_versions ~call g =
+  if Var.Set.mem call cps_calls
+  then
+    match Var.Hashtbl.find_opt cps_versions g with
+    | Some c -> c, false
+    | None -> g, true
+  else g, false
+
+let rec split_last l =
+  match l with
+  | [] -> assert false
+  | [ x ] -> [], x
+  | x :: r ->
+      let r, y = split_last r in
+      x :: r, y
 
 let rec arg_deps st ?ignore params args =
   match params, args with
@@ -240,7 +270,8 @@ let expr_deps blocks st x e =
          dependencies right now. This speeds up the analysis
          significantly. *)
       match st.defs.(Var.idx f) with
-      | Expr (Closure (params, _, _)) when List.compare_lengths args params = 0 ->
+      | Expr (Closure (params, _, _))
+        when List.compare_lengths args params = 0 && not (Var.Set.mem x st.cps_calls) ->
           VarPairTbl.add st.applied_functions (x, f) ();
           add_to_list st.function_call_sites f x;
           if st.fast
@@ -266,6 +297,12 @@ let program_deps st { start; blocks; _ } =
     (fun _ block ->
       List.iter block.body ~f:(fun i ->
           match i with
+          | Let (x, Prim (Extern ("caml_cps_closure", _), [ Pv d; Pv c ])) ->
+              (* Double translation: the closure of both versions of a
+                 function, represented by its direct-style version *)
+              Var.Hashtbl.replace st.cps_versions d c;
+              Var.Hashtbl.replace st.cps_closures x (d, c);
+              add_assign_def st x d
           | Let (x, e) ->
               add_expr_def st x e;
               expr_deps blocks st x e
@@ -381,7 +418,11 @@ module Domain = struct
             params;
           Var.Set.iter
             (fun y -> variable_escape ~update ~st ~approx s y)
-            (Var.Map.find x st.return_values)
+            (Var.Map.find x st.return_values);
+          (* The CPS version shares the closure *)
+          Option.iter
+            ~f:(fun c -> value_escape ~update ~st ~approx s c)
+            (Var.Hashtbl.find_opt st.cps_versions x)
       | _ -> ())
 
   and variable_escape ~update ~st ~approx s x =
@@ -542,10 +583,24 @@ let propagate st ~update approx x =
                 ~st
                 ~approx
                 ~others
-                (fun g ->
+                (fun g0 ->
+                  let g, cont =
+                    called_version
+                      ~cps_calls:st.cps_calls
+                      ~cps_versions:st.cps_versions
+                      ~call:x
+                      g0
+                  in
+                  let direct_args, k =
+                    if cont
+                    then
+                      let l, k = split_last args in
+                      l, Some k
+                    else args, None
+                  in
                   match st.defs.(Var.idx g) with
                   | Expr (Closure (params, _, _))
-                    when List.compare_lengths args params = 0 ->
+                    when List.compare_lengths direct_args params = 0 -> (
                       if not (VarPairTbl.mem st.applied_functions (x, g))
                       then (
                         VarPairTbl.add st.applied_functions (x, g) ();
@@ -562,19 +617,31 @@ let propagate st ~update approx x =
                               add_assign_def st p a;
                               update ~children:false p)
                             params
-                            args);
-                      Domain.join_set
-                        ~update
-                        ~st
-                        ~approx
-                        (fun y -> Var.Tbl.get approx y)
-                        (Var.Map.find g st.return_values)
+                            direct_args);
+                      match k with
+                      | None ->
+                          Domain.join_set
+                            ~update
+                            ~st
+                            ~approx
+                            (fun y -> Var.Tbl.get approx y)
+                            (Var.Map.find g st.return_values)
+                      | Some k ->
+                          (* The result is passed to the continuation, which
+                             is not tracked *)
+                          Domain.variable_escape ~update ~st ~approx Escape k;
+                          Var.Set.iter
+                            (fun y -> Domain.variable_escape ~update ~st ~approx Escape y)
+                            (Var.Map.find g st.return_values);
+                          Domain.others)
                   | Expr (Closure (_, _, _)) ->
-                      (* The function is partially applied or over applied *)
+                      (* The function is partially applied or over applied.
+                         With double translation, both versions escape
+                         (see [Domain.value_escape]). *)
                       List.iter
                         ~f:(fun y -> Domain.variable_escape ~update ~st ~approx Escape y)
                         args;
-                      Domain.variable_escape ~update ~st ~approx Escape g;
+                      Domain.variable_escape ~update ~st ~approx Escape g0;
                       Domain.others
                   | Expr (Block _) -> Domain.bot
                   | Phi _ | Expr _ -> assert false)
@@ -670,9 +737,12 @@ type info =
   ; info_may_escape : Var.ISet.t
   ; info_variable_may_escape : escape_status array
   ; info_return_vals : Var.Set.t Var.Map.t
+  ; info_cps_versions : Var.t Var.Hashtbl.t
+  ; info_cps_closures : (Var.t * Var.t) Var.Hashtbl.t
+  ; info_cps_calls : Var.Set.t
   }
 
-let f ~fast p =
+let f ?(cps_calls = Var.Set.empty) ~fast p =
   let t = Timer.make () in
   let t1 = Timer.make () in
   let rets = return_values p in
@@ -702,6 +772,9 @@ let f ~fast p =
     ; applied_functions = VarPairTbl.create 16
     ; fast
     ; function_call_sites = Var.Hashtbl.create 128
+    ; cps_versions = Var.Hashtbl.create 16
+    ; cps_closures = Var.Hashtbl.create 16
+    ; cps_calls
     }
   in
   program_deps st p;
@@ -772,6 +845,9 @@ let f ~fast p =
     ; info_variable_may_escape
     ; info_may_escape
     ; info_return_vals = rets
+    ; info_cps_versions = st.cps_versions
+    ; info_cps_closures = st.cps_closures
+    ; info_cps_calls = cps_calls
     } )
 
 let exact_call info f n =
@@ -786,7 +862,14 @@ let exact_call info f n =
           | Expr _ | Phi _ -> assert false)
         known
 
-let get_unique_closure info f =
+let called_version info ~call g =
+  called_version
+    ~cps_calls:info.info_cps_calls
+    ~cps_versions:info.info_cps_versions
+    ~call
+    g
+
+let get_unique_closure info ~call f =
   (* The specialize pass can create knew functions *)
   if Var.idx f >= Var.Tbl.length info.info_approximation
   then None
@@ -808,8 +891,15 @@ let get_unique_closure info f =
             known
             None
         with
-        | None -> None
-        | Some kind -> kind)
+        | None | Some None -> None
+        | Some (Some (g, params)) -> (
+            let g', cont = called_version info ~call g in
+            if Var.equal g g'
+            then Some (g, params, cont)
+            else
+              match info.info_defs.(Var.idx g') with
+              | Expr (Closure (params, _, _)) -> Some (g', params, cont)
+              | _ -> assert false))
 
 let update_def info x expr =
   let idx = Code.Var.idx x in
