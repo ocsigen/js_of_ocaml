@@ -1249,17 +1249,17 @@ and parse_formal_parameters t ctx =
   comma_list_rest
     t
     ~close:T_RPAREN
-    ~rest:(fun () -> parse_single_name_binding t ctx)
+    ~rest:(fun () -> parse_binding t ctx)
     (fun () -> parse_binding_element t ctx)
 
 (* BindingElement : (BindingIdentifier | BindingPattern) Initializer? *)
 and parse_binding_element t ctx =
-  let b = parse_single_name_binding t ctx in
+  let b = parse_binding t ctx in
   let init = parse_initializer_opt t ctx ~no_in:false in
   b, init
 
 (* BindingIdentifier | BindingPattern *)
-and parse_single_name_binding t ctx =
+and parse_binding t ctx =
   match cur t with
   | T_LBRACKET | T_LCURLY -> BindingPattern (parse_binding_pattern t ctx)
   | _ -> BindingIdent (parse_identifier t ctx)
@@ -1313,7 +1313,7 @@ and parse_array_binding_pattern t ctx =
     (comma_list_rest
        t
        ~close:T_RBRACKET
-       ~rest:(fun () -> parse_single_name_binding t ctx)
+       ~rest:(fun () -> parse_binding t ctx)
        (fun () ->
          match cur t with
          | T_COMMA -> None (* elision; the comma is consumed as the separator *)
@@ -1666,7 +1666,7 @@ and parse_for t ctx =
 (* After [for ( var], [for ( let] or [for ( const]: a single binding followed
    by [in] or [of], or a list of declarations *)
 and parse_for_declaration t ctx ~for_await kind =
-  let binding = parse_single_name_binding t ctx in
+  let binding = parse_binding t ctx in
   match cur t with
   | T_IN | T_OF -> parse_for_in_of t ctx ~for_await (Right (kind, binding))
   | _ ->
