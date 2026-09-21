@@ -48,6 +48,9 @@
   double-translation mode (#2437)
 * Compiler: with `--effects=double-translation` and OxCaml, calls proven
   unyielding no longer propagate the need for a CPS version (#2440)
+* Compiler: with `--effects=cps`, use OxCaml's unyielding-call information to
+  keep functions in direct style, running their CPS callees to completion
+  (#2440)
 
 ### Wasm
 * Compiler/Wasm: intern string constants (program-wide with whole-program
