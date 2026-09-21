@@ -404,17 +404,7 @@ let ident_of_token ~yield ~await (tok : Js_token.t) =
   | T_IDENTIFIER (name, _) -> Some name
   | T_YIELD when not yield -> Some (utf8_s "yield")
   | T_AWAIT when not await -> Some (utf8_s "await")
-  | T_ACCESSOR
-  | T_AS
-  | T_ASYNC
-  | T_FROM
-  | T_GET
-  | T_META
-  | T_OF
-  | T_SET
-  | T_TARGET
-  | T_USING
-  | T_DEFER -> Some (utf8_s (Js_token.to_string tok))
+  | _ when Js_token.is_contextual_keyword tok -> Some (utf8_s (Js_token.to_string tok))
   | _ -> None
 
 let is_identifier ~yield ~await tok = Option.is_some (ident_of_token ~yield ~await tok)
@@ -423,63 +413,8 @@ let is_identifier ~yield ~await tok = Option.is_some (ident_of_token ~yield ~awa
 let identifier_name_of_token (tok : Js_token.t) =
   match tok with
   | T_IDENTIFIER (name, _) -> Some name
-  | T_ACCESSOR
-  | T_AS
-  | T_ASYNC
-  | T_FROM
-  | T_GET
-  | T_META
-  | T_OF
-  | T_SET
-  | T_TARGET
-  | T_USING
-  | T_DEFER
-  | T_BREAK
-  | T_CASE
-  | T_CATCH
-  | T_CLASS
-  | T_CONST
-  | T_CONTINUE
-  | T_DEBUGGER
-  | T_DEFAULT
-  | T_DELETE
-  | T_DO
-  | T_ELSE
-  | T_ENUM
-  | T_EXPORT
-  | T_EXTENDS
-  | T_FALSE
-  | T_FINALLY
-  | T_FOR
-  | T_FUNCTION
-  | T_IF
-  | T_IMPORT
-  | T_IN
-  | T_INSTANCEOF
-  | T_NEW
-  | T_NULL
-  | T_RETURN
-  | T_SUPER
-  | T_SWITCH
-  | T_THIS
-  | T_THROW
-  | T_TRUE
-  | T_TRY
-  | T_TYPEOF
-  | T_VAR
-  | T_VOID
-  | T_WHILE
-  | T_WITH
-  | T_AWAIT
-  | T_YIELD
-  | T_LET
-  | T_STATIC
-  | T_IMPLEMENTS
-  | T_INTERFACE
-  | T_PACKAGE
-  | T_PRIVATE
-  | T_PROTECTED
-  | T_PUBLIC -> Some (utf8_s (Js_token.to_string tok))
+  | _ when Js_token.is_contextual_keyword tok || Js_token.is_reserved_word tok ->
+      Some (utf8_s (Js_token.to_string tok))
   | _ -> None
 
 let parse_identifier t ~yield ~await =
@@ -506,17 +441,6 @@ let parse_identifier_name t =
 let starts_expression (tok : Js_token.t) =
   match tok with
   | T_IDENTIFIER _
-  | T_ACCESSOR
-  | T_AS
-  | T_ASYNC
-  | T_FROM
-  | T_GET
-  | T_META
-  | T_OF
-  | T_SET
-  | T_TARGET
-  | T_USING
-  | T_DEFER
   | T_YIELD
   | T_AWAIT
   | T_THIS
@@ -551,7 +475,7 @@ let starts_expression (tok : Js_token.t) =
   | T_TYPEOF
   | T_VOID
   | T_DELETE -> true
-  | _ -> false
+  | _ -> Js_token.is_contextual_keyword tok
 
 let assignment_op (tok : Js_token.t) =
   match tok with
