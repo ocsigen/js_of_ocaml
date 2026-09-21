@@ -75,6 +75,9 @@
   separate compilation (#2436)
 * Runtime: specialize one- and two-argument partial applications in
   double-translation mode, avoiding an extra `caml_call_gen` frame (#2437)
+* Compiler/Wasm: with `--effects=cps`, no longer turn mutually recursive
+  functions into CPS: Wasm has proper tail calls, so this is only needed when
+  targeting JavaScript (#2441)
 
 ## Bug fixes
 * Runtime: convert unit names to OCaml strings before calling the toplevel
