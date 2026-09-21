@@ -24,7 +24,7 @@ let () =
         try Ok (run `Script)
         with Parse_js.Parsing_error _ -> (
           errors := [];
-          try Ok (run `Module) with Parse_js.Parsing_error pi -> Error pi)
+          try Ok (run `Module) with Parse_js.Parsing_error (pi, _) -> Error pi)
       with
       | Error pi -> Printf.printf "PARSE ERROR %d:%d\n" pi.Parse_info.line pi.col
       | Ok (_, toks) ->

@@ -50,7 +50,7 @@ let run kind file =
             (Parse_js.Lexer.of_string ~report_error:dummy_report ~filename:file src)
         with
         | p -> Ok (print p)
-        | exception Parse_js.Parsing_error pi -> Error (pi.Parse_info.line, pi.col)
+        | exception Parse_js.Parsing_error (pi, _) -> Error (pi.Parse_info.line, pi.col)
         | exception e -> Error (-1, Hashtbl.hash (Printexc.to_string e)))
   in
   match old_res, new_res with

@@ -36,7 +36,9 @@ module Lexer : sig
   val of_channel : in_channel -> t
 end
 
-exception Parsing_error of Parse_info.t
+exception Parsing_error of Parse_info.t * string
+(** A syntax error: its location and a message describing it, such as
+    ["unexpected `}`, expected `)`"]. *)
 
 val parse : [ `Script | `Module ] -> Lexer.t -> Javascript.program
 

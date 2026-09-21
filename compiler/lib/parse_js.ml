@@ -139,7 +139,19 @@ end = struct
     res
 end
 
-exception Parsing_error of Parse_info.t
+exception Parsing_error of Parse_info.t * string
+
+(* How a token is referred to in error messages *)
+let describe_token (tok : Js_token.t) =
+  match tok with
+  | T_EOF -> "end of input"
+  | T_IDENTIFIER _ -> Printf.sprintf "identifier `%s`" (Js_token.to_string tok)
+  | T_NUMBER _ | T_BIGINT _ -> Printf.sprintf "number `%s`" (Js_token.to_string tok)
+  | T_STRING _ -> "string literal"
+  | T_REGEXP _ -> "regular expression"
+  | T_ENCAPSED_STRING _ -> "template string"
+  | T_BACKQUOTE -> "template literal"
+  | _ -> Printf.sprintf "`%s`" (Js_token.to_string tok)
 
 open Javascript
 
@@ -228,8 +240,12 @@ module Stream : sig
   val prev_end : t -> Lexing.position
   (* End of the last consumed token *)
 
-  val error : t -> 'a
-  (* Syntax error at the current token *)
+  val error : ?expected:string -> t -> 'a
+  (* Syntax error at the current token: it is unexpected. [expected]
+     describes what could have been there instead. *)
+
+  val error_msg : t -> string -> 'a
+  (* Syntax error at the current token, with a specific message *)
 
   val expect : t -> Js_token.t -> unit
 
@@ -423,9 +439,18 @@ end = struct
   (* Whether the next token is on the same line as the current one *)
   let next_on_same_line t = same_line (cur_loc t) (snd (peek t 1))
 
-  let error t = raise (Parsing_error (pi (start_pos t)))
+  let error_msg t msg = raise (Parsing_error (pi (start_pos t), msg))
 
-  let expect t (tok : Js_token.t) = if Poly.equal (cur t) tok then advance t else error t
+  let error ?expected t =
+    let unexpected = "unexpected " ^ describe_token (cur t) in
+    error_msg
+      t
+      (match expected with
+      | None -> unexpected
+      | Some e -> unexpected ^ ", expected " ^ e)
+
+  let expect t (tok : Js_token.t) =
+    if Poly.equal (cur t) tok then advance t else error t ~expected:(describe_token tok)
 
   (* Record a virtual semicolon in the token stream, right after the last
    consumed token. Only used for the token list returned by [parse']. *)
@@ -451,7 +476,7 @@ end = struct
     | T_SEMICOLON -> advance t
     | T_RCURLY | T_EOF -> insert_virtual_semicolon t
     | _ when newline_before t -> insert_virtual_semicolon t
-    | _ -> error t
+    | _ -> error t ~expected:"`;`"
 
   let consume_semicolon_opt t =
     match cur t with
@@ -467,7 +492,9 @@ end = struct
          again as the parameters of an async arrow function, where [await]
          is a keyword rather than an identifier. The parameters are invalid
          either way. *)
-      error t;
+      error_msg
+        t
+        "`await` is a reserved word in the parameters of an async arrow function";
     set t t.pos (Lexer.lex_as_regexp t.lexbuf)
 
   let retag_current t tok =
@@ -576,9 +603,9 @@ let comma_list_gen t ~close ~rest f =
           let x = f () in
           if accept t close
           then { list = List.rev (x :: acc); rest = None }
-          else (
-            expect t T_COMMA;
-            loop (x :: acc))
+          else if accept t T_COMMA
+          then loop (x :: acc)
+          else error t ~expected:(Printf.sprintf "`,` or %s" (describe_token close))
   in
   loop []
 
@@ -630,7 +657,12 @@ let parse_identifier t ctx =
       let pos = start_pos t in
       advance t;
       var pos name
-  | None -> error t
+  | None -> (
+      match cur t with
+      | T_YIELD -> error_msg t "`yield` is a reserved word in a generator"
+      | T_AWAIT ->
+          error_msg t "`await` is a reserved word in an async function or a module"
+      | _ -> error t ~expected:"an identifier")
 
 (* BindingIdentifier[Yield, Await] accepts [yield] and [await] whatever the
    context; that they are not allowed in some contexts is an early error,
@@ -643,7 +675,7 @@ let parse_identifier_name t =
   | Some name ->
       advance t;
       name
-  | None -> error t
+  | None -> error t ~expected:"a property name"
 
 (* Tokens that can start an expression *)
 let starts_expression (tok : Js_token.t) =
@@ -716,8 +748,17 @@ let assignment_op (tok : Js_token.t) =
    parenthesized expression is accepted on the left of an assignment, and the
    error is reported at the current token: the operator, [in] or [of]. *)
 let check_assignment_target t ~in_for (e : expression) =
+  let invalid () =
+    let what =
+      match in_for, cur t with
+      | false, _ -> "assignment"
+      | true, T_IN -> "`for ... in`"
+      | true, _ -> "`for ... of`"
+    in
+    error_msg t ("invalid left-hand side in " ^ what)
+  in
   match e with
-  | (ESeq _ | ECond _ | EArrow _ | EYield _) when in_for -> error t
+  | (ESeq _ | ECond _ | EArrow _ | EYield _) when in_for -> invalid ()
   | EBin
       ( ( Eq
         | StarEq
@@ -737,7 +778,7 @@ let check_assignment_target t ~in_for (e : expression) =
         | CoalesceEq )
       , _
       , _ )
-    when in_for -> error t
+    when in_for -> invalid ()
   | EBin
       ( ( Or
         | And
@@ -770,7 +811,7 @@ let check_assignment_target t ~in_for (e : expression) =
         | Coalesce )
       , _
       , _ )
-  | EUn _ -> error t
+  | EUn _ -> invalid ()
   | _ -> ()
 
 (* Binary operators, with their precedence. [??] is handled separately. *)
@@ -800,6 +841,15 @@ let binary_op ~no_in (tok : Js_token.t) =
   | T_DIV -> Some (Div, 10)
   | T_MOD -> Some (Mod, 10)
   | _ -> None
+
+let decorators_before_export =
+  "decorators before `export` must be followed by `class` or `default class`"
+
+let declaration_not_allowed =
+  "a declaration is not allowed here: it must be directly in a block, a function body or \
+   at the top level"
+
+let mixed_coalesce = "`??` cannot be mixed with `||` or `&&` without parentheses"
 
 (* Unary operators, other than [++] and [--] *)
 let unary_op ctx (tok : Js_token.t) =
@@ -1020,14 +1070,14 @@ and parse_short_circuit_expression t ctx ~no_in =
             advance t;
             let e2 = parse_binary t ctx ~no_in ~min_prec:3 in
             loop (EBin (Coalesce, e, e2))
-        | T_OR | T_AND -> error t
+        | T_OR | T_AND -> error_msg t mixed_coalesce
         | _ -> e
       in
       loop e
   | T_OR | T_AND -> (
       let e = parse_binary_rest t ctx ~no_in ~min_prec:1 e in
       match cur t with
-      | T_PLING_PLING -> error t
+      | T_PLING_PLING -> error_msg t mixed_coalesce
       | _ -> e)
   | _ -> e
 
@@ -1056,7 +1106,8 @@ and parse_exponentiation_expression t ctx =
   let e = parse_unary_expression t ctx in
   match cur t with
   | T_EXP ->
-      if Option.is_some (unary_op ctx first) then error t;
+      if Option.is_some (unary_op ctx first)
+      then error_msg t "a unary expression cannot be the base of `**`: add parentheses";
       advance t;
       let e2 = parse_exponentiation_expression t ctx in
       EBin (Exp, e, e2)
@@ -1123,7 +1174,8 @@ and parse_suffixes t ctx ~start ~allow_call e =
         loop ~in_chain (parse_member_access t e kind)
     | T_LBRACKET -> loop ~in_chain (EAccess (e, kind, parse_index t ctx))
     | T_BACKQUOTE ->
-        if in_chain then error t;
+        if in_chain
+        then error_msg t "a template literal is not allowed in an optional chain";
         let tpl = parse_template_literal t ctx in
         loop ~in_chain (ECallTemplate (e, tpl, p !loc_start))
     | T_LPAREN when allow_call ->
@@ -1137,11 +1189,12 @@ and parse_suffixes t ctx ~start ~allow_call e =
             let args = parse_arguments t ctx in
             loop ~in_chain:true (ECall (e, ANullish, args, p !loc_start))
         | T_LBRACKET -> loop ~in_chain:true (EAccess (e, ANullish, parse_index t ctx))
-        | T_BACKQUOTE -> error t
+        | T_BACKQUOTE ->
+            error_msg t "a template literal is not allowed in an optional chain"
         | _ -> loop ~in_chain:true (parse_member_access t e ANullish))
     | T_PLING_PERIOD ->
         (* The callee of [new] is a MemberExpression *)
-        error t
+        error_msg t "an optional chain cannot be the callee of `new`: add parentheses"
     | _ -> e
   in
   loop ~in_chain:false e
@@ -1167,7 +1220,7 @@ and parse_new t ctx =
         | T_IMPORT when Poly.equal (peek_tok t 1) Js_token.T_LPAREN ->
             (* An import call is not a MemberExpression *)
             advance t;
-            error t
+            error_msg t "an import call cannot be the operand of `new`"
         | _ -> parse_primary_expression t ctx
       in
       let callee = parse_suffixes t ctx ~start:callee_pos ~allow_call:false callee in
@@ -1226,7 +1279,17 @@ and parse_primary_expression t ctx =
       EPrivName n
   | T_NEW -> parse_new t ctx
   | tok when is_identifier ctx tok -> EVar (parse_identifier t ctx)
-  | _ -> error t
+  | T_YIELD
+  | T_AWAIT
+  | T_LET
+  | T_STATIC
+  | T_IMPLEMENTS
+  | T_INTERFACE
+  | T_PACKAGE
+  | T_PRIVATE
+  | T_PROTECTED
+  | T_PUBLIC -> EVar (parse_identifier t ctx) (* reports the reserved word *)
+  | _ -> error t ~expected:"an expression"
 
 (* CoverParenthesizedExpressionAndArrowParameterList, parsed as an
    expression; see [parse_cover_or_arrow] *)
@@ -1239,14 +1302,20 @@ and parse_cover_parenthesized_expression t ctx =
     expect t T_ELLIPSIS;
     ignore (parse_binding_element t ctx);
     expect t T_RPAREN;
-    `Cover (early_error (pi ellipsis_pos))
+    `Cover
+      (early_error
+         ~reason:"a rest element is only allowed in the parameters of an arrow function"
+         (pi ellipsis_pos))
   in
   let res =
     match cur t with
     | T_RPAREN ->
         let rparen_pos = start_pos t in
         advance t;
-        `Cover (early_error (pi rparen_pos))
+        `Cover
+          (early_error
+             ~reason:"empty parentheses must be followed by `=>`"
+             (pi rparen_pos))
     | T_ELLIPSIS -> cover_rest ()
     | _ ->
         let rec loop e =
@@ -1264,7 +1333,7 @@ and parse_cover_parenthesized_expression t ctx =
           | T_RPAREN ->
               advance t;
               `Expr e
-          | _ -> error t
+          | _ -> error t ~expected:"`,` or `)`"
         in
         loop (parse_assignment_expression t ctx ~no_in:false)
   in
@@ -1297,7 +1366,7 @@ and parse_template_literal t ctx =
     | T_BACKQUOTE ->
         advance t;
         List.rev acc
-    | _ -> error t
+    | _ -> error_msg t "unterminated template literal"
   in
   loop []
 
@@ -1359,8 +1428,15 @@ and parse_property_definition t ctx =
             let eq_pos = start_pos t in
             advance t;
             let e = parse_assignment_expression t ctx ~no_in:false in
-            CoverInitializedName (early_error (pi eq_pos), var pos i, (e, p eq_pos))
-        | _ -> error t)
+            CoverInitializedName
+              ( early_error
+                  ~reason:
+                    "a shorthand property with an initializer is only allowed in a \
+                     destructuring pattern"
+                  (pi eq_pos)
+              , var pos i
+              , (e, p eq_pos) )
+        | _ -> error t ~expected:"`:`, `(`, `,` or `}`")
 
 (* Parameters and body of a function or method, after its name *)
 and parse_function_rest t ~pos kind =
@@ -1452,7 +1528,7 @@ and parse_binding_pattern t ctx =
   match cur t with
   | T_LCURLY -> parse_object_binding_pattern t ctx
   | T_LBRACKET -> parse_array_binding_pattern t ctx
-  | _ -> error t
+  | _ -> error t ~expected:"a binding pattern"
 
 (* ObjectBindingPattern *)
 and parse_object_binding_pattern t ctx =
@@ -1699,10 +1775,13 @@ and parse_declaration t ctx =
   | T_CLASS | T_AT ->
       let decorators = parse_decorator_list t ctx in
       stmt (parse_class_declaration t ctx ~decorators)
-  | _ -> error t
+  | _ -> error t ~expected:"a declaration"
 
 (* ClassDeclaration, whose name is required *)
 and parse_class_declaration t ctx ~decorators =
+  (match decorators, cur t with
+  | [], _ | _, T_CLASS -> ()
+  | _ :: _, _ -> error_msg t "decorators must be followed by `class`");
   expect t T_CLASS;
   let name = parse_binding_identifier t in
   Class_declaration (name, parse_class_tail t ctx ~decorators)
@@ -1773,7 +1852,7 @@ and parse_statement t ctx =
   | T_SWITCH -> stmt (parse_switch_statement t ctx)
   | T_THROW ->
       advance t;
-      if newline_before t then error t;
+      if newline_before t then error_msg t "no line break is allowed after `throw`";
       let e = parse_expression t ctx ~no_in:false in
       consume_semicolon t;
       stmt (Throw_statement e)
@@ -1788,8 +1867,10 @@ and parse_statement t ctx =
       advance t;
       let body = parse_statement t ctx in
       stmt (Labelled_statement (label, body))
-  | T_FUNCTION | T_CLASS | T_AT -> error t
-  | T_ASYNC when async_function_ahead t -> error t
+  | T_FUNCTION | T_CLASS | T_AT -> error_msg t declaration_not_allowed
+  | T_ASYNC when async_function_ahead t -> error_msg t declaration_not_allowed
+  | T_EXPORT ->
+      error_msg t "export declarations are only allowed at the top level of a module"
   | _ ->
       (* ExpressionStatement, which cannot start with [function], [async
          function] or [class] (above) *)
@@ -1840,7 +1921,7 @@ and parse_for t ctx =
       match cur t with
       | T_OF when Poly.equal tok Js_token.T_LET ->
           (* [for ( [lookahead != let] LeftHandSideExpression of] *)
-          error t
+          error_msg t "the left-hand side of `for ... of` cannot start with `let`"
       | T_IN | T_OF ->
           check_assignment_target t ~in_for:true e;
           parse_for_in_of t ctx ~for_await (Left (assignment_target_of_expr None e))
@@ -1905,7 +1986,8 @@ and parse_for_in_of t ctx ~for_await left =
       if for_await
       then ForAwaitOf_statement (left, e, body)
       else ForOf_statement (left, e, body)
-  | _ -> error t
+  | T_IN -> error_msg t "`for await` requires `of`"
+  | _ -> error t ~expected:"`in` or `of`"
 
 (* After the initializer: [; Expression? ; Expression? ) Statement] *)
 and parse_for_rest t ctx init =
@@ -1945,7 +2027,7 @@ and parse_switch_statement t ctx =
         | Some _ -> clauses before default ((e, l) :: after))
     | T_DEFAULT -> (
         match default with
-        | Some _ -> error t
+        | Some _ -> error_msg t "more than one `default` clause in a `switch` statement"
         | None ->
             advance t;
             expect t T_COLON;
@@ -1954,7 +2036,7 @@ and parse_switch_statement t ctx =
     | T_RCURLY ->
         advance t;
         Switch_statement (e, List.rev before, default, List.rev after)
-    | _ -> error t
+    | _ -> error t ~expected:"`case`, `default` or `}`"
   in
   clauses [] None []
 
@@ -1976,7 +2058,7 @@ and parse_try_statement t ctx =
   in
   let f = opt t T_FINALLY (fun () -> parse_block t ctx) in
   (match c, f with
-  | None, None -> error t
+  | None, None -> error t ~expected:"`catch` or `finally`"
   | _ -> ());
   Try_statement (b, c, f)
 
@@ -1990,7 +2072,7 @@ and parse_module_specifier t =
   | T_STRING (s, _) ->
       advance t;
       s
-  | _ -> error t
+  | _ -> error t ~expected:"a string literal"
 
 (* FromClause : from ModuleSpecifier *)
 and parse_from_clause t =
@@ -2044,7 +2126,7 @@ and parse_named_imports t =
           let id = parse_binding_identifier t in
           name, id
       | _, `Ident -> name, var pos name
-      | _ -> error t)
+      | _ -> error t ~expected:"`as`")
 
 (* ImportDeclaration *)
 and parse_import_declaration t ~pos =
@@ -2122,11 +2204,12 @@ and parse_export_declaration t ~pos ~decorators =
       | _ -> assert false)
   | T_DEFAULT, _ :: _ ->
       advance t;
-      if not (Poly.equal (cur t) Js_token.T_CLASS) then error t;
+      if not (Poly.equal (cur t) Js_token.T_CLASS)
+      then error_msg t decorators_before_export;
       let name, decl = parse_class_expression t ctx ~decorators in
       consume_semicolon_opt t;
       export (ExportDefaultClass (name, decl))
-  | _, _ :: _ -> error t
+  | _, _ :: _ -> error_msg t decorators_before_export
   | T_DEFAULT, [] -> (
       advance t;
       let dpos = start_pos t in
@@ -2175,7 +2258,11 @@ and parse_export_declaration t ~pos ~decorators =
                      match k with
                      | `Ident | `Reserved -> var pos id, s
                      | `String -> raise (Invalid pos)))
-            with Invalid pos -> CoverExportFrom (early_error (pi pos))
+            with Invalid pos ->
+              CoverExportFrom
+                (early_error
+                   ~reason:"a string can only be exported from another module (`from`)"
+                   (pi pos))
           in
           export k)
   | tok, [] -> (
@@ -2218,7 +2305,8 @@ let fail_early =
   object
     inherit Js_traverse.iter
 
-    method early_error p = raise (Parsing_error p.loc)
+    method! early_error p =
+      raise (Parsing_error (p.loc, Option.value ~default:"syntax error" p.reason))
   end
 
 let check_program p = List.iter p ~f:(fun (_, (s, _)) -> fail_early#statement s)
