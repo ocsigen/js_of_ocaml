@@ -181,108 +181,277 @@ let dummy_loc = Loc.create dummy_pos dummy_pos
 
 (* Token stream *)
 
-type t =
-  { lexbuf : Lexer.t
-  ; mutable toks : (Js_token.t * Loc.t) array
-  ; mutable len : int
-  ; mutable pos : int
-        (* Index of the current (lookahead) token. Comments are skipped by [cur_raw]. *)
-  ; mutable prev_end : Lexing.position (* end of the last consumed token *)
-  ; mutable prev_line_end : int (* line of the end of the last consumed token *)
-  ; mutable prev_real : int (* index of the last consumed token *)
-  ; mutable cover_start : int
-  ; mutable cover_end : int
-        (* Indices of the first and last tokens of the last
-           parenthesized expression or [async (...)] call *)
-  }
-
-let create lexbuf =
-  { lexbuf
-  ; toks = Array.make 64 (Js_token.T_EOF, dummy_loc)
-  ; len = 0
-  ; pos = 0
-  ; prev_end = dummy_pos
-  ; prev_line_end = -1
-  ; prev_real = -1
-  ; cover_start = -1
-  ; cover_end = -1
-  }
-
-let push t tok =
-  if t.len = Array.length t.toks
-  then (
-    let toks = Array.make (2 * t.len) (Js_token.T_EOF, dummy_loc) in
-    Array.blit ~src:t.toks ~src_pos:0 ~dst:toks ~dst_pos:0 ~len:t.len;
-    t.toks <- toks);
-  t.toks.(t.len) <- tok;
-  t.len <- t.len + 1
-
-let lex_one t =
-  let tok, loc = Lexer.token t.lexbuf in
-  let tok =
-    match tok with
-    | Js_token.TComment s -> (
-        match parse_annot s with
-        | None -> tok
-        | Some a -> TAnnot (s, a))
-    | _ -> tok
-  in
-  push t (tok, loc)
-
-let rec cur_raw t =
-  if t.pos >= t.len then lex_one t;
-  let ((tok, _) as x) = t.toks.(t.pos) in
-  if is_comment tok
-  then (
-    t.pos <- t.pos + 1;
-    cur_raw t)
-  else x
-
-let cur t = fst (cur_raw t)
-
-let cur_loc t = snd (cur_raw t)
-
-let start_pos t = Loc.p1 (cur_loc t)
-
-(* The [n]th token after the current one, and its location *)
-let peek t n =
-  ignore (cur_raw t);
-  let rec find i n =
-    if i >= t.len then lex_one t;
-    let tok, loc = t.toks.(i) in
-    if is_comment tok
-    then find (i + 1) n
-    else if n = 1
-    then tok, loc
-    else find (i + 1) (n - 1)
-  in
-  find (t.pos + 1) n
-
-let peek_tok t n = fst (peek t n)
-
-(* Index of the current token *)
-let cur_index t =
-  ignore (cur_raw t);
-  t.pos
-
-let advance t =
-  let _, loc = cur_raw t in
-  t.prev_end <- Loc.p2 loc;
-  t.prev_line_end <- Loc.line_end loc;
-  t.prev_real <- t.pos;
-  t.pos <- t.pos + 1
-
-(* Whether there is a line terminator between the previous token and the current one *)
-let newline_before t = Loc.line (cur_loc t) <> t.prev_line_end
-
 let same_line loc1 loc2 = Loc.line_end loc1 = Loc.line loc2
 
-(* Whether the next token is on the same line as the current one *)
-let next_on_same_line t = same_line (cur_loc t) (snd (peek t 1))
+(* The parser only accesses the tokens through this interface. *)
+module Stream : sig
+  type t
 
-let error t = raise (Parsing_error (pi (start_pos t)))
+  val create : Lexer.t -> t
 
-let expect t (tok : Js_token.t) = if Poly.equal (cur t) tok then advance t else error t
+  (* Lookahead. Comments are skipped. *)
+
+  val cur : t -> Js_token.t
+  (* The current token: the next one to be consumed *)
+
+  val cur_loc : t -> Loc.t
+
+  val start_pos : t -> Lexing.position
+  (* Start of the current token *)
+
+  val peek : t -> int -> Js_token.t * Loc.t
+  (* The [n]th token after the current one ([n >= 1]).
+
+     Tokens are lexed on demand, and the lexer does not know whether a [/]
+     is a division or starts a regular expression: the parser asks for it
+     to be re-lexed ([relex_regexp]) when it is the current token, which
+     is only possible while no token after it has been lexed. So one must
+     not peek beyond a token that may turn out to be a [/] starting a
+     regular expression, that is, a [/] where an expression can start. *)
+
+  val peek_tok : t -> int -> Js_token.t
+
+  val newline_before : t -> bool
+  (* Whether there is a line terminator between the last consumed token
+     and the current one *)
+
+  val next_on_same_line : t -> bool
+  (* Whether the token after the current one is on the same line *)
+
+  (* Consuming tokens *)
+
+  val advance : t -> unit
+
+  val prev_end : t -> Lexing.position
+  (* End of the last consumed token *)
+
+  val error : t -> 'a
+  (* Syntax error at the current token *)
+
+  val expect : t -> Js_token.t -> unit
+
+  val consume_semicolon : t -> unit
+  (* A semicolon, possibly inserted automatically (ASI) *)
+
+  val consume_semicolon_opt : t -> unit
+  (* A semicolon that can be omitted even on the same line: after
+     [do ... while (...)] and [export default function/class] *)
+
+  (* Changing the current token *)
+
+  val relex_regexp : t -> unit
+  (* The current token is a [/] or a [/=] starting a regular expression:
+     lex it again as such. See [peek]. *)
+
+  val retag_current : t -> Js_token.t -> unit
+  (* Replace the current token, keeping its location. This only matters
+     for the token list returned by [parse']. *)
+
+  (* Backtracking, for the arrow-function cover grammars *)
+
+  type mark
+
+  val mark : t -> mark
+
+  val reset : t -> mark -> unit
+
+  val record_cover : t -> start:mark -> unit
+  (* The tokens from [start] to the last consumed one form a parenthesized
+     expression or an [async (...)] call: they may have to be parsed again
+     as the parameters of an arrow function. *)
+
+  val is_cover : t -> since:mark -> bool
+  (* Whether the tokens consumed since the mark are exactly the last
+     recorded cover *)
+
+  (* Whole stream *)
+
+  val annots_before : t -> (Js_token.Annot.t * Parse_info.t) list
+  (* The annotations ([//Provides: ...]) among the comments between the
+     last consumed token and the current one *)
+
+  val all_tokens : t -> (Js_token.t * Loc.t) list
+  (* All the tokens lexed so far, including the comments and the virtual
+     semicolons *)
+end = struct
+  type t =
+    { lexbuf : Lexer.t
+    ; mutable toks : (Js_token.t * Loc.t) array
+    ; mutable len : int
+    ; mutable pos : int
+          (* Index of the current (lookahead) token. Comments are skipped by [cur_raw]. *)
+    ; mutable prev_end : Lexing.position (* end of the last consumed token *)
+    ; mutable prev_line_end : int (* line of the end of the last consumed token *)
+    ; mutable prev_real : int (* index of the last consumed token *)
+    ; mutable cover_start : int
+    ; mutable cover_end : int
+          (* Indices of the first and last tokens of the last
+           parenthesized expression or [async (...)] call *)
+    }
+
+  let create lexbuf =
+    { lexbuf
+    ; toks = Array.make 64 (Js_token.T_EOF, dummy_loc)
+    ; len = 0
+    ; pos = 0
+    ; prev_end = dummy_pos
+    ; prev_line_end = -1
+    ; prev_real = -1
+    ; cover_start = -1
+    ; cover_end = -1
+    }
+
+  let push t tok =
+    if t.len = Array.length t.toks
+    then (
+      let toks = Array.make (2 * t.len) (Js_token.T_EOF, dummy_loc) in
+      Array.blit ~src:t.toks ~src_pos:0 ~dst:toks ~dst_pos:0 ~len:t.len;
+      t.toks <- toks);
+    t.toks.(t.len) <- tok;
+    t.len <- t.len + 1
+
+  let lex_one t =
+    let tok, loc = Lexer.token t.lexbuf in
+    let tok =
+      match tok with
+      | Js_token.TComment s -> (
+          match parse_annot s with
+          | None -> tok
+          | Some a -> TAnnot (s, a))
+      | _ -> tok
+    in
+    push t (tok, loc)
+
+  let rec cur_raw t =
+    if t.pos >= t.len then lex_one t;
+    let ((tok, _) as x) = t.toks.(t.pos) in
+    if is_comment tok
+    then (
+      t.pos <- t.pos + 1;
+      cur_raw t)
+    else x
+
+  let cur t = fst (cur_raw t)
+
+  let cur_loc t = snd (cur_raw t)
+
+  let start_pos t = Loc.p1 (cur_loc t)
+
+  (* The [n]th token after the current one, and its location *)
+  let peek t n =
+    ignore (cur_raw t);
+    let rec find i n =
+      if i >= t.len then lex_one t;
+      let tok, loc = t.toks.(i) in
+      if is_comment tok
+      then find (i + 1) n
+      else if n = 1
+      then tok, loc
+      else find (i + 1) (n - 1)
+    in
+    find (t.pos + 1) n
+
+  let peek_tok t n = fst (peek t n)
+
+  (* Index of the current token *)
+  let cur_index t =
+    ignore (cur_raw t);
+    t.pos
+
+  let advance t =
+    let _, loc = cur_raw t in
+    t.prev_end <- Loc.p2 loc;
+    t.prev_line_end <- Loc.line_end loc;
+    t.prev_real <- t.pos;
+    t.pos <- t.pos + 1
+
+  (* Whether there is a line terminator between the previous token and the current one *)
+  let prev_end t = t.prev_end
+
+  let newline_before t = Loc.line (cur_loc t) <> t.prev_line_end
+
+  (* Whether the next token is on the same line as the current one *)
+  let next_on_same_line t = same_line (cur_loc t) (snd (peek t 1))
+
+  let error t = raise (Parsing_error (pi (start_pos t)))
+
+  let expect t (tok : Js_token.t) = if Poly.equal (cur t) tok then advance t else error t
+
+  (* Record a virtual semicolon in the token stream, right after the last
+   consumed token. Only used for the token list returned by [parse']. *)
+  let insert_virtual_semicolon t =
+    let i = t.prev_real + 1 in
+    match t.toks.(i) with
+    | T_VIRTUAL_SEMICOLON, _ when i < t.len -> () (* already there (re-parse) *)
+    | _ ->
+        push t (T_EOF, dummy_loc);
+        Array.blit ~src:t.toks ~src_pos:i ~dst:t.toks ~dst_pos:(i + 1) ~len:(t.len - 1 - i);
+        t.toks.(i) <- Js_token.T_VIRTUAL_SEMICOLON, dummy_loc;
+        t.pos <- t.pos + 1
+
+  let consume_semicolon t =
+    match cur t with
+    | T_SEMICOLON -> advance t
+    | T_RCURLY | T_EOF -> insert_virtual_semicolon t
+    | _ when newline_before t -> insert_virtual_semicolon t
+    | _ -> error t
+
+  let consume_semicolon_opt t =
+    match cur t with
+    | T_SEMICOLON -> advance t
+    | _ -> insert_virtual_semicolon t
+
+  let relex_regexp t =
+    ignore (cur_raw t);
+    assert (t.pos = t.len - 1);
+    t.toks.(t.pos) <- Lexer.lex_as_regexp t.lexbuf
+
+  let retag_current t tok =
+    let _, loc = cur_raw t in
+    t.toks.(t.pos) <- tok, loc
+
+  type mark =
+    { m_pos : int
+    ; m_prev_end : Lexing.position
+    ; m_prev_line_end : int
+    ; m_prev_real : int
+    }
+
+  let mark t =
+    ignore (cur_raw t);
+    { m_pos = t.pos
+    ; m_prev_end = t.prev_end
+    ; m_prev_line_end = t.prev_line_end
+    ; m_prev_real = t.prev_real
+    }
+
+  let reset t m =
+    t.pos <- m.m_pos;
+    t.prev_end <- m.m_prev_end;
+    t.prev_line_end <- m.m_prev_line_end;
+    t.prev_real <- m.m_prev_real
+
+  let record_cover t ~start =
+    t.cover_start <- start.m_pos;
+    t.cover_end <- t.prev_real
+
+  let is_cover t ~since = t.cover_start = since.m_pos && t.cover_end = t.prev_real
+
+  let annots_before t =
+    let rec loop i acc =
+      if i <= t.prev_real
+      then acc
+      else
+        match t.toks.(i) with
+        | TAnnot a, loc -> loop (i - 1) ((a, pi (Loc.p1 loc)) :: acc)
+        | _ -> loop (i - 1) acc
+    in
+    loop (cur_index t - 1) []
+
+  let all_tokens t = Array.to_list (Array.sub t.toks ~pos:0 ~len:t.len)
+end
+
+open Stream
 
 (* Combinators for the recurring grammar shapes. The sub-parsers are thunks
    as they usually need the [ctx] and [~no_in] parameters. *)
@@ -340,73 +509,6 @@ let comma_list_gen t ~close ~rest f =
 let comma_list t ~close f = (comma_list_gen t ~close ~rest:None f).list
 
 let comma_list_rest t ~close ~rest f = comma_list_gen t ~close ~rest:(Some rest) f
-
-(* Record a virtual semicolon in the token stream, right after the last
-   consumed token. Only used for the token list returned by [parse']. *)
-let insert_virtual_semicolon t =
-  let i = t.prev_real + 1 in
-  match t.toks.(i) with
-  | T_VIRTUAL_SEMICOLON, _ when i < t.len -> () (* already there (re-parse) *)
-  | _ ->
-      push t (T_EOF, dummy_loc);
-      Array.blit ~src:t.toks ~src_pos:i ~dst:t.toks ~dst_pos:(i + 1) ~len:(t.len - 1 - i);
-      t.toks.(i) <- Js_token.T_VIRTUAL_SEMICOLON, dummy_loc;
-      t.pos <- t.pos + 1
-
-let consume_semicolon t =
-  match cur t with
-  | T_SEMICOLON -> advance t
-  | T_RCURLY | T_EOF -> insert_virtual_semicolon t
-  | _ when newline_before t -> insert_virtual_semicolon t
-  | _ -> error t
-
-(* Semicolon optional even on the same line: after [do ... while (...)]
-   and [export default function/class] *)
-let consume_semicolon_opt t =
-  match cur t with
-  | T_SEMICOLON -> advance t
-  | _ -> insert_virtual_semicolon t
-
-let relex_regexp t =
-  ignore (cur_raw t);
-  assert (t.pos = t.len - 1);
-  t.toks.(t.pos) <- Lexer.lex_as_regexp t.lexbuf
-
-type mark =
-  { m_pos : int
-  ; m_prev_end : Lexing.position
-  ; m_prev_line_end : int
-  ; m_prev_real : int
-  }
-
-let mark t =
-  ignore (cur_raw t);
-  { m_pos = t.pos
-  ; m_prev_end = t.prev_end
-  ; m_prev_line_end = t.prev_line_end
-  ; m_prev_real = t.prev_real
-  }
-
-let reset t m =
-  t.pos <- m.m_pos;
-  t.prev_end <- m.m_prev_end;
-  t.prev_line_end <- m.m_prev_line_end;
-  t.prev_real <- m.m_prev_real
-
-(* The annotations ([//Provides: ...]) among the comments between the last
-   consumed token and the current one *)
-let annots_before t =
-  let rec loop i acc =
-    if i <= t.prev_real
-    then acc
-    else
-      match t.toks.(i) with
-      | TAnnot a, loc -> loop (i - 1) ((a, pi (Loc.p1 loc)) :: acc)
-      | _ -> loop (i - 1) acc
-  in
-  loop (cur_index t - 1) []
-
-let all_tokens t = Array.to_list (Array.sub t.toks ~pos:0 ~len:t.len)
 
 (****)
 
@@ -693,9 +795,7 @@ and parse_cover_or_arrow t ctx ~no_in =
   let m = mark t in
   let e = parse_conditional t ctx ~no_in in
   match cur t with
-  | T_ARROW
-    when (not (newline_before t)) && t.cover_start = m.m_pos && t.cover_end = t.prev_real
-    ->
+  | T_ARROW when (not (newline_before t)) && is_cover t ~since:m ->
       reset t m;
       let async = accept t T_ASYNC in
       (* ArrowFormalParameters[?Yield, ?Await], or [~Yield, +Await] after
@@ -719,7 +819,7 @@ and parse_arrow_body t ~no_in ~async =
   | _ ->
       let pos = start_pos t in
       let e = parse_assignment t ctx ~no_in in
-      let stop = t.prev_end in
+      let stop = prev_end t in
       [ Return_statement (Some e, p stop), p pos ], true
 
 (* YieldExpression : yield | yield AssignmentExpression
@@ -837,11 +937,10 @@ and parse_lhs t ctx =
   | T_ASYNC when Poly.equal (peek_tok t 1) Js_token.T_LPAREN && next_on_same_line t ->
       (* CoverCallExpressionAndAsyncArrowHead: parsed as a call; see
          [parse_cover_or_arrow] *)
-      let cover_start = cur_index t in
+      let cover_start = mark t in
       let async = parse_identifier t ctx in
       let args = parse_arguments t ctx in
-      t.cover_start <- cover_start;
-      t.cover_end <- t.prev_real;
+      record_cover t ~start:cover_start;
       parse_suffixes
         t
         ctx
@@ -963,7 +1062,7 @@ and parse_primary t ctx =
 (* CoverParenthesizedExpressionAndArrowParameterList, parsed as an
    expression; see [parse_cover_or_arrow] *)
 and parse_parenthesized t ctx =
-  let cover_start = cur_index t in
+  let cover_start = mark t in
   expect t T_LPAREN;
   let cover_rest () =
     (* [...] binding, only valid as arrow parameters *)
@@ -1000,8 +1099,7 @@ and parse_parenthesized t ctx =
         in
         loop (parse_assignment t ctx ~no_in:false)
   in
-  t.cover_start <- cover_start;
-  t.cover_end <- t.prev_real;
+  record_cover t ~start:cover_start;
   match res with
   | `Expr e -> e
   | `Cover e -> CoverParenthesizedExpressionAndArrowParameterList e
@@ -1492,7 +1590,7 @@ and parse_statement t ctx =
         | _ when newline_before t -> None
         | _ -> Some (parse_expression t ctx ~no_in:false)
       in
-      let stop = t.prev_end in
+      let stop = prev_end t in
       consume_semicolon t;
       stmt (Return_statement (e, p stop))
   | T_WITH ->
@@ -1591,8 +1689,7 @@ and parse_for_using t ctx ~for_await =
   | T_OF ->
       (* The binding is named [of]: record it as an identifier in the token
          list *)
-      let _, loc = cur_raw t in
-      t.toks.(t.pos) <- token_to_ident T_OF, loc
+      retag_current t (token_to_ident T_OF)
   | _ -> ());
   let i = parse_identifier t ctx in
   match cur t with
