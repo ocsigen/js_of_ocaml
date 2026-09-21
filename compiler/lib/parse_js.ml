@@ -187,7 +187,10 @@ let same_line loc1 loc2 = Loc.line_end loc1 = Loc.line loc2
 module Stream : sig
   type t
 
-  val create : Lexer.t -> t
+  val create : keep_tokens:bool -> Lexer.t -> t
+  (* With [keep_tokens], all the tokens are kept, for [all_tokens].
+     Otherwise, only a window of tokens is kept: the ones that may still be
+     looked at. This avoids promoting every token to the major heap. *)
 
   (* Lookahead. Comments are skipped. *)
 
@@ -253,7 +256,14 @@ module Stream : sig
 
   val mark : t -> mark
 
+  val hold : t -> mark -> unit
+  (* Keep the tokens from the mark on, so that one can [reset] to it, until
+     the matching [release]. Holds can be nested. *)
+
+  val release : t -> unit
+
   val reset : t -> mark -> unit
+  (* Go back to a mark which is being held *)
 
   val record_cover : t -> start:mark -> unit
   (* The tokens from [start] to the last consumed one form a parenthesized
@@ -272,11 +282,15 @@ module Stream : sig
 
   val all_tokens : t -> (Js_token.t * Loc.t) list
   (* All the tokens lexed so far, including the comments and the virtual
-     semicolons *)
+     semicolons. Requires [keep_tokens]. *)
 end = struct
+  (* Tokens are designated by their index in the whole stream. [toks] holds
+     the tokens of index [base] to [len - 1]. *)
   type t =
     { lexbuf : Lexer.t
+    ; keep_tokens : bool
     ; mutable toks : (Js_token.t * Loc.t) array
+    ; mutable base : int
     ; mutable len : int
     ; mutable pos : int
           (* Index of the current (lookahead) token. Comments are skipped by [cur_raw]. *)
@@ -287,11 +301,19 @@ end = struct
     ; mutable cover_end : int
           (* Indices of the first and last tokens of the last
            parenthesized expression or [async (...)] call *)
+    ; mutable holds : int
+    ; mutable held_from : int (* first token to keep, when [holds > 0] *)
     }
 
-  let create lexbuf =
+  let dummy_token = Js_token.T_EOF, dummy_loc
+
+  let initial_size = 64
+
+  let create ~keep_tokens lexbuf =
     { lexbuf
-    ; toks = Array.make 64 (Js_token.T_EOF, dummy_loc)
+    ; keep_tokens
+    ; toks = Array.make initial_size dummy_token
+    ; base = 0
     ; len = 0
     ; pos = 0
     ; prev_end = dummy_pos
@@ -299,15 +321,43 @@ end = struct
     ; prev_real = -1
     ; cover_start = -1
     ; cover_end = -1
+    ; holds = 0
+    ; held_from = 0
     }
 
+  let get t i = t.toks.(i - t.base)
+
+  let set t i tok = t.toks.(i - t.base) <- tok
+
+  (* The array is full: forget the tokens that cannot be looked at any
+     more, that is, the ones before the last consumed token and before
+     the tokens being held. Grow the array if this does not free enough
+     room; shrink it back once a large region is no longer held, so that
+     tokens do not linger. *)
+  let make_room t =
+    let first =
+      if t.keep_tokens
+      then t.base
+      else max t.base (if t.holds > 0 then min t.held_from t.prev_real else t.prev_real)
+    in
+    let live = t.len - first in
+    let size = Array.length t.toks in
+    let toks =
+      if 2 * live > size
+      then Array.make (2 * size) dummy_token
+      else if size > initial_size && 8 * live <= size
+      then Array.make (max initial_size (2 * live)) dummy_token
+      else t.toks
+    in
+    Array.blit ~src:t.toks ~src_pos:(first - t.base) ~dst:toks ~dst_pos:0 ~len:live;
+    if phys_equal toks t.toks
+    then Array.fill toks ~pos:live ~len:(size - live) dummy_token;
+    t.toks <- toks;
+    t.base <- first
+
   let push t tok =
-    if t.len = Array.length t.toks
-    then (
-      let toks = Array.make (2 * t.len) (Js_token.T_EOF, dummy_loc) in
-      Array.blit ~src:t.toks ~src_pos:0 ~dst:toks ~dst_pos:0 ~len:t.len;
-      t.toks <- toks);
-    t.toks.(t.len) <- tok;
+    if t.len - t.base = Array.length t.toks then make_room t;
+    set t t.len tok;
     t.len <- t.len + 1
 
   let lex_one t =
@@ -324,7 +374,7 @@ end = struct
 
   let rec cur_raw t =
     if t.pos >= t.len then lex_one t;
-    let ((tok, _) as x) = t.toks.(t.pos) in
+    let ((tok, _) as x) = get t t.pos in
     if is_comment tok
     then (
       t.pos <- t.pos + 1;
@@ -342,7 +392,7 @@ end = struct
     ignore (cur_raw t);
     let rec find i n =
       if i >= t.len then lex_one t;
-      let tok, loc = t.toks.(i) in
+      let tok, loc = get t i in
       if is_comment tok
       then find (i + 1) n
       else if n = 1
@@ -380,14 +430,21 @@ end = struct
   (* Record a virtual semicolon in the token stream, right after the last
    consumed token. Only used for the token list returned by [parse']. *)
   let insert_virtual_semicolon t =
-    let i = t.prev_real + 1 in
-    match t.toks.(i) with
-    | T_VIRTUAL_SEMICOLON, _ when i < t.len -> () (* already there (re-parse) *)
-    | _ ->
-        push t (T_EOF, dummy_loc);
-        Array.blit ~src:t.toks ~src_pos:i ~dst:t.toks ~dst_pos:(i + 1) ~len:(t.len - 1 - i);
-        t.toks.(i) <- Js_token.T_VIRTUAL_SEMICOLON, dummy_loc;
-        t.pos <- t.pos + 1
+    if t.keep_tokens
+    then
+      let i = t.prev_real + 1 in
+      match t.toks.(i) with
+      | T_VIRTUAL_SEMICOLON, _ when i < t.len -> () (* already there (re-parse) *)
+      | _ ->
+          push t dummy_token;
+          Array.blit
+            ~src:t.toks
+            ~src_pos:i
+            ~dst:t.toks
+            ~dst_pos:(i + 1)
+            ~len:(t.len - 1 - i);
+          t.toks.(i) <- Js_token.T_VIRTUAL_SEMICOLON, dummy_loc;
+          t.pos <- t.pos + 1
 
   let consume_semicolon t =
     match cur t with
@@ -404,11 +461,11 @@ end = struct
   let relex_regexp t =
     ignore (cur_raw t);
     assert (t.pos = t.len - 1);
-    t.toks.(t.pos) <- Lexer.lex_as_regexp t.lexbuf
+    set t t.pos (Lexer.lex_as_regexp t.lexbuf)
 
   let retag_current t tok =
     let _, loc = cur_raw t in
-    t.toks.(t.pos) <- tok, loc
+    set t t.pos (tok, loc)
 
   type mark =
     { m_pos : int
@@ -425,7 +482,17 @@ end = struct
     ; m_prev_real = t.prev_real
     }
 
+  let hold t m =
+    (* The tokens after [m_prev_real] are needed after a [reset] *)
+    if t.holds = 0 then t.held_from <- max 0 m.m_prev_real;
+    t.holds <- t.holds + 1
+
+  let release t =
+    assert (t.holds > 0);
+    t.holds <- t.holds - 1
+
   let reset t m =
+    assert (t.holds > 0 && m.m_pos >= t.base);
     t.pos <- m.m_pos;
     t.prev_end <- m.m_prev_end;
     t.prev_line_end <- m.m_prev_line_end;
@@ -442,13 +509,15 @@ end = struct
       if i <= t.prev_real
       then acc
       else
-        match t.toks.(i) with
+        match get t i with
         | TAnnot a, loc -> loop (i - 1) ((a, pi (Loc.p1 loc)) :: acc)
         | _ -> loop (i - 1) acc
     in
     loop (cur_index t - 1) []
 
-  let all_tokens t = Array.to_list (Array.sub t.toks ~pos:0 ~len:t.len)
+  let all_tokens t =
+    assert t.keep_tokens;
+    Array.to_list (Array.sub t.toks ~pos:0 ~len:t.len)
 end
 
 open Stream
@@ -795,10 +864,12 @@ and parse_assignment_operator t ctx ~no_in lhs =
 and parse_cover_or_arrow t ctx ~no_in =
   let pos = start_pos t in
   let m = mark t in
+  hold t m;
   let e = parse_conditional_expression t ctx ~no_in in
   match cur t with
   | T_ARROW when (not (newline_before t)) && is_cover t ~since:m ->
       reset t m;
+      release t;
       let async = accept t T_ASYNC in
       (* ArrowFormalParameters[?Yield, ?Await], or [~Yield, +Await] after
          [async] *)
@@ -810,7 +881,9 @@ and parse_cover_or_arrow t ctx ~no_in =
       expect t T_ARROW;
       let body, concise = parse_concise_body t ~no_in ~async in
       EArrow (({ async; generator = false }, params, body, p pos), concise, AUnknown)
-  | _ -> parse_assignment_operator t ctx ~no_in e
+  | _ ->
+      release t;
+      parse_assignment_operator t ctx ~no_in e
 
 (* ConciseBody : { FunctionBody } | ExpressionBody
    Also returns whether the body is an expression. *)
@@ -2033,13 +2106,15 @@ let fail_early =
 
 let check_program p = List.iter p ~f:(function _, p -> fail_early#program [ p ])
 
-let parse_aux script_or_module lex =
+let parse_aux ~keep_tokens script_or_module lex =
   let module_ =
     match script_or_module with
     | `Script -> false
     | `Module -> true
   in
-  let t = create lex in
+  (* The last tokens are printed when debugging a syntax error *)
+  let keep_tokens = keep_tokens || debug () in
+  let t = create ~keep_tokens lex in
   let p =
     try parse_script_or_module t ~module_
     with Parsing_error _ as e ->
@@ -2055,28 +2130,32 @@ let parse_aux script_or_module lex =
   check_program p;
   p, t
 
-let parse' script_or_module lex =
-  let p, t = parse_aux script_or_module lex in
-  (* Group the statements under the annotations they follow *)
+(* Group the statements under the annotations they follow *)
+let group_by_annots p =
   let groups =
     List.group p ~f:(fun a _pred ->
         match a with
         | [], _ -> true
         | _ :: _, _ -> false)
   in
-  let p =
-    List.map groups ~f:(function
-      | [] -> assert false
-      | (annot, _) :: _ as l -> annot, List.map l ~f:snd)
-  in
-  p, all_tokens t
+  List.map groups ~f:(function
+    | [] -> assert false
+    | (annot, _) :: _ as l -> annot, List.map l ~f:snd)
+
+let parse_annotated script_or_module lex =
+  let p, _ = parse_aux ~keep_tokens:false script_or_module lex in
+  group_by_annots p
+
+let parse' script_or_module lex =
+  let p, t = parse_aux ~keep_tokens:true script_or_module lex in
+  group_by_annots p, all_tokens t
 
 let parse script_or_module lex =
-  let p, _ = parse_aux script_or_module lex in
+  let p, _ = parse_aux ~keep_tokens:false script_or_module lex in
   List.map p ~f:(fun (_, x) -> x)
 
 let parse_expr lex =
-  let t = create lex in
+  let t = create ~keep_tokens:false lex in
   let e = parse_expression t no_ctx ~no_in:false in
   expect t T_EOF;
   fail_early#expression e;

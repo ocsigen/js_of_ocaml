@@ -261,8 +261,8 @@ module Fragment = struct
     List.for_all ~f:(fun (op, str) -> op Ocaml_version.(compare current (split str)) 0)
 
   let parse_from_lex ~filename lex =
-    let program, _ =
-      try Parse_js.parse' `Script lex
+    let program =
+      try Parse_js.parse_annotated `Script lex
       with Parse_js.Parsing_error pi ->
         let name = Option.value ~default:"??" (Parse_info.file pi) in
         (* The location can be in another file than the one being loaded *)
