@@ -725,9 +725,11 @@ let variable_kind (tok : Js_token.t) =
 
 (* Expression : AssignmentExpression (, AssignmentExpression)* *)
 let rec parse_expression t ctx ~no_in =
-  let e = parse_assignment t ctx ~no_in in
+  let e = parse_assignment_expression t ctx ~no_in in
   let rec loop e =
-    if accept t T_COMMA then loop (ESeq (e, parse_assignment t ctx ~no_in)) else e
+    if accept t T_COMMA
+    then loop (ESeq (e, parse_assignment_expression t ctx ~no_in))
+    else e
   in
   loop e
 
@@ -739,9 +741,9 @@ and parse_paren_expression t ctx =
      ConditionalExpression | YieldExpression | ArrowFunction
      | AsyncArrowFunction
      | LeftHandSideExpression AssignmentOperator AssignmentExpression *)
-and parse_assignment t ctx ~no_in =
+and parse_assignment_expression t ctx ~no_in =
   match cur t with
-  | T_YIELD when ctx.yield -> parse_yield t ctx ~no_in
+  | T_YIELD when ctx.yield -> parse_yield_expression t ctx ~no_in
   | tok
     when is_identifier ctx tok
          && Poly.equal (peek_tok t 1) Js_token.T_ARROW
@@ -750,7 +752,7 @@ and parse_assignment t ctx ~no_in =
       let pos = start_pos t in
       let i = parse_identifier t ctx in
       expect t T_ARROW;
-      let body, concise = parse_arrow_body t ~no_in ~async:false in
+      let body, concise = parse_concise_body t ~no_in ~async:false in
       EArrow ((no_fun, list [ param' i ], body, p pos), concise, AUnknown)
   | T_ASYNC -> (
       match peek t 1 with
@@ -762,7 +764,7 @@ and parse_assignment t ctx ~no_in =
           let i = parse_identifier t { ctx with await = true } in
           if newline_before t then error t;
           expect t T_ARROW;
-          let body, concise = parse_arrow_body t ~no_in ~async:true in
+          let body, concise = parse_concise_body t ~no_in ~async:true in
           EArrow
             ( ({ async = true; generator = false }, list [ param' i ], body, p pos)
             , concise
@@ -774,7 +776,7 @@ and parse_assignment t ctx ~no_in =
 
 (* AssignmentExpression, [yield] and arrow functions excluded *)
 and parse_assignment_rest t ctx ~no_in =
-  let lhs = parse_conditional t ctx ~no_in in
+  let lhs = parse_conditional_expression t ctx ~no_in in
   parse_assignment_operator t ctx ~no_in lhs
 
 (* [(AssignmentOperator AssignmentExpression)?], after the left-hand side *)
@@ -782,7 +784,7 @@ and parse_assignment_operator t ctx ~no_in lhs =
   match assignment_op (cur t) with
   | Some op ->
       advance t;
-      let rhs = parse_assignment t ctx ~no_in in
+      let rhs = parse_assignment_expression t ctx ~no_in in
       EBin (op, assignment_target_of_expr (Some op) lhs, rhs)
   | None -> lhs
 
@@ -793,7 +795,7 @@ and parse_assignment_operator t ctx ~no_in lhs =
 and parse_cover_or_arrow t ctx ~no_in =
   let pos = start_pos t in
   let m = mark t in
-  let e = parse_conditional t ctx ~no_in in
+  let e = parse_conditional_expression t ctx ~no_in in
   match cur t with
   | T_ARROW when (not (newline_before t)) && is_cover t ~since:m ->
       reset t m;
@@ -806,26 +808,26 @@ and parse_cover_or_arrow t ctx ~no_in =
         else parse_formal_parameters t ctx
       in
       expect t T_ARROW;
-      let body, concise = parse_arrow_body t ~no_in ~async in
+      let body, concise = parse_concise_body t ~no_in ~async in
       EArrow (({ async; generator = false }, params, body, p pos), concise, AUnknown)
   | _ -> parse_assignment_operator t ctx ~no_in e
 
 (* ConciseBody : { FunctionBody } | ExpressionBody
    Also returns whether the body is an expression. *)
-and parse_arrow_body t ~no_in ~async =
+and parse_concise_body t ~no_in ~async =
   let ctx = { yield = false; await = async } in
   match cur t with
   | T_LCURLY -> parse_block t ctx, false
   | _ ->
       let pos = start_pos t in
-      let e = parse_assignment t ctx ~no_in in
+      let e = parse_assignment_expression t ctx ~no_in in
       let stop = prev_end t in
       [ Return_statement (Some e, p stop), p pos ], true
 
 (* YieldExpression : yield | yield AssignmentExpression
                    | yield * AssignmentExpression
    with no line terminator after [yield] *)
-and parse_yield t ctx ~no_in =
+and parse_yield_expression t ctx ~no_in =
   advance t;
   if newline_before t
   then EYield { delegate = false; expr = None }
@@ -833,29 +835,29 @@ and parse_yield t ctx ~no_in =
     match cur t with
     | T_MULT ->
         advance t;
-        let e = parse_assignment t ctx ~no_in in
+        let e = parse_assignment_expression t ctx ~no_in in
         EYield { delegate = true; expr = Some e }
     | tok when starts_expression tok ->
-        let e = parse_assignment t ctx ~no_in in
+        let e = parse_assignment_expression t ctx ~no_in in
         EYield { delegate = false; expr = Some e }
     | _ -> EYield { delegate = false; expr = None }
 
 (* ConditionalExpression :
      ShortCircuitExpression
      (? AssignmentExpression[+In] : AssignmentExpression)? *)
-and parse_conditional t ctx ~no_in =
-  let c = parse_short_circuit t ctx ~no_in in
+and parse_conditional_expression t ctx ~no_in =
+  let c = parse_short_circuit_expression t ctx ~no_in in
   match cur t with
   | T_PLING ->
       advance t;
-      let e1 = parse_assignment t ctx ~no_in:false in
+      let e1 = parse_assignment_expression t ctx ~no_in:false in
       expect t T_COLON;
-      let e2 = parse_assignment t ctx ~no_in in
+      let e2 = parse_assignment_expression t ctx ~no_in in
       ECond (c, e1, e2)
   | _ -> c
 
 (* ShortCircuitExpression: a [??] chain or a [||]/[&&] chain, not both *)
-and parse_short_circuit t ctx ~no_in =
+and parse_short_circuit_expression t ctx ~no_in =
   let e = parse_binary t ctx ~no_in ~min_prec:3 in
   match cur t with
   | T_PLING_PLING ->
@@ -880,7 +882,7 @@ and parse_short_circuit t ctx ~no_in =
    LogicalORExpression down to MultiplicativeExpression, by precedence
    climbing *)
 and parse_binary t ctx ~no_in ~min_prec =
-  let e = parse_exponentiation t ctx in
+  let e = parse_exponentiation_expression t ctx in
   parse_binary_rest t ctx ~no_in ~min_prec e
 
 (* Likewise, after the left operand [e] *)
@@ -896,29 +898,29 @@ and parse_binary_rest t ctx ~no_in ~min_prec e =
      UnaryExpression | UpdateExpression ** ExponentiationExpression
    The base of [**] cannot be a unary operator application: [-a ** b] is a
    syntax error. *)
-and parse_exponentiation t ctx =
+and parse_exponentiation_expression t ctx =
   let first = cur t in
-  let e = parse_unary t ctx in
+  let e = parse_unary_expression t ctx in
   match cur t with
   | T_EXP ->
       if Option.is_some (unary_op ctx first) then error t;
       advance t;
-      let e2 = parse_exponentiation t ctx in
+      let e2 = parse_exponentiation_expression t ctx in
       EBin (Exp, e, e2)
   | _ -> e
 
 (* UnaryExpression, including UpdateExpression *)
-and parse_unary t ctx =
+and parse_unary_expression t ctx =
   let unop op =
     advance t;
-    EUn (op, parse_unary t ctx)
+    EUn (op, parse_unary_expression t ctx)
   in
   match unary_op ctx (cur t), cur t with
   | Some op, _ -> unop op
   | None, (T_INCR | T_INCR_NB) -> unop IncrB
   | None, (T_DECR | T_DECR_NB) -> unop DecrB
   | None, _ -> (
-      let e = parse_lhs t ctx in
+      let e = parse_left_hand_side_expression t ctx in
       (* Postfix operators: the lexer produces [T_INCR_NB] when there is no
          line terminator before [++] *)
       match cur t with
@@ -931,7 +933,7 @@ and parse_unary t ctx =
       | _ -> e)
 
 (* LeftHandSideExpression *)
-and parse_lhs t ctx =
+and parse_left_hand_side_expression t ctx =
   let start = start_pos t in
   match cur t with
   | T_ASYNC when Poly.equal (peek_tok t 1) Js_token.T_LPAREN && next_on_same_line t ->
@@ -948,7 +950,7 @@ and parse_lhs t ctx =
         ~allow_call:true
         (ECall (EVar async, ANormal, args, p start))
   | _ ->
-      let e = parse_primary t ctx in
+      let e = parse_primary_expression t ctx in
       parse_suffixes t ctx ~start ~allow_call:true e
 
 (* Member accesses, calls, optional chains and tagged templates *)
@@ -963,7 +965,7 @@ and parse_suffixes t ctx ~start ~allow_call e =
         loop (parse_member_access t e ANormal)
     | T_LBRACKET -> loop (EAccess (e, ANormal, parse_index t ctx))
     | T_BACKQUOTE ->
-        let tpl = parse_template t ctx in
+        let tpl = parse_template_literal t ctx in
         loop (ECallTemplate (e, tpl, p !loc_start))
     | T_LPAREN when allow_call ->
         let args = parse_arguments t ctx in
@@ -999,7 +1001,7 @@ and parse_new t ctx =
       let callee =
         match cur t with
         | T_NEW -> parse_new t ctx
-        | _ -> parse_primary t ctx
+        | _ -> parse_primary_expression t ctx
       in
       let callee = parse_suffixes t ctx ~start:callee_pos ~allow_call:false callee in
       match cur t with
@@ -1010,7 +1012,7 @@ and parse_new t ctx =
 
 (* PrimaryExpression, and the other expressions starting with a keyword:
    [super], [import], [new], as well as private names ([#x in o]) *)
-and parse_primary t ctx =
+and parse_primary_expression t ctx =
   let pos = start_pos t in
   match cur t with
   | (T_THIS | T_NULL | T_SUPER) as tok ->
@@ -1033,22 +1035,22 @@ and parse_primary t ctx =
   | T_STRING (s, _) ->
       advance t;
       EStr s
-  | T_BACKQUOTE -> ETemplate (parse_template t ctx)
+  | T_BACKQUOTE -> ETemplate (parse_template_literal t ctx)
   | T_DIV | T_DIV_ASSIGN ->
       relex_regexp t;
-      parse_primary t ctx
+      parse_primary_expression t ctx
   | T_REGEXP (Utf8 s, flags) ->
       advance t;
       ERegexp (s, if String.equal flags "" then None else Some flags)
   | T_LBRACKET -> parse_array_literal t ctx
   | T_LCURLY -> parse_object_literal t ctx
-  | T_LPAREN -> parse_parenthesized t ctx
+  | T_LPAREN -> parse_cover_parenthesized_expression t ctx
   | T_FUNCTION -> parse_function_expression t ~pos ~async:false
   | T_ASYNC when async_function_ahead t ->
       advance t;
       parse_function_expression t ~pos ~async:true
   | T_CLASS | T_AT ->
-      let decorators = parse_decorators t ctx in
+      let decorators = parse_decorator_list t ctx in
       let name, decl = parse_class_expression t ctx ~decorators in
       EClass (name, decl)
   | T_POUND ->
@@ -1061,7 +1063,7 @@ and parse_primary t ctx =
 
 (* CoverParenthesizedExpressionAndArrowParameterList, parsed as an
    expression; see [parse_cover_or_arrow] *)
-and parse_parenthesized t ctx =
+and parse_cover_parenthesized_expression t ctx =
   let cover_start = mark t in
   expect t T_LPAREN;
   let cover_rest () =
@@ -1090,14 +1092,14 @@ and parse_parenthesized t ctx =
                   `Expr e
               | T_ELLIPSIS -> cover_rest ()
               | _ ->
-                  let e2 = parse_assignment t ctx ~no_in:false in
+                  let e2 = parse_assignment_expression t ctx ~no_in:false in
                   loop (ESeq (e, e2)))
           | T_RPAREN ->
               advance t;
               `Expr e
           | _ -> error t
         in
-        loop (parse_assignment t ctx ~no_in:false)
+        loop (parse_assignment_expression t ctx ~no_in:false)
   in
   record_cover t ~start:cover_start;
   match res with
@@ -1109,11 +1111,11 @@ and parse_arguments t ctx =
   expect t T_LPAREN;
   comma_list t ~close:T_RPAREN (fun () ->
       if accept t T_ELLIPSIS
-      then ArgSpread (parse_assignment t ctx ~no_in:false)
-      else Arg (parse_assignment t ctx ~no_in:false))
+      then ArgSpread (parse_assignment_expression t ctx ~no_in:false)
+      else Arg (parse_assignment_expression t ctx ~no_in:false))
 
 (* TemplateLiteral *)
-and parse_template t ctx =
+and parse_template_literal t ctx =
   expect t T_BACKQUOTE;
   let rec loop acc =
     match cur t with
@@ -1141,8 +1143,8 @@ and parse_array_literal t ctx =
          | T_COMMA -> ElementHole (* the comma is consumed as the separator *)
          | T_ELLIPSIS ->
              advance t;
-             ElementSpread (parse_assignment t ctx ~no_in:false)
-         | _ -> Element (parse_assignment t ctx ~no_in:false)))
+             ElementSpread (parse_assignment_expression t ctx ~no_in:false)
+         | _ -> Element (parse_assignment_expression t ctx ~no_in:false)))
 
 (* PropertyName : LiteralPropertyName | [ AssignmentExpression ] *)
 and parse_property_name t ctx =
@@ -1155,7 +1157,8 @@ and parse_property_name t ctx =
       PNN (Num.of_string_unsafe raw)
   | T_LBRACKET ->
       PComputed
-        (between t T_LBRACKET T_RBRACKET (fun () -> parse_assignment t ctx ~no_in:false))
+        (between t T_LBRACKET T_RBRACKET (fun () ->
+             parse_assignment_expression t ctx ~no_in:false))
   | _ -> PNI (parse_identifier_name t)
 
 (* ObjectLiteral *)
@@ -1168,7 +1171,7 @@ and parse_object_literal t ctx =
 and parse_property_definition t ctx =
   let pos = start_pos t in
   if accept t T_ELLIPSIS
-  then PropertySpread (parse_assignment t ctx ~no_in:false)
+  then PropertySpread (parse_assignment_expression t ctx ~no_in:false)
   else
     match parse_method_modifier t with
     | Some (kind, meth) ->
@@ -1180,7 +1183,7 @@ and parse_property_definition t ctx =
         match cur t, ident with
         | T_COLON, _ ->
             advance t;
-            Property (name, parse_assignment t ctx ~no_in:false)
+            Property (name, parse_assignment_expression t ctx ~no_in:false)
         | T_LPAREN, _ -> PropertyMethod (name, Method (parse_function_rest t ~pos no_fun))
         | (T_COMMA | T_RCURLY), Some i ->
             (* shorthand property *)
@@ -1188,7 +1191,7 @@ and parse_property_definition t ctx =
         | T_ASSIGN, Some i ->
             let eq_pos = start_pos t in
             advance t;
-            let e = parse_assignment t ctx ~no_in:false in
+            let e = parse_assignment_expression t ctx ~no_in:false in
             CoverInitializedName (early_error (pi eq_pos), var pos i, (e, p eq_pos))
         | _ -> error t)
 
@@ -1274,7 +1277,7 @@ and parse_initializer_opt t ctx ~no_in =
 and parse_initializer t ctx ~no_in =
   let pos = start_pos t in
   expect t T_ASSIGN;
-  let e = parse_assignment t ctx ~no_in in
+  let e = parse_assignment_expression t ctx ~no_in in
   e, p pos
 
 (* BindingPattern : ObjectBindingPattern | ArrayBindingPattern *)
@@ -1324,7 +1327,7 @@ and parse_array_binding_pattern t ctx =
 (* Classes *)
 
 (* DecoratorList: [@a.b.c], [@a.b(arguments)] or [@(expression)] *)
-and parse_decorators t ctx =
+and parse_decorator_list t ctx =
   let rec loop acc =
     match cur t with
     | T_AT ->
@@ -1361,7 +1364,7 @@ and parse_class_expression t ctx ~decorators =
 
 (* ClassTail : ClassHeritage? { ClassBody } *)
 and parse_class_tail t ctx ~decorators =
-  let extends = opt t T_EXTENDS (fun () -> parse_lhs t ctx) in
+  let extends = opt t T_EXTENDS (fun () -> parse_left_hand_side_expression t ctx) in
   let body = between t T_LCURLY T_RCURLY (fun () -> parse_class_body t ctx) in
   { decorators; extends; body }
 
@@ -1385,7 +1388,7 @@ and parse_class_body t ctx =
         advance t;
         loop (CEStaticBLock (parse_block t { yield = false; await = true }) :: acc)
     | _ ->
-        let decorators = parse_decorators t ctx in
+        let decorators = parse_decorator_list t ctx in
         let static =
           match cur t with
           | T_STATIC when not (keyword_is_name t) ->
@@ -1472,7 +1475,7 @@ and parse_using_kind t =
   kind
 
 (* The BindingList of a [using] declaration: identifiers only *)
-and parse_using_bindings t ctx ~no_in =
+and parse_using_binding_list t ctx ~no_in =
   comma_list1 t (fun () ->
       let i = parse_identifier t ctx in
       let init = parse_initializer_opt t ctx ~no_in in
@@ -1485,13 +1488,13 @@ and parse_module_item t ctx =
   | T_IMPORT
     when match peek_tok t 1 with
          | T_LPAREN | T_PERIOD -> false (* [import(...)] and [import.meta] *)
-         | _ -> true -> parse_import t ~pos
-  | T_EXPORT -> parse_export t ~pos ~decorators:[]
+         | _ -> true -> parse_import_declaration t ~pos
+  | T_EXPORT -> parse_export_declaration t ~pos ~decorators:[]
   | T_AT -> (
       (* Decorators come before [export] *)
-      let decorators = parse_decorators t ctx in
+      let decorators = parse_decorator_list t ctx in
       match cur t with
-      | T_EXPORT -> parse_export t ~pos ~decorators
+      | T_EXPORT -> parse_export_declaration t ~pos ~decorators
       | _ -> parse_class_declaration t ctx ~decorators, p pos)
   | _ -> parse_statement_list_item t ctx
 
@@ -1514,7 +1517,7 @@ and parse_declaration t ctx =
   | (T_LET | T_CONST) as tok -> stmt (parse_variable_statement t ctx tok)
   | (T_USING | T_AWAIT) when using_declaration_ahead t ctx ->
       let kind = parse_using_kind t in
-      let l = parse_using_bindings t ctx ~no_in:false in
+      let l = parse_using_binding_list t ctx ~no_in:false in
       consume_semicolon t;
       stmt (Variable_statement (kind, l))
   | T_FUNCTION ->
@@ -1525,7 +1528,7 @@ and parse_declaration t ctx =
       let name, decl = parse_function_declaration t ctx ~pos ~async:true in
       stmt (Function_declaration (name, decl))
   | T_CLASS | T_AT ->
-      let decorators = parse_decorators t ctx in
+      let decorators = parse_decorator_list t ctx in
       stmt (parse_class_declaration t ctx ~decorators)
   | _ -> error t
 
@@ -1574,12 +1577,12 @@ and parse_statement t ctx =
   | T_FOR -> stmt (parse_for t ctx)
   | T_CONTINUE ->
       advance t;
-      let label = parse_label_opt t ctx in
+      let label = parse_label_identifier_opt t ctx in
       consume_semicolon t;
       stmt (Continue_statement label)
   | T_BREAK ->
       advance t;
-      let label = parse_label_opt t ctx in
+      let label = parse_label_identifier_opt t ctx in
       consume_semicolon t;
       stmt (Break_statement label)
   | T_RETURN ->
@@ -1598,14 +1601,14 @@ and parse_statement t ctx =
       let e = parse_paren_expression t ctx in
       let body = parse_statement t ctx in
       stmt (With_statement (e, body))
-  | T_SWITCH -> stmt (parse_switch t ctx)
+  | T_SWITCH -> stmt (parse_switch_statement t ctx)
   | T_THROW ->
       advance t;
       if newline_before t then error t;
       let e = parse_expression t ctx ~no_in:false in
       consume_semicolon t;
       stmt (Throw_statement e)
-  | T_TRY -> stmt (parse_try t ctx)
+  | T_TRY -> stmt (parse_try_statement t ctx)
   | T_DEBUGGER ->
       advance t;
       consume_semicolon t;
@@ -1626,7 +1629,7 @@ and parse_statement t ctx =
       stmt (Expression_statement e)
 
 (* [LabelIdentifier?], on the same line, after [break] or [continue] *)
-and parse_label_opt t ctx =
+and parse_label_identifier_opt t ctx =
   match cur t with
   | tok when is_identifier ctx tok && not (newline_before t) ->
       let label = Label.of_string (Option.get (ident_of_token ctx tok)) in
@@ -1699,7 +1702,7 @@ and parse_for_using t ctx ~for_await =
       let first = DeclIdent (i, init) in
       let l =
         if accept t T_COMMA
-        then first :: parse_using_bindings t ctx ~no_in:true
+        then first :: parse_using_binding_list t ctx ~no_in:true
         else [ first ]
       in
       parse_for_rest t ctx (Right (kind, l))
@@ -1716,7 +1719,7 @@ and parse_for_in_of t ctx ~for_await left =
       ForIn_statement (left, e, body)
   | T_OF ->
       advance t;
-      let e = parse_assignment t ctx ~no_in:false in
+      let e = parse_assignment_expression t ctx ~no_in:false in
       expect t T_RPAREN;
       let body = parse_statement t ctx in
       if for_await
@@ -1741,7 +1744,7 @@ and parse_for_rest t ctx init =
   For_statement (init, c, incr, body)
 
 (* SwitchStatement, with at most one [default] clause *)
-and parse_switch t ctx =
+and parse_switch_statement t ctx =
   expect t T_SWITCH;
   let e = parse_paren_expression t ctx in
   expect t T_LCURLY;
@@ -1777,7 +1780,7 @@ and parse_switch t ctx =
 
 (* TryStatement: [catch], [finally] or both; the parameter of [catch] is
    optional *)
-and parse_try t ctx =
+and parse_try_statement t ctx =
   expect t T_TRY;
   let b = parse_block t ctx in
   let c =
@@ -1845,7 +1848,7 @@ and parse_module_export_name t =
       (if is_ident then `Ident else `Reserved), name, pos
 
 (* NameSpaceImport : * as ImportedBinding *)
-and parse_namespace_import t =
+and parse_name_space_import t =
   expect t T_MULT;
   expect t T_AS;
   parse_binding_identifier t
@@ -1864,7 +1867,7 @@ and parse_named_imports t =
       | _ -> error t)
 
 (* ImportDeclaration *)
-and parse_import t ~pos =
+and parse_import_declaration t ~pos =
   expect t T_IMPORT;
   let kind, from =
     match cur t with
@@ -1873,10 +1876,10 @@ and parse_import t ~pos =
         SideEffect, from
     | T_DEFER when Poly.equal (peek_tok t 1) Js_token.T_MULT ->
         advance t;
-        let id = parse_namespace_import t in
+        let id = parse_name_space_import t in
         DeferNamespace id, parse_from_clause t
     | T_MULT ->
-        let id = parse_namespace_import t in
+        let id = parse_name_space_import t in
         Namespace (None, id), parse_from_clause t
     | T_LCURLY ->
         let l = parse_named_imports t in
@@ -1888,7 +1891,7 @@ and parse_import t ~pos =
             advance t;
             match cur t with
             | T_MULT ->
-                let id = parse_namespace_import t in
+                let id = parse_name_space_import t in
                 Namespace (Some default, id), parse_from_clause t
             | _ ->
                 let l = parse_named_imports t in
@@ -1909,7 +1912,7 @@ and parse_export_clause t =
       local, exported)
 
 (* ExportDeclaration, with the decorators found before [export] *)
-and parse_export t ~pos ~decorators =
+and parse_export_declaration t ~pos ~decorators =
   (* Exports are module top-level items: [~Yield, +Await] *)
   let ctx = { yield = false; await = true } in
   expect t T_EXPORT;
@@ -1933,7 +1936,7 @@ and parse_export t ~pos ~decorators =
       in
       match cur t with
       | T_CLASS | T_AT ->
-          let decorators = parse_decorators t ctx in
+          let decorators = parse_decorator_list t ctx in
           let name, decl = parse_class_expression t ctx ~decorators in
           consume_semicolon_opt t;
           export (ExportDefaultClass (name, decl))
@@ -1942,7 +1945,7 @@ and parse_export t ~pos ~decorators =
           advance t;
           default_fun ~async:true
       | _ ->
-          let e = parse_assignment t ctx ~no_in:false in
+          let e = parse_assignment_expression t ctx ~no_in:false in
           consume_semicolon t;
           export (ExportDefaultExpression e))
   | T_MULT ->
@@ -1991,7 +1994,7 @@ and parse_export t ~pos ~decorators =
 (* Script : StatementList[~Yield, ~Await, ~Return]
    Module : ModuleItemList, whose items are [~Yield, +Await]
    Each item comes with the annotations that precede it. *)
-let parse_program t ~module_ =
+let parse_script_or_module t ~module_ =
   let ctx = { yield = false; await = module_ } in
   let rec loop acc =
     match cur t with
@@ -2089,7 +2092,7 @@ let parse_aux script_or_module lex =
   in
   let t = create lex in
   let p =
-    try parse_program t ~module_
+    try parse_script_or_module t ~module_
     with Parsing_error _ as e ->
       if debug ()
       then (
