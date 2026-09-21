@@ -28,6 +28,14 @@ let double_translate () =
   | `Cps -> false
   | `Double_translation -> true
 
+(* We turn mutually recursive functions into CPS so that calls between
+   them are tail calls. This is not needed when targeting Wasm, which
+   has proper tail calls. *)
+let cps_for_tail_calls () =
+  match Config.target () with
+  | `JavaScript -> true
+  | `Wasm -> false
+
 open Code
 
 let add_var = Var.ISet.add
@@ -71,7 +79,8 @@ let block_deps ~info ~vars ~tail_deps ~deps ~blocks ~fun_name pc =
           | Top -> ()
           | Values { known; others } ->
               let known_tail_call =
-                (not others)
+                cps_for_tail_calls ()
+                && (not others)
                 && is_last
                 &&
                 match block.branch with
@@ -202,7 +211,11 @@ let f p info =
   program_deps ~info ~vars ~tail_deps ~deps p;
   if times () then Format.eprintf "      fun analysis (initialize): %a@." Timer.print t1;
   let t2 = Timer.make () in
-  let in_mutual_recursion = find_mutually_recursive_calls tail_deps in
+  let in_mutual_recursion =
+    if cps_for_tail_calls ()
+    then find_mutually_recursive_calls tail_deps
+    else Var.Set.empty
+  in
   if times () then Format.eprintf "      fun analysis (tail calls): %a@." Timer.print t2;
   let t3 = Timer.make () in
   let g =
