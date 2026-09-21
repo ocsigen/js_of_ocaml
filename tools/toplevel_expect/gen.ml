@@ -32,7 +32,6 @@ let dump_file file =
 
 let () =
   match Sys.ocaml_release with
-  | { extra = Some (Plus, "ox"); _ } -> dump_file "toplevel_expect_test.ml-oxcaml"
   | { major; minor; _ } -> (
       match major, minor with
       | 4, min ->

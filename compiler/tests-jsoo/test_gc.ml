@@ -31,7 +31,9 @@ let ok () = print_endline "OK"
 let ko size = Printf.printf "size=%d, ocaml_version=%s" size Sys.ocaml_version
 
 let%expect_test "stat" =
-  let s = (Gc.stat [@alert "-deprecated"]) () in
+  (* [Gc.stat] is deprecated in recent versions of OCaml but not in OxCaml,
+     where the alert disable would be reported as unused (warning 221). *)
+  let s = (Gc.stat [@alert "-deprecated"] [@warning "-221"]) () in
   let size = Obj.size (Obj.repr s) in
   (match size with
   | 18 when ocaml_version >= (5, 5) -> ok ()
