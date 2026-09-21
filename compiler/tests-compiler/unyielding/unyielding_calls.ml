@@ -141,6 +141,119 @@ let%expect_test "without debug info, the unyielding-call info changes nothing" =
         (if String.equal with_info without_info then "identical" else "different"));
   [%expect {| identical |}]
 
+(* A function only needs a CPS version if it may run below an effect handler.
+   [call_yielding] calls its argument [g], which is at mode [yielding] and
+   unknown to the compiler, so this call may perform an effect and is in CPS.
+   But [call_yielding] is only reached through unyielding calls: it is called
+   from [run], which is called from the fiber body; both calls are unyielding,
+   since the functions and their arguments are unyielding. So [call_yielding]
+   can never run below an effect handler, and it is compiled in direct style
+   only. The functions are local: the toplevel values of a compilation unit
+   are exported, hence escape, and may then be called from anywhere. *)
+let code_below_handler =
+  {|
+    open Effect
+    open Effect.Deep
+    type _ Effect.t += E : unit Effect.t
+    let l = ref []
+    let fns = ref [ (fun () -> ()) ]
+    let () =
+      let call_yielding (g : (unit -> unit) @ yielding) =
+        l := (fun () -> ()) :: !l; (* prevent inlining *)
+        g ()
+      in
+      let run () =
+        l := (fun () -> ()) :: !l; (* prevent inlining *)
+        (* Two call sites, so that the functions do not get inlined; the
+           argument is unknown to the compiler *)
+        call_yielding (List.hd !fns);
+        call_yielding (List.nth !fns 0)
+      in
+      Safe.try_with (fun _ () -> run (); run ()) ()
+        { effc = (fun (type a) (eff : a Effect.t) ->
+            match eff with
+            | E -> Some (fun (k : (a, _) continuation) -> continue k ())
+            | _ -> None) }
+|}
+
+let%expect_test
+    "functions only reached through unyielding calls are not double-translated" =
+  let program = compile_and_parse ~effects:`Double_translation code_below_handler in
+  print_fun_decl program (Some "call_yielding");
+  print_double_fun_decl program "call_yielding";
+  print_double_fun_decl program "run";
+  [%expect
+    {|
+           function call_yielding(g){
+            l[1] = [0, function(param){return 0;}, l[1]];
+            return caml_call1(g, 0);
+           }
+           //end
+           not found
+           not found
+           |}]
+
+let%expect_test
+    "functions only reached through unyielding calls are double-translated with \
+     --disable oxcaml-use-unyielding-debuginfo-for-effect-cps" =
+  let program =
+    compile_and_parse
+      ~effects:`Double_translation
+      ~flags:[ "--disable"; "oxcaml-use-unyielding-debuginfo-for-effect-cps" ]
+      code_below_handler
+  in
+  print_double_fun_decl program "call_yielding";
+  print_double_fun_decl program "run";
+  [%expect
+    {|
+           function call_yielding$0(g){
+            var _d_ = l[1];
+            l[1] = [0, _b_(), _d_];
+            return caml_call1(g, 0);
+           }
+           //end
+           function call_yielding$1(g, cont){
+            var _d_ = l[1];
+            l[1] = [0, _b_(), _d_];
+            return caml_trampoline_cps_call2(g, 0, cont);
+           }
+           //end
+           var call_yielding = caml_cps_closure(call_yielding$0, call_yielding$1);
+           //end
+           function run$0(_d_){
+            _d_ = l[1];
+            l[1] = [0, _a_(), _d_];
+            call_yielding(caml_call1(Stdlib_List[7], fns[1]));
+            return call_yielding(caml_call2(Stdlib_List[9], fns[1], 0));
+           }
+           //end
+           function run$1(_d_, cont){
+            _d_ = l[1];
+            l[1] = [0, _a_(), _d_];
+            return caml_trampoline_cps_call2
+                    (Stdlib_List[7],
+                     fns[1],
+                     function(_d_){
+                      return caml_exact_trampoline_cps_call
+                              (call_yielding,
+                               _d_,
+                               function(_d_){
+                                return caml_trampoline_cps_call3
+                                        (Stdlib_List[9],
+                                         fns[1],
+                                         0,
+                                         function(_d_){
+                                          return caml_exact_trampoline_cps_call
+                                                  (call_yielding, _d_, cont);
+                                         });
+                               });
+                     });
+           }
+           //end
+           var run = caml_cps_closure(run$0, run$1);
+           //end
+           |}]
+
 (* Calls to a function at mode [yielding] carry no unyielding-call marker and
    must remain in CPS: [h] may perform an effect. *)
 let code_yielding =
