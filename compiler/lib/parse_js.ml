@@ -159,6 +159,7 @@ let describe_token (tok : Js_token.t) =
   | T_STRING _ -> "string literal"
   | T_REGEXP _ -> "regular expression"
   | T_ENCAPSED_STRING _ -> "template string"
+  | T_BACKQUOTE -> "template literal"
   | _ -> Printf.sprintf "`%s`" (Js_token.to_string tok)
 
 open Javascript
@@ -1120,30 +1121,39 @@ and parse_suffixes t ctx ~start ~allow_call e =
   (* Location of calls: the start of the expression or, inside an optional
      chain, the position of the last [?.] *)
   let loc_start = ref start in
-  let rec loop e =
+  (* [in_chain]: after a [?.]. The following accesses are part of the
+     optional chain, which the kind [AChain] records. The expression [e] we
+     start from is not: if it is an optional chain, it was between
+     parentheses, and an access of kind [ANormal] ends it. *)
+  let rec loop ~in_chain e =
+    let kind = if in_chain then AChain else ANormal in
     match cur t with
     | T_PERIOD ->
         advance t;
-        loop (parse_member_access t e ANormal)
-    | T_LBRACKET -> loop (EAccess (e, ANormal, parse_index t ctx))
+        loop ~in_chain (parse_member_access t e kind)
+    | T_LBRACKET -> loop ~in_chain (EAccess (e, kind, parse_index t ctx))
     | T_BACKQUOTE ->
+        if in_chain
+        then error_msg t "a template literal is not allowed in an optional chain";
         let tpl = parse_template_literal t ctx in
-        loop (ECallTemplate (e, tpl, p !loc_start))
+        loop ~in_chain (ECallTemplate (e, tpl, p !loc_start))
     | T_LPAREN when allow_call ->
         let args = parse_arguments t ctx in
-        loop (ECall (e, ANormal, args, p !loc_start))
+        loop ~in_chain (ECall (e, kind, args, p !loc_start))
     | T_PLING_PERIOD when allow_call -> (
         loc_start := start_pos t;
         advance t;
         match cur t with
         | T_LPAREN ->
             let args = parse_arguments t ctx in
-            loop (ECall (e, ANullish, args, p !loc_start))
-        | T_LBRACKET -> loop (EAccess (e, ANullish, parse_index t ctx))
-        | _ -> loop (parse_member_access t e ANullish))
+            loop ~in_chain:true (ECall (e, ANullish, args, p !loc_start))
+        | T_LBRACKET -> loop ~in_chain:true (EAccess (e, ANullish, parse_index t ctx))
+        | T_BACKQUOTE ->
+            error_msg t "a template literal is not allowed in an optional chain"
+        | _ -> loop ~in_chain:true (parse_member_access t e ANullish))
     | _ -> e
   in
-  loop e
+  loop ~in_chain:false e
 
 (* [[ Expression ]] *)
 and parse_index t ctx =

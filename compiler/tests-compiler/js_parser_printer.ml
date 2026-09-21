@@ -1677,27 +1677,13 @@ let%expect_test "accesses built on top of an optional chain" =
 let%expect_test "template literals and optional chains" =
   (* A tagged template cannot be part of an optional chain *)
   check `Script "a?.b`t`";
-  [%expect {| cannot parse js (from l:1, c:4) |}];
+  [%expect {| error (l:1, c:4): a template literal is not allowed in an optional chain |}];
   check `Script "a?.b.c`t`";
-  [%expect {| cannot parse js (from l:1, c:6) |}];
+  [%expect {| error (l:1, c:6): a template literal is not allowed in an optional chain |}];
   check `Script "a?.(1)`t`";
-  [%expect {| cannot parse js (from l:1, c:6) |}];
+  [%expect {| error (l:1, c:6): a template literal is not allowed in an optional chain |}];
   check `Script "a?.`t`";
-  [%expect {| cannot parse js (from l:1, c:3) |}];
-  (* This is fine outside of the chain *)
-  check `Script "(a?.b)`t`; a`t`?.b; a.b`t`";
-  [%expect {| (a?.b)`t`;a`t`?.b;a.b`t`; |}]
-
-let%expect_test "template literals and optional chains" =
-  (* A tagged template cannot be part of an optional chain *)
-  check `Script "a?.b`t`";
-  [%expect {| a?.b`t`; |}];
-  check `Script "a?.b.c`t`";
-  [%expect {| a?.b.c`t`; |}];
-  check `Script "a?.(1)`t`";
-  [%expect {| a?.(1)`t`; |}];
-  check `Script "a?.`t`";
-  [%expect {| error (l:1, c:3): unexpected ```, expected a property name |}];
+  [%expect {| error (l:1, c:3): a template literal is not allowed in an optional chain |}];
   (* This is fine outside of the chain *)
   check `Script "(a?.b)`t`; a`t`?.b; a.b`t`";
   [%expect {| (a?.b)`t`;a`t`?.b;a.b`t`; |}]
