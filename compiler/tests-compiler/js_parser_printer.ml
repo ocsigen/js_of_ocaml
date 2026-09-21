@@ -1565,53 +1565,31 @@ let%expect_test "a class field named get, set or accessor before a generator" =
 let%expect_test "invalid programs" =
   (* A trailing comma is only allowed in arrow parameters *)
   check `Script "(a,)";
-  [%expect {| a; |}];
+  [%expect {| cannot parse js (from l:1, c:2) |}];
   check `Script "(a, b,)";
-  [%expect {| a,b; |}];
+  [%expect {| cannot parse js (from l:1, c:5) |}];
   check `Script "(a, b,) => 1";
   [%expect {| (a,b)=>1; |}];
   (* The parameter of [catch] has no initializer *)
   check `Script "try {} catch (e = 1) {}";
-  [%expect {| try{}catch(e=1){} |}];
+  [%expect {| cannot parse js (from l:1, c:16) |}];
   check `Script "try {} catch ([e = 1]) {}";
   [%expect {| try{}catch([e=1]){} |}];
   (* A getter has no parameter, a setter exactly one *)
   check `Script "x = { get a(b) {} }";
-  [%expect {|
-           x={get
-           a(b){}};
-           |}];
+  [%expect {| cannot parse js (from l:1, c:12) |}];
   check `Script "x = { set a() {} }";
-  [%expect {|
-           x={set
-           a(){}};
-           |}];
+  [%expect {| cannot parse js (from l:1, c:12) |}];
   check `Script "x = { set a(b, c) {} }";
-  [%expect {|
-           x={set
-           a(b,c){}};
-           |}];
+  [%expect {| cannot parse js (from l:1, c:13) |}];
   check `Script "x = { set a(...b) {} }";
-  [%expect {|
-           x={set
-           a(...b){}};
-           |}];
+  [%expect {| cannot parse js (from l:1, c:12) |}];
   check `Script "x = { set a(b,) {} }";
-  [%expect {|
-           x={set
-           a(b){}};
-           |}];
+  [%expect {| cannot parse js (from l:1, c:13) |}];
   check `Script "class C { get a(b) {} }";
-  [%expect {|
-           class
-           C{get
-           a(b){}}
-           |}];
+  [%expect {| cannot parse js (from l:1, c:16) |}];
   check `Script "class C { static set #a(b, c) {} }";
-  [%expect {|
-           class
-           C{static set#a(b,c){}}
-           |}];
+  [%expect {| cannot parse js (from l:1, c:25) |}];
   check `Script "x = { get a() {}, set a([b] = c) {}, get() {}, set(a, b) {} }";
   [%expect
     {|
@@ -1628,25 +1606,19 @@ let%expect_test "import calls" =
     "import.meta.url; import.source('m'); import.defer('m'); new (import('m'))";
   [%expect {| import.meta.url;import.source("m");import.defer("m");new(import("m")); |}];
   check `Script "import()";
-  [%expect {| import(); |}];
+  [%expect {| cannot parse js (from l:1, c:6) |}];
   check `Script "import(...a)";
-  [%expect {| import(...a); |}];
+  [%expect {| cannot parse js (from l:1, c:6) |}];
   check `Script "import('a', 'b', 'c')";
-  [%expect {| import("a","b","c"); |}];
+  [%expect {| cannot parse js (from l:1, c:6) |}];
   check `Script "new import('m')";
-  [%expect {|
-           new
-           import("m");
-           |}];
+  [%expect {| cannot parse js (from l:1, c:4) |}];
   check `Script "new import.source('m')";
-  [%expect {|
-           new
-           import.source("m");
-           |}];
+  [%expect {| cannot parse js (from l:1, c:4) |}];
   check `Script "import.foo";
-  [%expect {| import.foo; |}];
+  [%expect {| cannot parse js (from l:1, c:7) |}];
   check `Script "import.source";
-  [%expect {| import.source; |}];
+  [%expect {| cannot parse js (from l:1, c:13) |}];
   check `Script "typeof import";
   [%expect {| cannot parse js (from l:1, c:13) |}]
 
