@@ -46,6 +46,8 @@
   functions into CPS, since Wasm has proper tail calls (#2441)
 * Runtime: specialize one- and two-argument partial applications in
   double-translation mode (#2437)
+* Compiler: with `--effects=double-translation` and OxCaml, calls proven
+  unyielding no longer propagate the need for a CPS version (#2440)
 
 ### Wasm
 * Compiler/Wasm: intern string constants (program-wide with whole-program

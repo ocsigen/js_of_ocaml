@@ -187,8 +187,11 @@ let is_unyielding_call ~info ~in_mutual_recursion x =
    below an effect handler if it escapes (fiber bodies and effect
    handlers are passed to the [%with_stack] and [%resume] primitives,
    so they escape), or if it is called from a call point that may
-   itself run below an effect handler, that is, a call point in a
-   function that may. Toplevel code never runs below an effect handler.
+   itself run below an effect handler. A call point may run below an
+   effect handler if the function containing it may, except when the
+   OCaml compiler has proven the call unyielding: the callee then runs
+   in direct style whatever the context (see [is_unyielding_call]).
+   Toplevel code never runs below an effect handler.
 
    A function that never runs below an effect handler does not need a
    CPS version. This is only used with double translation, where a
@@ -199,14 +202,15 @@ let is_unyielding_call ~info ~in_mutual_recursion x =
    The dependencies are the same as for [cps_needed], but the
    information flows in the opposite direction: from callers to
    callees. So this is solved on the reversed graph, reading [deps]. *)
-let below_handler ~info ~deps st x =
+let below_handler ~info ~in_mutual_recursion ~deps st x =
   let from_callers () =
     fold_children deps (fun y acc -> acc || Var.Tbl.get st y) x false
   in
   match info.Global_flow.info_defs.(Var.idx x) with
   | Expr (Closure _) -> Var.ISet.mem info.Global_flow.info_may_escape x || from_callers ()
-  | Expr (Apply _ | Prim _ | Block _ | Constant _ | Field _ | Special _) | Phi _ ->
-      from_callers ()
+  | Expr (Apply _) ->
+      (not (is_unyielding_call ~info ~in_mutual_recursion x)) && from_callers ()
+  | Expr (Prim _ | Block _ | Constant _ | Field _ | Special _) | Phi _ -> from_callers ()
 
 let cps_needed ~info ~in_mutual_recursion ~rev_deps ~below st x =
   (match below with
@@ -303,7 +307,7 @@ let f p info =
   let rev_deps = G.invert () g in
   let below =
     if double_translate ()
-    then Some (Solver.f () rev_deps (below_handler ~info ~deps:g))
+    then Some (Solver.f () rev_deps (below_handler ~info ~in_mutual_recursion ~deps:g))
     else None
   in
   let res = Solver.f () g (cps_needed ~info ~in_mutual_recursion ~rev_deps ~below) in
