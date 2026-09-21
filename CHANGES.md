@@ -41,6 +41,7 @@
   known functions before the CPS transformation (#2458)
 * Compiler: with `--effects=double-translation`, only generate a CPS version
   of the functions that may run below an effect handler (#2441)
+* Compiler/Wasm: support `--effects=double-translation` (#2443)
 * Compiler/Wasm: with `--effects=cps`, no longer turn mutually recursive
   functions into CPS, since Wasm has proper tail calls (#2441)
 * Runtime: specialize one- and two-argument partial applications in

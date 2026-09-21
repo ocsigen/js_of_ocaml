@@ -38,7 +38,15 @@ let block_deps ~info ~non_escaping ~ambiguous ~blocks pc =
           | Top -> ()
           | Values { known; others } ->
               if (not exact) || others || Var.Set.compare_cardinal_with known 1 > 0
-              then Var.Set.iter (fun x -> Var.Hashtbl.replace ambiguous x ()) known;
+              then
+                Var.Set.iter
+                  (fun x ->
+                    Var.Hashtbl.replace ambiguous x ();
+                    (* Double translation: the CPS version may be called as well *)
+                    Option.iter
+                      ~f:(fun c -> Var.Hashtbl.replace ambiguous c ())
+                      (Var.Hashtbl.find_opt info.Global_flow.info_cps_versions x))
+                  known;
               if debug ()
               then
                 Format.eprintf "CALL others:%b known:%d@." others (Var.Set.cardinal known)
@@ -80,6 +88,15 @@ let f p info =
   if debug ()
   then Format.eprintf "SUMMARY non-escaping:%d" (Var.Hashtbl.length non_escaping);
   Var.Hashtbl.iter (fun x () -> Var.Hashtbl.remove non_escaping x) ambiguous;
+  (* Double translation: both versions of a function share their closure,
+     which holds the code pointers of both versions or none of them *)
+  Var.Hashtbl.iter
+    (fun d c ->
+      if not (Var.Hashtbl.mem non_escaping d && Var.Hashtbl.mem non_escaping c)
+      then (
+        Var.Hashtbl.remove non_escaping d;
+        Var.Hashtbl.remove non_escaping c))
+    info.Global_flow.info_cps_versions;
   if debug ()
   then Format.eprintf " unambiguous-non-escaping:%d@." (Var.Hashtbl.length non_escaping);
   if times () then Format.eprintf "  call graph analysis: %a@." Timer.print t;
