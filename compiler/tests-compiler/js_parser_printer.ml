@@ -1429,28 +1429,59 @@ let check kind src =
 
 let%expect_test "words reserved in strict mode only are identifiers in sloppy mode" =
   check `Script "var let = 1, static, implements, interface, package; let = 2";
-  [%expect {| cannot parse js (from l:1, c:4) |}];
+  [%expect
+    {|
+           var
+           let=1,static,implements,interface,package;(let=2);
+           |}];
   check `Script "var private, protected, public; public.x(static)";
-  [%expect {| cannot parse js (from l:1, c:4) |}];
+  [%expect
+    {|
+           var
+           private,protected,public;public.x(static);
+           |}];
   check `Script "for (var let in o) ; for (let in o) ; let: x; ({ let, static })";
-  [%expect {| cannot parse js (from l:1, c:9) |}];
+  [%expect
+    {|
+           for(var
+           let
+           in
+           o);for((let)in
+           o);\u{6c}et:x;({let:let,static:static});
+           |}];
   (* [let] followed by an identifier, [[] or [{] starts a declaration *)
   check `Script "let x = 1; let [a] = b; let {c} = d; let\ny = 2";
-  [%expect {|
+  [%expect
+    {|
            let
            x=1;let[a]=b;let{c}=d;let
            y=2;
            |}];
   (* ... but declarations are not statements: [let] is then an identifier *)
   check `Script "if (a) let\nx = 1";
-  [%expect {| cannot parse js (from l:1, c:7) |}];
+  [%expect {| if(a)(let);x=1; |}];
   check `Script "if (a) let\n{}";
-  [%expect {| cannot parse js (from l:1, c:7) |}];
+  [%expect {| if(a)(let);{} |}];
   (* and an expression statement cannot start with [let []] *)
   check `Script "if (a) let [x] = y";
   [%expect {| cannot parse js (from l:1, c:7) |}];
+  (* [let] cannot start the left-hand side of [for ... of], nor be bound by
+     a lexical declaration *)
+  check `Script "for (let.a in x) ;";
+  [%expect {|
+           for((let.a)in
+           x);
+           |}];
+  check `Script "for (let.a of x) ;";
+  [%expect {| cannot parse js (from l:1, c:11) |}];
+  check `Script "let let = 1";
+  [%expect {| cannot parse js (from l:1, c:4) |}];
+  check `Script "for (const let of x) ;";
+  [%expect {| cannot parse js (from l:1, c:11) |}];
+  check `Script "async function f() { let\nawait 0 }";
+  [%expect {| cannot parse js (from l:2, c:0) |}];
   check `Script "using\nlet = 1";
-  [%expect {| cannot parse js (from l:2, c:4) |}];
+  [%expect {| using;(let=1); |}];
   (* They are reserved in strict mode code: modules, classes, and after a
      [use strict] directive *)
   check `Module "var let = 1";
@@ -1462,9 +1493,19 @@ let%expect_test "words reserved in strict mode only are identifiers in sloppy mo
   check `Script "'use strict'; var let";
   [%expect {| cannot parse js (from l:1, c:18) |}];
   check `Script "function f() { 'use strict' + 1; var public } function g() { var let }";
-  [%expect {| cannot parse js (from l:1, c:37) |}];
+  [%expect
+    {|
+           function
+           f(){"use strict"+1;var
+           public}function
+           g(){var
+           let}
+           |}];
   check `Script "{ 'use strict'; var let }";
-  [%expect {| cannot parse js (from l:1, c:20) |}]
+  [%expect {|
+           {"use strict";var
+           let}
+           |}]
 
 let%expect_test "[async of] and [using of] in a for statement" =
   check `Script "for (async of => {}; ;) ;";
@@ -1494,7 +1535,8 @@ let%expect_test "a class field named get, set or accessor before a generator" =
   check `Script "class C { accessor\n *a() {} }";
   [%expect {| cannot parse js (from l:2, c:1) |}];
   check `Script "class C { static\n *a() {} async\n *b() {} get\n c() {} }";
-  [%expect {|
+  [%expect
+    {|
            class
            C{static*a(){}async;*b(){}get
            c(){}}
@@ -1555,7 +1597,8 @@ let%expect_test "invalid programs" =
            C{static set#a(b,c){}}
            |}];
   check `Script "x = { get a() {}, set a([b] = c) {}, get() {}, set(a, b) {} }";
-  [%expect {|
+  [%expect
+    {|
            x={get
            a(){},set
            a([b]=c){},get(){},set(a,b){}};
