@@ -45,10 +45,20 @@ val string_of_error : Parse_info.t -> string
 
 val parse : [ `Script | `Module ] -> Lexer.t -> Javascript.program
 
+val parse_annotated :
+     [ `Script | `Module ]
+  -> Lexer.t
+  -> ((Js_token.Annot.t * Parse_info.t) list * Javascript.program) list
+(** The top-level statements, grouped under the annotations
+    ([//Provides: ...]) that precede them. *)
+
 val parse' :
      [ `Script | `Module ]
   -> Lexer.t
   -> ((Js_token.Annot.t * Parse_info.t) list * Javascript.program) list
      * (Js_token.t * Loc.t) list
+(** Like {!parse_annotated}, and also returns all the tokens, including
+    comments and virtual semicolons. Keeping them makes parsing noticeably
+    slower: only use it when the tokens are needed. *)
 
 val parse_expr : Lexer.t -> Javascript.expression
