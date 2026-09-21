@@ -566,6 +566,25 @@ let%expect_test
  |};
   [%expect {| cannot parse js (from l:2, c:29)@. |}]
 
+let%expect_test ("declarations are not statements" [@when target_engine <> "quickjs"]) =
+  (* The body of an [if], a loop or a labelled statement is a Statement,
+     which excludes declarations. *)
+  let test s = print ~report:true ~compact:false ~invalid:true s in
+  test {| if (a) async function f() {} |};
+  [%expect {| cannot parse js (from l:1, c:8)@. |}];
+  test {| while (a) async function* f() {} |};
+  [%expect {| cannot parse js (from l:1, c:11)@. |}];
+  test {| l: async function f() {} |};
+  [%expect {| cannot parse js (from l:1, c:4)@. |}];
+  test {| if (a) class A {} |};
+  [%expect {| cannot parse js (from l:1, c:8)@. |}];
+  test {| if (a) let x = 1; |};
+  [%expect {| cannot parse js (from l:1, c:8)@. |}];
+  test {| if (a) using x = b; |};
+  [%expect {| cannot parse js (from l:1, c:14)@. |}];
+  test {| async function g() { for (;;) await using x = b; } |};
+  [%expect {| cannot parse js (from l:1, c:43)@. |}]
+
 let%expect_test "in operator in conditional within for-loop arrow" =
   (* Per ECMAScript spec, the 'then' branch of ?: uses [+In] context *)
   print ~report:true ~compact:false {|
