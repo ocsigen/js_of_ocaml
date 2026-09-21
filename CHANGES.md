@@ -69,7 +69,8 @@
   outside of strict mode code (modules, classes, code following a `use strict`
   directive). It also rejects some invalid programs it used to accept: getters
   and setters with the wrong number of parameters, an initializer in a `catch`
-  parameter, malformed `import(...)` calls, `for (async of ...)`
+  parameter, malformed `import(...)` calls, `for (async of ...)`, a template literal in
+  an optional chain
 * Lib: add `Crypto` — bindings to the Web Crypto API (`crypto`,
   `getRandomValues`, `randomUUID`, and the Promise-typed `SubtleCrypto`), with a
   typed `params` variant (one constructor per algorithm) and
