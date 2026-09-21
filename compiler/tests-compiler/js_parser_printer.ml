@@ -1509,17 +1509,26 @@ let%expect_test "words reserved in strict mode only are identifiers in sloppy mo
 
 let%expect_test "[async of] and [using of] in a for statement" =
   check `Script "for (async of => {}; ;) ;";
-  [%expect {| cannot parse js (from l:1, c:14) |}];
+  [%expect {| for(async of=>{};;); |}];
   check `Script "x = async of => 1";
-  [%expect {| cannot parse js (from l:1, c:10) |}];
+  [%expect {| x=async of=>1; |}];
   (* [for (async of] is excluded by the grammar *)
   check `Script "for (async of [1]) ;";
-  [%expect {| for((async)of[1]); |}];
+  [%expect {| cannot parse js (from l:1, c:14) |}];
   check `Script "for ((async) of [1]) ; for (async.x of [1]) ;";
   [%expect {| for((async)of[1]);for((async.x)of[1]); |}];
+  (* ... but not [for await (async of] *)
+  check `Script "async function f() { for await (async of x) ; }";
+  [%expect
+    {|
+           async function
+           f(){for await(async
+           of
+           x);}
+           |}];
   (* A [using] declaration of a variable named [of] *)
   check `Script "for (using of = null;;) break;";
-  [%expect {| cannot parse js (from l:1, c:14) |}];
+  [%expect {| for(using of=null;;)break; |}];
   check `Script "for (using of x) ;";
   [%expect {|
            for(using
@@ -1529,11 +1538,20 @@ let%expect_test "[async of] and [using of] in a for statement" =
 
 let%expect_test "a class field named get, set or accessor before a generator" =
   check `Script "class C { get\n *a() {} }";
-  [%expect {| cannot parse js (from l:2, c:1) |}];
+  [%expect {|
+           class
+           C{get;*a(){}}
+           |}];
   check `Script "class C { set\n *a() {} }";
-  [%expect {| cannot parse js (from l:2, c:1) |}];
+  [%expect {|
+           class
+           C{set;*a(){}}
+           |}];
   check `Script "class C { accessor\n *a() {} }";
-  [%expect {| cannot parse js (from l:2, c:1) |}];
+  [%expect {|
+           class
+           C{accessor;*a(){}}
+           |}];
   check `Script "class C { static\n *a() {} async\n *b() {} get\n c() {} }";
   [%expect
     {|

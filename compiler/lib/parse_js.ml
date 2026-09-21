@@ -788,12 +788,17 @@ let async_function_ahead t =
 (* The prefix of a MethodDefinition, in an object literal or a class body:
    [get], [set], [async], [*] or [async *]. Returns the kind of function
    and the constructor of the method. *)
+(* Likewise for [get], [set] and [accessor], which cannot be followed by
+   [*]: a field named [get], then a generator method on the next line *)
+let accessor_keyword_is_name t =
+  keyword_is_name t || Poly.equal (peek_tok t 1) Js_token.T_MULT
+
 let parse_method_modifier t =
   match cur t with
-  | T_GET when not (keyword_is_name t) ->
+  | T_GET when not (accessor_keyword_is_name t) ->
       advance t;
       Some (no_fun, fun m -> MethodGet m)
-  | T_SET when not (keyword_is_name t) ->
+  | T_SET when not (accessor_keyword_is_name t) ->
       advance t;
       Some (no_fun, fun m -> MethodSet m)
   | T_ASYNC when (not (keyword_is_name t)) && next_on_same_line t ->
@@ -862,9 +867,10 @@ and parse_assignment_expression t ctx ~no_in =
       EArrow ((no_fun, list [ param' i ], body, p pos), concise, AUnknown)
   | T_ASYNC -> (
       match peek t 1 with
-      | T_OF, _ -> parse_assignment_rest t ctx ~no_in
       | tok, loc when is_identifier ctx tok && same_line (cur_loc t) loc ->
-          (* async x => body *)
+          (* async x => body. This includes [async of => body]: the grammar
+             excludes [for (async of] as the start of a [for ... of]
+             statement. *)
           let pos = start_pos t in
           advance t;
           let i = parse_identifier t { ctx with await = true } in
@@ -1517,7 +1523,7 @@ and parse_class_body t ctx =
         in
         let elt =
           match cur t with
-          | T_ACCESSOR when not (keyword_is_name t) ->
+          | T_ACCESSOR when not (accessor_keyword_is_name t) ->
               advance t;
               let name = parse_class_element_name t ctx in
               let init = parse_initializer_opt t ctx ~no_in:false in
@@ -1795,6 +1801,13 @@ and parse_for t ctx =
       advance t;
       parse_for_declaration t ctx ~for_await Let
   | T_USING when using_declaration_ahead t ctx -> parse_for_using t ctx ~for_await
+  | T_USING
+    when Poly.equal (peek_tok t 1) Js_token.T_OF
+         && Poly.equal (peek_tok t 2) Js_token.T_ASSIGN
+         && next_on_same_line t ->
+      (* [for (using of = ...;;)] declares [of], whereas [for (using of x)]
+         iterates over [x] *)
+      parse_for_using t ctx ~for_await
   | T_AWAIT
     when ctx.await
          && (using_declaration_ahead t ctx
@@ -1803,6 +1816,10 @@ and parse_for t ctx =
                && Poly.equal (peek_tok t 3) Js_token.T_OF) ->
       (* [for (await using of of x)] declares [of] *)
       parse_for_using t ctx ~for_await
+  | T_ASYNC when for_await && Poly.equal (peek_tok t 1) Js_token.T_OF ->
+      (* Unlike [for (async of], [for await (async of] is allowed *)
+      let e = EVar (parse_identifier t ctx) in
+      parse_for_in_of t ctx ~for_await (Left (assignment_target_of_expr None e))
   | tok -> (
       let e = parse_expression t ctx ~no_in:true in
       match cur t with
