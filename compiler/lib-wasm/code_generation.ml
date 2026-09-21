@@ -53,6 +53,9 @@ type context =
   ; mutable cps_apply_funs : Var.t IntMap.t
   ; mutable curry_funs : Var.t IntMap.t
   ; mutable cps_curry_funs : Var.t IntMap.t
+  ; mutable pair_curry_funs : (Var.t * Var.t) IntMap.t
+        (** Double translation: curry functions for the functions with a CPS
+            version (direct-style and CPS versions) *)
   ; mutable dummy_funs : Var.t IntMap.t
   ; mutable cps_dummy_funs : Var.t IntMap.t
   ; mutable init_code : W.instruction list
@@ -78,6 +81,7 @@ let make_context ~value_type =
   ; cps_apply_funs = IntMap.empty
   ; curry_funs = IntMap.empty
   ; cps_curry_funs = IntMap.empty
+  ; pair_curry_funs = IntMap.empty
   ; dummy_funs = IntMap.empty
   ; cps_dummy_funs = IntMap.empty
   ; init_code = []
@@ -792,6 +796,19 @@ let need_curry_fun ~cps ~arity st =
            let x = Var.fresh_n (Printf.sprintf "curry_%d" arity) in
            ctx.curry_funs <- IntMap.add arity x ctx.curry_funs;
            x)
+  , st )
+
+let need_pair_curry_fun ~arity st =
+  let ctx = st.context in
+  ( (match IntMap.find_opt arity ctx.pair_curry_funs with
+    | Some x -> x
+    | None ->
+        let x =
+          ( Var.fresh_n (Printf.sprintf "pair_curry_%d" arity)
+          , Var.fresh_n (Printf.sprintf "cps_pair_curry_%d" arity) )
+        in
+        ctx.pair_curry_funs <- IntMap.add arity x ctx.pair_curry_funs;
+        x)
   , st )
 
 let need_dummy_fun ~cps ~arity st =

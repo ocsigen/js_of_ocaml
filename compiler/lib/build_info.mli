@@ -27,7 +27,8 @@ val effects_backend_of_string_result : string -> (Config.effects_backend, string
 val effects_backends_javascript :
   (string * [ `Cps | `Double_translation | `Disabled ]) list
 
-val effects_backends_wasm : (string * [ `Jspi | `Cps | `Native | `Disabled ]) list
+val effects_backends_wasm :
+  (string * [ `Jspi | `Cps | `Double_translation | `Native | `Disabled ]) list
 
 type config_key =
   | Bool_key of

@@ -48,6 +48,14 @@ let rec instruction ~no_tail_call ~tail i =
   | Push (Call_ref _) -> i
   | Drop (BlockExpr (typ, l)) ->
       Drop (BlockExpr (typ, instructions ~no_tail_call ~tail:false l))
+  (* A block expression may contain explicit returns (see
+     [Gc_target.Memory.cps_call_or_direct]) *)
+  | Push (BlockExpr (typ, l)) ->
+      Push (BlockExpr (typ, instructions ~no_tail_call ~tail:false l))
+  | Return (Some (BlockExpr (typ, l))) ->
+      Return (Some (BlockExpr (typ, instructions ~no_tail_call ~tail:false l)))
+  | LocalSet (x, BlockExpr (typ, l)) ->
+      LocalSet (x, BlockExpr (typ, instructions ~no_tail_call ~tail:false l))
   | Drop _
   | LocalSet _
   | GlobalSet _

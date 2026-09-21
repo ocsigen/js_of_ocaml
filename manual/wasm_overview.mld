@@ -63,14 +63,15 @@ supported in general. However:
 
 Compared to js_of_ocaml:
 - The default effect handler mode is [jspi] (instead of [disabled])
-- The [--effects] flag accepts [jspi] instead of [double-translation]
+- The [--effects] flag also accepts [jspi] and [native]
 - There is no [build-fs] subcommand; use the [--file] flag instead
 
 {2 Effect handlers}
 
-OCaml 5.x code using effect handlers can be compiled in three ways:
+OCaml 5.x code using effect handlers can be compiled in four ways:
 
 - {b [--effects=cps]} - Uses the CPS transformation from js_of_ocaml
+- {b [--effects=double-translation]} - Uses the double translation from js_of_ocaml: functions are also kept in direct style, which is used when no effect handler is involved
 - {b [--effects=jspi]} (default) - Uses the {{:https://github.com/WebAssembly/js-promise-integration}JavaScript-Promise Integration extension}
 - {b [--effects=native]} - Uses the {{:https://github.com/WebAssembly/stack-switching}WebAssembly Stack Switching proposal}
 
