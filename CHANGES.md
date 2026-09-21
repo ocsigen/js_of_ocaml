@@ -54,6 +54,11 @@
 * Compiler: replace the Menhir-based JavaScript parser with a hand-written
   recursive-descent parser; it also rejects `throw` followed by a line
   terminator hidden in a comment, as required by the spec
+* Compiler: syntax errors in JavaScript files are now explained: the message
+  tells which token is unexpected and what was expected instead
+  (``unexpected `{`, expected `,` or `)` ``), or which rule is broken (`a getter
+  has no parameter`), and shows the offending line. `Parse_js.Parsing_error`
+  now carries this message along with the location
 * Compiler: the JavaScript parser now accepts every valid program of test262
   (`test/language`). In particular, `let`, `static`, `implements`, `interface`,
   `package`, `private`, `protected` and `public` are accepted as identifiers

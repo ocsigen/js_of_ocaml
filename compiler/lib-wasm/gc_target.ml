@@ -1791,14 +1791,15 @@ let internal_primitives =
                       (J.fun_ [] [ Return_statement (Some e, N), N ] N, true, AUnknown))
               in
               JavaScript.invoke_fragment name []
-            with Parse_js.Parsing_error pi ->
+            with Parse_js.Parsing_error (pi, msg) ->
               failwith
                 (Printf.sprintf
-                   "Parse error in argument of %s %S at position %d:%d"
+                   "Parse error in argument of %s %S at position %d:%d: %s"
                    prim_name
                    str
                    pi.Parse_info.line
-                   pi.Parse_info.col))
+                   pi.Parse_info.col
+                   msg))
         | [ Pv _ ] ->
             let eval name code =
               let* () =
