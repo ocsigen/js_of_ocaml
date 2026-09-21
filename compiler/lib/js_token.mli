@@ -192,3 +192,9 @@ val is_reserved : string -> t option
 val is_keyword : string -> t option
 
 val all_keywords : t list
+
+val is_contextual_keyword : t -> bool
+(** Keywords that are always allowed as identifiers ([async], [of], [get], ...) *)
+
+val is_reserved_word : t -> bool
+(** The tokens produced by {!is_reserved} *)
