@@ -23,11 +23,13 @@ open Code_generation
 
 let times = Debug.find "times"
 
+(* Whether all functions use the CPS calling convention. With double
+   translation, functions are direct-style, and some of them additionally have
+   a CPS version (see [Gc_target.double_translation]). *)
 let effects_cps () =
   match Config.effects () with
   | `Cps -> true
-  | `Disabled | `Jspi | `Native -> false
-  | `Double_translation -> assert false
+  | `Disabled | `Jspi | `Double_translation | `Native -> false
 
 module Generate (Target : Target_sig.S) = struct
   open Target
@@ -41,6 +43,18 @@ module Generate (Target : Target_sig.S) = struct
     ; blocks : block Addr.Map.t
     ; closures : Closure_conversion.closure Var.Map.t
     ; global_context : Code_generation.context
+    ; cps_pairs : Var.t Var.Map.t
+          (** Double translation: maps the direct-style version of a
+              function to its CPS version. Both versions share a closure,
+              which holds their code pointers (see [Gc_target.double_translation]). *)
+    ; cps_sides : Var.Set.t  (** Double translation: the CPS versions *)
+    ; pair_of : (Var.t * Var.t) Var.Map.t
+          (** Double translation: maps the variable bound to a closure with
+              two versions (by [caml_cps_closure]) to these versions *)
+    ; public_name : Var.t Var.Map.t
+          (** Double translation: maps each version of a function to the
+              variable bound to their shared closure (see [pair_of]) *)
+    ; closure_params : Var.t list Var.Map.t  (** Parameters of each closure *)
     }
 
   let label_index context pc =
@@ -1734,54 +1748,107 @@ module Generate (Target : Target_sig.S) = struct
   let rec translate_expr ctx context x e =
     match e with
     | Apply { f; args; exact; _ } ->
+        let cps = Var.Set.mem x ctx.in_cps in
         let* closure = load f in
-        if exact || List.length args = if Var.Set.mem x ctx.in_cps then 2 else 1
+        if exact || List.length args = if cps then 2 else 1
         then
-          match
-            if exact then Global_flow.get_unique_closure ctx.global_flow_info f else None
-          with
-          | Some (g, params) when ctx.live.(Var.idx g) > 0 ->
-              let* cl =
-                (* Functions with constant closures ignore their environment. *)
-                match closure with
-                | GlobalGet global ->
-                    let* init = get_global global in
-                    if Option.is_some init then Value.unit else return closure
-                | _ -> return closure
-              in
-              let* args =
-                expression_list
-                  Fun.id
-                  (List.map2
-                     ~f:(fun a p ->
-                       convert
-                         ~from:(Typing.var_type ctx.types a)
-                         ~into:(Typing.var_type ctx.types p)
-                         (load a))
-                     args
-                     params)
-              in
+          let unique =
+            (* The function statically known to be called, if any. With
+               double translation, the closure of a function with a CPS
+               version is bound by [caml_cps_closure] (see [cps_pairs]); we
+               select the appropriate version. *)
+            match
+              if exact
+              then Global_flow.get_unique_closure ctx.global_flow_info f
+              else None
+            with
+            | Some (g, params) when ctx.live.(Var.idx g) > 0 -> (
+                match Var.Map.find_opt g ctx.pair_of with
+                | Some (d, c) ->
+                    if cps
+                    then `Call (c, Var.Map.find c ctx.closure_params)
+                    else `Call (d, params)
+                | None ->
+                    if not (Var.Map.mem g ctx.closures)
+                    then `Unknown
+                    else if cps && not (Var.Set.mem g ctx.in_cps)
+                    then (
+                      (* Double translation: CPS call to a function without
+                         CPS version *)
+                      assert (double_translation ());
+                      `Direct_then_continue (g, params))
+                    else `Call (g, params))
+            | Some _ | None -> `Unknown
+          in
+          let direct_call g params args =
+            let* cl =
+              (* Functions with constant closures ignore their environment. *)
+              match closure with
+              | GlobalGet global ->
+                  let* init = get_global global in
+                  if Option.is_some init then Value.unit else return closure
+              | _ -> return closure
+            in
+            let* args =
+              expression_list
+                Fun.id
+                (List.map2
+                   ~f:(fun a p ->
+                     convert
+                       ~from:(Typing.var_type ctx.types a)
+                       ~into:(Typing.var_type ctx.types p)
+                       (load a))
+                   args
+                   params)
+            in
+            return (g, W.Call (g, args @ [ cl ]))
+          in
+          match unique with
+          | `Call (g, params) ->
+              let* g, e = direct_call g params args in
               convert
                 ~from:(Typing.return_type ctx.types g)
                 ~into:(Typing.var_type ctx.types x)
-                (return (W.Call (g, args @ [ cl ])))
-          | _ -> (
-              let funct = Var.fresh () in
-              let* closure = tee funct (return closure) in
-              let* ty, funct =
-                Memory.load_function_pointer
-                  ~cps:(Var.Set.mem x ctx.in_cps)
-                  ~arity:(List.length args)
-                  (load funct)
+                (return e)
+          | `Direct_then_continue (g, params) ->
+              (* CPS call to a function without CPS version (double
+                 translation): call its direct-style version and pass the
+                 result to the continuation *)
+              let n = List.length args - 1 in
+              let k = List.nth args n in
+              let* g, e =
+                direct_call g params (List.filteri ~f:(fun i _ -> i < n) args)
               in
-              let* args = expression_list (fun x -> load_and_box ctx x) args in
-              match funct with
-              | W.RefFunc g -> return (W.Call (g, args @ [ closure ]))
-              | _ -> return (W.Call_ref (ty, funct, args @ [ closure ])))
+              let* res =
+                convert
+                  ~from:(Typing.return_type ctx.types g)
+                  ~into:(Typing.var_type ctx.types x)
+                  (return e)
+              in
+              let* k_ty, k_funct =
+                Memory.load_function_pointer ~cps:false ~arity:1 (load k)
+              in
+              let* k = load k in
+              return (W.Call_ref (k_ty, k_funct, [ res; k ]))
+          | `Unknown -> (
+              if cps && double_translation ()
+              then
+                Memory.cps_call_or_direct
+                  ~arity:(List.length args)
+                  f
+                  (List.map ~f:(fun x -> load_and_box ctx x) args)
+              else
+                let funct = Var.fresh () in
+                let* closure = tee funct (return closure) in
+                let* ty, funct =
+                  Memory.load_function_pointer ~cps ~arity:(List.length args) (load funct)
+                in
+                let* args = expression_list (fun x -> load_and_box ctx x) args in
+                match funct with
+                | W.RefFunc g -> return (W.Call (g, args @ [ closure ]))
+                | _ -> return (W.Call_ref (ty, funct, args @ [ closure ])))
         else
-          let* apply =
-            need_apply_fun ~cps:(Var.Set.mem x ctx.in_cps) ~arity:(List.length args)
-          in
+          let* apply = need_apply_fun ~cps ~arity:(List.length args) in
           let* args = expression_list (fun x -> load_and_box ctx x) args in
           return (W.Call (apply, args @ [ closure ]))
     | Block (tag, a, _, _) ->
@@ -1802,13 +1869,38 @@ module Generate (Target : Target_sig.S) = struct
           (load_and_box ctx y)
           (return (W.Const (I32 (Int32.of_int n))))
         |> box_number_if_needed ctx x
+    | Closure _ when Var.Set.mem x ctx.cps_sides ->
+        (* Double translation: the CPS version of a function shares the
+           closure of its direct-style version (see [cps_pairs]) *)
+        Value.unit
     | Closure _ ->
-        Closure.translate
-          ~context:ctx.global_context
-          ~closures:ctx.closures
-          ~cps:(Var.Set.mem x ctx.in_cps)
-          ~no_code_pointer:(Call_graph_analysis.direct_calls_only ctx.fun_info x)
-          x
+        let cps_version = Var.Map.find_opt x ctx.cps_pairs in
+        let* e =
+          Closure.translate
+            ~context:ctx.global_context
+            ~closures:ctx.closures
+            ~cps:(Var.Set.mem x ctx.in_cps)
+            ?cps_version
+            ~no_code_pointer:(Call_graph_analysis.direct_calls_only ctx.fun_info x)
+            x
+        in
+        (match cps_version with
+        | None -> ()
+        | Some c ->
+            (* Both versions have the same environment *)
+            let info = Var.Map.find x ctx.closures in
+            let info' = Var.Map.find c ctx.closures in
+            assert (
+              List.equal
+                ~eq:Var.equal
+                info.Closure_conversion.free_variables
+                info'.Closure_conversion.free_variables);
+            info'.id <- info.id);
+        return e
+    | Prim (Extern ("caml_cps_closure", _), [ Pv d; Pv _ ]) ->
+        (* Double translation: the closure holds the code pointers of both
+           versions (see [cps_pairs]) *)
+        load d
     | Constant c ->
         Constant.translate
           ~unboxed:
@@ -2341,12 +2433,39 @@ module Generate (Target : Target_sig.S) = struct
       let* () = bind_parameters in
       match name_opt with
       | Some f ->
-          Closure.bind_environment
-            ~context:ctx.global_context
-            ~closures:ctx.closures
-            ~cps:(Var.Set.mem f ctx.in_cps)
-            ~no_code_pointer:(Call_graph_analysis.direct_calls_only ctx.fun_info f)
-            f
+          let pair = Var.Map.mem f ctx.cps_pairs in
+          let* () =
+            Closure.bind_environment
+              ~context:ctx.global_context
+              ~closures:ctx.closures
+              ~cps:(Var.Set.mem f ctx.in_cps)
+              ~pair
+              ~no_code_pointer:
+                (Call_graph_analysis.direct_calls_only ctx.fun_info f
+                && not (pair || Var.Set.mem f ctx.cps_sides))
+              f
+          in
+          (* Double translation: the code refers to a function with two
+             versions through the variable bound by [caml_cps_closure]
+             (see [pair_of]), which is not part of the environment.
+             Bind it to the shared closure, for the current function and
+             for the other members of its recursive group. *)
+          let info = Var.Map.find f ctx.closures in
+          List.fold_left
+            ~f:(fun acc (g, _) ->
+              let* () = acc in
+              match Var.Map.find_opt g ctx.public_name with
+              | None -> return ()
+              | Some x ->
+                  let d, _ = Var.Map.find x ctx.pair_of in
+                  define_var
+                    x
+                    (let* c = get_constant d in
+                     match c with
+                     | Some e -> return e
+                     | None -> load g))
+            ~init:(return ())
+            info.Closure_conversion.functions
       | None -> return ()
     in
     (*
@@ -2526,6 +2645,31 @@ module Generate (Target : Target_sig.S) = struct
     (*
   Code.Print.program (fun _ _ -> "") p;
 *)
+    let cps_pairs, cps_sides, pair_of, public_name, closure_params =
+      Addr.Map.fold
+        (fun _ block acc ->
+          List.fold_left
+            ~f:(fun
+                ((cps_pairs, cps_sides, pair_of, public_name, closure_params) as acc) i ->
+              match i with
+              | Let (x, Prim (Extern ("caml_cps_closure", _), [ Pv d; Pv c ])) ->
+                  ( Var.Map.add d c cps_pairs
+                  , Var.Set.add c cps_sides
+                  , Var.Map.add x (d, c) pair_of
+                  , Var.Map.add d x (Var.Map.add c x public_name)
+                  , closure_params )
+              | Let (x, Closure (params, _, _)) ->
+                  ( cps_pairs
+                  , cps_sides
+                  , pair_of
+                  , public_name
+                  , Var.Map.add x params closure_params )
+              | _ -> acc)
+            ~init:acc
+            block.body)
+        p.blocks
+        (Var.Map.empty, Var.Set.empty, Var.Map.empty, Var.Map.empty, Var.Map.empty)
+    in
     let ctx =
       { live = live_vars
       ; in_cps
@@ -2535,6 +2679,11 @@ module Generate (Target : Target_sig.S) = struct
       ; blocks = p.blocks
       ; closures
       ; global_context
+      ; cps_pairs
+      ; cps_sides
+      ; pair_of
+      ; public_name
+      ; closure_params
       }
     in
     let toplevel_name = Var.fresh_n "toplevel" in

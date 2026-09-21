@@ -38,6 +38,10 @@ type st =
   ; globals : Code.Var.Set.t
   ; closures : Closure_conversion.closure Code.Var.Map.t
   ; constants : Code.Var.Set.t
+  ; pairs : Code.Var.t Code.Var.Map.t
+        (* Double translation: the variable bound to the shared closure of a
+           function with two versions maps to the direct-style version
+           (see [Closure_conversion.cps_pair]) *)
   }
 
 let threshold = 1000
@@ -60,7 +64,10 @@ and globalize_closure st x =
           if Code.Var.Map.mem x st.visited_variables then globalize st x else st)
         ~init:st
         free_variables
-  | exception Not_found -> st
+  | exception Not_found -> (
+      match Code.Var.Map.find_opt x st.pairs with
+      | Some d -> globalize_closure st d
+      | None -> st)
 
 let use x st =
   match Code.Var.Map.find x st.visited_variables with
@@ -83,6 +90,8 @@ let traverse_expression x e st =
         (Code.Var.Map.find x st.closures).Closure_conversion.free_variables
   | Constant _ -> { st with constants = Code.Var.Set.add x st.constants }
   | Special _ -> st
+  | Prim (Extern ("caml_cps_closure", _), [ Pv d; Pv c ]) ->
+      { st with pairs = Code.Var.Map.add x d st.pairs } |> use d |> use c
   | Prim (_, args) ->
       List.fold_left
         ~f:(fun st a ->
@@ -129,6 +138,10 @@ let propagate_instruction st i =
           then globalize st x
           else st
       | exception Not_found -> st)
+  | Code.Let (x, Prim (Extern ("caml_cps_closure", _), [ Pv d; _ ]))
+    when (not (Code.Var.Set.mem x st.globals)) && available d st ->
+      (* Alias of the closure [d] *)
+      globalize st x
   | _ -> st
 
 let propagate_block p st pc =
@@ -148,6 +161,7 @@ let f p g closures =
         ; globals = Code.Var.Set.empty
         ; closures
         ; constants = Code.Var.Set.empty
+        ; pairs = Code.Var.Map.empty
         }
       l
   in

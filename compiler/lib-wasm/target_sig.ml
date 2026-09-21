@@ -19,6 +19,10 @@
 module type S = sig
   type expression = Code_generation.expression
 
+  val double_translation : unit -> bool
+  (** Whether some functions have both a direct-style and a CPS version (see
+      [Gc_target.double_translation]) *)
+
   module Memory : sig
     val allocate : tag:int -> Wasm_ast.expression list Code_generation.t -> expression
 
@@ -44,6 +48,13 @@ module type S = sig
       -> (typ:Wasm_ast.value_type option -> expression -> expression)
       -> unit Code_generation.t
       -> unit Code_generation.t
+
+    val cps_call_or_direct : arity:int -> Code.Var.t -> expression list -> expression
+    (** With double translation, CPS call to a function which is not known
+        statically: if the function has no CPS version, its direct-style
+        version is called and the result is passed to the continuation (the
+        last argument). The calls are tail calls, so this can only be used
+        when the result of the call is immediately returned. *)
 
     val tag : expression -> expression
 
@@ -175,20 +186,27 @@ module type S = sig
          context:Code_generation.context
       -> closures:Closure_conversion.closure Code.Var.Map.t
       -> cps:bool
+      -> ?cps_version:Code.Var.t
       -> no_code_pointer:bool
       -> Code.Var.t
       -> expression
+    (** [cps_version] is the CPS version of the function (double translation):
+        the closure then holds the code pointers of both versions *)
 
     val bind_environment :
          context:Code_generation.context
       -> closures:Closure_conversion.closure Code.Var.Map.t
       -> cps:bool
+      -> ?pair:bool
       -> no_code_pointer:bool
       -> Code.Var.t
       -> unit Code_generation.t
+    (** [pair] indicates that the function is the direct-style version of a
+        function with a CPS version (double translation) *)
 
     val curry_allocate :
-         cps:bool
+         ?cps_f:Code.Var.t
+      -> cps:bool
       -> arity:int
       -> int
       -> f:Code.Var.t
