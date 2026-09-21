@@ -29,6 +29,8 @@
   releases are no longer supported (#2439)
 * Compiler/Wasm: accept library runtime files written for the former
   preprocessor, such as Jane Street's, with `@if` around operands (#2439)
+* Compiler: with `--effects=double-translation` and OxCaml, calls proven
+  unyielding no longer propagate the need for a CPS version (#2440)
 
 ## Bug fixes
 * Runtime/Wasm: add the system constants needed with `--disable staticeval`
