@@ -17,11 +17,12 @@
  *)
 
 (* Tests for the use of OxCaml's "unyielding call" bytecode debug info by the
-   double-translation effects backend. When the OCaml compiler has proven that
-   a call cannot perform an effect (the function and all of its arguments are
-   at mode [unyielding]), it records an [Event_unyielding_call] debug event
-   (with [-g]), and js_of_ocaml may then call the direct-style version of the
-   callee even in CPS context.
+   effects backends. When the OCaml compiler has proven that a call cannot
+   perform an effect (the function and all of its arguments are at mode
+   [unyielding]), it records an [Event_unyielding_call] debug event (with
+   [-g]), and js_of_ocaml may then call the direct-style version of the
+   callee even in CPS context (double translation), or keep the function
+   containing the call in direct style (CPS translation).
 
    These tests require an OxCaml compiler that emits these events. *)
 
@@ -166,8 +167,8 @@ let code_below_handler =
         l := (fun () -> ()) :: !l; (* prevent inlining *)
         (* Two call sites, so that the functions do not get inlined; the
            argument is unknown to the compiler *)
-        call_yielding (List.hd !fns);
-        call_yielding (List.nth !fns 0)
+        (match !fns with g :: _ -> call_yielding g | [] -> ());
+        (match !fns with _ :: g :: _ -> call_yielding g | _ -> ())
       in
       Safe.try_with (fun _ () -> run (); run ()) ()
         { effc = (fun (type a) (eff : a Effect.t) ->
@@ -206,53 +207,118 @@ let%expect_test
   print_double_fun_decl program "run";
   [%expect
     {|
-           function call_yielding$0(g){
-            var _d_ = l[1];
-            l[1] = [0, _b_(), _d_];
-            return caml_call1(g, 0);
-           }
-           //end
-           function call_yielding$1(g, cont){
-            var _d_ = l[1];
-            l[1] = [0, _b_(), _d_];
-            return caml_trampoline_cps_call2(g, 0, cont);
-           }
-           //end
-           var call_yielding = caml_cps_closure(call_yielding$0, call_yielding$1);
-           //end
-           function run$0(_d_){
-            _d_ = l[1];
-            l[1] = [0, _a_(), _d_];
-            call_yielding(caml_call1(Stdlib_List[7], fns[1]));
-            return call_yielding(caml_call2(Stdlib_List[9], fns[1], 0));
-           }
-           //end
-           function run$1(_d_, cont){
-            _d_ = l[1];
-            l[1] = [0, _a_(), _d_];
-            return caml_trampoline_cps_call2
-                    (Stdlib_List[7],
-                     fns[1],
-                     function(_d_){
-                      return caml_exact_trampoline_cps_call
-                              (call_yielding,
-                               _d_,
-                               function(_d_){
-                                return caml_trampoline_cps_call3
-                                        (Stdlib_List[9],
-                                         fns[1],
-                                         0,
-                                         function(_d_){
-                                          return caml_exact_trampoline_cps_call
-                                                  (call_yielding, _d_, cont);
-                                         });
-                               });
-                     });
-           }
-           //end
-           var run = caml_cps_closure(run$0, run$1);
-           //end
-           |}]
+    function call_yielding$0(g){
+     var _e_ = l[1];
+     l[1] = [0, _b_(), _e_];
+     return caml_call1(g, 0);
+    }
+    //end
+    function call_yielding$1(g, cont){
+     var _e_ = l[1];
+     l[1] = [0, _b_(), _e_];
+     return caml_trampoline_cps_call2(g, 0, cont);
+    }
+    //end
+    var call_yielding = caml_cps_closure(call_yielding$0, call_yielding$1);
+    //end
+    function run$0(_e_){
+     _e_ = l[1];
+     l[1] = [0, _a_(), _e_];
+     _e_ = fns[1];
+     if(_e_){var g = _e_[1]; call_yielding(g);}
+     _e_ = fns[1];
+     if(_e_){_e_ = _e_[2]; if(_e_){var g$0 = _e_[1]; return call_yielding(g$0);}}
+     return 0;
+    }
+    //end
+    function run$1(_d_, cont){
+     _d_ = l[1];
+     l[1] = [0, _a_(), _d_];
+     _d_ = fns[1];
+     function _e_(_e_){
+      _e_ = fns[1];
+      if(_e_){
+       _e_ = _e_[2];
+       if(_e_){
+        var g = _e_[1];
+        return caml_exact_trampoline_cps_call(call_yielding, g, cont);
+       }
+      }
+      return cont(0);
+     }
+     if(! _d_) return _e_(0);
+     var g = _d_[1];
+     return caml_exact_trampoline_cps_call(call_yielding, g, _e_);
+    }
+    //end
+    var run = caml_cps_closure(run$0, run$1);
+    //end
+    |}]
+
+(* With the CPS translation (no double translation), an unyielding call does
+   not force the function containing it into CPS either. [call_yielding] is
+   in CPS, as it calls a yielding function, but [run] remains in direct
+   style: since there is no direct-style version of [call_yielding] to call,
+   [run] runs it to completion on a fresh fiber, through
+   [caml_cps_trampoline]. The functions must not escape (the toplevel values
+   of a compilation unit do): escaping functions are always in CPS. *)
+let%expect_test "unyielding calls to CPS functions are bridged with --effects=cps" =
+  let program = compile_and_parse ~effects:`Cps code_below_handler in
+  print_fun_decl program (Some "run");
+  print_fun_decl program (Some "call_yielding");
+  [%expect
+    {|
+    function run(_a_){
+     l[1] = [0, function(param, cont){return cont(0);}, l[1]];
+     _a_ = fns[1];
+     if(_a_){var g = _a_[1]; caml_callback(call_yielding, [g]);}
+     _a_ = fns[1];
+     if(_a_){
+      _a_ = _a_[2];
+      if(_a_){var g$0 = _a_[1]; return caml_callback(call_yielding, [g$0]);}
+     }
+     return 0;
+    }
+    //end
+    function call_yielding(g, cont){
+     l[1] = [0, function(param, cont){return cont(0);}, l[1]];
+     return caml_trampoline_cps_call2(g, 0, cont);
+    }
+    //end
+    |}]
+
+let%expect_test
+    "unyielding calls are CPS-translated with --effects=cps --disable \
+     oxcaml-use-unyielding-debuginfo-for-effect-cps" =
+  let program =
+    compile_and_parse
+      ~effects:`Cps
+      ~flags:[ "--disable"; "oxcaml-use-unyielding-debuginfo-for-effect-cps" ]
+      code_below_handler
+  in
+  print_fun_decl program (Some "run");
+  [%expect
+    {|
+    function run(_a_, cont){
+     l[1] = [0, function(param, cont){return cont(0);}, l[1]];
+     _a_ = fns[1];
+     function _b_(_b_){
+      _b_ = fns[1];
+      if(_b_){
+       _b_ = _b_[2];
+       if(_b_){
+        var g = _b_[1];
+        return caml_exact_trampoline_cps_call(call_yielding, g, cont);
+       }
+      }
+      return cont(0);
+     }
+     if(! _a_) return _b_(0);
+     var g = _a_[1];
+     return caml_exact_trampoline_cps_call(call_yielding, g, _b_);
+    }
+    //end
+    |}]
 
 (* Calls to a function at mode [yielding] carry no unyielding-call marker and
    must remain in CPS: [h] may perform an effect. *)
@@ -341,6 +407,13 @@ let code_run =
 
 let%expect_test "performing effects still works" =
   compile_and_run ~effects:`Double_translation code_run;
+  [%expect {|
+    2
+    1000
+    |}]
+
+let%expect_test "performing effects still works with --effects=cps" =
+  compile_and_run ~effects:`Cps code_run;
   [%expect {|
     2
     1000

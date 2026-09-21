@@ -31,6 +31,9 @@
   preprocessor, such as Jane Street's, with `@if` around operands (#2439)
 * Compiler: with `--effects=double-translation` and OxCaml, calls proven
   unyielding no longer propagate the need for a CPS version (#2440)
+* Compiler: with `--effects=cps`, use OxCaml's unyielding-call information to
+  keep functions in direct style, running their CPS callees to completion
+  (#2440)
 
 ## Bug fixes
 * Runtime/Wasm: add the system constants needed with `--disable staticeval`
