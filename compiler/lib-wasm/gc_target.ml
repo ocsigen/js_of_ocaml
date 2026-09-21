@@ -1762,12 +1762,13 @@ let internal_primitives =
                       (J.fun_ [] [ Return_statement (Some e, N), N ] N, true, AUnknown))
               in
               JavaScript.invoke_fragment name []
-            with Parse_js.Parsing_error pi ->
+            with Parse_js.Parsing_error (pi, msg) ->
               failwith
                 (Printf.sprintf
-                   "%s: cannot parse the JavaScript expression %S"
+                   "%s: cannot parse the JavaScript expression %S: %s"
                    (Parse_info.Diagnostic.to_string pi)
-                   str))
+                   str
+                   msg))
         | [ Pv _ ] ->
             let eval name code =
               let* () =
