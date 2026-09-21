@@ -1100,18 +1100,18 @@ let parse_method_modifier t =
   match cur t with
   | T_GET when not (accessor_keyword_is_name t) ->
       advance t;
-      Some (no_fun, fun m -> MethodGet m)
+      Some (no_fun, `Getter, fun m -> MethodGet m)
   | T_SET when not (accessor_keyword_is_name t) ->
       advance t;
-      Some (no_fun, fun m -> MethodSet m)
+      Some (no_fun, `Setter, fun m -> MethodSet m)
   | T_ASYNC when (not (keyword_is_name t)) && next_on_same_line t ->
       (* [async] on its own line is a property named [async] *)
       advance t;
       let generator = accept t T_MULT in
-      Some ({ async = true; generator }, fun m -> Method m)
+      Some ({ async = true; generator }, `Any, fun m -> Method m)
   | T_MULT ->
       advance t;
-      Some ({ async = false; generator = true }, fun m -> Method m)
+      Some ({ async = false; generator = true }, `Any, fun m -> Method m)
   | _ -> None
 
 (* After [.] or [?.]: [name] or [#name] *)
@@ -1419,6 +1419,38 @@ and parse_suffixes t ctx ~start ~allow_call e =
 and parse_index t ctx =
   between t T_LBRACKET T_RBRACKET (fun () -> parse_expression t ctx ~no_in:false)
 
+(* ImportCall : import ( AssignmentExpression ,? )
+              | import ( AssignmentExpression , AssignmentExpression ,? )
+   ImportMeta : import . meta
+   as well as the [import.source(...)] and [import.defer(...)] proposals *)
+and parse_import_expression t ctx ~pos =
+  expect t T_IMPORT;
+  let import = vartok pos T_IMPORT in
+  let call callee =
+    let args_pos = start_pos t in
+    match parse_arguments t ctx with
+    | ([ Arg _ ] | [ Arg _; Arg _ ]) as args -> ECall (callee, ANormal, args, p pos)
+    | _ ->
+        raise
+          (Parsing_error
+             (pi args_pos, "an import call takes one or two arguments, without `...`"))
+  in
+  match cur t with
+  | T_LPAREN -> call import
+  | T_PERIOD -> (
+      advance t;
+      match cur t with
+      | T_META ->
+          advance t;
+          EDot (import, ANormal, utf8_s "meta")
+      | (T_DEFER | T_IDENTIFIER (Utf8 "source", _)) as phase ->
+          advance t;
+          call (EDot (import, ANormal, utf8_s (Js_token.to_string phase)))
+      | _ -> error t ~expected:"`meta`, `source` or `defer`")
+  | T_LCURLY | T_MULT | T_STRING _ | T_IDENTIFIER _ | T_DEFER ->
+      error_msg t "import declarations are only allowed at the top level of a module"
+  | _ -> error t ~expected:"`(` or `.`"
+
 (* [new MemberExpression Arguments?] and [new.target] *)
 and parse_new t ctx =
   let pos = start_pos t in
@@ -1433,9 +1465,11 @@ and parse_new t ctx =
       let callee =
         match cur t with
         | T_NEW -> parse_new t ctx
-        | T_IMPORT when Poly.equal (peek_tok t 1) Js_token.T_LPAREN ->
+        | T_IMPORT
+          when not
+                 (Poly.equal (peek_tok t 1) Js_token.T_PERIOD
+                 && Poly.equal (peek_tok t 2) Js_token.T_META) ->
             (* An import call is not a MemberExpression *)
-            advance t;
             error_msg t "an import call cannot be the operand of `new`"
         | _ -> parse_primary_expression t ctx
       in
@@ -1454,11 +1488,7 @@ and parse_primary_expression t ctx =
   | (T_THIS | T_NULL | T_SUPER) as tok ->
       advance t;
       vartok pos tok
-  | T_IMPORT -> (
-      advance t;
-      match cur t with
-      | T_PERIOD | T_LPAREN -> vartok pos T_IMPORT
-      | _ -> error t)
+  | T_IMPORT -> parse_import_expression t ctx ~pos
   | T_TRUE ->
       advance t;
       EBool true
@@ -1566,13 +1596,22 @@ and parse_cover_parenthesized_expression t ctx =
                ~reason:
                  "a rest element is only allowed in the parameters of an arrow function"
                (pi pos))
-      | None ->
-          List.fold_left items ~init:None ~f:(fun acc (item, _) ->
-              match item, acc with
-              | (Item e | Item_parenthesized e), None -> Some e
-              | (Item e | Item_parenthesized e), Some e1 -> Some (ESeq (e1, e))
-              | (Item_rest _ | Item_spread _), _ -> assert false)
-          |> Option.get)
+      | None -> (
+          match !trailing_comma with
+          | Some comma_pos ->
+              CoverParenthesizedExpressionAndArrowParameterList
+                (early_error
+                   ~reason:
+                     "a trailing comma is only allowed in the parameters of an arrow \
+                      function"
+                   (pi comma_pos))
+          | None ->
+              List.fold_left items ~init:None ~f:(fun acc (item, _) ->
+                  match item, acc with
+                  | (Item e | Item_parenthesized e), None -> Some e
+                  | (Item e | Item_parenthesized e), Some e1 -> Some (ESeq (e1, e))
+                  | (Item_rest _ | Item_spread _), _ -> assert false)
+              |> Option.get))
 
 (* An element of a cover: an AssignmentExpression, or an expression between
    its own parentheses *)
@@ -1680,9 +1719,9 @@ and parse_property_definition t ctx =
   then PropertySpread (parse_assignment_expression t ctx ~no_in:false)
   else
     match parse_method_modifier t with
-    | Some (kind, meth) ->
+    | Some (kind, params, meth) ->
         let name = parse_property_name t ctx in
-        PropertyMethod (name, meth (parse_function_rest t ctx ~pos kind))
+        PropertyMethod (name, meth (parse_function_rest t ctx ~pos ~params kind))
     | None -> (
         let ident = ident_of_token ctx (cur t) in
         let name = parse_property_name t ctx in
@@ -1691,7 +1730,8 @@ and parse_property_definition t ctx =
             advance t;
             Property (name, parse_assignment_expression t ctx ~no_in:false)
         | T_LPAREN, _ ->
-            PropertyMethod (name, Method (parse_function_rest t ctx ~pos no_fun))
+            PropertyMethod
+              (name, Method (parse_function_rest t ctx ~pos ~params:`Any no_fun))
         | (T_COMMA | T_RCURLY), Some i ->
             (* shorthand property *)
             Property (PNI i, EVar (ident_unsafe i))
@@ -1710,9 +1750,27 @@ and parse_property_definition t ctx =
         | _ -> error t ~expected:"`:`, `(`, `,` or `}`")
 
 (* Parameters and body of a function or method, after its name *)
-and parse_function_rest t ctx ~pos kind =
+and parse_function_rest t ctx ~pos ~params kind =
   let ctx = function_ctx ctx kind in
-  let params = parse_formal_parameters t ctx in
+  let params =
+    match params with
+    | `Any -> parse_formal_parameters t ctx
+    | `Getter ->
+        (* get ClassElementName ( ) *)
+        expect t T_LPAREN;
+        if not (accept t T_RPAREN) then error_msg t "a getter has no parameter";
+        { list = []; rest = None }
+    | `Setter -> (
+        (* PropertySetParameterList : FormalParameter *)
+        let one_parameter = "a setter has exactly one parameter, which is not a rest" in
+        expect t T_LPAREN;
+        match cur t with
+        | T_RPAREN | T_ELLIPSIS -> error_msg t one_parameter
+        | _ ->
+            let param = parse_binding_element t ctx in
+            if not (accept t T_RPAREN) then error_msg t one_parameter;
+            { list = [ param ]; rest = None })
+  in
   let body = parse_function_block t ctx in
   kind, params, body, p pos
 
@@ -1732,7 +1790,7 @@ and parse_function_expression t ctx ~pos ~async =
     | T_LPAREN -> None
     | _ -> Some (parse_identifier t (function_ctx ctx kind))
   in
-  EFun (name, parse_function_rest t ctx ~pos kind)
+  EFun (name, parse_function_rest t ctx ~pos ~params:`Any kind)
 
 (* FunctionDeclaration and its generator and async variants, after [async] *)
 and parse_function_declaration t ctx ~pos ~async =
@@ -1935,15 +1993,15 @@ and parse_class_body t ctx =
           | _ -> (
               let pos = start_pos t in
               match parse_method_modifier t with
-              | Some (kind, meth) ->
+              | Some (kind, params, meth) ->
                   let name = parse_class_element_name t ctx in
-                  let m = parse_function_rest t ctx ~pos kind in
+                  let m = parse_function_rest t ctx ~pos ~params kind in
                   CEMethod (decorators, static, name, meth m)
               | None -> (
                   let name = parse_class_element_name t ctx in
                   match cur t with
                   | T_LPAREN ->
-                      let m = parse_function_rest t ctx ~pos no_fun in
+                      let m = parse_function_rest t ctx ~pos ~params:`Any no_fun in
                       CEMethod (decorators, static, name, Method m)
                   | _ ->
                       let init = parse_initializer_opt t field_ctx ~no_in:false in
@@ -2220,11 +2278,8 @@ and parse_for t ctx =
                && Poly.equal (peek_tok t 3) Js_token.T_OF) ->
       (* [for (await using of of x)] declares [of] *)
       parse_for_using t ctx ~for_await
-  | T_ASYNC
-    when Poly.equal (peek_tok t 1) Js_token.T_OF
-         && not (Poly.equal (peek_tok t 2) Js_token.T_ARROW) ->
-      (* [for (async of x)] iterates with the variable [async], as the
-         previous parser accepted *)
+  | T_ASYNC when for_await && Poly.equal (peek_tok t 1) Js_token.T_OF ->
+      (* Unlike [for (async of], [for await (async of] is allowed *)
       let e = EVar (parse_identifier t ctx) in
       parse_for_in_of t ctx ~for_await (Left (assignment_target_of_expr None e))
   | tok -> (
@@ -2362,9 +2417,15 @@ and parse_try_statement t ctx =
     opt t T_CATCH (fun () ->
         let param =
           opt t T_LPAREN (fun () ->
-              let param = parse_binding_element t ctx in
+              (* CatchParameter : BindingIdentifier | BindingPattern, with
+                 no initializer *)
+              let param = parse_binding t ctx in
+              (match cur t with
+              | T_ASSIGN ->
+                  error_msg t "the parameter of `catch` cannot have an initializer"
+              | _ -> ());
               expect t T_RPAREN;
-              param)
+              param, None)
         in
         let b = parse_block t ctx in
         param, b)

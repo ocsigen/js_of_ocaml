@@ -1621,7 +1621,7 @@ let%expect_test "[async of] and [using of] in a for statement" =
   [%expect {| x=async of=>1; |}];
   (* [for (async of] is excluded by the grammar *)
   check `Script "for (async of [1]) ;";
-  [%expect {| for((async)of[1]); |}];
+  [%expect {| error (l:1, c:14): unexpected `[`, expected `=>` |}];
   check `Script "for ((async) of [1]) ; for (async.x of [1]) ;";
   [%expect {| for((async)of[1]);for((async.x)of[1]); |}];
   (* ... but not [for await (async of] *)
@@ -1674,53 +1674,38 @@ let%expect_test "a class field named get, set or accessor before a generator" =
 let%expect_test "invalid programs" =
   (* A trailing comma is only allowed in arrow parameters *)
   check `Script "(a,)";
-  [%expect {| a; |}];
+  [%expect
+    {| error (l:1, c:2): a trailing comma is only allowed in the parameters of an arrow function |}];
   check `Script "(a, b,)";
-  [%expect {| a,b; |}];
+  [%expect
+    {| error (l:1, c:5): a trailing comma is only allowed in the parameters of an arrow function |}];
   check `Script "(a, b,) => 1";
   [%expect {| (a,b)=>1; |}];
   (* The parameter of [catch] has no initializer *)
   check `Script "try {} catch (e = 1) {}";
-  [%expect {| try{}catch(e=1){} |}];
+  [%expect {| error (l:1, c:16): the parameter of `catch` cannot have an initializer |}];
   check `Script "try {} catch ([e = 1]) {}";
   [%expect {| try{}catch([e=1]){} |}];
   (* A getter has no parameter, a setter exactly one *)
   check `Script "x = { get a(b) {} }";
-  [%expect {|
-           x={get
-           a(b){}};
-           |}];
+  [%expect {| error (l:1, c:12): a getter has no parameter |}];
   check `Script "x = { set a() {} }";
-  [%expect {|
-    x={set
-    a(){}};
-    |}];
+  [%expect
+    {| error (l:1, c:12): a setter has exactly one parameter, which is not a rest |}];
   check `Script "x = { set a(b, c) {} }";
-  [%expect {|
-    x={set
-    a(b,c){}};
-    |}];
+  [%expect
+    {| error (l:1, c:13): a setter has exactly one parameter, which is not a rest |}];
   check `Script "x = { set a(...b) {} }";
-  [%expect {|
-    x={set
-    a(...b){}};
-    |}];
+  [%expect
+    {| error (l:1, c:12): a setter has exactly one parameter, which is not a rest |}];
   check `Script "x = { set a(b,) {} }";
-  [%expect {|
-    x={set
-    a(b){}};
-    |}];
+  [%expect
+    {| error (l:1, c:13): a setter has exactly one parameter, which is not a rest |}];
   check `Script "class C { get a(b) {} }";
-  [%expect {|
-           class
-           C{get
-           a(b){}}
-           |}];
+  [%expect {| error (l:1, c:16): a getter has no parameter |}];
   check `Script "class C { static set #a(b, c) {} }";
-  [%expect {|
-    class
-    C{static set#a(b,c){}}
-    |}];
+  [%expect
+    {| error (l:1, c:25): a setter has exactly one parameter, which is not a rest |}];
   check `Script "x = { get a() {}, set a([b] = c) {}, get() {}, set(a, b) {} }";
   [%expect
     {|
@@ -1737,24 +1722,25 @@ let%expect_test "import calls" =
     "import.meta.url; import.source('m'); import.defer('m'); new (import('m'))";
   [%expect {| import.meta.url;import.source("m");import.defer("m");new(import("m")); |}];
   check `Script "import()";
-  [%expect {| import(); |}];
+  [%expect
+    {| error (l:1, c:6): an import call takes one or two arguments, without `...` |}];
   check `Script "import(...a)";
-  [%expect {| import(...a); |}];
+  [%expect
+    {| error (l:1, c:6): an import call takes one or two arguments, without `...` |}];
   check `Script "import('a', 'b', 'c')";
-  [%expect {| import("a","b","c"); |}];
+  [%expect
+    {| error (l:1, c:6): an import call takes one or two arguments, without `...` |}];
   check `Script "new import('m')";
-  [%expect {| error (l:1, c:10): an import call cannot be the operand of `new` |}];
+  [%expect {| error (l:1, c:4): an import call cannot be the operand of `new` |}];
   check `Script "new import.source('m')";
-  [%expect {|
-           new
-           import.source("m");
-           |}];
+  [%expect {| error (l:1, c:4): an import call cannot be the operand of `new` |}];
   check `Script "import.foo";
-  [%expect {| import.foo; |}];
+  [%expect
+    {| error (l:1, c:7): unexpected identifier `foo`, expected `meta`, `source` or `defer` |}];
   check `Script "import.source";
-  [%expect {| import.source; |}];
+  [%expect {| error (l:1, c:13): unexpected end of input, expected `(` |}];
   check `Script "typeof import";
-  [%expect {| error (l:1, c:13): unexpected end of input |}]
+  [%expect {| error (l:1, c:13): unexpected end of input, expected `(` or `.` |}]
 
 let%expect_test "parenthesized optional chains" =
   (* Parentheses delimit an optional chain: when [a] is null,
