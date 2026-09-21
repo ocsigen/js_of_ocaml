@@ -1764,3 +1764,92 @@ let%expect_test "syntax error messages" =
   | exception Parse_js.Parsing_error pi ->
       print_endline (Parse_info.Diagnostic.with_excerpt pi "syntax error"));
   [%expect {| line 1, column 5: syntax error |}]
+
+let%expect_test "decorators and export" =
+  (* Decorators come either before [export] or before [class] *)
+  check `Module "@dec export class A {}";
+  [%expect
+    {|
+           @dec
+           export
+           class
+           A{}
+           |}];
+  check `Module "export @dec class A {}";
+  [%expect
+    {|
+           @dec
+           export
+           class
+           A{}
+           |}];
+  check `Module "@dec @a.b(1) export default class {}";
+  [%expect {|
+           export
+           default
+           class{}
+           |}];
+  check `Module "@dec export default class A {}";
+  [%expect
+    {|
+           export
+           default
+           class
+           A{}
+           |}];
+  check `Module "export default @dec class {}";
+  [%expect
+    {|
+           @dec
+           export
+           default
+           class{}
+           |}];
+  (* ... but not both *)
+  check `Module "@a export @b class A {}";
+  [%expect
+    {|
+           @b
+           export
+           class
+           A{}
+           |}];
+  check `Module "@a export default @b class {}";
+  [%expect
+    {|
+           @b
+           export
+           default
+           class{}
+           |}];
+  (* Only classes can be decorated *)
+  check `Module "@dec export function f() {}";
+  [%expect {|
+           export
+           function
+           f(){}
+           |}];
+  check `Module "@dec export default function () {}";
+  [%expect {|
+           export
+           default
+           function(){}
+           |}];
+  check `Module "@dec export default 1";
+  [%expect {|
+           export
+           default
+           1;
+           |}];
+  check `Module "@dec export var x";
+  [%expect {|
+           export
+           var
+           x;
+           |}];
+  check `Module "@dec export { a }";
+  [%expect {| export{a}; |}];
+  check `Module "@dec export * from 'm'";
+  [%expect {| export*from"m"; |}];
+  check `Script "@dec function f() {}";
+  [%expect {| cannot parse js (from l:1, c:5) |}]
