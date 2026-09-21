@@ -572,21 +572,56 @@
       (local.get $res))
 ))
 
-(@if (= $effects "cps")
+(@if (or (= $effects "cps") (= $effects "double-translation"))
 (@then
    (type $function_2
       (func (param (ref eq) (ref eq) (ref eq)) (result (ref eq))))
    (type $function_4
       (func (param (ref eq) (ref eq) (ref eq) (ref eq) (ref eq))
          (result (ref eq))))
-   (type $cps_closure (sub (struct (field $func (ref $function_2)))))
-   (type $cps_closure_0 (sub (struct (field $func (ref $function_1)))))
+(@if (not (= $effects "double-translation"))
+(@then
+   (type $cps_closure (sub (struct (field $cps_func (ref $function_2)))))
+   (type $cps_closure_0 (sub (struct (field $cps_func (ref $function_1)))))
    (type $cps_closure_2
       (sub $cps_closure
-         (struct (field $func (ref $function_2)) (field $direct (ref $function_3)))))
+         (struct (field $cps_func (ref $function_2)) (field $cps_direct (ref $function_3)))))
    (type $cps_closure_3
       (sub $cps_closure
-         (struct (field $func (ref $function_2)) (field $direct (ref $function_4)))))
+         (struct (field $cps_func (ref $function_2)) (field $cps_direct (ref $function_4)))))
+)
+(@else
+   ;; With double translation, functions are compiled in direct style, and
+   ;; those that may be involved in the handling of effects also have a
+   ;; CPS version. Their closure is a direct-style closure extended with the
+   ;; code pointers of the CPS version (see Gc_target.Type.code_pointer_fields
+   ;; in the compiler). The other functions have plain direct-style closures.
+   (type $function_0 (func (param (ref eq)) (result (ref eq))))
+   (type $closure_0 (sub (struct (field $func (ref $function_0)))))
+   (type $closure_last_arg (sub $closure (struct (field $func (ref $function_1)))))
+   (type $closure_2
+      (sub $closure
+         (struct (field $func (ref $function_1)) (field $direct (ref $function_2)))))
+   ;; Wasm types are structural, but include the supertype: $cps_closure has
+   ;; the same fields as $closure_2, and is a subtype of $closure_last_arg
+   ;; rather than of $closure to be a distinct type.
+   (type $cps_closure
+      (sub $closure_last_arg
+         (struct (field $func (ref $function_1)) (field $cps_func (ref $function_2)))))
+   (type $cps_closure_0
+      (sub $closure_0
+         (struct (field $func (ref $function_0)) (field $cps_func (ref $function_1)))))
+   (type $cps_closure_2
+      (sub $closure_2
+         (struct
+            (field $func (ref $function_1)) (field $direct (ref $function_2))
+            (field $cps_func (ref $function_2)) (field $cps_direct (ref $function_3)))))
+   (type $cps_closure_3
+      (sub $closure_3
+         (struct
+            (field $func (ref $function_1)) (field $direct (ref $function_3))
+            (field $cps_func (ref $function_2)) (field $cps_direct (ref $function_4)))))
+))
 
    (type $iterator
      (sub final $closure
@@ -660,16 +695,14 @@
       (local.set $args (struct.get $iterator $args (local.get $env)))
       (struct.set $iterator $i (local.get $env)
          (i32.add (local.get $i) (i32.const 1)))
-      (return_call_ref $function_2
+      (return_call $cps_call_1
          (array.get $block (local.get $args) (local.get $i))
          (if (result (ref eq))
              (i32.eq (i32.add (local.get $i) (i32.const 1))
                 (array.len (local.get $args)))
             (then (global.get $identity_closure))
             (else (local.get $env)))
-         (local.get $f)
-         (struct.get $cps_closure 0
-            (ref.cast (ref $cps_closure) (local.get $f)))))
+         (local.get $f)))
 
    (func $apply_iterator
       (param $f (ref eq)) (param $venv (ref eq)) (result (ref eq))
@@ -680,7 +713,7 @@
       (local.set $args (struct.get $iterator $args (local.get $env)))
       (struct.set $iterator $i (local.get $env)
          (i32.add (local.get $i) (i32.const 1)))
-      (return_call_ref $function_2
+      (return_call $cps_call_1
          (array.get $block (local.get $args) (local.get $i))
          (if (result (ref eq))
              (i32.eq (i32.add (local.get $i) (i32.const 2))
@@ -690,9 +723,7 @@
                   (i32.add (local.get $i) (i32.const 1))))
             (else
                (local.get $env)))
-         (local.get $f)
-         (struct.get $cps_closure 0
-            (ref.cast (ref $cps_closure) (local.get $f)))))
+         (local.get $f)))
 
    (func (export "caml_apply_continuation")
       (param $args (ref eq)) (result (ref eq))
@@ -700,6 +731,93 @@
          (ref.func $apply_iterator)
          (i32.const 1)
          (ref.cast (ref $block) (local.get $args))))
+
+   ;; CPS calls to functions which may, with double translation, have no CPS
+   ;; version: such functions cannot perform an effect; they are then called
+   ;; in direct style and the result is passed to the continuation (see
+   ;; Gc_target.Memory.cps_call_or_direct in the compiler).
+
+   (func $call_continuation (param $k (ref eq)) (param $v (ref eq)) (result (ref eq))
+      (return_call_ref $function_1 (local.get $v) (local.get $k)
+         (struct.get $closure 0 (ref.cast (ref $closure) (local.get $k)))))
+
+   (func $cps_call_0 (param $k (ref eq)) (param $f (ref eq)) (result (ref eq))
+(@if (= $effects "double-translation")
+(@then
+      (drop (block $direct (result (ref eq))
+         (return_call_ref $function_1 (local.get $k) (local.get $f)
+            (struct.get $cps_closure_0 $cps_func
+               (br_on_cast_fail $direct (ref eq) (ref $cps_closure_0)
+                  (local.get $f))))))
+      (return_call $call_continuation (local.get $k)
+         (call_ref $function_0 (local.get $f)
+            (struct.get $closure_0 0 (ref.cast (ref $closure_0) (local.get $f))))))
+(@else
+      (return_call_ref $function_1 (local.get $k) (local.get $f)
+         (struct.get $cps_closure_0 $cps_func
+            (ref.cast (ref $cps_closure_0) (local.get $f)))))
+))
+
+   (func $cps_call_1
+      (param $x (ref eq)) (param $k (ref eq)) (param $f (ref eq)) (result (ref eq))
+(@if (= $effects "double-translation")
+(@then
+      (drop (block $direct (result (ref eq))
+         (return_call_ref $function_2 (local.get $x) (local.get $k) (local.get $f)
+            (struct.get $cps_closure $cps_func
+               (br_on_cast_fail $direct (ref eq) (ref $cps_closure)
+                  (local.get $f))))))
+      (return_call $call_continuation (local.get $k)
+         (call_ref $function_1 (local.get $x) (local.get $f)
+            (struct.get $closure 0 (ref.cast (ref $closure) (local.get $f))))))
+(@else
+      (return_call_ref $function_2 (local.get $x) (local.get $k) (local.get $f)
+         (struct.get $cps_closure $cps_func
+            (ref.cast (ref $cps_closure) (local.get $f)))))
+))
+
+   (func $cps_call_2
+      (param $x (ref eq)) (param $y (ref eq)) (param $k (ref eq)) (param $f (ref eq))
+      (result (ref eq))
+(@if (= $effects "double-translation")
+(@then
+      (drop (block $direct (result (ref eq))
+         (return_call_ref $function_3
+            (local.get $x) (local.get $y) (local.get $k) (local.get $f)
+            (struct.get $cps_closure_2 $cps_direct
+               (br_on_cast_fail $direct (ref eq) (ref $cps_closure_2)
+                  (local.get $f))))))
+      (return_call $call_continuation (local.get $k)
+         (call_ref $function_2 (local.get $x) (local.get $y) (local.get $f)
+            (struct.get $closure_2 $direct (ref.cast (ref $closure_2) (local.get $f))))))
+(@else
+      (return_call_ref $function_3
+         (local.get $x) (local.get $y) (local.get $k) (local.get $f)
+         (struct.get $cps_closure_2 $cps_direct
+            (ref.cast (ref $cps_closure_2) (local.get $f)))))
+))
+
+   (func $cps_call_3
+      (param $x (ref eq)) (param $y (ref eq)) (param $z (ref eq)) (param $k (ref eq))
+      (param $f (ref eq)) (result (ref eq))
+(@if (= $effects "double-translation")
+(@then
+      (drop (block $direct (result (ref eq))
+         (return_call_ref $function_4
+            (local.get $x) (local.get $y) (local.get $z) (local.get $k) (local.get $f)
+            (struct.get $cps_closure_3 $cps_direct
+               (br_on_cast_fail $direct (ref eq) (ref $cps_closure_3)
+                  (local.get $f))))))
+      (return_call $call_continuation (local.get $k)
+         (call_ref $function_3
+            (local.get $x) (local.get $y) (local.get $z) (local.get $f)
+            (struct.get $closure_3 $direct (ref.cast (ref $closure_3) (local.get $f))))))
+(@else
+      (return_call_ref $function_4
+         (local.get $x) (local.get $y) (local.get $z) (local.get $k) (local.get $f)
+         (struct.get $cps_closure_3 $cps_direct
+            (ref.cast (ref $cps_closure_3) (local.get $f)))))
+))
 
    (func $dummy_cps_fun
       (param (ref eq)) (param (ref eq)) (param (ref eq)) (result (ref eq))
@@ -728,12 +846,10 @@
                   (if (result (ref eq))
                       (i32.eq (array.len (local.get $args)) (i32.const 1))
                      (then
-                        (call_ref $function_1 (global.get $identity_closure)
-                           (local.get $f)
-                           (struct.get $cps_closure_0 0
-                              (ref.cast (ref $cps_closure_0) (local.get $f)))))
+                        (call $cps_call_0 (global.get $identity_closure)
+                           (local.get $f)))
                      (else
-                        (call_ref $function_2
+                        (call $cps_call_1
                            (array.get $block (local.get $args) (i32.const 1))
                            (if (result (ref eq))
                                (i32.eq (i32.const 2)
@@ -744,9 +860,7 @@
                                     (ref.func $trampoline_iterator)
                                     (i32.const 2)
                                     (local.get $args))))
-                           (local.get $f)
-                           (struct.get $cps_closure 0
-                              (ref.cast (ref $cps_closure) (local.get $f)))))))
+                           (local.get $f)))))
                (global.set $cps_fiber_stack (local.get $saved_fiber_stack))
                (return (local.get $res)))
             (catch $ocaml_exception)
@@ -843,11 +957,9 @@
          (array.new_fixed $block 3 (ref.i31 (global.get $cont_tag))
             (local.get $last_fiber) (local.get $last_fiber)))
       (local.set $k1 (call $caml_pop_fiber))
-      (return_call_ref $function_4
+      (return_call $cps_call_3
          (local.get $eff) (local.get $continuation) (local.get $last_fiber)
-         (local.get $k1) (local.get $handler)
-         (struct.get $cps_closure_3 1
-            (ref.cast (ref $cps_closure_3) (local.get $handler))))))
+         (local.get $k1) (local.get $handler))))
 (@else
    (func (export "caml_perform_effect")
       (param $eff (ref eq)) (param $k0 (ref eq)) (result (ref eq))
@@ -867,11 +979,9 @@
          (array.new_fixed $block 3 (ref.i31 (global.get $cont_tag))
             (local.get $last_fiber) (local.get $last_fiber)))
       (local.set $k1 (call $caml_pop_fiber))
-      (return_call_ref $function_3
+      (return_call $cps_call_2
          (local.get $eff) (local.get $continuation)
-         (local.get $k1) (local.get $handler)
-         (struct.get $cps_closure_2 1
-            (ref.cast (ref $cps_closure_2) (local.get $handler))))))
+         (local.get $k1) (local.get $handler))))
 )
 
 (@if (< $ocaml_version (5 6 0))
@@ -901,12 +1011,10 @@
       (struct.set $cps_fiber $next (local.get $tail) (local.get $next))
       (array.set $block (local.get $continuation) (i32.const 2) (local.get $next))
       (local.set $k1 (call $caml_pop_fiber))
-      (return_call_ref $function_4
+      (return_call $cps_call_3
          (local.get $eff) (local.get $continuation) (local.get $next)
          (local.get $k1)
-         (local.get $handler)
-         (struct.get $cps_closure_3 1
-            (ref.cast (ref $cps_closure_3) (local.get $handler))))))
+         (local.get $handler))))
 (@else
    (func (export "caml_reperform_effect")
       (param $eff (ref eq)) (param $vcont (ref eq)) (param $_vtail (ref eq))
@@ -937,22 +1045,18 @@
       (struct.set $cps_fiber $next (local.get $tail) (local.get $last_fiber))
       (array.set $block (local.get $continuation) (i32.const 2) (local.get $last_fiber))
       (local.set $k1 (call $caml_pop_fiber))
-      (return_call_ref $function_3
+      (return_call $cps_call_2
          (local.get $eff) (local.get $continuation)
          (local.get $k1)
-         (local.get $handler)
-         (struct.get $cps_closure_2 1
-            (ref.cast (ref $cps_closure_2) (local.get $handler))))))
+         (local.get $handler))))
 )
 
    (func $cps_call_handler
       (param $handler (ref eq)) (param $x (ref eq)) (result (ref eq))
-      (return_call_ref $function_2
+      (return_call $cps_call_1
          (local.get $x)
          (call $caml_pop_fiber)
-         (local.get $handler)
-         (struct.get $cps_closure 0
-            (ref.cast (ref $cps_closure) (local.get $handler)))))
+         (local.get $handler)))
 
    (func $value_handler (param $x (ref eq)) (param (ref eq)) (result (ref eq))
       (return_call $cps_call_handler
@@ -970,6 +1074,84 @@
    (global $exn_handler_closure (ref $closure)
       (struct.new $closure (ref.func $exn_handler)))
 
+
+(@if (= $effects "double-translation")
+(@then
+   ;; Direct-style versions of the effect primitives, used by the
+   ;; direct-style code (see Effects.rewrite_direct_block in the compiler).
+   ;; They run CPS code to completion, as $caml_trampoline does.
+
+   (func $dt_fresh_fiber (result (ref $cps_fiber))
+      ;; A fresh fiber, so that effects cannot cross into the caller (this
+      ;; code is only reached by calls that cannot perform an effect).
+      (struct.new $cps_fiber
+         (ref.i31 (i32.const 0))
+         (ref.i31 (i32.const 0))
+         (ref.i31 (i32.const 0))
+         (ref.i31 (i32.const 0))
+         (ref.null $exn_stack)
+         (ref.null $cps_fiber)))
+
+   (func $dt_handle_exception
+      (param $saved (ref $cps_fiber)) (param $exn (ref eq)) (result (ref eq))
+      ;; Dispatch an exception to the exception handlers of the current
+      ;; fiber, then restore the fiber stack
+      (local $top (ref $exn_stack)) (local $f (ref eq)) (local $res (ref eq))
+      (loop $loop
+         (block $empty
+            (local.set $top
+               (br_on_null $empty
+                  (struct.get $cps_fiber $exn_stack
+                     (global.get $cps_fiber_stack))))
+            (struct.set $cps_fiber $exn_stack
+               (global.get $cps_fiber_stack)
+               (struct.get $exn_stack $next (local.get $top)))
+            (local.set $f (struct.get $exn_stack $h (local.get $top)))
+            (try
+               (do
+                  (local.set $res
+                     (call_ref $function_1
+                        (local.get $exn)
+                        (local.get $f)
+                        (struct.get $closure 0
+                           (ref.cast (ref $closure) (local.get $f)))))
+                  (global.set $cps_fiber_stack (local.get $saved))
+                  (return (local.get $res)))
+               (catch $ocaml_exception
+                  (local.set $exn)
+                  (br $loop))
+               (catch $javascript_exception
+                  (local.set $exn (call $caml_wrap_exception))
+                  (br $loop)))))
+      (global.set $cps_fiber_stack (local.get $saved))
+      (throw $ocaml_exception (local.get $exn)))
+
+   (func (export "caml_resume")
+      (param $f (ref eq)) (param $arg (ref eq)) (param $stack (ref eq))
+      (param $last (ref eq)) (result (ref eq))
+      ;; Run [f arg] on the given stack
+      (local $saved (ref $cps_fiber)) (local $k (ref eq))
+      (local $res (ref eq)) (local $exn (ref eq))
+      (local.set $saved (global.get $cps_fiber_stack))
+      (global.set $cps_fiber_stack (call $dt_fresh_fiber))
+      (local.set $k
+         (call $caml_resume_stack
+            (local.get $stack) (local.get $last) (global.get $identity_closure)))
+      (local.set $exn
+         (try (result (ref eq))
+            (do
+               (local.set $res
+                  (call $cps_call_1 (local.get $arg) (local.get $k) (local.get $f)))
+               (global.set $cps_fiber_stack (local.get $saved))
+               (return (local.get $res)))
+            (catch $ocaml_exception)
+            (catch $javascript_exception
+               (call $caml_wrap_exception))))
+      (return_call $dt_handle_exception (local.get $saved) (local.get $exn)))
+
+   (func (export "caml_raise_unhandled") (param $eff (ref eq)) (result (ref eq))
+      (return_call $raise_unhandled (local.get $eff) (ref.i31 (i32.const 0))))
+))
    (func (export "caml_alloc_stack")
       (param $value (ref eq)) (param $exn (ref eq)) (param $effect (ref eq))
       (result (ref eq))

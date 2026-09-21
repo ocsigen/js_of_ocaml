@@ -23,11 +23,13 @@ also ensure that some code runs in direct style using
 
 {1:wasm Wasm_of_ocaml}
 
-Wasm_of_ocaml provides three effect handler implementations:
+Wasm_of_ocaml provides four effect handler implementations:
 
 - {b [--effects=jspi]} (default) uses the JavaScript-Promise Integration extension.
   It does not require any code transformation but requires a runtime that supports JSPI.
 - {b [--effects=cps]} uses the same CPS transformation as js_of_ocaml.
+- {b [--effects=double-translation]} uses the same
+  {{!section-"double-translation"}double translation} as js_of_ocaml.
 - {b [--effects=native]} uses the
   {{:https://github.com/WebAssembly/stack-switching}WebAssembly Stack Switching proposal}
   (typed continuations). It provides the best performance but requires a runtime with
@@ -43,7 +45,7 @@ calls back into OCaml (for instance through a callback registered with
 {!Js_of_ocaml.Js.wrap_callback}), performing an effect inside the callback
 raises [Effect.Unhandled], even if a handler is installed on the other side of
 the JavaScript frame. A handler installed inside the callback works as usual
-with [--effects=cps] and [--effects=native].
+with [--effects=cps], [--effects=double-translation] and [--effects=native].
 
 With [--effects=jspi], effect handlers cannot be used inside JavaScript
 callbacks at all: JSPI can only suspend Wasm code that runs on its own stack,
