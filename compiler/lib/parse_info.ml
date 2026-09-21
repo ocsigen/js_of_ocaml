@@ -35,12 +35,24 @@ let equal a b =
   && Option.equal String.equal a.src b.src
   && Option.equal String.equal a.name b.name
 
+(* A parser calls [t_of_pos] for every location of a file: share the
+   [Some pos_fname] between them rather than allocating two for each. *)
+let last_fname = ref ("", Some "")
+
 let t_of_pos start_p =
   let idx = start_p.Lexing.pos_cnum in
   let line, col = start_p.pos_lnum, start_p.pos_cnum - start_p.pos_bol in
-  let name = Some start_p.pos_fname in
-  let src = Some start_p.pos_fname in
-  { idx; line; col; name; src }
+  let fname = start_p.pos_fname in
+  let name =
+    let last, name = !last_fname in
+    if phys_equal last fname
+    then name
+    else
+      let name = Some fname in
+      last_fname := fname, name;
+      name
+  in
+  { idx; line; col; name; src = name }
 
 let t_of_lexbuf lexbuf : t = t_of_pos lexbuf.Lexing.lex_start_p
 
