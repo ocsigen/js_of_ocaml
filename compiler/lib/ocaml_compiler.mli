@@ -16,7 +16,10 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-val constant_of_const : Lambda.structured_constant -> Code.constant
+module Constant : sig
+  val of_const : Lambda.structured_constant -> Code.constant
+end
+[@@if ocaml_version < (5, 1, 0)]
 
 type module_or_not =
   | Module

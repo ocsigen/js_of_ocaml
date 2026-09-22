@@ -3287,7 +3287,7 @@ module Reloc = struct
     ; primitives = String.Hashtbl.create 17
     }
 
-  let constant_of_const x = Ocaml_compiler.constant_of_const x
+  let constant_of_const x = Ocaml_compiler.Constant.of_const x
   [@@if ocaml_version < (5, 1, 0)]
 
   let constant_of_const x = Constants.parse x [@@if ocaml_version >= (5, 1, 0)]
