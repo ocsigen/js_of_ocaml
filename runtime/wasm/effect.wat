@@ -88,10 +88,6 @@
    (global $raise_unhandled_closure (ref $closure)
       (struct.new $closure (ref.func $raise_unhandled)))
 
-   ;; Only meaningful with native effects (see effect-native.wat): whether
-   ;; an effect handler is reachable from the current point
-   (global $effect_allowed (export "effect_allowed") (mut i32) (i32.const 0))
-
    (func $caml_continuation_use_noexc (export "caml_continuation_use_noexc")
       (param $vcont (ref eq)) (result (ref eq))
       (local $continuation (ref $block))
@@ -984,27 +980,15 @@
          (ref.null $cps_fiber)))
 ))
 
-(@if (not (and (= $effects "jspi") (not $wasi)))
+(@if (not (or (= $effects "native") (and (= $effects "jspi") (not $wasi))))
 (@then
+   ;; With the CPS transformation, the trampoline already runs [f] with no
+   ;; reachable handler; nothing to do beyond calling it.
    (func (export "caml_assume_no_perform") (param $f (ref eq)) (result (ref eq))
-      (local $saved_effect_allowed i32)
-      (local $res (ref eq))
-      (local $exn (ref eq))
-      (local.set $saved_effect_allowed (global.get $effect_allowed))
-      (global.set $effect_allowed (i32.const 0))
-      (local.set $res
-         (try (result (ref eq))
-            (do
-               (call $caml_callback_1 (local.get $f) (ref.i31 (i32.const 0))))
-            (catch $ocaml_exception
-               (local.set $exn)
-               (global.set $effect_allowed (local.get $saved_effect_allowed))
-               (throw $ocaml_exception (local.get $exn)))
-            (catch $javascript_exception
-               (local.set $exn (call $caml_wrap_exception))
-               (global.set $effect_allowed (local.get $saved_effect_allowed))
-               (throw $ocaml_exception (local.get $exn)))))
-      (global.set $effect_allowed (local.get $saved_effect_allowed))
-      (local.get $res))
+      (try (result (ref eq))
+         (do
+            (call $caml_callback_1 (local.get $f) (ref.i31 (i32.const 0))))
+         (catch $javascript_exception
+            (throw $ocaml_exception (call $caml_wrap_exception)))))
 ))
 )

@@ -31,7 +31,9 @@
    (import "fail" "ocaml_exception" (tag $ocaml_exception (param (ref eq))))
    (import "fail" "javascript_exception"
       (tag $javascript_exception (param externref)))
-   (import "effect" "effect_allowed" (global $effect_allowed (mut i32)))
+   (import "obj" "caml_callback_1"
+      (func $caml_callback_1
+         (param (ref eq)) (param (ref eq)) (result (ref eq))))
    (import "effect" "caml_continuation_use_noexc"
       (func $caml_continuation_use_noexc (param (ref eq)) (result (ref eq))))
 (@if $wasi
@@ -109,15 +111,37 @@
       (struct.new $closure (ref.func $raise_unhandled)))
 
    ;; A suspend with no enclosing handler traps, so we cannot let
-   ;; %perform suspend blindly. In this mode, $effect_allowed tells
-   ;; whether a $resume_fiber frame is directly above us with no
-   ;; JavaScript frame in between: it is initially 0 (toplevel), set to
-   ;; 1 by $resume_fiber while a fiber runs, and reset to 0 by the
+   ;; %perform suspend blindly. $effect_allowed tells whether a
+   ;; $resume_fiber frame is directly above us with no JavaScript frame
+   ;; in between: it is initially 0 (toplevel), set to 1 by
+   ;; $resume_fiber while a fiber runs, and reset to 0 by the
    ;; JavaScript callback wrappers (runtime.js) around each call into
    ;; OCaml, since suspending across a JavaScript frame is not
    ;; possible. Effects performed while it is 0 raise Effect.Unhandled,
    ;; as in the native OCaml runtime when crossing C frames.
    ;; caml_assume_no_perform also sets it to 0.
+   (global $effect_allowed (export "effect_allowed") (mut i32) (i32.const 0))
+
+   (func (export "caml_assume_no_perform") (param $f (ref eq)) (result (ref eq))
+      (local $saved_effect_allowed i32)
+      (local $res (ref eq))
+      (local $exn (ref eq))
+      (local.set $saved_effect_allowed (global.get $effect_allowed))
+      (global.set $effect_allowed (i32.const 0))
+      (local.set $res
+         (try (result (ref eq))
+            (do
+               (call $caml_callback_1 (local.get $f) (ref.i31 (i32.const 0))))
+            (catch $ocaml_exception
+               (local.set $exn)
+               (global.set $effect_allowed (local.get $saved_effect_allowed))
+               (throw $ocaml_exception (local.get $exn)))
+            (catch $javascript_exception
+               (local.set $exn (call $caml_wrap_exception))
+               (global.set $effect_allowed (local.get $saved_effect_allowed))
+               (throw $ocaml_exception (local.get $exn)))))
+      (global.set $effect_allowed (local.get $saved_effect_allowed))
+      (local.get $res))
 
    ;; Resume
 
