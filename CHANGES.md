@@ -19,6 +19,9 @@
   than about 17 for a large program. Compilation is about 10% faster (#2445)
 * Compiler: speed up the JavaScript printer: buffered output, cheaper location
   comparisons and line tracking (#2452)
+* Compiler: represent sets of addresses and variables as Patricia trees with
+  bitmap leaves (`Int_set`), which allocate much less than balanced trees for
+  the small sets of large integers the compiler mostly uses (#2454)
 * Compiler/Runtime: support building with Introcaml, an OCaml fork with
   runtime introspection: parse the `NEXT_RESERVED_BITS` instruction and the
   extended `Const_block`, skip the reserved header bits in marshaled data, and
