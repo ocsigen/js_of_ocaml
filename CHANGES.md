@@ -1,6 +1,9 @@
 # dev
 
 ## Features/Changes
+* Compiler: variable substitution (`Subst`) returns the original blocks,
+  instructions and expressions when they are not affected, rather than
+  rebuilding the whole program each time (#2447)
 * Compiler/Runtime: support building with Introcaml, an OCaml fork with
   runtime introspection: parse the `NEXT_RESERVED_BITS` instruction and the
   extended `Const_block`, skip the reserved header bits in marshaled data, and
