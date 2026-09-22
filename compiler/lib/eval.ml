@@ -703,37 +703,37 @@ let eval_instr update_count inline_constant ~target info i =
           incr update_count;
           [ Let (x, c) ]
       | _ ->
-          [ Let
-              ( x
-              , Prim
-                  ( prim
-                  , List.map2 prim_args prim_args' ~f:(fun arg (c : constant option) ->
-                        match arg with
-                        | Pc _ -> arg
-                        | Pv _ -> (
-                            match c, target with
-                            | Some (Int _ as c), _ ->
-                                incr inline_constant;
-                                Pc c
-                            | Some (Int32 _ | NativeInt _ | NativeString _), `Wasm ->
-                                (* Avoid duplicating the constant here as it would cause an
+          let prim_args'' =
+            List.map2 prim_args prim_args' ~f:(fun arg (c : constant option) ->
+                match arg with
+                | Pc _ -> arg
+                | Pv _ -> (
+                    match c, target with
+                    | Some (Int _ as c), _ ->
+                        incr inline_constant;
+                        Pc c
+                    | Some (Int32 _ | NativeInt _ | NativeString _), `Wasm ->
+                        (* Avoid duplicating the constant here as it would cause an
                                allocation *)
-                                arg
-                            | Some ((Int32 _ | NativeInt _) as c), `JavaScript ->
-                                incr inline_constant;
-                                Pc c
-                            | Some ((Float _ | NativeString _) as c), `JavaScript ->
-                                incr inline_constant;
-                                Pc c
-                            | Some (String _ as c), `JavaScript
-                              when Config.Flag.use_js_string () ->
-                                incr inline_constant;
-                                Pc c
-                            | Some _, _
-                            (* do not be duplicated other constant as
+                        arg
+                    | Some ((Int32 _ | NativeInt _) as c), `JavaScript ->
+                        incr inline_constant;
+                        Pc c
+                    | Some ((Float _ | NativeString _) as c), `JavaScript ->
+                        incr inline_constant;
+                        Pc c
+                    | Some (String _ as c), `JavaScript when Config.Flag.use_js_string ()
+                      ->
+                        incr inline_constant;
+                        Pc c
+                    | Some _, _
+                    (* do not be duplicated other constant as
                             they're not represented with constant in javascript. *)
-                            | None, _ -> arg)) ) )
-          ])
+                    | None, _ -> arg))
+          in
+          if List.equal ~eq:phys_equal prim_args'' prim_args
+          then [ i ]
+          else [ Let (x, Prim (prim, prim_args'')) ])
   | _ -> [ i ]
 
 type cond_of =
@@ -869,7 +869,10 @@ let eval update_count update_branch inline_constant ~target info blocks =
           ~f:(eval_instr update_count inline_constant ~target info)
       in
       let branch = eval_branch update_branch info block.branch in
-      { block with Code.body; Code.branch })
+      (* Preserve sharing when the block is left unchanged *)
+      if List.equal ~eq:phys_equal body block.body && phys_equal branch block.branch
+      then block
+      else { block with Code.body; Code.branch })
     blocks
 
 let f info p =
