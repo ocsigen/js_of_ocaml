@@ -10,6 +10,9 @@
   the `unused-js-vars` warning now reports such names (#2449)
 * Compiler: the worklist of the dataflow solvers is a fixed-size circular
   buffer rather than a list copied into a queue (#2448)
+* Compiler: `Js_traverse.map` returns the original AST node when nothing
+  changed below it, rather than rebuilding the whole JavaScript program in each
+  of the passes using it (#2446)
 * Compiler/Runtime: support building with Introcaml, an OCaml fork with
   runtime introspection: parse the `NEXT_RESERVED_BITS` instruction and the
   extended `Const_block`, skip the reserved header bits in marshaled data, and
