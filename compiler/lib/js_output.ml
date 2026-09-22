@@ -2265,7 +2265,7 @@ let program ?(accept_unnamed_var = false) ?(source_map = false) f p =
   | `Cps | `Double_translation -> PP.set_adjust_indentation_function f (fun n -> n mod 40)
   | `Disabled | `Jspi | `Native | (exception Failure _) -> ());
   PP.start_group f 0;
-  PP.with_buffering f (fun () -> O.program f p);
+  O.program f p;
   PP.end_group f;
   PP.newline f;
   let sm =

@@ -55,28 +55,42 @@ type t =
 let spaces = String.make 80 ' '
 
 let output st (s : string) l =
-  (try
-     let last = String.rindex_from s (l - 1) '\n' + 1 in
-     let line = ref 0 in
-     for i = 0 to l - 1 do
-       if Char.equal s.[i] '\n' then incr line
-     done;
-     st.line <- st.line + !line;
-     st.col <- l - last
-   with Not_found -> st.col <- l + st.col);
+  (* Update the current position; most strings contain no newline *)
+  let line = ref 0 in
+  let last = ref (-1) in
+  for i = 0 to l - 1 do
+    if Char.equal (String.unsafe_get s i) '\n'
+    then (
+      incr line;
+      last := i)
+  done;
+  if !line = 0
+  then st.col <- l + st.col
+  else (
+    st.line <- st.line + !line;
+    st.col <- l - (!last + 1));
   st.total <- st.total + String.length s;
   st.output s 0 l
 
+(* Fast paths for indentation and newlines, which do not need to be
+   scanned for newlines *)
 let rec output_spaces st n =
   let n =
     match st.adjust_indentation with
     | Some f -> f n
     | None -> n
   in
-  output st spaces (min n 80);
+  let l = min n 80 in
+  st.col <- st.col + l;
+  st.total <- st.total + l;
+  st.output spaces 0 l;
   if n > 80 then output_spaces st (n - 80)
 
-let output_newline st = output st "\n" 1
+let output_newline st =
+  st.line <- st.line + 1;
+  st.col <- 0;
+  st.total <- st.total + 1;
+  st.output "\n" 0 1
 
 let rec flat_render st l =
   match l with
