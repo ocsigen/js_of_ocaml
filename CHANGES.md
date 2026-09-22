@@ -22,6 +22,11 @@
 * Compiler: represent sets of addresses and variables as Patricia trees with
   bitmap leaves (`Int_set`), which allocate much less than balanced trees for
   the small sets of large integers the compiler mostly uses (#2454)
+* Compiler: tell the GC that the memory allocated while unmarshalling the debug
+  events is not part of the steady state of the program (`Gc.ramp_up`, with
+  OCaml 5.4 and later), rather than having it try to collect memory which is
+  not there. Reading the debug events of a large program is about twice as
+  fast (#2451)
 * Compiler/Runtime: support building with Introcaml, an OCaml fork with
   runtime introspection: parse the `NEXT_RESERVED_BITS` instruction and the
   extended `Const_block`, skip the reserved header bits in marshaled data, and
