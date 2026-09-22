@@ -8,6 +8,8 @@
   inherits from `iterator`) and no longer modifies the program; the name of a
   function expression that does not refer to itself is no longer removed, and
   the `unused-js-vars` warning now reports such names (#2449)
+* Compiler: the worklist of the dataflow solvers is a fixed-size circular
+  buffer rather than a list copied into a queue (#2448)
 * Compiler/Runtime: support building with Introcaml, an OCaml fork with
   runtime introspection: parse the `NEXT_RESERVED_BITS` instruction and the
   extended `Const_block`, skip the reserved header bits in marshaled data, and
