@@ -19,6 +19,9 @@ val bigstring : Js_of_ocaml_compiler.Builtins.File.t
 val blake2 : Js_of_ocaml_compiler.Builtins.File.t
 ```
 ```ocaml
+val block_index : Js_of_ocaml_compiler.Builtins.File.t
+```
+```ocaml
 val compare : Js_of_ocaml_compiler.Builtins.File.t
 ```
 ```ocaml
