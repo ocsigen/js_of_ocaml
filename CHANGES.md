@@ -1,6 +1,9 @@
 # dev
 
 ## Features/Changes
+* Compiler: `js_of_ocaml` and `wasm_of_ocaml` set the GC `space_overhead` to
+  200 at startup unless `OCAMLRUNPARAM` sets it, making compilation of large
+  programs about 6% faster at the expense of some more memory (#2450)
 * Compiler/Runtime: support building with Introcaml, an OCaml fork with
   runtime introspection: parse the `NEXT_RESERVED_BITS` instruction and the
   extended `Const_block`, skip the reserved header bits in marshaled data, and
