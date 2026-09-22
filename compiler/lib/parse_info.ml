@@ -28,6 +28,13 @@ type t =
 
 let zero = { src = None; name = None; col = 0; line = 0; idx = 0 }
 
+let equal a b =
+  a.line = b.line
+  && a.col = b.col
+  && a.idx = b.idx
+  && Option.equal String.equal a.src b.src
+  && Option.equal String.equal a.name b.name
+
 let t_of_pos start_p =
   let idx = start_p.Lexing.pos_cnum in
   let line, col = start_p.pos_lnum, start_p.pos_cnum - start_p.pos_bol in
