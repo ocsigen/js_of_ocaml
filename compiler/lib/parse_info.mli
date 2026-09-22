@@ -27,6 +27,8 @@ type t =
 
 val zero : t
 
+val equal : t -> t -> bool
+
 val t_of_lexbuf : Lexing.lexbuf -> t
 
 val t_of_pos : Lexing.position -> t

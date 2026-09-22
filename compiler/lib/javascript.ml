@@ -695,4 +695,8 @@ and assignment_target_of_expr op x =
   | None | Some Eq -> assignment_target_of_expr' x
   | _ -> x
 
-let location_equal (a : location) b = Poly.equal a b
+let location_equal (a : location) b =
+  match a, b with
+  | N, N | U, U -> true
+  | Pi a, Pi b -> phys_equal a b || Parse_info.equal a b
+  | (N | U | Pi _), _ -> false
