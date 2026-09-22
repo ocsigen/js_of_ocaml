@@ -18,7 +18,7 @@
 (js) => async (args) => {
   // biome-ignore lint/suspicious/noRedundantUseStrict: needed for non-module execution
   "use strict";
-  const { link, src, generated, disable_effects } = args;
+  const { link, src, generated, enable_jspi } = args;
 
   const isNode = globalThis.process?.versions?.node;
 
@@ -155,10 +155,12 @@
   var start_fiber;
 
   function make_suspending(f) {
-    return WebAssembly?.Suspending ? new WebAssembly.Suspending(f) : f;
+    return enable_jspi && WebAssembly?.Suspending
+      ? new WebAssembly.Suspending(f)
+      : f;
   }
   function make_promising(f) {
-    return !disable_effects && WebAssembly?.promising && f
+    return enable_jspi && WebAssembly?.promising && f
       ? WebAssembly.promising(f)
       : f;
   }

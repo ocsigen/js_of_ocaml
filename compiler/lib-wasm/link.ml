@@ -642,8 +642,8 @@ let build_runtime_arguments
   in
   let props =
     match Config.effects () with
-    | `Disabled -> ("disable_effects", Javascript.EBool true) :: props
-    | `Jspi | `Cps | `Native -> props
+    | `Jspi -> ("enable_jspi", Javascript.EBool true) :: props
+    | `Disabled | `Cps | `Native -> props
     | `Double_translation -> assert false
   in
   let props =
