@@ -26,6 +26,7 @@
    assume_no_perform
    assume_no_perform_unhandled
    assume_no_perform_nested_handler
+   assume_no_perform_nested_perform
    deep_state
    test_finalise))
  (preprocess
@@ -77,3 +78,24 @@
  (modes js)
  (preprocess
   (pps ppx_js_internal)))
+
+; Effects performed where no handler can be reached must raise
+; Effect.Unhandled; a handler installed inside assume_no_perform works.
+
+(tests
+ (names assume_no_perform_nested_perform)
+ (modules assume_no_perform_nested_perform)
+ (build_if
+  (>= %{ocaml_version} 5))
+ ; Not yet with native effects
+ (enabled_if
+  (and
+   (<> %{profile} with-native-effects)
+   (<> %{profile} wasi-with-native-effects)))
+ (libraries jsoo_runtime)
+ (action
+  (ignore-outputs
+   (with-accepted-exit-codes
+    0
+    (run node %{test}))))
+ (modes js wasm))
