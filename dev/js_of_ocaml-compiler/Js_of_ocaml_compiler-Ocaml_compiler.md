@@ -1,9 +1,6 @@
 # Module `Js_of_ocaml_compiler.Ocaml_compiler`
 
 ```ocaml
-val constant_of_const : Lambda.structured_constant -> Code.constant
-```
-```ocaml
 type module_or_not = 
   | Module
   | Not_module
