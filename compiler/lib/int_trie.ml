@@ -271,25 +271,37 @@ let rec to_rev_seq_node (node : node) shift prefix i (rest : (key * 'a) Seq.t) (
 
 let to_rev_seq t = to_rev_seq_node t.root t.shift 0 mask Seq.empty
 
-(* Whole-map transformations *)
+(* Whole-map transformations. They preserve sharing: a node is kept
+   when [f] returns all its values unchanged (physically). *)
 
 let rec mapi_node f (node : node) shift prefix : node =
-  let node' = Array.make width absent in
+  let node' = ref node in
   for i = 0 to mask do
     let c = Array.unsafe_get node i in
     if not (is_absent c)
     then
-      Array.unsafe_set
-        node'
-        i
-        (if shift = 0
-         then slot (f (prefix lor i) (unslot c))
-         else slot (mapi_node f (unslot c) (shift - bits) (prefix lor (i lsl shift))))
+      let c' =
+        if shift = 0
+        then slot (f (prefix lor i) (unslot c))
+        else slot (mapi_node f (unslot c) (shift - bits) (prefix lor (i lsl shift)))
+      in
+      if not (phys_eq c' c)
+      then (
+        if phys_eq !node' node then node' := Array.copy node;
+        Array.unsafe_set !node' i c')
   done;
-  node'
+  !node'
+
+(* When all the values are returned unchanged by [f], they are all of
+   type ['b] as well, so the map itself can be returned. *)
+external retype : 'a t -> 'b t = "%identity"
 
 let mapi f t =
-  if t.size = 0 then empty else { t with root = mapi_node f t.root t.shift 0 }
+  if t.size = 0
+  then empty
+  else
+    let root = mapi_node f t.root t.shift 0 in
+    if phys_eq root t.root then retype t else { t with root }
 
 let map f t = mapi (fun _ v -> f v) t
 
@@ -298,11 +310,12 @@ let map f t = mapi (fun _ v -> f v) t
    resulting map is not reinterpreted from a slot: OxCaml's flambda2
    rejects this.) *)
 let rec filter_map_node f (node : node) shift prefix count : node =
-  let node' = ref empty_node in
+  let node' = ref node in
+  let any = ref false in
   for i = 0 to mask do
     let c = Array.unsafe_get node i in
     if not (is_absent c)
-    then
+    then (
       let c' =
         if shift = 0
         then (
@@ -317,17 +330,22 @@ let rec filter_map_node f (node : node) shift prefix count : node =
           in
           if phys_eq child empty_node then absent else slot child
       in
-      if not (is_absent c')
+      if not (is_absent c') then any := true;
+      if not (phys_eq c' c)
       then (
-        if phys_eq !node' empty_node then node' := Array.make width absent;
-        Array.unsafe_set !node' i c')
+        if phys_eq !node' node then node' := Array.copy node;
+        Array.unsafe_set !node' i c'))
   done;
-  !node'
+  if not !any then empty_node else !node'
 
 let filter_map f t =
   let count = ref 0 in
   let root = filter_map_node f t.root t.shift 0 count in
-  if phys_eq root empty_node then empty else { shift = t.shift; root; size = !count }
+  if phys_eq root empty_node
+  then empty
+  else if phys_eq root t.root
+  then retype t
+  else { shift = t.shift; root; size = !count }
 
 let filter p t = filter_map (fun k v -> if p k v then Some v else None) t
 
