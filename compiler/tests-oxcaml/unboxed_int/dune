@@ -5,7 +5,7 @@
     (-w -32)))))
 
 (tests
- (names array_indexing stringlike_indexing)
+ (names array_indexing stringlike_indexing small_int_stringlike)
  (build_if %{oxcaml_supported})
  (libraries stdlib_stable stdlib_upstream_compatible)
  (modes js wasm))
