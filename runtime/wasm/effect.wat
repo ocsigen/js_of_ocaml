@@ -88,7 +88,9 @@
    (global $raise_unhandled_closure (ref $closure)
       (struct.new $closure (ref.func $raise_unhandled)))
 
-   (global $effect_allowed (export "effect_allowed") (mut i32) (i32.const 1))
+   ;; Only meaningful with native effects (see effect-native.wat): whether
+   ;; an effect handler is reachable from the current point
+   (global $effect_allowed (export "effect_allowed") (mut i32) (i32.const 0))
 
    (func $caml_continuation_use_noexc (export "caml_continuation_use_noexc")
       (param $vcont (ref eq)) (result (ref eq))
