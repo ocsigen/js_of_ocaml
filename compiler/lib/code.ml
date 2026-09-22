@@ -1020,10 +1020,8 @@ let do_compact { blocks; start; free_pc = _ } =
     { block with body; branch }
   in
   let blocks =
-    Addr.Map.fold
-      (fun pc b blocks -> Addr.Map.add remap.(pc) (rewrite remap b) blocks)
-      blocks
-      Addr.Map.empty
+    Addr.Map.of_seq
+      (Seq.map (fun (pc, b) -> remap.(pc), rewrite remap b) (Addr.Map.to_seq blocks))
   in
   let free_pc = (Addr.Map.max_binding blocks |> fst) + 1 in
   let start = remap.(start) in
