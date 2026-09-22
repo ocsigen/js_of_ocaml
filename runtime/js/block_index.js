@@ -33,11 +33,11 @@
 // that pointers should generally be safe to create and manipulate, and the
 // only points of unsafety should be reads and writes.
 
-//Provides: caml_unsafe_get_idx_bytecode mutable (mutable, const)
+//Provides: caml_get_idx_bytecode mutable (mutable, const)
 //Requires: caml_invalid_argument
 //Version: >= 5.2
 //If: oxcaml
-function caml_unsafe_get_idx_bytecode(base, idx) {
+function caml_get_idx_bytecode(base, idx) {
   if (idx[0] !== 0) {
     caml_invalid_argument(
       "caml_get_idx_bytecode: attempted to read from an invalid index",
@@ -51,11 +51,11 @@ function caml_unsafe_get_idx_bytecode(base, idx) {
   return res;
 }
 
-//Provides: caml_unsafe_set_idx_bytecode (mutable, const, mutable)
+//Provides: caml_set_idx_bytecode (mutable, const, mutable)
 //Requires: caml_invalid_argument
 //Version: >= 5.2
 //If: oxcaml
-function caml_unsafe_set_idx_bytecode(base, idx, v) {
+function caml_set_idx_bytecode(base, idx, v) {
   if (idx[0] !== 0) {
     caml_invalid_argument(
       "caml_set_idx_bytecode: attempted to write to an invalid index",
