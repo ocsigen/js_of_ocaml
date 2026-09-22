@@ -26,7 +26,7 @@ let times = Debug.find "times"
 module Addr = struct
   type t = int
 
-  module Set = Set.Make (Int)
+  module Set = Int_set
   module Map = Int_trie
   module Hashtbl = Int.Hashtbl
 
@@ -72,7 +72,7 @@ module Var : sig
 
   val reset : unit -> unit
 
-  module Set : Set.S with type elt = t
+  module Set : Int_set.S with type elt = t
 
   module Map : Map.S with type key = t
 
@@ -259,7 +259,7 @@ end = struct
     propagate_name o n;
     n
 
-  module Set = Set.Make (T)
+  module Set = Int_set
   module Map = Map.Make (T)
 
   module Tbl = struct
