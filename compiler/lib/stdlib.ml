@@ -153,6 +153,30 @@ module List = struct
     | x :: tl -> f x :: (map [@tailcall]) tl ~f
   [@@if ocaml_version >= (4, 14, 0)]
 
+  (* Like [map], but returns the list itself (physically) when the
+     function returns all the elements unchanged (physically). This
+     makes it possible to preserve sharing when rewriting a large data
+     structure that is mostly left unchanged. *)
+  let map_sharing l ~f =
+    let rec take n l acc =
+      if n = 0
+      then acc
+      else
+        match l with
+        | x :: r -> take (n - 1) r (x :: acc)
+        | [] -> assert false
+    in
+    let rec scan n rem =
+      match rem with
+      | [] -> l
+      | x :: r ->
+          let x' = f x in
+          if phys_equal x' x
+          then scan (n + 1) r
+          else rev_append (take n l []) (x' :: map r ~f)
+    in
+    scan 0 l
+
   let rec take' acc n l =
     if n = 0
     then acc, l
@@ -312,6 +336,14 @@ module Option = struct
     match x with
     | None -> None
     | Some v -> Some (f v)
+
+  (* See [List.map_sharing] *)
+  let map_sharing ~f x =
+    match x with
+    | None -> x
+    | Some v ->
+        let v' = f v in
+        if phys_equal v' v then x else Some v'
 
   let bind ~f x =
     match x with
@@ -1093,6 +1125,27 @@ end
 
 module Array = struct
   include ArrayLabels
+
+  (* See [List.map_sharing] *)
+  let map_sharing a ~f =
+    let len = length a in
+    let rec scan i =
+      if i = len
+      then a
+      else
+        let x = a.(i) in
+        let x' = f x in
+        if phys_equal x' x
+        then scan (i + 1)
+        else
+          let a' = copy a in
+          a'.(i) <- x';
+          for j = i + 1 to len - 1 do
+            a'.(j) <- f a.(j)
+          done;
+          a'
+    in
+    scan 0
 
   let fold_right_i a ~f ~init:x =
     let r = ref x in
