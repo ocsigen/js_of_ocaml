@@ -65,6 +65,8 @@ The CPS transformation is not the default since the generated code is slower, la
 
 The native implementation is based on the WebAssembly typed continuations proposal (stack switching). It provides the best performance but requires a runtime with support for the WasmFX extension (currently available, behind the `--experimental-wasm-wasmfx` flag, in Chrome 148 or higher, or in a recent Node.js canary release (V8 version 14\.7.100 or higher)).
 
+Effects cannot be performed across JavaScript frames. Moreover, with `--effects=jspi`, effect handlers cannot be installed inside JavaScript callbacks, since JSPI can only suspend Wasm code running on its own stack. See [Effects and JavaScript frames](./effects.md#wasm_js_frames).
+
 ## WASI support
 
 You can produce a WASI binary by running `wasm_of_ocaml` with the `--enable wasi` flag. At the moment, `wasm_of_ocaml` supports WASI 0\.1. Features from the Sys and Unix modules are available whenever they're supported by the WASI API.

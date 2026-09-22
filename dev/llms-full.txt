@@ -2336,6 +2336,12 @@ Wasm\_of\_ocaml provides three effect handler implementations:
 - **`--effects=cps`** uses the same CPS transformation as js\_of\_ocaml.
 - **`--effects=native`** uses the [WebAssembly Stack Switching proposal](https://github.com/WebAssembly/stack-switching) (typed continuations). It provides the best performance but requires a runtime with support for the WasmFX extension (currently available, behind the `--experimental-wasm-wasmfx` flag, in Chrome 148 or higher, or in a recent Node.js canary release (V8 version 14\.7.100 or higher)).
 
+### Effects and JavaScript frames
+
+As with C frames in the native OCaml runtime, an effect cannot be performed across a JavaScript frame. When OCaml code calls into JavaScript, which then calls back into OCaml (for instance through a callback registered with [`Js_of_ocaml.Js.wrap_callback`](./Js_of_ocaml-Js.md#val-wrap_callback)), performing an effect inside the callback raises `Effect.Unhandled`, even if a handler is installed on the other side of the JavaScript frame. A handler installed inside the callback works as usual with `--effects=cps` and `--effects=native`.
+
+With `--effects=jspi`, effect handlers cannot be used inside JavaScript callbacks at all: JSPI can only suspend Wasm code that runs on its own stack, which is the case for the main program and for fibers, but not for code entered from JavaScript through a callback. Installing a handler inside a callback (for instance with `Effect.Deep.try_with`) fails with a `Failure "SuspendError: ..."` exception. Use `--effects=cps` or `--effects=native` if callbacks need effect handlers.
+
 ## Dune integration
 
 Dune is aware of the `--effects` option. You can add it to the js\_of\_ocaml flags wherever you want to use it:
@@ -2675,6 +2681,8 @@ OCaml 5\.x code using effect handlers can be compiled in three ways:
 The CPS transformation is not the default since the generated code is slower, larger, and less readable. However, the JSPI extension is currently only available in Chrome 137 and Node.js 25 (or higher), and performing effects is slower when using it. Use `--effects=cps` for other browsers.
 
 The native implementation is based on the WebAssembly typed continuations proposal (stack switching). It provides the best performance but requires a runtime with support for the WasmFX extension (currently available, behind the `--experimental-wasm-wasmfx` flag, in Chrome 148 or higher, or in a recent Node.js canary release (V8 version 14\.7.100 or higher)).
+
+Effects cannot be performed across JavaScript frames. Moreover, with `--effects=jspi`, effect handlers cannot be installed inside JavaScript callbacks, since JSPI can only suspend Wasm code running on its own stack. See [Effects and JavaScript frames](./effects.md#wasm_js_frames).
 
 ## WASI support
 
