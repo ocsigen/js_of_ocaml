@@ -13,6 +13,10 @@
 * Compiler: `Js_traverse.map` returns the original AST node when nothing
   changed below it, rather than rebuilding the whole JavaScript program in each
   of the passes using it (#2446)
+* Compiler: represent the map of blocks of a program as a trie indexed by
+  the bits of the addresses (`Int_trie`), rather than a balanced tree. Looking
+  up a block, which all passes do all the time, follows 3 or 4 pointers rather
+  than about 17 for a large program. Compilation is about 10% faster (#2445)
 * Compiler/Runtime: support building with Introcaml, an OCaml fork with
   runtime introspection: parse the `NEXT_RESERVED_BITS` instruction and the
   extended `Const_block`, skip the reserved header bits in marshaled data, and
