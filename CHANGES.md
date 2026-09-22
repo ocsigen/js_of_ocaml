@@ -84,6 +84,11 @@
 ## Bug fixes
 * Runtime: convert unit names to OCaml strings before calling the toplevel
   relocation callback when `use-js-string` is disabled (#2429)
+* Compiler/Wasm: don't run the program on a JSPI stack when `--effects=cps`
+  (#2441)
+* Compiler/Wasm: with `--effects=disabled`, performing an effect on a
+  JSPI-capable engine now raises the intended `Failure` instead of a raw
+  `SuspendError` (#2441)
 * Compiler/Wasm: fix specialized generic bigarray accesses
   (`Bigarray.Genarray.get`/`set` with a locally allocated index array): the
   tag offset of the index array was accounted for twice, so each index was
