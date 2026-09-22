@@ -124,10 +124,10 @@ module Check = struct
   let primitive ~name pi ~code ~requires ~has_flags =
     let freename =
       if Warning.enabled `Unused_js_variable
-      then
+      then (
         let o = new check_and_warn name pi in
-        let _code = o#program code in
-        to_stringset o#get_free
+        o#program code;
+        to_stringset o#get_free)
       else
         let free = ref StringSet.empty in
         let o = new Js_traverse.fast_freevar (fun s -> free := StringSet.add s !free) in

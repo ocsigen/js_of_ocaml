@@ -438,7 +438,7 @@ let program' (module Strategy : Strategy) p =
   let state = Strategy.create nv in
   let labels = Var.Hashtbl.create 20 in
   let mapper = new traverse (Strategy.record_block state) in
-  let p = mapper#program p in
+  mapper#program p;
   let count = Array.make nv 0 in
   let () =
     let o = new traverse_idents_and_labels ~idents:count ~labels in

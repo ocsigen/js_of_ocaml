@@ -1031,7 +1031,7 @@ type block =
          constrains naming when it binds something block-scoped. *)
 
 class type freevar = object ('a)
-  inherit mapper
+  inherit iterator
 
   method merge_info : 'a -> unit
 
@@ -1056,7 +1056,7 @@ end
 
 class free =
   object (m : 'test)
-    inherit map as super
+    inherit iter as super
 
     val level : int = 0
 
@@ -1094,47 +1094,36 @@ class free =
     method def_local x =
       state_ <- { state_ with def_local = IdentSet.add x state_.def_local }
 
-    method fun_decl (k, params, body, nid) =
+    method fun_decl (_k, params, body, _nid) =
       let tbody = ({<state_ = empty; level = succ level>} :> 'test) in
       let ids = bound_idents_of_params params in
       List.iter ids ~f:tbody#def_var;
-      let body = tbody#function_body body in
-      let params = tbody#formal_parameter_list params in
+      tbody#function_body body;
+      tbody#formal_parameter_list params;
       tbody#record_block (Params params);
-      m#merge_info tbody;
-      k, params, body, nid
+      m#merge_info tbody
 
     method expression x =
       match x with
-      | EVar v ->
-          m#use_var v;
-          x
-      | EFun (ident, (k, params, body, nid)) ->
+      | EVar v -> m#use_var v
+      | EFun (ident, (_k, params, body, _nid)) ->
           let tbody = ({<state_ = empty; level = succ level>} :> 'test) in
           let ids = bound_idents_of_params params in
           List.iter ids ~f:tbody#def_var;
-          let body = tbody#function_body body in
-          let params = tbody#formal_parameter_list params in
+          tbody#function_body body;
+          tbody#formal_parameter_list params;
           (* The name of a function expression is only bound within
              the function *)
           Option.iter ident ~f:tbody#def_var;
           tbody#record_block (Params params);
-          m#merge_info tbody;
-          EFun (ident, (k, params, body, nid))
+          m#merge_info tbody
       | EClass (ident_o, cl_decl) ->
           let same_level = level in
           let cbody = {<state_ = empty; level = same_level>} in
-          let ident_o =
-            Option.map
-              ~f:(fun id ->
-                cbody#def_var id;
-                id)
-              ident_o
-          in
-          let cl_decl = cbody#class_decl cl_decl in
+          Option.iter ident_o ~f:cbody#def_var;
+          cbody#class_decl cl_decl;
           cbody#record_block Let_scope;
-          m#merge_block_info cbody;
-          EClass (ident_o, cl_decl)
+          m#merge_block_info cbody
       | EAssignTarget (ArrayTarget l) ->
           List.iter l ~f:(function
             | TargetElementHole -> ()
@@ -1163,138 +1152,102 @@ class free =
     method block b =
       let same_level = level in
       let tbody = {<state_ = empty; level = same_level>} in
-      let b = tbody#statements b in
+      tbody#statements b;
       tbody#record_block Let_scope;
-      m#merge_block_info tbody;
-      b
+      m#merge_block_info tbody
 
     method class_element x =
       match x with
       | CEStaticBLock l ->
           let tbody = {<state_ = empty; level = level + 1>} in
-          let l = tbody#statements l in
+          tbody#statements l;
           (* A static block anchors its own [var]s (merged with [merge_info],
              so they do not propagate up): it must always be recorded. *)
           tbody#record_block Var_scope;
-          m#merge_info tbody;
-          CEStaticBLock l
+          m#merge_info tbody
       | _ -> super#class_element x
 
     method statement x =
       match x with
-      | Function_declaration (id, (k, params, body, nid)) ->
+      | Function_declaration (id, (_k, params, body, _nid)) ->
           let tbody = {<state_ = empty; level = succ level>} in
           let ids = bound_idents_of_params params in
           List.iter ids ~f:tbody#def_var;
-          let body = tbody#function_body body in
-          let params = tbody#formal_parameter_list params in
+          tbody#function_body body;
+          tbody#formal_parameter_list params;
           tbody#record_block (Params params);
           m#def_local id;
-          m#merge_info tbody;
-          Function_declaration (id, (k, params, body, nid))
+          m#merge_info tbody
       | Class_declaration (id, cl_decl) ->
           let same_level = level in
           let cbody = {<state_ = empty; level = same_level>} in
-          let cl_decl = cbody#class_decl cl_decl in
+          cbody#class_decl cl_decl;
           cbody#record_block Let_scope;
           m#merge_block_info cbody;
-          m#def_local id;
-          Class_declaration (id, cl_decl)
-      | Block b -> Block (m#block b)
-      | For_statement (Right (((Const | Let) as k), l), e1, e2, (st, loc)) ->
+          m#def_local id
+      | For_statement (Right (((Const | Let) as k), l), e1, e2, (st, _loc)) ->
           let same_level = level in
           let m' = {<state_ = empty; level = same_level>} in
-          let l = List.map ~f:(m'#variable_declaration k) l in
-          let e1 = Option.map ~f:m'#expression e1 in
-          let e2 = Option.map ~f:m'#expression e2 in
-          let st = m'#statement st in
+          List.iter ~f:(m'#variable_declaration k) l;
+          Option.iter ~f:m'#expression e1;
+          Option.iter ~f:m'#expression e2;
+          m'#statement st;
           m'#record_block Let_scope;
-          m#merge_block_info m';
-          For_statement (Right (k, l), e1, e2, (st, m#loc loc))
-      | ForIn_statement (Right (((Const | Let) as k), l), e2, (st, loc)) ->
+          m#merge_block_info m'
+      | ForIn_statement (Right (((Const | Let) as k), l), e2, (st, _loc))
+      | ForOf_statement (Right (((Const | Let) as k), l), e2, (st, _loc))
+      | ForAwaitOf_statement (Right (((Const | Let) as k), l), e2, (st, _loc)) ->
           let same_level = level in
           let m' = {<state_ = empty; level = same_level>} in
-          let l = m'#for_binding k l in
-          let e2 = m'#expression e2 in
-          let st = m'#statement st in
+          m'#for_binding k l;
+          m'#expression e2;
+          m'#statement st;
           m'#record_block Let_scope;
-          m#merge_block_info m';
-          ForIn_statement (Right (k, l), e2, (st, m#loc loc))
-      | ForOf_statement (Right (((Const | Let) as k), l), e2, (st, loc)) ->
-          let same_level = level in
-          let m' = {<state_ = empty; level = same_level>} in
-          let l = m'#for_binding k l in
-          let e2 = m'#expression e2 in
-          let st = m'#statement st in
-          m'#record_block Let_scope;
-          m#merge_block_info m';
-          ForOf_statement (Right (k, l), e2, (st, m#loc loc))
-      | ForAwaitOf_statement (Right (((Const | Let) as k), l), e2, (st, loc)) ->
-          let same_level = level in
-          let m' = {<state_ = empty; level = same_level>} in
-          let l = m'#for_binding k l in
-          let e2 = m'#expression e2 in
-          let st = m'#statement st in
-          m'#record_block Let_scope;
-          m#merge_block_info m';
-          ForAwaitOf_statement (Right (k, l), e2, (st, m#loc loc))
+          m#merge_block_info m'
       | Switch_statement (e, l, def, l') ->
           let same_level = level in
           let m' = {<state_ = empty; level = same_level>} in
-          let l = List.map l ~f:(fun (e, s) -> m'#switch_case e, m'#statements s) in
-          let l' = List.map l' ~f:(fun (e, s) -> m'#switch_case e, m'#statements s) in
-          let def =
-            match def with
-            | None -> None
-            | Some l -> Some (m'#statements l)
+          let clause (e, s) =
+            m'#switch_case e;
+            m'#statements s
           in
-          let e = m#expression e in
+          List.iter l ~f:clause;
+          List.iter l' ~f:clause;
+          Option.iter def ~f:(fun l -> m'#statements l);
+          m#expression e;
           m'#record_block Let_scope;
-          m#merge_block_info m';
-          Switch_statement (e, l, def, l')
+          m#merge_block_info m'
       | Try_statement (b, w, f) ->
           let same_level = level in
-          let b = m#block b in
-          let w =
-            match w with
-            | None -> None
-            | Some (None, b) -> Some (None, m#block b)
-            | Some (Some id, block) ->
-                let tw = {<state_ = empty; level = same_level>} in
-                let block = tw#statements block in
-                (* Visit the catch parameter so that uses occurring in
-                   destructuring default expressions and computed
-                   property keys are recorded; the idents it binds are
-                   removed from [use] below. *)
-                let id =
-                  match tw#formal_parameter_list { list = [ id ]; rest = None } with
-                  | { list = [ id ]; rest = None } -> id
-                  | _ -> assert false
-                in
-                tw#record_block (Catch id);
-                (* special merge here *)
-                (* we need to propagate both def and use .. *)
-                (* .. except the use of 'id' since its scope is limited
-                   to 'block' *)
-                let ids = bound_idents_of_binding (fst id) in
-                let clean set =
-                  List.fold_left ids ~init:set ~f:(fun set id -> IdentSet.remove id set)
-                in
-                let def_var = tw#state.def_var in
-                let use = clean (IdentSet.diff tw#state.use tw#state.def_local) in
-                state_ <-
-                  { use = IdentSet.union state_.use use
-                  ; def_var = IdentSet.union state_.def_var def_var
-                  ; def_local = state_.def_local
-                  };
-                Some (Some id, block)
-          in
-          let f =
-            match f with
-            | None -> None
-            | Some f -> Some (m#block f)
-          in
-          Try_statement (b, w, f)
+          m#block b;
+          (match w with
+          | None -> ()
+          | Some (None, b) -> m#block b
+          | Some (Some id, block) ->
+              let tw = {<state_ = empty; level = same_level>} in
+              tw#statements block;
+              (* Visit the catch parameter so that uses occurring in
+                 destructuring default expressions and computed
+                 property keys are recorded; the idents it binds are
+                 removed from [use] below. *)
+              tw#formal_parameter_list { list = [ id ]; rest = None };
+              tw#record_block (Catch id);
+              (* special merge here *)
+              (* we need to propagate both def and use .. *)
+              (* .. except the use of 'id' since its scope is limited
+                 to 'block' *)
+              let ids = bound_idents_of_binding (fst id) in
+              let clean set =
+                List.fold_left ids ~init:set ~f:(fun set id -> IdentSet.remove id set)
+              in
+              let def_var = tw#state.def_var in
+              let use = clean (IdentSet.diff tw#state.use tw#state.def_local) in
+              state_ <-
+                { use = IdentSet.union state_.use use
+                ; def_var = IdentSet.union state_.def_var def_var
+                ; def_local = state_.def_local
+                });
+          Option.iter f ~f:(fun f -> m#block f)
       | Import ({ from = _; kind; withClause = _ }, _) ->
           (match kind with
           | DeferNamespace i -> m#def_local i
