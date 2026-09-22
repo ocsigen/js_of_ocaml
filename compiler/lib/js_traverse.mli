@@ -143,7 +143,7 @@ type block =
           [Params]/[Var_scope] scope. *)
 
 class type freevar = object ('a)
-  inherit mapper
+  inherit iterator
 
   method merge_info : 'a -> unit
 

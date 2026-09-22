@@ -23,7 +23,7 @@ let%expect_test "static eval of string get" =
   let use_jsoo_exports st =
     let open Js_of_ocaml_compiler in
     let traverse = new Js_traverse.free in
-    let _ = traverse#program [ st ] in
+    traverse#program [ st ];
     let jsoo_exports =
       Javascript.ident (Stdlib.Utf8_string.of_string_exn "jsoo_exports")
     in

@@ -31,16 +31,16 @@ class check_and_warn =
 
 let free_variable code =
   if Warning.enabled `Unused_js_variable
-  then
+  then (
     let o = new check_and_warn in
-    let _code = o#program code in
+    o#program code;
     Javascript.IdentSet.fold
       (fun x acc ->
         match x with
         | S { name = Utf8 x; _ } -> StringSet.add x acc
         | V _ -> acc)
       o#get_free
-      StringSet.empty
+      StringSet.empty)
   else
     let free = ref StringSet.empty in
     let o = new Js_traverse.fast_freevar (fun s -> free := StringSet.add s !free) in
