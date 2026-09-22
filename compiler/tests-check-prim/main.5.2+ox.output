@@ -225,6 +225,8 @@ caml_unboxed_int64_vect_blit
 caml_unboxed_nativeint_vect_blit
 caml_unboxed_vec128_vect_blit
 caml_unboxed_vec256_vect_blit
+caml_unsafe_get_idx_bytecode
+caml_unsafe_set_idx_bytecode
 caml_untagged_int16_vect_blit
 caml_untagged_int8_vect_blit
 caml_untagged_int_vect_blit
@@ -249,6 +251,10 @@ caml_bigstring_blit_bytes_to_ba
 caml_bigstring_blit_string_to_ba
 caml_bigstring_memcmp
 caml_hash_mix_bigstring
+
+From +block_index.js:
+caml_get_idx_bytecode
+caml_set_idx_bytecode
 
 From +effect.js:
 caml_continuation_use_and_update_handler_noexc

@@ -33,7 +33,7 @@
    ;; Iterates through the positions, indexing into nested blocks.
    ;; Special case: if base is a float array (all-float record), box the result.
    ;; Raises if [idx] has a non-zero tag (an "invalid" index).
-   (func (export "caml_unsafe_get_idx_bytecode")
+   (func (export "caml_get_idx_bytecode")
       (param $base (ref eq)) (param $idx (ref eq)) (result (ref eq))
       (local $idx_block (ref $block))
       (local $depth i32)
@@ -90,7 +90,7 @@
    ;; Traverses to the parent block, then sets the final field.
    ;; Special case: if base is a float array (all-float record), unbox the value.
    ;; Raises if [idx] has a non-zero tag (an "invalid" index).
-   (func (export "caml_unsafe_set_idx_bytecode")
+   (func (export "caml_set_idx_bytecode")
       (param $base (ref eq)) (param $idx (ref eq)) (param $v (ref eq))
       (result (ref eq))
       (local $idx_block (ref $block))
