@@ -57043,6 +57043,8 @@ type constant_global
 type context = {
   constants : Wasm_ast.expression Js_of_ocaml_compiler.Code.Var.Hashtbl.t;
   mutable data_segments : string Js_of_ocaml_compiler.Code.Var.Map.t;
+  string_globals : Js_of_ocaml_compiler.Code.Var.t
+                   Js_of_ocaml_compiler.Stdlib.String.Hashtbl.t;
   mutable constant_globals : constant_global Js_of_ocaml_compiler.Code.Var.Map.t;
   mutable other_fields : Wasm_ast.module_field list;
   mutable imports : (Js_of_ocaml_compiler.Code.Var.t * Wasm_ast.import_desc)
@@ -57067,7 +57069,7 @@ type context = {
                        Js_of_ocaml_compiler.Stdlib.IntMap.t;
   mutable cps_dummy_funs : Js_of_ocaml_compiler.Code.Var.t
                            Js_of_ocaml_compiler.Stdlib.IntMap.t;
-  mutable init_code : Wasm_ast.instruction list;
+  mutable init_code : Wasm_ast.instruction list; (* Initialization code, stored in reverse execution order *)
   mutable fragments : Js_of_ocaml_compiler.Javascript.expression
                       Js_of_ocaml_compiler.Stdlib.StringMap.t;
   mutable globalized_variables : Js_of_ocaml_compiler.Code.Var.Set.t;
@@ -57205,10 +57207,15 @@ val get_global :
 val register_data_segment : Js_of_ocaml_compiler.Code.Var.t -> string -> unit t
 ```
 ```ocaml
-val register_init_code : unit t -> unit t
+val intern_string : 
+  string ->
+  (unit -> Js_of_ocaml_compiler.Code.Var.t t) ->
+  Js_of_ocaml_compiler.Code.Var.t t
 ```
+`intern_string s gen` returns the global holding the string constant `s`, calling `gen` to create it the first time `s` is encountered.
+
 ```ocaml
-val init_code : context -> unit t
+val register_init_code : unit t -> unit t
 ```
 ```ocaml
 val register_fragment : 
