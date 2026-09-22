@@ -27,7 +27,7 @@ module Addr = struct
   type t = int
 
   module Set = Set.Make (Int)
-  module Map = Map.Make (Int)
+  module Map = Int_trie
   module Hashtbl = Int.Hashtbl
 
   let to_string = string_of_int

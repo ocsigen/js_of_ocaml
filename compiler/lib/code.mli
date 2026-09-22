@@ -32,7 +32,7 @@ module Addr : sig
 
   module Set : Set.S with type elt = t
 
-  module Map : Map.S with type key = t
+  module Map = Int_trie
 
   module Hashtbl : Hashtbl.S with type key = t
 end
