@@ -4,6 +4,10 @@
 * Compiler: variable substitution (`Subst`) returns the original blocks,
   instructions and expressions when they are not affected, rather than
   rebuilding the whole program each time (#2447)
+* Compiler: `Js_traverse.free` is now an iterator (the class type `freevar`
+  inherits from `iterator`) and no longer modifies the program; the name of a
+  function expression that does not refer to itself is no longer removed, and
+  the `unused-js-vars` warning now reports such names (#2449)
 * Compiler/Runtime: support building with Introcaml, an OCaml fork with
   runtime introspection: parse the `NEXT_RESERVED_BITS` instruction and the
   extended `Const_block`, skip the reserved header bits in marshaled data, and
