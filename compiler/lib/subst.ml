@@ -23,48 +23,113 @@ open Code
 
 let subst_cont s (pc, arg) = pc, List.map arg ~f:s
 
+(* The substitution usually only affects a small part of the program.
+   The functions below return their argument unchanged (physically
+   equal) when it is not affected, rather than building a copy: this
+   saves allocations and, above all, avoids having a whole copy of the
+   program promoted to the major heap each time we substitute. *)
+
+let subst_cont_sharing s ((pc, arg) as cont) =
+  let arg' = List.map_sharing arg ~f:s in
+  if phys_equal arg' arg then cont else pc, arg'
+
 module Excluding_Binders = struct
+  let prim_arg s x =
+    match x with
+    | Pv y ->
+        let y' = s y in
+        if phys_equal y' y then x else Pv y'
+    | Pc _ -> x
+
   let expr s e =
     match e with
     | Constant _ -> e
     | Apply { f; args; exact } ->
-        Apply { f = s f; args = List.map args ~f:(fun x -> s x); exact }
-    | Block (n, a, k, mut) -> Block (n, Array.map a ~f:(fun x -> s x), k, mut)
-    | Field (x, n, typ) -> Field (s x, n, typ)
-    | Closure (l, pc, loc) -> Closure (l, subst_cont s pc, loc)
+        let f' = s f in
+        let args' = List.map_sharing args ~f:s in
+        if phys_equal f' f && phys_equal args' args
+        then e
+        else Apply { f = f'; args = args'; exact }
+    | Block (n, a, k, mut) ->
+        let a' = Array.map_sharing a ~f:s in
+        if phys_equal a' a then e else Block (n, a', k, mut)
+    | Field (x, n, typ) ->
+        let x' = s x in
+        if phys_equal x' x then e else Field (x', n, typ)
+    | Closure (l, pc, loc) ->
+        let pc' = subst_cont_sharing s pc in
+        if phys_equal pc' pc then e else Closure (l, pc', loc)
     | Special _ -> e
     | Prim (p, l) ->
-        Prim
-          ( p
-          , List.map l ~f:(fun x ->
-                match x with
-                | Pv x -> Pv (s x)
-                | Pc _ -> x) )
+        let l' = List.map_sharing l ~f:(fun x -> prim_arg s x) in
+        if phys_equal l' l then e else Prim (p, l')
 
   let instr s i =
     match i with
-    | Let (x, e) -> Let (x, expr s e)
-    | Assign (x, y) -> Assign (x, s y) (* x is handled like a parameter *)
-    | Set_field (x, n, typ, y) -> Set_field (s x, n, typ, s y)
-    | Offset_ref (x, n) -> Offset_ref (s x, n)
-    | Array_set (x, y, z) -> Array_set (s x, s y, s z)
+    | Let (x, e) ->
+        let e' = expr s e in
+        if phys_equal e' e then i else Let (x, e')
+    | Assign (x, y) ->
+        (* x is handled like a parameter *)
+        let y' = s y in
+        if phys_equal y' y then i else Assign (x, y')
+    | Set_field (x, n, typ, y) ->
+        let x' = s x in
+        let y' = s y in
+        if phys_equal x' x && phys_equal y' y then i else Set_field (x', n, typ, y')
+    | Offset_ref (x, n) ->
+        let x' = s x in
+        if phys_equal x' x then i else Offset_ref (x', n)
+    | Array_set (x, y, z) ->
+        let x' = s x in
+        let y' = s y in
+        let z' = s z in
+        if phys_equal x' x && phys_equal y' y && phys_equal z' z
+        then i
+        else Array_set (x', y', z')
     | Event _ -> i
 
-  let instrs s l = List.map l ~f:(fun i -> instr s i)
+  let instrs s l = List.map_sharing l ~f:(fun i -> instr s i)
 
   let last s l =
     match l with
     | Stop -> l
-    | Branch cont -> Branch (subst_cont s cont)
-    | Pushtrap (cont1, x, cont2) -> Pushtrap (subst_cont s cont1, x, subst_cont s cont2)
-    | Return x -> Return (s x)
-    | Raise (x, k) -> Raise (s x, k)
-    | Cond (x, cont1, cont2) -> Cond (s x, subst_cont s cont1, subst_cont s cont2)
-    | Switch (x, a1) -> Switch (s x, Array.map a1 ~f:(fun cont -> subst_cont s cont))
-    | Poptrap cont -> Poptrap (subst_cont s cont)
+    | Branch cont ->
+        let cont' = subst_cont_sharing s cont in
+        if phys_equal cont' cont then l else Branch cont'
+    | Pushtrap (cont1, x, cont2) ->
+        let cont1' = subst_cont_sharing s cont1 in
+        let cont2' = subst_cont_sharing s cont2 in
+        if phys_equal cont1' cont1 && phys_equal cont2' cont2
+        then l
+        else Pushtrap (cont1', x, cont2')
+    | Return x ->
+        let x' = s x in
+        if phys_equal x' x then l else Return x'
+    | Raise (x, k) ->
+        let x' = s x in
+        if phys_equal x' x then l else Raise (x', k)
+    | Cond (x, cont1, cont2) ->
+        let x' = s x in
+        let cont1' = subst_cont_sharing s cont1 in
+        let cont2' = subst_cont_sharing s cont2 in
+        if phys_equal x' x && phys_equal cont1' cont1 && phys_equal cont2' cont2
+        then l
+        else Cond (x', cont1', cont2')
+    | Switch (x, a1) ->
+        let x' = s x in
+        let a1' = Array.map_sharing a1 ~f:(fun cont -> subst_cont_sharing s cont) in
+        if phys_equal x' x && phys_equal a1' a1 then l else Switch (x', a1')
+    | Poptrap cont ->
+        let cont' = subst_cont_sharing s cont in
+        if phys_equal cont' cont then l else Poptrap cont'
 
   let block s block =
-    { params = block.params; body = instrs s block.body; branch = last s block.branch }
+    let body = instrs s block.body in
+    let branch = last s block.branch in
+    if phys_equal body block.body && phys_equal branch block.branch
+    then block
+    else { params = block.params; body; branch }
 
   let program s p =
     let blocks = Addr.Map.map (fun b -> block s b) p.blocks in
