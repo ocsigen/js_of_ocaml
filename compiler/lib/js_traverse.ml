@@ -1115,16 +1115,9 @@ class free =
           List.iter ids ~f:tbody#def_var;
           let body = tbody#function_body body in
           let params = tbody#formal_parameter_list params in
-          let ident =
-            match ident with
-            | Some i ->
-                if IdentSet.mem i tbody#state.use
-                then (
-                  tbody#def_var i;
-                  ident)
-                else None
-            | None -> None
-          in
+          (* The name of a function expression is only bound within
+             the function *)
+          Option.iter ident ~f:tbody#def_var;
           tbody#record_block (Params params);
           m#merge_info tbody;
           EFun (ident, (k, params, body, nid))
