@@ -661,7 +661,7 @@ var zstd_decompress = (function () {
    *            it will yield better performance.
    * @returns The decompressed data
    */
-  return function decompress(dat, buf) {
+  return function (dat, buf) {
     var bt = 0,
       bufs = [],
       nb = +!buf,
