@@ -666,10 +666,7 @@ class map : mapper =
           else ArrayBinding { list = list'; rest = rest' }
 
     method private binding_array_elt x =
-      Option.map_sharing x ~f:(fun ((b, e) as y) ->
-          let b' = m#binding b in
-          let e' = m#initialiser_o e in
-          if phys_equal b' b && phys_equal e' e then y else b', e')
+      Option.map_sharing x ~f:(fun e -> m#binding_element e)
 
     method binding_property x =
       match x with
@@ -1039,12 +1036,7 @@ class iter : iterator =
           List.iter list ~f:m#binding_array_elt;
           Option.iter rest ~f:m#binding
 
-    method private binding_array_elt x =
-      match x with
-      | None -> ()
-      | Some (b, e) ->
-          m#binding b;
-          m#initialiser_o e
+    method private binding_array_elt x = Option.iter x ~f:(fun e -> m#binding_element e)
 
     method private binding_property x =
       match x with
