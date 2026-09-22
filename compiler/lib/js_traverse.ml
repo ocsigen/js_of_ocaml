@@ -82,424 +82,616 @@ class type mapper = object
 end
 
 (* generic js ast walk/map *)
+(* The methods of this class return their argument unchanged
+   (physically) when nothing changed below it, rather than building a
+   copy. Most passes only modify a small part of the program: this
+   way, we do not allocate a whole new copy of the program, which
+   would get promoted to the major heap, each time we traverse it. *)
 class map : mapper =
   object (m)
-    method loc =
-      function
-      | N -> N
-      | U -> U
-      | Pi x -> Pi (m#parse_info x)
+    method loc l =
+      match l with
+      | N | U -> l
+      | Pi x ->
+          let x' = m#parse_info x in
+          if phys_equal x' x then l else Pi x'
 
     method parse_info i = i
 
     method ident i =
       match i with
-      | V v -> V v
-      | S { name; var; loc } -> S { name; var; loc = m#loc loc }
+      | V _ -> i
+      | S { name; var; loc } ->
+          let loc' = m#loc loc in
+          if phys_equal loc' loc then i else S { name; var; loc = loc' }
 
-    method private early_error { reason; loc } = { reason; loc = m#parse_info loc }
+    method private early_error ({ reason; loc } as x) =
+      let loc' = m#parse_info loc in
+      if phys_equal loc' loc then x else { reason; loc = loc' }
 
-    method statements l =
-      List.map l ~f:(fun (s, pc) ->
-          let s = m#statement s in
-          s, m#loc pc)
+    method private statement_loc ((s, loc) as x) =
+      let s' = m#statement s in
+      let loc' = m#loc loc in
+      if phys_equal s' s && phys_equal loc' loc then x else s', loc'
+
+    method statements l = List.map_sharing l ~f:(fun x -> m#statement_loc x)
 
     method variable_declaration _ x =
       match x with
       | DeclIdent (id, eo) ->
-          let id = m#ident id in
-          DeclIdent (id, m#initialiser_o eo)
+          let id' = m#ident id in
+          let eo' = m#initialiser_o eo in
+          if phys_equal id' id && phys_equal eo' eo then x else DeclIdent (id', eo')
       | DeclPattern (p, i) ->
-          let p = m#binding_pattern p in
-          DeclPattern (p, m#initialiser i)
+          let p' = m#binding_pattern p in
+          let i' = m#initialiser i in
+          if phys_equal p' p && phys_equal i' i then x else DeclPattern (p', i')
 
     method for_binding _ x = m#binding x
 
-    method formal_parameter_list { list; rest } =
-      let list = List.map list ~f:m#param in
-      { list; rest = Option.map rest ~f:m#binding }
+    method formal_parameter_list ({ list; rest } as x) =
+      let list' = List.map_sharing list ~f:m#param in
+      let rest' = Option.map_sharing rest ~f:m#binding in
+      if phys_equal list' list && phys_equal rest' rest
+      then x
+      else { list = list'; rest = rest' }
 
     method private property_name x =
       match x with
-      | (PNI _ | PNS _ | PNN _) as x -> x
-      | PComputed e -> PComputed (m#expression e)
+      | PNI _ | PNS _ | PNN _ -> x
+      | PComputed e ->
+          let e' = m#expression e in
+          if phys_equal e' e then x else PComputed e'
 
-    method fun_decl (k, params, body, nid) =
-      let params = m#formal_parameter_list params in
-      let body = m#function_body body in
-      k, params, body, m#loc nid
+    method fun_decl ((k, params, body, nid) as x) =
+      let params' = m#formal_parameter_list params in
+      let body' = m#function_body body in
+      let nid' = m#loc nid in
+      if phys_equal params' params && phys_equal body' body && phys_equal nid' nid
+      then x
+      else k, params', body', nid'
 
     method class_decl x =
-      let decorators = List.map x.decorators ~f:m#expression in
-      let extends = Option.map x.extends ~f:m#expression in
-      { decorators; extends; body = List.map x.body ~f:m#class_element }
+      let decorators = List.map_sharing x.decorators ~f:m#expression in
+      let extends = Option.map_sharing x.extends ~f:m#expression in
+      let body = List.map_sharing x.body ~f:m#class_element in
+      if
+        phys_equal decorators x.decorators
+        && phys_equal extends x.extends
+        && phys_equal body x.body
+      then x
+      else { decorators; extends; body }
 
     method class_element x =
       match x with
       | CEMethod (d, s, n, meth) ->
-          let d = List.map d ~f:m#expression in
-          let n = m#class_element_name n in
-          CEMethod (d, s, n, m#method_ meth)
+          let d' = List.map_sharing d ~f:m#expression in
+          let n' = m#class_element_name n in
+          let meth' = m#method_ meth in
+          if phys_equal d' d && phys_equal n' n && phys_equal meth' meth
+          then x
+          else CEMethod (d', s, n', meth')
       | CEField (d, s, n, i) ->
-          let d = List.map d ~f:m#expression in
-          let n = m#class_element_name n in
-          CEField (d, s, n, m#initialiser_o i)
+          let d' = List.map_sharing d ~f:m#expression in
+          let n' = m#class_element_name n in
+          let i' = m#initialiser_o i in
+          if phys_equal d' d && phys_equal n' n && phys_equal i' i
+          then x
+          else CEField (d', s, n', i')
       | CEAccessor (d, s, n, i) ->
-          let d = List.map d ~f:m#expression in
-          let n = m#class_element_name n in
-          CEAccessor (d, s, n, m#initialiser_o i)
-      | CEStaticBLock b -> CEStaticBLock (m#block b)
+          let d' = List.map_sharing d ~f:m#expression in
+          let n' = m#class_element_name n in
+          let i' = m#initialiser_o i in
+          if phys_equal d' d && phys_equal n' n && phys_equal i' i
+          then x
+          else CEAccessor (d', s, n', i')
+      | CEStaticBLock b ->
+          let b' = m#block b in
+          if phys_equal b' b then x else CEStaticBLock b'
 
     method private class_element_name x =
       match x with
-      | PropName n -> PropName (m#property_name n)
-      | PrivName x -> PrivName x
+      | PropName n ->
+          let n' = m#property_name n in
+          if phys_equal n' n then x else PropName n'
+      | PrivName _ -> x
 
     method block l = m#statements l
 
+    method private for_in_binding e1 =
+      match e1 with
+      | Left e ->
+          let e' = m#expression e in
+          if phys_equal e' e then e1 else Left e'
+      | Right (k, d) ->
+          let d' = m#for_binding k d in
+          if phys_equal d' d then e1 else Right (k, d')
+
+    method private switch_clause ((e, s) as x) =
+      let e' = m#switch_case e in
+      let s' = m#statements s in
+      if phys_equal e' e && phys_equal s' s then x else e', s'
+
     method statement s =
       match s with
-      | Block b -> Block (m#block b)
+      | Block b ->
+          let b' = m#block b in
+          if phys_equal b' b then s else Block b'
       | Variable_statement (k, l) ->
-          Variable_statement (k, List.map l ~f:(m#variable_declaration k))
+          let l' = List.map_sharing l ~f:(m#variable_declaration k) in
+          if phys_equal l' l then s else Variable_statement (k, l')
       | Function_declaration (id, fun_decl) ->
-          let id = m#ident id in
-          Function_declaration (id, m#fun_decl fun_decl)
+          let id' = m#ident id in
+          let fun_decl' = m#fun_decl fun_decl in
+          if phys_equal id' id && phys_equal fun_decl' fun_decl
+          then s
+          else Function_declaration (id', fun_decl')
       | Class_declaration (id, cl_decl) ->
-          let id = m#ident id in
-          Class_declaration (id, m#class_decl cl_decl)
-      | Empty_statement -> Empty_statement
-      | Debugger_statement -> Debugger_statement
-      | Expression_statement e -> Expression_statement (m#expression e)
-      | If_statement (e, (s, loc), sopt) ->
-          let e = m#expression e in
-          let s = m#statement s in
-          let loc = m#loc loc in
-          If_statement (e, (s, loc), m#statement_o sopt)
-      | Do_while_statement ((s, loc), e) ->
-          let s = m#statement s in
-          let loc = m#loc loc in
-          Do_while_statement ((s, loc), m#expression e)
-      | While_statement (e, (s, loc)) ->
-          let e = m#expression e in
-          let s = m#statement s in
-          While_statement (e, (s, m#loc loc))
-      | For_statement (e1, e2, e3, (s, loc)) ->
-          let e1 =
+          let id' = m#ident id in
+          let cl_decl' = m#class_decl cl_decl in
+          if phys_equal id' id && phys_equal cl_decl' cl_decl
+          then s
+          else Class_declaration (id', cl_decl')
+      | Empty_statement | Debugger_statement -> s
+      | Expression_statement e ->
+          let e' = m#expression e in
+          if phys_equal e' e then s else Expression_statement e'
+      | If_statement (e, body, sopt) ->
+          let e' = m#expression e in
+          let body' = m#statement_loc body in
+          let sopt' = m#statement_o sopt in
+          if phys_equal e' e && phys_equal body' body && phys_equal sopt' sopt
+          then s
+          else If_statement (e', body', sopt')
+      | Do_while_statement (body, e) ->
+          let body' = m#statement_loc body in
+          let e' = m#expression e in
+          if phys_equal body' body && phys_equal e' e
+          then s
+          else Do_while_statement (body', e')
+      | While_statement (e, body) ->
+          let e' = m#expression e in
+          let body' = m#statement_loc body in
+          if phys_equal e' e && phys_equal body' body
+          then s
+          else While_statement (e', body')
+      | For_statement (e1, e2, e3, body) ->
+          let e1' =
             match e1 with
-            | Left o -> Left (m#expression_o o)
+            | Left o ->
+                let o' = m#expression_o o in
+                if phys_equal o' o then e1 else Left o'
             | Right (k, l) ->
-                Right (k, List.map l ~f:(fun d -> m#variable_declaration k d))
+                let l' = List.map_sharing l ~f:(fun d -> m#variable_declaration k d) in
+                if phys_equal l' l then e1 else Right (k, l')
           in
-          let e2 = m#expression_o e2 in
-          let e3 = m#expression_o e3 in
-          let s = m#statement s in
-          For_statement (e1, e2, e3, (s, m#loc loc))
-      | ForIn_statement (e1, e2, (s, loc)) ->
-          let e1 =
-            match e1 with
-            | Left e -> Left (m#expression e)
-            | Right (k, d) -> Right (k, m#for_binding k d)
-          in
-          let e2 = m#expression e2 in
-          let s = m#statement s in
-          ForIn_statement (e1, e2, (s, m#loc loc))
-      | ForOf_statement (e1, e2, (s, loc)) ->
-          let e1 =
-            match e1 with
-            | Left e -> Left (m#expression e)
-            | Right (k, d) -> Right (k, m#for_binding k d)
-          in
-          let e2 = m#expression e2 in
-          let s = m#statement s in
-          ForOf_statement (e1, e2, (s, m#loc loc))
-      | ForAwaitOf_statement (e1, e2, (s, loc)) ->
-          let e1 =
-            match e1 with
-            | Left e -> Left (m#expression e)
-            | Right (k, d) -> Right (k, m#for_binding k d)
-          in
-          let e2 = m#expression e2 in
-          let s = m#statement s in
-          ForAwaitOf_statement (e1, e2, (s, m#loc loc))
-      | Continue_statement s -> Continue_statement s
-      | Break_statement s -> Break_statement s
+          let e2' = m#expression_o e2 in
+          let e3' = m#expression_o e3 in
+          let body' = m#statement_loc body in
+          if
+            phys_equal e1' e1
+            && phys_equal e2' e2
+            && phys_equal e3' e3
+            && phys_equal body' body
+          then s
+          else For_statement (e1', e2', e3', body')
+      | ForIn_statement (e1, e2, body) ->
+          let e1' = m#for_in_binding e1 in
+          let e2' = m#expression e2 in
+          let body' = m#statement_loc body in
+          if phys_equal e1' e1 && phys_equal e2' e2 && phys_equal body' body
+          then s
+          else ForIn_statement (e1', e2', body')
+      | ForOf_statement (e1, e2, body) ->
+          let e1' = m#for_in_binding e1 in
+          let e2' = m#expression e2 in
+          let body' = m#statement_loc body in
+          if phys_equal e1' e1 && phys_equal e2' e2 && phys_equal body' body
+          then s
+          else ForOf_statement (e1', e2', body')
+      | ForAwaitOf_statement (e1, e2, body) ->
+          let e1' = m#for_in_binding e1 in
+          let e2' = m#expression e2 in
+          let body' = m#statement_loc body in
+          if phys_equal e1' e1 && phys_equal e2' e2 && phys_equal body' body
+          then s
+          else ForAwaitOf_statement (e1', e2', body')
+      | Continue_statement _ | Break_statement _ -> s
       | Return_statement (e, loc) ->
-          let e = m#expression_o e in
-          Return_statement (e, m#loc loc)
-      | Labelled_statement (l, (s, loc)) ->
-          let s = m#statement s in
-          Labelled_statement (l, (s, m#loc loc))
-      | Throw_statement e -> Throw_statement (m#expression e)
+          let e' = m#expression_o e in
+          let loc' = m#loc loc in
+          if phys_equal e' e && phys_equal loc' loc then s else Return_statement (e', loc')
+      | Labelled_statement (l, body) ->
+          let body' = m#statement_loc body in
+          if phys_equal body' body then s else Labelled_statement (l, body')
+      | Throw_statement e ->
+          let e' = m#expression e in
+          if phys_equal e' e then s else Throw_statement e'
       | Switch_statement (e, l, def, l') ->
-          let e = m#expression e in
-          let l =
-            List.map l ~f:(fun (e, s) ->
-                let e = m#switch_case e in
-                e, m#statements s)
-          in
-          let def =
-            match def with
-            | None -> None
-            | Some l -> Some (m#statements l)
-          in
-          Switch_statement
-            ( e
-            , l
-            , def
-            , List.map l' ~f:(fun (e, s) ->
-                  let e = m#switch_case e in
-                  e, m#statements s) )
+          let e' = m#expression e in
+          let l_ = List.map_sharing l ~f:(fun c -> m#switch_clause c) in
+          let def' = Option.map_sharing def ~f:(fun l -> m#statements l) in
+          let l'_ = List.map_sharing l' ~f:(fun c -> m#switch_clause c) in
+          if
+            phys_equal e' e && phys_equal l_ l && phys_equal def' def && phys_equal l'_ l'
+          then s
+          else Switch_statement (e', l_, def', l'_)
       | Try_statement (b, catch, final) ->
-          let b = m#block b in
-          let catch =
-            match catch with
-            | None -> None
-            | Some (id, b) ->
-                let id = Option.map ~f:m#param id in
-                Some (id, m#block b)
+          let b' = m#block b in
+          let catch' =
+            Option.map_sharing catch ~f:(fun ((id, b) as x) ->
+                let id' = Option.map_sharing ~f:m#param id in
+                let b' = m#block b in
+                if phys_equal id' id && phys_equal b' b then x else id', b')
           in
-          Try_statement
-            ( b
-            , catch
-            , match final with
-              | None -> None
-              | Some s -> Some (m#block s) )
-      | With_statement (e, (s, loc)) ->
-          let e = m#expression e in
-          let s = m#statement s in
-          With_statement (e, (s, m#loc loc))
+          let final' = Option.map_sharing final ~f:(fun s -> m#block s) in
+          if phys_equal b' b && phys_equal catch' catch && phys_equal final' final
+          then s
+          else Try_statement (b', catch', final')
+      | With_statement (e, body) ->
+          let e' = m#expression e in
+          let body' = m#statement_loc body in
+          if phys_equal e' e && phys_equal body' body
+          then s
+          else With_statement (e', body')
       | Import (import, loc) ->
-          let import = m#import import in
-          Import (import, m#parse_info loc)
+          let import' = m#import import in
+          let loc' = m#parse_info loc in
+          if phys_equal import' import && phys_equal loc' loc
+          then s
+          else Import (import', loc')
       | Export (export, loc) ->
-          let export = m#export export in
-          Export (export, m#parse_info loc)
+          let export' = m#export export in
+          let loc' = m#parse_info loc in
+          if phys_equal export' export && phys_equal loc' loc
+          then s
+          else Export (export', loc')
 
-    method import { from; kind; withClause } =
-      let kind =
+    method import ({ from; kind; withClause } as x) =
+      let kind' =
         match kind with
-        | DeferNamespace i -> DeferNamespace (m#ident i)
+        | DeferNamespace i ->
+            let i' = m#ident i in
+            if phys_equal i' i then kind else DeferNamespace i'
         | Namespace (iopt, i) ->
-            let iopt = Option.map ~f:m#ident iopt in
-            Namespace (iopt, m#ident i)
+            let iopt' = Option.map_sharing ~f:m#ident iopt in
+            let i' = m#ident i in
+            if phys_equal iopt' iopt && phys_equal i' i
+            then kind
+            else Namespace (iopt', i')
         | Named (iopt, l) ->
-            let iopt = Option.map ~f:m#ident iopt in
-            Named (iopt, List.map ~f:(fun (s, id) -> s, m#ident id) l)
-        | Default import_default -> Default (m#ident import_default)
-        | SideEffect -> SideEffect
+            let iopt' = Option.map_sharing ~f:m#ident iopt in
+            let l' =
+              List.map_sharing l ~f:(fun ((s, id) as x) ->
+                  let id' = m#ident id in
+                  if phys_equal id' id then x else s, id')
+            in
+            if phys_equal iopt' iopt && phys_equal l' l then kind else Named (iopt', l')
+        | Default import_default ->
+            let import_default' = m#ident import_default in
+            if phys_equal import_default' import_default
+            then kind
+            else Default import_default'
+        | SideEffect -> kind
       in
-      { from; kind; withClause }
+      if phys_equal kind' kind then x else { from; kind = kind'; withClause }
 
     method export e =
       match e with
       | ExportVar (k, l) -> (
           match m#statement (Variable_statement (k, l)) with
-          | Variable_statement (k, l) -> ExportVar (k, l)
+          | Variable_statement (k', l') ->
+              if phys_equal k' k && phys_equal l' l then e else ExportVar (k', l')
           | _ -> assert false)
       | ExportFun (id, f) -> (
           match m#statement (Function_declaration (id, f)) with
-          | Function_declaration (id, f) -> ExportFun (id, f)
+          | Function_declaration (id', f') ->
+              if phys_equal id' id && phys_equal f' f then e else ExportFun (id', f')
           | _ -> assert false)
       | ExportClass (id, f) -> (
           match m#statement (Class_declaration (id, f)) with
-          | Class_declaration (id, f) -> ExportClass (id, f)
+          | Class_declaration (id', f') ->
+              if phys_equal id' id && phys_equal f' f then e else ExportClass (id', f')
           | _ -> assert false)
       | ExportNames l ->
-          ExportNames
-            (List.map
-               ~f:(fun (id, s) ->
-                 match m#expression (EVar id) with
-                 | EVar id -> id, s
-                 | _ -> assert false)
-               l)
+          let l' =
+            List.map_sharing l ~f:(fun ((id, s) as x) ->
+                match m#expression (EVar id) with
+                | EVar id' -> if phys_equal id' id then x else id', s
+                | _ -> assert false)
+          in
+          if phys_equal l' l then e else ExportNames l'
       | ExportDefaultFun (Some id, decl) -> (
           match m#statement (Function_declaration (id, decl)) with
-          | Function_declaration (id, decl) -> ExportDefaultFun (Some id, decl)
+          | Function_declaration (id', decl') ->
+              if phys_equal id' id && phys_equal decl' decl
+              then e
+              else ExportDefaultFun (Some id', decl')
           | _ -> assert false)
       | ExportDefaultFun (None, decl) -> (
           match m#expression (EFun (None, decl)) with
-          | EFun (None, decl) -> ExportDefaultFun (None, decl)
+          | EFun (None, decl') ->
+              if phys_equal decl' decl then e else ExportDefaultFun (None, decl')
           | _ -> assert false)
       | ExportDefaultClass (Some id, decl) -> (
           match m#statement (Class_declaration (id, decl)) with
-          | Class_declaration (id, decl) -> ExportDefaultClass (Some id, decl)
+          | Class_declaration (id', decl') ->
+              if phys_equal id' id && phys_equal decl' decl
+              then e
+              else ExportDefaultClass (Some id', decl')
           | _ -> assert false)
       | ExportDefaultClass (None, decl) -> (
           match m#expression (EClass (None, decl)) with
-          | EClass (None, decl) -> ExportDefaultClass (None, decl)
+          | EClass (None, decl') ->
+              if phys_equal decl' decl then e else ExportDefaultClass (None, decl')
           | _ -> assert false)
-      | ExportDefaultExpression e -> ExportDefaultExpression (m#expression e)
-      | ExportFrom l -> ExportFrom l
-      | CoverExportFrom e -> CoverExportFrom (m#early_error e)
+      | ExportDefaultExpression x ->
+          let x' = m#expression x in
+          if phys_equal x' x then e else ExportDefaultExpression x'
+      | ExportFrom _ -> e
+      | CoverExportFrom x ->
+          let x' = m#early_error x in
+          if phys_equal x' x then e else CoverExportFrom x'
 
-    method statement_o x =
-      match x with
-      | None -> None
-      | Some (s, loc) ->
-          let s = m#statement s in
-          Some (s, m#loc loc)
+    method statement_o x = Option.map_sharing x ~f:(fun s -> m#statement_loc s)
 
     method switch_case e = m#expression e
 
     method private argument a =
       match a with
-      | Arg e -> Arg (m#expression e)
-      | ArgSpread e -> ArgSpread (m#expression e)
+      | Arg e ->
+          let e' = m#expression e in
+          if phys_equal e' e then a else Arg e'
+      | ArgSpread e ->
+          let e' = m#expression e in
+          if phys_equal e' e then a else ArgSpread e'
 
     method private template l =
-      List.map l ~f:(function
-        | TStr s -> TStr s
-        | TExp e -> TExp (m#expression e))
+      List.map_sharing l ~f:(fun x ->
+          match x with
+          | TStr _ -> x
+          | TExp e ->
+              let e' = m#expression e in
+              if phys_equal e' e then x else TExp e')
+
+    method private assignment_target_element x =
+      match x with
+      | TargetElementHole -> x
+      | TargetElementId (i, e) ->
+          let i' = m#ident i in
+          let e' = m#initialiser_o e in
+          if phys_equal i' i && phys_equal e' e then x else TargetElementId (i', e')
+      | TargetElement e ->
+          let e' = m#expression e in
+          if phys_equal e' e then x else TargetElement e'
+      | TargetElementSpread e ->
+          let e' = m#expression e in
+          if phys_equal e' e then x else TargetElementSpread e'
+
+    method private assignment_target_property x =
+      match x with
+      | TargetPropertyId (Prop_and_ident i, e) ->
+          let i' = m#ident i in
+          let e' = m#initialiser_o e in
+          if phys_equal i' i && phys_equal e' e
+          then x
+          else TargetPropertyId (Prop_and_ident i', e')
+      | TargetProperty (n, e, i) ->
+          let n' = m#property_name n in
+          let e' = m#expression e in
+          let i' = m#initialiser_o i in
+          if phys_equal n' n && phys_equal e' e && phys_equal i' i
+          then x
+          else TargetProperty (n', e', i')
+      | TargetPropertyMethod (n, meth) ->
+          let n' = m#property_name n in
+          let meth' = m#method_ meth in
+          if phys_equal n' n && phys_equal meth' meth
+          then x
+          else TargetPropertyMethod (n', meth')
+      | TargetPropertySpread e ->
+          let e' = m#expression e in
+          if phys_equal e' e then x else TargetPropertySpread e'
+
+    method private element x =
+      match x with
+      | ElementHole -> x
+      | Element e ->
+          let e' = m#expression e in
+          if phys_equal e' e then x else Element e'
+      | ElementSpread e ->
+          let e' = m#expression e in
+          if phys_equal e' e then x else ElementSpread e'
+
+    method private property p =
+      match p with
+      | Property (i, e) ->
+          let i' = m#property_name i in
+          let e' = m#expression e in
+          if phys_equal i' i && phys_equal e' e then p else Property (i', e')
+      | PropertyMethod (n, x) ->
+          let n' = m#property_name n in
+          let x' = m#method_ x in
+          if phys_equal n' n && phys_equal x' x then p else PropertyMethod (n', x')
+      | PropertySpread e ->
+          let e' = m#expression e in
+          if phys_equal e' e then p else PropertySpread e'
+      | CoverInitializedName (e, a, b) ->
+          let e' = m#early_error e in
+          if phys_equal e' e then p else CoverInitializedName (e', a, b)
 
     method expression x =
       match x with
       | ESeq (e1, e2) ->
-          let e1 = m#expression e1 in
-          ESeq (e1, m#expression e2)
+          let e1' = m#expression e1 in
+          let e2' = m#expression e2 in
+          if phys_equal e1' e1 && phys_equal e2' e2 then x else ESeq (e1', e2')
       | ECond (e1, e2, e3) ->
-          let e1 = m#expression e1 in
-          let e2 = m#expression e2 in
-          ECond (e1, e2, m#expression e3)
+          let e1' = m#expression e1 in
+          let e2' = m#expression e2 in
+          let e3' = m#expression e3 in
+          if phys_equal e1' e1 && phys_equal e2' e2 && phys_equal e3' e3
+          then x
+          else ECond (e1', e2', e3')
       | EBin (b, e1, e2) ->
-          let e1 = m#expression e1 in
-          EBin (b, e1, m#expression e2)
-      | EAssignTarget x -> (
-          match x with
+          let e1' = m#expression e1 in
+          let e2' = m#expression e2 in
+          if phys_equal e1' e1 && phys_equal e2' e2 then x else EBin (b, e1', e2')
+      | EAssignTarget t -> (
+          match t with
           | ArrayTarget l ->
-              EAssignTarget
-                (ArrayTarget
-                   (List.map l ~f:(function
-                     | TargetElementHole -> TargetElementHole
-                     | TargetElementId (i, e) ->
-                         let i = m#ident i in
-                         TargetElementId (i, m#initialiser_o e)
-                     | TargetElement e -> TargetElement (m#expression e)
-                     | TargetElementSpread e -> TargetElementSpread (m#expression e))))
+              let l' = List.map_sharing l ~f:(fun e -> m#assignment_target_element e) in
+              if phys_equal l' l then x else EAssignTarget (ArrayTarget l')
           | ObjectTarget l ->
-              EAssignTarget
-                (ObjectTarget
-                   (List.map l ~f:(function
-                     | TargetPropertyId (Prop_and_ident i, e) ->
-                         let i = m#ident i in
-                         TargetPropertyId (Prop_and_ident i, m#initialiser_o e)
-                     | TargetProperty (n, e, i) ->
-                         let n = m#property_name n in
-                         let e = m#expression e in
-                         TargetProperty (n, e, m#initialiser_o i)
-                     | TargetPropertyMethod (n, x) ->
-                         let n = m#property_name n in
-                         TargetPropertyMethod (n, m#method_ x)
-                     | TargetPropertySpread e -> TargetPropertySpread (m#expression e)))))
-      | EUn (b, e1) -> EUn (b, m#expression e1)
+              let l' = List.map_sharing l ~f:(fun p -> m#assignment_target_property p) in
+              if phys_equal l' l then x else EAssignTarget (ObjectTarget l'))
+      | EUn (b, e1) ->
+          let e1' = m#expression e1 in
+          if phys_equal e1' e1 then x else EUn (b, e1')
       | ECallTemplate (e1, t, loc) ->
-          let e1 = m#expression e1 in
-          let t = m#template t in
-          ECallTemplate (e1, t, m#loc loc)
+          let e1' = m#expression e1 in
+          let t' = m#template t in
+          let loc' = m#loc loc in
+          if phys_equal e1' e1 && phys_equal t' t && phys_equal loc' loc
+          then x
+          else ECallTemplate (e1', t', loc')
       | ECall (e1, ak, e2, loc) ->
-          let e1 = m#expression e1 in
-          let e2 = List.map e2 ~f:m#argument in
-          ECall (e1, ak, e2, m#loc loc)
+          let e1' = m#expression e1 in
+          let e2' = List.map_sharing e2 ~f:m#argument in
+          let loc' = m#loc loc in
+          if phys_equal e1' e1 && phys_equal e2' e2 && phys_equal loc' loc
+          then x
+          else ECall (e1', ak, e2', loc')
       | EAccess (e1, ak, e2) ->
-          let e1 = m#expression e1 in
-          EAccess (e1, ak, m#expression e2)
-      | EDot (e1, ak, id) -> EDot (m#expression e1, ak, id)
-      | EDotPrivate (e1, ak, id) -> EDotPrivate (m#expression e1, ak, id)
+          let e1' = m#expression e1 in
+          let e2' = m#expression e2 in
+          if phys_equal e1' e1 && phys_equal e2' e2 then x else EAccess (e1', ak, e2')
+      | EDot (e1, ak, id) ->
+          let e1' = m#expression e1 in
+          if phys_equal e1' e1 then x else EDot (e1', ak, id)
+      | EDotPrivate (e1, ak, id) ->
+          let e1' = m#expression e1 in
+          if phys_equal e1' e1 then x else EDotPrivate (e1', ak, id)
       | ENew (e1, args, loc) ->
-          let e1 = m#expression e1 in
-          let args = Option.map ~f:(List.map ~f:m#argument) args in
-          ENew (e1, args, m#loc loc)
-      | EVar v -> EVar (m#ident v)
+          let e1' = m#expression e1 in
+          let args' =
+            Option.map_sharing args ~f:(fun l -> List.map_sharing l ~f:m#argument)
+          in
+          let loc' = m#loc loc in
+          if phys_equal e1' e1 && phys_equal args' args && phys_equal loc' loc
+          then x
+          else ENew (e1', args', loc')
+      | EVar v ->
+          let v' = m#ident v in
+          if phys_equal v' v then x else EVar v'
       | EFun (idopt, fun_decl) ->
-          let idopt = Option.map ~f:m#ident idopt in
-          EFun (idopt, m#fun_decl fun_decl)
+          let idopt' = Option.map_sharing ~f:m#ident idopt in
+          let fun_decl' = m#fun_decl fun_decl in
+          if phys_equal idopt' idopt && phys_equal fun_decl' fun_decl
+          then x
+          else EFun (idopt', fun_decl')
       | EClass (id, cl_decl) ->
-          let id = Option.map ~f:m#ident id in
-          EClass (id, m#class_decl cl_decl)
-      | EArrow (fun_decl, consise, x) -> EArrow (m#fun_decl fun_decl, consise, x)
+          let id' = Option.map_sharing ~f:m#ident id in
+          let cl_decl' = m#class_decl cl_decl in
+          if phys_equal id' id && phys_equal cl_decl' cl_decl
+          then x
+          else EClass (id', cl_decl')
+      | EArrow (fun_decl, consise, k) ->
+          let fun_decl' = m#fun_decl fun_decl in
+          if phys_equal fun_decl' fun_decl then x else EArrow (fun_decl', consise, k)
       | EArr l ->
-          EArr
-            (List.map l ~f:(function
-              | ElementHole -> ElementHole
-              | Element e -> Element (m#expression e)
-              | ElementSpread e -> ElementSpread (m#expression e)))
+          let l' = List.map_sharing l ~f:(fun e -> m#element e) in
+          if phys_equal l' l then x else EArr l'
       | EObj l ->
-          EObj
-            (List.map l ~f:(fun p ->
-                 match p with
-                 | Property (i, e) ->
-                     let i = m#property_name i in
-                     Property (i, m#expression e)
-                 | PropertyMethod (n, x) ->
-                     let n = m#property_name n in
-                     PropertyMethod (n, m#method_ x)
-                 | PropertySpread e -> PropertySpread (m#expression e)
-                 | CoverInitializedName (e, a, b) ->
-                     CoverInitializedName (m#early_error e, a, b)))
-      | (EStr _ as x) | (EBool _ as x) | (ENum _ as x) | (ERegexp _ as x) -> x
-      | ETemplate t -> ETemplate (m#template t)
-      | EYield { delegate; expr } -> EYield { delegate; expr = m#expression_o expr }
-      | EPrivName i -> EPrivName i
+          let l' = List.map_sharing l ~f:(fun p -> m#property p) in
+          if phys_equal l' l then x else EObj l'
+      | EStr _ | EBool _ | ENum _ | ERegexp _ -> x
+      | ETemplate t ->
+          let t' = m#template t in
+          if phys_equal t' t then x else ETemplate t'
+      | EYield { delegate; expr } ->
+          let expr' = m#expression_o expr in
+          if phys_equal expr' expr then x else EYield { delegate; expr = expr' }
+      | EPrivName _ -> x
       | CoverParenthesizedExpressionAndArrowParameterList e ->
-          CoverParenthesizedExpressionAndArrowParameterList (m#early_error e)
+          let e' = m#early_error e in
+          if phys_equal e' e
+          then x
+          else CoverParenthesizedExpressionAndArrowParameterList e'
       | CoverCallExpressionAndAsyncArrowHead e ->
-          CoverCallExpressionAndAsyncArrowHead (m#early_error e)
+          let e' = m#early_error e in
+          if phys_equal e' e then x else CoverCallExpressionAndAsyncArrowHead e'
 
     method private method_ x =
       match x with
-      | MethodSet fun_decl -> MethodSet (m#fun_decl fun_decl)
-      | MethodGet fun_decl -> MethodGet (m#fun_decl fun_decl)
-      | Method fun_decl -> Method (m#fun_decl fun_decl)
+      | MethodSet fun_decl ->
+          let fun_decl' = m#fun_decl fun_decl in
+          if phys_equal fun_decl' fun_decl then x else MethodSet fun_decl'
+      | MethodGet fun_decl ->
+          let fun_decl' = m#fun_decl fun_decl in
+          if phys_equal fun_decl' fun_decl then x else MethodGet fun_decl'
+      | Method fun_decl ->
+          let fun_decl' = m#fun_decl fun_decl in
+          if phys_equal fun_decl' fun_decl then x else Method fun_decl'
 
     method private param p = m#binding_element p
 
-    method private binding_element (b, e) =
-      let b = m#binding b in
-      b, m#initialiser_o e
+    method private binding_element ((b, e) as x) =
+      let b' = m#binding b in
+      let e' = m#initialiser_o e in
+      if phys_equal b' b && phys_equal e' e then x else b', e'
 
     method private binding x =
       match x with
-      | BindingIdent x -> BindingIdent (m#ident x)
-      | BindingPattern x -> BindingPattern (m#binding_pattern x)
+      | BindingIdent i ->
+          let i' = m#ident i in
+          if phys_equal i' i then x else BindingIdent i'
+      | BindingPattern p ->
+          let p' = m#binding_pattern p in
+          if phys_equal p' p then x else BindingPattern p'
 
     method private binding_pattern x =
       match x with
       | ObjectBinding { list; rest } ->
-          let list = List.map list ~f:m#binding_property in
-          ObjectBinding { list; rest = Option.map rest ~f:m#ident }
+          let list' = List.map_sharing list ~f:m#binding_property in
+          let rest' = Option.map_sharing rest ~f:m#ident in
+          if phys_equal list' list && phys_equal rest' rest
+          then x
+          else ObjectBinding { list = list'; rest = rest' }
       | ArrayBinding { list; rest } ->
-          let list = List.map list ~f:m#binding_array_elt in
-          ArrayBinding { list; rest = Option.map rest ~f:m#binding }
+          let list' = List.map_sharing list ~f:m#binding_array_elt in
+          let rest' = Option.map_sharing rest ~f:m#binding in
+          if phys_equal list' list && phys_equal rest' rest
+          then x
+          else ArrayBinding { list = list'; rest = rest' }
 
     method private binding_array_elt x =
-      match x with
-      | None -> None
-      | Some (b, e) ->
-          let b = m#binding b in
-          Some (b, m#initialiser_o e)
+      Option.map_sharing x ~f:(fun ((b, e) as y) ->
+          let b' = m#binding b in
+          let e' = m#initialiser_o e in
+          if phys_equal b' b && phys_equal e' e then y else b', e')
 
     method binding_property x =
       match x with
       | Prop_binding (i, e) ->
-          let i = m#property_name i in
-          Prop_binding (i, m#binding_element e)
+          let i' = m#property_name i in
+          let e' = m#binding_element e in
+          if phys_equal i' i && phys_equal e' e then x else Prop_binding (i', e')
       | Prop_ident (Prop_and_ident i, e) ->
-          let i = m#ident i in
-          Prop_ident (Prop_and_ident i, m#initialiser_o e)
+          let i' = m#ident i in
+          let e' = m#initialiser_o e in
+          if phys_equal i' i && phys_equal e' e
+          then x
+          else Prop_ident (Prop_and_ident i', e')
 
-    method expression_o x =
-      match x with
-      | None -> None
-      | Some s -> Some (m#expression s)
+    method expression_o x = Option.map_sharing x ~f:(fun e -> m#expression e)
 
-    method initialiser (e, loc) =
-      let e = m#expression e in
-      e, m#loc loc
+    method initialiser ((e, loc) as x) =
+      let e' = m#expression e in
+      let loc' = m#loc loc in
+      if phys_equal e' e && phys_equal loc' loc then x else e', loc'
 
-    method initialiser_o x =
-      match x with
-      | None -> None
-      | Some i -> Some (m#initialiser i)
+    method initialiser_o x = Option.map_sharing x ~f:(fun i -> m#initialiser i)
 
     method program x = m#statements x
 
