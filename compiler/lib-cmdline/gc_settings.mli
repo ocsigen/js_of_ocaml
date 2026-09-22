@@ -1,6 +1,6 @@
 (* Js_of_ocaml compiler
  * http://www.ocsigen.org/js_of_ocaml/
- * Copyright (C) 2020 Hugo Heuzard
+ * Copyright (C) 2014 Hugo Heuzard
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -17,6 +17,6 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-module Arg = Arg
-module Build_config = Build_config
-module Gc_settings = Gc_settings
+val init : unit -> unit
+(** Tune the GC for the compiler, unless it is configured through the
+    environment (OCAMLRUNPARAM). *)

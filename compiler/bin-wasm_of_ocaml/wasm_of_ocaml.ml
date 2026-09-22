@@ -20,6 +20,7 @@ open! Js_of_ocaml_compiler.Stdlib
 open Js_of_ocaml_compiler
 
 let () =
+  Jsoo_cmdline.Gc_settings.init ();
   Sys.catch_break true;
   let argv = Sys.argv in
   let argv =
