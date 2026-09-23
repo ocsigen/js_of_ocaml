@@ -2437,7 +2437,7 @@ module Generate (Target : Target_sig.S) = struct
            | Some loc -> event loc
            | None -> return ())
     in
-    let locals, body = post_process_function_body ~param_names ~locals body in
+    (* The function is post-processed in [f] below. *)
     W.Function
       { name =
           (match name_opt with
@@ -2605,6 +2605,19 @@ module Generate (Target : Target_sig.S) = struct
                  constants must run after the globals holding these strings
                  have been set. *)
               W.Function { f with body = List.rev global_context.init_code @ f.body }
+          | _ -> f)
+        functions
+    in
+    (* The functions are post-processed once they have all been
+       generated, so that this can rely on information about the whole
+       module. *)
+    let functions =
+      List.map
+        ~f:(fun f ->
+          match f with
+          | W.Function ({ param_names; locals; body; _ } as f) ->
+              let locals, body = post_process_function_body ~param_names ~locals body in
+              W.Function { f with locals; body }
           | _ -> f)
         functions
     in
