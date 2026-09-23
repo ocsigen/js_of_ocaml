@@ -2108,11 +2108,18 @@ let post_process_function_body ~profile ~param_names ~param_types ~locals body =
   (* At [--opt 1] we skip [wasm-opt] entirely (both for .cmo/.cma and
      for executables), so our own passes are the only ones tightening
      the body. [Local_sink] runs first: shortening live ranges and
-     dropping [local.set]s simplifies the input to [Var_coalescing]. *)
+     dropping [local.set]s simplifies the input to [Var_coalescing].
+     [Cast_reuse] runs before [Var_coalescing], so that the locals it
+     introduces get coalesced. *)
   let locals, body =
     match (profile : Profile.t) with
     | O1 when Config.Flag.wasm_local_sink () ->
         Local_sink.f ~effect_free:Value.effect_free ~locals body
+    | O1 | O2 | O3 -> locals, body
+  in
+  let locals, body =
+    match (profile : Profile.t) with
+    | O1 when Config.Flag.wasm_cast_reuse () -> Cast_reuse.f ~locals body
     | O1 | O2 | O3 -> locals, body
   in
   let locals, body =

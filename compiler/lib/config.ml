@@ -109,6 +109,8 @@ module Flag = struct
 
   let wasm_reorder_locals = o ~name:"wasm-reorder-locals" ~default:true
 
+  let wasm_cast_reuse = o ~name:"wasm-cast-reuse" ~default:true
+
   let header = o ~name:"header" ~default:true
 
   let auto_link = o ~name:"auto-link" ~default:true

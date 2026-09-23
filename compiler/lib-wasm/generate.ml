@@ -2713,6 +2713,7 @@ let f
       p
   in
   Local_sink.report_stats ();
+  Cast_reuse.report_stats ();
   Var_coalescing.report_stats ();
   if times () then Format.eprintf "  code gen.: %a@." Timer.print t;
   res
