@@ -28,6 +28,7 @@ val cont' :
   (Code.Var.t -> Code.Var.t) ->
   int ->
   Code.block Js_of_ocaml_compiler.Code.Addr.Map.t ->
-  Code.Addr.Set.t ->
-  Code.block Js_of_ocaml_compiler.Code.Addr.Map.t * Code.Addr.Set.t
+  Js_of_ocaml_compiler.Code.Addr.Set.t ->
+  Code.block Js_of_ocaml_compiler.Code.Addr.Map.t
+  * Js_of_ocaml_compiler.Code.Addr.Set.t
 ```

@@ -16,7 +16,7 @@ val succ : t -> t
 val pred : t -> t
 ```
 ```ocaml
-module Set : Stdlib.Set.S with type elt = t
+module Set = Int_set
 ```
 ```ocaml
 module Map = Int_trie

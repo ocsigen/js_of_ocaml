@@ -49,7 +49,7 @@ val forget_generated_name : t -> unit
 val reset : unit -> unit
 ```
 ```ocaml
-module Set : Stdlib.Set.S with type elt = t
+module Set : Int_set.S with type elt = t
 ```
 ```ocaml
 module Map : Stdlib.Map.S with type key = t

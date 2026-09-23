@@ -97,6 +97,11 @@ module Inline : sig ... end
 module Instr : sig ... end
 ```
 ```ocaml
+module Int_set : sig ... end
+```
+Persistent sets of non-negative integers.
+
+```ocaml
 module Int_trie : sig ... end
 ```
 Persistent maps indexed by non-negative integers.

@@ -7,7 +7,7 @@ type graph
 type t
 ```
 ```ocaml
-val get_edges : graph -> Code.Addr.t -> Code.Addr.Set.t
+val get_edges : graph -> Code.Addr.t -> Js_of_ocaml_compiler.Code.Addr.Set.t
 ```
 ```ocaml
 val is_backward : t -> Code.Addr.t -> Code.Addr.t -> bool
@@ -37,7 +37,7 @@ val sort_in_post_order : t -> Code.Addr.t list -> Code.Addr.t list
 val blocks_in_reverse_post_order : t -> Code.Addr.t list
 ```
 ```ocaml
-val get_nodes : t -> Code.Addr.Set.t
+val get_nodes : t -> Js_of_ocaml_compiler.Code.Addr.Set.t
 ```
 ```ocaml
 val norm : Code.program -> Code.program

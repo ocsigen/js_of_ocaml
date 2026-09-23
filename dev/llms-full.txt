@@ -4007,156 +4007,6 @@ val register :
 
 ---
 
-# Module `Addr.Set`
-
-```ocaml
-type elt = t
-```
-```ocaml
-type t
-```
-```ocaml
-val empty : t
-```
-```ocaml
-val add : elt -> t -> t
-```
-```ocaml
-val singleton : elt -> t
-```
-```ocaml
-val remove : elt -> t -> t
-```
-```ocaml
-val union : t -> t -> t
-```
-```ocaml
-val inter : t -> t -> t
-```
-```ocaml
-val disjoint : t -> t -> bool
-```
-```ocaml
-val diff : t -> t -> t
-```
-```ocaml
-val cardinal : t -> int
-```
-```ocaml
-val elements : t -> elt list
-```
-```ocaml
-val min_elt : t -> elt
-```
-```ocaml
-val min_elt_opt : t -> elt option
-```
-```ocaml
-val max_elt : t -> elt
-```
-```ocaml
-val max_elt_opt : t -> elt option
-```
-```ocaml
-val choose : t -> elt
-```
-```ocaml
-val choose_opt : t -> elt option
-```
-```ocaml
-val find : elt -> t -> elt
-```
-```ocaml
-val find_opt : elt -> t -> elt option
-```
-```ocaml
-val find_first : (elt -> bool) -> t -> elt
-```
-```ocaml
-val find_first_opt : (elt -> bool) -> t -> elt option
-```
-```ocaml
-val find_last : (elt -> bool) -> t -> elt
-```
-```ocaml
-val find_last_opt : (elt -> bool) -> t -> elt option
-```
-```ocaml
-val iter : (elt -> unit) -> t -> unit
-```
-```ocaml
-val fold : (elt -> 'acc -> 'acc) -> t -> 'acc -> 'acc
-```
-```ocaml
-val map : (elt -> elt) -> t -> t
-```
-```ocaml
-val filter : (elt -> bool) -> t -> t
-```
-```ocaml
-val filter_map : (elt -> elt option) -> t -> t
-```
-```ocaml
-val partition : (elt -> bool) -> t -> t * t
-```
-```ocaml
-val split : elt -> t -> t * bool * t
-```
-```ocaml
-val is_empty : t -> bool
-```
-```ocaml
-val mem : elt -> t -> bool
-```
-```ocaml
-val equal : t -> t -> bool
-```
-```ocaml
-val compare : t -> t -> int
-```
-```ocaml
-val subset : t -> t -> bool
-```
-```ocaml
-val for_all : (elt -> bool) -> t -> bool
-```
-```ocaml
-val exists : (elt -> bool) -> t -> bool
-```
-```ocaml
-val to_list : t -> elt list
-```
-```ocaml
-val of_list : elt list -> t
-```
-```ocaml
-val to_seq_from : elt -> t -> elt Stdlib.Seq.t
-```
-```ocaml
-val to_seq : t -> elt Stdlib.Seq.t
-```
-```ocaml
-val to_rev_seq : t -> elt Stdlib.Seq.t
-```
-```ocaml
-val add_seq : elt Stdlib.Seq.t -> t -> t
-```
-```ocaml
-val of_seq : elt Stdlib.Seq.t -> t
-```
-```ocaml
-val compare_cardinal_with : t -> int -> int
-```
-`compare_cardinal_with s n` is equivalent to `compare (cardinal s) n` but runs in O(min(n, cardinal s)) time instead of O(cardinal s).
-
-```ocaml
-val to_list_bounded : int -> t -> elt list option
-```
-`to_list_bounded n s` returns `Some l` if `s` has at most `n` elements, where `l` is the sorted list of all elements. Returns `None` if `s` has more than `n` elements. Traverses at most `n+1` elements.
-
-
----
-
 # Module `Code.Addr`
 
 ```ocaml
@@ -4175,7 +4025,7 @@ val succ : t -> t
 val pred : t -> t
 ```
 ```ocaml
-module Set : Stdlib.Set.S with type elt = t
+module Set = Int_set
 ```
 ```ocaml
 module Map = Int_trie
@@ -4306,14 +4156,24 @@ type t
 val empty : t
 ```
 ```ocaml
+val is_empty : t -> bool
+```
+```ocaml
+val mem : elt -> t -> bool
+```
+```ocaml
 val add : elt -> t -> t
 ```
+Returns the set itself when the element is already present.
+
 ```ocaml
 val singleton : elt -> t
 ```
 ```ocaml
 val remove : elt -> t -> t
 ```
+Returns the set itself when the element is not present.
+
 ```ocaml
 val union : t -> t -> t
 ```
@@ -4321,10 +4181,39 @@ val union : t -> t -> t
 val inter : t -> t -> t
 ```
 ```ocaml
+val diff : t -> t -> t
+```
+```ocaml
+val equal : t -> t -> bool
+```
+```ocaml
+val compare : t -> t -> int
+```
+A total order, compatible with `equal`.
+
+```ocaml
+val subset : t -> t -> bool
+```
+```ocaml
 val disjoint : t -> t -> bool
 ```
 ```ocaml
-val diff : t -> t -> t
+val iter : (elt -> unit) -> t -> unit
+```
+```ocaml
+val fold : (elt -> 'a -> 'a) -> t -> 'a -> 'a
+```
+```ocaml
+val for_all : (elt -> bool) -> t -> bool
+```
+```ocaml
+val exists : (elt -> bool) -> t -> bool
+```
+```ocaml
+val filter : (elt -> bool) -> t -> t
+```
+```ocaml
+val map : (elt -> elt) -> t -> t
 ```
 ```ocaml
 val cardinal : t -> int
@@ -4336,110 +4225,28 @@ val elements : t -> elt list
 val min_elt : t -> elt
 ```
 ```ocaml
-val min_elt_opt : t -> elt option
-```
-```ocaml
 val max_elt : t -> elt
-```
-```ocaml
-val max_elt_opt : t -> elt option
 ```
 ```ocaml
 val choose : t -> elt
 ```
-```ocaml
-val choose_opt : t -> elt option
-```
-```ocaml
-val find : elt -> t -> elt
-```
-```ocaml
-val find_opt : elt -> t -> elt option
-```
-```ocaml
-val find_first : (elt -> bool) -> t -> elt
-```
-```ocaml
-val find_first_opt : (elt -> bool) -> t -> elt option
-```
-```ocaml
-val find_last : (elt -> bool) -> t -> elt
-```
-```ocaml
-val find_last_opt : (elt -> bool) -> t -> elt option
-```
-```ocaml
-val iter : (elt -> unit) -> t -> unit
-```
-```ocaml
-val fold : (elt -> 'acc -> 'acc) -> t -> 'acc -> 'acc
-```
-```ocaml
-val map : (elt -> elt) -> t -> t
-```
-```ocaml
-val filter : (elt -> bool) -> t -> t
-```
-```ocaml
-val filter_map : (elt -> elt option) -> t -> t
-```
-```ocaml
-val partition : (elt -> bool) -> t -> t * t
-```
-```ocaml
-val split : elt -> t -> t * bool * t
-```
-```ocaml
-val is_empty : t -> bool
-```
-```ocaml
-val mem : elt -> t -> bool
-```
-```ocaml
-val equal : t -> t -> bool
-```
-```ocaml
-val compare : t -> t -> int
-```
-```ocaml
-val subset : t -> t -> bool
-```
-```ocaml
-val for_all : (elt -> bool) -> t -> bool
-```
-```ocaml
-val exists : (elt -> bool) -> t -> bool
-```
-```ocaml
-val to_list : t -> elt list
-```
+Returns the smallest element.
+
 ```ocaml
 val of_list : elt list -> t
-```
-```ocaml
-val to_seq_from : elt -> t -> elt Stdlib.Seq.t
 ```
 ```ocaml
 val to_seq : t -> elt Stdlib.Seq.t
 ```
 ```ocaml
-val to_rev_seq : t -> elt Stdlib.Seq.t
-```
-```ocaml
-val add_seq : elt Stdlib.Seq.t -> t -> t
-```
-```ocaml
-val of_seq : elt Stdlib.Seq.t -> t
-```
-```ocaml
 val compare_cardinal_with : t -> int -> int
 ```
-`compare_cardinal_with s n` is equivalent to `compare (cardinal s) n` but runs in O(min(n, cardinal s)) time instead of O(cardinal s).
+`compare_cardinal_with s n` is `compare (cardinal s) n`.
 
 ```ocaml
 val to_list_bounded : int -> t -> elt list option
 ```
-`to_list_bounded n s` returns `Some l` if `s` has at most `n` elements, where `l` is the sorted list of all elements. Returns `None` if `s` has more than `n` elements. Traverses at most `n+1` elements.
+`to_list_bounded n s` returns `Some (elements s)` if `s` has at most `n` elements, and `None` otherwise.
 
 
 ---
@@ -4525,7 +4332,7 @@ val forget_generated_name : t -> unit
 val reset : unit -> unit
 ```
 ```ocaml
-module Set : Stdlib.Set.S with type elt = t
+module Set : Int_set.S with type elt = t
 ```
 ```ocaml
 module Map : Stdlib.Map.S with type key = t
@@ -6752,6 +6559,227 @@ val gets32 : string -> int -> int32
 ```ocaml
 val getu32 : string -> int -> int32
 ```
+
+
+---
+
+# Module type `Int_set.S`
+
+```ocaml
+type elt
+```
+```ocaml
+type t
+```
+```ocaml
+val empty : t
+```
+```ocaml
+val is_empty : t -> bool
+```
+```ocaml
+val mem : elt -> t -> bool
+```
+```ocaml
+val add : elt -> t -> t
+```
+Returns the set itself when the element is already present.
+
+```ocaml
+val singleton : elt -> t
+```
+```ocaml
+val remove : elt -> t -> t
+```
+Returns the set itself when the element is not present.
+
+```ocaml
+val union : t -> t -> t
+```
+```ocaml
+val inter : t -> t -> t
+```
+```ocaml
+val diff : t -> t -> t
+```
+```ocaml
+val equal : t -> t -> bool
+```
+```ocaml
+val compare : t -> t -> int
+```
+A total order, compatible with `equal`.
+
+```ocaml
+val subset : t -> t -> bool
+```
+```ocaml
+val disjoint : t -> t -> bool
+```
+```ocaml
+val iter : (elt -> unit) -> t -> unit
+```
+```ocaml
+val fold : (elt -> 'a -> 'a) -> t -> 'a -> 'a
+```
+```ocaml
+val for_all : (elt -> bool) -> t -> bool
+```
+```ocaml
+val exists : (elt -> bool) -> t -> bool
+```
+```ocaml
+val filter : (elt -> bool) -> t -> t
+```
+```ocaml
+val map : (elt -> elt) -> t -> t
+```
+```ocaml
+val cardinal : t -> int
+```
+```ocaml
+val elements : t -> elt list
+```
+```ocaml
+val min_elt : t -> elt
+```
+```ocaml
+val max_elt : t -> elt
+```
+```ocaml
+val choose : t -> elt
+```
+Returns the smallest element.
+
+```ocaml
+val of_list : elt list -> t
+```
+```ocaml
+val to_seq : t -> elt Stdlib.Seq.t
+```
+```ocaml
+val compare_cardinal_with : t -> int -> int
+```
+`compare_cardinal_with s n` is `compare (cardinal s) n`.
+
+```ocaml
+val to_list_bounded : int -> t -> elt list option
+```
+`to_list_bounded n s` returns `Some (elements s)` if `s` has at most `n` elements, and `None` otherwise.
+
+
+---
+
+# Module `Js_of_ocaml_compiler.Int_set`
+
+Persistent sets of non-negative integers.
+
+The set is a Patricia tree (a binary trie indexed by the bits of the elements, with path compression) whose leaves are small bitmaps. A set of a few elements is just a few small blocks, whatever the elements, and dense sets are packed 32 elements per leaf. Set operations (`union`, `inter`, `diff`, `equal`) work structurally. The interface is a subset of `Set.S` (extended as in [`Stdlib.Set.S`](./Js_of_ocaml_compiler-Stdlib-Set-module-type-S.md)), with the same semantics; in particular, the elements are always visited in increasing order. The only difference is that the elements must be non-negative: `add` raises `Invalid_argument` on a negative one.
+
+```ocaml
+module type S = sig ... end
+```
+```ocaml
+type elt = int
+```
+```ocaml
+type t
+```
+```ocaml
+val empty : t
+```
+```ocaml
+val is_empty : t -> bool
+```
+```ocaml
+val mem : elt -> t -> bool
+```
+```ocaml
+val add : elt -> t -> t
+```
+Returns the set itself when the element is already present.
+
+```ocaml
+val singleton : elt -> t
+```
+```ocaml
+val remove : elt -> t -> t
+```
+Returns the set itself when the element is not present.
+
+```ocaml
+val union : t -> t -> t
+```
+```ocaml
+val inter : t -> t -> t
+```
+```ocaml
+val diff : t -> t -> t
+```
+```ocaml
+val equal : t -> t -> bool
+```
+```ocaml
+val compare : t -> t -> int
+```
+A total order, compatible with `equal`.
+
+```ocaml
+val subset : t -> t -> bool
+```
+```ocaml
+val disjoint : t -> t -> bool
+```
+```ocaml
+val iter : (elt -> unit) -> t -> unit
+```
+```ocaml
+val fold : (elt -> 'a -> 'a) -> t -> 'a -> 'a
+```
+```ocaml
+val for_all : (elt -> bool) -> t -> bool
+```
+```ocaml
+val exists : (elt -> bool) -> t -> bool
+```
+```ocaml
+val filter : (elt -> bool) -> t -> t
+```
+```ocaml
+val map : (elt -> elt) -> t -> t
+```
+```ocaml
+val cardinal : t -> int
+```
+```ocaml
+val elements : t -> elt list
+```
+```ocaml
+val min_elt : t -> elt
+```
+```ocaml
+val max_elt : t -> elt
+```
+```ocaml
+val choose : t -> elt
+```
+Returns the smallest element.
+
+```ocaml
+val of_list : elt list -> t
+```
+```ocaml
+val to_seq : t -> elt Stdlib.Seq.t
+```
+```ocaml
+val compare_cardinal_with : t -> int -> int
+```
+`compare_cardinal_with s n` is `compare (cardinal s) n`.
+
+```ocaml
+val to_list_bounded : int -> t -> elt list option
+```
+`to_list_bounded n s` returns `Some (elements s)` if `s` has at most `n` elements, and `None` otherwise.
 
 
 ---
@@ -14981,7 +15009,7 @@ type graph
 type t
 ```
 ```ocaml
-val get_edges : graph -> Code.Addr.t -> Code.Addr.Set.t
+val get_edges : graph -> Code.Addr.t -> Js_of_ocaml_compiler.Code.Addr.Set.t
 ```
 ```ocaml
 val is_backward : t -> Code.Addr.t -> Code.Addr.t -> bool
@@ -15011,7 +15039,7 @@ val sort_in_post_order : t -> Code.Addr.t list -> Code.Addr.t list
 val blocks_in_reverse_post_order : t -> Code.Addr.t list
 ```
 ```ocaml
-val get_nodes : t -> Code.Addr.Set.t
+val get_nodes : t -> Js_of_ocaml_compiler.Code.Addr.Set.t
 ```
 ```ocaml
 val norm : Code.program -> Code.program
@@ -15051,8 +15079,9 @@ val cont' :
   (Code.Var.t -> Code.Var.t) ->
   int ->
   Code.block Js_of_ocaml_compiler.Code.Addr.Map.t ->
-  Code.Addr.Set.t ->
-  Code.block Js_of_ocaml_compiler.Code.Addr.Map.t * Code.Addr.Set.t
+  Js_of_ocaml_compiler.Code.Addr.Set.t ->
+  Code.block Js_of_ocaml_compiler.Code.Addr.Map.t
+  * Js_of_ocaml_compiler.Code.Addr.Set.t
 ```
 
 
@@ -15557,6 +15586,11 @@ module Inline : sig ... end
 ```ocaml
 module Instr : sig ... end
 ```
+```ocaml
+module Int_set : sig ... end
+```
+Persistent sets of non-negative integers.
+
 ```ocaml
 module Int_trie : sig ... end
 ```
