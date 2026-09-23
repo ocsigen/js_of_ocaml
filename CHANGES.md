@@ -111,6 +111,8 @@
 * Compiler/wasm: at -O2 and -O3, clone higher-order functions for each
   combination of known functions they are passed, when one of them may raise,
   so that calls to these functions become direct calls (#2098)
+* Compiler/wasm: raising functions which can also be called through a closure
+  return null too when called directly, using a wrapper otherwise (#2098)
 
 ### Libraries
 * Lib: add `WebGL2` bindings; the `webgl` example uses WebGL2 and a new

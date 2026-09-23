@@ -170,6 +170,11 @@ module Generate (Target : Target_sig.S) = struct
              JavaScript call defining [r] *)
     ; js_result_targets : unit Var.Hashtbl.t
     ; raising_funcs : unit Var.Hashtbl.t
+    ; wrapped_funcs : Var.t Var.Hashtbl.t
+          (* Raising functions which can also be called through a
+             closure, mapped to the name of the function implementing
+             their body; the original name is used for a wrapper
+             converting null back into an exception *)
     ; blocks : block Addr.Map.t
     ; closures : Closure_conversion.closure Var.Map.t
     ; global_context : Code_generation.context
@@ -2061,7 +2066,14 @@ module Generate (Target : Target_sig.S) = struct
   let may_call_raising_function ctx f exact =
     Var.Hashtbl.length ctx.raising_funcs > 0
     &&
-    match Call_graph_analysis.known_callee ctx.global_flow_info ctx.fun_info exact f with
+    match
+      Call_graph_analysis.known_callee
+        ctx.global_flow_info
+        ctx.fun_info
+        ~wrappable:(fun _ -> true)
+        exact
+        f
+    with
     | Some g -> Var.Hashtbl.mem ctx.raising_funcs g
     | None -> false
 
@@ -2069,12 +2081,20 @@ module Generate (Target : Target_sig.S) = struct
     let args = args @ [ closure ] in
     if Var.Hashtbl.mem ctx.raising_funcs f
     then
+      let wrapped = Var.Hashtbl.find_opt ctx.wrapped_funcs f in
       match label_index_opt context exception_handler_pc with
-      | Some label -> return (W.Br_on_null (label, W.Call (f, args)))
-      | None ->
-          (* A raising function is only called directly, and is always
-             known at its call sites, so they get a handler. *)
-          assert false
+      | Some label ->
+          return (W.Br_on_null (label, W.Call (Option.value ~default:f wrapped, args)))
+      | None -> (
+          (* No handler for this call ([may_call_raising_function] did
+             not expect one): use the wrapper. This only happens for
+             wrapped functions, as the code pointer of a constant
+             closure can be known without the flow analysis knowing the
+             callee. A function only called directly is always known at
+             its call sites, so they get a handler. *)
+          match wrapped with
+          | Some _ -> return (W.Call (f, args))
+          | None -> assert false)
     else return (W.Call (f, args))
 
   let rec translate_expr ctx context x e =
@@ -2644,6 +2664,48 @@ module Generate (Target : Target_sig.S) = struct
       ~fall_through
       ~context
 
+  (* A function with the generic calling convention, which calls the
+     function [body_name] and converts a null return value into an
+     exception *)
+  let wrapper_function ~context ~name ~body_name ~param_count =
+    let param_names = List.init ~len:param_count ~f:(fun _ -> Var.fresh ()) in
+    let locals, body =
+      function_body
+        ~context
+        ~return_exn:false
+        ~param_names
+        ~body:
+          (let* () = no_event in
+           let* () =
+             List.fold_left
+               ~f:(fun l x ->
+                 let* () = l in
+                 let* _ = add_var x in
+                 return ())
+               ~init:(return ())
+               param_names
+           in
+           let* () =
+             block
+               { params = []; result = [] }
+               (let* args = expression_list load param_names in
+                instr (Return (Some (Br_on_null (0, Call (body_name, args))))))
+           in
+           let* exn = take_exception in
+           let* tag = register_import ~name:exception_name (Tag Type.value) in
+           instr (Throw (tag, exn)))
+    in
+    (* The function is post-processed in [f] below. *)
+    W.Function
+      { name
+      ; exported_name = None
+      ; typ = None
+      ; signature = Type.func_type (param_count - 1)
+      ; param_names
+      ; locals
+      ; body
+      }
+
   let translate_function
       p
       ctx
@@ -2915,6 +2977,11 @@ module Generate (Target : Target_sig.S) = struct
            | Some loc -> event loc
            | None -> return ())
     in
+    let wrapped =
+      match name_opt with
+      | Some f -> Var.Hashtbl.find_opt ctx.wrapped_funcs f
+      | None -> None
+    in
     let signature =
       match name_opt with
       | None -> Type.primitive_type param_count
@@ -2935,14 +3002,24 @@ module Generate (Target : Target_sig.S) = struct
                     (unboxed_type return_type)
                 ]
             }
+          else if Option.is_some wrapped
+          then { (Type.func_type (param_count - 1)) with result = [ Type.value_or_exn ] }
           else Type.func_type (param_count - 1)
     in
     (* The function is post-processed in [f] below. *)
+    let acc =
+      match name_opt, wrapped with
+      | Some f, Some body_name ->
+          wrapper_function ~context:ctx.global_context ~name:f ~body_name ~param_count
+          :: acc
+      | _ -> acc
+    in
     W.Function
       { name =
-          (match name_opt with
-          | None -> toplevel_name
-          | Some x -> x)
+          (match name_opt, wrapped with
+          | None, _ -> toplevel_name
+          | Some _, Some body_name -> body_name
+          | Some x, None -> x)
       ; exported_name =
           (match name_opt with
           | None -> Option.map ~f:(fun name -> name ^ ".init") unit_name
@@ -3082,7 +3159,8 @@ module Generate (Target : Target_sig.S) = struct
       ~global_flow_info
       ~fun_info
       ~types
-      ~raising_funcs =
+      ~raising_funcs
+      ~wrapped_funcs =
     global_context.unit_name <- unit_name;
     global_context.wasm_opt <- Binaryen.optimizes profile;
     let p, closures = Closure_conversion.f p in
@@ -3110,6 +3188,7 @@ module Generate (Target : Target_sig.S) = struct
       ; js_results
       ; js_result_targets
       ; raising_funcs
+      ; wrapped_funcs
       ; blocks = p.blocks
       ; closures
       ; global_context
@@ -3327,11 +3406,27 @@ let f
     Typing.f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinel p
   in
   let raising_funcs =
-    Call_graph_analysis.raising_functions p global_flow_info fun_info (fun f ->
+    Call_graph_analysis.raising_functions
+      p
+      global_flow_info
+      fun_info
+      ~wrappable:(fun _ ->
+        (* With CPS, functions are called through closures with a
+           different calling convention *)
+        match Config.effects () with
+        | `Disabled | `Jspi | `Native -> true
+        | `Cps | `Double_translation -> false)
+      (fun f ->
         match Typing.return_type types f with
         | Int (Normalized | Unnormalized) | Number (_, Unboxed) -> false
         | Int Ref | Number (_, Boxed) | Top | Bot | Tuple _ | Bigarray _ | Null -> true)
   in
+  let wrapped_funcs = Var.Hashtbl.create 16 in
+  Var.Hashtbl.iter
+    (fun f () ->
+      if not (Call_graph_analysis.direct_calls_only fun_info f)
+      then Var.Hashtbl.replace wrapped_funcs f (Var.fork f))
+    raising_funcs;
   let t = Timer.make () in
   let p = Structure.norm p in
   let p = fix_switch_branches p in
@@ -3346,6 +3441,7 @@ let f
       ~fun_info
       ~types
       ~raising_funcs
+      ~wrapped_funcs
       p
   in
   Local_sink.report_stats ();
