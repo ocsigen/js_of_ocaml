@@ -19,6 +19,14 @@
   than about 17 for a large program. Compilation is about 10% faster (#2445)
 * Compiler: speed up the JavaScript printer: buffered output, cheaper location
   comparisons and line tracking (#2452)
+* Compiler: with `--effects=double-translation` and OxCaml, calls proven
+  unyielding no longer propagate the need for a CPS version (#2440)
+* Compiler: with `--effects=cps`, use OxCaml's unyielding-call information to
+  keep functions in direct style, running their CPS callees to completion
+  (#2440)
+* Compiler: with `--effects=double-translation`, an unyielding call into a
+  group of mutually recursive functions no longer forces the caller into CPS
+  when the caller is not part of the group (#2440)
 * Compiler/Runtime: support building with Introcaml, an OCaml fork with
   runtime introspection: parse the `NEXT_RESERVED_BITS` instruction and the
   extended `Const_block`, skip the reserved header bits in marshaled data, and

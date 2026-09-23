@@ -1200,6 +1200,53 @@ let rewrite_toplevel_instr (p, cps_needed, accu) instr =
            , _ ) as e) ) -> wrap_primitive ~cps_needed p x e accu
   | _ -> p, cps_needed, [ instr ] :: accu
 
+(* Without double translation, a call proven unyielding by the OCaml
+   compiler does not force the function containing it into CPS (see
+   [Partial_cps_analysis]). When such a call is in CPS (its callees are
+   CPS functions) but the function containing it is not, the call is
+   wrapped inside [caml_cps_trampoline], like CPS calls at toplevel: the
+   callee runs to completion on a fresh fiber. This is sound since the
+   call cannot perform an effect that would capture the caller's
+   continuation. *)
+let bridge_calls ~cps_needed (p : program) =
+  let bridge_block pc ((p : program), cps_needed) =
+    let block = Addr.Map.find pc p.blocks in
+    let is_bridged i =
+      match i with
+      | Let (x, Apply _) -> Var.Set.mem x cps_needed
+      | _ -> false
+    in
+    if List.exists ~f:is_bridged block.body
+    then
+      let cps_needed, body_rev =
+        List.fold_left
+          ~f:(fun (cps_needed, accu) i ->
+            match i with
+            | Let (x, Apply { f; args; _ }) when Var.Set.mem x cps_needed ->
+                let _, cps_needed, accu = wrap_call ~cps_needed p x f args accu in
+                cps_needed, accu
+            | _ -> cps_needed, [ i ] :: accu)
+          ~init:(cps_needed, [])
+          block.body
+      in
+      let body = List.concat @@ List.rev body_rev in
+      { p with blocks = Addr.Map.add pc { block with body } p.blocks }, cps_needed
+    else p, cps_needed
+  in
+  Code.fold_closures
+    p
+    (fun name _ (pc, _) _ ((p : program), cps_needed) ->
+      match name with
+      | Some f when not (Var.Set.mem f cps_needed) ->
+          Code.traverse
+            { fold = Code.fold_children }
+            bridge_block
+            pc
+            p.blocks
+            (p, cps_needed)
+      | Some _ | None -> p, cps_needed)
+    (p, cps_needed)
+
 (* Wrap function calls inside [caml_cps_trampoline] at toplevel to avoid
    unnecessary function nestings. This is not done inside loops since
    using repeatedly [caml_cps_trampoline] can be costly. *)
@@ -1308,7 +1355,7 @@ let f ~flow_info ~live_vars p =
       p, cps_needed)
     else
       let p, cps_needed = rewrite_toplevel ~cps_needed p in
-      p, cps_needed
+      bridge_calls ~cps_needed p
   in
   let p = split_blocks ~cps_needed p in
   let p, trampolined_calls, in_cps = cps_transform ~live_vars ~flow_info ~cps_needed p in
