@@ -1,0 +1,5 @@
+direct: 3015
+through a ref: 3 raised 7
+partial application: raised 9
+iter: raised 2
+no handler: 3 raised 8
