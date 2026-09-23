@@ -21,6 +21,16 @@ type t
 val direct_calls_only : t -> Code.Var.t -> bool
 
 val raising_functions :
-  Code.program -> Global_flow.info -> t -> (Code.Var.t -> bool) -> unit Code.Var.Hashtbl.t
+     Code.program
+  -> Global_flow.info
+  -> t
+  -> wrappable:(Code.Var.t -> bool)
+  -> (Code.Var.t -> bool)
+  -> unit Code.Var.Hashtbl.t
+(** Functions which signal exceptions by returning null. The
+    functions that are not only called directly ([direct_calls_only]
+    is false) must be wrapped: the function called through closures
+    converts the null value back into an exception. Only functions
+    satisfying [wrappable] are considered for this. *)
 
 val f : Code.program -> Global_flow.info -> t

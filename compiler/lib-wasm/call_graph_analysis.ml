@@ -64,20 +64,24 @@ let direct_calls_only info f =
   Config.Flag.optcall () && Var.Hashtbl.mem info.unambiguous_non_escaping f
 
 (* The functions possibly called at a call site, when they are all
-   known and only called directly *)
-let known_callees info call_info exact f =
+   known and either only called directly, or the only possible callee
+   and [wrappable]: then, the call site is a direct call, while other
+   uses of the function go through a wrapper. *)
+let known_callees info call_info ~wrappable exact f =
   match get_approx info f with
   | Top -> None
   | Values { known; others } ->
       if
         exact
         && (not others)
-        && Var.Set.for_all (fun f -> direct_calls_only call_info f) known
+        && (Var.Set.for_all (fun f -> direct_calls_only call_info f) known
+           || Var.Set.compare_cardinal_with known 1 = 0
+              && wrappable (Var.Set.choose known))
       then Some known
       else None
 
-let callee_if_known info call_info exact f =
-  match known_callees info call_info exact f with
+let callee_if_known info call_info ~wrappable exact f =
+  match known_callees info call_info ~wrappable exact f with
   | Some known when Var.Set.compare_cardinal_with known 1 = 0 ->
       Some (Var.Set.choose known)
   | Some _ | None -> None
@@ -94,7 +98,7 @@ let propagate nodes edges eligible =
   in
   Var.Hashtbl.iter (fun n () -> propagate n) nodes
 
-let call_graph p info call_info eligible =
+let call_graph p info call_info ~wrappable eligible =
   let under_handler = Var.Hashtbl.create 16 in
   let callees = Var.Hashtbl.create 16 in
   let callers = Var.Hashtbl.create 16 in
@@ -108,7 +112,7 @@ let call_graph p info call_info eligible =
       List.iter block.body ~f:(fun i ->
           match i with
           | Let (_, Apply { f; exact; _ }) -> (
-              match known_callees info call_info exact f with
+              match known_callees info call_info ~wrappable exact f with
               | None -> ()
               | Some known ->
                   if nesting > 0
@@ -148,7 +152,7 @@ let call_graph p info call_info eligible =
         | Return x -> (
             match last_instr block.body with
             | Some (Let (x', Apply { f = g; exact; _ })) when Code.Var.equal x x' -> (
-                match callee_if_known info call_info exact g with
+                match callee_if_known info call_info ~wrappable exact g with
                 | None -> Var.Hashtbl.replace has_tail_calls f ()
                 | Some g -> Var.Hashtbl.add tail_callers g f)
             | _ -> ())
@@ -189,10 +193,27 @@ let function_do_raise p pc =
    not), [has_tail_calls] is propagated to all functions (through
    [tail_callers]), [under_handler] as well (through [callees]) if no
    function has unknown tail calls, and finally the raising property
-   (through [callers]). *)
-let raising_functions p info call_info eligible =
+   (through [callers]).
+
+   A raising function which can also be called through a closure is
+   wrapped: the wrapper converts the null value into an exception, so
+   the call from the wrapper to the function is not a tail call
+   either. But a cycle of tail calls going through the wrapper
+   contains an unknown tail call, so [has_tail_calls] is propagated to
+   all functions of the cycle, which are thus not raising. *)
+let raising_functions p info call_info ~wrappable eligible =
+  (* Only closures can be called directly *)
+  let wrappable f =
+    wrappable f
+    && (not (direct_calls_only call_info f))
+    && Var.idx f < Array.length info.Global_flow.info_defs
+    &&
+    match info.Global_flow.info_defs.(Var.idx f) with
+    | Expr (Closure _) -> true
+    | Expr _ | Phi _ -> false
+  in
   let under_handler, callers, callees, has_tail_calls =
-    call_graph p info call_info eligible
+    call_graph p info call_info ~wrappable eligible
   in
   propagate under_handler callees (fun f ->
       eligible f && not (Var.Hashtbl.mem has_tail_calls f));
@@ -208,7 +229,10 @@ let raising_functions p info call_info eligible =
       match name_opt with
       | None -> ()
       | Some name ->
-          if direct_calls_only call_info name && eligible name && function_do_raise p pc
+          if
+            (direct_calls_only call_info name || wrappable name)
+            && eligible name
+            && function_do_raise p pc
           then Var.Hashtbl.add h name ())
     ();
   propagate h callers eligible;
