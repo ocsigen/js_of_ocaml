@@ -114,6 +114,7 @@
 - [Module `Js_of_ocaml_compiler.Global_name`](js_of_ocaml-compiler/Js_of_ocaml_compiler-Global_name.md)
 - [Module `Js_of_ocaml_compiler.Inline`](js_of_ocaml-compiler/Js_of_ocaml_compiler-Inline.md)
 - [Module `Js_of_ocaml_compiler.Instr`](js_of_ocaml-compiler/Js_of_ocaml_compiler-Instr.md)
+- [Module `Js_of_ocaml_compiler.Int_trie`](js_of_ocaml-compiler/Js_of_ocaml_compiler-Int_trie.md)
 - [Module `Javascript.IdentSet`](js_of_ocaml-compiler/Js_of_ocaml_compiler-Javascript-IdentSet.md)
 - [Module `Javascript.Label`](js_of_ocaml-compiler/Js_of_ocaml_compiler-Javascript-Label.md)
 - [Module `Javascript.Num`](js_of_ocaml-compiler/Js_of_ocaml_compiler-Javascript-Num.md)

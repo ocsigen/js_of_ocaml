@@ -19,7 +19,7 @@ val pred : t -> t
 module Set : Stdlib.Set.S with type elt = t
 ```
 ```ocaml
-module Map : Stdlib.Map.S with type key = t
+module Map = Int_trie
 ```
 ```ocaml
 module Hashtbl : Js_of_ocaml_compiler.Stdlib.Hashtbl.S with type key = t
