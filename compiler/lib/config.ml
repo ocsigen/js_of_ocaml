@@ -119,6 +119,8 @@ module Flag = struct
 
   let wasm_local_sink = o ~name:"wasm-local-sink" ~default:true
 
+  let wasm_cast_reuse = o ~name:"wasm-cast-reuse" ~default:true
+
   let header = o ~name:"header" ~default:true
 
   let auto_link = o ~name:"auto-link" ~default:true
