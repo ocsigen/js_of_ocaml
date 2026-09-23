@@ -13,6 +13,9 @@ type t = {
 val zero : t
 ```
 ```ocaml
+val equal : t -> t -> bool
+```
+```ocaml
 val t_of_lexbuf : Stdlib.Lexing.lexbuf -> t
 ```
 ```ocaml
