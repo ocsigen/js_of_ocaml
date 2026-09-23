@@ -193,12 +193,25 @@ let cps_needed ~info ~in_mutual_recursion ~rev_deps ~below st x =
   fold_children rev_deps (fun y acc -> acc || Var.Tbl.get st y) x false
   ||
   match info.Global_flow.info_defs.(idx) with
-  | Expr (Apply { f; _ }) -> (
+  | Expr (Apply { f; args; exact; _ }) -> (
       (* If we don't know all possible functions at a call point, it
          must be in CPS *)
       match Var.Tbl.get info.Global_flow.info_approximation f with
       | Top -> true
-      | Values { others; _ } -> others)
+      | Values { known; others } ->
+          others
+          || (not exact)
+             &&
+             (* Likewise if a function may be applied to too many
+                   arguments: the closure it returns is then applied
+                   to the remaining arguments *)
+             let nargs = List.length args in
+             Var.Set.exists
+               (fun g ->
+                 match info.Global_flow.info_defs.(Var.idx g) with
+                 | Expr (Closure (params, _, _)) -> List.length params < nargs
+                 | _ -> true)
+               known)
   | Expr (Closure _) ->
       (not (double_translate ()))
       &&

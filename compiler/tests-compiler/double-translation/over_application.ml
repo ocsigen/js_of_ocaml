@@ -49,9 +49,4 @@ let%expect_test "over-application of a function without CPS version" =
                  | _ -> None)
            })
     |};
-  [%expect {|
-           Fatal error: exception Stdlib.Effect.Unhandled(Test.E(1))
-
-           process exited with error code 2
-            node test.js
-           |}]
+  [%expect {| 42 |}]

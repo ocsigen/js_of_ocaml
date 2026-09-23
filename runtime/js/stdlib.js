@@ -186,6 +186,14 @@ var caml_call_gen_tuple = (function () {
   }
   function caml_call_gen_cps(f, args) {
     if (!f.cps) {
+      // [f] cannot perform an effect, so it is called in direct style.
+      // But if it is applied to too many arguments, the closure it
+      // returns may perform one: it is then applied in CPS.
+      var n = f.l >= 0 ? f.l : (f.l = f.length);
+      if (args.length - 1 > n) {
+        var g = f.apply(null, args.slice(0, n));
+        return caml_call_gen_cps(g, args.slice(n));
+      }
       var k = args.pop();
       return k(caml_call_gen_direct(f, args));
     }

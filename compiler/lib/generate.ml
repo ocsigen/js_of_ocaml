@@ -1246,6 +1246,31 @@ let apply_fun_raw =
           J.call (J.dot f (Utf8_string.of_string_exn "call")) (s_var "null" :: params) loc
       | _ -> J.call f params loc
     in
+    let has_arity real_closure n =
+      let l = Utf8_string.of_string_exn "l" in
+      J.EBin
+        ( J.EqEqEq
+        , J.ECond
+            ( J.EBin (J.Ge, J.dot real_closure l, int 0)
+            , J.dot real_closure l
+            , J.EBin
+                ( J.Eq
+                , J.dot real_closure l
+                , J.dot real_closure (Utf8_string.of_string_exn "length") ) )
+        , int n )
+    in
+    let call_gen ~cps params =
+      J.call
+        (* Note: when double translation is enabled, [caml_call_gen*] functions takes a two-version function *)
+        (runtime_fun
+           ctx
+           (match Config.effects () with
+           | `Double_translation when cps -> "caml_call_gen_cps"
+           | `Double_translation | `Cps | `Disabled -> "caml_call_gen"
+           | `Jspi | `Native -> assert false))
+        [ f; J.array params ]
+        J.N
+    in
     let apply ~cps f params =
       (* Adapt if [f] is a (direct-style, CPS) closure pair *)
       let real_closure =
@@ -1261,41 +1286,32 @@ let apply_fun_raw =
       if exact
       then apply_directly real_closure params
       else
-        let l = Utf8_string.of_string_exn "l" in
         J.ECond
-          ( J.EBin
-              ( J.EqEqEq
-              , J.ECond
-                  ( J.EBin (J.Ge, J.dot real_closure l, int 0)
-                  , J.dot real_closure l
-                  , J.EBin
-                      ( J.Eq
-                      , J.dot real_closure l
-                      , J.dot real_closure (Utf8_string.of_string_exn "length") ) )
-              , int (List.length params) )
+          ( has_arity real_closure (List.length params)
           , apply_directly real_closure params
-          , J.call
-              (* Note: when double translation is enabled, [caml_call_gen*] functions takes a two-version function *)
-              (runtime_fun
-                 ctx
-                 (match Config.effects () with
-                 | `Double_translation when cps -> "caml_call_gen_cps"
-                 | `Double_translation | `Cps | `Disabled -> "caml_call_gen"
-                 | `Jspi | `Native -> assert false))
-              [ f; J.array params ]
-              J.N )
+          , call_gen ~cps params )
     in
     let apply =
       match Config.effects () with
       | `Double_translation when cps ->
           let n = List.length params in
-          J.ECond
-            ( J.EDot (f, J.ANormal, cps_field)
-            , apply ~cps:true f params
-            , J.call
-                (List.nth params (n - 1))
-                [ apply ~cps:false f (fst (List.take (n - 1) params)) ]
-                J.N )
+          let k = List.nth params (n - 1) in
+          let direct_params = fst (List.take (n - 1) params) in
+          (* A function without CPS version cannot perform an effect,
+             so it can be called in direct style. But if it is
+             applied to too many arguments, the closure it returns
+             may have a CPS version, and must then be applied in CPS:
+             [caml_call_gen_cps] takes care of this. *)
+          let direct =
+            if exact
+            then J.call k [ apply_directly f direct_params ] J.N
+            else
+              J.ECond
+                ( has_arity f (n - 1)
+                , J.call k [ apply_directly f direct_params ] J.N
+                , call_gen ~cps:true params )
+          in
+          J.ECond (J.EDot (f, J.ANormal, cps_field), apply ~cps:true f params, direct)
       | `Double_translation | `Cps | `Disabled -> apply ~cps f params
       | `Jspi | `Native -> assert false
     in

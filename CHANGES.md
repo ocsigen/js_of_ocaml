@@ -100,6 +100,8 @@
   of the functions that may run below an effect handler (#2441)
 
 ## Bug fixes
+* Compiler: with `--effects=double-translation`, fix calls with too many
+  arguments to a function that does not perform effects (#2455)
 * Runtime/Wasm: with `--effects=native`, performing an effect that no
   handler can receive (at toplevel, inside a JavaScript callback, or when
   every handler lets it through) now raises `Effect.Unhandled` instead of
