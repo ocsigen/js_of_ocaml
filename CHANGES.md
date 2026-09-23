@@ -32,6 +32,8 @@
   (e.g. -14% on the toplevel example). Decoding uses `atob`, or
   `Uint8Array.fromBase64` when `use-js-string` is disabled, with a JavaScript
   fallback for engines lacking them (#2432)
+* Compiler/Wasm: split the huge toplevel function of large programs into
+  smaller functions, which are faster to optimize (#2423)
 * Lib: add `WebGL2` — bindings to the WebGL2 rendering context. The context
   inherits every method and constant of `WebGL`, and adds the WebGL2 objects
   (vertex array objects, queries, samplers, syncs, transform feedback), 3D and

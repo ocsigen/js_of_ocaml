@@ -1,0 +1,10 @@
+local read after the first sequence: 3 outlined functions, local used in 1 function(s)
+local read in the second sequence: 2 outlined functions, local used in 1 function(s)
+local written before a sequence: 1 outlined functions, local used in 1 function(s)
+toplevel: @1 call f0 call f1 @2 call f2 call f3 @3 call f4 nop
+f0: @1 set set
+f1: @1 set set set
+f2: @2 set nop nop
+f3: @2 nop @3 set set
+f4: @3 set set set
+nested loops: 1 outlined functions

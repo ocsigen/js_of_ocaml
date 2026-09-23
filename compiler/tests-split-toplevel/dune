@@ -1,0 +1,3 @@
+(test
+ (name split_toplevel_ast)
+ (libraries wasm_of_ocaml-compiler js_of_ocaml-compiler))
