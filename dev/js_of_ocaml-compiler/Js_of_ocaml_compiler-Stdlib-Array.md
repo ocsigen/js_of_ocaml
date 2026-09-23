@@ -168,6 +168,9 @@ val unsafe_set : 'a array -> int -> 'a -> unit
 module Floatarray : sig ... end
 ```
 ```ocaml
+val map_sharing : 'a array -> f:('a -> 'a) -> 'a array
+```
+```ocaml
 val fold_right_i : 'a array -> f:(int -> 'a -> 'b -> 'b) -> init:'b -> 'b
 ```
 ```ocaml

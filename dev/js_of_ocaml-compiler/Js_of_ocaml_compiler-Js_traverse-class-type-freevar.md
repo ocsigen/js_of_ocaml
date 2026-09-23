@@ -1,7 +1,7 @@
 # Class type `Js_traverse.freevar`
 
 ```ocaml
-inherit mapper
+inherit iterator
 ```
 ```ocaml
 method merge_info : 'a -> unit

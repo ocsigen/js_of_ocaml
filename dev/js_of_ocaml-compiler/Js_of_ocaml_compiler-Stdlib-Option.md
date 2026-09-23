@@ -45,6 +45,9 @@ val to_seq : 'a option -> 'a Stdlib.Seq.t
 val map : f:('a -> 'b) -> 'a t -> 'b t
 ```
 ```ocaml
+val map_sharing : f:('a -> 'a) -> 'a t -> 'a t
+```
+```ocaml
 val bind : f:('a -> 'b t) -> 'a t -> 'b t
 ```
 ```ocaml

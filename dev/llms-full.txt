@@ -8126,7 +8126,7 @@ method export : Js_of_ocaml_compiler.Javascript.export -> unit
 # Class `Js_traverse.free`
 
 ```ocaml
-inherit mapper
+inherit iterator
 ```
 ```ocaml
 method merge_info : 'a -> unit
@@ -8482,7 +8482,7 @@ method export : Js_of_ocaml_compiler.Javascript.export ->
 # Class type `Js_traverse.freevar`
 
 ```ocaml
-inherit mapper
+inherit iterator
 ```
 ```ocaml
 method merge_info : 'a -> unit
@@ -10513,6 +10513,9 @@ val unsafe_set : 'a array -> int -> 'a -> unit
 ```
 ```ocaml
 module Floatarray : sig ... end
+```
+```ocaml
+val map_sharing : 'a array -> f:('a -> 'a) -> 'a array
 ```
 ```ocaml
 val fold_right_i : 'a array -> f:(int -> 'a -> 'b -> 'b) -> init:'b -> 'b
@@ -12690,6 +12693,9 @@ val max_non_tailcall : int
 val map : 'a t -> f:('a -> 'b) -> 'b t
 ```
 ```ocaml
+val map_sharing : 'a t -> f:('a -> 'a) -> 'a t
+```
+```ocaml
 val take' : 'a t -> int -> 'a t -> 'a t * 'a t
 ```
 ```ocaml
@@ -12759,6 +12765,9 @@ val to_seq : 'a option -> 'a Stdlib.Seq.t
 ```
 ```ocaml
 val map : f:('a -> 'b) -> 'a t -> 'b t
+```
+```ocaml
+val map_sharing : f:('a -> 'a) -> 'a t -> 'a t
 ```
 ```ocaml
 val bind : f:('a -> 'b t) -> 'a t -> 'b t

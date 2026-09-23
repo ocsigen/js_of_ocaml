@@ -239,6 +239,9 @@ val max_non_tailcall : int
 val map : 'a t -> f:('a -> 'b) -> 'b t
 ```
 ```ocaml
+val map_sharing : 'a t -> f:('a -> 'a) -> 'a t
+```
+```ocaml
 val take' : 'a t -> int -> 'a t -> 'a t * 'a t
 ```
 ```ocaml
