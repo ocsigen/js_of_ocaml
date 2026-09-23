@@ -60,7 +60,9 @@ module Make (Target : Target_sig.S) = struct
      call
         (load_func (local.get closure_0)) (field 3 (local.get closure_1)) (field 3 (local.get closure_2)) ... (local.get closure_{n - m})) (local.get x1) ... (local.get xm) (local.get closure_0))
   *)
-  let curry_app ~context ~arity m ~name =
+  (* [pair]: the curried closures hold both a direct-style and a CPS code
+     pointer (double translation, see [pair_curry]) *)
+  let curry_app ?(pair = false) ~context ~arity m ~name =
     let args =
       List.init ~f:(fun i -> Code.Var.fresh_n (Printf.sprintf "x_%d" i)) ~len:m
     in
@@ -85,7 +87,7 @@ module Make (Target : Target_sig.S) = struct
           instr (W.Push e)
         else
           let* load_arg, load_closure, closure_typ =
-            Closure.curry_load ~cps:false ~arity m closure
+            Closure.curry_load ~cps:pair ~arity m closure
           in
           let* x = load_arg in
           let closure' = Code.Var.fresh_n "f" in
@@ -234,6 +236,92 @@ module Make (Target : Target_sig.S) = struct
 
   let cps_curry ~arity ~name = cps_curry ~arity arity ~name
 
+  (* Double translation: partial applications of a function with a CPS
+     version. The resulting closures have both a direct-style and a CPS code
+     pointer, whichever version of the function was applied (see
+     [Gc_target.Type.code_pointer_fields]), so that they can be used in CPS
+     context as well. *)
+  let pair_curry_name n m = Printf.sprintf "pair_curry_%d_%d" n m
+
+  let cps_pair_curry_name n m = Printf.sprintf "cps_pair_curry_%d_%d" n m
+
+  let rec pair_curry ~context ~arity m ~name ~cps_name =
+    assert (m > 1);
+    let name', cps_name', functions =
+      if m = 2
+      then
+        let nm = Var.fresh_n (Printf.sprintf "pair_curry_app %d_%d" arity 1) in
+        let cps_nm = Var.fresh_n (Printf.sprintf "cps_pair_curry_app %d_%d" arity 1) in
+        ( nm
+        , cps_nm
+        , [ curry_app ~pair:true ~context ~arity 1 ~name:nm
+          ; cps_curry_app ~context ~arity 1 ~name:cps_nm
+          ] )
+      else
+        let nm = Var.fresh_n (pair_curry_name arity (m - 1)) in
+        let cps_nm = Var.fresh_n (cps_pair_curry_name arity (m - 1)) in
+        nm, cps_nm, pair_curry ~context ~arity (m - 1) ~name:nm ~cps_name:cps_nm
+    in
+    let allocate ~f ~x =
+      Closure.curry_allocate
+        ~cps:true
+        ~arity
+        m
+        ~f:name'
+        ~cps_f:cps_name'
+        ~closure:f
+        ~arg:x
+    in
+    let direct =
+      let x = Code.Var.fresh_n "x" in
+      let f = Code.Var.fresh_n "f" in
+      let body =
+        let* () = no_event in
+        let* _ = add_var x in
+        let* _ = add_var f in
+        push (allocate ~f ~x)
+      in
+      let param_names = [ x; f ] in
+      let locals, body = function_body ~context ~param_names ~body in
+      W.Function
+        { name
+        ; exported_name = None
+        ; typ = None
+        ; signature = Type.func_type 1
+        ; param_names
+        ; locals
+        ; body
+        }
+    in
+    let cps =
+      let x = Code.Var.fresh_n "x" in
+      let cont = Code.Var.fresh_n "cont" in
+      let f = Code.Var.fresh_n "f" in
+      let body =
+        let* () = no_event in
+        let* _ = add_var x in
+        let* _ = add_var cont in
+        let* _ = add_var f in
+        let* e = allocate ~f ~x in
+        let* c = call ~cps:false ~arity:1 (load cont) [ e ] in
+        instr (W.Return (Some c))
+      in
+      let param_names = [ x; cont; f ] in
+      let locals, body = function_body ~context ~param_names ~body in
+      W.Function
+        { name = cps_name
+        ; exported_name = None
+        ; typ = None
+        ; signature = Type.func_type 2
+        ; param_names
+        ; locals
+        ; body
+        }
+    in
+    direct :: cps :: functions
+
+  let pair_curry ~arity ~name ~cps_name = pair_curry ~arity arity ~name ~cps_name
+
   let apply ~context ~arity ~name =
     assert (arity > 1);
     let l =
@@ -293,16 +381,42 @@ module Make (Target : Target_sig.S) = struct
         (fun ~typ closure ->
           let* l = expression_list load l in
           call ?typ ~cps:true ~arity closure l)
-        (let* args = Memory.allocate ~tag:0 (expression_list load (List.tl l)) in
+        (let* () =
+           if double_translation ()
+           then
+             (* A function without CPS version, with the right arity: call
+                it in direct style and pass the result to the continuation *)
+             let args, k =
+               match List.rev l with
+               | k :: rem -> List.rev rem, k
+               | [] -> assert false
+             in
+             Memory.check_function_arity
+               f
+               ~cps:false
+               ~arity:(arity - 1)
+               (fun ~typ closure ->
+                 let* args = expression_list load args in
+                 let* res = call ?typ ~cps:false ~arity:(arity - 1) closure args in
+                 call ~cps:false ~arity:1 (load k) [ res ])
+               (return ())
+           else return ()
+         in
+         let* args = Memory.allocate ~tag:0 (expression_list load (List.tl l)) in
          let* make_iterator =
            register_import ~name:"caml_apply_continuation" (Fun (Type.primitive_type 1))
          in
          let iterate = Var.fresh_n "iterate" in
          let* () = store iterate (return (W.Call (make_iterator, [ args ]))) in
          let x = List.hd l in
-         let* x = load x in
-         let* iterate = load iterate in
-         push (call ~cps:true ~arity:2 (load f) [ x; iterate ]))
+         if double_translation ()
+         then
+           (* The function may have no CPS version *)
+           push (Memory.cps_call_or_direct ~arity:2 f [ load x; load iterate ])
+         else
+           let* x = load x in
+           let* iterate = load iterate in
+           push (call ~cps:true ~arity:2 (load f) [ x; iterate ]))
     in
     let param_names = l @ [ f ] in
     let locals, body = function_body ~context ~param_names ~body in
@@ -372,6 +486,11 @@ module Make (Target : Target_sig.S) = struct
         let l = cps_curry ~context ~arity ~name in
         context.other_fields <- List.rev_append l context.other_fields)
       context.cps_curry_funs;
+    IntMap.iter
+      (fun arity (name, cps_name) ->
+        let l = pair_curry ~context ~arity ~name ~cps_name in
+        context.other_fields <- List.rev_append l context.other_fields)
+      context.pair_curry_funs;
     IntMap.iter
       (fun arity name ->
         let f = dummy ~context ~cps:false ~arity ~name in

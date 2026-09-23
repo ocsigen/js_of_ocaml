@@ -709,11 +709,16 @@
 (@then
       (@string "cps"))
 (@else
+(@if (= $effects "double-translation")
+(@then
+      (@string "double-translation"))
+(@else
 (@if (= $effects "jspi")
 (@then
       (@string "jspi"))
 (@else
       (@string "disabled"))
+))
 ))
 ))
 )

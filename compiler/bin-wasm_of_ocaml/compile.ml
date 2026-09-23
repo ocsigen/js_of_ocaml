@@ -85,8 +85,7 @@ let preprocessor_variables () =
                (* We are using the same runtime
                   [runtime-standard.wasm] in both cases. *)
                `Jspi
-           | (`Disabled | `Jspi | `Cps | `Native) as e -> e
-           | `Double_translation -> assert false)
+           | (`Disabled | `Jspi | `Cps | `Double_translation | `Native) as e -> e)
         |> Build_info.string_of_effects_backend) )
   ; "wasi", Wat_preprocess.Bool (Config.Flag.wasi ())
   ]
