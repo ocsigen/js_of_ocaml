@@ -1,0 +1,68 @@
+; The effects tests of the OxCaml testsuite (testsuite/tests/effects-safe),
+; written against the Effect.Safe API. Unlike the tests in ../effects, which
+; use the legacy Effect.perform, they are compiled with the unyielding-call
+; information (see unyielding.flags in the root dune file), and as whole
+; programs, so that the standard library is compiled with it too. As in
+; ../effects, marshal.ml refers to Stdlib.Marshal and keeps its call from
+; being eliminated, the expected output of reperform names the Dune__exe
+; module, and evenodd uses a smaller depth. The backtrace test is left out.
+
+(env
+ (with-effects-double-translation
+  (js_of_ocaml
+   (compilation_mode whole_program)
+   (flags :standard --enable oxcaml-use-unyielding-debuginfo-for-effect-cps))
+  (wasm_of_ocaml
+   (compilation_mode whole_program)
+   (flags :standard --enable oxcaml-use-unyielding-debuginfo-for-effect-cps)))
+ (with-native-effects)
+ (with-effects
+  (js_of_ocaml
+   (compilation_mode whole_program)
+   (flags :standard --enable oxcaml-use-unyielding-debuginfo-for-effect-cps))
+  (wasm_of_ocaml
+   (compilation_mode whole_program)
+   (flags :standard --enable oxcaml-use-unyielding-debuginfo-for-effect-cps)))
+ (wasi-with-native-effects)
+ (wasi
+  (wasm_of_ocaml
+   (compilation_mode whole_program)
+   (flags
+    (:standard
+     --effects
+     cps
+     --enable
+     oxcaml-use-unyielding-debuginfo-for-effect-cps))))
+ (_
+  (js_of_ocaml
+   (compilation_mode whole_program)
+   (flags
+    (:standard
+     --effects
+     cps
+     --enable
+     oxcaml-use-unyielding-debuginfo-for-effect-cps)))))
+
+(tests
+ (build_if %{oxcaml_supported})
+ (names
+  cmphash
+  evenodd
+  manylive
+  marshal
+  overflow
+  partial
+  perform_in_retc
+  pr3362
+  reperform
+  sched
+  shallow_state_io
+  shallow_state
+  test11
+  test1
+  test2
+  test3
+  test4
+  test5
+  used_cont)
+ (modes js wasm))
