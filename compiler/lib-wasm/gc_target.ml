@@ -2236,21 +2236,25 @@ let handle_exceptions ~result_typ ~fall_through ~context body x exn_handler =
      exn_handler ~result_typ ~fall_through ~context)
 
 let post_process_function_body ~profile ~param_names ~param_types ~locals body =
-  (* When [wasm-opt] does not run (at [--opt 1], both for .cmo/.cma
-     and for executables), our own passes are the only ones tightening
-     the body. [Local_sink] runs first: shortening live ranges and
-     dropping [local.set]s simplifies the input to [Var_coalescing]. *)
-  let locals, body =
-    if (not (Binaryen.optimizes profile)) && Config.Flag.wasm_local_sink ()
-    then Local_sink.f ~locals body
-    else locals, body
-  in
-  let locals, body =
-    if (not (Binaryen.optimizes profile)) && Config.Flag.wasm_var_coalescing ()
-    then Var_coalescing.f ~param_names ~param_types ~locals body
-    else locals, body
-  in
-  Initialize_locals.f ~param_names ~locals body
+  match Binaryen.optimizes profile with
+  | false ->
+      (* When [wasm-opt] does not run (at [--opt 1], both for .cmo/.cma
+         and for executables), our own passes are the only ones tightening
+         the body. [Local_sink] runs first: shortening live ranges and
+         dropping [local.set]s simplifies the input to [Var_coalescing].
+         [Cast_reuse] runs before [Var_coalescing], so that the locals it
+         introduces get coalesced. *)
+      let pass flag f (locals, body) = if flag () then f ~locals body else locals, body in
+      let locals, body =
+        (locals, body)
+        |> pass Config.Flag.wasm_local_sink Local_sink.f
+        |> pass Config.Flag.wasm_cast_reuse Cast_reuse.f
+        |> pass
+             Config.Flag.wasm_var_coalescing
+             (Var_coalescing.f ~param_names ~param_types)
+      in
+      Initialize_locals.f ~param_names ~locals body
+  | true -> Initialize_locals.f ~param_names ~locals body
 
 let entry_point ~toplevel_fun =
   let code =

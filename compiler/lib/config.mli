@@ -56,6 +56,8 @@ module Flag : sig
 
   val wasm_local_sink : unit -> bool
 
+  val wasm_cast_reuse : unit -> bool
+
   val debugger : unit -> bool
 
   val pretty : unit -> bool
