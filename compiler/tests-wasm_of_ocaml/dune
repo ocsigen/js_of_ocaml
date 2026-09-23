@@ -41,7 +41,20 @@
  (enabled_if
   (and
    (>= %{ocaml_version} 5)
+   (not %{oxcaml_supported})
    (<> %{profile} wasi)))
+ (wasm_of_ocaml
+  (compilation_mode whole_program)
+  (flags :standard)))
+
+; Same test written against the OxCaml Effect.Safe API.
+
+(tests
+ (names gh2093_oxcaml)
+ (modes wasm)
+ (build_if %{oxcaml_supported})
+ (enabled_if
+  (<> %{profile} wasi))
  (wasm_of_ocaml
   (compilation_mode whole_program)
   (flags :standard)))
@@ -59,6 +72,19 @@
 (tests
  (names string_interning)
  (modes wasm))
+
+; Preemptible effect handlers. OxCaml only, and wasm only: the JavaScript
+; runtime has stubs for the preemption primitives but no implementation.
+
+(tests
+ (names preemptible_oxcaml)
+ (modes wasm)
+ (build_if %{oxcaml_supported})
+ (enabled_if
+  (<> %{profile} wasi))
+ (wasm_of_ocaml
+  (compilation_mode whole_program)
+  (flags :standard)))
 
 ; The programs compiled here run Wasm code and rely on Node's module
 ; resolution (`require`, `require.main`). QuickJS provides neither, so these

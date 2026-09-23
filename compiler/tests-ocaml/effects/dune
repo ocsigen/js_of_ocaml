@@ -15,6 +15,9 @@
 (tests
  (build_if
   (>= %{ocaml_version} 5))
+ ; Effect.perform carries the unsafe_effects alert in OxCaml
+ (flags
+  (:standard -alert -unsafe_effects))
  (names
   cmphash
   marshal
@@ -22,6 +25,7 @@
   manylive
   overflow
   partial
+  rec_closures
   reperform
   sched
   shallow_state_io
@@ -47,6 +51,9 @@
 (tests
  (build_if
   (>= %{ocaml_version} 5))
+ ; Effect.perform carries the unsafe_effects alert in OxCaml
+ (flags
+  (:standard -alert -unsafe_effects))
  (enabled_if
   (<> %{profile} quickjs))
  (names unhandled_unlinked)

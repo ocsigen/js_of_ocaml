@@ -26,6 +26,7 @@
      (func $caml_fresh_oo_id (param (ref eq)) (result (ref eq))))
    (import "obj" "cont_tag" (global $cont_tag i32))
    (import "obj" "object_tag" (global $object_tag i32))
+   (import "obj" "null" (global $null_value (ref eq)))
    (import "stdlib" "caml_named_value"
       (func $caml_named_value (param (ref eq)) (result (ref null eq))))
    (import "fail" "ocaml_exception" (tag $ocaml_exception (param (ref eq))))
@@ -75,12 +76,17 @@
 
    (type $continuation (cont $cont_function))
 
+   ;; Must remain identical to the type in effect.wat. The dynamic binding
+   ;; fields are unused with this backend, which does not track the current
+   ;; fiber (see effect.wat).
    (type $generic_fiber
       (sub
          (struct
             (field $value (mut (ref eq)))
             (field $exn (mut (ref eq)))
-            (field $effect (mut (ref eq))))))
+            (field $effect (mut (ref eq)))
+            (field $dynamic (mut (ref eq)))
+            (field $is_task (mut i32)))))
 
    (type $fiber
       (sub final $generic_fiber
@@ -88,6 +94,8 @@
             (field $value (mut (ref eq)))
             (field $exn (mut (ref eq)))
             (field $effect (mut (ref eq)))
+            (field $dynamic (mut (ref eq)))
+            (field $is_task (mut i32))
             (field $continuation (mut (ref $continuation))))))
 
    ;; Unhandled effects
@@ -96,9 +104,9 @@
 
    (func $raise_unhandled
       (param $eff (ref eq)) (param (ref eq)) (result (ref eq))
-      (block $null
+      (block $null_value
          (call $caml_raise_with_arg
-            (br_on_null $null
+            (br_on_null $null_value
                (call $caml_named_value (global.get $effect_unhandled)))
             (local.get $eff)))
       (call $caml_raise_constant
@@ -232,6 +240,44 @@
       (return_call $resume_fiber
          (local.get $vfiber) (local.get $f) (local.get $v)))
 
+   (func $resume_identity
+      (param $x (ref eq)) (param (ref eq)) (result (ref eq))
+      (local.get $x))
+
+   (global $resume_identity_closure (ref $closure)
+      (struct.new $closure (ref.func $resume_identity)))
+
+   (func $resume_raise
+      (param $exn (ref eq)) (param (ref eq)) (result (ref eq))
+      (throw $ocaml_exception (local.get $exn)))
+
+   (global $resume_raise_closure (ref $closure)
+      (struct.new $closure (ref.func $resume_raise)))
+
+   ;; Resume the continuation, returning [$v] to the perform site.
+   (func (export "%continue")
+      (param $vfiber (ref eq)) (param $v (ref eq)) (param $_tail (ref eq))
+      (result (ref eq))
+      (return_call $resume_fiber
+         (local.get $vfiber) (global.get $resume_identity_closure)
+         (local.get $v)))
+
+   ;; Resume the continuation, raising [$exn] at the perform site.
+   (func (export "%discontinue")
+      (param $vfiber (ref eq)) (param $exn (ref eq)) (param $_tail (ref eq))
+      (result (ref eq))
+      (return_call $resume_fiber
+         (local.get $vfiber) (global.get $resume_raise_closure)
+         (local.get $exn)))
+
+   ;; As %discontinue; backtraces are not supported, so [$bt] is ignored.
+   (func (export "%discontinue_with_backtrace")
+      (param $vfiber (ref eq)) (param $exn (ref eq)) (param $bt (ref eq))
+      (param $_tail (ref eq)) (result (ref eq))
+      (return_call $resume_fiber
+         (local.get $vfiber) (global.get $resume_raise_closure)
+         (local.get $exn)))
+
    ;; Perform
 
    (func (export "%reperform")
@@ -285,6 +331,7 @@
       (result (ref eq))
       (struct.new $fiber
          (local.get $value) (local.get $exn) (local.get $effect)
+         (global.get $null_value) (i32.const 0)
          (cont.new $continuation (ref.func $initial_cont))))
 
    (func (export "%with_stack")
@@ -294,17 +341,21 @@
       (return_call $resume_fiber
          (struct.new $fiber
             (local.get $value) (local.get $exn) (local.get $effect)
+            (global.get $null_value) (i32.const 0)
             (cont.new $continuation (ref.func $initial_cont)))
          (local.get $f) (local.get $v)))
 
-   (func (export "%with_stack_bind")
+   ;; There is no tick source, so the fiber is never preempted: the tick
+   ;; handler is dropped and this behaves like [%with_stack].
+   (func (export "%with_stack_preemptible")
       (param $value (ref eq)) (param $exn (ref eq)) (param $effect (ref eq))
-      (param $dyn (ref eq)) (param $bind (ref eq))
+      (param $tick (ref eq))
       (param $f (ref eq)) (param $v (ref eq))
       (result (ref eq))
       (return_call $resume_fiber
          (struct.new $fiber
             (local.get $value) (local.get $exn) (local.get $effect)
+            (global.get $null_value) (i32.const 0)
             (cont.new $continuation (ref.func $initial_cont)))
          (local.get $f) (local.get $v)))
 ))

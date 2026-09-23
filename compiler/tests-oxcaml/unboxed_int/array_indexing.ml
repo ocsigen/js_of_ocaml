@@ -23,13 +23,13 @@
 module By_int64_u = struct
   module I = Stdlib_upstream_compatible.Int64_u
   module A = struct
-    external get : 'a array -> int64# -> 'a =
+    external get : 'a array -> int64_u -> 'a =
       "%array_safe_get_indexed_by_int64#"
-    external set : 'a array -> int64# -> 'a -> unit =
+    external set : 'a array -> int64_u -> 'a -> unit =
       "%array_safe_set_indexed_by_int64#"
-    external unsafe_get : 'a array -> int64# -> 'a =
+    external unsafe_get : 'a array -> int64_u -> 'a =
       "%array_unsafe_get_indexed_by_int64#"
-    external unsafe_set : 'a array -> int64# -> 'a -> unit =
+    external unsafe_set : 'a array -> int64_u -> 'a -> unit =
       "%array_unsafe_set_indexed_by_int64#"
   end
 end
@@ -37,13 +37,13 @@ end
 module By_int32_u = struct
   module I = Stdlib_upstream_compatible.Int32_u
   module A = struct
-    external get : 'a array -> int32# -> 'a =
+    external get : 'a array -> int32_u -> 'a =
       "%array_safe_get_indexed_by_int32#"
-    external set : 'a array -> int32# -> 'a -> unit =
+    external set : 'a array -> int32_u -> 'a -> unit =
       "%array_safe_set_indexed_by_int32#"
-    external unsafe_get : 'a array -> int32# -> 'a =
+    external unsafe_get : 'a array -> int32_u -> 'a =
       "%array_unsafe_get_indexed_by_int32#"
-    external unsafe_set : 'a array -> int32# -> 'a -> unit =
+    external unsafe_set : 'a array -> int32_u -> 'a -> unit =
       "%array_unsafe_set_indexed_by_int32#"
   end
 end
@@ -52,13 +52,13 @@ module By_nativeint_u = struct
   module I = Stdlib_upstream_compatible.Nativeint_u
 
   module A = struct
-    external get : 'a array -> nativeint# -> 'a =
+    external get : 'a array -> nativeint_u -> 'a =
       "%array_safe_get_indexed_by_nativeint#"
-    external set : 'a array -> nativeint# -> 'a -> unit =
+    external set : 'a array -> nativeint_u -> 'a -> unit =
       "%array_safe_set_indexed_by_nativeint#"
-    external unsafe_get : 'a array -> nativeint# -> 'a =
+    external unsafe_get : 'a array -> nativeint_u -> 'a =
       "%array_unsafe_get_indexed_by_nativeint#"
-    external unsafe_set : 'a array -> nativeint# -> 'a -> unit =
+    external unsafe_set : 'a array -> nativeint_u -> 'a -> unit =
       "%array_unsafe_set_indexed_by_nativeint#"
   end
 end

@@ -722,8 +722,9 @@ let optimize ~shapes ~profile ~keep_flow_data p =
     +> map_fst5
          (match Config.target (), Config.effects () with
          | `JavaScript, (`Disabled | `Double_translation) -> Generate_closure.f
-         | `JavaScript, `Cps | `Wasm, (`Disabled | `Jspi | `Cps | `Native) -> Fun.id
-         | `JavaScript, (`Jspi | `Native) | `Wasm, `Double_translation -> assert false)
+         | `JavaScript, `Cps
+         | `Wasm, (`Disabled | `Jspi | `Cps | `Double_translation | `Native) -> Fun.id
+         | `JavaScript, (`Jspi | `Native) -> assert false)
     +> map_fst5 deadcode'
   in
   if times () then Format.eprintf "Start Optimizing...@.";

@@ -127,7 +127,7 @@ Test directories:
 
 ## Key Compiler Flags
 
-- `--effects={disabled,cps,double-translation}` - Effect handler support (JS); wasm accepts `{disabled,cps,jspi}`
+- `--effects={disabled,cps,double-translation}` - Effect handler support (JS); wasm accepts `{disabled,cps,double-translation,jspi,native}`
 - `--target-env={isomorphic,browser,nodejs}` - Runtime target (default `isomorphic`)
 - `--source-map` / `--debug-info` / `--pretty` - Debug-friendly output
 - `--opt {1,2,3}` - Optimization profile (default 1; 3 iterates to fix-point)

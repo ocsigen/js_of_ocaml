@@ -1644,7 +1644,7 @@ let keep_name x = not (Code.Var.generated_name x)
 let rec translate_expr ctx loc x e level : (_ * J.statement_list) Expr_builder.t =
   let open Expr_builder in
   match e with
-  | Apply { f; args; exact } ->
+  | Apply { f; args; exact; yielding = _ } ->
       let trampolined = Var.Set.mem x ctx.Ctx.trampolined_calls in
       let args = remove_unused_tail_args ctx exact trampolined args in
       let* () = info ~need_loc:true mutator_p in
@@ -1844,10 +1844,13 @@ let rec translate_expr ctx loc x e level : (_ * J.statement_list) Expr_builder.t
         | Extern ("caml_alloc_dummy_function", _), _ -> assert false
         | ( Extern
               ( ( "%resume"
+                | "%continue"
+                | "%discontinue"
+                | "%discontinue_with_backtrace"
                 | "%perform"
                 | "%reperform"
                 | "%with_stack"
-                | "%with_stack_bind" )
+                | "%with_stack_preemptible" )
               , _ )
           , _ ) ->
             assert (not (cps_transform ()));
