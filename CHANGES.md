@@ -59,6 +59,8 @@
   descriptor instructions (#2515)
 * Compiler/Wasm: store more long-lived toplevel variables in globals; fix a
   crash when one of them is assigned in a `try` body (#2516)
+* Compiler/Wasm: split the huge toplevel function of large programs into
+  smaller functions, which are faster to optimize (#2423)
 * Runtime/Wasm: faster `caml_hash`, `compare`, lexer engines, `Str`
   searches and `output_value` sharing detection (with WASI, `output_value`
   now shares boxed numbers with equal contents); single bound check in
