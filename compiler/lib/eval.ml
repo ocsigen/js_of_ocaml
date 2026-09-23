@@ -671,10 +671,13 @@ let eval_instr update_count inline_constant ~target info i =
       , Prim
           ( Extern
               ( ( "%resume"
+                | "%continue"
+                | "%discontinue"
+                | "%discontinue_with_backtrace"
                 | "%perform"
                 | "%reperform"
                 | "%with_stack"
-                | "%with_stack_bind" )
+                | "%with_stack_preemptible" )
               , _ )
           , _ ) ) ->
       [ i ] (* We need that the arguments to this primitives remain variables *)

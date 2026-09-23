@@ -25,6 +25,7 @@
    (import "fail" "caml_failwith" (func $caml_failwith (param (ref eq))))
    (import "marshal" "caml_serialize_int_1"
       (func $caml_serialize_int_1 (param (ref eq)) (param i32)))
+   (import "fail" "caml_raise_zero_divide" (func $caml_raise_zero_divide))
    (import "marshal" "caml_serialize_int_4"
       (func $caml_serialize_int_4 (param (ref eq)) (param i32)))
    (import "marshal" "caml_deserialize_uint_1"
@@ -115,6 +116,18 @@
                    (i32.const 8))
          (i32.rotl (i32.and (local.get $i) (i32.const 0xFF00FF00))
                    (i32.const 8))))
+
+   (func $caml_int32_unsigned_div (export "caml_int32_unsigned_div")
+      (export "caml_nativeint_unsigned_div")
+      (param $x i32) (param $y i32) (result i32)
+      (if (i32.eqz (local.get $y)) (then (call $caml_raise_zero_divide)))
+      (i32.div_u (local.get $x) (local.get $y)))
+
+   (func $caml_int32_unsigned_mod (export "caml_int32_unsigned_mod")
+      (export "caml_nativeint_unsigned_mod")
+      (param $x i32) (param $y i32) (result i32)
+      (if (i32.eqz (local.get $y)) (then (call $caml_raise_zero_divide)))
+      (i32.rem_u (local.get $x) (local.get $y)))
 
    (@string $INT32_ERRMSG "Int32.of_string")
 

@@ -84,7 +84,7 @@ function caml_stack_check_depth() {
 // recursive function under --effects=double-translation. Sets up a stack
 // budget, runs the inner direct body, then loops on caml_trampoline_return
 // bounce objects until a plain value comes back. Mirrors the CPS-side
-// trampoline (see caml_callback / caml_resume): each iteration starts with
+// trampoline (see caml_callback / caml_resume_run): each iteration starts with
 // a fresh stack budget and dispatches the bounce target directly (the
 // joo_tramp is always the inner direct closure of an SCC member, never a
 // paired wrapper, so plain apply is correct).
@@ -118,7 +118,21 @@ function caml_callback(f, args) {
   var saved_stack_depth = caml_stack_depth;
   var saved_current_stack = caml_current_stack;
   try {
-    caml_current_stack = { k: 0, x: 0, h: 0, e: 0 };
+    // The callback runs on a fresh fiber, so that effects cannot cross into
+    // the caller (e is 0). It still sees the caller's dynamic bindings
+    // through p, as native code does when running a callback on the current
+    // stack: this is reached by synchronous re-entries such as
+    // [caml_assume_no_perform], [caml_with_async_exns] and toplevel calls
+    // wrapped in [caml_cps_trampoline], not only by JavaScript events.
+    caml_current_stack = {
+      k: 0,
+      x: 0,
+      h: 0,
+      e: 0,
+      p: saved_current_stack,
+      d: null,
+      t: false,
+    };
     var res = {
       joo_tramp: f,
       joo_args: args.concat(function (x) {
