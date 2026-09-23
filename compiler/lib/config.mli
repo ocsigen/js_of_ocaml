@@ -58,6 +58,8 @@ module Flag : sig
 
   val wasm_reorder_locals : unit -> bool
 
+  val wasm_cast_reuse : unit -> bool
+
   val debugger : unit -> bool
 
   val pretty : unit -> bool
