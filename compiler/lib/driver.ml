@@ -85,6 +85,15 @@ let specialize_js_once_after p =
   if debug () then Format.eprintf "Specialize js once...@.";
   Specialize_js.f_once_after p
 
+let clone_higher_order (profile : Profile.t) p =
+  (* This is only useful when the global flow analysis keeps track of
+     function parameters, which it does not in fast mode (at -O1) *)
+  match Config.target (), profile with
+  | `Wasm, (O2 | O3) when Config.Flag.clone_higher_order () ->
+      if debug () then Format.eprintf "Clone higher-order functions...@.";
+      Clone_higher_order.f p
+  | `Wasm, _ | `JavaScript, _ -> p
+
 let specialize (p, info) =
   let p = specialize_1 (p, info) in
   let p = specialize_js (p, info) in
@@ -718,6 +727,7 @@ let optimize ~shapes ~profile ~keep_flow_data p =
       | O2 -> o2
       | O3 -> o3)
     +> specialize_js_once_after
+    +> clone_higher_order profile
     +> effects_and_exact_calls ~keep_flow_data ~deadcode_sentinel ~shapes profile
     +> map_fst5
          (match Config.target (), Config.effects () with
