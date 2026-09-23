@@ -3,6 +3,8 @@
 ## Features/Changes
 * Compiler/Wasm: link with our own linker, which also removes dead code,
   instead of wasm-merge and wasm-metadce: faster compilation (#2506)
+* Compiler/Wasm: split the huge toplevel function of large programs into
+  smaller functions, which are faster to optimize (#2423)
 
 ## Bug fixes
 * Compiler: fix a miscompilation of `Int_trie` by OxCaml's flambda2 at -O2
