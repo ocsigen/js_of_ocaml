@@ -46,8 +46,15 @@ runs:
       shell: bash
       run: |
         set -eu
-        PPXLIB=oxcaml-external/external/ppxlib
-        PPXLIB_JANE=oxcaml-external/external/ppxlib_jane
+        # Move the checkout out of the workspace, so that dune does not
+        # consider it part of the project (with cone mode, the sparse
+        # checkout includes the files at the root of the oxcaml repository,
+        # such as its dune file). The pinned packages are built from there.
+        OXCAML="$RUNNER_TEMP/oxcaml-external"
+        rm -rf "$OXCAML"
+        mv oxcaml-external "$OXCAML"
+        PPXLIB="$OXCAML/external/ppxlib"
+        PPXLIB_JANE="$OXCAML/external/ppxlib_jane"
         # The vendored copy follows the tip of oxcaml. Drop the Pmod_hole
         # constructor if the installed compiler does not have it yet.
         if ! grep -q Pmod_hole "$(opam var lib)/ocaml/compiler-libs/parsetree.mli"
