@@ -39,6 +39,12 @@
   (link_flags :standard -w no-missing-debug-event)))
 
 (tests
+ (names split_toplevel split_toplevel_switch)
+ (modes wasm)
+ (wasm_of_ocaml
+  (flags :standard --set toplevel_split_size=5)))
+
+(tests
  (names marshal_fixes)
  (modes js wasm))
 
@@ -118,3 +124,7 @@
  (deps %{bin:wasm_of_ocaml})
  (enabled_if
   (<> %{profile} quickjs)))
+
+(cram
+ (applies_to split_toplevel_pieces)
+ (deps split_toplevel.ml split_toplevel_switch.ml))
