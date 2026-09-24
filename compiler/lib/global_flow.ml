@@ -179,7 +179,7 @@ let expr_deps blocks st x e =
               | "caml_array_unsafe_get"
               | "caml_floatarray_unsafe_get" )
             , _ )
-        | Array_get )
+        | Array_get _ )
       , l ) ->
       (* The analysis knowns about these primitives, and will compute
          an approximation of the value they return based on an
@@ -487,7 +487,7 @@ let propagate st ~update approx x =
               (("caml_check_bound" | "caml_check_bound_float" | "caml_check_bound_gen"), _)
           , [ Pv y; _ ] ) -> Var.Tbl.get approx y
       | Prim
-          ( ( Array_get
+          ( ( Array_get _
             | Extern (("caml_array_unsafe_get" | "caml_floatarray_unsafe_get"), _) )
           , [ Pv y; _ ] ) -> (
           if st.fast
@@ -522,7 +522,7 @@ let propagate st ~update approx x =
                     | Phi _ | Expr _ -> assert false)
                   known
             | Top -> Top)
-      | Prim (Array_get, _) -> Domain.others
+      | Prim (Array_get _, _) -> Domain.others
       | Prim ((Vectlength _ | Not | IsInt | Eq | Neq | Lt | Le | Ult), _) ->
           (* The result of these primitive is neither a function nor a
              block *)
