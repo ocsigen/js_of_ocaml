@@ -63,12 +63,8 @@ module Integer = struct
     | Small_normalized, _ | _, Small_normalized -> Small_normalized
 
   let kind_of_targetint i =
-    if Config.Flag.portable_int ()
-    then
-      let n = Targetint.to_int64 i in
-      if Int64.(n >= Lazy.force min_i31s && n <= Lazy.force max_i31s)
-      then Small_normalized
-      else Large_normalized
+    if Config.Flag.portable_int () && not (Targetint.is_within_i31s i)
+    then Large_normalized
     else Small_normalized
 end
 
@@ -378,13 +374,47 @@ let primitive_types = String.Hashtbl.create 16
 
 let prim_type ~st ~approx prim hint args =
   match prim with
-  | "%int_and" when Config.Flag.portable_int () -> Int Large_unnormalized
+  | ("%int_and" | "%int_or" | "%int_xor") when Config.Flag.portable_int () -> (
+      (* Bitwise operations preserve sign-extension, from 31 or from 63 bits *)
+      let small t =
+        match t with
+        | Bot | Int Small_normalized -> true
+        | _ -> false
+      in
+      let normalized t =
+        match t with
+        | Bot | Int (Ref | Small_normalized | Large_normalized) -> true
+        | _ -> false
+      in
+      (* [x land c] is in [\[0, c\]] when [c] is non-negative *)
+      let small_non_negative_constant p =
+        match
+          match p with
+          | Pc c -> Some c
+          | Pv y -> (
+              match st.global_flow_state.defs.(Var.idx y) with
+              | Expr (Constant c) -> Some c
+              | Phi _ | Expr _ -> None)
+        with
+        | Some (Int c) -> Targetint.(c >= zero) && Targetint.is_within_i31s c
+        | _ -> false
+      in
+      match args, List.map ~f:(fun x -> arg_type ~approx x) args with
+      | [ x; y ], [ t; t' ] ->
+          if
+            (small t && small t')
+            || String.equal prim "%int_and"
+               && (small_non_negative_constant x || small_non_negative_constant y)
+          then Int Small_normalized
+          else if normalized t && normalized t'
+          then Int Large_normalized
+          else Int Large_unnormalized
+      | _ -> Int Large_unnormalized)
   | "%int_and" -> (
       match List.map ~f:(fun x -> arg_type ~approx x) args with
       | [ (Bot | Int (Ref | Small_normalized)); _ ]
       | [ _; (Bot | Int (Ref | Small_normalized)) ] -> Int Small_normalized
       | _ -> Int Small_unnormalized)
-  | ("%int_or" | "%int_xor") when Config.Flag.portable_int () -> Int Large_unnormalized
   | "%int_or" | "%int_xor" -> (
       match List.map ~f:(fun x -> arg_type ~approx x) args with
       | [ (Bot | Int (Ref | Small_normalized)); (Bot | Int (Ref | Small_normalized)) ] ->
