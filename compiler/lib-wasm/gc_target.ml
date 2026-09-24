@@ -737,8 +737,9 @@ module Value64 = struct
   let int_val i =
     let* e = i in
     match e with
-    | W.RefI31 (Const (I32 n)) -> return (W.Const (I64 (Int64.of_int32 n)))
-    | W.RefI31 e' -> return (W.I64ExtendI32 (S, e'))
+    | W.RefI31 (Const (I32 n)) ->
+        return (W.Const (I64 (Int64.of_int32 Int32.(shift_right (shift_left n 1) 1))))
+    | W.RefI31 _ -> return (W.I64ExtendI32 (S, I31Get (S, e)))
     | _ ->
         let* ty = Type.large_int_type in
         let v = Code.Var.fresh () in
