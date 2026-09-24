@@ -7,6 +7,10 @@ tests:
 tests-wasm:
 	WASM_OF_OCAML=true dune build @runtest-wasm
 
+# Run the WebAssembly test suite with 63-bit integers (--enable portable-int)
+tests-wasm-portable-int:
+	WASM_OF_OCAML=true dune build @runtest-wasm --profile with-portable-int
+
 # Run the JS test suite using QuickJS-NG (`qjs`) in place of `node`.
 # Override the engine binary with JSOO_QUICKJS_BIN if `qjs` is not on PATH.
 tests-quickjs:
@@ -52,4 +56,4 @@ clean:
 bench:
 	$(MAKE) -C benchmarks bench
 
-.PHONY: all tests tests-wasm tests-quickjs test runtest runtests doc clean bench
+.PHONY: all tests tests-wasm tests-wasm-portable-int tests-quickjs test runtest runtests doc clean bench
