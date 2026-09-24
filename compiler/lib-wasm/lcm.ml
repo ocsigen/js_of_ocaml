@@ -95,6 +95,7 @@ type lcm_stats =
   ; mutable peephole_eliminated : int
   ; mutable params_widened : int
   ; mutable boxes_hoisted_from_loops : int
+  ; mutable unboxes_hoisted_from_loops : int
   ; mutable boxes_hoisted_from_closures : int
   ; mutable time_lowering : float
   ; mutable time_dataflow : float
@@ -118,6 +119,7 @@ let make_stats () =
   ; peephole_eliminated = 0
   ; params_widened = 0
   ; boxes_hoisted_from_loops = 0
+  ; unboxes_hoisted_from_loops = 0
   ; boxes_hoisted_from_closures = 0
   ; time_lowering = 0.
   ; time_dataflow = 0.
@@ -2240,11 +2242,12 @@ module Loops = struct
   (* The outermost loop containing block [pc] but not the definition [def]
      of a value ([None]: the value is defined before the function body,
      e.g. a parameter) *)
-  let outermost (loops : t) pc ~def =
+  let outermost ?(ok = fun _ -> true) (loops : t) pc ~def =
     Addr.Map.fold
       (fun header (body, size) acc ->
         if
           Addr.Set.mem pc body
+          && ok body
           &&
           match def with
           | None -> true
@@ -2396,6 +2399,100 @@ let hoist_boxes_out_of_loops ~types ~free_pc ~params ~(st : lcm_stats) blocks en
               blocks := Addr.Map.add pc { b with body } !blocks;
               append_instrs blocks ph [ i ])
         (List.rev !moves);
+      !blocks
+
+(* Speculative hoisting of unboxing conversions out of loops.
+
+   An unboxing (unbox or untag) of a loop-invariant value is performed in
+   the loop preheader, once per entry into the loop; LCM then eliminates the
+   occurrences inside the loop, which have become redundant. This is done
+   only when the conversion cannot fail, that is when the type of the
+   operand is known ([is_safe_input]): the conversion may be executed on
+   paths where it was not before, such as when the loop is exited before
+   reaching it. It is also cheap, so executing it speculatively is fine.
+   An untagging is not hoisted out of a loop containing calls, since its
+   result should not be kept live across calls ([not_live_across_calls]). *)
+let hoist_unboxes_out_of_loops ~types ~free_pc ~assigned ~(st : lcm_stats) blocks entry =
+  let loops = Loops.compute blocks entry in
+  if Addr.Map.is_empty loops
+  then blocks
+  else
+    let defs = Var.Hashtbl.create 16 in
+    Addr.Map.iter
+      (fun pc b ->
+        List.iter ~f:(fun x -> Var.Hashtbl.replace defs x pc) b.params;
+        List.iter
+          ~f:(fun i ->
+            match i with
+            | Let (x, _) -> Var.Hashtbl.replace defs x pc
+            | Assign _ | Set_field _ | Offset_ref _ | Array_set _ | Event _ -> ())
+          b.body)
+      blocks;
+    let has_call body =
+      Addr.Set.exists
+        (fun pc ->
+          List.exists
+            ~f:(fun i ->
+              match i with
+              | Let (_, Apply _) -> true
+              | Let _ | Assign _ | Set_field _ | Offset_ref _ | Array_set _ | Event _ ->
+                  false)
+            (Addr.Map.find pc blocks).body)
+        body
+    in
+    (* For each loop header, the conversions to perform in the preheader *)
+    let hoisted = ref Addr.Map.empty in
+    Addr.Map.iter
+      (fun pc b ->
+        List.iter
+          ~f:(fun i ->
+            match i with
+            | Let (_, Prim (p, [ Pv y ])) when not (VarSet.mem y assigned) -> (
+                match kind_of_prim p with
+                | Some kind
+                  when (not (is_boxing kind))
+                       && is_safe_input kind (Typing.var_type types y) -> (
+                    (* [None]: defined before the function body (parameter or
+                       free variable) *)
+                    let def = Var.Hashtbl.find_opt defs y in
+                    let ok body =
+                      (not (not_live_across_calls (kind, y))) || not (has_call body)
+                    in
+                    match Loops.outermost ~ok loops pc ~def with
+                    | Some (header, l) ->
+                        let convs, _ =
+                          Addr.Map.find_opt header !hoisted
+                          |> Option.value ~default:(ConvSet.empty, l)
+                        in
+                        hoisted :=
+                          Addr.Map.add header (ConvSet.add (kind, y) convs, l) !hoisted
+                    | None -> ())
+                | Some _ | None -> ())
+            | Let _ | Assign _ | Set_field _ | Offset_ref _ | Array_set _ | Event _ -> ())
+          b.body)
+      blocks;
+    if Addr.Map.is_empty !hoisted
+    then blocks
+    else
+      let blocks = ref blocks in
+      let preds = CFG.predecessors !blocks in
+      let preds pc = Addr.Map.find_opt pc preds |> Option.value ~default:[] in
+      Addr.Map.iter
+        (fun header (convs, l) ->
+          match loop_preheader ~types ~free_pc ~preds blocks (header, l) with
+          | None -> ()
+          | Some ph ->
+              append_instrs
+                blocks
+                ph
+                (List.map
+                   ~f:(fun ((kind, y) : Conv.t) ->
+                     st.unboxes_hoisted_from_loops <- st.unboxes_hoisted_from_loops + 1;
+                     let x = Var.fresh () in
+                     Typing.set_var_type types x (type_of_kind kind);
+                     Let (x, Prim (prim_of_kind kind, [ Pv y ])))
+                   (ConvSet.elements convs)))
+        !hoisted;
       !blocks
 
 (* The functions of a program, and where variables are defined *)
@@ -2776,6 +2873,11 @@ let f (p : program) (types : Typing.t) ~(global_flow_info : Global_flow.info) =
       let fun_blocks =
         hoist_boxes_out_of_loops ~types ~free_pc ~params ~st fun_blocks entry
       in
+      let fun_blocks =
+        if Config.Flag.lcm_hoist ()
+        then hoist_unboxes_out_of_loops ~types ~free_pc ~assigned ~st fun_blocks entry
+        else fun_blocks
+      in
       st.time_setup <- st.time_setup +. (tick () -. ts2);
       let result =
         process_function
@@ -2853,7 +2955,8 @@ let f (p : program) (types : Typing.t) ~(global_flow_info : Global_flow.info) =
     Format.eprintf
       "Stats - lcm: %d functions (%d with conversions), %d lowered, %d tracked, ant:%d \
        avail:%d delay:%d isol:%d iters, %d inserted, %d eliminated, %d peephole, %d \
-       params widened, boxes hoisted: %d from loops %d from closures, %d misplaced@."
+       params widened, boxes hoisted: %d from loops %d from closures, %d unboxes hoisted \
+       from loops, %d misplaced@."
       st.functions_processed
       st.functions_with_conversions
       st.conversions_lowered
@@ -2868,6 +2971,7 @@ let f (p : program) (types : Typing.t) ~(global_flow_info : Global_flow.info) =
       st.params_widened
       st.boxes_hoisted_from_loops
       st.boxes_hoisted_from_closures
+      st.unboxes_hoisted_from_loops
       misplaced_boxes;
   if debug ()
   then (
