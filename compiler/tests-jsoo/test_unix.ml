@@ -248,3 +248,24 @@ let%expect_test "empty path is ENOENT" =
   | exception Unix.Unix_error (e, _, _) ->
       print_endline (String.lowercase_ascii (Unix.error_message e)));
   [%expect {| ENOENT |}]
+
+let%expect_test
+    ("Unix.truncate and Unix.chmod beyond 31 bits"
+     [@when int_size_64 && unix && not quickjs]) =
+  let tmp = Filename.temp_file "a" "txt" in
+  let len = Sys.opaque_identity ((3 lsl 30) + 5) in
+  Unix.truncate tmp len;
+  Printf.printf "%d\n" (Unix.stat tmp).st_size;
+  let fd = Unix.openfile tmp [ O_RDWR ] 0 in
+  Unix.ftruncate fd (len + 1);
+  Printf.printf "%d\n" (Unix.fstat fd).st_size;
+  Unix.close fd;
+  (* Only the permission bits matter *)
+  Unix.chmod tmp (Sys.opaque_identity (0o600 + (1 lsl 40)));
+  Printf.printf "%o\n" (Unix.stat tmp).st_perm;
+  Unix.unlink tmp;
+  [%expect {|
+    3221225477
+    3221225478
+    600
+    |}]
