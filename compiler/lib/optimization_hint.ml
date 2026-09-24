@@ -74,6 +74,7 @@ type ccall =
   | Hint_int of boxed_integer
   | Hint_bigarray of Bigarray.t
   | Hint_primitive of primitive
+  | Hint_int_array
 
 type inline_attribute =
   | Always_inline
@@ -100,10 +101,12 @@ type t =
   | Hint_arraylength of array_kind
   | Hint_closures of closure_hint list
   | Hint_ccall of ccall
+  | Hint_immediate
 
 let print_ccall f h =
   match h with
   | Hint_unsafe -> Format.fprintf f "unsafe"
+  | Hint_int_array -> Format.fprintf f "int array"
   | Hint_int kind ->
       Format.fprintf
         f
@@ -194,6 +197,7 @@ let print_closure_hint f { params; return; inline; specialise; is_a_functor } =
 let print f h =
   match h with
   | Hint_immutable_block -> Format.fprintf f "immutable"
+  | Hint_immediate -> Format.fprintf f "immediate"
   | Hint_arraylength kind ->
       Format.fprintf
         f

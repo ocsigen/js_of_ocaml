@@ -385,7 +385,7 @@ let lower_conversions
             | _ -> false)
       in
       match p with
-      | Extern ("caml_array_unsafe_get", _) | Array_get -> Some [ top; int_n ]
+      | Extern ("caml_array_unsafe_get", _) | Array_get _ -> Some [ top; int_n ]
       | Extern (nm, _) -> (
           match Typing.prim_sig nm with
           | (Some _ as target_types), _ -> target_types

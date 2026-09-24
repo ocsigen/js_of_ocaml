@@ -220,10 +220,10 @@ let expr_escape st _x e =
   match e with
   | Special _ | Constant _ | Closure _ | Block _ | Field _ -> ()
   | Apply { args; _ } -> List.iter args ~f:(fun x -> block_escape st x)
-  | Prim (Array_get, [ Pv x; _ ]) -> block_escape st x
+  | Prim (Array_get _, [ Pv x; _ ]) -> block_escape st x
   | Prim
       ( ( Vectlength _
-        | Array_get
+        | Array_get _
         | Not
         | IsInt
         | Eq

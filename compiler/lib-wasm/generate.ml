@@ -2068,7 +2068,7 @@ module Generate (Target : Target_sig.S) = struct
           Memory.allocate
             ~tag
             (expression_list (fun x -> load_and_box ctx x) (Array.to_list a))
-    | Field (y, n, Non_float) -> Memory.field (load_and_box ctx y) n
+    | Field (y, n, (Non_float | Immediate)) -> Memory.field (load_and_box ctx y) n
     | Field (y, n, Float) ->
         Memory.float_array_get
           (load_and_box ctx y)
@@ -2190,7 +2190,7 @@ module Generate (Target : Target_sig.S) = struct
     | Prim (Ult, [ x; y ]) -> translate_int_comparison ctx `Ult x y
     | Prim (Eq, [ x; y ]) -> translate_int_equality ctx ~negate:false x y
     | Prim (Neq, [ x; y ]) -> translate_int_equality ctx ~negate:true x y
-    | Prim (Array_get, [ x; y ]) ->
+    | Prim (Array_get _, [ x; y ]) ->
         Memory.array_get (transl_prim_arg ctx x) (transl_prim_arg ctx ~typ:int_sn y)
     | Prim (Extern ("caml_array_unsafe_get", _), [ x; y ]) ->
         Memory.gen_array_get (transl_prim_arg ctx x) (transl_prim_arg ctx ~typ:int_sn y)
@@ -2322,7 +2322,7 @@ module Generate (Target : Target_sig.S) = struct
                 | Eq
                 | Neq
                 | Ult
-                | Array_get
+                | Array_get _
                 | IsInt
                 | Vectlength _
                 | Wasm_unbox_i32
@@ -2355,7 +2355,7 @@ module Generate (Target : Target_sig.S) = struct
             ?typ:(unboxed_type (Typing.var_type ctx.types x))
             x
             (translate_expr ctx context x e)
-    | Set_field (x, n, Non_float, y) ->
+    | Set_field (x, n, (Non_float | Immediate), y) ->
         Memory.set_field (load_and_box ctx x) n (load_and_box ctx y)
     | Set_field (x, n, Float, y) ->
         Memory.float_array_set

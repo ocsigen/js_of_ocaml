@@ -1705,7 +1705,7 @@ let rec translate_expr ctx loc x e level : (_ * J.statement_list) Expr_builder.t
         | Vectlength _, [ x ] ->
             let* cx = access' ~ctx x in
             return (Mlvalue.Array.length cx)
-        | Array_get, [ x; y ] ->
+        | Array_get _, [ x; y ] ->
             let* cx = access' ~ctx x in
             let* cy = access' ~ctx y in
             let* () = info mutable_p in
@@ -1961,7 +1961,7 @@ let rec translate_expr ctx loc x e level : (_ * J.statement_list) Expr_builder.t
             let* cz = access' ~ctx z in
             return (maybe_bool ctx x (J.EBin (J.LtInt, unsigned cy, unsigned cz)))
         | ( ( Vectlength _
-            | Array_get
+            | Array_get _
             | Not
             | IsInt
             | Eq

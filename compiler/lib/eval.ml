@@ -610,7 +610,7 @@ let eval_instr update_count inline_constant ~target info i =
                   | "caml_floatarray_unsafe_set"
                   | "caml_array_unsafe_set_addr" )
                 , _ )
-            | Array_get )
+            | Array_get _ )
           , _ ) ) ->
       (* Fresh parameters can be introduced for these primitives
            in Specialize_js, which would make the call to [the_const_of]

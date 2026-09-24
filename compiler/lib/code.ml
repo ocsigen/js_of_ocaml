@@ -306,9 +306,14 @@ end
 
 type cont = Addr.t * Var.t list
 
+type field_type =
+  | Non_float
+  | Immediate
+  | Float
+
 type prim =
   | Vectlength of Optimization_hint.array_kind
-  | Array_get
+  | Array_get of field_type
   | Extern of string * Optimization_hint.ccall option
   | Not
   | IsInt
@@ -482,10 +487,6 @@ type mutability =
   | Immutable
   | Maybe_mutable
 
-type field_type =
-  | Non_float
-  | Float
-
 type expr =
   | Apply of
       { f : Var.t
@@ -622,7 +623,8 @@ module Print = struct
           x
           Optimization_hint.print
           (Optimization_hint.Hint_arraylength k)
-    | Array_get, [ x; y ] -> Format.fprintf f "%a[%a]" arg x arg y
+    | Array_get Immediate, [ x; y ] -> Format.fprintf f "INT{%a[%a]}" arg x arg y
+    | Array_get _, [ x; y ] -> Format.fprintf f "%a[%a]" arg x arg y
     | Extern (s, h), [ x; y ] -> (
         try Format.fprintf f "%a %s %a%a" arg x (binop s) arg y hint h
         with Not_found -> Format.fprintf f "\"%s\"(%a)%a" s (list arg) l hint h)
@@ -672,6 +674,7 @@ module Print = struct
         done;
         Format.fprintf f "}"
     | Field (x, i, Non_float) -> Format.fprintf f "%a[%d]" Var.print x i
+    | Field (x, i, Immediate) -> Format.fprintf f "INT{%a[%d]}" Var.print x i
     | Field (x, i, Float) -> Format.fprintf f "FLOAT{%a[%d]}" Var.print x i
     | Closure (l, c, (hint, _)) -> (
         Format.fprintf f "fun(%a){%a}" var_list l cont c;
@@ -688,6 +691,8 @@ module Print = struct
     | Assign (x, y) -> Format.fprintf f "(assign) %a = %a" Var.print x Var.print y
     | Set_field (x, i, Non_float, y) ->
         Format.fprintf f "%a[%d] = %a" Var.print x i Var.print y
+    | Set_field (x, i, Immediate, y) ->
+        Format.fprintf f "INT{%a[%d]} = %a" Var.print x i Var.print y
     | Set_field (x, i, Float, y) ->
         Format.fprintf f "FLOAT{%a[%d]} = %a" Var.print x i Var.print y
     | Offset_ref (x, i) -> Format.fprintf f "%a[0] += %d" Var.print x i
