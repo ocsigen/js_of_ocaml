@@ -422,6 +422,7 @@ let propagate st approx x : Domain.t =
                      Domain.limit (Domain.box (Var.Tbl.get approx y)))
                lst)
       | Field (_, _, Float) -> Number (Float, Unboxed)
+      | Field (_, _, Immediate) | Prim (Array_get Immediate, _) -> Int Ref
       | Field (y, n, Non_float) -> (
           match Var.Tbl.get approx y with
           | Tuple t -> if n < Array.length t then t.(n) else Bot
@@ -431,7 +432,7 @@ let propagate st approx x : Domain.t =
           ( Extern
               (("caml_check_bound" | "caml_check_bound_float" | "caml_check_bound_gen"), _)
           , [ Pv y; _ ] ) -> Var.Tbl.get approx y
-      | Prim ((Array_get | Extern ("caml_array_unsafe_get", _)), [ Pv y; _ ]) -> (
+      | Prim ((Array_get _ | Extern ("caml_array_unsafe_get", _)), [ Pv y; _ ]) -> (
           match Var.Tbl.get st.global_flow_info.info_approximation y with
           | Values { known; others } ->
               Domain.join_set
@@ -456,7 +457,7 @@ let propagate st approx x : Domain.t =
                   | Phi _ | Expr _ -> assert false)
                 known
           | Top -> Top)
-      | Prim (Array_get, _) -> Top
+      | Prim (Array_get _, _) -> Top
       | Prim ((Vectlength _ | Not | IsInt | Eq | Neq | Lt | Le | Ult), _) ->
           Int Normalized
       | Prim (Extern (prim, hint), args) -> prim_type ~st ~approx prim hint args
@@ -635,9 +636,10 @@ let box_numbers p st types =
                           | Pv y -> box y
                           | Pc _ -> ())
                         args
-                  | Prim ((Vectlength _ | Array_get | Not | IsInt | Lt | Le | Ult), _)
+                  | Prim ((Vectlength _ | Array_get _ | Not | IsInt | Lt | Le | Ult), _)
                   | Field _ | Closure _ | Constant _ | Special _ -> ())
-              | Set_field (_, _, Non_float, y) | Array_set (_, _, y) -> box y
+              | Set_field (_, _, (Non_float | Immediate), y) | Array_set (_, _, y) ->
+                  box y
               | Assign _ | Offset_ref _ | Set_field (_, _, Float, _) | Event _ -> ())
             b.body;
           match b.branch with

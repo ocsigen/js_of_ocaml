@@ -435,6 +435,7 @@ module Hint = struct
       Optimization_hint.ccall option =
     match h with
     | Hint_unsafe -> Some Hint_unsafe
+    | Hint_int_array -> Some Hint_int_array
     | Hint_int kind ->
         Some
           (Hint_int
@@ -537,6 +538,7 @@ module Hint = struct
     | Hint_physical_comparison ->
         (* No corresponding optimization in js_of_ocaml yet; ignore the hint. *)
         None
+    | Hint_immediate -> Some Hint_immediate
 end
 [@@if ocaml_version >= (5, 6, 0)]
 
