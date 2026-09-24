@@ -2388,7 +2388,7 @@ module Generate (Target : Target_sig.S) = struct
            | Some loc -> event loc
            | None -> return ())
     in
-    let locals, body = post_process_function_body ~param_names ~locals body in
+    (* The function is post-processed in [f] below. *)
     W.Function
       { name =
           (match name_opt with
@@ -2546,16 +2546,35 @@ module Generate (Target : Target_sig.S) = struct
         []
     in
     let functions =
-      List.map
+      List.concat_map
         ~f:(fun f ->
           match f with
-          | W.Function ({ name; _ } as f) when Code.Var.equal name toplevel_name ->
+          | W.Function ({ name; locals; body; _ } as f)
+            when Code.Var.equal name toplevel_name ->
               (* [init_code] is stored in reverse execution order: reverse it
                  so that initialization code runs in registration order. In
                  particular, code patching interned strings into other
                  constants must run after the globals holding these strings
                  have been set. *)
-              W.Function { f with body = List.rev global_context.init_code @ f.body }
+              let body = List.rev global_context.init_code @ body in
+              if Config.Flag.split_toplevel ()
+              then
+                let locals, body, pieces = Split_toplevel.f ~name ~locals body in
+                W.Function { f with locals; body } :: pieces
+              else [ W.Function { f with body } ]
+          | _ -> [ f ])
+        functions
+    in
+    (* The post-processing initializes locals to keep the validator
+       happy. It is performed last, so that we do not initialize
+       locals which are moved to the outlined functions. *)
+    let functions =
+      List.map
+        ~f:(fun f ->
+          match f with
+          | W.Function ({ param_names; locals; body; _ } as f) ->
+              let locals, body = post_process_function_body ~param_names ~locals body in
+              W.Function { f with locals; body }
           | _ -> f)
         functions
     in
