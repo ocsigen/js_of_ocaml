@@ -92,6 +92,10 @@
    (@then
       (import "portableint" "int_val_32_exn"
          (func $int_val_32_exn (param (ref eq)) (param (ref eq)) (result i32)))
+      (import "portableint" "val_portable_int"
+         (func $val_portable_int (param i64) (result (ref eq))))
+      (import "bindings" "number_as_int"
+         (func $number_as_int (param anyref) (result f64)))
    ))
    (import "fail" "javascript_exception"
       (tag $javascript_exception (param externref)))
@@ -132,6 +136,40 @@
    (type $float_array (array (mut f64)))
    (type $js (struct (field $js anyref)))
 
+(@if $portable-int
+(@then
+   (type $ocaml_large_int (struct (field i64)))
+
+   ;; JavaScript numbers are converted to OCaml integers when they are
+   ;; integral and in range (the engine does it for numbers that fit in 31
+   ;; bits), and conversely
+   (func $wrap (export "wrap") (param $v anyref) (result (ref eq))
+      (local $f f64)
+      (block $is_eq (result (ref eq))
+         (local.set $f
+            (call $number_as_int
+               (br_on_cast $is_eq anyref (ref eq) (local.get $v))))
+         (if (f64.eq (local.get $f) (local.get $f))
+            (then
+               (return
+                  (call $val_portable_int
+                     (i64.trunc_sat_f64_s (local.get $f))))))
+         (return (struct.new $js (local.get $v)))))
+
+   (func $unwrap (export "unwrap") (param $v (ref eq)) (result anyref)
+      (drop (block $not_large_int (result (ref eq))
+         (return
+            (call $from_float
+               (f64.convert_i64_s
+                  (struct.get $ocaml_large_int 0
+                     (br_on_cast_fail $not_large_int
+                        (ref eq) (ref $ocaml_large_int) (local.get $v))))))))
+      (block $not_js (result anyref)
+         (return
+            (struct.get $js 0
+               (br_on_cast_fail $not_js (ref eq) (ref $js) (local.get $v))))))
+)
+(@else
    (func $wrap (export "wrap") (param $v anyref) (result (ref eq))
       (block $is_eq (result (ref eq))
          (return
@@ -142,6 +180,7 @@
          (return
             (struct.get $js 0
                (br_on_cast_fail $not_js (ref eq) (ref $js) (local.get $v))))))
+))
 
    (func (export "caml_js_equals")
       (param $v1 (ref eq)) (param $v2 (ref eq)) (result (ref eq))
@@ -187,7 +226,7 @@
       (@if $portable-int
       (@then
          (return_call $caml_copy_nativeint
-            (i64.extend_i32_s (call $to_int32 (call $unwrap (local.get $v))))))
+            (i64.trunc_sat_f64_s (call $to_float (call $unwrap (local.get $v))))))
       (@else
       (return_call $caml_copy_nativeint
          (call $to_int32 (call $unwrap (local.get $v)))))
@@ -197,11 +236,11 @@
       (@if $portable-int
       (@then
          (return_call $wrap
-            (call $from_int32 (i32.wrap_i64 (call $Nativeint_val (local.get $v))))))
+            (call $from_float
+               (f64.convert_i64_s (call $Nativeint_val (local.get $v))))))
       (@else
       (return_call $wrap (call $from_int32 (call $Nativeint_val (local.get $v)))))
       ))
-
 
   (func (export "caml_js_pure_expr")
      (param $f (ref eq)) (result (ref eq))
