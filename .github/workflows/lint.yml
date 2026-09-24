@@ -68,7 +68,6 @@ jobs:
           ocaml-compiler: "5.5"
       - name: Install wax
         run: |
-          opam pin add --yes wax-lib https://github.com/vouillon/wax.git
-          opam pin add --yes wax https://github.com/vouillon/wax.git
+          opam install --yes wax
       - name: Convert Wasm runtime files to wax
         run: opam exec -- ./tools/wat2wax.sh
