@@ -148,3 +148,15 @@ let%expect_test "is_binary_mode" =
   Sys.remove f;
   [%expect {| true true |}]
 [@@if ocaml_version >= (5, 2, 0)]
+
+let%expect_test ("Digest.channel with a length beyond 31 bits" [@when int_size_64]) =
+  let file = Filename.temp_file "digest" "txt" in
+  let oc = open_out_bin file in
+  output_string oc "hello world";
+  close_out oc;
+  let ic = open_in_bin file in
+  (try ignore (Digest.channel ic (Sys.opaque_identity (1 lsl 32)))
+   with End_of_file -> print_endline "End_of_file");
+  close_in ic;
+  Sys.remove file;
+  [%expect {| End_of_file |}]
