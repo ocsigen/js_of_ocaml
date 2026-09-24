@@ -405,8 +405,11 @@ function shift_right_nat(nat1, ofs1, len1, nat2, ofs2, nbits) {
 
 //Provides: compare_digits_nat
 function compare_digits_nat(nat1, ofs1, nat2, ofs2) {
-  if (nat1.data[ofs1] > nat2.data[ofs2]) return 1;
-  if (nat1.data[ofs1] < nat2.data[ofs2]) return -1;
+  // Digits are unsigned
+  var d1 = nat1.data[ofs1] >>> 0;
+  var d2 = nat2.data[ofs2] >>> 0;
+  if (d1 > d2) return 1;
+  if (d1 < d2) return -1;
   return 0;
 }
 
@@ -452,8 +455,10 @@ function serialize_nat(writer, nat, sz) {
   for (var i = 0; i < len; i++) {
     writer.write(32, nat.data[i]);
   }
+  // 64-bit platforms use 64-bit digits, serialized as two 32-bit words:
+  // they pad an odd number of words with a zero word
   sz[0] = len * 4;
-  sz[1] = len * 8;
+  sz[1] = (len + (len & 1)) * 4;
 }
 
 //Provides: deserialize_nat
