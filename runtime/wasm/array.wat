@@ -110,11 +110,7 @@
       (@if $portable-int
       (@then (local.set $sz (call $size_val (local.get $n))))
       (@else
-      (@if $portable-int
-      (@then (local.set $sz (call $size_val (local.get $n))))
-      (@else
       (local.set $sz (i31.get_s (ref.cast (ref i31) (local.get $n))))
-      ))
       ))
       (if (i32.ge_u (local.get $sz) (i32.const 0x7ffffff))
          (then (call $caml_invalid_argument (global.get $Array_make))))
