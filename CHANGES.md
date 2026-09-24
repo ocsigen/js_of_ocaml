@@ -25,6 +25,9 @@
 * Compiler: represent sets of addresses and variables as Patricia trees with
   bitmap leaves (`Int_set`), which allocate much less than balanced trees for
   the small sets of large integers the compiler mostly uses (#2454)
+* Compiler: `Int_trie.map` and `filter_map` preserve sharing; `Eval` and
+  `Specialize_js` keep the blocks they do not modify rather than rebuilding the
+  whole program (#2453)
 * Compiler/Runtime: support building with Introcaml, an OCaml fork with
   runtime introspection: parse the `NEXT_RESERVED_BITS` instruction and the
   extended `Const_block`, skip the reserved header bits in marshaled data, and

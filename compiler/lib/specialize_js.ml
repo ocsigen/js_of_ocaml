@@ -504,14 +504,17 @@ let specialize_all_instrs ~target opt_count info p =
   let blocks =
     Addr.Map.map
       (fun block ->
-        { block with
-          Code.body =
-            specialize_instrs
-              ~target
-              opt_count
-              info
-              (specialize_string_concat opt_count block.body)
-        })
+        let body =
+          specialize_instrs
+            ~target
+            opt_count
+            info
+            (specialize_string_concat opt_count block.body)
+        in
+        (* Preserve sharing when the block is left unchanged *)
+        if List.equal ~eq:phys_equal body block.body
+        then block
+        else { block with Code.body })
       p.blocks
   in
   { p with blocks }
