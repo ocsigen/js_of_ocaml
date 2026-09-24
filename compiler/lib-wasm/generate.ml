@@ -23,6 +23,8 @@ open Code_generation
 
 let times = Debug.find "times"
 
+let count_conversions = Debug.find ~even_if_quiet:true "count-conversions"
+
 let effects_cps () =
   match Config.effects () with
   | `Cps -> true
@@ -244,6 +246,48 @@ module Generate (Target : Target_sig.S) = struct
     | Pv x -> Typing.var_type ctx.types x
     | Pc c -> Typing.constant_type c
 
+  (* With [--debug count-conversions], count the representation conversions
+     executed at run time, per kind. The counters are mutable globals
+     provided by the JavaScript runtime, which prints them on exit. *)
+  let counted kind e =
+    if count_conversions ()
+    then
+      let* g =
+        register_import ~name:("caml_count_" ^ kind) (Global { mut = true; typ = I64 })
+      in
+      seq (instr (W.GlobalSet (g, W.BinOp (I64 Add, W.GlobalGet g, W.Const (I64 1L))))) e
+    else e
+
+  module Conv = struct
+    let box_float e = counted "box_f64" (Memory.box_float e)
+
+    let unbox_float e = counted "unbox_f64" (Memory.unbox_float e)
+
+    let box_float32 e = counted "box_f32" (Memory.box_float32 e)
+
+    let unbox_float32 e = counted "unbox_f32" (Memory.unbox_float32 e)
+
+    let box_int32 e = counted "box_i32" (Memory.box_int32 e)
+
+    let unbox_int32 e = counted "unbox_i32" (Memory.unbox_int32 e)
+
+    let box_int64 e = counted "box_i64" (Memory.box_int64 e)
+
+    let unbox_int64 e = counted "unbox_i64" (Memory.unbox_int64 e)
+
+    let box_nativeint e = counted "box_nativeint" (Memory.box_nativeint e)
+
+    let unbox_nativeint e = counted "unbox_nativeint" (Memory.unbox_nativeint e)
+
+    let tag e = counted "tag" (Value.val_int e)
+
+    let untag e = counted "untag" (Value.int_val e)
+
+    let tag64 e = counted "tag64" (Value64.val_int e)
+
+    let untag64 e = counted "untag64" (Value64.int_val e)
+  end
+
   let convert ~(from : Typing.typ) ~(into : Typing.typ) e =
     match from, into with
     (* Int conversions *)
@@ -276,30 +320,30 @@ module Generate (Target : Target_sig.S) = struct
     | Int _, Number (Float32, Unboxed) -> return (W.Const (F32 0.))
     (* Unboxing *)
     | _, Int (Small_normalized | Small_unnormalized) when Config.Flag.portable_int () ->
-        let* e = Value64.int_val e in
+        let* e = Conv.untag64 e in
         return (W.I32WrapI64 e)
     | _, Int (Large_normalized | Large_unnormalized) when Config.Flag.portable_int () ->
-        Value64.int_val e
+        Conv.untag64 e
     | ( _
       , Int (Small_normalized | Small_unnormalized | Large_normalized | Large_unnormalized)
-      ) -> Value.int_val e
+      ) -> Conv.untag e
     (* Boxing *)
     | Int Large_unnormalized, _ when Config.Flag.portable_int () ->
-        Value64.val_int Arith64.((e lsl const 1L) asr const 1L)
-    | Int Large_normalized, _ when Config.Flag.portable_int () -> Value64.val_int e
+        Conv.tag64 Arith64.((e lsl const 1L) asr const 1L)
+    | Int Large_normalized, _ when Config.Flag.portable_int () -> Conv.tag64 e
     | ( Int (Small_normalized | Small_unnormalized | Large_normalized | Large_unnormalized)
-      , _ ) -> Value.val_int e
+      , _ ) -> Conv.tag e
     | Number (_, Unboxed), Number (_, Unboxed) -> e
-    | _, Number (Int32, Unboxed) -> Memory.unbox_int32 e
-    | _, Number (Int64, Unboxed) -> Memory.unbox_int64 e
-    | _, Number (Nativeint, Unboxed) -> Memory.unbox_nativeint e
-    | _, Number (Float, Unboxed) -> Memory.unbox_float e
-    | _, Number (Float32, Unboxed) -> Memory.unbox_float32 e
-    | Number (Int32, Unboxed), _ -> Memory.box_int32 e
-    | Number (Int64, Unboxed), _ -> Memory.box_int64 e
-    | Number (Nativeint, Unboxed), _ -> Memory.box_nativeint e
-    | Number (Float, Unboxed), _ -> Memory.box_float e
-    | Number (Float32, Unboxed), _ -> Memory.box_float32 e
+    | _, Number (Int32, Unboxed) -> Conv.unbox_int32 e
+    | _, Number (Int64, Unboxed) -> Conv.unbox_int64 e
+    | _, Number (Nativeint, Unboxed) -> Conv.unbox_nativeint e
+    | _, Number (Float, Unboxed) -> Conv.unbox_float e
+    | _, Number (Float32, Unboxed) -> Conv.unbox_float32 e
+    | Number (Int32, Unboxed), _ -> Conv.box_int32 e
+    | Number (Int64, Unboxed), _ -> Conv.box_int64 e
+    | Number (Nativeint, Unboxed), _ -> Conv.box_nativeint e
+    | Number (Float, Unboxed), _ -> Conv.box_float e
+    | Number (Float32, Unboxed), _ -> Conv.box_float32 e
     | _ -> e
 
   let load_and_box ctx x = convert ~from:(Typing.var_type ctx.types x) ~into:Top (load x)
@@ -2194,27 +2238,27 @@ module Generate (Target : Target_sig.S) = struct
             loop [] arg_typ l |> box_number_if_needed ctx x
         | Wasm_unbox_i32 -> (
             match l with
-            | [ Pv v ] -> Memory.unbox_int32 (load v)
+            | [ Pv v ] -> Conv.unbox_int32 (load v)
             | _ -> assert false)
         | Wasm_unbox_i64 -> (
             match l with
-            | [ Pv v ] -> Memory.unbox_int64 (load v)
+            | [ Pv v ] -> Conv.unbox_int64 (load v)
             | _ -> assert false)
         | Wasm_unbox_f64 -> (
             match l with
-            | [ Pv v ] -> Memory.unbox_float (load v)
+            | [ Pv v ] -> Conv.unbox_float (load v)
             | _ -> assert false)
         | Wasm_box_i32 -> (
             match l with
-            | [ Pv v ] -> Memory.box_int32 (load v)
+            | [ Pv v ] -> Conv.box_int32 (load v)
             | _ -> assert false)
         | Wasm_box_i64 -> (
             match l with
-            | [ Pv v ] -> Memory.box_int64 (load v)
+            | [ Pv v ] -> Conv.box_int64 (load v)
             | _ -> assert false)
         | Wasm_box_f64 -> (
             match l with
-            | [ Pv v ] -> Memory.box_float (load v)
+            | [ Pv v ] -> Conv.box_float (load v)
             | _ -> assert false)
         | Wasm_untag_int -> (
             match l with

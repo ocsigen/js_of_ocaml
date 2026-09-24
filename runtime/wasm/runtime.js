@@ -880,6 +880,35 @@
     length: (s) => s.length,
     intoCharCodeArray: () => 0,
   };
+  // Counters of the representation conversions executed by code compiled
+  // with [--debug count-conversions]. They are printed on exit when nonzero.
+  const conversion_counters = {};
+  for (const kind of [
+    "box_f64",
+    "unbox_f64",
+    "box_f32",
+    "unbox_f32",
+    "box_i32",
+    "unbox_i32",
+    "box_i64",
+    "unbox_i64",
+    "box_nativeint",
+    "unbox_nativeint",
+    "tag",
+    "untag",
+    "tag64",
+    "untag64",
+  ])
+    conversion_counters[`caml_count_${kind}`] =
+      new globalThis.WebAssembly.Global({ value: "i64", mutable: true }, 0n);
+  if (isNode)
+    globalThis.process.on("exit", () => {
+      const counts = Object.entries(conversion_counters)
+        .filter(([_, g]) => g.value !== 0n)
+        .map(([name, g]) => `${name.slice(11)}=${g.value}`);
+      if (counts.length)
+        require("node:fs").writeSync(2, `conversions: ${counts.join(" ")}\n`);
+    });
   const imports = Object.assign(
     {
       Math: math,
@@ -900,6 +929,7 @@
     },
     generated,
   );
+  Object.assign(imports.env, conversion_counters);
   const options = {
     builtins: ["js-string", "text-decoder", "text-encoder"],
     importedStringConstants: "str",
