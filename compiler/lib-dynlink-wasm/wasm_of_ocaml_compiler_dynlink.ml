@@ -65,6 +65,8 @@ let register_fragments unit_name fragments =
     wasm_register_fragments unit_name source
 
 let () =
+  (* Compile with the integer representation of the running program *)
+  if Sys.int_size > 31 then Config.Flag.enable "portable-int";
   Config.set_target `Wasm;
   Config.set_effects_backend (Jsoo_runtime.Sys.Config.effects ());
   Wasm_of_ocaml_compiler.Generate.init ();
