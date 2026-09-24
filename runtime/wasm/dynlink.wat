@@ -28,13 +28,10 @@
       (func $load_wasmo (param anyref)))
    (import "bindings" "register_fragments"
       (func $register_fragments (param anyref) (param anyref)))
-   (import "fail" "javascript_exception"
-      (tag $javascript_exception (param externref)))
    (import "stdlib" "link_info"
       (global $link_info (mut (ref $block))))
 
    (type $block (array (mut (ref eq))))
-   (type $bytes (array (mut i8)))
 
 (@if (not $wasi)
 (@then
