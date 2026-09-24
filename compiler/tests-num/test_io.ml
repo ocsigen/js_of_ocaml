@@ -34,6 +34,31 @@ List.iter
    7, String.make 20000 '8']
 ;;
 
+(* The size recorded for a marshalled nat for 64-bit platforms must be the
+   one of their representation, with 64-bit digits, or they cannot read the
+   data back: an odd number of 32-bit words is padded with a zero word.
+   Native 32-bit OCaml records the unpadded size. *)
+let native_32 =
+  Sys.word_size = 32
+  && match Sys.backend_type with Native | Bytecode -> true | Other _ -> false
+
+let custom_sizes s =
+  let name = "_nat\000" in
+  let rec find i =
+    if String.sub s i (String.length name) = name then i + String.length name
+    else find (i + 1)
+  in
+  let i = find 0 in
+  let size_32 = Int32.to_int (String.get_int32_be s i) in
+  let size_64 = Int64.to_int (String.get_int64_be s (i + 4)) in
+  size_64, if native_32 then size_32 else (size_32 + 7) / 8 * 8
+;;
+
+test 8 eq_int
+  (custom_sizes (Marshal.to_string (nat_of_string "123456789012345678901234567890") []));;
+test 9 eq_int
+  (custom_sizes (Marshal.to_string (nat_of_string "1234567890123456789012") []));;
+
 testing_function "output_value/input_value on big ints";;
 
 List.iter
