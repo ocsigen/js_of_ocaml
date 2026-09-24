@@ -41,9 +41,7 @@
       (import "portableint" "val_portable_int"
          (func $val_portable_int (param i64) (result (ref eq))))
       (import "portableint" "checked_portable_int_val_32"
-         (func $caml_ba_index_val (param (ref eq)) (result i32)))
-      (import "nativeint" "Nativeint_val"
-         (func $Nativeint_val (param (ref eq)) (result i64))))
+         (func $caml_ba_index_val (param (ref eq)) (result i32))))
    (@else
    (import "nativeint" "caml_copy_nativeint"
       (func $caml_copy_nativeint (param i32) (result (ref eq))))
@@ -1692,10 +1690,19 @@
              (block $complex32
               (block $complex64
                (block $float16
+                ;; Nativeints are 64 bits in portable-int mode
+                (@if $portable-int
+                (@then
+                (br_table $float32 $float64 $int8 $int8 $int16 $int16
+                          $int32 $int64 $int $int64
+                          $complex32 $complex64 $int8 $float16
+                   (struct.get_u $bigarray $ba_kind (local.get $ba))))
+                (@else
                 (br_table $float32 $float64 $int8 $int8 $int16 $int16
                           $int32 $int64 $int $int32
                           $complex32 $complex64 $int8 $float16
                    (struct.get_u $bigarray $ba_kind (local.get $ba))))
+                ))
                ;; float16
                (call $dv_set_i16
                  (local.get $view) (i32.shl (local.get $i) (i32.const 1))
@@ -1728,27 +1735,11 @@
                    (array.get $float_array (local.get $b) (i32.const 1)))
                 (global.get $littleEndian))
              (return))
-            ;; int32 / nativeint
-            (@if $portable-int
-            (@then
-               (if (i32.eq (struct.get_u $bigarray $ba_kind (local.get $ba))
-                      (i32.const 9)) ;; nativeint: 64-bit elements
-                  (then
-                     (call $dv_set_i64
-                        (local.get $view) (i32.shl (local.get $i) (i32.const 3))
-                        (call $Nativeint_val (local.get $v))
-                        (global.get $littleEndian)))
-                  (else
-                     (call $dv_set_i32
-                        (local.get $view) (i32.shl (local.get $i) (i32.const 2))
-                        (call $Int32_val (local.get $v))
-                        (global.get $littleEndian)))))
-            (@else
+            ;; int32 / nativeint (without portable ints)
             (call $dv_set_i32
                (local.get $view) (i32.shl (local.get $i) (i32.const 2))
                (call $Int32_val (local.get $v))
                (global.get $littleEndian))
-            ))
             (return))
            ;; int
            (@if $portable-int
@@ -1764,7 +1755,7 @@
               (global.get $littleEndian))
             ))
            (return))
-          ;; int64
+          ;; int64 / nativeint (with portable ints; boxed as an int64)
           (call $dv_set_i64
              (local.get $view) (i32.shl (local.get $i) (i32.const 3))
              (call $Int64_val (local.get $v))
@@ -2655,9 +2646,17 @@
           (block $complex32
            (block $complex64
             (block $float16
+             ;; Nativeints are 64 bits in portable-int mode
+             (@if $portable-int
+             (@then
+             (br_table $float $float $int $int $int $int $int32 $int64 $int
+               $int64 $complex32 $complex64 $int $float16
+               (struct.get_u $bigarray $ba_kind (local.get $ba))))
+             (@else
              (br_table $float $float $int $int $int $int $int32 $int64 $int
                $int32 $complex32 $complex64 $int $float16
                (struct.get_u $bigarray $ba_kind (local.get $ba))))
+             ))
              ;; float16
              (call $ta_fill_int (local.get $dat)
                 (call $double_to_float16
@@ -2709,7 +2708,7 @@
                     (local.set $i (i32.add (local.get $i) (i32.const 8)))
                     (br $loop))))
            (return (ref.i31 (i32.const 0))))
-          ;; int64
+          ;; int64 / nativeint (with portable ints; boxed as an int64)
           (local.set $view (struct.get $bigarray $ba_view (local.get $ba)))
           (local.set $len
              (i32.shl (call $caml_ba_num_elts (local.get $ba)) (i32.const 3)))
@@ -2723,20 +2722,8 @@
                    (local.set $i (i32.add (local.get $i) (i32.const 8)))
                    (br $loop))))
           (return (ref.i31 (i32.const 0))))
-         ;; int32
-         (@if $portable-int
-         (@then
-            (if (i32.eq (struct.get_u $bigarray $ba_kind (local.get $ba))
-                   (i32.const 9))
-               (then
-                  (call $caml_ba_fill_i64 (local.get $ba)
-                     (call $Nativeint_val (local.get $v))))
-               (else
-                  (call $ta_fill_int (local.get $dat)
-                     (call $Int32_val (local.get $v))))))
-         (@else
+         ;; int32 / nativeint (without portable ints)
          (call $ta_fill_int (local.get $dat) (call $Int32_val (local.get $v)))
-         ))
          (return (ref.i31 (i32.const 0))))
         ;; int
         (@if $portable-int
