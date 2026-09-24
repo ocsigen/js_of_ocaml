@@ -276,7 +276,7 @@
     return caml_alloc_stat(
       large,
       s.dev,
-      s.ino | 0,
+      s.ino,
       kind,
       s.mode & 0o7777,
       s.nlink,
