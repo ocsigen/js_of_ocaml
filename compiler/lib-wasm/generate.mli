@@ -21,7 +21,8 @@ val init : unit -> unit
 val start : unit -> Code_generation.context
 
 val f :
-     context:Code_generation.context
+     profile:Profile.t
+  -> context:Code_generation.context
   -> unit_name:string option
   -> Code.program
   -> live_vars:int array
