@@ -128,7 +128,10 @@ module Make (Arg : Arg) : S = struct
     then num_bits_ := x
     else failwith (Printf.sprintf "%s.num_bits %d unsupported" Arg.name x)
 
-  let num_bits () = !num_bits_
+  let num_bits () =
+    match !num_bits_ with
+    | 0 -> failwith (Printf.sprintf "%s.num_bits: size not set" Arg.name)
+    | x -> x
 
   type offset = Offset of int [@@ocaml.unboxed]
 
@@ -170,7 +173,7 @@ module Make (Arg : Arg) : S = struct
 
   let to_int_exn x =
     if
-      Sys.int_size >= 32
+      Sys.int_size >= num_bits ()
       || (Int64.of_int Int.min_int <= x && x <= Int64.of_int Int.max_int)
     then Int64.to_int x
     else failwith "to_int_exn"
