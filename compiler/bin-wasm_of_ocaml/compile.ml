@@ -747,8 +747,10 @@ let run
            let missing_primitives =
              let l = Link.Wasm_binary.read_imports ~file:tmp_wasm_file' in
              List.filter_map
-               ~f:(fun { Link.Wasm_binary.module_; name; _ } ->
-                 if String.equal module_ "env" then Some name else None)
+               ~f:(fun { Link.Wasm_binary.module_; name; desc } ->
+                 match desc with
+                 | Func _ when String.equal module_ "env" -> Some name
+                 | _ -> None)
                l
            in
            build_js_runtime
