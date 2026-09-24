@@ -234,3 +234,12 @@ let%expect_test "get_copy does not copy custom blocks" =
   | Some a' -> Printf.printf "%b\n" (a' == a)
   | None -> print_endline "none");
   [%expect {| true |}]
+
+let%expect_test ("large integers are not weak" [@when int_size_64]) =
+  let w = Weak.create 1 in
+  Weak.set w 0 (Some (Sys.opaque_identity (1 lsl 40) + 1));
+  Gc.full_major ();
+  (match Weak.get w 0 with
+  | Some x -> Printf.printf "%d\n" x
+  | None -> print_endline "none");
+  [%expect {| 1099511627777 |}]

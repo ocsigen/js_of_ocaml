@@ -129,3 +129,15 @@ let%expect_test "sameness" =
   [%expect {| true |}];
   print_bool (f (-0. == 0.));
   [%expect {| false |}]
+
+external compare_and_swap_field : Obj.t -> int -> Obj.t -> Obj.t -> bool
+  = "caml_obj_compare_and_swap"
+
+let%expect_test ("compare and swap of a large integer" [@when int_size_64]) =
+  let big = Sys.opaque_identity (1 lsl 40) in
+  let r = ref (big + 1) in
+  (* The expected value is equal to the current one, but not physically equal
+     when large integers are boxed *)
+  let swapped = compare_and_swap_field (Obj.repr r) 0 (Obj.repr (big + 1)) (Obj.repr 7) in
+  Printf.printf "%b %d\n" swapped !r;
+  [%expect {| true 7 |}]
