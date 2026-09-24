@@ -3500,6 +3500,11 @@ module Generate (Target : Target_sig.S) = struct
         Typing.register_prim
           name
           ~kind:k
+          ~args:
+            (Typed
+               (List.map
+                  ~f:(fun ty -> Option.value ~default:Typing.Top (repr_type ty))
+                  param_types))
           ~unbox:
             (List.exists
                ~f:(fun ty ->

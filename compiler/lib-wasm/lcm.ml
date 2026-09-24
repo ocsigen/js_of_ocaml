@@ -67,6 +67,15 @@
       removes the conversions and the block parameters which the peephole pass and the
       widening have left without uses.
 
+   Boxing conversions (box, tag) are placed in a specific way (see "Placement of boxing
+   conversions" below): a number is boxed where the boxed value is used, but at most once
+   per execution of its definition. So boxes are moved out of loops before the dataflow
+   analysis ([hoist_boxes_out_of_loops]) and, once all the functions are processed, out of
+   closures ([hoist_boxes_out_of_closures]); the boxes of a value which may still follow
+   one another are then merged ([merge_repeated_boxes]). A number constant used in another
+   representation is not converted: a variable is bound to the constant in that
+   representation, right after the constant.
+
    The phases are ordered so that each feeds into the next: LCM creates optimal placements
    but may introduce inverse pairs; peephole cleans those up; widening then eliminates the
    conversions of values flowing through block parameters.
@@ -88,6 +97,8 @@ let times = Debug.find "times"
 
 let stats = Debug.find "stats"
 
+let check = Debug.find "lcm-check"
+
 type lcm_stats =
   { mutable functions_processed : int
   ; mutable functions_with_conversions : int
@@ -100,6 +111,9 @@ type lcm_stats =
   ; mutable conversions_eliminated : int
   ; mutable peephole_eliminated : int
   ; mutable params_widened : int
+  ; mutable boxes_hoisted_from_loops : int
+  ; mutable boxes_hoisted_from_closures : int
+  ; mutable boxes_merged : int
   ; mutable dead_conversions_removed : int
   ; mutable dead_params_removed : int
   ; mutable time_lowering : float
@@ -108,6 +122,7 @@ type lcm_stats =
   ; mutable time_peephole : float
   ; mutable time_widening : float
   ; mutable time_setup : float
+  ; mutable time_boxes : float
   ; mutable time_cleanup : float
   }
 
@@ -123,6 +138,9 @@ let make_stats () =
   ; conversions_eliminated = 0
   ; peephole_eliminated = 0
   ; params_widened = 0
+  ; boxes_hoisted_from_loops = 0
+  ; boxes_hoisted_from_closures = 0
+  ; boxes_merged = 0
   ; dead_conversions_removed = 0
   ; dead_params_removed = 0
   ; time_lowering = 0.
@@ -131,6 +149,7 @@ let make_stats () =
   ; time_peephole = 0.
   ; time_widening = 0.
   ; time_setup = 0.
+  ; time_boxes = 0.
   ; time_cleanup = 0.
   }
 
@@ -182,6 +201,8 @@ module Bits : sig
 
   val remove : t -> int -> unit
 
+  val mem : t -> int -> bool
+
   val copy : t -> t
 
   val union : t -> t -> t
@@ -229,6 +250,8 @@ end = struct
   let remove a i =
     let j = i / Sys.int_size in
     a.(j) <- a.(j) land lnot (1 lsl (i mod Sys.int_size))
+
+  let mem a i = a.(i / Sys.int_size) land (1 lsl (i mod Sys.int_size)) <> 0
 
   let copy = Array.copy
 
@@ -422,25 +445,32 @@ let lower_conversions
     (global_flow_info : Global_flow.info)
     (return_type : Typing.typ)
     (free_pc : int ref)
+    ~constant_twin
     ~rebind_call
     ~direct_callee
     ~(st : lcm_stats) =
-  (* A conversion of a number constant is replaced by the constant in the
-     target representation: a boxed constant is a static value and an
-     unboxed one an immediate. *)
+  (* A conversion of a number constant is replaced by a variable bound to
+     the constant in the target representation (see [constant_twins]): a
+     boxed constant is a static value and an unboxed one an immediate. *)
   let lower_var_conversion ~types ~from ~into x =
-    let constant =
-      match constant_of global_flow_info x with
-      | Some (Float _ | Int32 _ | Int64 _ | NativeInt _) as c -> c
-      | ((Some (Float32 _) as c) [@if oxcaml]) -> c
-      | Some _ | None -> None
+    let twin =
+      match constant_of global_flow_info x, Typing.conversion ~from ~into with
+      | Some c, Some kind -> (
+          (* The constant may not be of the kind of number expected by the
+             use, on a dead path (with GADTs, for instance): the conversion
+             is then kept, and fails if it is ever executed. *)
+          match c, kind with
+          | Float _, (Box_f64 | Unbox_f64)
+          | Int32 _, (Box_i32 | Unbox_i32)
+          | Int64 _, (Box_i64 | Unbox_i64)
+          | NativeInt _, (Box_nativeint | Unbox_nativeint) -> Some (c, kind)
+          | ((Float32 _, (Box_f32 | Unbox_f32)) [@if oxcaml]) -> Some (c, kind)
+          | _ -> None)
+      | _ -> None
     in
-    match constant with
-    | Some c when Option.is_some (Typing.conversion ~from ~into) ->
-        let tmp = Var.fresh () in
-        Typing.set_var_type types tmp into;
-        [ Let (tmp, Constant c) ], tmp
-    | Some _ | None -> lower_var_conversion ~types ~from ~into x
+    match twin with
+    | Some (c, kind) -> [], constant_twin x c kind
+    | None -> lower_var_conversion ~types ~from ~into x
   in
   let lower_apply x ~f ~args ~exact =
     let closure =
@@ -507,14 +537,40 @@ let lower_conversions
         | Pv v -> Typing.var_type types v
         | Pc c -> Typing.constant_type c
       in
+      let is_int a =
+        match a with
+        | Pv v -> (
+            match Typing.var_type types v with
+            | Typing.Int _ -> true
+            | _ -> false)
+        | Pc c -> (
+            match Typing.constant_type c with
+            | Typing.Int _ -> true
+            | _ -> false)
+      in
       match p with
+      | Extern ("caml_array_unsafe_get", _) | Array_get _ -> Some [ top; int_n ]
       | Extern (nm, hint) -> (
           match Typing.prim_sig nm with
           | Typed target_types, _ -> Some target_types
+          | Values, _ -> Some (List.map ~f:(fun _ -> top) args)
           | Computed f, _ ->
               Some (f ~hint ~info:global_flow_info (List.map ~f:(fun a -> a, own a) args))
-          | (Values | Any_representation), _ -> None)
-      | Array_get _ -> Some [ top; int_n ]
+          | Any_representation, _ ->
+              (* Unboxed numbers are boxed. The code generator converts the
+                 other arguments itself, according to their types. *)
+              Some
+                (List.map
+                   ~f:(fun a ->
+                     match own a with
+                     | Typing.Number (_, Unboxed) -> top
+                     | t -> t)
+                   args))
+      | Eq _ | Neq _ -> (
+          (* Integers are compared directly, other values physically *)
+          match args with
+          | [ a; b ] when is_int a && is_int b -> None
+          | _ -> Some (List.map ~f:(fun _ -> top) args))
       | Lt | Le | Ult -> Some [ int_n; int_n ]
       | _ -> None
     in
@@ -596,6 +652,24 @@ let lower_conversions
         let lowered_e =
           match e with
           | Prim (p, args) -> lower_prim x p args
+          | Block (tag, fields, kind, mut, desc) when tag <> 254 ->
+              (* The fields of a block are values *)
+              let lowered_rev = ref [] in
+              let fields =
+                Array.map
+                  ~f:(fun y ->
+                    let lowered, y' =
+                      lower_var_conversion
+                        ~types
+                        ~from:(Typing.var_type types y)
+                        ~into:Typing.Top
+                        y
+                    in
+                    lowered_rev := List.rev_append lowered !lowered_rev;
+                    y')
+                  fields
+              in
+              List.rev !lowered_rev @ [ Let (x, Block (tag, fields, kind, mut, desc)) ]
           | _ -> [ Let (x, e) ]
         in
         let into = Typing.var_type types x in
@@ -2294,6 +2368,800 @@ let process_function types entry fun_blocks ~assigned ~global_flow_info ~(st : l
     st.time_widening <- st.time_widening +. (tick () -. t3);
     result)
 
+(* Placement of boxing conversions.
+
+   A boxing conversion (box or tag) is performed where the boxed value is
+   used, so that no value is boxed on a path where the boxed value is not
+   needed. But a value must not be boxed more than once per execution of its
+   definition: a box of [y] must not be repeated by a loop or a function
+   body which does not contain the definition of [y]. Such a box is moved to
+   the entry of the outermost such region: before the loop, or, for a
+   function body, before the creation of the closure in the function where
+   [y] is defined (and then before the loops of that function which do not
+   contain the definition of [y]). Nor must a box of [y] be followed by
+   another one: the data flow analysis removes a box when [y] has been
+   boxed on all the paths leading to it, and the boxes remaining on a same
+   path are merged ([merge_repeated_boxes]). *)
+
+let is_boxing kind =
+  match kind with
+  | Box_i32 | Box_i64 | Box_nativeint | Box_f64 | Box_f32 | Tag_int -> true
+  | Unbox_i32 | Unbox_i64 | Unbox_nativeint | Unbox_f64 | Unbox_f32 | Untag_int -> false
+
+(* [Some (x, kind, y)] if the instruction is [x = kind(y)] with [kind] a
+   boxing conversion *)
+let boxing i =
+  match i with
+  | Let (x, Prim (p, [ Pv y ])) -> (
+      match kind_of_prim p with
+      | Some kind when is_boxing kind -> Some (x, kind, y)
+      | Some _ | None -> None)
+  | Let _ | Assign _ | Set_field _ | Offset_ref _ | Array_set _ | Event _ -> None
+
+(* The natural loops of a function, with the size of their body. A back
+   edge goes to a block which dominates its source, so the body of a loop
+   can only be entered through its header. *)
+module Loops = struct
+  type t = (Addr.Set.t * int) Addr.Map.t
+
+  let compute blocks entry : t =
+    let g = Structure.control_flow_graph blocks entry in
+    (* Most functions have no loop: the dominators and the predecessors are
+       only computed once a backward edge is found *)
+    let idom = lazy (Structure.immediate_dominators g) in
+    let rec dominates header pc =
+      pc = header
+      ||
+      match Addr.Hashtbl.find_opt (Lazy.force idom) pc with
+      | Some pc' -> dominates header pc'
+      | None -> false
+    in
+    let preds = lazy (CFG.predecessors blocks) in
+    let preds pc = Addr.Map.find_opt pc (Lazy.force preds) |> Option.value ~default:[] in
+    List.fold_left
+      ~f:(fun loops src ->
+        List.fold_left
+          ~f:(fun loops header ->
+            if Structure.is_backward g src header && dominates header src
+            then (
+              let body =
+                ref
+                  (Addr.Map.find_opt header loops
+                  |> Option.value ~default:(Addr.Set.singleton header))
+              in
+              let rec add pc =
+                if not (Addr.Set.mem pc !body)
+                then (
+                  body := Addr.Set.add pc !body;
+                  List.iter ~f:add (preds pc))
+              in
+              add src;
+              Addr.Map.add header !body loops)
+            else loops)
+          ~init:loops
+          (CFG.successors blocks src))
+      ~init:Addr.Map.empty
+      (Structure.blocks_in_reverse_post_order g)
+    |> Addr.Map.map (fun body -> body, Addr.Set.cardinal body)
+
+  (* The outermost loop containing block [pc] but not the definition [def]
+     of a value ([None]: the value is defined before the function body,
+     e.g. a parameter) *)
+  let outermost (loops : t) pc ~def =
+    Addr.Map.fold
+      (fun header (body, size) acc ->
+        if
+          Addr.Set.mem pc body
+          &&
+          match def with
+          | None -> true
+          | Some d -> not (Addr.Set.mem d body)
+        then
+          match acc with
+          | Some (_, (_, size')) when size' >= size -> acc
+          | Some _ | None -> Some (header, (body, size))
+        else acc)
+      loops
+      None
+end
+
+(* A block executed right before entering the loop, which is created if
+   needed. [None] if the loop is entered through an exception handler or
+   when leaving one. *)
+let loop_preheader ~types ~free_pc ~preds blocks (header, (body, _)) =
+  let entry_preds =
+    preds header
+    |> List.filter ~f:(fun pc -> not (Addr.Set.mem pc body))
+    |> List.sort_uniq ~cmp:compare
+  in
+  let branch pc = (Addr.Map.find pc !blocks).branch in
+  if
+    List.is_empty entry_preds
+    || not
+         (List.for_all
+            ~f:(fun pc ->
+              match branch pc with
+              | Branch _ | Cond _ | Switch _ -> true
+              | Pushtrap _ | Poptrap _ | Return _ | Raise _ | Stop -> false)
+            entry_preds)
+  then None
+  else
+    match entry_preds with
+    | [ pc ]
+      when match branch pc with
+           | Branch _ -> true
+           | _ -> false -> Some pc
+    | _ ->
+        let params =
+          List.map
+            ~f:(fun x ->
+              let x' = Var.fork x in
+              Typing.set_var_type types x' (Typing.var_type types x);
+              x')
+            (Addr.Map.find header !blocks).params
+        in
+        let pc' = !free_pc in
+        incr free_pc;
+        blocks :=
+          Addr.Map.add pc' { params; body = []; branch = Branch (header, params) } !blocks;
+        List.iter
+          ~f:(fun pc ->
+            let b = Addr.Map.find pc !blocks in
+            let redirect ((pc'', args) as cont) =
+              if pc'' = header then pc', args else cont
+            in
+            blocks :=
+              Addr.Map.add pc { b with branch = map_conts redirect b.branch } !blocks)
+          entry_preds;
+        Some pc'
+
+let append_instrs blocks pc l =
+  let b = Addr.Map.find pc !blocks in
+  blocks := Addr.Map.add pc { b with body = b.body @ l } !blocks
+
+(* Whether a block of the function contains an instruction satisfying [f] *)
+let exists_instr f blocks = Addr.Map.exists (fun _ b -> List.exists ~f b.body) blocks
+
+(* Move the boxes of a function out of the loops that do not contain the
+   definition of the boxed value. [params] are the parameters of the
+   function. The boxes of free variables are handled by
+   [hoist_boxes_out_of_closures]. Assigned variables need no specific
+   treatment here, although they are in effect defined at the entry of an
+   exception handler rather than in the [Pushtrap] block (see
+   [assigned_vars]): a loop which contains a use of such a variable, in
+   the handler, but not the [Pushtrap] block lies inside the handler. *)
+let hoist_boxes_out_of_loops ~types ~free_pc ~params ~(st : lcm_stats) blocks entry =
+  let loops =
+    if exists_instr (fun i -> Option.is_some (boxing i)) blocks
+    then Loops.compute blocks entry
+    else Addr.Map.empty
+  in
+  if Addr.Map.is_empty loops
+  then blocks
+  else
+    let defs = Var.Hashtbl.create 16 in
+    Addr.Map.iter
+      (fun pc b ->
+        List.iter ~f:(fun x -> Var.Hashtbl.replace defs x pc) b.params;
+        List.iter
+          ~f:(fun i ->
+            match i with
+            | Let (x, _) -> Var.Hashtbl.replace defs x pc
+            | Assign _ | Set_field _ | Offset_ref _ | Array_set _ | Event _ -> ())
+          b.body)
+      blocks;
+    let params =
+      List.fold_left ~f:(fun s x -> VarSet.add x s) ~init:VarSet.empty params
+    in
+    let moves = ref [] in
+    Addr.Map.iter
+      (fun pc b ->
+        List.iter
+          ~f:(fun i ->
+            match boxing i with
+            | Some (x, _, y) -> (
+                let def =
+                  match Var.Hashtbl.find_opt defs y with
+                  | Some d -> Some (Some d)
+                  | None -> if VarSet.mem y params then Some None else None
+                in
+                match def with
+                | Some def -> (
+                    match Loops.outermost loops pc ~def with
+                    | Some l -> moves := (pc, x, i, l) :: !moves
+                    | None -> ())
+                | None -> ())
+            | None -> ())
+          b.body)
+      blocks;
+    if List.is_empty !moves
+    then blocks
+    else
+      let blocks = ref blocks in
+      let preds = CFG.predecessors !blocks in
+      let preds pc = Addr.Map.find_opt pc preds |> Option.value ~default:[] in
+      let preheaders = Addr.Hashtbl.create 8 in
+      List.iter
+        ~f:(fun (pc, x, i, ((header, _) as l)) ->
+          let ph =
+            match Addr.Hashtbl.find_opt preheaders header with
+            | Some ph -> ph
+            | None ->
+                let ph = loop_preheader ~types ~free_pc ~preds blocks l in
+                Addr.Hashtbl.add preheaders header ph;
+                ph
+          in
+          match ph with
+          | None -> ()
+          | Some ph ->
+              st.boxes_hoisted_from_loops <- st.boxes_hoisted_from_loops + 1;
+              let b = Addr.Map.find pc !blocks in
+              let body =
+                List.filter
+                  ~f:(fun i ->
+                    match i with
+                    | Let (x', _) -> not (Var.equal x x')
+                    | Assign _ | Set_field _ | Offset_ref _ | Array_set _ | Event _ ->
+                        true)
+                  b.body
+              in
+              blocks := Addr.Map.add pc { b with body } !blocks;
+              append_instrs blocks ph [ i ])
+        (List.rev !moves);
+      !blocks
+
+(* The functions of a program, and where variables are defined *)
+type functions =
+  { fun_of_block : Addr.t Addr.Hashtbl.t  (** Entry of the function of a block *)
+  ; blocks_of_fun : Addr.t list Addr.Hashtbl.t
+  ; parent : Addr.t Addr.Hashtbl.t  (** Block where a closure is created *)
+  ; def_fun : Addr.t Var.Hashtbl.t
+        (** Function where a variable is defined (only for the operands of
+            boxing conversions) *)
+  ; def_block : Addr.t Var.Hashtbl.t
+        (** Block where a variable is defined (only for the operands of
+            boxing conversions, and not for function parameters) *)
+  }
+
+let functions (p : program) =
+  let fun_of_block = Addr.Hashtbl.create 1024 in
+  let blocks_of_fun = Addr.Hashtbl.create 64 in
+  let parent = Addr.Hashtbl.create 64 in
+  let rec visit f pc =
+    if not (Addr.Hashtbl.mem fun_of_block pc)
+    then (
+      Addr.Hashtbl.add fun_of_block pc f;
+      Addr.Hashtbl.replace
+        blocks_of_fun
+        f
+        (pc :: (Addr.Hashtbl.find_opt blocks_of_fun f |> Option.value ~default:[]));
+      List.iter ~f:(visit f) (CFG.successors p.blocks pc))
+  in
+  visit p.start p.start;
+  Addr.Map.iter
+    (fun pc b ->
+      List.iter
+        ~f:(fun i ->
+          match i with
+          | Let (_, Closure (_, (entry, _), _)) ->
+              Addr.Hashtbl.replace parent entry pc;
+              visit entry entry
+          | Let _ | Assign _ | Set_field _ | Offset_ref _ | Array_set _ | Event _ -> ())
+        b.body)
+    p.blocks;
+  (* Only the definitions of the operands of boxing conversions are
+     needed: recording all the variables of the program would be costly *)
+  let boxed = Var.Hashtbl.create 1024 in
+  Addr.Map.iter
+    (fun _ b ->
+      List.iter
+        ~f:(fun i ->
+          match boxing i with
+          | Some (_, _, y) -> Var.Hashtbl.replace boxed y ()
+          | None -> ())
+        b.body)
+    p.blocks;
+  let def_fun = Var.Hashtbl.create 1024 in
+  let def_block = Var.Hashtbl.create 1024 in
+  Addr.Map.iter
+    (fun pc b ->
+      match Addr.Hashtbl.find_opt fun_of_block pc with
+      | None -> ()
+      | Some f ->
+          let def x =
+            if Var.Hashtbl.mem boxed x
+            then (
+              Var.Hashtbl.replace def_fun x f;
+              Var.Hashtbl.replace def_block x pc)
+          in
+          List.iter ~f:def b.params;
+          List.iter
+            ~f:(fun i ->
+              match i with
+              | Let (x, e) -> (
+                  def x;
+                  match e with
+                  | Closure (params, (entry, _), _) ->
+                      List.iter
+                        ~f:(fun y ->
+                          if Var.Hashtbl.mem boxed y
+                          then Var.Hashtbl.replace def_fun y entry)
+                        params
+                  | _ -> ())
+              | Assign _ | Set_field _ | Offset_ref _ | Array_set _ | Event _ -> ())
+            b.body)
+    p.blocks;
+  { fun_of_block; blocks_of_fun; parent; def_fun; def_block }
+
+let fun_blocks (p : program) fns f =
+  List.fold_left
+    ~f:(fun m pc -> Addr.Map.add pc (Addr.Map.find pc p.blocks) m)
+    ~init:Addr.Map.empty
+    (Addr.Hashtbl.find fns.blocks_of_fun f)
+
+(* Move the boxes of free variables of a function to the function where the
+   variable is defined, before the creation of the closure. The functions
+   of the resulting program are returned as well. *)
+let hoist_boxes_out_of_closures ~types ~(st : lcm_stats) (p : program) =
+  let fns = functions p in
+  (* For each closure created in the function where a boxed variable is
+     defined, the boxes to perform before creating it *)
+  let insertions = Addr.Hashtbl.create 16 in
+  let subst = Var.Hashtbl.create 16 in
+  Addr.Map.iter
+    (fun pc b ->
+      match Addr.Hashtbl.find_opt fns.fun_of_block pc with
+      | None -> ()
+      | Some f ->
+          List.iter
+            ~f:(fun i ->
+              match boxing i with
+              | Some (x, kind, y) -> (
+                  match Var.Hashtbl.find_opt fns.def_fun y with
+                  | Some g when g <> f -> (
+                      (* The outermost closure containing [f] created in [g] *)
+                      let rec closure f =
+                        match Addr.Hashtbl.find_opt fns.parent f with
+                        | None -> None
+                        | Some def_pc ->
+                            let f' = Addr.Hashtbl.find fns.fun_of_block def_pc in
+                            if f' = g then Some f else closure f'
+                      in
+                      match closure f with
+                      | None -> ()
+                      | Some c ->
+                          let m =
+                            Addr.Hashtbl.find_opt insertions c
+                            |> Option.value ~default:ConvMap.empty
+                          in
+                          let yb =
+                            match ConvMap.find_opt (kind, y) m with
+                            | Some yb -> yb
+                            | None ->
+                                let yb = Var.fresh () in
+                                Typing.set_var_type types yb (Typing.var_type types x);
+                                Addr.Hashtbl.replace
+                                  insertions
+                                  c
+                                  (ConvMap.add (kind, y) yb m);
+                                yb
+                          in
+                          st.boxes_hoisted_from_closures <-
+                            st.boxes_hoisted_from_closures + 1;
+                          Var.Hashtbl.replace subst x yb)
+                  | Some _ | None -> ())
+              | None -> ())
+            b.body)
+    p.blocks;
+  if Var.Hashtbl.length subst = 0
+  then p, fns
+  else
+    let subst_var x = Var.Hashtbl.find_opt subst x |> Option.value ~default:x in
+    let blocks =
+      ref
+        (Addr.Map.map
+           (fun b ->
+             let body =
+               List.filter_map
+                 ~f:(fun i ->
+                   match i with
+                   | Let (x, _) when Var.Hashtbl.mem subst x -> None
+                   | _ -> Some (Subst.Excluding_Binders.instr subst_var i))
+                 b.body
+             in
+             { b with body; branch = Subst.Excluding_Binders.last subst_var b.branch })
+           p.blocks)
+    in
+    let free_pc = ref p.free_pc in
+    (* Loops and loop preheaders of the functions where boxes are inserted *)
+    let loops = Addr.Hashtbl.create 16 in
+    let get_loops g =
+      match Addr.Hashtbl.find_opt loops g with
+      | Some l -> l
+      | None ->
+          let fb = fun_blocks p fns g in
+          let preds = CFG.predecessors fb in
+          let l =
+            ( Loops.compute fb g
+            , (fun pc -> Addr.Map.find_opt pc preds |> Option.value ~default:[])
+            , Addr.Hashtbl.create 8 )
+          in
+          Addr.Hashtbl.add loops g l;
+          l
+    in
+    Addr.Hashtbl.iter
+      (fun c m ->
+        let def_pc = Addr.Hashtbl.find fns.parent c in
+        let g = Addr.Hashtbl.find fns.fun_of_block def_pc in
+        let loops, preds, preheaders = get_loops g in
+        ConvMap.iter
+          (fun (kind, y) yb ->
+            let instr = Let (yb, Prim (prim_of_kind kind, [ Pv y ])) in
+            let def = Var.Hashtbl.find_opt fns.def_block y in
+            let ph =
+              match Loops.outermost loops def_pc ~def with
+              | None -> None
+              | Some ((header, _) as l) -> (
+                  match Addr.Hashtbl.find_opt preheaders header with
+                  | Some ph -> ph
+                  | None ->
+                      let ph = loop_preheader ~types ~free_pc ~preds blocks l in
+                      Addr.Hashtbl.add preheaders header ph;
+                      (* A new block *)
+                      (match ph with
+                      | Some ph when not (Addr.Hashtbl.mem fns.fun_of_block ph) ->
+                          Addr.Hashtbl.add fns.fun_of_block ph g;
+                          Addr.Hashtbl.replace
+                            fns.blocks_of_fun
+                            g
+                            (ph :: Addr.Hashtbl.find fns.blocks_of_fun g)
+                      | Some _ | None -> ());
+                      ph)
+            in
+            match ph with
+            | Some ph -> append_instrs blocks ph [ instr ]
+            | None ->
+                (* Before the group of closures that contains [c] *)
+                let b = Addr.Map.find def_pc !blocks in
+                let rec insert rev_group l =
+                  match l with
+                  | (Let (_, Closure (_, (entry, _), _)) as i) :: rem ->
+                      if entry = c
+                      then (instr :: List.rev rev_group) @ (i :: rem)
+                      else insert (i :: rev_group) rem
+                  | (Let (_, Prim (Extern ("caml_cps_closure", _), _)) as i) :: rem ->
+                      (* Double translation: pairing the two versions of a
+                         function, this is part of the group (see
+                         [Closure_conversion.iter_closures]) *)
+                      insert (i :: rev_group) rem
+                  | i :: rem -> List.rev_append rev_group (i :: insert [] rem)
+                  | [] -> assert false
+                in
+                blocks := Addr.Map.add def_pc { b with body = insert [] b.body } !blocks)
+          m)
+      insertions;
+    { p with blocks = !blocks; free_pc = !free_pc }, fns
+
+(* The boxes which may be performed on a value that has already been boxed
+   since it was defined. Each function is returned with its blocks and
+   the conversions [(kind, y)] it performs at several places, when one of
+   these places can be reached from another one without going through the
+   definition of [y]. The places are given as the block and the result of
+   each conversion, in execution order within a block, together with the
+   block where [y] is defined ([None] for a parameter of the function).
+
+   The data flow analysis only removes a conversion which is redundant on
+   all paths, and does not see the boxes moved out of closures. As in
+   [hoist_boxes_out_of_loops], assigned variables need no specific
+   treatment: their boxes are all in the exception handler. *)
+let repeated_boxes (p : program) fns =
+  let sites = Var.Hashtbl.create 64 in
+  let repeated = ref false in
+  Addr.Map.iter
+    (fun pc b ->
+      List.iter
+        ~f:(fun i ->
+          match boxing i with
+          | Some (x, kind, y) ->
+              let l = Var.Hashtbl.find_opt sites y |> Option.value ~default:[] in
+              if not (List.is_empty l) then repeated := true;
+              Var.Hashtbl.replace sites y ((kind, pc, x) :: l)
+          | None -> ())
+        b.body)
+    p.blocks;
+  if not !repeated
+  then []
+  else
+    (* The values boxed at several places of the function where they are
+       defined *)
+    let candidates = Addr.Hashtbl.create 16 in
+    Var.Hashtbl.iter
+      (fun y l ->
+        match l with
+        | [] | [ _ ] -> ()
+        | (kind, pc, _) :: _ -> (
+            let f = Addr.Hashtbl.find_opt fns.fun_of_block pc in
+            match f, Var.Hashtbl.find_opt fns.def_fun y with
+            | Some f, Some g
+              when f = g
+                   && List.for_all
+                        ~f:(fun (kind', pc', _) ->
+                          Poly.equal kind kind'
+                          &&
+                          match Addr.Hashtbl.find_opt fns.fun_of_block pc' with
+                          | Some f' -> f = f'
+                          | None -> false)
+                        l ->
+                Addr.Hashtbl.replace
+                  candidates
+                  f
+                  (( (kind, y)
+                   , Var.Hashtbl.find_opt fns.def_block y
+                   , List.rev_map ~f:(fun (_, pc, x) -> pc, x) l )
+                  :: (Addr.Hashtbl.find_opt candidates f |> Option.value ~default:[]))
+            | _ -> ()))
+      sites;
+    Addr.Hashtbl.fold
+      (fun f l acc ->
+        let candidates = Array.of_list l in
+        let n = Array.length candidates in
+        let fb = fun_blocks p fns f in
+        let repeated = Array.make n false in
+        (* Forward analysis: the values which may have been boxed since
+           they were defined, at the exit of each block *)
+        let gen = Addr.Hashtbl.create 16 in
+        let kill = Addr.Hashtbl.create 16 in
+        let get tbl pc =
+          match Addr.Hashtbl.find_opt tbl pc with
+          | Some s -> s
+          | None ->
+              let s = Bits.empty n in
+              Addr.Hashtbl.add tbl pc s;
+              s
+        in
+        Array.iteri
+          ~f:(fun i (_, def, sites) ->
+            Option.iter ~f:(fun pc -> Bits.add (get kill pc) i) def;
+            List.iter
+              ~f:(fun (pc, _) ->
+                let s = get gen pc in
+                if Bits.mem s i then repeated.(i) <- true else Bits.add s i)
+              sites)
+          candidates;
+        let preds = CFG.predecessors fb in
+        (* An exception handler can be reached from any block of the body
+           of the [try] *)
+        let try_blocks = Addr.Hashtbl.create 16 in
+        Addr.Map.iter
+          (fun _ b ->
+            match b.branch with
+            | Pushtrap ((body, _), _, (handler, _)) ->
+                let visited = ref Addr.Set.empty in
+                let rec visit depth pc =
+                  if not (Addr.Set.mem pc !visited)
+                  then (
+                    visited := Addr.Set.add pc !visited;
+                    match (Addr.Map.find pc fb).branch with
+                    | Poptrap (pc', _) -> if depth > 0 then visit (depth - 1) pc'
+                    | Pushtrap ((pc', _), _, (pc'', _)) ->
+                        visit (depth + 1) pc';
+                        visit depth pc''
+                    | Branch _ | Cond _ | Switch _ | Return _ | Raise _ | Stop ->
+                        List.iter ~f:(visit depth) (CFG.successors fb pc))
+                in
+                visit 0 body;
+                Addr.Hashtbl.replace
+                  try_blocks
+                  handler
+                  (Addr.Set.elements !visited
+                  @ (Addr.Hashtbl.find_opt try_blocks handler |> Option.value ~default:[])
+                  )
+            | Branch _ | Cond _ | Switch _ | Return _ | Raise _ | Stop | Poptrap _ -> ())
+          fb;
+        let preds pc =
+          (Addr.Map.find_opt pc preds |> Option.value ~default:[])
+          @ (Addr.Hashtbl.find_opt try_blocks pc |> Option.value ~default:[])
+        in
+        let out = Addr.Hashtbl.create 16 in
+        (* The values which may have been boxed at the entry of a block,
+           and are not defined in the block *)
+        let boxed_at_entry pc =
+          let s = Bits.empty n in
+          List.iter
+            ~f:(fun pc' ->
+              match Addr.Hashtbl.find_opt out pc' with
+              | Some s' -> Bits.union_into s s'
+              | None -> ())
+            (preds pc);
+          (match Addr.Hashtbl.find_opt kill pc with
+          | Some s' -> Bits.diff_into s s'
+          | None -> ());
+          s
+        in
+        let order = reverse_post_order fb f in
+        let changed = ref true in
+        while !changed do
+          changed := false;
+          List.iter
+            ~f:(fun pc ->
+              let s = boxed_at_entry pc in
+              (match Addr.Hashtbl.find_opt gen pc with
+              | Some s' -> Bits.union_into s s'
+              | None -> ());
+              match Addr.Hashtbl.find_opt out pc with
+              | Some s' when Bits.equal s s' -> ()
+              | Some _ | None ->
+                  Addr.Hashtbl.replace out pc s;
+                  changed := true)
+            order
+        done;
+        Addr.Hashtbl.iter
+          (fun pc s ->
+            let s' = boxed_at_entry pc in
+            Bits.inter_into s' s;
+            Bits.iter ~f:(fun i -> repeated.(i) <- true) s')
+          gen;
+        let l = List.filteri ~f:(fun i _ -> repeated.(i)) l in
+        if List.is_empty l then acc else (f, fb, l) :: acc)
+      candidates
+      []
+
+(* Perform only once the boxes found by [repeated_boxes]: the value is
+   boxed by the first of them when it is executed before all the other
+   ones, and otherwise where the paths leading to them diverge (at the end
+   of their nearest common dominator), outside of the loops which do not
+   contain the definition of the value. *)
+let merge_repeated_boxes ~types ~(st : lcm_stats) (p : program) fns =
+  match repeated_boxes p fns with
+  | [] -> p
+  | l ->
+      let blocks = ref p.blocks in
+      let subst = Var.Hashtbl.create 16 in
+      List.iter
+        ~f:(fun (f, fb, groups) ->
+          let g = Structure.control_flow_graph fb f in
+          let idom = Structure.immediate_dominators g in
+          let loops = lazy (Loops.compute fb f) in
+          let rec dominators pc acc =
+            let acc = Addr.Set.add pc acc in
+            match Addr.Hashtbl.find_opt idom pc with
+            | Some pc' when pc' <> pc -> dominators pc' acc
+            | Some _ | None -> acc
+          in
+          let common_dominator pc pc' =
+            let s = dominators pc Addr.Set.empty in
+            let rec find pc' =
+              if Addr.Set.mem pc' s then pc' else find (Addr.Hashtbl.find idom pc')
+            in
+            find pc'
+          in
+          List.iter
+            ~f:(fun ((kind, y), def, sites) ->
+              let pc =
+                match sites with
+                | (pc, _) :: rem ->
+                    List.fold_left
+                      ~f:(fun pc (pc', _) -> common_dominator pc pc')
+                      ~init:pc
+                      rem
+                | [] -> assert false
+              in
+              (* The block still dominates the boxes, and is dominated by
+                 the definition of the value, which is outside of the
+                 loop *)
+              let rec leave_loops pc =
+                match Loops.outermost (Lazy.force loops) pc ~def with
+                | None -> Some pc
+                | Some (header, _) -> (
+                    match Addr.Hashtbl.find_opt idom header with
+                    | Some pc' when pc' <> header -> leave_loops pc'
+                    | Some _ | None -> None)
+              in
+              match leave_loops pc with
+              | None -> ()
+              | Some pc ->
+                  let x =
+                    match List.find_opt ~f:(fun (pc', _) -> pc' = pc) sites with
+                    | Some (_, x) -> x
+                    | None ->
+                        let _, x' = List.hd sites in
+                        let x = Var.fork x' in
+                        Typing.set_var_type types x (Typing.var_type types x');
+                        append_instrs
+                          blocks
+                          pc
+                          [ Let (x, Prim (prim_of_kind kind, [ Pv y ])) ];
+                        x
+                  in
+                  List.iter
+                    ~f:(fun (pc', x') ->
+                      if not (Var.equal x x')
+                      then (
+                        st.boxes_merged <- st.boxes_merged + 1;
+                        Var.Hashtbl.replace subst x' x;
+                        let b = Addr.Map.find pc' !blocks in
+                        let body =
+                          List.filter
+                            ~f:(fun i ->
+                              match i with
+                              | Let (x'', _) -> not (Var.equal x' x'')
+                              | Assign _
+                              | Set_field _
+                              | Offset_ref _
+                              | Array_set _
+                              | Event _ -> true)
+                            b.body
+                        in
+                        blocks := Addr.Map.add pc' { b with body } !blocks))
+                    sites)
+            groups)
+        l;
+      if Var.Hashtbl.length subst = 0
+      then p
+      else
+        let subst_var x = Var.Hashtbl.find_opt subst x |> Option.value ~default:x in
+        { p with blocks = Addr.Map.map (Subst.Excluding_Binders.block subst_var) !blocks }
+
+(* Boxes which may be performed more than once per execution of the
+   definition of the boxed value: boxes of free variables, boxes inside a
+   loop which does not contain the definition of the value, and boxes
+   which may follow another box of the same value *)
+let check_box_placement (p : program) fns =
+  let violations = ref 0 in
+  Addr.Hashtbl.iter
+    (fun f _ ->
+      let fb = fun_blocks p fns f in
+      let loops = Loops.compute fb f in
+      Addr.Map.iter
+        (fun pc b ->
+          List.iter
+            ~f:(fun i ->
+              match boxing i with
+              | Some (x, _, y) -> (
+                  let report reason =
+                    incr violations;
+                    if check ()
+                    then
+                      Format.eprintf
+                        "lcm: %a = box(%a) in block %d: %s@."
+                        Var.print
+                        x
+                        Var.print
+                        y
+                        pc
+                        reason
+                  in
+                  match Var.Hashtbl.find_opt fns.def_fun y with
+                  | Some g when g <> f -> report "free variable"
+                  | Some _ -> (
+                      let def = Var.Hashtbl.find_opt fns.def_block y in
+                      match Loops.outermost loops pc ~def with
+                      | Some (header, _) ->
+                          report (Printf.sprintf "in the loop at block %d" header)
+                      | None -> ())
+                  | None -> ())
+              | None -> ())
+            b.body)
+        fb)
+    fns.blocks_of_fun;
+  List.iter
+    ~f:(fun (_, _, groups) ->
+      List.iter
+        ~f:(fun ((_, y), _, sites) ->
+          incr violations;
+          if check ()
+          then
+            Format.eprintf
+              "lcm: %a may be boxed several times (blocks %s)@."
+              Var.print
+              y
+              (String.concat
+                 ~sep:", "
+                 (List.map ~f:(fun (pc, _) -> string_of_int pc) sites)))
+        groups)
+    (repeated_boxes p fns);
+  !violations
+
 (* The conversions whose result is not used, and the block parameters
    which are not used, once the conversions are placed: the peephole pass
    and the widening of parameters remove uses, and no dead code
@@ -2413,13 +3281,13 @@ let f
   in
   let ts = tick () in
   (* Collect function entry points, recording the defining block PC for closures *)
-  let fun_entries = ref [ None, p.start, None, [] ] in
+  let fun_entries = ref [ None, p.start, None, [], [] ] in
   Addr.Map.iter
     (fun def_pc block ->
       List.iter
         ~f:(function
-          | Let (x, Closure (_, (pc, args), _)) ->
-              fun_entries := (Some x, pc, Some def_pc, args) :: !fun_entries
+          | Let (x, Closure (params, (pc, args), _)) ->
+              fun_entries := (Some x, pc, Some def_pc, params, args) :: !fun_entries
           | _ -> ())
         block.body)
     p.blocks;
@@ -2428,7 +3296,7 @@ let f
      Each function's blocks are disjoint, so total work is O(N log N). *)
   let fun_block_tbl = Addr.Hashtbl.create (List.length !fun_entries) in
   List.iter
-    ~f:(fun (_, entry, _, _) ->
+    ~f:(fun (_, entry, _, _, _) ->
       let visited = ref Addr.Map.empty in
       let rec visit pc =
         if not (Addr.Map.mem pc !visited)
@@ -2455,6 +3323,26 @@ let f
      overwrite it. *)
   let entry_redirects = ref Addr.Map.empty in
   let redirected_defs = ref Addr.Set.empty in
+  (* A number constant [x] used in another representation gets a single
+     variable bound to the constant in that representation, defined right
+     after [x] (inserted once all functions have been processed). This
+     costs nothing at run time and preserves sharing: all the boxed uses of
+     [x] get the same static boxed value. *)
+  let constant_twins = Var.Hashtbl.create 16 in
+  let constant_twin x c kind =
+    let twins = Var.Hashtbl.find_opt constant_twins x |> Option.value ~default:[] in
+    match
+      List.find_map
+        ~f:(fun (kind', twin) -> if Poly.equal kind kind' then Some twin else None)
+        twins
+    with
+    | Some (x', _) -> x'
+    | None ->
+        let x' = Var.fresh () in
+        Typing.set_var_type types x' (Typing.conversion_type kind);
+        Var.Hashtbl.replace constant_twins x ((kind, (x', c)) :: twins);
+        x'
+  in
   (* The code generator and the global flow analysis identify a call by
      the variable it is bound to, to tell whether it is a CPS call. A call
      bound to a fresh variable, as its result is converted, remains one. *)
@@ -2465,7 +3353,7 @@ let f
     if Var.Set.mem x !cps_calls then cps_calls := Var.Set.add tmp !cps_calls
   in
   List.iter
-    ~f:(fun (name_opt, entry, def_pc_opt, entry_args) ->
+    ~f:(fun (name_opt, entry, def_pc_opt, params, entry_args) ->
       let ts = tick () in
       let return_type =
         match name_opt with
@@ -2482,6 +3370,7 @@ let f
           global_flow_info
           return_type
           free_pc
+          ~constant_twin
           ~rebind_call
           ~direct_callee
           ~st
@@ -2551,6 +3440,9 @@ let f
             fun_blocks, new_entry_pc
         | _ -> fun_blocks, entry
       in
+      let fun_blocks =
+        hoist_boxes_out_of_loops ~types ~free_pc ~params ~st fun_blocks entry
+      in
       st.time_setup <- st.time_setup +. (tick () -. ts2);
       let result =
         process_function types entry fun_blocks ~assigned ~global_flow_info ~st
@@ -2573,28 +3465,65 @@ let f
       in
       blocks := Addr.Map.add def_pc { def_block with body } !blocks)
     !redirected_defs;
+  if Var.Hashtbl.length constant_twins > 0
+  then
+    blocks :=
+      Addr.Map.map
+        (fun b ->
+          if
+            List.exists
+              ~f:(fun i ->
+                match i with
+                | Let (x, Constant _) -> Var.Hashtbl.mem constant_twins x
+                | _ -> false)
+              b.body
+          then
+            { b with
+              body =
+                List.concat_map
+                  ~f:(fun i ->
+                    match i with
+                    | Let (x, Constant _) when Var.Hashtbl.mem constant_twins x ->
+                        i
+                        :: List.map
+                             ~f:(fun (_, (x', c)) -> Let (x', Constant c))
+                             (Var.Hashtbl.find constant_twins x)
+                    | _ -> [ i ])
+                  b.body
+            }
+          else b)
+        !blocks;
   let p = { start = !start; blocks = !blocks; free_pc = !free_pc } in
+  let ts' = tick () in
+  st.time_cleanup <- st.time_cleanup +. (ts' -. ts);
+  let p, fns = hoist_boxes_out_of_closures ~types ~st p in
+  let p = merge_repeated_boxes ~types ~st p fns in
+  let ts = tick () in
+  st.time_boxes <- st.time_boxes +. (ts -. ts');
   let p = remove_dead_conversions ~st p in
   st.time_cleanup <- st.time_cleanup +. (tick () -. ts);
+  let misplaced_boxes = if check () || stats () then check_box_placement p fns else 0 in
   if times ()
   then (
     Format.eprintf "  lcm: %a@." Timer.print t;
     Format.eprintf
       "    lowering: %.2f@.    dataflow: %.2f@.    rewrite: %.2f@.    peephole: \
-       %.2f@.    widening: %.2f@.    setup: %.2f@.    cleanup: %.2f@."
+       %.2f@.    widening: %.2f@.    setup: %.2f@.    boxes: %.2f@.    cleanup: %.2f@."
       st.time_lowering
       st.time_dataflow
       st.time_rewrite
       st.time_peephole
       st.time_widening
       st.time_setup
+      st.time_boxes
       st.time_cleanup);
   if stats ()
   then
     Format.eprintf
       "Stats - lcm: %d functions (%d with conversions), %d lowered, %d tracked, ant:%d \
        avail:%d later:%d iters, %d inserted, %d eliminated, %d peephole, %d params \
-       widened, %d dead conversions and %d dead params removed@."
+       widened, boxes hoisted: %d from loops %d from closures, %d boxes merged, %d dead \
+       conversions and %d dead params removed, %d misplaced@."
       st.functions_processed
       st.functions_with_conversions
       st.conversions_lowered
@@ -2606,8 +3535,12 @@ let f
       st.conversions_eliminated
       st.peephole_eliminated
       st.params_widened
+      st.boxes_hoisted_from_loops
+      st.boxes_hoisted_from_closures
+      st.boxes_merged
       st.dead_conversions_removed
-      st.dead_params_removed;
+      st.dead_params_removed
+      misplaced_boxes;
   if debug ()
   then (
     prerr_endline "AFTER";
