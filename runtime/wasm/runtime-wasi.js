@@ -39,6 +39,30 @@
     returnOnExit: false,
   });
   const imports = wasi.getImportObject();
+  // Counters of the representation conversions executed by code compiled
+  // with [--debug count-conversions], created on demand (see runtime.js)
+  const conversion_counters = {};
+  imports.conversions = new globalThis.Proxy(
+    {},
+    {
+      get(_, name) {
+        if (!Object.hasOwn(conversion_counters, name))
+          conversion_counters[name] = new WebAssembly.Global(
+            { value: "i64", mutable: true },
+            0n,
+          );
+        return conversion_counters[name];
+      },
+    },
+  );
+  globalThis.process.on("exit", () => {
+    const counts = Object.entries(conversion_counters)
+      .filter(([_, g]) => g.value !== 0n)
+      .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+      .map(([name, g]) => `${name}=${g.value}`);
+    if (counts.length)
+      require("node:fs").writeSync(2, `conversions: ${counts.join(" ")}\n`);
+  });
   function loadRelative(src) {
     const path = require("node:path");
     const f = path.join(path.dirname(module.filename), src);
