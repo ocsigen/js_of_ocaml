@@ -76,6 +76,10 @@
    representation is not converted: a variable is bound to the constant in that
    representation, right after the constant.
 
+   The other conversions of loop invariants are moved out of loops before the dataflow
+   analysis as well, when they cannot fail ([hoist_unboxes_out_of_loops]): the analysis
+   alone does not move a conversion before a loop which may not perform it.
+
    The phases are ordered so that each feeds into the next: LCM creates optimal placements
    but may introduce inverse pairs; peephole cleans those up; widening then eliminates the
    conversions of values flowing through block parameters.
@@ -112,6 +116,7 @@ type lcm_stats =
   ; mutable peephole_eliminated : int
   ; mutable params_widened : int
   ; mutable boxes_hoisted_from_loops : int
+  ; mutable unboxes_hoisted_from_loops : int
   ; mutable boxes_hoisted_from_closures : int
   ; mutable boxes_merged : int
   ; mutable dead_conversions_removed : int
@@ -139,6 +144,7 @@ let make_stats () =
   ; peephole_eliminated = 0
   ; params_widened = 0
   ; boxes_hoisted_from_loops = 0
+  ; unboxes_hoisted_from_loops = 0
   ; boxes_hoisted_from_closures = 0
   ; boxes_merged = 0
   ; dead_conversions_removed = 0
@@ -2601,11 +2607,12 @@ module Loops = struct
   (* The outermost loop containing block [pc] but not the definition [def]
      of a value ([None]: the value is defined before the function body,
      e.g. a parameter) *)
-  let outermost (loops : t) pc ~def =
+  let outermost ?(ok = fun _ _ -> true) (loops : t) pc ~def =
     Addr.Map.fold
       (fun header (body, size) acc ->
         if
           Addr.Set.mem pc body
+          && ok header body
           &&
           match def with
           | None -> true
@@ -2762,6 +2769,132 @@ let hoist_boxes_out_of_loops ~types ~free_pc ~params ~(st : lcm_stats) blocks en
               blocks := Addr.Map.add pc { b with body } !blocks;
               append_instrs blocks ph [ i ])
         (List.rev !moves);
+      !blocks
+
+(* Speculative hoisting of unboxing conversions out of loops.
+
+   An unboxing (unbox or untag) of a loop-invariant value is performed in
+   the loop preheader, once per entry into the loop; LCM then eliminates the
+   occurrences inside the loop, which have become redundant. This is done
+   only when the conversion cannot fail, that is when the type of the
+   operand is known ([is_safe_input]): the conversion may be executed on
+   paths where it was not before, such as when the loop is exited before
+   reaching it. It is also cheap, so executing it speculatively is fine.
+   An untagging is not hoisted out of a loop containing calls, since its
+   result should not be kept live across calls ([not_live_across_calls]). *)
+let hoist_unboxes_out_of_loops ~types ~free_pc ~assigned ~(st : lcm_stats) blocks entry =
+  let loops =
+    if
+      exists_instr
+        (fun i ->
+          match i with
+          | Let (_, Prim (p, [ Pv _ ])) -> (
+              match kind_of_prim p with
+              | Some kind -> not (is_boxing kind)
+              | None -> false)
+          | Let _ | Assign _ | Set_field _ | Offset_ref _ | Array_set _ | Event _ -> false)
+        blocks
+    then Loops.compute blocks entry
+    else Addr.Map.empty
+  in
+  if Addr.Map.is_empty loops
+  then blocks
+  else
+    let defs = Var.Hashtbl.create 16 in
+    Addr.Map.iter
+      (fun pc b ->
+        List.iter ~f:(fun x -> Var.Hashtbl.replace defs x pc) b.params;
+        List.iter
+          ~f:(fun i ->
+            match i with
+            | Let (x, _) -> Var.Hashtbl.replace defs x pc
+            | Assign _ | Set_field _ | Offset_ref _ | Array_set _ | Event _ -> ())
+          b.body;
+        match b.branch with
+        | Pushtrap (_, x, (handler, _)) ->
+            (* The exception is bound when entering the handler *)
+            Var.Hashtbl.replace defs x handler
+        | Return _ | Raise _ | Stop | Branch _ | Cond _ | Switch _ | Poptrap _ -> ())
+      blocks;
+    (* Whether a loop contains a call, computed once per loop *)
+    let has_call_tbl = Addr.Hashtbl.create 8 in
+    let has_call header body =
+      match Addr.Hashtbl.find_opt has_call_tbl header with
+      | Some r -> r
+      | None ->
+          let r =
+            Addr.Set.exists
+              (fun pc ->
+                List.exists
+                  ~f:(fun i ->
+                    match i with
+                    | Let (_, Apply _) -> true
+                    | Let _
+                    | Assign _
+                    | Set_field _
+                    | Offset_ref _
+                    | Array_set _
+                    | Event _ -> false)
+                  (Addr.Map.find pc blocks).body)
+              body
+          in
+          Addr.Hashtbl.add has_call_tbl header r;
+          r
+    in
+    (* For each loop header, the conversions to perform in the preheader *)
+    let hoisted = ref Addr.Map.empty in
+    Addr.Map.iter
+      (fun pc b ->
+        List.iter
+          ~f:(fun i ->
+            match i with
+            | Let (_, Prim (p, [ Pv y ])) when not (VarSet.mem y assigned) -> (
+                match kind_of_prim p with
+                | Some kind
+                  when (not (is_boxing kind))
+                       && is_safe_input kind (Typing.var_type types y) -> (
+                    (* [None]: defined before the function body (parameter or
+                       free variable) *)
+                    let def = Var.Hashtbl.find_opt defs y in
+                    let ok header body =
+                      (not (not_live_across_calls (kind, y)))
+                      || not (has_call header body)
+                    in
+                    match Loops.outermost ~ok loops pc ~def with
+                    | Some (header, l) ->
+                        let convs, _ =
+                          Addr.Map.find_opt header !hoisted
+                          |> Option.value ~default:(ConvSet.empty, l)
+                        in
+                        hoisted :=
+                          Addr.Map.add header (ConvSet.add (kind, y) convs, l) !hoisted
+                    | None -> ())
+                | Some _ | None -> ())
+            | Let _ | Assign _ | Set_field _ | Offset_ref _ | Array_set _ | Event _ -> ())
+          b.body)
+      blocks;
+    if Addr.Map.is_empty !hoisted
+    then blocks
+    else
+      let blocks = ref blocks in
+      let preds = CFG.predecessors !blocks in
+      let preds pc = Addr.Map.find_opt pc preds |> Option.value ~default:[] in
+      Addr.Map.iter
+        (fun header (convs, l) ->
+          match loop_preheader ~types ~free_pc ~preds blocks (header, l) with
+          | None -> ()
+          | Some ph ->
+              append_instrs
+                blocks
+                ph
+                (List.map
+                   ~f:(fun ((kind, y) : Conv.t) ->
+                     st.unboxes_hoisted_from_loops <- st.unboxes_hoisted_from_loops + 1;
+                     let x = Var.fresh () in
+                     Typing.set_var_type types x (Typing.conversion_type kind);
+                     Let (x, Prim (prim_of_kind kind, [ Pv y ])))
+                   (ConvSet.elements convs)))
+        !hoisted;
       !blocks
 
 (* The functions of a program, and where variables are defined *)
@@ -3597,6 +3730,11 @@ let f
       let fun_blocks =
         hoist_boxes_out_of_loops ~types ~free_pc ~params ~st fun_blocks entry
       in
+      let fun_blocks =
+        if Config.Flag.lcm_hoist ()
+        then hoist_unboxes_out_of_loops ~types ~free_pc ~assigned ~st fun_blocks entry
+        else fun_blocks
+      in
       st.time_setup <- st.time_setup +. (tick () -. ts2);
       let result =
         process_function types entry fun_blocks ~assigned ~global_flow_info ~st
@@ -3676,8 +3814,9 @@ let f
     Format.eprintf
       "Stats - lcm: %d functions (%d with conversions), %d lowered, %d tracked, ant:%d \
        avail:%d later:%d iters, %d inserted, %d eliminated, %d peephole, %d params \
-       widened, boxes hoisted: %d from loops %d from closures, %d boxes merged, %d dead \
-       conversions and %d dead params removed, %d misplaced@."
+       widened, boxes hoisted: %d from loops %d from closures, %d boxes merged, %d \
+       unboxes hoisted from loops, %d dead conversions and %d dead params removed, %d \
+       misplaced@."
       st.functions_processed
       st.functions_with_conversions
       st.conversions_lowered
@@ -3692,6 +3831,7 @@ let f
       st.boxes_hoisted_from_loops
       st.boxes_hoisted_from_closures
       st.boxes_merged
+      st.unboxes_hoisted_from_loops
       st.dead_conversions_removed
       st.dead_params_removed
       misplaced_boxes;
