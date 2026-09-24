@@ -290,6 +290,10 @@ val fold_closures_outermost_first :
     outermost closures first. Unlike with {!fold_closures}, only the closures
     reachable from [p.start] are considered. *)
 
+val map_branch_conts : (cont -> cont) -> last -> last
+(** Apply [f] to every continuation in [branch], leaving non-branching
+    terminators unchanged. *)
+
 val fold_children : 'c fold_blocs
 
 val fold_children_skip_try_body : 'c fold_blocs
