@@ -350,9 +350,8 @@ module Generate (Target : Target_sig.S) = struct
         op_i32
           Arith.(transl_prim_arg ctx ~typ:(Int Small_unnormalized) x lsl const 1l)
           Arith.(transl_prim_arg ctx ~typ:(Int Small_unnormalized) y lsl const 1l)
-    | Int Large_unnormalized, Int Large_unnormalized
-    | Int Large_normalized, Int Large_unnormalized
-    | Int Large_unnormalized, Int Large_normalized ->
+    | Int Large_unnormalized, _ | _, Int Large_unnormalized ->
+        (* Shifting out the high bit is cheaper than normalizing *)
         op_i64
           Arith64.(transl_prim_arg ctx ~typ:(Int Large_unnormalized) x lsl const 1L)
           Arith64.(transl_prim_arg ctx ~typ:(Int Large_unnormalized) y lsl const 1L)
@@ -1394,7 +1393,12 @@ module Generate (Target : Target_sig.S) = struct
       ~ty:int_wu
       ~ret_typ:int32_u
       (fun i j -> int32_bin_op (Shr U) i (word_to_i32 j));
-    register_un_prim "caml_int32_to_int" `Pure ~typ:int32_u ~ret_typ:int_wu word_of_i32;
+    register_un_prim
+      "caml_int32_to_int"
+      `Pure
+      ~typ:int32_u
+      ~ret_typ:(if portable then int_ln else int_su)
+      word_of_i32;
     register_un_prim "caml_int32_of_int" `Pure ~typ:int_wn ~ret_typ:int32_u word_to_i32;
     register_un_prim
       "caml_nativeint_of_int32"
