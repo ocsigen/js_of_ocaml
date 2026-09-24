@@ -60,6 +60,13 @@
  (names string_interning)
  (modes wasm))
 
+(tests
+ (names portable_int_js)
+ (modes wasm)
+ (enabled_if
+  (= %{profile} with-portable-int))
+ (libraries js_of_ocaml))
+
 ; The programs compiled here run Wasm code and rely on Node's module
 ; resolution (`require`, `require.main`). QuickJS provides neither, so these
 ; tests are skipped under the `quickjs` profile.
