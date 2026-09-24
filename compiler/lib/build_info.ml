@@ -115,6 +115,12 @@ let config_keys target =
           ; set = Config.Flag.set "wasi"
           ; default = false
           }
+      ; Bool_key
+          { name = "portable-int"
+          ; get = Config.Flag.portable_int
+          ; set = Config.Flag.set "portable-int"
+          ; default = false
+          }
       ]
   | `JavaScript -> []
 
@@ -164,7 +170,9 @@ let set_values keys entries =
                      "key %S expects one of {%s}, got %S"
                      name
                      (String.concat ~sep:", " valid)
-                     v)))
+                     v)));
+  (* The integer sizes depend on the flags we just set *)
+  Config.set_target (Config.target ())
 
 let parse_entries ~sep s =
   if String.is_empty s
