@@ -2115,6 +2115,29 @@ module Generate (Target : Target_sig.S) = struct
         Memory.array_get (transl_prim_arg ctx x) (transl_prim_arg ctx ~typ:int_sn y)
     | Prim (Extern ("caml_array_unsafe_get", _), [ x; y ]) ->
         Memory.gen_array_get (transl_prim_arg ctx x) (transl_prim_arg ctx ~typ:int_sn y)
+    | Prim (Extern ((("%int_and" | "%int_or" | "%int_xor") as name), _), [ y; z ])
+      when Config.Flag.portable_int () -> (
+        (* The typing analysis determines whether the operation can be
+           performed on 31-bit integers *)
+        let small_op, large_op =
+          match name with
+          | "%int_and" -> Value.int_and, Value64.int_and
+          | "%int_or" -> Value.int_or, Value64.int_or
+          | _ -> Value.int_xor, Value64.int_xor
+        in
+        match Typing.var_type ctx.types x with
+        | Int (Small_normalized | Small_unnormalized) ->
+            small_op
+              (transl_prim_arg ctx ~typ:int_su y)
+              (transl_prim_arg ctx ~typ:int_su z)
+        | Int Large_normalized ->
+            large_op
+              (transl_prim_arg ctx ~typ:int_ln y)
+              (transl_prim_arg ctx ~typ:int_ln z)
+        | _ ->
+            large_op
+              (transl_prim_arg ctx ~typ:int_lu y)
+              (transl_prim_arg ctx ~typ:int_lu z))
     | Prim (p, l) -> (
         match p with
         | Extern (name, hint) when String.Hashtbl.mem internal_primitives name ->
