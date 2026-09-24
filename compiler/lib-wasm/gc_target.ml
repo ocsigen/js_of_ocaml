@@ -93,6 +93,11 @@ module Type = struct
                 [ { mut = false; typ = Value I32 }; { mut = false; typ = Value I32 } ]
           })
 
+  (* With [--enable portable-int], OCaml integers are 63 bits. Those that
+     fit in 31 bits are always represented as an [i31], the others are
+     boxed in a [$ocaml_large_int] struct. The code generator and the
+     runtime rely on this canonical representation (e.g. to test whether an
+     integer is zero, or for physical equality). *)
   let large_int_type =
     register_type "ocaml_large_int" (fun () ->
         return
@@ -756,10 +761,8 @@ module Value64 = struct
              >>| fun e ->
              W.StructGet (None, ty, 0, RefCast ({ nullable = false; typ = Type ty }, e))))
 
-  (* We can assume that 0 is gonna be an i31 as we canonicalize i31-fitting values in an unboxed int *)
-  let check_is_not_zero i =
-    let* i = i in
-    return (W.UnOp (I32 Eqz, RefEq (i, W.RefI31 (Const (I32 0l)))))
+  (* Zero fits in 31 bits, so it is always represented as an [i31] *)
+  let check_is_not_zero = Value.check_is_not_zero
 
   let check_is_int i =
     let* i = i in
@@ -775,46 +778,6 @@ module Value64 = struct
   let lt = Arith64.( < )
 
   let le = Arith64.( <= )
-
-  let ref_eq i i' =
-    let* i = i in
-    let* i' = i' in
-    return (W.RefEq (i, i'))
-
-  let ref ty = { W.nullable = false; typ = Type ty }
-
-  let ref_test (typ : W.ref_type) e =
-    let* e = e in
-    match e with
-    | W.RefI31 _ -> (
-        match typ.typ with
-        | W.I31 | Eq | Any -> return (W.Const (I32 1l))
-        | Struct | Array | Type _ | None_ | Func | Extern -> return (W.Const (I32 0l)))
-    | GlobalGet nm -> (
-        let* init = get_global nm in
-        match init with
-        | Some (W.ArrayNewFixed (t, _) | W.StructNew (t, _)) ->
-            let* b = heap_type_sub (Type t) typ.typ in
-            if b then return (W.Const (I32 1l)) else return (W.Const (I32 0l))
-        | _ -> return (W.RefTest (typ, e)))
-    | _ -> return (W.RefTest (typ, e))
-
-  let caml_js_strict_equals x y =
-    let* x = x in
-    let* y = y in
-    let* f =
-      register_import
-        ~name:"caml_js_strict_equals"
-        ~import_module:"env"
-        (Fun { params = [ Type.value; Type.value ]; result = [ Type.value ] })
-    in
-    return (W.Call (f, [ x; y ]))
-
-  let map f x =
-    let* x = x in
-    return (f x)
-
-  let ( >>| ) x f = map f x
 
   let ref_test_both ~ty a b =
     (* We mimic an "and" on the two conditions, but in a way that is nicer to the
