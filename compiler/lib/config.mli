@@ -38,6 +38,8 @@ module Flag : sig
 
   val lcm : unit -> bool
 
+  val lcm_hoist : unit -> bool
+
   val share_constant : unit -> bool
 
   val staticeval : unit -> bool
