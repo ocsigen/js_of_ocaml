@@ -710,6 +710,18 @@
 
    (@if $portable-int
    (@then
+      ;; A bigarray dimension. Dimensions are stored as i32, so larger ones
+      ;; cannot be allocated.
+      (func $ba_dim_val (param $v (ref eq)) (param $negative (ref eq))
+         (result i32)
+         (local $d i64)
+         (local.set $d (call $portable_int_val (local.get $v)))
+         (if (i64.lt_s (local.get $d) (i64.const 0))
+            (then (call $caml_invalid_argument (local.get $negative))))
+         (if (i64.gt_s (local.get $d) (i64.const 0x7fffffff))
+            (then (call $caml_raise_out_of_memory)))
+         (i32.wrap_i64 (local.get $d)))
+
       ;; As the native runtime, use 32-bit elements when all values fit, so
       ;; that the data can be read back by 32-bit runtimes
       (func $serialize_longarray
@@ -1430,9 +1442,10 @@
                (local.set $n
                   (@if $portable-int
                   (@then
-                     (call $caml_ba_index_val
+                     (call $ba_dim_val
                         (array.get $block (local.get $vdim)
-                           (i32.add (local.get $i) (i32.const 1)))))
+                           (i32.add (local.get $i) (i32.const 1)))
+                        (global.get $ba_create_negative_dim)))
                   (@else
                   (i31.get_s
                      (ref.cast (ref i31)
@@ -2591,9 +2604,13 @@
       (if (i32.or
              (i32.or (i32.lt_s (local.get $ofs) (i32.const 0))
                 (i32.lt_s (local.get $len) (i32.const 0)))
-             (i32.gt_s (i32.add (local.get $ofs) (local.get $len))
-                (array.get $int_array (local.get $dim)
-                   (local.get $changed_dim))))
+             ;; In 64 bits, as the sum may overflow
+             (i64.gt_s
+                (i64.add (i64.extend_i32_s (local.get $ofs))
+                   (i64.extend_i32_s (local.get $len)))
+                (i64.extend_i32_s
+                   (array.get $int_array (local.get $dim)
+                      (local.get $changed_dim)))))
          (then (call $caml_invalid_argument (global.get $bad_subarray))))
       (local.set $ba_dim
          (array.new $int_array (i32.const 0) (local.get $ba_num_dims)))
@@ -2798,9 +2815,10 @@
                (local.set $d
                   (@if $portable-int
                   (@then
-                     (call $caml_ba_index_val
+                     (call $ba_dim_val
                         (array.get $block (local.get $vdim)
-                           (i32.add (local.get $i) (i32.const 1)))))
+                           (i32.add (local.get $i) (i32.const 1)))
+                        (global.get $negative_dim)))
                   (@else
                   (i31.get_s
                      (ref.cast (ref i31)
