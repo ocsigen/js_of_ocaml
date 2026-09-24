@@ -321,6 +321,13 @@
       // ZZZ not supported in Safari yet
       new WebAssembly.Tag({ parameters: ["externref"], results: [] }),
     identity: (x) => x,
+    number_as_int: (x) =>
+      typeof x === "number" &&
+      Number.isInteger(x) &&
+      x >= -(2 ** 62) &&
+      x < 2 ** 62
+        ? x
+        : Number.NaN,
     from_bool: (x) => !!x,
     get: (x, y) => x[y],
     set: (x, y, z) => (x[y] = z),
