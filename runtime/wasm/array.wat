@@ -133,11 +133,7 @@
       (@if $portable_int
       (@then (local.set $sz (call $size_val (local.get $n))))
       (@else
-      (@if $portable_int
-      (@then (local.set $sz (call $size_val (local.get $n))))
-      (@else
       (local.set $sz (i31.get_s (ref.cast (ref i31) (local.get $n))))
-      ))
       ))
       (if (i32.gt_u (local.get $sz) (global.get $max_float_array_length))
          (then (call $caml_invalid_argument (global.get $Float_Array_create))))
