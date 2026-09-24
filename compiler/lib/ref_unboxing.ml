@@ -44,8 +44,8 @@ let rewrite_body unboxed_refs body ref_contents subst =
         match i with
         | Let (x, Block (0, [| y |], (NotArray | Unknown), Maybe_mutable))
           when Var.Set.mem x unboxed_refs -> Var.Map.add x y ref_contents, subst, acc
-        | Let (y, Field (x, 0, Non_float)) when Var.Map.mem x ref_contents ->
-            ref_contents, Var.Map.add y (Var.Map.find x ref_contents) subst, acc
+        | Let (y, Field (x, 0, (Non_float | Immediate))) when Var.Map.mem x ref_contents
+          -> ref_contents, Var.Map.add y (Var.Map.find x ref_contents) subst, acc
         | Offset_ref (x, n) when Var.Map.mem x ref_contents ->
             let y = Var.fork x in
             ( Var.Map.add x y ref_contents
@@ -58,7 +58,7 @@ let rewrite_body unboxed_refs body ref_contents subst =
                       ; Pc (Int (Targetint.of_int_exn n))
                       ] ) )
               :: acc )
-        | Set_field (x, 0, Non_float, y) when Var.Map.mem x ref_contents ->
+        | Set_field (x, 0, (Non_float | Immediate), y) when Var.Map.mem x ref_contents ->
             Var.Map.add x y ref_contents, subst, acc
         | Event _ -> (
             ( ref_contents
@@ -174,10 +174,11 @@ let f p =
               Var.Hashtbl.replace candidates x depth
           | Let (_, Closure (_, (pc', _), _)) ->
               traverse [] (max_depth + 1) (max_depth + 1) pc' pc'
-          | Let (_, Field (x, 0, Non_float)) -> ignore (check_field_access depth x)
+          | Let (_, Field (x, 0, (Non_float | Immediate))) ->
+              ignore (check_field_access depth x)
           | Offset_ref (x, _) ->
               if check_field_access depth x then Var.Hashtbl.replace updated x start_pc
-          | Set_field (x, _, Non_float, y) ->
+          | Set_field (x, _, (Non_float | Immediate), y) ->
               discard y;
               if check_field_access depth x then Var.Hashtbl.replace updated x start_pc
           | _ -> Freevars.iter_instr_free_vars discard i)
