@@ -325,6 +325,8 @@ type prim =
   | Wasm_box_f64
   | Wasm_untag_int
   | Wasm_tag_int
+  | Wasm_untag_large_int
+  | Wasm_tag_large_int
 
 type array_or_not =
   | Array
@@ -643,6 +645,8 @@ module Print = struct
     | Wasm_box_f64, [ x ] -> Format.fprintf f "box_f64(%a)" arg x
     | Wasm_untag_int, [ x ] -> Format.fprintf f "untag_int(%a)" arg x
     | Wasm_tag_int, [ x ] -> Format.fprintf f "tag_int(%a)" arg x
+    | Wasm_untag_large_int, [ x ] -> Format.fprintf f "untag_large_int(%a)" arg x
+    | Wasm_tag_large_int, [ x ] -> Format.fprintf f "tag_large_int(%a)" arg x
     | _ -> assert false
 
   let special f s =

@@ -30,8 +30,9 @@
    run independently on each function to avoid cross-function variable references.
 
    1. **Lowering** ([lower_conversions]): Materialises implicit representation mismatches
-      as explicit IR primitives (Wasm_box_*, Wasm_unbox_*, Wasm_tag_int, Wasm_untag_int).
-      After this phase, every conversion is a visible instruction that can be analysed.
+      as explicit IR primitives (Wasm_box_*, Wasm_unbox_*, Wasm_tag_* and Wasm_untag_*
+      ones). After this phase, every conversion is a visible instruction that can be
+      analysed.
 
    2. **LCM dataflow and rewrite** ([process_function]): Applies the classical
       Knoop-Ruthing-Steffen Lazy Code Motion algorithm. LCM finds the optimal placement:
@@ -140,6 +141,8 @@ type conversion_kind =
   | Box_f64
   | Untag_int
   | Tag_int
+  | Untag_large_int
+  | Tag_large_int
 
 module Conv = struct
   type t = conversion_kind * Var.t
@@ -161,6 +164,8 @@ let prim_of_kind = function
   | Box_f64 -> Wasm_box_f64
   | Untag_int -> Wasm_untag_int
   | Tag_int -> Wasm_tag_int
+  | Untag_large_int -> Wasm_untag_large_int
+  | Tag_large_int -> Wasm_tag_large_int
 
 let kind_of_prim = function
   | Wasm_unbox_i32 -> Some Unbox_i32
@@ -171,6 +176,8 @@ let kind_of_prim = function
   | Wasm_box_f64 -> Some Box_f64
   | Wasm_untag_int -> Some Untag_int
   | Wasm_tag_int -> Some Tag_int
+  | Wasm_untag_large_int -> Some Untag_large_int
+  | Wasm_tag_large_int -> Some Tag_large_int
   | _ -> None
 
 let inverse_kind = function
@@ -182,6 +189,8 @@ let inverse_kind = function
   | Box_f64 -> Some Unbox_f64
   | Untag_int -> Some Tag_int
   | Tag_int -> Some Untag_int
+  | Untag_large_int -> Some Tag_large_int
+  | Tag_large_int -> Some Untag_large_int
 
 let type_of_kind = function
   | Unbox_i32 -> Typing.Number (Typing.Int32, Typing.Unboxed)
@@ -191,7 +200,8 @@ let type_of_kind = function
   | Box_i64 -> Typing.Number (Typing.Int64, Typing.Boxed)
   | Box_f64 -> Typing.Number (Typing.Float, Typing.Boxed)
   | Untag_int -> Typing.Int Typing.Integer.Small_normalized
-  | Tag_int -> Typing.Int Typing.Integer.Ref
+  | Tag_int | Tag_large_int -> Typing.Int Typing.Integer.Ref
+  | Untag_large_int -> Typing.Int Typing.Integer.Large_normalized
 
 (* Check whether a conversion is safe given the operand's type. A conversion
    is safe when the operand's type is known to match the expected input
@@ -204,8 +214,8 @@ let is_safe_input kind typ =
   | Unbox_i32 -> Poly.equal typ (Typing.Number (Typing.Int32, Typing.Boxed))
   | Unbox_i64 -> Poly.equal typ (Typing.Number (Typing.Int64, Typing.Boxed))
   | Unbox_f64 -> Poly.equal typ (Typing.Number (Typing.Float, Typing.Boxed))
-  | Box_i32 | Box_i64 | Box_f64 | Tag_int -> true
-  | Untag_int -> (
+  | Box_i32 | Box_i64 | Box_f64 | Tag_int | Tag_large_int -> true
+  | Untag_int | Untag_large_int -> (
       match typ with
       | Typing.Int _ -> true
       | _ -> false)
@@ -218,7 +228,15 @@ let is_safe_input kind typ =
 let not_live_across_calls (kind, _) =
   match kind with
   | Untag_int -> not (Config.Flag.portable_int ())
-  | Unbox_i32 | Unbox_i64 | Unbox_f64 | Box_i32 | Box_i64 | Box_f64 | Tag_int -> false
+  | Unbox_i32
+  | Unbox_i64
+  | Unbox_f64
+  | Box_i32
+  | Box_i64
+  | Box_f64
+  | Tag_int
+  | Untag_large_int
+  | Tag_large_int -> false
 
 (* Determine which conversion operation, if any, is needed to go from one
    representation to another. Returns [None] when the representations match
@@ -244,9 +262,15 @@ let lower_var_conversion ~types ~(from : Typing.typ) ~(into : Typing.typ) x =
         types
         tmp
         (match kind with
-        | Untag_int -> type_of_kind kind
-        | Unbox_i32 | Unbox_i64 | Unbox_f64 | Box_i32 | Box_i64 | Box_f64 | Tag_int ->
-            into);
+        | Untag_int | Untag_large_int -> type_of_kind kind
+        | Unbox_i32
+        | Unbox_i64
+        | Unbox_f64
+        | Box_i32
+        | Box_i64
+        | Box_f64
+        | Tag_int
+        | Tag_large_int -> into);
       [ Let (tmp, Prim (prim_of_kind kind, [ Pv x ])) ], tmp
 
 (* The constant a variable is bound to, if any, according to the global flow
@@ -414,6 +438,7 @@ let lower_conversions
         | Wasm_unbox_i64 -> Typing.Number (Typing.Int64, Typing.Unboxed)
         | Wasm_untag_int | Lt | Le | Ult | IsInt | Eq | Neq | Not | Vectlength _ ->
             Typing.Int Typing.Integer.Small_normalized
+        | Wasm_untag_large_int -> Typing.Int Typing.Integer.Large_normalized
         | Extern (nm, _) ->
             let t = snd (Typing.prim_sig nm) in
             (* For context-dependent prims (e.g. caml_ba_get_N), prim_sig
@@ -1171,7 +1196,7 @@ let eliminate_param_conversions
       | Some (Float _ as c), (Unbox_f64 | Box_f64)
       | Some (Int32 _ as c), (Unbox_i32 | Box_i32)
       | Some (Int64 _ as c), (Unbox_i64 | Box_i64)
-      | Some (Int _ as c), Untag_int -> Some c
+      | Some (Int _ as c), (Untag_int | Untag_large_int) -> Some c
       | Some _, _ | None, _ -> None
     in
     let find_param_idx x params =
@@ -2170,8 +2195,8 @@ let process_function
 
 let is_boxing kind =
   match kind with
-  | Box_i32 | Box_i64 | Box_f64 | Tag_int -> true
-  | Unbox_i32 | Unbox_i64 | Unbox_f64 | Untag_int -> false
+  | Box_i32 | Box_i64 | Box_f64 | Tag_int | Tag_large_int -> true
+  | Unbox_i32 | Unbox_i64 | Unbox_f64 | Untag_int | Untag_large_int -> false
 
 (* [Some (x, kind, y)] if the instruction is [x = kind(y)] with [kind] a
    boxing conversion *)

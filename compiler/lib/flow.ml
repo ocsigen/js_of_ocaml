@@ -238,7 +238,9 @@ let expr_escape st _x e =
         | Wasm_box_i64
         | Wasm_box_f64
         | Wasm_untag_int
-        | Wasm_tag_int )
+        | Wasm_tag_int
+        | Wasm_untag_large_int
+        | Wasm_tag_large_int )
       , _ ) -> ()
   | Prim (Extern (("caml_make_array" | "caml_array_of_uniform_array"), _), [ Pv _ ]) -> ()
   | Prim (Extern (name, _), l) ->

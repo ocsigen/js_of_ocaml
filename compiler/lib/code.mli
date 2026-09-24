@@ -133,6 +133,8 @@ type prim =
   | Wasm_box_f64
   | Wasm_untag_int
   | Wasm_tag_int
+  | Wasm_untag_large_int
+  | Wasm_tag_large_int
 
 type array_or_not =
   | Array

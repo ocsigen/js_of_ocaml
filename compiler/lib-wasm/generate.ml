@@ -2270,7 +2270,21 @@ module Generate (Target : Target_sig.S) = struct
             | _ -> assert false)
         | Wasm_tag_int -> (
             match l with
-            | [ Pv v ] -> convert ~from:(Typing.var_type ctx.types v) ~into:(Int Ref) (load v)
+            | [ Pv v ] ->
+                convert ~from:(Typing.var_type ctx.types v) ~into:(Int Ref) (load v)
+            | _ -> assert false)
+        | Wasm_untag_large_int -> (
+            match l with
+            | [ Pv v ] ->
+                convert
+                  ~from:(Typing.var_type ctx.types v)
+                  ~into:(Int Large_normalized)
+                  (load v)
+            | _ -> assert false)
+        | Wasm_tag_large_int -> (
+            match l with
+            | [ Pv v ] ->
+                convert ~from:(Typing.var_type ctx.types v) ~into:(Int Ref) (load v)
             | _ -> assert false)
         | _ -> (
             let l = List.map ~f:(fun x -> transl_prim_arg ctx x) l in
@@ -2318,7 +2332,9 @@ module Generate (Target : Target_sig.S) = struct
                 | Wasm_box_i64
                 | Wasm_box_f64
                 | Wasm_untag_int
-                | Wasm_tag_int )
+                | Wasm_tag_int
+                | Wasm_untag_large_int
+                | Wasm_tag_large_int )
               , _ ) -> assert false))
 
   and translate_instr ctx context i =

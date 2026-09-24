@@ -1976,7 +1976,9 @@ let rec translate_expr ctx loc x e level : (_ * J.statement_list) Expr_builder.t
             | Wasm_box_i64
             | Wasm_box_f64
             | Wasm_untag_int
-            | Wasm_tag_int )
+            | Wasm_tag_int
+            | Wasm_untag_large_int
+            | Wasm_tag_large_int )
           , _ ) -> assert false
       in
       return (res, [])

@@ -184,7 +184,9 @@ let expr_deps blocks st x e =
         | Wasm_box_i64
         | Wasm_box_f64
         | Wasm_untag_int
-        | Wasm_tag_int )
+        | Wasm_tag_int
+        | Wasm_untag_large_int
+        | Wasm_tag_large_int )
       , _ )
   | Block _ -> ()
   | Special _ -> ()
@@ -556,7 +558,9 @@ let propagate st ~update approx x =
             | Wasm_box_i64
             | Wasm_box_f64
             | Wasm_untag_int
-            | Wasm_tag_int )
+            | Wasm_tag_int
+            | Wasm_untag_large_int
+            | Wasm_tag_large_int )
           , _ ) ->
           (* The result of these primitive is neither a function nor a
              block *)
