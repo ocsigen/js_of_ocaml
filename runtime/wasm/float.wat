@@ -46,6 +46,7 @@
    (import "Math" "exp" (func $exp (param f64) (result f64)))
 ))
    (import "fail" "caml_failwith" (func $caml_failwith (param (ref eq))))
+   (import "fail" "caml_raise_out_of_memory" (func $caml_raise_out_of_memory))
    (import "fail" "caml_invalid_argument"
       (func $caml_invalid_argument (param (ref eq))))
    (import "ints" "lowercase_hex_table"
@@ -86,7 +87,11 @@
       (local $len i32) (local $s (ref $bytes))
       (local $unit i64) (local $half i64) (local $mask i64) (local $frac i64)
       (@if $portable-int
-      (@then (local.set $prec (call $int_val_32_sat (local.get $vprec))))
+      (@then
+         (local.set $prec (call $int_val_32_sat (local.get $vprec)))
+         ;; As native, a string that large cannot be allocated
+         (if (i32.gt_s (local.get $prec) (i32.const 0xfffffff))
+            (then (call $caml_raise_out_of_memory))))
       (@else
       (local.set $prec (i31.get_s (ref.cast (ref i31) (local.get $vprec))))
       ))

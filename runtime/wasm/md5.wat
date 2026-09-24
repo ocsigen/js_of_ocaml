@@ -20,6 +20,8 @@
    (@then
       (import "portableint" "int_val_32_exn"
          (func $int_val_32_exn (param (ref eq)) (param (ref eq)) (result i32)))
+      (import "portableint" "portable_int_val"
+         (func $portable_int_val (param (ref eq)) (result i64)))
    ))
    (import "io" "caml_getblock"
       (func $caml_getblock
@@ -60,19 +62,20 @@
 
    (func (export "caml_md5_chan")
       (param $ch (ref eq)) (param $vlen (ref eq)) (result (ref eq))
-      (local $len i32) (local $read i32)
+      (local $len i64) (local $read i32)
       (local $buf (ref $bytes))
       (local $ctx (ref $context))
+      ;; As native, a negative length means reading until the end of file
       (@if $portable-int
       (@then
-         (local.set $len (call $int_val_32_exn (local.get $vlen)
-                            (global.get $md5_range))))
+         (local.set $len (call $portable_int_val (local.get $vlen))))
       (@else
-      (local.set $len (i31.get_s (ref.cast (ref i31) (local.get $vlen))))
+      (local.set $len
+         (i64.extend_i32_s (i31.get_s (ref.cast (ref i31) (local.get $vlen)))))
       ))
       (local.set $buf (array.new $bytes (i32.const 0) (i32.const 4096)))
       (local.set $ctx (call $MD5Init))
-      (if (i32.lt_s (local.get $len) (i32.const 0))
+      (if (i64.lt_s (local.get $len) (i64.const 0))
          (then
             (loop $loop
                (local.set $read
@@ -85,19 +88,21 @@
                      (br $loop)))))
          (else
             (loop $loop
-               (if (local.get $len)
+               (if (i64.ne (local.get $len) (i64.const 0))
                   (then
                      (local.set $read
                         (call $caml_getblock (local.get $ch) (local.get $buf)
                            (i32.const 0)
-                           (select (local.get $len) (i32.const 4096)
-                              (i32.le_u (local.get $len) (i32.const 4096)))))
+                           (select (i32.wrap_i64 (local.get $len))
+                              (i32.const 4096)
+                              (i64.le_u (local.get $len) (i64.const 4096)))))
                      (if (i32.eqz (local.get $read))
                         (then (call $caml_raise_end_of_file)))
                      (call $MD5Update (local.get $ctx) (local.get $buf)
                         (i32.const 0) (local.get $read))
                      (local.set $len
-                        (i32.sub (local.get $len) (local.get $read)))
+                        (i64.sub (local.get $len)
+                           (i64.extend_i32_u (local.get $read))))
                      (br $loop))))))
       (return_call $MD5Final (local.get $ctx)))
 
