@@ -441,3 +441,22 @@ let%expect_test "float16 rounds through float32 (double-rounding)" =
     -0x1.178p+12
     |}]
 [@@if ocaml_version >= (5, 2, 0)]
+
+let%expect_test ("sub-arrays and dimensions beyond 32 bits" [@when int_size_64]) =
+  let a = Bigarray.Array1.create Bigarray.char Bigarray.c_layout 10 in
+  (try
+     ignore (Bigarray.Array1.sub a (Sys.opaque_identity 0x7fffffff) 1);
+     print_endline "accepted"
+   with Invalid_argument s -> print_endline s);
+  (try
+     ignore
+       (Bigarray.Genarray.create
+          Bigarray.char
+          Bigarray.c_layout
+          [| Sys.opaque_identity (1 lsl 40) |]);
+     print_endline "allocated"
+   with Out_of_memory -> print_endline "Out_of_memory");
+  [%expect {|
+    Bigarray.sub: bad sub-array
+    Out_of_memory
+    |}]
