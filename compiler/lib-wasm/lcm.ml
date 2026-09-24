@@ -79,6 +79,8 @@ let times = Debug.find "times"
 
 let stats = Debug.find "stats"
 
+let check = Debug.find "lcm-check"
+
 type lcm_stats =
   { mutable functions_processed : int
   ; mutable functions_with_conversions : int
@@ -92,6 +94,8 @@ type lcm_stats =
   ; mutable conversions_eliminated : int
   ; mutable peephole_eliminated : int
   ; mutable params_widened : int
+  ; mutable boxes_hoisted_from_loops : int
+  ; mutable boxes_hoisted_from_closures : int
   ; mutable time_lowering : float
   ; mutable time_dataflow : float
   ; mutable time_rewrite : float
@@ -113,6 +117,8 @@ let make_stats () =
   ; conversions_eliminated = 0
   ; peephole_eliminated = 0
   ; params_widened = 0
+  ; boxes_hoisted_from_loops = 0
+  ; boxes_hoisted_from_closures = 0
   ; time_lowering = 0.
   ; time_dataflow = 0.
   ; time_rewrite = 0.
@@ -272,10 +278,11 @@ let lower_conversions
     (global_flow_info : Global_flow.info)
     (return_type : Typing.typ)
     (free_pc : int ref)
+    ~constant_twin
     ~(st : lcm_stats) =
-  (* A conversion of a number constant is replaced by the constant in the
-     target representation: a boxed constant is a static value and an
-     unboxed one an immediate. *)
+  (* A conversion of a number constant is replaced by a variable bound to
+     the constant in the target representation (see [constant_twins]): a
+     boxed constant is a static value and an unboxed one an immediate. *)
   let lower_var_conversion ~types ~from ~into x =
     let constant =
       match constant_of global_flow_info x with
@@ -285,9 +292,7 @@ let lower_conversions
     in
     match constant with
     | Some c when Option.is_some (number_conversion_kind ~from ~into) ->
-        let tmp = Var.fresh () in
-        Typing.set_var_type types tmp into;
-        [ Let (tmp, Constant c) ], tmp
+        [], constant_twin x c ~into
     | Some _ | None -> lower_var_conversion ~types ~from ~into x
   in
   let lower_apply x ~f ~args ~exact =
@@ -337,9 +342,30 @@ let lower_conversions
     let target_types_opt =
       let top = Typing.Top in
       let int_n = Typing.Int Typing.Integer.Normalized in
+      let is_int a =
+        match a with
+        | Pv v -> (
+            match Typing.var_type types v with
+            | Typing.Int _ -> true
+            | _ -> false)
+        | Pc c -> (
+            match Typing.constant_type c with
+            | Typing.Int _ -> true
+            | _ -> false)
+      in
       match p with
-      | Extern (nm, _) -> fst (Typing.prim_sig nm)
-      | Array_get -> Some [ top; int_n ]
+      | Extern ("caml_array_unsafe_get", _) | Array_get -> Some [ top; int_n ]
+      | Extern (nm, _) -> (
+          match Typing.prim_sig nm with
+          | (Some _ as target_types), _ -> target_types
+          | None, _ ->
+              (* Primitives without a signature take values *)
+              Some (List.map ~f:(fun _ -> top) args))
+      | Eq | Neq -> (
+          (* Integers are compared directly, other values physically *)
+          match args with
+          | [ a; b ] when is_int a && is_int b -> None
+          | _ -> Some (List.map ~f:(fun _ -> top) args))
       | Lt | Le | Ult -> Some [ int_n; int_n ]
       | _ -> None
     in
@@ -424,6 +450,24 @@ let lower_conversions
         let lowered_e =
           match e with
           | Prim (p, args) -> lower_prim x p args
+          | Block (tag, fields, kind, mut) when tag <> 254 ->
+              (* The fields of a block are values *)
+              let lowered_rev = ref [] in
+              let fields =
+                Array.map
+                  ~f:(fun y ->
+                    let lowered, y' =
+                      lower_var_conversion
+                        ~types
+                        ~from:(Typing.var_type types y)
+                        ~into:Typing.Top
+                        y
+                    in
+                    lowered_rev := List.rev_append lowered !lowered_rev;
+                    y')
+                  fields
+              in
+              List.rev !lowered_rev @ [ Let (x, Block (tag, fields, kind, mut)) ]
           | _ -> [ Let (x, e) ]
         in
         let into = Typing.var_type types x in
@@ -2105,41 +2149,505 @@ let process_function
     st.time_widening <- st.time_widening +. (tick () -. t3);
     result)
 
-(* Entry point. Three steps:
-   1. Decide which functions can return unboxed/untagged values for direct calls.
-   2. For each function, lower implicit conversions into explicit IR primitives.
-   3. Run the LCM analysis and rewrite to eliminate redundant conversions. *)
-let f (p : program) (types : Typing.t) ~(global_flow_info : Global_flow.info) ~fun_info =
+(* Placement of boxing conversions.
+
+   A boxing conversion (box or tag) is performed where the boxed value is
+   used, so that no value is boxed on a path where the boxed value is not
+   needed. But a value must not be boxed more than once per execution of its
+   definition: a box of [y] must not be repeated by a loop or a function
+   body which does not contain the definition of [y]. Such a box is moved to
+   the entry of the outermost such region: before the loop, or, for a
+   function body, before the creation of the closure in the function where
+   [y] is defined (and then before the loops of that function which do not
+   contain the definition of [y]). *)
+
+let is_boxing kind =
+  match kind with
+  | Box_i32 | Box_i64 | Box_f64 | Tag_int -> true
+  | Unbox_i32 | Unbox_i64 | Unbox_f64 | Untag_int -> false
+
+(* [Some (x, kind, y)] if the instruction is [x = kind(y)] with [kind] a
+   boxing conversion *)
+let boxing i =
+  match i with
+  | Let (x, Prim (p, [ Pv y ])) -> (
+      match kind_of_prim p with
+      | Some kind when is_boxing kind -> Some (x, kind, y)
+      | Some _ | None -> None)
+  | Let _ | Assign _ | Set_field _ | Offset_ref _ | Array_set _ | Event _ -> None
+
+(* The natural loops of a function, with the size of their body. Loops that
+   can be entered other than through their header are ignored. *)
+module Loops = struct
+  type t = (Addr.Set.t * int) Addr.Map.t
+
+  let compute blocks entry : t =
+    let preds = CFG.predecessors blocks in
+    let preds pc = Addr.Map.find_opt pc preds |> Option.value ~default:[] in
+    (* Retreating edges of a depth-first traversal: the value is [true]
+       while the block is on the traversal stack *)
+    let on_stack = Addr.Hashtbl.create 16 in
+    let back_edges = ref [] in
+    let rec visit pc =
+      Addr.Hashtbl.replace on_stack pc true;
+      List.iter
+        ~f:(fun pc' ->
+          match Addr.Hashtbl.find_opt on_stack pc' with
+          | None -> visit pc'
+          | Some true -> back_edges := (pc, pc') :: !back_edges
+          | Some false -> ())
+        (CFG.successors blocks pc);
+      Addr.Hashtbl.replace on_stack pc false
+    in
+    visit entry;
+    let bodies =
+      List.fold_left
+        ~f:(fun bodies (src, header) ->
+          let body =
+            ref
+              (Addr.Map.find_opt header bodies
+              |> Option.value ~default:(Addr.Set.singleton header))
+          in
+          let rec add pc =
+            if not (Addr.Set.mem pc !body)
+            then (
+              body := Addr.Set.add pc !body;
+              List.iter ~f:add (preds pc))
+          in
+          add src;
+          Addr.Map.add header !body bodies)
+        ~init:Addr.Map.empty
+        !back_edges
+    in
+    Addr.Map.filter_map
+      (fun header body ->
+        let single_entry =
+          ((not (Addr.Set.mem entry body)) || header = entry)
+          && Addr.Set.for_all
+               (fun pc ->
+                 pc = header
+                 || List.for_all ~f:(fun pc' -> Addr.Set.mem pc' body) (preds pc))
+               body
+        in
+        if single_entry then Some (body, Addr.Set.cardinal body) else None)
+      bodies
+
+  (* The outermost loop containing block [pc] but not the definition [def]
+     of a value ([None]: the value is defined before the function body,
+     e.g. a parameter) *)
+  let outermost (loops : t) pc ~def =
+    Addr.Map.fold
+      (fun header (body, size) acc ->
+        if
+          Addr.Set.mem pc body
+          &&
+          match def with
+          | None -> true
+          | Some d -> not (Addr.Set.mem d body)
+        then
+          match acc with
+          | Some (_, (_, size')) when size' >= size -> acc
+          | Some _ | None -> Some (header, (body, size))
+        else acc)
+      loops
+      None
+end
+
+(* A block executed right before entering the loop, which is created if
+   needed. [None] if the loop is entered through an exception handler or
+   when leaving one. *)
+let loop_preheader ~types ~free_pc ~preds blocks (header, (body, _)) =
+  let entry_preds =
+    preds header
+    |> List.filter ~f:(fun pc -> not (Addr.Set.mem pc body))
+    |> List.sort_uniq ~cmp:compare
+  in
+  let branch pc = (Addr.Map.find pc !blocks).branch in
+  if
+    List.is_empty entry_preds
+    || not
+         (List.for_all
+            ~f:(fun pc ->
+              match branch pc with
+              | Branch _ | Cond _ | Switch _ -> true
+              | Pushtrap _ | Poptrap _ | Return _ | Raise _ | Stop -> false)
+            entry_preds)
+  then None
+  else
+    match entry_preds with
+    | [ pc ]
+      when match branch pc with
+           | Branch _ -> true
+           | _ -> false -> Some pc
+    | _ ->
+        let params =
+          List.map
+            ~f:(fun x ->
+              let x' = Var.fork x in
+              Typing.set_var_type types x' (Typing.var_type types x);
+              x')
+            (Addr.Map.find header !blocks).params
+        in
+        let pc' = !free_pc in
+        incr free_pc;
+        blocks :=
+          Addr.Map.add pc' { params; body = []; branch = Branch (header, params) } !blocks;
+        List.iter
+          ~f:(fun pc ->
+            let b = Addr.Map.find pc !blocks in
+            let redirect ((pc'', args) as cont) =
+              if pc'' = header then pc', args else cont
+            in
+            let branch =
+              match b.branch with
+              | Branch c -> Branch (redirect c)
+              | Cond (x, c1, c2) -> Cond (x, redirect c1, redirect c2)
+              | Switch (x, cs) -> Switch (x, Array.map ~f:redirect cs)
+              | (Pushtrap _ | Poptrap _ | Return _ | Raise _ | Stop) as br -> br
+            in
+            blocks := Addr.Map.add pc { b with branch } !blocks)
+          entry_preds;
+        Some pc'
+
+let append_instrs blocks pc l =
+  let b = Addr.Map.find pc !blocks in
+  blocks := Addr.Map.add pc { b with body = b.body @ l } !blocks
+
+(* Move the boxes of a function out of the loops that do not contain the
+   definition of the boxed value. [params] are the parameters of the
+   function. The boxes of free variables are handled by
+   [hoist_boxes_out_of_closures]. *)
+let hoist_boxes_out_of_loops ~types ~free_pc ~params ~(st : lcm_stats) blocks entry =
+  let loops = Loops.compute blocks entry in
+  if Addr.Map.is_empty loops
+  then blocks
+  else
+    let defs = Var.Hashtbl.create 16 in
+    Addr.Map.iter
+      (fun pc b ->
+        List.iter ~f:(fun x -> Var.Hashtbl.replace defs x pc) b.params;
+        List.iter
+          ~f:(fun i ->
+            match i with
+            | Let (x, _) -> Var.Hashtbl.replace defs x pc
+            | Assign _ | Set_field _ | Offset_ref _ | Array_set _ | Event _ -> ())
+          b.body)
+      blocks;
+    let params =
+      List.fold_left ~f:(fun s x -> VarSet.add x s) ~init:VarSet.empty params
+    in
+    let moves = ref [] in
+    Addr.Map.iter
+      (fun pc b ->
+        List.iter
+          ~f:(fun i ->
+            match boxing i with
+            | Some (x, _, y) -> (
+                let def =
+                  match Var.Hashtbl.find_opt defs y with
+                  | Some d -> Some (Some d)
+                  | None -> if VarSet.mem y params then Some None else None
+                in
+                match def with
+                | Some def -> (
+                    match Loops.outermost loops pc ~def with
+                    | Some l -> moves := (pc, x, i, l) :: !moves
+                    | None -> ())
+                | None -> ())
+            | None -> ())
+          b.body)
+      blocks;
+    if List.is_empty !moves
+    then blocks
+    else
+      let blocks = ref blocks in
+      let preds = CFG.predecessors !blocks in
+      let preds pc = Addr.Map.find_opt pc preds |> Option.value ~default:[] in
+      let preheaders = Addr.Hashtbl.create 8 in
+      List.iter
+        ~f:(fun (pc, x, i, ((header, _) as l)) ->
+          let ph =
+            match Addr.Hashtbl.find_opt preheaders header with
+            | Some ph -> ph
+            | None ->
+                let ph = loop_preheader ~types ~free_pc ~preds blocks l in
+                Addr.Hashtbl.add preheaders header ph;
+                ph
+          in
+          match ph with
+          | None -> ()
+          | Some ph ->
+              st.boxes_hoisted_from_loops <- st.boxes_hoisted_from_loops + 1;
+              let b = Addr.Map.find pc !blocks in
+              let body =
+                List.filter
+                  ~f:(fun i ->
+                    match i with
+                    | Let (x', _) -> not (Var.equal x x')
+                    | Assign _ | Set_field _ | Offset_ref _ | Array_set _ | Event _ ->
+                        true)
+                  b.body
+              in
+              blocks := Addr.Map.add pc { b with body } !blocks;
+              append_instrs blocks ph [ i ])
+        (List.rev !moves);
+      !blocks
+
+(* The functions of a program, and where variables are defined *)
+type functions =
+  { fun_of_block : Addr.t Addr.Hashtbl.t  (** Entry of the function of a block *)
+  ; blocks_of_fun : Addr.t list Addr.Hashtbl.t
+  ; parent : Addr.t Addr.Hashtbl.t  (** Block where a closure is created *)
+  ; def_fun : Addr.t Var.Hashtbl.t  (** Function where a variable is defined *)
+  ; def_block : Addr.t Var.Hashtbl.t
+        (** Block where a variable is defined (not for function parameters) *)
+  }
+
+let functions (p : program) =
+  let fun_of_block = Addr.Hashtbl.create 1024 in
+  let blocks_of_fun = Addr.Hashtbl.create 64 in
+  let parent = Addr.Hashtbl.create 64 in
+  let rec visit f pc =
+    if not (Addr.Hashtbl.mem fun_of_block pc)
+    then (
+      Addr.Hashtbl.add fun_of_block pc f;
+      Addr.Hashtbl.replace
+        blocks_of_fun
+        f
+        (pc :: (Addr.Hashtbl.find_opt blocks_of_fun f |> Option.value ~default:[]));
+      List.iter ~f:(visit f) (CFG.successors p.blocks pc))
+  in
+  visit p.start p.start;
+  Addr.Map.iter
+    (fun pc b ->
+      List.iter
+        ~f:(fun i ->
+          match i with
+          | Let (_, Closure (_, (entry, _), _)) ->
+              Addr.Hashtbl.replace parent entry pc;
+              visit entry entry
+          | Let _ | Assign _ | Set_field _ | Offset_ref _ | Array_set _ | Event _ -> ())
+        b.body)
+    p.blocks;
+  let def_fun = Var.Hashtbl.create 1024 in
+  let def_block = Var.Hashtbl.create 1024 in
+  Addr.Map.iter
+    (fun pc b ->
+      match Addr.Hashtbl.find_opt fun_of_block pc with
+      | None -> ()
+      | Some f ->
+          let def x =
+            Var.Hashtbl.replace def_fun x f;
+            Var.Hashtbl.replace def_block x pc
+          in
+          List.iter ~f:def b.params;
+          List.iter
+            ~f:(fun i ->
+              match i with
+              | Let (x, e) -> (
+                  def x;
+                  match e with
+                  | Closure (params, (entry, _), _) ->
+                      List.iter ~f:(fun y -> Var.Hashtbl.replace def_fun y entry) params
+                  | _ -> ())
+              | Assign _ | Set_field _ | Offset_ref _ | Array_set _ | Event _ -> ())
+            b.body)
+    p.blocks;
+  { fun_of_block; blocks_of_fun; parent; def_fun; def_block }
+
+let fun_blocks (p : program) fns f =
+  List.fold_left
+    ~f:(fun m pc -> Addr.Map.add pc (Addr.Map.find pc p.blocks) m)
+    ~init:Addr.Map.empty
+    (Addr.Hashtbl.find fns.blocks_of_fun f)
+
+(* Move the boxes of free variables of a function to the function where the
+   variable is defined, before the creation of the closure. *)
+let hoist_boxes_out_of_closures ~types ~(st : lcm_stats) (p : program) =
+  let fns = functions p in
+  (* For each closure created in the function where a boxed variable is
+     defined, the boxes to perform before creating it *)
+  let insertions = Addr.Hashtbl.create 16 in
+  let subst = Var.Hashtbl.create 16 in
+  Addr.Map.iter
+    (fun pc b ->
+      match Addr.Hashtbl.find_opt fns.fun_of_block pc with
+      | None -> ()
+      | Some f ->
+          List.iter
+            ~f:(fun i ->
+              match boxing i with
+              | Some (x, kind, y) -> (
+                  match Var.Hashtbl.find_opt fns.def_fun y with
+                  | Some g when g <> f -> (
+                      (* The outermost closure containing [f] created in [g] *)
+                      let rec closure f =
+                        match Addr.Hashtbl.find_opt fns.parent f with
+                        | None -> None
+                        | Some def_pc ->
+                            let f' = Addr.Hashtbl.find fns.fun_of_block def_pc in
+                            if f' = g then Some f else closure f'
+                      in
+                      match closure f with
+                      | None -> ()
+                      | Some c ->
+                          let m =
+                            Addr.Hashtbl.find_opt insertions c
+                            |> Option.value ~default:ConvMap.empty
+                          in
+                          let yb =
+                            match ConvMap.find_opt (kind, y) m with
+                            | Some yb -> yb
+                            | None ->
+                                let yb = Var.fresh () in
+                                Typing.set_var_type types yb (Typing.var_type types x);
+                                Addr.Hashtbl.replace
+                                  insertions
+                                  c
+                                  (ConvMap.add (kind, y) yb m);
+                                yb
+                          in
+                          st.boxes_hoisted_from_closures <-
+                            st.boxes_hoisted_from_closures + 1;
+                          Var.Hashtbl.replace subst x yb)
+                  | Some _ | None -> ())
+              | None -> ())
+            b.body)
+    p.blocks;
+  if Var.Hashtbl.length subst = 0
+  then p
+  else
+    let subst_var x = Var.Hashtbl.find_opt subst x |> Option.value ~default:x in
+    let blocks =
+      ref
+        (Addr.Map.map
+           (fun b ->
+             let body =
+               List.filter_map
+                 ~f:(fun i ->
+                   match i with
+                   | Let (x, _) when Var.Hashtbl.mem subst x -> None
+                   | _ -> Some (Subst.Excluding_Binders.instr subst_var i))
+                 b.body
+             in
+             { b with body; branch = Subst.Excluding_Binders.last subst_var b.branch })
+           p.blocks)
+    in
+    let free_pc = ref p.free_pc in
+    (* Loops and loop preheaders of the functions where boxes are inserted *)
+    let loops = Addr.Hashtbl.create 16 in
+    let get_loops g =
+      match Addr.Hashtbl.find_opt loops g with
+      | Some l -> l
+      | None ->
+          let fb = fun_blocks p fns g in
+          let preds = CFG.predecessors fb in
+          let l =
+            ( Loops.compute fb g
+            , (fun pc -> Addr.Map.find_opt pc preds |> Option.value ~default:[])
+            , Addr.Hashtbl.create 8 )
+          in
+          Addr.Hashtbl.add loops g l;
+          l
+    in
+    Addr.Hashtbl.iter
+      (fun c m ->
+        let def_pc = Addr.Hashtbl.find fns.parent c in
+        let g = Addr.Hashtbl.find fns.fun_of_block def_pc in
+        let loops, preds, preheaders = get_loops g in
+        ConvMap.iter
+          (fun (kind, y) yb ->
+            let instr = Let (yb, Prim (prim_of_kind kind, [ Pv y ])) in
+            let def = Var.Hashtbl.find_opt fns.def_block y in
+            let ph =
+              match Loops.outermost loops def_pc ~def with
+              | None -> None
+              | Some ((header, _) as l) -> (
+                  match Addr.Hashtbl.find_opt preheaders header with
+                  | Some ph -> ph
+                  | None ->
+                      let ph = loop_preheader ~types ~free_pc ~preds blocks l in
+                      Addr.Hashtbl.add preheaders header ph;
+                      ph)
+            in
+            match ph with
+            | Some ph -> append_instrs blocks ph [ instr ]
+            | None ->
+                (* Before the group of closures that contains [c] *)
+                let b = Addr.Map.find def_pc !blocks in
+                let rec insert rev_group l =
+                  match l with
+                  | (Let (_, Closure (_, (entry, _), _)) as i) :: rem ->
+                      if entry = c
+                      then (instr :: List.rev rev_group) @ (i :: rem)
+                      else insert (i :: rev_group) rem
+                  | i :: rem -> List.rev_append rev_group (i :: insert [] rem)
+                  | [] -> assert false
+                in
+                blocks := Addr.Map.add def_pc { b with body = insert [] b.body } !blocks)
+          m)
+      insertions;
+    { p with blocks = !blocks; free_pc = !free_pc }
+
+(* Boxes which may be performed more than once per execution of the
+   definition of the boxed value: boxes of free variables, and boxes inside
+   a loop which does not contain the definition of the value *)
+let check_box_placement (p : program) =
+  let fns = functions p in
+  let violations = ref 0 in
+  Addr.Hashtbl.iter
+    (fun f _ ->
+      let fb = fun_blocks p fns f in
+      let loops = Loops.compute fb f in
+      Addr.Map.iter
+        (fun pc b ->
+          List.iter
+            ~f:(fun i ->
+              match boxing i with
+              | Some (x, _, y) -> (
+                  let report reason =
+                    incr violations;
+                    if check ()
+                    then
+                      Format.eprintf
+                        "lcm: %a = box(%a) in block %d: %s@."
+                        Var.print
+                        x
+                        Var.print
+                        y
+                        pc
+                        reason
+                  in
+                  match Var.Hashtbl.find_opt fns.def_fun y with
+                  | Some g when g <> f -> report "free variable"
+                  | Some _ -> (
+                      let def = Var.Hashtbl.find_opt fns.def_block y in
+                      match Loops.outermost loops pc ~def with
+                      | Some (header, _) ->
+                          report (Printf.sprintf "in the loop at block %d" header)
+                      | None -> ())
+                  | None -> ())
+              | None -> ())
+            b.body)
+        fb)
+    fns.blocks_of_fun;
+  !violations
+
+(* Entry point. For each function, lower implicit conversions into explicit
+   IR primitives, then run the LCM analysis and rewrite to eliminate
+   redundant conversions. The return types of functions are decided by
+   [Typing]. *)
+let f (p : program) (types : Typing.t) ~(global_flow_info : Global_flow.info) =
   let t = Timer.make () in
   let st = make_stats () in
-  (* Decide return-type unboxing for functions whose call sites are all known.
-     If a function always returns an unboxed number or a normalised int, record
-     that as its return type so callers can avoid re-boxing. *)
-  fold_closures
-    p
-    (fun name_opt _ _ _ () ->
-      match name_opt with
-      | Some g ->
-          if Typing.can_unbox_parameters fun_info g
-          then
-            let s = Var.Map.find g global_flow_info.info_return_vals in
-            let t =
-              Var.Set.fold
-                (fun x acc -> Typing.join (Typing.var_type types x) acc)
-                s
-                Typing.Bot
-            in
-            if Typing.is_unboxed_repr t then Typing.set_return_type types g t
-      | None -> ())
-    ();
   (* Collect function entry points, recording the defining block PC for closures *)
-  let fun_entries = ref [ None, p.start, None ] in
+  let fun_entries = ref [ None, p.start, None, [] ] in
   Addr.Map.iter
     (fun def_pc block ->
       List.iter
         ~f:(function
-          | Let (x, Closure (_, (pc, _), _)) ->
-              fun_entries := (Some x, pc, Some def_pc) :: !fun_entries
+          | Let (x, Closure (params, (pc, _), _)) ->
+              fun_entries := (Some x, pc, Some def_pc, params) :: !fun_entries
           | _ -> ())
         block.body)
     p.blocks;
@@ -2148,7 +2656,7 @@ let f (p : program) (types : Typing.t) ~(global_flow_info : Global_flow.info) ~f
      Each function's blocks are disjoint, so total work is O(N log N). *)
   let fun_block_tbl = Addr.Hashtbl.create (List.length !fun_entries) in
   List.iter
-    ~f:(fun (_, entry, _) ->
+    ~f:(fun (_, entry, _, _) ->
       let visited = ref Addr.Map.empty in
       let rec visit pc =
         if not (Addr.Map.mem pc !visited)
@@ -2175,8 +2683,34 @@ let f (p : program) (types : Typing.t) ~(global_flow_info : Global_flow.info) ~f
      overwrite it. *)
   let entry_redirects = ref Addr.Map.empty in
   let redirected_defs = ref Addr.Set.empty in
+  (* A number constant [x] used in another representation gets a single
+     variable bound to the constant in that representation, defined right
+     after [x] (inserted once all functions have been processed). This
+     costs nothing at run time and preserves sharing: all the boxed uses of
+     [x] get the same static boxed value. *)
+  let constant_twins = Var.Hashtbl.create 16 in
+  let constant_twin x c ~into =
+    let unboxed =
+      match into with
+      | Typing.Number (_, Unboxed) -> true
+      | _ -> false
+    in
+    let twins = Var.Hashtbl.find_opt constant_twins x |> Option.value ~default:[] in
+    match
+      List.find_map
+        ~f:(fun (unboxed', twin) ->
+          if Bool.equal unboxed unboxed' then Some twin else None)
+        twins
+    with
+    | Some (x', _) -> x'
+    | None ->
+        let x' = Var.fresh () in
+        Typing.set_var_type types x' into;
+        Var.Hashtbl.replace constant_twins x ((unboxed, (x', c)) :: twins);
+        x'
+  in
   List.iter
-    ~f:(fun (name_opt, entry, def_pc_opt) ->
+    ~f:(fun (name_opt, entry, def_pc_opt, params) ->
       let ts = tick () in
       let return_type =
         match name_opt with
@@ -2187,7 +2721,14 @@ let f (p : program) (types : Typing.t) ~(global_flow_info : Global_flow.info) ~f
       let t0 = tick () in
       st.time_setup <- st.time_setup +. (t0 -. ts);
       let fun_blocks =
-        lower_conversions fun_blocks types global_flow_info return_type free_pc ~st
+        lower_conversions
+          fun_blocks
+          types
+          global_flow_info
+          return_type
+          free_pc
+          ~constant_twin
+          ~st
       in
       let fun_blocks = split_critical_edges fun_blocks free_pc in
       st.time_lowering <- st.time_lowering +. (tick () -. t0);
@@ -2227,6 +2768,9 @@ let f (p : program) (types : Typing.t) ~(global_flow_info : Global_flow.info) ~f
             fun_blocks, new_entry_pc
         | _ -> fun_blocks, entry
       in
+      let fun_blocks =
+        hoist_boxes_out_of_loops ~types ~free_pc ~params ~st fun_blocks entry
+      in
       st.time_setup <- st.time_setup +. (tick () -. ts2);
       let result =
         process_function
@@ -2256,7 +2800,37 @@ let f (p : program) (types : Typing.t) ~(global_flow_info : Global_flow.info) ~f
       in
       blocks := Addr.Map.add def_pc { def_block with body } !blocks)
     !redirected_defs;
+  if Var.Hashtbl.length constant_twins > 0
+  then
+    blocks :=
+      Addr.Map.map
+        (fun b ->
+          if
+            List.exists
+              ~f:(fun i ->
+                match i with
+                | Let (x, Constant _) -> Var.Hashtbl.mem constant_twins x
+                | _ -> false)
+              b.body
+          then
+            { b with
+              body =
+                List.concat_map
+                  ~f:(fun i ->
+                    match i with
+                    | Let (x, Constant _) when Var.Hashtbl.mem constant_twins x ->
+                        i
+                        :: List.map
+                             ~f:(fun (_, (x', c)) -> Let (x', Constant c))
+                             (Var.Hashtbl.find constant_twins x)
+                    | _ -> [ i ])
+                  b.body
+            }
+          else b)
+        !blocks;
   let p = { start = !start; blocks = !blocks; free_pc = !free_pc } in
+  let p = hoist_boxes_out_of_closures ~types ~st p in
+  let misplaced_boxes = if check () || stats () then check_box_placement p else 0 in
   if times ()
   then (
     Format.eprintf "  lcm: %a@." Timer.print t;
@@ -2274,7 +2848,7 @@ let f (p : program) (types : Typing.t) ~(global_flow_info : Global_flow.info) ~f
     Format.eprintf
       "Stats - lcm: %d functions (%d with conversions), %d lowered, %d tracked, ant:%d \
        avail:%d delay:%d isol:%d iters, %d inserted, %d eliminated, %d peephole, %d \
-       params widened@."
+       params widened, boxes hoisted: %d from loops %d from closures, %d misplaced@."
       st.functions_processed
       st.functions_with_conversions
       st.conversions_lowered
@@ -2286,7 +2860,10 @@ let f (p : program) (types : Typing.t) ~(global_flow_info : Global_flow.info) ~f
       st.conversions_inserted
       st.conversions_eliminated
       st.peephole_eliminated
-      st.params_widened;
+      st.params_widened
+      st.boxes_hoisted_from_loops
+      st.boxes_hoisted_from_closures
+      misplaced_boxes;
   if debug ()
   then (
     prerr_endline "AFTER";
