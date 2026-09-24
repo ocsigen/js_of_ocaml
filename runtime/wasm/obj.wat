@@ -24,6 +24,8 @@
          (func $int_val_32_exn (param (ref eq)) (param (ref eq)) (result i32)))
       (import "portableint" "is_ocaml_portable_int"
          (func $is_ocaml_portable_int (param (ref eq)) (result i32)))
+      (import "portableint" "phys_eq"
+         (func $phys_eq (param (ref eq)) (param (ref eq)) (result i32)))
    ))
    (import "fail" "caml_failwith" (func $caml_failwith (param (ref eq))))
    (import "array" "caml_check_array_length"
@@ -493,14 +495,28 @@
       (local.set $i
          (i32.add (i31.get_u (ref.cast (ref i31) (local.get $vi))) (i32.const 1)))
       ))
-      (if (result (ref eq))
-          (ref.eq
-            (array.get $block (local.get $b) (local.get $i)) (local.get $old))
-         (then
-            (array.set $block (local.get $b) (local.get $i) (local.get $new))
-            (ref.i31 (i32.const 1)))
-         (else
-            (ref.i31 (i32.const 0)))))
+      (@if $portable_int
+      (@then
+         (if (result (ref eq))
+             ;; Large integers are boxed: compare them by value
+             (call $phys_eq
+                   (array.get $block (local.get $b) (local.get $i))
+                   (local.get $old))
+            (then
+               (array.set $block (local.get $b) (local.get $i) (local.get $new))
+               (ref.i31 (i32.const 1)))
+            (else
+               (ref.i31 (i32.const 0)))))
+      (@else
+         (if (result (ref eq))
+             ;; Large integers are boxed: compare them by value
+             (ref.eq
+               (array.get $block (local.get $b) (local.get $i)) (local.get $old))
+            (then
+               (array.set $block (local.get $b) (local.get $i) (local.get $new))
+               (ref.i31 (i32.const 1)))
+            (else
+               (ref.i31 (i32.const 0)))))))
 
    (func (export "caml_obj_is_shared") (param (ref eq)) (result (ref eq))
       (ref.i31 (i32.const 1)))
