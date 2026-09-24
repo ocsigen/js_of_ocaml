@@ -893,6 +893,31 @@
     length: (s) => s.length,
     intoCharCodeArray: () => 0,
   };
+  // Counters of the representation conversions executed by code compiled
+  // with [--debug count-conversions], imported from module "conversions"
+  // and created on demand. The nonzero ones are printed on exit.
+  const conversion_counters = {};
+  const conversion_counter_imports = new globalThis.Proxy(
+    {},
+    {
+      get(_, name) {
+        if (!Object.hasOwn(conversion_counters, name))
+          conversion_counters[name] = new globalThis.WebAssembly.Global(
+            { value: "i64", mutable: true },
+            0n,
+          );
+        return conversion_counters[name];
+      },
+    },
+  );
+  if (isNode)
+    globalThis.process.on("exit", () => {
+      const counts = Object.entries(conversion_counters)
+        .filter(([_, g]) => g.value !== 0n)
+        .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+        .map(([name, g]) => `${name}=${g.value}`);
+      if (counts.length) fs.writeSync(2, `conversions: ${counts.join(" ")}\n`);
+    });
   const imports = Object.assign(
     {
       Math: math,
@@ -910,6 +935,7 @@
         },
       ),
       env: {},
+      conversions: conversion_counter_imports,
     },
     generated,
   );
