@@ -390,7 +390,7 @@ let lower_conversions
             | _ -> false)
       in
       match p with
-      | Extern ("caml_array_unsafe_get", _) | Array_get -> Some [ top; int_n ]
+      | Extern ("caml_array_unsafe_get", _) | Array_get _ -> Some [ top; int_n ]
       | Extern
           ( (( "caml_ba_get_1"
              | "caml_ba_get_2"

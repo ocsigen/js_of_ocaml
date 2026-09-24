@@ -127,9 +127,14 @@ type wasm_conversion =
   | Untag_large_int
   | Tag_large_int
 
+type field_type =
+  | Non_float
+  | Immediate  (** A field known to contain an immediate value *)
+  | Float
+
 type prim =
   | Vectlength of Optimization_hint.array_kind
-  | Array_get
+  | Array_get of field_type  (** [Non_float] or [Immediate], never [Float] *)
   | Extern of string * Optimization_hint.ccall option
   | Not
   | IsInt
@@ -196,10 +201,6 @@ type special = Alias_prim of string
 type mutability =
   | Immutable
   | Maybe_mutable
-
-type field_type =
-  | Non_float
-  | Float
 
 type expr =
   | Apply of
