@@ -23,6 +23,8 @@ open Code_generation
 
 let times = Debug.find "times"
 
+let count_conversions = Debug.find ~even_if_quiet:true "count-conversions"
+
 let effects_cps () =
   match Config.effects () with
   | `Cps -> true
@@ -244,19 +246,84 @@ module Generate (Target : Target_sig.S) = struct
     | Pv x -> Typing.var_type ctx.types x
     | Pc c -> Typing.constant_type c
 
+  (* With [--debug count-conversions], count the representation conversions
+     executed at run time, per kind. The counters are mutable globals
+     imported from module "conversions", which the JavaScript runtime
+     creates on demand and prints on exit. *)
+  let counted kind e =
+    if count_conversions ()
+    then
+      let* e = e in
+      match e with
+      | W.Const _
+      | W.RefI31 (Const _)
+      | W.BinOp (_, Const _, Const _)
+      | W.LocalGet _ | W.GlobalGet _ ->
+          (* The conversion of a constant, or a tagging cancelling an
+             untagging: this costs nothing *)
+          return e
+      | _ ->
+          let* g =
+            register_import
+              ~import_module:"conversions"
+              ~name:kind
+              (Global { mut = true; typ = I64 })
+          in
+          seq
+            (instr (W.GlobalSet (g, W.BinOp (I64 Add, W.GlobalGet g, W.Const (I64 1L)))))
+            (return e)
+    else e
+
+  module Conv = struct
+    let box_float e = counted "box_f64" (Memory.box_float e)
+
+    let unbox_float e = counted "unbox_f64" (Memory.unbox_float e)
+
+    let box_float32 e = counted "box_f32" (Memory.box_float32 e)
+
+    let unbox_float32 e = counted "unbox_f32" (Memory.unbox_float32 e)
+
+    let box_int32 e = counted "box_i32" (Memory.box_int32 e)
+
+    let unbox_int32 e = counted "unbox_i32" (Memory.unbox_int32 e)
+
+    let box_int64 e = counted "box_i64" (Memory.box_int64 e)
+
+    let unbox_int64 e = counted "unbox_i64" (Memory.unbox_int64 e)
+
+    let box_nativeint e = counted "box_nativeint" (Memory.box_nativeint e)
+
+    let unbox_nativeint e = counted "unbox_nativeint" (Memory.unbox_nativeint e)
+
+    let tag e = counted "tag" (Value.val_int e)
+
+    let untag e = counted "untag" (Value.int_val e)
+
+    let tag64 e = counted "tag64" (Value64.val_int e)
+
+    let untag64 e = counted "untag64" (Value64.int_val e)
+
+    let normalize e = counted "normalize" Arith.((e lsl const 1l) asr const 1l)
+
+    (* Shifting an unnormalized integer to compare it *)
+    let shift e = counted "shift" Arith.(e lsl const 1l)
+
+    let normalize64 e = counted "normalize64" Arith64.((e lsl const 1L) asr const 1L)
+
+    let shift64 e = counted "shift64" Arith64.(e lsl const 1L)
+  end
+
   let convert ~(from : Typing.typ) ~(into : Typing.typ) e =
     match from, into with
     (* Int conversions *)
-    | Int Small_unnormalized, Int Small_normalized ->
-        Arith.((e lsl const 1l) asr const 1l)
-    | Int Large_unnormalized, Int Large_normalized ->
-        Arith64.((e lsl const 1L) asr const 1L)
+    | Int Small_unnormalized, Int Small_normalized -> Conv.normalize e
+    | Int Large_unnormalized, Int Large_normalized -> Conv.normalize64 e
     | ( Int (Small_normalized | Small_unnormalized)
       , Int (Small_normalized | Small_unnormalized) )
     | ( Int (Large_normalized | Large_unnormalized)
       , Int (Large_normalized | Large_unnormalized) ) -> e
     | Int Small_unnormalized, Int (Large_normalized | Large_unnormalized) ->
-        let* e = Arith.((e lsl const 1l) asr const 1l) in
+        let* e = Conv.normalize e in
         return (W.I64ExtendI32 (S, e))
     | Int Small_normalized, Int (Large_normalized | Large_unnormalized) ->
         let* e = e in
@@ -275,30 +342,30 @@ module Generate (Target : Target_sig.S) = struct
     | Int _, Number (Float32, Unboxed) -> return (W.Const (F32 0.))
     (* Unboxing *)
     | _, Int (Small_normalized | Small_unnormalized) when Config.Flag.portable_int () ->
-        let* e = Value64.int_val e in
+        let* e = Conv.untag64 e in
         return (W.I32WrapI64 e)
     | _, Int (Large_normalized | Large_unnormalized) when Config.Flag.portable_int () ->
-        Value64.int_val e
+        Conv.untag64 e
     | ( _
       , Int (Small_normalized | Small_unnormalized | Large_normalized | Large_unnormalized)
-      ) -> Value.int_val e
+      ) -> Conv.untag e
     (* Boxing *)
     | Int Large_unnormalized, _ when Config.Flag.portable_int () ->
-        Value64.val_int Arith64.((e lsl const 1L) asr const 1L)
-    | Int Large_normalized, _ when Config.Flag.portable_int () -> Value64.val_int e
+        Conv.tag64 (Conv.normalize64 e)
+    | Int Large_normalized, _ when Config.Flag.portable_int () -> Conv.tag64 e
     | ( Int (Small_normalized | Small_unnormalized | Large_normalized | Large_unnormalized)
-      , _ ) -> Value.val_int e
+      , _ ) -> Conv.tag e
     | Number (_, Unboxed), Number (_, Unboxed) -> e
-    | _, Number (Int32, Unboxed) -> Memory.unbox_int32 e
-    | _, Number (Int64, Unboxed) -> Memory.unbox_int64 e
-    | _, Number (Nativeint, Unboxed) -> Memory.unbox_nativeint e
-    | _, Number (Float, Unboxed) -> Memory.unbox_float e
-    | _, Number (Float32, Unboxed) -> Memory.unbox_float32 e
-    | Number (Int32, Unboxed), _ -> Memory.box_int32 e
-    | Number (Int64, Unboxed), _ -> Memory.box_int64 e
-    | Number (Nativeint, Unboxed), _ -> Memory.box_nativeint e
-    | Number (Float, Unboxed), _ -> Memory.box_float e
-    | Number (Float32, Unboxed), _ -> Memory.box_float32 e
+    | _, Number (Int32, Unboxed) -> Conv.unbox_int32 e
+    | _, Number (Int64, Unboxed) -> Conv.unbox_int64 e
+    | _, Number (Nativeint, Unboxed) -> Conv.unbox_nativeint e
+    | _, Number (Float, Unboxed) -> Conv.unbox_float e
+    | _, Number (Float32, Unboxed) -> Conv.unbox_float32 e
+    | Number (Int32, Unboxed), _ -> Conv.box_int32 e
+    | Number (Int64, Unboxed), _ -> Conv.box_int64 e
+    | Number (Nativeint, Unboxed), _ -> Conv.box_nativeint e
+    | Number (Float, Unboxed), _ -> Conv.box_float e
+    | Number (Float32, Unboxed), _ -> Conv.box_float32 e
     | _ -> e
 
   let load_and_box ctx x = convert ~from:(Typing.var_type ctx.types x) ~into:Top (load x)
@@ -351,13 +418,13 @@ module Generate (Target : Target_sig.S) = struct
     | Int Small_normalized, Int Small_unnormalized
     | Int Small_unnormalized, Int Small_normalized ->
         op_i32
-          Arith.(transl_prim_arg ctx ~typ:(Int Small_unnormalized) x lsl const 1l)
-          Arith.(transl_prim_arg ctx ~typ:(Int Small_unnormalized) y lsl const 1l)
+          (Conv.shift (transl_prim_arg ctx ~typ:(Int Small_unnormalized) x))
+          (Conv.shift (transl_prim_arg ctx ~typ:(Int Small_unnormalized) y))
     | Int Large_unnormalized, _ | _, Int Large_unnormalized ->
         (* Shifting out the high bit is cheaper than normalizing *)
         op_i64
-          Arith64.(transl_prim_arg ctx ~typ:(Int Large_unnormalized) x lsl const 1L)
-          Arith64.(transl_prim_arg ctx ~typ:(Int Large_unnormalized) y lsl const 1L)
+          (Conv.shift64 (transl_prim_arg ctx ~typ:(Int Large_unnormalized) x))
+          (Conv.shift64 (transl_prim_arg ctx ~typ:(Int Large_unnormalized) y))
     | _ when Config.Flag.portable_int () ->
         op_i64
           (transl_prim_arg ctx ~typ:(Int Large_normalized) x)
@@ -376,15 +443,15 @@ module Generate (Target : Target_sig.S) = struct
     | ( Int (Small_normalized | Small_unnormalized)
       , Int (Small_normalized | Small_unnormalized) ) ->
         (if negate then Arith.( <> ) else Arith.( = ))
-          Arith.(transl_prim_arg ctx ~typ:(Int Small_unnormalized) x lsl const 1l)
-          Arith.(transl_prim_arg ctx ~typ:(Int Small_unnormalized) y lsl const 1l)
+          (Conv.shift (transl_prim_arg ctx ~typ:(Int Small_unnormalized) x))
+          (Conv.shift (transl_prim_arg ctx ~typ:(Int Small_unnormalized) y))
     | ( Int (Small_normalized | Small_unnormalized | Large_normalized | Large_unnormalized)
       , Int (Small_normalized | Small_unnormalized | Large_normalized | Large_unnormalized)
       )
       when Config.Flag.portable_int () ->
         (if negate then Arith64.ne_i32 else Arith64.eq_i32)
-          Arith64.(transl_prim_arg ctx ~typ:(Int Large_unnormalized) x lsl const 1L)
-          Arith64.(transl_prim_arg ctx ~typ:(Int Large_unnormalized) y lsl const 1L)
+          (Conv.shift64 (transl_prim_arg ctx ~typ:(Int Large_unnormalized) x))
+          (Conv.shift64 (transl_prim_arg ctx ~typ:(Int Large_unnormalized) y))
     | Top, Top when (not (Config.Flag.wasi ())) && Config.Flag.portable_int () ->
         Value64.js_eqeqeq
           ~negate
@@ -1755,8 +1822,8 @@ module Generate (Target : Target_sig.S) = struct
                     Memory.array_get (load indices) (Arith.const (Int32.of_int i))
                   in
                   if portable
-                  then checked_i32_index (Value64.int_val index)
-                  else Value.int_val index)
+                  then checked_i32_index (Conv.untag64 index)
+                  else Conv.untag index)
                 (Array.to_list l) )
       | _, None | _, Some (_, (Expr _ | Phi _)) -> None
     in
@@ -2287,17 +2354,14 @@ module Generate (Target : Target_sig.S) = struct
         Memory.set_field
           (load x)
           0
-          (Value64.val_int
-             Arith64.(
-               ((Value64.int_val (Memory.field (load x) 0) + const (Int64.of_int n))
-               lsl const 1L)
-               asr const 1L))
+          (Conv.tag64
+             (Conv.normalize64
+                Arith64.(Conv.untag64 (Memory.field (load x) 0) + const (Int64.of_int n))))
     | Offset_ref (x, n) ->
         Memory.set_field
           (load x)
           0
-          (Value.val_int
-             Arith.(Value.int_val (Memory.field (load x) 0) + const (Int32.of_int n)))
+          (Conv.tag Arith.(Conv.untag (Memory.field (load x) 0) + const (Int32.of_int n)))
     | Array_set (x, y, z) ->
         Memory.array_set
           (load x)
@@ -2569,10 +2633,10 @@ module Generate (Target : Target_sig.S) = struct
                 { params = []; result = result_typ }
                 (match Typing.var_type ctx.types x with
                 | Int Small_normalized -> load x
-                | Int Small_unnormalized -> Arith.(load x lsl const 1l)
+                | Int Small_unnormalized -> Conv.shift (load x)
                 | Int Large_normalized -> Arith64.(ne_i32 (load x) (const 0L))
                 | Int Large_unnormalized ->
-                    Arith64.(ne_i32 (load x lsl const 1L) (const 0L))
+                    Arith64.(ne_i32 (Conv.shift64 (load x)) (const 0L))
                 | _ when Config.Flag.portable_int () -> Value64.check_is_not_zero (load x)
                 | _ -> Value.check_is_not_zero (load x))
                 (translate_branch result_typ fall_through pc cont1 context')
