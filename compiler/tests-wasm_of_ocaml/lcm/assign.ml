@@ -119,7 +119,34 @@ let f7 l n =
    with Exit -> r := !r *. 10.);
   !r
 
+(* An assigned variable boxed at several places of the handler, and in a
+   loop of the handler: it is boxed once per execution of the handler *)
+let kept = ref []
+
+let f8 a n =
+  let r = ref (a +. 1.) in
+  let res = ref true in
+  for i = 1 to n do
+    try
+      r := !r *. 2.;
+      if i land 1 = 0 then raise Exit;
+      r := !r +. 3.;
+      if i mod 3 = 0 then raise Exit
+    with Exit -> (
+      let b1 = Some !r in
+      let b2 = if i > 1 then Some !r else None in
+      for _ = 1 to 2 do
+        kept := !r :: !kept
+      done;
+      match b1, b2, !kept with
+      | Some u, Some v, w :: z :: _ ->
+          if not (u == v && w == z && u == w) then res := false
+      | _ -> ())
+  done;
+  !res && Float.equal !r 8190.
+
 let () =
+  assert (f8 (float_of_int k) (k + 5));
   assert (Float.equal (f7 [ 1.5 ] 10) 55.);
   assert (Float.equal (f7 [ 1.5 ] 3) 4.5);
   assert (Float.equal (f1 10) 33.);

@@ -36,3 +36,16 @@
  (modes js wasm)
  (wasm_of_ocaml
   (flags :standard --opt 2)))
+
+(tests
+ (names constant_twin)
+ (modes js wasm)
+ (wasm_of_ocaml
+  (flags :standard --opt 2)))
+
+(tests
+ (names box_once)
+ (modes js wasm)
+ ; Without inlining, so that the closures are kept
+ (wasm_of_ocaml
+  (flags :standard --opt 2 --no-inline)))
