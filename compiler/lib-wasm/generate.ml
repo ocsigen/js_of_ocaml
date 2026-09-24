@@ -3088,6 +3088,11 @@ module Generate (Target : Target_sig.S) = struct
         Typing.register_prim
           name
           ~kind:k
+          ~args:
+            (Typed
+               (List.map
+                  ~f:(fun ty -> Option.value ~default:Typing.Top (repr_type ty))
+                  param_types))
           ~unbox:
             (List.exists
                ~f:(fun ty ->
@@ -3181,7 +3186,7 @@ let f ~context ~unit_name p ~live_vars ~in_cps ~deadcode_sentinel ~global_flow_d
     Typing.f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinel p
   in
   let p, types =
-    if Config.Flag.lcm () then Lcm.f p types ~global_flow_info ~fun_info else p, types
+    if Config.Flag.lcm () then Lcm.f p types ~global_flow_info else p, types
   in
   let t = Timer.make () in
   let p = Structure.norm p in
