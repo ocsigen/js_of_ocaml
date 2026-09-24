@@ -374,13 +374,6 @@ let conversion_type c =
   | Untag_int -> Int Normalized
   | Tag_int -> Int Ref
 
-(* Whether [typ] is an unboxed-number or untagged-integer representation,
-   i.e. a value a function can return directly without re-boxing. *)
-let is_unboxed_repr (typ : typ) =
-  match typ with
-  | Number (_, Unboxed) | Int (Normalized | Unnormalized) -> true
-  | Top | Int Ref | Number (_, Boxed) | Null | Tuple _ | Bigarray _ | Bot -> false
-
 let arg_type ~approx arg =
   match arg with
   | Pc c -> constant_type c
@@ -684,11 +677,41 @@ let type_specialized_primitive types global_flow_state name args =
       | _ -> false)
   | _ -> false
 
-let box_numbers p st types =
-  (* We box numbers eagerly if the boxed value is ever used. *)
+(* Without the LCM pass ([lazy_boxing] false), we box numbers eagerly if
+   the boxed value is ever used: the variable gets a boxed type, and so do
+   the values it is computed from (the inputs of a phi, the values returned
+   by the function called).
+
+   With the LCM pass ([lazy_boxing] true), numbers are boxed where the boxed
+   value is used, and [Lcm] places these conversions. We only record which
+   variables are used boxed. Constants are still boxed eagerly, since this
+   is free. A phi or a call result keeps a boxed type if it
+   is used boxed and one of the values it is computed from is already
+   boxed, so as not to unbox a boxed value only to box it again; in the
+   case of a call, the function then returns a boxed value. The set of such
+   functions is returned. *)
+let box_numbers ~lazy_boxing p st types =
   let should_box = Var.ISet.empty () in
+  (* With lazy boxing, the unboxed numbers used boxed: all of them
+     ([boxed_uses], [unboxed_uses]) and those not examined yet
+     ([fresh_uses]). The other variables are of no interest: no variable
+     becomes unboxed below. *)
+  let boxed_uses = Var.ISet.empty () in
+  let unboxed_uses = ref [] in
+  let fresh_uses = ref [] in
+  let call_results = Var.Hashtbl.create 16 in
   let rec box y =
-    if not (Var.ISet.mem should_box y)
+    if lazy_boxing
+    then
+      match Var.Tbl.get types y with
+      | Number (_, Unboxed) ->
+          if not (Var.ISet.mem boxed_uses y)
+          then (
+            Var.ISet.add boxed_uses y;
+            unboxed_uses := y :: !unboxed_uses;
+            fresh_uses := y :: !fresh_uses)
+      | Number (_, Boxed) | Top | Int _ | Tuple _ | Bigarray _ | Null | Bot -> ()
+    else if not (Var.ISet.mem should_box y)
     then (
       Var.ISet.add should_box y;
       let typ = Var.Tbl.get types y in
@@ -710,6 +733,18 @@ let box_numbers p st types =
           | Phi { known; _ } -> Var.Set.iter box known)
       | Number (_, Boxed) | Int _ | Tuple _ | Bigarray _ | Null | Bot -> ())
   in
+  (* An argument passed to a block parameter which is not unboxed is used
+     boxed *)
+  let check_cont (pc', args) =
+    let b' = Addr.Map.find pc' p.blocks in
+    List.iter2
+      ~f:(fun param arg ->
+        match Var.Tbl.get types param with
+        | Number (_, Boxed) | Top -> box arg
+        | Number (_, Unboxed) | Int _ | Tuple _ | Bigarray _ | Null | Bot -> ())
+      b'.params
+      args
+  in
   Code.fold_closures
     p
     (fun name_opt _ (pc, _) _ () ->
@@ -722,14 +757,22 @@ let box_numbers p st types =
               match i with
               | Let (x, e) -> (
                   match e with
-                  | Apply { f; args; _ } ->
-                      if
-                        match
-                          Global_flow.get_unique_closure st.global_flow_info ~call:x f
-                        with
-                        | None -> true
-                        | Some (g, _, _) -> not (can_unbox_parameters st.fun_info g)
-                      then List.iter ~f:box args
+                  | Apply { f; args; _ } -> (
+                      match
+                        Global_flow.get_unique_closure st.global_flow_info ~call:x f
+                      with
+                      | None -> List.iter ~f:box args
+                      | Some (g, _, cont) ->
+                          if (not cont) && can_unbox_return_value st.fun_info g
+                          then
+                            Var.Hashtbl.replace
+                              call_results
+                              g
+                              (x
+                              :: (Var.Hashtbl.find_opt call_results g
+                                 |> Option.value ~default:[]));
+                          if not (can_unbox_parameters st.fun_info g)
+                          then List.iter ~f:box args)
                   | Block (tag, lst, _, _, _) -> if tag <> 254 then Array.iter ~f:box lst
                   | Prim (Extern (s, _), args) ->
                       if
@@ -784,7 +827,11 @@ let box_numbers p st types =
                             | Box_f32
                             | Tag_int ) )
                       , _ )
-                  | Field _ | Closure _ | Constant _ | Special _ -> ())
+                  | Field _ | Constant _ | Special _ -> ()
+                  | Closure (_, cont, _) ->
+                      (* The parameters of the function are passed to the
+                         parameters of its entry block *)
+                      if lazy_boxing then check_cont cont)
               | Set_field (_, _, (Non_float | Immediate), y) | Array_set (_, _, y) ->
                   box y
               | Assign _ | Offset_ref _ | Set_field (_, _, Float, _) | Event _ -> ())
@@ -794,55 +841,86 @@ let box_numbers p st types =
               Option.iter
                 ~f:(fun g -> if not (can_unbox_return_value st.fun_info g) then box y)
                 name_opt
-          | Branch cont | Poptrap cont ->
-              let pc', args = cont in
-              let b' = Addr.Map.find pc' p.blocks in
-              List.iter2
-                ~f:(fun param arg ->
-                  if Poly.equal (Var.Tbl.get types param) (Number (Float, Boxed))
-                  then box arg)
-                b'.params
-                args
-          | Cond (_, cont1, cont2) ->
-              let check_cont (pc', args) =
-                let b' = Addr.Map.find pc' p.blocks in
-                List.iter2
-                  ~f:(fun param arg ->
-                    if Poly.equal (Var.Tbl.get types param) (Number (Float, Boxed))
-                    then box arg)
-                  b'.params
-                  args
-              in
-              check_cont cont1;
-              check_cont cont2
-          | Switch (_, conts) ->
-              Array.iter
-                ~f:(fun (pc', args) ->
-                  let b' = Addr.Map.find pc' p.blocks in
-                  List.iter2
-                    ~f:(fun param arg ->
-                      if Poly.equal (Var.Tbl.get types param) (Number (Float, Boxed))
-                      then box arg)
-                    b'.params
-                    args)
-                conts
-          | Pushtrap (cont1, _, cont2) ->
-              let check_cont (pc', args) =
-                let b' = Addr.Map.find pc' p.blocks in
-                List.iter2
-                  ~f:(fun param arg ->
-                    if Poly.equal (Var.Tbl.get types param) (Number (Float, Boxed))
-                    then box arg)
-                  b'.params
-                  args
-              in
-              check_cont cont1;
-              check_cont cont2
+          | Branch cont | Poptrap cont -> if lazy_boxing then check_cont cont
+          | Cond (_, cont1, cont2) | Pushtrap (cont1, _, cont2) ->
+              if lazy_boxing
+              then (
+                check_cont cont1;
+                check_cont cont2)
+          | Switch (_, conts) -> if lazy_boxing then Array.iter ~f:check_cont conts
           | Raise _ | Stop -> ())
         pc
         p.blocks
         ())
-    ()
+    ();
+  let boxed_returns = Var.ISet.empty () in
+  if lazy_boxing
+  then (
+    let is_boxed x =
+      match Var.Tbl.get types x with
+      | Number (_, Boxed) -> true
+      | Number (_, Unboxed) | Top | Int _ | Tuple _ | Bigarray _ | Null | Bot -> false
+    in
+    let set_boxed x =
+      match Var.Tbl.get types x with
+      | Number (n, Unboxed) -> Var.Tbl.set types x (Number (n, Boxed))
+      | Number (_, Boxed) | Top | Int _ | Tuple _ | Bigarray _ | Null | Bot -> ()
+    in
+    (* A variable used boxed becomes boxed when one of the values it is
+       computed from is. These values are then used boxed. The variables
+       which remain unboxed are examined again whenever a variable becomes
+       boxed. *)
+    let changed = ref false in
+    let undecided y =
+      match Var.Tbl.get types y with
+      | Number (_, Unboxed) -> (
+          match st.global_flow_state.defs.(Var.idx y) with
+          | Phi { known; _ } ->
+              (not (Var.Set.exists is_boxed known))
+              ||
+              (set_boxed y;
+               changed := true;
+               Var.Set.iter box known;
+               false)
+          | Expr (Apply { f; _ }) -> (
+              match Global_flow.get_unique_closure st.global_flow_info ~call:y f with
+              | Some (g, _, false) when can_unbox_return_value st.fun_info g ->
+                  let s = Var.Map.find g st.global_flow_info.info_return_vals in
+                  Var.ISet.mem boxed_returns g
+                  || (not (Var.Set.exists is_boxed s))
+                  ||
+                  (Var.ISet.add boxed_returns g;
+                   changed := true;
+                   List.iter
+                     ~f:set_boxed
+                     (Var.Hashtbl.find_opt call_results g |> Option.value ~default:[]);
+                   Var.Set.iter box s;
+                   false)
+              | Some _ | None -> false)
+          | Expr _ -> false)
+      | Number (_, Boxed) | Top | Int _ | Tuple _ | Bigarray _ | Null | Bot -> false
+    in
+    let rec propagate l =
+      let l = List.rev_append !fresh_uses l in
+      fresh_uses := [];
+      changed := false;
+      let l = List.filter ~f:undecided l in
+      if !changed then propagate l
+    in
+    propagate [];
+    (* Boxing a constant is free (it is a static value), so constants used
+        boxed are boxed eagerly; this is done last, so that a boxed constant
+        does not force a phi to be boxed. *)
+    List.iter
+      ~f:(fun y ->
+        match Var.Tbl.get types y with
+        | Number (_, Unboxed) -> (
+            match st.global_flow_state.defs.(Var.idx y) with
+            | Expr (Constant _) -> set_boxed y
+            | Expr _ | Phi _ -> ())
+        | Number (_, Boxed) | Top | Int _ | Tuple _ | Bigarray _ | Null | Bot -> ())
+      !unboxed_uses);
+  boxed_returns
 
 let print_opt types global_flow_state f e =
   match e with
@@ -872,7 +950,7 @@ let f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinel p =
   in
   let types = solver st in
   Var.Tbl.set types deadcode_sentinel (Int Normalized);
-  box_numbers p st types;
+  let boxed_returns = box_numbers ~lazy_boxing:(Config.Flag.lcm ()) p st types in
   if times () then Format.eprintf "  type analysis: %a@." Timer.print t;
   if debug ()
   then (
@@ -907,10 +985,11 @@ let f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinel p =
           if can_unbox_return_value fun_info f
           then
             let s = Var.Map.find f global_flow_info.info_return_vals in
+            let t = Var.Set.fold (fun x t -> Domain.join (Var.Tbl.get types x) t) s Bot in
             Var.Hashtbl.replace
               return_types
               f
-              (Var.Set.fold (fun x t -> Domain.join (Var.Tbl.get types x) t) s Bot))
+              (if Var.ISet.mem boxed_returns f then Domain.box t else t))
         name_opt)
     ();
   { types; return_types; extra_types = Var.Hashtbl.create 128 }
@@ -942,7 +1021,5 @@ let set_var_type info x t =
 
 let return_type info f =
   Var.Hashtbl.find_opt info.return_types f |> Option.value ~default:Top
-
-let set_return_type info f t = Var.Hashtbl.replace info.return_types f t
 
 let join = Domain.join

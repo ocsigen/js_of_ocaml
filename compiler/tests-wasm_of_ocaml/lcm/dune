@@ -32,3 +32,11 @@
    (:standard --opt 2 -w no-missing-debug-event))
   (link_flags
    (:standard -w no-missing-debug-event))))
+
+(tests
+ (names constant_twin)
+ ; Not in JavaScript: js_of_ocaml fails on the integer addition applied to
+ ; a float constant
+ (modes wasm)
+ (wasm_of_ocaml
+  (flags :standard --opt 2)))

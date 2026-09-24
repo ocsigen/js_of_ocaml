@@ -23,7 +23,6 @@ val f :
   -> Typing.t
   -> in_cps:Effects.in_cps
   -> global_flow_info:Global_flow.info
-  -> fun_info:Call_graph_analysis.t
   -> program * Typing.t * Effects.in_cps * Global_flow.info
 (** Make the number conversions explicit and place them. The pass binds
     some calls to fresh variables: the set of CPS calls and the global flow
