@@ -32,6 +32,7 @@
       (func $caml_check_array_length (param i32)))
    (import "array" "caml_check_float_array_length"
       (func $caml_check_float_array_length (param i32)))
+   (import "fail" "caml_raise_out_of_memory" (func $caml_raise_out_of_memory))
    (import "custom" "caml_is_custom"
       (func $caml_is_custom (param (ref eq)) (result i32)))
    (import "custom" "caml_dup_custom"
@@ -155,6 +156,15 @@
          (if (i64.gt_u (local.get $n) (i64.const 0xfffffffe))
             (then (local.set $n (i64.const 0xfffffffe))))
          (i32.wrap_i64 (local.get $n)))
+
+      ;; The size of a block to allocate: as native, fail with Out_of_memory
+      ;; beyond [Max_wosize] rather than trapping
+      (func $block_size (param $v (ref eq)) (result i32)
+         (local $n i64)
+         (local.set $n (call $portable_int_val (local.get $v)))
+         (if (i64.gt_u (local.get $n) (i64.const 0xfffffff))
+            (then (call $caml_raise_out_of_memory)))
+         (i32.wrap_i64 (local.get $n)))
    ))
 
    (func (export "caml_obj_is_stack")
@@ -190,7 +200,7 @@
    (func (export "caml_alloc_dummy") (param $size (ref eq)) (result (ref eq))
       (local $sz i32)
       (@if $portable_int
-      (@then (local.set $sz (call $array_index_or_size (local.get $size))))
+      (@then (local.set $sz (call $block_size (local.get $size))))
       (@else
       (local.set $sz (i31.get_u (ref.cast (ref i31) (local.get $size))))
       ))
@@ -202,7 +212,7 @@
       (param $size (ref eq)) (result (ref eq))
       (local $sz i32)
       (@if $portable_int
-      (@then (local.set $sz (call $array_index_or_size (local.get $size))))
+      (@then (local.set $sz (call $block_size (local.get $size))))
       (@else
       (local.set $sz (i31.get_u (ref.cast (ref i31) (local.get $size))))
       ))
@@ -216,7 +226,7 @@
       (param $size (ref eq)) (param (ref eq)) (result (ref eq))
       (local $sz i32)
       (@if $portable_int
-      (@then (local.set $sz (call $array_index_or_size (local.get $size))))
+      (@then (local.set $sz (call $block_size (local.get $size))))
       (@else
       (local.set $sz (i31.get_u (ref.cast (ref i31) (local.get $size))))
       ))
@@ -376,7 +386,7 @@
       ;; TODO: fail for values that are not represented as an array
       (@if $portable_int
       (@then
-         (local.set $n (call $array_index_or_size (local.get $size))))
+         (local.set $n (call $block_size (local.get $size))))
       (@else
       (local.set $n (i31.get_s (ref.cast (ref i31) (local.get $size))))
       ))
