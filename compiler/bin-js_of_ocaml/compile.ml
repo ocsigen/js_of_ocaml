@@ -164,8 +164,8 @@ let run
     Option.map ~f:(fun spec -> spec.Source_map.Encoding_spec.source_map) source_map
   in
   let custom_header = common.Jsoo_cmdline.Arg.custom_header in
-  Config.set_target `JavaScript;
   Jsoo_cmdline.Arg.eval common;
+  Config.set_target `JavaScript;
   Config.set_effects_backend effects;
   Jsoo_cmdline.Build_config.process
     `JavaScript
