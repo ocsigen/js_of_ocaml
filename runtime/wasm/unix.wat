@@ -883,6 +883,32 @@
                (f64.convert_i64_s (i64.load offset=56 (local.get $p)))))))
 ))
 
+(@if $portable_int
+(@then
+   ;; Device and inode numbers, link counts and ids may not fit in 31 bits
+   (func (export "caml_alloc_stat")
+      (param $large i32)
+      (param $dev f64) (param $ino f64) (param $kind i32) (param $perm i32)
+      (param $nlink f64) (param $uid f64) (param $gid f64) (param $rdev f64)
+      (param $size i64) (param $atime f64) (param $mtime f64) (param $ctime f64)
+      (result (ref eq))
+      (array.new_fixed $block 13 (ref.i31 (i32.const 0))
+         (call $val_portable_int (i64.trunc_sat_f64_s (local.get $dev)))
+         (call $val_portable_int (i64.trunc_sat_f64_s (local.get $ino)))
+         (ref.i31 (local.get $kind))
+         (ref.i31 (local.get $perm))
+         (call $val_portable_int (i64.trunc_sat_f64_s (local.get $nlink)))
+         (call $val_portable_int (i64.trunc_sat_f64_s (local.get $uid)))
+         (call $val_portable_int (i64.trunc_sat_f64_s (local.get $gid)))
+         (call $val_portable_int (i64.trunc_sat_f64_s (local.get $rdev)))
+         (if (result (ref eq)) (local.get $large)
+            (then (call $caml_copy_int64 (local.get $size)))
+            (else (call $val_portable_int (local.get $size))))
+         (struct.new $float (local.get $atime))
+         (struct.new $float (local.get $mtime))
+         (struct.new $float (local.get $ctime))))
+)
+(@else
    (func (export "caml_alloc_stat")
       (param $large i32)
       (param $dev i32) (param $ino i32) (param $kind i32) (param $perm i32)
@@ -902,14 +928,11 @@
             (then
                (call $caml_copy_int64 (local.get $size)))
             (else
-               (@if $portable_int
-               (@then (call $val_portable_int (local.get $size)))
-               (@else
                (ref.i31 (i32.wrap_i64 (local.get $size)))))
-               ))
          (struct.new $float (local.get $atime))
          (struct.new $float (local.get $mtime))
          (struct.new $float (local.get $ctime))))
+))
 
 (@if $wasi
 (@then
@@ -1075,6 +1098,17 @@
       (ref.i31 (i32.const 0)))
 )
 (@else
+
+   ;; Permissions: as with [Int_val] followed by the kernel masking the
+   ;; mode, only the low bits matter
+   (func $perms_val (param $v (ref eq)) (result (ref eq))
+      (@if $portable_int
+      (@then
+         (ref.i31
+            (i32.and (call $portable_int_val_32 (local.get $v))
+               (i32.const 0xfff)))) ;; 0o7777
+      (@else (local.get $v))))
+
    (func (export "unix_chmod") (export "caml_unix_chmod")
       (param $path (ref eq)) (param $perms (ref eq)) (result (ref eq))
       (try
@@ -1082,7 +1116,7 @@
             (call $chmod
                (call $js_of_value
                   (call $caml_jsstring_of_string (local.get $path)))
-               (local.get $perms)))
+               (call $perms_val (local.get $perms))))
          (catch $javascript_exception
             (call $caml_unix_error (ref.null eq))))
       (ref.i31 (i32.const 0)))
@@ -1100,7 +1134,7 @@
       (param $fd (ref eq)) (param $perms (ref eq)) (result (ref eq))
       (try
          (do
-            (call $fchmod (local.get $fd) (local.get $perms)))
+            (call $fchmod (local.get $fd) (call $perms_val (local.get $perms))))
          (catch $javascript_exception
             (call $caml_unix_error (ref.null eq))))
       (ref.i31 (i32.const 0)))
@@ -1822,10 +1856,18 @@
       (result (ref eq))
       (try
          (do
+            (@if $portable_int
+            (@then
+               (call $truncate_64
+                  (call $js_of_value
+                     (call $caml_jsstring_of_string (local.get $path)))
+                  (f64.convert_i64_s (call $portable_int_val (local.get $len)))))
+            (@else
             (call $truncate
                (call $js_of_value
                   (call $caml_jsstring_of_string (local.get $path)))
                (local.get $len)))
+            ))
          (catch $javascript_exception
             (call $caml_unix_error (ref.null eq))))
       (ref.i31 (i32.const 0)))
@@ -1876,7 +1918,13 @@
       ;; ends up past the (now shorter) end of the file.
       (try
          (do
+            (@if $portable_int
+            (@then
+               (call $ftruncate_64 (local.get $fd)
+                  (f64.convert_i64_s (call $portable_int_val (local.get $vlen)))))
+            (@else
             (call $ftruncate (local.get $fd) (local.get $vlen)))
+            ))
          (catch $javascript_exception
             (call $caml_unix_error (ref.null eq))))
       (ref.i31 (i32.const 0)))
