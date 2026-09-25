@@ -350,9 +350,8 @@ module Generate (Target : Target_sig.S) = struct
         op_i32
           Arith.(transl_prim_arg ctx ~typ:(Int Small_unnormalized) x lsl const 1l)
           Arith.(transl_prim_arg ctx ~typ:(Int Small_unnormalized) y lsl const 1l)
-    | Int Large_unnormalized, Int Large_unnormalized
-    | Int Large_normalized, Int Large_unnormalized
-    | Int Large_unnormalized, Int Large_normalized ->
+    | Int Large_unnormalized, _ | _, Int Large_unnormalized ->
+        (* Shifting out the high bit is cheaper than normalizing *)
         op_i64
           Arith64.(transl_prim_arg ctx ~typ:(Int Large_unnormalized) x lsl const 1L)
           Arith64.(transl_prim_arg ctx ~typ:(Int Large_unnormalized) y lsl const 1L)
