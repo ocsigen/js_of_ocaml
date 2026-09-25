@@ -3211,11 +3211,37 @@ let init = G.init
 
 let start () = make_context ~value_type:Gc_target.Type.value
 
-let f ~context ~unit_name p ~live_vars ~in_cps ~deadcode_sentinel ~global_flow_data =
+let f
+    ~context
+    ~unit_name
+    ~profile
+    p
+    ~live_vars
+    ~in_cps
+    ~deadcode_sentinel
+    ~global_flow_data =
   let global_flow_state, global_flow_info = global_flow_data in
   let fun_info = Call_graph_analysis.f p global_flow_info in
+  (* The range analysis is too costly for [--opt 1], where the global flow
+     analysis is less precise anyway *)
+  let int_ranges =
+    if
+      Config.Flag.int_range ()
+      &&
+      match (profile : Profile.t) with
+      | O1 -> false
+      | O2 | O3 -> true
+    then Some (Int_range.f ~global_flow_state ~global_flow_info p)
+    else None
+  in
   let types =
-    Typing.f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinel p
+    Typing.f
+      ~global_flow_state
+      ~global_flow_info
+      ~fun_info
+      ~deadcode_sentinel
+      ~int_ranges
+      p
   in
   let p, types =
     if Config.Flag.lcm () then Lcm.f p types ~global_flow_info else p, types
@@ -3258,6 +3284,7 @@ let compile ~unit_name code =
     f
       ~context
       ~unit_name
+      ~profile:O1
       ~live_vars:variable_uses
       ~in_cps
       ~deadcode_sentinel

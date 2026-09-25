@@ -23,6 +23,7 @@ val start : unit -> Code_generation.context
 val f :
      context:Code_generation.context
   -> unit_name:string option
+  -> profile:Profile.t
   -> Code.program
   -> live_vars:int array
   -> in_cps:Effects.in_cps
