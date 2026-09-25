@@ -251,6 +251,14 @@ let update_deps st { blocks; _ } =
                       ( ( "%int_and"
                         | "%int_or"
                         | "%int_xor"
+                        | "%int_add"
+                        | "%int_sub"
+                        | "%int_mul"
+                        | "%direct_int_mul"
+                        | "%int_neg"
+                        | "%int_lsl"
+                        | "%int_div"
+                        | "%direct_int_div"
                         | "caml_ba_get_1"
                         | "caml_ba_get_2"
                         | "caml_ba_get_3"
@@ -313,6 +321,7 @@ type st =
   ; boxed_function_parameters : Var.ISet.t
   ; parameter_type_hints : typ Var.Hashtbl.t
   ; fun_info : Call_graph_analysis.t
+  ; int_ranges : Int_range.t option
   }
 
 let rec constant_type (c : constant) =
@@ -459,6 +468,36 @@ let propagate st approx x : Domain.t =
       | Prim (Array_get, _) -> Top
       | Prim ((Vectlength _ | Not | IsInt | Eq | Neq | Lt | Le | Ult), _) ->
           Int Normalized
+      | Prim
+          ( Extern
+              ( (( "%int_add"
+                 | "%int_sub"
+                 | "%int_mul"
+                 | "%direct_int_mul"
+                 | "%int_neg"
+                 | "%int_lsl"
+                 | "%int_div"
+                 | "%direct_int_div" ) as prim)
+              , hint )
+          , args ) -> (
+          (* The range analysis finds the operations which cannot overflow:
+             their result is normalized when their operands are, that is,
+             unless an operand is itself an unnormalized result. The
+             operands of a division are normalized anyway. *)
+          let t = prim_type ~st ~approx prim hint args in
+          match t, st.int_ranges with
+          | Int Unnormalized, Some r
+            when Int_range.cannot_overflow r x
+                 && ((match prim with
+                       | "%int_div" | "%direct_int_div" -> true
+                       | _ -> false)
+                    || List.for_all
+                         ~f:(fun a ->
+                           match arg_type ~approx a with
+                           | Int Unnormalized -> false
+                           | _ -> true)
+                         args) -> Int Normalized
+          | _ -> t)
       | Prim (Extern (prim, hint), args) -> prim_type ~st ~approx prim hint args
       | Special _ -> Top
       | Apply { f; args; _ } -> (
@@ -674,6 +713,10 @@ let f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinel p =
     ; boxed_function_parameters
     ; parameter_type_hints
     ; fun_info
+    ; int_ranges =
+        (if Config.Flag.int_range ()
+         then Some (Int_range.f ~global_flow_state ~global_flow_info p)
+         else None)
     }
   in
   let types = solver st in
