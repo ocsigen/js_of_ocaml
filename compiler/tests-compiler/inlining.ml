@@ -50,12 +50,12 @@ let%expect_test "inline small function exposing more tc" =
   [%expect
     {|
     function f(g, x){
-     var variant = x[1];
-     if(106380200 <= variant) return x;
-     var v = x[2], x$0 = caml_call1(g, v), variant$0 = x$0[1];
-     if(106380200 <= variant$0) return x$0;
-     var v$0 = x$0[2];
-     return v$0;
+     var variant$0 = x[1];
+     if(106380200 <= variant$0) return x;
+     var v$0 = x[2], x$0 = caml_call1(g, v$0), variant = x$0[1];
+     if(106380200 <= variant) return x$0;
+     var v = x$0[2];
+     return v;
     }
     //end
     not found
@@ -100,3 +100,21 @@ let%expect_test "function inlined both as an argument and directly" =
   print_endline
     (Str.global_replace (Str.regexp "[^ ]*js_of_ocaml\\.exe") "%{JSOO}" [%expect.output]);
   [%expect {| 012 |}]
+
+(* A function applied to itself: once its parameter is substituted by
+   the function, its body calls it again. Inlining this call must not
+   loop forever. *)
+let%expect_test "self application" =
+  let program =
+    compile_and_parse
+      {|
+    let delta (x : Obj.t) = (Obj.magic x : Obj.t -> Obj.t) x
+    let f () = delta (Obj.repr delta)
+  |}
+  in
+  print_fun_decl program (Some "f");
+  [%expect
+    {|
+           function f(param){return delta(delta);}
+           //end
+           |}]
