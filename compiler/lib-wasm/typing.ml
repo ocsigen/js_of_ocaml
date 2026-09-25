@@ -269,6 +269,13 @@ let update_deps st { blocks; _ } =
                       ( ( "%int_and"
                         | "%int_or"
                         | "%int_xor"
+                        | "%int_add"
+                        | "%int_sub"
+                        | "%int_mul"
+                        | "%direct_int_mul"
+                        | "%int_neg"
+                        | "%int_div"
+                        | "%direct_int_div"
                         | "caml_ba_get_1"
                         | "caml_ba_get_2"
                         | "caml_ba_get_3"
@@ -410,6 +417,29 @@ let prim_type ~st ~approx prim hint args =
           then Int Large_normalized
           else Int Large_unnormalized
       | _ -> Int Large_unnormalized)
+  | "%int_add"
+  | "%int_sub"
+  | "%int_mul"
+  | "%direct_int_mul"
+  | "%int_neg"
+  | "%int_div"
+  | "%direct_int_div"
+    when Config.Flag.portable_int () ->
+      (* These operations cannot overflow 63 bits when applied to 31-bit
+         integers. For a division, it is enough for the dividend to be a
+         31-bit integer. *)
+      let small t =
+        match t with
+        | Bot | Int (Small_normalized | Small_unnormalized) -> true
+        | _ -> false
+      in
+      let types = List.map ~f:(fun x -> arg_type ~approx x) args in
+      if
+        match prim, types with
+        | ("%int_div" | "%direct_int_div"), t :: _ -> small t
+        | _ -> List.for_all ~f:small types
+      then Int Large_normalized
+      else Int Large_unnormalized
   | "%int_and" -> (
       match List.map ~f:(fun x -> arg_type ~approx x) args with
       | [ (Bot | Int (Ref | Small_normalized)); _ ]
