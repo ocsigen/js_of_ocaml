@@ -25,6 +25,14 @@ let times = Debug.find "times"
 
 let count_conversions = Debug.find ~even_if_quiet:true "count-conversions"
 
+let count_conversion_sites = Debug.find ~even_if_quiet:true "count-conversion-sites"
+
+(* With [--debug count-conversion-sites], the function being translated and
+   the number of conversion sites so far, to name the counter of each site *)
+let current_function = ref ""
+
+let conversion_sites = ref 0
+
 let effects_cps () =
   match Config.effects () with
   | `Cps -> true
@@ -247,15 +255,36 @@ module Generate (Target : Target_sig.S) = struct
     | Pc c -> Typing.constant_type c
 
   (* With [--debug count-conversions], count the representation conversions
-     executed at run time, per kind. The counters are mutable globals
-     provided by the JavaScript runtime, which prints them on exit. *)
+     executed at run time, per kind. With [--debug count-conversion-sites],
+     also count them per site. The counters are mutable globals provided by
+     the JavaScript runtime, which prints them on exit. *)
   let counted kind e =
-    if count_conversions ()
-    then
-      let* g =
-        register_import ~name:("caml_count_" ^ kind) (Global { mut = true; typ = I64 })
-      in
-      seq (instr (W.GlobalSet (g, W.BinOp (I64 Add, W.GlobalGet g, W.Const (I64 1L))))) e
+    let count ?import_module name e =
+      let* e = e in
+      match e with
+      | W.RefI31 (Const _) | W.Const _ | W.GlobalGet _ ->
+          (* Converting a constant costs nothing *)
+          return e
+      | _ ->
+          let* g =
+            register_import ?import_module ~name (Global { mut = true; typ = I64 })
+          in
+          seq
+            (instr (W.GlobalSet (g, W.BinOp (I64 Add, W.GlobalGet g, W.Const (I64 1L)))))
+            (return e)
+    in
+    let e =
+      if count_conversions () || count_conversion_sites ()
+      then count ("caml_count_" ^ kind) e
+      else e
+    in
+    if count_conversion_sites ()
+    then (
+      incr conversion_sites;
+      count
+        ~import_module:"count"
+        (Printf.sprintf "%s %s #%d" kind !current_function !conversion_sites)
+        e)
     else e
 
   module Conv = struct
@@ -2630,6 +2659,18 @@ module Generate (Target : Target_sig.S) = struct
       ((pc, _) as cont)
       cloc
       acc =
+    if count_conversion_sites ()
+    then
+      current_function :=
+        Printf.sprintf
+          "%s%s"
+          (match name_opt with
+          | Some f -> Format.asprintf "%a" Var.print f
+          | None -> "toplevel")
+          (match cloc with
+          | Some { Parse_info.src = Some src; line; _ } ->
+              Printf.sprintf " (%s:%d)" src line
+          | Some _ | None -> "");
     let return_type =
       match name_opt with
       | Some f -> Typing.return_type ctx.types f

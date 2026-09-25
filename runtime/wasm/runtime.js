@@ -901,6 +901,22 @@
   ])
     conversion_counters[`caml_count_${kind}`] =
       new globalThis.WebAssembly.Global({ value: "i64", mutable: true }, 0n);
+  // Per-site counters, with [--debug count-conversion-sites], created on
+  // demand as the module imports them. The busiest sites are printed on exit.
+  const site_counters = {};
+  const site_counter_imports = new globalThis.Proxy(
+    {},
+    {
+      get(_, name) {
+        if (!(name in site_counters))
+          site_counters[name] = new globalThis.WebAssembly.Global(
+            { value: "i64", mutable: true },
+            0n,
+          );
+        return site_counters[name];
+      },
+    },
+  );
   if (isNode)
     globalThis.process.on("exit", () => {
       const counts = Object.entries(conversion_counters)
@@ -908,6 +924,17 @@
         .map(([name, g]) => `${name.slice(11)}=${g.value}`);
       if (counts.length)
         require("node:fs").writeSync(2, `conversions: ${counts.join(" ")}\n`);
+      const sites = Object.entries(site_counters)
+        .filter(([_, g]) => g.value !== 0n)
+        .sort(([_a, a], [_b, b]) =>
+          b.value > a.value ? 1 : b.value < a.value ? -1 : 0,
+        )
+        .slice(0, 40);
+      for (const [name, g] of sites)
+        require("node:fs").writeSync(
+          2,
+          `${String(g.value).padStart(14)} ${name}\n`,
+        );
     });
   const imports = Object.assign(
     {
@@ -926,6 +953,7 @@
         },
       ),
       env: {},
+      count: site_counter_imports,
     },
     generated,
   );
