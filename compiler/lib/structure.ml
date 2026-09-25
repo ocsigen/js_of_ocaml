@@ -77,7 +77,7 @@ let rec leave_try_body block_order preds blocks pc =
         leave_try_body block_order preds blocks pc'
     | _ -> true
 
-let build_graph blocks pc =
+let build_cfg ~limit_try_bodies blocks pc =
   let succs = Addr.Hashtbl.create 16 in
   let l = ref [] in
   let visited = Addr.Hashtbl.create 16 in
@@ -112,7 +112,7 @@ let build_graph blocks pc =
   List.iteri !l ~f:(fun i pc -> Addr.Hashtbl.add block_order pc i);
   let preds = reverse_graph succs in
   List.iter !poptraps ~f:(fun (enter_pc, leave_pc) ->
-      if leave_try_body block_order preds blocks leave_pc
+      if limit_try_bodies && leave_try_body block_order preds blocks leave_pc
       then (
         (* Add an edge to limit the [try] body *)
         Addr.Hashtbl.replace
@@ -286,9 +286,11 @@ let shrink_loops blocks ({ succs; preds; reverse_post_order; _ } as g) =
   traverse Addr.Set.empty root
 
 let build_graph blocks pc =
-  let g = build_graph blocks pc in
+  let g = build_cfg ~limit_try_bodies:true blocks pc in
   shrink_loops blocks g;
   g
+
+let control_flow_graph blocks pc = build_cfg ~limit_try_bodies:false blocks pc
 
 (* Ensure that all loops have a predecessor block. Function
    shrink_loops assumes this. *)

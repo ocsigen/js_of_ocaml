@@ -276,7 +276,8 @@ let program_deps st { start; blocks; _ } =
           | Array_set (x, _, y) ->
               possibly_mutable st x;
               do_escape st Escape y
-          | Event _ | Offset_ref _ -> ());
+          | Offset_ref (x, _) -> field_possibly_mutable st x 0
+          | Event _ -> ());
       match block.branch with
       | Return _ | Stop -> ()
       | Raise (x, _) -> do_escape st Escape x
