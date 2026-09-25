@@ -1,6 +1,8 @@
 # dev
 
 ## Features/Changes
+* Compiler: statically evaluate calls to known pure functions whose arguments
+  are all constants (#2153)
 * Compiler: with `--effects={cps,double-translation}`, specialize calls to
   known functions using the global flow analysis before the CPS transformation
   (#2456)
