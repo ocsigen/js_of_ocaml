@@ -376,6 +376,14 @@ module Hints = struct
         | _ -> false)
       (Int.Hashtbl.find_all t.hints pc)
 
+  let find_variant t pc =
+    List.exists
+      ~f:(fun (h : Optimization_hint.t) ->
+        match h with
+        | Hint_variant -> true
+        | _ -> false)
+      (Int.Hashtbl.find_all t.hints pc)
+
   (* The kind of the value read by the instruction at [pc] *)
   let field_type t pc : Code.field_type =
     if find_immediate t pc then Immediate else Non_float
@@ -2009,7 +2017,11 @@ and compile infos pc state (instrs : instr list) =
                   !compiled_blocks
             in
             let isint_var = Var.fresh () in
-            let instrs = Let (isint_var, Prim (IsInt, [ Pv x ])) :: instrs in
+            (* A switch on both constant and non-constant constructors
+               is a match on a value of a variant type *)
+            let instrs =
+              Let (isint_var, Prim (IsInt { variant_only = true }, [ Pv x ])) :: instrs
+            in
             instrs, Cond (isint_var, (isint_branch, []), (isblock_branch, [])), state)
     | BOOLNOT ->
         let y = State.accu state in
@@ -2588,7 +2600,12 @@ and compile infos pc state (instrs : instr list) =
         let x, state = State.fresh_var state in
 
         if debug_parser () then Format.printf "%a = !%a@." Var.print x Var.print y;
-        compile infos (pc + 1) state (Let (x, Prim (IsInt, [ Pv y ])) :: instrs)
+        let variant_only = Hints.find_variant infos.hints pc in
+        compile
+          infos
+          (pc + 1)
+          state
+          (Let (x, Prim (IsInt { variant_only }, [ Pv y ])) :: instrs)
     | BEQ ->
         let n = gets32 code (pc + 1) in
         let offset = gets code (pc + 2) in

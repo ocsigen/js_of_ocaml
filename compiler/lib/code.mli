@@ -124,7 +124,9 @@ type prim =
   | Array_get of field_type  (** [Non_float] or [Immediate], never [Float] *)
   | Extern of string * Optimization_hint.ccall option
   | Not
-  | IsInt
+  | IsInt of { variant_only : bool }
+      (** [variant_only]: the argument is a value of a variant type, whose
+          immediates are constant constructors *)
   | Eq
   | Neq
   | Lt
