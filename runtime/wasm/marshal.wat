@@ -703,6 +703,9 @@
           (call $register_object (local.get $s) (local.get $v))
           (br $done))
          ;; read_block
+         ;; The size comes from a 32-bit header, so it is less than 2^22:
+         ;; no need to check it against the maximal array length (see
+         ;; array.wat), unlike the length of a float array ($readfloats)
          (local.set $b
             (array.new $block (ref.i31 (i32.const 0))
                (i32.add (local.get $size) (i32.const 1))))

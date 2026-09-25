@@ -851,7 +851,9 @@ module Generate (Target : Target_sig.S) = struct
     register_arith_bin_prim "%int_and" `Pure ~typ:int_u Value.int_and;
     register_arith_bin_prim "%int_xor" `Pure ~typ:int_u Value.int_xor;
     register_arith_bin_prim "%int_lsl" `Pure ~typ:int_u Value.int_lsl;
-    register_bin_prim "%int_lsr" `Pure ~tx:int_u ~ty:int_u ~ret_typ:int_n Value.int_lsr;
+    (* The type analysis refines the type of the result (see
+       [Typing.prim_type]) *)
+    register_bin_prim "%int_lsr" `Pure ~tx:int_u ~ty:int_u ~ret_typ:int_u Value.int_lsr;
     register_bin_prim "%int_asr" `Pure ~tx:int_n ~ty:int_u ~ret_typ:int_n Value.int_asr;
     register_un_prim "%direct_obj_tag" `Pure ~ret_typ:(Int Ref) Memory.tag;
     register_bin_prim_ctx "caml_check_bound" ~ty:int_n (fun context x y ->
@@ -3412,8 +3414,26 @@ let f
     ~global_flow_data =
   let global_flow_state, global_flow_info = global_flow_data in
   let fun_info = Call_graph_analysis.f p global_flow_info in
+  (* The range analysis is too costly for [--opt 1], where the global flow
+     analysis is less precise anyway *)
+  let int_ranges =
+    if
+      Config.Flag.int_range ()
+      &&
+      match (profile : Profile.t) with
+      | O1 -> false
+      | O2 | O3 -> true
+    then Some (Int_range.f ~global_flow_state ~global_flow_info p)
+    else None
+  in
   let types =
-    Typing.f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinel p
+    Typing.f
+      ~global_flow_state
+      ~global_flow_info
+      ~fun_info
+      ~deadcode_sentinel
+      ~int_ranges
+      p
   in
   let raising_funcs =
     Call_graph_analysis.raising_functions

@@ -116,6 +116,20 @@ val called_version : info -> call:Var.t -> Var.t -> Var.t * bool
     calls its CPS version. A CPS call to a function without CPS version calls
     its direct-style version and passes the result to the continuation. *)
 
+val call_results :
+     state
+  -> info
+  -> call:Var.t
+  -> Var.t
+  -> nargs:int
+  -> (Var.t * Var.t list * Var.Set.t) list option
+(** The functions possibly called at call site [call] through [f] with
+    [nargs] arguments, when the call returns the result of one of them: the
+    version called (see [called_version]), with its parameters and the
+    variables holding its return values. [None] if the result of the call is
+    unknown: the functions are not all known, one of them is not applied to
+    exactly its parameters, or its result is passed to a continuation. *)
+
 val get_unique_closure : info -> call:Var.t -> Var.t -> (Var.t * Var.t list * bool) option
 (** The function called at call site [call] through [f], if it is statically
     known, with its parameters, and whether the last argument of the call is a
