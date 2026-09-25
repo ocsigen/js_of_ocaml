@@ -710,6 +710,47 @@
 
    (@if $portable-int
    (@then
+      ;; As the native runtime, use 32-bit elements when all values fit, so
+      ;; that the data can be read back by 32-bit runtimes
+      (func $serialize_longarray
+         (param $s (ref eq)) (param $view (ref extern)) (param $n i32)
+         (local $i i32) (local $len i32) (local $l i64)
+         (local.set $len (i32.shl (local.get $n) (i32.const 3)))
+         (block $overflow
+            (loop $loop
+               (if (i32.lt_u (local.get $i) (local.get $len))
+                  (then
+                     (local.set $l
+                        (call $dv_get_i64 (local.get $view) (local.get $i)
+                           (global.get $littleEndian)))
+                     (br_if $overflow
+                        (i64.ne (local.get $l)
+                           (i64.extend_i32_s (i32.wrap_i64 (local.get $l)))))
+                     (local.set $i (i32.add (local.get $i) (i32.const 8)))
+                     (br $loop))))
+            (call $caml_serialize_int_1 (local.get $s) (i32.const 0))
+            (local.set $i (i32.const 0))
+            (loop $loop
+               (if (i32.lt_u (local.get $i) (local.get $len))
+                  (then
+                     (call $caml_serialize_int_4 (local.get $s)
+                        (i32.wrap_i64
+                           (call $dv_get_i64 (local.get $view) (local.get $i)
+                              (global.get $littleEndian))))
+                     (local.set $i (i32.add (local.get $i) (i32.const 8)))
+                     (br $loop))))
+            (return))
+         (call $caml_serialize_int_1 (local.get $s) (i32.const 1))
+         (local.set $i (i32.const 0))
+         (loop $loop
+            (if (i32.lt_u (local.get $i) (local.get $len))
+               (then
+                  (call $caml_serialize_int_8 (local.get $s)
+                     (call $dv_get_i64 (local.get $view) (local.get $i)
+                        (global.get $littleEndian)))
+                  (local.set $i (i32.add (local.get $i) (i32.const 8)))
+                  (br $loop)))))
+
       (func $caml_ba_fill_i64 (param $ba (ref $bigarray)) (param $l i64)
          (local $view (ref extern)) (local $i i32) (local $len i32)
          (local.set $view (struct.get $bigarray $ba_view (local.get $ba)))
@@ -1099,35 +1140,9 @@
            (br $done))
            (@if $portable-int
            (@then
-             ;; nativeint
-             (if (i32.eq (struct.get_u $bigarray $ba_kind (local.get $b))
-                    (i32.const 9))
-                (then
-                   (call $caml_serialize_int_1 (local.get $s) (i32.const 1))
-                   (local.set $len (i32.shl (local.get $len) (i32.const 3)))
-                   (loop $loop
-                      (if (i32.lt_u (local.get $i) (local.get $len))
-                         (then
-                            (call $caml_serialize_int_8 (local.get $s)
-                               (call $dv_get_i64 (local.get $view) (local.get $i)
-                                  (global.get $littleEndian)))
-                            (local.set $i (i32.add (local.get $i) (i32.const 8)))
-                            (br $loop))))
-                   (br $done)))))
-          ;; int
-          (@if $portable-int
-           (@then
-             ;; int: portable
-             (call $caml_serialize_int_1 (local.get $s) (i32.const 1))
-             (local.set $len (i32.shl (local.get $len) (i32.const 3)))
-             (loop $loop
-                (if (i32.lt_u (local.get $i) (local.get $len))
-                   (then
-                      (call $caml_serialize_int_8 (local.get $s)
-                         (call $dv_get_i64 (local.get $view) (local.get $i)
-                            (global.get $littleEndian)))
-                      (local.set $i (i32.add (local.get $i) (i32.const 8)))
-                      (br $loop))))
+             ;; int and nativeint
+             (call $serialize_longarray
+                (local.get $s) (local.get $view) (local.get $len))
              (br $done)))
           ;; int
           (call $caml_serialize_int_1 (local.get $s) (i32.const 0)))
