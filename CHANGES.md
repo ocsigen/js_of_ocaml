@@ -106,6 +106,12 @@
   of the functions that may run below an effect handler (#2441)
 
 ## Bug fixes
+* Compiler: keep the parentheses around an optional chain in JavaScript code
+  (runtime files, `jsoo_minify`): `(a?.b).c` was printed as `a?.b.c`, which
+  is undefined rather than raising an exception when `a` is null, and
+  `` (a?.b)`t` `` and `new (a?.b)()` were printed without their parentheses,
+  which is a syntax error. Reject a template literal in an optional chain
+  (`` a?.b`t` ``), as the grammar requires
 * Compiler: with `--effects=double-translation`, fix calls with too many
   arguments to a function that does not perform effects (#2455)
 * Runtime/Wasm: with `--effects=native`, performing an effect that no

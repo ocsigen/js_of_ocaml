@@ -374,9 +374,15 @@ and template_part =
   | TStr of Utf8_string.t
   | TExp of expression
 
+(* An optional chain is an access [?.] followed by other accesses: when
+   [a] is null or undefined, the whole chain [a?.b.c] is undefined. The
+   chain does not extend through parentheses: [(a?.b).c] raises an
+   exception. Both are [EDot (EDot (a, ANullish, b), _, c)], with the kind
+   of the outer access telling them apart. *)
 and access_kind =
-  | ANormal
-  | ANullish
+  | ANormal (* [a.b]: not part of an optional chain *)
+  | ANullish (* [a?.b] *)
+  | AChain (* [.c] in [a?.b.c]: part of the optional chain of its object *)
 
 (****)
 
@@ -638,6 +644,18 @@ module IdentMap = Map.Make (struct
 
   let compare = compare_ident
 end)
+
+let rec is_optional_chain e =
+  match e with
+  | ECall (e, kind, _, _)
+  | EAccess (e, kind, _)
+  | EDot (e, kind, _)
+  | EDotPrivate (e, kind, _) -> (
+      match kind with
+      | ANullish -> true
+      | AChain -> is_optional_chain e
+      | ANormal -> false)
+  | _ -> false
 
 let dot e l = EDot (e, ANormal, l)
 

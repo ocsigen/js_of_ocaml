@@ -625,19 +625,17 @@ optionalChain:
     { fun e -> EDotPrivate(e, ANullish, i) }
   (* OptionalChain Arguments *)
   | c=optionalChain a=arguments
-    { fun e -> ECall(c e, ANormal, a, p $symbolstartpos) }
+    { fun e -> ECall(c e, AChain, a, p $symbolstartpos) }
   (* OptionalChain [ Expression ] *)
   | c=optionalChain "[" e2=expression(in_allowed) "]"
-    { fun e -> EAccess(c e, ANormal, e2) }
+    { fun e -> EAccess(c e, AChain, e2) }
   (* OptionalChain . IdentifierName *)
   | c=optionalChain "." i=fieldName
-    { fun e -> EDot(c e, ANormal, i) }
-  (* OptionalChain TemplateLiteral *)
-  | c=optionalChain t=templateLiteral
-    { fun e -> ECallTemplate(c e, t, p $symbolstartpos) }
+    { fun e -> EDot(c e, AChain, i) }
+  (* OptionalChain TemplateLiteral is a syntax error *)
   (* OptionalChain . PrivateIdentifier *)
   | c=optionalChain "." i=privateIdentifier
-    { fun e -> EDotPrivate(c e, ANormal, i) }
+    { fun e -> EDotPrivate(c e, AChain, i) }
 
 (*----------------------------*)
 (* 13.4 Update Expressions *)
