@@ -37,6 +37,13 @@ let raises f =
   | _ -> false
   | exception Exit -> true
 
+(* [x] is untagged on every path from the entry, but after a call which
+   may raise: it must not be passed untagged *)
+let g : type a. a w -> a -> int -> int =
+ fun w x k ->
+  let Refl = check_int w in
+  x + k
+
 (* The loop header is the entry of the function: [y] must not be untagged
    once in the entry, before the call *)
 let rec loop : type a. a w -> a -> int -> int =
@@ -51,7 +58,9 @@ let loop w = loop w
 
 (* The untagging of [x] follows a primitive which raises when [x] is not
    an integer: it must not be moved before the primitive, although it is
-   performed on both branches and used after them. *)
+   performed on both branches and used after them. ([x] is read from a
+   reference rather than passed as a parameter, so that it is not passed
+   untagged.) *)
 let cell = ref (Obj.repr 0)
 
 let conv s b =
@@ -70,6 +79,8 @@ let conv x s b =
   conv s b
 
 let () =
+  assert (g I 5 (Sys.opaque_identity 1) = 6);
+  assert (raises (fun () -> g S (Sys.opaque_identity "abc") 1));
   assert (loop I 1 (Sys.opaque_identity 3) = 5);
   assert (raises (fun () -> loop S "x" (Sys.opaque_identity 3)));
   assert (conv (Obj.repr 5) "1" true = 11);
