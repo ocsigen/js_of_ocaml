@@ -34,6 +34,12 @@
    (:standard -w no-missing-debug-event))))
 
 (tests
+ (names guarded_untag)
+ (modes js wasm)
+ (wasm_of_ocaml
+  (flags :standard --opt 2)))
+
+(tests
  (names constant_twin)
  ; Not in JavaScript: js_of_ocaml fails on the integer addition applied to
  ; a float constant

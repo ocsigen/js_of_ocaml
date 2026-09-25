@@ -27,3 +27,7 @@ val f :
 (** Make the number conversions explicit and place them. The pass binds
     some calls to fresh variables: the set of CPS calls and the global flow
     information are updated accordingly. *)
+
+val guarded_untag : Var.t -> bool
+(** Whether the untaggings of this variable must not fail, as they may be
+    executed speculatively *)
