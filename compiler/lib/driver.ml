@@ -218,15 +218,15 @@ let rec loop max name round i (p : 'a) : 'a =
   let debug = times () || stats () in
   if debug then Format.eprintf "%s#%d...@." name i;
   let p', only_deadcode = round p in
-  if i >= max
-  then (
-    if debug then Format.eprintf "%s#%d: couldn't reach fix point.@." name i;
-    p')
-  else if only_deadcode
+  if only_deadcode
   then (
     (* Removing dead code rarely enables further optimizations, and
        dead code is removed again after the optimization loop. *)
     if debug then Format.eprintf "%s#%d: fix-point reached (dead code only).@." name i;
+    p')
+  else if i >= max
+  then (
+    if debug then Format.eprintf "%s#%d: couldn't reach fix point.@." name i;
     p')
   else loop max name round (i + 1) p'
 
@@ -250,7 +250,7 @@ let o1 =
 
 (* o2 *)
 
-let o2 = loop 10 "round" (round Profile.O2) 1 +> print
+let o2 = loop 5 "round" (round Profile.O2) 1 +> print
 
 (* o3 *)
 
