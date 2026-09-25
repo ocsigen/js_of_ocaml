@@ -47,6 +47,17 @@
   (binaries
    (tools/node_wrapper.exe as node)
    (tools/node_wrapper.exe as node.exe)))
+ (with-portable-int
+  (js_of_ocaml
+   ;; Portable ints are not supported in js
+   (enabled_if false))
+  (wasm_of_ocaml
+   (compilation_mode separate)
+   (flags
+    (:standard --effects jspi --enable portable-int)))
+  (binaries
+   (tools/node_wrapper.exe as node)
+   (tools/node_wrapper.exe as node.exe)))
  (wasi
   (wasm_of_ocaml
    (flags

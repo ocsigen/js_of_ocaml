@@ -22,6 +22,9 @@ make tests
 # Run WebAssembly tests
 make tests-wasm
 
+# Run WebAssembly tests with 63-bit integers (--enable portable-int)
+make tests-wasm-portable-int
+
 # Format OCaml code
 make fmt
 
