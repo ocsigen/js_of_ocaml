@@ -38,6 +38,8 @@ module Flag : sig
 
   val clone_higher_order : unit -> bool
 
+  val int_range : unit -> bool
+
   val share_constant : unit -> bool
 
   val staticeval : unit -> bool
