@@ -612,7 +612,7 @@ module Print = struct
     | Int i -> Format.fprintf f "%s" (Targetint.to_string i)
     | Int32 i -> Format.fprintf f "%ldl" i
     | Int64 i -> Format.fprintf f "%LdL" i
-    | NativeInt i -> Format.fprintf f "%s" (Targetnativeint.to_string i)
+    | NativeInt i -> Format.fprintf f "%sn" (Targetnativeint.to_string i)
     | Tuple (tag, a, _, desc) -> (
         Format.fprintf f "<%d>" tag;
         if not (Block_desc.is_none desc) then Format.fprintf f "#%a" Block_desc.print desc;
