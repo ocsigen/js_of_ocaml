@@ -24,7 +24,7 @@
    (:standard -w no-missing-debug-event))))
 
 (tests
- (names guarded_untag)
+ (names guarded_untag untagged_param)
  (modes js wasm)
  (wasm_of_ocaml
   (flags :standard --opt 2)))

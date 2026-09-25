@@ -991,6 +991,150 @@ type t =
   ; extra_types : typ Var.Hashtbl.t
   }
 
+(* A parameter of unknown type which a function untags on every path from
+   its entry, and does not use otherwise, can be passed untagged: the
+   callers then perform the untagging, and can share it between several
+   calls with the same argument. This does not make the untagging fail on
+   more executions, since it is performed at each call anyway. This is only
+   possible when all the call sites of the function are known. *)
+let untagged_parameters ~fun_info p types =
+  let is_candidate x =
+    match Var.Tbl.get types x with
+    | Top | Int Ref -> true
+    | Int (Small_normalized | Small_unnormalized | Large_normalized | Large_unnormalized)
+    | Number _ | Tuple _ | Bigarray _ | Null | Bot -> false
+  in
+  (* Where each candidate is used untagged, and the candidates used
+     otherwise *)
+  let int_uses = Var.Hashtbl.create 16 in
+  let other_uses = Var.Hashtbl.create 16 in
+  let int_args i =
+    let vars args =
+      List.filter_map
+        ~f:(fun a ->
+          match a with
+          | Pv y -> Some y
+          | Pc _ -> None)
+        args
+    in
+    match i with
+    | Let (_, Prim ((Lt | Le | Ult), args)) -> vars args
+    | Let
+        ( _
+        , Prim
+            ( Extern
+                ( ( "%int_add"
+                  | "%int_sub"
+                  | "%int_mul"
+                  | "%direct_int_mul"
+                  | "%int_neg"
+                  | "%int_div"
+                  | "%direct_int_div"
+                  | "%int_mod"
+                  | "%direct_int_mod"
+                  | "%int_and"
+                  | "%int_or"
+                  | "%int_xor"
+                  | "%int_lsl"
+                  | "%int_lsr"
+                  | "%int_asr" )
+                , _ )
+            , args ) ) -> vars args
+    | Let (_, Prim ((Array_get _ | Extern ("caml_array_unsafe_get", _)), [ _; Pv y ])) ->
+        [ y ]
+    | Let
+        ( _
+        , Prim
+            ( Extern
+                ( ("caml_check_bound" | "caml_check_bound_gen" | "caml_check_bound_float")
+                , _ )
+            , [ _; Pv y ] ) ) -> [ y ]
+    | _ -> []
+  in
+  Addr.Map.iter
+    (fun pc block ->
+      List.iter
+        ~f:(fun i ->
+          let l = int_args i in
+          Freevars.iter_instr_free_vars
+            (fun y ->
+              if List.mem ~eq:Var.equal y l
+              then
+                Var.Hashtbl.replace
+                  int_uses
+                  y
+                  (Addr.Set.add
+                     pc
+                     (Var.Hashtbl.find_opt int_uses y
+                     |> Option.value ~default:Addr.Set.empty))
+              else Var.Hashtbl.replace other_uses y ())
+            i)
+        block.body;
+      Freevars.iter_last_free_var
+        (fun y -> Var.Hashtbl.replace other_uses y ())
+        block.branch)
+    p.blocks;
+  Code.fold_closures
+    p
+    (fun name_opt params (pc, _) _ () ->
+      match name_opt with
+      | Some f when can_unbox_parameters fun_info f ->
+          List.iter
+            ~f:(fun x ->
+              if is_candidate x && not (Var.Hashtbl.mem other_uses x)
+              then
+                match Var.Hashtbl.find_opt int_uses x with
+                | None -> ()
+                | Some used ->
+                    (* The blocks of the function, and whether every path
+                       from them reaches a use of [x] (greatest fixpoint) *)
+                    let blocks =
+                      Code.traverse
+                        { fold = Code.fold_children }
+                        (fun pc s -> Addr.Set.add pc s)
+                        pc
+                        p.blocks
+                        Addr.Set.empty
+                    in
+                    if Addr.Set.subset used blocks
+                    then (
+                      let reaches = Addr.Hashtbl.create 16 in
+                      Addr.Set.iter
+                        (fun pc -> Addr.Hashtbl.replace reaches pc true)
+                        blocks;
+                      let changed = ref true in
+                      while !changed do
+                        changed := false;
+                        Addr.Set.iter
+                          (fun pc ->
+                            if Addr.Hashtbl.find reaches pc && not (Addr.Set.mem pc used)
+                            then
+                              let succs =
+                                Code.fold_children p.blocks pc (fun pc' l -> pc' :: l) []
+                              in
+                              if
+                                List.is_empty succs
+                                || List.exists
+                                     ~f:(fun pc' -> not (Addr.Hashtbl.find reaches pc'))
+                                     succs
+                              then (
+                                Addr.Hashtbl.replace reaches pc false;
+                                changed := true))
+                          blocks
+                      done;
+                      if Addr.Hashtbl.find reaches pc
+                      then
+                        Var.Tbl.set
+                          types
+                          x
+                          (Int
+                             (if Config.Flag.portable_int ()
+                              then Large_normalized
+                              else Small_normalized))))
+            params
+      | Some _ | None -> ())
+    ()
+
 let f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinel p =
   let t = Timer.make () in
   update_deps global_flow_state p;
@@ -1010,6 +1154,7 @@ let f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinel p =
   in
   let types = solver st in
   Var.Tbl.set types deadcode_sentinel (Int Small_normalized);
+  untagged_parameters ~fun_info p types;
   let boxed_returns = box_numbers ~lazy_boxing:(Config.Flag.lcm ()) p st types in
   if times () then Format.eprintf "  type analysis: %a@." Timer.print t;
   if debug ()
