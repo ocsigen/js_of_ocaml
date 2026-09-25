@@ -546,7 +546,11 @@ let build_cfg stmts candidates param_vars =
           in
           visit_stmt context exit inner_stmt
     | Empty_statement | Debugger_statement -> exit
-    | Function_declaration (_, _) | Class_declaration (_, _) -> exit
+    | Function_declaration (_, _) -> exit
+    | Class_declaration (_, cl) ->
+        (* Heritage, computed keys and decorators are evaluated here. Other
+           reads are captured. *)
+        add_node (Use (expr_use (EClass (None, cl)))) [ exit ]
     | With_statement (e, (body, _)) ->
         let body_entry = visit_stmt context exit body in
         let u, _ = expr_use_def e in
