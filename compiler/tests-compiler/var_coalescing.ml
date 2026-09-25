@@ -325,6 +325,133 @@ let%expect_test "captured variable exclusion — runtime correctness" =
 |};
   [%expect {| 23 |}]
 
+(* Class field initialisers run in their own scope: the variables they
+   reference are captured. *)
+let%expect_test "class field initialisers capture variables" =
+  test
+    {|
+(function(x) {
+  var a = x + 1;
+  var s = x + 2;
+  class C { y = a; static z = s; }
+  var b = x + 3;
+  console.log(new C().y + C.z + b);
+})(10)
+|};
+  [%expect
+    {|
+    (function(b){
+       var a = b + 1, a = b + 2;
+       class C{y = a;static z = a;}
+       b += 3;
+       console.log(new C().y + C.z + b);
+      }
+      (10));
+    |}]
+
+let%expect_test "class field initialisers capture variables — runtime correctness" =
+  test_run
+    {|
+(function(x) {
+  var a = x + 1;
+  var s = x + 2;
+  class C { y = a; static z = s; }
+  var b = x + 3;
+  console.log(new C().y + C.z + b);
+})(10)
+|};
+  [%expect {| 37 |}]
+
+(* The heritage, computed keys and decorators of a class are evaluated at
+   definition time. *)
+let%expect_test "class definition-time uses — declaration" =
+  test
+    {|
+(function(x) {
+  var base = x.base;
+  var key = x.key;
+  var fkey = x.fkey;
+  var t = x.n + 1;
+  console.log(t);
+  class C extends base { [key]() { return 1; } static [fkey] = 2; }
+  console.log(new C()[x.key]() + C[x.fkey] + new C().tag);
+})({ base: class { tag = "b" }, key: "m", fkey: "f", n: 1 })
+|};
+  [%expect
+    {|
+    (function(x){
+       var a = x.base, a = x.key, a = x.fkey, a = x.n + 1;
+       console.log(a);
+       class C extends a {[a](){return 1;}static [a] = 2;}
+       console.log(new C()[x.key]() + C[x.fkey] + new C().tag);
+      }
+      ({base: class{tag = "b";}, key: "m", fkey: "f", n: 1}));
+    |}]
+
+let%expect_test "class definition-time uses — declaration, runtime correctness" =
+  test_run
+    {|
+try {
+(function(x) {
+  var base = x.base;
+  var key = x.key;
+  var fkey = x.fkey;
+  var t = x.n + 1;
+  console.log(t);
+  class C extends base { [key]() { return 1; } static [fkey] = 2; }
+  console.log(new C()[x.key]() + C[x.fkey] + new C().tag);
+})({ base: class { tag = "b" }, key: "m", fkey: "f", n: 1 });
+} catch (e) { console.log(e.message); }
+|};
+  [%expect {|
+    2
+    Class extends value 2 is not a constructor or null
+    |}]
+
+let%expect_test "class definition-time uses — expression, runtime correctness" =
+  test_run
+    {|
+try {
+(function(x) {
+  var base = x.base;
+  var key = x.key;
+  var fkey = x.fkey;
+  var t = x.n + 1;
+  console.log(t);
+  var C = class extends base { [key]() { return 1; } static [fkey] = 2; };
+  console.log(new C()[x.key]() + C[x.fkey] + new C().tag);
+})({ base: class { tag = "b" }, key: "m", fkey: "f", n: 1 });
+} catch (e) { console.log(e.message); }
+|};
+  [%expect {|
+    2
+    3b
+    |}]
+
+(* No runtime test: Node does not support decorators. *)
+let%expect_test "class definition-time uses — decorators" =
+  test
+    {|
+(function(x) {
+  var d = x.d;
+  var e = x.e;
+  var t = x.n + 1;
+  console.log(t);
+  @d class C { @e m() {} }
+  console.log(C);
+})(0)
+|};
+  [%expect
+    {|
+    (function(a){
+       var b = a.d, b = a.e, a = a.n + 1;
+       console.log(a);
+       @b class C{@b m(){}}
+       console.log(C);
+      }
+      (0));
+    |}]
+
 let%expect_test "coalescing enabled vs disabled" =
   let prog =
     {|
