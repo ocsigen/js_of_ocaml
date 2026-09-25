@@ -578,7 +578,7 @@ let may_raise i =
             ( ( Vectlength _
               | Array_get _
               | Not
-              | IsInt
+              | IsInt _
               | Eq
               | Neq
               | Lt
@@ -659,7 +659,7 @@ let propagate st approx x : Domain.t =
                 known
           | Top -> Top)
       | Prim (Array_get _, _) -> Top
-      | Prim ((Vectlength _ | Not | IsInt | Eq | Neq | Lt | Le | Ult), _) ->
+      | Prim ((Vectlength _ | Not | IsInt _ | Eq | Neq | Lt | Le | Ult), _) ->
           Int Small_normalized
       | Prim (Wasm_conversion c, _) -> conversion_type c
       | Prim (Extern (prim, hint), args) -> prim_type ~st ~approx prim hint args
@@ -894,7 +894,7 @@ let box_numbers ~lazy_boxing p st types =
                           | Pc _ -> ())
                         args
                   | Prim
-                      ( ( Vectlength _ | Array_get _ | Not | IsInt | Lt | Le | Ult
+                      ( ( Vectlength _ | Array_get _ | Not | IsInt _ | Lt | Le | Ult
                         | Wasm_conversion
                             ( Box_i32
                             | Box_i64

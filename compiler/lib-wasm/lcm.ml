@@ -502,7 +502,7 @@ let lower_conversions
         | Wasm_conversion ((Unbox_f64 | Unbox_i32 | Unbox_i64) as kind) ->
             type_of_kind kind
         | Wasm_conversion Untag_int
-        | Lt | Le | Ult | IsInt | Eq | Neq | Not | Vectlength _ ->
+        | Lt | Le | Ult | IsInt _ | Eq | Neq | Not | Vectlength _ ->
             Typing.Int Typing.Integer.Small_normalized
         | Wasm_conversion Untag_large_int -> Typing.Int Typing.Integer.Large_normalized
         | Extern (nm, _) ->

@@ -102,6 +102,9 @@ type t =
   | Hint_closures of closure_hint list
   | Hint_ccall of ccall
   | Hint_immediate  (** The value produced by the instruction is an immediate *)
+  | Hint_variant
+      (** The argument of the instruction is a value of a variant type: if it
+          is an immediate, it is a constant constructor *)
 
 val print_ccall : Format.formatter -> ccall -> unit
 

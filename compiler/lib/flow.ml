@@ -225,7 +225,7 @@ let expr_escape st _x e =
       ( ( Vectlength _
         | Array_get _
         | Not
-        | IsInt
+        | IsInt _
         | Eq
         | Neq
         | Lt
