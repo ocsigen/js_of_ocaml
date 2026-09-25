@@ -295,22 +295,6 @@ module Int32 = struct
   external ( > ) : int32 -> int32 -> bool = "%greaterthan"
 
   external ( >= ) : int32 -> int32 -> bool = "%greaterequal"
-
-  let convert_warning_on_overflow name ~to_int32 ~of_int32 ~equal ~to_dec ~to_hex x =
-    let i32 = to_int32 x in
-    let x' = of_int32 i32 in
-    if not (equal x' x) then warn_overflow name ~to_dec ~to_hex x x';
-    i32
-
-  let of_nativeint_warning_on_overflow n =
-    convert_warning_on_overflow
-      "native integer"
-      ~to_int32:Nativeint.to_int32
-      ~of_int32:Nativeint.of_int32
-      ~equal:Nativeint.equal
-      ~to_dec:(Printf.sprintf "%nd")
-      ~to_hex:(Printf.sprintf "%nx")
-      n
 end
 
 module Int64 = struct
@@ -341,16 +325,6 @@ module Int64 = struct
     let x' = of_int64 i64 in
     if not (equal x' x) then warn_overflow name ~to_dec ~to_hex ?to_hex_truncated x x';
     i64
-
-  let of_nativeint_warning_on_overflow n =
-    convert_warning_on_overflow
-      "native integer"
-      ~to_int64:Int64.of_nativeint
-      ~of_int64:Int64.to_nativeint
-      ~equal:Nativeint.equal
-      ~to_dec:(Printf.sprintf "%nd")
-      ~to_hex:(Printf.sprintf "%nx")
-      n
 end
 
 module Option = struct
