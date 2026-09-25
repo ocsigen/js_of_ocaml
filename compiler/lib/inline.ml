@@ -617,6 +617,25 @@ let rewrite_closure blocks cont_pc clos_pc =
     blocks
     blocks
 
+(* All the blocks of a function body, including those of nested closures *)
+let function_blocks p pc =
+  let blocks = ref Addr.Set.empty in
+  let rec traverse pc =
+    Code.traverse
+      { fold = Code.fold_children }
+      (fun pc () ->
+        blocks := Addr.Set.add pc !blocks;
+        List.iter (Addr.Map.find pc p.blocks).body ~f:(fun i ->
+            match i with
+            | Let (_, Closure (_, (pc', _), _)) -> traverse pc'
+            | _ -> ()))
+      pc
+      p.blocks
+      ()
+  in
+  traverse pc;
+  !blocks
+
 let rewrite_inlined_function p rem branch x params cont args =
   let blocks, cont_pc, free_pc =
     match rem, branch with
@@ -649,8 +668,13 @@ let rewrite_inlined_function p rem branch x params cont args =
    receive a single value are replaced by this value. Calls to known
    closures that appear this way are then inlined in turn. This
    typically resolves optional arguments ([if opt then opt[0] else
-   default]) in the same round. *)
-let rec inline_recursively ~context p params (pc, cont_args) args =
+   default]) in the same round.
+   The parameters that have been replaced are removed, so that the
+   actual arguments are not referenced anymore by the block binding
+   the parameters. This keeps the occurrence count of these arguments
+   accurate. The remaining parameters and arguments, as well as the
+   updated continuation, are returned. *)
+let rec inline_recursively ~context p params ((pc, cont_args) as cont) args =
   let nv = Array.length context.live_vars in
   let subst = Var.Hashtbl.create 16 in
   let rec repr x =
@@ -677,6 +701,7 @@ let rec inline_recursively ~context p params (pc, cont_args) args =
       && useful y
     then (
       Var.Hashtbl.replace subst x y;
+      Var.propagate_name x y;
       true)
     else false
   in
@@ -747,19 +772,18 @@ let rec inline_recursively ~context p params (pc, cont_args) args =
     if !changed then fixpoint () else visited
   in
   let visited = fixpoint () in
+  let blocks = function_blocks p pc in
   let assigns_substituted =
-    Addr.Hashtbl.fold
-      (fun pc () b ->
-        b
-        || List.exists (Addr.Map.find pc p.blocks).body ~f:(fun i ->
+    Addr.Set.exists
+      (fun pc ->
+        List.exists (Addr.Map.find pc p.blocks).body ~f:(fun i ->
             match i with
             | Assign (x, _) -> Var.Hashtbl.mem subst x
             | _ -> false))
-      visited
-      false
+      blocks
   in
   if assigns_substituted || Var.Hashtbl.length subst = 0
-  then p
+  then p, params, args, cont
   else
     let s x =
       let y = repr x in
@@ -767,37 +791,65 @@ let rec inline_recursively ~context p params (pc, cont_args) args =
       then context.live_vars.(Var.idx y) <- context.live_vars.(Var.idx y) + 1;
       y
     in
-    Addr.Hashtbl.fold
-      (fun pc () p ->
-        let block = Addr.Map.find pc p.blocks in
-        let branch =
-          match block.branch with
-          | Cond (x, cont1, cont2) -> (
-              match cond x with
-              | Some true -> Branch cont1
-              | Some false -> Branch cont2
-              | None -> block.branch)
-          | b -> b
-        in
-        let block = Subst.Excluding_Binders.block s { block with branch } in
-        let original_body = (Addr.Map.find pc p.blocks).body in
-        let body, (branch, p) =
-          List.fold_right2
-            ~f:(fun i i' (rem, state) ->
-              match i, i' with
-              | Let (_, Apply { f = f0; _ }), Let (x, Apply { f; args; _ })
-                when (not (Var.equal f f0))
-                     && Var.Map.mem f context.env
-                     && List.compare_lengths args (Var.Map.find f context.env).params = 0
-                -> inline_function ~context ~force_duplicate:false i' x f args rem state
-              | _ -> i' :: rem, state)
-            original_body
-            block.body
-            ~init:([], (block.branch, p))
-        in
-        { p with blocks = Addr.Map.add pc { block with body; branch } p.blocks })
-      visited
-      p
+    (* Perform the substitution everywhere before inlining, so that
+       occurrence counts are accurate when deciding whether to inline. *)
+    let original_bodies = Addr.Hashtbl.create 16 in
+    let p =
+      Addr.Set.fold
+        (fun pc p ->
+          let block = Addr.Map.find pc p.blocks in
+          let block =
+            if Addr.Hashtbl.mem visited pc
+            then (
+              Addr.Hashtbl.add original_bodies pc block.body;
+              match block.branch with
+              | Cond (x, cont1, cont2) -> (
+                  match cond x with
+                  | Some true -> { block with branch = Branch cont1 }
+                  | Some false -> { block with branch = Branch cont2 }
+                  | None -> block)
+              | _ -> block)
+            else block
+          in
+          { p with
+            blocks = Addr.Map.add pc (Subst.Excluding_Binders.block s block) p.blocks
+          })
+        blocks
+        p
+    in
+    let cont = pc, List.map ~f:s cont_args in
+    let params, args =
+      List.fold_right2 params args ~init:([], []) ~f:(fun x y (params, args) ->
+          if Var.Hashtbl.mem subst x
+          then (
+            context.live_vars.(Var.idx y) <- context.live_vars.(Var.idx y) - 1;
+            params, args)
+          else x :: params, y :: args)
+    in
+    let p =
+      Addr.Hashtbl.fold
+        (fun pc original_body p ->
+          let block = Addr.Map.find pc p.blocks in
+          let body, (branch, p) =
+            List.fold_right2
+              ~f:(fun i i' (rem, state) ->
+                match i, i' with
+                | Let (_, Apply { f = f0; _ }), Let (x, Apply { f; args; _ })
+                  when (not (Var.equal f f0))
+                       && Var.Map.mem f context.env
+                       && List.compare_lengths args (Var.Map.find f context.env).params
+                          = 0 ->
+                    inline_function ~context ~force_duplicate:false i' x f args rem state
+                | _ -> i' :: rem, state)
+              original_body
+              block.body
+              ~init:([], (block.branch, p))
+          in
+          { p with blocks = Addr.Map.add pc { block with body; branch } p.blocks })
+        original_bodies
+        p
+    in
+    p, params, args, cont
 
 and inline_function ~context ~force_duplicate i x f args rem state =
   let info = Var.Map.find f context.env in
@@ -823,7 +875,7 @@ and inline_function ~context ~force_duplicate i x f args rem state =
         p, params, cont
       else p, params, cont
     in
-    let p = inline_recursively ~context p params cont args in
+    let p, params, args, cont = inline_recursively ~context p params cont args in
     rewrite_inlined_function p rem branch x params cont args)
   else i :: rem, state
 
