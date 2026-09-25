@@ -1981,7 +1981,7 @@ module Generate (Target : Target_sig.S) = struct
                       loop (x :: acc) r
                 in
                 loop [] l
-            | IsInt, [ x ] -> Value.is_int x
+            | IsInt _, [ x ] -> Value.is_int x
             | Vectlength kind, [ x ] -> (
                 match kind with
                 | Generic -> Memory.gen_array_length x
@@ -1993,8 +1993,8 @@ module Generate (Target : Target_sig.S) = struct
                     let* ift = Memory.float_array_length (load y) in
                     let* iff = Arith.const 0l in
                     return (W.IfExpr (I32, cond, ift, iff)))
-            | (Not | Lt | Le | Eq | Neq | Ult | Array_get _ | IsInt | Vectlength _), _ ->
-                assert false))
+            | (Not | Lt | Le | Eq | Neq | Ult | Array_get _ | IsInt _ | Vectlength _), _
+              -> assert false))
 
   and translate_instr ctx context i =
     match i with

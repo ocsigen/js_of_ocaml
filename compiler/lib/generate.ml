@@ -1945,14 +1945,14 @@ let rec translate_expr ctx loc x e level : (_ * J.statement_list) Expr_builder.t
             let* cy = access' ~ctx y in
             let* cz = access' ~ctx z in
             return (maybe_bool ctx x (J.EBin (J.NotEqEq, cy, cz)))
-        | IsInt, [ y ] ->
+        | IsInt _, [ y ] ->
             let* cy = access' ~ctx y in
             return (maybe_bool ctx x (Mlvalue.is_immediate cy))
         | Ult, [ y; z ] ->
             let* cy = access' ~ctx y in
             let* cz = access' ~ctx z in
             return (maybe_bool ctx x (J.EBin (J.LtInt, unsigned cy, unsigned cz)))
-        | (Vectlength _ | Array_get _ | Not | IsInt | Eq | Neq | Lt | Le | Ult), _ ->
+        | (Vectlength _ | Array_get _ | Not | IsInt _ | Eq | Neq | Lt | Le | Ult), _ ->
             assert false
       in
       return (res, [])
