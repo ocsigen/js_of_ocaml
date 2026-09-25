@@ -220,6 +220,31 @@ let is_safe_input kind typ =
       | Typing.Int _ -> true
       | _ -> false)
 
+(* The variables whose untaggings are hoisted out of a loop although their
+   type is not known to be an integer. These untaggings are performed
+   speculatively, so they must not fail: [Generate] returns a dummy value
+   rather than failing when the value is not an integer (the original
+   untagging then only happens on paths where it is an integer). *)
+let guarded = Var.Hashtbl.create 16
+
+let guarded_untag x = Var.Hashtbl.mem guarded x
+
+let is_untag kind =
+  match kind with
+  | Untag_int | Untag_large_int -> true
+  | Unbox_i32
+  | Unbox_i64
+  | Unbox_f64
+  | Box_i32
+  | Box_i64
+  | Box_f64
+  | Tag_int
+  | Tag_large_int -> false
+
+(* Whether a conversion of [y] cannot fail *)
+let is_safe_conversion types (kind, y) =
+  is_safe_input kind (Typing.var_type types y) || (is_untag kind && guarded_untag y)
+
 (* Whether the result of a conversion should not be kept live across a
    call. Untagging a 31-bit integer is a single shift: recomputing it after
    the call is cheaper than keeping the result in a register, which the
@@ -1507,7 +1532,7 @@ let process_function
     st.functions_with_conversions <- st.functions_with_conversions + 1;
     st.conversions_tracked <- st.conversions_tracked + ConvSet.cardinal all_convs;
     let t0 = tick () in
-    let is_safe (kind, var) = is_safe_input kind (Typing.var_type types var) in
+    let is_safe conv = is_safe_conversion types conv in
     let props = Addr.Map.map (compute_local_props all_convs is_safe) fun_blocks in
     let block_param_sets =
       Addr.Map.map
@@ -2432,9 +2457,10 @@ let hoist_boxes_out_of_loops ~types ~free_pc ~params ~(st : lcm_stats) blocks en
    the loop preheader, once per entry into the loop; LCM then eliminates the
    occurrences inside the loop, which have become redundant. This is done
    only when the conversion cannot fail, that is when the type of the
-   operand is known ([is_safe_input]): the conversion may be executed on
-   paths where it was not before, such as when the loop is exited before
-   reaching it. It is also cheap, so executing it speculatively is fine.
+   operand is known ([is_safe_conversion]), or for an untagging, which can be
+   made not to fail ([guarded]): the conversion may be executed on paths
+   where it was not before, such as when the loop is exited before reaching
+   it. It is also cheap, so executing it speculatively is fine.
    An untagging is not hoisted out of a loop containing calls, since its
    result should not be kept live across calls ([not_live_across_calls]). *)
 let hoist_unboxes_out_of_loops ~types ~free_pc ~assigned ~(st : lcm_stats) blocks entry =
@@ -2476,7 +2502,7 @@ let hoist_unboxes_out_of_loops ~types ~free_pc ~assigned ~(st : lcm_stats) block
                 match kind_of_prim p with
                 | Some kind
                   when (not (is_boxing kind))
-                       && is_safe_input kind (Typing.var_type types y) -> (
+                       && (is_safe_conversion types (kind, y) || is_untag kind) -> (
                     (* [None]: defined before the function body (parameter or
                        free variable) *)
                     let def = Var.Hashtbl.find_opt defs y in
@@ -2513,6 +2539,8 @@ let hoist_unboxes_out_of_loops ~types ~free_pc ~assigned ~(st : lcm_stats) block
                 (List.map
                    ~f:(fun ((kind, y) : Conv.t) ->
                      st.unboxes_hoisted_from_loops <- st.unboxes_hoisted_from_loops + 1;
+                     if not (is_safe_conversion types (kind, y))
+                     then Var.Hashtbl.replace guarded y ();
                      let x = Var.fresh () in
                      Typing.set_var_type types x (type_of_kind kind);
                      Let (x, Prim (prim_of_kind kind, [ Pv y ])))
@@ -2799,6 +2827,7 @@ let f (p : program) (types : Typing.t) ~(global_flow_info : Global_flow.info) =
   (* Process each function independently to avoid cross-function variable leakage
      in the data flow analysis. *)
   let assigned = assigned_vars p.blocks in
+  Var.Hashtbl.reset guarded;
   let conv_types = ref ConvMap.empty in
   let blocks = ref p.blocks in
   let free_pc = ref p.free_pc in

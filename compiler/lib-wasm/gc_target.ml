@@ -629,6 +629,18 @@ module Value = struct
 
   let ( >>| ) x f = map f x
 
+  (* Like [int_val], but returns 0 rather than failing when the value is not
+     an integer: used for an untagging executed speculatively *)
+  let int_val_no_trap i =
+    let v = Code.Var.fresh () in
+    seq
+      (store v i)
+      (if_expr
+         I32
+         (load v >>| fun e -> W.RefTest ({ nullable = false; typ = I31 }, e))
+         (int_val (load v))
+         (Arith.const 0l))
+
   let js_eqeqeq ~negate x y =
     let xv = Code.Var.fresh () in
     let yv = Code.Var.fresh () in
@@ -760,6 +772,27 @@ module Value64 = struct
              (load v
              >>| fun e ->
              W.StructGet (None, ty, 0, RefCast ({ nullable = false; typ = Type ty }, e))))
+
+  (* Like [int_val], but returns 0 rather than failing when the value is not
+     an integer: used for an untagging executed speculatively *)
+  let int_val_no_trap i =
+    let* ty = Type.large_int_type in
+    let v = Code.Var.fresh () in
+    seq
+      (store v i)
+      (if_expr
+         I64
+         (load v >>| fun e -> W.RefTest ({ nullable = false; typ = I31 }, e))
+         (load v
+         >>| fun e ->
+         W.I64ExtendI32 (S, I31Get (S, RefCast ({ nullable = false; typ = I31 }, e))))
+         (if_expr
+            I64
+            (load v >>| fun e -> W.RefTest ({ nullable = false; typ = Type ty }, e))
+            (load v
+            >>| fun e ->
+            W.StructGet (None, ty, 0, RefCast ({ nullable = false; typ = Type ty }, e)))
+            (return (W.Const (I64 0L)))))
 
   (* Zero fits in 31 bits, so it is always represented as an [i31] *)
   let check_is_not_zero = Value.check_is_not_zero

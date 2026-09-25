@@ -22,3 +22,9 @@
    (:standard --opt 2 -w no-missing-debug-event))
   (link_flags
    (:standard -w no-missing-debug-event))))
+
+(tests
+ (names guarded_untag)
+ (modes js wasm)
+ (wasm_of_ocaml
+  (flags :standard --opt 2)))

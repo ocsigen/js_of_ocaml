@@ -286,6 +286,10 @@ module Generate (Target : Target_sig.S) = struct
     let tag64 e = counted "tag64" (Value64.val_int e)
 
     let untag64 e = counted "untag64" (Value64.int_val e)
+
+    let untag_no_trap e = counted "untag" (Value.int_val_no_trap e)
+
+    let untag64_no_trap e = counted "untag64" (Value64.int_val_no_trap e)
   end
 
   let convert ~(from : Typing.typ) ~(into : Typing.typ) e =
@@ -2314,6 +2318,7 @@ module Generate (Target : Target_sig.S) = struct
             | _ -> assert false)
         | Wasm_untag_int -> (
             match l with
+            | [ Pv v ] when Lcm.guarded_untag v -> Conv.untag_no_trap (load v)
             | [ Pv v ] ->
                 convert
                   ~from:(Typing.var_type ctx.types v)
@@ -2327,6 +2332,7 @@ module Generate (Target : Target_sig.S) = struct
             | _ -> assert false)
         | Wasm_untag_large_int -> (
             match l with
+            | [ Pv v ] when Lcm.guarded_untag v -> Conv.untag64_no_trap (load v)
             | [ Pv v ] ->
                 convert
                   ~from:(Typing.var_type ctx.types v)

@@ -19,3 +19,7 @@
 open Code
 
 val f : program -> Typing.t -> global_flow_info:Global_flow.info -> program * Typing.t
+
+val guarded_untag : Var.t -> bool
+(** Whether the untaggings of this variable must not fail, as they may be
+    executed speculatively *)
