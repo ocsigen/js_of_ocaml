@@ -269,12 +269,13 @@ module Fragment = struct
           | { Parse_info.src = Some x; _ } | { Parse_info.name = Some x; _ } -> x
           | _ -> "??"
         in
+        (* The location can be in another file than the one being loaded *)
         error
-          "cannot parse file %S (%sl:%d, c:%d)"
-          filename
-          (if String.equal name filename then "" else Printf.sprintf "orig:%S from " name)
-          pi.Parse_info.line
-          pi.Parse_info.col
+          "%s%s"
+          (if String.equal name filename
+           then ""
+           else Printf.sprintf "cannot parse file %S:\n" filename)
+          (Parse_js.string_of_error pi)
     in
     let res =
       List.map program ~f:(fun (annot, code) ->

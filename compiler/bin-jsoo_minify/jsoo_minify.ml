@@ -45,14 +45,7 @@ let f { Cmd_arg.common; output_file; use_stdin; files } =
   let gen pp =
     let pretty = Config.Flag.pretty () in
     Pretty_print.set_compact pp (not pretty);
-    let error_of_pi pi =
-      match pi with
-      | { Parse_info.name = Some src; line; col; _ }
-      | { Parse_info.src = Some src; line; col; _ } ->
-          error "error at file:%S l:%d col:%d" src line col
-      | { Parse_info.src = None; name = None; line; col; _ } ->
-          error "error at l:%d col:%d" line col
-    in
+    let error_of_pi pi = error "%s" (Parse_js.string_of_error pi) in
     let p =
       List.flatten
         (List.map files ~f:(fun file ->
