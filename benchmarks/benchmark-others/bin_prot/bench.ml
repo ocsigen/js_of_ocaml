@@ -76,8 +76,11 @@ let () =
     let b = Bin_prot.Common.create_buf len in
     Bin_prot.Common.blit_string_buf ~src_pos:0 s ~dst_pos:0 b ~len;
     let t = Unix.gettimeofday () in
+    (* Use the result, so that the compiler cannot drop the list
+       while it is being built *)
+    let count = ref 0 in
     for _ = 0 to 4 do
-      ignore ([%bin_read: t] b ~pos_ref:(ref 0) : t)
+      count := !count + List.length ([%bin_read: t] b ~pos_ref:(ref 0) : t)
     done;
     let t' = Unix.gettimeofday () in
-    Format.printf "%.2f@." (t' -. t)
+    Format.printf "%.2f (%d elements)@." (t' -. t) !count
