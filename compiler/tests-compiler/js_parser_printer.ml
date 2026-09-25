@@ -1387,3 +1387,53 @@ let%expect_test "in operator in conditional then-branch needs no parentheses" =
     x=/*<<fake:1:11>>*/c?z="a"in
     b:d;;);
     |}]
+
+let check kind src =
+  let lex = Parse_js.Lexer.of_string ~filename:"fake" src in
+  match Parse_js.parse kind lex with
+  | p ->
+      Config.Flag.disable "debuginfo";
+      let buffer = Buffer.create 17 in
+      let pp = Pretty_print.to_buffer buffer in
+      Pretty_print.set_compact pp true;
+      let _ = Js_output.program pp p in
+      print_endline (Buffer.contents buffer)
+  | exception Parse_js.Parsing_error pi ->
+      Printf.printf
+        "cannot parse js (from l:%d, c:%d)\n"
+        pi.Parse_info.line
+        pi.Parse_info.col
+
+let%expect_test "parenthesized optional chains" =
+  (* Parentheses delimit an optional chain: when [a] is null,
+     [(a?.b).c] raises an exception whereas [a?.b.c] is undefined. *)
+  check `Script "(a?.b).c; a?.b.c";
+  [%expect {| a?.b.c;a?.b.c; |}];
+  check `Script "(a?.b)(); (a?.[0])[1]; (a?.b.c).d; (a.b?.()).e; ((a?.b)).c";
+  [%expect {| a?.b();a?.[0][1];a?.b.c.d;a.b?.().e;a?.b.c; |}];
+  (* These are syntax errors without the parentheses *)
+  check `Script "(a?.b)`t`";
+  [%expect {| a?.b`t`; |}];
+  check `Script "new (a?.b)(); new (a?.b)";
+  [%expect {|
+           new
+           a?.b();new
+           a?.b;
+           |}];
+  (* No difference in these cases *)
+  check `Script "(a?.b)?.c; x = (a?.b) + 1; (x, a?.b).c; (a?.b || c).d";
+  [%expect {| a?.b?.c;x=a?.b+1;(x,a?.b).c;(a?.b||c).d; |}]
+
+let%expect_test "template literals and optional chains" =
+  (* A tagged template cannot be part of an optional chain *)
+  check `Script "a?.b`t`";
+  [%expect {| a?.b`t`; |}];
+  check `Script "a?.b.c`t`";
+  [%expect {| a?.b.c`t`; |}];
+  check `Script "a?.(1)`t`";
+  [%expect {| a?.(1)`t`; |}];
+  check `Script "a?.`t`";
+  [%expect {| cannot parse js (from l:1, c:3) |}];
+  (* This is fine outside of the chain *)
+  check `Script "(a?.b)`t`; a`t`?.b; a.b`t`";
+  [%expect {| a?.b`t`;a`t`?.b;a.b`t`; |}]
