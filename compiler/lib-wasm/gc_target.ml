@@ -581,6 +581,17 @@ module Value = struct
     in
     return (W.Call (f, [ x; y ]))
 
+  (* Like [int_val], but returns 0 rather than failing when the value is not
+     an integer: used for an untagging executed speculatively *)
+  let int_val_no_trap i =
+    let v = Code.Var.fresh () in
+    seq
+      (store v i)
+      (let* e = load v in
+       let* n = int_val (load v) in
+       return
+         (W.IfExpr (I32, RefTest ({ nullable = false; typ = I31 }, e), n, Const (I32 0l))))
+
   let js_eqeqeq ~negate x y =
     let xv = Code.Var.fresh () in
     let yv = Code.Var.fresh () in

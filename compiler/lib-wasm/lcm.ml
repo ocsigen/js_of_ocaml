@@ -379,6 +379,16 @@ let is_untag kind =
   | Tag_int
   | Normalize_int -> false
 
+(* Whether a conversion of [y] cannot fail. [guarded] contains the variables
+   whose untaggings are hoisted out of a loop although their type is not
+   known to be an integer. These untaggings are performed speculatively, so
+   they must not fail: [Generate] returns a dummy value rather than failing
+   when the value is not an integer (the original untagging then only
+   happens on paths where it is an integer). *)
+let is_safe_conversion ~guarded types (kind, y) =
+  is_safe_input kind (Typing.var_type types y)
+  || (is_untag kind && Var.Hashtbl.mem guarded y)
+
 (* Whether the result of a conversion should not be kept live across a
    call. Untagging a 31-bit integer is a single shift, and normalizing it
    two: recomputing it after the call is cheaper than keeping the result
@@ -949,7 +959,7 @@ let get_all_conversions blocks types ~assigned =
      other ones.
    - [kill_ant]: the conversions which cannot be anticipated through this
      block: the ones in [kill], and the conversions which may fail
-     ([is_safe_input]) if the block contains an instruction which may
+     ([is_safe_conversion]) if the block contains an instruction which may
      raise ([Typing.may_raise]). Such a conversion is only known to
      succeed when it is reached: it must not be performed before an
      instruction which may prevent reaching it (e.g. with GADTs).
@@ -1899,8 +1909,14 @@ let eliminate_param_conversions
 
    The analysis must be per-function to avoid cross-function variable references
    in the inserted conversion instructions. *)
-let process_function types entry fun_blocks ~assigned ~global_flow_info ~(st : lcm_stats)
-    =
+let process_function
+    types
+    entry
+    fun_blocks
+    ~assigned
+    ~guarded
+    ~global_flow_info
+    ~(st : lcm_stats) =
   let all_convs, conv_types = get_all_conversions fun_blocks types ~assigned in
   st.functions_processed <- st.functions_processed + 1;
   if ConvSet.is_empty all_convs
@@ -1909,7 +1925,7 @@ let process_function types entry fun_blocks ~assigned ~global_flow_info ~(st : l
     st.functions_with_conversions <- st.functions_with_conversions + 1;
     st.conversions_tracked <- st.conversions_tracked + ConvSet.cardinal all_convs;
     let t0 = tick () in
-    let is_safe (kind, var) = is_safe_input kind (Typing.var_type types var) in
+    let is_safe conv = is_safe_conversion ~guarded types conv in
     (* The rank of each conversion, for its bit vector representation *)
     let ranks = Ranks.create all_convs in
     let n_convs = Ranks.tracked ranks in
@@ -2442,18 +2458,17 @@ let process_function types entry fun_blocks ~assigned ~global_flow_info ~(st : l
               body_rev := Let (tmp, Prim (prim_of_kind kind, [ Pv arg ])) :: !body_rev))
           (Addr.Map.find pc insert_at_end);
         let branch = Subst.Excluding_Binders.last subst_var block.branch in
-        (* The untagged integer tested by a branch *)
+        (* The untagged integer tested by a branch. The tested variable must
+           be known to be an integer: the untagging of another value may
+           have been speculative, returning 0 for a block ([guarded]). *)
         let int_arg v =
-          match
-            Typing.conversion
-              ~from:(Typing.var_type types v)
-              ~into:(Typing.Int Typing.Integer.Normalized)
-          with
-          | Some kind -> (
+          let from = Typing.var_type types v in
+          match Typing.conversion ~from ~into:(Typing.Int Typing.Integer.Normalized) with
+          | Some kind when is_safe_input kind from -> (
               match Tracker.find_opt ranks (kind, v) !conv_to_var with
               | Some tmp -> tmp
               | None -> v)
-          | None -> v
+          | Some _ | None -> v
         in
         (* Lowering has already replaced the arguments of the branch by
            their converted copies: only the tested variable remains *)
@@ -2777,12 +2792,20 @@ let hoist_boxes_out_of_loops ~types ~free_pc ~params ~(st : lcm_stats) blocks en
    the loop preheader, once per entry into the loop; LCM then eliminates the
    occurrences inside the loop, which have become redundant. This is done
    only when the conversion cannot fail, that is when the type of the
-   operand is known ([is_safe_input]): the conversion may be executed on
-   paths where it was not before, such as when the loop is exited before
-   reaching it. It is also cheap, so executing it speculatively is fine.
+   operand is known ([is_safe_conversion]), or for an untagging, which can be
+   made not to fail ([guarded]): the conversion may be executed on paths
+   where it was not before, such as when the loop is exited before reaching
+   it. It is also cheap, so executing it speculatively is fine.
    An untagging is not hoisted out of a loop containing calls, since its
    result should not be kept live across calls ([not_live_across_calls]). *)
-let hoist_unboxes_out_of_loops ~types ~free_pc ~assigned ~(st : lcm_stats) blocks entry =
+let hoist_unboxes_out_of_loops
+    ~types
+    ~free_pc
+    ~assigned
+    ~guarded
+    ~(st : lcm_stats)
+    blocks
+    entry =
   let loops =
     if
       exists_instr
@@ -2852,7 +2875,8 @@ let hoist_unboxes_out_of_loops ~types ~free_pc ~assigned ~(st : lcm_stats) block
                 match kind_of_prim p with
                 | Some kind
                   when (not (is_boxing kind))
-                       && is_safe_input kind (Typing.var_type types y) -> (
+                       && (is_safe_conversion ~guarded types (kind, y) || is_untag kind)
+                  -> (
                     (* [None]: defined before the function body (parameter or
                        free variable) *)
                     let def = Var.Hashtbl.find_opt defs y in
@@ -2890,6 +2914,8 @@ let hoist_unboxes_out_of_loops ~types ~free_pc ~assigned ~(st : lcm_stats) block
                 (List.map
                    ~f:(fun ((kind, y) : Conv.t) ->
                      st.unboxes_hoisted_from_loops <- st.unboxes_hoisted_from_loops + 1;
+                     if not (is_safe_conversion ~guarded types (kind, y))
+                     then Var.Hashtbl.replace guarded y ();
                      let x = Var.fresh () in
                      Typing.set_var_type types x (Typing.conversion_type kind);
                      Let (x, Prim (prim_of_kind kind, [ Pv y ])))
@@ -3600,6 +3626,7 @@ let f
      in the data flow analysis. *)
   let assigned = assigned_vars p.blocks in
   st.time_setup <- st.time_setup +. (tick () -. ts);
+  let guarded = Var.Hashtbl.create 16 in
   let blocks = ref p.blocks in
   let free_pc = ref p.free_pc in
   let start = ref p.start in
@@ -3732,12 +3759,20 @@ let f
       in
       let fun_blocks =
         if Config.Flag.lcm_hoist ()
-        then hoist_unboxes_out_of_loops ~types ~free_pc ~assigned ~st fun_blocks entry
+        then
+          hoist_unboxes_out_of_loops
+            ~types
+            ~free_pc
+            ~assigned
+            ~guarded
+            ~st
+            fun_blocks
+            entry
         else fun_blocks
       in
       st.time_setup <- st.time_setup +. (tick () -. ts2);
       let result =
-        process_function types entry fun_blocks ~assigned ~global_flow_info ~st
+        process_function types entry fun_blocks ~assigned ~guarded ~global_flow_info ~st
       in
       let ts3 = tick () in
       Addr.Map.iter (fun pc block -> blocks := Addr.Map.add pc block !blocks) result;
@@ -3839,4 +3874,8 @@ let f
   then (
     prerr_endline "AFTER";
     Print.program Format.err_formatter (fun _ _ -> "") p);
-  p, types, !in_cps, { global_flow_info with info_cps_calls = !cps_calls }
+  ( p
+  , types
+  , !in_cps
+  , { global_flow_info with info_cps_calls = !cps_calls }
+  , fun x -> Var.Hashtbl.mem guarded x )
