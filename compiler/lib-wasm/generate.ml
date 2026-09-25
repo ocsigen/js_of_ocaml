@@ -2107,9 +2107,19 @@ module Generate (Target : Target_sig.S) = struct
            let* name_str = Constant.translate ~unboxed:false (String name) in
            instr (W.Drop (W.Call (f, [ v; name_str ]))))
           Value.unit
-    | Prim (Not, [ x ]) when Config.Flag.portable_int () ->
-        Value64.not (transl_prim_arg ctx ~typ:int_lu x)
-    | Prim (Not, [ x ]) -> Value.not (transl_prim_arg ctx ~typ:int_su x)
+    | Prim (Not, [ x ]) -> (
+        match get_type ctx x with
+        | Int
+            (Small_normalized | Small_unnormalized | Large_normalized | Large_unnormalized)
+          ->
+            if Config.Flag.portable_int ()
+            then Value64.not (transl_prim_arg ctx ~typ:int_lu x)
+            else Value.not (transl_prim_arg ctx ~typ:int_su x)
+        | _ ->
+            (* Zero is always an i31: no need to untag the value, which
+               with portable integers takes a test for a boxed integer *)
+            let* x = transl_prim_arg ctx ~typ:Top x in
+            return (W.RefEq (x, W.RefI31 (Const (I32 0l)))))
     | Prim (Lt, [ x; y ]) -> translate_int_comparison ctx `Lt x y
     | Prim (Le, [ x; y ]) -> translate_int_comparison ctx `Le x y
     | Prim (Ult, [ x; y ]) -> translate_int_comparison ctx `Ult x y
