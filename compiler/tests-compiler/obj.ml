@@ -41,7 +41,27 @@ let%expect_test "static eval of string get" =
   in
   print_fun_decl program (Some "my_is_block");
   print_fun_decl program (Some "my_is_int");
+  [%expect
+    {|
+    function my_is_block(x){return caml_call1(Stdlib_Obj[1], x);}
+    //end
+    function my_is_int(x){return typeof x === "number" ? 1 : 0;}
+    //end
+    |}];
+  (* OCaml 5.6 marks the list cell as immutable, so its tag is known *)
   print_fun_decl program (Some "my_tag");
+  [%expect
+    ({|
+    function my_tag(x){return 0;}
+    //end
+    |}
+    [@when ocaml_version >= (5, 6, 0)])];
+  [%expect
+    ({|
+    function my_tag(x){return runtime.caml_obj_tag([0, x, 0]);}
+    //end
+    |}
+    [@when ocaml_version < (5, 6, 0)])];
   print_fun_decl program (Some "my_size");
   print_fun_decl program (Some "my_field");
   print_fun_decl program (Some "my_set_field");
@@ -49,12 +69,6 @@ let%expect_test "static eval of string get" =
   print_fun_decl program (Some "my_dup");
   [%expect
     {|
-    function my_is_block(x){return caml_call1(Stdlib_Obj[1], x);}
-    //end
-    function my_is_int(x){return typeof x === "number" ? 1 : 0;}
-    //end
-    function my_tag(x){return runtime.caml_obj_tag([0, x, 0]);}
-    //end
     function my_size(x){return x.length - 1;}
     //end
     function my_field(x, i){return x[i + 1];}
