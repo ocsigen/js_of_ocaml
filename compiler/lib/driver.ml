@@ -50,15 +50,11 @@ let deadcode p =
   let p = Code.compact p in
   p
 
-let inline profile p =
-  if Config.Flag.deadcode ()
-  then
-    let p, live_vars = deadcode' p in
-    if Config.Flag.inline ()
-    then (
-      if debug () then Format.eprintf "Inlining...@.";
-      Inline.f ~profile p live_vars)
-    else p
+let inline profile (p, live_vars) =
+  if Config.Flag.inline ()
+  then (
+    if debug () then Format.eprintf "Inlining...@.";
+    Inline.f ~profile p live_vars)
   else p
 
 let specialize_1 (p, info) =
@@ -221,25 +217,31 @@ let stats = Debug.find "stats"
 let rec loop max name round i (p : 'a) : 'a =
   let debug = times () || stats () in
   if debug then Format.eprintf "%s#%d...@." name i;
-  let p' = round p in
+  let p', only_deadcode = round p in
   if i >= max
   then (
     if debug then Format.eprintf "%s#%d: couldn't reach fix point.@." name i;
     p')
-  else if Code.equal p' p
+  else if only_deadcode
   then (
-    if debug then Format.eprintf "%s#%d: fix-point reached.@." name i;
+    (* Removing dead code rarely enables further optimizations, and
+       dead code is removed again after the optimization loop. *)
+    if debug then Format.eprintf "%s#%d: fix-point reached (dead code only).@." name i;
     p')
   else loop max name round (i + 1) p'
 
-let round profile : 'a -> 'a =
-  print
-  +> tailcall
-  +> Ref_unboxing.f
-  +> (flow +> specialize +> eval +> fst)
-  +> inline profile
-  +> phi
-  +> deadcode
+(* Returns the optimized program, and whether the round only removed
+   dead code (which includes the case of a fix-point). *)
+let round profile p =
+  let p' = (print +> tailcall +> Ref_unboxing.f +> flow +> specialize +> eval +> fst) p in
+  if Config.Flag.deadcode ()
+  then
+    let ((q, _) as q') = deadcode' p' in
+    let p'' = q' |> inline profile |> phi |> deadcode in
+    p'', Code.equal p' p && Code.equal p'' q
+  else
+    let p'' = p' |> phi |> deadcode in
+    p'', Code.equal p'' p
 
 (* o1 *)
 
