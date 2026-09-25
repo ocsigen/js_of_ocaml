@@ -874,22 +874,27 @@
     intoCharCodeArray: () => 0,
   };
   // Counters of the representation conversions executed by code compiled
-  // with [--debug count-conversions], imported from module "conversions"
-  // and created on demand. The nonzero ones are printed on exit.
-  const conversion_counters = {};
-  const conversion_counter_imports = new globalThis.Proxy(
-    {},
-    {
-      get(_, name) {
-        if (!Object.hasOwn(conversion_counters, name))
-          conversion_counters[name] = new globalThis.WebAssembly.Global(
-            { value: "i64", mutable: true },
-            0n,
-          );
-        return conversion_counters[name];
+  // with [--debug count-conversions] (per kind, imported from module
+  // "conversions") or [--debug count-conversion-sites] (also per site,
+  // imported from module "conversion-sites"), created on demand. The nonzero
+  // ones are printed on exit, the busiest sites only.
+  function make_counters(counters) {
+    return new globalThis.Proxy(
+      {},
+      {
+        get(_, name) {
+          if (!Object.hasOwn(counters, name))
+            counters[name] = new globalThis.WebAssembly.Global(
+              { value: "i64", mutable: true },
+              0n,
+            );
+          return counters[name];
+        },
       },
-    },
-  );
+    );
+  }
+  const conversion_counters = {};
+  const site_counters = {};
   if (isNode)
     globalThis.process.on("exit", () => {
       const counts = Object.entries(conversion_counters)
@@ -897,6 +902,14 @@
         .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
         .map(([name, g]) => `${name}=${g.value}`);
       if (counts.length) fs.writeSync(2, `conversions: ${counts.join(" ")}\n`);
+      const sites = Object.entries(site_counters)
+        .filter(([_, g]) => g.value !== 0n)
+        .sort(([_a, a], [_b, b]) =>
+          b.value > a.value ? 1 : b.value < a.value ? -1 : 0,
+        )
+        .slice(0, 40);
+      for (const [name, g] of sites)
+        fs.writeSync(2, `${String(g.value).padStart(14)} ${name}\n`);
     });
   const imports = Object.assign(
     {
@@ -915,7 +928,8 @@
         },
       ),
       env: {},
-      conversions: conversion_counter_imports,
+      conversions: make_counters(conversion_counters),
+      "conversion-sites": make_counters(site_counters),
     },
     generated,
   );
