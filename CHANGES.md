@@ -106,8 +106,10 @@
   of the functions that may run below an effect handler (#2441)
 
 ## Bug fixes
+* Runtime: `caml_alloc_dummy_mixed` takes two arguments, as OxCaml calls it;
+  recursive definitions of mixed records failed to compile (#2461)
 * Runtime: `compare_digits_nat` compares digits as unsigned, and nats
-  marshalled with 32-bit digits can be read on 64-bit platforms (#2456)
+  marshalled with 32-bit digits can be read on 64-bit platforms (#2460)
 * Compiler: fix variable coalescing with ES classes: the heritage, computed
   keys and decorators of a class declaration are evaluated at definition
   time, and class field initializers and static blocks capture the variables
