@@ -255,33 +255,39 @@ module Domain = struct
           (Array.to_list t)
 end
 
-let update_deps st { blocks; _ } =
+(* The arithmetic operations which may overflow: their result is
+   normalized when the range analysis proves that they do not *)
+let may_overflow_prim name =
+  match name with
+  | "%int_add"
+  | "%int_sub"
+  | "%int_mul"
+  | "%direct_int_mul"
+  | "%int_neg"
+  | "%int_lsl"
+  | "%int_div"
+  | "%direct_int_div" -> true
+  | _ -> false
+
+let update_deps ~int_range st { blocks; _ } =
   let add_dep st x y = Var.Tbl.set st.deps y (x :: Var.Tbl.get st.deps y) in
   Addr.Map.iter
     (fun _ block ->
       List.iter block.body ~f:(fun i ->
           match i with
           | Let (x, Block (_, lst, _, _)) -> Array.iter ~f:(fun y -> add_dep st x y) lst
-          | Let
-              ( x
-              , Prim
-                  ( Extern
-                      ( ( "%int_and"
-                        | "%int_or"
-                        | "%int_xor"
-                        | "%int_add"
-                        | "%int_sub"
-                        | "%int_mul"
-                        | "%direct_int_mul"
-                        | "%int_neg"
-                        | "%int_div"
-                        | "%direct_int_div"
-                        | "caml_ba_get_1"
-                        | "caml_ba_get_2"
-                        | "caml_ba_get_3"
-                        | "caml_ba_get_generic" )
-                      , _ )
-                  , lst ) ) ->
+          | Let (x, Prim (Extern (name, _), lst))
+            when ((int_range || Config.Flag.portable_int ()) && may_overflow_prim name)
+                 ||
+                 match name with
+                 | "%int_and"
+                 | "%int_or"
+                 | "%int_xor"
+                 | "caml_ba_get_1"
+                 | "caml_ba_get_2"
+                 | "caml_ba_get_3"
+                 | "caml_ba_get_generic" -> true
+                 | _ -> false ->
               (* The return type of these primitives depend on the input type *)
               List.iter
                 ~f:(fun p ->
@@ -338,6 +344,7 @@ type st =
   ; boxed_function_parameters : Var.ISet.t
   ; parameter_type_hints : typ Var.Hashtbl.t
   ; fun_info : Call_graph_analysis.t
+  ; int_ranges : Int_range.t option
   }
 
 let rec constant_type (c : constant) =
@@ -659,6 +666,25 @@ let propagate st approx x : Domain.t =
       | Prim ((Vectlength _ | Not | IsInt _ | Eq | Neq | Lt | Le | Ult), _) ->
           Int Small_normalized
       | Prim (Wasm_conversion c, _) -> conversion_type c
+      | Prim (Extern (prim, hint), args) when may_overflow_prim prim -> (
+          (* The range analysis finds the operations which cannot overflow:
+             their result is normalized when their operands are, that is,
+             unless an operand is itself an unnormalized result. The
+             operands of a division are normalized anyway. *)
+          let t = prim_type ~st ~approx prim hint args in
+          match t, st.int_ranges with
+          | Int Small_unnormalized, Some r
+            when Int_range.cannot_overflow r x
+                 && ((match prim with
+                       | "%int_div" | "%direct_int_div" -> true
+                       | _ -> false)
+                    || List.for_all
+                         ~f:(fun a ->
+                           match arg_type ~approx a with
+                           | Int Small_unnormalized -> false
+                           | _ -> true)
+                         args) -> Int Small_normalized
+          | _ -> t)
       | Prim (Extern (prim, hint), args) -> prim_type ~st ~approx prim hint args
       | Special _ -> Top
       | Apply { f; args; _ } -> (
@@ -1288,9 +1314,9 @@ let unboxed_parameters ~global_flow_info ~fun_info p types =
   in
   iterate !candidates
 
-let f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinel p =
+let f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinel ~int_ranges p =
   let t = Timer.make () in
-  update_deps global_flow_state p;
+  update_deps ~int_range:(Option.is_some int_ranges) global_flow_state p;
   let boxed_function_parameters = mark_boxed_function_parameters ~fun_info p in
   let parameter_type_hints = collect_parameter_type_hints p in
   let st =
@@ -1299,6 +1325,7 @@ let f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinel p =
     ; boxed_function_parameters
     ; parameter_type_hints
     ; fun_info
+    ; int_ranges
     }
   in
   let types = solver st in

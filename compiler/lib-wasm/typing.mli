@@ -107,5 +107,8 @@ val f :
   -> global_flow_info:Global_flow.info
   -> fun_info:Call_graph_analysis.t
   -> deadcode_sentinel:Code.Var.t
+  -> int_ranges:Int_range.t option
   -> Code.program
   -> t
+(** The result of the range analysis, when available, is used to find the
+    arithmetic operations which cannot overflow *)
