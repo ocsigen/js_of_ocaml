@@ -114,6 +114,12 @@
   keys and decorators of a class declaration are evaluated at definition
   time, and class field initializers and static blocks capture the variables
   they reference (#2462)
+* Compiler: keep the parentheses around an optional chain in JavaScript code
+  (runtime files, `jsoo_minify`): `(a?.b).c` was printed as `a?.b.c`, which
+  is undefined rather than raising an exception when `a` is null, and
+  `` (a?.b)`t` `` and `new (a?.b)()` were printed without their parentheses,
+  which is a syntax error. Reject a template literal in an optional chain
+  (`` a?.b`t` ``), as the grammar requires (#2465)
 * Compiler: with `--effects=double-translation`, fix calls with too many
   arguments to a function that does not perform effects (#2455)
 * Runtime/Wasm: with `--effects=native`, performing an effect that no

@@ -438,6 +438,14 @@ struct
           (* We force parens around the function in that case.*)
           false
       | ECallTemplate (e, _, _)
+      | ECall (e, ANormal, _, _)
+      | EAccess (e, ANormal, _)
+      | EDot (e, ANormal, _)
+      | EDotPrivate (e, ANormal, _)
+        when is_optional_chain e ->
+          (* The optional chain is put between parentheses *)
+          false
+      | ECallTemplate (e, _, _)
       | ECall (e, _, _, _)
       | EAccess (e, _, _)
       | EDot (e, _, _)
@@ -718,13 +726,13 @@ struct
           PP.string f "(");
         output_debug_info f loc;
         PP.start_group f 1;
-        expression CallOrMemberExpression f e;
+        chain_object ~access_kind CallOrMemberExpression f e;
         PP.break f;
         (* Make sure that the opening parenthesis has the appropriate info *)
         output_debug_info f loc;
         PP.start_group f 1;
         (match access_kind with
-        | ANormal -> PP.string f "("
+        | ANormal | AChain -> PP.string f "("
         | ANullish -> PP.string f "?.(");
         arguments f el;
         PP.string f ")";
@@ -742,7 +750,9 @@ struct
           PP.string f "(");
         output_debug_info f loc;
         PP.start_group f 1;
-        parenthesized_expression ~funct:true CallOrMemberExpression f e;
+        if is_optional_chain e
+        then chain_object ~access_kind:ANormal CallOrMemberExpression f e
+        else parenthesized_expression ~funct:true CallOrMemberExpression f e;
         PP.break f;
         PP.start_group f 1;
         template f t;
@@ -1010,11 +1020,11 @@ struct
           | NewExpression | MemberExpression -> MemberExpression
           | _ -> CallOrMemberExpression
         in
-        expression l' f e;
+        chain_object ~access_kind l' f e;
         PP.break f;
         PP.start_group f 1;
         (match access_kind with
-        | ANormal -> PP.string f "["
+        | ANormal | AChain -> PP.string f "["
         | ANullish -> PP.string f "?.[");
         expression Expression f e';
         PP.string f "]";
@@ -1028,9 +1038,9 @@ struct
           | NewExpression | MemberExpression -> MemberExpression
           | _ -> CallOrMemberExpression
         in
-        expression l' f e;
+        chain_object ~access_kind l' f e;
         (match access_kind with
-        | ANormal -> PP.string f "."
+        | ANormal | AChain -> PP.string f "."
         | ANullish -> PP.string f "?.");
         PP.string f nm
     | EDotPrivate (e, access_kind, Utf8 nm) ->
@@ -1041,9 +1051,9 @@ struct
           | NewExpression | MemberExpression -> MemberExpression
           | _ -> CallOrMemberExpression
         in
-        expression l' f e;
+        chain_object ~access_kind l' f e;
         (match access_kind with
-        | ANormal -> PP.string f ".#"
+        | ANormal | AChain -> PP.string f ".#"
         | ANullish -> PP.string f "?.#");
         PP.string f nm
     | ENew (e, None, loc) ->
@@ -1055,7 +1065,7 @@ struct
         output_debug_info f loc;
         PP.string f "new";
         PP.space f;
-        expression NewExpression f e;
+        chain_object ~access_kind:ANormal NewExpression f e;
         PP.end_group f;
         if Prec.(l > NewExpression)
         then (
@@ -1066,7 +1076,7 @@ struct
         output_debug_info f loc;
         PP.string f "new";
         PP.space f;
-        expression MemberExpression f e;
+        chain_object ~access_kind:ANormal MemberExpression f e;
         PP.break f;
         PP.start_group f 1;
         PP.string f "(";
@@ -1425,6 +1435,20 @@ struct
         variable_declaration_list_aux f ?in_ l;
         if close then PP.string f ";";
         PP.end_group f
+
+  (* The object of an access, a callee, the tag of a template or the operand
+     of [new]. An optional chain does not extend through an access of kind
+     [ANormal]: it is put between parentheses, as [(a?.b).c] is not
+     [a?.b.c]. *)
+  and chain_object ~access_kind l f e =
+    match access_kind with
+    | ANormal when is_optional_chain e ->
+        PP.start_group f 1;
+        PP.string f "(";
+        expression Expression f e;
+        PP.string f ")";
+        PP.end_group f
+    | ANormal | ANullish | AChain -> expression l f e
 
   and parenthesized_expression
       ?(last_semi = fun () -> ())

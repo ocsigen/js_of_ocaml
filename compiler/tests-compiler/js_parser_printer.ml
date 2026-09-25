@@ -1408,32 +1408,54 @@ let%expect_test "parenthesized optional chains" =
   (* Parentheses delimit an optional chain: when [a] is null,
      [(a?.b).c] raises an exception whereas [a?.b.c] is undefined. *)
   check `Script "(a?.b).c; a?.b.c";
-  [%expect {| a?.b.c;a?.b.c; |}];
+  [%expect {| (a?.b).c;a?.b.c; |}];
   check `Script "(a?.b)(); (a?.[0])[1]; (a?.b.c).d; (a.b?.()).e; ((a?.b)).c";
-  [%expect {| a?.b();a?.[0][1];a?.b.c.d;a.b?.().e;a?.b.c; |}];
+  [%expect {| (a?.b)();(a?.[0])[1];(a?.b.c).d;(a.b?.()).e;(a?.b).c; |}];
   (* These are syntax errors without the parentheses *)
   check `Script "(a?.b)`t`";
-  [%expect {| a?.b`t`; |}];
+  [%expect {| (a?.b)`t`; |}];
   check `Script "new (a?.b)(); new (a?.b)";
-  [%expect {|
-           new
-           a?.b();new
-           a?.b;
-           |}];
+  [%expect {| new(a?.b)();new(a?.b); |}];
   (* No difference in these cases *)
   check `Script "(a?.b)?.c; x = (a?.b) + 1; (x, a?.b).c; (a?.b || c).d";
   [%expect {| a?.b?.c;x=a?.b+1;(x,a?.b).c;(a?.b||c).d; |}]
 
+let%expect_test "accesses built on top of an optional chain" =
+  (* An access of kind [ANormal] is not part of the optional chain of its
+     object: a pass building one gets the parentheses *)
+  let open Javascript in
+  let ident s = ident (Utf8_string.of_string_exn s) in
+  let name s = Utf8_string.of_string_exn s in
+  let chain = EDot (EVar (ident "a"), ANullish, name "b") in
+  let print e =
+    Config.Flag.disable "debuginfo";
+    let buffer = Buffer.create 17 in
+    let pp = Pretty_print.to_buffer buffer in
+    Pretty_print.set_compact pp true;
+    let _ = Js_output.program pp [ Expression_statement e, N ] in
+    print_endline (Buffer.contents buffer)
+  in
+  print (dot chain (name "c"));
+  [%expect {| (a?.b).c; |}];
+  print (call chain [] N);
+  [%expect {| (a?.b)(); |}];
+  print (EDot (chain, AChain, name "c"));
+  [%expect {| a?.b.c; |}];
+  print (EDot (dot chain (name "c"), ANormal, name "d"));
+  [%expect {| (a?.b).c.d; |}];
+  print (ENew (chain, Some [], N));
+  [%expect {| new(a?.b)(); |}]
+
 let%expect_test "template literals and optional chains" =
   (* A tagged template cannot be part of an optional chain *)
   check `Script "a?.b`t`";
-  [%expect {| a?.b`t`; |}];
+  [%expect {| cannot parse js (from l:1, c:4) |}];
   check `Script "a?.b.c`t`";
-  [%expect {| a?.b.c`t`; |}];
+  [%expect {| cannot parse js (from l:1, c:6) |}];
   check `Script "a?.(1)`t`";
-  [%expect {| a?.(1)`t`; |}];
+  [%expect {| cannot parse js (from l:1, c:6) |}];
   check `Script "a?.`t`";
   [%expect {| cannot parse js (from l:1, c:3) |}];
   (* This is fine outside of the chain *)
   check `Script "(a?.b)`t`; a`t`?.b; a.b`t`";
-  [%expect {| a?.b`t`;a`t`?.b;a.b`t`; |}]
+  [%expect {| (a?.b)`t`;a`t`?.b;a.b`t`; |}]

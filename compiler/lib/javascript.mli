@@ -239,9 +239,15 @@ and template_part =
   | TStr of Utf8_string.t
   | TExp of expression
 
+(* An optional chain is an access [?.] followed by other accesses: when
+   [a] is null or undefined, the whole chain [a?.b.c] is undefined. The
+   chain does not extend through parentheses: [(a?.b).c] raises an
+   exception. Both are [EDot (EDot (a, ANullish, b), _, c)], with the kind
+   of the outer access telling them apart. *)
 and access_kind =
-  | ANormal
-  | ANullish
+  | ANormal (* [a.b]: not part of an optional chain *)
+  | ANullish (* [a?.b] *)
+  | AChain (* [.c] in [a?.b.c]: part of the optional chain of its object *)
 
 (****)
 
@@ -457,6 +463,12 @@ val bound_idents_of_binding : binding -> ident list
 module IdentSet : Set.S with type elt = ident
 
 module IdentMap : Map.S with type key = ident
+
+val is_optional_chain : expression -> bool
+(** Whether an expression is an optional chain, possibly continued by
+    accesses of kind [AChain]. Such an expression is put between
+    parentheses when it is the object of an access of kind [ANormal], a
+    template tag, or the operand of [new]. *)
 
 val dot : expression -> identifier -> expression
 
