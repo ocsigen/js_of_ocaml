@@ -146,6 +146,26 @@ let mark_captured_variables pass_stats captured_vars f =
   visitor#visit f;
   pass_stats.time_mark_captured <- pass_stats.time_mark_captured +. Timer.get t
 
+(* Class field initialisers and static blocks run in their own function
+   scope: the variables they reference are captured. *)
+let mark_class_element_captured pass_stats captured_vars el =
+  let t = Timer.make () in
+  let visitor =
+    object
+      inherit Js_traverse.iter
+
+      method! ident i =
+        match i with
+        | V v -> Var.Tbl.set captured_vars v true
+        | _ -> ()
+    end
+  in
+  (match el with
+  | CEMethod _ -> ()
+  | CEField (_, _, _, init) | CEAccessor (_, _, _, init) -> visitor#initialiser_o init
+  | CEStaticBLock b -> visitor#block b);
+  pass_stats.time_mark_captured <- pass_stats.time_mark_captured +. Timer.get t
+
 (* Collect local variables in the current function *)
 let collect_locals captured_vars params stmts =
   let locals = ref Var.Set.empty in
@@ -1261,6 +1281,10 @@ let f program =
         let _, params, body, _ = f in
         optimize_scope pass_stats captured_vars subst params body;
         mark_captured_variables pass_stats captured_vars f
+
+      method! class_element el =
+        super#class_element el;
+        mark_class_element_captured pass_stats captured_vars el
     end
   in
   visitor#program program;

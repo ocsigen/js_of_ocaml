@@ -341,8 +341,8 @@ let%expect_test "class field initialisers capture variables" =
   [%expect
     {|
     (function(b){
-       var a = b + 1, a = b + 2;
-       class C{y = a;static z = a;}
+       var a = b + 1, s = b + 2;
+       class C{y = a;static z = s;}
        b += 3;
        console.log(new C().y + C.z + b);
       }
@@ -360,7 +360,7 @@ let%expect_test "class field initialisers capture variables — runtime correctn
   console.log(new C().y + C.z + b);
 })(10)
 |};
-  [%expect {| 37 |}]
+  [%expect {| 36 |}]
 
 (* The heritage, computed keys and decorators of a class are evaluated at
    definition time. *)
