@@ -612,6 +612,30 @@ let rewrite_closure blocks cont_pc clos_pc =
     blocks
     blocks
 
+(* The live blocks of a function body, including those of nested
+   closures. In the function itself, [successors] gives the successors
+   of a block, so that the branches of resolved conditionals can be
+   left out. *)
+let function_blocks p pc ~successors =
+  let visited = Addr.Hashtbl.create 16 in
+  let blocks = ref [] in
+  let rec traverse ~nested pc =
+    if not (Addr.Hashtbl.mem visited pc)
+    then (
+      Addr.Hashtbl.add visited pc ();
+      let block = Addr.Map.find pc p.blocks in
+      blocks := (pc, block) :: !blocks;
+      List.iter block.body ~f:(fun i ->
+          match i with
+          | Let (_, Closure (_, (pc', _), _)) -> traverse ~nested:true pc'
+          | _ -> ());
+      if nested
+      then Code.fold_children p.blocks pc (fun pc' () -> traverse ~nested pc') ()
+      else List.iter (successors block.branch) ~f:(fun (pc', _) -> traverse ~nested pc'))
+  in
+  traverse ~nested:false pc;
+  !blocks
+
 let rewrite_inlined_function p rem branch x params cont args =
   let blocks, cont_pc, free_pc =
     match rem, branch with
@@ -639,13 +663,18 @@ let rewrite_inlined_function p rem branch x params cont args =
 
 (* Simplify the body of an inlined function using what is known about
    the actual arguments: parameters are replaced by the arguments,
-   conditionals on known values are resolved, fields of known immutable
-   blocks are replaced by their contents, and block parameters that
-   receive a single value are replaced by this value. Calls to known
-   closures that appear this way are then inlined in turn. This
-   typically resolves optional arguments ([if opt then opt[0] else
-   default]) in the same round. *)
-let rec inline_recursively ~context p params (pc, cont_args) args =
+   conditionals and switches on known values are resolved, fields of
+   known immutable blocks are replaced by their contents, and block
+   parameters that receive a single value are replaced by this value.
+   Calls to known closures that appear this way are then inlined in
+   turn. This typically resolves optional arguments ([if opt then
+   opt[0] else default]) in the same round.
+   The parameters that have been replaced are removed, so that the
+   actual arguments are not referenced anymore by the block binding
+   the parameters. This keeps the occurrence count of these arguments
+   accurate. The remaining parameters and arguments, as well as the
+   updated continuation, are returned. *)
+let rec inline_recursively ~context p params ((pc, cont_args) as cont) args =
   let nv = Array.length context.live_vars in
   let subst = Var.Hashtbl.create 16 in
   let rec repr x =
@@ -656,6 +685,11 @@ let rec inline_recursively ~context p params (pc, cont_args) args =
   let known_idx i =
     if i < Array.length context.known then context.known.(i) else Unknown
   in
+  (* [context.known] is not updated when function bodies are rewritten:
+     a block built in a function inlined earlier may still be recorded
+     with a parameter of this function as field, though this parameter
+     is no longer bound. This is harmless as long as we only substitute
+     variables bound by a [Let], which function parameters never are. *)
   let useful y =
     Var.Map.mem y context.env
     ||
@@ -672,6 +706,7 @@ let rec inline_recursively ~context p params (pc, cont_args) args =
       && useful y
     then (
       Var.Hashtbl.replace subst x y;
+      Var.propagate_name x y;
       true)
     else false
   in
@@ -682,127 +717,177 @@ let rec inline_recursively ~context p params (pc, cont_args) args =
     | Block _ -> Some true
     | Unknown -> None
   in
-  let successors branch =
+  (* The continuation taken by a conditional or a switch on a known value *)
+  let resolved_branch branch =
     match branch with
     | Cond (x, cont1, cont2) -> (
         match cond x with
-        | Some true -> [ cont1 ]
-        | Some false -> [ cont2 ]
-        | None -> [ cont1; cont2 ])
-    | Branch cont | Poptrap cont -> [ cont ]
-    | Switch (_, a) -> Array.to_list a
-    | Pushtrap (cont, _, cont_h) -> [ cont; cont_h ]
-    | Return _ | Raise _ | Stop -> []
+        | Some true -> Some cont1
+        | Some false -> Some cont2
+        | None -> None)
+    | Switch (x, a) -> (
+        match known x with
+        | Int n ->
+            let i = Targetint.to_int_exn n in
+            if i >= 0 && i < Array.length a then Some a.(i) else None
+        | Block _ | Unknown -> None)
+    | Branch _ | Poptrap _ | Pushtrap _ | Return _ | Raise _ | Stop -> None
+  in
+  let successors branch =
+    match resolved_branch branch with
+    | Some cont -> [ cont ]
+    | None -> (
+        match branch with
+        | Cond (_, cont1, cont2) -> [ cont1; cont2 ]
+        | Branch cont | Poptrap cont -> [ cont ]
+        | Switch (_, a) -> Array.to_list a
+        | Pushtrap (cont, _, cont_h) -> [ cont; cont_h ]
+        | Return _ | Raise _ | Stop -> [])
   in
   List.iter2 params args ~f:(fun x y -> ignore (add x y));
-  let rec fixpoint () =
-    let visited = Addr.Hashtbl.create 16 in
-    let incoming = Addr.Hashtbl.create 16 in
-    let add_incoming (pc, args) =
-      Addr.Hashtbl.replace
-        incoming
-        pc
-        (args :: Option.value ~default:[] (Addr.Hashtbl.find_opt incoming pc))
-    in
-    (* [Assign (x, y)] passes [y] as an argument to the block
-       parameter [x] (see [Code.invariant]) *)
-    let assigned = Var.Hashtbl.create 16 in
-    let changed = ref false in
-    let rec visit pc =
-      if not (Addr.Hashtbl.mem visited pc)
-      then (
-        Addr.Hashtbl.add visited pc ();
-        let block = Addr.Map.find pc p.blocks in
-        List.iter block.body ~f:(fun i ->
-            match i with
-            | Let (x, Field (y, n, _)) -> (
-                match known y with
-                | Block (Some a) when n < Array.length a ->
-                    if add x a.(n) then changed := true
-                | _ -> ())
-            | Assign (x, y) -> Var.Hashtbl.add assigned x y
-            | _ -> ());
-        List.iter (successors block.branch) ~f:(fun ((pc', _) as cont) ->
-            add_incoming cont;
-            visit pc'))
-    in
-    add_incoming (pc, cont_args);
-    visit pc;
-    Addr.Hashtbl.iter
-      (fun pc' l ->
-        let block = Addr.Map.find pc' p.blocks in
-        List.iteri block.params ~f:(fun i x ->
-            if not (Var.Hashtbl.mem subst x)
-            then
-              let add_val s y =
-                let y = repr y in
-                if Var.equal y x then s else Var.Set.add y s
-              in
-              let vals =
-                List.fold_left l ~init:Var.Set.empty ~f:(fun s args ->
-                    add_val s (List.nth args i))
-              in
-              let vals =
-                List.fold_left (Var.Hashtbl.find_all assigned x) ~init:vals ~f:add_val
-              in
-              match Var.Set.elements vals with
-              | [ y ] -> if add x y then changed := true
-              | _ -> ()))
-      incoming;
-    if !changed then fixpoint () else visited
-  in
-  let visited = fixpoint () in
   if Var.Hashtbl.length subst = 0
-  then p
+  then (* No known argument *) p, params, args, cont
   else
+    let rec fixpoint () =
+      let visited = Addr.Hashtbl.create 16 in
+      let incoming = Addr.Hashtbl.create 16 in
+      let add_incoming (pc, args) =
+        Addr.Hashtbl.replace
+          incoming
+          pc
+          (args :: Option.value ~default:[] (Addr.Hashtbl.find_opt incoming pc))
+      in
+      (* [Assign (x, y)] passes [y] as an argument to the block
+         parameter [x] (see [Code.invariant]) *)
+      let assigned = Var.Hashtbl.create 16 in
+      let changed = ref false in
+      let rec visit pc =
+        if not (Addr.Hashtbl.mem visited pc)
+        then (
+          Addr.Hashtbl.add visited pc ();
+          let block = Addr.Map.find pc p.blocks in
+          List.iter block.body ~f:(fun i ->
+              match i with
+              | Let (x, Field (y, n, _)) -> (
+                  match known y with
+                  | Block (Some a) when n < Array.length a ->
+                      if add x a.(n) then changed := true
+                  | _ -> ())
+              | Assign (x, y) -> Var.Hashtbl.add assigned x y
+              | _ -> ());
+          List.iter (successors block.branch) ~f:(fun ((pc', _) as cont) ->
+              add_incoming cont;
+              visit pc'))
+      in
+      add_incoming (pc, cont_args);
+      visit pc;
+      Addr.Hashtbl.iter
+        (fun pc' l ->
+          let params = Array.of_list (Addr.Map.find pc' p.blocks).params in
+          (* The values received by each parameter, other than itself *)
+          let vals = Array.make (Array.length params) `None in
+          let add_val i y =
+            let y = repr y in
+            if not (Var.equal y params.(i))
+            then
+              match vals.(i) with
+              | `None -> vals.(i) <- `One y
+              | `One y' when Var.equal y y' -> ()
+              | `One _ | `Many -> vals.(i) <- `Many
+          in
+          List.iter l ~f:(fun args -> List.iteri args ~f:add_val);
+          Array.iteri params ~f:(fun i x ->
+              List.iter (Var.Hashtbl.find_all assigned x) ~f:(add_val i));
+          Array.iteri vals ~f:(fun i v ->
+              match v with
+              | `One y -> if add params.(i) y then changed := true
+              | `None | `Many -> ()))
+        incoming;
+      if !changed then fixpoint () else visited
+    in
+    let visited = fixpoint () in
+    (* Blocks only reachable through resolved branches are dead:
+       they are left unchanged, so that the occurrence counts do not
+       include the uses they would get from the substitution. *)
+    let blocks = function_blocks p pc ~successors in
     let s x =
       let y = repr x in
       if not (Var.equal x y)
       then context.live_vars.(Var.idx y) <- context.live_vars.(Var.idx y) + 1;
       y
     in
+    let remove_use x =
+      if Var.idx x < nv
+      then context.live_vars.(Var.idx x) <- context.live_vars.(Var.idx x) - 1
+    in
+    let add_use x =
+      if Var.idx x < nv
+      then context.live_vars.(Var.idx x) <- context.live_vars.(Var.idx x) + 1
+    in
+    (* Perform the substitution everywhere before inlining, so that
+       occurrence counts are accurate when deciding whether to inline. *)
+    let original_bodies = Addr.Hashtbl.create 16 in
+    let p =
+      List.fold_left blocks ~init:p ~f:(fun p (pc, block) ->
+          let block =
+            if Addr.Hashtbl.mem visited pc
+            then (
+              Addr.Hashtbl.add original_bodies pc block.body;
+              match resolved_branch block.branch with
+              | Some cont ->
+                  Freevars.iter_last_free_var remove_use block.branch;
+                  List.iter ~f:add_use (snd cont);
+                  { block with branch = Branch cont }
+              | None -> block)
+            else block
+          in
+          { p with
+            blocks = Addr.Map.add pc (Subst.Excluding_Binders.block s block) p.blocks
+          })
+    in
+    let cont = pc, List.map ~f:s cont_args in
+    let params, args =
+      List.fold_right2 params args ~init:([], []) ~f:(fun x y (params, args) ->
+          if Var.Hashtbl.mem subst x
+          then (
+            remove_use y;
+            params, args)
+          else x :: params, y :: args)
+    in
     (* The calls inlined below end up in a loop if the call being
-       inlined is in a loop or if they are in a loop of the inlined
-       function *)
-    let in_loop = lazy (blocks_in_loop p pc) in
-    Addr.Hashtbl.fold
-      (fun pc () p ->
-        let context =
-          { context with
-            in_loop =
-              lazy (Lazy.force context.in_loop || Addr.Set.mem pc (Lazy.force in_loop))
-          }
-        in
-        let block = Addr.Map.find pc p.blocks in
-        let branch =
-          match block.branch with
-          | Cond (x, cont1, cont2) -> (
-              match cond x with
-              | Some true -> Branch cont1
-              | Some false -> Branch cont2
-              | None -> block.branch)
-          | b -> b
-        in
-        let block = Subst.Excluding_Binders.block s { block with branch } in
-        let original_body = (Addr.Map.find pc p.blocks).body in
-        let body, (branch, p) =
-          List.fold_right2
-            ~f:(fun i i' (rem, state) ->
-              match i, i' with
-              | Let (_, Apply { f = f0; _ }), Let (x, Apply { f; args; _ })
-                when (not (Var.equal f f0))
-                     && (not (Var.Set.mem f context.being_inlined))
-                     && Var.Map.mem f context.env
-                     && List.compare_lengths args (Var.Map.find f context.env).params = 0
-                -> inline_function ~context i' x f args rem state
-              | _ -> i' :: rem, state)
-            original_body
-            block.body
-            ~init:([], (block.branch, p))
-        in
-        { p with blocks = Addr.Map.add pc { block with body; branch } p.blocks })
-      visited
-      p
+         inlined is in a loop or if they are in a loop of the inlined
+         function *)
+    let in_loop = lazy (blocks_in_loop p (fst cont)) in
+    let p =
+      Addr.Hashtbl.fold
+        (fun pc original_body p ->
+          let context =
+            { context with
+              in_loop =
+                lazy (Lazy.force context.in_loop || Addr.Set.mem pc (Lazy.force in_loop))
+            }
+          in
+          let block = Addr.Map.find pc p.blocks in
+          let body, (branch, p) =
+            List.fold_right2
+              ~f:(fun i i' (rem, state) ->
+                match i, i' with
+                | Let (_, Apply { f = f0; _ }), Let (x, Apply { f; args; _ })
+                  when (not (Var.equal f f0))
+                       && (not (Var.Set.mem f context.being_inlined))
+                       && Var.Map.mem f context.env
+                       && List.compare_lengths args (Var.Map.find f context.env).params
+                          = 0 -> inline_function ~context i' x f args rem state
+                | _ -> i' :: rem, state)
+              original_body
+              block.body
+              ~init:([], (block.branch, p))
+          in
+          { p with blocks = Addr.Map.add pc { block with body; branch } p.blocks })
+        original_bodies
+        p
+    in
+    p, params, args, cont
 
 and inline_function ~context i x f args rem state =
   let info = Var.Map.find f context.env in
@@ -828,7 +913,7 @@ and inline_function ~context i x f args rem state =
         p, params, cont
       else p, params, cont
     in
-    let p =
+    let p, params, args, cont =
       inline_recursively
         ~context:{ context with being_inlined = Var.Set.add f context.being_inlined }
         p
