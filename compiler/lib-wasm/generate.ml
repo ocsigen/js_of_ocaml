@@ -3102,7 +3102,34 @@ module Generate (Target : Target_sig.S) = struct
                  | Value | Int _ -> false)
                param_types)
           (Option.value ~default:Typing.Top (repr_type typ)))
-      specialized_primitives
+      specialized_primitives;
+    (* Runtime primitives returning an integer. They are called like other
+       primitives: only their result type is declared, so that the type
+       analysis does not lose track of integers flowing through them. *)
+    List.iter
+      ~f:(fun name ->
+        if not (String.Hashtbl.mem internal_primitives name)
+        then Typing.register_prim name ~unbox:false (Int Ref))
+      [ "caml_int_of_string"
+      ; "caml_string_compare"
+      ; "caml_bytes_compare"
+      ; "caml_string_equal"
+      ; "caml_string_notequal"
+      ; "caml_string_lessthan"
+      ; "caml_bytes_equal"
+      ; "caml_hash"
+      ; "caml_obj_tag"
+      ; "caml_ml_input_char"
+      ; "caml_ml_input_int"
+      ; "caml_ml_input"
+      ; "caml_ml_channel_size"
+      ; "caml_ml_pos_in"
+      ; "caml_ml_pos_out"
+      ; "caml_ba_dim"
+      ; "caml_ba_num_dims"
+      ; "caml_lex_engine"
+      ; "caml_new_lex_engine"
+      ]
 end
 
 (* Make sure we can use [br_table] for switches *)
