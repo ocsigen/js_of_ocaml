@@ -825,10 +825,12 @@
                         (struct.get_u $bigarray $ba_kind (local.get $b))))
                   ;; int and nativeint: 64-bit elements hashed as the native
                   ;; runtime does with caml_hash_mix_intnat, which folds the
-                  ;; high bits so that small values hash like 32-bit ones
+                  ;; high bits so that small values hash like 32-bit ones.
+                  ;; As in the native runtime, at most 64 elements are
+                  ;; hashed, as for int32 bigarrays.
                   (local.set $len (i32.shl (local.get $len) (i32.const 3)))
-                  (if (i32.gt_u (local.get $len) (i32.const 256))
-                     (then (local.set $len (i32.const 256))))
+                  (if (i32.gt_u (local.get $len) (i32.const 512))
+                     (then (local.set $len (i32.const 512))))
                   (loop $loop
                      (if (i32.lt_u (local.get $i) (local.get $len))
                         (then
