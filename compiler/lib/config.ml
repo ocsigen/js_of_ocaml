@@ -77,6 +77,8 @@ module Flag = struct
 
   let lcm_hoist = o ~name:"lcm-hoist" ~default:true
 
+  let int_range = o ~name:"int-range" ~default:true
+
   let effects = o ~name:"effects" ~default:false
 
   let staticeval = o ~name:"staticeval" ~default:true

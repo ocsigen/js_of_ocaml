@@ -274,6 +274,7 @@ let update_deps st { blocks; _ } =
                         | "%int_mul"
                         | "%direct_int_mul"
                         | "%int_neg"
+                        | "%int_lsl"
                         | "%int_div"
                         | "%direct_int_div"
                         | "caml_ba_get_1"
@@ -338,7 +339,25 @@ type st =
   ; boxed_function_parameters : Var.ISet.t
   ; parameter_type_hints : typ Var.Hashtbl.t
   ; fun_info : Call_graph_analysis.t
+  ; int_ranges : Int_range.t option
   }
+
+(* Integer variables whose value is known to fit in 31 bits.
+
+   With portable integers, they are represented as 32-bit integers. We only
+   do this for block and function parameters, whose arguments are converted
+   as needed, and for the primitives whose result is declared as a 64-bit
+   integer: [Generate] either performs them on 32-bit integers, or wraps
+   their result.
+
+   With 31-bit integers, the range analysis finds the arithmetic operations
+   which do not overflow. Their result is normalized when their operands
+   are, that is, unless an operand is itself an unnormalized result. *)
+let small_if_fits st x t =
+  match t, st.int_ranges with
+  | Int (Large_normalized | Large_unnormalized | Small_unnormalized), Some r
+    when Int_range.fits_in_i31 r x -> Int Small_normalized
+  | _ -> t
 
 let rec constant_type (c : constant) =
   match c with
@@ -531,7 +550,7 @@ let propagate st approx x : Domain.t =
           match Var.Hashtbl.find_opt st.parameter_type_hints x with
           | Some t -> t
           | None -> Top)
-      | _ -> res)
+      | _ -> if Config.Flag.portable_int () then small_if_fits st x res else res)
   | Expr e -> (
       match e with
       | Constant c -> constant_type c
@@ -594,6 +613,40 @@ let propagate st approx x : Domain.t =
       | Prim (Wasm_box_i32, _) -> Number (Int32, Boxed)
       | Prim (Wasm_box_i64, _) -> Number (Int64, Boxed)
       | Prim (Wasm_box_f64, _) -> Number (Float, Boxed)
+      | Prim (Extern (prim, hint), args)
+        when Config.Flag.portable_int ()
+             &&
+             match String.Hashtbl.find_opt primitive_types prim with
+             | Some (_, _, Int (Large_normalized | Large_unnormalized)) -> true
+             | _ -> false -> small_if_fits st x (prim_type ~st ~approx prim hint args)
+      | Prim
+          ( Extern
+              ( (( "%int_add"
+                 | "%int_sub"
+                 | "%int_mul"
+                 | "%direct_int_mul"
+                 | "%int_neg"
+                 | "%int_lsl"
+                 | "%int_div"
+                 | "%direct_int_div" ) as prim)
+              , hint )
+          , args )
+        when not (Config.Flag.portable_int ()) ->
+          let t = prim_type ~st ~approx prim hint args in
+          if
+            (* The operands of a division are normalized *)
+            (match prim with
+              | "%int_div" | "%direct_int_div" -> true
+              | _ -> false)
+            || List.for_all
+                 ~f:(fun a ->
+                   (* Untagging produces a normalized value *)
+                   match arg_type ~approx a with
+                   | Int Small_unnormalized -> false
+                   | _ -> true)
+                 args
+          then small_if_fits st x t
+          else t
       | Prim (Extern (prim, hint), args) -> prim_type ~st ~approx prim hint args
       | Special _ -> Top
       | Apply { f; args; _ } -> (
@@ -949,6 +1002,10 @@ let f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinel p =
     ; boxed_function_parameters
     ; parameter_type_hints
     ; fun_info
+    ; int_ranges =
+        (if Config.Flag.int_range ()
+         then Some (Int_range.f ~global_flow_state ~global_flow_info p)
+         else None)
     }
   in
   let types = solver st in
