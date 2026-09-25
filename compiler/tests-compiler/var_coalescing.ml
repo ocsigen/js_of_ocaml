@@ -380,9 +380,9 @@ let%expect_test "class definition-time uses — declaration" =
   [%expect
     {|
     (function(x){
-       var a = x.base, a = x.key, a = x.fkey, a = x.n + 1;
-       console.log(a);
-       class C extends a {[a](){return 1;}static [a] = 2;}
+       var base = x.base, key = x.key, fkey = x.fkey, t = x.n + 1;
+       console.log(t);
+       class C extends base {[key](){return 1;}static [fkey] = 2;}
        console.log(new C()[x.key]() + C[x.fkey] + new C().tag);
       }
       ({base: class{tag = "b";}, key: "m", fkey: "f", n: 1}));
@@ -405,7 +405,7 @@ try {
 |};
   [%expect {|
     2
-    Class extends value 2 is not a constructor or null
+    3b
     |}]
 
 let%expect_test "class definition-time uses — expression, runtime correctness" =
@@ -444,9 +444,9 @@ let%expect_test "class definition-time uses — decorators" =
   [%expect
     {|
     (function(a){
-       var b = a.d, b = a.e, a = a.n + 1;
+       var d = a.d, e = a.e, a = a.n + 1;
        console.log(a);
-       @b class C{@b m(){}}
+       @d class C{@e m(){}}
        console.log(C);
       }
       (0));

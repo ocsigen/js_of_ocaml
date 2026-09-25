@@ -108,6 +108,10 @@
 ## Bug fixes
 * Runtime: `compare_digits_nat` compares digits as unsigned, and nats
   marshalled with 32-bit digits can be read on 64-bit platforms (#2456)
+* Compiler: fix variable coalescing with ES classes: the heritage, computed
+  keys and decorators of a class declaration are evaluated at definition
+  time, and class field initializers and static blocks capture the variables
+  they reference (#2462)
 * Compiler: with `--effects=double-translation`, fix calls with too many
   arguments to a function that does not perform effects (#2455)
 * Runtime/Wasm: with `--effects=native`, performing an effect that no
