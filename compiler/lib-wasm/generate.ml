@@ -330,6 +330,10 @@ module Generate (Target : Target_sig.S) = struct
     let normalize64 e = counted "normalize64" Arith64.((e lsl const 1L) asr const 1L)
 
     let shift64 e = counted "shift64" Arith64.(e lsl const 1L)
+
+    let untag_no_trap e = counted "untag" (Value.int_val_no_trap e)
+
+    let untag64_no_trap e = counted "untag64" (Value64.int_val_no_trap e)
   end
 
   let conversion c e =
@@ -2387,6 +2391,9 @@ module Generate (Target : Target_sig.S) = struct
             loop [] arg_typ l |> box_number_if_needed ctx x
         | Wasm_conversion c -> (
             match c, l with
+            | Untag_int, [ Pv v ] when Lcm.guarded_untag v -> Conv.untag_no_trap (load v)
+            | Untag_large_int, [ Pv v ] when Lcm.guarded_untag v ->
+                Conv.untag64_no_trap (load v)
             | Tag_large_int, [ Pv v ] ->
                 conversion
                   c

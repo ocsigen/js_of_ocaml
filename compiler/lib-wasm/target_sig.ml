@@ -113,6 +113,8 @@ module type S = sig
 
     val int_val : expression -> expression
 
+    val int_val_no_trap : expression -> expression
+
     val check_is_not_zero : expression -> expression
     (** Returns an int32 value *)
 
@@ -170,6 +172,8 @@ module type S = sig
     val val_int : expression -> expression
 
     val int_val : expression -> expression
+
+    val int_val_no_trap : expression -> expression
 
     val check_is_not_zero : expression -> expression
     (** Returns an int32 value *)
