@@ -1290,37 +1290,9 @@
                     (local.set $i (i32.add (local.get $i) (i32.const 8)))
                     (br $loop))))
            (br $done))
-           (@if $portable-int
-           (@then
-             ;; nativeint
-             (if (i32.eq (struct.get_u $bigarray $ba_kind (local.get $b))
-                    (i32.const 9))
-                (then
-                   (local.set $len (i32.shl (local.get $len) (i32.const 3)))
-                   (if (call $caml_deserialize_uint_1 (local.get $s))
-                      (then
-                         (loop $loop
-                            (if (i32.lt_u (local.get $i) (local.get $len))
-                               (then
-                                  (call $dv_set_i64 (local.get $ba_view) (local.get $i)
-                                     (call $caml_deserialize_int_8 (local.get $s))
-                                     (global.get $littleEndian))
-                                  (local.set $i (i32.add (local.get $i) (i32.const 8)))
-                                  (br $loop)))))
-                      (else
-                         (loop $loop
-                            (if (i32.lt_u (local.get $i) (local.get $len))
-                               (then
-                                  (call $dv_set_i64 (local.get $ba_view) (local.get $i)
-                                     (i64.extend_i32_s
-                                        (call $caml_deserialize_int_4 (local.get $s)))
-                                     (global.get $littleEndian))
-                                  (local.set $i (i32.add (local.get $i) (i32.const 8)))
-                                  (br $loop))))))
-                   (br $done)))))
           (@if $portable-int
           (@then
-            ;; int: portable
+            ;; int and nativeint
             (local.set $len (i32.shl (local.get $len) (i32.const 3)))
             (if (call $caml_deserialize_uint_1 (local.get $s))
                (then
