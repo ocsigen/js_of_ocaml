@@ -171,7 +171,7 @@ let expr_deps blocks st x e =
   | Prim
       ( ( Vectlength _
         | Not
-        | IsInt
+        | IsInt _
         | Eq
         | Neq
         | Lt
@@ -545,7 +545,7 @@ let propagate st ~update approx x =
       | Prim
           ( ( Vectlength _
             | Not
-            | IsInt
+            | IsInt _
             | Eq
             | Neq
             | Lt

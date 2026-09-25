@@ -622,7 +622,7 @@ let eval_instr update_count inline_constant ~target info i =
       | Some i ->
           incr update_count;
           [ Let (x, Field (o, Targetint.to_int_exn i, Non_float)) ])
-  | Let (x, Prim (IsInt, [ y ])) -> (
+  | Let (x, Prim (IsInt _, [ y ])) -> (
       match is_int info y with
       | Unknown -> [ i ]
       | Y ->

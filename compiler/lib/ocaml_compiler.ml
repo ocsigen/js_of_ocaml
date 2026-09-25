@@ -539,6 +539,7 @@ module Hint = struct
         (* No corresponding optimization in js_of_ocaml yet; ignore the hint. *)
         None
     | Hint_immediate -> Some Hint_immediate
+    | Hint_variant -> Some Hint_variant
 end
 [@@if ocaml_version >= (5, 6, 0)]
 

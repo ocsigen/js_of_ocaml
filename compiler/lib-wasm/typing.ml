@@ -583,7 +583,8 @@ let propagate st approx x : Domain.t =
                 known
           | Top -> Top)
       | Prim (Array_get _, _) -> Top
-      | Prim ((Vectlength _ | Not | IsInt | Eq | Neq | Lt | Le | Ult | Wasm_untag_int), _)
+      | Prim
+          ((Vectlength _ | Not | IsInt _ | Eq | Neq | Lt | Le | Ult | Wasm_untag_int), _)
         -> Int Small_normalized
       | Prim (Wasm_untag_large_int, _) -> Int Large_normalized
       | Prim ((Wasm_tag_int | Wasm_tag_large_int), _) -> Int Ref
@@ -831,7 +832,7 @@ let box_numbers ~lazy_boxing p st types =
                       ( ( Vectlength _
                         | Array_get _
                         | Not
-                        | IsInt
+                        | IsInt _
                         | Lt
                         | Le
                         | Ult

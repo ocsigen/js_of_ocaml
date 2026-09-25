@@ -102,6 +102,7 @@ type t =
   | Hint_closures of closure_hint list
   | Hint_ccall of ccall
   | Hint_immediate
+  | Hint_variant
 
 let print_ccall f h =
   match h with
@@ -198,6 +199,7 @@ let print f h =
   match h with
   | Hint_immutable_block -> Format.fprintf f "immutable"
   | Hint_immediate -> Format.fprintf f "immediate"
+  | Hint_variant -> Format.fprintf f "variant"
   | Hint_arraylength kind ->
       Format.fprintf
         f

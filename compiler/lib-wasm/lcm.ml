@@ -436,7 +436,7 @@ let lower_conversions
         | Wasm_unbox_f64 -> Typing.Number (Typing.Float, Typing.Unboxed)
         | Wasm_unbox_i32 -> Typing.Number (Typing.Int32, Typing.Unboxed)
         | Wasm_unbox_i64 -> Typing.Number (Typing.Int64, Typing.Unboxed)
-        | Wasm_untag_int | Lt | Le | Ult | IsInt | Eq | Neq | Not | Vectlength _ ->
+        | Wasm_untag_int | Lt | Le | Ult | IsInt _ | Eq | Neq | Not | Vectlength _ ->
             Typing.Int Typing.Integer.Small_normalized
         | Wasm_untag_large_int -> Typing.Int Typing.Integer.Large_normalized
         | Extern (nm, _) ->

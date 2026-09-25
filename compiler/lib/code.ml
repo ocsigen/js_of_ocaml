@@ -316,7 +316,7 @@ type prim =
   | Array_get of field_type
   | Extern of string * Optimization_hint.ccall option
   | Not
-  | IsInt
+  | IsInt of { variant_only : bool }
   | Eq
   | Neq
   | Lt
@@ -633,7 +633,7 @@ module Print = struct
         with Not_found -> Format.fprintf f "\"%s\"(%a) %a" s (list arg) l hint h)
     | Extern (s, h), _ -> Format.fprintf f "\"%s\"(%a) %a" s (list arg) l hint h
     | Not, [ x ] -> Format.fprintf f "!%a" arg x
-    | IsInt, [ x ] -> Format.fprintf f "is_int(%a)" arg x
+    | IsInt _, [ x ] -> Format.fprintf f "is_int(%a)" arg x
     | Eq, [ x; y ] -> Format.fprintf f "%a === %a" arg x arg y
     | Neq, [ x; y ] -> Format.fprintf f "!(%a === %a)" arg x arg y
     | Lt, [ x; y ] -> Format.fprintf f "%a < %a" arg x arg y

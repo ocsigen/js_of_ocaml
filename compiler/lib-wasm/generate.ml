@@ -2301,8 +2301,10 @@ module Generate (Target : Target_sig.S) = struct
                       loop (x :: acc) r
                 in
                 loop [] l
-            | IsInt, [ x ] ->
-                if Config.Flag.portable_int ()
+            | IsInt { variant_only }, [ x ] ->
+                (* The immediates of a variant type are constant
+                   constructors, which are never boxed *)
+                if Config.Flag.portable_int () && not variant_only
                 then Value64.check_is_int x
                 else Value.check_is_int x
             | Vectlength kind, [ x ] -> (
@@ -2323,7 +2325,7 @@ module Generate (Target : Target_sig.S) = struct
                 | Neq
                 | Ult
                 | Array_get _
-                | IsInt
+                | IsInt _
                 | Vectlength _
                 | Wasm_unbox_i32
                 | Wasm_unbox_i64

@@ -389,13 +389,13 @@ let propagate defs scoped_live_vars ~state ~dep:y ~target:x ~action:usage_kind =
                 vars;
               !live
           | Expr (Field (_, i, _)) -> Domain.live_field i l
-          | Expr (Prim (IsInt, _)) -> Domain.live_block
+          | Expr (Prim (IsInt _, _)) -> Domain.live_block
           | _ -> Domain.top)
       (* If y is top and y is a field access, x depends only on that field *)
       | Top -> (
           match Var.Tbl.get defs y with
           | Expr (Field (_, i, _)) -> Domain.live_field i Domain.top
-          | Expr (Prim (IsInt, _)) -> Domain.live_block
+          | Expr (Prim (IsInt _, _)) -> Domain.live_block
           | _ -> Domain.top))
   (* If x is used as an argument for parameter y, then contribution is liveness of y *)
   | Propagate { scope; src } ->
