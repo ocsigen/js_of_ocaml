@@ -53,8 +53,7 @@ let check_js_file fname =
   let c = Fs.read_file fname in
   let p =
     try Parse_js.parse `Script (Parse_js.Lexer.of_string ~filename:fname c)
-    with Parse_js.Parsing_error pi ->
-      failwith (Printf.sprintf "cannot parse file %S (l:%d, c:%d)" fname pi.line pi.col)
+    with Parse_js.Parsing_error pi -> failwith (Parse_js.string_of_error pi)
   in
   let freenames = free_variable p in
   let freenames = StringSet.diff freenames Reserved.keyword in
