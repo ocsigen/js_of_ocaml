@@ -675,6 +675,57 @@ let fail_early =
 
 let check_program p = List.iter p ~f:(function _, p -> fail_early#program [ p ])
 
+(* The [n]th line of a file (starting from 1), if it can be read *)
+let source_line file n =
+  match open_in_bin file with
+  | exception Sys_error _ -> None
+  | ic ->
+      let rec loop i =
+        match In_channel.input_line ic with
+        | None -> None
+        | Some l -> if i = n then Some l else loop (i + 1)
+      in
+      let l = if n >= 1 then loop 1 else None in
+      close_in ic;
+      l
+
+let string_of_error (pi : Parse_info.t) =
+  let file =
+    match pi with
+    | { src = Some f; _ } | { name = Some f; _ } -> Some f
+    | { src = None; name = None; _ } -> None
+  in
+  (* [file:line:col: message] *)
+  let msg =
+    match Parse_info.to_string pi with
+    | "?" -> Printf.sprintf "line %d, column %d: syntax error" pi.line pi.col
+    | loc -> Printf.sprintf "%s: syntax error" loc
+  in
+  match Option.bind file ~f:(fun file -> source_line file pi.line) with
+  | None -> msg
+  | Some line ->
+      let line =
+        (* Strip a carriage return *)
+        let n = String.length line in
+        if n > 0 && Char.equal line.[n - 1] '\r'
+        then String.sub line ~pos:0 ~len:(n - 1)
+        else line
+      in
+      (* Columns count code points. Keep the tabs to stay aligned. *)
+      let b = Buffer.create 16 in
+      String.fold_utf_8 line () ~f:(fun () _ u ->
+          if Buffer.length b < pi.col
+          then
+            Buffer.add_char b (if Uchar.equal u (Uchar.of_char '\t') then '\t' else ' '));
+      let num = string_of_int pi.line in
+      Printf.sprintf
+        "%s\n%s | %s\n%s | %s^"
+        msg
+        num
+        line
+        (String.make (String.length num) ' ')
+        (Buffer.contents b)
+
 let parse' script_or_module lex =
   let p, toks =
     match script_or_module with
