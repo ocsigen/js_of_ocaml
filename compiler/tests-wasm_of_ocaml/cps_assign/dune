@@ -5,6 +5,7 @@
  (with-effects)
  (with-effects-double-translation)
  (with-native-effects)
+ (with-portable-int)
  (wasi-with-native-effects)
  (_
   (js_of_ocaml
