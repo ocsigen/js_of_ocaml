@@ -304,6 +304,8 @@ module Generate (Target : Target_sig.S) = struct
 
     (* Shifting an unnormalized integer to compare it *)
     let shift e = counted "shift" Arith.(e lsl const 1l)
+
+    let untag_no_trap e = counted "untag" (Value.int_val_no_trap e)
   end
 
   let conversion c e =
@@ -2101,6 +2103,7 @@ module Generate (Target : Target_sig.S) = struct
             loop [] arg_typ l |> box_number_if_needed ctx x
         | Wasm_conversion c -> (
             match c, l with
+            | Untag_int, [ Pv v ] when Lcm.guarded_untag v -> Conv.untag_no_trap (load v)
             | _, [ Pv v ] -> conversion c (load v)
             | _ -> assert false)
         | _ -> (
