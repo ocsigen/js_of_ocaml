@@ -16,6 +16,8 @@ val to_float : t -> float
 
 val to_int32 : t -> int32
 
+val to_int64 : t -> int64
+
 (* of *)
 
 val of_string_exn : string -> t
