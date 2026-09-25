@@ -45,6 +45,8 @@ let to_float x = Int32.to_float x
 
 let to_int32 x = x
 
+let to_int64 x = Int64.of_int32 x
+
 let to_int_exn x =
   if Sys.int_size >= 32 || (Int32.of_int Int.min_int <= x && x <= Int32.of_int Int.max_int)
   then Int32.to_int x

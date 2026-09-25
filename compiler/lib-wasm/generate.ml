@@ -3402,8 +3402,26 @@ let f
     ~global_flow_data =
   let global_flow_state, global_flow_info = global_flow_data in
   let fun_info = Call_graph_analysis.f p global_flow_info in
+  (* The range analysis is too costly for [--opt 1], where the global flow
+     analysis is less precise anyway *)
+  let int_ranges =
+    if
+      Config.Flag.int_range ()
+      &&
+      match (profile : Profile.t) with
+      | O1 -> false
+      | O2 | O3 -> true
+    then Some (Int_range.f ~global_flow_state ~global_flow_info p)
+    else None
+  in
   let types =
-    Typing.f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinel p
+    Typing.f
+      ~global_flow_state
+      ~global_flow_info
+      ~fun_info
+      ~deadcode_sentinel
+      ~int_ranges
+      p
   in
   let raising_funcs =
     Call_graph_analysis.raising_functions
