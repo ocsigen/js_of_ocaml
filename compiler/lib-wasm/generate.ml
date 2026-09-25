@@ -2770,7 +2770,14 @@ module Generate (Target : Target_sig.S) = struct
                 label_index context pc
               in
               let* e =
-                convert ~from:(Typing.var_type ctx.types x) ~into:int_sn (load x)
+                match Typing.var_type ctx.types x with
+                | Top | Int Ref ->
+                    (* The operand of a switch is a constant constructor or
+                       an integer already checked to be within the range of
+                       the switch: it is always an [i31], even with portable
+                       integers *)
+                    Conv.untag (load x)
+                | typ -> convert ~from:typ ~into:int_sn (load x)
               in
               instr (Br_table (e, List.map ~f:dest l, dest a.(len - 1)))
           | Raise (x, _) -> (
