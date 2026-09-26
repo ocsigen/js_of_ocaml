@@ -25,7 +25,12 @@ let backend =
 let target_engine =
   match Sys.getenv_opt "JSOO_TEST_ENGINE" with
   | Some e when not (String.equal e "") -> e
-  | _ -> "node"
+  | _ -> (
+      (* [JSOO_ENGINE] selects the engine that runs the generated code (node,
+         bun, ...); reflect it here so engine-specific test guards apply. *)
+      match Sys.getenv_opt "JSOO_ENGINE" with
+      | Some e when not (String.equal e "") -> e
+      | _ -> "node")
 
 (* The engine the current test process itself runs on. A native test process
    does not run under a JS/wasm engine, so it ignores [JSOO_TEST_ENGINE]; only a
@@ -35,6 +40,16 @@ let host_engine =
   match Sys.backend_type with
   | Native | Bytecode -> "native"
   | Other _ -> target_engine
+
+(* The engine hosting the WASI runtime ([JSOO_ENGINE], like the node wrapper);
+   [""] when not running under WASI, so [wasi_host = "bun"] implies [wasi]. *)
+let wasi_host =
+  if String.equal host_engine "wasi"
+  then
+    match Sys.getenv_opt "JSOO_ENGINE" with
+    | Some e when not (String.equal e "") -> e
+    | _ -> "node"
+  else ""
 
 let os_type = Sys.os_type
 
