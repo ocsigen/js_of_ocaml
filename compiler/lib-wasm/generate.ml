@@ -924,6 +924,16 @@ module Generate (Target : Target_sig.S) = struct
         word_of_i32 (Memory.bytes_length x));
     register_un_prim "caml_ml_bytes_length" `Pure ~ret_typ:int_wn (fun x ->
         word_of_i32 (Memory.bytes_length x));
+    (* Dimensions are nonnegative [i32]; with 31-bit integers, the runtime
+       wraps those that do not fit *)
+    List.iteri
+      ~f:(fun n name ->
+        register_un_prim
+          name
+          `Mutator
+          ~ret_typ:(if portable then int_wn else int_wu)
+          (fun x -> word_of_i32 (Bigarray.dimension n x)))
+      [ "caml_ba_dim_1"; "caml_ba_dim_2"; "caml_ba_dim_3" ];
     register_arith_bin_prim "%int_add" `Pure ~typ:int_wu I.int_add;
     register_arith_bin_prim "%int_sub" `Pure ~typ:int_wu I.int_sub;
     register_arith_bin_prim "%int_mul" `Pure ~typ:int_wu I.int_mul;

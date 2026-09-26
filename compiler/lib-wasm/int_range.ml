@@ -343,6 +343,8 @@ let extern_range st name args =
     | "caml_string_equal"
     | "caml_string_notequal" -> Range (0L, 1L)
     | "caml_ml_string_length" | "caml_ml_bytes_length" -> Range (0L, Lazy.force max_i31s)
+    | ("caml_ba_dim_1" | "caml_ba_dim_2" | "caml_ba_dim_3")
+      when Config.Flag.portable_int () -> Range (0L, Int64.of_int32 Int32.max_int)
     | _ -> Top
 
 let is_mutable_field st z n =
