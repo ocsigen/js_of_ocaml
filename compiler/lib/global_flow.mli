@@ -86,4 +86,6 @@ val exact_call : info -> Var.t -> int -> bool
 
 val get_unique_closure : info -> Var.t -> (Var.t * Var.t list) option
 
+val is_closure : info -> Var.t -> bool
+
 val function_arity : info -> Var.t -> int option
