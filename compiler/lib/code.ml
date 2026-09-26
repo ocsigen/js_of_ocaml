@@ -476,11 +476,17 @@ type field_type =
   | Non_float
   | Float
 
+type yielding_kind =
+  | Unyielding
+  | May_yield
+  | Unknown
+
 type expr =
   | Apply of
       { f : Var.t
       ; args : Var.t list
       ; exact : bool
+      ; yielding : yielding_kind
       }
   | Block of int * Var.t array * array_or_not * mutability
   | Field of Var.t * int * field_type
@@ -635,10 +641,18 @@ module Print = struct
 
   let expr f e =
     match e with
-    | Apply { f = g; args; exact } ->
-        if exact
-        then Format.fprintf f "%a!(%a)" Var.print g var_list args
-        else Format.fprintf f "%a(%a)" Var.print g var_list args
+    | Apply { f = g; args; exact; yielding } ->
+        Format.fprintf
+          f
+          "%a%s%s(%a)"
+          Var.print
+          g
+          (if exact then "!" else "")
+          (match yielding with
+          | May_yield -> "~"
+          | Unyielding | Unknown -> "")
+          var_list
+          args
     | Block (t, a, _, mut) ->
         Format.fprintf
           f

@@ -217,6 +217,30 @@ function caml_mod(x, y) {
   return x % y;
 }
 
+//Provides: caml_int_unsigned_div
+//Requires: caml_raise_zero_divide
+//Version: >= 5.2
+//If: oxcaml
+//Alias: caml_int32_unsigned_div
+//Alias: caml_nativeint_unsigned_div
+//Alias: %int_unsigned_div
+function caml_int_unsigned_div(x, y) {
+  if (y === 0) caml_raise_zero_divide();
+  return ((x >>> 0) / (y >>> 0)) | 0;
+}
+
+//Provides: caml_int_unsigned_mod
+//Requires: caml_raise_zero_divide
+//Version: >= 5.2
+//If: oxcaml
+//Alias: caml_int32_unsigned_mod
+//Alias: caml_nativeint_unsigned_mod
+//Alias: %int_unsigned_mod
+function caml_int_unsigned_mod(x, y) {
+  if (y === 0) caml_raise_zero_divide();
+  return ((x >>> 0) % (y >>> 0)) | 0;
+}
+
 //Provides: caml_bswap16 const
 function caml_bswap16(x) {
   return ((x & 0x00ff) << 8) | ((x & 0xff00) >> 8);

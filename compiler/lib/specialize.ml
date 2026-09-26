@@ -32,19 +32,20 @@ let add_event loc instrs =
   | None -> instrs
 
 let unknown_apply = function
-  | Let (_, Apply { f = _; args = _; exact = false }) -> true
+  | Let (_, Apply { f = _; args = _; exact = false; yielding = _ }) -> true
   | _ -> false
 
 let specialize_apply opt_count shape set_shape update_def =
-  let rec loop x f args shape loc (acc, free_pc, extra) =
+  let rec loop x f args ~yielding shape loc (acc, free_pc, extra) =
     match shape.Shape.desc with
-    | Top | Block _ -> Let (x, Apply { f; args; exact = false }) :: acc, free_pc, extra
+    | Top | Block _ ->
+        Let (x, Apply { f; args; exact = false; yielding }) :: acc, free_pc, extra
     | Function { arity; res; _ } ->
         let nargs = List.length args in
         if arity = nargs
         then (
           incr opt_count;
-          let expr = Apply { f; args; exact = true } in
+          let expr = Apply { f; args; exact = true; yielding } in
           update_def x expr;
           Let (x, expr) :: acc, free_pc, extra)
         else if arity > nargs
@@ -58,8 +59,14 @@ let specialize_apply opt_count shape set_shape update_def =
             let return' = Code.Var.fresh () in
             let args = args @ params' in
             assert (List.length args = arity);
+            (* The full application happens later, when the closure is applied
+               to the missing arguments; even if the partial application was
+               proven not to perform an effect, this tells us nothing about the
+               full application. *)
+            let yielding = May_yield in
             { params = params'
-            ; body = add_event loc [ Let (return', Apply { f; args; exact = true }) ]
+            ; body =
+                add_event loc [ Let (return', Apply { f; args; exact = true; yielding }) ]
             ; branch = Return return'
             }
           in
@@ -73,16 +80,29 @@ let specialize_apply opt_count shape set_shape update_def =
           let v = Code.Var.fresh () in
           set_shape v res;
           let args, rest = List.take arity args in
-          let exact_expr = Apply { f; args; exact = true } in
+          let exact_expr =
+            Apply
+              { f
+              ; args
+              ; exact =
+                  true
+                  (* Both the partial application and the application of its result to
+                 the remaining arguments are part of the original application, so
+                 they can both be considered as not performing any effect if the
+                 original application was proven not to. *)
+              ; yielding
+              }
+          in
           let body =
             (* Reversed *)
             add_event loc (Let (v, exact_expr) :: acc)
           in
-          loop x v rest res loc (body, free_pc, extra))
+          loop x v rest ~yielding res loc (body, free_pc, extra))
   in
   fun i (((body_rev, free_pc, extra) as acc), loc) ->
     match i with
-    | Let (x, Apply { f; args; exact = false }) -> loop x f args (shape f) loc acc
+    | Let (x, Apply { f; args; exact = false; yielding }) ->
+        loop x f args ~yielding (shape f) loc acc
     | _ -> i :: body_rev, free_pc, extra
 
 let specialize_instrs ~shape ~set_shape ~update_def opt_count p =
@@ -149,7 +169,8 @@ end = struct
   let expr s e =
     match e with
     | Constant _ -> e
-    | Apply { f; args; exact } -> Apply { f = s f; args = List.map args ~f:s; exact }
+    | Apply { f; args; exact; yielding } ->
+        Apply { f = s f; args = List.map args ~f:s; exact; yielding }
     | Block (n, a, k, mut) -> Block (n, Array.map a ~f:s, k, mut)
     | Field (x, n, typ) -> Field (s x, n, typ)
     | Closure (l, pc, loc) -> Closure (l, subst_cont s pc, loc)
