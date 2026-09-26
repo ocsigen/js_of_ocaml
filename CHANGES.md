@@ -4,6 +4,8 @@
 * Runtime/Wasm: `caml_hash` and `compare` keep their work stack in locals and
   a per-call array rather than a global one, avoiding write-barrier slow
   paths (#XXXX)
+* Runtime/Wasm: the lexer engines convert the lexer tables once to 16-bit
+  arrays rather than reading each entry as two bytes (#XXXX)
 * Compiler: with `--effects={cps,double-translation}`, specialize calls to
   known functions using the global flow analysis before the CPS transformation
   (#2456)

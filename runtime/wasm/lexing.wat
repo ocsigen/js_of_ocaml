@@ -21,16 +21,95 @@
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
 
-   (func $get (param $a (ref eq)) (param $i i32) (result i32)
-      (local $s (ref $bytes))
-      (local.set $s (ref.cast (ref $bytes) (local.get $a)))
-      (local.set $i (i32.add (local.get $i) (local.get $i)))
-      (i32.extend16_s
-         (i32.or (array.get_u $bytes (local.get $s) (local.get $i))
-            (i32.shl
-               (array.get_u $bytes (local.get $s)
-                  (i32.add (local.get $i) (i32.const 1)))
-               (i32.const 8)))))
+   ;; The lexer tables are strings of signed 16-bit little-endian
+   ;; integers. Reading an entry byte per byte costs two array accesses
+   ;; (with two bounds checks), so we convert the tables into arrays of
+   ;; 16-bit integers the first time they are used, and cache the result.
+   ;; Lexer tables are static data, and a program has only a few lexers,
+   ;; so the cache is a list which is never pruned.
+   (type $lex_table (array (mut i16)))
+   (type $lex_tables
+      (struct
+         (field $key (ref $block))
+         (field $base (ref $lex_table))
+         (field $backtrk (ref $lex_table))
+         (field $default (ref $lex_table))
+         (field $trans (ref $lex_table))
+         (field $check (ref $lex_table))
+         (field $base_code (ref $lex_table))
+         (field $backtrk_code (ref $lex_table))
+         (field $default_code (ref $lex_table))
+         (field $trans_code (ref $lex_table))
+         (field $check_code (ref $lex_table))
+         (field $next (ref null $lex_tables))))
+
+   (global $lex_tables_cache (mut (ref null $lex_tables))
+      (ref.null $lex_tables))
+
+   (func $convert_table (param $tbl (ref $block)) (param $i i32)
+      (result (ref $lex_table))
+      (local $s (ref $bytes)) (local $t (ref $lex_table))
+      (local $j i32) (local $len i32)
+      (local.set $s
+         (ref.cast (ref $bytes)
+            (array.get $block (local.get $tbl) (local.get $i))))
+      ;; an odd trailing byte cannot be part of a valid entry
+      (local.set $len (i32.shr_u (array.len (local.get $s)) (i32.const 1)))
+      (local.set $t (array.new_default $lex_table (local.get $len)))
+      (local.set $j (i32.const 0))
+      (loop $loop
+         (if (i32.lt_u (local.get $j) (local.get $len))
+            (then
+               (array.set $lex_table (local.get $t) (local.get $j)
+                  (i32.or
+                     (array.get_u $bytes (local.get $s)
+                        (i32.shl (local.get $j) (i32.const 1)))
+                     (i32.shl
+                        (array.get_u $bytes (local.get $s)
+                           (i32.add (i32.shl (local.get $j) (i32.const 1))
+                              (i32.const 1)))
+                        (i32.const 8))))
+               (local.set $j (i32.add (local.get $j) (i32.const 1)))
+               (br $loop))))
+      (local.get $t))
+
+   (func $get_tables (param $tbl (ref $block)) (result (ref $lex_tables))
+      (local $t (ref null $lex_tables)) (local $r (ref $lex_tables))
+      (local.set $t (global.get $lex_tables_cache))
+      (loop $loop
+         (if (i32.eqz (ref.is_null (local.get $t)))
+            (then
+               (if (ref.eq (struct.get $lex_tables $key (local.get $t))
+                      (local.get $tbl))
+                  (then (return (ref.as_non_null (local.get $t)))))
+               (local.set $t (struct.get $lex_tables $next (local.get $t)))
+               (br $loop))))
+      (local.set $r
+         (struct.new $lex_tables
+            (local.get $tbl)
+            (call $convert_table (local.get $tbl) (global.get $lex_base_field))
+            (call $convert_table (local.get $tbl)
+               (global.get $lex_backtrk_field))
+            (call $convert_table (local.get $tbl)
+               (global.get $lex_default_field))
+            (call $convert_table (local.get $tbl) (global.get $lex_trans_field))
+            (call $convert_table (local.get $tbl) (global.get $lex_check_field))
+            (call $convert_table (local.get $tbl)
+               (global.get $lex_base_code_field))
+            (call $convert_table (local.get $tbl)
+               (global.get $lex_backtrk_code_field))
+            (call $convert_table (local.get $tbl)
+               (global.get $lex_default_code_field))
+            (call $convert_table (local.get $tbl)
+               (global.get $lex_trans_code_field))
+            (call $convert_table (local.get $tbl)
+               (global.get $lex_check_code_field))
+            (global.get $lex_tables_cache)))
+      (global.set $lex_tables_cache (local.get $r))
+      (local.get $r))
+
+   (func $get (param $t (ref $lex_table)) (param $i i32) (result i32)
+      (array.get_s $lex_table (local.get $t) (local.get $i)))
 
    (global $lex_buffer i32 (i32.const 2))
    (global $lex_buffer_len i32 (i32.const 3))
@@ -65,11 +144,12 @@
       (local $buffer (ref $bytes))
       (local $vpos (ref eq)) (local $action (ref eq))
       (local $pos i32) (local $base i32) (local $backtrk i32)
-      (local $lex_base (ref $bytes))
-      (local $lex_backtrk (ref $bytes))
-      (local $lex_check (ref $bytes))
-      (local $lex_trans (ref $bytes))
-      (local $lex_default (ref $bytes))
+      (local $tbls (ref $lex_tables))
+      (local $lex_base (ref $lex_table))
+      (local $lex_backtrk (ref $lex_table))
+      (local $lex_check (ref $lex_table))
+      (local $lex_trans (ref $lex_table))
+      (local $lex_default (ref $lex_table))
       (local.set $tbl (ref.cast (ref $block) (local.get $vtbl)))
       (local.set $lexbuf (ref.cast (ref $block) (local.get $vlexbuf)))
       (local.set $state
@@ -89,21 +169,14 @@
                (ref.i31 (i32.const -1))))
          (else
             (local.set $state (i32.sub (i32.const -1) (local.get $state)))))
-      (local.set $lex_base
-         (ref.cast (ref $bytes)
-            (array.get $block (local.get $tbl) (global.get $lex_base_field))))
+      (local.set $tbls (call $get_tables (local.get $tbl)))
+      (local.set $lex_base (struct.get $lex_tables $base (local.get $tbls)))
       (local.set $lex_backtrk
-         (ref.cast (ref $bytes)
-            (array.get $block (local.get $tbl) (global.get $lex_backtrk_field))))
-      (local.set $lex_check
-         (ref.cast (ref $bytes)
-            (array.get $block (local.get $tbl) (global.get $lex_check_field))))
-      (local.set $lex_trans
-         (ref.cast (ref $bytes)
-            (array.get $block (local.get $tbl) (global.get $lex_trans_field))))
+         (struct.get $lex_tables $backtrk (local.get $tbls)))
+      (local.set $lex_check (struct.get $lex_tables $check (local.get $tbls)))
+      (local.set $lex_trans (struct.get $lex_tables $trans (local.get $tbls)))
       (local.set $lex_default
-         (ref.cast (ref $bytes)
-            (array.get $block (local.get $tbl) (global.get $lex_default_field))))
+         (struct.get $lex_tables $default (local.get $tbls)))
       (loop $loop
          (local.set $base (call $get (local.get $lex_base) (local.get $state)))
          (if (i32.lt_s (local.get $base) (i32.const 0))
@@ -222,17 +295,18 @@
       (local $vpos (ref eq)) (local $action (ref eq))
       (local $pos i32) (local $base i32) (local $backtrk i32)
       (local $pc_off i32) (local $base_code i32)
+      (local $tbls (ref $lex_tables))
       (local $lex_code (ref $bytes))
-      (local $lex_base (ref $bytes))
-      (local $lex_base_code (ref $bytes))
-      (local $lex_backtrk (ref $bytes))
-      (local $lex_backtrk_code (ref $bytes))
-      (local $lex_check (ref $bytes))
-      (local $lex_check_code (ref $bytes))
-      (local $lex_trans (ref $bytes))
-      (local $lex_trans_code (ref $bytes))
-      (local $lex_default (ref $bytes))
-      (local $lex_default_code (ref $bytes))
+      (local $lex_base (ref $lex_table))
+      (local $lex_base_code (ref $lex_table))
+      (local $lex_backtrk (ref $lex_table))
+      (local $lex_backtrk_code (ref $lex_table))
+      (local $lex_check (ref $lex_table))
+      (local $lex_check_code (ref $lex_table))
+      (local $lex_trans (ref $lex_table))
+      (local $lex_trans_code (ref $lex_table))
+      (local $lex_default (ref $lex_table))
+      (local $lex_default_code (ref $lex_table))
       (local.set $tbl (ref.cast (ref $block) (local.get $vtbl)))
       (local.set $lexbuf (ref.cast (ref $block) (local.get $vlexbuf)))
       (local.set $state
@@ -255,36 +329,24 @@
       (local.set $lex_code
          (ref.cast (ref $bytes)
             (array.get $block (local.get $tbl) (global.get $lex_code_field))))
-      (local.set $lex_base
-         (ref.cast (ref $bytes)
-            (array.get $block (local.get $tbl) (global.get $lex_base_field))))
+      (local.set $tbls (call $get_tables (local.get $tbl)))
+      (local.set $lex_base (struct.get $lex_tables $base (local.get $tbls)))
       (local.set $lex_base_code
-         (ref.cast (ref $bytes)
-            (array.get $block (local.get $tbl) (global.get $lex_base_code_field))))
+         (struct.get $lex_tables $base_code (local.get $tbls)))
       (local.set $lex_backtrk
-         (ref.cast (ref $bytes)
-            (array.get $block (local.get $tbl) (global.get $lex_backtrk_field))))
+         (struct.get $lex_tables $backtrk (local.get $tbls)))
       (local.set $lex_backtrk_code
-         (ref.cast (ref $bytes)
-            (array.get $block (local.get $tbl) (global.get $lex_backtrk_code_field))))
-      (local.set $lex_check
-         (ref.cast (ref $bytes)
-            (array.get $block (local.get $tbl) (global.get $lex_check_field))))
+         (struct.get $lex_tables $backtrk_code (local.get $tbls)))
+      (local.set $lex_check (struct.get $lex_tables $check (local.get $tbls)))
       (local.set $lex_check_code
-         (ref.cast (ref $bytes)
-            (array.get $block (local.get $tbl) (global.get $lex_check_code_field))))
-      (local.set $lex_trans
-         (ref.cast (ref $bytes)
-            (array.get $block (local.get $tbl) (global.get $lex_trans_field))))
+         (struct.get $lex_tables $check_code (local.get $tbls)))
+      (local.set $lex_trans (struct.get $lex_tables $trans (local.get $tbls)))
       (local.set $lex_trans_code
-         (ref.cast (ref $bytes)
-            (array.get $block (local.get $tbl) (global.get $lex_trans_code_field))))
+         (struct.get $lex_tables $trans_code (local.get $tbls)))
       (local.set $lex_default
-         (ref.cast (ref $bytes)
-            (array.get $block (local.get $tbl) (global.get $lex_default_field))))
+         (struct.get $lex_tables $default (local.get $tbls)))
       (local.set $lex_default_code
-         (ref.cast (ref $bytes)
-            (array.get $block (local.get $tbl) (global.get $lex_default_code_field))))
+         (struct.get $lex_tables $default_code (local.get $tbls)))
       (loop $loop
          (local.set $base (call $get (local.get $lex_base) (local.get $state)))
          (if (i32.lt_s (local.get $base) (i32.const 0))
