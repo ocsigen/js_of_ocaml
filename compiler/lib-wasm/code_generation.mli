@@ -45,6 +45,9 @@ type context =
   ; value_type : Wasm_ast.value_type
   ; mutable unit_name : string option
   ; mutable no_tail_call : unit Code.Var.Hashtbl.t
+  ; eq_globals : Code.Var.t option list Code.Var.Hashtbl.t
+        (** Mutable globals of type [eq], with the functions whose
+            results are stored in them ([None] for any other value) *)
   }
 
 val make_context : value_type:Wasm_ast.value_type -> context
@@ -166,6 +169,8 @@ val register_import :
   -> name:string
   -> Wasm_ast.import_desc
   -> Wasm_ast.var t
+
+val refine_eq_globals : context -> unit
 
 val register_global :
      Wasm_ast.var
