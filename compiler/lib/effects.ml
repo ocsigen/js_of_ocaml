@@ -781,6 +781,9 @@ let rewrite_direct_block ~st ~cps_needed ~closure_info ~pc block =
           let direct_c = Var.fork x in
           let cps_c = Var.fork x in
           let cps_params, cps_cont = Addr.Hashtbl.find closure_info pc in
+          (* The Wasm backend needs to know which closures use the CPS
+             calling convention *)
+          st.in_cps := Var.Set.add cps_c !(st.in_cps);
           [ Let (direct_c, Closure (params, cont, cloc))
           ; Let (cps_c, Closure (cps_params, cps_cont, (None, None)))
           ; Let (x, Prim (Extern ("caml_cps_closure", None), [ Pv direct_c; Pv cps_c ]))

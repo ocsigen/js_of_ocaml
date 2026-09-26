@@ -37,9 +37,27 @@
    (type $closure (sub (struct (field $func (ref $function_1)))))
    (type $closure_last_arg (sub $closure (struct (field $func (ref $function_1)))))
    (type $function_2 (func (param (ref eq) (ref eq) (ref eq)) (result (ref eq))))
+(@if (not (= $effects "double-translation"))
+(@then
    (type $cps_closure (sub (struct (field $func (ref $function_2)))))
    (type $cps_closure_last_arg
       (sub $cps_closure (struct (field $func (ref $function_2)))))
+)
+(@else
+   ;; With double translation, the closure of a function with a CPS version is
+   ;; a direct-style closure extended with the code pointers of the CPS
+   ;; version (see Gc_target.Type.code_pointer_fields in the compiler). Since
+   ;; Wasm types are structural, $cps_closure would otherwise be the same type
+   ;; as $closure_2; it is made a subtype of $closure_last_arg to keep the two
+   ;; apart. This does not mean it has a single argument left: as in direct
+   ;; style, that is what $cps_closure_last_arg denotes.
+   (type $cps_closure
+      (sub $closure_last_arg
+         (struct (field $func (ref $function_1)) (field $cps_func (ref $function_2)))))
+   (type $cps_closure_last_arg
+      (sub $cps_closure
+         (struct (field $func (ref $function_1)) (field $cps_func (ref $function_2)))))
+))
 
    (type $int_array (array (mut i32)))
 
@@ -81,11 +99,24 @@
          (struct (field $func (ref $function_1)) (field $direct (ref $function_4))
             (field $closure (mut (ref null $closure_4))))))
 
+   ;; Only used when functions are compiled in CPS: with double translation,
+   ;; recursive values are initialised with direct-style dummy closures.
+(@if (not (= $effects "double-translation"))
+(@then
    (type $cps_dummy_closure
       (sub final $cps_closure_last_arg
          (struct
             (field $func (ref $function_2))
             (field $closure (mut (ref null $cps_closure))))))
+)
+(@else
+   (type $cps_dummy_closure
+      (sub final $cps_closure_last_arg
+         (struct
+            (field $func (ref $function_1))
+            (field $cps_func (ref $function_2))
+            (field $closure (mut (ref null $cps_closure))))))
+))
 
    (global $forcing_tag i32 (i32.const 244))
    (global $cont_tag (export "cont_tag") i32 (i32.const 245))
@@ -120,10 +151,14 @@
       (i32.or (ref.test (ref $closure) (local.get $v))
               (ref.test (ref $cps_closure) (local.get $v))))
 
+   ;; Whether applying one more argument to this closure completes the call.
+   ;; With double translation, $cps_closure is a subtype of $closure_last_arg,
+   ;; so the CPS hierarchy must be tested first.
    (func (export "caml_is_last_arg")
       (param $v (ref eq)) (result i32)
-      (i32.or (ref.test (ref $closure_last_arg) (local.get $v))
-              (ref.test (ref $cps_closure_last_arg) (local.get $v))))
+      (if (result i32) (ref.test (ref $cps_closure) (local.get $v))
+         (then (ref.test (ref $cps_closure_last_arg) (local.get $v)))
+         (else (ref.test (ref $closure_last_arg) (local.get $v)))))
 
    (func (export "caml_alloc_dummy") (param $size (ref eq)) (result (ref eq))
       (array.new $block (ref.i31 (i32.const 0))
@@ -193,7 +228,7 @@
       (drop (block $not_cps_closure (result (ref eq))
          (local.set $ccps
             (br_on_cast_fail $not_cps_closure (ref eq) (ref $cps_dummy_closure) (local.get $dummy)))
-         (struct.set $cps_dummy_closure 1 (local.get $ccps)
+         (struct.set $cps_dummy_closure $closure (local.get $ccps)
             (ref.cast (ref $cps_closure) (local.get $newval)))
          (return (ref.i31 (i32.const 0)))))
       (unreachable))

@@ -735,8 +735,9 @@ let optimize ~shapes ~profile ~keep_flow_data p =
     +> map_fst5
          (match Config.target (), Config.effects () with
          | `JavaScript, (`Disabled | `Double_translation) -> Generate_closure.f
-         | `JavaScript, `Cps | `Wasm, (`Disabled | `Jspi | `Cps | `Native) -> Fun.id
-         | `JavaScript, (`Jspi | `Native) | `Wasm, `Double_translation -> assert false)
+         | `JavaScript, `Cps
+         | `Wasm, (`Disabled | `Jspi | `Cps | `Double_translation | `Native) -> Fun.id
+         | `JavaScript, (`Jspi | `Native) -> assert false)
     +> map_fst5 deadcode'
   in
   if times () then Format.eprintf "Start Optimizing...@.";
@@ -755,7 +756,9 @@ let optimize_for_wasm ~shapes ~profile p =
   ( optimized_code
   , match global_flow_data with
     | Some data -> data
-    | None -> Global_flow.f ~fast:false optimized_code.program )
+    | None ->
+        Global_flow.f ~cps_calls:optimized_code.in_cps ~fast:false optimized_code.program
+  )
 
 let full ~standalone ~wrap_with_fun ~shapes ~profile ~link ~source_map ~formatter p =
   let optimized_code, _ = optimize ~shapes ~profile ~keep_flow_data:false p in
