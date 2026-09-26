@@ -106,6 +106,8 @@
   of the functions that may run below an effect handler (#2441)
 
 ## Bug fixes
+* Runtime/Wasm: `caml_hash` follows forwarded values (such as forced lazy
+  values), counts objects and ignores negative counts, as native code does (#XXXX)
 * Runtime: `caml_alloc_dummy_mixed` takes two arguments, as OxCaml calls it;
   recursive definitions of mixed records failed to compile (#2461)
 * Runtime: `compare_digits_nat` compares digits as unsigned, and nats
