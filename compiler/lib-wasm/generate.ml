@@ -2736,6 +2736,7 @@ module Generate (Target : Target_sig.S) = struct
     let js_code = StringMap.bindings global_context.fragments in
     global_context.fragments <- StringMap.empty;
     Curry.f ~context:global_context;
+    refine_eq_globals global_context;
     toplevel_name, js_code
 
   let output ~context =
