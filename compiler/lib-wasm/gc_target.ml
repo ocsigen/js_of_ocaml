@@ -732,7 +732,6 @@ module Value64 = struct
           let* ty = Type.large_int_type in
           return (W.StructNew (ty, [ Const (I64 n) ]))
     | _ ->
-        let* ty = Type.large_int_type in
         let v = Code.Var.fresh () in
         seq
           (store ~typ:I64 v (return e))
@@ -759,7 +758,16 @@ module Value64 = struct
                           (Lazy.force Typing.Integer.min_i31s))
                        1L)))
              (load v >>| fun e -> W.RefI31 (I32WrapI64 e))
-             (load v >>| fun e -> W.StructNew (ty, [ e ])))
+             (* The allocation of a large integer is rare, and its machine
+                code is large: it is performed by a runtime function *)
+             (let* e = load v in
+              let* f =
+                register_import
+                  ~name:"box_large_int"
+                  ~import_module:"env"
+                  (Fun { params = [ I64 ]; result = [ Type.value ] })
+              in
+              return (W.Call (f, [ e ]))))
 
   let int_val i =
     let* e = i in
