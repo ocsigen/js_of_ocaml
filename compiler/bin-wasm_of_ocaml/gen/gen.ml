@@ -53,8 +53,7 @@ let check_js_file fname =
   let c = Fs.read_file fname in
   let p =
     try Parse_js.parse `Script (Parse_js.Lexer.of_string ~filename:fname c)
-    with Parse_js.Parsing_error pi ->
-      failwith (Printf.sprintf "cannot parse file %S (l:%d, c:%d)@." fname pi.line pi.col)
+    with Parse_js.Parsing_error pi -> failwith (Parse_js.string_of_error pi)
   in
   let freenames = free_variable p in
   let freenames = StringSet.diff freenames Reserved.keyword in
@@ -121,7 +120,7 @@ let print_flags f flags =
            v))
     flags
 
-let () =
+let main () =
   let () = set_binary_mode_out stdout true in
   let ( js_launcher
       , deps
@@ -198,3 +197,11 @@ let () =
          | Some file ->
              Format.fprintf f "%a,@;%S;@;" print_flags flags (Fs.read_file file)))
     (List.mapi interesting_runtimes ~f:(fun i flags -> i = 0, flags))
+
+(* Report errors the way the compiler does, rather than as an uncaught
+   exception, which escapes the message *)
+let () =
+  try main ()
+  with Failure s ->
+    Format.eprintf "%s: Error: %s@." Sys.argv.(0) s;
+    exit 1
