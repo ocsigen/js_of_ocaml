@@ -63,6 +63,8 @@
   searches and `output_value` sharing detection (with WASI, `output_value`
   now shares boxed numbers with equal contents); single bound check in
   fixed-width `Bytes` accesses (#2470, #2505)
+* Compiler/Wasm: more precise types for function results and globals, which
+  lets binaryen remove about 4% of the casts (#1987)
 
 ### Libraries
 * Lib: add `WebGL2` bindings; the `webgl` example uses WebGL2 and a new
