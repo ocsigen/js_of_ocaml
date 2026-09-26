@@ -6,6 +6,8 @@
   paths (#XXXX)
 * Runtime/Wasm: the lexer engines convert the lexer tables once to 16-bit
   arrays rather than reading each entry as two bytes (#XXXX)
+* Runtime/Wasm: `Str.search_forward` and `Str.search_backward` skip positions
+  where no match can start, as the C and JavaScript runtimes do (#XXXX)
 * Compiler: with `--effects={cps,double-translation}`, specialize calls to
   known functions using the global flow analysis before the CPS transformation
   (#2456)
