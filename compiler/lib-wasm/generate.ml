@@ -1989,6 +1989,12 @@ module Generate (Target : Target_sig.S) = struct
     | Let (x, e) ->
         if ctx.live.(Var.idx x) = 0
         then drop (translate_expr ctx context x e)
+        else if
+          (match e with
+            | Closure _ -> false
+            | _ -> true)
+          && Global_flow.is_closure ctx.global_flow_info x
+        then store x (Memory.cast_generic_closure (translate_expr ctx context x e))
         else
           store
             ?typ:(unboxed_type (Typing.var_type ctx.types x))

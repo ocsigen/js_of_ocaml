@@ -811,6 +811,20 @@ let get_unique_closure info f =
         | None -> None
         | Some kind -> kind)
 
+let is_closure info x =
+  Var.idx x < Var.Tbl.length info.info_approximation
+  &&
+  match Var.Tbl.get info.info_approximation x with
+  | Top | Values { others = true; _ } -> false
+  | Values { known; others = false } ->
+      (not (Var.Set.is_empty known))
+      && Var.Set.for_all
+           (fun g ->
+             match info.info_defs.(Var.idx g) with
+             | Expr (Closure _) -> true
+             | Expr _ | Phi _ -> false)
+           known
+
 let update_def info x expr =
   let idx = Code.Var.idx x in
   info.info_defs.(idx) <- Expr expr
