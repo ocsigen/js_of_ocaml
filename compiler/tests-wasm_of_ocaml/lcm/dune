@@ -28,3 +28,13 @@
  (modes js wasm)
  (wasm_of_ocaml
   (flags :standard --opt 2)))
+
+(tests
+ (names unboxed_param)
+ (modes js wasm)
+ ; Without inlining, so that the functions whose parameters are unboxed
+ ; are kept, and with whole-program compilation, so that all their call
+ ; sites are known
+ (wasm_of_ocaml
+  (compilation_mode whole_program)
+  (flags :standard --opt 2 --no-inline)))
