@@ -66,6 +66,15 @@
   (flags :standard --opt 2)))
 
 (tests
+ (names bigarray_dim)
+ (modes js wasm)
+ ; Bigarray accesses are specialized when the type analysis knows the kind
+ ; and layout of the bigarray
+ (wasm_of_ocaml
+  (compilation_mode whole_program)
+  (flags :standard --opt 2)))
+
+(tests
  (names string_interning)
  (modes wasm))
 
