@@ -1,6 +1,9 @@
 # dev
 
 ## Features/Changes
+* Runtime/Wasm: `caml_hash` and `compare` keep their work stack in locals and
+  a per-call array rather than a global one, avoiding write-barrier slow
+  paths (#XXXX)
 * Compiler: with `--effects={cps,double-translation}`, specialize calls to
   known functions using the global flow analysis before the CPS transformation
   (#2456)
