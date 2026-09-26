@@ -1,0 +1,13 @@
+for loop: 285
+while loop: 45.
+repeated access: 10
+string loop: 29
+bytes loop: ABCDE
+bigarray loop: 721
+checked position: 16
+one too far: Invalid_argument index out of bounds
+negative start: Invalid_argument index out of bounds
+other array: Invalid_argument index out of bounds
+string index too far: Invalid_argument index out of bounds
+bigarray index too far: Invalid_argument index out of bounds
+modified index: Invalid_argument index out of bounds

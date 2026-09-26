@@ -700,6 +700,7 @@ let print_opt types global_flow_state f e =
 type t =
   { types : typ Var.Tbl.t
   ; return_types : typ Var.Hashtbl.t
+  ; int_ranges : Int_range.t option
   }
 
 let f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinel p =
@@ -762,7 +763,9 @@ let f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinel p =
               (Var.Set.fold (fun x t -> Domain.join (Var.Tbl.get types x) t) s Bot))
         name_opt)
     ();
-  { types; return_types }
+  { types; return_types; int_ranges = st.int_ranges }
+
+let int_ranges info = info.int_ranges
 
 let var_type info x = Var.Tbl.get info.types x
 

@@ -55,6 +55,9 @@ val var_type : t -> Code.Var.t -> typ
 
 val return_type : t -> Code.Var.t -> typ
 
+val int_ranges : t -> Int_range.t option
+(** The result of the range analysis, when enabled *)
+
 val reset : unit -> unit
 
 val register_prim : string -> unbox:bool -> typ -> unit

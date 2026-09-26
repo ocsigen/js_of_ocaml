@@ -67,6 +67,7 @@ type constr =
   | Ne of bound
   | Ult of bound
   | Within of int64 * int64
+  | In_bounds of Var.t  (** A valid index of this array, string or bigarray *)
 
 type env = constr list Var.Map.t
 
@@ -169,20 +170,26 @@ let apply_constr st r c =
   | Bot -> Bot
   | Tuple _ -> r
   | Top | Range _ -> (
+      (* Comparisons are between integers: a bound of unknown range is
+         still within the range of integers, so that [x < b] implies
+         [x < max_int] *)
       let upper b f =
         match bound_range st b with
         | Bot -> Bot
-        | Top | Tuple _ -> r
+        | Tuple _ -> r
+        | Top -> meet r (Range (st.min_t, f st.min_t st.max_t))
         | Range (l, h) -> meet r (Range (st.min_t, f l h))
       in
       let lower b f =
         match bound_range st b with
         | Bot -> Bot
-        | Top | Tuple _ -> r
+        | Tuple _ -> r
+        | Top -> meet r (Range (f st.min_t st.max_t, st.max_t))
         | Range (l, h) -> meet r (Range (f l h, st.max_t))
       in
       match c with
       | Within (l, h) -> meet r (Range (l, h))
+      | In_bounds _ -> r
       | Lt b -> upper b (fun _ h -> Int64.pred h)
       | Le b -> upper b (fun _ h -> h)
       | Gt b -> lower b (fun l _ -> Int64.succ l)
@@ -472,7 +479,8 @@ let counter_bound st x l =
       ~f:(fun c ->
         match c with
         | Ne (B_var hi) -> Some hi
-        | Ne (B_const _) | Lt _ | Le _ | Gt _ | Ge _ | Eq _ | Ult _ | Within _ -> None)
+        | Ne (B_const _)
+        | Lt _ | Le _ | Gt _ | Ge _ | Eq _ | Ult _ | Within _ | In_bounds _ -> None)
       (constrs env x)
   in
   match increments with
@@ -555,7 +563,7 @@ let dependencies st x =
             | Eq (B_const _)
             | Ne (B_const _)
             | Ult (B_const _)
-            | Within _ -> acc)
+            | Within _ | In_bounds _ -> acc)
           ~init:acc
           l
   in
@@ -710,6 +718,7 @@ let thresholds st x =
           ~f:(fun acc c ->
             match c with
             | Within (l, h) -> l :: h :: acc
+            | In_bounds _ -> acc
             | Lt b | Le b | Gt b | Ge b | Eq b | Ne b | Ult b -> (
                 match bound_range st b with
                 | Range (l, h) ->
@@ -759,6 +768,80 @@ module Solver = G.Solver (struct
 
   let bot = Bot
 end)
+
+(* The array a checked array access refers to: [caml_check_bound] returns
+   its argument *)
+let rec checked_object st a =
+  if Var.idx a < Array.length st.defs
+  then
+    match st.defs.(Var.idx a) with
+    | Expr_def
+        ( Prim
+            ( Extern
+                ( ("caml_check_bound" | "caml_check_bound_float" | "caml_check_bound_gen")
+                , _ )
+            , Pv b :: _ )
+        , _ ) -> checked_object st b
+    | Expr_def _ | Param_def _ | Other -> a
+  else a
+
+(* Whether [i] is a valid index of [obj] where [x] is defined: [i] has
+   already been checked against [obj], or it is nonnegative and less than a
+   variable [n] such that [is_length n]. [i < n] is also known from
+   [i <= n - 1], which is the case of the counter of a for loop up to
+   [Array.length a - 1]. *)
+let valid_index st ~at:x ~obj ~is_length i =
+  Var.idx x < Array.length st.defs
+  &&
+  match st.defs.(Var.idx x) with
+  | Expr_def (_, env) ->
+      let obj = checked_object st obj in
+      let def z =
+        if Var.idx z < Array.length st.defs then st.defs.(Var.idx z) else Other
+      in
+      let length z =
+        match def z with
+        | Expr_def (e, _) -> is_length e
+        | Param_def _ | Other -> false
+      in
+      (* [m] is [n - 1] for some length [n] *)
+      let length_minus_one m =
+        match def m with
+        | Expr_def (Prim (Extern ("%int_sub", _), [ Pv n; Pc (Int one) ]), _)
+          when Int64.equal (Int64.of_int32 (Targetint.to_int32 one)) 1L -> length n
+        | Expr_def (Prim (Extern ("%int_add", _), [ Pv n; Pc (Int minus_one) ]), _)
+          when Int64.equal (Int64.of_int32 (Targetint.to_int32 minus_one)) (-1L) ->
+            length n
+        | Expr_def _ | Param_def _ | Other -> false
+      in
+      let cs = constrs env i in
+      List.exists
+        ~f:(fun c ->
+          match c with
+          | In_bounds a -> Var.equal a obj
+          | _ -> false)
+        cs
+      || (match refine st env i with
+           | Range (l, _) -> Int64.(l >= 0L)
+           | Bot | Top | Tuple _ -> false)
+         && (List.exists
+               ~f:(fun c ->
+                 match c with
+                 | Lt (B_var n) | Ult (B_var n) -> length n
+                 | Le (B_var m) -> length_minus_one m
+                 | Lt (B_const _)
+                 | Ult (B_const _)
+                 | Le (B_const _)
+                 | Gt _ | Ge _ | Eq _ | Ne _ | Within _ | In_bounds _ -> false)
+               cs
+            ||
+            match def i with
+            | Param_def l -> (
+                match counter_bound st i l with
+                | Some (hi, `Up) -> length_minus_one hi
+                | Some (_, `Down) | None -> false)
+            | Expr_def _ | Other -> false)
+  | Param_def _ | Other -> false
 
 let f ~global_flow_state ~global_flow_info p =
   let t = Timer.make () in
@@ -816,11 +899,14 @@ let f ~global_flow_state ~global_flow_info p =
                   st.defs.(Var.idx x) <- Expr_def (e, env);
                   order := x :: !order;
                   match e with
-                  | Prim (Extern (name, _), Pv _ :: Pv i :: _) when is_checked_access name
+                  | Prim (Extern (name, _), Pv a :: Pv i :: _) when is_checked_access name
                     ->
                       (* The index is checked against the length of the
                          array or string, which fits in 31 bits *)
-                      add_constr env i (Within (0L, Int64.pred (Lazy.force max_i31s)))
+                      add_constr
+                        (add_constr env i (Within (0L, Int64.pred (Lazy.force max_i31s))))
+                        i
+                        (In_bounds (checked_object st a))
                   | _ -> env)
               | Assign _ | Set_field _ | Offset_ref _ | Array_set _ | Event _ -> env)
             ~init:env

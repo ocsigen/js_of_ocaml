@@ -2702,6 +2702,7 @@ let f ~context ~unit_name p ~live_vars ~in_cps ~deadcode_sentinel ~global_flow_d
   let types =
     Typing.f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinel p
   in
+  let p = Bound_checks.f ~types p in
   let t = Timer.make () in
   let p = Structure.norm p in
   let p = fix_switch_branches p in

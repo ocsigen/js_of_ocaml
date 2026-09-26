@@ -75,6 +75,15 @@
   (flags :standard --opt 2)))
 
 (tests
+ (names bound_checks)
+ (modes js wasm)
+ ; The range analysis relies on the global flow analysis, which is more
+ ; precise at --opt 2 and with whole-program compilation
+ (wasm_of_ocaml
+  (compilation_mode whole_program)
+  (flags :standard --opt 2)))
+
+(tests
  (names string_interning)
  (modes wasm))
 
