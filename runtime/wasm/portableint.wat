@@ -50,7 +50,16 @@
 
       (func (export "portable_int_val_31") (param $v (ref eq)) (result i32)
          (i32.shr_s
-            (i32.shl (i32.wrap_i64 (call $portable_int_val (local.get $v)))
+            (i32.shl
+               (i32.wrap_i64
+                  (struct.get $ocaml_large_int 0
+                     (ref.cast (ref $ocaml_large_int)
+                        (block $large (result (ref eq))
+                           ;; An i31 is already a 31-bit integer
+                           (return
+                              (i31.get_s
+                                 (br_on_cast_fail $large (ref eq) (ref i31)
+                                    (local.get $v))))))))
                (i32.const 1))
             (i32.const 1)))
 
@@ -107,7 +116,15 @@
       ;; Saturating extract: clamps to [-2^31, 2^31-1].
       (func (export "int_val_32_sat") (param $v (ref eq)) (result i32)
          (local $l i64)
-         (local.set $l (call $portable_int_val (local.get $v)))
+         ;; An i31 always fits
+         (local.set $l
+            (struct.get $ocaml_large_int 0
+               (ref.cast (ref $ocaml_large_int)
+                  (block $large (result (ref eq))
+                     (return
+                        (i31.get_s
+                           (br_on_cast_fail $large (ref eq) (ref i31)
+                              (local.get $v))))))))
          (if (i64.lt_s (local.get $l) (i64.const -0x80000000))
             (then (return (i32.const 0x80000000))))
          (if (i64.gt_s (local.get $l) (i64.const 0x7fffffff))
@@ -117,7 +134,15 @@
       (func (export "int_val_32_exn")
          (param $v (ref eq)) (param $msg (ref eq)) (result i32)
          (local $l i64)
-         (local.set $l (call $portable_int_val (local.get $v)))
+         ;; An i31 always fits
+         (local.set $l
+            (struct.get $ocaml_large_int 0
+               (ref.cast (ref $ocaml_large_int)
+                  (block $large (result (ref eq))
+                     (return
+                        (i31.get_s
+                           (br_on_cast_fail $large (ref eq) (ref i31)
+                              (local.get $v))))))))
          (if (i64.ne (local.get $l)
                 (i64.extend_i32_s (i32.wrap_i64 (local.get $l))))
             (then (call $caml_invalid_argument (local.get $msg))))
@@ -126,7 +151,15 @@
       (func (export "int_val_31_exn")
          (param $v (ref eq)) (param $msg (ref eq)) (result i32)
          (local $l i64)
-         (local.set $l (call $portable_int_val (local.get $v)))
+         ;; An i31 always fits
+         (local.set $l
+            (struct.get $ocaml_large_int 0
+               (ref.cast (ref $ocaml_large_int)
+                  (block $large (result (ref eq))
+                     (return
+                        (i31.get_s
+                           (br_on_cast_fail $large (ref eq) (ref i31)
+                              (local.get $v))))))))
          (if (i64.ne (local.get $l)
                 (i64.extend_i32_s
                    (i32.shr_s
