@@ -38,6 +38,11 @@
                (struct.get $ocaml_large_int 0
                   (ref.cast (ref $ocaml_large_int) (local.get $v))))))
 
+      ;; The slow path of tagging, out of line: an allocation takes much
+      ;; more machine code than a call
+      (func (export "box_large_int") (param $l i64) (result (ref eq))
+         (struct.new $ocaml_large_int (local.get $l)))
+
       (func $val_portable_int (export "val_portable_int")
          (param $l i64) (result (ref eq))
          (local.set $l
