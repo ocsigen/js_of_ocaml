@@ -596,6 +596,31 @@ let tee ?typ x e =
 
 let should_make_global x st = Var.Set.mem x st.context.globalized_variables, st
 
+let get_constant x st = Var.Hashtbl.find_opt st.context.constants x, st
+
+let placeholder_value typ f =
+  let* c = get_constant typ in
+  match c with
+  | None ->
+      let x = Var.fresh () in
+      let* () = register_constant typ (W.GlobalGet x) in
+      let* () =
+        register_global
+          ~constant:true
+          x
+          { mut = false; typ = Ref { nullable = false; typ = Type typ } }
+          (f typ)
+      in
+      return (W.GlobalGet x)
+  | Some c -> return c
+
+let empty_struct =
+  let* typ =
+    register_type "empty_struct" (fun () ->
+        return { supertype = None; final = true; typ = W.Struct [] })
+  in
+  placeholder_value typ (fun typ -> W.StructNew (typ, []))
+
 let value_type st = st.context.value_type, st
 
 let get_constant x st = Var.Hashtbl.find_opt st.context.constants x, st
@@ -621,6 +646,10 @@ let array_placeholder typ = placeholder_value typ (fun typ -> ArrayNewFixed (typ
 let default_value val_typ st =
   match val_typ with
   | W.Ref { typ = I31 | Eq | Any; _ } -> (W.RefI31 (Const (I32 0l)), val_typ, None), st
+  | W.Ref { typ = Struct; nullable = false } ->
+      (let* placeholder = empty_struct in
+       return (placeholder, val_typ, None))
+        st
   | W.Ref { typ = Type typ; nullable = false } -> (
       match (Var.Hashtbl.find st.context.types typ).typ with
       | Array _ ->
@@ -636,8 +665,8 @@ let default_value val_typ st =
   | F32 -> (Const (F32 0.), val_typ, None), st
   | I64 -> (Const (I64 0L), val_typ, None), st
   | F64 -> (Const (F64 0.), val_typ, None), st
-  | W.Ref { nullable = true; _ }
-  | W.Ref { typ = Func | Extern | Struct | Array | None_; _ } -> assert false
+  | W.Ref { nullable = true; _ } | W.Ref { typ = Func | Extern | Array | None_; _ } ->
+      assert false
 
 let rec store ?(always = false) ?typ x e =
   let* e = e in

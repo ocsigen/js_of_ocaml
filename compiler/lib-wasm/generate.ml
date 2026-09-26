@@ -1746,8 +1746,10 @@ module Generate (Target : Target_sig.S) = struct
                 match closure with
                 | GlobalGet global ->
                     let* init = get_global global in
-                    if Option.is_some init then Value.unit else return closure
-                | _ -> return closure
+                    if Option.is_some init
+                    then Value.dummy_closure
+                    else Memory.cast_generic_closure (return closure)
+                | _ -> Memory.cast_generic_closure (return closure)
               in
               let* args =
                 expression_list
@@ -1767,11 +1769,17 @@ module Generate (Target : Target_sig.S) = struct
                 (return (W.Call (g, args @ [ cl ])))
           | _ -> (
               let funct = Var.fresh () in
-              let* closure = tee funct (return closure) in
+              let arity = List.length args in
+              let* closure =
+                Memory.cast_closure
+                  ~cps:(Var.Set.mem x ctx.in_cps)
+                  ~arity
+                  (tee funct (return closure))
+              in
               let* ty, funct =
                 Memory.load_function_pointer
                   ~cps:(Var.Set.mem x ctx.in_cps)
-                  ~arity:(List.length args)
+                  ~arity
                   (load funct)
               in
               let* args = expression_list (fun x -> load_and_box ctx x) args in
@@ -1981,6 +1989,12 @@ module Generate (Target : Target_sig.S) = struct
     | Let (x, e) ->
         if ctx.live.(Var.idx x) = 0
         then drop (translate_expr ctx context x e)
+        else if
+          (match e with
+            | Closure _ -> false
+            | _ -> true)
+          && Global_flow.is_closure ctx.global_flow_info x
+        then store x (Memory.cast_generic_closure (translate_expr ctx context x e))
         else
           store
             ?typ:(unboxed_type (Typing.var_type ctx.types x))
@@ -2412,7 +2426,7 @@ module Generate (Target : Target_sig.S) = struct
                           ~default:Type.value
                           (unboxed_type (Typing.var_type ctx.types x)))
                       params
-                    @ [ Type.value ]
+                    @ [ Type.closure ]
                 ; result = [ Option.value ~default:Type.value (unboxed_type return_type) ]
                 }
               else Type.func_type (param_count - 1))
