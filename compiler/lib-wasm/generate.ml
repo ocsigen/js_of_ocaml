@@ -41,6 +41,7 @@ module Generate (Target : Target_sig.S) = struct
     ; blocks : block Addr.Map.t
     ; closures : Closure_conversion.closure Var.Map.t
     ; global_context : Code_generation.context
+    ; directly_called : Var.Set.t
     }
 
   let label_index context pc =
@@ -2182,6 +2183,61 @@ module Generate (Target : Target_sig.S) = struct
       ~fall_through
       ~context
 
+  (* Type of the values returned by a function whose return value is
+     boxed. Only called once the function body has been translated, so
+     that the types of the local variables are known. *)
+  let function_return_type ctx pc =
+    let* ty =
+      Code.preorder_traverse
+        { fold = Code.fold_children }
+        (fun pc ty ->
+          let block = Code.Addr.Map.find pc ctx.blocks in
+          match block.branch with
+          | Return x ->
+              let* ty = ty in
+              let* ty' =
+                (* The returned value is boxed if needed (see [convert]) *)
+                match Typing.var_type ctx.types x with
+                | Int (Normalized | Unnormalized) ->
+                    return (W.Ref { nullable = false; typ = I31 })
+                | Number (_, Unboxed) -> return Type.value
+                | _ ->
+                    let* ty' = variable_type x in
+                    return (Option.value ~default:Type.value ty')
+              in
+              value_type_lub ty ty'
+          | Stop -> return Type.value
+          | Raise _ | Branch _ | Cond _ | Switch _ | Pushtrap _ | Poptrap _ -> ty)
+        pc
+        ctx.blocks
+        (return (W.Ref { nullable = false; typ = None_ }))
+    in
+    return
+      (match ty with
+      | Ref { nullable = false; typ = I31 | Struct | Array | None_ | Type _ } -> ty
+      | _ -> Type.value)
+
+  (* Change the result type of the structured instruction producing the
+     function return value *)
+  let refine_type ~typ (instrs : W.instruction list) : W.instruction list =
+    let rec refine_instr (i : W.instruction) =
+      match i with
+      | Block (ty, instrs') when is_value ty ->
+          W.Block ({ ty with result = [ typ ] }, refine_list instrs')
+      | Loop (ty, instrs') when is_value ty ->
+          Loop ({ ty with result = [ typ ] }, refine_list instrs')
+      | If (ty, e, instrs', instrs'') when is_value ty ->
+          If ({ ty with result = [ typ ] }, e, refine_list instrs', refine_list instrs'')
+      | i -> i
+    and is_value (ty : W.func_type) = Poly.equal ty.result [ Type.value ]
+    and refine_list instrs =
+      match List.rev instrs with
+      | (Event _ as i') :: i :: rem -> List.rev_append rem [ refine_instr i; i' ]
+      | i :: rem -> List.rev_append rem [ refine_instr i ]
+      | [] -> []
+    in
+    refine_list instrs
+
   let translate_function
       p
       ctx
@@ -2361,7 +2417,7 @@ module Generate (Target : Target_sig.S) = struct
     (match name_opt with
     | None -> ctx.global_context.globalized_variables <- Globalize.f p g ctx.closures
     | Some _ -> ());
-    let locals, body =
+    let locals, return_typ, body =
       function_body
         ~context:ctx.global_context
         ~param_names
@@ -2384,11 +2440,26 @@ module Generate (Target : Target_sig.S) = struct
                (fun ~result_typ ~fall_through ~context ->
                  translate_branch result_typ fall_through (-1) cont context)
            in
-           match cloc with
-           | Some loc -> event loc
-           | None -> return ())
+           let* () =
+             match cloc with
+             | Some loc -> event loc
+             | None -> return ()
+           in
+           match unboxed_type return_type with
+           | Some ty -> return ty
+           | None -> function_return_type ctx pc)
     in
     let locals, body = post_process_function_body ~param_names ~locals body in
+    let return_typ =
+      (* A more precise return type only benefits direct callers,
+         which escaping functions may not have *)
+      match name_opt with
+      | Some f
+        when not
+               (Typing.can_unbox_parameters ctx.fun_info f
+               || Var.Set.mem f ctx.directly_called) -> Type.value
+      | _ -> return_typ
+    in
     W.Function
       { name =
           (match name_opt with
@@ -2398,7 +2469,24 @@ module Generate (Target : Target_sig.S) = struct
           (match name_opt with
           | None -> Option.map ~f:(fun name -> name ^ ".init") unit_name
           | Some _ -> None)
-      ; typ = None
+      ; typ =
+          (match name_opt with
+          | None -> None
+          | Some f ->
+              if Typing.can_unbox_parameters ctx.fun_info f
+              then None
+              else
+                let cps = Var.Set.mem f ctx.in_cps in
+                Some
+                  (Code_generation.eval
+                     ~context:ctx.global_context
+                     (Type.function_type
+                        ~cps
+                        ?ret:
+                          (if Poly.equal return_typ Type.value
+                           then None
+                           else Some return_typ)
+                        (if cps then param_count - 2 else param_count - 1))))
       ; signature =
           (match name_opt with
           | None -> Type.primitive_type param_count
@@ -2413,19 +2501,39 @@ module Generate (Target : Target_sig.S) = struct
                           (unboxed_type (Typing.var_type ctx.types x)))
                       params
                     @ [ Type.value ]
-                ; result = [ Option.value ~default:Type.value (unboxed_type return_type) ]
+                ; result = [ return_typ ]
                 }
-              else Type.func_type (param_count - 1))
+              else Type.func_type ~ret:return_typ (param_count - 1))
       ; param_names
       ; locals
-      ; body
+      ; body =
+          (if Poly.equal return_typ Type.value
+           then body
+           else refine_type ~typ:return_typ body)
       }
     :: acc
+
+  let directly_called_functions (p : Code.program) ~global_flow_info ~live_vars =
+    (* Functions called directly (see [translate_expr]) *)
+    Addr.Map.fold
+      (fun _ block s ->
+        List.fold_left
+          ~f:(fun s i ->
+            match i with
+            | Let (_, Apply { f; exact = true; _ }) -> (
+                match Global_flow.get_unique_closure global_flow_info f with
+                | Some (g, _) when live_vars.(Var.idx g) > 0 -> Var.Set.add g s
+                | _ -> s)
+            | _ -> s)
+          ~init:s
+          block.body)
+      p.blocks
+      Var.Set.empty
 
   let init_function ~context ~to_link =
     let name = Code.Var.fresh_n "initialize" in
     let signature = { W.params = []; result = [ Type.value ] } in
-    let locals, body =
+    let locals, _, body =
       function_body
         ~context
         ~param_names:[]
@@ -2440,7 +2548,9 @@ module Generate (Target : Target_sig.S) = struct
                in
                let* () = instr (Drop (Call (f, []))) in
                cont)
-             ~init:(instr (Push (RefI31 (Const (I32 0l)))))
+             ~init:
+               (let* unit = Value.unit in
+                instr (Push unit))
              to_link)
     in
     context.other_fields <-
@@ -2460,7 +2570,7 @@ module Generate (Target : Target_sig.S) = struct
     let failwith_desc = W.Fun { params = [ Type.value ]; result = [] } in
     List.iter l ~f:(fun (exported_name, arity) ->
         let name = Code.Var.fresh_n exported_name in
-        let locals, body =
+        let locals, _, body =
           function_body
             ~context
             ~param_names:[]
@@ -2490,7 +2600,7 @@ module Generate (Target : Target_sig.S) = struct
 
   let entry_point context toplevel_fun entry_name =
     let signature, param_names, body = entry_point ~toplevel_fun in
-    let locals, body = function_body ~context ~param_names ~body in
+    let locals, _, body = function_body ~context ~param_names ~body in
     W.Function
       { name = Var.fresh_n "entry_point"
       ; exported_name = Some entry_name
@@ -2535,6 +2645,7 @@ module Generate (Target : Target_sig.S) = struct
       ; blocks = p.blocks
       ; closures
       ; global_context
+      ; directly_called = directly_called_functions p ~global_flow_info ~live_vars
       }
     in
     let toplevel_name = Var.fresh_n "toplevel" in
@@ -2564,6 +2675,7 @@ module Generate (Target : Target_sig.S) = struct
     let js_code = StringMap.bindings global_context.fragments in
     global_context.fragments <- StringMap.empty;
     Curry.f ~context:global_context;
+    refine_eq_globals global_context;
     toplevel_name, js_code
 
   let output ~context =

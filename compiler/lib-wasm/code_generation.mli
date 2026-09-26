@@ -45,6 +45,9 @@ type context =
   ; value_type : Wasm_ast.value_type
   ; mutable unit_name : string option
   ; mutable no_tail_call : unit Code.Var.Hashtbl.t
+  ; eq_globals : Code.Var.t option list Code.Var.Hashtbl.t
+        (** Mutable globals of type [eq], with the functions whose
+            results are stored in them ([None] for any other value) *)
   }
 
 val make_context : value_type:Wasm_ast.value_type -> context
@@ -158,12 +161,16 @@ val register_type : string -> (unit -> type_def t) -> Wasm_ast.var t
 
 val heap_type_sub : Wasm_ast.heap_type -> Wasm_ast.heap_type -> bool t
 
+val value_type_lub : Wasm_ast.value_type -> Wasm_ast.value_type -> Wasm_ast.value_type t
+
 val register_import :
      ?allow_tail_call:bool
   -> ?import_module:string
   -> name:string
   -> Wasm_ast.import_desc
   -> Wasm_ast.var t
+
+val refine_eq_globals : context -> unit
 
 val register_global :
      Wasm_ast.var
@@ -204,13 +211,17 @@ val need_dummy_fun : cps:bool -> arity:int -> Code.Var.t t
 val function_body :
      context:context
   -> param_names:Code.Var.t list
-  -> body:unit t
-  -> (Wasm_ast.var * Wasm_ast.value_type) list * Wasm_ast.instruction list
+  -> body:'a t
+  -> (Wasm_ast.var * Wasm_ast.value_type) list * 'a * Wasm_ast.instruction list
 
 val variable_type : Code.Var.t -> Wasm_ast.value_type option t
+
+val expression_type : Wasm_ast.expression -> Wasm_ast.value_type option t
 
 val array_placeholder : Code.Var.t -> expression
 
 val default_value :
      Wasm_ast.value_type
   -> (Wasm_ast.expression * Wasm_ast.value_type * Wasm_ast.ref_type option) t
+
+val eval : context:context -> 'a t -> 'a

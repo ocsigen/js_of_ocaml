@@ -104,6 +104,8 @@
   targeting JavaScript (#2441)
 * Compiler: with `--effects=double-translation`, only generate a CPS version
   of the functions that may run below an effect handler (#2441)
+* Compiler/Wasm: more precise types for function results and globals, which
+  lets binaryen remove about 4% of the casts (#1987)
 
 ## Bug fixes
 * Runtime: `caml_alloc_dummy_mixed` takes two arguments, as OxCaml calls it;

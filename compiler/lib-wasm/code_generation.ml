@@ -61,6 +61,9 @@ type context =
   ; value_type : W.value_type
   ; mutable unit_name : string option
   ; mutable no_tail_call : unit Var.Hashtbl.t
+  ; eq_globals : Var.t option list Var.Hashtbl.t
+        (** Mutable globals of type [eq], with the functions whose
+            results are stored in them ([None] for any other value) *)
   }
 
 let make_context ~value_type =
@@ -86,6 +89,7 @@ let make_context ~value_type =
   ; value_type
   ; unit_name = None
   ; no_tail_call = Var.Hashtbl.create 16
+  ; eq_globals = Var.Hashtbl.create 16
   }
 
 type var =
@@ -205,6 +209,68 @@ let heap_type_sub (ty : W.heap_type) (ty' : W.heap_type) st =
   | Any, _
   (* I31, struct, array and none have no other subtype *)
   | _, (I31 | Type _ | Struct | Array | None_) -> false, st
+
+let rec type_index_lub ty ty' st =
+  (* Find the LUB efficiently by taking advantage of the fact that
+     types are defined after their supertypes, making their variables
+     compare greater. *)
+  let c = Var.compare ty ty' in
+  if c > 0
+  then type_index_lub ty' ty st
+  else if c = 0
+  then Some ty
+  else
+    let type_field = Var.Hashtbl.find st.context.types ty' in
+    match type_field.supertype with
+    | None -> None
+    | Some ty'' ->
+        assert (Var.compare ty'' ty' < 0);
+        type_index_lub ty ty'' st
+
+let heap_type_lub (ty : W.heap_type) (ty' : W.heap_type) =
+  match ty, ty' with
+  | (Func | Extern), _ | _, (Func | Extern) -> assert false
+  | None_, _ -> return ty'
+  | _, None_ | Struct, Struct | Array, Array -> return ty
+  | Any, _ | _, Any -> return W.Any
+  | Eq, _
+  | _, Eq
+  | (Struct | Array | Type _), I31
+  | I31, (Struct | Array | Type _)
+  | Struct, Array
+  | Array, Struct -> return (Eq : W.heap_type)
+  | Struct, Type t | Type t, Struct -> (
+      fun st ->
+        let type_field = Var.Hashtbl.find st.context.types t in
+        match type_field.typ with
+        | Struct _ -> W.Struct, st
+        | Array _ | Func _ -> W.Eq, st)
+  | Array, Type t | Type t, Array -> (
+      fun st ->
+        let type_field = Var.Hashtbl.find st.context.types t in
+        match type_field.typ with
+        | Array _ -> W.Array, st
+        | Struct _ | Func _ -> W.Eq, st)
+  | Type t, Type t' -> (
+      let* r = fun st -> type_index_lub t t' st, st in
+      match r with
+      | Some t'' -> return (Type t'' : W.heap_type)
+      | None -> (
+          fun st ->
+            let type_field = Var.Hashtbl.find st.context.types t in
+            let type_field' = Var.Hashtbl.find st.context.types t' in
+            match type_field.typ, type_field'.typ with
+            | Struct _, Struct _ -> (Struct : W.heap_type), st
+            | Array _, Array _ -> W.Array, st
+            | (Array _ | Struct _ | Func _), (Array _ | Struct _ | Func _) -> W.Eq, st))
+  | I31, I31 -> return W.I31
+
+let value_type_lub (ty : W.value_type) (ty' : W.value_type) =
+  match ty, ty' with
+  | Ref { nullable; typ }, Ref { nullable = nullable'; typ = typ' } ->
+      let* typ = heap_type_lub typ typ' in
+      return (W.Ref { nullable = nullable || nullable'; typ })
+  | _ -> assert false
 
 let register_global name ?exported_name ?(constant = false) typ init st =
   st.context.other_fields <-
@@ -639,6 +705,19 @@ let default_value val_typ st =
   | W.Ref { nullable = true; _ }
   | W.Ref { typ = Func | Extern | Struct | Array | None_; _ } -> assert false
 
+let note_eq_global_value x e st =
+  (match Var.Hashtbl.find_opt st.context.eq_globals x with
+  | Some l ->
+      Var.Hashtbl.replace
+        st.context.eq_globals
+        x
+        ((match e with
+         | W.Call (f, _) -> Some f
+         | _ -> None)
+        :: l)
+  | None -> ());
+  (), st
+
 let rec store ?(always = false) ?typ x e =
   let* e = e in
   match e with
@@ -655,7 +734,9 @@ let rec store ?(always = false) ?typ x e =
         then
           let* b = global_is_registered x in
           if b
-          then instr (GlobalSet (x, e))
+          then
+            let* () = note_eq_global_value x e in
+            instr (GlobalSet (x, e))
           else
             let* typ =
               match typ with
@@ -682,7 +763,20 @@ let rec store ?(always = false) ?typ x e =
                   let* () = register_global x { mut = false; typ } init_expr in
                   instrs patches
               | None ->
-                  let* default, typ', cast = default_value typ in
+                  let* default, typ', cast =
+                    match typ with
+                    | Ref { nullable = false; typ = Eq } ->
+                        (* The type of the global may be refined once
+                           the types of all functions are known (see
+                           [refine_eq_globals]) *)
+                        fun st ->
+                          Var.Hashtbl.replace st.context.eq_globals x [];
+                          ( ( W.RefNull None_
+                            , W.Ref { nullable = true; typ = Eq }
+                            , Some { W.nullable = false; typ = Eq } )
+                          , st )
+                    | _ -> default_value typ
+                  in
                   let* () =
                     register_constant
                       x
@@ -693,6 +787,7 @@ let rec store ?(always = false) ?typ x e =
                   let* () =
                     register_global ~constant:true x { mut = true; typ = typ' } default
                   in
+                  let* () = note_eq_global_value x e in
                   instr (GlobalSet (x, e))
         else
           let* typ =
@@ -815,7 +910,7 @@ let need_dummy_fun ~cps ~arity st =
 
 let function_body ~context ~param_names ~body =
   let st = { var_count = 0; vars = Var.Map.empty; instrs = []; context } in
-  let (), st = body st in
+  let res, st = body st in
   let local_count, body = st.var_count, List.rev st.instrs in
   let local_types = Array.make local_count (Var.fresh (), None) in
   List.iteri ~f:(fun i x -> local_types.(i) <- x, None) param_names;
@@ -833,4 +928,144 @@ let function_body ~context ~param_names ~body =
     |> (fun a -> Array.sub a ~pos:param_count ~len:(Array.length a - param_count))
     |> Array.to_list
   in
-  locals, body
+  locals, res, body
+
+let eval ~context e =
+  let st = { var_count = 0; vars = Var.Map.empty; instrs = []; context } in
+  let r, st = e st in
+  assert (st.var_count = 0 && List.is_empty st.instrs);
+  r
+
+(* A constant expression of type [typ], if we can build one. Structs
+   and arrays are shared placeholder values. We give up on function
+   references rather than using an arbitrary function. *)
+let rec constant_value ~visited (typ : W.value_type) =
+  match typ with
+  | I32 -> return (Some (W.Const (I32 0l)))
+  | I64 -> return (Some (W.Const (I64 0L)))
+  | F32 -> return (Some (W.Const (F32 0.)))
+  | F64 -> return (Some (W.Const (F64 0.)))
+  | Ref { nullable = true; typ } -> return (Some (W.RefNull typ))
+  | Ref { typ = Eq | I31 | Any; _ } -> return (Some (W.RefI31 (Const (I32 0l))))
+  | Ref { typ = Type ty; _ } -> (
+      let* ctx = get_context in
+      match (Var.Hashtbl.find ctx.types ty).typ with
+      | Array _ ->
+          let* e = array_placeholder ty in
+          return (Some e)
+      | Func _ -> return None
+      | Struct fields -> (
+          let* c = get_constant ty in
+          match c with
+          | Some c -> return (Some c)
+          | None -> (
+              if Var.Set.mem ty visited
+              then return None
+              else
+                let visited = Var.Set.add ty visited in
+                let* l =
+                  List.fold_right
+                    ~f:(fun (field : W.field_type) l ->
+                      let* l = l in
+                      match l with
+                      | None -> return None
+                      | Some l -> (
+                          let* e =
+                            match field.typ with
+                            | Value typ -> constant_value ~visited typ
+                            | Packed _ -> return (Some (W.Const (I32 0l)))
+                          in
+                          match e with
+                          | Some e -> return (Some (e :: l))
+                          | None -> return None))
+                    ~init:(return (Some []))
+                    fields
+                in
+                match l with
+                | None -> return None
+                | Some l ->
+                    let* e = placeholder_value ty (fun ty -> StructNew (ty, l)) in
+                    return (Some e))))
+  | Ref { typ = Func | Extern | Struct | Array | None_; _ } -> return None
+
+(* Give a precise type to the mutable globals of type [eq] only
+   holding results of functions with a more precise return type. The
+   other ones are given back a non-nullable type. *)
+let refine_eq_globals context =
+  let results = Var.Hashtbl.create 1024 in
+  List.iter
+    ~f:(fun field ->
+      match field with
+      | W.Function { name; signature = { result = [ ty ]; _ }; _ } ->
+          Var.Hashtbl.replace results name ty
+      | _ -> ())
+    context.other_fields;
+  let result_type f =
+    match f with
+    | None -> None
+    | Some f -> (
+        match Var.Hashtbl.find_opt results f with
+        | Some
+            (W.Ref
+               { nullable = false; typ = (I31 | Struct | Array | None_ | Type _) as typ })
+          -> Some typ
+        | _ -> None)
+  in
+  let lub ty ty' =
+    (* Only keep a precise type when all the values have the same type *)
+    match ty, ty' with
+    | Some ty, Some ty' when Poly.equal ty ty' -> Some ty
+    | _ -> None
+  in
+  let refined = Var.Hashtbl.create 16 in
+  Var.Hashtbl.iter
+    (fun x l ->
+      match l with
+      | [] -> ()
+      | f :: rem ->
+          let ty =
+            List.fold_left
+              ~f:(fun ty f -> lub ty (result_type f))
+              ~init:(result_type f)
+              rem
+          in
+          Var.Hashtbl.replace refined x ty)
+    context.eq_globals;
+  let globals =
+    List.filter_map
+      ~f:(fun field ->
+        match field with
+        | W.Global ({ name; _ } as g) when Var.Hashtbl.mem context.eq_globals name -> (
+            match Var.Hashtbl.find_opt refined name with
+            | Some (Some typ) -> (
+                let typ : W.ref_type = { nullable = false; typ } in
+                match eval ~context (constant_value ~visited:Var.Set.empty (Ref typ)) with
+                | Some init ->
+                    Some (W.Global { g with typ = { mut = true; typ = Ref typ }; init })
+                | None ->
+                    Some
+                      (W.Global
+                         { g with
+                           typ = { mut = true; typ = Ref { typ with nullable = true } }
+                         }))
+            | Some None | None ->
+                Some
+                  (W.Global
+                     { g with
+                       typ = { mut = true; typ = context.value_type }
+                     ; init = RefI31 (Const (I32 0l))
+                     }))
+        | _ -> None)
+      context.other_fields
+  in
+  (* These mutable globals cannot be referred to by other globals. We
+     move them after all other globals, and thus after the placeholders
+     they may use. *)
+  context.other_fields <-
+    globals
+    @ List.filter
+        ~f:(fun field ->
+          match field with
+          | W.Global { name; _ } -> not (Var.Hashtbl.mem context.eq_globals name)
+          | _ -> true)
+        context.other_fields
