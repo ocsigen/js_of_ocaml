@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta name="robots" content="noindex"/>
+<title>Page not found</title></head>
+<body>
+<p id="wodoc-404">This page does not exist in this version of the documentation.</p>
+<script>
+(function () {
+  var segs = location.pathname.split('/').filter(function (s) { return s; });
+  var msg = document.getElementById('wodoc-404');
+  function go(url, text) {
+    if (url === location.pathname) return;
+    var a = document.createElement('a');
+    a.href = url; a.textContent = text;
+    msg.appendChild(document.createTextNode(' '));
+    msg.appendChild(a);
+    location.replace(url);
+  }
+  // the first [i] segments are tried as the project prefix
+  function probe(i) {
+    if (i >= segs.length) return;
+    var base = segs.slice(0, i).map(function (s) { return '/' + s; }).join('');
+    fetch(base + '/versions.json')
+      .then(function (r) { if (!r.ok) throw 0; return r.json(); })
+      .then(function (m) {
+        var v = segs[i], list = m.list || [];
+        var home = function (v) { return base + '/' + v + '/index.html'; };
+        // a page missing from a known version: that version's index;
+        // otherwise (unknown version, or its index itself missing): latest
+        if (!(v === 'latest' || list.indexOf(v) >= 0)
+            || home(v) === location.pathname)
+          v = m.latest ? 'latest' : list[0];
+        if (v)
+          go(home(v), 'Go to the index of version '
+             + (v === 'latest' ? m.latest : v) + '.');
+      }, function () { probe(i + 1); });
+  }
+  probe(0);
+})();
+</script>
+</body>
+</html>
