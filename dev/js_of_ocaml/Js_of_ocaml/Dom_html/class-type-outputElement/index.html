@@ -230,13 +230,19 @@
 
   <script>
     var wodocPub = "/js_of_ocaml";
-    // Switch version: keep the current page, swapping only the version segment.
+    // Switch version: keep the current page, swapping only the version segment,
+    // unless that page does not exist in the target version (a renamed module,
+    // a merged manual page): then go to that version's index.
     function wodocVersion(v) {
       if (!v) return;
       var re = new RegExp('^(' + wodocPub + '/)[^/]+');
       var p = location.pathname;
-      location.href =
-        re.test(p) ? p.replace(re, '$1' + v) : wodocPub + '/' + v + '/index.html';
+      var home = wodocPub + '/' + v + '/index.html';
+      if (!re.test(p)) { location.href = home; return; }
+      var target = p.replace(re, '$1' + v);
+      fetch(target, { method: 'HEAD' })
+        .then(function (r) { location.href = r.ok ? target : home; })
+        .catch(function () { location.href = target; });
     }
     // Build the version <select> from the project's versions.json (the single
     // source of truth, refreshed on every build/release), so even older frozen
