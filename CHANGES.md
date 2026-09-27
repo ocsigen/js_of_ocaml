@@ -3,6 +3,8 @@
 ## Features/Changes
 * Compiler/Runtime: support the OCaml 5.6 bit counting primitives
   (`caml_int_clz`, `caml_int_ctz`, `caml_int_popcount`) (#2469)
+* Runtime: with OCaml 5.6, `Weak.get_copy` and the ephemeron `get_*_copy`
+  primitives no longer copy, as in the OCaml runtime (#2469)
 * Compiler: with `--effects={cps,double-translation}`, specialize calls to
   known functions using the global flow analysis before the CPS transformation
   (#2456)

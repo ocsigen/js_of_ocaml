@@ -1667,7 +1667,7 @@
         check_key,
         blit_key,
         runtime.caml_ephe_get_data,
-        runtime.caml_ephe_get_data_copy,
+        function(_a_){return runtime.caml_ephe_get_data_copy(_a_);},
         runtime.caml_ephe_set_data,
         runtime.caml_ephe_unset_data,
         runtime.caml_ephe_check_data,
