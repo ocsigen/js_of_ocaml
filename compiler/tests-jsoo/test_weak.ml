@@ -61,23 +61,6 @@ let%expect_test _ =
     found
   |}]
 
-let copy_eq a b =
-  if a == b
-  then false
-  else
-    let a = Obj.repr a in
-    let b = Obj.repr b in
-    if Obj.size a <> Obj.size b || Obj.tag a <> Obj.tag b
-    then false
-    else
-      let exception False in
-      try
-        for i = 0 to Obj.size a - 1 do
-          if Obj.field a i != Obj.field b i then raise False
-        done;
-        true
-      with False -> false
-
 let bool x = Printf.printf "%b" x
 
 let%expect_test _ =
@@ -94,16 +77,8 @@ let%expect_test _ =
   E.set_key e 3 k2;
   bool (Option.get (E.get_key e 2) == k1);
   [%expect {| true |}];
-  bool (Option.get (E.get_key_copy e 2) == k1);
-  [%expect {| false |}];
-  bool (copy_eq (Option.get (E.get_key_copy e 2)) k1);
-  [%expect {| true |}];
   bool (Option.get (E.get_key e 1) == ki);
   [%expect {| true |}];
-  bool (Option.get (E.get_key_copy e 1) == ki);
-  [%expect {| true |}];
-  bool (copy_eq (Option.get (E.get_key_copy e 1)) ki);
-  [%expect {| false |}];
   bool (E.check_key e 0);
   [%expect {| false |}];
   bool (E.check_key e 2);
@@ -122,18 +97,10 @@ let%expect_test _ =
 
   bool (Option.get (E.get_data e) == k1);
   [%expect {| true |}];
-  bool (Option.get (E.get_data_copy e) == k1);
-  [%expect {| false |}];
-  bool (copy_eq (Option.get (E.get_data_copy e)) k1);
-  [%expect {| true |}];
 
   E.set_data e ki;
   bool (Option.get (E.get_data e) == ki);
   [%expect {| true |}];
-  bool (Option.get (E.get_data_copy e) == ki);
-  [%expect {| true |}];
-  bool (copy_eq (Option.get (E.get_data_copy e)) ki);
-  [%expect {| false |}];
 
   bool (E.check_data e2);
   [%expect {| false |}];
@@ -152,6 +119,75 @@ let%expect_test _ =
   E.unset_data e;
   bool (E.check_data e);
   [%expect {| false |}]
+
+let copy_eq a b =
+  if a == b
+  then false
+  else
+    let a = Obj.repr a in
+    let b = Obj.repr b in
+    if Obj.size a <> Obj.size b || Obj.tag a <> Obj.tag b
+    then false
+    else
+      let exception False in
+      try
+        for i = 0 to Obj.size a - 1 do
+          if Obj.field a i != Obj.field b i then raise False
+        done;
+        true
+      with False -> false
+[@@if ocaml_version < (5, 6, 0)]
+
+(* Up to OCaml 5.5, [get_key_copy] and [get_data_copy] return a shallow
+   copy of a block. *)
+let%expect_test "get_key_copy / get_data_copy" =
+  let module E = Obj.Ephemeron in
+  let ki = Obj.repr None in
+  let k1 = Obj.repr (Some 2) in
+  let e = E.create 3 in
+  E.set_key e 1 ki;
+  E.set_key e 2 k1;
+  bool (Option.get (E.get_key_copy e 2) == k1);
+  [%expect {| false |}];
+  bool (copy_eq (Option.get (E.get_key_copy e 2)) k1);
+  [%expect {| true |}];
+  bool (Option.get (E.get_key_copy e 1) == ki);
+  [%expect {| true |}];
+  bool (copy_eq (Option.get (E.get_key_copy e 1)) ki);
+  [%expect {| false |}];
+  E.set_data e k1;
+  bool (Option.get (E.get_data_copy e) == k1);
+  [%expect {| false |}];
+  bool (copy_eq (Option.get (E.get_data_copy e)) k1);
+  [%expect {| true |}];
+  E.set_data e ki;
+  bool (Option.get (E.get_data_copy e) == ki);
+  [%expect {| true |}];
+  bool (copy_eq (Option.get (E.get_data_copy e)) ki);
+  [%expect {| false |}]
+[@@if ocaml_version < (5, 6, 0)]
+
+(* Since OCaml 5.6, the copy primitives are aliases of the non-copying
+   ones. *)
+let%expect_test "get_key_copy / get_data_copy do not copy" =
+  let module E = Obj.Ephemeron in
+  let k = Obj.repr (Some 2) in
+  let b = Bytes.of_string "hello" in
+  let e = E.create 1 in
+  E.set_key e 0 k;
+  E.set_data e (Obj.repr b);
+  bool (Option.get (E.get_key_copy e 0) == k);
+  [%expect {| true |}];
+  bool (Option.get (E.get_data_copy e) == Obj.repr b);
+  [%expect {| true |}];
+  let module W = struct
+    external get_copy : 'a Weak.t -> int -> 'a option = "caml_weak_get_copy"
+  end in
+  let w = Weak.create 1 in
+  Weak.set w 0 (Some b);
+  bool (Option.get (W.get_copy w 0) == b);
+  [%expect {| true |}]
+[@@if ocaml_version >= (5, 6, 0)]
 
 (* Regression test for https://github.com/ocsigen/js_of_ocaml/issues/2263:
    [blit_key] must only copy keys; it must not modify the destination's
@@ -201,6 +237,7 @@ let%expect_test "get_copy copies bytes" =
   | Some d -> Printf.printf "%b\n" (d == Obj.repr b)
   | None -> print_endline "none");
   [%expect {| false |}]
+[@@if ocaml_version < (5, 6, 0)]
 
 (* A float array is a mutable no-scan block, so like ordinary blocks
    and bytes it must be copied. In the Wasm runtime it is its own type
@@ -215,6 +252,7 @@ let%expect_test "get_copy copies float arrays" =
       Printf.printf "shares=%b orig_mutated=%b\n" (fa' == fa) (fa.(0) = 99.0)
   | None -> print_endline "none");
   [%expect {| shares=false orig_mutated=false |}]
+[@@if ocaml_version < (5, 6, 0)]
 
 (* Custom blocks (Int64, bigarrays, ...) are deliberately NOT copied:
    the native runtime returns the value itself rather than risk an
@@ -234,3 +272,4 @@ let%expect_test "get_copy does not copy custom blocks" =
   | Some a' -> Printf.printf "%b\n" (a' == a)
   | None -> print_endline "none");
   [%expect {| true |}]
+[@@if ocaml_version < (5, 6, 0)]

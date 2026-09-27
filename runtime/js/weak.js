@@ -101,6 +101,7 @@ function caml_ephe_get_key(x, i) {
 //Requires: caml_ephe_get_key,caml_ephe_key_offset
 //Requires: caml_obj_dup, caml_is_ml_bytes
 //Alias: caml_weak_get_copy
+//Version: < 5.6
 function caml_ephe_get_key_copy(x, i) {
   var y = caml_ephe_get_key(x, i);
   if (y === 0) return y;
@@ -108,6 +109,12 @@ function caml_ephe_get_key_copy(x, i) {
   if (Array.isArray(z) || caml_is_ml_bytes(z)) return [0, caml_obj_dup(z)];
   return y;
 }
+
+//Provides: caml_ephe_get_key_copy
+//Requires: caml_ephe_get_key
+//Alias: caml_weak_get_copy
+//Version: >= 5.6
+const caml_ephe_get_key_copy = caml_ephe_get_key;
 
 //Provides: caml_ephe_check_key mutable
 //Requires: caml_ephe_key_offset, caml_ephe_data_offset
@@ -188,6 +195,7 @@ function caml_ephe_get_data(x) {
 //Provides: caml_ephe_get_data_copy
 //Requires: caml_ephe_get_data
 //Requires: caml_obj_dup, caml_is_ml_bytes
+//Version: < 5.6
 function caml_ephe_get_data_copy(x) {
   var r = caml_ephe_get_data(x);
   if (r === 0) return 0;
@@ -195,6 +203,11 @@ function caml_ephe_get_data_copy(x) {
   if (Array.isArray(z) || caml_is_ml_bytes(z)) return [0, caml_obj_dup(z)];
   return r;
 }
+
+//Provides: caml_ephe_get_data_copy
+//Requires: caml_ephe_get_data
+//Version: >= 5.6
+const caml_ephe_get_data_copy = caml_ephe_get_data;
 
 //Provides: caml_ephe_set_data
 //Requires: caml_ephe_data_offset, caml_ephe_key_offset

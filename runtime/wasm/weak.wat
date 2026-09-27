@@ -119,6 +119,8 @@
             (global.get $caml_ephe_none)))
       (ref.i31 (i32.const 0)))
 
+(@if (< $ocaml_version (5 6 0))
+(@then
    (func (export "caml_ephe_get_data_copy")
       (param $x (ref eq)) (result (ref eq))
       (local $r (ref eq)) (local $v (ref eq))
@@ -142,6 +144,10 @@
                      (call $caml_obj_dup (local.get $v))))))
          (ref.i31 (i32.const 0))))
       (local.get $r))
+)
+(@else
+   (export "caml_ephe_get_data_copy" (func $caml_ephe_get_data))
+))
 
    (func $caml_ephe_set_data (export "caml_ephe_set_data")
       (param $vx (ref eq)) (param $dat (ref eq)) (result (ref eq))
@@ -233,6 +239,8 @@
          (return (ref.i31 (i32.const 0))))
       (array.new_fixed $block 2 (ref.i31 (i32.const 0)) (local.get $v)))
 
+(@if (< $ocaml_version (5 6 0))
+(@then
    (export "caml_weak_get_copy" (func $caml_ephe_get_key_copy))
    (func $caml_ephe_get_key_copy (export "caml_ephe_get_key_copy")
       (param $x (ref eq)) (param $i (ref eq)) (result (ref eq))
@@ -257,6 +265,11 @@
                      (call $caml_obj_dup (local.get $v))))))
          (ref.i31 (i32.const 0))))
       (local.get $r))
+)
+(@else
+   (export "caml_weak_get_copy" (func $caml_ephe_get_key))
+   (export "caml_ephe_get_key_copy" (func $caml_ephe_get_key))
+))
 
    (export "caml_weak_check" (func $caml_ephe_check_key))
    (func $caml_ephe_check_key (export "caml_ephe_check_key")
