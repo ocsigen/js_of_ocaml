@@ -64,6 +64,12 @@ val neg : t -> t
 
 val abs : t -> t
 
+val leading_zeros : t -> int
+
+val trailing_zeros : t -> int
+
+val popcount : t -> int
+
 (* constant *)
 
 val min_int : unit -> t

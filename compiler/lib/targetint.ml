@@ -96,6 +96,17 @@ let shift_right_logical = shift_op Int32.shift_right_logical
 
 let is_zero x = equal x 0l
 
+(* Bit counting over [num_bits] bits. As in the OCaml runtime, the
+   low tag bit keeps [leading_zeros] from counting past [num_bits]. *)
+
+let leading_zeros x =
+  let (Offset offset as o) = offset () in
+  Stdlib.Int32.leading_zeros (Int32.logor (wrap o x) (Int32.of_int ((1 lsl offset) - 1)))
+
+let trailing_zeros x = if is_zero x then num_bits () else Stdlib.Int32.trailing_zeros x
+
+let popcount x = Stdlib.Int32.popcount (wrap (offset ()) x)
+
 let of_int_exn (x : int) =
   let offset = offset () in
   if
