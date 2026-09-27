@@ -189,6 +189,7 @@ and template_part =
 and access_kind = 
   | ANormal
   | ANullish
+  | AChain
 ```
 ```ocaml
 and statement = 
@@ -448,6 +449,11 @@ module IdentSet : Stdlib.Set.S with type elt = ident
 ```ocaml
 module IdentMap : Stdlib.Map.S with type key = ident
 ```
+```ocaml
+val is_optional_chain : expression -> bool
+```
+Whether an expression is an optional chain, possibly continued by accesses of kind `AChain`. Such an expression is put between parentheses when it is the object of an access of kind `ANormal`, a template tag, or the operand of `new`.
+
 ```ocaml
 val dot : expression -> identifier -> expression
 ```
