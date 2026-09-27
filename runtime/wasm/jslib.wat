@@ -132,8 +132,14 @@
 
    (func (export "caml_js_strict_equals")
       (param $v1 (ref eq)) (param $v2 (ref eq)) (result (ref eq))
-      (ref.i31 (call $strict_equals
-                  (call $unwrap (local.get $v1)) (call $unwrap (local.get $v2)))))
+      (ref.i31
+         (call $caml_js_strict_equals_i32 (local.get $v1) (local.get $v2))))
+
+   ;; Used by the compiler for physical equality on JavaScript values
+   (func $caml_js_strict_equals_i32 (export "caml_js_strict_equals_i32")
+      (param $v1 (ref eq)) (param $v2 (ref eq)) (result i32)
+      (call $strict_equals
+         (call $unwrap (local.get $v1)) (call $unwrap (local.get $v2))))
 
    (func (export "caml_js_global") (param (ref eq)) (result (ref eq))
       (call $wrap (global.get $global_this)))

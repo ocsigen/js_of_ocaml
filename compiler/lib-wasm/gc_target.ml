@@ -559,81 +559,52 @@ module Value = struct
     let* y = y in
     let* f =
       register_import
-        ~name:"caml_js_strict_equals"
+        ~name:"caml_js_strict_equals_i32"
         ~import_module:"env"
-        (Fun { params = [ Type.value; Type.value ]; result = [ Type.value ] })
+        (Fun { params = [ Type.value; Type.value ]; result = [ I32 ] })
     in
     return (W.Call (f, [ x; y ]))
-
-  let rec effect_free e =
-    match e with
-    | W.Const _ | LocalGet _ | GlobalGet _ | RefFunc _ | RefNull _ -> true
-    | UnOp (_, e')
-    | I32WrapI64 e'
-    | I64ExtendI32 (_, e')
-    | F32DemoteF64 e'
-    | F64PromoteF32 e'
-    | RefI31 e'
-    | I31Get (_, e')
-    | ArrayLen e'
-    | StructGet (_, _, _, e')
-    | RefCast (_, e')
-    | RefTest (_, e')
-    | ExternConvertAny e'
-    | AnyConvertExtern e' -> effect_free e'
-    | BinOp (_, e1, e2)
-    | ArrayNew (_, e1, e2)
-    | ArrayNewData (_, _, e1, e2)
-    | ArrayGet (_, _, e1, e2)
-    | RefEq (e1, e2) -> effect_free e1 && effect_free e2
-    | LocalTee _
-    | BlockExpr _
-    | Call _
-    | Seq _
-    | Pop _
-    | Call_ref _
-    | Br_on_cast _
-    | Br_on_cast_fail _
-    | Br_on_null _
-    | Try _ -> false
-    | IfExpr (_, e1, e2, e3) -> effect_free e1 && effect_free e2 && effect_free e3
-    | ArrayNewFixed (_, l) | StructNew (_, l) -> List.for_all ~f:effect_free l
-
-  let if_expr ty cond ift iff =
-    let* cond = cond in
-    let* ift = ift in
-    let* iff = iff in
-    match cond with
-    | W.Const (I32 n) -> return (if Int32.equal n 0l then iff else ift)
-    | _ ->
-        if Poly.equal ift iff && effect_free cond
-        then return ift
-        else return (W.IfExpr (ty, cond, ift, iff))
-
-  let map f x =
-    let* x = x in
-    return (f x)
-
-  let ( >>| ) x f = map f x
 
   let js_eqeqeq ~negate x y =
     let xv = Code.Var.fresh () in
     let yv = Code.Var.fresh () in
     let* js = Type.js_type in
     let n =
-      if_expr
-        I32
-        (* We mimic an "and" on the two conditions, but in a way that is nicer to the
-           binaryen optimizer. *)
-        (if_expr
-           I32
-           (ref_test (ref js) (load xv))
-           (ref_test (ref js) (load yv))
-           (Arith.const 0l))
-        (caml_js_strict_equals (load xv) (load yv)
-        >>| (fun e -> W.RefCast ({ nullable = false; typ = I31 }, e))
-        >>| fun e -> W.I31Get (S, e))
-        (ref_eq (load xv) (load yv))
+      let* cx = ref_test (ref js) (load xv) in
+      let* cy = ref_test (ref js) (load yv) in
+      let is_false e =
+        match e with
+        | W.Const (I32 0l) -> true
+        | _ -> false
+      in
+      if is_false cx || is_false cy
+      then ref_eq (load xv) (load yv)
+      else
+        (* Omit the tests which are statically known to succeed *)
+        let conds =
+          List.filter
+            ~f:(fun c ->
+              match c with
+              | W.Const _ -> false
+              | _ -> true)
+            [ cx; cy ]
+        in
+        if List.is_empty conds
+        then caml_js_strict_equals (load xv) (load yv)
+        else
+          block_expr
+            { params = []; result = [ I32 ] }
+            (let* () =
+               List.fold_right
+                 conds
+                 ~init:
+                   (let* e = caml_js_strict_equals (load xv) (load yv) in
+                    instr (Br (List.length conds, Some e)))
+                 ~f:(fun c body ->
+                   if_ { params = []; result = [] } (return c) body (return ()))
+             in
+             let* e = ref_eq (load xv) (load yv) in
+             instr (Push e))
     in
     seq
       (let* () = store xv x in
