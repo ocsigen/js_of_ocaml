@@ -222,6 +222,27 @@ function caml_bswap16(x) {
   return ((x & 0x00ff) << 8) | ((x & 0xff00) >> 8);
 }
 
+//Provides: caml_int_clz const
+//Version: >= 5.6
+function caml_int_clz(x) {
+  return Math.clz32(x);
+}
+
+//Provides: caml_int_ctz const
+//Version: >= 5.6
+function caml_int_ctz(x) {
+  return x === 0 ? 32 : 31 - Math.clz32(x & -x);
+}
+
+//Provides: caml_int_popcount const
+//Version: >= 5.6
+function caml_int_popcount(x) {
+  x = x - ((x >>> 1) & 0x55555555);
+  x = (x & 0x33333333) + ((x >>> 2) & 0x33333333);
+  x = (x + (x >>> 4)) & 0x0f0f0f0f;
+  return Math.imul(x, 0x01010101) >>> 24;
+}
+
 //Provides: caml_int32_bswap const
 //Alias: caml_nativeint_bswap
 function caml_int32_bswap(x) {

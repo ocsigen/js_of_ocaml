@@ -311,6 +311,72 @@ module Int32 = struct
       ~to_dec:(Printf.sprintf "%nd")
       ~to_hex:(Printf.sprintf "%nx")
       n
+
+  (* Bit counting functions, from the OCaml 5.5 standard library *)
+
+  (* Number of leading zeros.  Hacker's Delight (2 ed.), algorithm 5.12 *)
+  let leading_zeros x =
+    let x = ref x and n = ref 32 in
+    let y = shift_right_logical !x 16 in
+    if y <> 0l
+    then (
+      n := !n - 16;
+      x := y);
+    let y = shift_right_logical !x 8 in
+    if y <> 0l
+    then (
+      n := !n - 8;
+      x := y);
+    let y = shift_right_logical !x 4 in
+    if y <> 0l
+    then (
+      n := !n - 4;
+      x := y);
+    let y = shift_right_logical !x 2 in
+    if y <> 0l
+    then (
+      n := !n - 2;
+      x := y);
+    let y = shift_right_logical !x 1 in
+    if y <> 0l then !n - 2 else !n - to_int !x
+
+  (* Number of trailing zeros.  Hacker's Delight (2 ed.), algorithm 5.21 *)
+  let trailing_zeros x =
+    if x = 0l
+    then 32
+    else
+      let x = ref x and n = ref 31 in
+      let y = shift_left !x 16 in
+      if y <> 0l
+      then (
+        n := !n - 16;
+        x := y);
+      let y = shift_left !x 8 in
+      if y <> 0l
+      then (
+        n := !n - 8;
+        x := y);
+      let y = shift_left !x 4 in
+      if y <> 0l
+      then (
+        n := !n - 4;
+        x := y);
+      let y = shift_left !x 2 in
+      if y <> 0l
+      then (
+        n := !n - 2;
+        x := y);
+      let y = shift_left !x 1 in
+      if y <> 0l then !n - 1 else !n
+
+  (* Population count.  Hacker's Delight (2 ed.), algorithm 5.2 *)
+  let popcount x =
+    let x = sub x (logand (shift_right_logical x 1) 0x5555_5555l) in
+    let x = add (logand x 0x3333_3333l) (logand (shift_right_logical x 2) 0x3333_3333l) in
+    let x = logand (add x (shift_right_logical x 4)) 0x0F0F_0F0Fl in
+    let x = add x (shift_right_logical x 8) in
+    let x = add x (shift_right_logical x 16) in
+    to_int x land 0x3F
 end
 
 module Int64 = struct

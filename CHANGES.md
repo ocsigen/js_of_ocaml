@@ -1,6 +1,8 @@
 # dev
 
 ## Features/Changes
+* Compiler/Runtime: support the OCaml 5.6 bit counting primitives
+  (`caml_int_clz`, `caml_int_ctz`, `caml_int_popcount`) (#2469)
 * Compiler: with `--effects={cps,double-translation}`, specialize calls to
   known functions using the global flow analysis before the CPS transformation
   (#2456)

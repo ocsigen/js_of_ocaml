@@ -1428,6 +1428,21 @@ module Generate (Target : Target_sig.S) = struct
     register_un_prim "caml_nativeint_of_int" `Pure ~typ:int_n ~ret_typ:nativeint_u Fun.id;
     register_arith_bin_prim "caml_int_compare" `Pure ~typ:int_n (fun i j ->
         Arith.((j < i) - (i < j)));
+    (* Bit counting over the 31 bits of an integer. The top bit of the
+       unnormalized argument is shifted out or overwritten; as in the
+       OCaml runtime, the bit set by clz and ctz bounds the count by 31. *)
+    register_un_prim "caml_int_clz" `Pure ~typ:int_u ~ret_typ:int_n (fun x ->
+        let* x = x in
+        return
+          (W.UnOp
+             ( I32 Clz
+             , W.BinOp (I32 Or, W.BinOp (I32 Shl, x, Const (I32 1l)), Const (I32 1l)) )));
+    register_un_prim "caml_int_ctz" `Pure ~typ:int_u ~ret_typ:int_n (fun x ->
+        let* x = x in
+        return (W.UnOp (I32 Ctz, W.BinOp (I32 Or, x, Const (I32 Int32.min_int)))));
+    register_un_prim "caml_int_popcount" `Pure ~typ:int_u ~ret_typ:int_n (fun x ->
+        let* x = x in
+        return (W.UnOp (I32 Popcnt, W.BinOp (I32 Shl, x, Const (I32 1l)))));
     (* The runtime function has a fixed signature (no parameters), but
        this primitive stands in for externals of varying arity. We bridge
        the two by dropping the call site's arguments and invoking the

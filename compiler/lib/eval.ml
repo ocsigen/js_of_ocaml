@@ -169,6 +169,12 @@ let eval_prim ~target x =
       | "%int_neg", _ -> int_unop l Targetint.neg
       | "caml_int_compare", _ ->
           int_binop l Targetint.(fun i j -> of_int_exn (compare i j))
+      | "caml_int_clz", _ ->
+          int_unop l (fun i -> Targetint.(of_int_exn (leading_zeros i)))
+      | "caml_int_ctz", _ ->
+          int_unop l (fun i -> Targetint.(of_int_exn (trailing_zeros i)))
+      | "caml_int_popcount", _ ->
+          int_unop l (fun i -> Targetint.(of_int_exn (popcount i)))
       (* float *)
       | "caml_eq_float", _ -> float_binop_bool l Float.( = )
       | "caml_neq_float", _ -> float_binop_bool l Float.( <> )
