@@ -86,7 +86,7 @@ let get_input_val ?(get = false) (elt : inputElement t) =
     match to_bytestring elt##._type##toLowerCase with
     | "checkbox" | "radio" ->
         if to_bool elt##.checked then [ name, `String value ] else []
-    | "submit" | "reset" -> []
+    | "submit" | "reset" | "button" -> []
     | "text" | "password" -> [ name, `String value ]
     | "file" ->
         if get
