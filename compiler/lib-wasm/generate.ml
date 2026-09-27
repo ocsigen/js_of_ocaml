@@ -1925,7 +1925,13 @@ module Generate (Target : Target_sig.S) = struct
            let* name_str = Constant.translate ~unboxed:false (String name) in
            instr (W.Drop (W.Call (f, [ v; name_str ]))))
           Value.unit
-    | Prim (Not, [ x ]) -> Value.not (transl_prim_arg ctx ~typ:int_u x)
+    | Prim (Not, [ x ]) -> (
+        match get_type ctx x with
+        | Int (Normalized | Unnormalized) -> Value.not (transl_prim_arg ctx ~typ:int_u x)
+        | _ ->
+            (* Zero is always an i31: no need to untag the value *)
+            let* x = transl_prim_arg ctx ~typ:Top x in
+            return (W.RefEq (x, W.RefI31 (Const (I32 0l)))))
     | Prim (Lt, [ x; y ]) -> translate_int_comparison ctx Arith.( < ) x y
     | Prim (Le, [ x; y ]) -> translate_int_comparison ctx Arith.( <= ) x y
     | Prim (Ult, [ x; y ]) -> translate_int_comparison ctx Arith.ult x y
