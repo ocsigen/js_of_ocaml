@@ -1794,11 +1794,9 @@ let internal_primitives =
             with Parse_js.Parsing_error pi ->
               failwith
                 (Printf.sprintf
-                   "Parse error in argument of %s %S at position %d:%d"
-                   prim_name
-                   str
-                   pi.Parse_info.line
-                   pi.Parse_info.col))
+                   "%s: cannot parse the JavaScript expression %S"
+                   (Parse_js.string_of_location pi)
+                   str))
         | [ Pv _ ] ->
             let eval name code =
               let* () =

@@ -1459,3 +1459,87 @@ let%expect_test "template literals and optional chains" =
   (* This is fine outside of the chain *)
   check `Script "(a?.b)`t`; a`t`?.b; a.b`t`";
   [%expect {| (a?.b)`t`;a`t`?.b;a.b`t`; |}]
+
+let print_syntax_error ?filename ?(write = true) s =
+  let file =
+    match filename with
+    | Some f -> f
+    | None -> Filename.temp_file "jsoo_syntax_error" ".js"
+  in
+  if write
+  then (
+    let oc = open_out_bin file in
+    output_string oc s;
+    close_out oc);
+  (match Parse_js.parse `Script (Parse_js.Lexer.of_string ~filename:file s) with
+  | _ -> print_endline "no error"
+  | exception Parse_js.Parsing_error pi ->
+      let msg = Parse_js.string_of_error pi in
+      let msg =
+        if Option.is_none filename && String.starts_with ~prefix:file msg
+        then
+          "FILE"
+          ^ String.sub
+              msg
+              ~pos:(String.length file)
+              ~len:(String.length msg - String.length file)
+        else msg
+      in
+      print_endline msg);
+  if write then Sys.remove file
+
+let%expect_test "syntax error messages" =
+  print_syntax_error "var x = 1;\nfunction f(a, b {\n  return a;\n}\n";
+  [%expect
+    {|
+    FILE:2:17: syntax error
+    2 | function f(a, b {
+      |                 ^
+    |}];
+  (* Tabs are kept to stay aligned *)
+  print_syntax_error "\t\tvar = 1;";
+  [%expect {|
+    FILE:1:7: syntax error
+    1 | 		var = 1;
+      | 		    ^
+    |}];
+  (* Columns count code points *)
+  print_syntax_error "var s = \"\xc3\xa9\xe2\x82\xac\"; var = 1;";
+  [%expect
+    {|
+    FILE:1:19: syntax error
+    1 | var s = "é€"; var = 1;
+      |                   ^
+    |}];
+  (* Line terminators other than '\n' *)
+  print_syntax_error "// a\xe2\x80\xa8b\nvar a;\r\nvar b;\rvar = 1;";
+  [%expect {|
+    FILE:5:5: syntax error
+    5 | var = 1;
+      |     ^
+    |}];
+  (* Only a window around the column of a long line is printed *)
+  print_syntax_error
+    (String.concat
+       ~sep:""
+       (List.init ~len:30 ~f:(fun i -> Printf.sprintf "var a%d=%d;" i i))
+    ^ "var = 1;"
+    ^ String.concat
+        ~sep:""
+        (List.init ~len:30 ~f:(fun i -> Printf.sprintf "var b%d=%d;" i i)));
+  [%expect
+    {|
+    FILE:1:315: syntax error
+    1 | ...5;var a26=26;var a27=27;var a28=28;var a29=29;var = 1;var b0=0;var b1=1;var b2=2;var b3=3;var b4=4;v...
+      |                                                      ^
+    |}];
+  (* No excerpt when the file cannot be read *)
+  print_syntax_error ~filename:"does-not-exist.js" ~write:false "var = 1;";
+  [%expect {| does-not-exist.js:1:5: syntax error |}];
+  print_syntax_error ~filename:Filename.current_dir_name ~write:false "var = 1;";
+  [%expect {| .:1:5: syntax error |}];
+  (* No file *)
+  (match Parse_js.parse `Script (Parse_js.Lexer.of_string "var = 1;") with
+  | _ -> print_endline "no error"
+  | exception Parse_js.Parsing_error pi -> print_endline (Parse_js.string_of_error pi));
+  [%expect {| line 1, column 5: syntax error |}]
