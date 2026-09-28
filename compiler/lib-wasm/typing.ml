@@ -327,6 +327,29 @@ let rec constant_type (c : constant) =
   | Null_ -> Null
   | _ -> Top
 
+(* The wasm conversion needed to coerce a value of type [from] into
+   representation [into], or [None] if the representations already match or
+   no conversion applies. This is the single source of truth for the
+   box/unbox/tag/untag representation lattice; [Lcm] is built on top of it
+   rather than re-deriving the same case analysis. *)
+let conversion ~(from : typ) ~(into : typ) : wasm_conversion option =
+  match from, into with
+  | Number (Int32, Unboxed), Number (Int32, Unboxed)
+  | Number (Int64, Unboxed), Number (Int64, Unboxed)
+  | Number (Float, Unboxed), Number (Float, Unboxed)
+  | Int (Normalized | Unnormalized), Int (Normalized | Unnormalized) -> None
+  | _, Int (Normalized | Unnormalized) -> Some Untag_int
+  | Int (Normalized | Unnormalized), Int Ref -> Some Tag_int
+  | Int _, _ | _, Int _ -> None
+  | Number (_, Unboxed), Number (_, Unboxed) -> None
+  | _, Number (Int32, Unboxed) -> Some Unbox_i32
+  | _, Number (Int64, Unboxed) -> Some Unbox_i64
+  | _, Number (Float, Unboxed) -> Some Unbox_f64
+  | Number (Int32, Unboxed), _ -> Some Box_i32
+  | Number (Int64, Unboxed), _ -> Some Box_i64
+  | Number (Float, Unboxed), _ -> Some Box_f64
+  | _ -> None
+
 let conversion_type c =
   match c with
   | Unbox_i32 -> Number (Int32, Unboxed)
@@ -337,6 +360,13 @@ let conversion_type c =
   | Box_f64 -> Number (Float, Boxed)
   | Untag_int -> Int Normalized
   | Tag_int -> Int Ref
+
+(* Whether [typ] is an unboxed-number or untagged-integer representation,
+   i.e. a value a function can return directly without re-boxing. *)
+let is_unboxed_repr (typ : typ) =
+  match typ with
+  | Number (_, Unboxed) | Int (Normalized | Unnormalized) -> true
+  | Top | Int Ref | Number (_, Boxed) | Null | Tuple _ | Bigarray _ | Bot -> false
 
 let arg_type ~approx arg =
   match arg with
@@ -359,6 +389,11 @@ let bigarray_type ~approx ba =
   | Bot -> Bot
   | Bigarray { kind; _ } -> bigarray_element_type kind
   | _ -> Top
+
+type prim_args =
+  | Values
+  | Typed of typ list
+  | Any_representation
 
 let primitive_types = String.Hashtbl.create 16
 
@@ -407,12 +442,56 @@ let prim_type ~st ~approx prim hint args =
       | [] | [ _ ] | _ :: Pc _ :: _ -> Top)
   | _ -> (
       match String.Hashtbl.find_opt primitive_types prim with
-      | Some (_, typ) -> typ
+      | Some (_, _, typ) -> typ
       | None -> Top)
 
-let reset () = String.Hashtbl.reset primitive_types
+(* The primitives which cannot raise an exception *)
+let non_raising_primitives = String.Hashtbl.create 16
 
-let register_prim nm ~unbox typ = String.Hashtbl.replace primitive_types nm (unbox, typ)
+let reset () =
+  String.Hashtbl.reset primitive_types;
+  String.Hashtbl.reset non_raising_primitives
+
+let register_prim nm ?(args = Values) ?(kind = `Mutator) ~unbox typ =
+  String.Hashtbl.replace primitive_types nm (args, unbox, typ);
+  (* The primitives which may raise an exception (bound checks, divisions)
+     are mutators *)
+  match kind with
+  | `Pure | `Mutable -> String.Hashtbl.replace non_raising_primitives nm ()
+  | `Mutator -> String.Hashtbl.remove non_raising_primitives nm
+
+(* Whether the execution of an instruction may not proceed to the next
+   one: the instruction may raise an exception, or it is a call, which may
+   also not return. A conversion placed after such an instruction must not
+   be performed before it, unless it cannot fail. A conversion does not
+   count: when it is reached, the value has the right representation
+   (except for a speculative untagging, which does not fail). *)
+let may_raise i =
+  match i with
+  | Let (_, Apply _) -> true
+  | Let (_, Prim (Extern (nm, _), _)) ->
+      not (String.Hashtbl.mem non_raising_primitives nm)
+  | Let
+      ( _
+      , ( Prim
+            ( ( Vectlength _
+              | Array_get _
+              | Not
+              | IsInt _
+              | Eq
+              | Neq
+              | Lt
+              | Le
+              | Ult
+              | Wasm_conversion _ )
+            , _ )
+        | Block _ | Field _ | Closure _ | Constant _ | Special _ ) )
+  | Assign _ | Set_field _ | Offset_ref _ | Array_set _ | Event _ -> false
+
+let prim_sig nm =
+  match String.Hashtbl.find_opt primitive_types nm with
+  | Some (args, _, typ) -> args, typ
+  | None -> Values, Top
 
 let propagate st approx x : Domain.t =
   match st.global_flow_state.defs.(Var.idx x) with
@@ -640,8 +719,10 @@ let box_numbers p st types =
                   | Prim (Extern (s, _), args) ->
                       if
                         not
-                          (String.Hashtbl.mem primitive_types s
-                           && fst (String.Hashtbl.find primitive_types s)
+                          ((String.Hashtbl.mem primitive_types s
+                           &&
+                           let _, unbox, _ = String.Hashtbl.find primitive_types s in
+                           unbox)
                           || type_specialized_primitive types st.global_flow_state s args
                           )
                       then
@@ -681,7 +762,51 @@ let box_numbers p st types =
               Option.iter
                 ~f:(fun g -> if not (can_unbox_return_value st.fun_info g) then box y)
                 name_opt
-          | Raise _ | Stop | Branch _ | Cond _ | Switch _ | Pushtrap _ | Poptrap _ -> ())
+          | Branch cont | Poptrap cont ->
+              let pc', args = cont in
+              let b' = Addr.Map.find pc' p.blocks in
+              List.iter2
+                ~f:(fun param arg ->
+                  if Poly.equal (Var.Tbl.get types param) (Number (Float, Boxed))
+                  then box arg)
+                b'.params
+                args
+          | Cond (_, cont1, cont2) ->
+              let check_cont (pc', args) =
+                let b' = Addr.Map.find pc' p.blocks in
+                List.iter2
+                  ~f:(fun param arg ->
+                    if Poly.equal (Var.Tbl.get types param) (Number (Float, Boxed))
+                    then box arg)
+                  b'.params
+                  args
+              in
+              check_cont cont1;
+              check_cont cont2
+          | Switch (_, conts) ->
+              Array.iter
+                ~f:(fun (pc', args) ->
+                  let b' = Addr.Map.find pc' p.blocks in
+                  List.iter2
+                    ~f:(fun param arg ->
+                      if Poly.equal (Var.Tbl.get types param) (Number (Float, Boxed))
+                      then box arg)
+                    b'.params
+                    args)
+                conts
+          | Pushtrap (cont1, _, cont2) ->
+              let check_cont (pc', args) =
+                let b' = Addr.Map.find pc' p.blocks in
+                List.iter2
+                  ~f:(fun param arg ->
+                    if Poly.equal (Var.Tbl.get types param) (Number (Float, Boxed))
+                    then box arg)
+                  b'.params
+                  args
+              in
+              check_cont cont1;
+              check_cont cont2
+          | Raise _ | Stop -> ())
         pc
         p.blocks
         ())
@@ -697,6 +822,7 @@ let print_opt types global_flow_state f e =
 type t =
   { types : typ Var.Tbl.t
   ; return_types : typ Var.Hashtbl.t
+  ; extra_types : typ Var.Hashtbl.t
   }
 
 let f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinel p =
@@ -755,9 +881,23 @@ let f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinel p =
               (Var.Set.fold (fun x t -> Domain.join (Var.Tbl.get types x) t) s Bot))
         name_opt)
     ();
-  { types; return_types }
+  { types; return_types; extra_types = Var.Hashtbl.create 128 }
 
-let var_type info x = Var.Tbl.get info.types x
+let var_type info x =
+  let idx = Var.idx x in
+  if idx < Var.Tbl.length info.types
+  then Var.Tbl.get info.types x
+  else Var.Hashtbl.find_opt info.extra_types x |> Option.value ~default:Top
+
+let set_var_type info x t =
+  let idx = Var.idx x in
+  if idx < Var.Tbl.length info.types
+  then Var.Tbl.set info.types x t
+  else Var.Hashtbl.replace info.extra_types x t
 
 let return_type info f =
   Var.Hashtbl.find_opt info.return_types f |> Option.value ~default:Top
+
+let set_return_type info f t = Var.Hashtbl.replace info.return_types f t
+
+let join = Domain.join
