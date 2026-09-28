@@ -164,3 +164,12 @@ val convert_warning_on_overflow :
 ```ocaml
 val of_nativeint_warning_on_overflow : Stdlib.Nativeint.t -> int32
 ```
+```ocaml
+val leading_zeros : int32 -> int
+```
+```ocaml
+val trailing_zeros : int32 -> int
+```
+```ocaml
+val popcount : int32 -> int
+```

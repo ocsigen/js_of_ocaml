@@ -91,6 +91,15 @@ val neg : t -> t
 val abs : t -> t
 ```
 ```ocaml
+val leading_zeros : t -> int
+```
+```ocaml
+val trailing_zeros : t -> int
+```
+```ocaml
+val popcount : t -> int
+```
+```ocaml
 val min_int : unit -> t
 ```
 ```ocaml
