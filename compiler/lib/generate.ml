@@ -1730,14 +1730,15 @@ let rec translate_expr ctx loc x e level : (_ * J.statement_list) Expr_builder.t
               in
               let lex = Parse_js.Lexer.of_string ?pos nm in
               return (Parse_js.parse_expr lex)
-            with Parse_js.Parsing_error pi ->
+            with Parse_js.Parsing_error (pi, msg) ->
               failwith
                 (Printf.sprintf
-                   "%s: cannot parse the JavaScript expression %S"
+                   "%s: cannot parse the JavaScript expression %S: %s"
                    (match pi.Parse_info.src with
                    | None -> Printf.sprintf "%d:%d" pi.Parse_info.line pi.Parse_info.col
                    | Some _ -> Parse_info.to_string pi)
-                   nm))
+                   nm
+                   msg))
         | Extern ("caml_jsoo_runtime_value", _), [ Pc (String nm) ] when J.is_ident nm ->
             let prim = Share.get_prim (runtime_fun ctx) nm ctx.Ctx.share in
             return prim

@@ -192,3 +192,13 @@ val is_reserved : string -> t option
 val is_keyword : string -> t option
 
 val all_keywords : t list
+
+val is_contextual_keyword : t -> bool
+(** Keywords that are always allowed as identifiers ([async], [of], [get], ...) *)
+
+val is_strict_mode_reserved_word : t -> bool
+(** Reserved words that are only reserved in strict mode code ([let],
+    [static], [public], ...): they are identifiers in sloppy mode *)
+
+val is_reserved_word : t -> bool
+(** The tokens produced by {!is_reserved} *)

@@ -261,9 +261,9 @@ module Fragment = struct
     List.for_all ~f:(fun (op, str) -> op Ocaml_version.(compare current (split str)) 0)
 
   let parse_from_lex ~filename lex =
-    let program, _ =
-      try Parse_js.parse' `Script lex
-      with Parse_js.Parsing_error pi ->
+    let program =
+      try Parse_js.parse_annotated `Script lex
+      with Parse_js.Parsing_error (pi, msg) ->
         let name =
           match pi with
           | { Parse_info.src = Some x; _ } | { Parse_info.name = Some x; _ } -> x
@@ -275,7 +275,7 @@ module Fragment = struct
           (if String.equal name filename
            then ""
            else Printf.sprintf "cannot parse file %S:\n" filename)
-          (Parse_js.string_of_error pi)
+          (Parse_js.string_of_error (pi, msg))
     in
     let res =
       List.map program ~f:(fun (annot, code) ->

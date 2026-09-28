@@ -39,6 +39,7 @@ The code was later largely rewritten but still contain pieces from its predecess
 
 %{
 
+open Js_of_ocaml_compiler
 open Js_token
 open Javascript
 

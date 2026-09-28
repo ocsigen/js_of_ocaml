@@ -1,0 +1,3 @@
+(executables
+ (names parser_diff dump_tokens bench_lex)
+ (libraries js_of_ocaml-compiler parse_js_menhir sedlex))

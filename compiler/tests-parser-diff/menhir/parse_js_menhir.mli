@@ -17,6 +17,11 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+(** Previous, Menhir-based implementation of the JavaScript parser. Kept
+    only to check the recursive-descent parser in [Parse_js] against it. *)
+
+open Js_of_ocaml_compiler
+
 module Lexer : sig
   type t
 
@@ -36,31 +41,14 @@ module Lexer : sig
   val of_channel : in_channel -> t
 end
 
-exception Parsing_error of Parse_info.t * string
-(** A syntax error: its location and a message describing it, such as
-    ["unexpected `}`, expected `)`"]. *)
-
-val string_of_error : Parse_info.t * string -> string
-(** A syntax error, as [file:line:col: message] followed, when the source
-    file can be read, by the offending line and a marker under the
-    unexpected token. *)
+exception Parsing_error of Parse_info.t
 
 val parse : [ `Script | `Module ] -> Lexer.t -> Javascript.program
-
-val parse_annotated :
-     [ `Script | `Module ]
-  -> Lexer.t
-  -> ((Js_token.Annot.t * Parse_info.t) list * Javascript.program) list
-(** The top-level statements, grouped under the annotations
-    ([//Provides: ...]) that precede them. *)
 
 val parse' :
      [ `Script | `Module ]
   -> Lexer.t
   -> ((Js_token.Annot.t * Parse_info.t) list * Javascript.program) list
      * (Js_token.t * Loc.t) list
-(** Like {!parse_annotated}, and also returns all the tokens, including
-    comments and virtual semicolons. Keeping them makes parsing noticeably
-    slower: only use it when the tokens are needed. *)
 
 val parse_expr : Lexer.t -> Javascript.expression

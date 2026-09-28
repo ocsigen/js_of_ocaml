@@ -45,20 +45,20 @@ let f { Cmd_arg.common; output_file; use_stdin; files } =
   let gen pp =
     let pretty = Config.Flag.pretty () in
     Pretty_print.set_compact pp (not pretty);
-    let error_of_pi pi = error "%s" (Parse_js.string_of_error pi) in
+    let error_of_pi e = error "%s" (Parse_js.string_of_error e) in
     let p =
       List.flatten
         (List.map files ~f:(fun file ->
              let lex = Parse_js.Lexer.of_file file in
              try Parse_js.parse `Module lex
-             with Parse_js.Parsing_error pi -> error_of_pi pi))
+             with Parse_js.Parsing_error (pi, msg) -> error_of_pi (pi, msg)))
     in
     let p =
       if use_stdin
       then
         let lex = Parse_js.Lexer.of_channel stdin in
         try p @ Parse_js.parse `Module lex
-        with Parse_js.Parsing_error pi -> error_of_pi pi
+        with Parse_js.Parsing_error (pi, msg) -> error_of_pi (pi, msg)
       else p
     in
     let true_ () = true in
