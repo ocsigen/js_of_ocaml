@@ -57462,6 +57462,11 @@ val default_value :
 # Module `_.Bigarray`
 
 ```ocaml
+val dimension : int -> expression -> expression
+```
+The `n`\-th dimension of a bigarray, as an `i32`
+
+```ocaml
 val get : 
   bound_error_index:int ->
   unsafe:bool ->
@@ -57959,6 +57964,11 @@ module Make (_ : Target_sig.S) : sig ... end
 ---
 
 # Module `Gc_target.Bigarray`
+
+```ocaml
+val dimension : int -> expression -> expression
+```
+The `n`\-th dimension of a bigarray, as an `i32`
 
 ```ocaml
 val get : 
@@ -58690,6 +58700,11 @@ val f :
 ---
 
 # Module `S.Bigarray`
+
+```ocaml
+val dimension : int -> expression -> expression
+```
+The `n`\-th dimension of a bigarray, as an `i32`
 
 ```ocaml
 val get : 

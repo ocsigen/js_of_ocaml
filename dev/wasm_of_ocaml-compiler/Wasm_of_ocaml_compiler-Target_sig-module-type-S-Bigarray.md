@@ -1,6 +1,11 @@
 # Module `S.Bigarray`
 
 ```ocaml
+val dimension : int -> expression -> expression
+```
+The `n`\-th dimension of a bigarray, as an `i32`
+
+```ocaml
 val get : 
   bound_error_index:int ->
   unsafe:bool ->
