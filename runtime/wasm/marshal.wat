@@ -55,6 +55,7 @@
    (type $int_array (array (mut i32)))
 (@if (not $wasi)
 (@then
+   ;; JavaScript Map, keyed on identity
    (import "bindings" "map_new" (func $map_new (result (ref any))))
    (import "bindings" "map_get_or_set"
       (func $map_get_or_set
@@ -873,8 +874,9 @@
          (field $obj_counter (mut i32))
          (field $size_32 (mut i32))
          (field $size_64 (mut i32))
-         ;; Position of already marshalled objects
-         (field $pos_table (ref any))
+         ;; Position of already marshalled objects other than blocks
+         ;; (created on first use)
+         (field $pos_table (mut (ref null any)))
          ;; Buffers
          (field $buf (mut (ref $bytes)))
          (field $pos (mut i32))
@@ -911,7 +913,7 @@
          (i32.const 0)
          (i32.const 0)
          (i32.const 0)
-         (call $map_new)
+         (ref.null any)
          (struct.get $output_block $dat (local.get $output))
          (local.get $pos)
          (struct.get $output_block $end (local.get $output))
@@ -1081,10 +1083,17 @@
 
 (@if $wasi
 (@then
-   ;; Table of the objects other than blocks (strings, floats, custom
-   ;; values, ...) already marshalled. Wasm has no identity hash for
-   ;; references, so they are hashed on their contents; objects with the
-   ;; same hash are told apart with ref.eq, in chained buckets.
+   ;; Table of the objects other than blocks already marshalled. Without a
+   ;; JavaScript Map, and as Wasm has no identity hash for references,
+   ;; they are hashed on their contents; objects with the same hash are
+   ;; told apart with $same_object, in chained buckets. Floats and
+   ;; int32/int64/nativeint values are immutable, so any previous one with
+   ;; the same contents is shared: distinct equal numbers would otherwise
+   ;; share a chain, and marshaling many of them would be quadratic. Other
+   ;; objects (strings, float arrays, bigarrays, ...) are mutable and are
+   ;; shared by identity only: distinct objects with similar contents
+   ;; (strings with the same length and ends, float arrays with the same
+   ;; length and first element, ...) still share a chain.
    (type $map
       (struct
          (field $count (mut i32))
@@ -1212,6 +1221,64 @@
             (i32.const 0xc2b2ae35)))
       (i32.xor (local.get $h) (i32.shr_u (local.get $h) (i32.const 16))))
 
+   (func $is_int_custom (param $ops (ref $custom_operations)) (result i32)
+      ;; int32, int64 and nativeint, whose identifiers are "_i", "_j", "_n"
+      (local $id (ref $bytes)) (local $c i32)
+      (local.set $id (struct.get $custom_operations $id (local.get $ops)))
+      (if (i32.ne (array.len (local.get $id)) (i32.const 2))
+         (then (return (i32.const 0))))
+      (if (i32.ne (array.get_u $bytes (local.get $id) (i32.const 0))
+             (i32.const 95)) ;; '_'
+         (then (return (i32.const 0))))
+      (local.set $c (array.get_u $bytes (local.get $id) (i32.const 1)))
+      (i32.or (i32.eq (local.get $c) (i32.const 105)) ;; 'i'
+         (i32.or (i32.eq (local.get $c) (i32.const 106)) ;; 'j'
+            (i32.eq (local.get $c) (i32.const 110))))) ;; 'n'
+
+   (func $same_object (param $a (ref eq)) (param $b (ref eq)) (result i32)
+      ;; physically equal, or immutable numbers with the same contents.
+      ;; Unlike native code (and the JavaScript-hosted runtime),
+      ;; output_value thus shares distinct floats and int32/int64/nativeint
+      ;; values with equal contents: the output is smaller but differs
+      ;; from native code, and unmarshaling gives physically equal values.
+      (local $fa (ref $float)) (local $ca (ref $custom)) (local $cb (ref $custom))
+      (local $ops (ref $custom_operations))
+      (if (ref.eq (local.get $a) (local.get $b)) (then (return (i32.const 1))))
+      (drop (block $not_float (result (ref eq))
+         (local.set $fa
+            (br_on_cast_fail $not_float (ref eq) (ref $float) (local.get $a)))
+         (drop (block $b_not_float (result (ref eq))
+            (return
+               (i64.eq
+                  (i64.reinterpret_f64 (struct.get $float 0 (local.get $fa)))
+                  (i64.reinterpret_f64
+                     (struct.get $float 0
+                        (br_on_cast_fail $b_not_float (ref eq) (ref $float)
+                           (local.get $b))))))))
+         (return (i32.const 0))))
+      (drop (block $not_custom (result (ref eq))
+         (local.set $ca
+            (br_on_cast_fail $not_custom (ref eq) (ref $custom) (local.get $a)))
+         (drop (block $b_not_custom (result (ref eq))
+            (local.set $cb
+               (br_on_cast_fail $b_not_custom (ref eq) (ref $custom)
+                  (local.get $b)))
+            (local.set $ops (struct.get $custom $ops (local.get $ca)))
+            (if (i32.eqz
+                   (ref.eq (local.get $ops)
+                      (struct.get $custom $ops (local.get $cb))))
+               (then (return (i32.const 0))))
+            (if (i32.eqz (call $is_int_custom (local.get $ops)))
+               (then (return (i32.const 0))))
+            (return
+               (i32.eqz
+                  (call_ref $compare (local.get $a) (local.get $b) (i32.const 1)
+                     (ref.as_non_null
+                        (struct.get $custom_operations $compare
+                           (local.get $ops))))))))
+         (return (i32.const 0))))
+      (i32.const 0))
+
    (func $map_resize (param $m (ref $map))
       (local $count i32) (local $size i32) (local $i i32) (local $b i32)
       (local $buckets (ref $int_array)) (local $next (ref $int_array))
@@ -1279,7 +1346,7 @@
                          (array.get $int_array
                             (struct.get $map $hashes (local.get $m))
                             (local.get $i)))
-                      (ref.eq (local.get $k)
+                      (call $same_object (local.get $k)
                          (array.get $block (struct.get $map $keys (local.get $m))
                             (local.get $i))))
                   (then
@@ -1319,6 +1386,16 @@
       (ref.null i31))
 ))
 
+   (func $get_pos_table (param $s (ref $extern_state)) (result (ref any))
+      (local $t (ref any))
+      (block $create
+         (return
+            (br_on_null $create
+               (struct.get $extern_state $pos_table (local.get $s)))))
+      (local.set $t (call $map_new))
+      (struct.set $extern_state $pos_table (local.get $s) (local.get $t))
+      (local.get $t))
+
    (func $extern_lookup_or_record
       (param $s (ref $extern_state)) (param $obj (ref eq)) (result i32)
       ;; the position of an object already marshalled, or -1 after
@@ -1328,8 +1405,7 @@
          (then (return (i32.const -1))))
       (local.set $pos (struct.get $extern_state $obj_counter (local.get $s)))
       (local.set $r
-         (call $map_get_or_set
-            (struct.get $extern_state $pos_table (local.get $s))
+         (call $map_get_or_set (call $get_pos_table (local.get $s))
             (local.get $obj) (ref.i31 (local.get $pos))))
       (if (ref.is_null (local.get $r))
          (then
