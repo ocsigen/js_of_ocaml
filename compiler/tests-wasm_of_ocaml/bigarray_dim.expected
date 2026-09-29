@@ -1,0 +1,36 @@
+dims: 7 3 | 2 5 | 4 1 | 3 6 2 | 1 2 8
+dims arithmetic: 8 49 -3
+reads: 43396 10
+read #0: 65
+read #1: 74
+read #2: Buffer_short
+read #3: Invalid_argument index out of bounds
+read #4: Invalid_argument index out of bounds
+read #5: Buffer_short
+read #6: Buffer_short
+read #7: Invalid_argument index out of bounds
+set and get: 50 2 203 203
+get #0: 0
+set #0: ok
+fortran get #0: Invalid_argument index out of bounds
+get #1: 50
+set #1: ok
+fortran get #1: 2.
+get #2: Invalid_argument index out of bounds
+set #2: Invalid_argument index out of bounds
+fortran get #2: 2.5
+get #3: Invalid_argument index out of bounds
+set #3: Invalid_argument index out of bounds
+fortran get #3: Invalid_argument index out of bounds
+get #4: Invalid_argument index out of bounds
+set #4: Invalid_argument index out of bounds
+fortran get #4: Invalid_argument index out of bounds
+get #5: Invalid_argument index out of bounds
+set #5: Invalid_argument index out of bounds
+fortran get #5: Invalid_argument index out of bounds
+get #6: Invalid_argument index out of bounds
+set #6: Invalid_argument index out of bounds
+fortran get #6: Invalid_argument index out of bounds
+get #7: Invalid_argument index out of bounds
+set #7: Invalid_argument index out of bounds
+fortran get #7: Invalid_argument index out of bounds
