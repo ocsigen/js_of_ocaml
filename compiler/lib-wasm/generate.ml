@@ -1908,23 +1908,57 @@ module Generate (Target : Target_sig.S) = struct
             | Number (Float, _) -> call "caml_float_compare" F64
             | _ -> call "caml_compare" Type.value)
         | _ -> invalid_arity "caml_compare" l ~expected:2);
+    (* A bigarray access is specialized when the kind and layout of the
+       bigarray are known, from the hint or from its type. Its indices are
+       then untagged integers and the element is in its own
+       representation. *)
+    let bigarray_access (hint : Optimization_hint.ccall option) (ta : Typing.typ) =
+      match hint, ta with
+      | Some (Hint_bigarray { unsafe; kind; layout }), _
+      | _, Bigarray { unsafe; kind; layout } -> Some (unsafe, kind, layout)
+      | _ -> None
+    in
+    let bigarray_args ~set =
+      Typing.Computed
+        (fun ~hint ~info:_ args ->
+          match args with
+          | (_, ta) :: rem -> (
+              match bigarray_access hint ta with
+              | Some (_, kind, _) ->
+                  let n = List.length rem in
+                  Typing.Top
+                  :: List.mapi
+                       ~f:(fun i _ ->
+                         if set && i = n - 1
+                         then Typing.bigarray_element_type kind
+                         else int_n)
+                       rem
+              | None -> List.map ~f:(fun _ -> Typing.Top) args)
+          | [] -> [])
+    in
+    (* A generic bigarray access is specialized when the kind and layout of
+       the bigarray are known from its type, and the indices are a block
+       built in place, which gives their number *)
+    let generic_bigarray_access ~(info : Global_flow.info) (ta : Typing.typ) indices =
+      match ta, indices with
+      | Bigarray { kind; layout; _ }, Pv indices -> (
+          match info.info_defs.(Var.idx indices) with
+          | Expr (Block (_, l, _, _, _)) -> Some (kind, layout, indices, Array.length l)
+          | Expr _ | Phi _ -> None)
+      | _, (Pv _ | Pc _) -> None
+    in
     let bigarray_generic_access ~ctx ta indices =
       match
-        ( get_type ctx ta
-        , match indices with
-          | Pv indices -> Some (indices, ctx.global_flow_info.info_defs.(Var.idx indices))
-          | Pc _ -> None )
+        generic_bigarray_access ~info:ctx.global_flow_info (get_type ctx ta) indices
       with
-      | Bigarray { kind; layout; _ }, Some (indices, Expr (Block (_, l, _, _, _))) ->
+      | Some (kind, layout, indices, n) ->
           Some
             ( kind
             , layout
-            , List.mapi
-                ~f:(fun i _ ->
+            , List.init ~len:n ~f:(fun i ->
                   Conv.untag
-                    (Memory.array_get (load indices) (Arith.const (Int32.of_int i))))
-                (Array.to_list l) )
-      | _, None | _, Some (_, (Expr _ | Phi _)) -> None
+                    (Memory.array_get (load indices) (Arith.const (Int32.of_int i)))) )
+      | None -> None
     in
     (* The type of a generic bigarray does not give its number of
        dimensions: when it does not match the number of indices, the
@@ -1950,9 +1984,8 @@ module Generate (Target : Target_sig.S) = struct
         ~indices
     in
     let caml_ba_get_n ~ctx ~context ~hint ta indices =
-      match hint, get_type ctx ta with
-      | Some (Optimization_hint.Hint_bigarray { unsafe; kind; layout }), _
-      | _, Bigarray { unsafe; kind; layout } ->
+      match bigarray_access hint (get_type ctx ta) with
+      | Some (unsafe, kind, layout) ->
           let indices = List.map ~f:(fun i -> transl_prim_arg ctx ~typ:int_n i) indices in
           caml_ba_get ~ctx ~context ~unsafe ~kind ~layout ta indices
       | _ ->
@@ -1969,7 +2002,7 @@ module Generate (Target : Target_sig.S) = struct
     register_prim
       "caml_ba_get_1"
       `Mutator
-      ~args:Any_representation
+      ~args:(bigarray_args ~set:false)
       (fun ctx context hint l ->
         match l with
         | [ ta; i ] -> caml_ba_get_n ~ctx ~context ~hint ta [ i ]
@@ -1977,7 +2010,7 @@ module Generate (Target : Target_sig.S) = struct
     register_prim
       "caml_ba_get_2"
       `Mutator
-      ~args:Any_representation
+      ~args:(bigarray_args ~set:false)
       (fun ctx context hint l ->
         match l with
         | [ ta; i; j ] -> caml_ba_get_n ~ctx ~context ~hint ta [ i; j ]
@@ -1985,16 +2018,12 @@ module Generate (Target : Target_sig.S) = struct
     register_prim
       "caml_ba_get_3"
       `Mutator
-      ~args:Any_representation
+      ~args:(bigarray_args ~set:false)
       (fun ctx context hint l ->
         match l with
         | [ ta; i; j; k ] -> caml_ba_get_n ~ctx ~context ~hint ta [ i; j; k ]
         | _ -> invalid_arity "caml_ba_get_3" l ~expected:4);
-    register_prim
-      "caml_ba_get_generic"
-      `Mutator
-      ~args:Any_representation
-      (fun ctx context _ l ->
+    register_prim "caml_ba_get_generic" `Mutator ~args:Values (fun ctx context _ l ->
         match l with
         | [ ta; indices ] -> (
             let generic () =
@@ -2035,7 +2064,7 @@ module Generate (Target : Target_sig.S) = struct
     register_prim
       "caml_ba_float32_get_1"
       `Mutator
-      ~args:Any_representation
+      ~args:(Typed [ Top; int_n ])
       ~ret_typ:float32_u
       (fun ctx context _ l ->
         match l with
@@ -2044,7 +2073,7 @@ module Generate (Target : Target_sig.S) = struct
     register_prim
       "caml_ba_float32_get_2"
       `Mutator
-      ~args:Any_representation
+      ~args:(Typed [ Top; int_n; int_n ])
       ~ret_typ:float32_u
       (fun ctx context _ l ->
         match l with
@@ -2053,7 +2082,7 @@ module Generate (Target : Target_sig.S) = struct
     register_prim
       "caml_ba_float32_get_3"
       `Mutator
-      ~args:Any_representation
+      ~args:(Typed [ Top; int_n; int_n; int_n ])
       ~ret_typ:float32_u
       (fun ctx context _ l ->
         match l with
@@ -2072,9 +2101,8 @@ module Generate (Target : Target_sig.S) = struct
         v'
     in
     let caml_ba_set_n ~ctx ~context ~hint ta indices v =
-      match hint, get_type ctx ta with
-      | Some (Optimization_hint.Hint_bigarray { unsafe; kind; layout }), _
-      | _, Bigarray { unsafe; kind; layout } ->
+      match bigarray_access hint (get_type ctx ta) with
+      | Some (unsafe, kind, layout) ->
           let indices = List.map ~f:(fun i -> transl_prim_arg ctx ~typ:int_n i) indices in
           caml_ba_set ~ctx ~context ~unsafe ~kind ~layout ta indices v
       | _ ->
@@ -2092,7 +2120,7 @@ module Generate (Target : Target_sig.S) = struct
     register_prim
       "caml_ba_set_1"
       `Mutator
-      ~args:Any_representation
+      ~args:(bigarray_args ~set:true)
       (fun ctx context hint l ->
         match l with
         | [ ta; i; v ] -> caml_ba_set_n ~ctx ~context ~hint ta [ i ] v
@@ -2100,7 +2128,7 @@ module Generate (Target : Target_sig.S) = struct
     register_prim
       "caml_ba_set_2"
       `Mutator
-      ~args:Any_representation
+      ~args:(bigarray_args ~set:true)
       (fun ctx context hint l ->
         match l with
         | [ ta; i; j; v ] -> caml_ba_set_n ~ctx ~context ~hint ta [ i; j ] v
@@ -2108,7 +2136,7 @@ module Generate (Target : Target_sig.S) = struct
     register_prim
       "caml_ba_set_3"
       `Mutator
-      ~args:Any_representation
+      ~args:(bigarray_args ~set:true)
       (fun ctx context hint l ->
         match l with
         | [ ta; i; j; k; v ] -> caml_ba_set_n ~ctx ~context ~hint ta [ i; j; k ] v
@@ -2116,7 +2144,18 @@ module Generate (Target : Target_sig.S) = struct
     register_prim
       "caml_ba_set_generic"
       `Mutator
-      ~args:Any_representation
+      ~args:
+        (Computed
+           (fun ~hint:_ ~info args ->
+             match args with
+             | [ (_, ta); (indices, _); _ ] ->
+                 [ Top
+                 ; Top
+                 ; (match generic_bigarray_access ~info ta indices with
+                   | Some (kind, _, _, _) -> Typing.bigarray_element_type kind
+                   | None -> Top)
+                 ]
+             | _ -> List.map ~f:(fun _ -> Typing.Top) args))
       (fun ctx context _ l ->
         match l with
         | [ ta; indices; v ] -> (
@@ -2161,7 +2200,7 @@ module Generate (Target : Target_sig.S) = struct
     register_prim
       "caml_ba_float32_set_1"
       `Mutator
-      ~args:Any_representation
+      ~args:(Typed [ Top; int_n; float32_u ])
       ~unbox:true
       (fun ctx context _ l ->
         match l with
@@ -2170,7 +2209,7 @@ module Generate (Target : Target_sig.S) = struct
     register_prim
       "caml_ba_float32_set_2"
       `Mutator
-      ~args:Any_representation
+      ~args:(Typed [ Top; int_n; int_n; float32_u ])
       ~unbox:true
       (fun ctx context _ l ->
         match l with
@@ -2179,7 +2218,7 @@ module Generate (Target : Target_sig.S) = struct
     register_prim
       "caml_ba_float32_set_3"
       `Mutator
-      ~args:Any_representation
+      ~args:(Typed [ Top; int_n; int_n; int_n; float32_u ])
       ~unbox:true
       (fun ctx context _ l ->
         match l with
