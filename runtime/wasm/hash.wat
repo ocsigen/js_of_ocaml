@@ -194,7 +194,7 @@
       (local.set $sz (i31.get_u (ref.cast (ref i31) (local.get $limit))))
       (if (i32.gt_u (local.get $sz) (global.get $HASH_QUEUE_SIZE))
          (then (local.set $sz (global.get $HASH_QUEUE_SIZE))))
-      (local.set $num (i31.get_u (ref.cast (ref i31) (local.get $count))))
+      (local.set $num (i31.get_s (ref.cast (ref i31) (local.get $count))))
       (local.set $h (i31.get_s (ref.cast (ref i31) (local.get $seed))))
       (array.set $block
          (global.get $caml_hash_queue) (i32.const 0) (local.get $obj))
@@ -202,13 +202,13 @@
       (local.set $wr (i32.const 1))
       (loop $loop
          (if (i32.and (i32.lt_u (local.get $rd) (local.get $wr))
-                      (i32.gt_u (local.get $num) (i32.const 0)))
+                      (i32.gt_s (local.get $num) (i32.const 0)))
             (then
                (local.set $v
                   (array.get $block (global.get $caml_hash_queue)
                      (local.get $rd)))
                (local.set $rd (i32.add (local.get $rd) (i32.const 1)))
-               (block $again
+               (loop $again
                   (drop (block $not_int (result (ref eq))
                      (local.set $iv
                         (br_on_cast_fail $not_int (ref eq) (ref i31)
@@ -273,6 +273,8 @@
                                     (ref.cast (ref i31)
                                        (array.get $block
                                           (local.get $bv) (i32.const 2))))))
+                           (local.set $num
+                              (i32.sub (local.get $num) (i32.const 1)))
                            (br $loop)))
                      ;; abstract tag: block contents unknown, do nothing
                      (br_if $loop
