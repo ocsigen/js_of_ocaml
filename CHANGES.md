@@ -8,6 +8,8 @@
 * Runtime: support `Sys.filepath_exists` (OCaml 5.6) (#2493)
 * Runtime: with OCaml 5.6, `Weak.get_copy` and the ephemeron `get_*_copy`
   primitives no longer copy, as in the OCaml runtime (#2469)
+* Runtime/Wasm: faster `caml_hash` and `compare`, without a global work stack
+  (#2470)
 * Compiler: with `--effects={cps,double-translation}`, specialize calls to
   known functions using the global flow analysis before the CPS transformation
   (#2456)
