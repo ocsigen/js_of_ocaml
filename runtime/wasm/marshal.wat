@@ -17,6 +17,9 @@
 
 (module
    (import "fail" "caml_failwith" (func $caml_failwith (param (ref eq))))
+   (import "fail" "ocaml_exception" (tag $ocaml_exception (param (ref eq))))
+   (import "fail" "javascript_exception"
+      (tag $javascript_exception (param externref)))
    (import "fail" "caml_invalid_argument"
       (func $caml_invalid_argument (param (ref eq))))
    (import "fail" "caml_raise_end_of_file" (func $caml_raise_end_of_file))
@@ -49,74 +52,13 @@
       (func $caml_find_custom_operations
          (param (ref $bytes)) (result (ref null $custom_operations))))
    (type $block (array (mut (ref eq))))
-(@if $wasi
+   (type $int_array (array (mut i32)))
+(@if (not $wasi)
 (@then
-   (type $map
-      (struct
-         (field $size (mut i32))
-         (field $keys (mut (ref $block)))
-         (field $values (mut (ref $block)))))
-   (func $map_new (result (ref any))
-      (struct.new $map
-         (i32.const 0)
-         (array.new $block (ref.i31 (i32.const 0)) (i32.const 2))
-         (array.new $block (ref.i31 (i32.const 0)) (i32.const 2))))
-   (func $map_get (param $map (ref any)) (param $k (ref eq)) (result i31ref)
-      (local $m (ref $map)) (local $keys (ref $block))
-      (local $i i32) (local $size i32)
-      (local.set $m (ref.cast (ref $map) (local.get $map)))
-      (local.set $size (struct.get $map $size (local.get $m)))
-      (local.set $keys (struct.get $map $keys (local.get $m)))
-      (loop $loop
-         (if (i32.lt_u (local.get $i) (local.get $size))
-            (then
-               (if (ref.eq (array.get $block (local.get $keys) (local.get $i))
-                      (local.get $k))
-                  (then
-                     (return
-                        (ref.cast (ref i31)
-                           (array.get $block
-                              (struct.get $map $values (local.get $m))
-                              (local.get $i))))))
-               (local.set $i (i32.add (local.get $i) (i32.const 1)))
-               (br $loop))))
-      (ref.null i31))
-   (func $map_set (param $map (ref any)) (param $k (ref eq)) (param $v (ref i31))
-      (local $m (ref $map)) (local $i i32) (local $size i32)
-      (local $keys (ref $block)) (local $a (ref $block))
-      (local.set $m (ref.cast (ref $map) (local.get $map)))
-      (local.set $i (struct.get $map $size (local.get $m)))
-      (local.set $keys (struct.get $map $keys (local.get $m)))
-      (if (i32.eq (local.get $i) (array.len (local.get $keys)))
-         (then
-            (local.set $size (i32.shl (local.get $i) (i32.const 1)))
-            (local.set $a
-               (array.new $block (ref.i31 (i32.const 0)) (local.get $size)))
-            (array.copy $block $block
-               (local.get $a) (i32.const 0)
-               (local.get $keys) (i32.const 0)
-               (local.get $i))
-            (struct.set $map $keys (local.get $m) (local.get $a))
-            (local.set $keys (local.get $a))
-            (local.set $a
-               (array.new $block (ref.i31 (i32.const 0)) (local.get $size)))
-            (array.copy $block $block
-               (local.get $a) (i32.const 0)
-               (struct.get $map $values (local.get $m)) (i32.const 0)
-               (local.get $i))
-            (struct.set $map $values (local.get $m) (local.get $a))))
-      (array.set $block (local.get $keys) (local.get $i) (local.get $k))
-      (array.set $block (struct.get $map $values (local.get $m))
-         (local.get $i) (local.get $v))
-      (struct.set $map $size (local.get $m)
-         (i32.add (local.get $i) (i32.const 1))))
-)
-(@else
    (import "bindings" "map_new" (func $map_new (result (ref any))))
-   (import "bindings" "map_get"
-      (func $map_get (param (ref any)) (param (ref eq)) (result i31ref)))
-   (import "bindings" "map_set"
-      (func $map_set (param (ref any)) (param (ref eq)) (param (ref i31))))
+   (import "bindings" "map_get_or_set"
+      (func $map_get_or_set
+         (param (ref any)) (param (ref eq)) (param (ref i31)) (result i31ref)))
 ))
 
    (@string $input_val_from_string "input_value_from_string")
@@ -940,7 +882,15 @@
          (field $pos (mut i32))
          (field $limit (mut i32))
          (field $output_first (ref $output_block))
-         (field $output_last (mut (ref $output_block)))))
+         (field $output_last (mut (ref $output_block)))
+         ;; Blocks already marshalled, with their original tags: their
+         ;; field 0 holds -(position + 1) until $extern_restore
+         (field $trail (mut (ref $block)))
+         (field $trail_tags (mut (ref $int_array)))
+         (field $trail_len (mut i32))))
+
+   (global $empty_block (ref $block) (array.new_fixed $block 0))
+   (global $empty_int_array (ref $int_array) (array.new_fixed $int_array 0))
 
    (func $init_extern_state
       (param $flags (ref eq)) (param $output (ref $output_block))
@@ -968,7 +918,10 @@
          (local.get $pos)
          (struct.get $output_block $end (local.get $output))
          (local.get $output)
-         (local.get $output)))
+         (local.get $output)
+         (global.get $empty_block)
+         (global.get $empty_int_array)
+         (i32.const 0)))
 
    (@string $buffer_overflow "Marshal.to_buffer: buffer overflow")
 
@@ -1128,29 +1081,353 @@
                (local.set $j (i32.add (local.get $j) (i32.const 1)))
                (br $loop2)))))
 
-   (func $extern_lookup_position
-      (param $s (ref $extern_state)) (param $obj (ref eq)) (result i32)
-      (block $not_found
-         (br_if $not_found (struct.get $extern_state $no_sharing (local.get $s)))
-         (return
-            (i31.get_s
-               (br_on_null $not_found
-                  (call $map_get
-                     (struct.get $extern_state $pos_table (local.get $s))
-                     (local.get $obj))))))
-      (i32.const -1))
+(@if $wasi
+(@then
+   ;; Table of the objects other than blocks (strings, floats, custom
+   ;; values, ...) already marshalled. Wasm has no identity hash for
+   ;; references, so they are hashed on their contents; objects with the
+   ;; same hash are told apart with ref.eq, in chained buckets.
+   (type $map
+      (struct
+         (field $count (mut i32))
+         (field $buckets (mut (ref $int_array))) ;; entry index + 1, or 0
+         (field $keys (mut (ref $block)))
+         (field $values (mut (ref $int_array)))
+         (field $hashes (mut (ref $int_array)))
+         (field $next (mut (ref $int_array))))) ;; entry index + 1, or 0
 
-   (func $extern_record_location
-      (param $s (ref $extern_state)) (param $obj (ref eq))
-      (local $pos i32)
+   (global $MAP_INITIAL_SIZE i32 (i32.const 16))
+
+   (func $map_new (result (ref any))
+      (struct.new $map
+         (i32.const 0)
+         (array.new $int_array (i32.const 0) (global.get $MAP_INITIAL_SIZE))
+         (array.new $block (ref.i31 (i32.const 0))
+            (global.get $MAP_INITIAL_SIZE))
+         (array.new $int_array (i32.const 0) (global.get $MAP_INITIAL_SIZE))
+         (array.new $int_array (i32.const 0) (global.get $MAP_INITIAL_SIZE))
+         (array.new $int_array (i32.const 0) (global.get $MAP_INITIAL_SIZE))))
+
+   (func $mix (param $h i32) (param $d i32) (result i32)
+      ;; MurmurHash3 mixing step
+      (i32.add
+         (i32.mul
+            (i32.rotl
+               (i32.xor (local.get $h)
+                  (i32.mul
+                     (i32.rotl (i32.mul (local.get $d) (i32.const 0xcc9e2d51))
+                        (i32.const 15))
+                     (i32.const 0x1b873593)))
+               (i32.const 13))
+            (i32.const 5))
+         (i32.const 0xe6546b64)))
+
+   (func $mix_bytes
+      (param $h i32) (param $s (ref $bytes)) (param $i i32) (param $end i32)
+      (result i32)
+      (local $w i32)
+      (loop $loop
+         (if (i32.lt_u (local.get $i) (local.get $end))
+            (then
+               (local.set $w
+                  (i32.or (i32.shl (local.get $w) (i32.const 8))
+                     (array.get_u $bytes (local.get $s) (local.get $i))))
+               (local.set $i (i32.add (local.get $i) (i32.const 1)))
+               (if (i32.eqz (i32.and (local.get $i) (i32.const 3)))
+                  (then
+                     (local.set $h (call $mix (local.get $h) (local.get $w)))
+                     (local.set $w (i32.const 0))))
+               (br $loop))))
+      (call $mix (local.get $h) (local.get $w)))
+
+   (func $object_hash (param $v (ref eq)) (result i32)
+      (local $h i32) (local $s (ref $bytes)) (local $len i32)
+      (local $fa (ref $float_array)) (local $f i64) (local $c (ref $custom))
+      (block $done
+         (drop (block $not_string (result (ref eq))
+            (local.set $s
+               (br_on_cast_fail $not_string (ref eq) (ref $bytes) (local.get $v)))
+            ;; the length, and at most the first and last 64 bytes
+            (local.set $len (array.len (local.get $s)))
+            (local.set $h (call $mix (local.get $h) (local.get $len)))
+            (if (i32.le_u (local.get $len) (i32.const 128))
+               (then
+                  (local.set $h
+                     (call $mix_bytes (local.get $h) (local.get $s)
+                        (i32.const 0) (local.get $len))))
+               (else
+                  (local.set $h
+                     (call $mix_bytes
+                        (call $mix_bytes (local.get $h) (local.get $s)
+                           (i32.const 0) (i32.const 64))
+                        (local.get $s)
+                        (i32.sub (local.get $len) (i32.const 64))
+                        (local.get $len)))))
+            (br $done)))
+         (drop (block $not_float (result (ref eq))
+            (local.set $f
+               (i64.reinterpret_f64
+                  (struct.get $float 0
+                     (br_on_cast_fail $not_float (ref eq) (ref $float)
+                        (local.get $v)))))
+            (local.set $h
+               (call $mix
+                  (call $mix (local.get $h) (i32.wrap_i64 (local.get $f)))
+                  (i32.wrap_i64 (i64.shr_u (local.get $f) (i64.const 32)))))
+            (br $done)))
+         (drop (block $not_float_array (result (ref eq))
+            (local.set $fa
+               (br_on_cast_fail $not_float_array (ref eq) (ref $float_array)
+                  (local.get $v)))
+            (local.set $len (array.len (local.get $fa)))
+            (local.set $h (call $mix (local.get $h) (local.get $len)))
+            (if (local.get $len)
+               (then
+                  (local.set $f
+                     (i64.reinterpret_f64
+                        (array.get $float_array (local.get $fa) (i32.const 0))))
+                  (local.set $h
+                     (call $mix
+                        (call $mix (local.get $h) (i32.wrap_i64 (local.get $f)))
+                        (i32.wrap_i64
+                           (i64.shr_u (local.get $f) (i64.const 32)))))))
+            (br $done)))
+         (drop (block $not_custom (result (ref eq))
+            (local.set $c
+               (br_on_cast_fail $not_custom (ref eq) (ref $custom) (local.get $v)))
+            (local.set $h
+               (call_ref $hash (local.get $v)
+                  (br_on_null $done
+                     (struct.get $custom_operations $hash
+                        (struct.get $custom $ops (local.get $c))))))
+            (br $done)))
+         ;; other values (JavaScript values, ...) all get the same hash
+         )
+      ;; MurmurHash3 finalization
+      (local.set $h
+         (i32.mul
+            (i32.xor (local.get $h) (i32.shr_u (local.get $h) (i32.const 16)))
+            (i32.const 0x85ebca6b)))
+      (local.set $h
+         (i32.mul
+            (i32.xor (local.get $h) (i32.shr_u (local.get $h) (i32.const 13)))
+            (i32.const 0xc2b2ae35)))
+      (i32.xor (local.get $h) (i32.shr_u (local.get $h) (i32.const 16))))
+
+   (func $map_resize (param $m (ref $map))
+      (local $count i32) (local $size i32) (local $i i32) (local $b i32)
+      (local $buckets (ref $int_array)) (local $next (ref $int_array))
+      (local $hashes (ref $int_array)) (local $keys (ref $block))
+      (local $values (ref $int_array))
+      (local.set $count (struct.get $map $count (local.get $m)))
+      (local.set $size (i32.shl (local.get $count) (i32.const 1)))
+      (local.set $keys
+         (array.new $block (ref.i31 (i32.const 0)) (local.get $size)))
+      (array.copy $block $block (local.get $keys) (i32.const 0)
+         (struct.get $map $keys (local.get $m)) (i32.const 0)
+         (local.get $count))
+      (struct.set $map $keys (local.get $m) (local.get $keys))
+      (local.set $values (array.new $int_array (i32.const 0) (local.get $size)))
+      (array.copy $int_array $int_array (local.get $values) (i32.const 0)
+         (struct.get $map $values (local.get $m)) (i32.const 0)
+         (local.get $count))
+      (struct.set $map $values (local.get $m) (local.get $values))
+      (local.set $hashes (array.new $int_array (i32.const 0) (local.get $size)))
+      (array.copy $int_array $int_array (local.get $hashes) (i32.const 0)
+         (struct.get $map $hashes (local.get $m)) (i32.const 0)
+         (local.get $count))
+      (struct.set $map $hashes (local.get $m) (local.get $hashes))
+      ;; rebuild the chains
+      (local.set $buckets
+         (array.new $int_array (i32.const 0) (local.get $size)))
+      (local.set $next (array.new $int_array (i32.const 0) (local.get $size)))
+      (loop $loop
+         (if (i32.lt_u (local.get $i) (local.get $count))
+            (then
+               (local.set $b
+                  (i32.and
+                     (array.get $int_array (local.get $hashes) (local.get $i))
+                     (i32.sub (local.get $size) (i32.const 1))))
+               (array.set $int_array (local.get $next) (local.get $i)
+                  (array.get $int_array (local.get $buckets) (local.get $b)))
+               (local.set $i (i32.add (local.get $i) (i32.const 1)))
+               (array.set $int_array (local.get $buckets) (local.get $b)
+                  (local.get $i))
+               (br $loop))))
+      (struct.set $map $buckets (local.get $m) (local.get $buckets))
+      (struct.set $map $next (local.get $m) (local.get $next)))
+
+   (func $map_get_or_set
+      (param $vm (ref any)) (param $k (ref eq)) (param $v (ref i31))
+      (result i31ref)
+      ;; the value of $k if present; otherwise, adds $k with value $v
+      (local $m (ref $map)) (local $h i32) (local $b i32) (local $e i32)
+      (local $i i32)
+      (local.set $m (ref.cast (ref $map) (local.get $vm)))
+      (local.set $h (call $object_hash (local.get $k)))
+      (local.set $b
+         (i32.and (local.get $h)
+            (i32.sub (array.len (struct.get $map $buckets (local.get $m)))
+               (i32.const 1))))
+      (local.set $e
+         (array.get $int_array (struct.get $map $buckets (local.get $m))
+            (local.get $b)))
+      (loop $chain
+         (if (local.get $e)
+            (then
+               (local.set $i (i32.sub (local.get $e) (i32.const 1)))
+               (if (i32.and
+                      (i32.eq (local.get $h)
+                         (array.get $int_array
+                            (struct.get $map $hashes (local.get $m))
+                            (local.get $i)))
+                      (ref.eq (local.get $k)
+                         (array.get $block (struct.get $map $keys (local.get $m))
+                            (local.get $i))))
+                  (then
+                     (return
+                        (ref.i31
+                           (array.get $int_array
+                              (struct.get $map $values (local.get $m))
+                              (local.get $i))))))
+               (local.set $e
+                  (array.get $int_array (struct.get $map $next (local.get $m))
+                     (local.get $i)))
+               (br $chain))))
+      (local.set $i (struct.get $map $count (local.get $m)))
+      (if (i32.eq (local.get $i)
+             (array.len (struct.get $map $keys (local.get $m))))
+         (then
+            (call $map_resize (local.get $m))
+            (local.set $b
+               (i32.and (local.get $h)
+                  (i32.sub
+                     (array.len (struct.get $map $buckets (local.get $m)))
+                     (i32.const 1))))))
+      (array.set $block (struct.get $map $keys (local.get $m)) (local.get $i)
+         (local.get $k))
+      (array.set $int_array (struct.get $map $values (local.get $m))
+         (local.get $i) (i31.get_s (local.get $v)))
+      (array.set $int_array (struct.get $map $hashes (local.get $m))
+         (local.get $i) (local.get $h))
+      (array.set $int_array (struct.get $map $next (local.get $m))
+         (local.get $i)
+         (array.get $int_array (struct.get $map $buckets (local.get $m))
+            (local.get $b)))
+      (array.set $int_array (struct.get $map $buckets (local.get $m))
+         (local.get $b) (i32.add (local.get $i) (i32.const 1)))
+      (struct.set $map $count (local.get $m)
+         (i32.add (local.get $i) (i32.const 1)))
+      (ref.null i31))
+))
+
+   (func $extern_lookup_or_record
+      (param $s (ref $extern_state)) (param $obj (ref eq)) (result i32)
+      ;; the position of an object already marshalled, or -1 after
+      ;; recording the position of a new one
+      (local $pos i32) (local $r i31ref)
+      (if (struct.get $extern_state $no_sharing (local.get $s))
+         (then (return (i32.const -1))))
+      (local.set $pos (struct.get $extern_state $obj_counter (local.get $s)))
+      (local.set $r
+         (call $map_get_or_set
+            (struct.get $extern_state $pos_table (local.get $s))
+            (local.get $obj) (ref.i31 (local.get $pos))))
+      (if (ref.is_null (local.get $r))
+         (then
+            (struct.set $extern_state $obj_counter (local.get $s)
+               (i32.add (local.get $pos) (i32.const 1)))
+            (return (i32.const -1))))
+      (i31.get_s (ref.as_non_null (local.get $r))))
+
+   (func $extern_mark_block
+      (param $s (ref $extern_state)) (param $b (ref $block)) (param $tg i32)
+      ;; Records the position of a block by storing a negative mark in its
+      ;; field 0, as there is no identity hash for references: the i31
+      ;; -(2 * position + forward + 1), where forward is 1 for a
+      ;; Forward_tag block (see $keep_forward). Marks fit in an i31: there
+      ;; cannot be 2^29 objects in a Wasm heap.
+      (local $pos i32) (local $n i32) (local $len i32)
+      (local $trail (ref $block)) (local $tags (ref $int_array))
       (if (struct.get $extern_state $no_sharing (local.get $s))
          (then (return)))
       (local.set $pos (struct.get $extern_state $obj_counter (local.get $s)))
       (struct.set $extern_state $obj_counter (local.get $s)
          (i32.add (local.get $pos) (i32.const 1)))
-      (call $map_set
-         (struct.get $extern_state $pos_table (local.get $s))
-         (local.get $obj) (ref.i31 (local.get $pos))))
+      (local.set $n (struct.get $extern_state $trail_len (local.get $s)))
+      (local.set $trail (struct.get $extern_state $trail (local.get $s)))
+      (local.set $tags (struct.get $extern_state $trail_tags (local.get $s)))
+      (if (i32.eq (local.get $n) (array.len (local.get $trail)))
+         (then
+            (local.set $len
+               (select (i32.const 16) (i32.shl (local.get $n) (i32.const 1))
+                  (i32.eqz (local.get $n))))
+            (local.set $trail
+               (array.new $block (ref.i31 (i32.const 0)) (local.get $len)))
+            (array.copy $block $block (local.get $trail) (i32.const 0)
+               (struct.get $extern_state $trail (local.get $s)) (i32.const 0)
+               (local.get $n))
+            (struct.set $extern_state $trail (local.get $s) (local.get $trail))
+            (local.set $tags (array.new $int_array (i32.const 0) (local.get $len)))
+            (array.copy $int_array $int_array (local.get $tags) (i32.const 0)
+               (struct.get $extern_state $trail_tags (local.get $s))
+               (i32.const 0) (local.get $n))
+            (struct.set $extern_state $trail_tags (local.get $s)
+               (local.get $tags))))
+      (array.set $block (local.get $trail) (local.get $n) (local.get $b))
+      (array.set $int_array (local.get $tags) (local.get $n) (local.get $tg))
+      (struct.set $extern_state $trail_len (local.get $s)
+         (i32.add (local.get $n) (i32.const 1)))
+      (array.set $block (local.get $b) (i32.const 0)
+         (ref.i31
+            (i32.sub (i32.const -1)
+               (i32.or (i32.shl (local.get $pos) (i32.const 1))
+                  (i32.eq (local.get $tg) (global.get $forward_tag)))))))
+
+   (func $keep_forward (param $v (ref eq)) (result i32)
+      ;; Whether a Forward_tag block pointing to $v is marshalled as such
+      ;; rather than as $v. Like the native runtime, it is kept when $v is
+      ;; a lazy value or a float, whose type it would otherwise change.
+      (local $tg i32)
+      (drop (block $not_block (result (ref eq))
+         (local.set $tg
+            (i31.get_s
+               (ref.cast (ref i31)
+                  (array.get $block
+                     (br_on_cast_fail $not_block (ref eq) (ref $block)
+                        (local.get $v))
+                     (i32.const 0)))))
+         ;; a block already marshalled: whether it is a Forward_tag block
+         (if (i32.lt_s (local.get $tg) (i32.const 0))
+            (then
+               (return
+                  (i32.and (i32.sub (i32.const -1) (local.get $tg))
+                     (i32.const 1)))))
+         (return
+            (i32.or (i32.eq (local.get $tg) (global.get $forward_tag))
+               (i32.or (i32.eq (local.get $tg) (global.get $lazy_tag))
+                  (i32.eq (local.get $tg) (global.get $forcing_tag)))))))
+      (ref.test (ref $float) (local.get $v)))
+
+   (func $extern_restore (param $s (ref $extern_state))
+      ;; puts back the tags of the marked blocks
+      (local $i i32) (local $n i32)
+      (local $trail (ref $block)) (local $tags (ref $int_array))
+      (local.set $n (struct.get $extern_state $trail_len (local.get $s)))
+      (local.set $trail (struct.get $extern_state $trail (local.get $s)))
+      (local.set $tags (struct.get $extern_state $trail_tags (local.get $s)))
+      (loop $loop
+         (if (i32.lt_u (local.get $i) (local.get $n))
+            (then
+               (array.set $block
+                  (ref.cast (ref $block)
+                     (array.get $block (local.get $trail) (local.get $i)))
+                  (i32.const 0)
+                  (ref.i31
+                     (array.get $int_array (local.get $tags) (local.get $i))))
+               (local.set $i (i32.add (local.get $i) (i32.const 1)))
+               (br $loop))))
+      (struct.set $extern_state $trail_len (local.get $s) (i32.const 0)))
 
    (func $extern_size
       (param $s (ref $extern_state)) (param $s32 i32) (param $s64 i32)
@@ -1313,25 +1590,6 @@
    (@string $abstract_value "output_value: abstract value")
    (@string $cust_value "output_value: abstract value (Custom)")
 
-   (func $keep_forward (param $v (ref eq)) (result i32)
-      ;; Whether a Forward_tag block pointing to $v is marshalled as such
-      ;; rather than as $v. Like the native runtime, it is kept when $v is
-      ;; a lazy value or a float, whose type it would otherwise change.
-      (local $tg i32)
-      (drop (block $not_block (result (ref eq))
-         (local.set $tg
-            (i31.get_u
-               (ref.cast (ref i31)
-                  (array.get $block
-                     (br_on_cast_fail $not_block (ref eq) (ref $block)
-                        (local.get $v))
-                     (i32.const 0)))))
-         (return
-            (i32.or (i32.eq (local.get $tg) (global.get $forward_tag))
-               (i32.or (i32.eq (local.get $tg) (global.get $lazy_tag))
-                  (i32.eq (local.get $tg) (global.get $forcing_tag)))))))
-      (ref.test (ref $float) (local.get $v)))
-
    (func $extern_rec (param $s (ref $extern_state)) (param $v (ref eq))
       (local $next (ref null $stack_item))
       (local $item (ref $stack_item))
@@ -1354,10 +1612,20 @@
                (local.set $blk
                   (br_on_cast_fail $not_block (ref eq) (ref $block)
                      (local.get $v)))
+               ;; the tag, or a negative mark for a block already marshalled
+               ;; (see $extern_mark_block)
                (local.set $tg
-                  (i31.get_u
+                  (i31.get_s
                      (ref.cast (ref i31)
                         (array.get $block (local.get $blk) (i32.const 0)))))
+               (if (i32.lt_s (local.get $tg) (i32.const 0))
+                  (then
+                     (call $extern_shared_reference (local.get $s)
+                        (i32.sub
+                           (struct.get $extern_state $obj_counter (local.get $s))
+                           (i32.shr_u (i32.sub (i32.const -1) (local.get $tg))
+                              (i32.const 1))))
+                     (br $next_item)))
                ;; a forwarded value, such as a forced lazy value, is
                ;; marshalled as the value it points to, as in the native
                ;; runtime
@@ -1375,16 +1643,8 @@
                      (call $extern_header
                         (local.get $s) (i32.const 0) (local.get $tg))
                      (br $next_item)))
-               (local.set $pos
-                  (call $extern_lookup_position (local.get $s) (local.get $v)))
-               (if (i32.ge_s (local.get $pos) (i32.const 0))
-                  (then
-                     (call $extern_shared_reference (local.get $s)
-                        (i32.sub
-                           (struct.get $extern_state $obj_counter (local.get $s))
-                           (local.get $pos)))
-                     (br $next_item)))
-               (call $extern_record_location (local.get $s) (local.get $v))
+               (call $extern_mark_block
+                  (local.get $s) (local.get $blk) (local.get $tg))
                (call $extern_header
                   (local.get $s) (local.get $sz) (local.get $tg))
                (call $extern_size
@@ -1403,7 +1663,7 @@
                   (call $write (local.get $s) (global.get $CODE_NULL))
                   (br $next_item)))
             (local.set $pos
-               (call $extern_lookup_position (local.get $s) (local.get $v)))
+               (call $extern_lookup_or_record (local.get $s) (local.get $v)))
             (if (i32.ge_s (local.get $pos) (i32.const 0))
                (then
                   (call $extern_shared_reference (local.get $s)
@@ -1411,7 +1671,6 @@
                         (struct.get $extern_state $obj_counter (local.get $s))
                         (local.get $pos)))
                   (br $next_item)))
-            (call $extern_record_location (local.get $s) (local.get $v))
             (drop (block $not_string (result (ref eq))
                (local.set $str
                   (br_on_cast_fail $not_string (ref eq) (ref $bytes)
@@ -1510,12 +1769,29 @@
       (param $pos i32) (param $user_provided_output i32) (param $v (ref eq))
       (result i32 (ref $bytes) (ref $extern_state))
       (local $s (ref $extern_state)) (local $len i32)
+      (local $exn (ref eq)) (local $js_exn externref)
       (local $header (ref $bytes))
       (local.set $s
          (call $init_extern_state
             (local.get $flags) (local.get $output) (local.get $pos)
             (local.get $user_provided_output)))
-      (call $extern_rec (local.get $s) (local.get $v))
+      ;; the blocks must be restored when an exception is raised (a
+      ;; functional value, a buffer overflow, a custom serializer...).
+      ;; These are the only two exception tags; catch_all would need
+      ;; rethrow, which wax does not support. A trap (out of memory, for
+      ;; instance) cannot be caught: the blocks then remain marked, which
+      ;; can only be observed if the host calls into OCaml code again.
+      (try
+         (do (call $extern_rec (local.get $s) (local.get $v)))
+         (catch $ocaml_exception
+            (local.set $exn)
+            (call $extern_restore (local.get $s))
+            (throw $ocaml_exception (local.get $exn)))
+         (catch $javascript_exception
+            (local.set $js_exn)
+            (call $extern_restore (local.get $s))
+            (throw $javascript_exception (local.get $js_exn))))
+      (call $extern_restore (local.get $s))
       (local.set $len
          (call $extern_output_length (local.get $s) (local.get $pos)))
       (local.set $header (array.new $bytes (i32.const 0) (i32.const 20)))

@@ -266,6 +266,47 @@ let%expect_test "float array marshalling is interoperable" =
     1.5 2.5 3.5
     |}]
 
+(* Blocks are marked while being marshaled: they must be restored when
+   marshaling fails. *)
+let%expect_test "blocks restored after a failure" =
+  let v = Sys.opaque_identity (Some [ 1; 2 ], ref "a", (fun x -> x + 1), Some 3) in
+  (* the results are printed: unused calls could be removed *)
+  (try print_int (String.length (Marshal.to_string v []))
+   with Invalid_argument _ | Failure _ -> print_endline "cannot marshal a function");
+  let buf = Bytes.create 30 in
+  let l = Sys.opaque_identity (List.init 20 (fun i -> Some i)) in
+  (try print_int (Marshal.to_buffer buf 0 30 l []) with Failure s -> print_endline s);
+  (match v with
+  | Some [ a; b ], { contents = s }, f, Some c ->
+      Printf.printf "%d %d %s %d %d\n" a b s (f 1) c
+  | _ -> print_endline "corrupted");
+  Printf.printf "%d\n" (List.fold_left (fun acc o -> acc + Option.get o) 0 l);
+  (* A block left marked has a negative tag, and is marshaled again as a
+     shared reference. *)
+  let tag x = Obj.tag (Obj.repr x) in
+  let a, r, _, d = v in
+  Printf.printf "%d %d %d %d %d\n" (tag v) (tag a) (tag (Option.get a)) (tag r) (tag d);
+  Printf.printf
+    "%b %b\n"
+    (List.for_all (fun o -> tag o = 0) l)
+    (let rec cells l = l = [] || (tag l = 0 && cells (List.tl l)) in
+     cells l);
+  Printf.printf
+    "%b %b\n"
+    (Marshal.to_string (a, r, d) []
+    = Marshal.to_string (Some [ 1; 2 ], ref "a", Some 3) [])
+    (Marshal.to_string l [] = Marshal.to_string (List.init 20 (fun i -> Some i)) []);
+  [%expect
+    {|
+           cannot marshal a function
+           Marshal.to_buffer: buffer overflow
+           1 2 a 2 3
+           190
+           0 0 0 0 0
+           true true
+           true true
+           |}]
+
 (* As in the native runtime, a forced lazy value is marshaled as its value,
    unless this value is a lazy value or a float. *)
 let%expect_test "forced lazy values" =
