@@ -266,6 +266,40 @@ let%expect_test "float array marshalling is interoperable" =
     1.5 2.5 3.5
     |}]
 
+(* Numbers with equal contents may be shared (by the WASI runtime), but only
+   when their bits and their kind are the same. *)
+let%expect_test "numbers with equal contents" =
+  let floats, ints =
+    Marshal.from_string
+      (Marshal.to_string
+         ( Sys.opaque_identity [ 0.; -0.; 0.; nan; 1.5; nan; 1.5 ]
+         , Sys.opaque_identity (1l, 1L, 1n, 1L, 1l) )
+         [])
+      0
+  in
+  (* -0. is not shared with 0. (the JavaScript runtime marshals integral
+     floats as integers, which loses the sign) *)
+  (match Sys.backend_type with
+  | Other "js_of_ocaml" -> ()
+  | _ -> assert (Float.sign_bit (List.nth floats 1)));
+  List.iter (fun f -> Printf.printf "%g " (Float.abs f)) floats;
+  let a, b, c, d, e = ints in
+  Printf.printf "\n%ld %Ld %nd %Ld %ld\n" a b c d e;
+  [%expect {|
+           0 0 0 nan 1.5 nan 1.5
+           1 1 1 1 1
+           |}]
+
+(* Mutable values with equal contents are not shared. (Bytes cannot be
+   marshaled with the JavaScript runtime and [--enable use-js-string].) *)
+let%expect_test "mutable values with equal contents" =
+  let a1, a2 =
+    Marshal.from_string (Marshal.to_string ([| 1.; 2. |], [| 1.; 2. |]) []) 0
+  in
+  a1.(0) <- 3.;
+  Printf.printf "%g %g\n" a1.(0) a2.(0);
+  [%expect {| 3 1 |}]
+
 (* Blocks are marked while being marshaled: they must be restored when
    marshaling fails. *)
 let%expect_test "blocks restored after a failure" =
