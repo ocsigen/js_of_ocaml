@@ -58,3 +58,32 @@ let%expect_test "large alternation" =
     alts;
   Printf.printf "%d/300\n" !ok;
   [%expect {| 300/300 |}]
+
+(* Searches skip the positions where no match can start (the startchars
+   table), with the same results as trying every position. *)
+let%expect_test "search with startchars" =
+  let text = "xaB1 b22 zB333 b" in
+  let test re =
+    let pos f i = try f re text i with Not_found -> -1 in
+    List.init (String.length text + 1) (fun i -> pos Str.search_forward i)
+    |> List.iter (Printf.printf "%d ");
+    print_newline ();
+    List.init (String.length text + 1) (fun i -> pos Str.search_backward i)
+    |> List.iter (Printf.printf "%d ");
+    print_newline ()
+  in
+  test (Str.regexp "b[0-9]+");
+  test (Str.regexp_case_fold "b[0-9]+");
+  test (Str.regexp "[az]\\|3 ");
+  test (Str.regexp "[0-9]*b");
+  [%expect
+    {|
+           5 5 5 5 5 5 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+           -1 -1 -1 -1 -1 5 5 5 5 5 5 5 5 5 5 5 5
+           2 2 2 5 5 5 10 10 10 10 10 -1 -1 -1 -1 -1 -1
+           -1 -1 2 2 2 5 5 5 5 5 10 10 10 10 10 10 10
+           1 1 9 9 9 9 9 9 9 9 13 13 13 13 -1 -1 -1
+           -1 1 1 1 1 1 1 1 1 9 9 9 9 13 13 13 13
+           5 5 5 5 5 5 15 15 15 15 15 15 15 15 15 15 -1
+           -1 -1 -1 -1 -1 5 5 5 5 5 5 5 5 5 5 15 15
+           |}]
