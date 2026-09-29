@@ -112,6 +112,8 @@
   `wasm_of_ocaml`) as `file:line:col`, followed by the offending line (#2464)
 
 ## Bug fixes
+* Runtime/Wasm: `caml_hash` follows forwarded values, counts objects and
+  ignores negative counts, as native code does (#2486)
 * Runtime: `caml_alloc_dummy_mixed` takes two arguments, as OxCaml calls it;
   recursive definitions of mixed records failed to compile (#2461)
 * Runtime: `compare_digits_nat` compares digits as unsigned, and nats
