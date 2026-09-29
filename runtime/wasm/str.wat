@@ -691,7 +691,9 @@
                (local.set $c (i32.shl (local.get $c) (i32.const 1)))
                (if (i32.ge_u (i32.add (local.get $c) (i32.const 1))
                       (array.len (local.get $groups)))
-                  (then (call $caml_failwith (global.get $unmatched_group))))
+                  (then
+                     (call $caml_failwith (global.get $unmatched_group))
+                     (unreachable)))
                (local.set $start
                   (i31.get_s
                      (ref.cast (ref i31)
@@ -744,7 +746,9 @@
                (local.set $c (i32.shl (local.get $c) (i32.const 1)))
                (if (i32.ge_u (i32.add (local.get $c) (i32.const 1))
                       (array.len (local.get $groups)))
-                  (then (call $caml_failwith (global.get $unmatched_group))))
+                  (then
+                     (call $caml_failwith (global.get $unmatched_group))
+                     (unreachable)))
                (local.set $start
                   (i31.get_s
                      (ref.cast (ref i31)
