@@ -114,9 +114,12 @@ external phys_eq : 'a -> 'a -> bool = "%eq"
 
 let empty = Empty
 
+(* Large literals result in a warning with wasm_of_ocaml *)
+let mask_0x55555555 = (0x5555 lsl 16) lor 0x5555
+
 let popcount b =
   (* Only up to 32 bits are set *)
-  let b = b - ((b lsr 1) land 0x55555555) in
+  let b = b - ((b lsr 1) land mask_0x55555555) in
   let b = (b land 0x33333333) + ((b lsr 2) land 0x33333333) in
   let b = (b + (b lsr 4)) land 0x0F0F0F0F in
   ((b * 0x01010101) lsr 24) land 0xFF
