@@ -15,6 +15,8 @@
 * Runtime/Wasm: `Str` searches skip positions where no match can start (#2470)
 * Runtime/Wasm: faster sharing detection in `output_value`, no longer
   quadratic with WASI (#2470)
+* Runtime/Wasm: with WASI, `output_value` shares boxed numbers with equal
+  contents, unlike native code (#2470)
 * Compiler: with `--effects={cps,double-translation}`, specialize calls to
   known functions using the global flow analysis before the CPS transformation
   (#2456)
