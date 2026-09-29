@@ -1060,7 +1060,7 @@ let unboxed_parameters ~global_flow_info ~fun_info p types =
                   | "%int_asr" )
                 , _ )
             , args ) ) -> vars Untag args
-    | Let (_, Prim ((Array_get | Extern ("caml_array_unsafe_get", _)), [ _; Pv y ])) ->
+    | Let (_, Prim ((Array_get _ | Extern ("caml_array_unsafe_get", _)), [ _; Pv y ])) ->
         [ y, `Conv Untag ]
     | Let
         ( _

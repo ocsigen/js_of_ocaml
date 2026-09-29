@@ -391,6 +391,56 @@ let lower_conversions
       in
       match p with
       | Extern ("caml_array_unsafe_get", _) | Array_get _ -> Some [ top; int_n ]
+      | Extern
+          ( (( "caml_ba_get_1"
+             | "caml_ba_get_2"
+             | "caml_ba_get_3"
+             | "caml_ba_set_1"
+             | "caml_ba_set_2"
+             | "caml_ba_set_3"
+             | "caml_ba_float32_get_1"
+             | "caml_ba_float32_get_2"
+             | "caml_ba_float32_get_3"
+             | "caml_ba_float32_set_1"
+             | "caml_ba_float32_set_2"
+             | "caml_ba_float32_set_3" ) as nm)
+          , hint )
+        when String.starts_with ~prefix:"caml_ba_float32_" nm
+             || (match hint with
+               | Some (Optimization_hint.Hint_bigarray _) -> true
+               | _ -> false)
+             ||
+             match args with
+             | Pv ba :: _ -> (
+                 match Typing.var_type types ba with
+                 | Typing.Bigarray _ -> true
+                 | _ -> false)
+             | _ -> false ->
+          (* The code generator converts the indices of specialized bigarray
+             accesses (and of all float32 accesses) itself. Make these
+             conversions explicit, so that they can be shared with other uses
+             of the indices. The bigarray and the value keep their
+             representation. *)
+          let indices = Char.code nm.[String.length nm - 1] - Char.code '0' in
+          let own a =
+            match a with
+            | Pv v -> Typing.var_type types v
+            | Pc c -> Typing.constant_type c
+          in
+          Some
+            (List.mapi
+               ~f:(fun i a ->
+                 if i = 0 || i > indices
+                 then own a
+                 else
+                   match own a with
+                   | Typing.Int Small_normalized as t -> t
+                   | Typing.Int Small_unnormalized -> int_n
+                   | _ ->
+                       if Config.Flag.portable_int ()
+                       then Typing.Int Large_normalized
+                       else int_n)
+               args)
       | Extern (nm, _) -> (
           match Typing.prim_sig nm with
           | Typed target_types, _ -> Some target_types
@@ -1520,7 +1570,11 @@ let eliminate_param_conversions
           Var.Map.mem y !untagged_twins
           ||
           match Typing.var_type types y with
-          | Typing.Int (Small_normalized | Small_unnormalized | Large_normalized | Large_unnormalized) -> true
+          | Typing.Int
+              ( Small_normalized
+              | Small_unnormalized
+              | Large_normalized
+              | Large_unnormalized ) -> true
           | _ -> false)
     in
     let twin a =
