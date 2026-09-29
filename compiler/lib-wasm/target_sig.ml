@@ -257,6 +257,9 @@ module type S = sig
   end
 
   module Bigarray : sig
+    val dimension : int -> expression -> expression
+    (** The [n]-th dimension of a bigarray, as an [i32] *)
+
     val get :
          bound_error_index:int
       -> unsafe:bool
