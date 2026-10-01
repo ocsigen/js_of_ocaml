@@ -122,6 +122,7 @@ type wasm_conversion =
   | Box_i64
   | Box_f64
   | Untag_int
+  | Normalize_int
   | Tag_int
   | Untag_large_int
   | Tag_large_int
