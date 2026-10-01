@@ -1770,6 +1770,11 @@ module Generate (Target : Target_sig.S) = struct
     | Number (n, Boxed) as into -> convert ~from:(Number (n, Unboxed)) ~into e
     | _ -> e
 
+  let is_block (t : Typing.typ) =
+    match t with
+    | Tuple { block = true; _ } | Array _ | Bigarray _ -> true
+    | Tuple { block = false; _ } | Top | Int _ | Number _ | Null | Bot -> false
+
   (* Use the array representation known from the type analysis to
      avoid dynamic tests *)
   let specialized_array_primitive ctx p l =
@@ -1991,6 +1996,7 @@ module Generate (Target : Target_sig.S) = struct
           context
           x
           (Prim (Option.get (specialized_array_primitive ctx p l), l))
+    | Prim (IsInt _, [ y ]) when is_block (get_type ctx y) -> Arith.const 0l
     | Prim (Array_get _, [ x; y ]) ->
         Memory.array_get (transl_prim_arg ctx x) (transl_prim_arg ctx ~typ:int_n y)
     | Prim (Extern ("caml_array_unsafe_get", _), [ x; y ]) ->

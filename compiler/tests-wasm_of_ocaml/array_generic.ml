@@ -103,8 +103,34 @@ let bounds () =
   && expect_invalid_argument (fun () -> value_get v (-1))
   && expect_invalid_argument (fun () -> value_get ve 0)
 
+(* The analysis also knows which values are blocks rather than
+   integers *)
+type t =
+  | A
+  | B of int
+  | C of int * int
+
+let[@inline never] only_blocks = function
+  | A -> 0
+  | B x -> x
+  | C (x, y) -> x + y
+
+let[@inline never] blocks_and_ints = function
+  | A -> 0
+  | B x -> x
+  | C (x, y) -> x + y
+
+let variants () =
+  let n = opaque 1 in
+  only_blocks (B n) = 1
+  && only_blocks (C (n, 2)) = 3
+  && blocks_and_ints (B n) = 1
+  && blocks_and_ints (if n = 0 then B n else A) = 0
+  && Array.length [| "a"; "b" |] = 2
+
 let () =
   test "float arrays" float_arrays;
   test "value arrays" value_arrays;
   test "sub and append" sub_append;
-  test "bounds" bounds
+  test "bounds" bounds;
+  test "variants" variants
