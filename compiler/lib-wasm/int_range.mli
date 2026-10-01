@@ -32,3 +32,18 @@ val fits_in_i31 : t -> Code.Var.t -> bool
 
 val cannot_overflow : t -> Code.Var.t -> bool
 (** Whether the value of this variable is computed without overflow *)
+
+val checked_object : t -> Code.Var.t -> Code.Var.t
+(** The array, string or bigarray a variable refers to, looking through bound
+    checks, which return their argument *)
+
+val valid_index :
+     t
+  -> at:Code.Var.t
+  -> obj:Code.Var.t
+  -> is_length:(Code.expr -> bool)
+  -> Code.Var.t
+  -> bool
+(** [valid_index st ~at ~obj ~is_length i] tells whether [i] is a valid index
+    of [obj] where [at] is defined. [is_length e] tells whether the
+    expression [e] computes the length of [obj]. *)
