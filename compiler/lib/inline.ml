@@ -670,7 +670,9 @@ and inline_function ~context ~force_duplicate i x f args rem state =
     let branch, p = state in
     incr context.inline_count;
     if closure_count ~context info > 0 then context.has_closures := lazy true;
-    context.live_vars.(Var.idx f) <- context.live_vars.(Var.idx f) - 1;
+    (* With [force_duplicate], [f] is still referenced by block arguments *)
+    if not force_duplicate
+    then context.live_vars.(Var.idx f) <- context.live_vars.(Var.idx f) - 1;
     let p, params, cont =
       if force_duplicate || context.live_vars.(Var.idx f) > 0
       then

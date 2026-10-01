@@ -130,6 +130,8 @@
   `` (a?.b)`t` `` and `new (a?.b)()` were printed without their parentheses,
   which is a syntax error. Reject a template literal in an optional chain
   (`` a?.b`t` ``), as the grammar requires (#2465)
+* Compiler: fix an invariant violation when a function is inlined both as an
+  argument of another inlined function and directly (#2482)
 * Compiler: with `--effects=double-translation`, fix calls with too many
   arguments to a function that does not perform effects (#2455)
 * Runtime/Wasm: with `--effects=native`, performing an effect that no

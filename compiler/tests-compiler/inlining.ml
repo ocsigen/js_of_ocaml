@@ -99,13 +99,4 @@ let%expect_test "function inlined both as an argument and directly" =
    with Failure e -> print_endline e);
   print_endline
     (Str.global_replace (Str.regexp "[^ ]*js_of_ocaml\\.exe") "%{JSOO}" [%expect.output]);
-  [%expect
-    {|
-    %{JSOO}: You found a bug. Please report it at https://github.com/ocsigen/js_of_ocaml/issues :
-    Error: File "compiler/lib/code.ml", line 1080, characters 8-14: Assertion failed
-
-    process exited with error code 125
-     %{JSOO} --pretty --debug var --sourcemap --effects=disabled --disable=use-js-string --debug invariant --Werror test.bc -o test.js
-
-    non-zero exit code
-    |}]
+  [%expect {| 012 |}]
