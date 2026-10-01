@@ -1988,11 +1988,14 @@ module Generate (Target : Target_sig.S) = struct
         lor (Arith64.eq_i32 (load x) (Arith64.of_i32_s (Arith64.to_i32 (load x)))
             - const 1l))
     in
-    let bigarray_index ctx i =
+    let bigarray_index ?(unsafe = false) ctx i =
       match get_type ctx i with
       | Int (Small_normalized | Small_unnormalized) ->
           (* Statically fits 32 bits: plain narrowing. *)
           transl_prim_arg ctx ~typ:int_sn i
+      | _ when portable && unsafe ->
+          (* The index is not checked *)
+          word_to_i32 (transl_prim_arg ctx ~typ:int_ln i)
       | _ when portable -> checked_i32_index (transl_prim_arg ctx ~typ:int_ln i)
       | _ -> transl_prim_arg ctx ~typ:int_sn i
     in
@@ -2045,7 +2048,7 @@ module Generate (Target : Target_sig.S) = struct
       match hint, get_type ctx ta with
       | Some (Optimization_hint.Hint_bigarray { unsafe; kind; layout }), _
       | _, Bigarray { unsafe; kind; layout } ->
-          let indices = List.map ~f:(fun i -> bigarray_index ctx i) indices in
+          let indices = List.map ~f:(fun i -> bigarray_index ~unsafe ctx i) indices in
           caml_ba_get ~ctx ~context ~unsafe ~kind ~layout ta indices
       | _ ->
           let n = List.length indices in
@@ -2091,7 +2094,7 @@ module Generate (Target : Target_sig.S) = struct
     let caml_ba_float32_get_n ~ctx ~context ta indices =
       match get_type ctx ta with
       | Bigarray { unsafe; layout; _ } ->
-          let indices = List.map ~f:(fun i -> bigarray_index ctx i) indices in
+          let indices = List.map ~f:(fun i -> bigarray_index ~unsafe ctx i) indices in
           caml_ba_get ~ctx ~context ~unsafe ~kind:Float32_t ~layout ta indices
       | _ ->
           let n = List.length indices in
@@ -2155,7 +2158,7 @@ module Generate (Target : Target_sig.S) = struct
       match hint, get_type ctx ta with
       | Some (Optimization_hint.Hint_bigarray { unsafe; kind; layout }), _
       | _, Bigarray { unsafe; kind; layout } ->
-          let indices = List.map ~f:(fun i -> bigarray_index ctx i) indices in
+          let indices = List.map ~f:(fun i -> bigarray_index ~unsafe ctx i) indices in
           caml_ba_set ~ctx ~context ~unsafe ~kind ~layout ta indices v
       | _ ->
           let n = List.length indices in
@@ -2203,7 +2206,7 @@ module Generate (Target : Target_sig.S) = struct
     let caml_ba_float32_set_n ~ctx ~context ta indices v =
       match get_type ctx ta with
       | Bigarray { unsafe; layout; _ } ->
-          let indices = List.map ~f:(fun i -> bigarray_index ctx i) indices in
+          let indices = List.map ~f:(fun i -> bigarray_index ~unsafe ctx i) indices in
           caml_ba_set ~ctx ~context ~unsafe ~kind:Float32_t ~layout ta indices v
       | _ ->
           let n = List.length indices in
