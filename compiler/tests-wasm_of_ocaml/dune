@@ -7,6 +7,12 @@
   (flags :standard --disable optcall --no-inline)))
 
 (tests
+ (names lcm_regression)
+ (modes js wasm)
+ (wasm_of_ocaml
+  (flags :standard --opt 2)))
+
+(tests
  (names fun_eq open_append)
  (modes js wasm))
 
