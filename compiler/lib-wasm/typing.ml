@@ -331,10 +331,11 @@ let rec constant_type (c : constant) =
 (* The wasm conversion needed to coerce a value of type [from] into
    representation [into], or [None] if the representations already match or
    no conversion applies. This is the single source of truth for the
-   box/unbox/tag/untag representation lattice; [Lcm] is built on top of it
-   rather than re-deriving the same case analysis. *)
+   box/unbox/tag/untag/normalize representation lattice; [Lcm] is built on
+   top of it rather than re-deriving the same case analysis. *)
 let conversion ~(from : typ) ~(into : typ) : wasm_conversion option =
   match from, into with
+  | Int Unnormalized, Int Normalized -> Some Normalize_int
   | Number (Int32, Unboxed), Number (Int32, Unboxed)
   | Number (Int64, Unboxed), Number (Int64, Unboxed)
   | Number (Float, Unboxed), Number (Float, Unboxed)
@@ -374,7 +375,7 @@ let conversion_type c =
   | Box_nativeint -> Number (Nativeint, Boxed)
   | Box_f64 -> Number (Float, Boxed)
   | Box_f32 -> Number (Float32, Boxed)
-  | Untag_int -> Int Normalized
+  | Untag_int | Normalize_int -> Int Normalized
   | Tag_int -> Int Ref
 
 let arg_type ~approx arg =
@@ -825,6 +826,7 @@ let box_numbers ~lazy_boxing p st types =
                             | Box_nativeint
                             | Box_f64
                             | Box_f32
+                            | Normalize_int
                             | Tag_int ) )
                       , _ )
                   | Field _ | Closure _ | Constant _ | Special _ -> ())

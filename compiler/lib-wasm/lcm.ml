@@ -168,6 +168,7 @@ let inverse_kind = function
   | Box_f32 -> Some Unbox_f32
   | Untag_int -> Some Tag_int
   | Tag_int -> Some Untag_int
+  | Normalize_int -> None
 
 let type_of_kind = Typing.conversion_type
 
@@ -184,7 +185,8 @@ let is_safe_input kind typ =
   | Unbox_nativeint -> Poly.equal typ (Typing.Number (Typing.Nativeint, Typing.Boxed))
   | Unbox_f64 -> Poly.equal typ (Typing.Number (Typing.Float, Typing.Boxed))
   | Unbox_f32 -> Poly.equal typ (Typing.Number (Typing.Float32, Typing.Boxed))
-  | Box_i32 | Box_i64 | Box_nativeint | Box_f64 | Box_f32 | Tag_int -> true
+  | Box_i32 | Box_i64 | Box_nativeint | Box_f64 | Box_f32 | Tag_int | Normalize_int ->
+      true
   | Untag_int -> (
       match typ with
       | Typing.Int
@@ -214,20 +216,22 @@ let is_untag kind =
   | Box_nativeint
   | Box_f64
   | Box_f32
-  | Tag_int -> false
+  | Tag_int
+  | Normalize_int -> false
 
 (* Whether a conversion of [y] cannot fail *)
 let is_safe_conversion types (kind, y) =
   is_safe_input kind (Typing.var_type types y) || (is_untag kind && guarded_untag y)
 
 (* Whether the result of a conversion should not be kept live across a
-   call. Untagging a 31-bit integer is a single shift: recomputing it after
-   the call is cheaper than keeping the result in a register, which the
-   call forces to spill. (This would not hold with a more expensive
-   integer representation, such as mixed 63-bit integers.) *)
+   call. Untagging a 31-bit integer is a single shift, and normalizing it
+   two: recomputing it after the call is cheaper than keeping the result
+   in a register, which the call forces to spill. (This would not hold
+   with a more expensive integer representation, such as mixed 63-bit
+   integers.) *)
 let not_live_across_calls (kind, _) =
   match kind with
-  | Untag_int -> true
+  | Untag_int | Normalize_int -> true
   | Unbox_i32
   | Unbox_i64
   | Unbox_nativeint
@@ -405,7 +409,12 @@ let lower_conversions
           match args with
           | [ a; b ] when is_int a && is_int b -> None
           | _ -> Some (List.map ~f:(fun _ -> top) args))
-      | Lt | Le | Ult -> Some [ int_n; int_n ]
+      | Lt | Le | Ult ->
+          (* Unnormalized integers are compared by shifting them, which is
+             cheaper than normalizing them. A normalized copy is still used
+             when one is available (see [process_function]). *)
+          let int_u = Typing.Int Typing.Integer.Unnormalized in
+          Some [ int_u; int_u ]
       | IsInt _ | Vectlength _ ->
           (* The argument is a value. It is an integer on a dead path only,
              or, for [IsInt], when the test is known to succeed. *)
@@ -1005,10 +1014,15 @@ let apply_subst subst x =
      let y = box_f64(x)     -- inserted by LCM or lowering
      let z = unbox_f64(y)   -- original use
    This pass detects such pairs and substitutes z with x directly,
-   removing the dead intermediate definitions. *)
-let optimize_peephole_conversions blocks preds ~assigned ~(st : lcm_stats) =
+   removing the dead intermediate definitions. An untagging of a tagged
+   unnormalized integer is not the integer itself but its normalization,
+   which then replaces it. *)
+let optimize_peephole_conversions blocks types preds ~assigned ~(st : lcm_stats) =
   let defs = Var.Hashtbl.create 16 in
   let subst = ref Var.Map.empty in
+  (* The untaggings of a tagged unnormalized integer, which are replaced by
+     its normalization *)
+  let normalized = Var.Hashtbl.create 16 in
   Addr.Map.iter
     (fun _ block ->
       List.iter
@@ -1074,12 +1088,15 @@ let optimize_peephole_conversions blocks preds ~assigned ~(st : lcm_stats) =
   Var.Hashtbl.iter
     (fun x (k1, y) ->
       match Var.Hashtbl.find_opt defs y with
-      | Some (k2, z) when Poly.equal (inverse_kind k1) (Some k2) ->
-          subst := Var.Map.add x z !subst
+      | Some (k2, z) when Poly.equal (inverse_kind k1) (Some k2) -> (
+          match k1, Typing.var_type types z with
+          | Untag_int, Int Unnormalized -> Var.Hashtbl.replace normalized x z
+          | _ -> subst := Var.Map.add x z !subst)
       | _ -> ())
     defs;
-  st.peephole_eliminated <- st.peephole_eliminated + Var.Map.cardinal !subst;
-  if Var.Map.is_empty !subst
+  st.peephole_eliminated <-
+    st.peephole_eliminated + Var.Map.cardinal !subst + Var.Hashtbl.length normalized;
+  if Var.Map.is_empty !subst && Var.Hashtbl.length normalized = 0
   then blocks
   else
     let subst_var v = apply_subst !subst v in
@@ -1090,6 +1107,9 @@ let optimize_peephole_conversions blocks preds ~assigned ~(st : lcm_stats) =
             ~f:(fun i ->
               match i with
               | Let (x, _) when Var.Map.mem x !subst -> None
+              | Let (x, _) when Var.Hashtbl.mem normalized x ->
+                  let z = Var.Hashtbl.find normalized x in
+                  Some (Let (x, Prim (prim_of_kind Normalize_int, [ Pv (subst_var z) ])))
               | _ -> Some (Subst.Excluding_Binders.instr subst_var i))
             block.body
         in
@@ -1203,6 +1223,14 @@ let eliminate_param_conversions
           match Addr.Map.find_opt pred_pc !block_computed with
           | Some m -> ConvMap.find_opt (kind, q) m
           | None -> None)
+    in
+    (* The untagging of a tagged integer [u] is [u] normalized *)
+    let needs_normalization kind u =
+      is_untag kind
+      &&
+      match Typing.var_type types u with
+      | Int Unnormalized -> true
+      | _ -> false
     in
     (* A predecessor can also supply kind(q) when q is a constant: the
        constant is then materialised in the target representation. *)
@@ -1435,6 +1463,19 @@ let eliminate_param_conversions
                                   in
                                   let shadow_val =
                                     match find_direct_value pred_pc q kind with
+                                    | Some u when needs_normalization kind u ->
+                                        (* [u] is the operand of a tagging:
+                                           untagging the tagged value
+                                           normalizes it *)
+                                        let n = Var.fresh () in
+                                        Typing.set_var_type types n (type_of_kind kind);
+                                        materialised :=
+                                          Let
+                                            ( n
+                                            , Prim (prim_of_kind Normalize_int, [ Pv u ])
+                                            )
+                                          :: !materialised;
+                                        n
                                     | Some u -> u
                                     | None when Option.is_some (constant_supply q kind) ->
                                         let c = Option.get (constant_supply q kind) in
@@ -1990,6 +2031,28 @@ let process_function
                         body_rev := i :: !body_rev;
                         conv_to_var := ConvTracker.add conv v !conv_to_var)
                 | None -> body_rev := i :: !body_rev)
+            | Let (v, Prim (((Lt | Le | Ult | Eq _ | Neq _) as p), args)) ->
+                (* Compare the normalized copy of an integer when one is
+                   available, rather than shifting the integer *)
+                let args =
+                  List.map
+                    ~f:(fun a ->
+                      match a with
+                      | Pv x -> (
+                          match Typing.var_type types x with
+                          | Int Unnormalized -> (
+                              match
+                                ConvTracker.find_opt (Normalize_int, x) !conv_to_var
+                              with
+                              | Some x' -> Pv x'
+                              | None -> a)
+                          | _ -> a)
+                      | Pc _ -> a)
+                    args
+                in
+                conv_to_var := ConvTracker.kill_var v !conv_to_var;
+                subst := Var.Map.remove v !subst;
+                body_rev := Let (v, Prim (p, args)) :: !body_rev
             | Let (v, Apply _) ->
                 conv_to_var :=
                   ConvTracker.kill_at_call (ConvTracker.kill_var v !conv_to_var);
@@ -2131,7 +2194,7 @@ let process_function
            !result);
     let t2 = tick () in
     st.time_rewrite <- st.time_rewrite +. (t2 -. t1);
-    let result = optimize_peephole_conversions !result preds ~assigned ~st in
+    let result = optimize_peephole_conversions !result types preds ~assigned ~st in
     let t3 = tick () in
     st.time_peephole <- st.time_peephole +. (t3 -. t2);
     let result =
@@ -2155,7 +2218,13 @@ let process_function
 let is_boxing kind =
   match kind with
   | Box_i32 | Box_i64 | Box_nativeint | Box_f64 | Box_f32 | Tag_int -> true
-  | Unbox_i32 | Unbox_i64 | Unbox_nativeint | Unbox_f64 | Unbox_f32 | Untag_int -> false
+  | Unbox_i32
+  | Unbox_i64
+  | Unbox_nativeint
+  | Unbox_f64
+  | Unbox_f32
+  | Untag_int
+  | Normalize_int -> false
 
 (* [Some (x, kind, y)] if the instruction is [x = kind(y)] with [kind] a
    boxing conversion *)
@@ -2794,10 +2863,6 @@ let remove_dead_conversions ~(st : lcm_stats) (p : program) =
   in
   { p with blocks }
 
-(* Entry point. Three steps:
-   1. Decide which functions can return unboxed/untagged values for direct calls.
-   2. For each function, lower implicit conversions into explicit IR primitives.
-   3. Run the LCM analysis and rewrite to eliminate redundant conversions. *)
 (* Entry point. For each function, lower implicit conversions into explicit
    IR primitives, then run the LCM analysis and rewrite to eliminate
    redundant conversions. The return types of functions are decided by
