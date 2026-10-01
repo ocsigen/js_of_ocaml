@@ -75,6 +75,11 @@ type t
 
 val var_type : t -> Code.Var.t -> typ
 
+val prim_result_type : t -> string -> Code.prim_arg list -> typ
+(** The type of the result of a primitive, given the types of its
+    arguments. It is [Top] for the primitives whose result type depends on
+    the context of the call. *)
+
 val set_var_type : t -> Code.Var.t -> typ -> unit
 
 val return_type : t -> Code.Var.t -> typ

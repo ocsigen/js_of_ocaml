@@ -1,6 +1,8 @@
 # dev
 
 ## Features/Changes
+* Compiler/Wasm: place number conversions (boxing, tagging) with a Lazy Code
+  Motion pass (`--disable lcm`), and pass parameters untagged or unboxed (#2479)
 * Compiler/Runtime: support the OCaml 5.6 bit counting primitives
   (`caml_int_clz`, `caml_int_ctz`, `caml_int_popcount`) (#2469)
 * Runtime: with OCaml 5.6, `Weak.get_copy` and the ephemeron `get_*_copy`
