@@ -122,15 +122,18 @@ end
 type array_kind =
   { float : bool  (** May be a float array *)
   ; value : bool  (** May be a non-empty block *)
+  ; cast : bool
+        (** Only when [float] is false: represented by a Wasm block
+            reference, the value being cast where it is defined *)
   }
 
-let empty_array = { float = false; value = false }
+let empty_array = { float = false; value = false; cast = false }
 
-let float_array = { float = true; value = false }
+let float_array = { float = true; value = false; cast = false }
 
-let value_array = { float = false; value = true }
+let value_array = { float = false; value = true; cast = false }
 
-let any_array = { float = true; value = true }
+let any_array = { float = true; value = true; cast = false }
 
 type typ =
   | Top
@@ -139,6 +142,9 @@ type typ =
   | Tuple of
       { fields : typ array
       ; block : bool
+      ; cast : bool
+            (** Only when [block] holds: represented by a Wasm block
+                reference, the value being cast where it is defined *)
       }
       (** This value is a block (not a float array) if [block] holds, a
           block or an integer otherwise; if it's a block, an
@@ -175,7 +181,8 @@ module Domain = struct
               | Unboxed, _ | _, Unboxed -> Unboxed
               | Boxed, Boxed -> Boxed )
         else Top
-    | Tuple { fields = t; block = b }, Tuple { fields = t'; block = b' } ->
+    | ( Tuple { fields = t; block = b; cast = c }
+      , Tuple { fields = t'; block = b'; cast = c' } ) ->
         let l = Array.length t in
         let l' = Array.length t' in
         Tuple
@@ -186,19 +193,25 @@ module Domain = struct
                  Array.init (max l l') ~f:(fun i ->
                      if i < l then if i < l' then join t.(i) t'.(i) else t.(i) else t'.(i)))
           ; block = b && b'
+          ; cast = c && c'
           }
     | (Int _ | Null), Tuple { fields; _ } | Tuple { fields; _ }, (Int _ | Null) ->
-        Tuple { fields; block = false }
+        Tuple { fields; block = false; cast = false }
     | Bigarray b, Bigarray b' when Bigarray.equal b b' -> t
     | Array a, Array a' ->
-        Array { float = a.float || a'.float; value = a.value || a'.value }
-    | Array { float = false; value = false }, Tuple _ -> t'
-    | Tuple _, Array { float = false; value = false } -> t
-    | Array a, Tuple { block = true; _ } | Tuple { block = true; _ }, Array a ->
-        Array { a with value = true }
-    | Array { float = false; value = false }, (Int _ | Null)
-    | (Int _ | Null), Array { float = false; value = false } ->
-        Tuple { fields = [||]; block = false }
+        Array
+          { float = a.float || a'.float
+          ; value = a.value || a'.value
+          ; cast = a.cast && a'.cast
+          }
+    | Array { float = false; value = false; cast = c }, Tuple ({ cast = c'; _ } as r)
+    | Tuple ({ cast = c'; _ } as r), Array { float = false; value = false; cast = c } ->
+        Tuple { r with cast = c && c' }
+    | Array a, Tuple { block = true; cast; _ } | Tuple { block = true; cast; _ }, Array a
+      -> Array { a with value = true; cast = a.cast && cast }
+    | Array { float = false; value = false; _ }, (Int _ | Null)
+    | (Int _ | Null), Array { float = false; value = false; _ } ->
+        Tuple { fields = [||]; block = false; cast = false }
     | Null, Null -> Null
     | Top, _ | _, Top -> Top
     | (Int _ | Number _ | Tuple _ | Bigarray _ | Array _ | Null), _ -> Top
@@ -211,12 +224,17 @@ module Domain = struct
     | Top, Top | Bot, Bot -> true
     | Int t, Int t' -> Poly.equal t t'
     | Number (t, b), Number (t', b') -> Poly.equal t t' && Poly.equal b b'
-    | Tuple { fields = t; block = b }, Tuple { fields = t'; block = b' } ->
+    | ( Tuple { fields = t; block = b; cast = c }
+      , Tuple { fields = t'; block = b'; cast = c' } ) ->
         Bool.equal b b'
+        && Bool.equal c c'
         && Array.length t = Array.length t'
         && Array.for_all2 ~f:equal t t'
     | Bigarray b, Bigarray b' -> Bigarray.equal b b'
-    | Array a, Array a' -> Bool.equal a.float a'.float && Bool.equal a.value a'.value
+    | Array a, Array a' ->
+        Bool.equal a.float a'.float
+        && Bool.equal a.value a'.value
+        && Bool.equal a.cast a'.cast
     | Null, Null -> true
     | (Top | Tuple _ | Int _ | Number _ | Bigarray _ | Array _ | Null | Bot), _ -> false
 
@@ -233,12 +251,12 @@ module Domain = struct
   let rec truncate depth t =
     match t with
     | Top | Bot | Number _ | Int _ | Bigarray _ | Array _ | Null -> t
-    | Tuple { fields; block } ->
+    | Tuple ({ fields; _ } as r) ->
         if depth = 0
         then Top
         else
           Tuple
-            { fields = Array.map ~f:(fun t' -> truncate (depth - 1) t') fields; block }
+            { r with fields = Array.map ~f:(fun t' -> truncate (depth - 1) t') fields }
 
   let limit t = if depth t > depth_threshold then truncate depth_threshold t else t
 
@@ -274,23 +292,24 @@ module Domain = struct
           | Boxed -> "boxed"
           | Unboxed -> "unboxed")
     | Bigarray b -> Bigarray.print f b
-    | Array { float; value } ->
+    | Array { float; value; cast } ->
         Format.fprintf
           f
-          "array{%s}"
+          "array{%s%s}"
           (match float, value with
           | false, false -> "empty"
           | true, false -> "float"
           | false, true -> "value"
           | true, true -> "any")
+          (if cast then "!" else "")
     | Null -> Format.fprintf f "null"
-    | Tuple { fields; block } ->
+    | Tuple { fields; block; cast } ->
         Format.fprintf
           f
           "(%a)%s"
           (Format.pp_print_list ~pp_sep:(fun f () -> Format.fprintf f ",") print)
           (Array.to_list fields)
-          (if block then "" else "?")
+          (if cast then "!" else if block then "" else "?")
 end
 
 let update_deps st { blocks; _ } =
@@ -391,6 +410,7 @@ let rec constant_type (c : constant) =
       Tuple
         { fields = Array.map ~f:(fun c' -> Domain.box (constant_type c')) a
         ; block = true
+        ; cast = false
         }
   | Float_array _ -> Array float_array
   | Null_ -> Null
@@ -552,6 +572,7 @@ let propagate st approx x : Domain.t =
                         Domain.limit (Domain.box (Var.Tbl.get approx y)))
                   lst
             ; block = true
+            ; cast = false
             }
       | Field (_, _, Float) -> Number (Float, Unboxed)
       | Field (_, _, Immediate) | Prim (Array_get Immediate, _) -> Int Ref
@@ -559,7 +580,7 @@ let propagate st approx x : Domain.t =
           match Var.Tbl.get approx y with
           | Tuple { fields = t; _ } -> if n < Array.length t then t.(n) else Bot
           | Top -> Top
-          | Array { float = false; value = false } -> Bot
+          | Array { float = false; value = false; _ } -> Bot
           | Array _ -> Top
           | _ -> Bot)
       | Prim
@@ -799,6 +820,156 @@ let box_numbers p st types =
         ())
     ()
 
+let can_cast st y =
+  (* The parameters of functions with unknown call sites have the
+     generic type *)
+  not (Var.ISet.mem st.boxed_function_parameters y)
+
+let castable_functions st types =
+  (* Functions whose return values can all be cast. Casting the result
+     of a call to another function would take place just after the
+     call, and prevent a tail call: in a cycle of tail calls, this
+     would make the stack grow. So, we only propagate casts to the
+     return values of these functions. *)
+  let defs = st.global_flow_state.defs in
+  let return_vals = st.global_flow_info.info_return_vals in
+  let unique_callee y =
+    match defs.(Var.idx y) with
+    | Expr (Apply { f; _ }) -> (
+        match Global_flow.get_unique_closure st.global_flow_info f with
+        | Some (g, _) when can_unbox_return_value st.fun_info g -> Some g
+        | _ -> None)
+    | _ -> None
+  in
+  (* The values the return values come from, through phis *)
+  let vars = ref [] in
+  let seen = Var.ISet.empty () in
+  let rec collect y =
+    if not (Var.ISet.mem seen y)
+    then (
+      Var.ISet.add seen y;
+      vars := y :: !vars;
+      match defs.(Var.idx y) with
+      | Phi { known; _ } -> Var.Set.iter collect known
+      | Expr _ -> ())
+  in
+  Var.Map.iter (fun _ s -> Var.Set.iter collect s) return_vals;
+  let bad = Var.ISet.empty () in
+  List.iter !vars ~f:(fun y ->
+      let ok =
+        can_cast st y
+        &&
+        match Var.Tbl.get types y with
+        | Tuple { block = true; _ } | Array { float = false; _ } -> (
+            match defs.(Var.idx y) with
+            | Expr (Apply _) -> Option.is_some (unique_callee y)
+            | Phi _ | Expr _ -> true)
+        | Bot -> true
+        | Top | Int _ | Number _ | Tuple _ | Bigarray _ | Array _ | Null -> false
+      in
+      if not ok then Var.ISet.add bad y);
+  let is_bad_function g =
+    Var.Set.exists (Var.ISet.mem bad) (Var.Map.find g return_vals)
+  in
+  let changed = ref true in
+  while !changed do
+    changed := false;
+    List.iter !vars ~f:(fun y ->
+        if not (Var.ISet.mem bad y)
+        then
+          let b =
+            match defs.(Var.idx y) with
+            | Phi { known; _ } -> Var.Set.exists (Var.ISet.mem bad) known
+            | Expr _ -> (
+                match unique_callee y with
+                | Some g -> is_bad_function g
+                | None -> false)
+          in
+          if b
+          then (
+            Var.ISet.add bad y;
+            changed := true))
+  done;
+  fun g -> can_unbox_return_value st.fun_info g && not (is_bad_function g)
+
+let cast_blocks p st types =
+  (* A value known to be a block is given the type of a Wasm block
+     reference, and is cast where it is defined, if it is used as a
+     block. This is propagated to the values it comes from, so that it
+     is cast only once. *)
+  let castable = castable_functions st types in
+  let visited = Var.ISet.empty () in
+  let rec cast y =
+    if (not (Var.ISet.mem visited y)) && can_cast st y
+    then (
+      Var.ISet.add visited y;
+      match Var.Tbl.get types y with
+      | Tuple ({ block = true; _ } as r) ->
+          Var.Tbl.set types y (Tuple { r with cast = true });
+          propagate y
+      | Array ({ float = false; _ } as a) ->
+          Var.Tbl.set types y (Array { a with cast = true });
+          propagate y
+      | Top | Int _ | Number _ | Tuple _ | Bigarray _ | Array _ | Null | Bot -> ())
+  and propagate y =
+    match st.global_flow_state.defs.(Var.idx y) with
+    | Phi { known; _ } -> Var.Set.iter cast known
+    | Expr (Apply { f; _ }) -> (
+        match Global_flow.get_unique_closure st.global_flow_info f with
+        | None -> ()
+        | Some (g, _) ->
+            if castable g
+            then Var.Set.iter cast (Var.Map.find g st.global_flow_info.info_return_vals))
+    | Expr
+        (Prim
+           ( Extern
+               ( ("caml_check_bound" | "caml_check_bound_gen" | "caml_check_bound_float")
+               , _ )
+           , Pv z :: _ )) -> cast z
+    | Expr _ -> ()
+  in
+  let cast_arg a =
+    match a with
+    | Pv y -> cast y
+    | Pc _ -> ()
+  in
+  Code.fold_closures
+    p
+    (fun _ _ (pc, _) _ () ->
+      traverse
+        { fold = Code.fold_children }
+        (fun pc () ->
+          let b = Addr.Map.find pc p.blocks in
+          List.iter
+            ~f:(fun i ->
+              match i with
+              | Let (_, e) -> (
+                  match e with
+                  | Field (y, _, (Non_float | Immediate)) -> cast y
+                  | Prim
+                      ( ( Vectlength _ | Array_get _
+                        | Extern
+                            ( ( "caml_check_bound"
+                              | "caml_check_bound_gen"
+                              | "caml_check_bound_float"
+                              | "caml_array_unsafe_get"
+                              | "caml_array_unsafe_set"
+                              | "caml_array_unsafe_set_addr"
+                              | "%direct_obj_tag" )
+                            , _ ) )
+                      , a :: _ ) -> cast_arg a
+                  | Field (_, _, Float)
+                  | Prim _ | Apply _ | Block _ | Closure _ | Constant _ | Special _ -> ())
+              | Set_field (y, _, (Non_float | Immediate), _)
+              | Offset_ref (y, _)
+              | Array_set (y, _, _) -> cast y
+              | Assign _ | Set_field (_, _, Float, _) | Event _ -> ())
+            b.body)
+        pc
+        p.blocks
+        ())
+    ()
+
 let print_opt types global_flow_state f e =
   match e with
   | Prim (Extern (name, _), args)
@@ -827,6 +998,7 @@ let f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinel p =
   let types = solver st in
   Var.Tbl.set types deadcode_sentinel (Int Normalized);
   box_numbers p st types;
+  cast_blocks p st types;
   if times () then Format.eprintf "  type analysis: %a@." Timer.print t;
   if debug ()
   then (

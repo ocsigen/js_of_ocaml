@@ -226,8 +226,18 @@ module Generate (Target : Target_sig.S) = struct
     | Pv x -> Typing.var_type ctx.types x
     | Pc c -> Typing.constant_type c
 
-  let convert ~(from : Typing.typ) ~(into : Typing.typ) e =
+  let is_cast (t : Typing.typ) =
+    match t with
+    | Tuple { cast = true; _ } | Array { cast = true; _ } -> true
+    | Tuple { cast = false; _ }
+    | Array { cast = false; _ }
+    | Top | Int _ | Number _ | Bigarray _ | Null | Bot -> false
+
+  let rec convert ~(from : Typing.typ) ~(into : Typing.typ) e =
     match from, into with
+    | _, (Tuple { cast = true; _ } | Array { cast = true; _ }) ->
+        (* A value with a cast type already has a block type *)
+        if is_cast from then e else Value.as_block (convert ~from ~into:Top e)
     | Int Unnormalized, Int Normalized -> Arith.((e lsl const 1l) asr const 1l)
     | Int (Normalized | Unnormalized), Int (Normalized | Unnormalized) -> e
     (* Dummy value *)
@@ -1747,6 +1757,15 @@ module Generate (Target : Target_sig.S) = struct
     | Number (Float32, Unboxed) -> Some F32
     | _ -> None
 
+  (* The Wasm type of a variable, when it is more precise than a
+     generic value *)
+  let value_type ty : W.value_type option Code_generation.t =
+    if is_cast ty
+    then
+      let* t = Value.block_type in
+      return (Some t)
+    else return (unboxed_type ty)
+
   let box_number_if_needed ctx x e =
     match Typing.var_type ctx.types x with
     | Number (n, Boxed) as into -> convert ~from:(Number (n, Unboxed)) ~into e
@@ -2043,10 +2062,21 @@ module Generate (Target : Target_sig.S) = struct
         if ctx.live.(Var.idx x) = 0
         then drop (translate_expr ctx context x e)
         else
-          store
-            ?typ:(unboxed_type (Typing.var_type ctx.types x))
-            x
-            (translate_expr ctx context x e)
+          let ty = Typing.var_type ctx.types x in
+          let already_cast =
+            (* Direct calls convert their result to the type of [x] *)
+            match e with
+            | Apply { f; exact = true; _ } -> (
+                match Global_flow.get_unique_closure ctx.global_flow_info f with
+                | Some (g, _) when ctx.live.(Var.idx g) > 0 ->
+                    is_cast (Typing.return_type ctx.types g)
+                | _ -> false)
+            | _ -> false
+          in
+          let e = translate_expr ctx context x e in
+          let e = if is_cast ty && not already_cast then Value.as_block e else e in
+          let* typ = value_type ty in
+          store ?typ x e
     | Set_field (x, n, (Non_float | Immediate), y) ->
         Memory.set_field (load_and_box ctx x) n (load_and_box ctx y)
     | Set_field (x, n, Float, y) ->
@@ -2117,7 +2147,8 @@ module Generate (Target : Target_sig.S) = struct
       l
       ~f:(fun continuation (y, ty, x, tx) ->
         let* () = continuation in
-        store ~always:true ?typ:(unboxed_type ty) y (convert ~from:tx ~into:ty (load x)))
+        let* typ = value_type ty in
+        store ~always:true ?typ y (convert ~from:tx ~into:ty (load x)))
       ~init:(return ())
 
   let exception_name = "ocaml_exception"
@@ -2260,6 +2291,8 @@ module Generate (Target : Target_sig.S) = struct
     in
     let g = Structure.build_graph ctx.blocks pc in
     let dom = Structure.dominator_tree g in
+    (* Computed when translating the body *)
+    let signature = ref None in
     let rec translate_tree result_typ fall_through pc context =
       let block = Addr.Map.find pc ctx.blocks in
       let keep_ouside pc' =
@@ -2393,7 +2426,8 @@ module Generate (Target : Target_sig.S) = struct
       List.fold_left
         ~f:(fun l x ->
           let* _ = l in
-          let* _ = add_var ?typ:(unboxed_type (Typing.var_type ctx.types x)) x in
+          let* typ = value_type (Typing.var_type ctx.types x) in
+          let* _ = add_var ?typ x in
           return ())
         ~init:(return ())
         params
@@ -2434,12 +2468,22 @@ module Generate (Target : Target_sig.S) = struct
              | _ -> no_event
            in
            let* () = build_initial_env in
+           let* result_typ = value_type return_type in
+           let result_typ = Option.value ~default:Type.value result_typ in
+           let* param_typs =
+             expression_list
+               (fun x ->
+                 let* typ = value_type (Typing.var_type ctx.types x) in
+                 return (Option.value ~default:Type.value typ))
+               params
+           in
+           signature := Some (param_typs, result_typ);
            let* () =
              wrap_with_handlers
                p
                ~dom
                pc
-               ~result_typ:[ Option.value ~default:Type.value (unboxed_type return_type) ]
+               ~result_typ:[ result_typ ]
                ~fall_through:`Return
                ~context:[]
                (fun ~result_typ ~fall_through ~context ->
@@ -2466,16 +2510,8 @@ module Generate (Target : Target_sig.S) = struct
           | Some f ->
               if Typing.can_unbox_parameters ctx.fun_info f
               then
-                { W.params =
-                    List.map
-                      ~f:(fun x ->
-                        Option.value
-                          ~default:Type.value
-                          (unboxed_type (Typing.var_type ctx.types x)))
-                      params
-                    @ [ Type.value ]
-                ; result = [ Option.value ~default:Type.value (unboxed_type return_type) ]
-                }
+                let param_typs, result_typ = Option.get !signature in
+                { W.params = param_typs @ [ Type.value ]; result = [ result_typ ] }
               else Type.func_type (param_count - 1))
       ; param_names
       ; locals

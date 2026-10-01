@@ -66,11 +66,12 @@
   (flags :standard --opt 2)))
 
 (tests
- (names array_generic)
+ (names array_generic block_tail_calls)
  (modes wasm)
  ; Generic array accesses are only specialized when the type analysis knows
  ; the representation of the array, which requires whole-program
- ; compilation. Array parameters are only typed with --opt 2 or more.
+ ; compilation. Array parameters are only typed with --opt 2 or more. The
+ ; same holds for values known to be blocks.
  (wasm_of_ocaml
   (compilation_mode whole_program)
   (flags :standard --opt 2)))

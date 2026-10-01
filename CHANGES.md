@@ -10,6 +10,8 @@
   primitives no longer copy, as in the OCaml runtime (#2469)
 * Compiler/wasm: track whether a value is a float array or a block array, to
   specialize generic array accesses and `Array.length` (#2485)
+* Compiler/wasm: give values known to be blocks a Wasm block type when they
+  are used as blocks, so that they are cast once where they are defined (#2485)
 * Compiler: with `--effects={cps,double-translation}`, specialize calls to
   known functions using the global flow analysis before the CPS transformation
   (#2456)
