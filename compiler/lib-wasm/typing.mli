@@ -34,14 +34,26 @@ type boxed_status =
   | Boxed
   | Unboxed
 
+type array_kind =
+  { float : bool  (** May be a float array *)
+  ; value : bool  (** May be a non-empty block *)
+  }
+
 type typ =
   | Top
   | Int of Integer.kind
   | Number of boxed_number * boxed_status
   | Tuple of typ array
   | Bigarray of Optimization_hint.Bigarray.t
+  | Array of array_kind
+      (** An array: the empty array, a float array if [float] holds,
+          or a non-empty block if [value] holds *)
   | Null
   | Bot
+
+val array_kind : typ -> Optimization_hint.array_kind
+(** How the primitives manipulating an array of this type can be
+    compiled *)
 
 val constant_type : Code.constant -> typ
 

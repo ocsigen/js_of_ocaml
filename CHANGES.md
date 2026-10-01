@@ -8,6 +8,8 @@
 * Runtime: support `Sys.filepath_exists` (OCaml 5.6) (#2493)
 * Runtime: with OCaml 5.6, `Weak.get_copy` and the ephemeron `get_*_copy`
   primitives no longer copy, as in the OCaml runtime (#2469)
+* Compiler/wasm: track whether a value is a float array or a block array, to
+  specialize generic array accesses and `Array.length` (#2485)
 * Compiler: with `--effects={cps,double-translation}`, specialize calls to
   known functions using the global flow analysis before the CPS transformation
   (#2456)

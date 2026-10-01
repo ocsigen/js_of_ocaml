@@ -297,8 +297,8 @@ module Generate (Target : Target_sig.S) = struct
         (if negate then Value.phys_neq else Value.phys_eq)
           (transl_prim_arg ctx ~typ:Top x)
           (transl_prim_arg ctx ~typ:Top y)
-    | (Int _ | Number _ | Tuple _ | Bigarray _ | Null), _
-    | _, (Int _ | Number _ | Tuple _ | Bigarray _ | Null)
+    | (Int _ | Number _ | Tuple _ | Bigarray _ | Array _ | Null), _
+    | _, (Int _ | Number _ | Tuple _ | Bigarray _ | Array _ | Null)
     | Top, Top (* when wasi is enabled *) ->
         (* Only Top may contain JavaScript values *)
         (if negate then Value.phys_neq else Value.phys_eq)
@@ -1752,6 +1752,28 @@ module Generate (Target : Target_sig.S) = struct
     | Number (n, Boxed) as into -> convert ~from:(Number (n, Unboxed)) ~into e
     | _ -> e
 
+  (* Use the array representation known from the type analysis to
+     avoid dynamic tests *)
+  let specialized_array_primitive ctx p l =
+    match l with
+    | [] -> None
+    | a :: _ -> (
+        match p, Typing.array_kind (get_type ctx a) with
+        | _, Generic -> None
+        | Vectlength k, k' -> if Poly.equal k k' then None else Some (Vectlength k')
+        | Extern (("caml_check_bound_gen" | "caml_check_bound_float"), h), Value ->
+            Some (Extern ("caml_check_bound", h))
+        | Extern ("caml_check_bound_gen", h), Float ->
+            Some (Extern ("caml_check_bound_float", h))
+        | Extern ("caml_array_unsafe_get", _), Value -> Some (Array_get Non_float)
+        | Extern ("caml_array_unsafe_get", h), Float ->
+            Some (Extern ("caml_floatarray_unsafe_get", h))
+        | Extern ("caml_array_unsafe_set", h), Value ->
+            Some (Extern ("caml_array_unsafe_set_addr", h))
+        | Extern ("caml_array_unsafe_set", h), Float ->
+            Some (Extern ("caml_floatarray_unsafe_set", h))
+        | _ -> None)
+
   let rec translate_expr ctx context x e =
     match e with
     | Apply { f; args; exact; _ } ->
@@ -1943,6 +1965,12 @@ module Generate (Target : Target_sig.S) = struct
     | Prim (Ult, [ x; y ]) -> translate_int_comparison ctx Arith.ult x y
     | Prim (Eq, [ x; y ]) -> translate_int_equality ctx ~negate:false x y
     | Prim (Neq, [ x; y ]) -> translate_int_equality ctx ~negate:true x y
+    | Prim (p, l) when Option.is_some (specialized_array_primitive ctx p l) ->
+        translate_expr
+          ctx
+          context
+          x
+          (Prim (Option.get (specialized_array_primitive ctx p l), l))
     | Prim (Array_get _, [ x; y ]) ->
         Memory.array_get (transl_prim_arg ctx x) (transl_prim_arg ctx ~typ:int_n y)
     | Prim (Extern ("caml_array_unsafe_get", _), [ x; y ]) ->
