@@ -323,6 +323,7 @@ type wasm_conversion =
   | Box_f64
   | Box_f32
   | Untag_int
+  | Normalize_int
   | Tag_int
 
 type prim =
@@ -555,6 +556,7 @@ module Print = struct
     | Box_f64 -> "box_f64"
     | Box_f32 -> "box_f32"
     | Untag_int -> "untag_int"
+    | Normalize_int -> "normalize_int"
     | Tag_int -> "tag_int"
 
   let rec list pr f l =
