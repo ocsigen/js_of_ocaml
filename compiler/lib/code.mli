@@ -131,6 +131,7 @@ type wasm_conversion =
   | Box_f64
   | Box_f32
   | Untag_int
+  | Normalize_int
   | Tag_int
 
 type prim =
