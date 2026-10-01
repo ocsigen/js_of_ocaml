@@ -411,37 +411,43 @@ type prim_args =
 
 let primitive_types = String.Hashtbl.create 16
 
-let prim_type ~st ~approx prim hint args =
+(* The result of a bitwise operation is normalized when its operands are.
+   For [land], a non-negative constant operand also clears the bits above
+   the 31 low bits; a negative one, such as [-1], keeps them. The result
+   of [lsr] is nonnegative, hence normalized, except when the shift amount
+   is 0 (modulo 32): a negative integer is then returned with its sign bit
+   cleared. *)
+let bitwise_type prim ~typ args =
+  let normalized t =
+    match t with
+    | Bot | Int (Ref | Normalized) -> true
+    | _ -> false
+  in
+  let non_negative_constant a =
+    match a with
+    | Pc (Int c) -> Targetint.(compare c zero) >= 0
+    | Pc _ | Pv _ -> false
+  in
   match prim with
-  | "%int_and" -> (
-      (* A non-negative operand clears the bits above the 31 low bits; a
-         negative one, such as [-1], keeps them *)
-      let non_negative_constant a =
-        match a with
-        | Pc (Int c) -> Targetint.(compare c zero) >= 0
-        | Pc _ | Pv _ -> false
-      in
-      if List.exists ~f:non_negative_constant args
-      then Int Normalized
-      else
-        match List.map ~f:(fun x -> arg_type ~approx x) args with
-        | [ (Bot | Int (Ref | Normalized)); (Bot | Int (Ref | Normalized)) ] ->
-            Int Normalized
-        | _ -> Int Unnormalized)
-  | "%int_or" | "%int_xor" -> (
-      match List.map ~f:(fun x -> arg_type ~approx x) args with
-      | [ (Bot | Int (Ref | Normalized)); (Bot | Int (Ref | Normalized)) ] ->
-          Int Normalized
-      | _ -> Int Unnormalized)
+  | "%int_and" when List.exists ~f:non_negative_constant args -> Some (Int Normalized)
+  | "%int_and" | "%int_or" | "%int_xor" -> (
+      match List.map ~f:typ args with
+      | [ t1; t2 ] when normalized t1 && normalized t2 -> Some (Int Normalized)
+      | _ -> Some (Int Unnormalized))
   | "%int_lsr" -> (
-      (* The result is nonnegative, hence normalized, except when the
-         shift amount is 0 (modulo 32): a negative integer is then returned
-         with its sign bit cleared *)
       match args with
       | [ _; Pc (Int k) ]
         when Targetint.compare k Targetint.zero > 0
-             && Targetint.compare k (Targetint.of_int_exn 32) < 0 -> Int Normalized
-      | _ -> Int Unnormalized)
+             && Targetint.compare k (Targetint.of_int_exn 32) < 0 -> Some (Int Normalized)
+      | _ -> Some (Int Unnormalized))
+  | _ -> None
+
+let prim_type ~st ~approx prim hint args =
+  match prim with
+  | "%int_and" | "%int_or" | "%int_xor" | "%int_lsr" ->
+      Option.value
+        ~default:Top
+        (bitwise_type prim ~typ:(fun x -> arg_type ~approx x) args)
   | "caml_ba_create" -> (
       match args with
       | [ Pc (Int kind); Pc (Int layout); _ ] ->
@@ -718,6 +724,18 @@ let box_numbers p st types =
           | Phi { known; _ } -> Var.Set.iter box known)
       | Number (_, Boxed) | Int _ | Tuple _ | Bigarray _ | Null | Bot -> ())
   in
+  (* With the LCM pass, a float passed to a boxed block parameter is boxed
+     where it is defined *)
+  let check_cont (pc', args) =
+    if Config.Flag.lcm ()
+    then
+      let b' = Addr.Map.find pc' p.blocks in
+      List.iter2
+        ~f:(fun param arg ->
+          if Poly.equal (Var.Tbl.get types param) (Number (Float, Boxed)) then box arg)
+        b'.params
+        args
+  in
   Code.fold_closures
     p
     (fun name_opt _ (pc, _) _ () ->
@@ -781,7 +799,12 @@ let box_numbers p st types =
               Option.iter
                 ~f:(fun g -> if not (can_unbox_return_value st.fun_info g) then box y)
                 name_opt
-          | Raise _ | Stop | Branch _ | Cond _ | Switch _ | Pushtrap _ | Poptrap _ -> ())
+          | Branch cont | Poptrap cont -> check_cont cont
+          | Cond (_, cont1, cont2) | Pushtrap (cont1, _, cont2) ->
+              check_cont cont1;
+              check_cont cont2
+          | Switch (_, conts) -> Array.iter ~f:check_cont conts
+          | Raise _ | Stop -> ())
         pc
         p.blocks
         ())
@@ -863,6 +886,19 @@ let var_type info x =
   if idx < Var.Tbl.length info.types
   then Var.Tbl.get info.types x
   else Var.Hashtbl.find_opt info.extra_types x |> Option.value ~default:Top
+
+let prim_result_type info prim args =
+  match
+    bitwise_type
+      prim
+      ~typ:(fun a ->
+        match a with
+        | Pv x -> var_type info x
+        | Pc c -> constant_type c)
+      args
+  with
+  | Some t -> t
+  | None -> snd (prim_sig prim)
 
 let set_var_type info x t =
   let idx = Var.idx x in
