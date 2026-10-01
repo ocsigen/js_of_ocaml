@@ -532,6 +532,71 @@ let ref_argument_function ~context info args =
       r.only_accessed && List.for_all ~f:(fun (g, j) -> ref_param g j) r.passed_to)
     (List.mapi ~f:(fun i x -> i, x) args)
 
+(* Whether a function checks some condition: it performs no direct
+   mutation (though it may call other functions), branches on a
+   comparison, and raises on some path *)
+let is_guard ~context info =
+  let pc, _ = info.cont in
+  let blocks =
+    Code.traverse
+      { fold = Code.fold_children }
+      (fun pc l -> Addr.Map.find pc context.p.blocks :: l)
+      pc
+      context.p.blocks
+      []
+  in
+  let defs = Var.Hashtbl.create 16 in
+  List.iter
+    ~f:(fun block ->
+      List.iter
+        ~f:(fun i ->
+          match i with
+          | Let (x, e) -> Var.Hashtbl.replace defs x e
+          | _ -> ())
+        block.body)
+    blocks;
+  let rec comparison v =
+    match Var.Hashtbl.find_opt defs v with
+    | Some (Prim ((Lt | Le | Ult | Eq | Neq), _)) -> true
+    | Some (Prim (Not, [ Pv w ])) -> comparison w
+    | _ -> false
+  in
+  List.for_all
+    ~f:(fun block ->
+      List.for_all
+        ~f:(fun i ->
+          match i with
+          | Let _ | Event _ -> true
+          | Assign _ | Set_field _ | Offset_ref _ | Array_set _ -> false)
+        block.body)
+    blocks
+  && List.exists
+       ~f:(fun block ->
+         match block.branch with
+         | Cond (v, _, _) -> comparison v
+         | _ -> false)
+       blocks
+  && List.exists
+       ~f:(fun block ->
+         match block.branch with
+         | Raise _ -> true
+         | _ -> false)
+       blocks
+
+(*
+  With Wasm, we inline small functions which check their parameters (for
+  instance, that an index is within bounds): once inlined, the comparison
+  is known at the call site, where it can be used to remove other checks.
+*)
+let guard_function ~context info =
+  (match Config.target () with
+    | `Wasm -> true
+    | `JavaScript -> false)
+  && (not info.recursive)
+  && closure_count ~context info = 0
+  && body_size ~context info <= 10
+  && is_guard ~context info
+
 (*
   We inline small functions which are simple (no closure, no
   recursive) when one of the argument is a function that would get
@@ -622,7 +687,8 @@ and should_inline ~context info args =
               | _ -> body_size ~context info < Config.Param.inlining_limit ())
            || trivial_function ~context info
            || small_function ~context info args
-           || ref_argument_function ~context info args)
+           || ref_argument_function ~context info args
+           || guard_function ~context info)
 
 let trace_inlining ~context info x args =
   if debug ()
