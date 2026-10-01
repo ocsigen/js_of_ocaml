@@ -154,6 +154,11 @@ val get_constant : Wasm_ast.var -> Wasm_ast.expression option t
 
 val is_small_constant : Wasm_ast.expression -> bool t
 
+val is_constant_expression : Wasm_ast.expression -> bool t
+(** Whether the expression can be used in a global initializer. Unlike
+    [is_small_constant], this excludes mutable globals that are only
+    written once. *)
+
 val event : Parse_info.t -> unit t
 
 val no_event : unit t
@@ -230,6 +235,8 @@ val function_body :
   -> (Wasm_ast.var * Wasm_ast.value_type) list * Wasm_ast.instruction list
 
 val variable_type : Code.Var.t -> Wasm_ast.value_type option t
+
+val expression_type : Wasm_ast.expression -> Wasm_ast.value_type option t
 
 val array_placeholder : Code.Var.t -> expression
 

@@ -11,7 +11,7 @@
  (modes js wasm))
 
 (tests
- (names marshal_regressions int_and)
+ (names marshal_regressions int_and globalize_box)
  (modes wasm))
 
 (tests
