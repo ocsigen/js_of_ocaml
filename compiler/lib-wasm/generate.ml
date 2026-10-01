@@ -332,60 +332,77 @@ module Generate (Target : Target_sig.S) = struct
     let shift64 e = counted "shift64" Arith64.(e lsl const 1L)
   end
 
+  let conversion c e =
+    match c with
+    | Unbox_i32 -> Conv.unbox_int32 e
+    | Unbox_i64 -> Conv.unbox_int64 e
+    | Unbox_f64 -> Conv.unbox_float e
+    | Box_i32 -> Conv.box_int32 e
+    | Box_i64 -> Conv.box_int64 e
+    | Box_f64 -> Conv.box_float e
+    | Untag_int -> Conv.untag e
+    | Tag_int -> Conv.tag e
+
   let convert ~(from : Typing.typ) ~(into : Typing.typ) e =
-    match from, into with
-    (* Int conversions *)
-    | Int Small_unnormalized, Int Small_normalized -> Conv.normalize e
-    | Int Large_unnormalized, Int Large_normalized -> Conv.normalize64 e
-    | ( Int (Small_normalized | Small_unnormalized)
-      , Int (Small_normalized | Small_unnormalized) )
-    | ( Int (Large_normalized | Large_unnormalized)
-      , Int (Large_normalized | Large_unnormalized) ) -> e
-    | Int Small_unnormalized, Int (Large_normalized | Large_unnormalized) ->
-        let* e = Conv.normalize e in
-        return (W.I64ExtendI32 (S, e))
-    | Int Small_normalized, Int (Large_normalized | Large_unnormalized) ->
-        let* e = e in
-        return (W.I64ExtendI32 (S, e))
-    | ( Int (Large_normalized | Large_unnormalized)
-      , Int (Small_normalized | Small_unnormalized) ) ->
-        (* The high bits are dropped: no need to normalize *)
-        let* e = e in
-        return (W.I32WrapI64 e)
-    (* Dummy value *)
-    | Int _, Number (Int32, Unboxed) -> return (W.Const (I32 0l))
-    | Int _, Number (Nativeint, Unboxed) when not (Config.Flag.portable_int ()) ->
-        return (W.Const (I32 0l))
-    | Int _, Number ((Int64 | Nativeint), Unboxed) -> return (W.Const (I64 0L))
-    | Int _, Number (Float, Unboxed) -> return (W.Const (F64 0.))
-    | Int _, Number (Float32, Unboxed) -> return (W.Const (F32 0.))
-    (* Unboxing *)
-    | _, Int (Small_normalized | Small_unnormalized) when Config.Flag.portable_int () ->
-        let* e = Conv.untag64 e in
-        return (W.I32WrapI64 e)
-    | _, Int (Large_normalized | Large_unnormalized) when Config.Flag.portable_int () ->
-        Conv.untag64 e
-    | ( _
-      , Int (Small_normalized | Small_unnormalized | Large_normalized | Large_unnormalized)
-      ) -> Conv.untag e
-    (* Boxing *)
-    | Int Large_unnormalized, _ when Config.Flag.portable_int () ->
-        Conv.tag64 (Conv.normalize64 e)
-    | Int Large_normalized, _ when Config.Flag.portable_int () -> Conv.tag64 e
-    | ( Int (Small_normalized | Small_unnormalized | Large_normalized | Large_unnormalized)
-      , _ ) -> Conv.tag e
-    | Number (_, Unboxed), Number (_, Unboxed) -> e
-    | _, Number (Int32, Unboxed) -> Conv.unbox_int32 e
-    | _, Number (Int64, Unboxed) -> Conv.unbox_int64 e
-    | _, Number (Nativeint, Unboxed) -> Conv.unbox_nativeint e
-    | _, Number (Float, Unboxed) -> Conv.unbox_float e
-    | _, Number (Float32, Unboxed) -> Conv.unbox_float32 e
-    | Number (Int32, Unboxed), _ -> Conv.box_int32 e
-    | Number (Int64, Unboxed), _ -> Conv.box_int64 e
-    | Number (Nativeint, Unboxed), _ -> Conv.box_nativeint e
-    | Number (Float, Unboxed), _ -> Conv.box_float e
-    | Number (Float32, Unboxed), _ -> Conv.box_float32 e
-    | _ -> e
+    match Typing.conversion ~from ~into with
+    | Some c -> conversion c e
+    | None -> (
+        match from, into with
+        (* Int conversions *)
+        | Int Small_unnormalized, Int Small_normalized -> Conv.normalize e
+        | Int Large_unnormalized, Int Large_normalized -> Conv.normalize64 e
+        | ( Int (Small_normalized | Small_unnormalized)
+          , Int (Small_normalized | Small_unnormalized) )
+        | ( Int (Large_normalized | Large_unnormalized)
+          , Int (Large_normalized | Large_unnormalized) ) -> e
+        | Int Small_unnormalized, Int (Large_normalized | Large_unnormalized) ->
+            let* e = Conv.normalize e in
+            return (W.I64ExtendI32 (S, e))
+        | Int Small_normalized, Int (Large_normalized | Large_unnormalized) ->
+            let* e = e in
+            return (W.I64ExtendI32 (S, e))
+        | ( Int (Large_normalized | Large_unnormalized)
+          , Int (Small_normalized | Small_unnormalized) ) ->
+            (* The high bits are dropped: no need to normalize *)
+            let* e = e in
+            return (W.I32WrapI64 e)
+        (* Dummy value *)
+        | Int _, Number (Int32, Unboxed) -> return (W.Const (I32 0l))
+        | Int _, Number (Nativeint, Unboxed) when not (Config.Flag.portable_int ()) ->
+            return (W.Const (I32 0l))
+        | Int _, Number ((Int64 | Nativeint), Unboxed) -> return (W.Const (I64 0L))
+        | Int _, Number (Float, Unboxed) -> return (W.Const (F64 0.))
+        | Int _, Number (Float32, Unboxed) -> return (W.Const (F32 0.))
+        (* Unboxing *)
+        | _, Int (Small_normalized | Small_unnormalized) when Config.Flag.portable_int ()
+          ->
+            let* e = Conv.untag64 e in
+            return (W.I32WrapI64 e)
+        | _, Int (Large_normalized | Large_unnormalized) when Config.Flag.portable_int ()
+          -> Conv.untag64 e
+        | ( _
+          , Int
+              ( Small_normalized
+              | Small_unnormalized
+              | Large_normalized
+              | Large_unnormalized ) ) -> Conv.untag e
+        (* Boxing *)
+        | Int Large_unnormalized, _ when Config.Flag.portable_int () ->
+            Conv.tag64 (Conv.normalize64 e)
+        | Int Large_normalized, _ when Config.Flag.portable_int () -> Conv.tag64 e
+        | ( Int
+              ( Small_normalized
+              | Small_unnormalized
+              | Large_normalized
+              | Large_unnormalized )
+          , _ ) -> Conv.tag e
+        | Number (_, Unboxed), Number (_, Unboxed) -> e
+        (* The numbers without conversion primitives *)
+        | _, Number (Nativeint, Unboxed) -> Conv.unbox_nativeint e
+        | _, Number (Float32, Unboxed) -> Conv.unbox_float32 e
+        | Number (Nativeint, Unboxed), _ -> Conv.box_nativeint e
+        | Number (Float32, Unboxed), _ -> Conv.box_float32 e
+        | _ -> e)
 
   let load_and_box ctx x = convert ~from:(Typing.var_type ctx.types x) ~into:Top (load x)
 
@@ -2364,14 +2381,7 @@ module Generate (Target : Target_sig.S) = struct
             loop [] arg_typ l |> box_number_if_needed ctx x
         | Wasm_conversion c -> (
             match c, l with
-            | Unbox_i32, [ Pv v ] -> Conv.unbox_int32 (load v)
-            | Unbox_i64, [ Pv v ] -> Conv.unbox_int64 (load v)
-            | Unbox_f64, [ Pv v ] -> Conv.unbox_float (load v)
-            | Box_i32, [ Pv v ] -> Conv.box_int32 (load v)
-            | Box_i64, [ Pv v ] -> Conv.box_int64 (load v)
-            | Box_f64, [ Pv v ] -> Conv.box_float (load v)
-            | Untag_int, [ Pv v ] -> Conv.untag (load v)
-            | Tag_int, [ Pv v ] -> Conv.tag (load v)
+            | _, [ Pv v ] -> conversion c (load v)
             | _ -> assert false)
         | _ -> (
             let l = List.map ~f:(fun x -> transl_prim_arg ctx x) l in
