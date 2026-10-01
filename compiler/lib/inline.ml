@@ -408,8 +408,17 @@ let functor_like ~context info =
       full_size ~context info - body_size ~context info
       <= 20 * closure_count ~context info
 
+(* With Wasm, a function called directly is not inlined as easily by the
+   engine as in JavaScript, and inlining it avoids converting its arguments
+   and result (tagging and boxing): we inline slightly larger functions *)
 let trivial_function ~context info =
-  (not info.recursive) && body_size ~context info <= 1 && closure_count ~context info = 0
+  (not info.recursive)
+  && (body_size ~context info
+     <=
+     match Config.target () with
+     | `Wasm -> 4
+     | `JavaScript -> 1)
+  && closure_count ~context info = 0
 
 (*
   We inline small functions which are simple (no closure, no
@@ -418,7 +427,11 @@ let trivial_function ~context info =
 *)
 let rec small_function ~context info args =
   (not info.recursive)
-  && body_size ~context info <= 15
+  && (body_size ~context info
+     <=
+     match Config.target () with
+     | `Wasm -> 25
+     | `JavaScript -> 15)
   && closure_count ~context info = 0
   && (not (List.is_empty args))
   && not (Var.Map.is_empty (relevant_arguments ~context info args))
