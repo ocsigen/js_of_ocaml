@@ -36,6 +36,8 @@ module Flag : sig
 
   val inline : unit -> bool
 
+  val lcm : unit -> bool
+
   val clone_higher_order : unit -> bool
 
   val share_constant : unit -> bool
