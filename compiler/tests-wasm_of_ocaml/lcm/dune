@@ -7,7 +7,7 @@
   (flags :standard --no-inline)))
 
 (tests
- (names raise_before_use)
+ (names raise_before_use compare_untagged)
  (modes js wasm)
  ; Without inlining, so that the functions are kept
  (wasm_of_ocaml
@@ -32,7 +32,7 @@
    (:standard -w no-missing-debug-event))))
 
 (tests
- (names guarded_untag normalize loop_hoist exn_untag)
+ (names guarded_untag normalize entry_loop loop_hoist exn_untag)
  (modes js wasm)
  (wasm_of_ocaml
   (flags :standard --opt 2)))

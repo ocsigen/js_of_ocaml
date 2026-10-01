@@ -1540,6 +1540,7 @@ let eliminate_param_conversions
     types
     preds
     ~assigned
+    ~guarded
     ~global_flow_info
     ~(st : lcm_stats) =
   let result = ref blocks in
@@ -1655,7 +1656,33 @@ let eliminate_param_conversions
      (includes the initial (bpc, origin) passed to the top-level call). *)
     (* Pre-sort and deduplicate predecessor lists once *)
     let sorted_preds = Addr.Map.map (fun ps -> List.sort_uniq ~cmp:compare ps) preds in
-    let rec can_supply bpc origin kind visited =
+    (* The conversion can be performed in a predecessor of the block [target]
+       containing it when this predecessor is the entry of the function (it
+       has no predecessor): it is then performed once per call, when the
+       block is entered for the first time, rather than at each iteration
+       when the block is a loop header. This is not speculative when the
+       block performs the conversion whenever it is entered ([reached]: no
+       instruction which may raise precedes it) and the entry has no other
+       successor, or when the conversion of the argument [q] cannot fail. *)
+    let materialize_at ~target ~reached bpc origin pred_pc q kind =
+      bpc = target
+      && (match origin with
+        | Param _ ->
+            (* The value is an argument of the branch of the predecessor,
+                available there *)
+            true
+        | Var _ -> false)
+      && List.is_empty (Addr.Map.find_opt pred_pc sorted_preds |> Option.value ~default:[])
+      && (is_safe_conversion ~guarded types (kind, q)
+         || reached
+            &&
+            (* Otherwise, the conversion would also be performed on the
+               paths to the other successors, where it may fail *)
+            match (Addr.Map.find pred_pc !result).branch with
+            | Branch _ -> true
+            | _ -> false)
+    in
+    let rec can_supply ~target ~reached bpc origin kind visited =
       let pred_pcs = Addr.Map.find_opt bpc sorted_preds |> Option.value ~default:[] in
       if List.is_empty pred_pcs
       then None
@@ -1682,6 +1709,8 @@ let eliminate_param_conversions
                     | Some _ -> check_conts rest_conts acc
                     | None when Option.is_some (constant_supply q kind) ->
                         check_conts rest_conts acc
+                    | None when materialize_at ~target ~reached bpc origin pred_pc q kind
+                      -> check_conts rest_conts acc
                     | None ->
                         (* q not directly available; trace how it enters pred *)
                         let pred_origin =
@@ -1698,7 +1727,9 @@ let eliminate_param_conversions
                           check_conts rest_conts acc'
                         else (
                           visited := AddrOriginSet.add key !visited;
-                          match can_supply pred_pc pred_origin kind visited with
+                          match
+                            can_supply ~target ~reached pred_pc pred_origin kind visited
+                          with
                           | None -> None
                           | Some more ->
                               check_conts rest_conts (AddrOriginSet.union acc' more)))
@@ -1714,6 +1745,8 @@ let eliminate_param_conversions
      for a single batched pass at the end. *)
     let eliminated = ref VarSet.empty in
     let all_substs = ref Var.Map.empty in
+    (* Block parameters with an untagged shadow parameter *)
+    let untagged_twins = ref Var.Map.empty in
     List.iter
       ~f:(fun (pc, v, kind, _param_var) ->
         if VarSet.mem v !eliminated
@@ -1744,6 +1777,24 @@ let eliminate_param_conversions
                 | None -> Var param_var
               in
               let initial_key = pc, initial_origin in
+              (* A conversion performed in the entry of the function
+                 replaces the untagging of [param_var], which must not fail
+                 if it may have been executed speculatively *)
+              let guarded_conv = is_untag kind && Var.Hashtbl.mem guarded param_var in
+              let guard q = if guarded_conv then Var.Hashtbl.replace guarded q () in
+              (* Whether the conversion is performed whenever the block is
+                 entered, or cannot fail once performed in the entry *)
+              let reached =
+                guarded_conv
+                ||
+                let rec loop l =
+                  match l with
+                  | [] -> false
+                  | Let (x, _) :: _ when Var.equal x v -> true
+                  | i :: rem -> (not (Typing.may_raise i)) && loop rem
+                in
+                loop block.body
+              in
               match initial_origin with
               | Var _ ->
                   (* Not a candidate (see above) *)
@@ -1751,6 +1802,8 @@ let eliminate_param_conversions
               | Param _ -> (
                   match
                     can_supply
+                      ~target:pc
+                      ~reached
                       pc
                       initial_origin
                       kind
@@ -1793,6 +1846,16 @@ let eliminate_param_conversions
                    conversion from the target block *)
                       let target_sv = find_shadow_var pc initial_origin in
                       all_substs := Var.Map.add v target_sv !all_substs;
+                      (* The untagged shadow can replace the parameter
+                         wherever the parameter is known to be an integer,
+                         not only after the untagging (see
+                         [compare_untagged]) *)
+                      (match kind, initial_origin with
+                      | Untag_int, Param _
+                        when is_safe_input Untag_int (Typing.var_type types param_var) ->
+                          untagged_twins :=
+                            Var.Map.add param_var target_sv !untagged_twins
+                      | _ -> ());
                       let b = Addr.Map.find pc !result in
                       let new_body =
                         List.filter
@@ -1862,6 +1925,25 @@ let eliminate_param_conversions
                                         materialised :=
                                           Let (u, Constant c) :: !materialised;
                                         u
+                                    | None
+                                      when materialize_at
+                                             ~target:pc
+                                             ~reached
+                                             bpc
+                                             origin
+                                             pred_pc
+                                             q
+                                             kind ->
+                                        guard q;
+                                        let u = Var.fresh () in
+                                        Typing.set_var_type
+                                          types
+                                          u
+                                          (Typing.conversion_type kind);
+                                        materialised :=
+                                          Let (u, Prim (prim_of_kind kind, [ Pv q ]))
+                                          :: !materialised;
+                                        u
                                     | None ->
                                         let pred_block = Addr.Map.find pred_pc !result in
                                         let pred_origin =
@@ -1886,6 +1968,48 @@ let eliminate_param_conversions
                         shadow_vars))
           | _ -> ())
       candidates;
+    (* An integer compared for equality with a constant or an untagged
+       integer can be compared untagged: use the untagged shadow of a block
+       parameter, which is in scope wherever the parameter is. The tagged
+       parameter may then become useless. The parameter must be known to be
+       an integer: the untagging of another value may have been
+       speculative, returning 0 ([guarded]), or may not be reached. *)
+    let untagged_int a =
+      match a with
+      | Pc (Int _) -> true
+      | Pc _ -> false
+      | Pv y -> (
+          Var.Map.mem y !untagged_twins
+          ||
+          match Typing.var_type types y with
+          | Typing.Int (Normalized | Unnormalized) -> true
+          | _ -> false)
+    in
+    let twin a =
+      match a with
+      | Pv y -> (
+          match Var.Map.find_opt y !untagged_twins with
+          | Some sv -> Pv sv
+          | None -> a)
+      | Pc _ -> a
+    in
+    let compare_untagged i =
+      match i with
+      | Let (x, Prim (((Eq _ | Neq _) as op), [ a; b ]))
+        when untagged_int a
+             && untagged_int b
+             && (Var.Map.mem
+                   (match a with
+                   | Pv y -> y
+                   | Pc _ -> x)
+                   !untagged_twins
+                || Var.Map.mem
+                     (match b with
+                     | Pv y -> y
+                     | Pc _ -> x)
+                     !untagged_twins) -> Let (x, Prim (op, [ twin a; twin b ]))
+      | _ -> i
+    in
     (* Apply all substitutions in a single pass *)
     if Var.Map.is_empty !all_substs
     then !result
@@ -1897,7 +2021,11 @@ let eliminate_param_conversions
       in
       Addr.Map.map
         (fun b ->
-          let new_body = List.map ~f:(Subst.Excluding_Binders.instr subst_var) b.body in
+          let new_body =
+            List.map
+              ~f:(fun i -> compare_untagged (Subst.Excluding_Binders.instr subst_var i))
+              b.body
+          in
           let new_branch = Subst.Excluding_Binders.last subst_var b.branch in
           { b with body = new_body; branch = new_branch })
         !result
@@ -2532,7 +2660,14 @@ let process_function
     let t3 = tick () in
     st.time_peephole <- st.time_peephole +. (t3 -. t2);
     let result =
-      eliminate_param_conversions result types preds ~assigned ~global_flow_info ~st
+      eliminate_param_conversions
+        result
+        types
+        preds
+        ~assigned
+        ~guarded
+        ~global_flow_info
+        ~st
     in
     st.time_widening <- st.time_widening +. (tick () -. t3);
     result)
