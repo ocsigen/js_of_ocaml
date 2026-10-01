@@ -87,7 +87,7 @@
             (field $func (ref $function_2))
             (field $closure (mut (ref null $cps_closure))))))
 
-   (global $forcing_tag i32 (i32.const 244))
+   (global $forcing_tag (export "forcing_tag") i32 (i32.const 244))
    (global $cont_tag (export "cont_tag") i32 (i32.const 245))
    (global $lazy_tag (export "lazy_tag") i32 (i32.const 246))
    (global $closure_tag i32 (i32.const 247))

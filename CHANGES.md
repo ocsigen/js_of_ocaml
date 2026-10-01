@@ -112,6 +112,8 @@
   `wasm_of_ocaml`) as `file:line:col`, followed by the offending line (#2464)
 
 ## Bug fixes
+* Runtime: `output_value` marshals forced lazy values as their value, as native
+  code does (#2486)
 * Runtime/Wasm: `caml_hash` follows forwarded values, counts objects and
   ignores negative counts, as native code does (#2486)
 * Runtime: `caml_alloc_dummy_mixed` takes two arguments, as OxCaml calls it;

@@ -21,6 +21,9 @@
       (func $caml_invalid_argument (param (ref eq))))
    (import "fail" "caml_raise_end_of_file" (func $caml_raise_end_of_file))
    (import "obj" "object_tag" (global $object_tag i32))
+   (import "obj" "forward_tag" (global $forward_tag i32))
+   (import "obj" "lazy_tag" (global $lazy_tag i32))
+   (import "obj" "forcing_tag" (global $forcing_tag i32))
    (import "obj" "null" (global $null_value (ref eq)))
    (import "obj" "caml_set_oo_id"
       (func $caml_set_oo_id (param (ref eq)) (result (ref eq))))
@@ -1308,6 +1311,25 @@
    (@string $abstract_value "output_value: abstract value")
    (@string $cust_value "output_value: abstract value (Custom)")
 
+   (func $keep_forward (param $v (ref eq)) (result i32)
+      ;; Whether a Forward_tag block pointing to $v is marshalled as such
+      ;; rather than as $v. Like the native runtime, it is kept when $v is
+      ;; a lazy value or a float, whose type it would otherwise change.
+      (local $tg i32)
+      (drop (block $not_block (result (ref eq))
+         (local.set $tg
+            (i31.get_u
+               (ref.cast (ref i31)
+                  (array.get $block
+                     (br_on_cast_fail $not_block (ref eq) (ref $block)
+                        (local.get $v))
+                     (i32.const 0)))))
+         (return
+            (i32.or (i32.eq (local.get $tg) (global.get $forward_tag))
+               (i32.or (i32.eq (local.get $tg) (global.get $lazy_tag))
+                  (i32.eq (local.get $tg) (global.get $forcing_tag)))))))
+      (ref.test (ref $float) (local.get $v)))
+
    (func $extern_rec (param $s (ref $extern_state)) (param $v (ref eq))
       (local $next (ref null $stack_item))
       (local $item (ref $stack_item))
@@ -1316,7 +1338,7 @@
       (local $blk (ref $block))
       (local $fa (ref $float_array))
       (local $tg i32) (local $sz i32)
-      (local $pos i32)
+      (local $pos i32) (local $f (ref eq))
       (local $r_0 i32)
       (local $r_1 i32)
       (loop $loop
@@ -1334,6 +1356,17 @@
                   (i31.get_u
                      (ref.cast (ref i31)
                         (array.get $block (local.get $blk) (i32.const 0)))))
+               ;; a forwarded value, such as a forced lazy value, is
+               ;; marshalled as the value it points to, as in the native
+               ;; runtime
+               (if (i32.eq (local.get $tg) (global.get $forward_tag))
+                  (then
+                     (local.set $f
+                        (array.get $block (local.get $blk) (i32.const 1)))
+                     (if (i32.eqz (call $keep_forward (local.get $f)))
+                        (then
+                           (local.set $v (local.get $f))
+                           (br $loop)))))
                (local.set $sz (i32.sub (array.len (local.get $blk)) (i32.const 1)))
                (if (i32.eqz (local.get $sz))
                   (then

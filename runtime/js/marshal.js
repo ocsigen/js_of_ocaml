@@ -759,6 +759,22 @@ var caml_output_val = (function () {
         writer.size_32 += 1 + nfloats * 2;
         writer.size_64 += 1 + nfloats;
       } else if (Array.isArray(v) && v[0] === (v[0] | 0)) {
+        if (v[0] === 250 /* Forward_tag */) {
+          // A forwarded value, such as a forced lazy value, is marshaled as
+          // the value it points to, as in the native runtime, unless this
+          // value is a lazy value or a float, whose type it would change.
+          var f = v[1];
+          if (
+            !(
+              Array.isArray(f) &&
+              (f[0] === 250 || f[0] === 246 || f[0] === 244)
+            ) &&
+            !(typeof f === "number" && f !== (f | 0))
+          ) {
+            extern_rec(f);
+            return;
+          }
+        }
         if (v[0] === 251) {
           caml_failwith("output_value: abstract value (Abstract)");
         }

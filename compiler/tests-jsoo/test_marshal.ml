@@ -265,3 +265,22 @@ let%expect_test "float array marshalling is interoperable" =
     8495a6be0000001a0000000100000007000000040e03000000000000f83f00000000000004400000000000000c40
     1.5 2.5 3.5
     |}]
+
+(* As in the native runtime, a forced lazy value is marshaled as its value,
+   unless this value is a lazy value or a float. *)
+let%expect_test "forced lazy values" =
+  let l = lazy (Sys.opaque_identity (1, 2)) in
+  ignore (Lazy.force l);
+  Printf.printf "%b\n" (Marshal.to_string l [] = Marshal.to_string (1, 2) []);
+  let l1 = lazy (Sys.opaque_identity 1.5) in
+  let l2 = lazy (Sys.opaque_identity l1) in
+  ignore (Lazy.force (Lazy.force l2));
+  (* [l2] points to [l1], which has already been marshaled *)
+  let (l1', l2') : float Lazy.t * float Lazy.t Lazy.t =
+    Marshal.from_string (Marshal.to_string (l1, l2) []) 0
+  in
+  Printf.printf "%g %g\n" (Lazy.force l1') (Lazy.force (Lazy.force l2'));
+  [%expect {|
+    true
+    1.5 1.5
+    |}]
