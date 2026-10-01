@@ -333,18 +333,24 @@ let rec constant_type (c : constant) =
    no conversion applies. This is the single source of truth for the
    box/unbox/tag/untag representation lattice; [Lcm] is built on top of it
    rather than re-deriving the same case analysis. *)
+let kind_mismatch ~(from : typ) ~(into : typ) =
+  match from, into with
+  | Number (_, Unboxed), Int (Normalized | Unnormalized)
+  | Int (Normalized | Unnormalized), Number (_, Unboxed) -> true
+  | Number (n, Unboxed), Number (n', Unboxed) -> not (Poly.equal n n')
+  | _ -> false
+
 let conversion ~(from : typ) ~(into : typ) : wasm_conversion option =
   match from, into with
-  | Number (Int32, Unboxed), Number (Int32, Unboxed)
-  | Number (Int64, Unboxed), Number (Int64, Unboxed)
-  | Number (Float, Unboxed), Number (Float, Unboxed)
   | Int (Normalized | Unnormalized), Int (Normalized | Unnormalized) -> None
   (* A number of another kind is expected, on a dead path: the code
      generator uses a dummy value *)
-  | Number (_, Unboxed), Int (Normalized | Unnormalized) -> None
+  | _ when kind_mismatch ~from ~into -> None
   | _, Int (Normalized | Unnormalized) -> Some Untag_int
-  | Int (Normalized | Unnormalized), Int Ref -> Some Tag_int
-  | Int _, _ | _, Int _ -> None
+  | ( Int (Normalized | Unnormalized)
+    , (Int Ref | Top | Number (_, Boxed) | Tuple _ | Bigarray _ | Null | Bot) ) ->
+      Some Tag_int
+  | Int Ref, _ -> None
   | Number (_, Unboxed), Number (_, Unboxed) -> None
   | _, Number (n, Unboxed) -> (
       match n with

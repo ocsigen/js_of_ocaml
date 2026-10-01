@@ -38,7 +38,7 @@
   (flags :standard --opt 2)))
 
 (tests
- (names constant_twin)
+ (names constant_twin dead_path)
  (modes js wasm)
  (wasm_of_ocaml
   (flags :standard --opt 2)))
