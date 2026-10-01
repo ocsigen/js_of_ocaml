@@ -98,6 +98,8 @@
   descriptor instructions (#2515)
 * Compiler/Wasm: store more long-lived toplevel variables in globals; fix a
   crash when one of them is assigned in a `try` body (#2516)
+* Compiler/Wasm: track whether a value is a float array or a block array, to
+  specialize generic array accesses and `Array.length` (#2485)
 * Runtime/Wasm: faster `caml_hash`, `compare`, lexer engines, `Str`
   searches and `output_value` sharing detection (with WASI, `output_value`
   now shares boxed numbers with equal contents); single bound check in
