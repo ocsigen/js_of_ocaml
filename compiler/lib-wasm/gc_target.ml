@@ -497,6 +497,18 @@ module Type = struct
           })
 end
 
+(* Cast [e] to a non-nullable reference to [typ], unless it already has
+   this type. *)
+let ref_cast typ e =
+  let* e = e in
+  let cast = W.RefCast ({ nullable = false; typ }, e) in
+  let* t = expression_type e in
+  match t with
+  | Some (Ref { nullable = false; typ = typ' }) ->
+      let* b = heap_type_sub typ' typ in
+      return (if b then e else cast)
+  | Some (Ref { nullable = true; _ } | I32 | I64 | F32 | F64) | None -> return cast
+
 module Value = struct
   let block_type =
     let* t = Type.block_type in
@@ -508,8 +520,7 @@ module Value = struct
 
   let as_block e =
     let* t = Type.block_type in
-    let* e = e in
-    return (W.RefCast ({ nullable = false; typ = Type t }, e))
+    ref_cast (Type t) e
 
   let unit = return (W.RefI31 (Const (I32 0l)))
 
@@ -662,18 +673,16 @@ let store_in_global ?(name = "const") c =
   return (W.GlobalGet name)
 
 module Memory = struct
-  let wasm_cast ty e =
-    let* e = e in
-    return (W.RefCast ({ nullable = false; typ = Type ty }, e))
+  let wasm_cast ty e = ref_cast (Type ty) e
 
   let wasm_struct_get ty e i =
     let* e = e in
     match e with
-    | W.RefCast ({ typ; _ }, GlobalGet nm) -> (
+    | W.RefCast (_, GlobalGet nm) | GlobalGet nm -> (
         let* init = get_global nm in
         match init with
         | Some (W.StructNew (ty', l)) ->
-            let* b = heap_type_sub (Type ty') typ in
+            let* b = heap_type_sub (Type ty') (Type ty) in
             if b
             then
               let e' = List.nth l i in
