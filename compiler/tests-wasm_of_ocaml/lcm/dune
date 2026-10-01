@@ -32,7 +32,7 @@
    (:standard -w no-missing-debug-event))))
 
 (tests
- (names loop_hoist)
+ (names normalize loop_hoist)
  (modes js wasm)
  (wasm_of_ocaml
   (flags :standard --opt 2)))
