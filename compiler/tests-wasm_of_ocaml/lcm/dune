@@ -7,7 +7,7 @@
   (flags :standard --no-inline)))
 
 (tests
- (names raise_before_use)
+ (names raise_before_use compare_untagged)
  (modes js wasm)
  ; With whole-program compilation, so that all the call sites of the
  ; functions are known, and without inlining, so that these functions are
@@ -34,7 +34,7 @@
    (:standard -w no-missing-debug-event))))
 
 (tests
- (names guarded_untag untagged_param normalize)
+ (names guarded_untag untagged_param normalize entry_loop)
  (modes js wasm)
  (wasm_of_ocaml
   (flags :standard --opt 2)))
