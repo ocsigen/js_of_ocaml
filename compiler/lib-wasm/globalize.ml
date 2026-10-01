@@ -101,10 +101,25 @@ let traverse_instruction st i =
   | Array_set (x, y, z) -> st |> use x |> use y |> use z
   | Event _ -> st
 
+let traverse_cont st (_, args) = List.fold_left ~f:(fun st x -> use x st) ~init:st args
+
+let traverse_branch st (b : Code.last) =
+  match b with
+  | Return x | Raise (x, _) -> use x st
+  | Stop -> st
+  | Branch cont | Poptrap cont -> traverse_cont st cont
+  | Cond (x, cont1, cont2) ->
+      st |> use x |> fun st -> traverse_cont (traverse_cont st cont1) cont2
+  | Switch (x, a) -> Array.fold_left ~f:traverse_cont ~init:(use x st) a
+  | Pushtrap (cont, x, cont') -> traverse_cont (traverse_cont (declare x st) cont) cont'
+
 let traverse_block p st pc =
   let b = Code.Addr.Map.find pc p.Code.blocks in
   let st = List.fold_left ~f:(fun st x -> declare x st) ~init:st b.Code.params in
-  List.fold_left ~f:(fun st i -> traverse_instruction st i) ~init:st b.Code.body
+  let st =
+    List.fold_left ~f:(fun st i -> traverse_instruction st i) ~init:st b.Code.body
+  in
+  traverse_branch st b.Code.branch
 
 let available x st = Code.Var.Set.mem x st.globals || Code.Var.Set.mem x st.constants
 
