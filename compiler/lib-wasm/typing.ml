@@ -359,21 +359,26 @@ let rec constant_type (c : constant) =
    rather than re-deriving the same case analysis. *)
 let conversion ~(from : typ) ~(into : typ) : wasm_conversion option =
   match from, into with
-  | (Int _, _ | _, Int _) when Config.Flag.portable_int () ->
-      (* With portable integers, the code generator performs the integer
-         conversions *)
-      None
   | Number (Int32, Unboxed), Number (Int32, Unboxed)
   | Number (Int64, Unboxed), Number (Int64, Unboxed)
   | Number (Float, Unboxed), Number (Float, Unboxed)
+  | Int _, _
+  | _, Int _
+    when Config.Flag.portable_int () ->
+      (* With portable integers, the code generator performs the integer
+         conversions *)
+      None
   | ( Int (Small_normalized | Small_unnormalized | Large_normalized | Large_unnormalized)
     , Int (Small_normalized | Small_unnormalized | Large_normalized | Large_unnormalized)
     ) -> None
   | _, Int (Small_normalized | Small_unnormalized | Large_normalized | Large_unnormalized)
     -> Some Untag_int
   | ( Int (Small_normalized | Small_unnormalized | Large_normalized | Large_unnormalized)
-    , Int Ref ) -> Some Tag_int
-  | Int _, _ | _, Int _ -> None
+    , Number (_, Unboxed) ) -> None
+  | ( Int (Small_normalized | Small_unnormalized | Large_normalized | Large_unnormalized)
+    , (Int Ref | Top | Number (_, Boxed) | Tuple _ | Bigarray _ | Null | Bot) ) ->
+      Some Tag_int
+  | Int Ref, _ -> None
   | Number (_, Unboxed), Number (_, Unboxed) -> None
   | _, Number (Int32, Unboxed) -> Some Unbox_i32
   | _, Number (Int64, Unboxed) -> Some Unbox_i64
