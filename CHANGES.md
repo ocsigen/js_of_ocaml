@@ -3,6 +3,8 @@
 ## Features/Changes
 * Compiler: with OCaml 5.6, use the optimization hints recorded in the bytecode
   (primitive types, immutable blocks, closures, immediates, ...) (#1721, #2488)
+* Compiler/Wasm: place number conversions (boxing, tagging) with a Lazy Code
+  Motion pass (`--disable lcm`), and pass parameters untagged or unboxed (#2479)
 * Compiler/Runtime: support the OCaml 5.6 bit counting primitives
   (`caml_int_clz`, `caml_int_ctz`, `caml_int_popcount`) (#2469)
 * Runtime: support `Sys.filepath_exists` (OCaml 5.6) (#2493)

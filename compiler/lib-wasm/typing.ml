@@ -435,21 +435,44 @@ type prim_args =
 
 let primitive_types = String.Hashtbl.create 16
 
+(* The result of a bitwise operation is normalized when its operands are *)
+let bitwise_type prim arg_types =
+  if Config.Flag.portable_int ()
+  then
+    (* Bitwise operations preserve sign-extension, from 31 or from 63 bits *)
+    let small t =
+      match t with
+      | Bot | Int Small_normalized -> true
+      | _ -> false
+    in
+    let normalized t =
+      match t with
+      | Bot | Int (Ref | Small_normalized | Large_normalized) -> true
+      | _ -> false
+    in
+    match prim, arg_types with
+    | ("%int_and" | "%int_or" | "%int_xor"), [ t; t' ] ->
+        Some
+          (if small t && small t'
+           then Int Small_normalized
+           else if normalized t && normalized t'
+           then Int Large_normalized
+           else Int Large_unnormalized)
+    | ("%int_and" | "%int_or" | "%int_xor"), _ -> Some (Int Large_unnormalized)
+    | _ -> None
+  else
+    match prim, arg_types with
+    | ( ("%int_and" | "%int_or" | "%int_xor")
+      , [ (Bot | Int (Ref | Small_normalized)); (Bot | Int (Ref | Small_normalized)) ] )
+      -> Some (Int Small_normalized)
+    | ("%int_and" | "%int_or" | "%int_xor"), _ -> Some (Int Small_unnormalized)
+    | _ -> None
+
 let prim_type ~st ~approx prim hint args =
   match prim with
-  | ("%int_and" | "%int_or" | "%int_xor") when Config.Flag.portable_int () -> (
-      (* Bitwise operations preserve sign-extension, from 31 or from 63 bits *)
-      let small t =
-        match t with
-        | Bot | Int Small_normalized -> true
-        | _ -> false
-      in
-      let normalized t =
-        match t with
-        | Bot | Int (Ref | Small_normalized | Large_normalized) -> true
-        | _ -> false
-      in
-      (* [x land c] is in [\[0, c\]] when [c] is non-negative *)
+  | "%int_and" | "%int_or" | "%int_xor" -> (
+      (* [x land c] is in [\[0, c\]] when [c] is non-negative; a negative
+         constant, such as [-1], keeps the bits above the 31 low bits *)
       let small_non_negative_constant p =
         match
           match p with
@@ -462,17 +485,15 @@ let prim_type ~st ~approx prim hint args =
         | Some (Int c) -> Targetint.(c >= zero) && Targetint.is_within_i31s c
         | _ -> false
       in
-      match args, List.map ~f:(fun x -> arg_type ~approx x) args with
-      | [ x; y ], [ t; t' ] ->
-          if
-            (small t && small t')
-            || String.equal prim "%int_and"
-               && (small_non_negative_constant x || small_non_negative_constant y)
-          then Int Small_normalized
-          else if normalized t && normalized t'
-          then Int Large_normalized
-          else Int Large_unnormalized
-      | _ -> Int Large_unnormalized)
+      match args with
+      | [ x; y ]
+        when String.equal prim "%int_and"
+             && (small_non_negative_constant x || small_non_negative_constant y) ->
+          Int Small_normalized
+      | _ ->
+          Option.value
+            ~default:Top
+            (bitwise_type prim (List.map ~f:(fun x -> arg_type ~approx x) args)))
   | "%int_add"
   | "%int_sub"
   | "%int_mul"
@@ -496,26 +517,6 @@ let prim_type ~st ~approx prim hint args =
         | _ -> List.for_all ~f:small types
       then Int Large_normalized
       else Int Large_unnormalized
-  | "%int_and" -> (
-      (* A non-negative operand clears the bits above the 31 low bits; a
-         negative one, such as [-1], keeps them *)
-      let non_negative_constant a =
-        match a with
-        | Pc (Int c) -> Targetint.(compare c zero) >= 0
-        | Pc _ | Pv _ -> false
-      in
-      if List.exists ~f:non_negative_constant args
-      then Int Small_normalized
-      else
-        match List.map ~f:(fun x -> arg_type ~approx x) args with
-        | [ (Bot | Int (Ref | Small_normalized)); (Bot | Int (Ref | Small_normalized)) ]
-          -> Int Small_normalized
-        | _ -> Int Small_unnormalized)
-  | "%int_or" | "%int_xor" -> (
-      match List.map ~f:(fun x -> arg_type ~approx x) args with
-      | [ (Bot | Int (Ref | Small_normalized)); (Bot | Int (Ref | Small_normalized)) ] ->
-          Int Small_normalized
-      | _ -> Int Small_unnormalized)
   | "caml_ba_create" -> (
       match args with
       | [ Pc (Int kind); Pc (Int layout); _ ] ->
@@ -572,9 +573,9 @@ let may_raise i =
       ( _
       , ( Prim
             ( ( Vectlength _
-              | Array_get
+              | Array_get _
               | Not
-              | IsInt
+              | IsInt _
               | Eq
               | Neq
               | Lt
@@ -985,6 +986,20 @@ let var_type info x =
   if idx < Var.Tbl.length info.types
   then Var.Tbl.get info.types x
   else Var.Hashtbl.find_opt info.extra_types x |> Option.value ~default:Top
+
+let prim_result_type info prim args =
+  match
+    bitwise_type
+      prim
+      (List.map
+         ~f:(fun a ->
+           match a with
+           | Pv x -> var_type info x
+           | Pc c -> constant_type c)
+         args)
+  with
+  | Some t -> t
+  | None -> snd (prim_sig prim)
 
 let set_var_type info x t =
   let idx = Var.idx x in

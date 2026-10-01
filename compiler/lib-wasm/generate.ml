@@ -530,12 +530,24 @@ module Generate (Target : Target_sig.S) = struct
         String.Hashtbl.add
           h
           nm
-          (k, false, Typing.Top, fun ctx _ _ l -> f (fun x -> transl_prim_arg ctx x) l))
+          ( k
+          , Typing.Values
+          , false
+          , Typing.Top
+          , fun ctx _ _ l -> f (fun x -> transl_prim_arg ctx x) l ))
       internal_primitives;
     h
 
-  let register_prim name ?(unbox = false) ?(ret_typ = Typing.Top) kind f =
-    String.Hashtbl.add internal_primitives name (kind, unbox, ret_typ, f)
+  (* By default, a primitive translates its arguments itself, examining
+     their types *)
+  let register_prim
+      name
+      ?(args = Typing.Any_representation)
+      ?(unbox = false)
+      ?(ret_typ = Typing.Top)
+      kind
+      f =
+    String.Hashtbl.add internal_primitives name (kind, args, unbox, ret_typ, f)
 
   let invalid_arity name l ~expected =
     failwith
@@ -569,7 +581,14 @@ module Generate (Target : Target_sig.S) = struct
   let nativeint_u = Typing.Number (Nativeint, Unboxed)
 
   let register_un_prim name k ?typ ?ret_typ f =
-    register_prim name k ~unbox:(is_unboxed typ) ?ret_typ (fun ctx _ _ l ->
+    let arg1 = Option.value ~default:Typing.Top typ in
+    register_prim
+      name
+      k
+      ~args:(Typed [ arg1 ])
+      ~unbox:(is_unboxed typ)
+      ?ret_typ
+      (fun ctx _ _ l ->
         match l with
         | [ x ] -> f (transl_prim_arg ctx ?typ x)
         | l -> invalid_arity name l ~expected:1)
@@ -582,7 +601,15 @@ module Generate (Target : Target_sig.S) = struct
 
   let register_bin_prim name k ?tx ?ty ?ret_typ f =
     let unbox = is_unboxed tx || is_unboxed ty in
-    register_prim name k ~unbox ?ret_typ (fun ctx _ _ l ->
+    let arg1 = Option.value ~default:Typing.Top tx in
+    let arg2 = Option.value ~default:Typing.Top ty in
+    register_prim
+      name
+      k
+      ~args:(Typed [ arg1; arg2 ])
+      ~unbox
+      ?ret_typ
+      (fun ctx _ _ l ->
         match l with
         | [ x; y ] -> f (transl_prim_arg ctx ?typ:tx x) (transl_prim_arg ctx ?typ:ty y)
         | _ -> invalid_arity name l ~expected:2)
@@ -592,7 +619,15 @@ module Generate (Target : Target_sig.S) = struct
 
   let register_bin_prim_ctx name ?tx ?ty ?ret_typ f =
     let unbox = is_unboxed tx || is_unboxed ty in
-    register_prim name `Mutator ~unbox ?ret_typ (fun ctx context _ l ->
+    let arg1 = Option.value ~default:Typing.Top tx in
+    let arg2 = Option.value ~default:Typing.Top ty in
+    register_prim
+      name
+      `Mutator
+      ~args:(Typed [ arg1; arg2 ])
+      ~unbox
+      ?ret_typ
+      (fun ctx context _ l ->
         match l with
         | [ x; y ] ->
             f context (transl_prim_arg ctx ?typ:tx x) (transl_prim_arg ctx ?typ:ty y)
@@ -600,7 +635,15 @@ module Generate (Target : Target_sig.S) = struct
 
   let register_tern_prim name ?ty ?tz ?ret_typ f =
     let unbox = is_unboxed ty || is_unboxed tz in
-    register_prim name `Mutator ~unbox ?ret_typ (fun ctx _ _ l ->
+    let arg2 = Option.value ~default:Typing.Top ty in
+    let arg3 = Option.value ~default:Typing.Top tz in
+    register_prim
+      name
+      `Mutator
+      ~args:(Typed [ Typing.Top; arg2; arg3 ])
+      ~unbox
+      ?ret_typ
+      (fun ctx _ _ l ->
         match l with
         | [ x; y; z ] ->
             f
@@ -738,7 +781,14 @@ module Generate (Target : Target_sig.S) = struct
       | `Word i -> word_to_i32 i
     in
     let register_indexed_prim name ?tz ?ret_typ f =
-      register_prim name `Mutator ~unbox:(is_unboxed tz) ?ret_typ (fun ctx context _ l ->
+      let args = [ Typing.Top; int_wn ] @ Option.to_list tz in
+      register_prim
+        name
+        `Mutator
+        ~args:(Typed args)
+        ~unbox:(is_unboxed tz)
+        ?ret_typ
+        (fun ctx context _ l ->
           match l with
           | [ x; y ] -> f context (transl_prim_arg ctx x) (transl_index ctx y) None
           | [ x; y; z ] ->
@@ -747,7 +797,7 @@ module Generate (Target : Target_sig.S) = struct
                 (transl_prim_arg ctx x)
                 (transl_index ctx y)
                 (Some (transl_prim_arg ctx ?typ:tz z))
-          | _ -> invalid_arity name l ~expected:(if Option.is_some tz then 3 else 2))
+          | _ -> invalid_arity name l ~expected:(List.length args))
     in
     let (module I : Int_ops) =
       if portable then (module Value64 : Int_ops) else (module Value : Int_ops)
@@ -2296,7 +2346,7 @@ module Generate (Target : Target_sig.S) = struct
     | Prim (p, l) -> (
         match p with
         | Extern (name, hint) when String.Hashtbl.mem internal_primitives name ->
-            let _, _, _, f = String.Hashtbl.find internal_primitives name in
+            let _, _, _, _, f = String.Hashtbl.find internal_primitives name in
             f ctx context hint l |> box_number_if_needed ctx x
         | Extern (name, _) when String.Hashtbl.mem specialized_primitives name ->
             let ((_, arg_typ, _) as typ) =
@@ -2375,7 +2425,8 @@ module Generate (Target : Target_sig.S) = struct
              ~into:(Typing.var_type ctx.types x)
              (load y))
     | Let (x, e) ->
-        if ctx.live.(Var.idx x) = 0
+        let idx = Var.idx x in
+        if idx < Array.length ctx.live && ctx.live.(idx) = 0
         then drop (translate_expr ctx context x e)
         else
           store
@@ -3027,15 +3078,16 @@ module Generate (Target : Target_sig.S) = struct
     Primitive.register "caml_array_get_addr" `Mutable None None;
     Primitive.register "caml_array_set_addr" `Mutable None None;
     String.Hashtbl.iter
-      (fun name (k, unbox, typ, _) ->
+      (fun name (k, args, unbox, typ, _) ->
         Primitive.register name k None None;
-        Typing.register_prim name ~unbox typ)
+        Typing.register_prim name ~args ~kind:k ~unbox typ)
       internal_primitives;
     String.Hashtbl.iter
       (fun name (k, param_types, typ) ->
         Primitive.register name k None None;
         Typing.register_prim
           name
+          ~kind:k
           ~unbox:
             (List.exists
                ~f:(fun ty ->
@@ -3127,6 +3179,9 @@ let f ~context ~unit_name p ~live_vars ~in_cps ~deadcode_sentinel ~global_flow_d
   let fun_info = Call_graph_analysis.f p global_flow_info in
   let types =
     Typing.f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinel p
+  in
+  let p, types =
+    if Config.Flag.lcm () then Lcm.f p types ~global_flow_info ~fun_info else p, types
   in
   let t = Timer.make () in
   let p = Structure.norm p in
