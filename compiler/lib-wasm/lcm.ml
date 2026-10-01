@@ -352,16 +352,15 @@ let lower_conversions
     let target_types_opt =
       let top = Typing.Top in
       let int_n = Typing.Int Typing.Integer.Normalized in
+      (* Whether an argument is an untagged integer *)
       let is_int a =
-        match a with
-        | Pv v -> (
-            match Typing.var_type types v with
-            | Typing.Int _ -> true
-            | _ -> false)
-        | Pc c -> (
-            match Typing.constant_type c with
-            | Typing.Int _ -> true
-            | _ -> false)
+        match
+          match a with
+          | Pv v -> Typing.var_type types v
+          | Pc c -> Typing.constant_type c
+        with
+        | Typing.Int (Typing.Integer.Normalized | Typing.Integer.Unnormalized) -> true
+        | _ -> false
       in
       match p with
       | Extern ("caml_array_unsafe_get", _) | Array_get _ -> Some [ top; int_n ]
@@ -373,11 +372,16 @@ let lower_conversions
               (* The code generator uses the types of the arguments *)
               None)
       | Eq _ | Neq _ -> (
-          (* Integers are compared directly, other values physically *)
+          (* Untagged integers are compared directly, other values
+             physically *)
           match args with
           | [ a; b ] when is_int a && is_int b -> None
           | _ -> Some (List.map ~f:(fun _ -> top) args))
       | Lt | Le | Ult -> Some [ int_n; int_n ]
+      | IsInt _ | Vectlength _ ->
+          (* The argument is a value. It is an integer on a dead path only,
+             or, for [IsInt], when the test is known to succeed. *)
+          Some [ top ]
       | _ -> None
     in
     let args', lowered_args =
@@ -437,12 +441,25 @@ let lower_conversions
     | Let (v, e) when Var.equal v x -> Let (tmp, e)
     | _ -> i
   in
+  let float_u = Typing.Number (Typing.Float, Typing.Unboxed) in
+  (* The block of a field access is a value. It is not an integer or an
+     unboxed number but on a dead path, where the code generator still
+     needs it as a value. *)
+  let lower_block x =
+    lower_var_conversion ~types ~from:(Typing.var_type types x) ~into:Typing.Top x
+  in
   let lower_instr = function
-    | Set_field (x, n, Non_float, y) ->
-        let lowered, y' =
-          lower_var_conversion ~types ~from:(Typing.var_type types y) ~into:Typing.Top y
+    | Set_field (x, n, kind, y) ->
+        let lowered_x, x' = lower_block x in
+        let into =
+          match kind with
+          | Non_float | Immediate -> Typing.Top
+          | Float -> float_u
         in
-        lowered @ [ Set_field (x, n, Non_float, y') ]
+        let lowered_y, y' =
+          lower_var_conversion ~types ~from:(Typing.var_type types y) ~into y
+        in
+        lowered_x @ lowered_y @ [ Set_field (x', n, kind, y') ]
     | Array_set (x, y, z) ->
         let int_n = Typing.Int Typing.Integer.Normalized in
         let lowered1, y' =
@@ -480,6 +497,27 @@ let lower_conversions
                   fields
               in
               List.rev !lowered_rev @ [ Let (x, Block (tag, fields, kind, mut)) ]
+          | Block (tag, fields, kind, mut) ->
+              (* The fields of a float array are unboxed floats *)
+              let lowered_rev = ref [] in
+              let fields =
+                Array.map
+                  ~f:(fun y ->
+                    let lowered, y' =
+                      lower_var_conversion
+                        ~types
+                        ~from:(Typing.var_type types y)
+                        ~into:float_u
+                        y
+                    in
+                    lowered_rev := List.rev_append lowered !lowered_rev;
+                    y')
+                  fields
+              in
+              List.rev !lowered_rev @ [ Let (x, Block (tag, fields, kind, mut)) ]
+          | Field (y, n, kind) ->
+              let lowered, y' = lower_block y in
+              lowered @ [ Let (x, Field (y', n, kind)) ]
           | _ -> [ Let (x, e) ]
         in
         let into = Typing.var_type types x in
