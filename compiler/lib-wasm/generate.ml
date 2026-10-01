@@ -1542,8 +1542,8 @@ module Generate (Target : Target_sig.S) = struct
     let caml_ba_get ~ctx ~context ~unsafe ~kind ~layout ta indices =
       let ta' = transl_prim_arg ctx ta in
       Bigarray.get
-        ~bound_error_index:(label_index context bound_error_pc)
-        ~unsafe
+        ~bound_error_index:
+          (if unsafe then None else Some (label_index context bound_error_pc))
         ~kind
         ~layout
         ta'
@@ -1642,8 +1642,8 @@ module Generate (Target : Target_sig.S) = struct
       let ta' = transl_prim_arg ctx ta in
       let v' = transl_prim_arg ctx ~typ:(Typing.bigarray_element_type kind) v in
       Bigarray.set
-        ~bound_error_index:(label_index context bound_error_pc)
-        ~unsafe
+        ~bound_error_index:
+          (if unsafe then None else Some (label_index context bound_error_pc))
         ~kind
         ~layout
         ta'
@@ -2120,6 +2120,18 @@ module Generate (Target : Target_sig.S) = struct
         List.fold_left
           ~f:(fun n i ->
             match i with
+            | Let
+                ( _
+                , Prim
+                    ( Extern
+                        ( ( "caml_ba_get_1"
+                          | "caml_ba_get_2"
+                          | "caml_ba_get_3"
+                          | "caml_ba_set_1"
+                          | "caml_ba_set_2"
+                          | "caml_ba_set_3" )
+                        , Some (Optimization_hint.Hint_bigarray { unsafe = true; _ }) )
+                    , _ ) ) -> n
             | Let
                 ( _
                 , Prim
@@ -2748,6 +2760,11 @@ let f
       ~deadcode_sentinel
       ~int_ranges
       p
+  in
+  let p =
+    match int_ranges with
+    | Some ranges -> Bound_checks.f ~types ~ranges p
+    | None -> p
   in
   let t = Timer.make () in
   let p = Structure.norm p in
