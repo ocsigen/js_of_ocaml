@@ -2370,11 +2370,42 @@ module Generate (Target : Target_sig.S) = struct
             large_op
               (transl_prim_arg ctx ~typ:int_lu y)
               (transl_prim_arg ctx ~typ:int_lu z))
+    | Prim
+        ( Extern ((("%int_add" | "%int_sub" | "%int_mul" | "%direct_int_mul") as name), _)
+        , [ y; z ] )
+      when Config.Flag.portable_int ()
+           &&
+           match Typing.var_type ctx.types x with
+           | Int (Small_normalized | Small_unnormalized) -> true
+           | _ -> false ->
+        (* The range analysis has found that the result fits in 31 bits.
+           These operations are exact modulo 2^32, so they can be
+           performed on the low 32 bits of the operands. *)
+        let op =
+          match name with
+          | "%int_add" -> Arith.( + )
+          | "%int_sub" -> Arith.( - )
+          | _ -> Arith.( * )
+        in
+        op (transl_prim_arg ctx ~typ:int_sn y) (transl_prim_arg ctx ~typ:int_sn z)
+    | Prim (Extern ("%int_neg", _), [ y ])
+      when Config.Flag.portable_int ()
+           &&
+           match Typing.var_type ctx.types x with
+           | Int (Small_normalized | Small_unnormalized) -> true
+           | _ -> false -> Arith.(const 0l - transl_prim_arg ctx ~typ:int_sn y)
     | Prim (p, l) -> (
         match p with
-        | Extern (name, hint) when String.Hashtbl.mem internal_primitives name ->
-            let _, _, _, _, f = String.Hashtbl.find internal_primitives name in
-            f ctx context hint l |> box_number_if_needed ctx x
+        | Extern (name, hint) when String.Hashtbl.mem internal_primitives name -> (
+            let _, _, _, ret_typ, f = String.Hashtbl.find internal_primitives name in
+            let e = f ctx context hint l in
+            match ret_typ, Typing.var_type ctx.types x with
+            | ( Int (Large_normalized | Large_unnormalized)
+              , (Int (Small_normalized | Small_unnormalized) as into) ) ->
+                (* The range analysis has found that the result fits in 31
+                   bits *)
+                convert ~from:ret_typ ~into e
+            | _ -> box_number_if_needed ctx x e)
         | Extern (name, _) when String.Hashtbl.mem specialized_primitives name ->
             let ((_, arg_typ, _) as typ) =
               String.Hashtbl.find specialized_primitives name
