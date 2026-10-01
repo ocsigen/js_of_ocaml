@@ -397,18 +397,23 @@ type prim_args =
 
 let primitive_types = String.Hashtbl.create 16
 
+(* The result of a bitwise operation is normalized when its operands are *)
+let bitwise_type prim arg_types =
+  match prim, arg_types with
+  | ( "%int_and"
+    , ([ (Bot | Int (Ref | Normalized)); _ ] | [ _; (Bot | Int (Ref | Normalized)) ]) )
+  | ( ("%int_or" | "%int_xor")
+    , [ (Bot | Int (Ref | Normalized)); (Bot | Int (Ref | Normalized)) ] ) ->
+      Some (Int Normalized)
+  | ("%int_and" | "%int_or" | "%int_xor"), _ -> Some (Int Unnormalized)
+  | _ -> None
+
 let prim_type ~st ~approx prim hint args =
   match prim with
-  | "%int_and" -> (
-      match List.map ~f:(fun x -> arg_type ~approx x) args with
-      | [ (Bot | Int (Ref | Normalized)); _ ] | [ _; (Bot | Int (Ref | Normalized)) ] ->
-          Int Normalized
-      | _ -> Int Unnormalized)
-  | "%int_or" | "%int_xor" -> (
-      match List.map ~f:(fun x -> arg_type ~approx x) args with
-      | [ (Bot | Int (Ref | Normalized)); (Bot | Int (Ref | Normalized)) ] ->
-          Int Normalized
-      | _ -> Int Unnormalized)
+  | "%int_and" | "%int_or" | "%int_xor" ->
+      Option.value
+        ~default:Top
+        (bitwise_type prim (List.map ~f:(fun x -> arg_type ~approx x) args))
   | "caml_ba_create" -> (
       match args with
       | [ Pc (Int kind); Pc (Int layout); _ ] ->
@@ -876,6 +881,20 @@ let var_type info x =
   if idx < Var.Tbl.length info.types
   then Var.Tbl.get info.types x
   else Var.Hashtbl.find_opt info.extra_types x |> Option.value ~default:Top
+
+let prim_result_type info prim args =
+  match
+    bitwise_type
+      prim
+      (List.map
+         ~f:(fun a ->
+           match a with
+           | Pv x -> var_type info x
+           | Pc c -> constant_type c)
+         args)
+  with
+  | Some t -> t
+  | None -> snd (prim_sig prim)
 
 let set_var_type info x t =
   let idx = Var.idx x in
