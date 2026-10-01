@@ -2829,7 +2829,7 @@ module Generate (Target : Target_sig.S) = struct
                        an integer already checked to be within the range of
                        the switch: it is always an [i31], even with portable
                        integers *)
-                    Value.int_val (load x)
+                    Conv.untag (load x)
                 | typ -> convert ~from:typ ~into:int_sn (load x)
               in
               instr (Br_table (e, List.map ~f:dest l, dest a.(len - 1)))
