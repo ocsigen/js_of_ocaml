@@ -114,6 +114,8 @@
 ## Bug fixes
 * Compiler: with `--effects=cps`, a call result could be unbound in its
   continuation when a local reference was mutated in a `try` body (#2484)
+* Compiler: with `--effects=cps` or `double-translation`, fix mutable local
+  variables read in an exception handler (code compiled without `-g`) (#2484)
 * Runtime: `output_value` marshals forced lazy values as their value, as native
   code does (#2486)
 * Runtime/Wasm: `caml_hash` follows forwarded values, counts objects and

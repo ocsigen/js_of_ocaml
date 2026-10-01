@@ -197,6 +197,7 @@ let effects_and_exact_calls
       if debug () then Format.eprintf "Effects...@.";
       let shapes = collects_shapes ~shapes p in
       let p, trampolined_calls, in_cps = Effects.f ~flow_info:info ~live_vars p in
+      let p = Box_assigned.f p in
       let p =
         match Config.target () with
         | `Wasm -> p

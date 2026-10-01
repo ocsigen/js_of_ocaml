@@ -1,0 +1,33 @@
+; These tests are about the CPS transformation: use it in all profiles
+; which do not select an implementation of effects
+
+(env
+ (with-effects)
+ (with-effects-double-translation)
+ (with-native-effects)
+ (wasi-with-native-effects)
+ (_
+  (js_of_ocaml
+   (flags
+    (:standard --effects cps)))
+  (wasm_of_ocaml
+   (flags
+    (:standard --effects cps)))))
+
+(tests
+ (names cps_assign)
+ (modes js wasm)
+ ; Without -g, ocamlc turns local references into mutable variables,
+ ; which exercises Assign instructions
+ (ocamlc_flags ())
+ (js_of_ocaml
+  ; Lambda lift f5 with fewer nested continuations
+  (flags
+   (:standard -w no-missing-debug-event --set lifting-threshold=10))
+  (link_flags
+   (:standard -w no-missing-debug-event)))
+ (wasm_of_ocaml
+  (flags
+   (:standard -w no-missing-debug-event))
+  (link_flags
+   (:standard -w no-missing-debug-event))))
