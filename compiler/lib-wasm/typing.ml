@@ -119,6 +119,19 @@ module Bigarray = struct
     Bool.equal unsafe unsafe' && phys_equal kind kind' && phys_equal layout layout'
 end
 
+type array_kind =
+  { float : bool  (** May be a float array *)
+  ; value : bool  (** May be a non-empty block *)
+  }
+
+let empty_array = { float = false; value = false }
+
+let float_array = { float = true; value = false }
+
+let value_array = { float = false; value = true }
+
+let any_array = { float = true; value = true }
+
 type typ =
   | Top
   | Int of Integer.kind
@@ -128,8 +141,18 @@ type typ =
           overapproximation of the possible values of each of its
           fields is given by the array of types *)
   | Bigarray of Optimization_hint.Bigarray.t
+  | Array of array_kind
+      (** An array: the empty array (which is a block with no field), a
+          float array if [float] holds, or a non-empty block if [value]
+          holds *)
   | Null
   | Bot
+
+let array_kind t : Optimization_hint.array_kind =
+  match t with
+  | Array { float = false; _ } -> Value
+  | Array { value = false; _ } -> Float
+  | Top | Int _ | Number _ | Tuple _ | Bigarray _ | Array _ | Null | Bot -> Generic
 
 module Domain = struct
   type t = typ
@@ -159,9 +182,15 @@ module Domain = struct
     | (Int _ | Null), Tuple _ -> t'
     | Tuple _, (Int _ | Null) -> t
     | Bigarray b, Bigarray b' when Bigarray.equal b b' -> t
+    | Array a, Array a' ->
+        Array { float = a.float || a'.float; value = a.value || a'.value }
+    | Array { float = false; value = false }, Tuple _ -> t'
+    | Tuple _, Array { float = false; value = false } -> t
+    | Array { float = false; value = false }, (Int _ | Null)
+    | (Int _ | Null), Array { float = false; value = false } -> Tuple [||]
     | Null, Null -> Null
     | Top, _ | _, Top -> Top
-    | (Int _ | Number _ | Tuple _ | Bigarray _ | Null), _ -> Top
+    | (Int _ | Number _ | Tuple _ | Bigarray _ | Array _ | Null), _ -> Top
 
   let join_set ?(others = false) f s =
     if others then Top else Var.Set.fold (fun x a -> join (f x) a) s Bot
@@ -174,8 +203,9 @@ module Domain = struct
     | Tuple t, Tuple t' ->
         Array.length t = Array.length t' && Array.for_all2 ~f:equal t t'
     | Bigarray b, Bigarray b' -> Bigarray.equal b b'
+    | Array a, Array a' -> Bool.equal a.float a'.float && Bool.equal a.value a'.value
     | Null, Null -> true
-    | (Top | Tuple _ | Int _ | Number _ | Bigarray _ | Null | Bot), _ -> false
+    | (Top | Tuple _ | Int _ | Number _ | Bigarray _ | Array _ | Null | Bot), _ -> false
 
   let bot = Bot
 
@@ -183,12 +213,12 @@ module Domain = struct
 
   let rec depth t =
     match t with
-    | Top | Bot | Number _ | Int _ | Bigarray _ | Null -> 0
+    | Top | Bot | Number _ | Int _ | Bigarray _ | Array _ | Null -> 0
     | Tuple l -> 1 + Array.fold_left ~f:(fun acc t' -> max (depth t') acc) l ~init:0
 
   let rec truncate depth t =
     match t with
-    | Top | Bot | Number _ | Int _ | Bigarray _ | Null -> t
+    | Top | Bot | Number _ | Int _ | Bigarray _ | Array _ | Null -> t
     | Tuple l ->
         if depth = 0
         then Top
@@ -228,6 +258,15 @@ module Domain = struct
           | Boxed -> "boxed"
           | Unboxed -> "unboxed")
     | Bigarray b -> Bigarray.print f b
+    | Array { float; value } ->
+        Format.fprintf
+          f
+          "array{%s}"
+          (match float, value with
+          | false, false -> "empty"
+          | true, false -> "float"
+          | false, true -> "value"
+          | true, true -> "any")
     | Null -> Format.fprintf f "null"
     | Tuple t ->
         Format.fprintf
@@ -251,6 +290,13 @@ let update_deps st { blocks; _ } =
                       ( ( "%int_and"
                         | "%int_or"
                         | "%int_xor"
+                        | "caml_make_vect"
+                        | "caml_array_make"
+                        | "caml_uniform_array_make"
+                        | "caml_array_sub"
+                        | "caml_array_sub_local"
+                        | "caml_array_append"
+                        | "caml_array_append_local"
                         | "caml_ba_get_1"
                         | "caml_ba_get_2"
                         | "caml_ba_get_3"
@@ -323,7 +369,9 @@ let rec constant_type (c : constant) =
   | NativeInt _ -> Number (Nativeint, Unboxed)
   | Float _ -> Number (Float, Unboxed)
   | Float32 _ -> Number (Float32, Unboxed)
+  | Tuple (_, [||], _) -> Array empty_array
   | Tuple (_, a, _) -> Tuple (Array.map ~f:(fun c' -> Domain.box (constant_type c')) a)
+  | Float_array _ -> Array float_array
   | Null_ -> Null
   | _ -> Top
 
@@ -363,6 +411,52 @@ let prim_type ~st ~approx prim hint args =
       | [ (Bot | Int (Ref | Normalized)); (Bot | Int (Ref | Normalized)) ] ->
           Int Normalized
       | _ -> Int Unnormalized)
+  | "caml_make_vect" | "caml_array_make" | "caml_uniform_array_make" -> (
+      match args with
+      | [ _; init ] -> (
+          (* The runtime builds a float array exactly when the initial
+             value is a boxed float *)
+          match arg_type ~approx init with
+          | Bot -> Bot
+          | Number (Float, _) -> Array float_array
+          | Top -> (
+              (* Float constants have a [Number] type *)
+              match init with
+              | Pc _ -> Array value_array
+              | Pv y -> (
+                  match st.global_flow_state.defs.(Var.idx y) with
+                  | Expr (Constant _ | Closure _) -> Array value_array
+                  | Expr _ | Phi _ -> Array any_array))
+          | Int _
+          | Number ((Int32 | Int64 | Nativeint | Float32), _)
+          | Tuple _ | Bigarray _ | Array _ | Null -> Array value_array)
+      | _ -> Top)
+  | "caml_floatarray_create"
+  | "caml_make_float_vect"
+  | "caml_array_create_float"
+  | "caml_floatarray_create_local"
+  | "caml_floatarray_make"
+  | "caml_floatarray_sub"
+  | "caml_floatarray_append"
+  | "caml_floatarray_concat" -> Array float_array
+  | "caml_array_sub"
+  | "caml_array_sub_local"
+  | "caml_array_append"
+  | "caml_array_append_local" -> (
+      (* The result is either the empty array or has the
+         representation of one of the array arguments *)
+      let array_arg a =
+        match arg_type ~approx a with
+        | Bot -> Bot
+        | Array _ as t -> t
+        | _ -> Array any_array
+      in
+      match prim, args with
+      | ("caml_array_sub" | "caml_array_sub_local"), [ a; _; _ ] -> array_arg a
+      | ("caml_array_append" | "caml_array_append_local"), [ a; a' ] ->
+          Domain.join (array_arg a) (array_arg a')
+      | _ -> Top)
+  | "caml_array_concat" | "caml_array_concat_local" -> Array any_array
   | "caml_ba_create" -> (
       match args with
       | [ Pc (Int kind); Pc (Int layout); _ ] ->
@@ -411,6 +505,8 @@ let propagate st approx x : Domain.t =
       match e with
       | Constant c -> constant_type c
       | Closure _ -> Top
+      | Block (254, _, _, _) -> Array float_array
+      | Block (_, [||], _, _) -> Array empty_array
       | Block (_, lst, _, _) ->
           Tuple
             (Array.mapi
@@ -426,11 +522,16 @@ let propagate st approx x : Domain.t =
           match Var.Tbl.get approx y with
           | Tuple t -> if n < Array.length t then t.(n) else Bot
           | Top -> Top
+          | Array { float = false; value = false } -> Bot
+          | Array _ -> Top
           | _ -> Bot)
       | Prim
           ( Extern
               (("caml_check_bound" | "caml_check_bound_float" | "caml_check_bound_gen"), _)
           , [ Pv y; _ ] ) -> Var.Tbl.get approx y
+      | Prim (Extern ("caml_array_unsafe_get", _), [ Pv y; _ ])
+        when Poly.equal (array_kind (Var.Tbl.get approx y)) Float ->
+          Number (Float, Unboxed)
       | Prim ((Array_get | Extern ("caml_array_unsafe_get", _)), [ Pv y; _ ]) -> (
           match Var.Tbl.get st.global_flow_info.info_approximation y with
           | Values { known; others } ->
@@ -560,6 +661,15 @@ let type_specialized_primitive types global_flow_state name args =
           | Bigarray _ -> true
           | _ -> false)
       | _ -> false)
+  | "caml_array_unsafe_set" -> (
+      (* Compiled as [caml_floatarray_unsafe_set], which takes an
+         unboxed float *)
+      match args with
+      | a :: _ -> (
+          match array_kind (arg_type ~approx:types a) with
+          | Float -> true
+          | Value | Generic -> false)
+      | [] -> false)
   | "caml_ba_get_generic" | "caml_ba_set_generic" -> (
       match args with
       | Pv x :: Pv indices :: _ -> (
@@ -593,7 +703,7 @@ let box_numbers p st types =
                     Var.Set.iter box s)
           | Expr _ -> ()
           | Phi { known; _ } -> Var.Set.iter box known)
-      | Number (_, Boxed) | Int _ | Tuple _ | Bigarray _ | Null | Bot -> ())
+      | Number (_, Boxed) | Int _ | Tuple _ | Bigarray _ | Array _ | Null | Bot -> ())
   in
   Code.fold_closures
     p
