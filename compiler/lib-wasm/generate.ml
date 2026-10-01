@@ -261,10 +261,9 @@ module Generate (Target : Target_sig.S) = struct
     | Int Small_normalized, Int (Large_normalized | Large_unnormalized) ->
         let* e = e in
         return (W.I64ExtendI32 (S, e))
-    | Int Large_unnormalized, Int (Small_normalized | Small_unnormalized) ->
-        let* e = Arith64.((e lsl const 1L) asr const 1L) in
-        return (W.I32WrapI64 e)
-    | Int Large_normalized, Int (Small_normalized | Small_unnormalized) ->
+    | ( Int (Large_normalized | Large_unnormalized)
+      , Int (Small_normalized | Small_unnormalized) ) ->
+        (* The high bits are dropped: no need to normalize *)
         let* e = e in
         return (W.I32WrapI64 e)
     (* Dummy value *)
@@ -344,6 +343,10 @@ module Generate (Target : Target_sig.S) = struct
       | `Ult -> Arith.ult, Arith64.ult_i32
     in
     match get_type ctx x, get_type ctx y with
+    | Int Small_normalized, Int Small_normalized ->
+        op_i32
+          (transl_prim_arg ctx ~typ:(Int Small_normalized) x)
+          (transl_prim_arg ctx ~typ:(Int Small_normalized) y)
     | Int Small_unnormalized, Int Small_unnormalized
     | Int Small_normalized, Int Small_unnormalized
     | Int Small_unnormalized, Int Small_normalized ->
@@ -520,18 +523,6 @@ module Generate (Target : Target_sig.S) = struct
               (transl_prim_arg ctx ?typ:tz z)
         | _ -> invalid_arity name l ~expected:3)
 
-  let register_tern_prim_ctx name ?ty ?tz ?ret_typ f =
-    let unbox = is_unboxed ty || is_unboxed tz in
-    register_prim name `Mutator ~unbox ?ret_typ (fun ctx context _ l ->
-        match l with
-        | [ x; y; z ] ->
-            f
-              context
-              (transl_prim_arg ctx x)
-              (transl_prim_arg ctx ?typ:ty y)
-              (transl_prim_arg ctx ?typ:tz z)
-        | _ -> invalid_arity name l ~expected:3)
-
   let register_comparison name cmp_boxed_int cmp_float cmp_int =
     register_prim
       name
@@ -641,6 +632,36 @@ module Generate (Target : Target_sig.S) = struct
     (* Whether integer [i] is outside of [0, len), where [len] is an [i32] *)
     let out_of_bounds i len =
       if portable then Arith64.uge_i32 i (Arith64.of_i32_u len) else Arith.uge i len
+    in
+    (* An index is used as a 32-bit integer when it is known to fit in 31
+       bits *)
+    let transl_index ctx y =
+      match get_type ctx y with
+      | Int (Small_normalized | Small_unnormalized) ->
+          `I32 (transl_prim_arg ctx ~typ:int_sn y)
+      | _ -> `Word (transl_prim_arg ctx ~typ:int_wn y)
+    in
+    let index_out_of_bounds i len =
+      match i with
+      | `I32 i -> Arith.uge i len
+      | `Word i -> out_of_bounds i len
+    in
+    let index_to_i32 i =
+      match i with
+      | `I32 i -> i
+      | `Word i -> word_to_i32 i
+    in
+    let register_indexed_prim name ?tz ?ret_typ f =
+      register_prim name `Mutator ~unbox:(is_unboxed tz) ?ret_typ (fun ctx context _ l ->
+          match l with
+          | [ x; y ] -> f context (transl_prim_arg ctx x) (transl_index ctx y) None
+          | [ x; y; z ] ->
+              f
+                context
+                (transl_prim_arg ctx x)
+                (transl_index ctx y)
+                (Some (transl_prim_arg ctx ?typ:tz z))
+          | _ -> invalid_arity name l ~expected:(if Option.is_some tz then 3 else 2))
     in
     let (module I : Int_ops) =
       if portable then (module Value64 : Int_ops) else (module Value : Int_ops)
@@ -774,23 +795,24 @@ module Generate (Target : Target_sig.S) = struct
         seq (Memory.bytes_set x (word_to_i32 y) (word_to_i32 z)) Value.unit);
     register_tern_prim "caml_bytes_unsafe_set" ~ty:int_wn ~tz:int_wu (fun x y z ->
         seq (Memory.bytes_set x (word_to_i32 y) (word_to_i32 z)) Value.unit);
-    let bytes_get context x y =
+    let bytes_get context x y _ =
       seq
-        (let* cond = out_of_bounds y (Memory.bytes_length x) in
+        (let* cond = index_out_of_bounds y (Memory.bytes_length x) in
          instr (W.Br_if (label_index context bound_error_pc, cond)))
-        (Memory.bytes_get x (word_to_i32 y))
+        (Memory.bytes_get x (index_to_i32 y))
     in
-    register_bin_prim_ctx "caml_string_get" ~ty:int_wn ~ret_typ:int_sn bytes_get;
-    register_bin_prim_ctx "caml_bytes_get" ~ty:int_wn ~ret_typ:int_sn bytes_get;
+    register_indexed_prim "caml_string_get" ~ret_typ:int_sn bytes_get;
+    register_indexed_prim "caml_bytes_get" ~ret_typ:int_sn bytes_get;
     let bytes_set context x y z =
+      let z = Option.get z in
       seq
-        (let* cond = out_of_bounds y (Memory.bytes_length x) in
+        (let* cond = index_out_of_bounds y (Memory.bytes_length x) in
          let* () = instr (W.Br_if (label_index context bound_error_pc, cond)) in
-         Memory.bytes_set x (word_to_i32 y) (word_to_i32 z))
+         Memory.bytes_set x (index_to_i32 y) (word_to_i32 z))
         Value.unit
     in
-    register_tern_prim_ctx "caml_string_set" ~ty:int_wn ~tz:int_wu bytes_set;
-    register_tern_prim_ctx "caml_bytes_set" ~ty:int_wn ~tz:int_wu bytes_set;
+    register_indexed_prim "caml_string_set" ~tz:int_wu bytes_set;
+    register_indexed_prim "caml_bytes_set" ~tz:int_wu bytes_set;
     register_un_prim "caml_ml_string_length" `Pure ~ret_typ:int_wn (fun x ->
         word_of_i32 (Memory.bytes_length x));
     register_un_prim "caml_ml_bytes_length" `Pure ~ret_typ:int_wn (fun x ->
@@ -851,17 +873,17 @@ module Generate (Target : Target_sig.S) = struct
       I.int_lsr;
     register_bin_prim "%int_asr" `Pure ~tx:int_wn ~ty:int_wu ~ret_typ:int_wn I.int_asr;
     register_un_prim "%direct_obj_tag" `Pure ~ret_typ:(Int Ref) Memory.tag;
-    register_bin_prim_ctx "caml_check_bound" ~ty:int_wn (fun context x y ->
+    register_indexed_prim "caml_check_bound" (fun context x y _ ->
         seq
-          (let* cond = out_of_bounds y (Memory.array_length x) in
+          (let* cond = index_out_of_bounds y (Memory.array_length x) in
            instr (W.Br_if (label_index context bound_error_pc, cond)))
           x);
-    register_bin_prim_ctx "caml_check_bound_gen" ~ty:int_wn (fun context x y ->
+    register_indexed_prim "caml_check_bound_gen" (fun context x y _ ->
         seq
-          (let* cond = out_of_bounds y (Memory.gen_array_length x) in
+          (let* cond = index_out_of_bounds y (Memory.gen_array_length x) in
            instr (W.Br_if (label_index context bound_error_pc, cond)))
           x);
-    register_bin_prim_ctx "caml_check_bound_float" ~ty:int_wn (fun context x y ->
+    register_indexed_prim "caml_check_bound_float" (fun context x y _ ->
         seq
           (let a = Code.Var.fresh () in
            let* () = store a x in
@@ -870,7 +892,7 @@ module Generate (Target : Target_sig.S) = struct
               empty array, and the bound check should fail. *)
            let* cond = Arith.eqz (Memory.check_is_float_array (load a)) in
            let* () = instr (W.Br_if (label, cond)) in
-           let* cond = out_of_bounds y (Memory.float_array_length (load a)) in
+           let* cond = index_out_of_bounds y (Memory.float_array_length (load a)) in
            instr (W.Br_if (label, cond)))
           x);
     let checked_i32_to_int context x =
