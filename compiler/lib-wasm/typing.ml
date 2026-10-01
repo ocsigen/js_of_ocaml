@@ -136,10 +136,14 @@ type typ =
   | Top
   | Int of Integer.kind
   | Number of boxed_number * boxed_status
-  | Tuple of typ array
-      (** This value is a block or an integer; if it's an integer, an
+  | Tuple of
+      { fields : typ array
+      ; block : bool
+      }
+      (** This value is a block (not a float array) if [block] holds, a
+          block or an integer otherwise; if it's a block, an
           overapproximation of the possible values of each of its
-          fields is given by the array of types *)
+          fields is given by [fields] *)
   | Bigarray of Optimization_hint.Bigarray.t
   | Array of array_kind
       (** An array: the empty array (which is a block with no field), a
@@ -152,6 +156,7 @@ let array_kind t : Optimization_hint.array_kind =
   match t with
   | Array { float = false; _ } -> Value
   | Array { value = false; _ } -> Float
+  | Tuple { block = true; _ } -> Value
   | Top | Int _ | Number _ | Tuple _ | Bigarray _ | Array _ | Null | Bot -> Generic
 
 module Domain = struct
@@ -170,24 +175,30 @@ module Domain = struct
               | Unboxed, _ | _, Unboxed -> Unboxed
               | Boxed, Boxed -> Boxed )
         else Top
-    | Tuple t, Tuple t' ->
+    | Tuple { fields = t; block = b }, Tuple { fields = t'; block = b' } ->
         let l = Array.length t in
         let l' = Array.length t' in
         Tuple
-          (if l = l'
-           then Array.map2 ~f:join t t'
-           else
-             Array.init (max l l') ~f:(fun i ->
-                 if i < l then if i < l' then join t.(i) t'.(i) else t.(i) else t'.(i)))
-    | (Int _ | Null), Tuple _ -> t'
-    | Tuple _, (Int _ | Null) -> t
+          { fields =
+              (if l = l'
+               then Array.map2 ~f:join t t'
+               else
+                 Array.init (max l l') ~f:(fun i ->
+                     if i < l then if i < l' then join t.(i) t'.(i) else t.(i) else t'.(i)))
+          ; block = b && b'
+          }
+    | (Int _ | Null), Tuple { fields; _ } | Tuple { fields; _ }, (Int _ | Null) ->
+        Tuple { fields; block = false }
     | Bigarray b, Bigarray b' when Bigarray.equal b b' -> t
     | Array a, Array a' ->
         Array { float = a.float || a'.float; value = a.value || a'.value }
     | Array { float = false; value = false }, Tuple _ -> t'
     | Tuple _, Array { float = false; value = false } -> t
+    | Array a, Tuple { block = true; _ } | Tuple { block = true; _ }, Array a ->
+        Array { a with value = true }
     | Array { float = false; value = false }, (Int _ | Null)
-    | (Int _ | Null), Array { float = false; value = false } -> Tuple [||]
+    | (Int _ | Null), Array { float = false; value = false } ->
+        Tuple { fields = [||]; block = false }
     | Null, Null -> Null
     | Top, _ | _, Top -> Top
     | (Int _ | Number _ | Tuple _ | Bigarray _ | Array _ | Null), _ -> Top
@@ -200,8 +211,10 @@ module Domain = struct
     | Top, Top | Bot, Bot -> true
     | Int t, Int t' -> Poly.equal t t'
     | Number (t, b), Number (t', b') -> Poly.equal t t' && Poly.equal b b'
-    | Tuple t, Tuple t' ->
-        Array.length t = Array.length t' && Array.for_all2 ~f:equal t t'
+    | Tuple { fields = t; block = b }, Tuple { fields = t'; block = b' } ->
+        Bool.equal b b'
+        && Array.length t = Array.length t'
+        && Array.for_all2 ~f:equal t t'
     | Bigarray b, Bigarray b' -> Bigarray.equal b b'
     | Array a, Array a' -> Bool.equal a.float a'.float && Bool.equal a.value a'.value
     | Null, Null -> true
@@ -214,15 +227,18 @@ module Domain = struct
   let rec depth t =
     match t with
     | Top | Bot | Number _ | Int _ | Bigarray _ | Array _ | Null -> 0
-    | Tuple l -> 1 + Array.fold_left ~f:(fun acc t' -> max (depth t') acc) l ~init:0
+    | Tuple { fields = l; _ } ->
+        1 + Array.fold_left ~f:(fun acc t' -> max (depth t') acc) l ~init:0
 
   let rec truncate depth t =
     match t with
     | Top | Bot | Number _ | Int _ | Bigarray _ | Array _ | Null -> t
-    | Tuple l ->
+    | Tuple { fields; block } ->
         if depth = 0
         then Top
-        else Tuple (Array.map ~f:(fun t' -> truncate (depth - 1) t') l)
+        else
+          Tuple
+            { fields = Array.map ~f:(fun t' -> truncate (depth - 1) t') fields; block }
 
   let limit t = if depth t > depth_threshold then truncate depth_threshold t else t
 
@@ -268,12 +284,13 @@ module Domain = struct
           | false, true -> "value"
           | true, true -> "any")
     | Null -> Format.fprintf f "null"
-    | Tuple t ->
+    | Tuple { fields; block } ->
         Format.fprintf
           f
-          "(%a)"
+          "(%a)%s"
           (Format.pp_print_list ~pp_sep:(fun f () -> Format.fprintf f ",") print)
-          (Array.to_list t)
+          (Array.to_list fields)
+          (if block then "" else "?")
 end
 
 let update_deps st { blocks; _ } =
@@ -370,7 +387,11 @@ let rec constant_type (c : constant) =
   | Float _ -> Number (Float, Unboxed)
   | Float32 _ -> Number (Float32, Unboxed)
   | Tuple (_, [||], _) -> Array empty_array
-  | Tuple (_, a, _) -> Tuple (Array.map ~f:(fun c' -> Domain.box (constant_type c')) a)
+  | Tuple (_, a, _) ->
+      Tuple
+        { fields = Array.map ~f:(fun c' -> Domain.box (constant_type c')) a
+        ; block = true
+        }
   | Float_array _ -> Array float_array
   | Null_ -> Null
   | _ -> Top
@@ -389,7 +410,9 @@ let bigarray_element_type (kind : Optimization_hint.Bigarray.kind) =
   | Int32 -> Number (Int32, Unboxed)
   | Int64 -> Number (Int64, Unboxed)
   | Nativeint -> Number (Nativeint, Unboxed)
-  | Complex32 | Complex64 -> Tuple [| Number (Float, Boxed); Number (Float, Boxed) |]
+  | Complex32 | Complex64 ->
+      (* Complex numbers are float records *)
+      Array float_array
 
 let bigarray_type ~approx ba =
   match arg_type ~approx ba with
@@ -509,18 +532,21 @@ let propagate st approx x : Domain.t =
       | Block (_, [||], _, _) -> Array empty_array
       | Block (_, lst, _, _) ->
           Tuple
-            (Array.mapi
-               ~f:(fun i y ->
-                 match st.global_flow_state.mutable_fields.(Var.idx x) with
-                 | All_fields -> Top
-                 | Some_fields s when IntSet.mem i s -> Top
-                 | Some_fields _ | No_field ->
-                     Domain.limit (Domain.box (Var.Tbl.get approx y)))
-               lst)
+            { fields =
+                Array.mapi
+                  ~f:(fun i y ->
+                    match st.global_flow_state.mutable_fields.(Var.idx x) with
+                    | All_fields -> Top
+                    | Some_fields s when IntSet.mem i s -> Top
+                    | Some_fields _ | No_field ->
+                        Domain.limit (Domain.box (Var.Tbl.get approx y)))
+                  lst
+            ; block = true
+            }
       | Field (_, _, Float) -> Number (Float, Unboxed)
       | Field (y, n, Non_float) -> (
           match Var.Tbl.get approx y with
-          | Tuple t -> if n < Array.length t then t.(n) else Bot
+          | Tuple { fields = t; _ } -> if n < Array.length t then t.(n) else Bot
           | Top -> Top
           | Array { float = false; value = false } -> Bot
           | Array _ -> Top

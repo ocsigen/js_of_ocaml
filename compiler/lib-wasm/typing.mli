@@ -43,7 +43,12 @@ type typ =
   | Top
   | Int of Integer.kind
   | Number of boxed_number * boxed_status
-  | Tuple of typ array
+  | Tuple of
+      { fields : typ array
+      ; block : bool
+      }
+      (** A block (not a float array) if [block] holds, a block or an
+          integer otherwise *)
   | Bigarray of Optimization_hint.Bigarray.t
   | Array of array_kind
       (** An array: the empty array, a float array if [float] holds,
