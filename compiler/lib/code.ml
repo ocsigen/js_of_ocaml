@@ -315,6 +315,8 @@ type wasm_conversion =
   | Box_f64
   | Untag_int
   | Tag_int
+  | Untag_large_int
+  | Tag_large_int
 
 type prim =
   | Vectlength of Optimization_hint.array_kind
@@ -547,6 +549,8 @@ module Print = struct
     | Box_f64 -> "box_f64"
     | Untag_int -> "untag_int"
     | Tag_int -> "tag_int"
+    | Untag_large_int -> "untag_large_int"
+    | Tag_large_int -> "tag_large_int"
 
   let rec list pr f l =
     match l with

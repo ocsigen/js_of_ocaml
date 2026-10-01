@@ -164,6 +164,8 @@ let inverse_kind = function
   | Box_f64 -> Some Unbox_f64
   | Untag_int -> Some Tag_int
   | Tag_int -> Some Untag_int
+  | Untag_large_int -> Some Tag_large_int
+  | Tag_large_int -> Some Untag_large_int
 
 let type_of_kind = Typing.conversion_type
 
@@ -178,8 +180,8 @@ let is_safe_input kind typ =
   | Unbox_i32 -> Poly.equal typ (Typing.Number (Typing.Int32, Typing.Boxed))
   | Unbox_i64 -> Poly.equal typ (Typing.Number (Typing.Int64, Typing.Boxed))
   | Unbox_f64 -> Poly.equal typ (Typing.Number (Typing.Float, Typing.Boxed))
-  | Box_i32 | Box_i64 | Box_f64 | Tag_int -> true
-  | Untag_int -> (
+  | Box_i32 | Box_i64 | Box_f64 | Tag_int | Tag_large_int -> true
+  | Untag_int | Untag_large_int -> (
       match typ with
       | Typing.Int
           ( Typing.Integer.Ref
@@ -197,7 +199,15 @@ let is_safe_input kind typ =
 let not_live_across_calls (kind, _) =
   match kind with
   | Untag_int -> not (Config.Flag.portable_int ())
-  | Unbox_i32 | Unbox_i64 | Unbox_f64 | Box_i32 | Box_i64 | Box_f64 | Tag_int -> false
+  | Unbox_i32
+  | Unbox_i64
+  | Unbox_f64
+  | Box_i32
+  | Box_i64
+  | Box_f64
+  | Tag_int
+  | Untag_large_int
+  | Tag_large_int -> false
 
 (* Determine which conversion operation, if any, is needed to go from one
    representation to another. Returns [None] when the representations match
@@ -412,6 +422,7 @@ let lower_conversions
         | Wasm_conversion Untag_int
         | Lt | Le | Ult | IsInt | Eq | Neq | Not | Vectlength _ ->
             Typing.Int Typing.Integer.Small_normalized
+        | Wasm_conversion Untag_large_int -> Typing.Int Typing.Integer.Large_normalized
         | Extern (nm, _) ->
             let t = Typing.prim_result_type types nm args in
             (* For context-dependent prims (e.g. caml_ba_get_N), prim_sig
@@ -1143,7 +1154,7 @@ let eliminate_param_conversions
       | Some (Float _ as c), (Unbox_f64 | Box_f64)
       | Some (Int32 _ as c), (Unbox_i32 | Box_i32)
       | Some (Int64 _ as c), (Unbox_i64 | Box_i64)
-      | Some (Int _ as c), Untag_int -> Some c
+      | Some (Int _ as c), (Untag_int | Untag_large_int) -> Some c
       | Some _, _ | None, _ -> None
     in
     let find_param_idx x params =
@@ -2090,8 +2101,8 @@ let process_function
 
 let is_boxing kind =
   match kind with
-  | Box_i32 | Box_i64 | Box_f64 | Tag_int -> true
-  | Unbox_i32 | Unbox_i64 | Unbox_f64 | Untag_int -> false
+  | Box_i32 | Box_i64 | Box_f64 | Tag_int | Tag_large_int -> true
+  | Unbox_i32 | Unbox_i64 | Unbox_f64 | Untag_int | Untag_large_int -> false
 
 (* [Some (x, kind, y)] if the instruction is [x = kind(y)] with [kind] a
    boxing conversion *)

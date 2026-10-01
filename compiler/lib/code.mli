@@ -123,6 +123,8 @@ type wasm_conversion =
   | Box_f64
   | Untag_int
   | Tag_int
+  | Untag_large_int
+  | Tag_large_int
 
 type prim =
   | Vectlength of Optimization_hint.array_kind
