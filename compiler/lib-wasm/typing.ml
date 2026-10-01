@@ -362,19 +362,21 @@ let conversion ~(from : typ) ~(into : typ) : wasm_conversion option =
   | Number (Int32, Unboxed), Number (Int32, Unboxed)
   | Number (Int64, Unboxed), Number (Int64, Unboxed)
   | Number (Float, Unboxed), Number (Float, Unboxed)
-  | Int _, _
-  | _, Int _
-    when Config.Flag.portable_int () ->
-      (* With portable integers, the code generator performs the integer
-         conversions *)
-      None
   | ( Int (Small_normalized | Small_unnormalized | Large_normalized | Large_unnormalized)
     , Int (Small_normalized | Small_unnormalized | Large_normalized | Large_unnormalized)
     ) -> None
   | _, Int (Small_normalized | Small_unnormalized | Large_normalized | Large_unnormalized)
+    when Config.Flag.portable_int () ->
+      (* Untagged to a 64-bit integer, then implicitly truncated if needed, so
+         that the untagging is shared by all uses *)
+      Some Untag_large_int
+  | _, Int (Small_normalized | Small_unnormalized | Large_normalized | Large_unnormalized)
     -> Some Untag_int
   | ( Int (Small_normalized | Small_unnormalized | Large_normalized | Large_unnormalized)
     , Number (_, Unboxed) ) -> None
+  | ( Int (Large_normalized | Large_unnormalized)
+    , (Int Ref | Top | Number (_, Boxed) | Tuple _ | Bigarray _ | Null | Bot) )
+    when Config.Flag.portable_int () -> Some Tag_large_int
   | ( Int (Small_normalized | Small_unnormalized | Large_normalized | Large_unnormalized)
     , (Int Ref | Top | Number (_, Boxed) | Tuple _ | Bigarray _ | Null | Bot) ) ->
       Some Tag_int
@@ -397,7 +399,8 @@ let conversion_type c =
   | Box_i64 -> Number (Int64, Boxed)
   | Box_f64 -> Number (Float, Boxed)
   | Untag_int -> Int Small_normalized
-  | Tag_int -> Int Ref
+  | Untag_large_int -> Int Large_normalized
+  | Tag_int | Tag_large_int -> Int Ref
 
 let arg_type ~approx arg =
   match arg with
@@ -877,7 +880,8 @@ let box_numbers ~lazy_boxing p st types =
                           | Pc _ -> ())
                         args
                   | Prim
-                      ( Wasm_conversion (Unbox_i32 | Unbox_i64 | Unbox_f64 | Untag_int)
+                      ( Wasm_conversion
+                          (Unbox_i32 | Unbox_i64 | Unbox_f64 | Untag_int | Untag_large_int)
                       , args ) ->
                       List.iter
                         ~f:(fun a ->
@@ -887,7 +891,8 @@ let box_numbers ~lazy_boxing p st types =
                         args
                   | Prim
                       ( ( Vectlength _ | Array_get _ | Not | IsInt _ | Lt | Le | Ult
-                        | Wasm_conversion (Box_i32 | Box_i64 | Box_f64 | Tag_int) )
+                        | Wasm_conversion
+                            (Box_i32 | Box_i64 | Box_f64 | Tag_int | Tag_large_int) )
                       , _ )
                   | Field _ | Closure _ | Constant _ | Special _ -> ())
               | Set_field (_, _, (Non_float | Immediate), y) | Array_set (_, _, y) ->
