@@ -646,7 +646,12 @@ let lower_conversions
           match branch with
           | Switch (v, conts) ->
               let lowered_v, v' =
-                lower_var_conversion ~types ~from:(Typing.var_type types v) ~into:int_n v
+                match Typing.var_type types v with
+                | (Typing.Top | Int Ref) when Config.Flag.portable_int () ->
+                    (* An untagging with a cheaper 31-bit untagging at code
+                       generation: see [Generate] *)
+                    [], v
+                | from -> lower_var_conversion ~types ~from ~into:int_n v
               in
               lowered_v, Switch (v', conts)
           | _ -> [], branch
