@@ -49,8 +49,14 @@ val join : typ -> typ -> typ
 
 val conversion : from:typ -> into:typ -> Code.wasm_conversion option
 (** The wasm conversion needed to coerce a value of type [from] into
-    representation [into], or [None] if no conversion is needed.
+    representation [into], or [None] if no conversion is needed or
+    possible ([kind_mismatch]).
     Single source of truth for the box/unbox/tag/untag lattice. *)
+
+val kind_mismatch : from:typ -> into:typ -> bool
+(** Whether a number of another kind is expected (an untagged integer or an
+    unboxed number of another kind), which happens on dead paths only. No
+    conversion applies: the code generator uses a dummy value. *)
 
 val conversion_type : Code.wasm_conversion -> typ
 (** The type of the result of a conversion *)

@@ -473,14 +473,19 @@ let lower_conversions
     | None -> lower_var_conversion ~types ~from ~into x
   in
   let lower_apply x ~f ~args ~exact =
+    (* The function is a value. It is an integer or an unboxed number on a
+       dead path only. The copy is not known to the flow analysis, so the
+       code generator does not call the function directly either. *)
+    let tf = Typing.var_type types f in
+    let lowered_f, f' = lower_var_conversion ~types ~from:tf ~into:Typing.Top f in
     let closure =
-      if exact
+      if exact && Var.equal f f'
       then
-        match Global_flow.get_unique_closure global_flow_info ~call:x f with
         (* This should agree with the code generator: with double
            translation, a CPS call to a function without CPS version
            ([cont]) calls the function directly and passes the result to
            the continuation, which is the last argument. *)
+        match Global_flow.get_unique_closure global_flow_info ~call:x f with
         | Some (g, params, cont)
           when direct_callee g
                && List.compare_length_with
@@ -507,26 +512,29 @@ let lower_conversions
         args
         target_types
     in
-    let lowered_args = List.rev !lowered_args_rev in
-    match closure with
-    | Some (g, _, false) -> (
-        let from = Typing.return_type types g in
-        let into = Typing.var_type types x in
-        match Typing.conversion ~from ~into with
-        | None -> lowered_args @ [ Let (x, Apply { f; args = args'; exact }) ]
-        | Some kind ->
-            let tmp = Var.fresh () in
-            Typing.set_var_type types tmp from;
-            (* The call is now bound to [tmp] *)
-            rebind_call x tmp;
-            lowered_args
-            @ [ Let (tmp, Apply { f; args = args'; exact })
-              ; Let (x, Prim (prim_of_kind kind, [ Pv tmp ]))
-              ])
-    | Some (_, _, true) | None ->
-        (* The result of the continuation, or of an unknown function, is a
-           value *)
-        lowered_args @ [ Let (x, Apply { f; args = args'; exact }) ]
+    let lowered_args = lowered_f @ List.rev !lowered_args_rev in
+    let from =
+      match closure with
+      | Some (g, _, false) -> Typing.return_type types g
+      | Some (_, _, true) | None ->
+          (* The result of the continuation, or of an unknown function, is a
+             value. The code generator boxes the result of the direct call
+             itself before passing it to the continuation: this conversion
+             cannot be expressed here. *)
+          Typing.Top
+    in
+    let into = Typing.var_type types x in
+    match Typing.conversion ~from ~into with
+    | None -> lowered_args @ [ Let (x, Apply { f = f'; args = args'; exact }) ]
+    | Some kind ->
+        let tmp = Var.fresh () in
+        Typing.set_var_type types tmp from;
+        (* The call is now bound to [tmp] *)
+        rebind_call x tmp;
+        lowered_args
+        @ [ Let (tmp, Apply { f = f'; args = args'; exact })
+          ; Let (x, Prim (prim_of_kind kind, [ Pv tmp ]))
+          ]
   in
   let lower_prim x p args =
     let target_types_opt =
@@ -537,16 +545,11 @@ let lower_conversions
         | Pv v -> Typing.var_type types v
         | Pc c -> Typing.constant_type c
       in
+      (* Whether an argument is an untagged integer *)
       let is_int a =
-        match a with
-        | Pv v -> (
-            match Typing.var_type types v with
-            | Typing.Int _ -> true
-            | _ -> false)
-        | Pc c -> (
-            match Typing.constant_type c with
-            | Typing.Int _ -> true
-            | _ -> false)
+        match own a with
+        | Typing.Int (Typing.Integer.Normalized | Typing.Integer.Unnormalized) -> true
+        | _ -> false
       in
       match p with
       | Extern ("caml_array_unsafe_get", _) | Array_get _ -> Some [ top; int_n ]
@@ -567,11 +570,22 @@ let lower_conversions
                      | t -> t)
                    args))
       | Eq _ | Neq _ -> (
-          (* Integers are compared directly, other values physically *)
+          (* Untagged integers are compared directly, other values
+             physically *)
           match args with
           | [ a; b ] when is_int a && is_int b -> None
           | _ -> Some (List.map ~f:(fun _ -> top) args))
       | Lt | Le | Ult -> Some [ int_n; int_n ]
+      | IsInt _ | Vectlength _ ->
+          (* The argument is a value. It is an integer on a dead path only,
+             or, for [IsInt], when the test is known to succeed. *)
+          Some [ top ]
+      | Not -> (
+          (* An untagged integer is tested directly, and any other value is
+             compared with the tagged integer zero *)
+          match args with
+          | [ a ] when is_int a -> None
+          | _ -> Some [ top ])
       | _ -> None
     in
     let args', lowered_args =
@@ -627,12 +641,25 @@ let lower_conversions
     | Let (v, e) when Var.equal v x -> Let (tmp, e)
     | _ -> i
   in
+  let float_u = Typing.Number (Typing.Float, Typing.Unboxed) in
+  (* The block of a field access is a value. It is not an integer or an
+     unboxed number but on a dead path, where the code generator still
+     needs it as a value. *)
+  let lower_block x =
+    lower_var_conversion ~types ~from:(Typing.var_type types x) ~into:Typing.Top x
+  in
   let lower_instr = function
-    | Set_field (x, n, Non_float, y) ->
-        let lowered, y' =
-          lower_var_conversion ~types ~from:(Typing.var_type types y) ~into:Typing.Top y
+    | Set_field (x, n, kind, y) ->
+        let lowered_x, x' = lower_block x in
+        let into =
+          match kind with
+          | Non_float | Immediate -> Typing.Top
+          | Float -> float_u
         in
-        lowered @ [ Set_field (x, n, Non_float, y') ]
+        let lowered_y, y' =
+          lower_var_conversion ~types ~from:(Typing.var_type types y) ~into y
+        in
+        lowered_x @ lowered_y @ [ Set_field (x', n, kind, y') ]
     | Array_set (x, y, z) ->
         let int_n = Typing.Int Typing.Integer.Normalized in
         let lowered1, y' =
@@ -641,7 +668,11 @@ let lower_conversions
         let lowered2, z' =
           lower_var_conversion ~types ~from:(Typing.var_type types z) ~into:Typing.Top z
         in
-        lowered1 @ lowered2 @ [ Array_set (x, y', z') ]
+        let lowered0, x' = lower_block x in
+        lowered0 @ lowered1 @ lowered2 @ [ Array_set (x', y', z') ]
+    | Offset_ref (x, n) ->
+        let lowered, x' = lower_block x in
+        lowered @ [ Offset_ref (x', n) ]
     | Assign (x, y) ->
         let from = Typing.var_type types y in
         let into = Typing.var_type types x in
@@ -670,6 +701,27 @@ let lower_conversions
                   fields
               in
               List.rev !lowered_rev @ [ Let (x, Block (tag, fields, kind, mut, desc)) ]
+          | Block (tag, fields, kind, mut, desc) ->
+              (* The fields of a float array are unboxed floats *)
+              let lowered_rev = ref [] in
+              let fields =
+                Array.map
+                  ~f:(fun y ->
+                    let lowered, y' =
+                      lower_var_conversion
+                        ~types
+                        ~from:(Typing.var_type types y)
+                        ~into:float_u
+                        y
+                    in
+                    lowered_rev := List.rev_append lowered !lowered_rev;
+                    y')
+                  fields
+              in
+              List.rev !lowered_rev @ [ Let (x, Block (tag, fields, kind, mut, desc)) ]
+          | Field (y, n, kind) ->
+              let lowered, y' = lower_block y in
+              lowered @ [ Let (x, Field (y', n, kind)) ]
           | _ -> [ Let (x, e) ]
         in
         let into = Typing.var_type types x in
@@ -688,7 +740,7 @@ let lower_conversions
           | None -> lowered_e, x
         in
         lowered
-    | i -> [ i ]
+    | Event _ as i -> [ i ]
   in
   let new_blocks_map = ref Addr.Map.empty in
   let split_edge lowered (pc, args) =

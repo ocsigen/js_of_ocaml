@@ -458,29 +458,34 @@ module Generate (Target : Target_sig.S) = struct
       | Float -> Const (F64 0.)
       | Float32 -> Const (F32 0.))
 
+  let conversion c e =
+    match c with
+    | Unbox_i32 -> Conv.unbox_int32 e
+    | Unbox_i64 -> Conv.unbox_int64 e
+    | Unbox_nativeint -> Conv.unbox_nativeint e
+    | Unbox_f64 -> Conv.unbox_float e
+    | Unbox_f32 -> Conv.unbox_float32 e
+    | Box_i32 -> Conv.box_int32 e
+    | Box_i64 -> Conv.box_int64 e
+    | Box_nativeint -> Conv.box_nativeint e
+    | Box_f64 -> Conv.box_float e
+    | Box_f32 -> Conv.box_float32 e
+    | Untag_int -> Conv.untag e
+    | Tag_int -> Conv.tag e
+
   let convert ~(from : Typing.typ) ~(into : Typing.typ) e =
-    match from, into with
-    | Int Unnormalized, Int Normalized -> Conv.normalize e
-    | Int (Normalized | Unnormalized), Int (Normalized | Unnormalized) -> e
-    (* A number of another kind is expected, on a dead path: use a dummy
-       value *)
-    | Int (Unnormalized | Normalized), Number (n, Unboxed) -> dummy_number n
-    | Number (_, Unboxed), Int (Normalized | Unnormalized) -> return (W.Const (I32 0l))
-    | _, Int (Normalized | Unnormalized) -> Conv.untag e
-    | Int (Unnormalized | Normalized), _ -> Conv.tag e
-    | Number (n, Unboxed), Number (n', Unboxed) ->
-        if Poly.equal n n' then e else dummy_number n'
-    | _, Number (Int32, Unboxed) -> Conv.unbox_int32 e
-    | _, Number (Int64, Unboxed) -> Conv.unbox_int64 e
-    | _, Number (Nativeint, Unboxed) -> Conv.unbox_nativeint e
-    | _, Number (Float, Unboxed) -> Conv.unbox_float e
-    | _, Number (Float32, Unboxed) -> Conv.unbox_float32 e
-    | Number (Int32, Unboxed), _ -> Conv.box_int32 e
-    | Number (Int64, Unboxed), _ -> Conv.box_int64 e
-    | Number (Nativeint, Unboxed), _ -> Conv.box_nativeint e
-    | Number (Float, Unboxed), _ -> Conv.box_float e
-    | Number (Float32, Unboxed), _ -> Conv.box_float32 e
-    | _ -> e
+    match Typing.conversion ~from ~into with
+    | Some c -> conversion c e
+    | None -> (
+        match from, into with
+        | Int Unnormalized, Int Normalized -> Conv.normalize e
+        | _ when Typing.kind_mismatch ~from ~into -> (
+            (* A number of another kind is expected, on a dead path: use a
+               dummy value *)
+            match into with
+            | Number (n, _) -> dummy_number n
+            | _ -> return (W.Const (I32 0l)))
+        | _ -> e)
 
   let load_and_box ctx x = convert ~from:(Typing.var_type ctx.types x) ~into:Top (load x)
 
@@ -2544,18 +2549,7 @@ module Generate (Target : Target_sig.S) = struct
             loop [] arg_typ l |> box_number_if_needed ctx x
         | Wasm_conversion c -> (
             match c, l with
-            | Unbox_i32, [ Pv v ] -> Conv.unbox_int32 (load v)
-            | Unbox_i64, [ Pv v ] -> Conv.unbox_int64 (load v)
-            | Unbox_nativeint, [ Pv v ] -> Conv.unbox_nativeint (load v)
-            | Unbox_f64, [ Pv v ] -> Conv.unbox_float (load v)
-            | Unbox_f32, [ Pv v ] -> Conv.unbox_float32 (load v)
-            | Box_i32, [ Pv v ] -> Conv.box_int32 (load v)
-            | Box_i64, [ Pv v ] -> Conv.box_int64 (load v)
-            | Box_nativeint, [ Pv v ] -> Conv.box_nativeint (load v)
-            | Box_f64, [ Pv v ] -> Conv.box_float (load v)
-            | Box_f32, [ Pv v ] -> Conv.box_float32 (load v)
-            | Untag_int, [ Pv v ] -> Conv.untag (load v)
-            | Tag_int, [ Pv v ] -> Conv.tag (load v)
+            | _, [ Pv v ] -> conversion c (load v)
             | _ -> assert false)
         | _ -> (
             let l = List.map ~f:(fun x -> transl_prim_arg ctx x) l in
