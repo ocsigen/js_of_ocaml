@@ -342,9 +342,15 @@ module Generate (Target : Target_sig.S) = struct
     | Box_f64 -> Conv.box_float e
     | Untag_int -> Conv.untag e
     | Tag_int -> Conv.tag e
+    | Untag_large_int -> Conv.untag64 e
+    | Tag_large_int -> Conv.tag64 e
 
-  let convert ~(from : Typing.typ) ~(into : Typing.typ) e =
+  let rec convert ~(from : Typing.typ) ~(into : Typing.typ) e =
     match Typing.conversion ~from ~into with
+    | Some Untag_large_int ->
+        (* Truncated if a 32-bit integer is expected *)
+        convert ~from:(Int Large_normalized) ~into (Conv.untag64 e)
+    | Some Tag_large_int -> Conv.tag64 (convert ~from ~into:(Int Large_normalized) e)
     | Some c -> conversion c e
     | None -> (
         match from, into with
@@ -2381,6 +2387,13 @@ module Generate (Target : Target_sig.S) = struct
             loop [] arg_typ l |> box_number_if_needed ctx x
         | Wasm_conversion c -> (
             match c, l with
+            | Tag_large_int, [ Pv v ] ->
+                conversion
+                  c
+                  (convert
+                     ~from:(Typing.var_type ctx.types v)
+                     ~into:(Int Large_normalized)
+                     (load v))
             | _, [ Pv v ] -> conversion c (load v)
             | _ -> assert false)
         | _ -> (
