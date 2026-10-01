@@ -469,21 +469,21 @@ module Generate (Target : Target_sig.S) = struct
     | Box_f64 -> Conv.box_float e
     | Box_f32 -> Conv.box_float32 e
     | Untag_int -> Conv.untag e
+    | Normalize_int -> Conv.normalize e
     | Tag_int -> Conv.tag e
 
   let convert ~(from : Typing.typ) ~(into : Typing.typ) e =
     match Typing.conversion ~from ~into with
     | Some c -> conversion c e
     | None -> (
-        match from, into with
-        | Int Unnormalized, Int Normalized -> Conv.normalize e
-        | _ when Typing.kind_mismatch ~from ~into -> (
-            (* A number of another kind is expected, on a dead path: use a
-               dummy value *)
-            match into with
-            | Number (n, _) -> dummy_number n
-            | _ -> return (W.Const (I32 0l)))
-        | _ -> e)
+        if not (Typing.kind_mismatch ~from ~into)
+        then e
+        else
+          (* A number of another kind is expected, on a dead path: use a
+             dummy value *)
+          match into with
+          | Number (n, _) -> dummy_number n
+          | _ -> return (W.Const (I32 0l)))
 
   let load_and_box ctx x = convert ~from:(Typing.var_type ctx.types x) ~into:Top (load x)
 

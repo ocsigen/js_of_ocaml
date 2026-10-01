@@ -331,8 +331,8 @@ let rec constant_type (c : constant) =
 (* The wasm conversion needed to coerce a value of type [from] into
    representation [into], or [None] if the representations already match or
    no conversion applies. This is the single source of truth for the
-   box/unbox/tag/untag representation lattice; [Lcm] is built on top of it
-   rather than re-deriving the same case analysis. *)
+   box/unbox/tag/untag/normalize representation lattice; [Lcm] is built on
+   top of it rather than re-deriving the same case analysis. *)
 let kind_mismatch ~(from : typ) ~(into : typ) =
   match from, into with
   | Number (_, Unboxed), Int (Normalized | Unnormalized)
@@ -342,6 +342,7 @@ let kind_mismatch ~(from : typ) ~(into : typ) =
 
 let conversion ~(from : typ) ~(into : typ) : wasm_conversion option =
   match from, into with
+  | Int Unnormalized, Int Normalized -> Some Normalize_int
   | Int (Normalized | Unnormalized), Int (Normalized | Unnormalized) -> None
   (* A number of another kind is expected, on a dead path: the code
      generator uses a dummy value *)
@@ -380,7 +381,7 @@ let conversion_type c =
   | Box_nativeint -> Number (Nativeint, Boxed)
   | Box_f64 -> Number (Float, Boxed)
   | Box_f32 -> Number (Float32, Boxed)
-  | Untag_int -> Int Normalized
+  | Untag_int | Normalize_int -> Int Normalized
   | Tag_int -> Int Ref
 
 let arg_type ~approx arg =
