@@ -2046,6 +2046,17 @@ module Generate (Target : Target_sig.S) = struct
               | [], _ :: _ | _ :: _, [] -> assert false
             in
             loop [] arg_typ l |> box_number_if_needed ctx x
+        | Wasm_conversion c -> (
+            match c, l with
+            | Unbox_i32, [ Pv v ] -> Conv.unbox_int32 (load v)
+            | Unbox_i64, [ Pv v ] -> Conv.unbox_int64 (load v)
+            | Unbox_f64, [ Pv v ] -> Conv.unbox_float (load v)
+            | Box_i32, [ Pv v ] -> Conv.box_int32 (load v)
+            | Box_i64, [ Pv v ] -> Conv.box_int64 (load v)
+            | Box_f64, [ Pv v ] -> Conv.box_float (load v)
+            | Untag_int, [ Pv v ] -> Conv.untag (load v)
+            | Tag_int, [ Pv v ] -> Conv.tag (load v)
+            | _ -> assert false)
         | _ -> (
             let l = List.map ~f:(fun x -> transl_prim_arg ctx x) l in
             match p, l with
@@ -2073,8 +2084,17 @@ module Generate (Target : Target_sig.S) = struct
                     let* ift = Memory.float_array_length (load y) in
                     let* iff = Arith.const 0l in
                     return (W.IfExpr (I32, cond, ift, iff)))
-            | (Not | Lt | Le | Eq | Neq | Ult | Array_get | IsInt | Vectlength _), _ ->
-                assert false))
+            | ( ( Not
+                | Lt
+                | Le
+                | Eq
+                | Neq
+                | Ult
+                | Array_get
+                | IsInt
+                | Vectlength _
+                | Wasm_conversion _ )
+              , _ ) -> assert false))
 
   and translate_instr ctx context i =
     match i with

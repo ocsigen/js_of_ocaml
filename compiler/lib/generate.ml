@@ -1954,8 +1954,17 @@ let rec translate_expr ctx loc x e level : (_ * J.statement_list) Expr_builder.t
             let* cy = access' ~ctx y in
             let* cz = access' ~ctx z in
             return (maybe_bool ctx x (J.EBin (J.LtInt, unsigned cy, unsigned cz)))
-        | (Vectlength _ | Array_get | Not | IsInt | Eq | Neq | Lt | Le | Ult), _ ->
-            assert false
+        | ( ( Vectlength _
+            | Array_get
+            | Not
+            | IsInt
+            | Eq
+            | Neq
+            | Lt
+            | Le
+            | Ult
+            | Wasm_conversion _ )
+          , _ ) -> assert false
       in
       return (res, [])
 
