@@ -347,6 +347,18 @@ type st =
   ; int_ranges : Int_range.t option
   }
 
+(* With portable integers, integer variables whose value is known to fit
+   in 31 bits are represented as 32-bit integers. We only do this for
+   block and function parameters, whose arguments are converted as needed,
+   and for the primitives whose result is declared as a 64-bit integer:
+   [Generate] either performs them on 32-bit integers, or wraps their
+   result. *)
+let small_if_fits st x t =
+  match t, st.int_ranges with
+  | Int (Large_normalized | Large_unnormalized | Small_unnormalized), Some r
+    when Int_range.fits_in_i31 r x -> Int Small_normalized
+  | _ -> t
+
 let rec constant_type (c : constant) =
   match c with
   | Int i -> Int (Integer.kind_of_targetint i)
@@ -611,7 +623,7 @@ let propagate st approx x : Domain.t =
           match Var.Hashtbl.find_opt st.parameter_type_hints x with
           | Some t -> t
           | None -> Top)
-      | _ -> res)
+      | _ -> if Config.Flag.portable_int () then small_if_fits st x res else res)
   | Expr e -> (
       match e with
       | Constant c -> constant_type c
@@ -666,7 +678,8 @@ let propagate st approx x : Domain.t =
       | Prim ((Vectlength _ | Not | IsInt _ | Eq | Neq | Lt | Le | Ult), _) ->
           Int Small_normalized
       | Prim (Wasm_conversion c, _) -> conversion_type c
-      | Prim (Extern (prim, hint), args) when may_overflow_prim prim -> (
+      | Prim (Extern (prim, hint), args)
+        when may_overflow_prim prim && not (Config.Flag.portable_int ()) -> (
           (* The range analysis finds the operations which cannot overflow:
              their result is normalized when their operands are, that is,
              unless an operand is itself an unnormalized result. The
@@ -685,6 +698,12 @@ let propagate st approx x : Domain.t =
                            | _ -> true)
                          args) -> Int Small_normalized
           | _ -> t)
+      | Prim (Extern (prim, hint), args)
+        when Config.Flag.portable_int ()
+             &&
+             match String.Hashtbl.find_opt primitive_types prim with
+             | Some (_, _, Int (Large_normalized | Large_unnormalized)) -> true
+             | _ -> false -> small_if_fits st x (prim_type ~st ~approx prim hint args)
       | Prim (Extern (prim, hint), args) -> prim_type ~st ~approx prim hint args
       | Special _ -> Top
       | Apply { f; args; _ } -> (

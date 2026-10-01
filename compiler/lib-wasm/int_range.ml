@@ -356,6 +356,11 @@ let extern_range st name args =
     | "caml_string_equal"
     | "caml_string_notequal" -> Range (0L, 1L)
     | "caml_ml_string_length" | "caml_ml_bytes_length" -> Range (0L, max_length st)
+    | ("caml_ba_dim_1" | "caml_ba_dim_2" | "caml_ba_dim_3")
+      when Config.Flag.portable_int () ->
+        (* Dimensions are nonnegative [i32]. With 31-bit integers, the
+           runtime wraps those that do not fit. *)
+        Range (0L, 0x7fffffffL)
     | _ -> Top
 
 let is_mutable_field st z n =
@@ -1042,6 +1047,17 @@ let f ~global_flow_state ~global_flow_info p =
         | Bot | Top -> ())
       order;
   st
+
+(* Whether the value of [x] fits in 31 bits *)
+let fits_in_i31 st x =
+  Var.idx x < Var.Tbl.length st.ranges
+  &&
+  match Var.Tbl.get st.ranges x with
+  | Range (l, h) ->
+      Int64.(
+        l >= Targetint.to_int64 (Lazy.force Targetint.min_i31s)
+        && h <= Targetint.to_int64 (Lazy.force Targetint.max_i31s))
+  | Bot | Top | Tuple _ -> false
 
 (* Whether the value of [x] is computed without overflow *)
 let cannot_overflow st x =
