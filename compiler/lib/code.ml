@@ -306,6 +306,16 @@ end
 
 type cont = Addr.t * Var.t list
 
+type wasm_conversion =
+  | Unbox_i32
+  | Unbox_i64
+  | Unbox_f64
+  | Box_i32
+  | Box_i64
+  | Box_f64
+  | Untag_int
+  | Tag_int
+
 type prim =
   | Vectlength of Optimization_hint.array_kind
   | Array_get
@@ -317,6 +327,7 @@ type prim =
   | Lt
   | Le
   | Ult
+  | Wasm_conversion of wasm_conversion
 
 type array_or_not =
   | Array
@@ -526,6 +537,17 @@ let location_of_pc pc = Before pc
 (****)
 
 module Print = struct
+  let wasm_conversion_name c =
+    match c with
+    | Unbox_i32 -> "unbox_i32"
+    | Unbox_i64 -> "unbox_i64"
+    | Unbox_f64 -> "unbox_f64"
+    | Box_i32 -> "box_i32"
+    | Box_i64 -> "box_i64"
+    | Box_f64 -> "box_f64"
+    | Untag_int -> "untag_int"
+    | Tag_int -> "tag_int"
+
   let rec list pr f l =
     match l with
     | [] -> ()
@@ -627,6 +649,7 @@ module Print = struct
     | Lt, [ x; y ] -> Format.fprintf f "%a < %a" arg x arg y
     | Le, [ x; y ] -> Format.fprintf f "%a <= %a" arg x arg y
     | Ult, [ x; y ] -> Format.fprintf f "%a <= %a" arg x arg y
+    | Wasm_conversion c, [ x ] -> Format.fprintf f "%s(%a)" (wasm_conversion_name c) arg x
     | _ -> assert false
 
   let special f s =

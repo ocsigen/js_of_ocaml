@@ -114,6 +114,16 @@ end
 
 type cont = Addr.t * Var.t list
 
+type wasm_conversion =
+  | Unbox_i32
+  | Unbox_i64
+  | Unbox_f64
+  | Box_i32
+  | Box_i64
+  | Box_f64
+  | Untag_int
+  | Tag_int
+
 type prim =
   | Vectlength of Optimization_hint.array_kind
   | Array_get
@@ -125,6 +135,7 @@ type prim =
   | Lt
   | Le
   | Ult
+  | Wasm_conversion of wasm_conversion
 
 type array_or_not =
   | Array
