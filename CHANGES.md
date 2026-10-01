@@ -1,3 +1,9 @@
+# dev
+
+## Features/Changes
+* Compiler/Wasm: place number conversions (boxing, tagging) with a Lazy Code
+  Motion pass (`--disable lcm`), and pass parameters untagged or unboxed (#2479)
+
 # 6.5.0 (2026-10-22) - Lille
 
 ## Features/Changes
