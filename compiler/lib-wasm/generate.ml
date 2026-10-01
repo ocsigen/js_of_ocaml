@@ -306,33 +306,35 @@ module Generate (Target : Target_sig.S) = struct
     let shift e = counted "shift" Arith.(e lsl const 1l)
   end
 
+  let conversion c e =
+    match c with
+    | Unbox_i32 -> Conv.unbox_int32 e
+    | Unbox_i64 -> Conv.unbox_int64 e
+    | Unbox_f64 -> Conv.unbox_float e
+    | Box_i32 -> Conv.box_int32 e
+    | Box_i64 -> Conv.box_int64 e
+    | Box_f64 -> Conv.box_float e
+    | Untag_int -> Conv.untag e
+    | Tag_int -> Conv.tag e
+
   let convert ~(from : Typing.typ) ~(into : Typing.typ) e =
-    match from, into with
-    | Int Unnormalized, Int Normalized -> Conv.normalize e
-    | Int (Normalized | Unnormalized), Int (Normalized | Unnormalized) -> e
-    (* Dummy value *)
-    | Int (Unnormalized | Normalized), Number ((Int32 | Nativeint), Unboxed) ->
-        return (W.Const (I32 0l))
-    | Int (Unnormalized | Normalized), Number (Int64, Unboxed) ->
-        return (W.Const (I64 0L))
-    | Int (Unnormalized | Normalized), Number (Float, Unboxed) ->
-        return (W.Const (F64 0.))
-    | Int (Unnormalized | Normalized), Number (Float32, Unboxed) ->
-        return (W.Const (F32 0.))
-    | _, Int (Normalized | Unnormalized) -> Conv.untag e
-    | Int (Unnormalized | Normalized), _ -> Conv.tag e
-    | Number (_, Unboxed), Number (_, Unboxed) -> e
-    | _, Number (Int32, Unboxed) -> Conv.unbox_int32 e
-    | _, Number (Int64, Unboxed) -> Conv.unbox_int64 e
-    | _, Number (Nativeint, Unboxed) -> Conv.unbox_nativeint e
-    | _, Number (Float, Unboxed) -> Conv.unbox_float e
-    | _, Number (Float32, Unboxed) -> Conv.unbox_float32 e
-    | Number (Int32, Unboxed), _ -> Conv.box_int32 e
-    | Number (Int64, Unboxed), _ -> Conv.box_int64 e
-    | Number (Nativeint, Unboxed), _ -> Conv.box_nativeint e
-    | Number (Float, Unboxed), _ -> Conv.box_float e
-    | Number (Float32, Unboxed), _ -> Conv.box_float32 e
-    | _ -> e
+    match Typing.conversion ~from ~into with
+    | Some c -> conversion c e
+    | None -> (
+        match from, into with
+        | Int Unnormalized, Int Normalized -> Conv.normalize e
+        (* Dummy value *)
+        | Int _, Number ((Int32 | Nativeint), Unboxed) -> return (W.Const (I32 0l))
+        | Int _, Number (Int64, Unboxed) -> return (W.Const (I64 0L))
+        | Int _, Number (Float, Unboxed) -> return (W.Const (F64 0.))
+        | Int _, Number (Float32, Unboxed) -> return (W.Const (F32 0.))
+        | Number (_, Unboxed), Number (_, Unboxed) -> e
+        (* The numbers without conversion primitives *)
+        | _, Number (Nativeint, Unboxed) -> Conv.unbox_nativeint e
+        | _, Number (Float32, Unboxed) -> Conv.unbox_float32 e
+        | Number (Nativeint, Unboxed), _ -> Conv.box_nativeint e
+        | Number (Float32, Unboxed), _ -> Conv.box_float32 e
+        | _ -> e)
 
   let load_and_box ctx x = convert ~from:(Typing.var_type ctx.types x) ~into:Top (load x)
 
@@ -2099,14 +2101,7 @@ module Generate (Target : Target_sig.S) = struct
             loop [] arg_typ l |> box_number_if_needed ctx x
         | Wasm_conversion c -> (
             match c, l with
-            | Unbox_i32, [ Pv v ] -> Conv.unbox_int32 (load v)
-            | Unbox_i64, [ Pv v ] -> Conv.unbox_int64 (load v)
-            | Unbox_f64, [ Pv v ] -> Conv.unbox_float (load v)
-            | Box_i32, [ Pv v ] -> Conv.box_int32 (load v)
-            | Box_i64, [ Pv v ] -> Conv.box_int64 (load v)
-            | Box_f64, [ Pv v ] -> Conv.box_float (load v)
-            | Untag_int, [ Pv v ] -> Conv.untag (load v)
-            | Tag_int, [ Pv v ] -> Conv.tag (load v)
+            | _, [ Pv v ] -> conversion c (load v)
             | _ -> assert false)
         | _ -> (
             let l = List.map ~f:(fun x -> transl_prim_arg ctx x) l in

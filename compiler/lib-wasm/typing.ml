@@ -339,8 +339,11 @@ let conversion ~(from : typ) ~(into : typ) : wasm_conversion option =
   | Number (Float, Unboxed), Number (Float, Unboxed)
   | Int (Normalized | Unnormalized), Int (Normalized | Unnormalized) -> None
   | _, Int (Normalized | Unnormalized) -> Some Untag_int
-  | Int (Normalized | Unnormalized), Int Ref -> Some Tag_int
-  | Int _, _ | _, Int _ -> None
+  | Int (Normalized | Unnormalized), Number (_, Unboxed) -> None
+  | ( Int (Normalized | Unnormalized)
+    , (Int Ref | Top | Number (_, Boxed) | Tuple _ | Bigarray _ | Null | Bot) ) ->
+      Some Tag_int
+  | Int Ref, _ -> None
   | Number (_, Unboxed), Number (_, Unboxed) -> None
   | _, Number (Int32, Unboxed) -> Some Unbox_i32
   | _, Number (Int64, Unboxed) -> Some Unbox_i64
