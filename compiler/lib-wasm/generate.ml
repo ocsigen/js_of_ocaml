@@ -317,6 +317,7 @@ module Generate (Target : Target_sig.S) = struct
     | Box_i64 -> Conv.box_int64 e
     | Box_f64 -> Conv.box_float e
     | Untag_int -> Conv.untag e
+    | Normalize_int -> Conv.normalize e
     | Tag_int -> Conv.tag e
 
   let convert ~(from : Typing.typ) ~(into : Typing.typ) e =
@@ -324,7 +325,6 @@ module Generate (Target : Target_sig.S) = struct
     | Some c -> conversion c e
     | None -> (
         match from, into with
-        | Int Unnormalized, Int Normalized -> Conv.normalize e
         (* Dummy value *)
         | Int _, Number ((Int32 | Nativeint), Unboxed) -> return (W.Const (I32 0l))
         | Int _, Number (Int64, Unboxed) -> return (W.Const (I64 0L))
