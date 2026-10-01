@@ -401,7 +401,12 @@ let allocate_continuation ~st ~alloc_jump_closures ~split_closures src_pc x dire
       | _ -> false)
     &&
     match Addr.Hashtbl.find st.is_continuation direct_pc with
-    | `Param _ -> true
+    | `Param _ ->
+        (* [x] is not bound in the continuation, so it should not be used
+           there directly. This happens when [x] is used in the body of a
+           [try] whose handler uses the parameter instead (see [ASSIGN] in
+           [Parse_bytecode]). *)
+        List.is_empty args || st.live_vars.(Var.idx x) = 1
     | `Loop -> List.compare_length_with args ~len:st.live_vars.(Var.idx x) = 0
   then alloc_jump_closures, closure_of_pc ~st direct_pc
   else
