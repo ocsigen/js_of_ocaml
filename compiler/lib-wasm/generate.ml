@@ -345,6 +345,7 @@ module Generate (Target : Target_sig.S) = struct
     | Box_i64 -> Conv.box_int64 e
     | Box_f64 -> Conv.box_float e
     | Untag_int -> Conv.untag e
+    | Normalize_int -> Conv.normalize e
     | Tag_int -> Conv.tag e
     | Untag_large_int -> Conv.untag64 e
     | Tag_large_int -> Conv.tag64 e
@@ -359,7 +360,6 @@ module Generate (Target : Target_sig.S) = struct
     | None -> (
         match from, into with
         (* Int conversions *)
-        | Int Small_unnormalized, Int Small_normalized -> Conv.normalize e
         | Int Large_unnormalized, Int Large_normalized -> Conv.normalize64 e
         | ( Int (Small_normalized | Small_unnormalized)
           , Int (Small_normalized | Small_unnormalized) )

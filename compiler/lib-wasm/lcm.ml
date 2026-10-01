@@ -166,6 +166,7 @@ let inverse_kind = function
   | Tag_int -> Some Untag_int
   | Untag_large_int -> Some Tag_large_int
   | Tag_large_int -> Some Untag_large_int
+  | Normalize_int -> None
 
 let type_of_kind = Typing.conversion_type
 
@@ -180,7 +181,7 @@ let is_safe_input kind typ =
   | Unbox_i32 -> Poly.equal typ (Typing.Number (Typing.Int32, Typing.Boxed))
   | Unbox_i64 -> Poly.equal typ (Typing.Number (Typing.Int64, Typing.Boxed))
   | Unbox_f64 -> Poly.equal typ (Typing.Number (Typing.Float, Typing.Boxed))
-  | Box_i32 | Box_i64 | Box_f64 | Tag_int | Tag_large_int -> true
+  | Box_i32 | Box_i64 | Box_f64 | Tag_int | Tag_large_int | Normalize_int -> true
   | Untag_int | Untag_large_int -> (
       match typ with
       | Typing.Int
@@ -210,20 +211,23 @@ let is_untag kind =
   | Box_i64
   | Box_f64
   | Tag_int
-  | Tag_large_int -> false
+  | Tag_large_int
+  | Normalize_int -> false
 
 (* Whether a conversion of [y] cannot fail *)
 let is_safe_conversion types (kind, y) =
   is_safe_input kind (Typing.var_type types y) || (is_untag kind && guarded_untag y)
 
 (* Whether the result of a conversion should not be kept live across a
-   call. Untagging a 31-bit integer is a single shift: recomputing it after
-   the call is cheaper than keeping the result in a register, which the
-   call forces to spill. This does not hold with portable integers, where
-   untagging must also handle boxed large integers. *)
+   call. Untagging a 31-bit integer is a single shift, and normalizing it
+   two: recomputing it after the call is cheaper than keeping the result
+   in a register, which the call forces to spill. This does not hold for
+   untagging with portable integers, where it must also handle boxed large
+   integers. *)
 let not_live_across_calls (kind, _) =
   match kind with
   | Untag_int -> not (Config.Flag.portable_int ())
+  | Normalize_int -> true
   | Unbox_i32
   | Unbox_i64
   | Unbox_f64
@@ -374,13 +378,6 @@ let lower_conversions
     let target_types_opt =
       let top = Typing.Top in
       let int_n = Typing.Int Typing.Integer.Small_normalized in
-      (* Integers compared as the code generator does: as 64-bit integers
-         with portable integers *)
-      let int_cmp =
-        if Config.Flag.portable_int ()
-        then Typing.Int Typing.Integer.Large_normalized
-        else int_n
-      in
       let is_int a =
         match a with
         | Pv v -> (
@@ -406,7 +403,17 @@ let lower_conversions
           match args with
           | [ a; b ] when is_int a && is_int b -> None
           | _ -> Some (List.map ~f:(fun _ -> top) args))
-      | Lt | Le | Ult -> Some [ int_cmp; int_cmp ]
+      | Lt | Le | Ult ->
+          (* Small_unnormalized integers are compared by shifting them, which is
+             cheaper than normalizing them. A normalized copy is still used
+             when one is available (see [process_function]). *)
+          let int_u =
+            Typing.Int
+              (if Config.Flag.portable_int ()
+               then Typing.Integer.Large_unnormalized
+               else Typing.Integer.Small_unnormalized)
+          in
+          Some [ int_u; int_u ]
       | _ -> None
     in
     let args', lowered_args =
@@ -1962,6 +1969,28 @@ let process_function
                         body_rev := i :: !body_rev;
                         conv_to_var := ConvTracker.add conv v !conv_to_var)
                 | None -> body_rev := i :: !body_rev)
+            | Let (v, Prim (((Lt | Le | Ult | Eq | Neq) as p), args)) ->
+                (* Compare the normalized copy of an integer when one is
+                   available, rather than shifting the integer *)
+                let args =
+                  List.map
+                    ~f:(fun a ->
+                      match a with
+                      | Pv x -> (
+                          match Typing.var_type types x with
+                          | Int Small_unnormalized -> (
+                              match
+                                ConvTracker.find_opt (Normalize_int, x) !conv_to_var
+                              with
+                              | Some x' -> Pv x'
+                              | None -> a)
+                          | _ -> a)
+                      | Pc _ -> a)
+                    args
+                in
+                conv_to_var := ConvTracker.kill_var v !conv_to_var;
+                subst := Var.Map.remove v !subst;
+                body_rev := Let (v, Prim (p, args)) :: !body_rev
             | Let (v, Apply _) ->
                 conv_to_var :=
                   ConvTracker.kill_at_call (ConvTracker.kill_var v !conv_to_var);
@@ -2127,7 +2156,8 @@ let process_function
 let is_boxing kind =
   match kind with
   | Box_i32 | Box_i64 | Box_f64 | Tag_int | Tag_large_int -> true
-  | Unbox_i32 | Unbox_i64 | Unbox_f64 | Untag_int | Untag_large_int -> false
+  | Unbox_i32 | Unbox_i64 | Unbox_f64 | Untag_int | Untag_large_int | Normalize_int ->
+      false
 
 (* [Some (x, kind, y)] if the instruction is [x = kind(y)] with [kind] a
    boxing conversion *)
@@ -2778,10 +2808,6 @@ let remove_dead_conversions ~(st : lcm_stats) (p : program) =
   in
   { p with blocks }
 
-(* Entry point. Three steps:
-   1. Decide which functions can return unboxed/untagged values for direct calls.
-   2. For each function, lower implicit conversions into explicit IR primitives.
-   3. Run the LCM analysis and rewrite to eliminate redundant conversions. *)
 (* Entry point. For each function, lower implicit conversions into explicit
    IR primitives, then run the LCM analysis and rewrite to eliminate
    redundant conversions. The return types of functions are decided by

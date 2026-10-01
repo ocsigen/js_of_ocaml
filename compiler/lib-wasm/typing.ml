@@ -355,10 +355,11 @@ let rec constant_type (c : constant) =
 (* The wasm conversion needed to coerce a value of type [from] into
    representation [into], or [None] if the representations already match or
    no conversion applies. This is the single source of truth for the
-   box/unbox/tag/untag representation lattice; [Lcm] is built on top of it
-   rather than re-deriving the same case analysis. *)
+   box/unbox/tag/untag/normalize representation lattice; [Lcm] is built on
+   top of it rather than re-deriving the same case analysis. *)
 let conversion ~(from : typ) ~(into : typ) : wasm_conversion option =
   match from, into with
+  | Int Small_unnormalized, Int Small_normalized -> Some Normalize_int
   | Number (Int32, Unboxed), Number (Int32, Unboxed)
   | Number (Int64, Unboxed), Number (Int64, Unboxed)
   | Number (Float, Unboxed), Number (Float, Unboxed)
@@ -398,7 +399,7 @@ let conversion_type c =
   | Box_i32 -> Number (Int32, Boxed)
   | Box_i64 -> Number (Int64, Boxed)
   | Box_f64 -> Number (Float, Boxed)
-  | Untag_int -> Int Small_normalized
+  | Untag_int | Normalize_int -> Int Small_normalized
   | Untag_large_int -> Int Large_normalized
   | Tag_int | Tag_large_int -> Int Ref
 
@@ -892,7 +893,12 @@ let box_numbers ~lazy_boxing p st types =
                   | Prim
                       ( ( Vectlength _ | Array_get _ | Not | IsInt _ | Lt | Le | Ult
                         | Wasm_conversion
-                            (Box_i32 | Box_i64 | Box_f64 | Tag_int | Tag_large_int) )
+                            ( Box_i32
+                            | Box_i64
+                            | Box_f64
+                            | Normalize_int
+                            | Tag_int
+                            | Tag_large_int ) )
                       , _ )
                   | Field _ | Closure _ | Constant _ | Special _ -> ())
               | Set_field (_, _, (Non_float | Immediate), y) | Array_set (_, _, y) ->
