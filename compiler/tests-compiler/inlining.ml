@@ -81,3 +81,31 @@ let%expect_test "inline_recursively must duplicate closure" =
     function hash_char(x){return hash_fold_int(0, x);}
     //end
     |}]
+
+(* Inlining [some] into [apply_some] must not make [call_some] look like its
+   last use. *)
+let%expect_test "function inlined both as an argument and directly" =
+  (try
+     compile_and_run
+       ~flags:[ "--debug"; "invariant" ]
+       {|
+    let some x = Some x
+    let apply f x = f x
+    let apply_some x = apply some x
+    let call_some x = some x
+    let () =
+      List.iter (fun x -> print_int (Option.get x)) [ apply_some 0; apply_some 1; call_some 2 ]
+  |}
+   with Failure e -> print_endline e);
+  print_endline
+    (Str.global_replace (Str.regexp "[^ ]*js_of_ocaml\\.exe") "%{JSOO}" [%expect.output]);
+  [%expect
+    {|
+    %{JSOO}: You found a bug. Please report it at https://github.com/ocsigen/js_of_ocaml/issues :
+    Error: File "compiler/lib/code.ml", line 1080, characters 8-14: Assertion failed
+
+    process exited with error code 125
+     %{JSOO} --pretty --debug var --sourcemap --effects=disabled --disable=use-js-string --debug invariant --Werror test.bc -o test.js
+
+    non-zero exit code
+    |}]
