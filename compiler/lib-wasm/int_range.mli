@@ -27,5 +27,8 @@ val f :
   -> t
 (** Compute a range for each integer variable of the program *)
 
+val fits_in_i31 : t -> Code.Var.t -> bool
+(** Whether the value of this variable fits in 31 bits *)
+
 val cannot_overflow : t -> Code.Var.t -> bool
 (** Whether the value of this variable is computed without overflow *)
