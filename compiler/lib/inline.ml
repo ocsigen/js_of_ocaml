@@ -193,6 +193,7 @@ type info =
   ; init_code : int cache
   ; returns_a_block : bool cache
   ; interesting_params : (Var.t * int) list cache
+  ; ref_params : Var.t list cache
   }
 
 type known_value =
@@ -229,6 +230,15 @@ let known_values p =
           | _ -> ()));
   known
 
+type local_ref =
+  { ref_function : Var.t option  (** The function allocating the reference *)
+  ; mutable only_accessed : bool
+        (** Whether the reference is only read, updated, or passed to
+            functions, in this function *)
+  ; mutable passed_to : (Var.t * int) list
+        (** The functions it is passed to, and at which position *)
+  }
+
 type context =
   { profile : Profile.t  (** Aggressive inlining? *)
   ; p : program
@@ -242,6 +252,9 @@ type context =
         (** Name of the function enclosing the current function *)
   ; known : known_value array  (** Known definitions of variables *)
   ; being_inlined : Var.Set.t  (** Functions whose body is being inlined *)
+  ; local_refs : local_ref Var.Hashtbl.t
+        (** References, with the function they are allocated in and their
+            uses *)
   }
 (** Current context into which we consider inlining some functions. *)
 
@@ -456,6 +469,74 @@ let trivial_function ~context info =
      | `JavaScript -> 1)
   && closure_count ~context info = 0
 
+(* The parameters of a function whose only uses are reads and updates of
+   their contents, as for a reference that [Ref_unboxing] can unbox *)
+let ref_parameters ~context info =
+  cache ~info info.ref_params
+  @@ fun pc ->
+  let uses = Var.Hashtbl.create 16 in
+  let other = Var.Hashtbl.create 16 in
+  Code.traverse
+    { fold = Code.fold_children }
+    (fun pc () ->
+      let block = Addr.Map.find pc context.p.blocks in
+      List.iter
+        ~f:(fun i ->
+          match i with
+          | Let (_, Field (x, 0, Non_float)) | Offset_ref (x, _) ->
+              Var.Hashtbl.replace uses x ()
+          | Set_field (x, 0, Non_float, y) ->
+              Var.Hashtbl.replace uses x ();
+              Var.Hashtbl.replace other y ()
+          | _ -> Freevars.iter_instr_free_vars (fun y -> Var.Hashtbl.replace other y ()) i)
+        block.body;
+      Freevars.iter_last_free_var (fun y -> Var.Hashtbl.replace other y ()) block.branch)
+    pc
+    context.p.blocks
+    ();
+  List.filter
+    ~f:(fun p -> Var.Hashtbl.mem uses p && not (Var.Hashtbl.mem other p))
+    info.params
+
+(*
+  With Wasm, we inline functions which are passed a reference allocated in
+  the current function: the reference can then be unboxed
+  ([Ref_unboxing]), which avoids boxing the numbers it contains.
+*)
+let ref_argument_function ~context info args =
+  let local_ref x =
+    match Var.Hashtbl.find_opt context.local_refs x with
+    | Some r -> Option.equal Var.equal r.ref_function context.current_function
+    | None -> false
+  in
+  (* [context.local_refs] is empty unless targeting Wasm *)
+  List.exists ~f:local_ref args
+  && (not info.recursive)
+  && closure_count ~context info = 0
+  && body_size ~context info <= 60
+  && List.compare_lengths args info.params = 0
+  &&
+  (* Whether the [i]-th parameter of function [f] is only read and
+     updated *)
+  let ref_param f i =
+    match Var.Map.find_opt f context.env with
+    | Some info' -> (
+        match List.nth_opt info'.params i with
+        | Some p -> List.mem ~eq:Var.equal p (ref_parameters ~context info')
+        | None -> false)
+    | None -> false
+  in
+  (* The reference can be unboxed once this function, and the other
+     functions it is passed to, are inlined *)
+  List.exists
+    ~f:(fun (i, x) ->
+      local_ref x
+      && ref_param info.f i
+      &&
+      let r = Var.Hashtbl.find context.local_refs x in
+      List.for_all ~f:(fun (g, j) -> ref_param g j) r.passed_to)
+    (List.mapi ~f:(fun i x -> i, x) args)
+
 (*
   We inline small functions which are simple (no closure, no
   recursive) when one of the argument is a function that would get
@@ -545,7 +626,8 @@ and should_inline ~context info args =
                   false
               | _ -> body_size ~context info < Config.Param.inlining_limit ())
            || trivial_function ~context info
-           || small_function ~context info args)
+           || small_function ~context info args
+           || ref_argument_function ~context info args)
 
 let trace_inlining ~context info x args =
   if debug ()
@@ -922,8 +1004,76 @@ let inline_in_block ~context pc block p =
   in
   { p with blocks = Addr.Map.add pc { block with body; branch } p.blocks }
 
+(* A single traversal, starting from the program entry point and entering
+   closures where they are defined, as in [Ref_unboxing]. A reference is
+   allocated before any of its uses is reached. *)
+let local_refs p =
+  let refs = Var.Hashtbl.create 16 in
+  (* The variables in [refs], for a fast membership test *)
+  let is_ref = BitSet.create' (Var.count ()) in
+  let visited = BitSet.create' p.free_pc in
+  let rec traverse name_opt pc =
+    if not (BitSet.mem visited pc)
+    then (
+      BitSet.set visited pc;
+      let other x =
+        if BitSet.mem is_ref (Var.idx x)
+        then (Var.Hashtbl.find refs x).only_accessed <- false
+      in
+      let access x =
+        if BitSet.mem is_ref (Var.idx x)
+        then
+          let r = Var.Hashtbl.find refs x in
+          if not (Option.equal Var.equal r.ref_function name_opt)
+          then r.only_accessed <- false
+      in
+      let block = Addr.Map.find pc p.blocks in
+      List.iter
+        ~f:(fun i ->
+          match i with
+          | Let (x, Block (0, [| y |], (NotArray | Unknown), Maybe_mutable)) ->
+              other y;
+              BitSet.set is_ref (Var.idx x);
+              Var.Hashtbl.replace
+                refs
+                x
+                { ref_function = name_opt; only_accessed = true; passed_to = [] }
+          | Let (_, Block (0, [| y |], _, _)) -> other y
+          | Let (x, Closure (_, (pc', _), _)) ->
+              Freevars.iter_instr_free_vars other i;
+              traverse (Some x) pc'
+          | Let (_, Field (x, 0, Non_float)) | Offset_ref (x, _) -> access x
+          | Set_field (x, 0, Non_float, y) ->
+              access x;
+              other y
+          | Let (_, Apply { f; args; exact = true }) ->
+              other f;
+              List.iteri
+                ~f:(fun i x ->
+                  if BitSet.mem is_ref (Var.idx x)
+                  then (
+                    let r = Var.Hashtbl.find refs x in
+                    access x;
+                    r.passed_to <- (f, i) :: r.passed_to))
+                args
+          | _ -> Freevars.iter_instr_free_vars other i)
+        block.body;
+      Freevars.iter_last_free_var other block.branch;
+      Code.fold_children p.blocks pc (fun pc' () -> traverse name_opt pc') ())
+  in
+  traverse None p.start;
+  Var.Hashtbl.filter_map_inplace
+    (fun _ r -> if r.only_accessed then Some r else None)
+    refs;
+  refs
+
 let inline ~profile ~inline_count p ~live_vars =
   if debug () then Format.eprintf "====== inlining ======@.";
+  let local_refs =
+    match Config.target () with
+    | `Wasm -> local_refs p
+    | `JavaScript -> Var.Hashtbl.create 1
+  in
   (visit_closures
      p
      ~live_vars
@@ -985,6 +1135,7 @@ let inline ~profile ~inline_count p ~live_vars =
                ; init_code = ref None
                ; returns_a_block = ref None
                ; interesting_params = ref None
+               ; ref_params = ref None
                }
                context.env
          | None -> context.env
@@ -1001,6 +1152,7 @@ let inline ~profile ~inline_count p ~live_vars =
      ; enclosing_function = None
      ; known = known_values p
      ; being_inlined = Var.Set.empty
+     ; local_refs
      })
     .p
 
