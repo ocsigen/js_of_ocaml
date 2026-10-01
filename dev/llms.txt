@@ -43,6 +43,7 @@
 - [Module `Js_of_ocaml_compiler.Annot_parser`](js_of_ocaml-compiler/Js_of_ocaml_compiler-Annot_parser.md)
 - [Module `Js_of_ocaml_compiler.Base64`](js_of_ocaml-compiler/Js_of_ocaml_compiler-Base64.md)
 - [Module `Js_of_ocaml_compiler.Bool_context`](js_of_ocaml-compiler/Js_of_ocaml_compiler-Bool_context.md)
+- [Module `Js_of_ocaml_compiler.Box_assigned`](js_of_ocaml-compiler/Js_of_ocaml_compiler-Box_assigned.md)
 - [Module `Js_of_ocaml_compiler.Build_info`](js_of_ocaml-compiler/Js_of_ocaml_compiler-Build_info.md)
 - [Module `Js_of_ocaml_compiler.Build_path_prefix_map`](js_of_ocaml-compiler/Js_of_ocaml_compiler-Build_path_prefix_map.md)
 - [Module `Builtins.File`](js_of_ocaml-compiler/Js_of_ocaml_compiler-Builtins-File.md)

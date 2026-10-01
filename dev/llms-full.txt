@@ -3792,6 +3792,16 @@ val is_bool_context_only : t -> Code.Var.t -> bool
 
 ---
 
+# Module `Js_of_ocaml_compiler.Box_assigned`
+
+```ocaml
+val f : Code.program -> Code.program
+```
+Store in a mutable block the variables which are the target of an `Assign` instruction and are referenced from another function than the one that binds them. Such references are introduced by the CPS transformation, and closures may capture variables by value.
+
+
+---
+
 # Module `Js_of_ocaml_compiler.Build_info`
 
 ```ocaml
@@ -15537,6 +15547,9 @@ Base64 RFC4648 implementation.
 
 ```ocaml
 module Bool_context : sig ... end
+```
+```ocaml
+module Box_assigned : sig ... end
 ```
 ```ocaml
 module Build_info : sig ... end

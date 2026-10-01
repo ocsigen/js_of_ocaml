@@ -15,6 +15,9 @@ Base64 RFC4648 implementation.
 module Bool_context : sig ... end
 ```
 ```ocaml
+module Box_assigned : sig ... end
+```
+```ocaml
 module Build_info : sig ... end
 ```
 ```ocaml
