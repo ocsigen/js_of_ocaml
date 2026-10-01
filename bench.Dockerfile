@@ -58,6 +58,9 @@ RUN opam exec -- dune exec tools/ci_setup.exe ../janestreet . \
 RUN opam pin add -n https://github.com/janestreet/bin_prot.git#125e336faacd2e2e8c7a1fed2231bde1cebfebdd \
  && opam install ppx_bin_prot
 
+# Digestif (pure OCaml hash functions)
+RUN opam install digestif
+
 # Copy sources
 COPY --chown=opam:opam . ./
 
