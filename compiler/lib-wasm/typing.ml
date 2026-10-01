@@ -327,6 +327,17 @@ let rec constant_type (c : constant) =
   | Null_ -> Null
   | _ -> Top
 
+let conversion_type c =
+  match c with
+  | Unbox_i32 -> Number (Int32, Unboxed)
+  | Unbox_i64 -> Number (Int64, Unboxed)
+  | Unbox_f64 -> Number (Float, Unboxed)
+  | Box_i32 -> Number (Int32, Boxed)
+  | Box_i64 -> Number (Int64, Boxed)
+  | Box_f64 -> Number (Float, Boxed)
+  | Untag_int -> Int Normalized
+  | Tag_int -> Int Ref
+
 let arg_type ~approx arg =
   match arg with
   | Pc c -> constant_type c
@@ -470,6 +481,7 @@ let propagate st approx x : Domain.t =
       | Prim (Array_get _, _) -> Top
       | Prim ((Vectlength _ | Not | IsInt _ | Eq | Neq | Lt | Le | Ult), _) ->
           Int Normalized
+      | Prim (Wasm_conversion c, _) -> conversion_type c
       | Prim (Extern (prim, hint), args) -> prim_type ~st ~approx prim hint args
       | Special _ -> Top
       | Apply { f; args; _ } -> (
@@ -646,7 +658,19 @@ let box_numbers p st types =
                           | Pv y -> box y
                           | Pc _ -> ())
                         args
-                  | Prim ((Vectlength _ | Array_get _ | Not | IsInt _ | Lt | Le | Ult), _)
+                  | Prim
+                      ( Wasm_conversion (Unbox_i32 | Unbox_i64 | Unbox_f64 | Untag_int)
+                      , args ) ->
+                      List.iter
+                        ~f:(fun a ->
+                          match a with
+                          | Pv y -> box y
+                          | Pc _ -> ())
+                        args
+                  | Prim
+                      ( ( Vectlength _ | Array_get _ | Not | IsInt _ | Lt | Le | Ult
+                        | Wasm_conversion (Box_i32 | Box_i64 | Box_f64 | Tag_int) )
+                      , _ )
                   | Field _ | Closure _ | Constant _ | Special _ -> ())
               | Set_field (_, _, (Non_float | Immediate), y) | Array_set (_, _, y) ->
                   box y
