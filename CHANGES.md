@@ -214,6 +214,9 @@
 * Compiler: fix reference unboxing when a variable read from an unboxed
   reference is stored into another unboxed reference in a nested closure
   (#2426)
+* Lib: `Form.form_elements` and `Form.get_form_contents` skip
+  `<input type="button">`, as a native form submission does; a named one
+  was sent as a field with its value (#2466)
 # 6.4.1 (2026-06-30) - Lille
 
 ## Bug fixes
