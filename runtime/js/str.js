@@ -334,12 +334,13 @@ function re_search_backward(re, s, pos) {
     startchars = re[2][startchars + 1];
     var len = caml_ml_string_length(s);
     do {
-      while (
-        pos > 0 &&
-        pos < len &&
-        caml_string_get(startchars, caml_string_get(s, pos)) === 0
-      )
+      while (pos > 0) {
+        // at the end of the string, the C runtime reads the terminating
+        // null character
+        var c = pos < len ? caml_string_get(s, pos) : 0;
+        if (caml_string_get(startchars, c) !== 0) break;
         pos--;
+      }
       var res = re_match(re, s, pos, 0);
       if (res) return res;
       pos--;

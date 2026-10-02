@@ -804,6 +804,14 @@
       return v === undefined ? null : v;
     },
     map_set: (m, x, v) => m.set(x, v),
+    map_get_or_set: (m, x, v) => {
+      var r = m.get(x);
+      if (r === undefined) {
+        m.set(x, v);
+        return null;
+      }
+      return r;
+    },
     map_delete: (m, x) => m.delete(x),
     hash_string,
     log: (x) => console.log(x),

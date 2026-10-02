@@ -1568,7 +1568,9 @@
             (ref.cast (ref $bigarray) (local.get $vba))))
       (local.set $i (i31.get_s (ref.cast (ref i31) (local.get $vi))))
       (if (i32.ge_u (local.get $i) (array.len (local.get $dim)))
-         (then (call $caml_invalid_argument (global.get $Bigarray_dim))))
+         (then
+            (call $caml_invalid_argument (global.get $Bigarray_dim))
+            (unreachable)))
       (ref.i31 (array.get $int_array (local.get $dim) (local.get $i))))
 
    (func (export "caml_ba_dim_1") (param $vba (ref eq)) (result (ref eq))

@@ -110,7 +110,7 @@
       (local.set $i)
       (local.set $threshold (i32.div_u (i32.const -1) (local.get $base)))
       (if (i32.ge_s (local.get $i) (local.get $len))
-         (then (call $caml_failwith (local.get $errmsg))))
+         (then (call $caml_failwith (local.get $errmsg)) (unreachable)))
       (local.set $d
          (call $parse_digit (array.get_u $bytes (local.get $s) (local.get $i))))
       (if (i32.ge_u (local.get $d) (local.get $base))

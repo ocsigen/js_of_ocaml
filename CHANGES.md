@@ -5,6 +5,15 @@
   (`caml_int_clz`, `caml_int_ctz`, `caml_int_popcount`) (#2469)
 * Runtime: with OCaml 5.6, `Weak.get_copy` and the ephemeron `get_*_copy`
   primitives no longer copy, as in the OCaml runtime (#2469)
+* Runtime/Wasm: faster `caml_hash` and `compare`, without a global work stack
+  (#2470)
+* Runtime/Wasm: faster lexer engines, using lexer tables cached as 16-bit
+  arrays (#2470)
+* Runtime/Wasm: `Str` searches skip positions where no match can start (#2470)
+* Runtime/Wasm: faster sharing detection in `output_value`, no longer
+  quadratic with WASI (#2470)
+* Runtime/Wasm: with WASI, `output_value` shares boxed numbers with equal
+  contents, unlike native code (#2470)
 * Compiler: with `--effects={cps,double-translation}`, specialize calls to
   known functions using the global flow analysis before the CPS transformation
   (#2456)
