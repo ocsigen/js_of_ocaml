@@ -51,3 +51,58 @@ let%expect_test "substitution chains across nested closures" =
       Printf.printf "%d %d\n" (h1 5 ()) (h2 7 ())
     |};
   [%expect {| 7 18 |}]
+
+(* After tail-call optimization, [r] is allocated in the body of a loop
+   and read in the large block leaving the loop. [Structure.build_graph]
+   adds an edge from the loop entry to this block, so that it is not
+   dominated by the allocation in the dominator tree computed from this
+   graph: the allocation was removed but not the read. *)
+let%expect_test "reference read after leaving a loop" =
+  compile_and_run
+    {|
+    let get r = !r
+
+    let f n =
+      let rec loop i =
+        let r = ref i in
+        incr r;
+        if !r > 10
+        then (
+          let a = !r in
+          print_int a;
+          print_newline ();
+          print_int (a + 1);
+          print_newline ();
+          print_int (a + 2);
+          print_newline ();
+          print_int (a + 3);
+          print_newline ();
+          print_int (a + 4);
+          print_newline ();
+          print_int (a + 5);
+          print_newline ();
+          print_int (a + 6);
+          print_newline ();
+          print_int (a + 7);
+          print_newline ();
+          get r)
+        else loop !r
+      in
+      print_endline "start";
+      loop n
+
+    let () = print_int (f 0); print_newline ()
+    |};
+  [%expect
+    {|
+           start
+           11
+           12
+           13
+           14
+           15
+           16
+           17
+           18
+           11
+           |}]

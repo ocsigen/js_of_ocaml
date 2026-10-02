@@ -114,6 +114,8 @@
 ## Bug fixes
 * Compiler/wasm: `x land y` was assumed to fit in 31 bits as soon as one
   operand did, which is wrong when that operand is negative (#2490)
+* Compiler: fix reference unboxing when a reference allocated in a loop is
+  read after leaving it (#2489)
 * Compiler: with `--effects=cps`, a call result could be unbound in its
   continuation when a local reference was mutated in a `try` body (#2484)
 * Compiler: with `--effects=cps` or `double-translation`, fix mutable local
