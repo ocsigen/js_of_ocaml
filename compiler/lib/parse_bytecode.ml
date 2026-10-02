@@ -368,6 +368,26 @@ module Hints = struct
     | Some (Hint_ccall h) -> Some h
     | _ -> None
 
+  let find_immediate t pc =
+    List.exists
+      ~f:(fun (h : Optimization_hint.t) ->
+        match h with
+        | Hint_immediate -> true
+        | _ -> false)
+      (Int.Hashtbl.find_all t.hints pc)
+
+  let find_variant t pc =
+    List.exists
+      ~f:(fun (h : Optimization_hint.t) ->
+        match h with
+        | Hint_variant -> true
+        | _ -> false)
+      (Int.Hashtbl.find_all t.hints pc)
+
+  (* The kind of the value read by the instruction at [pc] *)
+  let field_type t pc : Code.field_type =
+    if find_immediate t pc then Immediate else Non_float
+
   let find_closures_opt t pc =
     match Int.Hashtbl.find_opt t.hints pc with
     | Some (Hint_closures l) -> Some l
@@ -1548,7 +1568,11 @@ and compile infos pc state (instrs : instr list) =
         let y, state = State.fresh_var state in
         if debug_parser () then Format.printf "%a = %a[%d]@." Var.print y Var.print x j;
         Shape.State.propagate x j y;
-        compile infos (pc + 3) state (Let (y, Field (x, j, Non_float)) :: instrs)
+        compile
+          infos
+          (pc + 3)
+          state
+          (Let (y, Field (x, j, Hints.field_type infos.hints pc)) :: instrs)
     | PUSHGETGLOBALFIELD ->
         let state = State.push state in
 
@@ -1558,7 +1582,11 @@ and compile infos pc state (instrs : instr list) =
         let y, state = State.fresh_var state in
         if debug_parser () then Format.printf "%a = %a[%d]@." Var.print y Var.print x j;
         Shape.State.propagate x j y;
-        compile infos (pc + 3) state (Let (y, Field (x, j, Non_float)) :: instrs)
+        compile
+          infos
+          (pc + 3)
+          state
+          (Let (y, Field (x, j, Hints.field_type infos.hints pc)) :: instrs)
     | SETGLOBAL ->
         let i = getu code (pc + 1) in
         State.size_globals state (i + 1);
@@ -1698,28 +1726,44 @@ and compile infos pc state (instrs : instr list) =
 
         if debug_parser () then Format.printf "%a = %a[0]@." Var.print x Var.print y;
         Shape.State.propagate y 0 x;
-        compile infos (pc + 1) state (Let (x, Field (y, 0, Non_float)) :: instrs)
+        compile
+          infos
+          (pc + 1)
+          state
+          (Let (x, Field (y, 0, Hints.field_type infos.hints pc)) :: instrs)
     | GETFIELD1 ->
         let y = State.accu state in
         let x, state = State.fresh_var state in
 
         if debug_parser () then Format.printf "%a = %a[1]@." Var.print x Var.print y;
         Shape.State.propagate y 1 x;
-        compile infos (pc + 1) state (Let (x, Field (y, 1, Non_float)) :: instrs)
+        compile
+          infos
+          (pc + 1)
+          state
+          (Let (x, Field (y, 1, Hints.field_type infos.hints pc)) :: instrs)
     | GETFIELD2 ->
         let y = State.accu state in
         let x, state = State.fresh_var state in
 
         if debug_parser () then Format.printf "%a = %a[2]@." Var.print x Var.print y;
         Shape.State.propagate y 2 x;
-        compile infos (pc + 1) state (Let (x, Field (y, 2, Non_float)) :: instrs)
+        compile
+          infos
+          (pc + 1)
+          state
+          (Let (x, Field (y, 2, Hints.field_type infos.hints pc)) :: instrs)
     | GETFIELD3 ->
         let y = State.accu state in
         let x, state = State.fresh_var state in
 
         if debug_parser () then Format.printf "%a = %a[3]@." Var.print x Var.print y;
         Shape.State.propagate y 3 x;
-        compile infos (pc + 1) state (Let (x, Field (y, 3, Non_float)) :: instrs)
+        compile
+          infos
+          (pc + 1)
+          state
+          (Let (x, Field (y, 3, Hints.field_type infos.hints pc)) :: instrs)
     | GETFIELD ->
         let y = State.accu state in
         let n = getu code (pc + 1) in
@@ -1727,7 +1771,11 @@ and compile infos pc state (instrs : instr list) =
 
         if debug_parser () then Format.printf "%a = %a[%d]@." Var.print x Var.print y n;
         Shape.State.propagate y n x;
-        compile infos (pc + 2) state (Let (x, Field (y, n, Non_float)) :: instrs)
+        compile
+          infos
+          (pc + 2)
+          state
+          (Let (x, Field (y, n, Hints.field_type infos.hints pc)) :: instrs)
     | GETFLOATFIELD ->
         let y = State.accu state in
         let n = getu code (pc + 1) in
@@ -1833,7 +1881,8 @@ and compile infos pc state (instrs : instr list) =
           infos
           (pc + 1)
           (State.pop 1 state)
-          (Let (x, Prim (Array_get, [ Pv y; Pv z ])) :: instrs)
+          (Let (x, Prim (Array_get (Hints.field_type infos.hints pc), [ Pv y; Pv z ]))
+          :: instrs)
     | SETVECTITEM ->
         if debug_parser ()
         then
@@ -1968,7 +2017,11 @@ and compile infos pc state (instrs : instr list) =
                   !compiled_blocks
             in
             let isint_var = Var.fresh () in
-            let instrs = Let (isint_var, Prim (IsInt, [ Pv x ])) :: instrs in
+            (* A switch on both constant and non-constant constructors
+               is a match on a value of a variant type *)
+            let instrs =
+              Let (isint_var, Prim (IsInt { variant_only = true }, [ Pv x ])) :: instrs
+            in
             instrs, Cond (isint_var, (isint_branch, []), (isblock_branch, [])), state)
     | BOOLNOT ->
         let y = State.accu state in
@@ -2547,7 +2600,12 @@ and compile infos pc state (instrs : instr list) =
         let x, state = State.fresh_var state in
 
         if debug_parser () then Format.printf "%a = !%a@." Var.print x Var.print y;
-        compile infos (pc + 1) state (Let (x, Prim (IsInt, [ Pv y ])) :: instrs)
+        let variant_only = Hints.find_variant infos.hints pc in
+        compile
+          infos
+          (pc + 1)
+          state
+          (Let (x, Prim (IsInt { variant_only }, [ Pv y ])) :: instrs)
     | BEQ ->
         let n = gets32 code (pc + 1) in
         let offset = gets code (pc + 2) in
@@ -2712,7 +2770,7 @@ and compile infos pc state (instrs : instr list) =
           infos
           (pc + 1)
           state
-          (Let (m, Prim (Array_get, [ Pv meths; Pv lab ]))
+          (Let (m, Prim (Array_get Non_float, [ Pv meths; Pv lab ]))
           :: Let (meths, Field (obj, 0, Non_float))
           :: instrs)
     | STOP -> instrs, Stop, state

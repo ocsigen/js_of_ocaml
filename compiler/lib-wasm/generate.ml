@@ -1817,7 +1817,7 @@ module Generate (Target : Target_sig.S) = struct
           Memory.allocate
             ~tag
             (expression_list (fun x -> load_and_box ctx x) (Array.to_list a))
-    | Field (y, n, Non_float) -> Memory.field (load_and_box ctx y) n
+    | Field (y, n, (Non_float | Immediate)) -> Memory.field (load_and_box ctx y) n
     | Field (y, n, Float) ->
         Memory.float_array_get
           (load_and_box ctx y)
@@ -1943,7 +1943,7 @@ module Generate (Target : Target_sig.S) = struct
     | Prim (Ult, [ x; y ]) -> translate_int_comparison ctx Arith.ult x y
     | Prim (Eq, [ x; y ]) -> translate_int_equality ctx ~negate:false x y
     | Prim (Neq, [ x; y ]) -> translate_int_equality ctx ~negate:true x y
-    | Prim (Array_get, [ x; y ]) ->
+    | Prim (Array_get _, [ x; y ]) ->
         Memory.array_get (transl_prim_arg ctx x) (transl_prim_arg ctx ~typ:int_n y)
     | Prim (Extern ("caml_array_unsafe_get", _), [ x; y ]) ->
         Memory.gen_array_get (transl_prim_arg ctx x) (transl_prim_arg ctx ~typ:int_n y)
@@ -1981,7 +1981,7 @@ module Generate (Target : Target_sig.S) = struct
                       loop (x :: acc) r
                 in
                 loop [] l
-            | IsInt, [ x ] -> Value.is_int x
+            | IsInt _, [ x ] -> Value.is_int x
             | Vectlength kind, [ x ] -> (
                 match kind with
                 | Generic -> Memory.gen_array_length x
@@ -1993,8 +1993,8 @@ module Generate (Target : Target_sig.S) = struct
                     let* ift = Memory.float_array_length (load y) in
                     let* iff = Arith.const 0l in
                     return (W.IfExpr (I32, cond, ift, iff)))
-            | (Not | Lt | Le | Eq | Neq | Ult | Array_get | IsInt | Vectlength _), _ ->
-                assert false))
+            | (Not | Lt | Le | Eq | Neq | Ult | Array_get _ | IsInt _ | Vectlength _), _
+              -> assert false))
 
   and translate_instr ctx context i =
     match i with
@@ -2013,7 +2013,7 @@ module Generate (Target : Target_sig.S) = struct
             ?typ:(unboxed_type (Typing.var_type ctx.types x))
             x
             (translate_expr ctx context x e)
-    | Set_field (x, n, Non_float, y) ->
+    | Set_field (x, n, (Non_float | Immediate), y) ->
         Memory.set_field (load_and_box ctx x) n (load_and_box ctx y)
     | Set_field (x, n, Float, y) ->
         Memory.float_array_set

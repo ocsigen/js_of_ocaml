@@ -74,6 +74,7 @@ type ccall =
   | Hint_int of boxed_integer
   | Hint_bigarray of Bigarray.t
   | Hint_primitive of primitive
+  | Hint_int_array  (** Access to an array of immediate values *)
 
 type inline_attribute =
   | Always_inline
@@ -100,6 +101,10 @@ type t =
   | Hint_arraylength of array_kind
   | Hint_closures of closure_hint list
   | Hint_ccall of ccall
+  | Hint_immediate  (** The value produced by the instruction is an immediate *)
+  | Hint_variant
+      (** The argument of the instruction is a value of a variant type: if it
+          is an immediate, it is a constant constructor *)
 
 val print_ccall : Format.formatter -> ccall -> unit
 

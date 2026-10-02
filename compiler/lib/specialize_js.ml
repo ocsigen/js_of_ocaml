@@ -377,7 +377,7 @@ let specialize_instrs ~target opt_count info l =
                        | "caml_array_get_float"
                        | "caml_floatarray_get"
                        | "caml_array_get_addr" ) as prim)
-                    , _ )
+                    , hint )
                 , [ Pv y; z ] ) ) ->
             let idx =
               match the_int info z with
@@ -393,7 +393,11 @@ let specialize_instrs ~target opt_count info l =
                 | "caml_array_get" -> Extern ("caml_array_unsafe_get", None)
                 | "caml_array_get_float" | "caml_floatarray_get" ->
                     Extern ("caml_floatarray_unsafe_get", None)
-                | "caml_array_get_addr" -> Array_get
+                | "caml_array_get_addr" -> (
+                    match hint with
+                    | Some Hint_int_array -> Array_get Immediate
+                    | Some (Hint_unsafe | Hint_int _ | Hint_bigarray _ | Hint_primitive _)
+                    | None -> Array_get Non_float)
                 | _ -> assert false
               in
               Let (x, Prim (prim, [ Pv y; z ]))
