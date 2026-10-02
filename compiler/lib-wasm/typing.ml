@@ -119,17 +119,51 @@ module Bigarray = struct
     Bool.equal unsafe unsafe' && phys_equal kind kind' && phys_equal layout layout'
 end
 
+type array_kind =
+  { float : bool  (** May be a float array *)
+  ; value : bool  (** May be a non-empty block *)
+  ; cast : bool
+        (** Only when [float] is false: represented by a Wasm block
+            reference, the value being cast where it is defined *)
+  }
+
+let empty_array = { float = false; value = false; cast = false }
+
+let float_array = { float = true; value = false; cast = false }
+
+let value_array = { float = false; value = true; cast = false }
+
+let any_array = { float = true; value = true; cast = false }
+
 type typ =
   | Top
   | Int of Integer.kind
   | Number of boxed_number * boxed_status
-  | Tuple of typ array
-      (** This value is a block or an integer; if it's an integer, an
+  | Tuple of
+      { fields : typ array
+      ; block : bool
+      ; cast : bool
+            (** Only when [block] holds: represented by a Wasm block
+                reference, the value being cast where it is defined *)
+      }
+      (** This value is a block (not a float array) if [block] holds, a
+          block or an integer otherwise; if it's a block, an
           overapproximation of the possible values of each of its
-          fields is given by the array of types *)
+          fields is given by [fields] *)
   | Bigarray of Optimization_hint.Bigarray.t
+  | Array of array_kind
+      (** An array: the empty array (which is a block with no field), a
+          float array if [float] holds, or a non-empty block if [value]
+          holds *)
   | Null
   | Bot
+
+let array_kind t : Optimization_hint.array_kind =
+  match t with
+  | Array { float = false; _ } -> Value
+  | Array { value = false; _ } -> Float
+  | Tuple { block = true; _ } -> Value
+  | Top | Int _ | Number _ | Tuple _ | Bigarray _ | Array _ | Null | Bot -> Generic
 
 module Domain = struct
   type t = typ
@@ -147,21 +181,40 @@ module Domain = struct
               | Unboxed, _ | _, Unboxed -> Unboxed
               | Boxed, Boxed -> Boxed )
         else Top
-    | Tuple t, Tuple t' ->
+    | ( Tuple { fields = t; block = b; cast = c }
+      , Tuple { fields = t'; block = b'; cast = c' } ) ->
         let l = Array.length t in
         let l' = Array.length t' in
         Tuple
-          (if l = l'
-           then Array.map2 ~f:join t t'
-           else
-             Array.init (max l l') ~f:(fun i ->
-                 if i < l then if i < l' then join t.(i) t'.(i) else t.(i) else t'.(i)))
-    | (Int _ | Null), Tuple _ -> t'
-    | Tuple _, (Int _ | Null) -> t
+          { fields =
+              (if l = l'
+               then Array.map2 ~f:join t t'
+               else
+                 Array.init (max l l') ~f:(fun i ->
+                     if i < l then if i < l' then join t.(i) t'.(i) else t.(i) else t'.(i)))
+          ; block = b && b'
+          ; cast = c && c'
+          }
+    | (Int _ | Null), Tuple { fields; _ } | Tuple { fields; _ }, (Int _ | Null) ->
+        Tuple { fields; block = false; cast = false }
     | Bigarray b, Bigarray b' when Bigarray.equal b b' -> t
+    | Array a, Array a' ->
+        Array
+          { float = a.float || a'.float
+          ; value = a.value || a'.value
+          ; cast = a.cast && a'.cast
+          }
+    | Array { float = false; value = false; cast = c }, Tuple ({ cast = c'; _ } as r)
+    | Tuple ({ cast = c'; _ } as r), Array { float = false; value = false; cast = c } ->
+        Tuple { r with cast = c && c' }
+    | Array a, Tuple { block = true; cast; _ } | Tuple { block = true; cast; _ }, Array a
+      -> Array { a with value = true; cast = a.cast && cast }
+    | Array { float = false; value = false; _ }, (Int _ | Null)
+    | (Int _ | Null), Array { float = false; value = false; _ } ->
+        Tuple { fields = [||]; block = false; cast = false }
     | Null, Null -> Null
     | Top, _ | _, Top -> Top
-    | (Int _ | Number _ | Tuple _ | Bigarray _ | Null), _ -> Top
+    | (Int _ | Number _ | Tuple _ | Bigarray _ | Array _ | Null), _ -> Top
 
   let join_set ?(others = false) f s =
     if others then Top else Var.Set.fold (fun x a -> join (f x) a) s Bot
@@ -171,11 +224,19 @@ module Domain = struct
     | Top, Top | Bot, Bot -> true
     | Int t, Int t' -> Poly.equal t t'
     | Number (t, b), Number (t', b') -> Poly.equal t t' && Poly.equal b b'
-    | Tuple t, Tuple t' ->
-        Array.length t = Array.length t' && Array.for_all2 ~f:equal t t'
+    | ( Tuple { fields = t; block = b; cast = c }
+      , Tuple { fields = t'; block = b'; cast = c' } ) ->
+        Bool.equal b b'
+        && Bool.equal c c'
+        && Array.length t = Array.length t'
+        && Array.for_all2 ~f:equal t t'
     | Bigarray b, Bigarray b' -> Bigarray.equal b b'
+    | Array a, Array a' ->
+        Bool.equal a.float a'.float
+        && Bool.equal a.value a'.value
+        && Bool.equal a.cast a'.cast
     | Null, Null -> true
-    | (Top | Tuple _ | Int _ | Number _ | Bigarray _ | Null | Bot), _ -> false
+    | (Top | Tuple _ | Int _ | Number _ | Bigarray _ | Array _ | Null | Bot), _ -> false
 
   let bot = Bot
 
@@ -183,16 +244,19 @@ module Domain = struct
 
   let rec depth t =
     match t with
-    | Top | Bot | Number _ | Int _ | Bigarray _ | Null -> 0
-    | Tuple l -> 1 + Array.fold_left ~f:(fun acc t' -> max (depth t') acc) l ~init:0
+    | Top | Bot | Number _ | Int _ | Bigarray _ | Array _ | Null -> 0
+    | Tuple { fields = l; _ } ->
+        1 + Array.fold_left ~f:(fun acc t' -> max (depth t') acc) l ~init:0
 
   let rec truncate depth t =
     match t with
-    | Top | Bot | Number _ | Int _ | Bigarray _ | Null -> t
-    | Tuple l ->
+    | Top | Bot | Number _ | Int _ | Bigarray _ | Array _ | Null -> t
+    | Tuple ({ fields; _ } as r) ->
         if depth = 0
         then Top
-        else Tuple (Array.map ~f:(fun t' -> truncate (depth - 1) t') l)
+        else
+          Tuple
+            { r with fields = Array.map ~f:(fun t' -> truncate (depth - 1) t') fields }
 
   let limit t = if depth t > depth_threshold then truncate depth_threshold t else t
 
@@ -228,13 +292,24 @@ module Domain = struct
           | Boxed -> "boxed"
           | Unboxed -> "unboxed")
     | Bigarray b -> Bigarray.print f b
-    | Null -> Format.fprintf f "null"
-    | Tuple t ->
+    | Array { float; value; cast } ->
         Format.fprintf
           f
-          "(%a)"
+          "array{%s%s}"
+          (match float, value with
+          | false, false -> "empty"
+          | true, false -> "float"
+          | false, true -> "value"
+          | true, true -> "any")
+          (if cast then "!" else "")
+    | Null -> Format.fprintf f "null"
+    | Tuple { fields; block; cast } ->
+        Format.fprintf
+          f
+          "(%a)%s"
           (Format.pp_print_list ~pp_sep:(fun f () -> Format.fprintf f ",") print)
-          (Array.to_list t)
+          (Array.to_list fields)
+          (if cast then "!" else if block then "" else "?")
 end
 
 let update_deps st { blocks; _ } =
@@ -251,6 +326,13 @@ let update_deps st { blocks; _ } =
                       ( ( "%int_and"
                         | "%int_or"
                         | "%int_xor"
+                        | "caml_make_vect"
+                        | "caml_array_make"
+                        | "caml_uniform_array_make"
+                        | "caml_array_sub"
+                        | "caml_array_sub_local"
+                        | "caml_array_append"
+                        | "caml_array_append_local"
                         | "caml_ba_get_1"
                         | "caml_ba_get_2"
                         | "caml_ba_get_3"
@@ -323,7 +405,14 @@ let rec constant_type (c : constant) =
   | NativeInt _ -> Number (Nativeint, Unboxed)
   | Float _ -> Number (Float, Unboxed)
   | Float32 _ -> Number (Float32, Unboxed)
-  | Tuple (_, a, _) -> Tuple (Array.map ~f:(fun c' -> Domain.box (constant_type c')) a)
+  | Tuple (_, [||], _) -> Array empty_array
+  | Tuple (_, a, _) ->
+      Tuple
+        { fields = Array.map ~f:(fun c' -> Domain.box (constant_type c')) a
+        ; block = true
+        ; cast = false
+        }
+  | Float_array _ -> Array float_array
   | Null_ -> Null
   | _ -> Top
 
@@ -341,7 +430,9 @@ let bigarray_element_type (kind : Optimization_hint.Bigarray.kind) =
   | Int32 -> Number (Int32, Unboxed)
   | Int64 -> Number (Int64, Unboxed)
   | Nativeint -> Number (Nativeint, Unboxed)
-  | Complex32 | Complex64 -> Tuple [| Number (Float, Boxed); Number (Float, Boxed) |]
+  | Complex32 | Complex64 ->
+      (* Complex numbers are float records *)
+      Array float_array
 
 let bigarray_type ~approx ba =
   match arg_type ~approx ba with
@@ -373,6 +464,52 @@ let prim_type ~st ~approx prim hint args =
       | [ (Bot | Int (Ref | Normalized)); (Bot | Int (Ref | Normalized)) ] ->
           Int Normalized
       | _ -> Int Unnormalized)
+  | "caml_make_vect" | "caml_array_make" | "caml_uniform_array_make" -> (
+      match args with
+      | [ _; init ] -> (
+          (* The runtime builds a float array exactly when the initial
+             value is a boxed float *)
+          match arg_type ~approx init with
+          | Bot -> Bot
+          | Number (Float, _) -> Array float_array
+          | Top -> (
+              (* Float constants have a [Number] type *)
+              match init with
+              | Pc _ -> Array value_array
+              | Pv y -> (
+                  match st.global_flow_state.defs.(Var.idx y) with
+                  | Expr (Constant _ | Closure _) -> Array value_array
+                  | Expr _ | Phi _ -> Array any_array))
+          | Int _
+          | Number ((Int32 | Int64 | Nativeint | Float32), _)
+          | Tuple _ | Bigarray _ | Array _ | Null -> Array value_array)
+      | _ -> Top)
+  | "caml_floatarray_create"
+  | "caml_make_float_vect"
+  | "caml_array_create_float"
+  | "caml_floatarray_create_local"
+  | "caml_floatarray_make"
+  | "caml_floatarray_sub"
+  | "caml_floatarray_append"
+  | "caml_floatarray_concat" -> Array float_array
+  | "caml_array_sub"
+  | "caml_array_sub_local"
+  | "caml_array_append"
+  | "caml_array_append_local" -> (
+      (* The result is either the empty array or has the
+         representation of one of the array arguments *)
+      let array_arg a =
+        match arg_type ~approx a with
+        | Bot -> Bot
+        | Array _ as t -> t
+        | _ -> Array any_array
+      in
+      match prim, args with
+      | ("caml_array_sub" | "caml_array_sub_local"), [ a; _; _ ] -> array_arg a
+      | ("caml_array_append" | "caml_array_append_local"), [ a; a' ] ->
+          Domain.join (array_arg a) (array_arg a')
+      | _ -> Top)
+  | "caml_array_concat" | "caml_array_concat_local" -> Array any_array
   | "caml_ba_create" -> (
       match args with
       | [ Pc (Int kind); Pc (Int layout); _ ] ->
@@ -421,26 +558,37 @@ let propagate st approx x : Domain.t =
       match e with
       | Constant c -> constant_type c
       | Closure _ -> Top
+      | Block (254, _, _, _) -> Array float_array
+      | Block (_, [||], _, _) -> Array empty_array
       | Block (_, lst, _, _) ->
           Tuple
-            (Array.mapi
-               ~f:(fun i y ->
-                 match st.global_flow_state.mutable_fields.(Var.idx x) with
-                 | All_fields -> Top
-                 | Some_fields s when IntSet.mem i s -> Top
-                 | Some_fields _ | No_field ->
-                     Domain.limit (Domain.box (Var.Tbl.get approx y)))
-               lst)
+            { fields =
+                Array.mapi
+                  ~f:(fun i y ->
+                    match st.global_flow_state.mutable_fields.(Var.idx x) with
+                    | All_fields -> Top
+                    | Some_fields s when IntSet.mem i s -> Top
+                    | Some_fields _ | No_field ->
+                        Domain.limit (Domain.box (Var.Tbl.get approx y)))
+                  lst
+            ; block = true
+            ; cast = false
+            }
       | Field (_, _, Float) -> Number (Float, Unboxed)
       | Field (y, n, Non_float) -> (
           match Var.Tbl.get approx y with
-          | Tuple t -> if n < Array.length t then t.(n) else Bot
+          | Tuple { fields = t; _ } -> if n < Array.length t then t.(n) else Bot
           | Top -> Top
+          | Array { float = false; value = false; _ } -> Bot
+          | Array _ -> Top
           | _ -> Bot)
       | Prim
           ( Extern
               (("caml_check_bound" | "caml_check_bound_float" | "caml_check_bound_gen"), _)
           , [ Pv y; _ ] ) -> Var.Tbl.get approx y
+      | Prim (Extern ("caml_array_unsafe_get", _), [ Pv y; _ ])
+        when Poly.equal (array_kind (Var.Tbl.get approx y)) Float ->
+          Number (Float, Unboxed)
       | Prim ((Array_get | Extern ("caml_array_unsafe_get", _)), [ Pv y; _ ]) -> (
           match Var.Tbl.get st.global_flow_info.info_approximation y with
           | Values { known; others } ->
@@ -570,6 +718,15 @@ let type_specialized_primitive types global_flow_state name args =
           | Bigarray _ -> true
           | _ -> false)
       | _ -> false)
+  | "caml_array_unsafe_set" -> (
+      (* Compiled as [caml_floatarray_unsafe_set], which takes an
+         unboxed float *)
+      match args with
+      | a :: _ -> (
+          match array_kind (arg_type ~approx:types a) with
+          | Float -> true
+          | Value | Generic -> false)
+      | [] -> false)
   | "caml_ba_get_generic" | "caml_ba_set_generic" -> (
       match args with
       | Pv x :: Pv indices :: _ -> (
@@ -603,7 +760,7 @@ let box_numbers p st types =
                     Var.Set.iter box s)
           | Expr _ -> ()
           | Phi { known; _ } -> Var.Set.iter box known)
-      | Number (_, Boxed) | Int _ | Tuple _ | Bigarray _ | Null | Bot -> ())
+      | Number (_, Boxed) | Int _ | Tuple _ | Bigarray _ | Array _ | Null | Bot -> ())
   in
   Code.fold_closures
     p
@@ -661,6 +818,155 @@ let box_numbers p st types =
         ())
     ()
 
+let can_cast st y =
+  (* The parameters of functions with unknown call sites have the
+     generic type *)
+  not (Var.ISet.mem st.boxed_function_parameters y)
+
+let castable_functions st types =
+  (* Functions whose return values can all be cast. Casting the result
+     of a call to another function would take place just after the
+     call, and prevent a tail call: in a cycle of tail calls, this
+     would make the stack grow. So, we only propagate casts to the
+     return values of these functions. *)
+  let defs = st.global_flow_state.defs in
+  let return_vals = st.global_flow_info.info_return_vals in
+  let unique_callee y =
+    match defs.(Var.idx y) with
+    | Expr (Apply { f; _ }) -> (
+        match Global_flow.get_unique_closure st.global_flow_info f with
+        | Some (g, _) when can_unbox_return_value st.fun_info g -> Some g
+        | _ -> None)
+    | _ -> None
+  in
+  (* The values the return values come from, through phis *)
+  let vars = ref [] in
+  let seen = Var.ISet.empty () in
+  let rec collect y =
+    if not (Var.ISet.mem seen y)
+    then (
+      Var.ISet.add seen y;
+      vars := y :: !vars;
+      match defs.(Var.idx y) with
+      | Phi { known; _ } -> Var.Set.iter collect known
+      | Expr _ -> ())
+  in
+  Var.Map.iter (fun _ s -> Var.Set.iter collect s) return_vals;
+  let bad = Var.ISet.empty () in
+  List.iter !vars ~f:(fun y ->
+      let ok =
+        can_cast st y
+        &&
+        match Var.Tbl.get types y with
+        | Tuple { block = true; _ } | Array { float = false; _ } -> (
+            match defs.(Var.idx y) with
+            | Expr (Apply _) -> Option.is_some (unique_callee y)
+            | Phi _ | Expr _ -> true)
+        | Bot -> true
+        | Top | Int _ | Number _ | Tuple _ | Bigarray _ | Array _ | Null -> false
+      in
+      if not ok then Var.ISet.add bad y);
+  let is_bad_function g =
+    Var.Set.exists (Var.ISet.mem bad) (Var.Map.find g return_vals)
+  in
+  let changed = ref true in
+  while !changed do
+    changed := false;
+    List.iter !vars ~f:(fun y ->
+        if not (Var.ISet.mem bad y)
+        then
+          let b =
+            match defs.(Var.idx y) with
+            | Phi { known; _ } -> Var.Set.exists (Var.ISet.mem bad) known
+            | Expr _ -> (
+                match unique_callee y with
+                | Some g -> is_bad_function g
+                | None -> false)
+          in
+          if b
+          then (
+            Var.ISet.add bad y;
+            changed := true))
+  done;
+  fun g -> can_unbox_return_value st.fun_info g && not (is_bad_function g)
+
+let cast_blocks p st types =
+  (* A value known to be a block is given the type of a Wasm block
+     reference, and is cast where it is defined, if it is used as a
+     block. This is propagated to the values it comes from, so that it
+     is cast only once. *)
+  let castable = castable_functions st types in
+  let visited = Var.ISet.empty () in
+  let rec cast y =
+    if (not (Var.ISet.mem visited y)) && can_cast st y
+    then (
+      Var.ISet.add visited y;
+      match Var.Tbl.get types y with
+      | Tuple ({ block = true; _ } as r) ->
+          Var.Tbl.set types y (Tuple { r with cast = true });
+          propagate y
+      | Array ({ float = false; _ } as a) ->
+          Var.Tbl.set types y (Array { a with cast = true });
+          propagate y
+      | Top | Int _ | Number _ | Tuple _ | Bigarray _ | Array _ | Null | Bot -> ())
+  and propagate y =
+    match st.global_flow_state.defs.(Var.idx y) with
+    | Phi { known; _ } -> Var.Set.iter cast known
+    | Expr (Apply { f; _ }) -> (
+        match Global_flow.get_unique_closure st.global_flow_info f with
+        | None -> ()
+        | Some (g, _) ->
+            if castable g
+            then Var.Set.iter cast (Var.Map.find g st.global_flow_info.info_return_vals))
+    | Expr
+        (Prim
+           ( Extern
+               ( ("caml_check_bound" | "caml_check_bound_gen" | "caml_check_bound_float")
+               , _ )
+           , Pv z :: _ )) -> cast z
+    | Expr _ -> ()
+  in
+  let cast_arg a =
+    match a with
+    | Pv y -> cast y
+    | Pc _ -> ()
+  in
+  Code.fold_closures
+    p
+    (fun _ _ (pc, _) _ () ->
+      traverse
+        { fold = Code.fold_children }
+        (fun pc () ->
+          let b = Addr.Map.find pc p.blocks in
+          List.iter
+            ~f:(fun i ->
+              match i with
+              | Let (_, e) -> (
+                  match e with
+                  | Field (y, _, Non_float) -> cast y
+                  | Prim
+                      ( ( Vectlength _ | Array_get
+                        | Extern
+                            ( ( "caml_check_bound"
+                              | "caml_check_bound_gen"
+                              | "caml_check_bound_float"
+                              | "caml_array_unsafe_get"
+                              | "caml_array_unsafe_set"
+                              | "caml_array_unsafe_set_addr"
+                              | "%direct_obj_tag" )
+                            , _ ) )
+                      , a :: _ ) -> cast_arg a
+                  | Field (_, _, Float)
+                  | Prim _ | Apply _ | Block _ | Closure _ | Constant _ | Special _ -> ())
+              | Set_field (y, _, Non_float, _) | Offset_ref (y, _) | Array_set (y, _, _)
+                -> cast y
+              | Assign _ | Set_field (_, _, Float, _) | Event _ -> ())
+            b.body)
+        pc
+        p.blocks
+        ())
+    ()
+
 let print_opt types global_flow_state f e =
   match e with
   | Prim (Extern (name, _), args)
@@ -689,6 +995,7 @@ let f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinel p =
   let types = solver st in
   Var.Tbl.set types deadcode_sentinel (Int Normalized);
   box_numbers p st types;
+  cast_blocks p st types;
   if times () then Format.eprintf "  type analysis: %a@." Timer.print t;
   if debug ()
   then (
