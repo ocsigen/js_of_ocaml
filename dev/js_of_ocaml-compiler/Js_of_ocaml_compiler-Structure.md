@@ -22,8 +22,31 @@ val build_graph :
   t
 ```
 ```ocaml
+val control_flow_graph : 
+  Code.block Js_of_ocaml_compiler.Code.Addr.Map.t ->
+  Code.Addr.t ->
+  t
+```
+The control flow graph of a function, without the edges `build_graph` adds to limit the scope of loops and exception handlers
+
+```ocaml
 val dominator_tree : t -> graph
 ```
+```ocaml
+val immediate_dominators : 
+  t ->
+  Code.Addr.t Js_of_ocaml_compiler.Code.Addr.Hashtbl.t
+```
+The immediate dominator of each block, except the entry block
+
+```ocaml
+val dominance_frontier : 
+  t ->
+  Code.Addr.t Js_of_ocaml_compiler.Code.Addr.Hashtbl.t ->
+  graph
+```
+`dominance_frontier g idom` computes the dominance frontier of each block, given the immediate dominators `idom` of graph `g`
+
 ```ocaml
 val is_merge_node : t -> Code.Addr.t -> bool
 ```
