@@ -19,6 +19,13 @@ val control_flow_graph : block Addr.Map.t -> Addr.t -> t
 
 val dominator_tree : t -> graph
 
+val immediate_dominators : t -> Addr.t Addr.Hashtbl.t
+(** The immediate dominator of each block, except the entry block *)
+
+val dominance_frontier : t -> Addr.t Addr.Hashtbl.t -> graph
+(** [dominance_frontier g idom] computes the dominance frontier of each block, given
+    the immediate dominators [idom] of graph [g] *)
+
 val is_merge_node : t -> Addr.t -> bool
 
 val is_loop_header : t -> Addr.t -> bool

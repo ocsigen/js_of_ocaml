@@ -44,105 +44,6 @@ let double_translate () =
   | `Cps -> false
   | `Double_translation -> true
 
-let get_edges g src = Addr.Hashtbl.find_opt g src |> Option.value ~default:Addr.Set.empty
-
-let add_edge g src dst = Addr.Hashtbl.replace g src (Addr.Set.add dst (get_edges g src))
-
-let reverse_graph g =
-  let g' = Addr.Hashtbl.create 16 in
-  Addr.Hashtbl.iter
-    (fun child parents -> Addr.Set.iter (fun parent -> add_edge g' parent child) parents)
-    g;
-  g'
-
-type control_flow_graph =
-  { succs : Addr.Set.t Addr.Hashtbl.t
-  ; preds : Addr.Set.t Addr.Hashtbl.t
-  ; reverse_post_order : Addr.t list
-  ; block_order : int Addr.Hashtbl.t
-  }
-
-let build_graph blocks pc =
-  let succs = Addr.Hashtbl.create 16 in
-  let l = ref [] in
-  let visited = Addr.Hashtbl.create 16 in
-  let rec traverse pc =
-    if not (Addr.Hashtbl.mem visited pc)
-    then (
-      Addr.Hashtbl.add visited pc ();
-      let successors = Code.fold_children blocks pc Addr.Set.add Addr.Set.empty in
-      Addr.Hashtbl.add succs pc successors;
-      Addr.Set.iter traverse successors;
-      l := pc :: !l)
-  in
-  traverse pc;
-  let block_order = Addr.Hashtbl.create 16 in
-  List.iteri !l ~f:(fun i pc -> Addr.Hashtbl.add block_order pc i);
-  let preds = reverse_graph succs in
-  { succs; preds; reverse_post_order = !l; block_order }
-
-let dominator_tree g =
-  (* A Simple, Fast Dominance Algorithm
-     Keith D. Cooper, Timothy J. Harvey, and Ken Kennedy *)
-  let dom = Addr.Hashtbl.create 16 in
-  let rec inter pc pc' =
-    (* Compute closest common ancestor *)
-    if pc = pc'
-    then pc
-    else if Addr.Hashtbl.find g.block_order pc < Addr.Hashtbl.find g.block_order pc'
-    then inter pc (Addr.Hashtbl.find dom pc')
-    else inter (Addr.Hashtbl.find dom pc) pc'
-  in
-  List.iter g.reverse_post_order ~f:(fun pc ->
-      let l = Addr.Hashtbl.find g.succs pc in
-      Addr.Set.iter
-        (fun pc' ->
-          let d =
-            match Addr.Hashtbl.find_opt dom pc' with
-            | Some d -> inter pc d
-            | None -> pc
-          in
-          Addr.Hashtbl.replace dom pc' d)
-        l);
-  (* Check we have reached a fixed point (reducible graph) *)
-  List.iter g.reverse_post_order ~f:(fun pc ->
-      let l = Addr.Hashtbl.find g.succs pc in
-      Addr.Set.iter
-        (fun pc' ->
-          let d = Addr.Hashtbl.find dom pc' in
-          assert (inter pc d = d))
-        l);
-  dom
-
-(* pc has at least two forward edges moving into it *)
-let is_merge_node g pc =
-  let s = Addr.Hashtbl.find g.preds pc in
-  let o = Addr.Hashtbl.find g.block_order pc in
-  let n =
-    Addr.Set.fold
-      (fun pc' n -> if Addr.Hashtbl.find g.block_order pc' < o then n + 1 else n)
-      s
-      0
-  in
-  n > 1
-
-let dominance_frontier g idom =
-  let frontiers = Addr.Hashtbl.create 16 in
-  Addr.Hashtbl.iter
-    (fun pc preds ->
-      if Addr.Set.compare_cardinal_with preds 1 > 0
-      then
-        let dom = Addr.Hashtbl.find idom pc in
-        let rec loop runner =
-          if runner <> dom
-          then (
-            add_edge frontiers runner pc;
-            loop (Addr.Hashtbl.find idom runner))
-        in
-        Addr.Set.iter loop preds)
-    g.preds;
-  frontiers
-
 (* Split a block, separating the last instruction from the preceding
    ones, ignoring events *)
 let block_split_last xs =
@@ -180,7 +81,7 @@ exception handlers. And we keep track of the exception handler
 associated to each Poptrap, and possibly Raise.
 *)
 let compute_needed_transformations ~cfg ~idom ~cps_needed ~blocks ~start =
-  let frontiers = dominance_frontier cfg idom in
+  let frontiers = Structure.dominance_frontier cfg idom in
   let transformation_needed = ref Addr.Set.empty in
   let matching_exn_handler = Addr.Hashtbl.create 16 in
   let is_continuation = Addr.Hashtbl.create 16 in
@@ -190,7 +91,7 @@ let compute_needed_transformations ~cfg ~idom ~cps_needed ~blocks ~start =
     if not (Addr.Set.mem pc !transformation_needed)
     then (
       transformation_needed := Addr.Set.add pc !transformation_needed;
-      Addr.Set.iter mark_needed (get_edges frontiers pc))
+      Addr.Set.iter mark_needed (Structure.get_edges frontiers pc))
   in
   let mark_continuation pc x =
     if not (Addr.Hashtbl.mem is_continuation pc)
@@ -198,7 +99,7 @@ let compute_needed_transformations ~cfg ~idom ~cps_needed ~blocks ~start =
       Addr.Hashtbl.add
         is_continuation
         pc
-        (if Addr.Set.mem pc (get_edges frontiers pc) then `Loop else `Param x)
+        (if Addr.Set.mem pc (Structure.get_edges frontiers pc) then `Loop else `Param x)
   in
   let rec traverse visited ~englobing_exn_handlers pc =
     if Addr.Set.mem pc visited
@@ -286,7 +187,7 @@ type st =
   { mutable new_blocks : Code.block Addr.Map.t
   ; mutable free_pc : Code.Addr.t
   ; blocks : Code.block Addr.Map.t
-  ; cfg : control_flow_graph
+  ; cfg : Structure.t
   ; jc : jump_closures
   ; closure_info : (Var.t list * (Addr.t * Var.t list)) Addr.Hashtbl.t
         (* Associates a function's address with its CPS parameters and CPS continuation *)
@@ -294,7 +195,6 @@ type st =
   ; blocks_to_transform : Addr.Set.t
   ; is_continuation : [ `Param of Var.t | `Loop ] Addr.Hashtbl.t
   ; matching_exn_handler : Addr.t Addr.Hashtbl.t
-  ; block_order : int Addr.Hashtbl.t
   ; live_vars : Deadcode.variable_uses
   ; flow_info : Global_flow.info
   ; trampolined_calls : trampolined_calls ref (* Call sites that require trampolining *)
@@ -356,9 +256,7 @@ let cps_branch ~st ~src (pc, args) =
       in
       (* We check the stack depth only for backward edges (so, at
          least once per loop iteration) *)
-      let check =
-        Addr.Hashtbl.find st.block_order src >= Addr.Hashtbl.find st.block_order pc
-      in
+      let check = Structure.is_backward st.cfg src pc in
       tail_call
         ~st
         ~instrs
@@ -418,7 +316,7 @@ let allocate_continuation ~st ~alloc_jump_closures ~split_closures src_pc x dire
          of the exception handler. *)
       if not split_closures
       then alloc_jump_closures, []
-      else if is_merge_node st.cfg direct_pc
+      else if Structure.is_merge_node st.cfg direct_pc
       then [], alloc_jump_closures
       else
         List.partition
@@ -868,8 +766,8 @@ let cps_transform ~live_vars ~flow_info ~cps_needed p =
               { params = []; body = []; branch = Branch (start, args) }
               blocks )
         in
-        let cfg = build_graph blocks' start' in
-        let idom = dominator_tree cfg in
+        let cfg = Structure.control_flow_graph blocks' start' in
+        let idom = Structure.immediate_dominators cfg in
         let should_compute_needed_transformations =
           match name_opt with
           | Some name -> Var.Set.mem name cps_needed
@@ -910,7 +808,6 @@ let cps_transform ~live_vars ~flow_info ~cps_needed p =
           ; blocks_to_transform
           ; is_continuation
           ; matching_exn_handler
-          ; block_order = cfg.block_order
           ; flow_info
           ; live_vars
           ; trampolined_calls
@@ -1077,7 +974,7 @@ let cps_transform ~live_vars ~flow_info ~cps_needed p =
 let current_loop_header frontiers in_loop pc =
   (* We remain in a loop while the loop header is in the dominance frontier.
      We enter a loop when the block is in its dominance frontier. *)
-  let frontier = get_edges frontiers pc in
+  let frontier = Structure.get_edges frontiers pc in
   match in_loop with
   | Some header when Addr.Set.mem header frontier -> in_loop
   | _ -> if Addr.Set.mem pc frontier then Some pc else None
@@ -1133,9 +1030,9 @@ let rewrite_toplevel_instr (p, cps_needed, accu) instr =
    using repeatedly [caml_cps_trampoline] can be costly. *)
 let rewrite_toplevel ~cps_needed p =
   let { start; blocks; _ } = p in
-  let cfg = build_graph blocks start in
-  let idom = dominator_tree cfg in
-  let frontiers = dominance_frontier cfg idom in
+  let cfg = Structure.control_flow_graph blocks start in
+  let idom = Structure.immediate_dominators cfg in
+  let frontiers = Structure.dominance_frontier cfg idom in
   let rec traverse visited (p : Code.program) cps_needed in_loop pc =
     if Addr.Set.mem pc visited
     then visited, p, cps_needed
