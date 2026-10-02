@@ -39,6 +39,44 @@
     returnOnExit: false,
   });
   const imports = wasi.getImportObject();
+  // Counters of the representation conversions executed by code compiled
+  // with [--debug count-conversions] or [--debug count-conversion-sites],
+  // created on demand (see runtime.js)
+  function make_counters(counters) {
+    return new globalThis.Proxy(
+      {},
+      {
+        get(_, name) {
+          if (!Object.hasOwn(counters, name))
+            counters[name] = new WebAssembly.Global(
+              { value: "i64", mutable: true },
+              0n,
+            );
+          return counters[name];
+        },
+      },
+    );
+  }
+  const conversion_counters = {};
+  const site_counters = {};
+  imports.conversions = make_counters(conversion_counters);
+  imports["conversion-sites"] = make_counters(site_counters);
+  globalThis.process.on("exit", () => {
+    const { writeSync } = require("node:fs");
+    const counts = Object.entries(conversion_counters)
+      .filter(([_, g]) => g.value !== 0n)
+      .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+      .map(([name, g]) => `${name}=${g.value}`);
+    if (counts.length) writeSync(2, `conversions: ${counts.join(" ")}\n`);
+    const sites = Object.entries(site_counters)
+      .filter(([_, g]) => g.value !== 0n)
+      .sort(([_a, a], [_b, b]) =>
+        b.value > a.value ? 1 : b.value < a.value ? -1 : 0,
+      )
+      .slice(0, 40);
+    for (const [name, g] of sites)
+      writeSync(2, `${String(g.value).padStart(14)} ${name}\n`);
+  });
   function loadRelative(src) {
     const path = require("node:path");
     const f = path.join(path.dirname(module.filename), src);
