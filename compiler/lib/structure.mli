@@ -13,6 +13,10 @@ val is_forward : t -> Addr.t -> Addr.t -> bool
 
 val build_graph : block Addr.Map.t -> Addr.t -> t
 
+val control_flow_graph : block Addr.Map.t -> Addr.t -> t
+(** The control flow graph of a function, without the edges [build_graph] adds to
+    limit the scope of loops and exception handlers *)
+
 val dominator_tree : t -> graph
 
 val is_merge_node : t -> Addr.t -> bool
