@@ -163,6 +163,8 @@ let reversed_dominator_tree g =
 
   dom
 
+let immediate_dominators = reversed_dominator_tree
+
 let dominator_tree g =
   let idom = reversed_dominator_tree g in
   reverse_tree idom
@@ -184,12 +186,11 @@ let blocks_in_reverse_post_order g = g.reverse_post_order
 let rec dominates g idom pc pc' =
   pc = pc' || (is_forward g pc pc' && dominates g idom pc (Addr.Hashtbl.find idom pc'))
 
-(*
 let dominance_frontier g idom =
   let frontiers = Addr.Hashtbl.create 16 in
   Addr.Hashtbl.iter
     (fun pc preds ->
-      if Addr.Set.cardinal preds > 1
+      if Addr.Set.compare_cardinal_with preds 1 > 0
       then
         let dom = Addr.Hashtbl.find idom pc in
         let rec loop runner =
@@ -201,7 +202,6 @@ let dominance_frontier g idom =
         Addr.Set.iter loop preds)
     g.preds;
   frontiers
-*)
 
 (* Compute a map from each block to the set of loops it belongs to *)
 let mark_loops g =
