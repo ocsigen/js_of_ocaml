@@ -21,7 +21,7 @@ open Stdlib
 let build ~allowed_imports ~link_options ~opt_options ~variables ~inputs ~output_file =
   Fs.with_intermediate_file (Filename.temp_file "runtime-merged" ".wasm")
   @@ fun merge_file ->
-  (Wat_preprocess.with_preprocessed_files ~variables ~inputs
+  (Wax_link.with_preprocessed_files ~variables ~inputs
   @@ fun inputs ->
   Binaryen.link
     ~options:link_options

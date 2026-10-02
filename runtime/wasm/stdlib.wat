@@ -86,7 +86,7 @@
          (array.new $bytes (i32.const 0) (i32.add (local.get $len) (i32.const 7))))
       (array.copy $bytes $bytes
          (local.get $key) (i32.const 0)
-         (ref.cast (ref $bytes) (global.get $predef_prefix)) (i32.const 0) (i32.const 7))
+         (global.get $predef_prefix) (i32.const 0) (i32.const 7))
       (array.copy $bytes $bytes
          (local.get $key) (i32.const 7)
          (local.get $name) (i32.const 0)
