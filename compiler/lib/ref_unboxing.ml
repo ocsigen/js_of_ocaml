@@ -98,7 +98,7 @@ let rewrite_branch relevant_vars ref_contents branch =
   | Poptrap cont -> Poptrap (rewrite_cont relevant_vars ref_contents cont)
 
 let rewrite_function p ~unboxed_refs pc subst =
-  let g = Structure.(dominator_tree (build_graph p.blocks pc)) in
+  let g = Structure.(dominator_tree (control_flow_graph p.blocks pc)) in
   let relevant_vars =
     let relevant_vars = Int.Hashtbl.create 16 in
     let rec traverse_tree g pc refs =
