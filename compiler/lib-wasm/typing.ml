@@ -354,10 +354,20 @@ let primitive_types = String.Hashtbl.create 16
 let prim_type ~st ~approx prim hint args =
   match prim with
   | "%int_and" -> (
-      match List.map ~f:(fun x -> arg_type ~approx x) args with
-      | [ (Bot | Int (Ref | Normalized)); _ ] | [ _; (Bot | Int (Ref | Normalized)) ] ->
-          Int Normalized
-      | _ -> Int Unnormalized)
+      (* A non-negative operand clears the bits above the 31 low bits; a
+         negative one, such as [-1], keeps them *)
+      let non_negative_constant a =
+        match a with
+        | Pc (Int c) -> Targetint.(compare c zero) >= 0
+        | Pc _ | Pv _ -> false
+      in
+      if List.exists ~f:non_negative_constant args
+      then Int Normalized
+      else
+        match List.map ~f:(fun x -> arg_type ~approx x) args with
+        | [ (Bot | Int (Ref | Normalized)); (Bot | Int (Ref | Normalized)) ] ->
+            Int Normalized
+        | _ -> Int Unnormalized)
   | "%int_or" | "%int_xor" -> (
       match List.map ~f:(fun x -> arg_type ~approx x) args with
       | [ (Bot | Int (Ref | Normalized)); (Bot | Int (Ref | Normalized)) ] ->
