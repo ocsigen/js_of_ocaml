@@ -45,7 +45,9 @@ let f { Cmd_arg.common; output_file; use_stdin; files } =
   let gen pp =
     let pretty = Config.Flag.pretty () in
     Pretty_print.set_compact pp (not pretty);
-    let error_of_pi pi = error "%s" (Parse_js.string_of_error pi) in
+    let error_of_pi pi =
+      error "%s" (Parse_info.Diagnostic.with_excerpt pi "syntax error")
+    in
     let p =
       List.flatten
         (List.map files ~f:(fun file ->

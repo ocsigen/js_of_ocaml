@@ -958,8 +958,8 @@ let%expect_test ("invalid ident" [@when target_engine <> "quickjs"]) =
 |};
   [%expect
     {|
-    Lexer error: fake:2:9: Illegal Unicode escape
-    Lexer error: fake:3:9: Unexpected "\\u{1F42B}" (🐫) is not a valid identifier
+    fake:2:9: lexer error: Illegal Unicode escape
+    fake:3:9: lexer error: Unexpected "\\u{1F42B}" (🐫) is not a valid identifier
     cannot parse l:3:8@.
     |}]
 
@@ -992,7 +992,7 @@ let%expect_test ("multiline string" [@when target_engine <> "quickjs"]) =
      3: 4:"\n    ",
      4: 5:;,
      5: 4:42, 0:;,
-    Lexer error: fake:3:6: Unexpected token ILLEGAL
+    fake:3:6: lexer error: Unexpected token ILLEGAL
     |}];
   parse_print_token (clean {|
     42;
@@ -1018,8 +1018,8 @@ let%expect_test ("multiline string" [@when target_engine <> "quickjs"]) =
      3: 4:"\n\n    ",
      5: 5:;,
      6: 4:42, 0:;,
-    Lexer error: fake:3:6: Unexpected token ILLEGAL
-    Lexer error: fake:4:1: Unexpected token ILLEGAL
+    fake:3:6: lexer error: Unexpected token ILLEGAL
+    fake:4:1: lexer error: Unexpected token ILLEGAL
     |}];
   [%expect {||}]
 
@@ -1476,7 +1476,7 @@ let print_syntax_error ?filename ?(write = true) s =
   (match Parse_js.parse `Script (Parse_js.Lexer.of_string ~filename:file s) with
   | _ -> print_endline "no error"
   | exception Parse_js.Parsing_error pi ->
-      let msg = Parse_js.string_of_error pi in
+      let msg = Parse_info.Diagnostic.with_excerpt pi "syntax error" in
       let msg =
         if Option.is_none filename && String.starts_with ~prefix:file msg
         then
@@ -1543,5 +1543,6 @@ let%expect_test "syntax error messages" =
   (* No file *)
   (match Parse_js.parse `Script (Parse_js.Lexer.of_string "var = 1;") with
   | _ -> print_endline "no error"
-  | exception Parse_js.Parsing_error pi -> print_endline (Parse_js.string_of_error pi));
+  | exception Parse_js.Parsing_error pi ->
+      print_endline (Parse_info.Diagnostic.with_excerpt pi "syntax error"));
   [%expect {| line 1, column 5: syntax error |}]
