@@ -264,18 +264,14 @@ module Fragment = struct
     let program, _ =
       try Parse_js.parse' `Script lex
       with Parse_js.Parsing_error pi ->
-        let name =
-          match pi with
-          | { Parse_info.src = Some x; _ } | { Parse_info.name = Some x; _ } -> x
-          | _ -> "??"
-        in
+        let name = Option.value ~default:"??" (Parse_info.file pi) in
         (* The location can be in another file than the one being loaded *)
         error
           "%s%s"
           (if String.equal name filename
            then ""
            else Printf.sprintf "cannot parse file %S:\n" filename)
-          (Parse_js.string_of_error pi)
+          (Parse_info.Diagnostic.with_excerpt pi "syntax error")
     in
     let res =
       List.map program ~f:(fun (annot, code) ->
