@@ -1388,9 +1388,8 @@ let invalid_arity name l ~loc ~expected =
     (Printf.sprintf
        "%sInvalid arity for primitive %s. Expecting %d but used with %d."
        (match (loc : J.location) with
-       | Pi { name = Some name; col; line; _ } ->
-           Printf.sprintf "%s:%d:%d: " name line col
-       | Pi _ | N | U -> "")
+       | Pi pi -> Printf.sprintf "%s: " (Parse_info.Diagnostic.to_string pi)
+       | N | U -> "")
        name
        expected
        (List.length l))
@@ -1734,7 +1733,7 @@ let rec translate_expr ctx loc x e level : (_ * J.statement_list) Expr_builder.t
               failwith
                 (Printf.sprintf
                    "%s: cannot parse the JavaScript expression %S"
-                   (Parse_js.string_of_location pi)
+                   (Parse_info.Diagnostic.to_string pi)
                    nm))
         | Extern ("caml_jsoo_runtime_value", _), [ Pc (String nm) ] when J.is_ident nm ->
             let prim = Share.get_prim (runtime_fun ctx) nm ctx.Ctx.share in
@@ -1744,9 +1743,8 @@ let rec translate_expr ctx loc x e level : (_ * J.statement_list) Expr_builder.t
               (Printf.sprintf
                  "%sJsoo_runtime.Js.runtime_value expects a string literal."
                  (match (loc : J.location) with
-                 | Pi { name = Some name; col; line; _ } ->
-                     Printf.sprintf "%s:%d:%d: " name line col
-                 | Pi _ | N | U -> ""))
+                 | Pi pi -> Printf.sprintf "%s: " (Parse_info.Diagnostic.to_string pi)
+                 | N | U -> ""))
         | Extern ("%js_array", _), l ->
             let* args = list_map (fun x -> access' ~ctx x) l in
             return (J.array args)

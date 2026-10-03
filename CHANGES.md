@@ -109,7 +109,8 @@
 * Compiler: with `--effects=double-translation`, only generate a CPS version
   of the functions that may run below an effect handler (#2441)
 * Compiler: report JavaScript syntax errors (runtime files, `jsoo_minify`,
-  `wasm_of_ocaml`) as `file:line:col`, followed by the offending line (#2464)
+  `wasm_of_ocaml`) as `file:line:col`, followed by the offending line; columns
+  start from 1 in all error messages, as editors expect (#2464, #2491)
 
 ## Bug fixes
 * Compiler/wasm: `x land y` was assumed to fit in 31 bits as soon as one

@@ -71,15 +71,22 @@ let t_of_position ~src pos =
   ; idx = 0
   }
 
-let to_string { name; src; line; col; _ } =
+let file { name; src; _ } =
   match name, src with
-  | (None | Some ""), (None | Some "") -> "?"
-  | _ ->
-      let file =
-        match name, src with
-        | (None | Some ""), Some file -> file
-        | Some file, (None | Some "") -> file
-        | Some file, Some _file -> file
-        | None, None -> assert false
-      in
-      Format.sprintf "%s:%d:%d" file line col
+  | (None | Some ""), (None | Some "") -> None
+  | (None | Some ""), Some file | Some file, _ -> Some file
+
+module Debug = struct
+  let to_string ({ line; col; _ } as t) =
+    match file t with
+    | None -> "?"
+    | Some file -> Format.sprintf "%s:%d:%d" file line col
+end
+
+module Diagnostic = struct
+  let to_string ({ line; col; _ } as t) =
+    let col = col + 1 in
+    match file t with
+    | None -> Format.sprintf "line %d, column %d" line col
+    | Some file -> Format.sprintf "%s:%d:%d" file line col
+end

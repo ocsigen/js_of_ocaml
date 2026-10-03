@@ -191,7 +191,7 @@ struct
                PP.non_breaking_space f
            | Pi pi ->
                PP.non_breaking_space f;
-               PP.string f (Format.sprintf "/*<<%s>>*/" (Parse_info.to_string pi));
+               PP.string f (Format.sprintf "/*<<%s>>*/" (Parse_info.Debug.to_string pi));
                PP.non_breaking_space f);
         current_loc := loc;
         last_mapping_has_a_name := false

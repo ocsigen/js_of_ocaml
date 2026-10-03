@@ -591,9 +591,7 @@ let expression_or_instructions ctx st in_function =
         ]
     | Unreachable -> [ List [ Atom "unreachable" ] ]
     | Event Parse_info.{ src = None | Some ""; _ } -> [ Comment "@" ]
-    | Event Parse_info.{ src = Some src; col; line; _ } ->
-        let loc = Format.sprintf "%s:%d:%d" src line col in
-        [ Comment ("@ " ^ loc) ]
+    | Event pi -> [ Comment ("@ " ^ Parse_info.Debug.to_string pi) ]
   and instructions l = List.concat (List.map ~f:instruction l) in
   expression, instructions
 
@@ -665,8 +663,8 @@ let field ctx st f =
       (* Annotate the function with the location of its start, mirroring the
          mapping emitted at the very start of the function by [Wasm_output]. *)
       (match body with
-        | Event Parse_info.{ src = Some src; col; line; _ } :: _ ->
-            [ Comment ("@ " ^ Format.sprintf "%s:%d:%d" src line col) ]
+        | Event (Parse_info.{ src = Some _; _ } as pi) :: _ ->
+            [ Comment ("@ " ^ Parse_info.Debug.to_string pi) ]
         | _ -> [])
       @ [ funct ctx st name exported_name typ signature param_names locals body ]
   | Global { name; exported_name; typ; init } ->
