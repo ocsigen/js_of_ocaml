@@ -71,15 +71,82 @@ let t_of_position ~src pos =
   ; idx = 0
   }
 
-let to_string { name; src; line; col; _ } =
+let file { name; src; _ } =
   match name, src with
-  | (None | Some ""), (None | Some "") -> "?"
-  | _ ->
-      let file =
-        match name, src with
-        | (None | Some ""), Some file -> file
-        | Some file, (None | Some "") -> file
-        | Some file, Some _file -> file
-        | None, None -> assert false
-      in
-      Format.sprintf "%s:%d:%d" file line col
+  | (None | Some ""), (None | Some "") -> None
+  | (None | Some ""), Some file | Some file, _ -> Some file
+
+module Debug = struct
+  let to_string ({ line; col; _ } as t) =
+    match file t with
+    | None -> "?"
+    | Some file -> Format.sprintf "%s:%d:%d" file line col
+end
+
+module Diagnostic = struct
+  let to_string ({ line; col; _ } as t) =
+    let col = col + 1 in
+    match file t with
+    | None -> Format.sprintf "line %d, column %d" line col
+    | Some file -> Format.sprintf "%s:%d:%d" file line col
+
+  (* The code points of the [n]th line of a file (starting from 1), if it
+     can be read. Lines end where the JavaScript lexer ends them: at
+     "\r\n", '\n', '\r', U+2028 and U+2029. *)
+  let source_line file n =
+    match Fs.read_file file with
+    | exception Failure _ -> None
+    | s ->
+        let line, _, rev_line =
+          String.fold_utf_8 s (1, false, []) ~f:(fun (line, cr, acc) _ u ->
+              match Uchar.to_int u with
+              | 0x0a -> (if cr then line else line + 1), false, acc
+              | 0x0d -> line + 1, true, acc
+              | 0x2028 | 0x2029 -> line + 1, false, acc
+              | _ -> line, false, if line = n then u :: acc else acc)
+        in
+        if n < 1 || line < n then None else Some (Array.of_list (List.rev rev_line))
+
+  (* At most this many code points of the offending line are printed *)
+  let excerpt_width = 100
+
+  let with_excerpt t message =
+    let msg = Printf.sprintf "%s: %s" (to_string t) message in
+    match Option.bind (file t) ~f:(fun file -> source_line file t.line) with
+    | None -> msg
+    | Some line ->
+        (* Columns count code points. Only print a window around the column
+           of a long line (minified code, for instance). *)
+        let len = Array.length line in
+        let first, last =
+          if len <= excerpt_width
+          then 0, len
+          else
+            let first = max 0 (min (t.col - (excerpt_width / 2)) (len - excerpt_width)) in
+            first, first + excerpt_width
+        in
+        let text = Buffer.create 128 in
+        let marker = Buffer.create 128 in
+        if first > 0
+        then (
+          Buffer.add_string text "...";
+          Buffer.add_string marker "   ");
+        for i = first to last - 1 do
+          Buffer.add_utf_8_uchar text line.(i)
+        done;
+        if last < len then Buffer.add_string text "...";
+        (* Keep the tabs to stay aligned *)
+        for i = first to t.col - 1 do
+          Buffer.add_char
+            marker
+            (if i < len && Uchar.equal line.(i) (Uchar.of_char '\t') then '\t' else ' ')
+        done;
+        let num = string_of_int t.line in
+        Printf.sprintf
+          "%s\n%s | %s\n%s | %s^"
+          msg
+          num
+          (Buffer.contents text)
+          (String.make (String.length num) ' ')
+          (Buffer.contents marker)
+end

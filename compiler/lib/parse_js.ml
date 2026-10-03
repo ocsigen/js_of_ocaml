@@ -63,9 +63,9 @@ end = struct
   let zero_pos = { Lexing.pos_fname = ""; pos_lnum = 1; pos_cnum = 0; pos_bol = 0 }
 
   let print_error (loc, e) =
-    let f = Loc.filename loc in
-    let loc = Printf.sprintf "%s:%d:%d" f (Loc.line loc) (Loc.column loc) in
-    Printf.eprintf "Lexer error: %s: %s\n" loc (Flow_lexer.Parse_error.to_string e)
+    let pi = Parse_info.t_of_pos (Loc.p1 loc) in
+    let msg = "lexer error: " ^ Flow_lexer.Parse_error.to_string e in
+    Printf.eprintf "%s\n" (Parse_info.Diagnostic.with_excerpt pi msg)
 
   let create ?(report_error = print_error) l =
     { l; env = Flow_lexer.Lex_env.create l; report_error }
@@ -674,78 +674,6 @@ let fail_early =
   end
 
 let check_program p = List.iter p ~f:(function _, p -> fail_early#program [ p ])
-
-(* The code points of the [n]th line of a file (starting from 1), if it
-   can be read. Lines end where the lexer ends them: at "\r\n", '\n',
-   '\r', U+2028 and U+2029. *)
-let source_line file n =
-  match Fs.read_file file with
-  | exception Failure _ -> None
-  | s ->
-      let line, _, rev_line =
-        String.fold_utf_8 s (1, false, []) ~f:(fun (line, cr, acc) _ u ->
-            match Uchar.to_int u with
-            | 0x0a -> (if cr then line else line + 1), false, acc
-            | 0x0d -> line + 1, true, acc
-            | 0x2028 | 0x2029 -> line + 1, false, acc
-            | _ -> line, false, if line = n then u :: acc else acc)
-      in
-      if n < 1 || line < n then None else Some (Array.of_list (List.rev rev_line))
-
-let string_of_location (pi : Parse_info.t) =
-  (* Columns start from 1, as expected by editors *)
-  let col = pi.col + 1 in
-  match Parse_info.to_string { pi with col } with
-  | "?" -> Printf.sprintf "line %d, column %d" pi.line col
-  | loc -> loc
-
-(* At most this many code points of the offending line are printed *)
-let excerpt_width = 100
-
-let string_of_error (pi : Parse_info.t) =
-  let file =
-    match pi with
-    | { src = Some f; _ } | { name = Some f; _ } -> Some f
-    | { src = None; name = None; _ } -> None
-  in
-  let msg = Printf.sprintf "%s: syntax error" (string_of_location pi) in
-  match Option.bind file ~f:(fun file -> source_line file pi.line) with
-  | None -> msg
-  | Some line ->
-      (* Columns count code points. Only print a window around the column
-         of a long line (minified code, for instance). *)
-      let len = Array.length line in
-      let first, last =
-        if len <= excerpt_width
-        then 0, len
-        else
-          let first = max 0 (min (pi.col - (excerpt_width / 2)) (len - excerpt_width)) in
-          first, first + excerpt_width
-      in
-      let text = Buffer.create 128 in
-      let marker = Buffer.create 128 in
-      if first > 0
-      then (
-        Buffer.add_string text "...";
-        Buffer.add_string marker "   ");
-      for i = first to last - 1 do
-        Buffer.add_utf_8_uchar text line.(i)
-      done;
-      if last < len then Buffer.add_string text "...";
-      (* Keep the tabs to stay aligned *)
-      for i = first to pi.col - 1 do
-        Buffer.add_char
-          marker
-          (if i < len && Uchar.equal line.(i) (Uchar.of_char '\t') then '\t' else ' ')
-      done;
-      let num = string_of_int pi.line in
-      Printf.sprintf
-        "%s\n%s | %s\n%s | %s^"
-        msg
-        num
-        (Buffer.contents text)
-        (String.make (String.length num) ' ')
-        (Buffer.contents marker)
 
 let parse' script_or_module lex =
   let p, toks =

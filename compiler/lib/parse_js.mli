@@ -38,15 +38,6 @@ end
 
 exception Parsing_error of Parse_info.t
 
-val string_of_location : Parse_info.t -> string
-(** The location of a syntax error, as [file:line:col], or [line L, column C]
-    when the file is not known. Columns start from 1. *)
-
-val string_of_error : Parse_info.t -> string
-(** A syntax error, as [file:line:col: syntax error] followed, when the
-    source file can be read, by the offending line and a marker under the
-    unexpected token. *)
-
 val parse : [ `Script | `Module ] -> Lexer.t -> Javascript.program
 
 val parse' :

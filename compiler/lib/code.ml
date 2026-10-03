@@ -673,7 +673,7 @@ module Print = struct
     | Offset_ref (x, i) -> Format.fprintf f "%a[0] += %d" Var.print x i
     | Array_set (x, y, z) ->
         Format.fprintf f "%a[%a] = %a" Var.print x Var.print y Var.print z
-    | Event loc -> Format.fprintf f "event %s" (Parse_info.to_string loc)
+    | Event loc -> Format.fprintf f "event %s" (Parse_info.Debug.to_string loc)
 
   let last f l =
     match l with
