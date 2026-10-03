@@ -958,8 +958,8 @@ let%expect_test ("invalid ident" [@when target_engine <> "quickjs"]) =
 |};
   [%expect
     {|
-    Lexer error: fake:2:8: Illegal Unicode escape
-    Lexer error: fake:3:8: Unexpected "\\u{1F42B}" (🐫) is not a valid identifier
+    Lexer error: fake:2:9: Illegal Unicode escape
+    Lexer error: fake:3:9: Unexpected "\\u{1F42B}" (🐫) is not a valid identifier
     cannot parse l:3:8@.
     |}]
 
@@ -992,7 +992,8 @@ let%expect_test ("multiline string" [@when target_engine <> "quickjs"]) =
      3: 4:"\n    ",
      4: 5:;,
      5: 4:42, 0:;,
-    Lexer error: fake:3:5: Unexpected token ILLEGAL |}];
+    Lexer error: fake:3:6: Unexpected token ILLEGAL
+    |}];
   parse_print_token (clean {|
     42;
     "\
@@ -1017,8 +1018,9 @@ let%expect_test ("multiline string" [@when target_engine <> "quickjs"]) =
      3: 4:"\n\n    ",
      5: 5:;,
      6: 4:42, 0:;,
-    Lexer error: fake:3:5: Unexpected token ILLEGAL
-    Lexer error: fake:4:0: Unexpected token ILLEGAL |}];
+    Lexer error: fake:3:6: Unexpected token ILLEGAL
+    Lexer error: fake:4:1: Unexpected token ILLEGAL
+    |}];
   [%expect {||}]
 
 let%expect_test "multiline comments" =

@@ -1766,7 +1766,7 @@ let internal_primitives =
               failwith
                 (Printf.sprintf
                    "%s: cannot parse the JavaScript expression %S"
-                   (Parse_js.string_of_location pi)
+                   (Parse_info.Diagnostic.to_string pi)
                    str))
         | [ Pv _ ] ->
             let eval name code =

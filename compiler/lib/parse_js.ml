@@ -63,8 +63,7 @@ end = struct
   let zero_pos = { Lexing.pos_fname = ""; pos_lnum = 1; pos_cnum = 0; pos_bol = 0 }
 
   let print_error (loc, e) =
-    let f = Loc.filename loc in
-    let loc = Printf.sprintf "%s:%d:%d" f (Loc.line loc) (Loc.column loc) in
+    let loc = Parse_info.Diagnostic.to_string (Parse_info.t_of_pos (Loc.p1 loc)) in
     Printf.eprintf "Lexer error: %s: %s\n" loc (Flow_lexer.Parse_error.to_string e)
 
   let create ?(report_error = print_error) l =
@@ -692,24 +691,12 @@ let source_line file n =
       in
       if n < 1 || line < n then None else Some (Array.of_list (List.rev rev_line))
 
-let string_of_location (pi : Parse_info.t) =
-  (* Columns start from 1, as expected by editors *)
-  let col = pi.col + 1 in
-  match Parse_info.to_string { pi with col } with
-  | "?" -> Printf.sprintf "line %d, column %d" pi.line col
-  | loc -> loc
-
 (* At most this many code points of the offending line are printed *)
 let excerpt_width = 100
 
 let string_of_error (pi : Parse_info.t) =
-  let file =
-    match pi with
-    | { src = Some f; _ } | { name = Some f; _ } -> Some f
-    | { src = None; name = None; _ } -> None
-  in
-  let msg = Printf.sprintf "%s: syntax error" (string_of_location pi) in
-  match Option.bind file ~f:(fun file -> source_line file pi.line) with
+  let msg = Printf.sprintf "%s: syntax error" (Parse_info.Diagnostic.to_string pi) in
+  match Option.bind (Parse_info.file pi) ~f:(fun file -> source_line file pi.line) with
   | None -> msg
   | Some line ->
       (* Columns count code points. Only print a window around the column

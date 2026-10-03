@@ -24,8 +24,7 @@ type t =
   ; name : string option  (** Name of the source file, as given by the producer. *)
   ; col : int
         (** Column, 0-based ([pos_cnum - pos_bol]), in code points for
-            JavaScript sources and in bytes for OCaml sources. Add 1 when
-            printing a location for an editor. *)
+            JavaScript sources and in bytes for OCaml sources. *)
   ; line : int  (** Line, 1-based ([pos_lnum]). *)
   ; idx : int
         (** Offset from the start of the lexed buffer ([pos_cnum]), in code
@@ -63,6 +62,23 @@ val t_of_position : src:string option -> Lexing.position -> t
 (** Position from an OCaml debug event: [name] is the [pos_fname] of the
     event, [src] the resolved path of the source file. *)
 
-val to_string : t -> string
-(** [file:line:col] with the column as stored (0-based), or ["?"] when no
-    file name is known. *)
+val file : t -> string option
+(** The file to show for the position: [name], or [src] when the name is
+    unknown; [None] when neither is known. *)
+
+(** Locations in debugging output, where the printed values should match
+    the fields: the IR printer and the location comments of
+    [--debug-info]. *)
+module Debug : sig
+  val to_string : t -> string
+  (** [file:line:col] with the line and column as stored (column
+      0-based), or ["?"] when no file name is known. *)
+end
+
+(** Locations in error and warning messages. *)
+module Diagnostic : sig
+  val to_string : t -> string
+  (** [file:line:col] with the column starting from 1, as editors and
+      compilers expect, or [line L, column C] when the file is not
+      known. *)
+end

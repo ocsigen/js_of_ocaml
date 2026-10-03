@@ -764,7 +764,7 @@ let link ?(check_missing = true) program (state : state) =
               ~sep:"\n"
               (List.map path ~f:(fun id ->
                    let nm, loc = Int.Hashtbl.find provided_rev id in
-                   Printf.sprintf "-> %s:%s" nm (Parse_info.to_string loc)))
+                   Printf.sprintf "-> %s:%s" nm (Parse_info.Diagnostic.to_string loc)))
           in
           Warning.warn
             `Deprecated_primitive
