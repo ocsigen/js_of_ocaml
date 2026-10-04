@@ -1846,3 +1846,78 @@ let%expect_test "decorators and export" =
     {| error (l:1, c:12): decorators before `export` must be followed by `class` or `default class` |}];
   check `Script "@dec function f() {}";
   [%expect {| error (l:1, c:5): decorators must be followed by `class` |}]
+
+let%expect_test "optional chain after new" =
+  (* An optional chain cannot be the callee of [new] *)
+  check `Script "new a?.b()";
+  [%expect {|
+           (new
+           a)?.b();
+           |}];
+  check `Script "new a?.b";
+  [%expect {|
+           (new
+           a)?.b;
+           |}];
+  check `Script "new (a?.b)()";
+  [%expect {| new(a?.b)(); |}]
+
+let%expect_test "reserved words in an export clause" =
+  (* Without a [from] clause, the local names are bindings: no reserved word *)
+  check `Module "export { default }";
+  [%expect {| export{default}; |}];
+  check `Module "export { if as x }";
+  [%expect {| export{if as x}; |}];
+  check `Module "var a; export { a as default, a as if }";
+  [%expect {|
+           var
+           a;export{a as default,a as if};
+           |}];
+  check `Module "export { default, if as x } from 'm'";
+  [%expect {| export{default,if as x}from"m"; |}]
+
+let%expect_test "line terminator after accessor" =
+  (* [accessor] is only a modifier when the name is on the same line *)
+  check `Script "class A { accessor\n x }";
+  [%expect {|
+           class
+           A{accessor
+           x;}
+           |}];
+  check `Script "class A { accessor x }";
+  [%expect {|
+           class
+           A{accessor
+           x;}
+           |}];
+  check `Script "class A { accessor\n x() {} }";
+  [%expect {| error (l:2, c:2): unexpected `(`, expected `;` |}]
+
+let%expect_test "directive prologue" =
+  (* Only a string literal statement is a directive: not a parenthesized one,
+     nor an expression starting with a string *)
+  check `Script "'use strict'; var let = 1";
+  [%expect {| error (l:1, c:18): `let` is a reserved word in strict mode code |}];
+  check `Script "('use strict'); var let = 1";
+  [%expect {| error (l:1, c:20): `let` is a reserved word in strict mode code |}];
+  check `Script "'use strict'.length; var let = 1";
+  [%expect {|
+           "use strict".length;var
+           let=1;
+           |}];
+  check `Script "'a'; 'use strict'; var let = 1";
+  [%expect {| error (l:1, c:23): `let` is a reserved word in strict mode code |}];
+  check `Script "var a; 'use strict'; var let = 1";
+  [%expect {|
+           var
+           a;"use strict";var
+           let=1;
+           |}]
+
+let%expect_test "line terminator before =>" =
+  check `Script "x\n=> y";
+  [%expect {| error (l:2, c:0): unexpected `=>`, expected an expression |}];
+  check `Script "async x\n=> y";
+  [%expect {| error (l:2, c:0): no line break is allowed before `=>` |}];
+  check `Script "(x)\n=> y";
+  [%expect {| error (l:2, c:0): unexpected `=>`, expected an expression |}]
