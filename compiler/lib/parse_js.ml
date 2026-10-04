@@ -634,15 +634,21 @@ let function_ctx ctx { async; generator } =
   { yield = generator; await = async; strict = ctx.strict }
 
 (* Directive prologues: the string literal statements at the beginning of
-   a script or of a function body *)
-let is_directive (s, _) =
-  match s with
-  | Expression_statement (EStr _) -> true
+   a script or of a function body. [tok] is the first token of the
+   statement: a parenthesized string is not a directive. *)
+let is_directive (tok : Js_token.t) (s, _) =
+  match tok, s with
+  | T_STRING _, Expression_statement (EStr _) -> true
   | _ -> false
 
-let is_use_strict (s, _) =
-  match s with
-  | Expression_statement (EStr (Utf8 "use strict")) -> true
+(* A Use Strict Directive is spelled exactly ["use strict"], without escape
+   sequences. The second component of [T_STRING] is the length of the raw
+   contents, plus one for the closing quote. *)
+let is_use_strict (tok : Js_token.t) s =
+  is_directive tok s
+  &&
+  match tok with
+  | T_STRING (Utf8 "use strict", n) -> n = String.length "use strict" + 1
   | _ -> false
 
 (* Identifiers *)
@@ -901,13 +907,11 @@ and parse_paren_expression t ctx =
 and parse_assignment_expression t ctx ~no_in =
   match cur t with
   | T_YIELD when ctx.yield -> parse_yield_expression t ctx ~no_in
-  | tok
-    when is_identifier ctx tok
-         && Poly.equal (peek_tok t 1) Js_token.T_ARROW
-         && next_on_same_line t ->
-      (* x => body; no line terminator before [=>] *)
+  | tok when is_identifier ctx tok && Poly.equal (peek_tok t 1) Js_token.T_ARROW ->
+      (* x => body *)
       let pos = start_pos t in
       let i = parse_identifier t ctx in
+      if newline_before t then error_msg t "no line break is allowed before `=>`";
       expect t T_ARROW;
       let body, concise = parse_concise_body t ctx ~no_in ~async:false in
       EArrow ((no_fun, list [ param' i ], body, p pos), concise, AUnknown)
@@ -970,6 +974,7 @@ and parse_cover_or_arrow t ctx ~no_in =
       expect t T_ARROW;
       let body, concise = parse_concise_body t ctx ~no_in ~async in
       EArrow (({ async; generator = false }, params, body, p pos), concise, AUnknown)
+  | T_ARROW when is_cover t ~since:m -> error_msg t "no line break is allowed before `=>`"
   | _ ->
       release t;
       parse_assignment_operator t ctx ~no_in e
@@ -1151,6 +1156,9 @@ and parse_suffixes t ctx ~start ~allow_call e =
         | T_BACKQUOTE ->
             error_msg t "a template literal is not allowed in an optional chain"
         | _ -> loop ~in_chain:true (parse_member_access t e ANullish))
+    | T_PLING_PERIOD ->
+        (* The callee of [new] is a MemberExpression *)
+        error_msg t "an optional chain cannot be the callee of `new`: add parentheses"
     | _ -> e
   in
   loop ~in_chain:false e
@@ -1496,11 +1504,11 @@ and parse_function_body t ctx ~directives =
   let rec loop ctx prologue acc =
     match cur t with
     | T_RCURLY | T_EOF -> List.rev acc
-    | _ ->
+    | tok ->
         let s = parse_statement_list_item t ctx in
-        let prologue = prologue && is_directive s in
+        let prologue = prologue && is_directive tok s in
         let ctx =
-          if prologue && is_use_strict s then { ctx with strict = true } else ctx
+          if prologue && is_use_strict tok s then { ctx with strict = true } else ctx
         in
         loop ctx prologue (s :: acc)
   in
@@ -1662,7 +1670,8 @@ and parse_class_body t ctx =
         in
         let elt =
           match cur t with
-          | T_ACCESSOR when not (accessor_keyword_is_name t) ->
+          | T_ACCESSOR when (not (accessor_keyword_is_name t)) && next_on_same_line t ->
+              (* [accessor] on its own line is a field named [accessor] *)
               advance t;
               let name = parse_class_element_name t ctx in
               let init = parse_initializer_opt t ctx ~no_in:false in
@@ -2297,19 +2306,26 @@ and parse_export_declaration t ~pos ~decorators =
             (Export_names (List.map names ~f:(fun ((_, a, _), (_, b, _)) -> a, b)))
       | _ ->
           consume_semicolon t;
-          let exception Invalid of Lexing.position in
+          let exception Invalid of Lexing.position * string in
           let k =
             try
               ExportNames
                 (List.map names ~f:(fun ((k, id, pos), (_, s, _)) ->
                      match k with
-                     | `Ident | `Reserved -> var pos id, s
-                     | `String -> raise (Invalid pos)))
-            with Invalid pos ->
-              CoverExportFrom
-                (early_error
-                   ~reason:"a string can only be exported from another module (`from`)"
-                   (pi pos))
+                     | `Ident -> var pos id, s
+                     | `Reserved ->
+                         raise
+                           (Invalid
+                              ( pos
+                              , "a reserved word can only be exported from another \
+                                 module (`from`)" ))
+                     | `String ->
+                         raise
+                           (Invalid
+                              ( pos
+                              , "a string can only be exported from another module \
+                                 (`from`)" ))))
+            with Invalid (pos, reason) -> CoverExportFrom (early_error ~reason (pi pos))
           in
           export k)
   | tok, [] -> (
@@ -2336,14 +2352,14 @@ let parse_script_or_module t ~module_ =
   let rec loop ctx prologue acc =
     match cur t with
     | T_EOF -> List.rev acc
-    | _ ->
+    | tok ->
         let annots = annots_before t in
         let s =
           if module_ then parse_module_item t ctx else parse_statement_list_item t ctx
         in
-        let prologue = prologue && is_directive s in
+        let prologue = prologue && is_directive tok s in
         let ctx =
-          if prologue && is_use_strict s then { ctx with strict = true } else ctx
+          if prologue && is_use_strict tok s then { ctx with strict = true } else ctx
         in
         loop ctx prologue ((annots, s) :: acc)
   in
