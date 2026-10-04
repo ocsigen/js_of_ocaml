@@ -28,10 +28,12 @@
      expression (only ever at the start of a primary expression) and asks
      the lexer to re-lex the token in that case.
 
-   - Every token, including comments, is recorded in an array. This gives
-     the parser arbitrary lookahead, provides the token list returned by
-     [parse'], and allows the arrow-function cover grammars
-     (CoverParenthesizedExpressionAndArrowParameterList and
+   - Tokens, including comments, are lexed on demand into an array
+     ([Stream]). Only a window of them is kept: those that can still be
+     looked at, from the last consumed token or from a held backtracking
+     point; [parse'] asks for all of them, to return the token list. This
+     gives the parser arbitrary lookahead and allows the arrow-function
+     cover grammars (CoverParenthesizedExpressionAndArrowParameterList and
      CoverCallExpressionAndAsyncArrowHead) to be handled by re-parsing: a
      parenthesized expression or an [async (...)] call is first parsed as
      an expression, recording the span of tokens it covers. If, at the
@@ -66,11 +68,9 @@
      checked. A directive does not apply retroactively to the name and
      the parameters of its function. *)
 
-let debug = Debug.find "js-parser"
-
-let debug () = debug ()
-
 open! Stdlib
+
+let debug = Debug.find "js-parser"
 
 module Lexer : sig
   type t
@@ -209,105 +209,112 @@ module Stream : sig
   type t
 
   val create : keep_tokens:bool -> Lexer.t -> t
-  (* With [keep_tokens], all the tokens are kept, for [all_tokens].
-     Otherwise, only a window of tokens is kept: the ones that may still be
-     looked at. This avoids promoting every token to the major heap. *)
+  (** With [keep_tokens], all the tokens are kept, for [all_tokens].
+      Otherwise, only a window of tokens is kept: the ones that may still
+      be looked at. This avoids promoting every token to the major heap. *)
 
-  (* Lookahead. Comments are skipped. *)
+  (** {2 Lookahead}
+
+      Comments are skipped.
+
+      Tokens are lexed on demand, and the lexer does not know whether a
+      [/] is a division or starts a regular expression: the parser asks
+      for the current token to be lexed again ([relex_regexp]) when it is a
+      [/] starting a regular expression, which is only possible while no
+      token after it has been lexed. So one must never lex past such a
+      [/], that is, never peek beyond it. This holds because the parser
+      peeks only when the current token is an identifier or a keyword used
+      as a name ([async], [let], [static], [using], ...), after which a [/]
+      is a division, and because the few longer lookaheads
+      ([import . meta], [using of =], [await using of of]) stop at the
+      first token that could be such a [/]. *)
 
   val cur : t -> Js_token.t
-  (* The current token: the next one to be consumed *)
+  (** The current token: the next one to be consumed *)
 
   val cur_loc : t -> Loc.t
 
   val start_pos : t -> Lexing.position
-  (* Start of the current token *)
+  (** Start of the current token *)
 
   val peek : t -> int -> Js_token.t * Loc.t
-  (* The [n]th token after the current one ([n >= 1]).
-
-     Tokens are lexed on demand, and the lexer does not know whether a [/]
-     is a division or starts a regular expression: the parser asks for it
-     to be re-lexed ([relex_regexp]) when it is the current token, which
-     is only possible while no token after it has been lexed. So one must
-     not peek beyond a token that may turn out to be a [/] starting a
-     regular expression, that is, a [/] where an expression can start. *)
+  (** The [n]th token after the current one ([n >= 1]) *)
 
   val peek_tok : t -> int -> Js_token.t
 
   val newline_before : t -> bool
-  (* Whether there is a line terminator between the last consumed token
-     and the current one *)
+  (** Whether there is a line terminator between the last consumed token
+      and the current one *)
 
   val next_on_same_line : t -> bool
-  (* Whether the token after the current one is on the same line *)
+  (** Whether the token after the current one is on the same line *)
 
-  (* Consuming tokens *)
+  (** {2 Consuming tokens} *)
 
   val advance : t -> unit
 
   val prev_end : t -> Lexing.position
-  (* End of the last consumed token *)
+  (** End of the last consumed token *)
 
   val error : ?expected:string -> t -> 'a
-  (* Syntax error at the current token: it is unexpected. [expected]
-     describes what could have been there instead. *)
+  (** Syntax error at the current token: it is unexpected. [expected]
+      describes what could have been there instead. *)
 
   val error_msg : t -> string -> 'a
-  (* Syntax error at the current token, with a specific message *)
+  (** Syntax error at the current token, with a specific message *)
 
   val expect : t -> Js_token.t -> unit
 
   val consume_semicolon : t -> unit
-  (* A semicolon, possibly inserted automatically (ASI) *)
+  (** A semicolon, possibly inserted automatically (ASI) *)
 
   val consume_semicolon_opt : t -> unit
-  (* A semicolon that can be omitted even on the same line: after
-     [do ... while (...)] and [export default function/class] *)
+  (** A semicolon that can be omitted even on the same line: after
+      [do ... while (...)] and [export default function/class] *)
 
-  (* Changing the current token *)
+  (** {2 Changing the current token} *)
 
   val relex_regexp : t -> unit
-  (* The current token is a [/] or a [/=] starting a regular expression:
-     lex it again as such. See [peek]. *)
+  (** The current token is a [/] or a [/=] starting a regular expression:
+      lex it again as such. See the lookahead section above. *)
 
   val retag_current : t -> Js_token.t -> unit
-  (* Replace the current token, keeping its location. This only matters
-     for the token list returned by [parse']. *)
+  (** Replace the current token, keeping its location. This only matters
+      for the token list returned by [parse']. *)
 
-  (* Backtracking, for the arrow-function cover grammars *)
+  (** {2 Backtracking}, for the arrow-function cover grammars *)
 
   type mark
 
   val mark : t -> mark
 
   val hold : t -> mark -> unit
-  (* Keep the tokens from the mark on, so that one can [reset] to it, until
-     the matching [release]. Holds can be nested. *)
+  (** Keep the tokens from the mark on, so that one can [reset] to it,
+      until the matching [release]. Holds can be nested. *)
 
   val release : t -> unit
 
   val reset : t -> mark -> unit
-  (* Go back to a mark which is being held *)
+  (** Go back to a mark which is being held *)
 
   val record_cover : t -> start:mark -> unit
-  (* The tokens from [start] to the last consumed one form a parenthesized
-     expression or an [async (...)] call: they may have to be parsed again
-     as the parameters of an arrow function. *)
+  (** The tokens from [start] to the last consumed one form a parenthesized
+      expression or an [async (...)] call: they may have to be parsed again
+      as the parameters of an arrow function. *)
 
   val is_cover : t -> since:mark -> bool
-  (* Whether the tokens consumed since the mark are exactly the last
-     recorded cover *)
+  (** Whether the tokens consumed since the mark are exactly the last
+      recorded cover *)
 
-  (* Whole stream *)
+  (** {2 Whole stream} *)
 
   val annots_before : t -> (Js_token.Annot.t * Parse_info.t) list
-  (* The annotations ([//Provides: ...]) among the comments between the
-     last consumed token and the current one *)
+  (** The annotations ([//Provides: ...]) among the comments between the
+      last consumed token and the current one *)
 
   val all_tokens : t -> (Js_token.t * Loc.t) list
-  (* All the tokens lexed so far, including the comments and the virtual
-     semicolons. Requires [keep_tokens]. *)
+  (** All the tokens lexed so far, including the comments and the virtual
+      semicolons. Requires [keep_tokens]. *)
 end = struct
   (* Tokens are designated by their index in the whole stream. [toks] holds
      the tokens of index [base] to [len - 1]. *)
@@ -465,10 +472,15 @@ end = struct
    consumed token. Only used for the token list returned by [parse']. *)
   let insert_virtual_semicolon t =
     if t.keep_tokens
-    then
+    then (
+      (* With [keep_tokens], [make_room] never drops tokens: an index in
+         the stream is an index in the array. The current token has been
+         looked at, so there is a token after the last consumed one. *)
+      assert (t.base = 0);
       let i = t.prev_real + 1 in
-      match t.toks.(i) with
-      | T_VIRTUAL_SEMICOLON, _ when i < t.len -> () (* already there (re-parse) *)
+      assert (i < t.len);
+      match get t i with
+      | T_VIRTUAL_SEMICOLON, _ -> () (* already there (re-parse) *)
       | _ ->
           push t dummy_token;
           Array.blit
@@ -477,8 +489,8 @@ end = struct
             ~dst:t.toks
             ~dst_pos:(i + 1)
             ~len:(t.len - 1 - i);
-          t.toks.(i) <- Js_token.T_VIRTUAL_SEMICOLON, dummy_loc;
-          t.pos <- t.pos + 1
+          set t i (Js_token.T_VIRTUAL_SEMICOLON, dummy_loc);
+          t.pos <- t.pos + 1)
 
   let consume_semicolon t =
     match cur t with
@@ -836,14 +848,14 @@ let async_function_ahead t =
   | T_FUNCTION, loc -> same_line (cur_loc t) loc
   | _ -> false
 
-(* The prefix of a MethodDefinition, in an object literal or a class body:
-   [get], [set], [async], [*] or [async *]. Returns the kind of function,
-   the shape of its parameters and the constructor of the method. *)
 (* Likewise for [get], [set] and [accessor], which cannot be followed by
    [*]: a field named [get], then a generator method on the next line *)
 let accessor_keyword_is_name t =
   keyword_is_name t || Poly.equal (peek_tok t 1) Js_token.T_MULT
 
+(* The prefix of a MethodDefinition, in an object literal or a class body:
+   [get], [set], [async], [*] or [async *]. Returns the kind of function,
+   the shape of its parameters and the constructor of the method. *)
 let parse_method_modifier t =
   match cur t with
   | T_GET when not (accessor_keyword_is_name t) ->
@@ -1492,15 +1504,16 @@ and parse_function_declaration t ctx ~pos ~async =
   let body_ctx = function_ctx ctx kind in
   let params = parse_formal_parameters t body_ctx in
   expect t T_LCURLY;
-  let body = parse_function_body t body_ctx ~directives:true in
+  let body = parse_statement_list t body_ctx ~directives:true in
   (* For compatibility with the previous parser, plain function
      declarations are located at their closing brace. *)
   let pos = if async || kind.generator then pos else start_pos t in
   expect t T_RCURLY;
   name, (kind, params, body, p pos)
 
-(* FunctionBody / StatementList, up to the closing brace *)
-and parse_function_body t ctx ~directives =
+(* StatementList, up to the closing brace or the end of input. With
+   [directives], it can start with a directive prologue (a function body). *)
+and parse_statement_list t ctx ~directives =
   let rec loop ctx prologue acc =
     match cur t with
     | T_RCURLY | T_EOF -> List.rev acc
@@ -1706,14 +1719,14 @@ and parse_class_body t ctx =
 (* Block : { StatementList? } *)
 and parse_block t ctx =
   expect t T_LCURLY;
-  let body = parse_function_body t ctx ~directives:false in
+  let body = parse_statement_list t ctx ~directives:false in
   expect t T_RCURLY;
   body
 
 (* [{ FunctionBody }], which can start with directives *)
 and parse_function_block t ctx =
   expect t T_LCURLY;
-  let body = parse_function_body t ctx ~directives:true in
+  let body = parse_statement_list t ctx ~directives:true in
   expect t T_RCURLY;
   body
 

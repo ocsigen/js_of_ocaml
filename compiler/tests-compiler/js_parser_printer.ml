@@ -1850,18 +1850,22 @@ let%expect_test "decorators and export" =
 let%expect_test "optional chain after new" =
   (* An optional chain cannot be the callee of [new] *)
   check `Script "new a?.b()";
-  [%expect {| error (l:1, c:5): an optional chain cannot be the callee of `new`: add parentheses |}];
+  [%expect
+    {| error (l:1, c:5): an optional chain cannot be the callee of `new`: add parentheses |}];
   check `Script "new a?.b";
-  [%expect {| error (l:1, c:5): an optional chain cannot be the callee of `new`: add parentheses |}];
+  [%expect
+    {| error (l:1, c:5): an optional chain cannot be the callee of `new`: add parentheses |}];
   check `Script "new (a?.b)()";
   [%expect {| new(a?.b)(); |}]
 
 let%expect_test "reserved words in an export clause" =
   (* Without a [from] clause, the local names are bindings: no reserved word *)
   check `Module "export { default }";
-  [%expect {| error (l:1, c:9): a reserved word can only be exported from another module (`from`) |}];
+  [%expect
+    {| error (l:1, c:9): a reserved word can only be exported from another module (`from`) |}];
   check `Module "export { if as x }";
-  [%expect {| error (l:1, c:9): a reserved word can only be exported from another module (`from`) |}];
+  [%expect
+    {| error (l:1, c:9): a reserved word can only be exported from another module (`from`) |}];
   check `Module "var a; export { a as default, a as if }";
   [%expect {|
            var

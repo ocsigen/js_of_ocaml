@@ -57,20 +57,21 @@
   (#1226)
 * Compiler: replace the Menhir-based JavaScript parser with a hand-written
   recursive-descent parser; it also rejects `throw` followed by a line
-  terminator hidden in a comment, as required by the spec
+  terminator hidden in a comment, as required by the spec (#2467)
 * Compiler: syntax errors in JavaScript files are now explained: the message
   tells which token is unexpected and what was expected instead
   (``unexpected `{`, expected `,` or `)` ``), or which rule is broken (`a getter
   has no parameter`), and shows the offending line. `Parse_js.Parsing_error`
-  now carries this message along with the location
+  now carries this message along with the location (#2467)
 * Compiler: the JavaScript parser now accepts every valid program of test262
   (`test/language`). In particular, `let`, `static`, `implements`, `interface`,
   `package`, `private`, `protected` and `public` are accepted as identifiers
   outside of strict mode code (modules, classes, code following a `use strict`
   directive). It also rejects some invalid programs it used to accept: getters
   and setters with the wrong number of parameters, an initializer in a `catch`
-  parameter, malformed `import(...)` calls, `for (async of ...)`, a template literal in
-  an optional chain
+  parameter, malformed `import(...)` calls, `for (async of ...)`, a template
+  literal in an optional chain, an optional chain as the callee of `new`,
+  reserved words in an export clause (#2467)
 * Lib: add `Crypto` — bindings to the Web Crypto API (`crypto`,
   `getRandomValues`, `randomUUID`, and the Promise-typed `SubtleCrypto`), with a
   typed `params` variant (one constructor per algorithm) and
@@ -168,6 +169,7 @@
 * Compiler: keep the decorators of `@dec export default class {}`, which were
   silently dropped, and reject decorators before the other forms of `export`
   (`@dec export function f() {}`, ...) or on both sides (`@a export @b class`)
+  (#2467)
 * Runtime: convert unit names to OCaml strings before calling the toplevel
   relocation callback when `use-js-string` is disabled (#2429)
 * Compiler/Wasm: don't run the program on a JSPI stack when `--effects=cps`
