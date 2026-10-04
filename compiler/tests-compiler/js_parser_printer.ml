@@ -1930,3 +1930,17 @@ let%expect_test "line terminator before =>" =
   [%expect {| error (l:2, c:0): no line break is allowed before `=>` |}];
   check `Script "(x)\n=> y";
   [%expect {| error (l:2, c:0): no line break is allowed before `=>` |}]
+
+let%expect_test "line terminator before postfix ++ and --" =
+  (* A line terminator, even inside a comment, ends the statement before a
+     postfix operator *)
+  check `Script "a\n++b";
+  [%expect {| a;++b; |}];
+  check `Script "a /*\n*/ ++b";
+  [%expect {| error (l:2, c:5): unexpected identifier `b`, expected `;` |}];
+  check `Script "a /*\n*/ --b";
+  [%expect {| error (l:2, c:5): unexpected identifier `b`, expected `;` |}];
+  check `Script "a /* */ ++b";
+  [%expect {| error (l:1, c:10): unexpected identifier `b`, expected `;` |}];
+  check `Script "a++\nb";
+  [%expect {| a++;b; |}]
