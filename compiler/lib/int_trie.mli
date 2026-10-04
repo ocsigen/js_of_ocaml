@@ -67,6 +67,9 @@ val iter : (key -> 'a -> unit) -> 'a t -> unit
 val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
 
 val map : ('a -> 'b) -> 'a t -> 'b t
+(** [map], [mapi], [filter] and [filter_map] return the map itself
+    when [f] returns all the values unchanged (physically), and share
+    the unchanged parts of the map otherwise. *)
 
 val mapi : (key -> 'a -> 'b) -> 'a t -> 'b t
 
