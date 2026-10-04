@@ -2109,7 +2109,10 @@ let%expect_test "directive prologue" =
            let=1;
            |}];
   check `Script "('use strict'); var let = 1";
-  [%expect {| error (l:1, c:20): unexpected `let`, expected an identifier |}];
+  [%expect {|
+           "use strict";var
+           let=1;
+           |}];
   check `Script "'use strict'.length; var let = 1";
   [%expect {|
            "use strict".length;var

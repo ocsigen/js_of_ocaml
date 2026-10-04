@@ -656,15 +656,21 @@ let function_ctx ctx { async; generator } =
   { yield = generator; await = async; strict = ctx.strict }
 
 (* Directive prologues: the string literal statements at the beginning of
-   a script or of a function body *)
-let is_directive (s, _) =
-  match s with
-  | Expression_statement (EStr _) -> true
+   a script or of a function body. [tok] is the first token of the
+   statement: a parenthesized string is not a directive. *)
+let is_directive (tok : Js_token.t) (s, _) =
+  match tok, s with
+  | T_STRING _, Expression_statement (EStr _) -> true
   | _ -> false
 
-let is_use_strict (s, _) =
-  match s with
-  | Expression_statement (EStr (Utf8 "use strict")) -> true
+(* A Use Strict Directive is spelled exactly ["use strict"], without escape
+   sequences. The second component of [T_STRING] is the length of the raw
+   contents, plus one for the closing quote. *)
+let is_use_strict (tok : Js_token.t) s =
+  is_directive tok s
+  &&
+  match tok with
+  | T_STRING (Utf8 "use strict", n) -> n = String.length "use strict" + 1
   | _ -> false
 
 (* What the parameters of an async arrow function cannot contain (ECMA-262
@@ -1736,23 +1742,24 @@ and parse_function_declaration t ctx ~pos ~async =
   let body_ctx = function_ctx ctx kind in
   let params = parse_formal_parameters t body_ctx in
   expect t T_LCURLY;
-  let body = parse_function_body t body_ctx ~directives:true in
+  let body = parse_statement_list t body_ctx ~directives:true in
   (* For compatibility with the previous parser, plain function
      declarations are located at their closing brace. *)
   let pos = if async || kind.generator then pos else start_pos t in
   expect t T_RCURLY;
   name, (kind, params, body, p pos)
 
-(* FunctionBody / StatementList, up to the closing brace *)
-and parse_function_body t ctx ~directives =
+(* StatementList, up to the closing brace or the end of input. With
+   [directives], it can start with a directive prologue (a function body). *)
+and parse_statement_list t ctx ~directives =
   let rec loop ctx prologue acc =
     match cur t with
     | T_RCURLY | T_EOF -> List.rev acc
-    | _ ->
+    | tok ->
         let s = parse_statement_list_item t ctx in
-        let prologue = prologue && is_directive s in
+        let prologue = prologue && is_directive tok s in
         let ctx =
-          if prologue && is_use_strict s then { ctx with strict = true } else ctx
+          if prologue && is_use_strict tok s then { ctx with strict = true } else ctx
         in
         loop ctx prologue (s :: acc)
   in
@@ -1954,14 +1961,14 @@ and parse_class_body t ctx =
 (* Block : { StatementList? } *)
 and parse_block t ctx =
   expect t T_LCURLY;
-  let body = parse_function_body t ctx ~directives:false in
+  let body = parse_statement_list t ctx ~directives:false in
   expect t T_RCURLY;
   body
 
 (* [{ FunctionBody }], which can start with directives *)
 and parse_function_block t ctx =
   expect t T_LCURLY;
-  let body = parse_function_body t ctx ~directives:true in
+  let body = parse_statement_list t ctx ~directives:true in
   expect t T_RCURLY;
   body
 
@@ -2595,14 +2602,14 @@ let parse_script_or_module t ~module_ =
   let rec loop ctx prologue acc =
     match cur t with
     | T_EOF -> List.rev acc
-    | _ ->
+    | tok ->
         let annots = annots_before t in
         let s =
           if module_ then parse_module_item t ctx else parse_statement_list_item t ctx
         in
-        let prologue = prologue && is_directive s in
+        let prologue = prologue && is_directive tok s in
         let ctx =
-          if prologue && is_use_strict s then { ctx with strict = true } else ctx
+          if prologue && is_use_strict tok s then { ctx with strict = true } else ctx
         in
         loop ctx prologue ((annots, s) :: acc)
   in
