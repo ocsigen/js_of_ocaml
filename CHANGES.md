@@ -5,6 +5,7 @@
   (primitive types, immutable blocks, closures, immediates, ...) (#1721, #2488)
 * Compiler/Runtime: support the OCaml 5.6 bit counting primitives
   (`caml_int_clz`, `caml_int_ctz`, `caml_int_popcount`) (#2469)
+* Runtime: support `Sys.filepath_exists` (OCaml 5.6) (#2493)
 * Runtime: with OCaml 5.6, `Weak.get_copy` and the ephemeron `get_*_copy`
   primitives no longer copy, as in the OCaml runtime (#2469)
 * Compiler: with `--effects={cps,double-translation}`, specialize calls to

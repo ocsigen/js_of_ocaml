@@ -54,6 +54,16 @@ class MlNodeDevice {
     }
   }
 
+  filepath_exists(name) {
+    try {
+      this.fs.statSync(this.nm(name));
+      return 1;
+    } catch (err) {
+      if (err.code === "ENOENT" || err.code === "ENOTDIR") return 0;
+      caml_raise_sys_error(err.toString());
+    }
+  }
+
   isFile(name) {
     try {
       return this.fs.statSync(this.nm(name)).isFile() ? 1 : 0;

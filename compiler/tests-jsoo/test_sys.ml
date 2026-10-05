@@ -20,7 +20,8 @@
 open! Js_of_ocaml
 
 (* The four [In_channel.input_all] tests carry a per-test [@@if] (the API is
-   5.0+), so they only build on OCaml >= 5. The three tests digesting the
+   5.0+), so they only build on OCaml >= 5; likewise, the [Sys.filepath_exists]
+   test only builds on OCaml >= 5.6. The three tests digesting the
    Random-generated [content] run everywhere, but the Random PRNG changed in 5.0,
    so each digest snapshot has a [@when ocaml_version >= (5, 0, 0)] variant (the
    5.x value) and a default (the pre-5 value). Everything else runs unconditionally. *)
@@ -356,3 +357,19 @@ let%expect_test "Unix.error_message" =
     EDEADLK
     true
     |}]
+
+let%expect_test "filepath_exists" =
+  Sys.mkdir "/static/fpe" 0o777;
+  close_out (open_out "/static/fpe/f");
+  List.iter
+    (fun name -> Printf.printf "%s: %b\n" name (Sys.filepath_exists name))
+    [ "/static"; "/static/fpe"; "/static/fpe/f"; "/static/fpe/g"; "/static/fpe/f/x" ];
+  [%expect
+    {|
+    /static: true
+    /static/fpe: true
+    /static/fpe/f: true
+    /static/fpe/g: false
+    /static/fpe/f/x: false
+    |}]
+[@@if ocaml_version >= (5, 6, 0)]

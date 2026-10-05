@@ -288,6 +288,15 @@ function caml_sys_file_exists(name) {
   return root.device.exists(root.rest);
 }
 
+//Provides: caml_sys_filepath_exists
+//Requires: resolve_fs_device, caml_jsstring_of_string
+//Version: >= 5.6
+function caml_sys_filepath_exists(name) {
+  if (caml_jsstring_of_string(name) === "") return 0;
+  var root = resolve_fs_device(name);
+  return root.device.filepath_exists(root.rest);
+}
+
 //Provides: caml_sys_read_directory
 //Requires: caml_string_of_jsstring
 //Requires: resolve_fs_device
