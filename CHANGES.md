@@ -1,6 +1,8 @@
 # dev
 
 ## Features/Changes
+* Compiler: with OCaml 5.6, use the optimization hints recorded in the bytecode
+  (primitive types, immutable blocks, closures, immediates, ...) (#1721, #2488)
 * Compiler/Runtime: support the OCaml 5.6 bit counting primitives
   (`caml_int_clz`, `caml_int_ctz`, `caml_int_popcount`) (#2469)
 * Runtime: with OCaml 5.6, `Weak.get_copy` and the ephemeron `get_*_copy`
@@ -197,7 +199,7 @@
   builds the toplevel variant of library dependencies and their cmis (Stdlib,
   compiler-libs, ...) end up in `/static/cmis`. Previously only whole-program
   compilation embedded them, so a separately-compiled wasm toplevel failed to
-  load Stdlib at startup (#1721)
+  load Stdlib at startup (#2227)
 * Runtime: fix comparison between an immediate and a custom block that
   provides a compare op (e.g. zarith), broken by #2290 (#2391)
 * Wasm: resolve `.wasm` assets relative to the runtime file rather than the
