@@ -168,6 +168,8 @@
 - [Module `Parse_bytecode.Debug`](js_of_ocaml-compiler/Js_of_ocaml_compiler-Parse_bytecode-Debug.md)
 - [Module `Parse_bytecode.Toc`](js_of_ocaml-compiler/Js_of_ocaml_compiler-Parse_bytecode-Toc.md)
 - [Module `Js_of_ocaml_compiler.Parse_bytecode`](js_of_ocaml-compiler/Js_of_ocaml_compiler-Parse_bytecode.md)
+- [Module `Parse_info.Debug`](js_of_ocaml-compiler/Js_of_ocaml_compiler-Parse_info-Debug.md)
+- [Module `Parse_info.Diagnostic`](js_of_ocaml-compiler/Js_of_ocaml_compiler-Parse_info-Diagnostic.md)
 - [Module `Js_of_ocaml_compiler.Parse_info`](js_of_ocaml-compiler/Js_of_ocaml_compiler-Parse_info.md)
 - [Module `Parse_js.Lexer`](js_of_ocaml-compiler/Js_of_ocaml_compiler-Parse_js-Lexer.md)
 - [Module `Js_of_ocaml_compiler.Parse_js`](js_of_ocaml-compiler/Js_of_ocaml_compiler-Parse_js.md)
