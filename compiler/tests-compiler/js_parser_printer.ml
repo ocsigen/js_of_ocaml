@@ -1937,9 +1937,9 @@ let%expect_test "line terminator before postfix ++ and --" =
   check `Script "a\n++b";
   [%expect {| a;++b; |}];
   check `Script "a /*\n*/ ++b";
-  [%expect {| error (l:2, c:5): unexpected identifier `b`, expected `;` |}];
+  [%expect {| a;++b; |}];
   check `Script "a /*\n*/ --b";
-  [%expect {| error (l:2, c:5): unexpected identifier `b`, expected `;` |}];
+  [%expect {| a;--b; |}];
   check `Script "a /* */ ++b";
   [%expect {| error (l:1, c:10): unexpected identifier `b`, expected `;` |}];
   check `Script "a++\nb";

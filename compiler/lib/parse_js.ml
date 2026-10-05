@@ -1101,13 +1101,14 @@ and parse_unary_expression t ctx =
   | None, (T_DECR | T_DECR_NB) -> unop DecrB
   | None, _ -> (
       let e = parse_left_hand_side_expression t ctx in
-      (* Postfix operators: the lexer produces [T_INCR_NB] when there is no
-         line terminator before [++] *)
+      (* Postfix operators: no line terminator before them, not even inside
+         a comment, which the lexer does not see when it produces
+         [T_INCR_NB] rather than [T_INCR] *)
       match cur t with
-      | T_INCR_NB ->
+      | (T_INCR | T_INCR_NB) when not (newline_before t) ->
           advance t;
           EUn (IncrA, e)
-      | T_DECR_NB ->
+      | (T_DECR | T_DECR_NB) when not (newline_before t) ->
           advance t;
           EUn (DecrA, e)
       | _ -> e)
