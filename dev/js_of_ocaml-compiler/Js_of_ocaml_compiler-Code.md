@@ -10,12 +10,20 @@ module Var : sig ... end
 type cont = Addr.t * Var.t list
 ```
 ```ocaml
+type field_type = 
+  | Non_float
+  | Immediate (* A field known to contain an immediate value *)
+  | Float
+```
+```ocaml
 type prim = 
   | Vectlength of Optimization_hint.array_kind
-  | Array_get
+  | Array_get of field_type (* Non_float or Immediate, never Float *)
   | Extern of string * Optimization_hint.ccall option
   | Not
-  | IsInt
+  | IsInt of {
+    variant_only : bool;
+  } (* variant_only: the argument is a value of a variant type, whose immediates are constant constructors *)
   | Eq
   | Neq
   | Lt
@@ -73,11 +81,6 @@ type special =
 type mutability = 
   | Immutable
   | Maybe_mutable
-```
-```ocaml
-type field_type = 
-  | Non_float
-  | Float
 ```
 ```ocaml
 type expr = 

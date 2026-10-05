@@ -4372,12 +4372,20 @@ module Var : sig ... end
 type cont = Addr.t * Var.t list
 ```
 ```ocaml
+type field_type = 
+  | Non_float
+  | Immediate (* A field known to contain an immediate value *)
+  | Float
+```
+```ocaml
 type prim = 
   | Vectlength of Optimization_hint.array_kind
-  | Array_get
+  | Array_get of field_type (* Non_float or Immediate, never Float *)
   | Extern of string * Optimization_hint.ccall option
   | Not
-  | IsInt
+  | IsInt of {
+    variant_only : bool;
+  } (* variant_only: the argument is a value of a variant type, whose immediates are constant constructors *)
   | Eq
   | Neq
   | Lt
@@ -4435,11 +4443,6 @@ type special =
 type mutability = 
   | Immutable
   | Maybe_mutable
-```
-```ocaml
-type field_type = 
-  | Non_float
-  | Float
 ```
 ```ocaml
 type expr = 
@@ -9507,6 +9510,7 @@ type ccall =
   | Hint_int of boxed_integer
   | Hint_bigarray of Bigarray.t
   | Hint_primitive of primitive
+  | Hint_immediate_result (* The value returned by the C function is an immediate *)
 ```
 ```ocaml
 type inline_attribute = 
@@ -9537,6 +9541,8 @@ type t =
   | Hint_arraylength of array_kind
   | Hint_closures of closure_hint list
   | Hint_ccall of ccall
+  | Hint_immediate (* The value produced by the instruction is an immediate *)
+  | Hint_variant (* The argument of the instruction is a value of a variant type: if it is an immediate, it is a constant constructor *)
 ```
 ```ocaml
 val print_ccall : Stdlib.Format.formatter -> ccall -> unit
