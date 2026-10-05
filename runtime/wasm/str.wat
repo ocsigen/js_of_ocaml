@@ -475,14 +475,20 @@
              (then
                 (local.set $j (i32.shl (local.get $i) (i32.const 1)))
                 (if (i32.or
-                       (i32.lt_s
+                       (i32.or
+                          (i32.lt_s
+                             (array.get $int_array (local.get $group_start)
+                                (local.get $i))
+                             (i32.const 0))
+                          (i32.lt_s
+                             (array.get $int_array (local.get $group_end)
+                                (local.get $i))
+                             (i32.const 0)))
+                       (i32.gt_s
                           (array.get $int_array (local.get $group_start)
                              (local.get $i))
-                          (i32.const 0))
-                       (i32.lt_s
                           (array.get $int_array (local.get $group_end)
-                             (local.get $i))
-                          (i32.const 0)))
+                             (local.get $i))))
                    (then
                       (array.set $block (local.get $res)
                          (i32.add (local.get $j) (i32.const 1))
