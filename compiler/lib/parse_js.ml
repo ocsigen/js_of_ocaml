@@ -2379,35 +2379,19 @@ let parse_script_or_module t ~module_ =
   in
   loop ctx (not module_) []
 
+(* The early errors recorded while parsing the cover grammars (see
+   [Javascript.early_error]). Import and export declarations are only
+   built at the top level of a module, so there is nothing to check about
+   their position. *)
 let fail_early =
-  object (m)
-    inherit Js_traverse.iter as super
+  object
+    inherit Js_traverse.iter
 
-    method early_error p =
+    method! early_error p =
       raise (Parsing_error (p.loc, Option.value ~default:"syntax error" p.reason))
-
-    method statement s =
-      match s with
-      | Import (_, loc) | Export (_, loc) ->
-          raise
-            (Parsing_error
-               ( loc
-               , "import and export declarations are only allowed at the top level of a \
-                  module" ))
-      | _ -> super#statement s
-
-    method program p =
-      List.iter p ~f:(fun ((p : Javascript.statement), _loc) ->
-          match p with
-          | Import _ -> super#statement p
-          | Export (e, _) -> (
-              match e with
-              | CoverExportFrom e -> m#early_error e
-              | _ -> super#statement p)
-          | _ -> super#statement p)
   end
 
-let check_program p = List.iter p ~f:(function _, p -> fail_early#program [ p ])
+let check_program p = List.iter p ~f:(fun (_, (s, _)) -> fail_early#statement s)
 
 (* The parser uses the native stack: a program nested very deeply (tens of
    thousands of brackets, with the stack of OCaml 4) overflows it. Report
