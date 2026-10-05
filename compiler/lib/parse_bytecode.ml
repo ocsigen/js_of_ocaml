@@ -3045,6 +3045,19 @@ let emit_link_info ~symbols ~primitives ~crcs ~num_globals body =
   :: Let (Var.fresh (), Prim (Extern ("caml_set_link_info", None), [ Pv c ]))
   :: body
 
+(* The debug events of a large program are hundreds of megabytes,
+   unmarshalled directly into the major heap, and dropped as soon as
+   the bytecode has been parsed. Let the GC know that the live memory
+   is growing, rather than having it work harder to collect memory
+   which is not there; the suspended collection work is given back
+   once the events have been dropped. *)
+let ramp_up f =
+  let res, work = Gc.ramp_up f in
+  res, fun () -> Gc.ramp_down work
+[@@if ocaml_version >= (5, 4, 0)]
+
+let ramp_up f = f (), fun () -> () [@@if ocaml_version < (5, 4, 0)]
+
 let from_exe
     ?(includes = [])
     ~linkall
@@ -3089,11 +3102,15 @@ let from_exe
       orig_symbols
   in
   let t = Timer.make () in
+  let ramp_down = ref (fun () -> ()) in
   (if Debug.dbg_section_needed debug_data
    then
      try
        ignore (Toc.seek_section toc ic "DBUG");
-       Debug.read debug_data ~crcs ~includes ic
+       let (), ramp_down' =
+         ramp_up (fun () -> Debug.read debug_data ~crcs ~includes ic)
+       in
+       ramp_down := ramp_down'
      with Not_found ->
        if Debug.enabled debug_data || include_cmis
        then
@@ -3187,7 +3204,10 @@ let from_exe
   in
   let code = prepend p body in
   Code.invariant code;
-  { code; cmis; debug = Debug.summarize debug_data }
+  let p = { code; cmis; debug = Debug.summarize debug_data } in
+  (* The debug events are not used any more *)
+  !ramp_down ();
+  p
 
 (* As input: list of primitives + size of global table *)
 let from_bytes ~prims ~debug (code : bytecode) =
