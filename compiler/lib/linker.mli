@@ -32,6 +32,18 @@ module Fragment : sig
   val parse_builtin : Builtins.File.t -> t list
 
   val pack : t -> t
+
+  val attach_annot :
+       (Lexing.position * (Javascript.statement * Javascript.location)) list
+    -> (Js_token.t * Loc.t) list
+    -> ((Js_token.Annot.t * Parse_info.t) list * Javascript.statement_list) list
+  (** Group the positioned statements returned by {!Parse_js.parse'} by the
+      annotations preceding them. *)
+
+  val script_to_module :
+       runtime_import:Utf8_string.t
+    -> ((Js_token.Annot.t * Parse_info.t) list * Javascript.statement_list) list
+    -> Javascript.program
 end
 
 val reset : unit -> unit
