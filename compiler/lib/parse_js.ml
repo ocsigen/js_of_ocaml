@@ -2409,6 +2409,12 @@ let fail_early =
 
 let check_program p = List.iter p ~f:(function _, p -> fail_early#program [ p ])
 
+(* The parser uses the native stack: a program nested very deeply (tens of
+   thousands of brackets, with the stack of OCaml 4) overflows it. Report
+   this as a syntax error at the current token rather than letting
+   Stack_overflow escape. *)
+let nested_too_deeply t = error_msg t "the program is nested too deeply"
+
 let parse_aux ~keep_tokens script_or_module lex =
   let module_ =
     match script_or_module with
@@ -2419,16 +2425,17 @@ let parse_aux ~keep_tokens script_or_module lex =
   let keep_tokens = keep_tokens || debug () in
   let t = create ~keep_tokens lex in
   let p =
-    try parse_script_or_module t ~module_
-    with Parsing_error _ as e ->
-      if debug ()
-      then (
-        let toks = all_tokens t in
-        let n = List.length toks in
-        List.iteri toks ~f:(fun i (tok, _) ->
-            if i >= n - 10 then Printf.eprintf "%s " (Js_token.to_string_extra tok));
-        Printf.eprintf "\n");
-      raise e
+    try parse_script_or_module t ~module_ with
+    | Parsing_error _ as e ->
+        if debug ()
+        then (
+          let toks = all_tokens t in
+          let n = List.length toks in
+          List.iteri toks ~f:(fun i (tok, _) ->
+              if i >= n - 10 then Printf.eprintf "%s " (Js_token.to_string_extra tok));
+          Printf.eprintf "\n");
+        raise e
+    | Stack_overflow -> nested_too_deeply t
   in
   check_program p;
   p, t
@@ -2459,7 +2466,10 @@ let parse script_or_module lex =
 
 let parse_expr lex =
   let t = create ~keep_tokens:false lex in
-  let e = parse_expression t no_ctx ~no_in:false in
+  let e =
+    try parse_expression t no_ctx ~no_in:false
+    with Stack_overflow -> nested_too_deeply t
+  in
   expect t T_EOF;
   fail_early#expression e;
   e
