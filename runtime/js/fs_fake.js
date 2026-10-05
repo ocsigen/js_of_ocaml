@@ -73,6 +73,10 @@ class MlFakeDevice {
     return this.content[name] ? 1 : 0;
   }
 
+  filepath_exists(name) {
+    return this.exists(name);
+  }
+
   isFile(name) {
     if (this.exists(name) && !this.is_dir(name)) {
       return 1;

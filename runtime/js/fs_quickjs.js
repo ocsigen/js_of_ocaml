@@ -119,6 +119,7 @@ function ocaml_stats_from_qjs_stats(s, large) {
 
 //Provides: MlQuickJSDevice
 //Requires: MlQuickJSFd, caml_raise_qjs_error, caml_raise_sys_error
+//Requires: caml_qjs_errno_code
 //Requires: caml_raise_system_error
 //Requires: caml_string_of_jsstring, caml_failwith
 //Requires: ocaml_stats_from_qjs_stats
@@ -135,6 +136,14 @@ class MlQuickJSDevice {
   exists(name) {
     var r = this.os.stat(this.nm(name));
     return r[1] === 0 ? 1 : 0;
+  }
+
+  filepath_exists(name) {
+    var r = this.os.stat(this.nm(name));
+    if (r[1] === 0) return 1;
+    var code = caml_qjs_errno_code(r[1]);
+    if (code === "ENOENT" || code === "ENOTDIR") return 0;
+    caml_raise_qjs_error(r[1], "stat", this.nm(name));
   }
 
   isFile(name) {

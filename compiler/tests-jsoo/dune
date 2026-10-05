@@ -64,6 +64,7 @@
    test_runtime_value
    ephemeron_data
    hash_jsstring
+   test_filepath_exists
    bigstring_kind
    wrap_exception
    meth_call_utf8
@@ -190,6 +191,20 @@
   (deps
    (sandbox preserve_file_kind))
   (modes js wasm))
+ (preprocess
+  (pps ppx_expect_light)))
+
+; Sys.filepath_exists is new in OCaml 5.6.
+
+(library
+ (name jsoo_testsuite_filepath_exists)
+ (enabled_if
+  (>= %{ocaml_version} 5.6))
+ (modules test_filepath_exists)
+ (inline_tests
+  (deps
+   (sandbox preserve_file_kind))
+  (modes js wasm best))
  (preprocess
   (pps ppx_expect_light)))
 

@@ -65,6 +65,8 @@
       (func $read_dir (param anyref) (result (ref extern))))
    (import "bindings" "file_exists"
       (func $file_exists (param anyref) (result (ref eq))))
+   (import "bindings" "filepath_exists"
+      (func $filepath_exists (param anyref) (result (ref eq))))
    (import "bindings" "is_directory"
       (func $is_directory (param anyref) (result (ref eq))))
    (import "bindings" "is_file"
@@ -750,12 +752,49 @@
             (local.get $buffer)))
       (call $free (local.get $p_addr))
       (ref.i31 (i32.eqz (local.get $res))))
+
+   (func (export "caml_sys_filepath_exists")
+      (param $name (ref eq)) (result (ref eq))
+      (local $p_fd i32) (local $p_addr i32) (local $p_len i32)
+      (local $res i32) (local $buffer i32)
+      (call $wasi_resolve_path (local.get $name))
+      (local.set $p_len)
+      (local.set $p_addr)
+      (local.set $p_fd)
+      (if (i32.lt_s (local.get $p_fd) (i32.const 0))
+         (then
+            (call $free (local.get $p_addr))
+            (return (ref.i31 (i32.const 0)))))
+      (local.set $buffer (call $get_buffer))
+      (local.set $res
+         (call $path_filestat_get
+            (local.get $p_fd)
+            (i32.const 1)
+            (local.get $p_addr)
+            (local.get $p_len)
+            (local.get $buffer)))
+      (call $free (local.get $p_addr))
+      (if (i32.or (i32.eq (local.get $res) (i32.const 44)) ;; ENOENT
+             (i32.eq (local.get $res) (i32.const 54))) ;; ENOTDIR
+         (then (return (ref.i31 (i32.const 0)))))
+      (call $caml_handle_sys_error_if (local.get $name) (local.get $res))
+      (ref.i31 (i32.const 1)))
 )
 (@else
    (func (export "caml_sys_file_exists")
       (param $name (ref eq)) (result (ref eq))
       (return_call $file_exists
          (call $unwrap (call $caml_jsstring_of_string (local.get $name)))))
+
+   (func (export "caml_sys_filepath_exists")
+      (param $name (ref eq)) (result (ref eq))
+      (try (result (ref eq))
+         (do
+            (call $filepath_exists
+               (call $unwrap (call $caml_jsstring_of_string (local.get $name)))))
+         (catch $javascript_exception
+            (call $caml_handle_sys_error)
+            (ref.i31 (i32.const 0)))))
 ))
 
    (@string $no_such_file ": No such file or directory")

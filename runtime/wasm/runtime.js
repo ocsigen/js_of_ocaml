@@ -745,6 +745,18 @@
       if (virtual_files.has(vp) || virtual_dirs.has(vp)) return 1;
       return fs ? +fs.existsSync(p) : 0;
     },
+    filepath_exists: (p) => {
+      const vp = virtual_path(p);
+      if (virtual_files.has(vp) || virtual_dirs.has(vp)) return 1;
+      if (!fs) return 0;
+      try {
+        fs.statSync(p);
+        return 1;
+      } catch (e) {
+        if (e.code === "ENOENT" || e.code === "ENOTDIR") return 0;
+        throw e;
+      }
+    },
     is_directory: (p) => {
       const vp = virtual_path(p);
       if (virtual_dirs.has(vp)) return 1;
