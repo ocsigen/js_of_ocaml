@@ -60,7 +60,12 @@ let effects_backends_javascript =
   [ "cps", `Cps; "double-translation", `Double_translation; "disabled", `Disabled ]
 
 let effects_backends_wasm =
-  [ "jspi", `Jspi; "cps", `Cps; "native", `Native; "disabled", `Disabled ]
+  [ "jspi", `Jspi
+  ; "cps", `Cps
+  ; "double-translation", `Double_translation
+  ; "native", `Native
+  ; "disabled", `Disabled
+  ]
 
 type config_key =
   | Bool_key of
