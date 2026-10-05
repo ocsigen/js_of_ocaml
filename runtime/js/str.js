@@ -77,6 +77,7 @@ var re_match = (function () {
     var pc = 0,
       quit = false,
       stack = [],
+      partial_result = 0,
       groups = new Array(numgroups),
       re_register = new Array(numregisters);
 
@@ -109,7 +110,7 @@ var re_match = (function () {
       result[0] = 0; // tag
       for (var i = 0; i < groups.length; i++) {
         var g = groups[i];
-        if (g.start < 0 || g.end < 0) {
+        if (g.start < 0 || g.end < 0 || g.start > g.end) {
           g.start = g.end = -1;
         }
         result[2 * i + 1] = g.start;
@@ -119,8 +120,10 @@ var re_match = (function () {
     };
 
     var prefix_match = function () {
-      if (partial) return accept();
-      else backtrack();
+      if (partial) {
+        partial_result = accept();
+        quit = true;
+      } else backtrack();
     };
 
     /* Main DFA interpreter loop */
@@ -287,7 +290,7 @@ var re_match = (function () {
           throw new Error("Invalid bytecode");
       }
     }
-    return 0;
+    return partial_result;
   }
 
   return re_match_impl;
