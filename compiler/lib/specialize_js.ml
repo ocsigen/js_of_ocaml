@@ -572,7 +572,90 @@ let rec args_equal xs ys =
   | x :: xs, Pv y :: ys -> Code.Var.compare x y = 0 && args_equal xs ys
   | _ -> false
 
+(* An array access with the same array and index as a dominating access
+   does not need to be checked again: the length of an array does not
+   change. [specialize_instrs] removes the checks which are redundant within
+   a block when it makes them explicit. We do it again once the program is
+   optimized, when more accesses use the same variables (references are
+   unboxed, functions are inlined, ...), and across blocks. *)
+let remove_redundant_bound_checks p =
+  let count = ref 0 in
+  let constants = Var.Hashtbl.create 128 in
+  Addr.Map.iter
+    (fun _ block ->
+      List.iter block.body ~f:(fun i ->
+          match i with
+          | Let (x, Constant (Int c)) -> Var.Hashtbl.replace constants x c
+          | _ -> ()))
+    p.blocks;
+  let index z =
+    match z with
+    | Pc (Int c) -> Some (`Cst c)
+    | Pv z -> (
+        match Var.Hashtbl.find_opt constants z with
+        | Some c -> Some (`Cst c)
+        | None -> Some (`Var z))
+    | Pc _ -> None
+  in
+  let subst = Var.Hashtbl.create 16 in
+  let rec rewrite checks l acc =
+    match l with
+    | [] -> checks, List.rev acc
+    | (Let
+         ( x
+         , Prim
+             ( Extern
+                 ( ("caml_check_bound" | "caml_check_bound_gen" | "caml_check_bound_float")
+                 , _ )
+             , [ Pv y; z ] ) ) as i)
+      :: r -> (
+        match index z with
+        | Some idx when List.mem ~eq:idx_equal (y, idx) checks ->
+            (* The check returns the array *)
+            incr count;
+            Var.Hashtbl.replace subst x y;
+            rewrite checks r acc
+        | Some idx -> rewrite ((y, idx) :: checks) r (i :: acc)
+        | None -> rewrite checks r (i :: acc))
+    | i :: r -> rewrite checks r (i :: acc)
+  in
+  let t = Timer.make () in
+  let blocks =
+    Code.fold_closures
+      p
+      (fun _ _ (pc, _) _ blocks ->
+        let g = Structure.control_flow_graph p.blocks pc in
+        let dom = Structure.dominator_tree g in
+        let rec walk pc checks blocks =
+          let block = Addr.Map.find pc p.blocks in
+          let checks, body = rewrite checks block.body [] in
+          Addr.Set.fold
+            (fun pc' blocks -> walk pc' checks blocks)
+            (Structure.get_edges dom pc)
+            (Addr.Map.add pc { block with body } blocks)
+        in
+        walk pc [] blocks)
+      p.blocks
+  in
+  let p = { p with blocks } in
+  let p =
+    if Var.Hashtbl.length subst = 0
+    then p
+    else
+      let rec resolve x =
+        match Var.Hashtbl.find_opt subst x with
+        | Some y -> resolve y
+        | None -> x
+      in
+      Subst.Excluding_Binders.program resolve p
+  in
+  if times () then Format.eprintf "  redundant bound checks: %a@." Timer.print t;
+  if stats () then Format.eprintf "Stats - redundant bound checks: %d@." !count;
+  p
+
 let f_once_after p =
+  let p = remove_redundant_bound_checks p in
+  Code.invariant p;
   let first_class_primitives =
     match Config.target (), Config.effects () with
     | `JavaScript, `Disabled -> true

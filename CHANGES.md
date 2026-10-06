@@ -1,6 +1,8 @@
 # dev
 
 ## Features/Changes
+* Compiler: remove the array bound checks made redundant by a dominating
+  check, once references are unboxed and functions inlined (#XXXX)
 * Compiler: with OCaml 5.6, use the optimization hints recorded in the bytecode
   (primitive types, immutable blocks, closures, immediates, ...) (#1721, #2488)
 * Compiler/Runtime: support the OCaml 5.6 bit counting primitives

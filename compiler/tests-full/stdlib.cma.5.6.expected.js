@@ -6543,8 +6543,8 @@
           /*<<array.ml:394:13>>*/ caml_check_bound(a, i)[i + 1] = e$1;
          break;
         }
-         /*<<array.ml:392:14>>*/ _f_ = caml_check_bound(a, j)[j + 1];
-         /*<<array.ml:392:6>>*/ caml_check_bound(a, i)[i + 1] = _f_;
+         /*<<array.ml:392:6>>*/ _f_ = a[j + 1];
+        caml_check_bound(a, i)[i + 1] = _f_;
          /*<<array.ml:392:23>>*/ i = j;
        }
       }
@@ -6593,11 +6593,10 @@
              e$0))
           /*<<array.ml:411:13>>*/ caml_check_bound(a, i$3)[i$3 + 1] = e$0;
         else{
-          /*<<array.ml:409:14>>*/ _f_ =
-          caml_check_bound(a, father)[father + 1];
-          /*<<array.ml:409:6>>*/ caml_check_bound(a, i$3)[i$3 + 1] = _f_;
+          /*<<array.ml:409:6>>*/ _f_ = a[father + 1];
+         caml_check_bound(a, i$3)[i$3 + 1] = _f_;
           /*<<array.ml:409:28>>*/ if(0 < father){i$3 = father; continue;}
-          /*<<array.ml:410:49>>*/ caml_check_bound(a, 0)[1] = e$0;
+          /*<<array.ml:410:49>>*/ a[1] = e$0;
         }
          /*<<array.ml:420:28>>*/ _f_ = i$4 - 1 | 0;
         if(2 === i$4) break a;
@@ -6679,8 +6678,8 @@
                /*<<array.ml:451:33>>*/ caml_check_bound(dst, j)[j + 1],
               e)){
           /*<<array.ml:452:37>>*/ _e_ = j + 1 | 0;
-         var _d_ =  /*<<array.ml:452:25>>*/ caml_check_bound(dst, j)[j + 1];
-          /*<<array.ml:452:8>>*/ caml_check_bound(dst, _e_)[_e_ + 1] = _d_;
+         var _d_ =  /*<<array.ml:452:8>>*/ dst[j + 1];
+         caml_check_bound(dst, _e_)[_e_ + 1] = _d_;
          var j$0 =  /*<<array.ml:452:37>>*/ j - 1 | 0;
          j = j$0;
          continue;
@@ -11462,8 +11461,8 @@
           /*<<float.ml:469:15>>*/ caml_check_bound(a, i)[i + 1] = e$1;
          break;
         }
-         /*<<float.ml:467:16>>*/ _m_ = caml_check_bound(a, j)[j + 1];
-         /*<<float.ml:467:8>>*/ caml_check_bound(a, i)[i + 1] = _m_;
+         /*<<float.ml:467:8>>*/ _m_ = a[j + 1];
+        caml_check_bound(a, i)[i + 1] = _m_;
          /*<<float.ml:467:25>>*/ i = j;
        }
       }
@@ -11512,11 +11511,10 @@
              e$0))
           /*<<float.ml:486:15>>*/ caml_check_bound(a, i$3)[i$3 + 1] = e$0;
         else{
-          /*<<float.ml:484:16>>*/ _m_ =
-          caml_check_bound(a, father)[father + 1];
-          /*<<float.ml:484:8>>*/ caml_check_bound(a, i$3)[i$3 + 1] = _m_;
+          /*<<float.ml:484:8>>*/ _m_ = a[father + 1];
+         caml_check_bound(a, i$3)[i$3 + 1] = _m_;
           /*<<float.ml:484:30>>*/ if(0 < father){i$3 = father; continue;}
-          /*<<float.ml:485:51>>*/ caml_check_bound(a, 0)[1] = e$0;
+          /*<<float.ml:485:51>>*/ a[1] = e$0;
         }
          /*<<float.ml:495:30>>*/ _m_ = i$4 - 1 | 0;
         if(2 === i$4) break a;
@@ -11598,8 +11596,8 @@
                /*<<float.ml:526:35>>*/ caml_check_bound(dst, j)[j + 1],
               e)){
           /*<<float.ml:527:39>>*/ _l_ = j + 1 | 0;
-         var _k_ =  /*<<float.ml:527:27>>*/ caml_check_bound(dst, j)[j + 1];
-          /*<<float.ml:527:10>>*/ caml_check_bound(dst, _l_)[_l_ + 1] = _k_;
+         var _k_ =  /*<<float.ml:527:10>>*/ dst[j + 1];
+         caml_check_bound(dst, _l_)[_l_ + 1] = _k_;
          var j$0 =  /*<<float.ml:527:39>>*/ j - 1 | 0;
          j = j$0;
          continue;
@@ -12655,7 +12653,6 @@
    var
     runtime = globalThis.jsoo_runtime,
     caml_bytes_get = runtime.caml_bytes_get,
-    caml_check_bound = runtime.caml_check_bound,
     caml_create_bytes = runtime.caml_create_bytes,
     caml_get_global = runtime.caml_get_global,
     caml_ml_bytes_length = runtime.caml_ml_bytes_length;
@@ -12763,9 +12760,11 @@
                var i = 0;
                for(;;){
                 var
-                 v =  /*<<lexing.ml:131:14>>*/ caml_check_bound(t, i)[i + 1];
+                 v =
+                    /*<<lexing.ml:131:14>>*/ runtime.caml_check_bound(t, i)
+                    [i + 1];
                  /*<<lexing.ml:132:6>>*/ if(0 <= v)
-                  /*<<lexing.ml:133:8>>*/ caml_check_bound(t, i)[i + 1] = v - s | 0;
+                  /*<<lexing.ml:133:8>>*/ t[i + 1] = v - s | 0;
                 var _d_ =  /*<<lexing.ml:132:6>>*/ i + 1 | 0;
                 if(_c_ === i) break;
                 i = _d_;
@@ -27292,8 +27291,7 @@
          /*<<hashtbl.ml:141:23>>*/ _k_[3] = cell$0;
        else
          /*<<hashtbl.ml:140:19>>*/ caml_check_bound(ndata, nidx)[nidx + 1] = cell$0;
-        /*<<hashtbl.ml:143:8>>*/ caml_check_bound(ndata_tail, nidx)[nidx + 1]
-       = cell$0;
+        /*<<hashtbl.ml:143:8>>*/ ndata_tail[nidx + 1] = cell$0;
         /*<<hashtbl.ml:143:33>>*/ cell = next;
       }
      }
@@ -33638,9 +33636,7 @@
           ( /*<<dynarray.ml:300:33>>*/ caml_check_bound(values, 0)[1])
          === _w_){
         var
-         a =
-            /*<<dynarray.ml:306:42>>*/  /*<<dynarray.ml:306:17>>*/ caml_array_make
-            (n,  /*<<dynarray.ml:306:42>>*/ caml_check_bound(values, 0)[1]),
+         a =  /*<<dynarray.ml:306:17>>*/ caml_array_make(n, values[1]),
          _w_ =  /*<<dynarray.ml:307:8>>*/ n - 1 | 0;
         if(_w_ < 1){_w_ = a; break a;}
         var i$0 = 1;
