@@ -77,6 +77,8 @@ module Flag = struct
 
   let staticeval = o ~name:"staticeval" ~default:true
 
+  let jump_threading = o ~name:"jump-threading" ~default:true
+
   let share_constant = o ~name:"share" ~default:true
 
   let strictmode = o ~name:"strict" ~default:true
