@@ -317,8 +317,8 @@ type prim =
   | Extern of string * Optimization_hint.ccall option
   | Not
   | IsInt of { variant_only : bool }
-  | Eq
-  | Neq
+  | Eq of { int_only : bool }
+  | Neq of { int_only : bool }
   | Lt
   | Le
   | Ult
@@ -624,8 +624,8 @@ module Print = struct
     | Extern (s, h), _ -> Format.fprintf f "\"%s\"(%a) %a" s (list arg) l hint h
     | Not, [ x ] -> Format.fprintf f "!%a" arg x
     | IsInt _, [ x ] -> Format.fprintf f "is_int(%a)" arg x
-    | Eq, [ x; y ] -> Format.fprintf f "%a === %a" arg x arg y
-    | Neq, [ x; y ] -> Format.fprintf f "!(%a === %a)" arg x arg y
+    | Eq _, [ x; y ] -> Format.fprintf f "%a === %a" arg x arg y
+    | Neq _, [ x; y ] -> Format.fprintf f "!(%a === %a)" arg x arg y
     | Lt, [ x; y ] -> Format.fprintf f "%a < %a" arg x arg y
     | Le, [ x; y ] -> Format.fprintf f "%a <= %a" arg x arg y
     | Ult, [ x; y ] -> Format.fprintf f "%a <= %a" arg x arg y

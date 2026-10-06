@@ -168,7 +168,7 @@ let field_possibly_mutable st x n =
 let expr_deps blocks st x e =
   match e with
   | Constant _
-  | Prim ((Vectlength _ | Not | IsInt _ | Eq | Neq | Lt | Le | Ult), _)
+  | Prim ((Vectlength _ | Not | IsInt _ | Eq _ | Neq _ | Lt | Le | Ult), _)
   | Block _ -> ()
   | Special _ -> ()
   | Prim
@@ -523,7 +523,7 @@ let propagate st ~update approx x =
                   known
             | Top -> Top)
       | Prim (Array_get _, _) -> Domain.others
-      | Prim ((Vectlength _ | Not | IsInt _ | Eq | Neq | Lt | Le | Ult), _) ->
+      | Prim ((Vectlength _ | Not | IsInt _ | Eq _ | Neq _ | Lt | Le | Ult), _) ->
           (* The result of these primitive is neither a function nor a
              block *)
           Domain.bot
