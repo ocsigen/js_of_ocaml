@@ -73,6 +73,8 @@
   of `compare` with 0 (#2529)
 * Compiler: faster reading of debug events, used with `--pretty` and
   `--debug-info` (#2541, #2548)
+* Compiler: jump threading: redirect an edge to a block that only tests a
+  value known on this edge to the branch the test selects (#2497)
 
 ### Effects
 * Compiler: with `--effects={cps,double-translation}`, specialize calls to
