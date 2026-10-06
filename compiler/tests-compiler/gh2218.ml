@@ -17,7 +17,11 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-open Util
+open! Util
+
+(* Before OCaml 5.4, the bytecode lets [wrap print_endline] be inlined one round
+   earlier, so the copy [var _a_ = string] is optimized away. *)
+[@@@if ocaml_version >= (5, 4, 0)]
 
 let%expect_test "Js_traverse.simpl ordering" =
   let p =

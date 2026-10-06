@@ -264,19 +264,16 @@ let f t x =
         try{var val = caml_call2(Stdlib_Hashtbl[6], t, x$0);}
         catch(exn$0){
          var exn = caml_wrap_exception(exn$0);
-         if(exn !== Stdlib[3]) throw caml_maybe_attach_backtrace(exn, 0);
-         var _a_ = 0;
-         break a;
+         if(exn === Stdlib[3]) break a;
+         throw caml_maybe_attach_backtrace(exn, 0);
         }
         if(val && ! val[2]){
          var y = val[1], _a_ = y === (x$0 + 1 | 0);
-         if(_a_) break a;
-         x$0 = y;
-         continue;
+         if(! _a_){x$0 = y; continue;}
+         if(_a_) return 1;
         }
-        _a_ = 0;
        }
-       return _a_ ? 1 : 2;
+       return 2;
       }
      }
      return - 2;
