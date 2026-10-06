@@ -468,7 +468,7 @@ let propagate st approx x : Domain.t =
                 known
           | Top -> Top)
       | Prim (Array_get _, _) -> Top
-      | Prim ((Vectlength _ | Not | IsInt _ | Eq | Neq | Lt | Le | Ult), _) ->
+      | Prim ((Vectlength _ | Not | IsInt _ | Eq _ | Neq _ | Lt | Le | Ult), _) ->
           Int Normalized
       | Prim (Extern (prim, hint), args) -> prim_type ~st ~approx prim hint args
       | Special _ -> Top
@@ -639,14 +639,21 @@ let box_numbers p st types =
                             | Pv y -> box y
                             | Pc _ -> ())
                           args
-                  | Prim ((Eq | Neq), args) ->
+                  | Prim ((Eq { int_only = false } | Neq { int_only = false }), args) ->
+                      (* Physical comparison: the arguments must not be boxed
+                         at the comparison, which would allocate fresh boxes *)
                       List.iter
                         ~f:(fun a ->
                           match a with
                           | Pv y -> box y
                           | Pc _ -> ())
                         args
-                  | Prim ((Vectlength _ | Array_get _ | Not | IsInt _ | Lt | Le | Ult), _)
+                  | Prim
+                      ( ( Vectlength _ | Array_get _ | Not | IsInt _
+                        | Eq { int_only = true }
+                        | Neq { int_only = true }
+                        | Lt | Le | Ult )
+                      , _ )
                   | Field _ | Closure _ | Constant _ | Special _ -> ())
               | Set_field (_, _, (Non_float | Immediate), y) | Array_set (_, _, y) ->
                   box y

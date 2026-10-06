@@ -127,8 +127,10 @@ type prim =
   | IsInt of { variant_only : bool }
       (** [variant_only]: the argument is a value of a variant type, whose
           immediates are constant constructors *)
-  | Eq
-  | Neq
+  | Eq of { int_only : bool }
+      (** [int_only]: both arguments are integers (an integer equality test
+          rather than a physical comparison) *)
+  | Neq of { int_only : bool }
   | Lt
   | Le
   | Ult

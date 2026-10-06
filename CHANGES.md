@@ -3,6 +3,8 @@
 ## Features/Changes
 * Compiler: with OCaml 5.6, use the optimization hints recorded in the bytecode
   (primitive types, immutable blocks, closures, immediates, ...) (#1721, #2488)
+* Compiler: with OCaml 5.6, use the bytecode hint on integer equality tests
+  (wasm: no check for JavaScript values, no boxing of the arguments) (#2494)
 * Compiler/Runtime: support the OCaml 5.6 bit counting primitives
   (`caml_int_clz`, `caml_int_ctz`, `caml_int_popcount`) (#2469)
 * Runtime: support `Sys.filepath_exists` (OCaml 5.6) (#2493)

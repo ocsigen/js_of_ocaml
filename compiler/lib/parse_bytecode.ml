@@ -384,6 +384,14 @@ module Hints = struct
         | _ -> false)
       (Int.Hashtbl.find_all t.hints pc)
 
+  let find_int_equality_test t pc =
+    List.exists
+      ~f:(fun (h : Optimization_hint.t) ->
+        match h with
+        | Hint_int_equality_test -> true
+        | _ -> false)
+      (Int.Hashtbl.find_all t.hints pc)
+
   (* The kind of the value read by the instruction at [pc] *)
   let field_type t pc : Code.field_type =
     if find_immediate t pc then Immediate else Non_float
@@ -2170,8 +2178,8 @@ and compile infos pc state (instrs : instr list) =
               | "caml_lessequal"
               | "caml_greaterequal" -> (
                   let prim_of_ext = function
-                    | "caml_equal" -> Eq, y, z
-                    | "caml_notequal" -> Neq, y, z
+                    | "caml_equal" -> Eq { int_only = false }, y, z
+                    | "caml_notequal" -> Neq { int_only = false }, y, z
                     | "caml_lessthan" -> Lt, y, z
                     | "caml_lessequal" -> Le, y, z
                     | "caml_greaterequal" -> Le, z, y
@@ -2504,7 +2512,12 @@ and compile infos pc state (instrs : instr list) =
           infos
           (pc + 1)
           (State.pop 1 state)
-          (Let (x, Prim (Eq, [ Pv y; Pv z ])) :: instrs)
+          (Let
+             ( x
+             , Prim
+                 ( Eq { int_only = Hints.find_int_equality_test infos.hints pc }
+                 , [ Pv y; Pv z ] ) )
+          :: instrs)
     | NEQ ->
         let y = State.accu state in
         let z = State.peek 0 state in
@@ -2516,7 +2529,12 @@ and compile infos pc state (instrs : instr list) =
           infos
           (pc + 1)
           (State.pop 1 state)
-          (Let (x, Prim (Neq, [ Pv y; Pv z ])) :: instrs)
+          (Let
+             ( x
+             , Prim
+                 ( Neq { int_only = Hints.find_int_equality_test infos.hints pc }
+                 , [ Pv y; Pv z ] ) )
+          :: instrs)
     | LTINT ->
         let y = State.accu state in
         let z = State.peek 0 state in
@@ -2612,7 +2630,11 @@ and compile infos pc state (instrs : instr list) =
         let x = State.accu state in
         let y = Var.fresh () in
 
-        ( Let (y, Prim (Eq, [ Pc (Int (Targetint.of_int32_exn n)); Pv x ])) :: instrs
+        ( Let
+            ( y
+            , Prim (Eq { int_only = false }, [ Pc (Int (Targetint.of_int32_exn n)); Pv x ])
+            )
+          :: instrs
         , Cond (y, (pc + offset + 2, []), (pc + 3, []))
         , state )
     | BNEQ ->
@@ -2621,7 +2643,11 @@ and compile infos pc state (instrs : instr list) =
         let x = State.accu state in
         let y = Var.fresh () in
 
-        ( Let (y, Prim (Eq, [ Pc (Int (Targetint.of_int32_exn n)); Pv x ])) :: instrs
+        ( Let
+            ( y
+            , Prim (Eq { int_only = false }, [ Pc (Int (Targetint.of_int32_exn n)); Pv x ])
+            )
+          :: instrs
         , Cond (y, (pc + 3, []), (pc + offset + 2, []))
         , state )
     | BLTINT ->

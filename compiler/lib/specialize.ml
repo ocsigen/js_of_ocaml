@@ -273,7 +273,13 @@ let optimize_switch_to_cond block x l (opt : switch_to_cond) =
       let c = Var.fresh () in
       { block with
         body =
-          block.body @ [ Let (c, Prim (Eq, [ Pc (Int (Targetint.of_int_exn i)); Pv x ])) ]
+          block.body
+          @ [ Let
+                ( c
+                , Prim
+                    (Eq { int_only = true }, [ Pc (Int (Targetint.of_int_exn i)); Pv x ])
+                )
+            ]
       ; branch = Cond (c, l.(i), l.((i + 1) mod Array.length l))
       }
   | `Splitted i ->

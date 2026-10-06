@@ -277,7 +277,7 @@ module Generate (Target : Target_sig.S) = struct
           (transl_prim_arg ctx ~typ:(Int Normalized) x)
           (transl_prim_arg ctx ~typ:(Int Normalized) y)
 
-  let translate_int_equality ctx ~negate x y =
+  let translate_int_equality ctx ~int_only ~negate x y =
     match get_type ctx x, get_type ctx y with
     | (Int Normalized as typ), Int Normalized ->
         (if negate then Arith.( <> ) else Arith.( = ))
@@ -287,7 +287,7 @@ module Generate (Target : Target_sig.S) = struct
         (if negate then Arith.( <> ) else Arith.( = ))
           Arith.(transl_prim_arg ctx ~typ:(Int Unnormalized) x lsl const 1l)
           Arith.(transl_prim_arg ctx ~typ:(Int Unnormalized) y lsl const 1l)
-    | Top, Top when not (Config.Flag.wasi ()) ->
+    | Top, Top when not (int_only || Config.Flag.wasi ()) ->
         Value.js_eqeqeq
           ~negate
           (transl_prim_arg ctx ~typ:Top x)
@@ -299,8 +299,9 @@ module Generate (Target : Target_sig.S) = struct
           (transl_prim_arg ctx ~typ:Top y)
     | (Int _ | Number _ | Tuple _ | Bigarray _ | Null), _
     | _, (Int _ | Number _ | Tuple _ | Bigarray _ | Null)
-    | Top, Top (* when wasi is enabled *) ->
-        (* Only Top may contain JavaScript values *)
+    | Top, Top (* when [int_only] or wasi is enabled *) ->
+        (* Only Top may contain JavaScript values, and the arguments of an
+           integer equality test are never JavaScript values *)
         (if negate then Value.phys_neq else Value.phys_eq)
           (transl_prim_arg ctx ~typ:Top x)
           (transl_prim_arg ctx ~typ:Top y)
@@ -1472,9 +1473,9 @@ module Generate (Target : Target_sig.S) = struct
     register_comparison "caml_lessequal" (Le S) Le (fun ctx x y ->
         translate_int_comparison ctx Arith.( <= ) x y);
     register_comparison "caml_equal" Eq Eq (fun ctx x y ->
-        translate_int_equality ctx ~negate:false x y);
+        translate_int_equality ctx ~int_only:true ~negate:false x y);
     register_comparison "caml_notequal" Ne Ne (fun ctx x y ->
-        translate_int_equality ctx ~negate:true x y);
+        translate_int_equality ctx ~int_only:true ~negate:true x y);
     register_prim "caml_compare" `Mutator ~ret_typ:int_n (fun ctx _ _ l ->
         match l with
         | [ x; y ] -> (
@@ -1941,8 +1942,10 @@ module Generate (Target : Target_sig.S) = struct
     | Prim (Lt, [ x; y ]) -> translate_int_comparison ctx Arith.( < ) x y
     | Prim (Le, [ x; y ]) -> translate_int_comparison ctx Arith.( <= ) x y
     | Prim (Ult, [ x; y ]) -> translate_int_comparison ctx Arith.ult x y
-    | Prim (Eq, [ x; y ]) -> translate_int_equality ctx ~negate:false x y
-    | Prim (Neq, [ x; y ]) -> translate_int_equality ctx ~negate:true x y
+    | Prim (Eq { int_only }, [ x; y ]) ->
+        translate_int_equality ctx ~int_only ~negate:false x y
+    | Prim (Neq { int_only }, [ x; y ]) ->
+        translate_int_equality ctx ~int_only ~negate:true x y
     | Prim (Array_get _, [ x; y ]) ->
         Memory.array_get (transl_prim_arg ctx x) (transl_prim_arg ctx ~typ:int_n y)
     | Prim (Extern ("caml_array_unsafe_get", _), [ x; y ]) ->
@@ -1993,8 +1996,8 @@ module Generate (Target : Target_sig.S) = struct
                     let* ift = Memory.float_array_length (load y) in
                     let* iff = Arith.const 0l in
                     return (W.IfExpr (I32, cond, ift, iff)))
-            | (Not | Lt | Le | Eq | Neq | Ult | Array_get _ | IsInt _ | Vectlength _), _
-              -> assert false))
+            | ( (Not | Lt | Le | Eq _ | Neq _ | Ult | Array_get _ | IsInt _ | Vectlength _)
+              , _ ) -> assert false))
 
   and translate_instr ctx context i =
     match i with
