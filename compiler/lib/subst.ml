@@ -44,12 +44,12 @@ module Excluding_Binders = struct
   let expr s e =
     match e with
     | Constant _ -> e
-    | Apply { f; args; exact } ->
+    | Apply { f; args; exact; yielding } ->
         let f' = s f in
         let args' = List.map_sharing args ~f:s in
         if phys_equal f' f && phys_equal args' args
         then e
-        else Apply { f = f'; args = args'; exact }
+        else Apply { f = f'; args = args'; exact; yielding }
     | Block (n, a, k, mut) ->
         let a' = Array.map_sharing a ~f:s in
         if phys_equal a' a then e else Block (n, a', k, mut)
@@ -180,7 +180,8 @@ module Including_Binders = struct
   let expr s e =
     match e with
     | Constant _ -> e
-    | Apply { f; args; exact } -> Apply { f = s f; args = List.map args ~f:s; exact }
+    | Apply { f; args; exact; yielding } ->
+        Apply { f = s f; args = List.map args ~f:s; exact; yielding }
     | Block (n, a, k, mut) -> Block (n, Array.map a ~f:s, k, mut)
     | Field (x, n, typ) -> Field (s x, n, typ)
     | Closure (l, pc, loc) -> Closure (List.map l ~f:s, subst_cont s pc, loc)
@@ -227,7 +228,8 @@ module Including_Binders = struct
     let expr m s e =
       match e with
       | Constant _ -> e
-      | Apply { f; args; exact } -> Apply { f = s f; args = List.map args ~f:s; exact }
+      | Apply { f; args; exact; yielding } ->
+          Apply { f = s f; args = List.map args ~f:s; exact; yielding }
       | Block (n, a, k, mut) -> Block (n, Array.map a ~f:s, k, mut)
       | Field (x, n, typ) -> Field (s x, n, typ)
       | Closure (l, pc, loc) -> Closure (List.map l ~f:s, subst_cont m s pc, loc)

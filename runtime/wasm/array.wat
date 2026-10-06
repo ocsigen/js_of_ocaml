@@ -31,7 +31,6 @@
 
    (func $caml_make_vect
       (export "caml_make_vect") (export "caml_array_make")
-      (export "caml_uniform_array_make")
       (param $n (ref eq)) (param $v (ref eq)) (result (ref eq))
       (local $sz i32) (local $b (ref $block)) (local $f f64)
       (local $fv (ref $float))
@@ -56,7 +55,25 @@
       (array.set $block (local.get $b) (i32.const 0) (ref.i31 (i32.const 0)))
       (local.get $b))
 
-   (func (export "caml_floatarray_make")
+   ;; Unlike [caml_make_vect], a uniform array is always an ordinary block
+   ;; with boxed float elements, mirroring [caml_uniform_array_make] in the
+   ;; OCaml runtime's array.c, which never uses the flat float representation.
+   (func (export "caml_uniform_array_make")
+         (export "caml_uniform_array_make_local")
+      (param $n (ref eq)) (param $v (ref eq)) (result (ref eq))
+      (local $sz i32) (local $b (ref $block))
+      (local.set $sz (i31.get_s (ref.cast (ref i31) (local.get $n))))
+      (if (i32.ge_u (local.get $sz) (i32.const 0xfffffff))
+         (then (call $caml_invalid_argument (global.get $Array_make))))
+      (if (i32.eqz (local.get $sz)) (then (return (global.get $empty_array))))
+      (local.set $b
+         (array.new $block (local.get $v)
+            (i32.add (local.get $sz) (i32.const 1))))
+      (array.set $block (local.get $b) (i32.const 0) (ref.i31 (i32.const 0)))
+      (local.get $b))
+
+   (func (export "caml_floatarray_make") (export "caml_floatarray_make_local")
+         (export "caml_floatarray_make_unboxed_local")
       (param $n (ref eq)) (param $v (ref eq)) (result (ref eq))
       (local $sz i32) (local $f f64)
       (local.set $sz (i31.get_s (ref.cast (ref i31) (local.get $n))))
@@ -119,6 +136,8 @@
       (ref.i31 (i32.const 0)))
 
    (func (export "caml_array_sub") (export "caml_array_sub_local")
+      (export "caml_uniform_array_sub")
+      (export "caml_uniform_array_sub_local")
       (param $a (ref eq)) (param $i (ref eq)) (param $vlen (ref eq))
       (result (ref eq))
       (local $a1 (ref $block)) (local $a2 (ref $block)) (local $len i32)
@@ -146,7 +165,7 @@
          (local.get $len))
       (local.get $fa2))
 
-   (func (export "caml_floatarray_sub")
+   (func (export "caml_floatarray_sub") (export "caml_floatarray_sub_local")
       (param $a (ref eq)) (param $i (ref eq)) (param $vlen (ref eq))
       (result (ref eq))
       (local $len i32)
@@ -172,6 +191,8 @@
       (local.get $a'))
 
    (func (export "caml_array_append") (export "caml_array_append_local")
+         (export "caml_uniform_array_append")
+         (export "caml_uniform_array_append_local")
       (param $va1 (ref eq)) (param $va2 (ref eq)) (result (ref eq))
       (local $a1 (ref $block)) (local $a2 (ref $block)) (local $a (ref $block))
       (local $fa1 (ref $float_array)) (local $fa2 (ref $float_array))
@@ -219,7 +240,7 @@
          (return (local.get $fa))))
       (return_call $caml_floatarray_dup (local.get $fa1)))
 
-   (func (export "caml_floatarray_append")
+   (func (export "caml_floatarray_append") (export "caml_floatarray_append_local")
       (param $va1 (ref eq)) (param $va2 (ref eq)) (result (ref eq))
       (local $fa1 (ref $float_array)) (local $fa2 (ref $float_array))
       (local $fa (ref $float_array))
@@ -324,7 +345,8 @@
                    (br $fill))))
             (local.get $a))))
 
-   (func (export "caml_floatarray_concat") (param $vl (ref eq)) (result (ref eq))
+   (func (export "caml_floatarray_concat") (export "caml_floatarray_concat_local")
+      (param $vl (ref eq)) (result (ref eq))
       (local $i i32) (local $len i32)
       (local $l (ref eq)) (local $v (ref eq))
       (local $b (ref $block))
@@ -368,7 +390,9 @@
              (br $fill))))
       (local.get $fa))
 
-   (func (export "caml_uniform_array_concat") (param $vl (ref eq)) (result (ref eq))
+   (func (export "caml_uniform_array_concat")
+         (export "caml_uniform_array_concat_local")
+      (param $vl (ref eq)) (result (ref eq))
       (local $i i32) (local $len i32)
       (local $l (ref eq)) (local $v (ref eq))
       (local $b (ref $block))

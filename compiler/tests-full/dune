@@ -28,10 +28,12 @@
 
 (rule
  (alias runtest)
+ ; The snapshot is of the mainstream stdlib
  (enabled_if
   (and
    (>= %{ocaml_version} "5.4")
-   (< %{ocaml_version} "5.5")))
+   (< %{ocaml_version} "5.5")
+   (not %{oxcaml_supported})))
  (action
   (diff stdlib.cma.expected.js stdlib.cma.output.js)))
 

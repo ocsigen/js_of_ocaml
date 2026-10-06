@@ -5,6 +5,7 @@
   (js_of_ocaml
    (flags
     (:include ci.flags)
+    (:include unyielding.flags)
     (:standard)))
   (binaries
    (tools/node_wrapper.exe as node)
@@ -14,10 +15,12 @@
    (compilation_mode separate)
    (flags
     (:include ci.flags)
+    (:include unyielding.flags)
     (:standard --effects cps)))
   (wasm_of_ocaml
    (compilation_mode separate)
    (flags
+    (:include unyielding.flags)
     (:standard --effects cps)))
   (binaries
    (tools/node_wrapper.exe as node)
@@ -27,12 +30,14 @@
    (compilation_mode separate)
    (flags
     (:include ci.flags)
+    (:include unyielding.flags)
     (:standard --effects double-translation))
    (build_runtime_flags
     (:standard --effects double-translation)))
   (wasm_of_ocaml
    (compilation_mode separate)
    (flags
+    (:include unyielding.flags)
     (:standard --effects double-translation)))
   (binaries
    (tools/node_wrapper.exe as node)
@@ -51,6 +56,7 @@
  (wasi
   (wasm_of_ocaml
    (flags
+    (:include unyielding.flags)
     (:standard --pretty --enable wasi))
    ; Wasmtime is slow on large binaries, so use whole program compilation
    (compilation_mode whole_program))
@@ -119,6 +125,29 @@
   (with-stdout-to
    %{target}
    (echo "(--debug invariant)"))))
+
+; OxCaml does not track the legacy [Effect.perform], which the effect tests
+; use, in its unyielding-call information: with OxCaml, this information is
+; not used when compiling the tests. This applies to all the code, since the
+; separately compiled libraries (the standard library in particular) run the
+; tests' effectful closures too.
+
+(rule
+ (target unyielding.flags)
+ (enabled_if %{oxcaml_supported})
+ (action
+  (with-stdout-to
+   %{target}
+   (echo "(--disable oxcaml-use-unyielding-debuginfo-for-effect-cps)"))))
+
+(rule
+ (target unyielding.flags)
+ (enabled_if
+  (not %{oxcaml_supported}))
+ (action
+  (with-stdout-to
+   %{target}
+   (echo "()"))))
 
 (data_only_dirs _wikidoc doc-dev janestreet)
 
