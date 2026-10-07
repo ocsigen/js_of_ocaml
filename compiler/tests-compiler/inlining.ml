@@ -100,3 +100,21 @@ let%expect_test "function inlined both as an argument and directly" =
   print_endline
     (Str.global_replace (Str.regexp "[^ ]*js_of_ocaml\\.exe") "%{JSOO}" [%expect.output]);
   [%expect {| 012 |}]
+
+(* A function applied to itself: once its parameter is substituted by
+   the function, its body calls it again. Inlining this call must not
+   loop forever. *)
+let%expect_test "self application" =
+  let program =
+    compile_and_parse
+      {|
+    let delta (x : Obj.t) = (Obj.magic x : Obj.t -> Obj.t) x
+    let f () = delta (Obj.repr delta)
+  |}
+  in
+  print_fun_decl program (Some "f");
+  [%expect
+    {|
+           function f(param){return delta(delta);}
+           //end
+           |}]

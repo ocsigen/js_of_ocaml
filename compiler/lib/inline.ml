@@ -193,6 +193,51 @@ type info =
   ; init_code : int cache
   ; returns_a_block : bool cache
   ; interesting_params : (Var.t * int) list cache
+  ; ref_params : Var.t list cache
+  ; guard : bool cache
+  }
+
+type known_value =
+  | Unknown
+  | Int of Targetint.t
+  | Block of Var.t array option  (** Fields, when the block is immutable *)
+
+let known_values p =
+  let n = Var.count () in
+  let known = Array.make n Unknown in
+  let assigned = ref [] in
+  Addr.Map.iter
+    (fun _ block ->
+      List.iter block.body ~f:(fun i ->
+          match i with
+          | Let (x, Block (_, a, _, Immutable)) -> known.(Var.idx x) <- Block (Some a)
+          | Let (x, Block (_, _, _, Maybe_mutable)) -> known.(Var.idx x) <- Block None
+          | Let (x, Constant (Int n)) -> known.(Var.idx x) <- Int n
+          | Assign (x, _) -> assigned := x :: !assigned
+          | _ -> ()))
+    p.blocks;
+  if not (List.is_empty !assigned)
+  then (
+    let assigned_set = BitSet.create' n in
+    List.iter !assigned ~f:(fun x -> BitSet.set assigned_set (Var.idx x));
+    Array.iteri known ~f:(fun i k ->
+        if BitSet.mem assigned_set i
+        then known.(i) <- Unknown
+        else
+          match k with
+          | Block (Some a)
+            when Array.exists a ~f:(fun x -> BitSet.mem assigned_set (Var.idx x)) ->
+              known.(i) <- Block None
+          | _ -> ()));
+  known
+
+type local_ref =
+  { ref_function : Var.t option  (** The function allocating the reference *)
+  ; mutable only_accessed : bool
+        (** Whether the reference is only read, updated, or passed to
+            functions, in this function *)
+  ; mutable passed_to : (Var.t * int) list
+        (** The functions it is passed to, and at which position *)
   }
 
 type context =
@@ -206,6 +251,11 @@ type context =
   ; current_function : Var.t option  (** Name of the current function *)
   ; enclosing_function : Var.t option
         (** Name of the function enclosing the current function *)
+  ; known : known_value array  (** Known definitions of variables *)
+  ; being_inlined : Var.Set.t  (** Functions whose body is being inlined *)
+  ; local_refs : local_ref Var.Hashtbl.t
+        (** References, with the function they are allocated in and their
+            uses *)
   }
 (** Current context into which we consider inlining some functions. *)
 
@@ -408,8 +458,151 @@ let functor_like ~context info =
       full_size ~context info - body_size ~context info
       <= 20 * closure_count ~context info
 
+(* With Wasm, a function called directly is not inlined as easily by the
+   engine as in JavaScript, and inlining it avoids converting its arguments
+   and result (tagging and boxing): we inline slightly larger functions *)
 let trivial_function ~context info =
-  (not info.recursive) && body_size ~context info <= 1 && closure_count ~context info = 0
+  (not info.recursive)
+  && (body_size ~context info
+     <=
+     match Config.target () with
+     | `Wasm -> 4
+     | `JavaScript -> 1)
+  && closure_count ~context info = 0
+
+(* The parameters of a function whose only uses are reads and updates of
+   their contents, as for a reference that [Ref_unboxing] can unbox *)
+let ref_parameters ~context info =
+  cache ~info info.ref_params
+  @@ fun pc ->
+  let uses = Var.Hashtbl.create 16 in
+  let other = Var.Hashtbl.create 16 in
+  Code.traverse
+    { fold = Code.fold_children }
+    (fun pc () ->
+      let block = Addr.Map.find pc context.p.blocks in
+      List.iter
+        ~f:(fun i ->
+          match i with
+          | Let (_, Field (x, 0, Non_float)) | Offset_ref (x, _) ->
+              Var.Hashtbl.replace uses x ()
+          | Set_field (x, 0, Non_float, y) ->
+              Var.Hashtbl.replace uses x ();
+              Var.Hashtbl.replace other y ()
+          | _ -> Freevars.iter_instr_free_vars (fun y -> Var.Hashtbl.replace other y ()) i)
+        block.body;
+      Freevars.iter_last_free_var (fun y -> Var.Hashtbl.replace other y ()) block.branch)
+    pc
+    context.p.blocks
+    ();
+  List.filter
+    ~f:(fun p -> Var.Hashtbl.mem uses p && not (Var.Hashtbl.mem other p))
+    info.params
+
+(*
+  With Wasm, we inline functions which are passed a reference allocated in
+  the current function: the reference can then be unboxed
+  ([Ref_unboxing]), which avoids boxing the numbers it contains.
+*)
+let ref_argument_function ~context info args =
+  let local_ref x =
+    match Var.Hashtbl.find_opt context.local_refs x with
+    | Some r -> Option.equal Var.equal r.ref_function context.current_function
+    | None -> false
+  in
+  (* [context.local_refs] is empty unless targeting Wasm *)
+  List.exists ~f:local_ref args
+  && (not info.recursive)
+  && closure_count ~context info = 0
+  && body_size ~context info <= 60
+  && List.compare_lengths args info.params = 0
+  &&
+  (* Whether the [i]-th parameter of function [f] is only read and
+     updated *)
+  let ref_param f i =
+    match Var.Map.find_opt f context.env with
+    | Some info' -> (
+        match List.nth_opt info'.params i with
+        | Some p -> List.mem ~eq:Var.equal p (ref_parameters ~context info')
+        | None -> false)
+    | None -> false
+  in
+  (* The reference can be unboxed once this function, and the other
+     functions it is passed to, are inlined *)
+  List.exists
+    ~f:(fun (i, x) ->
+      local_ref x
+      && ref_param info.f i
+      &&
+      let r = Var.Hashtbl.find context.local_refs x in
+      List.for_all ~f:(fun (g, j) -> ref_param g j) r.passed_to)
+    (List.mapi ~f:(fun i x -> i, x) args)
+
+(* Whether a function checks some condition: it performs no direct
+   mutation (though it may call other functions), branches on a
+   comparison, and raises on some path *)
+let is_guard ~context info =
+  cache ~info info.guard
+  @@ fun pc ->
+  let blocks =
+    Code.traverse
+      { fold = Code.fold_children }
+      (fun pc l -> Addr.Map.find pc context.p.blocks :: l)
+      pc
+      context.p.blocks
+      []
+  in
+  let defs = Var.Hashtbl.create 16 in
+  List.iter
+    ~f:(fun block ->
+      List.iter
+        ~f:(fun i ->
+          match i with
+          | Let (x, e) -> Var.Hashtbl.replace defs x e
+          | _ -> ())
+        block.body)
+    blocks;
+  let rec comparison v =
+    match Var.Hashtbl.find_opt defs v with
+    | Some (Prim ((Lt | Le | Ult | Eq | Neq), _)) -> true
+    | Some (Prim (Not, [ Pv w ])) -> comparison w
+    | _ -> false
+  in
+  List.for_all
+    ~f:(fun block ->
+      List.for_all
+        ~f:(fun i ->
+          match i with
+          | Let _ | Event _ -> true
+          | Assign _ | Set_field _ | Offset_ref _ | Array_set _ -> false)
+        block.body)
+    blocks
+  && List.exists
+       ~f:(fun block ->
+         match block.branch with
+         | Cond (v, _, _) -> comparison v
+         | _ -> false)
+       blocks
+  && List.exists
+       ~f:(fun block ->
+         match block.branch with
+         | Raise _ -> true
+         | _ -> false)
+       blocks
+
+(*
+  With Wasm, we inline small functions which check their parameters (for
+  instance, that an index is within bounds): once inlined, the comparison
+  is known at the call site, where it can be used to remove other checks.
+*)
+let guard_function ~context info =
+  (match Config.target () with
+    | `Wasm -> true
+    | `JavaScript -> false)
+  && (not info.recursive)
+  && closure_count ~context info = 0
+  && body_size ~context info <= 10
+  && is_guard ~context info
 
 (*
   We inline small functions which are simple (no closure, no
@@ -418,7 +611,11 @@ let trivial_function ~context info =
 *)
 let rec small_function ~context info args =
   (not info.recursive)
-  && body_size ~context info <= 15
+  && (body_size ~context info
+     <=
+     match Config.target () with
+     | `Wasm -> 25
+     | `JavaScript -> 15)
   && closure_count ~context info = 0
   && (not (List.is_empty args))
   && not (Var.Map.is_empty (relevant_arguments ~context info args))
@@ -496,7 +693,9 @@ and should_inline ~context info args =
                   false
               | _ -> body_size ~context info < Config.Param.inlining_limit ())
            || trivial_function ~context info
-           || small_function ~context info args)
+           || small_function ~context info args
+           || ref_argument_function ~context info args
+           || guard_function ~context info)
 
 let trace_inlining ~context info x args =
   if debug ()
@@ -588,7 +787,26 @@ let rewrite_closure blocks cont_pc clos_pc =
     blocks
     blocks
 
-let rewrite_inlined_function p rem branch x params cont args ~inlined =
+(* All the blocks of a function body, including those of nested closures *)
+let function_blocks p pc =
+  let visited = Addr.Hashtbl.create 16 in
+  let blocks = ref [] in
+  let rec traverse pc =
+    if not (Addr.Hashtbl.mem visited pc)
+    then (
+      Addr.Hashtbl.add visited pc ();
+      let block = Addr.Map.find pc p.blocks in
+      blocks := (pc, block) :: !blocks;
+      List.iter block.body ~f:(fun i ->
+          match i with
+          | Let (_, Closure (_, (pc', _), _)) -> traverse pc'
+          | _ -> ());
+      Code.fold_children p.blocks pc (fun pc' () -> traverse pc') ())
+  in
+  traverse pc;
+  !blocks
+
+let rewrite_inlined_function p rem branch x params cont args =
   let blocks, cont_pc, free_pc =
     match rem, branch with
     | [], Return y when Var.equal x y ->
@@ -611,72 +829,196 @@ let rewrite_inlined_function p rem branch x params cont args ~inlined =
   let blocks =
     Addr.Map.add fresh_addr { params; body = []; branch = Branch cont } blocks
   in
-  let body, args =
-    if Var.Set.is_empty inlined
-    then [], args
-    else
-      (* The only use of these parameters was a call which has been
-         inlined. We do not pass the actual argument anymore, so that
-         its occurrence count remains accurate. *)
-      let dummy = Var.fresh () in
-      ( [ Let (dummy, Constant (Int Targetint.zero)) ]
-      , List.map2 params args ~f:(fun param arg ->
-            if Var.Set.mem param inlined then dummy else arg) )
+  [], (Branch (fresh_addr, args), { p with blocks; free_pc })
+
+(* Simplify the body of an inlined function using what is known about
+   the actual arguments: parameters are replaced by the arguments,
+   conditionals on known values are resolved, fields of known immutable
+   blocks are replaced by their contents, and block parameters that
+   receive a single value are replaced by this value. Calls to known
+   closures that appear this way are then inlined in turn. This
+   typically resolves optional arguments ([if opt then opt[0] else
+   default]) in the same round.
+   The parameters that have been replaced are removed, so that the
+   actual arguments are not referenced anymore by the block binding
+   the parameters. This keeps the occurrence count of these arguments
+   accurate. The remaining parameters and arguments, as well as the
+   updated continuation, are returned. *)
+let rec inline_recursively ~context p params ((pc, cont_args) as cont) args =
+  let nv = Array.length context.live_vars in
+  let subst = Var.Hashtbl.create 16 in
+  let rec repr x =
+    match Var.Hashtbl.find_opt subst x with
+    | Some y -> repr y
+    | None -> x
   in
-  body, (Branch (fresh_addr, args), { p with blocks; free_pc })
-
-let rec inline_recursively ~context ~info p params (pc, _) args =
-  let relevant_args = relevant_arguments ~context info args in
-  if Var.Map.is_empty relevant_args
-  then p, Var.Set.empty
+  let known_idx i =
+    if i < Array.length context.known then context.known.(i) else Unknown
+  in
+  let useful y =
+    Var.Map.mem y context.env
+    ||
+    match known_idx (Var.idx y) with
+    | Unknown -> false
+    | Int _ | Block _ -> true
+  in
+  let add x y =
+    let y = repr y in
+    if
+      (not (Var.equal x y))
+      && Var.idx y < nv
+      && (not (Var.Hashtbl.mem subst x))
+      && useful y
+    then (
+      Var.Hashtbl.replace subst x y;
+      Var.propagate_name x y;
+      true)
+    else false
+  in
+  let known x = known_idx (Var.idx (repr x)) in
+  let cond x =
+    match known x with
+    | Int n -> Some (not (Targetint.is_zero n))
+    | Block _ -> Some true
+    | Unknown -> None
+  in
+  let successors branch =
+    match branch with
+    | Cond (x, cont1, cont2) -> (
+        match cond x with
+        | Some true -> [ cont1 ]
+        | Some false -> [ cont2 ]
+        | None -> [ cont1; cont2 ])
+    | Branch cont | Poptrap cont -> [ cont ]
+    | Switch (_, a) -> Array.to_list a
+    | Pushtrap (cont, _, cont_h) -> [ cont; cont_h ]
+    | Return _ | Raise _ | Stop -> []
+  in
+  List.iter2 params args ~f:(fun x y -> ignore (add x y));
+  if Var.Hashtbl.length subst = 0
+  then (* No known argument *) p, params, args, cont
   else
-    let subst =
-      List.fold_left2
-        params
-        info.params
-        ~f:(fun m param param' ->
-          if Var.Map.mem param' relevant_args
-          then Var.Map.add param (Var.Map.find param' relevant_args) m
-          else m)
-        ~init:Var.Map.empty
-    in
-    let inlined = ref Var.Set.empty in
-    let p =
-      Code.traverse
-        { fold = Code.fold_children }
-        (fun pc p ->
+    let rec fixpoint () =
+      let visited = Addr.Hashtbl.create 16 in
+      let incoming = Addr.Hashtbl.create 16 in
+      let add_incoming (pc, args) =
+        Addr.Hashtbl.replace
+          incoming
+          pc
+          (args :: Option.value ~default:[] (Addr.Hashtbl.find_opt incoming pc))
+      in
+      let changed = ref false in
+      let rec visit pc =
+        if not (Addr.Hashtbl.mem visited pc)
+        then (
+          Addr.Hashtbl.add visited pc ();
           let block = Addr.Map.find pc p.blocks in
-          let body, (branch, p) =
-            List.fold_right
-              ~f:(fun i (rem, state) ->
-                match i with
-                | Let (x, Apply { f = param; args; _ }) when Var.Map.mem param subst -> (
-                    (* The [exact] field might not be accurate since it
-                       considers all possible values of [f], before the
-                       current function is inlined, not just the one
-                       called after inlining. We have checked in
-                       [relevant_arguments] that the call was exact.
-                       We have also checked that it made sense to inline
-                       this call. In particular, this function is
-                       applied only once. *)
-                    let f = Var.Map.find param subst in
-                    match inline_function ~context x f args rem state with
-                    | Some res ->
-                        inlined := Var.Set.add param !inlined;
-                        res
-                    | None -> i :: rem, state)
-                | _ -> i :: rem, state)
-              ~init:([], (block.branch, p))
-              block.body
-          in
-          { p with blocks = Addr.Map.add pc { block with body; branch } p.blocks })
-        pc
-        p.blocks
-        p
+          List.iter block.body ~f:(fun i ->
+              match i with
+              | Let (x, Field (y, n, _)) -> (
+                  match known y with
+                  | Block (Some a) when n < Array.length a ->
+                      if add x a.(n) then changed := true
+                  | _ -> ())
+              | _ -> ());
+          List.iter (successors block.branch) ~f:(fun ((pc', _) as cont) ->
+              add_incoming cont;
+              visit pc'))
+      in
+      add_incoming (pc, cont_args);
+      visit pc;
+      Addr.Hashtbl.iter
+        (fun pc' l ->
+          let block = Addr.Map.find pc' p.blocks in
+          List.iteri block.params ~f:(fun i x ->
+              if not (Var.Hashtbl.mem subst x)
+              then
+                let vals =
+                  List.fold_left l ~init:Var.Set.empty ~f:(fun s args ->
+                      let y = repr (List.nth args i) in
+                      if Var.equal y x then s else Var.Set.add y s)
+                in
+                match Var.Set.elements vals with
+                | [ y ] -> if add x y then changed := true
+                | _ -> ()))
+        incoming;
+      if !changed then fixpoint () else visited
     in
-    p, !inlined
+    let visited = fixpoint () in
+    let blocks = function_blocks p pc in
+    let assigns_substituted =
+      List.exists blocks ~f:(fun (_, block) ->
+          List.exists block.body ~f:(fun i ->
+              match i with
+              | Assign (x, _) -> Var.Hashtbl.mem subst x
+              | _ -> false))
+    in
+    if assigns_substituted
+    then p, params, args, cont
+    else
+      let s x =
+        let y = repr x in
+        if not (Var.equal x y)
+        then context.live_vars.(Var.idx y) <- context.live_vars.(Var.idx y) + 1;
+        y
+      in
+      (* Perform the substitution everywhere before inlining, so that
+       occurrence counts are accurate when deciding whether to inline. *)
+      let original_bodies = Addr.Hashtbl.create 16 in
+      let p =
+        List.fold_left blocks ~init:p ~f:(fun p (pc, block) ->
+            let block =
+              if Addr.Hashtbl.mem visited pc
+              then (
+                Addr.Hashtbl.add original_bodies pc block.body;
+                match block.branch with
+                | Cond (x, cont1, cont2) -> (
+                    match cond x with
+                    | Some true -> { block with branch = Branch cont1 }
+                    | Some false -> { block with branch = Branch cont2 }
+                    | None -> block)
+                | _ -> block)
+              else block
+            in
+            { p with
+              blocks = Addr.Map.add pc (Subst.Excluding_Binders.block s block) p.blocks
+            })
+      in
+      let cont = pc, List.map ~f:s cont_args in
+      let params, args =
+        List.fold_right2 params args ~init:([], []) ~f:(fun x y (params, args) ->
+            if Var.Hashtbl.mem subst x
+            then (
+              context.live_vars.(Var.idx y) <- context.live_vars.(Var.idx y) - 1;
+              params, args)
+            else x :: params, y :: args)
+      in
+      let p =
+        Addr.Hashtbl.fold
+          (fun pc original_body p ->
+            let block = Addr.Map.find pc p.blocks in
+            let body, (branch, p) =
+              List.fold_right2
+                ~f:(fun i i' (rem, state) ->
+                  match i, i' with
+                  | Let (_, Apply { f = f0; _ }), Let (x, Apply { f; args; _ })
+                    when (not (Var.equal f f0))
+                         && (not (Var.Set.mem f context.being_inlined))
+                         && Var.Map.mem f context.env
+                         && List.compare_lengths args (Var.Map.find f context.env).params
+                            = 0 -> inline_function ~context i' x f args rem state
+                  | _ -> i' :: rem, state)
+                original_body
+                block.body
+                ~init:([], (block.branch, p))
+            in
+            { p with blocks = Addr.Map.add pc { block with body; branch } p.blocks })
+          original_bodies
+          p
+      in
+      p, params, args, cont
 
-and inline_function ~context x f args rem state =
+and inline_function ~context i x f args rem state =
   let info = Var.Map.find f context.env in
   let { params; cont; _ } = info in
   trace_inlining ~context info x args;
@@ -700,27 +1042,106 @@ and inline_function ~context x f args rem state =
         p, params, cont
       else p, params, cont
     in
-    let p, inlined = inline_recursively ~context ~info p params cont args in
-    Some (rewrite_inlined_function p rem branch x params cont args ~inlined))
-  else None
+    let p, params, args, cont =
+      inline_recursively
+        ~context:{ context with being_inlined = Var.Set.add f context.being_inlined }
+        p
+        params
+        cont
+        args
+    in
+    rewrite_inlined_function p rem branch x params cont args)
+  else i :: rem, state
 
 let inline_in_block ~context pc block p =
   let body, (branch, p) =
     List.fold_right
       ~f:(fun i (rem, state) ->
         match i with
-        | Let (x, Apply { f; args; exact = true; _ }) when Var.Map.mem f context.env -> (
-            match inline_function ~context x f args rem state with
-            | Some res -> res
-            | None -> i :: rem, state)
+        | Let (x, Apply { f; args; exact }) when Var.Map.mem f context.env ->
+            (* [f] is bound to a known closure, so the call is exact if the
+               number of arguments matches, even when the flow analysis did
+               not mark it as such (for instance, when [f] was substituted
+               after the analysis was run). *)
+            if exact || List.compare_lengths args (Var.Map.find f context.env).params = 0
+            then inline_function ~context i x f args rem state
+            else i :: rem, state
         | _ -> i :: rem, state)
       ~init:([], (block.branch, p))
       block.body
   in
   { p with blocks = Addr.Map.add pc { block with body; branch } p.blocks }
 
+(* A single traversal, starting from the program entry point and entering
+   closures where they are defined, as in [Ref_unboxing]. A reference is
+   allocated before any of its uses is reached. *)
+let local_refs p =
+  let refs = Var.Hashtbl.create 16 in
+  (* The variables in [refs], for a fast membership test *)
+  let is_ref = BitSet.create' (Var.count ()) in
+  let visited = BitSet.create' p.free_pc in
+  let rec traverse name_opt pc =
+    if not (BitSet.mem visited pc)
+    then (
+      BitSet.set visited pc;
+      let other x =
+        if BitSet.mem is_ref (Var.idx x)
+        then (Var.Hashtbl.find refs x).only_accessed <- false
+      in
+      let access x =
+        if BitSet.mem is_ref (Var.idx x)
+        then
+          let r = Var.Hashtbl.find refs x in
+          if not (Option.equal Var.equal r.ref_function name_opt)
+          then r.only_accessed <- false
+      in
+      let block = Addr.Map.find pc p.blocks in
+      List.iter
+        ~f:(fun i ->
+          match i with
+          | Let (x, Block (0, [| y |], (NotArray | Unknown), Maybe_mutable)) ->
+              other y;
+              BitSet.set is_ref (Var.idx x);
+              Var.Hashtbl.replace
+                refs
+                x
+                { ref_function = name_opt; only_accessed = true; passed_to = [] }
+          | Let (_, Block (0, [| y |], _, _)) -> other y
+          | Let (x, Closure (_, (pc', _), _)) ->
+              Freevars.iter_instr_free_vars other i;
+              traverse (Some x) pc'
+          | Let (_, Field (x, 0, Non_float)) | Offset_ref (x, _) -> access x
+          | Set_field (x, 0, Non_float, y) ->
+              access x;
+              other y
+          | Let (_, Apply { f; args; exact = true }) ->
+              other f;
+              List.iteri
+                ~f:(fun i x ->
+                  if BitSet.mem is_ref (Var.idx x)
+                  then (
+                    let r = Var.Hashtbl.find refs x in
+                    access x;
+                    r.passed_to <- (f, i) :: r.passed_to))
+                args
+          | _ -> Freevars.iter_instr_free_vars other i)
+        block.body;
+      Freevars.iter_last_free_var other block.branch;
+      Code.fold_children p.blocks pc (fun pc' () -> traverse name_opt pc') ())
+  in
+  traverse None p.start;
+  Var.Hashtbl.filter_map_inplace
+    (fun _ r -> if r.only_accessed then Some r else None)
+    refs;
+  refs
+
 let inline ~profile ~inline_count p ~live_vars =
   if debug () then Format.eprintf "====== inlining ======@.";
+  let local_refs =
+    match Config.target () with
+    | `Wasm -> local_refs p
+    | `JavaScript -> Var.Hashtbl.create 1
+  in
   (visit_closures
      p
      ~live_vars
@@ -782,6 +1203,8 @@ let inline ~profile ~inline_count p ~live_vars =
                ; init_code = ref None
                ; returns_a_block = ref None
                ; interesting_params = ref None
+               ; ref_params = ref None
+               ; guard = ref None
                }
                context.env
          | None -> context.env
@@ -796,6 +1219,9 @@ let inline ~profile ~inline_count p ~live_vars =
      ; has_closures = ref (lazy false)
      ; current_function = None
      ; enclosing_function = None
+     ; known = known_values p
+     ; being_inlined = Var.Set.empty
+     ; local_refs
      })
     .p
 
