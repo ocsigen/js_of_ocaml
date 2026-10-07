@@ -1,4 +1,11 @@
-let wizard_args = [ "--ext:stack-switching"; "--stack-size=2M"; "--dir=."; "--dir=/tmp" ]
+let wizard_args =
+  [ "--ext:stack-switching"
+  ; "--stack-size=2M"
+  ; (* The default (2048) is too low for evenodd.ml, which nests 10000 stacks *)
+    "--max-stacks=20000"
+  ; "--dir=."
+  ; "--dir=/tmp"
+  ]
 
 let wasmtime_args =
   [ (* "-C"; "collector=null"; *) "-W=all-proposals=y"; "--dir=."; "--dir=/tmp" ]
