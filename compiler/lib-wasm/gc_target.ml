@@ -497,6 +497,18 @@ module Type = struct
           })
 end
 
+(* Cast [e] to a non-nullable reference to [typ], unless it already has
+   this type. *)
+let ref_cast typ e =
+  let* e = e in
+  let cast = W.RefCast ({ nullable = false; typ }, e) in
+  let* t = expression_type e in
+  match t with
+  | Some (Ref { nullable = false; typ = typ' }) ->
+      let* b = heap_type_sub typ' typ in
+      return (if b then e else cast)
+  | Some (Ref { nullable = true; _ } | I32 | I64 | F32 | F64) | None -> return cast
+
 module Value = struct
   let block_type =
     let* t = Type.block_type in
@@ -508,8 +520,7 @@ module Value = struct
 
   let as_block e =
     let* t = Type.block_type in
-    let* e = e in
-    return (W.RefCast ({ nullable = false; typ = Type t }, e))
+    ref_cast (Type t) e
 
   let unit = return (W.RefI31 (Const (I32 0l)))
 
@@ -653,19 +664,25 @@ module Value = struct
   let int_asr = Arith.( asr )
 end
 
+let store_in_global ?(name = "const") c =
+  let name = Code.Var.fresh_n name in
+  let* typ = expression_type c in
+  let* () =
+    register_global name { mut = false; typ = Option.value ~default:Type.value typ } c
+  in
+  return (W.GlobalGet name)
+
 module Memory = struct
-  let wasm_cast ty e =
-    let* e = e in
-    return (W.RefCast ({ nullable = false; typ = Type ty }, e))
+  let wasm_cast ty e = ref_cast (Type ty) e
 
   let wasm_struct_get ty e i =
     let* e = e in
     match e with
-    | W.RefCast ({ typ; _ }, GlobalGet nm) -> (
+    | W.RefCast (_, GlobalGet nm) | GlobalGet nm -> (
         let* init = get_global nm in
         match init with
         | Some (W.StructNew (ty', l)) ->
-            let* b = heap_type_sub (Type ty') typ in
+            let* b = heap_type_sub (Type ty') (Type ty) in
             if b
             then
               let e' = List.nth l i in
@@ -919,7 +936,9 @@ module Memory = struct
     in
     let* ty = Type.int32_type in
     let* e = e in
-    return (W.StructNew (ty, [ GlobalGet int32_ops; e ]))
+    let e' = W.StructNew (ty, [ GlobalGet int32_ops; e ]) in
+    let* b = is_small_constant e in
+    if b then store_in_global e' else return e'
 
   let box_int32 e = make_int32 ~kind:`Int32 e
 
@@ -937,7 +956,9 @@ module Memory = struct
     in
     let* ty = Type.int64_type in
     let* e = e in
-    return (W.StructNew (ty, [ GlobalGet int64_ops; e ]))
+    let e' = W.StructNew (ty, [ GlobalGet int64_ops; e ]) in
+    let* b = is_small_constant e in
+    if b then store_in_global e' else return e'
 
   let box_int64 e = make_int64 e
 
@@ -956,11 +977,6 @@ module Constant = struct
   (* dune-build-info use a 64-byte placeholder. This ensures that such
      strings are encoded as a sequence of bytes in the wasm module. *)
   let string_length_threshold = 64
-
-  let store_in_global ?(name = "const") c =
-    let name = Code.Var.fresh_n name in
-    let* () = register_global name { mut = false; typ = Type.value } c in
-    return (W.GlobalGet name)
 
   let byte_string s =
     let b = Buffer.create (String.length s) in

@@ -34,14 +34,37 @@ type boxed_status =
   | Boxed
   | Unboxed
 
+type array_kind =
+  { float : bool  (** May be a float array *)
+  ; value : bool  (** May be a non-empty block *)
+  ; cast : bool
+        (** Only when [float] is false: represented by a Wasm block
+            reference, the value being cast where it is defined *)
+  }
+
 type typ =
   | Top
   | Int of Integer.kind
   | Number of boxed_number * boxed_status
-  | Tuple of typ array
+  | Tuple of
+      { fields : typ array
+      ; block : bool
+      ; cast : bool
+      }
+      (** A block (not a float array) if [block] holds, a block or an
+          integer otherwise. When [cast] holds (only for blocks), the
+          value is represented by a Wasm block reference, being cast
+          where it is defined. *)
   | Bigarray of Optimization_hint.Bigarray.t
+  | Array of array_kind
+      (** An array: the empty array, a float array if [float] holds,
+          or a non-empty block if [value] holds *)
   | Null
   | Bot
+
+val array_kind : typ -> Optimization_hint.array_kind
+(** How the primitives manipulating an array of this type can be
+    compiled *)
 
 val constant_type : Code.constant -> typ
 
