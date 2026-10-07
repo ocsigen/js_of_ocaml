@@ -14,6 +14,12 @@ created array: 25
 constant table: 10 a
 last character: z
 next element: 64
+unrolled loop: 285
+unrolled recursive loop: 285
+copied constant table: 6
+rows of a literal array of arrays: 36
+after a loop guarded by <: 81
+after a loop guarded by >: 0
 closure: 285
 fortran layout bigarray: 60
 constant index: 4
@@ -44,6 +50,21 @@ bigarray index too far: Invalid_argument index out of bounds
 decremented ref: Invalid_argument index out of bounds
 variable bound: Invalid_argument index out of bounds
 modified index: Invalid_argument index out of bounds
+unrolled loop too far: Invalid_argument index out of bounds
+offset wrapping around: Invalid_argument index out of bounds
+copied constant table too far: Invalid_argument index out of bounds
+offset wrapping around downwards: Invalid_argument index out of bounds
+offset fact not dominating: Invalid_argument index out of bounds
+unrolled loop over another array: Invalid_argument index out of bounds
+row too short: Invalid_argument index out of bounds
+modified row: Invalid_argument index out of bounds
+after a loop not entered: Invalid_argument index out of bounds
+after a loop guarded by <=: Invalid_argument index out of bounds
+after a loop guarded by >=: Invalid_argument index out of bounds
+mixed loop guards: Invalid_argument index out of bounds
+row modified by Array.blit: Invalid_argument index out of bounds
+row maybe empty: Invalid_argument index out of bounds
+copy of an empty array: Invalid_argument index out of bounds
 assigned in a try (9): 0
 assigned in a try (10): Invalid_argument index out of bounds
 assigned index (2): 0

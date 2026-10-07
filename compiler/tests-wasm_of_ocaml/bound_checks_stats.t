@@ -120,6 +120,101 @@ library. The analysis is only performed from `--opt 2`.
   >   let a = Array.make ((n land 7) + 4) 0 in
   >   a.(3)
   > 
+  > let unrolled a =
+  >   let n = Array.length a in
+  >   let r = ref 0 and i = ref 0 in
+  >   while !i + 3 < n do
+  >     r := !r + a.(!i) + a.(!i + 1) + a.(!i + 2) + a.(!i + 3);
+  >     i := !i + 4
+  >   done;
+  >   while !i < n do
+  >     r := !r + a.(!i);
+  >     incr i
+  >   done;
+  >   !r
+  > 
+  > let unrolled_rec a =
+  >   let n = Array.length a in
+  >   let rec loop i r =
+  >     if i + 1 < n then loop (i + 2) (r + a.(i) + a.(i + 1)) else r
+  >   in
+  >   loop 0 0
+  > 
+  > (* A literal array of 8 constants is a copy of a constant *)
+  > let constants = [| 1l; 2l; 3l; 4l; 5l; 6l; 7l; 8l |]
+  > 
+  > let constant_table i = constants.(i land 7)
+  > 
+  > let count_board () =
+  >   (* The arrays of arrays are local: exported, they could be modified *)
+  >   let board = [| [| 0; 1; 1; 0 |]; [| 1; 1; 1; 1 |]; [| 0; 1; 1; 0 |] |] in
+  >   let n = ref 0 in
+  >   for i = 0 to 2 do
+  >     for j = 0 to 3 do
+  >       n := !n + board.(i).(j)
+  >     done
+  >   done;
+  >   !n
+  > 
+  > let sum_table np =
+  >   let float_tables =
+  >     [| [| 1.; 2.; 3.; 4.; 5.; 6.; 7.; 8. |]; [| 1.; 2.; 3.; 4.; 5.; 6.; 7.; 8.; 9. |] |]
+  >   in
+  >   let t = float_tables.(np land 1) in
+  >   let r = ref 0. in
+  >   for k = 0 to 7 do
+  >     r := !r +. t.(k)
+  >   done;
+  >   !r
+  > 
+  > let after_lt a =
+  >   let n = Array.length a - 1 in
+  >   if n >= 0
+  >   then (
+  >     let i = ref 0 in
+  >     while !i < n do
+  >       incr i
+  >     done;
+  >     a.(!i))
+  >   else 0
+  > 
+  > let after_le a =
+  >   let n = Array.length a - 2 in
+  >   if n >= 0
+  >   then (
+  >     let i = ref 0 in
+  >     while !i <= n do
+  >       incr i
+  >     done;
+  >     a.(!i))
+  >   else 0
+  > 
+  > let after_gt a =
+  >   let j = ref (Array.length a - 1) in
+  >   if !j >= 0
+  >   then (
+  >     while !j > 0 do
+  >       decr j
+  >     done;
+  >     a.(!j))
+  >   else 0
+  > 
+  > let bound_below_length a lo hi =
+  >   if lo >= 0
+  >   then
+  >     if hi < Array.length a
+  >     then
+  >       if lo < hi
+  >       then (
+  >         let i = ref lo in
+  >         while !i < hi do
+  >           incr i
+  >         done;
+  >         a.(!i))
+  >       else 0
+  >     else 0
+  >   else 0
+  > 
   > let assigned_in_try f j =
   >   (* The values assigned to [i] are bounded by the conditions where they
   >      are assigned *)
@@ -260,6 +355,140 @@ library. The analysis is only performed from `--opt 2`.
   > 
   > let eight s i = if String.length s >= 4 then s.[i land 7] else ' '
   > 
+  > let unrolled_too_far a =
+  >   let n = Array.length a in
+  >   let r = ref 0 and i = ref 0 in
+  >   while !i + 2 < n do
+  >     r := !r + a.(!i + 3);
+  >     incr i
+  >   done;
+  >   !r
+  > 
+  > let offset_wrapping a i =
+  >   (* [i + 1] wraps around if [i] is [max_int] *)
+  >   if i >= 0 && i + 1 < Array.length a then a.(i) else 0
+  > 
+  > let constants = [| 1l; 2l; 3l; 4l; 5l; 6l; 7l; 8l |]
+  > 
+  > let constant_table_too_far i = constants.(i land 15)
+  > 
+  > let offset_down_wrapping a i =
+  >   (* [i - 1] wraps around if [i] is [min_int] *)
+  >   if i < 50 then if i - 1 >= 0 then if i < Array.length a then a.(i) else 0 else 0
+  >   else 0
+  > 
+  > let offset_not_dominating a i =
+  >   (* The fact about [i + 1] only holds in one branch *)
+  >   if i >= 0
+  >   then
+  >     let r = if i + 1 < Array.length a then 1 else 0 in
+  >     r + a.(i)
+  >   else 0
+  > 
+  > let unrolled_other_array a b =
+  >   let r = ref 0 and i = ref 0 in
+  >   while !i + 3 < Array.length a do
+  >     r := !r + b.(!i + 3);
+  >     i := !i + 4
+  >   done;
+  >   !r
+  > 
+  > let dup_unknown (a : int array) = (Obj.obj (Obj.dup (Obj.repr a)) : int array).(0)
+  > 
+  > let row_too_far i =
+  >   let rows = [| [| 0; 1; 1; 0 |]; [| 1; 1; 1 |] |] in
+  >   rows.(i land 3).(3)
+  > 
+  > let modified_row i j =
+  >   let rows = [| [| 0; 1; 1; 0 |]; [| 1; 1; 1; 1 |] |] in
+  >   rows.(i land 3) <- [||];
+  >   rows.(j land 3).(3)
+  > 
+  > let row_of_param x i = [| x; [| 1; 2; 3; 4 |] |].(i land 3).(3)
+  > 
+  > let after_lt_empty a =
+  >   (* The loop is not entered when [a] is empty *)
+  >   let n = Array.length a - 1 in
+  >   let i = ref 0 in
+  >   while !i < n do
+  >     incr i
+  >   done;
+  >   a.(!i)
+  > 
+  > let after_le_too_far a =
+  >   let n = Array.length a - 1 in
+  >   if n >= 0
+  >   then (
+  >     let i = ref 0 in
+  >     while !i <= n do
+  >       incr i
+  >     done;
+  >     a.(!i))
+  >   else 0
+  > 
+  > let after_gt_empty a =
+  >   let j = ref (Array.length a - 1) in
+  >   while !j > 0 do
+  >     decr j
+  >   done;
+  >   a.(!j)
+  > 
+  > let after_ge a =
+  >   (* [j] is -1 after the loop *)
+  >   let j = ref (Array.length a - 1) in
+  >   if !j >= 0
+  >   then (
+  >     while !j >= 0 do
+  >       decr j
+  >     done;
+  >     a.(!j))
+  >   else 0
+  > 
+  > let bound_at_length a hi =
+  >   (* [i <= hi <= Array.length a] *)
+  >   if hi <= Array.length a
+  >   then
+  >     if hi > 0
+  >     then (
+  >       let i = ref 0 in
+  >       while !i < hi do
+  >         incr i
+  >       done;
+  >       a.(!i))
+  >     else 0
+  >   else 0
+  > 
+  > let mixed_guards a k =
+  >   (* Incremented while [i <> n] or while [i <= n]: [i] may exceed [n] *)
+  >   let n = Array.length a - 1 in
+  >   if n >= 0
+  >   then
+  >     let rec loop i k =
+  >       let x = a.(i) in
+  >       if k > 0
+  >       then if i <> n then loop (i + 1) (k - 1) else x
+  >       else if i <= n
+  >       then loop (i + 1) (k - 1)
+  >       else x
+  >     in
+  >     loop 0 k
+  >   else 0
+  > 
+  > let modified_by_blit i j =
+  >   let rows = [| [| 0; 1; 1; 0 |]; [| 1; 1; 1; 1 |] |] in
+  >   Array.blit [| [||] |] 0 rows (i land 1) 1;
+  >   rows.(j land 3).(3)
+  > 
+  > let modified_by_closure i j =
+  >   let rows = [| [| 0; 1; 1; 0 |]; [| 1; 1; 1; 1 |] |] in
+  >   let f = Sys.opaque_identity (fun () -> rows.(i land 3) <- [||]) in
+  >   f ();
+  >   rows.(j land 3).(3)
+  > 
+  > let row_maybe_empty c j =
+  >   let rows = [| (if c then [| 1; 2; 3; 4 |] else [||]) |] in
+  >   rows.(j land 3).(3)
+  > 
   > let assigned_in_try_too_far f j =
   >   let a = Array.make 11 0 in
   >   let i = ref 0 in
@@ -282,12 +511,12 @@ library. The analysis is only performed from `--opt 2`.
   0
   [1]
   $ wasm_of_ocaml compile --opt 2 --debug stats removed.cmo -o removed.wasmo 2>&1 | grep 'bound checks'
-  Stats - bound checks removed: 19 arrays, 8 strings, 0 bigarrays
+  Stats - bound checks removed: 35 arrays, 8 strings, 0 bigarrays
   $ wasm_of_ocaml compile --opt 2 --debug bound-checks kept.cmo -o kept.wasmo 2>&1 | grep -c ': removed'
   0
   [1]
   $ wasm_of_ocaml compile --opt 2 --debug bound-checks kept.cmo -o kept.wasmo 2>&1 | grep -c ': kept'
-  21
+  48
 
   $ wasm_of_ocaml compile --debug stats removed.cmo -o removed.wasmo 2>&1 | grep 'bound checks'
   [1]
