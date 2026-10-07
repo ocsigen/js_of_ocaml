@@ -56,6 +56,25 @@ let guarded_bound a =
   in
   loop 0 0
 
+(* The loop bound [n - 1] is only computed in the loop when [n > 10], so
+   its range there does not apply to [y], which has the same value: with
+   [n = min_int], [y + 1] wraps around and nothing bounds [i] *)
+let guarded_bound_wraps a n i0 =
+  let y = n - 1 in
+  let j = y + 1 in
+  if j < Array.length a && i0 >= 0 && i0 <= y
+  then (
+    let i = ref i0 in
+    let r = ref 0 in
+    while
+      r := !r + a.(!i);
+      n > 10 && !i <> n - 1
+    do
+      incr i
+    done;
+    !r)
+  else -1
+
 let guarded_bound_bigarray
     (b : (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t) =
   let n = Bigarray.Array1.dim b in
@@ -166,6 +185,53 @@ let () =
   test "next element" (fun () ->
       let i = o 7 in
       if i >= 0 && i < Array.length a - 1 then string_of_int a.(i + 1) else "out");
+  test "unrolled loop" (fun () ->
+      let n = Array.length a in
+      let r = ref 0 and i = ref 0 in
+      while !i + 3 < n do
+        r := !r + a.(!i) + a.(!i + 1) + a.(!i + 2) + a.(!i + 3);
+        i := !i + 4
+      done;
+      while !i < n do
+        r := !r + a.(!i);
+        incr i
+      done;
+      string_of_int !r);
+  test "unrolled recursive loop" (fun () ->
+      let n = Array.length a in
+      let rec loop i r = if i + 1 < n then loop (i + 2) (r + a.(i) + a.(i + 1)) else r in
+      string_of_int (loop 0 0));
+  test "copied constant table" (fun () ->
+      let t = [| 1l; 2l; 3l; 4l; 5l; 6l; 7l; 8l |] in
+      Int32.to_string t.(o 13 land 7));
+  test "rows of a literal array of arrays" (fun () ->
+      let t = [| [| 1; 2; 3; 4 |]; [| 5; 6; 7; 8 |] |] in
+      let r = ref 0 in
+      for i = 0 to 1 do
+        for j = 0 to 3 do
+          r := !r + t.(i).(j)
+        done
+      done;
+      string_of_int !r);
+  test "after a loop guarded by <" (fun () ->
+      let n = Array.length a - 1 in
+      if n >= 0
+      then (
+        let i = ref 0 in
+        while !i < n do
+          incr i
+        done;
+        string_of_int a.(!i))
+      else "out");
+  test "after a loop guarded by >" (fun () ->
+      let j = ref (Array.length a - 1) in
+      if !j >= 0
+      then (
+        while !j > 0 do
+          decr j
+        done;
+        string_of_int a.(!j))
+      else "out");
   test "closure" (fun () ->
       let r = ref 0 in
       let get i = a.(i) in
@@ -316,6 +382,98 @@ let () =
         r := !r + a.(!i)
       done;
       string_of_int !r);
+  test "unrolled loop too far" (fun () ->
+      let n = Array.length a in
+      let r = ref 0 and i = ref 0 in
+      while !i + 2 < n do
+        r := !r + a.(!i + 3);
+        incr i
+      done;
+      string_of_int !r);
+  test "offset wrapping around" (fun () ->
+      let i = o (max_int - 1) in
+      if i >= 0 && i + 3 < Array.length a then string_of_int a.(i) else "out");
+  test "copied constant table too far" (fun () ->
+      let t = [| 1l; 2l; 3l; 4l; 5l; 6l; 7l; 8l |] in
+      Int32.to_string t.(o 13 land 15));
+  test "offset wrapping around downwards" (fun () ->
+      let i = o min_int in
+      if i < 50
+      then
+        if i - 1 >= 0
+        then if i < Array.length a then string_of_int a.(i) else "out"
+        else "out"
+      else "out");
+  test "offset fact not dominating" (fun () ->
+      let i = o 10 in
+      if i >= 0
+      then
+        let r = if i + 1 < Array.length a then 1 else 0 in
+        string_of_int (r + a.(i))
+      else "out");
+  test "unrolled loop over another array" (fun () ->
+      let short = Array.make (o 5) 0 in
+      let r = ref 0 and i = ref 0 in
+      while !i + 3 < Array.length a do
+        r := !r + short.(!i + 3);
+        i := !i + 4
+      done;
+      string_of_int !r);
+  test "row too short" (fun () ->
+      let t = [| [| 1; 2; 3; 4 |]; [| 5; 6; 7 |] |] in
+      string_of_int t.(o 1).(3));
+  test "modified row" (fun () ->
+      let t = [| [| 1; 2; 3; 4 |]; [| 5; 6; 7; 8 |] |] in
+      (Sys.opaque_identity t).(1) <- [||];
+      string_of_int t.(o 1).(3));
+  test "after a loop not entered" (fun () ->
+      let e = Array.make (o 0) 0 in
+      let n = Array.length e - 1 in
+      let i = ref 0 in
+      while !i < n do
+        incr i
+      done;
+      string_of_int e.(!i));
+  test "after a loop guarded by <=" (fun () ->
+      let n = Array.length a - 1 in
+      if n >= 0
+      then (
+        let i = ref 0 in
+        while !i <= n do
+          incr i
+        done;
+        string_of_int a.(!i))
+      else "out");
+  test "after a loop guarded by >=" (fun () ->
+      let j = ref (Array.length a - 1) in
+      if !j >= 0
+      then (
+        while !j >= 0 do
+          decr j
+        done;
+        string_of_int a.(!j))
+      else "out");
+  test "mixed loop guards" (fun () ->
+      let n = Array.length a - 1 in
+      let rec loop i k =
+        let x = a.(i) in
+        if k > 0
+        then if i <> n then loop (i + 1) (k - 1) else x
+        else if i <= n
+        then loop (i + 1) (k - 1)
+        else x
+      in
+      string_of_int (loop 0 (o 0)));
+  test "row modified by Array.blit" (fun () ->
+      let rows = [| [| 0; 1; 1; 0 |]; [| 1; 1; 1; 1 |] |] in
+      Array.blit [| [||] |] 0 rows (o 1) 1;
+      string_of_int rows.(o 1).(3));
+  test "row maybe empty" (fun () ->
+      let rows = [| (if o 0 = 1 then [| 1; 2; 3; 4 |] else [||]) |] in
+      string_of_int rows.(o 0).(3));
+  test "copy of an empty array" (fun () ->
+      let e : int array = Obj.obj (Obj.dup (Obj.repr (Array.make (o 0) 0))) in
+      string_of_int e.(0));
   List.iter
     (fun j ->
       test (Printf.sprintf "assigned in a try (%d)" j) (fun () ->
@@ -339,4 +497,6 @@ let () =
             if o 0 = 0 then raise Exit;
             "no exception"
           with Exit -> if !i <= Array.length a then string_of_int a.(!i) else "out"))
-    [ 2; 3 ]
+    [ 2; 3 ];
+  test "bound computed under a guard, wrapping around" (fun () ->
+      string_of_int (guarded_bound_wraps a (o min_int) (o 1000)))
