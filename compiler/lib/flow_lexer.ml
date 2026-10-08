@@ -442,19 +442,23 @@ let rec string_quote env q buf lexbuf =
       | _ -> Buffer.add_string buf "\\");
       Buffer.add_string buf str;
       string_quote env q buf lexbuf
-  | '\n' ->
-      let x = lexeme lexbuf in
-      Buffer.add_string buf x;
+  | '\n' | '\r' | "\r\n" ->
+      newline lexbuf;
+      lexeme_to_buffer lexbuf buf;
       let env = illegal env (loc_of_lexbuf env lexbuf) "" in
       string_quote env q buf lexbuf
-  (* env, end_pos_of_lexbuf env lexbuf *)
+  (* U+2028 and U+2029 are allowed in string literals (ES2019) *)
+  | 0x2028 | 0x2029 ->
+      newline lexbuf;
+      lexeme_to_buffer lexbuf buf;
+      string_quote env q buf lexbuf
   | eof ->
       let x = lexeme lexbuf in
       Buffer.add_string buf x;
       let env = illegal env (loc_of_lexbuf env lexbuf) "" in
       env
   (* match multi-char substrings that don't contain the start chars of the above patterns *)
-  | Plus (Compl ("'" | '"' | '\\' | '\n')) ->
+  | Plus (Compl ("'" | '"' | '\\' | line_terminator_sequence_start)) ->
       lexeme_to_buffer lexbuf buf;
       string_quote env q buf lexbuf
   | _ -> failwith "unreachable string_quote"
@@ -815,7 +819,13 @@ let backquote env lexbuf =
   | "${" ->
       let env = push_mode env NORMAL in
       Token (env, T_DOLLARCURLY)
-  | Plus (Compl ('`' | '$' | '\\')) -> Token (env, T_ENCAPSED_STRING (lexeme lexbuf))
+  (* a line at a time, so that [newline] sets the line start right after the
+     line terminator *)
+  | line_terminator_sequence
+  | ( Plus (Compl ('`' | '$' | '\\' | line_terminator_sequence_start))
+    , Opt line_terminator_sequence ) ->
+      newline lexbuf;
+      Token (env, T_ENCAPSED_STRING (lexeme lexbuf))
   | '$' -> Token (env, T_ENCAPSED_STRING (lexeme lexbuf))
   | '\\' ->
       let buf = Buffer.create 127 in
