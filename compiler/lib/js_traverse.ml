@@ -2221,29 +2221,15 @@ class simpl =
         | Band -> BandEq
         | Bxor -> BxorEq
         | Bor -> BorEq
-        | Or -> OrEq
-        | And -> AndEq
         | Exp -> ExpEq
-        | Coalesce -> CoalesceEq
         | _ -> assert false
       in
       let has_assign_op op =
         match op with
-        | Mul
-        | Div
-        | Mod
-        | Plus
-        | Minus
-        | Lsl
-        | Asr
-        | Lsr
-        | Band
-        | Bxor
-        | Bor
-        | Or
-        | And
-        | Exp
-        | Coalesce -> true
+        | Mul | Div | Mod | Plus | Minus | Lsl | Asr | Lsr | Band | Bxor | Bor | Exp ->
+            true
+        (* The logical assignments [||=], [&&=] and [??=] are not used: they
+           are ES2021, while the generated code targets ES2020 *)
         | _ -> false
       in
       let is_commutative_op op =
