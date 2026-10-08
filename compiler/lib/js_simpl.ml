@@ -20,7 +20,14 @@
 open! Stdlib
 module J = Javascript
 
+let simplify_condition = function
+  | J.ECond (e, J.ENum one, J.ENum zero) when J.Num.is_one one && J.Num.is_zero zero -> e
+  | J.ECond (e, J.ENum zero, J.ENum one) when J.Num.is_one one && J.Num.is_zero zero ->
+      J.EUn (J.Not, e)
+  | cond -> cond
+
 let rec enot_rec e =
+  let e = simplify_condition e in
   let ((_, cost) as res) =
     match e with
     | J.ESeq (e1, e2) ->
@@ -138,12 +145,6 @@ let assignment_of_statement st =
   | J.Variable_statement (Var, [ (DeclIdent (_, Some _) as vd) ]) -> vd
   | J.Block l -> assignment_of_statement_list l
   | _ -> raise Not_assignment
-
-let simplify_condition = function
-  | J.ECond (e, J.ENum one, J.ENum zero) when J.Num.is_one one && J.Num.is_zero zero -> e
-  | J.ECond (e, J.ENum zero, J.ENum one) when J.Num.is_one one && J.Num.is_zero zero ->
-      J.EUn (J.Not, e)
-  | cond -> cond
 
 let rec depth = function
   | J.Block b -> depth_block b + 1
