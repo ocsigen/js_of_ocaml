@@ -475,7 +475,8 @@ type edge_kind =
   | Loop
   | Exit_loop of bool ref
   | Exit_switch of bool ref
-  | Forward
+  (* Labelled block, with the number of [break]s emitted towards it *)
+  | Forward of int ref
   (* Branch target reached through a flat dispatch loop: assign the
      selector variable the given case index and [continue] the loop. *)
   | Dispatch of Code.Var.t * int
@@ -492,7 +493,7 @@ type edge_kind =
 let branch_label kind pc l used scope_stack =
   let rec can_skip = function
     | [] -> assert false
-    | (_, (_, _, Forward)) :: rem -> can_skip rem
+    | (_, (_, _, Forward _)) :: rem -> can_skip rem
     | (_, (_, _, Exit_switch _)) :: rem
       when match kind with
            | `Continue -> true
@@ -2158,6 +2159,45 @@ and translate_instrs (ctx : Ctx.t) loc expr_queue instrs =
   in
   loc, List.rev st_rev, expr_queue
 
+(* [l: { P; if (c) { S; break l; } R }] becomes [P; if (c) { S } else { R }]
+   when this [break] is the only one targeting [l]. *)
+and labelled_block st l count inner =
+  let is_break (s, _) =
+    match s with
+    | J.Break_statement (Some l') -> J.Label.equal l l'
+    | _ -> false
+  in
+  let then_branch (s, _) =
+    match s with
+    | J.Break_statement (Some l') when J.Label.equal l l' -> Some []
+    | J.Block b -> (
+        match List.rev b with
+        | last :: rev_b when is_break last -> Some (List.rev rev_b)
+        | _ -> None)
+    | _ -> None
+  in
+  let rec split rev_prefix rem =
+    match rem with
+    | [] -> None
+    | ((J.If_statement (c, iftrue, None), loc) as s) :: rem -> (
+        match then_branch iftrue with
+        | Some iftrue -> Some (List.rev rev_prefix, c, loc, iftrue, rem)
+        | None -> split (s :: rev_prefix) rem)
+    | s :: rem -> split (s :: rev_prefix) rem
+  in
+  match if count = 1 then split [] inner else None with
+  | Some (prefix, c, loc, iftrue, iffalse) ->
+      prefix
+      @ Js_simpl.if_statement
+          ~function_end:(fun () -> source_location st.cloc)
+          c
+          loc
+          (Js_simpl.block iftrue)
+          false
+          (Js_simpl.block iffalse)
+          false
+  | None -> [ J.Labelled_statement (l, (J.Block inner, J.N)), J.N ]
+
 (* Compile loops. *)
 and compile_block st loc (queue : Q.queue) (pc : Addr.t) scope_stack ~fall_through =
   if
@@ -2239,11 +2279,12 @@ and compile_block_no_loop st loc queue (pc : Addr.t) ~fall_through scope_stack =
     | x :: xs -> (
         let l = J.Label.fresh () in
         let used = ref false in
-        let scope_stack = (x, (l, used, Forward)) :: scope_stack in
+        let count = ref 0 in
+        let scope_stack = (x, (l, used, Forward count)) :: scope_stack in
         let _never_inner, inner = loop ~scope_stack ~fall_through:(Block x) xs in
         let never, code = compile_block st loc Q.empty x scope_stack ~fall_through in
         match !used with
-        | true -> never, [ J.Labelled_statement (l, (J.Block inner, J.N)), J.N ] @ code
+        | true -> never, labelled_block st l !count inner @ code
         | false -> never, inner @ code)
   in
   let never_after, after =
@@ -2628,10 +2669,11 @@ and compile_branch st loc queue ((pc, _) as cont) scope_stack ~fall_through : bo
               then Format.eprintf "break;@,"
               else Format.eprintf "break (%d);@," pc;
             true, Q.flush_all queue loc [ J.Break_statement label, J.N ]
-        | Some (l, used, Forward) ->
+        | Some (l, used, Forward count) ->
             (* break outside a labelled statement. The label is mandatory in this case. *)
             if debug () then Format.eprintf "(br %d)@;" pc;
             used := true;
+            incr count;
             true, Q.flush_all queue loc [ J.Break_statement (Some l), J.N ]
         | Some (l, used, Dispatch (sel, k)) ->
             (* Reach the target through the enclosing dispatch loop: select the
