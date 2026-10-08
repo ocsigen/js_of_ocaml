@@ -1927,9 +1927,12 @@ let rec translate_expr ctx loc x e level : (_ * J.statement_list) Expr_builder.t
                 let* () = info ~need_loc:true (kind (Primitive.kind name)) in
                 let* args = list_map (fun x -> access' ~ctx x) l in
                 return (J.call prim args loc))
-        | Not, [ x ] ->
-            let* cx = access' ~ctx x in
-            return (J.EBin (J.Minus, one, cx))
+        | Not, [ y ] ->
+            let* cy = access' ~ctx y in
+            return
+              (if Bool_context.is_bool_context_only ctx.Ctx.bool_context x
+               then Js_simpl.enot cy
+               else J.EBin (J.Minus, one, cy))
         | Lt, [ y; z ] ->
             let* cy = access' ~ctx y in
             let* cz = access' ~ctx z in
