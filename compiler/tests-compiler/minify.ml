@@ -296,8 +296,8 @@ let%expect_test _ =
           1: function
           2: f(){const
           3: a=2;if(!0){var
-          4: b=a;const
-          5: c=b+1}}
+          4: b=a;{const
+          5: a=b+1}}}
         |}])
 
 let%expect_test _ =
