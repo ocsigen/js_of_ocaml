@@ -84,6 +84,24 @@ let lexeme = Sedlexing.Utf8.lexeme
 
 let lexeme_to_buffer lexbuf b = Buffer.add_string b (Sedlexing.Utf8.lexeme lexbuf)
 
+(* The value of a submatch of hexadecimal digits, read in place. It
+   saturates above the code point range: an escape with too many digits is
+   out of range rather than an [int_of_string] failure. *)
+let hex_submatch_value { Sedlexing.lexbuf; pos; len } =
+  let rec loop i acc =
+    if i = len || acc > 0x10FFFF
+    then acc
+    else
+      let c = Uchar.to_int (Sedlexing.lexeme_char lexbuf (pos + i)) in
+      let d =
+        if c <= Char.code '9'
+        then c - Char.code '0'
+        else (c lor 0x20) - Char.code 'a' + 10
+      in
+      loop (i + 1) ((acc lsl 4) lor d)
+  in
+  loop 0 0
+
 let letter = [%sedlex.regexp? 'a' .. 'z' | 'A' .. 'Z' | '$']
 
 let id_letter = [%sedlex.regexp? letter | '_']
@@ -236,22 +254,6 @@ let illegal (env : Lex_env.t) (loc : Loc.t) reason =
   lex_error env loc (Parse_error.Unexpected reason)
 
 let decode_identifier =
-  let sub_lexeme lexbuf trim_start trim_end =
-    Sedlexing.Utf8.sub_lexeme
-      lexbuf
-      trim_start
-      (Sedlexing.lexeme_length lexbuf - trim_start - trim_end)
-  in
-  let unicode_escape_code lexbuf =
-    let hex = sub_lexeme lexbuf 2 0 in
-    let code = int_of_string ("0x" ^ hex) in
-    code
-  in
-  let codepoint_escape_code lexbuf =
-    let hex = sub_lexeme lexbuf 3 1 in
-    let code = int_of_string ("0x" ^ hex) in
-    code
-  in
   let is_high_surrogate c = 0xD800 <= c && c <= 0xDBFF in
   let is_low_surrogate c = 0xDC00 <= c && c <= 0xDFFF in
   let combine_surrogate hi lo =
@@ -260,16 +262,8 @@ let decode_identifier =
   let low_surrogate env loc buf lexbuf lead =
     let env = lex_error env loc Parse_error.IllegalUnicodeEscape in
     match%sedlex lexbuf with
-    | unicode_escape ->
-        let code = unicode_escape_code lexbuf in
-        if is_low_surrogate code
-        then (
-          let code = combine_surrogate lead code in
-          Buffer.add_utf_8_uchar buf (Uchar.of_int code);
-          env)
-        else lex_error env loc Parse_error.IllegalUnicodeEscape
-    | codepoint_escape ->
-        let code = codepoint_escape_code lexbuf in
+    | "\\u", (hex_quad as hex) | "\\u{", (Plus hex_digit as hex), '}' ->
+        let code = hex_submatch_value hex in
         if is_low_surrogate code
         then (
           let code = combine_surrogate lead code in
@@ -280,34 +274,16 @@ let decode_identifier =
   in
   let rec id_char env loc buf lexbuf =
     match%sedlex lexbuf with
-    | unicode_escape ->
-        let code = unicode_escape_code lexbuf in
+    | "\\u", (hex_quad as hex) | "\\u{", (Plus hex_digit as hex), '}' ->
+        let code = hex_submatch_value hex in
         let env =
           if is_high_surrogate code
           then low_surrogate env loc buf lexbuf code
-          else
-            let env =
-              if not (Uchar.is_valid code)
-              then lex_error env loc Parse_error.IllegalUnicodeEscape
-              else env
-            in
+          else if Uchar.is_valid code
+          then (
             Buffer.add_utf_8_uchar buf (Uchar.of_int code);
-            env
-        in
-        id_char env loc buf lexbuf
-    | codepoint_escape ->
-        let code = codepoint_escape_code lexbuf in
-        let env =
-          if is_high_surrogate code
-          then low_surrogate env loc buf lexbuf code
-          else
-            let env =
-              if not (Uchar.is_valid code)
-              then lex_error env loc Parse_error.IllegalUnicodeEscape
-              else env
-            in
-            Buffer.add_utf_8_uchar buf (Uchar.of_int code);
-            env
+            env)
+          else lex_error env loc Parse_error.IllegalUnicodeEscape
         in
         id_char env loc buf lexbuf
     | eof -> env, Buffer.contents buf
@@ -423,17 +399,14 @@ let string_escape ~accept_invalid env lexbuf =
   | 'u', hex_quad ->
       let str = lexeme lexbuf in
       env, str
-  | "u{", Plus hex_digit, '}' ->
-      let str = lexeme lexbuf in
-      let hex = String.sub str 2 (String.length str - 3) in
-      let code = int_of_string ("0x" ^ hex) in
+  | "u{", (Plus hex_digit as hex), '}' ->
       (* 11.8.4.1 *)
       let env =
-        if code > 0x10FFFF && not accept_invalid
+        if hex_submatch_value hex > 0x10FFFF && not accept_invalid
         then illegal env (loc_of_lexbuf env lexbuf) "unicode escape out of range"
         else env
       in
-      env, str
+      env, lexeme lexbuf
   | 'u' | 'x' | '0' .. '7' ->
       let str = lexeme lexbuf in
       let env =
@@ -787,12 +760,7 @@ let rec regexp_body env buf lexbuf =
       let s = lexeme lexbuf in
       Buffer.add_string buf s;
       regexp_body env buf lexbuf
-  | '/', Plus id_letter ->
-      let flags =
-        let str = lexeme lexbuf in
-        String.sub str 1 (String.length str - 1)
-      in
-      env, flags
+  | '/', (Plus id_letter as flags) -> env, Sedlexing.Utf8.of_submatch flags
   | '/' -> env, ""
   | '[' ->
       Buffer.add_char buf '[';
