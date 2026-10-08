@@ -283,7 +283,7 @@ var caml_custom_ops = {
 
 //Provides: caml_input_value_from_reader mutable
 //Requires: caml_failwith
-//Requires: caml_float_of_bytes, caml_custom_ops
+//Requires: caml_float_of_bytes, caml_custom_ops, caml_max_float_array_length
 //Requires: UInt8ArrayReader
 //Requires: caml_decompress_input
 //Requires: caml_set_oo_id
@@ -449,6 +449,10 @@ function caml_input_value_from_reader(reader) {
             return v;
           case 0x07: //cst.CODE_DOUBLE_ARRAY32_LITTLE:
             var len = reader.read32u();
+            if (len > caml_max_float_array_length)
+              caml_failwith(
+                "input_value: object too large to be read back on a 32-bit platform",
+              );
             var v = new Array(len + 1);
             v[0] = 254;
             if (intern_obj_table) intern_obj_table[obj_counter++] = v;
@@ -460,6 +464,10 @@ function caml_input_value_from_reader(reader) {
             return v;
           case 0x0f: //cst.CODE_DOUBLE_ARRAY32_BIG:
             var len = reader.read32u();
+            if (len > caml_max_float_array_length)
+              caml_failwith(
+                "input_value: object too large to be read back on a 32-bit platform",
+              );
             var v = new Array(len + 1);
             v[0] = 254;
             if (intern_obj_table) intern_obj_table[obj_counter++] = v;

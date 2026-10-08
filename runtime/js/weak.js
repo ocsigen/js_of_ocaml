@@ -61,7 +61,12 @@ function caml_ephe_create(n) {
 //Provides: caml_weak_create
 //Requires: caml_ephe_key_offset
 //Requires: caml_ephe_none
+//Requires: caml_invalid_argument, caml_max_array_length
 function caml_weak_create(n) {
+  // As in OCaml, the size of the block, as seen by Obj.size, is at most
+  // Max_wosize
+  if (n < 0 || n + caml_ephe_key_offset - 1 > caml_max_array_length)
+    caml_invalid_argument("Weak.create");
   var alen = caml_ephe_key_offset + n;
   var x = new Array(alen);
   x[0] = 251;
