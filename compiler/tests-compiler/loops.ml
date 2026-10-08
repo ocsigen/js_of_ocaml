@@ -438,7 +438,7 @@ let add_substitute =
      for(;;){
       if(i$4 >= lim$1){
        var _b_ = 92 === previous ? 1 : 0;
-       return _b_ ? caml_call2(add_char, b, previous) : _b_;
+       return _b_ && caml_call2(add_char, b, previous);
       }
       var previous$0 = caml_string_get(s, i$4);
       if(36 === previous$0)

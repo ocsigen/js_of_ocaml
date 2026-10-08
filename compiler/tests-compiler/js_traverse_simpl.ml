@@ -64,14 +64,14 @@ function f(c, x) {
 |};
   [%expect
     {|
-           "use strict";
-           function f(c, x){
-            if(c) ; else{let z = x();}
-            if(c){const z = x();}
-            if(c){function g(){}}
-            while(c){class C{}}
-            {let y = 1;}
-            let y = 2;
-            return y;
-           }
-           |}]
+    "use strict";
+    function f(c, x){
+     if(! c){let z = x();}
+     if(c){const z = x();}
+     if(c){function g(){}}
+     while(c){class C{}}
+     {let y = 1;}
+     let y = 2;
+     return y;
+    }
+    |}]
