@@ -2086,7 +2086,13 @@ class clean =
         | None -> None
       in
       match s with
-      | If_statement (if', then', else') -> If_statement (if', b then', bopt else')
+      | If_statement (if', then', else') -> (
+          match b then', bopt else' with
+          (* Branches can become empty once the assignments [x = x] are removed *)
+          | (Empty_statement, _), None -> Expression_statement if'
+          | (Empty_statement, _), Some else' ->
+              If_statement (Js_simpl.enot if', else', None)
+          | then', else' -> If_statement (if', then', else'))
       | Do_while_statement (do', while') -> Do_while_statement (b do', while')
       | While_statement (cond, st) -> While_statement (cond, b st)
       | For_statement (p1, p2, p3, st) -> For_statement (p1, p2, p3, b st)
@@ -2250,6 +2256,12 @@ class simpl =
         | _ -> false
       in
       match e with
+      (* b ? e : b --> b && e *)
+      | ECond (EVar x, e1, EVar y) when ident_equal x y -> EBin (And, EVar x, e1)
+      (* b ? b : e --> b || e *)
+      | ECond (EVar x, EVar y, e2) when ident_equal x y -> EBin (Or, EVar x, e2)
+      | EUn (Not, (EBin ((EqEqEq | NotEqEq | EqEq | NotEq), _, _) as e)) ->
+          Js_simpl.enot e
       | EBin (Plus, e1, e2) -> (
           match e1, e2 with
           | _, ENum n when Num.is_neg n -> EBin (Minus, e1, ENum (Num.neg n))
