@@ -128,6 +128,9 @@
   start from 1 in all error messages, as editors expect (#2464, #2491)
 
 ## Bug fixes
+* Compiler: the JavaScript lexer no longer crashes on a unicode escape out
+  of the code point range (`\u{110000}`) or with too many digits; it is
+  reported as a syntax error
 * Compiler/Wasm: fix several bugs of the Wasm linker (instruction decoding,
   retargeting of active segments, type checks of imports) (#2504)
 * Wasm: `Genarray.get`/`set` check the number of indices
