@@ -2103,22 +2103,38 @@
                      (br $loop))))))
       (local.get $offset))
 
+   (@string $ba_get_wrong_num_indices "Bigarray.get: wrong number of indices")
+
    (func (export "caml_ba_get_generic")
-      (param $vba (ref eq)) (param $index (ref eq)) (result (ref eq))
-      (local $ba (ref $bigarray))
+      (param $vba (ref eq)) (param $vindex (ref eq)) (result (ref eq))
+      (local $ba (ref $bigarray)) (local $index (ref $block))
       (local.set $ba (ref.cast (ref $bigarray) (local.get $vba)))
+      (local.set $index (ref.cast (ref $block) (local.get $vindex)))
+      (if (i32.ne (i32.sub (array.len (local.get $index)) (i32.const 1))
+             (struct.get_u $bigarray $ba_num_dims (local.get $ba)))
+         (then
+            (call $caml_invalid_argument
+               (global.get $ba_get_wrong_num_indices))
+            (unreachable)))
       (return_call $caml_ba_get_at_offset (local.get $ba)
-         (call $caml_ba_offset' (local.get $ba)
-            (ref.cast (ref $block) (local.get $index)))))
+         (call $caml_ba_offset' (local.get $ba) (local.get $index))))
+
+   (@string $ba_set_wrong_num_indices "Bigarray.set: wrong number of indices")
 
    (func (export "caml_ba_set_generic")
-      (param $vba (ref eq)) (param $index (ref eq)) (param $v (ref eq))
+      (param $vba (ref eq)) (param $vindex (ref eq)) (param $v (ref eq))
       (result (ref eq))
-      (local $ba (ref $bigarray))
+      (local $ba (ref $bigarray)) (local $index (ref $block))
       (local.set $ba (ref.cast (ref $bigarray) (local.get $vba)))
+      (local.set $index (ref.cast (ref $block) (local.get $vindex)))
+      (if (i32.ne (i32.sub (array.len (local.get $index)) (i32.const 1))
+             (struct.get_u $bigarray $ba_num_dims (local.get $ba)))
+         (then
+            (call $caml_invalid_argument
+               (global.get $ba_set_wrong_num_indices))
+            (unreachable)))
       (call $caml_ba_set_at_offset (local.get $ba)
-         (call $caml_ba_offset' (local.get $ba)
-            (ref.cast (ref $block) (local.get $index)))
+         (call $caml_ba_offset' (local.get $ba) (local.get $index))
          (local.get $v))
       (ref.i31 (i32.const 0)))
 

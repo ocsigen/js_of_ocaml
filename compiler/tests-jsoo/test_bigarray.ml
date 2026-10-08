@@ -433,3 +433,30 @@ let%expect_test "float16 rounds through float32 (double-rounding)" =
     -0x1.178p+12
     |}]
 [@@if ocaml_version >= (5, 2, 0)]
+
+let%expect_test "generic get/set check the number of indices" =
+  let a = Genarray.create int c_layout [| 2; 3 |] in
+  Genarray.fill a 7;
+  let test name f =
+    match f () with
+    | () -> Printf.printf "%s: ok\n" name
+    | exception Invalid_argument _ -> Printf.printf "%s: Invalid_argument\n" name
+  in
+  test "get 2" (fun () ->
+      print_int (Genarray.get a [| 1; 2 |]);
+      print_newline ());
+  test "get 1" (fun () -> ignore (Genarray.get a [| 1 |]));
+  test "get 3" (fun () -> ignore (Genarray.get a [| 1; 2; 0 |]));
+  test "set 2" (fun () -> Genarray.set a [| 0; 1 |] 5);
+  test "set 1" (fun () -> Genarray.set a [| 0 |] 5);
+  test "set 3" (fun () -> Genarray.set a [| 0; 1; 0 |] 5);
+  [%expect
+    {|
+    7
+    get 2: ok
+    get 1: Invalid_argument
+    get 3: Invalid_argument
+    set 2: ok
+    set 1: Invalid_argument
+    set 3: Invalid_argument
+    |}]
