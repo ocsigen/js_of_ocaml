@@ -1,0 +1,10 @@
+limits: true
+Array.append: 5
+Array.concat: 3
+Obj.new_block: 5
+too large array: Invalid_argument Array.make
+too large float array: Invalid_argument Array.make
+too large Float.Array: Invalid_argument Float.Array.create
+too large block: Out_of_memory
+too large float block: Out_of_memory
+too large weak array: Invalid_argument Weak.create
