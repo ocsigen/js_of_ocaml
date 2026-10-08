@@ -117,6 +117,9 @@
   start from 1 in all error messages, as editors expect (#2464, #2491)
 
 ## Bug fixes
+* Compiler: the JavaScript lexer no longer crashes on a unicode escape out
+  of the code point range (`\u{110000}`) or with too many digits; it is
+  reported as a syntax error
 * Runtime: `Str.string_partial_match` stops at a partial match (JS) and no
   longer returns invalid groups (OSEC-2026-21, ocaml/ocaml#15113) (#2492)
 * Compiler/wasm: `x land y` was assumed to fit in 31 bits as soon as one

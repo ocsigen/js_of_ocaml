@@ -963,6 +963,21 @@ let%expect_test ("invalid ident" [@when target_engine <> "quickjs"]) =
     cannot parse l:3:8@.
     |}]
 
+let%expect_test "unicode escape with too many digits" =
+  parse_print_token
+    ~invalid:true
+    {|
+    var \u{FFFFFFFFFFFFFFFFFFFF} = 1;
+    var s = "\u{FFFFFFFFFFFFFFFFFFFF}";
+|};
+  [%expect
+    {|
+            2: 4:var, 8:\u{FFFFFFFFFFFFFFFFFFFF}, 33:=, 35:1, 36:;,
+            3: 4:var, 8:s, 10:=, 12:"\\u{FFFFFFFFFFFFFFFFFFFF}", 38:;,
+           fake:2:9: lexer error: Illegal Unicode escape
+           fake:3:15: lexer error: Unexpected unicode escape out of range
+           |}]
+
 let%expect_test "string" =
   parse_print_token
     {|
