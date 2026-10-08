@@ -33,6 +33,8 @@
   blocks into `if`/`else` statements or conditional expressions; the nesting
   this introduces is bounded by `--set=break_sink_depth`, and the
   `merge_node_max` parameter is renamed `label_depth` (#2513)
+* Compiler: simplify the generated JavaScript (`!x` for negated
+  conditions, no empty `if` branches) (#2500)
 
 ### Effects
 * Compiler: with `--effects={cps,double-translation}`, specialize calls to
