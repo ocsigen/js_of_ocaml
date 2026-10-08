@@ -81,6 +81,10 @@
       (func $wrap_meth_callback_unsafe (param (ref eq)) (result anyref)))
    (import "bindings" "wrap_fun_arguments"
       (func $wrap_fun_arguments (param anyref) (result anyref)))
+   (import "array" "caml_check_array_length"
+      (func $caml_check_array_length (param i32)))
+   (import "array" "caml_check_float_array_length"
+      (func $caml_check_float_array_length (param i32)))
    (import "fail" "caml_failwith_tag"
       (func $caml_failwith_tag (result (ref eq))))
    (import "fail" "javascript_exception"
@@ -329,11 +333,13 @@
       (local.set $a
          (ref.as_non_null (extern.convert_any (call $unwrap (local.get $v)))))
       (local.set $l (call $array_length (local.get $a)))
+      (call $caml_check_array_length (local.get $l))
       (if (local.get $l)
          (then
             (if (ref.test (ref $float)
                    (call $array_get (local.get $a) (i32.const 0)))
                (then
+                  (call $caml_check_float_array_length (local.get $l))
                   (local.set $fa
                      (array.new $float_array (f64.const 0) (local.get $l)))
                   (local.set $i (i32.const 0))
@@ -367,6 +373,7 @@
       (param $a (ref extern)) (result (ref eq))
       (local $a' (ref $block)) (local $l i32) (local $i i32)
       (local.set $l (call $array_length (local.get $a)))
+      (call $caml_check_array_length (local.get $l))
       (local.set $a'
          (array.new $block (ref.i31 (i32.const 0))
             (i32.add (local.get $l) (i32.const 1))))

@@ -429,6 +429,8 @@
                (i32.eq (local.get $code) (global.get $CODE_DOUBLE_ARRAY8_BIG))
                (i32.eq (local.get $code)
                  (global.get $CODE_DOUBLE_ARRAY32_BIG)))))
+      (if (i32.gt_u (local.get $len) (i32.const 0x7ffffff))
+         (then (call $fail_too_large (global.get $input_value))))
       (local.set $dest (array.new $float_array (f64.const 0) (local.get $len)))
       (loop $loop
          (if (i32.lt_u (local.get $i) (local.get $len))

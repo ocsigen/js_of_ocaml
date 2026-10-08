@@ -18,6 +18,7 @@
 (module
    (import "fail" "caml_invalid_argument"
       (func $caml_invalid_argument (param (ref eq))))
+   (import "fail" "caml_raise_out_of_memory" (func $caml_raise_out_of_memory))
 
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
@@ -25,6 +26,28 @@
    (type $float_array (array (mut f64)))
 
    (@string $Array_make "Array.make")
+   (@string $Array_concat "Array.concat")
+   (@string $Float_Array_create "Float.Array.create")
+
+   ;; As in OCaml, arrays have at most Max_wosize elements, and float
+   ;; arrays half as many (Sys.max_array_length and
+   ;; Sys.max_floatarray_length). Every function which creates an array of
+   ;; arbitrary length checks this bound, so that the compiler can rely on
+   ;; it.
+   (global $max_array_length i32 (i32.const 0xfffffff))
+   (global $max_float_array_length i32 (i32.const 0x7ffffff))
+
+   (func $check_concat_length (param $len i32) (param $max i32)
+      (if (i32.gt_u (local.get $len) (local.get $max))
+         (then (call $caml_invalid_argument (global.get $Array_concat)))))
+
+   (func (export "caml_check_array_length") (param $len i32)
+      (if (i32.gt_u (local.get $len) (global.get $max_array_length))
+         (then (call $caml_raise_out_of_memory))))
+
+   (func (export "caml_check_float_array_length") (param $len i32)
+      (if (i32.gt_u (local.get $len) (global.get $max_float_array_length))
+         (then (call $caml_raise_out_of_memory))))
 
    (global $empty_array (ref eq)
       (array.new_fixed $block 1 (ref.i31 (i32.const 0))))
@@ -36,7 +59,7 @@
       (local $sz i32) (local $b (ref $block)) (local $f f64)
       (local $fv (ref $float))
       (local.set $sz (i31.get_s (ref.cast (ref i31) (local.get $n))))
-      (if (i32.ge_u (local.get $sz) (i32.const 0xfffffff))
+      (if (i32.gt_u (local.get $sz) (global.get $max_array_length))
          (then (call $caml_invalid_argument (global.get $Array_make))))
       (if (i32.eqz (local.get $sz)) (then (return (global.get $empty_array))))
       (drop (block $not_float (result (ref eq))
@@ -47,7 +70,7 @@
          ;; A float init builds an unboxed float array, which has the tighter
          ;; size limit of the dedicated floatarray primitives, not the generic
          ;; one checked above.
-         (if (i32.ge_u (local.get $sz) (i32.const 0x7ffffff))
+         (if (i32.gt_u (local.get $sz) (global.get $max_float_array_length))
             (then (call $caml_invalid_argument (global.get $Array_make))))
          (return (array.new $float_array (local.get $f) (local.get $sz)))))
       (local.set $b
@@ -60,7 +83,7 @@
       (param $n (ref eq)) (param $v (ref eq)) (result (ref eq))
       (local $sz i32) (local $f f64)
       (local.set $sz (i31.get_s (ref.cast (ref i31) (local.get $n))))
-      (if (i32.ge_u (local.get $sz) (i32.const 0x7ffffff))
+      (if (i32.gt_u (local.get $sz) (global.get $max_float_array_length))
          (then (call $caml_invalid_argument (global.get $Array_make))))
       (if (i32.eqz (local.get $sz)) (then (return (global.get $empty_array))))
       (local.set $f
@@ -74,8 +97,8 @@
       (param $n (ref eq)) (result (ref eq))
       (local $sz i32)
       (local.set $sz (i31.get_s (ref.cast (ref i31) (local.get $n))))
-      (if (i32.ge_u (local.get $sz) (i32.const 0x7ffffff))
-         (then (call $caml_invalid_argument (global.get $Array_make))))
+      (if (i32.gt_u (local.get $sz) (global.get $max_float_array_length))
+         (then (call $caml_invalid_argument (global.get $Float_Array_create))))
       (if (i32.eqz (local.get $sz)) (then (return (global.get $empty_array))))
       (array.new $float_array (f64.const 0) (local.get $sz)))
 
@@ -187,6 +210,9 @@
                   (local.get $va2)))
             (local.set $l1 (array.len (local.get $a1)))
             (local.set $l2 (array.len (local.get $a2)))
+            (call $check_concat_length
+               (i32.sub (i32.add (local.get $l1) (local.get $l2)) (i32.const 2))
+               (global.get $max_array_length))
             (local.set $a
                (array.new $block (ref.i31 (i32.const 0))
                   (i32.sub (i32.add (local.get $l1) (local.get $l2))
@@ -207,6 +233,9 @@
                (local.get $va2)))
          (local.set $l1 (array.len (local.get $fa1)))
          (local.set $l2 (array.len (local.get $fa2)))
+         (call $check_concat_length
+            (i32.add (local.get $l1) (local.get $l2))
+            (global.get $max_float_array_length))
          (local.set $fa
             (array.new $float_array (f64.const 0)
                (i32.add (local.get $l1) (local.get $l2))))
@@ -231,6 +260,9 @@
                (local.get $va2)))
          (local.set $l1 (array.len (local.get $fa1)))
          (local.set $l2 (array.len (local.get $fa2)))
+         (call $check_concat_length
+            (i32.add (local.get $l1) (local.get $l2))
+            (global.get $max_float_array_length))
          (local.set $fa
             (array.new $float_array (f64.const 0)
                (i32.add (local.get $l1) (local.get $l2))))
@@ -272,6 +304,10 @@
                    (i32.add (local.get $len)
                       (array.len (ref.cast (ref $float_array) (local.get $v)))))
                 (local.set $isfloat (i32.const 1)))
+             ;; Checked at each step, so that the sum does not overflow
+             (call $check_concat_length (local.get $len)
+                (select (global.get $max_float_array_length)
+                   (global.get $max_array_length) (local.get $isfloat)))
              (local.set $l (array.get $block (local.get $b) (i32.const 2)))
              (br $compute_length))))
       (if (result (ref eq)) (local.get $isfloat)
@@ -341,7 +377,9 @@
                   (local.set $len
                      (i32.add (local.get $len)
                         (array.len
-                           (ref.cast (ref $float_array) (local.get $v)))))))
+                           (ref.cast (ref $float_array) (local.get $v)))))
+                  (call $check_concat_length (local.get $len)
+                     (global.get $max_float_array_length))))
             (local.set $l (array.get $block (local.get $b) (i32.const 2)))
             (br $compute_length))))
       (local.set $fa
@@ -385,6 +423,8 @@
                   (i32.sub
                      (array.len (ref.cast (ref $block) (local.get $v)))
                      (i32.const 1))))
+            (call $check_concat_length (local.get $len)
+               (global.get $max_array_length))
             (local.set $l (array.get $block (local.get $b) (i32.const 2)))
             (br $compute_length))))
       (local.set $a
