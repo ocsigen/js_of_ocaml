@@ -1515,15 +1515,14 @@
           ? 1 <= x.length - 1 ? x[1] : x
           : x
         : x,
-     cst_Obj_extension_constructor =  /*<<?>>*/ "Obj.extension_constructor";
-    a:
-    {
-      /*<<obj.ml:81:9>>*/ if
-      (is_block(slot) &&  /*<<obj.ml:81:28>>*/ caml_obj_tag(slot) === 248){var name =  /*<<obj.ml:81:69>>*/ slot[1]; break a;}
-      /*<<obj.ml:82:50>>*/ name =
-       /*<<obj.ml:82:11>>*/ Stdlib[1].call
-       (null, cst_Obj_extension_constructor);
-    }
+     cst_Obj_extension_constructor =  /*<<?>>*/ "Obj.extension_constructor",
+     name =
+        /*<<obj.ml:81:9>>*/ is_block(slot)
+        &&  /*<<obj.ml:81:28>>*/ caml_obj_tag(slot) === 248
+        ? slot[1]
+        :  /*<<obj.ml:82:11>>*/ Stdlib
+           [1].call
+          (null, cst_Obj_extension_constructor);
      /*<<obj.ml:84:9>>*/ return caml_obj_tag(name) === 252
             ? slot
             :  /*<<obj.ml:85:11>>*/ Stdlib
@@ -29982,18 +29981,13 @@
           + (10 * (c1$0 - 48 | 0) | 0)
           | 0)
           + (c2$0 - 48 | 0)
-          | 0;
-       b:
-       {
-         /*<<scanf.ml:959:2>>*/ if(0 <= c && 255 >= c){
-         var _u_ =  /*<<scanf.ml:963:2>>*/ Stdlib[29].call(null, c);
-         break b;
-        }
-         /*<<scanf.ml:962:60>>*/ _u_ =
-         bad_input
-          ( /*<<scanf.ml:961:6>>*/ caml_call3
-            (Stdlib_Printf[4].call(null, _k_), c0, c1$0, c2$0));
-       }
+          | 0,
+        _u_ =
+           /*<<scanf.ml:959:2>>*/ 0 <= c && 255 >= c
+           ?  /*<<scanf.ml:963:2>>*/ Stdlib[29].call(null, c)
+           :  /*<<scanf.ml:962:60>>*/ bad_input
+             ( /*<<scanf.ml:961:6>>*/ caml_call3
+               (Stdlib_Printf[4].call(null, _k_), c0, c1$0, c2$0));
         /*<<scanf.ml:1017:71>>*/ return store_char(width - 2 | 0, ib, _u_) /*<<scanf.ml:1028:22>>*/ ;
       }
        /*<<scanf.ml:1005:41>>*/ _u_ = c0 - 92 | 0;
@@ -30022,18 +30016,13 @@
           c$0 =
              /*<<scanf.ml:984:9>>*/ (16 * hexadecimal_value_of_char(c1) | 0)
             + _u_
-            | 0;
-         b:
-         {
-           /*<<scanf.ml:986:2>>*/ if(0 <= c$0 && 255 >= c$0){
-            /*<<scanf.ml:989:2>>*/ _u_ = Stdlib[29].call(null, c$0);
-           break b;
-          }
-           /*<<scanf.ml:988:72>>*/ _u_ =
-           bad_input
-            ( /*<<scanf.ml:988:6>>*/ caml_call2
-              (Stdlib_Printf[4].call(null, _l_), c1, c2));
-         }
+            | 0,
+          _u_ =
+             /*<<scanf.ml:986:2>>*/ 0 <= c$0 && 255 >= c$0
+             ?  /*<<scanf.ml:989:2>>*/ Stdlib[29].call(null, c$0)
+             :  /*<<scanf.ml:988:72>>*/ bad_input
+               ( /*<<scanf.ml:988:6>>*/ caml_call2
+                 (Stdlib_Printf[4].call(null, _l_), c1, c2));
           /*<<scanf.ml:1026:72>>*/ return store_char(width - 2 | 0, ib, _u_) /*<<scanf.ml:1028:22>>*/ ;
         case 0:
         case 6:

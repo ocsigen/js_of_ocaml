@@ -34,12 +34,12 @@ let read_line buf =
      try{
       for(;;){
        if(caml_string_get(buf[2], buf[1]) === 10){
-        a:
-        {
-         if(0 < buf[1] && caml_string_get(buf[2], buf[1] - 1 | 0) === 13){var l = (buf[1] - start | 0) - 1 | 0; break a;}
-         l = buf[1] - start | 0;
-        }
-        var s = caml_call3(string_sub, buf[2], start, l);
+        var
+         l =
+           0 < buf[1] && caml_string_get(buf[2], buf[1] - 1 | 0) === 13
+            ? (buf[1] - start | 0) - 1 | 0
+            : buf[1] - start | 0,
+         s = caml_call3(string_sub, buf[2], start, l);
         buf[1] = buf[1] + 1 | 0;
         return s;
        }
