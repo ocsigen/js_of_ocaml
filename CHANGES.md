@@ -223,6 +223,8 @@
 * Compiler: fix reference unboxing when a variable read from an unboxed
   reference is stored into another unboxed reference in a nested closure
   (#2426)
+* Compiler: do not emit the ES2021 logical assignments (`||=`, `&&=`, `??=`),
+  as the generated code targets ES2020 (#XXXX)
 # 6.4.1 (2026-06-30) - Lille
 
 ## Bug fixes
