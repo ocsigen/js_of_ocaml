@@ -377,24 +377,24 @@ let ()  = M.run ()
       var
        odd =
          function(n){
-          if(2 < n >>> 0) return 1 - (1 - even$0(n - 1 | 0));
+          if(2 < n >>> 0) return 1 - ! even$0(n - 1 | 0);
           switch(n){
             case 0:
              return 0;
             case 1:
-             return 1 - (1 - even$0(0));
-            default: return 1 - (1 - even$0(1));
+             return 1 - ! even$0(0);
+            default: return 1 - ! even$0(1);
           }
          },
        even =
          function(n){
-          if(2 < n >>> 0) return 1 - (1 - odd$0(n - 1 | 0));
+          if(2 < n >>> 0) return 1 - ! odd$0(n - 1 | 0);
           switch(n){
             case 0:
              return 1;
             case 1:
-             return 1 - (1 - odd$0(0));
-            default: return 1 - (1 - odd$0(1));
+             return 1 - ! odd$0(0);
+            default: return 1 - ! odd$0(1);
           }
          };
       let odd$0 = odd, even$0 = even;
@@ -476,7 +476,7 @@ let ()  = M.run ()
       var
        odd =
          function(n){
-          if(2 < n >>> 0) return 1 - (1 - even$0(n - 1 | 0));
+          if(2 < n >>> 0) return 1 - ! even$0(n - 1 | 0);
           switch(n){
             case 0:
              var
@@ -485,13 +485,13 @@ let ()  = M.run ()
              f(0);
              return 0;
             case 1:
-             return 1 - (1 - even$0(0));
-            default: return 1 - (1 - even$0(1));
+             return 1 - ! even$0(0);
+            default: return 1 - ! even$0(1);
           }
          },
        even =
          function(n){
-          if(2 < n >>> 0) return 1 - (1 - odd$0(n - 1 | 0));
+          if(2 < n >>> 0) return 1 - ! odd$0(n - 1 | 0);
           switch(n){
             case 0:
              var
@@ -500,8 +500,8 @@ let ()  = M.run ()
              f(0);
              return 1;
             case 1:
-             return 1 - (1 - odd$0(0));
-            default: return 1 - (1 - odd$0(1));
+             return 1 - ! odd$0(0);
+            default: return 1 - ! odd$0(1);
           }
          };
       let odd$0 = odd, even$0 = even;

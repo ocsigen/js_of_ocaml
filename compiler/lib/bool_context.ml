@@ -27,7 +27,8 @@ let times = Debug.find "times"
 
    Boolean contexts:
    - Cond(v, _, _): JS truthiness is identical for true/1 and false/0
-   - Prim(Not, [Pv v]): compiles to 1-v; 1-true=0, 1-false=1
+   - Prim(Not, [Pv v]): compiles to 1-v (1-true=0, 1-false=1), or to !v
+     when its result is itself bool-context-only
    - Prim(Extern "caml_js_from_bool", [Pv v]): compiles to !!v
    - Flowing into a variable (via block params or Assign) that is itself
      bool-context-only
@@ -71,7 +72,7 @@ let f (p : program) =
     List.iter block.body ~f:(fun instr ->
         match instr with
         | Let (_, Prim (Not, [ Pv _ ])) ->
-            (* Bool context: 1 - v works for JS booleans *)
+            (* Bool context: both 1 - v and !v work for JS booleans *)
             ()
         | Let (_, Prim (Extern (name, _), [ Pv _ ]))
           when String.equal name "caml_js_from_bool" ->
