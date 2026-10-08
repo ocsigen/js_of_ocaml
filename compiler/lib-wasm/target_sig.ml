@@ -67,6 +67,8 @@ module type S = sig
 
     val array_length : expression -> expression
 
+    val array_raw_length : expression -> expression
+
     val float_array_length : expression -> expression
 
     val gen_array_length : expression -> expression

@@ -724,6 +724,11 @@ module Memory = struct
     let* e = wasm_cast block e in
     Arith.(return (W.ArrayLen e) - const 1l)
 
+  let array_raw_length e =
+    let* block = Type.block_type in
+    let* e = wasm_cast block e in
+    return (W.ArrayLen e)
+
   let float_array_length e =
     let* float_array = Type.float_array_type in
     let* e = wasm_cast float_array e in

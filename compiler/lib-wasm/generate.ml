@@ -584,7 +584,16 @@ module Generate (Target : Target_sig.S) = struct
     register_un_prim "%direct_obj_tag" `Pure ~ret_typ:(Int Ref) Memory.tag;
     register_bin_prim_ctx "caml_check_bound" ~ty:int_n (fun context x y ->
         seq
-          (let* cond = Arith.uge y (Memory.array_length x) in
+          (let* y = y in
+           let* len = Memory.array_raw_length x in
+           (* zext(y) + 1 >=u zext(a.length): the check of the Wasm
+              index y + 1, which needs no min length *)
+           let cond =
+             W.BinOp
+               ( I64 (Ge U)
+               , W.BinOp (I64 Add, W.I64ExtendI32 (U, y), Const (I64 1L))
+               , W.I64ExtendI32 (U, len) )
+           in
            instr (W.Br_if (label_index context bound_error_pc, cond)))
           x);
     register_bin_prim_ctx "caml_check_bound_gen" ~ty:int_n (fun context x y ->
