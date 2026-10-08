@@ -288,7 +288,7 @@ let decode_identifier =
         id_char env loc buf lexbuf
     | eof -> env, Buffer.contents buf
     (* match multi-char substrings that don't contain the start chars of the above patterns *)
-    | Plus (Compl "\\") | any ->
+    | Plus (Compl '\\') | '\\' ->
         lexeme_to_buffer lexbuf buf;
         id_char env loc buf lexbuf
     | _ -> failwith "unreachable id_char"
@@ -344,7 +344,7 @@ let rec comment env buf lexbuf =
       Buffer.add_string buf "*-/";
       comment env buf lexbuf
   (* match multi-char substrings that don't contain the start chars of the above patterns *)
-  | Plus (Compl (line_terminator_sequence_start | '*')) | any ->
+  | Plus (Compl (line_terminator_sequence_start | '*')) | '*' ->
       lexeme_to_buffer lexbuf buf;
       comment env buf lexbuf
   | _ ->
@@ -364,7 +364,7 @@ let rec line_comment env buf lexbuf =
       Sedlexing.rollback lexbuf;
       env
   (* match multi-char substrings that don't contain the start chars of the above patterns *)
-  | Plus (Compl line_terminator_sequence_start) | any ->
+  | Plus (Compl line_terminator_sequence_start) ->
       lexeme_to_buffer lexbuf buf;
       line_comment env buf lexbuf
   | _ -> failwith "unreachable line_comment"
@@ -385,7 +385,6 @@ let string_escape ~accept_invalid env lexbuf =
       let str = lexeme lexbuf in
       (* 0o01 *)
       env, str
-  | '0' -> env, "0"
   | 'b' -> env, "b"
   | 'f' -> env, "f"
   | 'n' -> env, "n"
@@ -407,7 +406,7 @@ let string_escape ~accept_invalid env lexbuf =
         else env
       in
       env, lexeme lexbuf
-  | 'u' | 'x' | '0' .. '7' ->
+  | 'u' | 'x' ->
       let str = lexeme lexbuf in
       let env =
         if accept_invalid then env else illegal env (loc_of_lexbuf env lexbuf) ""
@@ -455,7 +454,7 @@ let rec string_quote env q buf lexbuf =
       let env = illegal env (loc_of_lexbuf env lexbuf) "" in
       env
   (* match multi-char substrings that don't contain the start chars of the above patterns *)
-  | Plus (Compl ("'" | '"' | '\\' | '\n')) | any ->
+  | Plus (Compl ("'" | '"' | '\\' | '\n')) ->
       lexeme_to_buffer lexbuf buf;
       string_quote env q buf lexbuf
   | _ -> failwith "unreachable string_quote"
@@ -739,7 +738,7 @@ let rec regexp_class env buf lexbuf =
       let env = lex_error env loc Parse_error.UnterminatedRegExp in
       env
   (* match multi-char substrings that don't contain the start chars of the above patterns *)
-  | Plus (Compl ('\\' | ']' | line_terminator_sequence_start)) | any ->
+  | Plus (Compl ('\\' | ']' | line_terminator_sequence_start)) | '\\' ->
       let str = lexeme lexbuf in
       Buffer.add_string buf str;
       regexp_class env buf lexbuf
@@ -772,7 +771,7 @@ let rec regexp_body env buf lexbuf =
       let env = lex_error env loc Parse_error.UnterminatedRegExp in
       env, ""
   (* match multi-char substrings that don't contain the start chars of the above patterns *)
-  | Plus (Compl ('\\' | '/' | '[' | line_terminator_sequence_start)) | any ->
+  | Plus (Compl ('\\' | '/' | '[' | line_terminator_sequence_start)) | '\\' ->
       let str = lexeme lexbuf in
       Buffer.add_string buf str;
       regexp_body env buf lexbuf
@@ -825,9 +824,7 @@ let backquote env lexbuf =
       Buffer.add_string buf str;
       Token (env, T_ENCAPSED_STRING (Buffer.contents buf))
   | eof -> Token (env, T_EOF)
-  | _ ->
-      let env = illegal env (loc_of_lexbuf env lexbuf) "" in
-      Token (env, T_ERROR (lexeme lexbuf))
+  | _ -> failwith "unreachable backquote"
 
 let wrap f =
   let f env =
