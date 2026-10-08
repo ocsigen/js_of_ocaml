@@ -1540,6 +1540,19 @@ module Generate (Target : Target_sig.S) = struct
                 (Array.to_list l) )
       | _, None | _, Some (_, (Expr _ | Phi _)) -> None
     in
+    (* The type of a generic bigarray does not give its number of
+       dimensions: when it does not match the number of indices, the
+       runtime function [generic] raises. *)
+    let check_num_dims ~ctx ta indices generic =
+      if_
+        { params = []; result = [] }
+        Arith.(
+          Bigarray.num_dims (transl_prim_arg ctx ta)
+          <> const (Int32.of_int (List.length indices)))
+        (let* () = drop generic in
+         instr W.Unreachable)
+        (return ())
+    in
     let caml_ba_get ~ctx ~context ~unsafe ~kind ~layout ta indices =
       let ta' = transl_prim_arg ctx ta in
       Bigarray.get
@@ -1582,18 +1595,20 @@ module Generate (Target : Target_sig.S) = struct
     register_prim "caml_ba_get_generic" `Mutator (fun ctx context _ l ->
         match l with
         | [ ta; indices ] -> (
+            let generic () =
+              let* f =
+                register_import ~name:"caml_ba_get_generic" (Fun (Type.primitive_type 2))
+              in
+              let* ta' = transl_prim_arg ctx ta in
+              let* indices' = transl_prim_arg ctx indices in
+              return (W.Call (f, [ ta'; indices' ]))
+            in
             match bigarray_generic_access ~ctx ta indices with
             | Some (kind, layout, indices) ->
-                caml_ba_get ~ctx ~context ~unsafe:false ~kind ~layout ta indices
-            | _ ->
-                let* f =
-                  register_import
-                    ~name:"caml_ba_get_generic"
-                    (Fun (Type.primitive_type 2))
-                in
-                let* ta' = transl_prim_arg ctx ta in
-                let* indices' = transl_prim_arg ctx indices in
-                return (W.Call (f, [ ta'; indices' ])))
+                seq
+                  (check_num_dims ~ctx ta indices (generic ()))
+                  (caml_ba_get ~ctx ~context ~unsafe:false ~kind ~layout ta indices)
+            | _ -> generic ())
         | _ -> invalid_arity "caml_ba_get_generic" l ~expected:2);
     let caml_ba_float32_get_n ~ctx ~context ta indices =
       match get_type ctx ta with
@@ -1684,19 +1699,21 @@ module Generate (Target : Target_sig.S) = struct
     register_prim "caml_ba_set_generic" `Mutator (fun ctx context _ l ->
         match l with
         | [ ta; indices; v ] -> (
+            let generic () =
+              let* f =
+                register_import ~name:"caml_ba_set_generic" (Fun (Type.primitive_type 3))
+              in
+              let* ta' = transl_prim_arg ctx ta in
+              let* indices' = transl_prim_arg ctx indices in
+              let* v' = transl_prim_arg ctx v in
+              return (W.Call (f, [ ta'; indices'; v' ]))
+            in
             match bigarray_generic_access ~ctx ta indices with
             | Some (kind, layout, indices) ->
-                caml_ba_set ~ctx ~context ~unsafe:false ~kind ~layout ta indices v
-            | _ ->
-                let* f =
-                  register_import
-                    ~name:"caml_ba_set_generic"
-                    (Fun (Type.primitive_type 3))
-                in
-                let* ta' = transl_prim_arg ctx ta in
-                let* indices' = transl_prim_arg ctx indices in
-                let* v' = transl_prim_arg ctx v in
-                return (W.Call (f, [ ta'; indices'; v' ])))
+                seq
+                  (check_num_dims ~ctx ta indices (generic ()))
+                  (caml_ba_set ~ctx ~context ~unsafe:false ~kind ~layout ta indices v)
+            | _ -> generic ())
         | _ -> invalid_arity "caml_ba_set_generic" l ~expected:3);
     let caml_ba_float32_set_n ~ctx ~context ta indices v =
       match get_type ctx ta with
