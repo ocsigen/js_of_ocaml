@@ -26,7 +26,7 @@
   (ocaml-compiler-libs (>= v0.12.4))
   (re :with-test)
   (cmdliner (>= 2.0))
-  (sedlex (>= 3.3))
+  (sedlex (>= 3.8.1))
   (qcheck :with-test)
   (menhir (>= 20180523))
   menhirLib
