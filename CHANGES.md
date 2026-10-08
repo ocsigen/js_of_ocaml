@@ -116,6 +116,10 @@
   start from 1 in all error messages, as editors expect (#2464, #2491)
 
 ## Bug fixes
+* Runtime/wasm: the functions creating arrays of arbitrary length
+  (`Array.append`, `Array.concat`, `Obj.new_block`, `Weak.create`, ...) check
+  the size limits of OCaml (`Sys.max_array_length`) rather than letting the
+  allocation trap, and `Array.make` accepts these limits (#2499)
 * Runtime: `Str.string_partial_match` stops at a partial match (JS) and no
   longer returns invalid groups (OSEC-2026-21, ocaml/ocaml#15113) (#2492)
 * Compiler/wasm: `x land y` was assumed to fit in 31 bits as soon as one

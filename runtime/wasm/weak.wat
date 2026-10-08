@@ -349,7 +349,13 @@
       (local $len i32)
       (local $res (ref $block))
       (local.set $len (i31.get_s (ref.cast (ref i31) (local.get $vlen))))
-      (if (i32.lt_s (local.get $len) (i32.const 0))
+      ;; As in OCaml, the size of the block, as seen by Obj.size, is at
+      ;; most Max_wosize
+      (if (i32.or (i32.lt_s (local.get $len) (i32.const 0))
+             (i32.gt_u
+                (i32.add (local.get $len)
+                   (i32.sub (global.get $caml_ephe_key_offset) (i32.const 1)))
+                (i32.const 0xfffffff)))
          (then (call $caml_invalid_argument (global.get $Weak_create))))
       (local.set $res
          (array.new $block (global.get $caml_ephe_none)
