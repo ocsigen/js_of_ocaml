@@ -159,10 +159,7 @@
       (param $v (ref eq)) (param $p i32) (result i32)
       (local $s (ref $bytes))
       (local.set $s (ref.cast (ref $bytes) (local.get $v)))
-      (if (i32.lt_s (local.get $p) (i32.const 0))
-         (then (call $caml_bound_error) (unreachable)))
-      (if (i32.ge_u (local.get $p)
-                    (array.len (local.get $s)))
+      (if (i32.ge_u (local.get $p) (array.len (local.get $s)))
          (then (call $caml_bound_error) (unreachable)))
       (i32.extend8_s (array.get_u $bytes (local.get $s) (local.get $p))))
 
@@ -176,10 +173,11 @@
       (param $v (ref eq)) (param $p i32) (result i32)
       (local $s (ref $bytes))
       (local.set $s (ref.cast (ref $bytes) (local.get $v)))
-      (if (i32.lt_s (local.get $p) (i32.const 0))
-         (then (call $caml_bound_error) (unreachable)))
-      (if (i32.ge_u (i32.add (local.get $p) (i32.const 1))
-                    (array.len (local.get $s)))
+      ;; Computed on 64 bits, so that p + 1 cannot overflow; negative
+      ;; positions zero-extend to at least 2^31 and fail the test too.
+      (if (i64.ge_u
+             (i64.add (i64.extend_i32_u (local.get $p)) (i64.const 1))
+             (i64.extend_i32_u (array.len (local.get $s))))
          (then (call $caml_bound_error) (unreachable)))
       (i32.or
          (array.get_u $bytes (local.get $s) (local.get $p))
@@ -203,10 +201,9 @@
       (param $v (ref eq)) (param $p i32) (result i32)
       (local $s (ref $bytes))
       (local.set $s (ref.cast (ref $bytes) (local.get $v)))
-      (if (i32.lt_s (local.get $p) (i32.const 0))
-         (then (call $caml_bound_error) (unreachable)))
-      (if (i32.ge_u (i32.add (local.get $p) (i32.const 3))
-                    (array.len (local.get $s)))
+      (if (i64.ge_u
+             (i64.add (i64.extend_i32_u (local.get $p)) (i64.const 3))
+             (i64.extend_i32_u (array.len (local.get $s))))
          (then (call $caml_bound_error) (unreachable)))
       (i32.or
          (i32.or
@@ -246,10 +243,9 @@
       (param $v (ref eq)) (param $p i32) (result i64)
       (local $s (ref $bytes))
       (local.set $s (ref.cast (ref $bytes) (local.get $v)))
-      (if (i32.lt_s (local.get $p) (i32.const 0))
-         (then (call $caml_bound_error) (unreachable)))
-      (if (i32.ge_u (i32.add (local.get $p) (i32.const 7))
-                    (array.len (local.get $s)))
+      (if (i64.ge_u
+             (i64.add (i64.extend_i32_u (local.get $p)) (i64.const 7))
+             (i64.extend_i32_u (array.len (local.get $s))))
          (then (call $caml_bound_error) (unreachable)))
       (i64.or
          (i64.or
@@ -336,10 +332,7 @@
       (param $vs (ref eq)) (param $p i32) (param $v i32) (result (ref eq))
       (local $s (ref $bytes))
       (local.set $s (ref.cast (ref $bytes) (local.get $vs)))
-      (if (i32.lt_s (local.get $p) (i32.const 0))
-         (then (call $caml_bound_error) (unreachable)))
-      (if (i32.ge_u (local.get $p)
-                    (array.len (local.get $s)))
+      (if (i32.ge_u (local.get $p) (array.len (local.get $s)))
          (then (call $caml_bound_error) (unreachable)))
       (array.set $bytes (local.get $s) (local.get $p) (local.get $v))
       (ref.i31 (i32.const 0)))
@@ -348,10 +341,9 @@
       (param $vs (ref eq)) (param $p i32) (param $v i32) (result (ref eq))
       (local $s (ref $bytes))
       (local.set $s (ref.cast (ref $bytes) (local.get $vs)))
-      (if (i32.lt_s (local.get $p) (i32.const 0))
-         (then (call $caml_bound_error) (unreachable)))
-      (if (i32.ge_u (i32.add (local.get $p) (i32.const 1))
-                    (array.len (local.get $s)))
+      (if (i64.ge_u
+             (i64.add (i64.extend_i32_u (local.get $p)) (i64.const 1))
+             (i64.extend_i32_u (array.len (local.get $s))))
          (then (call $caml_bound_error) (unreachable)))
       (array.set $bytes (local.get $s) (local.get $p) (local.get $v))
       (array.set $bytes (local.get $s)
@@ -373,10 +365,9 @@
       (param $vs (ref eq)) (param $p i32) (param $v i32) (result (ref eq))
       (local $s (ref $bytes))
       (local.set $s (ref.cast (ref $bytes) (local.get $vs)))
-      (if (i32.lt_s (local.get $p) (i32.const 0))
-         (then (call $caml_bound_error) (unreachable)))
-      (if (i32.ge_u (i32.add (local.get $p) (i32.const 3))
-                    (array.len (local.get $s)))
+      (if (i64.ge_u
+             (i64.add (i64.extend_i32_u (local.get $p)) (i64.const 3))
+             (i64.extend_i32_u (array.len (local.get $s))))
          (then (call $caml_bound_error) (unreachable)))
       (array.set $bytes (local.get $s) (local.get $p) (local.get $v))
       (array.set $bytes (local.get $s)
@@ -410,10 +401,9 @@
       (param $vs (ref eq)) (param $p i32) (param $v i64) (result (ref eq))
       (local $s (ref $bytes))
       (local.set $s (ref.cast (ref $bytes) (local.get $vs)))
-      (if (i32.lt_s (local.get $p) (i32.const 0))
-         (then (call $caml_bound_error) (unreachable)))
-      (if (i32.ge_u (i32.add (local.get $p) (i32.const 7))
-                    (array.len (local.get $s)))
+      (if (i64.ge_u
+             (i64.add (i64.extend_i32_u (local.get $p)) (i64.const 7))
+             (i64.extend_i32_u (array.len (local.get $s))))
          (then (call $caml_bound_error) (unreachable)))
       (array.set $bytes (local.get $s) (local.get $p)
          (i32.wrap_i64 (local.get $v)))
