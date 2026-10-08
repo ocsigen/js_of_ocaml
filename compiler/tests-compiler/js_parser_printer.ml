@@ -1061,61 +1061,69 @@ let%expect_test ("line terminators in strings" [@when target_engine <> "quickjs"
   parse_print_token ~invalid:true "42;\n\"a\rb\";\n42\n";
   [%expect
     {|
-           1: 0:42, 2:;,
-           2: 0:"a\rb", 5:;,
-           3: 0:42, 0:;,
-           |}];
+     1: 0:42, 2:;,
+     2: 0:"a\rb",
+     3: 2:;,
+     4: 0:42, 0:;,
+    fake:2:3: lexer error: Unexpected token ILLEGAL
+    |}];
   parse_print_token ~invalid:true "42;\n\"a\r\nb\";\n42\n";
   [%expect
     {|
-            1: 0:42, 2:;,
-            2: 0:"a\r\nb",
-            3: 2:;,
-            4: 0:42, 0:;,
-           fake:2:4: lexer error: Unexpected token ILLEGAL
-           |}];
+     1: 0:42, 2:;,
+     2: 0:"a\r\nb",
+     3: 2:;,
+     4: 0:42, 0:;,
+    fake:2:3: lexer error: Unexpected token ILLEGAL
+    |}];
   parse_print_token "42;\n\"a\u{2028}b\u{2029}c\";\n42\n";
   [%expect
     {|
-           1: 0:42, 2:;,
-           2: 0:"a\226\128\168b\226\128\169c", 7:;,
-           3: 0:42, 0:;,
-           |}]
+    1: 0:42, 2:;,
+    2: 0:"a\226\128\168b\226\128\169c",
+    4: 2:;,
+    5: 0:42, 0:;,
+    |}]
 
 let%expect_test "line terminators in templates" =
   (* Line terminators other than LF inside a template literal must advance the
      line count too. *)
   parse_print_token "42;\n`a\rb\rc`;\n42\n";
-  [%expect {|
-    1: 0:42, 2:;,
-    2: 0:`, 1:a\rb\rc, 6:`, 7:;,
-    3: 0:42, 0:;,
-    |}];
+  [%expect
+    {|
+           1: 0:42, 2:;,
+           2: 0:`, 1:a\r,
+           3: 0:b\r,
+           4: 0:c, 1:`, 2:;,
+           5: 0:42, 0:;,
+           |}];
   parse_print_token "42;\n`a\r\nb`;\n42\n";
   [%expect
     {|
      1: 0:42, 2:;,
      2: 0:`, 1:a\r
-    b,
-     3: 1:`, 2:;,
+    ,
+     3: 0:b, 1:`, 2:;,
      4: 0:42, 0:;,
     |}];
   parse_print_token "42;\n`a\u{2028}b\u{2029}c`;\n42\n";
   [%expect
     {|
     1: 0:42, 2:;,
-    2: 0:`, 1:a\u{2028}b\u{2029}c, 6:`, 7:;,
-    3: 0:42, 0:;,
+    2: 0:`, 1:a\u{2028},
+    3: 0:b\u{2029},
+    4: 0:c, 1:`, 2:;,
+    5: 0:42, 0:;,
     |}];
   parse_print_token "42;\n`a\nb`;\n42\n";
   [%expect
     {|
-            1: 0:42, 2:;,
-            2: 0:`, 1:a
-           b,
-            3: 1:`, 2:;,
-            4: 0:42, 0:;,
-           |}]
+     1: 0:42, 2:;,
+     2: 0:`, 1:a
+    ,
+     3: 0:b, 1:`, 2:;,
+     4: 0:42, 0:;,
+    |}]
 
 let%expect_test "multiline comments" =
   parse_print_token {|
