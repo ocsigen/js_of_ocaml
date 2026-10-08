@@ -105,8 +105,11 @@ function caml_obj_set_tag(x, tag) {
   return 0;
 }
 //Provides: caml_obj_block const (const,const)
+//Requires: caml_check_array_length, caml_check_float_array_length
 function caml_obj_block(tag, size) {
   // TODO: fail for value that are not represented as an array
+  if (tag === 254) caml_check_float_array_length(size);
+  else caml_check_array_length(size);
   var o = new Array(size + 1);
   o[0] = tag;
   for (var i = 1; i <= size; i++) o[i] = 0;
