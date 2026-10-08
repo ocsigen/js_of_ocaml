@@ -304,35 +304,39 @@ module Generate (Target : Target_sig.S) = struct
 
     (* Shifting an unnormalized integer to compare it *)
     let shift e = counted "shift" Arith.(e lsl const 1l)
+
+    let untag_no_trap e = counted "untag" (Value.int_val_no_trap e)
   end
 
+  let conversion c e =
+    match c with
+    | Unbox_i32 -> Conv.unbox_int32 e
+    | Unbox_i64 -> Conv.unbox_int64 e
+    | Unbox_f64 -> Conv.unbox_float e
+    | Box_i32 -> Conv.box_int32 e
+    | Box_i64 -> Conv.box_int64 e
+    | Box_f64 -> Conv.box_float e
+    | Untag_int -> Conv.untag e
+    | Normalize_int -> Conv.normalize e
+    | Tag_int -> Conv.tag e
+
   let convert ~(from : Typing.typ) ~(into : Typing.typ) e =
-    match from, into with
-    | Int Unnormalized, Int Normalized -> Conv.normalize e
-    | Int (Normalized | Unnormalized), Int (Normalized | Unnormalized) -> e
-    (* Dummy value *)
-    | Int (Unnormalized | Normalized), Number ((Int32 | Nativeint), Unboxed) ->
-        return (W.Const (I32 0l))
-    | Int (Unnormalized | Normalized), Number (Int64, Unboxed) ->
-        return (W.Const (I64 0L))
-    | Int (Unnormalized | Normalized), Number (Float, Unboxed) ->
-        return (W.Const (F64 0.))
-    | Int (Unnormalized | Normalized), Number (Float32, Unboxed) ->
-        return (W.Const (F32 0.))
-    | _, Int (Normalized | Unnormalized) -> Conv.untag e
-    | Int (Unnormalized | Normalized), _ -> Conv.tag e
-    | Number (_, Unboxed), Number (_, Unboxed) -> e
-    | _, Number (Int32, Unboxed) -> Conv.unbox_int32 e
-    | _, Number (Int64, Unboxed) -> Conv.unbox_int64 e
-    | _, Number (Nativeint, Unboxed) -> Conv.unbox_nativeint e
-    | _, Number (Float, Unboxed) -> Conv.unbox_float e
-    | _, Number (Float32, Unboxed) -> Conv.unbox_float32 e
-    | Number (Int32, Unboxed), _ -> Conv.box_int32 e
-    | Number (Int64, Unboxed), _ -> Conv.box_int64 e
-    | Number (Nativeint, Unboxed), _ -> Conv.box_nativeint e
-    | Number (Float, Unboxed), _ -> Conv.box_float e
-    | Number (Float32, Unboxed), _ -> Conv.box_float32 e
-    | _ -> e
+    match Typing.conversion ~from ~into with
+    | Some c -> conversion c e
+    | None -> (
+        match from, into with
+        (* Dummy value *)
+        | Int _, Number ((Int32 | Nativeint), Unboxed) -> return (W.Const (I32 0l))
+        | Int _, Number (Int64, Unboxed) -> return (W.Const (I64 0L))
+        | Int _, Number (Float, Unboxed) -> return (W.Const (F64 0.))
+        | Int _, Number (Float32, Unboxed) -> return (W.Const (F32 0.))
+        | Number (_, Unboxed), Number (_, Unboxed) -> e
+        (* The numbers without conversion primitives *)
+        | _, Number (Nativeint, Unboxed) -> Conv.unbox_nativeint e
+        | _, Number (Float32, Unboxed) -> Conv.unbox_float32 e
+        | Number (Nativeint, Unboxed), _ -> Conv.box_nativeint e
+        | Number (Float32, Unboxed), _ -> Conv.box_float32 e
+        | _ -> e)
 
   let load_and_box ctx x = convert ~from:(Typing.var_type ctx.types x) ~into:Top (load x)
 
@@ -392,12 +396,24 @@ module Generate (Target : Target_sig.S) = struct
         String.Hashtbl.add
           h
           nm
-          (k, false, Typing.Top, fun ctx _ _ l -> f (fun x -> transl_prim_arg ctx x) l))
+          ( k
+          , Typing.Values
+          , false
+          , Typing.Top
+          , fun ctx _ _ l -> f (fun x -> transl_prim_arg ctx x) l ))
       internal_primitives;
     h
 
-  let register_prim name ?(unbox = false) ?(ret_typ = Typing.Top) kind f =
-    String.Hashtbl.add internal_primitives name (kind, unbox, ret_typ, f)
+  (* By default, a primitive translates its arguments itself, examining
+     their types *)
+  let register_prim
+      name
+      ?(args = Typing.Any_representation)
+      ?(unbox = false)
+      ?(ret_typ = Typing.Top)
+      kind
+      f =
+    String.Hashtbl.add internal_primitives name (kind, args, unbox, ret_typ, f)
 
   let invalid_arity name l ~expected =
     failwith
@@ -427,7 +443,14 @@ module Generate (Target : Target_sig.S) = struct
   let nativeint_u = Typing.Number (Nativeint, Unboxed)
 
   let register_un_prim name k ?typ ?ret_typ f =
-    register_prim name k ~unbox:(is_unboxed typ) ?ret_typ (fun ctx _ _ l ->
+    let arg1 = Option.value ~default:Typing.Top typ in
+    register_prim
+      name
+      k
+      ~args:(Typed [ arg1 ])
+      ~unbox:(is_unboxed typ)
+      ?ret_typ
+      (fun ctx _ _ l ->
         match l with
         | [ x ] -> f (transl_prim_arg ctx ?typ x)
         | l -> invalid_arity name l ~expected:1)
@@ -440,7 +463,15 @@ module Generate (Target : Target_sig.S) = struct
 
   let register_bin_prim name k ?tx ?ty ?ret_typ f =
     let unbox = is_unboxed tx || is_unboxed ty in
-    register_prim name k ~unbox ?ret_typ (fun ctx _ _ l ->
+    let arg1 = Option.value ~default:Typing.Top tx in
+    let arg2 = Option.value ~default:Typing.Top ty in
+    register_prim
+      name
+      k
+      ~args:(Typed [ arg1; arg2 ])
+      ~unbox
+      ?ret_typ
+      (fun ctx _ _ l ->
         match l with
         | [ x; y ] -> f (transl_prim_arg ctx ?typ:tx x) (transl_prim_arg ctx ?typ:ty y)
         | _ -> invalid_arity name l ~expected:2)
@@ -450,7 +481,15 @@ module Generate (Target : Target_sig.S) = struct
 
   let register_bin_prim_ctx name ?tx ?ty ?ret_typ f =
     let unbox = is_unboxed tx || is_unboxed ty in
-    register_prim name `Mutator ~unbox ?ret_typ (fun ctx context _ l ->
+    let arg1 = Option.value ~default:Typing.Top tx in
+    let arg2 = Option.value ~default:Typing.Top ty in
+    register_prim
+      name
+      `Mutator
+      ~args:(Typed [ arg1; arg2 ])
+      ~unbox
+      ?ret_typ
+      (fun ctx context _ l ->
         match l with
         | [ x; y ] ->
             f context (transl_prim_arg ctx ?typ:tx x) (transl_prim_arg ctx ?typ:ty y)
@@ -458,7 +497,15 @@ module Generate (Target : Target_sig.S) = struct
 
   let register_tern_prim name ?ty ?tz ?ret_typ f =
     let unbox = is_unboxed ty || is_unboxed tz in
-    register_prim name `Mutator ~unbox ?ret_typ (fun ctx _ _ l ->
+    let arg2 = Option.value ~default:Typing.Top ty in
+    let arg3 = Option.value ~default:Typing.Top tz in
+    register_prim
+      name
+      `Mutator
+      ~args:(Typed [ Typing.Top; arg2; arg3 ])
+      ~unbox
+      ?ret_typ
+      (fun ctx _ _ l ->
         match l with
         | [ x; y; z ] ->
             f
@@ -469,7 +516,15 @@ module Generate (Target : Target_sig.S) = struct
 
   let register_tern_prim_ctx name ?ty ?tz ?ret_typ f =
     let unbox = is_unboxed ty || is_unboxed tz in
-    register_prim name `Mutator ~unbox ?ret_typ (fun ctx context _ l ->
+    let arg2 = Option.value ~default:Typing.Top ty in
+    let arg3 = Option.value ~default:Typing.Top tz in
+    register_prim
+      name
+      `Mutator
+      ~args:(Typed [ Typing.Top; arg2; arg3 ])
+      ~unbox
+      ?ret_typ
+      (fun ctx context _ l ->
         match l with
         | [ x; y; z ] ->
             f
@@ -2030,7 +2085,7 @@ module Generate (Target : Target_sig.S) = struct
     | Prim (p, l) -> (
         match p with
         | Extern (name, hint) when String.Hashtbl.mem internal_primitives name ->
-            let _, _, _, f = String.Hashtbl.find internal_primitives name in
+            let _, _, _, _, f = String.Hashtbl.find internal_primitives name in
             f ctx context hint l |> box_number_if_needed ctx x
         | Extern (name, _) when String.Hashtbl.mem specialized_primitives name ->
             let ((_, arg_typ, _) as typ) =
@@ -2046,6 +2101,11 @@ module Generate (Target : Target_sig.S) = struct
               | [], _ :: _ | _ :: _, [] -> assert false
             in
             loop [] arg_typ l |> box_number_if_needed ctx x
+        | Wasm_conversion c -> (
+            match c, l with
+            | Untag_int, [ Pv v ] when Lcm.guarded_untag v -> Conv.untag_no_trap (load v)
+            | _, [ Pv v ] -> conversion c (load v)
+            | _ -> assert false)
         | _ -> (
             let l = List.map ~f:(fun x -> transl_prim_arg ctx x) l in
             match p, l with
@@ -2073,8 +2133,17 @@ module Generate (Target : Target_sig.S) = struct
                     let* ift = Memory.float_array_length (load y) in
                     let* iff = Arith.const 0l in
                     return (W.IfExpr (I32, cond, ift, iff)))
-            | (Not | Lt | Le | Eq | Neq | Ult | Array_get _ | IsInt _ | Vectlength _), _
-              -> assert false))
+            | ( ( Not
+                | Lt
+                | Le
+                | Eq
+                | Neq
+                | Ult
+                | Array_get _
+                | IsInt _
+                | Vectlength _
+                | Wasm_conversion _ )
+              , _ ) -> assert false))
 
   and translate_instr ctx context i =
     match i with
@@ -2086,7 +2155,8 @@ module Generate (Target : Target_sig.S) = struct
              ~into:(Typing.var_type ctx.types x)
              (load y))
     | Let (x, e) ->
-        if ctx.live.(Var.idx x) = 0
+        let idx = Var.idx x in
+        if idx < Array.length ctx.live && ctx.live.(idx) = 0
         then drop (translate_expr ctx context x e)
         else
           store
@@ -2717,15 +2787,21 @@ module Generate (Target : Target_sig.S) = struct
     Primitive.register "caml_array_get_addr" `Mutable None None;
     Primitive.register "caml_array_set_addr" `Mutable None None;
     String.Hashtbl.iter
-      (fun name (k, unbox, typ, _) ->
+      (fun name (k, args, unbox, typ, _) ->
         Primitive.register name k None None;
-        Typing.register_prim name ~unbox typ)
+        Typing.register_prim name ~args ~kind:k ~unbox typ)
       internal_primitives;
     String.Hashtbl.iter
       (fun name (k, param_types, typ) ->
         Primitive.register name k None None;
         Typing.register_prim
           name
+          ~kind:k
+          ~args:
+            (Typed
+               (List.map
+                  ~f:(fun ty -> Option.value ~default:Typing.Top (repr_type ty))
+                  param_types))
           ~unbox:
             (List.exists
                ~f:(fun ty ->
@@ -2817,6 +2893,9 @@ let f ~context ~unit_name p ~live_vars ~in_cps ~deadcode_sentinel ~global_flow_d
   let fun_info = Call_graph_analysis.f p global_flow_info in
   let types =
     Typing.f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinel p
+  in
+  let p, types =
+    if Config.Flag.lcm () then Lcm.f p types ~global_flow_info else p, types
   in
   let t = Timer.make () in
   let p = Structure.norm p in

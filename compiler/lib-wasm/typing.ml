@@ -327,6 +327,44 @@ let rec constant_type (c : constant) =
   | Null_ -> Null
   | _ -> Top
 
+(* The wasm conversion needed to coerce a value of type [from] into
+   representation [into], or [None] if the representations already match or
+   no conversion applies. This is the single source of truth for the
+   box/unbox/tag/untag/normalize representation lattice; [Lcm] is built on
+   top of it rather than re-deriving the same case analysis. *)
+let conversion ~(from : typ) ~(into : typ) : wasm_conversion option =
+  match from, into with
+  | Int Unnormalized, Int Normalized -> Some Normalize_int
+  | Number (Int32, Unboxed), Number (Int32, Unboxed)
+  | Number (Int64, Unboxed), Number (Int64, Unboxed)
+  | Number (Float, Unboxed), Number (Float, Unboxed)
+  | Int (Normalized | Unnormalized), Int (Normalized | Unnormalized) -> None
+  | _, Int (Normalized | Unnormalized) -> Some Untag_int
+  | Int (Normalized | Unnormalized), Number (_, Unboxed) -> None
+  | ( Int (Normalized | Unnormalized)
+    , (Int Ref | Top | Number (_, Boxed) | Tuple _ | Bigarray _ | Null | Bot) ) ->
+      Some Tag_int
+  | Int Ref, _ -> None
+  | Number (_, Unboxed), Number (_, Unboxed) -> None
+  | _, Number (Int32, Unboxed) -> Some Unbox_i32
+  | _, Number (Int64, Unboxed) -> Some Unbox_i64
+  | _, Number (Float, Unboxed) -> Some Unbox_f64
+  | Number (Int32, Unboxed), _ -> Some Box_i32
+  | Number (Int64, Unboxed), _ -> Some Box_i64
+  | Number (Float, Unboxed), _ -> Some Box_f64
+  | _ -> None
+
+let conversion_type c =
+  match c with
+  | Unbox_i32 -> Number (Int32, Unboxed)
+  | Unbox_i64 -> Number (Int64, Unboxed)
+  | Unbox_f64 -> Number (Float, Unboxed)
+  | Box_i32 -> Number (Int32, Boxed)
+  | Box_i64 -> Number (Int64, Boxed)
+  | Box_f64 -> Number (Float, Boxed)
+  | Untag_int | Normalize_int -> Int Normalized
+  | Tag_int -> Int Ref
+
 let arg_type ~approx arg =
   match arg with
   | Pc c -> constant_type c
@@ -349,30 +387,41 @@ let bigarray_type ~approx ba =
   | Bigarray { kind; _ } -> bigarray_element_type kind
   | _ -> Top
 
+type prim_args =
+  | Values
+  | Typed of typ list
+  | Any_representation
+
 let primitive_types = String.Hashtbl.create 16
+
+(* The result of a bitwise operation is normalized when its operands are.
+   For [land], a non-negative constant operand also clears the bits above
+   the 31 low bits; a negative one, such as [-1], keeps them. *)
+let bitwise_type prim ~typ args =
+  let normalized t =
+    match t with
+    | Bot | Int (Ref | Normalized) -> true
+    | _ -> false
+  in
+  let non_negative_constant a =
+    match a with
+    | Pc (Int c) -> Targetint.(compare c zero) >= 0
+    | Pc _ | Pv _ -> false
+  in
+  match prim with
+  | "%int_and" when List.exists ~f:non_negative_constant args -> Some (Int Normalized)
+  | "%int_and" | "%int_or" | "%int_xor" -> (
+      match List.map ~f:typ args with
+      | [ t1; t2 ] when normalized t1 && normalized t2 -> Some (Int Normalized)
+      | _ -> Some (Int Unnormalized))
+  | _ -> None
 
 let prim_type ~st ~approx prim hint args =
   match prim with
-  | "%int_and" -> (
-      (* A non-negative operand clears the bits above the 31 low bits; a
-         negative one, such as [-1], keeps them *)
-      let non_negative_constant a =
-        match a with
-        | Pc (Int c) -> Targetint.(compare c zero) >= 0
-        | Pc _ | Pv _ -> false
-      in
-      if List.exists ~f:non_negative_constant args
-      then Int Normalized
-      else
-        match List.map ~f:(fun x -> arg_type ~approx x) args with
-        | [ (Bot | Int (Ref | Normalized)); (Bot | Int (Ref | Normalized)) ] ->
-            Int Normalized
-        | _ -> Int Unnormalized)
-  | "%int_or" | "%int_xor" -> (
-      match List.map ~f:(fun x -> arg_type ~approx x) args with
-      | [ (Bot | Int (Ref | Normalized)); (Bot | Int (Ref | Normalized)) ] ->
-          Int Normalized
-      | _ -> Int Unnormalized)
+  | "%int_and" | "%int_or" | "%int_xor" ->
+      Option.value
+        ~default:Top
+        (bitwise_type prim ~typ:(fun x -> arg_type ~approx x) args)
   | "caml_ba_create" -> (
       match args with
       | [ Pc (Int kind); Pc (Int layout); _ ] ->
@@ -396,12 +445,56 @@ let prim_type ~st ~approx prim hint args =
       | [] | [ _ ] | _ :: Pc _ :: _ -> Top)
   | _ -> (
       match String.Hashtbl.find_opt primitive_types prim with
-      | Some (_, typ) -> typ
+      | Some (_, _, typ) -> typ
       | None -> Top)
 
-let reset () = String.Hashtbl.reset primitive_types
+(* The primitives which cannot raise an exception *)
+let non_raising_primitives = String.Hashtbl.create 16
 
-let register_prim nm ~unbox typ = String.Hashtbl.replace primitive_types nm (unbox, typ)
+let reset () =
+  String.Hashtbl.reset primitive_types;
+  String.Hashtbl.reset non_raising_primitives
+
+let register_prim nm ?(args = Values) ?(kind = `Mutator) ~unbox typ =
+  String.Hashtbl.replace primitive_types nm (args, unbox, typ);
+  (* The primitives which may raise an exception (bound checks, divisions)
+     are mutators *)
+  match kind with
+  | `Pure | `Mutable -> String.Hashtbl.replace non_raising_primitives nm ()
+  | `Mutator -> String.Hashtbl.remove non_raising_primitives nm
+
+(* Whether the execution of an instruction may not proceed to the next
+   one: the instruction may raise an exception, or it is a call, which may
+   also not return. A conversion placed after such an instruction must not
+   be performed before it, unless it cannot fail. A conversion does not
+   count: when it is reached, the value has the right representation
+   (except for a speculative untagging, which does not fail). *)
+let may_raise i =
+  match i with
+  | Let (_, Apply _) -> true
+  | Let (_, Prim (Extern (nm, _), _)) ->
+      not (String.Hashtbl.mem non_raising_primitives nm)
+  | Let
+      ( _
+      , ( Prim
+            ( ( Vectlength _
+              | Array_get _
+              | Not
+              | IsInt _
+              | Eq
+              | Neq
+              | Lt
+              | Le
+              | Ult
+              | Wasm_conversion _ )
+            , _ )
+        | Block _ | Field _ | Closure _ | Constant _ | Special _ ) )
+  | Assign _ | Set_field _ | Offset_ref _ | Array_set _ | Event _ -> false
+
+let prim_sig nm =
+  match String.Hashtbl.find_opt primitive_types nm with
+  | Some (args, _, typ) -> args, typ
+  | None -> Values, Top
 
 let propagate st approx x : Domain.t =
   match st.global_flow_state.defs.(Var.idx x) with
@@ -470,6 +563,7 @@ let propagate st approx x : Domain.t =
       | Prim (Array_get _, _) -> Top
       | Prim ((Vectlength _ | Not | IsInt _ | Eq | Neq | Lt | Le | Ult), _) ->
           Int Normalized
+      | Prim (Wasm_conversion c, _) -> conversion_type c
       | Prim (Extern (prim, hint), args) -> prim_type ~st ~approx prim hint args
       | Special _ -> Top
       | Apply { f; args; _ } -> (
@@ -580,11 +674,27 @@ let type_specialized_primitive types global_flow_state name args =
       | _ -> false)
   | _ -> false
 
-let box_numbers p st types =
-  (* We box numbers eagerly if the boxed value is ever used. *)
+(* Without the LCM pass ([lazy_boxing] false), we box numbers eagerly if
+   the boxed value is ever used: the variable gets a boxed type, and so do
+   the values it is computed from (the inputs of a phi, the values returned
+   by the function called).
+
+   With the LCM pass ([lazy_boxing] true), numbers are boxed where the boxed
+   value is used, and [Lcm] places these conversions. We only record which
+   variables are used boxed. Constants are still boxed eagerly, since this
+   is free. A phi or a call result keeps a boxed type if it
+   is used boxed and one of the values it is computed from is already
+   boxed, so as not to unbox a boxed value only to box it again; in the
+   case of a call, the function then returns a boxed value. The set of such
+   functions is returned. *)
+let box_numbers ~lazy_boxing p st types =
   let should_box = Var.ISet.empty () in
+  let boxed_uses = Var.ISet.empty () in
+  let call_results = Var.Hashtbl.create 16 in
   let rec box y =
-    if not (Var.ISet.mem should_box y)
+    if lazy_boxing
+    then Var.ISet.add boxed_uses y
+    else if not (Var.ISet.mem should_box y)
     then (
       Var.ISet.add should_box y;
       let typ = Var.Tbl.get types y in
@@ -606,6 +716,18 @@ let box_numbers p st types =
           | Phi { known; _ } -> Var.Set.iter box known)
       | Number (_, Boxed) | Int _ | Tuple _ | Bigarray _ | Null | Bot -> ())
   in
+  (* An argument passed to a block parameter which is not unboxed is used
+     boxed *)
+  let check_cont (pc', args) =
+    let b' = Addr.Map.find pc' p.blocks in
+    List.iter2
+      ~f:(fun param arg ->
+        match Var.Tbl.get types param with
+        | Number (_, Boxed) | Top -> box arg
+        | Number (_, Unboxed) | Int _ | Tuple _ | Bigarray _ | Null | Bot -> ())
+      b'.params
+      args
+  in
   Code.fold_closures
     p
     (fun name_opt _ (pc, _) _ () ->
@@ -619,6 +741,21 @@ let box_numbers p st types =
               | Let (_, e) -> (
                   match e with
                   | Apply { f; args; _ } ->
+                      (match Global_flow.get_unique_closure st.global_flow_info f with
+                      | Some (g, _) when can_unbox_return_value st.fun_info g ->
+                          (* [x] is the result of the call *)
+                          let x =
+                            match i with
+                            | Let (x, _) -> x
+                            | _ -> assert false
+                          in
+                          Var.Hashtbl.replace
+                            call_results
+                            g
+                            (x
+                            :: (Var.Hashtbl.find_opt call_results g
+                               |> Option.value ~default:[]))
+                      | Some _ | None -> ());
                       if
                         match Global_flow.get_unique_closure st.global_flow_info f with
                         | None -> true
@@ -628,8 +765,10 @@ let box_numbers p st types =
                   | Prim (Extern (s, _), args) ->
                       if
                         not
-                          (String.Hashtbl.mem primitive_types s
-                           && fst (String.Hashtbl.find primitive_types s)
+                          ((String.Hashtbl.mem primitive_types s
+                           &&
+                           let _, unbox, _ = String.Hashtbl.find primitive_types s in
+                           unbox)
                           || type_specialized_primitive types st.global_flow_state s args
                           )
                       then
@@ -646,7 +785,20 @@ let box_numbers p st types =
                           | Pv y -> box y
                           | Pc _ -> ())
                         args
-                  | Prim ((Vectlength _ | Array_get _ | Not | IsInt _ | Lt | Le | Ult), _)
+                  | Prim
+                      ( Wasm_conversion (Unbox_i32 | Unbox_i64 | Unbox_f64 | Untag_int)
+                      , args ) ->
+                      List.iter
+                        ~f:(fun a ->
+                          match a with
+                          | Pv y -> box y
+                          | Pc _ -> ())
+                        args
+                  | Prim
+                      ( ( Vectlength _ | Array_get _ | Not | IsInt _ | Lt | Le | Ult
+                        | Wasm_conversion
+                            (Box_i32 | Box_i64 | Box_f64 | Normalize_int | Tag_int) )
+                      , _ )
                   | Field _ | Closure _ | Constant _ | Special _ -> ())
               | Set_field (_, _, (Non_float | Immediate), y) | Array_set (_, _, y) ->
                   box y
@@ -657,11 +809,78 @@ let box_numbers p st types =
               Option.iter
                 ~f:(fun g -> if not (can_unbox_return_value st.fun_info g) then box y)
                 name_opt
-          | Raise _ | Stop | Branch _ | Cond _ | Switch _ | Pushtrap _ | Poptrap _ -> ())
+          | Branch cont | Poptrap cont -> if lazy_boxing then check_cont cont
+          | Cond (_, cont1, cont2) | Pushtrap (cont1, _, cont2) ->
+              if lazy_boxing
+              then (
+                check_cont cont1;
+                check_cont cont2)
+          | Switch (_, conts) -> if lazy_boxing then Array.iter ~f:check_cont conts
+          | Raise _ | Stop -> ())
         pc
         p.blocks
         ())
-    ()
+    ();
+  let boxed_returns = Var.ISet.empty () in
+  if lazy_boxing
+  then (
+    let is_boxed x =
+      match Var.Tbl.get types x with
+      | Number (_, Boxed) -> true
+      | Number (_, Unboxed) | Top | Int _ | Tuple _ | Bigarray _ | Null | Bot -> false
+    in
+    let set_boxed x =
+      match Var.Tbl.get types x with
+      | Number (n, Unboxed) -> Var.Tbl.set types x (Number (n, Boxed))
+      | Number (_, Boxed) | Top | Int _ | Tuple _ | Bigarray _ | Null | Bot -> ()
+    in
+    let changed = ref true in
+    while !changed do
+      changed := false;
+      (* Values that become used boxed, as they flow into a boxed variable *)
+      let pending = ref [] in
+      Var.ISet.iter
+        (fun y ->
+          match Var.Tbl.get types y with
+          | Number (_, Unboxed) -> (
+              match st.global_flow_state.defs.(Var.idx y) with
+              | Phi { known; _ } ->
+                  if Var.Set.exists is_boxed known
+                  then (
+                    set_boxed y;
+                    changed := true;
+                    pending := Var.Set.elements known @ !pending)
+              | Expr (Apply { f; _ }) -> (
+                  match Global_flow.get_unique_closure st.global_flow_info f with
+                  | Some (g, _) when can_unbox_return_value st.fun_info g ->
+                      let s = Var.Map.find g st.global_flow_info.info_return_vals in
+                      if (not (Var.ISet.mem boxed_returns g)) && Var.Set.exists is_boxed s
+                      then (
+                        Var.ISet.add boxed_returns g;
+                        changed := true;
+                        List.iter
+                          ~f:set_boxed
+                          (Var.Hashtbl.find_opt call_results g |> Option.value ~default:[]);
+                        pending := Var.Set.elements s @ !pending)
+                  | Some _ | None -> ())
+              | Expr _ -> ())
+          | Number (_, Boxed) | Top | Int _ | Tuple _ | Bigarray _ | Null | Bot -> ())
+        boxed_uses;
+      List.iter ~f:(fun x -> Var.ISet.add boxed_uses x) !pending
+    done;
+    (* Boxing a constant is free (it is a static value), so constants used
+        boxed are boxed eagerly; this is done last, so that a boxed constant
+        does not force a phi to be boxed. *)
+    Var.ISet.iter
+      (fun y ->
+        match Var.Tbl.get types y with
+        | Number (_, Unboxed) -> (
+            match st.global_flow_state.defs.(Var.idx y) with
+            | Expr (Constant _) -> set_boxed y
+            | Expr _ | Phi _ -> ())
+        | Number (_, Boxed) | Top | Int _ | Tuple _ | Bigarray _ | Null | Bot -> ())
+      boxed_uses);
+  boxed_returns
 
 let print_opt types global_flow_state f e =
   match e with
@@ -673,7 +892,294 @@ let print_opt types global_flow_state f e =
 type t =
   { types : typ Var.Tbl.t
   ; return_types : typ Var.Hashtbl.t
+  ; extra_types : typ Var.Hashtbl.t
   }
+
+(* A parameter which a function untags or unboxes on every path from its
+   entry, and does not use otherwise, can be passed untagged or unboxed:
+   the callers then perform the conversion, and can share it between
+   several calls with the same argument. This is only possible when all
+   the call sites of the function are known. The conversion must not fail
+   on more executions: it must be performed at each call anyway. Unless
+   the type of the parameter is known, it must also be reached from the
+   entry without executing an instruction which may raise an exception or
+   not return, such as a call ([may_raise]): the type of a parameter of
+   type [Top] is only known when the conversion is reached (with GADTs, a
+   previous call may raise when the parameter has another type). *)
+type conversion =
+  | Untag
+  | Unbox of boxed_number
+
+let unboxed_parameters ~global_flow_info ~fun_info p types =
+  let is_candidate x conv =
+    match Var.Tbl.get types x, conv with
+    | (Top | Int Ref), Untag -> true
+    | Top, Unbox _ -> true
+    | Number (k, Boxed), Unbox k' -> Poly.equal k k'
+    | (Int _ | Number _ | Tuple _ | Bigarray _ | Null | Bot), _ -> false
+  in
+  (* Whether the conversion cannot fail, the type of the parameter being
+     known *)
+  let is_safe x =
+    match Var.Tbl.get types x with
+    | Int Ref | Number (_, Boxed) -> true
+    | Top | Int _ | Number _ | Tuple _ | Bigarray _ | Null | Bot -> false
+  in
+  (* The variables that an instruction converts, and the parameters of
+     directly called functions its arguments are passed to *)
+  let uses i =
+    let vars conv args =
+      List.filter_map
+        ~f:(fun a ->
+          match a with
+          | Pv y -> Some (y, `Conv conv)
+          | Pc _ -> None)
+        args
+    in
+    match i with
+    | Let (_, Prim ((Lt | Le | Ult), args)) -> vars Untag args
+    | Let
+        ( _
+        , Prim
+            ( Extern
+                ( ( "%int_add"
+                  | "%int_sub"
+                  | "%int_mul"
+                  | "%direct_int_mul"
+                  | "%int_neg"
+                  | "%int_div"
+                  | "%direct_int_div"
+                  | "%int_mod"
+                  | "%direct_int_mod"
+                  | "%int_and"
+                  | "%int_or"
+                  | "%int_xor"
+                  | "%int_lsl"
+                  | "%int_lsr"
+                  | "%int_asr" )
+                , _ )
+            , args ) ) -> vars Untag args
+    | Let (_, Prim ((Array_get _ | Extern ("caml_array_unsafe_get", _)), [ _; Pv y ])) ->
+        [ y, `Conv Untag ]
+    | Let
+        ( _
+        , Prim
+            ( Extern
+                ( ("caml_check_bound" | "caml_check_bound_gen" | "caml_check_bound_float")
+                , _ )
+            , [ _; Pv y ] ) ) -> [ y, `Conv Untag ]
+    | Let (_, Prim (Extern (name, _), args)) -> (
+        (* Primitives taking unboxed numbers *)
+        match prim_sig name with
+        | Typed arg_types, _ when List.compare_lengths arg_types args = 0 ->
+            List.concat
+              (List.map2
+                 ~f:(fun a t ->
+                   match a, t with
+                   | Pv y, Number (k, Unboxed) -> [ y, `Conv (Unbox k) ]
+                   | _ -> [])
+                 args
+                 arg_types)
+        | _ -> [])
+    | Let (_, Apply { f; args; exact = true }) -> (
+        match Global_flow.get_unique_closure global_flow_info f with
+        | Some (g, params)
+          when can_unbox_parameters fun_info g && List.compare_lengths args params = 0 ->
+            List.map2 ~f:(fun a q -> a, `Param q) args params
+        | Some _ | None -> [])
+    | _ -> []
+  in
+  (* Where each variable is converted or passed as a parameter, and the
+     variables used otherwise. A use is recorded with its block, and
+     whether it is reached from the entry of the block without executing
+     an instruction which may raise. *)
+  let param_uses = Var.Hashtbl.create 16 in
+  let other_uses = Var.Hashtbl.create 16 in
+  (* The blocks containing an instruction which may raise *)
+  let raising_blocks = Addr.Hashtbl.create 16 in
+  Addr.Map.iter
+    (fun pc block ->
+      let raised = ref false in
+      List.iter
+        ~f:(fun i ->
+          let l = uses i in
+          (* The occurrences of each variable in the instruction: a variable
+             occurring at a position which is not a conversion is used
+             otherwise *)
+          let occurrences = ref [] in
+          Freevars.iter_instr_free_vars (fun y -> occurrences := y :: !occurrences) i;
+          List.iter
+            ~f:(fun y ->
+              let n =
+                List.length (List.filter ~f:(fun y' -> Var.equal y y') !occurrences)
+              in
+              let us =
+                List.filter_map
+                  ~f:(fun (y', u) -> if Var.equal y y' then Some u else None)
+                  l
+              in
+              if List.compare_length_with us ~len:n <> 0
+              then Var.Hashtbl.replace other_uses y ()
+              else
+                Var.Hashtbl.replace
+                  param_uses
+                  y
+                  ((pc, not !raised, us)
+                  :: (Var.Hashtbl.find_opt param_uses y |> Option.value ~default:[])))
+            (List.sort_uniq ~cmp:Var.compare !occurrences);
+          (* The conversions of the instruction are performed before it *)
+          if may_raise i then raised := true)
+        block.body;
+      if !raised then Addr.Hashtbl.replace raising_blocks pc ();
+      Freevars.iter_last_free_var
+        (fun y -> Var.Hashtbl.replace other_uses y ())
+        block.branch)
+    p.blocks;
+  (* The parameters which may be converted, with the entry of their
+     function *)
+  let candidates = ref [] in
+  Code.fold_closures
+    p
+    (fun name_opt params (pc, _) _ () ->
+      match name_opt with
+      | Some f when can_unbox_parameters fun_info f ->
+          List.iter
+            ~f:(fun x ->
+              if (not (Var.Hashtbl.mem other_uses x)) && Var.Hashtbl.mem param_uses x
+              then candidates := (x, pc) :: !candidates)
+            params
+      | Some _ | None -> ())
+    ();
+  (* The conversion performed at a use, once known *)
+  let conversion u =
+    match u with
+    | `Conv conv -> Some conv
+    | `Param q -> (
+        match Var.Tbl.get types q with
+        | Number (k, Unboxed) -> Some (Unbox k)
+        | Int (Normalized | Unnormalized) -> Some Untag
+        | Top | Int Ref | Number (_, Boxed) | Tuple _ | Bigarray _ | Null | Bot -> None)
+  in
+  (* The blocks of each function, given by its entry, with their
+     predecessors and their number of distinct successors *)
+  let graphs = Addr.Hashtbl.create 16 in
+  let graph pc =
+    match Addr.Hashtbl.find_opt graphs pc with
+    | Some g -> g
+    | None ->
+        let blocks =
+          Code.traverse
+            { fold = Code.fold_children }
+            (fun pc s -> Addr.Set.add pc s)
+            pc
+            p.blocks
+            Addr.Set.empty
+        in
+        let preds = Addr.Hashtbl.create 16 in
+        let succ_count = Addr.Hashtbl.create 16 in
+        Addr.Set.iter
+          (fun pc ->
+            let succs = Code.fold_children p.blocks pc Addr.Set.add Addr.Set.empty in
+            Addr.Hashtbl.replace succ_count pc (Addr.Set.cardinal succs);
+            Addr.Set.iter
+              (fun pc' ->
+                Addr.Hashtbl.replace
+                  preds
+                  pc'
+                  (pc :: (Addr.Hashtbl.find_opt preds pc' |> Option.value ~default:[])))
+              succs)
+          blocks;
+        let g = blocks, preds, succ_count in
+        Addr.Hashtbl.add graphs pc g;
+        g
+  in
+  (* Whether every path from the entry [pc] of a function reaches one of
+     the blocks [used]. This is a least fixpoint: a path which returns,
+     raises or loops forever without reaching them does not perform the
+     conversion. A block reaches them if it is one of them or if all its
+     successors (at least one) reach them and, when [through_raise] is
+     false, it contains no instruction which may raise. *)
+  let always_reaches ~through_raise pc used =
+    let blocks, preds, succ_count = graph pc in
+    Addr.Set.subset used blocks
+    &&
+    let reaches = Addr.Hashtbl.create 16 in
+    (* The number of successors not known yet to reach the blocks *)
+    let remaining = Addr.Hashtbl.create 16 in
+    let queue = Queue.create () in
+    Addr.Set.iter
+      (fun pc ->
+        Addr.Hashtbl.replace reaches pc ();
+        Queue.push pc queue)
+      used;
+    while not (Queue.is_empty queue) do
+      List.iter
+        ~f:(fun pc' ->
+          if
+            not
+              (Addr.Hashtbl.mem reaches pc'
+              || ((not through_raise) && Addr.Hashtbl.mem raising_blocks pc'))
+          then
+            let n =
+              (match Addr.Hashtbl.find_opt remaining pc' with
+                | Some n -> n
+                | None -> Addr.Hashtbl.find succ_count pc')
+              - 1
+            in
+            if n = 0
+            then (
+              Addr.Hashtbl.replace reaches pc' ();
+              Queue.push pc' queue)
+            else Addr.Hashtbl.replace remaining pc' n)
+        (Addr.Hashtbl.find_opt preds (Queue.pop queue) |> Option.value ~default:[])
+    done;
+    Addr.Hashtbl.mem reaches pc
+  in
+  (* Passing a parameter to a function which takes it untagged or unboxed
+     converts it: we iterate until no more parameter is converted. A
+     candidate is examined once all its uses are known conversions. *)
+  let rec iterate candidates =
+    let progress = ref false in
+    let pending =
+      List.filter
+        ~f:(fun (x, pc) ->
+          let convs =
+            List.map
+              ~f:(fun (_, _, us) -> List.map ~f:conversion us)
+              (Var.Hashtbl.find param_uses x)
+            |> List.concat
+          in
+          if List.exists ~f:Option.is_none convs
+          then true
+          else (
+            (match List.filter_map ~f:Fun.id convs with
+            | conv :: rem
+              when List.for_all ~f:(fun c -> Poly.equal c conv) rem
+                   && is_candidate x conv
+                   &&
+                   let through_raise = is_safe x in
+                   always_reaches
+                     ~through_raise
+                     pc
+                     (List.fold_left
+                        ~f:(fun s (pc, early, _) ->
+                          if early || through_raise then Addr.Set.add pc s else s)
+                        ~init:Addr.Set.empty
+                        (Var.Hashtbl.find param_uses x)) ->
+                progress := true;
+                Var.Tbl.set
+                  types
+                  x
+                  (match conv with
+                  | Untag -> Int Normalized
+                  | Unbox k -> Number (k, Unboxed))
+            | _ -> ());
+            false))
+        candidates
+    in
+    if !progress then iterate pending
+  in
+  iterate !candidates
 
 let f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinel p =
   let t = Timer.make () in
@@ -690,7 +1196,8 @@ let f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinel p =
   in
   let types = solver st in
   Var.Tbl.set types deadcode_sentinel (Int Normalized);
-  box_numbers p st types;
+  unboxed_parameters ~global_flow_info ~fun_info p types;
+  let boxed_returns = box_numbers ~lazy_boxing:(Config.Flag.lcm ()) p st types in
   if times () then Format.eprintf "  type analysis: %a@." Timer.print t;
   if debug ()
   then (
@@ -725,15 +1232,41 @@ let f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinel p =
           if can_unbox_return_value fun_info f
           then
             let s = Var.Map.find f global_flow_info.info_return_vals in
+            let t = Var.Set.fold (fun x t -> Domain.join (Var.Tbl.get types x) t) s Bot in
             Var.Hashtbl.replace
               return_types
               f
-              (Var.Set.fold (fun x t -> Domain.join (Var.Tbl.get types x) t) s Bot))
+              (if Var.ISet.mem boxed_returns f then Domain.box t else t))
         name_opt)
     ();
-  { types; return_types }
+  { types; return_types; extra_types = Var.Hashtbl.create 128 }
 
-let var_type info x = Var.Tbl.get info.types x
+let var_type info x =
+  let idx = Var.idx x in
+  if idx < Var.Tbl.length info.types
+  then Var.Tbl.get info.types x
+  else Var.Hashtbl.find_opt info.extra_types x |> Option.value ~default:Top
+
+let prim_result_type info prim args =
+  match
+    bitwise_type
+      prim
+      ~typ:(fun a ->
+        match a with
+        | Pv x -> var_type info x
+        | Pc c -> constant_type c)
+      args
+  with
+  | Some t -> t
+  | None -> snd (prim_sig prim)
+
+let set_var_type info x t =
+  let idx = Var.idx x in
+  if idx < Var.Tbl.length info.types
+  then Var.Tbl.set info.types x t
+  else Var.Hashtbl.replace info.extra_types x t
 
 let return_type info f =
   Var.Hashtbl.find_opt info.return_types f |> Option.value ~default:Top
+
+let join = Domain.join
