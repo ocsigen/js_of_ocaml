@@ -1,6 +1,6 @@
 Tests of the Wasm linker.
 
-  $ asm () { wasm-as --enable-gc --enable-reference-types --enable-exception-handling --enable-simd --enable-threads --enable-multimemory "$1.wat" -o "$1.wasm"; }
+  $ asm () { wasm-as --enable-gc --enable-reference-types --enable-exception-handling --enable-simd --enable-threads --enable-extended-const "$1.wat" -o "$1.wasm"; }
 
 Active segments without an explicit memory or table index refer to memory 0
 and table 0 of their module, which are not memory 0 and table 0 of the linked
@@ -184,6 +184,25 @@ supertype is in the same recursion group.
   $ node run.cjs sub.wasm h
   h: 5
 
+The initializer of a global can refer to a global defined in a later module.
+
+  $ cat > gA.wat <<EOF
+  > (module
+  >   (import "b" "h" (global \$h i32))
+  >   (global \$g i32 (global.get \$h))
+  >   (global \$k (export "k") i32 (i32.const 7))
+  >   (func (export "main") (result i32) (i32.add (global.get \$g) (global.get \$k))))
+  > EOF
+  $ cat > gB.wat <<EOF
+  > (module
+  >   (import "a" "k" (global \$k i32))
+  >   (global \$h (export "h") i32 (i32.add (global.get \$k) (i32.const 5))))
+  > EOF
+  $ asm gA; asm gB
+  $ ./link_driver.exe g.wasm a:gA.wasm b:gB.wasm
+  $ node run.cjs g.wasm main
+  main: 19
+
 Exports are kept in order.
 
   $ cat > exp.wat <<EOF
@@ -204,3 +223,143 @@ continuation type of type 64.
   >   for i in $(seq 65); do printf '\140\000\000'; done
   >   printf '\135\300\000'; } > cont.wasm
   $ ./link_driver.exe cont2.wasm a:cont.wasm
+
+Dead code elimination. A function referenced by [ref.func] must remain
+declared when the export and the global which declared it are removed.
+
+  $ cat > decl.wat <<EOF
+  > (module
+  >   (func \$h (export "h") (result i32) (i32.const 6))
+  >   (global \$g funcref (ref.func \$h))
+  >   (func (export "main") (result i32) (call_ref \$t (ref.func \$h)))
+  >   (type \$t (func (result i32))))
+  > EOF
+  $ cat > deps.json <<EOF
+  > [{"name": "root", "reaches": ["main"], "root": true},
+  >  {"name": "main", "export": "main"}]
+  > EOF
+  $ asm decl
+  $ ./link_driver.exe -deps deps.json decl2.wasm a:decl.wasm
+  $ node run.cjs decl2.wasm
+  function main
+  $ node run.cjs decl2.wasm main
+  main: 6
+
+Passive segments which are not used only keep the live functions they
+mention, as declarations. Segments of expressions become segments of
+function indices, since their type may be removed.
+
+  $ cat > elem.wat <<EOF
+  > (module
+  >   (type \$t (func (result i32)))
+  >   (type \$u (func (result i64)))
+  >   (func \$h (result i32) (i32.const 6))
+  >   (func \$dead (result i32) (i32.const 7))
+  >   (func \$dead2 (result i64) (i64.const 8))
+  >   (elem (ref null \$t) (item (ref.func \$h)) (item (ref.func \$dead)) (item (ref.null \$t)))
+  >   (elem (ref null \$u) (item (ref.func \$dead2)))
+  >   (func (export "main") (result i32) (call_ref \$t (ref.func \$h))))
+  > EOF
+  $ asm elem
+  $ ./link_driver.exe -deps deps.json elem2.wasm a:elem.wasm
+  $ wasm-dis elem2.wasm | grep -c "^ (func "
+  2
+  $ wasm-dis elem2.wasm | grep "(elem"
+   (elem $0 func $0)
+   (elem $1 func)
+  $ node run.cjs elem2.wasm main
+  main: 6
+
+A table initializer declares the functions it refers to: no declarative
+segment is added for them. This module, with a table initialized with
+[ref.func $h] and a function returning [call_ref (ref.func $h)], cannot
+be written in the text format accepted by our version of Binaryen. The
+linked module has the same size, since nothing is added.
+
+  $ printf '\000asm\001\000\000\000\001\005\001\140\000\001\177\003\003\002\000\000\004\011\001\100\000\160\000\001\322\000\013\007\010\001\004main\000\001\012\015\002\004\000\101\006\013\006\000\322\000\024\000\013' > tab.wasm
+  $ ./link_driver.exe -deps deps.json tab2.wasm a:tab.wasm
+  $ test $(wc -c < tab.wasm) -eq $(wc -c < tab2.wasm) && echo same size
+  same size
+  $ node run.cjs tab2.wasm main
+  main: 6
+
+Exports not selected by the filter are removed even if the dependency graph
+reaches them.
+
+  $ cat > deps2.json <<EOF
+  > [{"name": "root", "reaches": ["main", "h"], "root": true},
+  >  {"name": "main", "export": "main"},
+  >  {"name": "h", "export": "h"}]
+  > EOF
+  $ ./link_driver.exe -deps deps2.json -filter main decl3.wasm a:decl.wasm
+  $ node run.cjs decl3.wasm
+  function main
+
+Without dead code elimination, a function only declared by an export
+which is removed gets declared in a declarative segment. In this module,
+[main] returns [call_ref (ref.func $h)] and [$h] is exported; there is
+no element segment, which Binaryen would add.
+
+  $ printf '\000asm\001\000\000\000\001\005\001`\000\001\177\003\003\002\000\000\007\014\002\001h\000\000\004main\000\001\012\015\002\004\000A\006\013\006\000\322\000\024\000\013' > nodecl.wasm
+  $ ./link_driver.exe -filter main nodecl2.wasm a:nodecl.wasm
+  $ node run.cjs nodecl2.wasm
+  function main
+  $ node run.cjs nodecl2.wasm main
+  main: 6
+
+Global initializers reading each other in a cycle cannot be ordered:
+
+  $ cat > cyc1.wat <<EOF
+  > (module
+  >   (import "b" "gb" (global \$gb i32))
+  >   (global (export "ga") i32 (global.get \$gb)))
+  > EOF
+  $ cat > cyc2.wat <<EOF
+  > (module
+  >   (import "a" "ga" (global \$ga i32))
+  >   (global (export "gb") i32 (global.get \$ga)))
+  > EOF
+  $ asm cyc1; asm cyc2
+  $ ./link_driver.exe cyc.wasm a:cyc1.wasm b:cyc2.wasm 2>&1 | grep -o "The initializers of some globals of cyc1.wasm, cyc2.wasm read each other in a cycle"
+  The initializers of some globals of cyc1.wasm, cyc2.wasm read each other in a cycle
+
+Imports are checked against the exports they resolve to, also when dead
+code elimination removes them:
+
+  $ cat > badimp.wat <<EOF
+  > (module
+  >   (import "s" "f" (func (param i64) (result f32)))
+  >   (import "s" "t" (tag (param f64)))
+  >   (func (export "main") (result i32) (i32.const 0)))
+  > EOF
+  $ cat > badexp.wat <<EOF
+  > (module
+  >   (tag (export "t") (param i32))
+  >   (func (export "f") (result i32) (i32.const 1)))
+  > EOF
+  $ asm badimp; asm badexp
+  $ ./link_driver.exe -deps deps.json bad.wasm m:badimp.wasm s:badexp.wasm 2>&1 | grep -o "of an incompatible type"
+  of an incompatible type
+
+Tables and memories are always kept, so their import nodes are reached:
+
+  $ cat > memimp.wat <<EOF
+  > (module
+  >   (import "env" "mem" (memory 1))
+  >   (func (export "main") (result i32) (i32.load (i32.const 0)))
+  >   (func (export "cb_mem") (result i32) (i32.const 1))
+  >   (func (export "cb_unused") (result i32) (i32.const 3)))
+  > EOF
+  $ cat > memdeps.json <<EOF
+  > [{"name": "root", "root": true, "reaches": ["main"]},
+  >  {"name": "main", "export": "main"},
+  >  {"name": "cb_mem", "export": "cb_mem"},
+  >  {"name": "cb_unused", "export": "cb_unused"},
+  >  {"name": "mem", "import": ["env", "mem"], "reaches": ["cb_mem"]},
+  >  {"name": "g", "import": ["env", "g"], "reaches": ["cb_unused"]}]
+  > EOF
+  $ asm memimp
+  $ ./link_driver.exe -deps memdeps.json memimp2.wasm a:memimp.wasm
+  $ wasm-dis memimp2.wasm | grep export
+   (export "main" (func $0))
+   (export "cb_mem" (func $1))
