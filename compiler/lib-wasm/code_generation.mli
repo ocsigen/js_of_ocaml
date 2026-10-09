@@ -116,8 +116,6 @@ val tee : ?typ:Wasm_ast.value_type -> Wasm_ast.var -> expression -> expression
 val store :
   ?always:bool -> ?typ:Wasm_ast.value_type -> Wasm_ast.var -> expression -> unit t
 
-val assign : Wasm_ast.var -> expression -> unit t
-
 val drop : expression -> unit t
 
 val push : expression -> unit t
