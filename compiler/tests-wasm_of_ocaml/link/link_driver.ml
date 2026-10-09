@@ -16,18 +16,34 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-(* Usage: link_driver OUTPUT NAME:FILE...
+(* Usage: link_driver [-deps FILE] [-names] [-filter NAME]* OUTPUT NAME:FILE...
 
    Link the Wasm modules [FILE] (imported under module name [NAME]) into
-   [OUTPUT]. If [FILE.map] exists, it is used as the source map of [FILE],
-   and the source map of the output is written to [OUTPUT.map]. *)
+   [OUTPUT]. With [-deps], dead code is removed using the given dependency
+   graph (in the format of wasm-metadce). If [FILE.map] exists, it is used
+   as the source map of [FILE], and the source map of the output is
+   written to [OUTPUT.map]. *)
 
 open Js_of_ocaml_compiler.Stdlib
 open Js_of_ocaml_compiler
 open Wasm_of_ocaml_compiler
 
 let () =
-  match List.tl (Array.to_list Sys.argv) with
+  let dependencies = ref None in
+  let names = ref false in
+  let filter = ref [] in
+  let args = ref [] in
+  Arg.parse
+    [ ( "-deps"
+      , Arg.String
+          (fun f -> dependencies := Some (Wasm_link.parse_dependencies (Fs.read_file f)))
+      , "FILE dependency graph" )
+    ; "-names", Arg.Set names, " emit the name section"
+    ; "-filter", Arg.String (fun s -> filter := s :: !filter), "NAME export to keep"
+    ]
+    (fun s -> args := s :: !args)
+    "link_driver [options] OUTPUT NAME:FILE...";
+  match List.rev !args with
   | [] -> failwith "no output file"
   | output_file :: inputs ->
       let inputs =
@@ -47,6 +63,22 @@ let () =
                 })
           inputs
       in
-      let source_map = Wasm_link.f inputs ~output_file in
+      let filter_export =
+        match !filter with
+        | [] -> None
+        | l -> Some (fun name -> List.mem ~eq:String.equal name l)
+      in
+      let { Wasm_link.source_map; _ } =
+        Wasm_link.f
+          ?filter_export
+          ?dependencies:!dependencies
+          ~names:!names
+          inputs
+          ~output_file
+      in
       if List.exists ~f:(fun i -> Option.is_some i.Wasm_link.opt_source_map) inputs
-      then Source_map.to_file ~rewrite_paths:false source_map (output_file ^ ".map")
+      then
+        Source_map.to_file
+          ~rewrite_paths:false
+          (Standard (Source_map.to_standard source_map))
+          (output_file ^ ".map")
