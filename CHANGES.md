@@ -1,6 +1,8 @@
 # dev
 
 ## Features/Changes
+* Compiler: jump threading: redirect an edge to a block that only tests a
+  value known on this edge to the branch the test selects (#2497)
 * Compiler: with OCaml 5.6, use the optimization hints recorded in the bytecode
   (primitive types, immutable blocks, closures, immediates, ...) (#1721, #2488)
 * Compiler: with OCaml 5.6, use the bytecode hint on integer equality tests

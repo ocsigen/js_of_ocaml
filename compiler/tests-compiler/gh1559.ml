@@ -95,9 +95,14 @@ let () = my_ref := 2
          let t$1 = t$0;
          var
           this_will_be_undefined =
-            function(_a_){_a_ = t$1 && 1 === t$1[1] ? 1 : 0; return _a_ ? 1 : 2;};
-         if(t$0) var i = t$0[1], match = i; else match = - 1;
-         if(0 === match) return this_will_be_undefined(0);
+            function(param){if(t$1 && 1 === t$1[1]) return 1; return 2;};
+         if(t$0){
+          var i = t$0[1];
+          if(0 === i) return this_will_be_undefined(0);
+          var match = i;
+         }
+         else
+          match = - 1;
          if(1 === match){
           var nesting = 1;
           return caml_call2(Stdlib_Int[12], nesting, 0)
@@ -200,9 +205,8 @@ let () = my_ref := 2
           let t$1 = t$0;
           var
            this_will_be_undefined =
-             function(_a_){_a_ = t$1 && 1 === t$1[1] ? 1 : 0; return _a_ ? 1 : 2;};
-          if(t$0) var i = t$0[1], _a_ = i; else _a_ = - 1;
-          if(0 === _a_) break;
+             function(param){if(t$1 && 1 === t$1[1]) return 1; return 2;};
+          if(t$0){var i = t$0[1]; if(0 === i) break; var _a_ = i;} else _a_ = - 1;
           if(1 === _a_) break a;
           t$0 = t;
          }

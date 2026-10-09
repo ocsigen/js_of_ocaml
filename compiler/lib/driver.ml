@@ -92,6 +92,13 @@ let specialize (p, info) =
 
 let eval (p, info) = if Config.Flag.staticeval () then Eval.f info p, info else p, info
 
+let jump_threading p =
+  if Config.Flag.jump_threading ()
+  then (
+    if debug () then Format.eprintf "Jump threading...@.";
+    Jump_threading.f p)
+  else p
+
 let flow p =
   if debug () then Format.eprintf "Data flow...@.";
   Flow.f p
@@ -238,6 +245,7 @@ let round profile : 'a -> 'a =
   +> tailcall
   +> Ref_unboxing.f
   +> (flow +> specialize +> eval +> fst)
+  +> jump_threading
   +> inline profile
   +> phi
   +> deadcode

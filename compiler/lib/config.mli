@@ -40,6 +40,8 @@ module Flag : sig
 
   val staticeval : unit -> bool
 
+  val jump_threading : unit -> bool
+
   val effects : unit -> bool
 
   val genprim : unit -> bool
