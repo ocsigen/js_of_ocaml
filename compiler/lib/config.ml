@@ -114,6 +114,8 @@ module Flag = struct
   let toplevel = o ~name:"toplevel" ~default:false
 
   let wasi = o ~name:"wasi" ~default:false
+
+  let split_toplevel = o ~name:"split-toplevel" ~default:true
 end
 
 module Param = struct
@@ -194,6 +196,14 @@ module Param = struct
         "set the maximum number of nested labelled blocks before switching to a flat \
          dispatch loop"
       (int 10)
+
+  let toplevel_split_size =
+    p
+      ~name:"toplevel_split_size"
+      ~desc:
+        "set the size (in AST nodes) above which a piece of the Wasm toplevel function \
+         is outlined into a separate function"
+      (int 10000)
 
   type tc =
     | TcNone

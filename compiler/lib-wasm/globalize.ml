@@ -38,6 +38,7 @@ type st =
   ; globals : Code.Var.Set.t
   ; closures : Closure_conversion.closure Code.Var.Map.t
   ; constants : Code.Var.Set.t
+  ; in_loop : bool
   }
 
 let threshold = 1000
@@ -68,7 +69,11 @@ let use x st =
   | exception Not_found -> st
 
 let declare x st =
-  { st with visited_variables = Code.Var.Map.add x st.pos st.visited_variables }
+  (* Variables defined in a loop are not globalized, since they can
+     take several values. We still look at the uses in loops. *)
+  if st.in_loop
+  then st
+  else { st with visited_variables = Code.Var.Map.add x st.pos st.visited_variables }
 
 let traverse_expression x e st =
   match e with
@@ -81,7 +86,8 @@ let traverse_expression x e st =
         ~f:(fun st x -> use x st)
         ~init:st
         (Code.Var.Map.find x st.closures).Closure_conversion.free_variables
-  | Constant _ -> { st with constants = Code.Var.Set.add x st.constants }
+  | Constant _ ->
+      if st.in_loop then st else { st with constants = Code.Var.Set.add x st.constants }
   | Special _ -> st
   | Prim (_, args) ->
       List.fold_left
@@ -101,10 +107,26 @@ let traverse_instruction st i =
   | Array_set (x, y, z) -> st |> use x |> use y |> use z
   | Event _ -> st
 
-let traverse_block p st pc =
+let traverse_cont st (_, args) = List.fold_left ~f:(fun st x -> use x st) ~init:st args
+
+let traverse_branch st (b : Code.last) =
+  match b with
+  | Return x | Raise (x, _) -> use x st
+  | Stop -> st
+  | Branch cont | Poptrap cont -> traverse_cont st cont
+  | Cond (x, cont1, cont2) ->
+      st |> use x |> fun st -> traverse_cont (traverse_cont st cont1) cont2
+  | Switch (x, a) -> Array.fold_left ~f:traverse_cont ~init:(use x st) a
+  | Pushtrap (cont, x, cont') -> traverse_cont (traverse_cont (declare x st) cont) cont'
+
+let traverse_block p in_loop st pc =
   let b = Code.Addr.Map.find pc p.Code.blocks in
+  let st = { st with in_loop = Code.Addr.Map.mem pc in_loop } in
   let st = List.fold_left ~f:(fun st x -> declare x st) ~init:st b.Code.params in
-  List.fold_left ~f:(fun st i -> traverse_instruction st i) ~init:st b.Code.body
+  let st =
+    List.fold_left ~f:(fun st i -> traverse_instruction st i) ~init:st b.Code.body
+  in
+  traverse_branch st b.Code.branch
 
 let available x st = Code.Var.Set.mem x st.globals || Code.Var.Set.mem x st.constants
 
@@ -140,14 +162,14 @@ let f p g closures =
   let in_loop = Freevars.find_loops_in_closure p p.Code.start in
   let st =
     List.fold_left
-      ~f:(fun st pc ->
-        if Code.Addr.Map.mem pc in_loop then st else traverse_block p st pc)
+      ~f:(fun st pc -> traverse_block p in_loop st pc)
       ~init:
         { pos = 0
         ; visited_variables = Code.Var.Map.empty
         ; globals = Code.Var.Set.empty
         ; closures
         ; constants = Code.Var.Set.empty
+        ; in_loop = false
         }
       l
   in
