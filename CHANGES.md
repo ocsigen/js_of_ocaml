@@ -125,6 +125,8 @@
 * Compiler: report JavaScript syntax errors (runtime files, `jsoo_minify`,
   `wasm_of_ocaml`) as `file:line:col`, followed by the offending line; columns
   start from 1 in all error messages, as editors expect (#2464, #2491)
+* Compiler: simplify the generated JavaScript (fewer labelled blocks,
+  `!x` for negated conditions, no empty `if` branches) (#2500)
 
 ## Bug fixes
 * Compiler/Wasm: fix several bugs of the Wasm linker (instruction decoding,

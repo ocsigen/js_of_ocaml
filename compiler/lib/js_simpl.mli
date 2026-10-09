@@ -20,6 +20,9 @@
 
 open Javascript
 
+val enot : expression -> expression
+(** Negation of a condition (the result is only meaningful as a condition). *)
+
 val if_statement :
      function_end:(unit -> location)
   -> expression
