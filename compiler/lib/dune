@@ -5,7 +5,6 @@
  (libraries
   ocaml-compiler-libs.common
   ocaml-compiler-libs.bytecomp
-  menhirLib
   sedlex
   yojson)
  (flags
@@ -14,21 +13,6 @@
   (pps ppx_optcomp_light sedlex.ppx)))
 
 (ocamllex annot_lexer)
-
-(menhir
- (modules js_parser)
- (flags
-  --table
-  --external-tokens
-  Js_token
-  --unused-token
-  TAnnot
-  --unused-token
-  TComment
-  --unused-token
-  TCommentLineDirective
-  --unused-token
-  T_ERROR))
 
 (menhir
  (modules annot_parser))

@@ -29,7 +29,7 @@
   (sedlex (>= 3.3))
   (qcheck :with-test)
   (menhir (>= 20180523))
-  menhirLib
+  (menhirLib :with-test)
   menhirSdk
   (yojson (>= 2.1)))
  (depopts
@@ -144,7 +144,7 @@
   (cmdliner (>= 2.0))
   (sedlex (>= 2.3))
   (menhir (>= 20180523))
-  menhirLib
+  (menhirLib :with-test)
   menhirSdk
   (yojson (>= 2.1))
   conf-binaryen)
