@@ -1,0 +1,50 @@
+for loop: 285
+while loop: 45.
+repeated access: 10
+string loop: 29
+bytes loop: ABCDE
+bigarray loop: 721
+polymorphic loop: 285 45
+downto loop: 67578
+decreasing while loop: 29
+while i <> length: 3
+repeated computation: 25
+same immutable field: 10
+created array: 25
+constant table: 10 a
+last character: z
+next element: 64
+closure: 285
+fortran layout bigarray: 60
+constant index: 4
+constant index into a string: a
+masked index into a long enough string: d
+checked position: 16
+one too far: Invalid_argument index out of bounds
+negative start: Invalid_argument index out of bounds
+downto from length: Invalid_argument index out of bounds
+downto other array: Invalid_argument index out of bounds
+while i <> length from a larger index: Invalid_argument index out of bounds
+next index wrapping around: Invalid_argument index out of bounds
+same mutable field: Invalid_argument index out of bounds
+created array too far: Invalid_argument index out of bounds
+constant table too far: Invalid_argument index out of bounds
+next element too far: Invalid_argument index out of bounds
+loop bound computed under a condition: Invalid_argument index out of bounds
+loop bound computed under a condition, bigarray: Invalid_argument index out of bounds
+field read in another case: Invalid_argument index out of bounds
+index from an exception handler: Invalid_argument index out of bounds
+fortran layout bigarray index 0: Invalid_argument index out of bounds
+constant index too far: Invalid_argument index out of bounds
+masked index into a short string: Invalid_argument index out of bounds
+other array: Invalid_argument index out of bounds
+polymorphic loop too far: Invalid_argument index out of bounds
+string index too far: Invalid_argument index out of bounds
+bigarray index too far: Invalid_argument index out of bounds
+decremented ref: Invalid_argument index out of bounds
+variable bound: Invalid_argument index out of bounds
+modified index: Invalid_argument index out of bounds
+assigned in a try (9): 0
+assigned in a try (10): Invalid_argument index out of bounds
+assigned index (2): 0
+assigned index (3): Invalid_argument index out of bounds

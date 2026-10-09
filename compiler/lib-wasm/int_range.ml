@@ -67,6 +67,7 @@ type constr =
   | Ne of bound
   | Ult of bound
   | Within of int64 * int64
+  | In_bounds of Var.t  (** A valid index of this array or string *)
 
 type env = constr list Var.Map.t
 
@@ -90,6 +91,15 @@ type t =
             the dominator tree of the closure *)
   ; global_flow_state : Global_flow.state
   ; global_flow_info : Global_flow.info
+  ; reps : int array
+        (** The index of the representative of the variables with the same
+            value, see [compute_reps], or [-1] if not computed yet *)
+  ; lengths : Var.t list Var.Hashtbl.t
+        (** The variables holding the length of an array, string or bigarray,
+            given by its representative (one per value number) *)
+  ; members : Var.t list Var.Hashtbl.t
+        (** The variables with a given representative, when there are
+            several *)
   }
 
 let int_constant c = Targetint.to_int64 c
@@ -156,6 +166,23 @@ let rec print_range f r =
 
 let get st x = Var.Tbl.get st.ranges x
 
+(* See [compute_reps] *)
+let rep st x =
+  let i = Var.idx x in
+  if i < Array.length st.reps && st.reps.(i) >= 0 then Var.of_idx st.reps.(i) else x
+
+let members st x =
+  let r = rep st x in
+  Var.Hashtbl.find_opt st.members r |> Option.value ~default:[ r ]
+
+(* Whether the value of [x] is computed without overflow *)
+let cannot_overflow st x =
+  Var.idx x < Var.Tbl.length st.ranges
+  &&
+  match Var.Tbl.get st.ranges x with
+  | Range _ -> true
+  | Bot | Top | Tuple _ -> false
+
 (* Some variables are created after the global flow analysis *)
 let gf_def st x =
   let defs = st.global_flow_state.defs in
@@ -178,20 +205,26 @@ let apply_constr st r c =
   | Bot -> Bot
   | Tuple _ -> r
   | Top | Range _ -> (
+      (* Comparisons are between integers: a bound of unknown range is
+         still within the range of integers, so that [x < b] implies
+         [x < max_int] *)
       let upper b f =
         match bound_range st b with
         | Bot -> Bot
-        | Top | Tuple _ -> r
+        | Tuple _ -> r
+        | Top -> meet r (Range (st.min_t, f st.min_t st.max_t))
         | Range (l, h) -> meet r (Range (st.min_t, f l h))
       in
       let lower b f =
         match bound_range st b with
         | Bot -> Bot
-        | Top | Tuple _ -> r
+        | Tuple _ -> r
+        | Top -> meet r (Range (f st.min_t st.max_t, st.max_t))
         | Range (l, h) -> meet r (Range (f l h, st.max_t))
       in
       match c with
       | Within (l, h) -> meet r (Range (l, h))
+      | In_bounds _ -> r
       | Lt b -> upper b (fun _ h -> Int64.pred h)
       | Le b -> upper b (fun _ h -> h)
       | Gt b -> lower b (fun l _ -> Int64.succ l)
@@ -460,7 +493,8 @@ let ne_bounds env x =
     ~f:(fun c ->
       match c with
       | Ne (B_var hi) -> Some hi
-      | Ne (B_const _) | Lt _ | Le _ | Gt _ | Ge _ | Eq _ | Ult _ | Within _ -> None)
+      | Ne (B_const _) | Lt _ | Le _ | Gt _ | Ge _ | Eq _ | Ult _ | Within _ | In_bounds _
+        -> None)
     (constrs env x)
 
 (* The step of the argument [y] of a loop counter [x], if [y] is [x + 1] or
@@ -478,30 +512,123 @@ let counter_step st x y =
     when Var.equal x x' && Int64.(int_constant c = 1L) -> Some `Down
   | Expr_def _ | Param_def _ | Other -> None
 
+(* Whether field [n] of the blocks [y] may be bound to is never modified:
+   all the reads of this field then return the same value *)
+let immutable_field st y n =
+  Var.idx y < Array.length st.defs
+  &&
+  match gf_approx st y with
+  | Values { known; others = false } when not (Var.Set.is_empty known) ->
+      Var.Set.for_all
+        (fun z ->
+          match st.global_flow_state.defs.(Var.idx z) with
+          | Expr (Block (_, a, _, _)) ->
+              n < Array.length a && not (is_mutable_field st z n)
+          | Expr _ | Phi _ -> false)
+        known
+  | Values _ | Top -> false
+
+(* An expression whose value only depends on the value of its operands:
+   an arithmetic operation, the length of an array or a string, the
+   dimension of a bigarray, or the read of a field which is never modified.
+   We return a name for the operation and its operands. *)
+let pure_expr st e =
+  match e with
+  | Prim (Extern (name, _), args) when is_arith_prim name -> Some (name, args)
+  | Prim (Extern (("caml_ml_string_length" | "caml_ml_bytes_length"), _), args) ->
+      Some ("length", args)
+  | Prim (Extern ("caml_ba_dim_1", _), args) -> Some ("dim_1", args)
+  | Prim (Vectlength kind, args) ->
+      Some
+        ( (match kind with
+          | Generic -> "vectlength"
+          | Value -> "vectlength_value"
+          | Float -> "vectlength_float")
+        , args )
+  | Field (y, n, _) when immutable_field st y n ->
+      Some ("field" ^ string_of_int n, [ Pv y ])
+  | _ -> None
+
+(* The range of the value of a pure expression, given the ranges of its
+   operands *)
+let pure_range st e rs =
+  match e, rs with
+  | Prim (Extern (name, _), _), _ when is_arith_prim name -> arith_prim st name rs
+  | ( Prim
+        ( (Vectlength _ | Extern (("caml_ml_string_length" | "caml_ml_bytes_length"), _))
+        , _ )
+    , _ ) -> Range (0L, max_length st)
+  | Field (_, n, _), [ Tuple t ] when n < Array.length t -> t.(n)
+  | Field _, [ Bot ] -> Bot
+  | _ -> Top
+
 (* Whether [hi] keeps the same value while the parameter [x] is live: [hi]
    is defined in a block which strictly dominates the block of [x], or in an
-   enclosing closure. Then, a path which defines [hi] again also goes through
-   an edge entering the block of [x] from outside the loop. *)
-let invariant_bound st ~param:x hi =
+   enclosing closure ([Dominating]). Then, a path which defines [hi] again
+   also goes through an edge entering the block of [x] from outside the loop.
+   Otherwise, [hi] has the same value each time it is defined if it is
+   computed by a pure expression from operands which keep the same value, as
+   when the loop test computes the length of an array again ([Pure r]). But
+   [hi] may then not be defined in some iterations, and its range, computed
+   with the facts known where it is defined, does not apply to this value:
+   [r] is the range of the expression evaluated on the ranges of the
+   operands. *)
+type invariance =
+  | Dominating
+  | Pure of range
+
+let rec invariance ?(depth = 3) st ~param:x hi =
   let pc = st.def_block.(Var.idx x) in
   let pc' = st.def_block.(Var.idx hi) in
-  pc' = -1
-  || pc <> pc'
-     &&
-     match
-       ( Addr.Hashtbl.find_opt st.dom_intervals pc
-       , Addr.Hashtbl.find_opt st.dom_intervals pc' )
-     with
-     | Some (c, pre, post), Some (c', pre', post') ->
-         c <> c' || (pre' <= pre && post <= post')
-     | _ -> false
+  if
+    pc' = -1
+    || pc <> pc'
+       &&
+       match
+         ( Addr.Hashtbl.find_opt st.dom_intervals pc
+         , Addr.Hashtbl.find_opt st.dom_intervals pc' )
+       with
+       | Some (c, pre, post), Some (c', pre', post') ->
+           c <> c' || (pre' <= pre && post <= post')
+       | _ -> false
+  then Some Dominating
+  else if depth = 0
+  then None
+  else
+    match st.defs.(Var.idx hi) with
+    | Expr_def (e, _) -> (
+        match pure_expr st e with
+        | Some (_, args) ->
+            let rs =
+              List.map
+                ~f:(fun a ->
+                  match a with
+                  | Pv y -> (
+                      match invariance ~depth:(depth - 1) st ~param:x y with
+                      | Some Dominating -> Some (get st y)
+                      | Some (Pure r) -> Some r
+                      | None -> None)
+                  | Pc (Int c) ->
+                      let c = int_constant c in
+                      Some (Range (c, c))
+                  | Pc _ -> Some Top)
+                args
+            in
+            if List.exists ~f:Option.is_none rs
+            then None
+            else Some (Pure (pure_range st e (List.filter_map ~f:Fun.id rs)))
+        | None -> None)
+    | Param_def _ | Other -> None
+
+let invariant_bound st ~param:x hi = Option.is_some (invariance st ~param:x hi)
 
 (* A loop counter [x] which is incremented while [x <> hi], and whose initial
    values are at most [hi], remains at most [hi] provided that [hi] is loop
    invariant; this is the case of the counter of a [for] loop, which the
    interval domain cannot capture when [hi] is a variable. Similarly for a
-   counter which is decremented. We return the bound [hi] and the direction
-   of the loop, if applicable. *)
+   counter which is decremented. We return the bound [hi], the direction of
+   the loop, and the range of the value of [hi] (see [invariance]), if
+   applicable. *)
 let counter_bound st x l =
   let increments, others =
     List.partition ~f:(fun (y, _) -> Option.is_some (counter_step st x y)) l
@@ -512,32 +639,100 @@ let counter_bound st x l =
       let dir = Option.get (counter_step st x y) in
       List.find_map
         ~f:(fun hi ->
-          let increment_ok (y, env) =
-            Poly.equal (counter_step st x y) (Some dir)
-            && List.exists ~f:(fun hi' -> Var.equal hi hi') (ne_bounds env x)
-          in
-          (* The initial value [y] is on the right side of [hi] *)
-          let initial_ok (y, env) =
-            List.exists
-              ~f:(fun c ->
-                match dir, c with
-                | `Up, (Le (B_var hi') | Lt (B_var hi'))
-                | `Down, (Ge (B_var hi') | Gt (B_var hi')) -> Var.equal hi hi'
-                | _ -> false)
-              (constrs env y)
-            ||
-            match dir, refine st env y, refine st env hi with
-            | `Up, Range (_, h), Range (l, _) -> Int64.(h <= l)
-            | `Down, Range (l, _), Range (_, h) -> Int64.(l >= h)
-            | _ -> false
-          in
-          if
-            invariant_bound st ~param:x hi
-            && List.for_all ~f:increment_ok increments
-            && List.for_all ~f:initial_ok others
-          then Some (hi, dir)
-          else None)
+          match invariance st ~param:x hi with
+          | None -> None
+          | Some inv ->
+              (* A variable with the same value as [hi] where it is
+                 defined (see [compute_reps]) *)
+              let same hi' = Var.equal (rep st hi) (rep st hi') in
+              let increment_ok (y, env) =
+                Poly.equal (counter_step st x y) (Some dir)
+                && List.exists ~f:same (ne_bounds env x)
+              in
+              (* The initial value [y] is on the right side of [hi] *)
+              let initial_ok (y, env) =
+                List.exists
+                  ~f:(fun c ->
+                    match dir, c with
+                    | `Up, (Le (B_var hi') | Lt (B_var hi'))
+                    | `Down, (Ge (B_var hi') | Gt (B_var hi')) -> same hi'
+                    | _ -> false)
+                  (constrs env y)
+                ||
+                let hi_range =
+                  match inv with
+                  | Dominating -> refine st env hi
+                  | Pure r -> r
+                in
+                match dir, refine st env y, hi_range with
+                | `Up, Range (_, h), Range (l, _) -> Int64.(h <= l)
+                | `Down, Range (l, _), Range (_, h) -> Int64.(l >= h)
+                | _ -> false
+              in
+              if
+                List.for_all ~f:increment_ok increments
+                && List.for_all ~f:initial_ok others
+              then
+                Some
+                  ( hi
+                  , dir
+                  , match inv with
+                    | Dominating -> get st hi
+                    | Pure r -> r )
+              else None)
         (ne_bounds env x)
+
+(* The bounds [Le (B_var m)] or [Lt (B_var m)] of a counter [x] which is
+   decremented: its other arguments are bounded by [m], which is loop
+   invariant, and [x] is not [min_int] where it is decremented, so that
+   [x - 1] does not wrap around. This is the case of the counter of a [for]
+   loop down from [Array.length a - 1], which the interval domain only bounds
+   by the range of [Array.length a - 1]. *)
+let decreasing_counter_bounds st x l =
+  let decrements, others =
+    List.partition ~f:(fun (y, _) -> Poly.equal (counter_step st x y) (Some `Down)) l
+  in
+  (* The bounds of an argument [y], including [y] itself *)
+  let bounds (y, env) =
+    Le (B_var y)
+    :: List.filter
+         ~f:(fun c ->
+           match c with
+           | Le (B_var _) | Lt (B_var _) -> true
+           | Le (B_const _)
+           | Lt (B_const _)
+           | Gt _ | Ge _ | Eq _ | Ne _ | Ult _ | Within _ | In_bounds _ -> false)
+         (constrs env y)
+  in
+  (* [c] implies [c'] *)
+  let implies c c' =
+    match c, c' with
+    | (Le (B_var m) | Lt (B_var m)), Le (B_var m') | Lt (B_var m), Lt (B_var m') ->
+        Var.equal m m'
+    | _ -> false
+  in
+  let no_wrap (_, env) =
+    match refine st env x with
+    | Range (l, _) -> Int64.(l > st.min_t)
+    | Bot -> true
+    | Top | Tuple _ -> false
+  in
+  match decrements, others with
+  | [], _ | _, [] -> []
+  | _, edge :: _ ->
+      if List.for_all ~f:no_wrap decrements
+      then
+        List.filter
+          ~f:(fun c ->
+            match c with
+            | Le (B_var m) | Lt (B_var m) ->
+                invariant_bound st ~param:x m
+                && List.for_all
+                     ~f:(fun e -> List.exists ~f:(fun c' -> implies c' c) (bounds e))
+                     others
+            | _ -> false)
+          (bounds edge)
+      else []
 
 let compute st x =
   match st.defs.(Var.idx x) with
@@ -551,8 +746,8 @@ let compute st x =
       in
       match counter_bound st x l with
       | None -> r
-      | Some (hi, dir) -> (
-          match dir, get st hi with
+      | Some (_, dir, hi_range) -> (
+          match dir, hi_range with
           | `Up, Range (_, h) -> meet r (Range (st.min_t, h))
           | `Down, Range (l, _) -> meet r (Range (l, st.max_t))
           | _, Bot -> Bot
@@ -565,6 +760,321 @@ let compute st x =
             (fun y acc -> join acc (get st y))
             known
             (if unit then Range (0L, 0L) else Bot))
+
+let is_access name =
+  match name with
+  | "caml_check_bound"
+  | "caml_check_bound_gen"
+  | "caml_check_bound_float"
+  | "caml_string_get"
+  | "caml_bytes_get"
+  | "caml_string_set"
+  | "caml_bytes_set"
+  | "caml_ba_get_1"
+  | "caml_ba_set_1" -> true
+  | _ -> false
+
+let is_checked_access name =
+  match name with
+  | "caml_check_bound"
+  | "caml_check_bound_gen"
+  | "caml_check_bound_float"
+  | "caml_string_get"
+  | "caml_bytes_get"
+  | "caml_string_set"
+  | "caml_bytes_set" -> true
+  | _ -> false
+
+module Value_key = Hashtbl.Make (struct
+  type t = string * [ `Var of int | `Const of int64 ] list
+
+  let equal (name, args) (name', args') =
+    String.equal name name'
+    && List.equal
+         ~eq:(fun a a' ->
+           match a, a' with
+           | `Var i, `Var i' -> i = i'
+           | `Const c, `Const c' -> Int64.equal c c'
+           | (`Var _ | `Const _), _ -> false)
+         args
+         args'
+
+  let hash = Hashtbl.hash
+end)
+
+(* Variables with the same value are identified by a representative: a
+   checked array access returns the array, and variables computed by the
+   same pure expression from operands with the same representatives have
+   the same value. Two such variables have the same value where the
+   definitions of both dominate. *)
+let compute_reps st p =
+  let keys = Value_key.create 128 in
+  let rec rep x =
+    let i = Var.idx x in
+    let r = st.reps.(i) in
+    if r >= 0
+    then r
+    else
+      let r =
+        match st.defs.(i) with
+        | Expr_def
+            ( Prim
+                ( Extern
+                    ( ( "caml_check_bound"
+                      | "caml_check_bound_float"
+                      | "caml_check_bound_gen" )
+                    , _ )
+                , Pv a :: _ )
+            , _ ) -> rep a
+        | Expr_def (e, _) -> (
+            match pure_expr st e with
+            | Some (name, args) -> (
+                let args =
+                  List.map
+                    ~f:(fun a ->
+                      match a with
+                      | Pv y -> Some (`Var (rep y))
+                      | Pc (Int c) -> Some (`Const (int_constant c))
+                      | Pc _ -> None)
+                    args
+                in
+                if List.exists ~f:Option.is_none args
+                then i
+                else
+                  let key = name, List.filter_map ~f:Fun.id args in
+                  match Value_key.find_opt keys key with
+                  | Some r ->
+                      let r' = Var.of_idx r in
+                      Var.Hashtbl.replace
+                        st.members
+                        r'
+                        (x
+                        :: (Var.Hashtbl.find_opt st.members r'
+                           |> Option.value ~default:[ r' ]));
+                      r
+                  | None ->
+                      Value_key.add keys key i;
+                      (match key with
+                      | ( ( "length"
+                          | "dim_1"
+                          | "vectlength"
+                          | "vectlength_value"
+                          | "vectlength_float" )
+                        , [ `Var a ] ) ->
+                          let a = Var.of_idx a in
+                          Var.Hashtbl.replace
+                            st.lengths
+                            a
+                            (x
+                            :: (Var.Hashtbl.find_opt st.lengths a
+                               |> Option.value ~default:[]))
+                      | _ -> ());
+                      i)
+            | None -> i)
+        | Param_def _ | Other -> i
+      in
+      st.reps.(i) <- r;
+      r
+  in
+  Addr.Map.iter
+    (fun _ block ->
+      List.iter
+        ~f:(fun i ->
+          match i with
+          | Let (x, _) -> ignore (rep x)
+          | Assign _ | Set_field _ | Offset_ref _ | Array_set _ | Event _ -> ())
+        block.body)
+    p.blocks
+
+(* The size argument of the primitive which created the array or string
+   [a], which is then its length *)
+let creation_size st a =
+  match st.defs.(Var.idx a) with
+  | Expr_def
+      ( Prim
+          ( Extern
+              ( ( "caml_make_vect"
+                | "caml_array_make"
+                | "caml_uniform_array_make"
+                | "caml_floatarray_make"
+                | "caml_make_float_vect"
+                | "caml_floatarray_create"
+                | "caml_array_create_float"
+                | "caml_floatarray_create_local"
+                | "caml_create_bytes"
+                | "caml_create_local_bytes" )
+              , _ )
+          , size :: _ )
+      , _ ) -> Some size
+  | Expr_def _ | Param_def _ | Other -> None
+
+(* The variables holding the length of the array, string or bigarray
+   [obj], a representative: its array lengths, string lengths or
+   dimensions, and the size it was created with. They have the length of
+   [obj] where their definition dominates. *)
+let length_vars st obj =
+  List.concat_map
+    ~f:(members st)
+    ((Var.Hashtbl.find_opt st.lengths obj |> Option.value ~default:[])
+    @
+    match creation_size st obj with
+    | Some (Pv size) -> [ size ]
+    | Some (Pc _) | None -> [])
+
+(* Whether [n] is the length of the array, string or bigarray [obj], a
+   representative: its array length, string length or dimension, or the size
+   it was created with. Whatever the kind of a [Vectlength], it does not
+   exceed the length of the array: the float array length is 0 for another
+   array, and a [Value] array length only applies to arrays which are not
+   float arrays. *)
+let is_length st ~obj n =
+  (match st.defs.(Var.idx (rep st n)) with
+    | Expr_def
+        ( Prim
+            ( ( Vectlength _
+              | Extern
+                  (("caml_ml_string_length" | "caml_ml_bytes_length" | "caml_ba_dim_1"), _)
+                )
+            , [ Pv a ] )
+        , _ ) -> Var.equal (rep st a) obj
+    | Expr_def _ | Param_def _ | Other -> false)
+  ||
+  match creation_size st obj with
+  | Some (Pv size) -> Var.equal (rep st size) (rep st n)
+  | Some (Pc _) | None -> false
+
+(* A lower bound on the length of the array or string [obj], a
+   representative of the accessed variable [a]: a string constant, a block,
+   an array or string created with a size whose range is known, or the
+   blocks [a] may be bound to. We use the approximation of [a] rather than
+   of [obj], which may be refined differently: the approximation of a field
+   read depends on the case of a [switch] it is in. *)
+let min_length st ~accessed:a obj =
+  match st.defs.(Var.idx obj) with
+  | Expr_def (Block (_, l, _, _), _) -> Some (Int64.of_int (Array.length l))
+  | Expr_def (Constant (String s), _) -> Some (Int64.of_int (String.length s))
+  | _ -> (
+      match creation_size st obj with
+      | Some (Pc (Int c)) -> Some (int_constant c)
+      | Some (Pv n) -> (
+          match get st n with
+          | Range (l, _) -> Some l
+          | Bot | Top | Tuple _ -> None)
+      | Some (Pc _) -> None
+      | None -> (
+          match gf_approx st a with
+          | Values { known; others = false } when not (Var.Set.is_empty known) ->
+              Var.Set.fold
+                (fun z acc ->
+                  match acc, st.global_flow_state.defs.(Var.idx z) with
+                  | Some m, Expr (Block (_, l, _, _)) ->
+                      Some (Int64.min m (Int64.of_int (Array.length l)))
+                  | _ -> None)
+                known
+                (Some Int64.max_int)
+          | Values _ | Top -> None))
+
+(* [x] is computed as [y + k] *)
+let offset_def st x =
+  match st.defs.(Var.idx x) with
+  | Expr_def
+      (Prim (Extern ("%int_add", _), ([ Pv y; Pc (Int k) ] | [ Pc (Int k); Pv y ])), _) ->
+      Some (y, int_constant k)
+  | Expr_def (Prim (Extern ("%int_sub", _), [ Pv y; Pc (Int k) ]), _) ->
+      Some (y, Int64.neg (int_constant k))
+  | Expr_def _ | Param_def _ | Other -> None
+
+(* The terms [(z, k)] such that the index [i] is equal to [z + k] at an
+   access where the facts [env] hold: [i] itself, the variables of the same
+   value which have facts there (their definition then dominates the
+   access), and the same for [y] if [i] is computed as [y + k] *)
+let index_terms ?(check = true) st env i =
+  let same z =
+    z
+    :: List.filter
+         ~f:(fun z' -> (not (Var.equal z z')) && not (List.is_empty (constrs env z')))
+         (members st z)
+  in
+  let rec terms depth (z, k) acc =
+    let acc = List.map ~f:(fun z' -> z', k) (same z) @ acc in
+    match offset_def st z with
+    | Some (y, k') when depth > 0 && ((not check) || cannot_overflow st z) ->
+        terms (depth - 1) (y, Int64.add k k') acc
+    | Some _ | None -> acc
+  in
+  terms 2 (i, 0L) []
+
+(* The upper bounds [(v, c)] of a variable [z] where the facts [env] hold:
+   [z <= v + c]. They come from the facts known about [z], from its loop
+   counter bounds, and [z <= v] becomes [z <= v - 1] if [z <> v]. Then, [v]
+   is replaced by [w] when [v] is computed as [w + k]: [z <= w + k + c]
+   holds unless [w + k] is less than [min_int], since a sum which wraps
+   around to the negative numbers is less than its exact value. This is the
+   case when [k] is nonnegative, or [w] is large enough, in particular when
+   it is nonnegative ([nonneg w]). *)
+let upper_bounds st ~nonneg env z =
+  let cs = constrs env z in
+  let direct =
+    List.filter_map
+      ~f:(fun c ->
+        match c with
+        | Lt (B_var v) -> Some (v, -1L)
+        | Le (B_var v) | Eq (B_var v) -> Some (v, 0L)
+        | Ult (B_var v) -> (
+            (* [z <u v] implies [z < v] when [v] is nonnegative *)
+            match refine st env v with
+            | Range (l, _) when Int64.(l >= 0L) -> Some (v, -1L)
+            | Range _ | Bot | Top | Tuple _ -> None)
+        | Lt (B_const _)
+        | Le (B_const _)
+        | Eq (B_const _)
+        | Ult (B_const _)
+        | Gt _ | Ge _ | Ne _ | Within _ | In_bounds _ -> None)
+      cs
+  in
+  let counter =
+    match st.defs.(Var.idx z) with
+    | Param_def l ->
+        (match counter_bound st z l with
+          | Some (hi, `Up, _) -> [ hi, 0L ]
+          | Some (_, `Down, _) | None -> [])
+        @ List.filter_map
+            ~f:(fun c ->
+              match c with
+              | Le (B_var m) -> Some (m, 0L)
+              | Lt (B_var m) -> Some (m, -1L)
+              | _ -> None)
+            (decreasing_counter_bounds st z l)
+    | Expr_def _ | Other -> []
+  in
+  let not_equal v =
+    List.exists
+      ~f:(fun c ->
+        match c with
+        | Ne (B_var v') -> Var.equal (rep st v) (rep st v')
+        | _ -> false)
+      cs
+  in
+  let rec normalize depth (v, c) acc =
+    let acc = (v, c) :: acc in
+    match offset_def st v with
+    | Some (w, k)
+      when depth > 0
+           && (Int64.(k >= 0L)
+              || nonneg w
+              ||
+              match get st w with
+              | Range (l, _) -> Int64.(add l k >= st.min_t)
+              | Bot | Top | Tuple _ -> false) ->
+        normalize (depth - 1) (w, Int64.add c k) acc
+    | Some _ | None -> acc
+  in
+  List.fold_left
+    ~f:(fun acc (v, c) ->
+      let c = if Int64.equal c 0L && not_equal v then -1L else c in
+      normalize 2 (v, c) acc)
+    ~init:[]
+    (((z, 0L) :: direct) @ counter)
 
 (* The variables [x] depends on *)
 let dependencies st x =
@@ -586,7 +1096,7 @@ let dependencies st x =
         | Eq (B_const _)
         | Ne (B_const _)
         | Ult (B_const _)
-        | Within _ -> acc)
+        | Within _ | In_bounds _ -> acc)
       ~init:acc
       (constrs env y)
   in
@@ -611,6 +1121,33 @@ let dependencies st x =
     match e with
     | Prim ((Array_get _ | Extern ("caml_array_unsafe_get", _)), [ Pv y; _ ]) ->
         array_elements y acc
+    | Prim (Extern (name, _), (Pv a :: i :: _ as args)) when is_access name ->
+        (* See [valid_index]: the length variables of the object which have
+           facts at the access, the size it was created with, and the
+           variables the index is computed from *)
+        let a = rep st a in
+        let acc =
+          List.fold_left
+            ~f:(fun acc n ->
+              if List.is_empty (constrs env n) then acc else arg_vars env (Pv n) acc)
+            ~init:acc
+            (length_vars st a)
+        in
+        let acc =
+          match creation_size st a with
+          | Some (Pv n) -> n :: acc
+          | Some (Pc _) | None -> acc
+        in
+        let acc =
+          match i with
+          | Pv i ->
+              List.fold_left
+                ~f:(fun acc (z, _) -> arg_vars env (Pv z) acc)
+                ~init:acc
+                (index_terms ~check:false st env i)
+          | Pc _ -> acc
+        in
+        List.fold_left ~f:(fun acc a -> arg_vars env a acc) ~init:acc args
     | Prim (_, args) -> List.fold_left ~f:(fun acc a -> arg_vars env a acc) ~init:acc args
     | Field (y, _, _) -> y :: acc
     | Block (_, lst, _, _) -> Array.to_list lst @ acc
@@ -683,17 +1220,6 @@ let rec add_cond st env v pol =
   | Expr_def _ | Param_def _ | Other ->
       add_constr env v (if pol then Ne (B_const 0L) else Eq (B_const 0L))
 
-let is_checked_access name =
-  match name with
-  | "caml_check_bound"
-  | "caml_check_bound_gen"
-  | "caml_check_bound_float"
-  | "caml_string_get"
-  | "caml_bytes_get"
-  | "caml_string_set"
-  | "caml_bytes_set" -> true
-  | _ -> false
-
 (* The widening moves a bound which grows to the closest threshold beyond
    it, or to the bound of target integers *)
 let rec widen st th old r =
@@ -731,6 +1257,7 @@ let thresholds st x =
           ~f:(fun acc c ->
             match c with
             | Within (l, h) -> l :: h :: acc
+            | In_bounds _ -> acc
             | Lt b | Le b | Gt b | Ge b | Eq b | Ne b | Ult b -> (
                 match bound_range st b with
                 | Range (l, h) ->
@@ -781,11 +1308,86 @@ module Solver = G.Solver (struct
   let bot = Bot
 end)
 
+(* Whether [i] is a valid index of [obj] where [x] is defined. A variable
+   index is equal to [z + k] for each of its terms (see [index_terms]). It
+   is valid if it has already been checked against [obj], or if it is
+   nonnegative and either less than a lower bound of the length of [obj] (see
+   [min_length]; the facts known about the variables holding this length
+   tell more), or at most [n - 1] for a length [n] of [obj] (see
+   [upper_bounds]). *)
+let valid_index st ~at:x ~obj i =
+  let analysed z = Var.idx z < Array.length st.defs in
+  Var.idx x < Array.length st.defs
+  && (match i with
+    | Pv i -> analysed i
+    | Pc (Int _) -> true
+    | Pc _ -> false)
+  && analysed obj
+  &&
+  match st.defs.(Var.idx x) with
+  | Expr_def (_, env) when analysed (rep st obj) ->
+      let accessed = obj in
+      let obj = rep st obj in
+      let terms =
+        match i with
+        | Pv i -> List.filter ~f:(fun (z, _) -> analysed z) (index_terms st env i)
+        | Pc _ -> []
+      in
+      List.exists
+        ~f:(fun (z, k) ->
+          Int64.equal k 0L
+          && List.exists
+               ~f:(fun c ->
+                 match c with
+                 | In_bounds a -> Var.equal a obj
+                 | _ -> false)
+               (constrs env z))
+        terms
+      ||
+      let lower, upper =
+        match i with
+        | Pc (Int c) -> int_constant c, int_constant c
+        | Pv _ | Pc _ ->
+            List.fold_left
+              ~f:(fun (l, h) (z, k) ->
+                match refine st env z with
+                | Range (l', h') ->
+                    Int64.max l (Int64.add l' k), Int64.min h (Int64.add h' k)
+                | Bot | Top | Tuple _ -> l, h)
+              ~init:(Int64.min_int, Int64.max_int)
+              terms
+      in
+      let min_length =
+        List.fold_left
+          ~f:(fun m n ->
+            (* Only the variables with facts at the access, whose definition
+               then dominates it, hold the length of [obj] there *)
+            if analysed n && not (List.is_empty (constrs env n))
+            then
+              match refine st env n with
+              | Range (l, _) -> Int64.max m l
+              | Bot | Top | Tuple _ -> m
+            else m)
+          ~init:(min_length st ~accessed obj |> Option.value ~default:0L)
+          (length_vars st obj)
+      in
+      Int64.(lower >= 0L)
+      && (Int64.(upper < min_length)
+         || List.exists
+              ~f:(fun (z, k) ->
+                List.exists
+                  ~f:(fun (v, c) ->
+                    Int64.(add c k <= -1L) && analysed v && is_length st ~obj v)
+                  (upper_bounds st ~nonneg:(fun w -> is_length st ~obj w) env z))
+              terms)
+  | Expr_def _ | Param_def _ | Other -> false
+
 (* The variables whose range is looked at: the results of arithmetic
-   operations (see [cannot_overflow]) *)
+   operations (see [cannot_overflow]) and the accesses whose index may be
+   valid (see [valid_index]) *)
 let is_root st x =
   match st.defs.(Var.idx x) with
-  | Expr_def (Prim (Extern (name, _), _), _) -> is_arith_prim name
+  | Expr_def (Prim (Extern (name, _), _), _) -> is_arith_prim name || is_access name
   | Expr_def _ | Param_def _ | Other -> false
 
 let f ~global_flow_state ~global_flow_info p =
@@ -802,6 +1404,9 @@ let f ~global_flow_state ~global_flow_info p =
     ; dom_intervals = Addr.Hashtbl.create 128
     ; global_flow_state
     ; global_flow_info
+    ; reps = Array.make n (-1)
+    ; lengths = Var.Hashtbl.create 128
+    ; members = Var.Hashtbl.create 128
     }
   in
   let set_def_block x pc = st.def_block.(Var.idx x) <- pc in
@@ -818,6 +1423,7 @@ let f ~global_flow_state ~global_flow_info p =
           | Assign _ | Set_field _ | Offset_ref _ | Array_set _ | Event _ -> ())
         block.body)
     p.blocks;
+  compute_reps st p;
   let loop_params = BitSet.create' n in
   let order = ref [] in
   let param_defs = Array.make n [] in
@@ -858,11 +1464,14 @@ let f ~global_flow_state ~global_flow_info p =
                   set_def_block x pc;
                   order := x :: !order;
                   match e with
-                  | Prim (Extern (name, _), Pv _ :: Pv i :: _) when is_checked_access name
+                  | Prim (Extern (name, _), Pv a :: Pv i :: _) when is_checked_access name
                     ->
                       (* The index is checked against the length of the
                          array or string *)
-                      add_constr env i (Within (0L, Int64.pred (max_length st)))
+                      add_constr
+                        (add_constr env i (Within (0L, Int64.pred (max_length st))))
+                        i
+                        (In_bounds (rep st a))
                   | _ -> env)
               | Assign (x, y) ->
                   (* [y] is a possible value of the parameter [x], as if
@@ -1050,11 +1659,3 @@ let f ~global_flow_state ~global_flow_info p =
         | Bot | Top -> ())
       order;
   st
-
-(* Whether the value of [x] is computed without overflow *)
-let cannot_overflow st x =
-  Var.idx x < Var.Tbl.length st.ranges
-  &&
-  match Var.Tbl.get st.ranges x with
-  | Range _ -> true
-  | Bot | Top | Tuple _ -> false

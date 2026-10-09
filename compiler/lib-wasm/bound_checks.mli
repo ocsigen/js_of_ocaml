@@ -16,20 +16,6 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-(** Integer range analysis *)
-
-type t
-
-val f :
-     global_flow_state:Global_flow.state
-  -> global_flow_info:Global_flow.info
-  -> Code.program
-  -> t
-(** Compute a range for each integer variable of the program *)
-
-val cannot_overflow : t -> Code.Var.t -> bool
-(** Whether the value of this variable is computed without overflow *)
-
-val valid_index : t -> at:Code.Var.t -> obj:Code.Var.t -> Code.prim_arg -> bool
-(** [valid_index st ~at ~obj i] tells whether [i] is a valid index of the
-    array, string or C-layout bigarray [obj] where [at] is defined *)
+val f : types:Typing.t -> ranges:Int_range.t -> Code.program -> Code.program
+(** Remove the bound checks of array, string and bigarray accesses whose index
+    the range analysis proves to be valid *)
