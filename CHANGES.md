@@ -25,6 +25,8 @@
 * Compiler: split switches with more than 256 cases (instead of 60), or whose
   case values span more than 1000, which the JavaScriptCore interpreter
   compiles to a sequence of tests (#2612)
+* Compiler/wasm: integer range analysis (from `--opt 2`), to skip normalizing
+  integers and remove bound checks when it is safe (#2478)
 
 ## Bug fixes
 * Compiler/Wasm: box variables typed as integers before using them as a

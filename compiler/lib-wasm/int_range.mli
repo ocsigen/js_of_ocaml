@@ -30,6 +30,21 @@ val f :
 val cannot_overflow : t -> Code.Var.t -> bool
 (** Whether the value of this variable is computed without overflow *)
 
+val valid_index : t -> at:Code.Var.t -> obj:Code.Var.t -> Code.prim_arg -> bool
+(** [valid_index st ~at ~obj i] tells whether [i] is a valid index of the
+    array, string or C-layout bigarray [obj] where [at] is defined *)
+
+(** The primitives which check an index, their first two arguments being the
+    accessed object and the index *)
+type access =
+  | Array_access  (** Returns the array *)
+  | String_access of string  (** The corresponding unchecked primitive *)
+  | Bigarray_access
+      (** A bigarray with one dimension; the hint of the primitive tells
+          whether the access is checked *)
+
+val access : string -> access option
+
 val may_overflow_prim : string -> bool
 (** The arithmetic primitives which may overflow: {!cannot_overflow} only
     holds for their result when they do not *)
