@@ -125,6 +125,8 @@
   start from 1 in all error messages, as editors expect (#2464, #2491)
 
 ## Bug fixes
+* Compiler/Wasm: fix several bugs of the Wasm linker (instruction decoding,
+  retargeting of active segments, type checks of imports) (#2504)
 * Runtime: the functions creating arrays of arbitrary length (`Array.append`,
   `Array.concat`, `Obj.new_block`, `Weak.create`, ...) check the size limits of
   OCaml (`Sys.max_array_length`), and `Array.make` accepts these limits (#2499)
