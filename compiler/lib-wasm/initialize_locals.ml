@@ -66,7 +66,11 @@ let rec scan_expression ctx e =
       scan_expression ctx e'
   | Call (_, l) | ArrayNewFixed (_, l) | StructNew (_, l) -> scan_expressions ctx l
   | BlockExpr (_, l) -> scan_instructions ctx l
-  | Seq (l, e') -> scan_instructions ctx (l @ [ Push e' ])
+  | Seq (l, e') ->
+      (* Not a block: the locals initialized by [l] remain initialized
+         afterwards. *)
+      List.iter ~f:(fun i -> scan_instruction ctx i) l;
+      scan_expression ctx e'
   | IfExpr (_, cond, e1, e2) ->
       scan_expression ctx cond;
       scan_expression (fork_context ctx) e1;
