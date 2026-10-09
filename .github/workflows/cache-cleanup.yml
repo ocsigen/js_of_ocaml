@@ -1,0 +1,65 @@
+name: Cache cleanup
+
+# setup-ocaml saves its opam cache from a pull request job whenever no
+# cache with that key is visible, for instance after master's cache was
+# evicted or when the key changed (new opam release, runner image, ...).
+# Caches saved from a pull request are only visible to that pull
+# request, yet they count towards the repository's 10 GB cache quota:
+# they push more of master's caches out, so more pull requests save
+# their own copies, and jobs start from a cold opam switch.
+#
+# Delete the pull request caches whose key also exists on master, and
+# all caches of closed pull requests.
+
+on:
+  workflow_run:
+    workflows:
+      - js_of_ocaml
+      - wasm_of_ocaml
+      - janestreet
+      - lint
+      - quickjs
+      - js-parser
+    types:
+      - completed
+  # pull_request_target, so that the token can delete caches of pull
+  # requests from forks. No code from the pull request is checked out.
+  pull_request_target:
+    types:
+      - closed
+  schedule:
+    - cron: 0 3 * * *
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}
+
+permissions:
+  actions: write
+  pull-requests: read
+
+jobs:
+  cleanup:
+    if: github.repository == 'ocsigen/js_of_ocaml'
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Delete redundant pull request caches
+        run: |
+          caches=$(gh api --paginate "repos/$GH_REPO/actions/caches?per_page=100" \
+            -q '.actions_caches[] | [.id, .ref, .key] | @tsv')
+          master_keys=$(awk -F'\t' '$2 == "refs/heads/master" { print $3 }' <<< "$caches")
+          declare -A state
+          while IFS=$'\t' read -r id ref key; do
+            [[ $ref =~ ^refs/pull/([0-9]+)/merge$ ]] || continue
+            pr=${BASH_REMATCH[1]}
+            if [[ -z ${state[$pr]+x} ]]; then
+              state[$pr]=$(gh pr view "$pr" --json state -q .state)
+            fi
+            if [[ ${state[$pr]} != OPEN ]] || grep -qxF "$key" <<< "$master_keys"; then
+              echo "Deleting $key (#$pr, ${state[$pr]})"
+              gh api -X DELETE "repos/$GH_REPO/actions/caches/$id" || true
+            fi
+          done <<< "$caches"
