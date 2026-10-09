@@ -13746,9 +13746,9 @@
       /*<<buffer.ml:151:7>>*/ Stdlib[1].call(null, "Buffer.add_substring");
     var
      position =  /*<<buffer.ml:152:2>>*/ b[2],
-     match =  /*<<buffer.ml:153:2>>*/ b[1],
-     length = match[2],
-     buffer = match[1],
+     _c_ =  /*<<buffer.ml:153:2>>*/ b[1],
+     length = _c_[2],
+     buffer = _c_[1],
      new_position =  /*<<buffer.ml:154:2>>*/ position + len | 0;
      /*<<buffer.ml:155:2>>*/ if(length < new_position){
       /*<<buffer.ml:156:4>>*/ resize(b, len);
@@ -13773,9 +13773,9 @@
       /*<<buffer.ml:164:7>>*/ Stdlib[1].call(null, "Buffer.add_subbytes");
     var
      position =  /*<<buffer.ml:165:2>>*/ b[2],
-     match =  /*<<buffer.ml:166:2>>*/ b[1],
-     length = match[2],
-     buffer = match[1],
+     _c_ =  /*<<buffer.ml:166:2>>*/ b[1],
+     length = _c_[2],
+     buffer = _c_[1],
      new_position =  /*<<buffer.ml:167:2>>*/ position + len | 0;
      /*<<buffer.ml:168:2>>*/ if(length < new_position){
       /*<<buffer.ml:169:4>>*/ resize(b, len);
@@ -32348,21 +32348,21 @@
     Stdlib_Obj = caml_get_global("Stdlib__Obj"),
     CamlinternalOO = caml_get_global("CamlinternalOO");
    function copy_from_array(a, dummy){
-    var _J_ =  /*<<dynarray.ml:253:14>>*/ Stdlib_Obj[17];
-    if(caml_obj_tag(a) !== _J_)
+    var _I_ =  /*<<dynarray.ml:253:14>>*/ Stdlib_Obj[17];
+    if(caml_obj_tag(a) !== _I_)
       /*<<dynarray.ml:254:8>>*/ return Stdlib_Array[7].call(null, a) /*<<dynarray.ml:263:9>>*/ ;
     var
      n =  /*<<dynarray.ml:255:11>>*/ a.length - 1,
      arr =  /*<<dynarray.ml:257:18>>*/ caml_array_make(n, dummy),
-     _J_ =  /*<<dynarray.ml:258:8>>*/ n - 1 | 0;
-    if(_J_ >= 0){
+     _I_ =  /*<<dynarray.ml:258:8>>*/ n - 1 | 0;
+    if(_I_ >= 0){
      var i = 0;
      for(;;){
       var v =  /*<<dynarray.ml:260:20>>*/ a[i + 1];
        /*<<dynarray.ml:259:10>>*/ arr[i + 1] = v;
-      var _K_ =  /*<<dynarray.ml:260:43>>*/ i + 1 | 0;
-      if(_J_ === i) break;
-      i = _K_;
+      var _J_ =  /*<<dynarray.ml:260:43>>*/ i + 1 | 0;
+      if(_I_ === i) break;
+      i = _J_;
      }
     }
      /*<<dynarray.ml:262:8>>*/ return arr;
@@ -32390,10 +32390,10 @@
      _c_ = CamlinternalOO[3].call(null, _b_, "x");
     CamlinternalOO[17].call(null, _b_);
     _a_[1] =
-     function(_J_){
-      var _I_ =  /*<<?>>*/ CamlinternalOO[24].call(null, 0, _b_);
-      _I_[_c_ + 1] = _J_[2];
-      return _I_;
+     function(_I_){
+      var _H_ =  /*<<?>>*/ CamlinternalOO[24].call(null, 0, _b_);
+      _H_[_c_ + 1] = _I_[2];
+      return _H_;
      };
    }
    var
@@ -32505,17 +32505,17 @@
            0,
            [11, " to ", [4, 0, 0, 0, [11, " occurred during iteration", 0]]]]]]],
        "Dynarray.%s: a length change from %d to %d occurred during iteration"];
-   function check_same_length(f, _I_, expected){
+   function check_same_length(f, _H_, expected){
     var
-     length_a =  /*<<dynarray.ml:452:2>>*/ _I_[1],
-     _I_ =  /*<<dynarray.ml:453:2>>*/ expected !== length_a ? 1 : 0;
-    return _I_
+     length_a =  /*<<dynarray.ml:452:2>>*/ _H_[1],
+     _H_ =  /*<<dynarray.ml:453:2>>*/ expected !== length_a ? 1 : 0;
+    return _H_
             ?  /*<<dynarray.ml:424:4>>*/ caml_call3
               (Stdlib_Printf[10].call(null, Stdlib[1], _m_),
                f,
                expected,
                length_a)
-            : _I_ /*<<dynarray.ml:455:41>>*/ ;
+            : _H_ /*<<dynarray.ml:455:41>>*/ ;
    }
    var
     _l_ =
@@ -32527,14 +32527,14 @@
    function check_valid_length(length, arr){
     var
      capacity =  /*<<dynarray.ml:462:2>>*/ arr.length - 1,
-     _I_ =  /*<<dynarray.ml:463:2>>*/ capacity < length ? 1 : 0;
-    return _I_
+     _H_ =  /*<<dynarray.ml:463:2>>*/ capacity < length ? 1 : 0;
+    return _H_
             ?  /*<<dynarray.ml:418:4>>*/ caml_call3
               (Stdlib_Printf[10].call(null, Stdlib[1], _l_),
                invalid_state_description,
                length,
                capacity)
-            : _I_ /*<<dynarray.ml:464:42>>*/ ;
+            : _H_ /*<<dynarray.ml:464:42>>*/ ;
    }
    function unsafe_get(arr, dummy, i, length){
     var v =  /*<<dynarray.ml:471:10>>*/ arr[i + 1];
@@ -32548,8 +32548,8 @@
    function make(n, x){
      /*<<dynarray.ml:487:2>>*/ if(n < 0)
       /*<<dynarray.ml:487:16>>*/ negative_length_requested("make", n);
-    var _I_ =  /*<<dynarray.ml:244:14>>*/ Stdlib_Obj[16];
-    if(caml_obj_tag(x) !== _I_)
+    var _H_ =  /*<<dynarray.ml:244:14>>*/ Stdlib_Obj[16];
+    if(caml_obj_tag(x) !== _H_)
      var
       arr$0 =
          /*<<dynarray.ml:245:31>>*/  /*<<dynarray.ml:245:8>>*/ caml_array_make
@@ -32566,15 +32566,15 @@
       /*<<dynarray.ml:497:16>>*/ negative_length_requested("init", n);
     var
      arr =  /*<<dynarray.ml:291:16>>*/ caml_array_make(n, dummy),
-     _H_ =  /*<<dynarray.ml:292:6>>*/ n - 1 | 0;
-    if(_H_ >= 0){
+     _G_ =  /*<<dynarray.ml:292:6>>*/ n - 1 | 0;
+    if(_G_ >= 0){
      var i = 0;
      for(;;){
       var v =  /*<<dynarray.ml:293:39>>*/ caml_call1(f, i);
        /*<<dynarray.ml:293:8>>*/ arr[i + 1] = v;
-      var _I_ =  /*<<dynarray.ml:293:45>>*/ i + 1 | 0;
-      if(_H_ === i) break;
-      i = _I_;
+      var _H_ =  /*<<dynarray.ml:293:45>>*/ i + 1 | 0;
+      if(_G_ === i) break;
+      i = _H_;
      }
     }
      /*<<dynarray.ml:500:2>>*/ return [0, n, arr, dummy];
@@ -32672,14 +32672,14 @@
    function remove_last(a){
     var
      last =  /*<<dynarray.ml:570:2>>*/ a[1] - 1 | 0,
-     _H_ =  /*<<dynarray.ml:571:2>>*/ 0 <= last ? 1 : 0;
-    if(_H_){
+     _G_ =  /*<<dynarray.ml:571:2>>*/ 0 <= last ? 1 : 0;
+    if(_G_){
       /*<<dynarray.ml:571:20>>*/ a[1] = last;
      var dummy =  /*<<dynarray.ml:573:4>>*/ a[3];
      caml_check_bound(a[2], last)[last + 1] = dummy;
-      /*<<dynarray.ml:573:42>>*/ _H_ = 0;
+      /*<<dynarray.ml:573:42>>*/ _G_ = 0;
     }
-     /*<<dynarray.ml:571:2>>*/ return _H_;
+     /*<<dynarray.ml:571:2>>*/ return _G_;
     /*<<dynarray.ml:574:5>>*/ }
    function truncate(a, n){
      /*<<dynarray.ml:577:2>>*/ if(n < 0)
@@ -32722,30 +32722,30 @@
     var
      arr =  /*<<dynarray.ml:611:2>>*/ a[2],
      cur_capacity =  /*<<dynarray.ml:612:2>>*/ arr.length - 1,
-     _G_ =  /*<<?>>*/ "ensure_capacity";
+     _F_ =  /*<<?>>*/ "ensure_capacity";
      /*<<dynarray.ml:613:2>>*/ if(0 > capacity_request)
       /*<<dynarray.ml:614:4>>*/ return negative_capacity_requested
-             (_G_, capacity_request) /*<<dynarray.ml:646:5>>*/ ;
+             (_F_, capacity_request) /*<<dynarray.ml:646:5>>*/ ;
      /*<<dynarray.ml:615:7>>*/ if(capacity_request <= cur_capacity)
       /*<<dynarray.ml:619:4>>*/ return 0;
      /*<<dynarray.ml:620:7>>*/ if(Stdlib_Sys[14] < capacity_request){
-     var _H_ =  /*<<dynarray.ml:398:4>>*/ Stdlib_Sys[14];
+     var _G_ =  /*<<dynarray.ml:398:4>>*/ Stdlib_Sys[14];
      caml_call3
       (Stdlib_Printf[10].call(null, Stdlib[1], _j_),
-       _G_,
+       _F_,
        capacity_request,
-       _H_);
+       _G_);
     }
     var
      n =
         /*<<dynarray.ml:593:2>>*/ 512 < cur_capacity
         ? cur_capacity + (cur_capacity / 2 | 0) | 0
         : cur_capacity * 2 | 0,
-     _G_ =  /*<<dynarray.ml:608:6>>*/ Stdlib_Sys[14],
-     _H_ = Stdlib[17].call(null, 8, n),
-     _G_ =  /*<<dynarray.ml:608:16>>*/ Stdlib[16].call(null, _H_, _G_),
+     _F_ =  /*<<dynarray.ml:608:6>>*/ Stdlib_Sys[14],
+     _G_ = Stdlib[17].call(null, 8, n),
+     _F_ =  /*<<dynarray.ml:608:16>>*/ Stdlib[16].call(null, _G_, _F_),
      new_capacity =
-        /*<<dynarray.ml:638:6>>*/ Stdlib[17].call(null, _G_, capacity_request);
+        /*<<dynarray.ml:638:6>>*/ Stdlib[17].call(null, _F_, capacity_request);
      /*<<dynarray.ml:639:4>>*/ if(0 >= new_capacity)
      throw caml_maybe_attach_backtrace([0, Assert_failure, _r_], 1);
     var
@@ -32782,12 +32782,12 @@
       /*<<dynarray.ml:663:37>>*/ return 0;
     }
     var
-     _G_ =  /*<<dynarray.ml:665:7>>*/ cur_capacity < n ? 1 : 0,
-     _G_ =
-       _G_
+     _F_ =  /*<<dynarray.ml:665:7>>*/ cur_capacity < n ? 1 : 0,
+     _F_ =
+       _F_
         ? (a[2] =  /*<<dynarray.ml:667:6>>*/ extend(arr, a[1], a[3], n), 0)
-        : _G_;
-     /*<<dynarray.ml:665:7>>*/ return _G_;
+        : _F_;
+     /*<<dynarray.ml:665:7>>*/ return _F_;
     /*<<dynarray.ml:668:5>>*/ }
    function reset(param){
      /*<<dynarray.ml:671:2>>*/ param[1] = 0;
@@ -32805,8 +32805,8 @@
       /*<<dynarray.ml:701:31>>*/ return 0;
      /*<<dynarray.ml:701:25>>*/ for(;;){
       /*<<dynarray.ml:705:6>>*/ ensure_extra_capacity(a, 1);
-     var _G_ =  /*<<dynarray.ml:706:13>>*/ 1 - add_last_if_room(a, x);
-      /*<<dynarray.ml:706:35>>*/ if(! _G_) return _G_;
+     var _F_ =  /*<<dynarray.ml:706:13>>*/ 1 - add_last_if_room(a, x);
+      /*<<dynarray.ml:706:35>>*/ if(! _F_) return _F_;
     }
     /*<<dynarray.ml:709:5>>*/ }
    function append_list(a, li$0){
@@ -32883,14 +32883,14 @@
             ([0, Assert_failure, _d_], 1);
      /*<<dynarray.ml:327:8>>*/ if(src_arr === dst_arr)
      throw caml_maybe_attach_backtrace([0, Assert_failure, _e_], 1);
-    var _F_ =  /*<<dynarray.ml:331:8>>*/ blit_length - 1 | 0;
-    if(_F_ >= 0){
+     /*<<dynarray.ml:331:8>>*/ _E_ = blit_length - 1 | 0;
+    if(_E_ >= 0){
      var i = 0;
      for(;;){
        /*<<dynarray.ml:332:10>>*/ dst_arr[(dst_pos + i | 0) + 1] = src_arr[(src_pos + i | 0) + 1];
-      var _G_ =  /*<<dynarray.ml:333:48>>*/ i + 1 | 0;
-      if(_F_ === i) break;
-      i = _G_;
+      var _F_ =  /*<<dynarray.ml:333:48>>*/ i + 1 | 0;
+      if(_E_ === i) break;
+      i = _F_;
      }
     }
      /*<<dynarray.ml:331:8>>*/ return 0;
