@@ -148,6 +148,73 @@ end
 module ConvSet = Set.Make (Conv)
 module ConvMap = Map.Make (Conv)
 
+(* Sets of the conversions of a function, as bit vectors indexed by the
+   rank of the conversion in the set of all its conversions. The data flow
+   analyses keep several sets per block: balanced trees would take memory
+   proportional to the number of blocks times the number of conversions,
+   which is too much for large functions. All the sets of a function have
+   the same length. *)
+module Bits : sig
+  type t
+
+  val empty : int -> t
+
+  val full : int -> t
+  (** [full n] contains the conversions of rank [0] to [n - 1] *)
+
+  val mem : t -> int -> bool
+
+  val add : t -> int -> unit
+
+  val union : t -> t -> t
+
+  val inter : t -> t -> t
+
+  val diff : t -> t -> t
+
+  val equal : t -> t -> bool
+
+  val iter : f:(int -> unit) -> t -> unit
+end = struct
+  type t = int array
+
+  let length n = (n + Sys.int_size - 1) / Sys.int_size
+
+  let empty n = Array.make (length n) 0
+
+  let full n =
+    let a = Array.make (length n) (-1) in
+    let r = n mod Sys.int_size in
+    if r <> 0 then a.(Array.length a - 1) <- (1 lsl r) - 1;
+    a
+
+  let mem a i = a.(i / Sys.int_size) land (1 lsl (i mod Sys.int_size)) <> 0
+
+  let add a i =
+    let j = i / Sys.int_size in
+    a.(j) <- a.(j) lor (1 lsl (i mod Sys.int_size))
+
+  let union a b = Array.mapi ~f:(fun i x -> x lor b.(i)) a
+
+  let inter a b = Array.mapi ~f:(fun i x -> x land b.(i)) a
+
+  let diff a b = Array.mapi ~f:(fun i x -> x land lnot b.(i)) a
+
+  let equal a b =
+    let rec loop i = i < 0 || (a.(i) = b.(i) && loop (i - 1)) in
+    loop (Array.length a - 1)
+
+  let iter ~f a =
+    Array.iteri
+      ~f:(fun j x ->
+        if x <> 0
+        then
+          for k = 0 to Sys.int_size - 1 do
+            if x land (1 lsl k) <> 0 then f ((j * Sys.int_size) + k)
+          done)
+      a
+end
+
 let prim_of_kind kind = Wasm_conversion kind
 
 let kind_of_prim p =
@@ -708,8 +775,7 @@ let get_all_conversions blocks types ~assigned =
    - [kill]: conversions which are not transparent: their operand is killed
      in this block, or their result should not be kept live across a call
      and the block contains a call. The transparent conversions are the
-     other ones. Only the conversions which are not transparent are
-     represented, as there are usually few of them.
+     other ones.
    - [kill_ant]: the conversions which cannot be anticipated through this
      block: the ones in [kill], and the conversions which may fail
      ([is_safe_conversion]) if the block contains an instruction which may
@@ -725,10 +791,10 @@ let get_all_conversions blocks types ~assigned =
      anticipatable: the operand's value at block entry reaches the
      conversion.) *)
 type block_props =
-  { kill : ConvSet.t
-  ; kill_ant : ConvSet.t
-  ; comp : ConvSet.t
-  ; antloc : ConvSet.t
+  { kill : Bits.t
+  ; kill_ant : Bits.t
+  ; comp : Bits.t
+  ; antloc : Bits.t
   }
 
 let remove_conversions_of_var convs v =
@@ -844,8 +910,10 @@ let is_call i =
   | Let _ | Assign _ | Set_field _ | Offset_ref _ | Array_set _ | Event _ -> false
 
 (* [not_live_convs] and [unsafe_convs] are the conversions whose result
-   should not be kept live across a call, and those which may fail *)
-let compute_local_props convs_by_operand ~not_live_convs ~unsafe_convs is_safe block =
+   should not be kept live across a call, and those which may fail; [bits]
+   converts a set of conversions into a bit vector *)
+let compute_local_props convs_by_operand ~not_live_convs ~unsafe_convs ~bits is_safe block
+    =
   (* Block parameters are definitions. They kill conversions involving them. *)
   let killed_vars =
     List.fold_left
@@ -856,15 +924,15 @@ let compute_local_props convs_by_operand ~not_live_convs ~unsafe_convs is_safe b
       ~init:block.params
       block.body
   in
-  let kill = conversions_of_vars convs_by_operand killed_vars in
+  let kill = bits (conversions_of_vars convs_by_operand killed_vars) in
   (* A call also ends the availability of the conversions whose result
      should not be kept live across calls *)
   let kill =
-    if List.exists ~f:is_call block.body then ConvSet.union kill not_live_convs else kill
+    if List.exists ~f:is_call block.body then Bits.union kill not_live_convs else kill
   in
   let kill_ant =
     if List.exists ~f:Typing.may_raise block.body
-    then ConvSet.union kill unsafe_convs
+    then Bits.union kill unsafe_convs
     else kill
   in
   let comp = ref ConvSet.empty in
@@ -904,7 +972,7 @@ let compute_local_props convs_by_operand ~not_live_convs ~unsafe_convs is_safe b
       | Set_field _ | Offset_ref _ | Array_set _ | Event _ -> ());
       if Typing.may_raise i then seen_raise := true)
     block.body;
-  { kill; kill_ant; comp = !comp; antloc = !antloc }
+  { kill; kill_ant; comp = bits !comp; antloc = bits !antloc }
 
 module CFG = struct
   let successors blocks pc =
@@ -1614,11 +1682,44 @@ let process_function
     let t0 = tick () in
     let is_safe conv = is_safe_conversion types conv in
     let convs_by_operand = conversions_by_operand all_convs in
-    let not_live_convs = ConvSet.filter not_live_across_calls all_convs in
-    let unsafe_convs = ConvSet.filter (fun c -> not (is_safe c)) all_convs in
+    (* The rank of each conversion, for its bit vector representation *)
+    let n_convs = ConvSet.cardinal all_convs in
+    let conv_of_rank = Array.of_list (ConvSet.elements all_convs) in
+    let rank_of_conv = ref ConvMap.empty in
+    Array.iteri
+      ~f:(fun i conv -> rank_of_conv := ConvMap.add conv i !rank_of_conv)
+      conv_of_rank;
+    let rank_of_conv conv = ConvMap.find_opt conv !rank_of_conv in
+    (* The conversions of the assigned variables are not tracked: they are
+       left where they are, and are never available at the beginning of a
+       block *)
+    let bits convs =
+      let b = Bits.empty n_convs in
+      ConvSet.iter
+        (fun conv ->
+          match rank_of_conv conv with
+          | Some i -> Bits.add b i
+          | None -> ())
+        convs;
+      b
+    in
+    let mem_conv convs conv =
+      match rank_of_conv conv with
+      | Some i -> Bits.mem convs i
+      | None -> false
+    in
+    let all_convs = Bits.full n_convs in
+    let no_convs = Bits.empty n_convs in
+    let not_live_convs = Bits.empty n_convs in
+    let unsafe_convs = Bits.empty n_convs in
+    Array.iteri
+      ~f:(fun i conv ->
+        if not_live_across_calls conv then Bits.add not_live_convs i;
+        if not (is_safe conv) then Bits.add unsafe_convs i)
+      conv_of_rank;
     let props =
       Addr.Map.map
-        (compute_local_props convs_by_operand ~not_live_convs ~unsafe_convs is_safe)
+        (compute_local_props convs_by_operand ~not_live_convs ~unsafe_convs ~bits is_safe)
         fun_blocks
     in
     let preds = CFG.predecessors fun_blocks in
@@ -1645,9 +1746,10 @@ let process_function
     (* The conversions of the parameters of each block *)
     let param_convs_of =
       Array.init n_blocks ~f:(fun i ->
-          conversions_of_vars
-            convs_by_operand
-            (Addr.Map.find rpo_order.(i) fun_blocks).params)
+          bits
+            (conversions_of_vars
+               convs_by_operand
+               (Addr.Map.find rpo_order.(i) fun_blocks).params))
     in
     (* Step 1: Anticipatability (backward dataflow, all-paths).
 
@@ -1674,19 +1776,19 @@ let process_function
         let succs = succs_of.(ri) in
         let new_antout =
           if List.is_empty succs
-          then ConvSet.empty
+          then no_convs
           else
             List.fold_left
               ~f:(fun acc succ ->
                 let si = Addr.Hashtbl.find rpo_index succ in
-                ConvSet.inter acc (ConvSet.diff antin.(si) param_convs_of.(si)))
+                Bits.inter acc (Bits.diff antin.(si) param_convs_of.(si)))
               ~init:all_convs
               succs
         in
         let new_antin =
-          ConvSet.union b_props.antloc (ConvSet.diff new_antout b_props.kill_ant)
+          Bits.union b_props.antloc (Bits.diff new_antout b_props.kill_ant)
         in
-        if not (ConvSet.equal antin.(ri) new_antin)
+        if not (Bits.equal antin.(ri) new_antin)
         then (
           antin.(ri) <- new_antin;
           changed := true)
@@ -1707,7 +1809,7 @@ let process_function
        available — this is the first point where inserting it is both useful
        and correct. *)
     let avout = Array.make n_blocks all_convs in
-    avout.(0) <- ConvSet.empty;
+    avout.(0) <- no_convs;
     changed := true;
     while !changed do
       changed := false;
@@ -1719,15 +1821,15 @@ let process_function
         let ps = preds_of.(ri) in
         let new_avin =
           if pc = entry || List.is_empty ps
-          then ConvSet.empty
+          then no_convs
           else
             List.fold_left
-              ~f:(fun acc p' -> ConvSet.inter acc avout.(Addr.Hashtbl.find rpo_index p'))
+              ~f:(fun acc p' -> Bits.inter acc avout.(Addr.Hashtbl.find rpo_index p'))
               ~init:all_convs
               ps
         in
-        let new_avout = ConvSet.union b_props.comp (ConvSet.diff new_avin b_props.kill) in
-        if not (ConvSet.equal avout.(ri) new_avout)
+        let new_avout = Bits.union b_props.comp (Bits.diff new_avin b_props.kill) in
+        if not (Bits.equal avout.(ri) new_avout)
         then (
           avout.(ri) <- new_avout;
           changed := true)
@@ -1738,14 +1840,14 @@ let process_function
           let pc = rpo_order.(ri) in
           let ps = preds_of.(ri) in
           if pc = entry || List.is_empty ps
-          then ConvSet.empty
+          then no_convs
           else
             List.fold_left
-              ~f:(fun acc p' -> ConvSet.inter acc avout.(Addr.Hashtbl.find rpo_index p'))
+              ~f:(fun acc p' -> Bits.inter acc avout.(Addr.Hashtbl.find rpo_index p'))
               ~init:all_convs
               ps)
     in
-    let earliest = Array.init n_blocks ~f:(fun ri -> ConvSet.diff antin.(ri) avin.(ri)) in
+    let earliest = Array.init n_blocks ~f:(fun ri -> Bits.diff antin.(ri) avin.(ri)) in
     (* Step 3: Delayability (forward dataflow, all-paths).
 
        DELAYIN(b) = set of conversions whose earliest placement can be delayed
@@ -1772,17 +1874,17 @@ let process_function
           if pc = entry || List.is_empty ps
           then earliest.(ri)
           else
-            ConvSet.union
+            Bits.union
               earliest.(ri)
               (List.fold_left
                  ~f:(fun acc p' ->
-                   ConvSet.inter acc delayout.(Addr.Hashtbl.find rpo_index p'))
+                   Bits.inter acc delayout.(Addr.Hashtbl.find rpo_index p'))
                  ~init:all_convs
                  ps)
         in
         delayin.(ri) <- new_delayin;
-        let new_delayout = ConvSet.diff new_delayin b_props.antloc in
-        if not (ConvSet.equal delayout.(ri) new_delayout)
+        let new_delayout = Bits.diff new_delayin b_props.antloc in
+        if not (Bits.equal delayout.(ri) new_delayout)
         then (
           delayout.(ri) <- new_delayout;
           changed := true)
@@ -1806,19 +1908,16 @@ let process_function
           let b_props = props_of.(ri) in
           let delayin_succs_intersect =
             if List.is_empty succs
-            then ConvSet.empty
+            then no_convs
             else
               List.fold_left
-                ~f:(fun acc s ->
-                  ConvSet.inter acc delayin.(Addr.Hashtbl.find rpo_index s))
+                ~f:(fun acc s -> Bits.inter acc delayin.(Addr.Hashtbl.find rpo_index s))
                 ~init:all_convs
                 succs
           in
-          ConvSet.inter
+          Bits.inter
             delayin_pc
-            (ConvSet.union
-               b_props.antloc
-               (ConvSet.diff all_convs delayin_succs_intersect)))
+            (Bits.union b_props.antloc (Bits.diff all_convs delayin_succs_intersect)))
     in
     (* Step 5: Isolation (backward dataflow, all-paths).
 
@@ -1848,15 +1947,15 @@ let process_function
           List.fold_left
             ~f:(fun acc s ->
               let si = Addr.Hashtbl.find rpo_index s in
-              ConvSet.inter acc (ConvSet.union isolatedin.(si) param_convs_of.(si)))
+              Bits.inter acc (Bits.union isolatedin.(si) param_convs_of.(si)))
             ~init:all_convs
             succs
         in
         isolatedout.(ri) <- new_isolatedout;
         let new_isolatedin =
-          ConvSet.union latest.(ri) (ConvSet.diff new_isolatedout b_props.antloc)
+          Bits.union latest.(ri) (Bits.diff new_isolatedout b_props.antloc)
         in
-        if not (ConvSet.equal isolatedin.(ri) new_isolatedin)
+        if not (Bits.equal isolatedin.(ri) new_isolatedin)
         then (
           isolatedin.(ri) <- new_isolatedin;
           changed := true)
@@ -1940,7 +2039,7 @@ let process_function
                 tl
         in
         let pc_avin = Addr.Map.find pc avin in
-        let safe_conv_in = ConvMap.filter (fun k _ -> ConvSet.mem k pc_avin) conv_in in
+        let safe_conv_in = ConvMap.filter (fun k _ -> mem_conv pc_avin k) conv_in in
         (* Handle conversions present in ALL predecessors with different variables:
            create a phi to merge them. Only at fully-processed merge points. *)
         let safe_conv_in =
@@ -1956,7 +2055,7 @@ let process_function
                   (fun conv _var acc ->
                     if ConvMap.mem conv acc
                     then acc (* already in conv_in with same variable *)
-                    else if not (ConvSet.mem conv pc_avin)
+                    else if not (mem_conv pc_avin conv)
                     then acc
                     else if
                       (* Check: all preds have it? *)
@@ -1983,7 +2082,10 @@ let process_function
           else safe_conv_in
         in
         let to_insert =
-          ConvSet.diff (Addr.Map.find pc latest) (Addr.Map.find pc !isolatedout)
+          let b = Bits.diff (Addr.Map.find pc latest) (Addr.Map.find pc !isolatedout) in
+          let s = ref [] in
+          Bits.iter ~f:(fun i -> s := conv_of_rank.(i) :: !s) b;
+          List.rev !s
         in
         let inserted_rev = ref [] in
         let conv_to_var = ref (ConvTracker.of_map safe_conv_in) in
@@ -1994,8 +2096,8 @@ let process_function
            Only at fully-processed non-loop merge points (same guard as the
            all-preds phi insertion above). *)
         let to_insert_remaining = ref ConvSet.empty in
-        ConvSet.iter
-          (fun ((kind, arg) as conv) ->
+        List.iter
+          ~f:(fun ((kind, arg) as conv) ->
             if all_preds_processed && List.length preds_pc > 1
             then
               let preds_with =
