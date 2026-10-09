@@ -1,6 +1,8 @@
 # dev
 
 ## Features/Changes
+* Compiler/Wasm: link with our own linker, which also removes dead code,
+  instead of wasm-merge and wasm-metadce: faster compilation (#2506)
 * Compiler: with OCaml 5.6, use the optimization hints recorded in the bytecode
   (primitive types, immutable blocks, closures, immediates, ...) (#1721, #2488)
 * Compiler: with OCaml 5.6, use the bytecode hint on integer equality tests
