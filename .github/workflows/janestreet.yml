@@ -25,7 +25,8 @@ jobs:
       OXCAML_OPAM_REPO_REF: d89747aa6e7b9f44d6cc844dca5b5e7c8a90716f
 
     strategy:
-      fail-fast: false
+      # On pull requests, free the runners as soon as a job fails
+      fail-fast: ${{ github.event_name == 'pull_request' }}
       matrix:
         include:
           - backend: js

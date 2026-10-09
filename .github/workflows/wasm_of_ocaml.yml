@@ -20,7 +20,8 @@ jobs:
       OXCAML_OPAM_REPO_REF: d89747aa6e7b9f44d6cc844dca5b5e7c8a90716f
 
     strategy:
-      fail-fast: false
+      # On pull requests, free the runners as soon as a job fails
+      fail-fast: ${{ github.event_name == 'pull_request' }}
       matrix:
         # 4.14 and 5.5 are tested on all three OSes; build-only compiler
         # coverage lives in the build workflow. 5.5 exercises the toplevel
