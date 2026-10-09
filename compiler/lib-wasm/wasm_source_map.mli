@@ -26,7 +26,14 @@ type resize_data =
   ; mutable delta : int array
   }
 
-val resize : resize_data -> Source_map.Standard.t -> Source_map.Standard.t
+val resize :
+     ?dead_ranges:(int * int) list
+  -> resize_data
+  -> Source_map.Standard.t
+  -> Source_map.Standard.t
+(** Shift the generated columns according to [resize_data]. The mappings
+    whose generated column is in one of the [dead_ranges] [\[start, end)]
+    (sorted and disjoint) are removed first. *)
 
 val concatenate : (int * Source_map.Standard.t) list -> Source_map.t
 

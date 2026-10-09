@@ -1185,7 +1185,7 @@ let make_library ~linkall ~output_file ~enable_source_maps ~files =
       ~output_file:tmp_wasm_file
   in
   Zip.add_file z ~name:"code.wasm" ~file:tmp_wasm_file;
-  if enable_source_maps then add_source_map files z output_sourcemap;
+  if enable_source_maps then add_source_map files z output_sourcemap.source_map;
   Zip.close_out z
 
 let link ~output_file ~linkall ~mklib ~enable_source_maps ~embedded_files ~files =

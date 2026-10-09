@@ -32,77 +32,140 @@ type input = Vlq64.input =
   ; len : int
   }
 
-let rec next' src mappings pos len =
-  pos < len
-  &&
-  match mappings.[pos] with
-  | ',' ->
-      src.pos <- pos + 1;
-      true
-  | _ -> next' src mappings (pos + 1) len
+(* Shift each generated column by the cumulative [resize_data] delta at
+   this column, dropping the segments in the [dead_ranges] [\[start, end)]
+   (sorted and disjoint), which belong to removed code, as well as the
+   segments whose column would become negative. The fields following the
+   generated column of a segment (source index, original line and column,
+   name index) are encoded as deltas relative to the previous segment
+   with these fields: the deltas of a dropped segment are folded into the
+   next segment emitted with the corresponding field.
 
-let next src = next' src src.string src.pos src.len
-
-let flush buf src start pos =
-  if start < pos then Buffer.add_substring buf src.string start (pos - start)
-
-let rec resize_rec buf start src resize_data i col0 delta0 col =
-  let pos = src.pos in
-  let delta = Vlq64.decode src in
-  let col = col + delta in
-  if col < col0
-  then
-    if next src
-    then resize_rec buf start src resize_data i col0 delta0 col
-    else flush buf src start src.len
-  else
-    let delta = delta + delta0 in
-    adjust buf start src resize_data i col delta pos
-
-and adjust buf start src (resize_data : resize_data) i col delta pos =
-  assert (delta > 0);
-  if i < resize_data.i
-  then
-    let col0 = resize_data.pos.(i) in
-    let delta0 = resize_data.delta.(i) in
-    if col < col0
-    then (
-      flush buf src start pos;
-      Vlq64.encode buf delta;
-      let start = src.pos in
-      if next src
-      then resize_rec buf start src resize_data (i + 1) col0 delta0 col
-      else flush buf src start src.len)
-    else
-      let delta = delta + delta0 in
-      adjust buf start src resize_data (i + 1) col delta pos
-  else (
-    flush buf src start pos;
-    Vlq64.encode buf delta;
-    let start = src.pos in
-    flush buf src start src.len)
-
-let resize_mappings (resize_data : resize_data) mappings =
-  if String.equal mappings "" || resize_data.i = 0
+   The segment without origin which terminates a function is located at
+   the start of the next function. If it is dropped with the next
+   function, the location of the last segment emitted would extend past
+   its function: we emit a segment without origin at the start of the
+   range instead, unless a segment is kept at the end of the range. *)
+let resize_mappings ~dead_ranges (resize_data : resize_data) mappings =
+  if String.equal mappings "" || (resize_data.i = 0 && List.is_empty dead_ranges)
   then mappings
   else
-    let col0 = resize_data.pos.(0) in
-    let delta0 = resize_data.delta.(0) in
+    let src = { Vlq64.string = mappings; pos = 0; len = String.length mappings } in
     let buf = Buffer.create (String.length mappings) in
-    resize_rec
-      buf
-      0
-      { Vlq64.string = mappings; pos = 0; len = String.length mappings }
-      resize_data
-      1
-      col0
-      delta0
-      0;
+    let col = ref 0 in
+    let new_col_acc = ref 0 in
+    let idx = ref 0 in
+    let shift = ref 0 in
+    let pending_source = ref 0 in
+    let pending_line = ref 0 in
+    let pending_col = ref 0 in
+    let pending_name = ref 0 in
+    let emitted = ref false in
+    let ranges = ref dead_ranges in
+    (* When a segment of the current range has been dropped, the output
+       column of the start of the range *)
+    let range_start = ref None in
+    let last_has_origin = ref false in
+    let advance col =
+      while !idx < resize_data.i && col >= resize_data.pos.(!idx) do
+        shift := !shift + resize_data.delta.(!idx);
+        incr idx
+      done
+    in
+    let emit_column new_col ~has_origin =
+      if !emitted then Buffer.add_char buf ',';
+      emitted := true;
+      Vlq64.encode buf (new_col - !new_col_acc);
+      new_col_acc := new_col;
+      last_has_origin := has_origin
+    in
+    let end_range ~next =
+      (match !range_start with
+      | Some new_col when !last_has_origin && new_col >= 0 && not next ->
+          emit_column new_col ~has_origin:false
+      | Some _ | None -> ());
+      range_start := None
+    in
+    let rec leave_ranges col =
+      match !ranges with
+      | (_, end_) :: rem when col >= end_ ->
+          end_range ~next:(col = end_);
+          ranges := rem;
+          leave_ranges col
+      | _ -> ()
+    in
+    (* Called before advancing to [col] *)
+    let in_range col =
+      match !ranges with
+      | (start, _) :: _ when col >= start ->
+          if Option.is_none !range_start
+          then (
+            advance start;
+            range_start := Some (start + !shift));
+          true
+      | _ -> false
+    in
+    (* The generated column is already decoded: read the other fields of
+       the segment *)
+    let rec read_tail acc =
+      if src.pos < src.len && Vlq64.in_alphabet src.string.[src.pos]
+      then read_tail (Vlq64.decode src :: acc)
+      else List.rev acc
+    in
+    let accumulate tail =
+      match tail with
+      | source :: line :: column :: rest -> (
+          pending_source := !pending_source + source;
+          pending_line := !pending_line + line;
+          pending_col := !pending_col + column;
+          match rest with
+          | name :: _ -> pending_name := !pending_name + name
+          | [] -> ())
+      | _ -> ()
+    in
+    let emit_tail tail =
+      match tail with
+      | source :: line :: column :: rest -> (
+          Vlq64.encode buf (source + !pending_source);
+          Vlq64.encode buf (line + !pending_line);
+          Vlq64.encode buf (column + !pending_col);
+          pending_source := 0;
+          pending_line := 0;
+          pending_col := 0;
+          match rest with
+          | [] -> ()
+          | name :: rest ->
+              Vlq64.encode buf (name + !pending_name);
+              pending_name := 0;
+              List.iter ~f:(fun x -> Vlq64.encode buf x) rest)
+      | fields -> List.iter ~f:(fun x -> Vlq64.encode buf x) fields
+    in
+    let rec segment () =
+      if src.pos < src.len && Vlq64.in_alphabet src.string.[src.pos]
+      then (
+        col := !col + Vlq64.decode src;
+        let tail = read_tail [] in
+        leave_ranges !col;
+        let dropped = in_range !col in
+        advance !col;
+        let new_col = !col + !shift in
+        if dropped || new_col < 0
+        then accumulate tail
+        else (
+          emit_column new_col ~has_origin:(not (List.is_empty tail));
+          emit_tail tail));
+      if src.pos < src.len && Char.equal src.string.[src.pos] ','
+      then (
+        src.pos <- src.pos + 1;
+        segment ())
+    in
+    segment ();
+    end_range ~next:false;
     Buffer.contents buf
 
-let resize resize_data (sm : Source_map.Standard.t) =
+let resize ?(dead_ranges = []) resize_data (sm : Source_map.Standard.t) =
   let mappings = Source_map.Mappings.to_string sm.mappings in
-  let mappings = resize_mappings resize_data mappings in
+  let mappings = resize_mappings ~dead_ranges resize_data mappings in
   { sm with mappings = Source_map.Mappings.of_string_unsafe mappings }
 
 let is_empty { Source_map.Standard.mappings; _ } = Source_map.Mappings.is_empty mappings

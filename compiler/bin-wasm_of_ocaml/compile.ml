@@ -818,7 +818,7 @@ let run
                Fs.with_intermediate_file (Filename.temp_file "wasm" ".wasm")
                @@ fun tmp_wasm_file ->
                let l = List.rev l in
-               let source_map =
+               let { Wasm_link.source_map; _ } =
                  Wasm_link.f
                    (List.map
                       ~f:(fun (_, _, file, opt_source_map, _, _) ->
