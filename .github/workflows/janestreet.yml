@@ -223,9 +223,28 @@ jobs:
             master_args+=("$a")
           done
           /usr/bin/time -f "branch $name: %e s, %M KB maxrss, exit %x" -a -o $WASMOO_LOG $WASMOO_BRANCH "$@" || exit
-          /usr/bin/time -f "master $name: %e s, %M KB maxrss, exit %x" -a -o $WASMOO_LOG $WASMOO_MASTER "${master_args[@]}" > /dev/null 2>&1
+          /usr/bin/time -f "master $name: %e s, %M KB maxrss, exit %x" -a -o $WASMOO_LOG $WASMOO_MASTER "${master_args[@]}" > $RUNNER_TEMP/master.out 2>&1
+          grep -v "^Warning\|^Dummy\|^Missing\|^ *[a-z_0-9]*$" $RUNNER_TEMP/master.out | tail -5 >> $WASMOO_LOG
+          # Save the inputs of this link, to replay it elsewhere
+          case $PWD in
+            *query_box*)
+              d=$RUNNER_TEMP/wasmoo-inputs; mkdir -p $d; i=0; saved=()
+              for a in "$@"; do
+                if [ -f "$a" ] && [[ $a != *.wasm.js ]]; then i=$((i+1)); cp "$a" $d/$i-$(basename "$a"); a=$i-$(basename "$a"); fi
+                saved+=("$a")
+              done
+              printf '%s\n' "${saved[@]}" > $d/args.txt ;;
+          esac
           rm -rf $RUNNER_TEMP/master.wasm.js $RUNNER_TEMP/master.wasm.assets
           WRAP
           chmod +x $RUNNER_TEMP/wrap/wasm_of_ocaml
           touch $WASMOO_LOG; tail -f $WASMOO_LOG &
-          opam exec -- bash -c 'PATH=$RUNNER_TEMP/wrap:$PATH dune runtest --profile release --display short -j 1'
+          opam exec -- bash -c 'PATH=$RUNNER_TEMP/wrap:$PATH dune runtest --profile release --display short -j 1 query_box/test'
+
+      - name: Upload the inputs of the query_box link
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: wasmoo-inputs
+          path: ${{ runner.temp }}/wasmoo-inputs
+          retention-days: 3
