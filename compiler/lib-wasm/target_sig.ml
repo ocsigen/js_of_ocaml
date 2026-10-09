@@ -289,9 +289,11 @@ module type S = sig
     val num_dims : expression -> expression
     (** The number of dimensions of a bigarray, as an [i32] *)
 
+    (* For [get] and [set], [bound_error_index] is the label to branch to when an
+       index is out of bounds, or [None] when the indices are not checked *)
+
     val get :
-         bound_error_index:int
-      -> unsafe:bool
+         bound_error_index:int option
       -> kind:Optimization_hint.Bigarray.kind
       -> layout:Optimization_hint.Bigarray.layout
       -> expression
@@ -299,8 +301,7 @@ module type S = sig
       -> expression
 
     val set :
-         bound_error_index:int
-      -> unsafe:bool
+         bound_error_index:int option
       -> kind:Optimization_hint.Bigarray.kind
       -> layout:Optimization_hint.Bigarray.layout
       -> expression
