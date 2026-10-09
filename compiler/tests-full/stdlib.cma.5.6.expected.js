@@ -15776,9 +15776,9 @@
       /*<<buffer.ml:151:7>>*/ Stdlib[1].call(null, "Buffer.add_substring");
     var
      position =  /*<<buffer.ml:152:2>>*/ b[2],
-     match =  /*<<buffer.ml:153:2>>*/ b[1],
-     length = match[2],
-     buffer = match[1],
+     _c_ =  /*<<buffer.ml:153:2>>*/ b[1],
+     length = _c_[2],
+     buffer = _c_[1],
      new_position =  /*<<buffer.ml:154:2>>*/ position + len | 0;
      /*<<buffer.ml:155:2>>*/ if(length < new_position){
       /*<<buffer.ml:156:4>>*/ resize(b, len);
@@ -15803,9 +15803,9 @@
       /*<<buffer.ml:164:7>>*/ Stdlib[1].call(null, "Buffer.add_subbytes");
     var
      position =  /*<<buffer.ml:165:2>>*/ b[2],
-     match =  /*<<buffer.ml:166:2>>*/ b[1],
-     length = match[2],
-     buffer = match[1],
+     _c_ =  /*<<buffer.ml:166:2>>*/ b[1],
+     length = _c_[2],
+     buffer = _c_[1],
      new_position =  /*<<buffer.ml:167:2>>*/ position + len | 0;
      /*<<buffer.ml:168:2>>*/ if(length < new_position){
       /*<<buffer.ml:169:4>>*/ resize(b, len);
