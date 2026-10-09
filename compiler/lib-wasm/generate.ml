@@ -2019,12 +2019,14 @@ module Generate (Target : Target_sig.S) = struct
   and translate_instr ctx context i =
     match i with
     | Assign (x, y) ->
-        assign
+        (* Like the assignment of a block parameter (see
+           [parallel_renaming]): [x] may have been globalized *)
+        let tx = Typing.var_type ctx.types x in
+        store
+          ~always:true
+          ?typ:(unboxed_type tx)
           x
-          (convert
-             ~from:(Typing.var_type ctx.types y)
-             ~into:(Typing.var_type ctx.types x)
-             (load y))
+          (convert ~from:(Typing.var_type ctx.types y) ~into:tx (load y))
     | Let (x, e) ->
         if ctx.live.(Var.idx x) = 0
         then drop (translate_expr ctx context x e)

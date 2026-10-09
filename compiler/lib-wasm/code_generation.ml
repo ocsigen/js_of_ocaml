@@ -703,13 +703,6 @@ let rec store ?(always = false) ?typ x e =
           let* i = add_var ?typ x in
           instr (LocalSet (i, e))
 
-let assign x e =
-  let* x = var x in
-  let* e = e in
-  match x with
-  | Local (_, x, _) -> instr (W.LocalSet (x, e))
-  | Expr _ -> assert false
-
 let seq l e =
   let* instrs = blk l in
   let* e = e in
