@@ -22,6 +22,13 @@
 * Compiler: with `--effects={cps,double-translation}`, specialize calls to
   known functions using the global flow analysis before the CPS transformation
   (#2456)
+* Compiler/wasm: functions called under an exception handler signal an
+  exception by returning null rather than throwing, which is much cheaper (#2098)
+* Compiler/wasm: at -O2 and -O3, clone higher-order functions for each
+  combination of known functions they are passed, when one of them may raise,
+  so that calls to these functions become direct calls (#2098)
+* Compiler/wasm: raising functions which can also be called through a closure
+  return null too when called directly, using a wrapper otherwise (#2098)
 * Compiler: variable substitution (`Subst`) returns the original blocks,
   instructions and expressions when they are not affected, rather than
   rebuilding the whole program each time (#2447)

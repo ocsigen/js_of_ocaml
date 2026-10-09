@@ -1,4 +1,4 @@
-(* Wasm_of_ocaml compiler
+(* Js_of_ocaml compiler
  * http://www.ocsigen.org/js_of_ocaml/
  *
  * This program is free software; you can redistribute it and/or modify
@@ -16,21 +16,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-type t
-
-val direct_calls_only : t -> Code.Var.t -> bool
-
-val raising_functions :
-     Code.program
-  -> Global_flow.info
-  -> t
-  -> wrappable:(Code.Var.t -> bool)
-  -> (Code.Var.t -> bool)
-  -> unit Code.Var.Hashtbl.t
-(** Functions which signal exceptions by returning null. The
-    functions that are not only called directly ([direct_calls_only]
-    is false) must be wrapped: the function called through closures
-    converts the null value back into an exception. Only functions
-    satisfying [wrappable] are considered for this. *)
-
-val f : Code.program -> Global_flow.info -> t
+val f : Code.program -> Code.program
+(** Duplicate higher-order functions for each combination of known
+    closures passed as the parameters they call, and redirect the
+    corresponding call sites to the copies. *)

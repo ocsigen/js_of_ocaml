@@ -7,7 +7,7 @@
   (flags :standard --disable optcall --no-inline)))
 
 (tests
- (names fun_eq open_append)
+ (names fun_eq open_append exn_wrapper)
  (modes js wasm))
 
 (tests
@@ -68,6 +68,15 @@
 (tests
  (names string_interning)
  (modes wasm))
+
+(tests
+ (names clone_higher_order)
+ (modes wasm)
+ ; Higher-order functions are only cloned at -O2 and -O3, when the global
+ ; flow analysis is precise.
+ (wasm_of_ocaml
+  (compilation_mode whole_program)
+  (flags :standard --opt 2)))
 
 ; The programs compiled here run Wasm code and rely on Node's module
 ; resolution (`require`, `require.main`). QuickJS provides neither, so these
