@@ -72,6 +72,9 @@ let dune_workspace =
 (env
  (_
   (env-vars (TESTING_FRAMEWORK inline-test))
+  ;; The tests run with --profile release, where recent versions of dune
+  ;; disable the inline tests: their bodies are then removed by the ppx
+  (inline_tests enabled)
   (wasm_of_ocaml (enabled_if %{env:WASM_OF_OCAML=false}))
   ;; Jane Street's runtime.js stubs assume string and bytes share a
   ;; representation (they build with use-js-string=false), so run the js
