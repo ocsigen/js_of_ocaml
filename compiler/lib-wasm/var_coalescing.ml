@@ -20,12 +20,13 @@
 (*
    Linear-scan variable coalescing for the Wasm backend.
 
-   The algorithm mirrors [Js_variable_coalescing]:
+   As [Js_variable_coalescing], this relies on [Linear_scan]:
      1. Build a CFG of the function body.
-     2. Compute backward liveness to a fixed point via [Dgraph.Solver].
+     2. Compute backward liveness to a fixed point.
      3. Derive per-variable live ranges (intervals with possible holes).
-     4. Run linear-scan allocation, bucketed by Wasm [value_type], with
-        copy hints from [local.set x (local.get y)] patterns.
+     4. Run linear-scan allocation, only merging locals of the same Wasm
+        [value_type], with copy hints from [local.set x (local.get y)]
+        patterns.
      5. Rewrite [LocalGet]/[LocalSet]/[LocalTee] through the substitution
         and drop [LocalSet(x, LocalGet x)] copies introduced by merging.
      6. Rebuild the [locals] list with only representatives.
@@ -90,85 +91,7 @@ let report_stats () =
 (*  CFG construction                                                     *)
 (* --------------------------------------------------------------------- *)
 
-module Node = struct
-  type t = int
-end
-
-module NodeSet = struct
-  type t = BitSet.t
-
-  type elt = int
-
-  let iter f t = BitSet.iter ~f t
-
-  let mem = BitSet.mem
-
-  let add = BitSet.set
-
-  let remove = BitSet.unset
-
-  let copy = BitSet.copy
-end
-
-module NodeTbl = struct
-  type 'a t = 'a array
-
-  type key = int
-
-  type size = int
-
-  let get t k = t.(k)
-
-  let set t k v = t.(k) <- v
-
-  let make = Array.make
-end
-
-module G = Dgraph.Make_Imperative (Node) (NodeSet) (NodeTbl)
-
-module Domain = struct
-  type t = Var.Set.t
-
-  let equal = Var.Set.equal
-
-  let bot = Var.Set.empty
-end
-
-module Solver = G.Solver (Domain)
-
-type action =
-  | Use of Var.Set.t
-  | Def of Var.Set.t
-  | Nop
-
-let defs_of_action = function
-  | Def d -> d
-  | Use _ | Nop -> Var.Set.empty
-
-let uses_of_action = function
-  | Use u -> u
-  | Def _ | Nop -> Var.Set.empty
-
-type node_id = int
-
-type stmt_graph =
-  { entry : node_id
-  ; size : int
-  ; actions : action array
-  ; succs : node_id list array
-  ; coalescing_hints : Var.t Var.Hashtbl.t
-  ; try_blocks : node_id Int.Hashtbl.t
-        (** [catch_entry -> try_body_entry]. When the live-range pass reaches
-            [catch_entry], every variable currently live is extended back to
-            the start of the try body, modeling the fact that an exception
-            can fire anywhere inside the body. *)
-  }
-
-type graph_builder =
-  { mutable nodes : (node_id * action * node_id list) list
-  ; hints : Var.t Var.Hashtbl.t
-  ; tries : node_id Int.Hashtbl.t
-  }
+open Linear_scan
 
 (* Block stack frame: the target node id reached by [br n] with n equal
    to this frame's depth. For a [Block], that target is the node
@@ -186,24 +109,12 @@ type graph_builder =
    entry node through to [exit_node]. *)
 
 let build_cfg ~candidates ~param_vars instrs =
-  let builder =
-    { nodes = []; hints = Var.Hashtbl.create 16; tries = Int.Hashtbl.create 8 }
-  in
-  let next_id = ref 0 in
-  let reserve_id () =
-    let id = !next_id in
-    incr next_id;
-    id
-  in
-  let set_node id action succs = builder.nodes <- (id, action, succs) :: builder.nodes in
-  let add_node action succs =
-    let id = reserve_id () in
-    set_node id action succs;
-    id
-  in
+  let builder = Builder.create () in
+  let reserve_id () = Builder.reserve builder in
+  let set_node id action succs = Builder.set builder id action succs in
+  let add_node action succs = Builder.add builder action succs in
   let add_hint x y =
-    if Var.Set.mem x candidates && Var.Set.mem y candidates
-    then Var.Hashtbl.replace builder.hints x y
+    if Var.Set.mem x candidates && Var.Set.mem y candidates then Builder.hint builder x y
   in
   let target_of_br block_stack n =
     match List.nth_opt block_stack n with
@@ -305,7 +216,7 @@ let build_cfg ~candidates ~param_vars instrs =
           List.map catches ~f:(fun (_, depth, _) -> target_of_br block_stack depth)
         in
         let catch_entry = add_node Nop catch_targets in
-        Int.Hashtbl.replace builder.tries catch_entry body_entry;
+        Builder.try_block builder ~catch_entry ~body_entry;
         add_node Nop [ body_entry; catch_entry ]
   and build_exprs_left_to_right block_stack exit_node l =
     List.fold_right l ~init:exit_node ~f:(fun e next -> build_expr block_stack next e)
@@ -385,420 +296,7 @@ let build_cfg ~candidates ~param_vars instrs =
     then body_entry
     else add_node (Def param_vars) [ body_entry ]
   in
-  let size = !next_id in
-  let actions = Array.make size Nop in
-  let succs = Array.make size [] in
-  List.iter builder.nodes ~f:(fun (id, action, s) ->
-      actions.(id) <- action;
-      succs.(id) <- s);
-  { entry
-  ; size
-  ; actions
-  ; succs
-  ; coalescing_hints = builder.hints
-  ; try_blocks = builder.tries
-  }
-
-(* --------------------------------------------------------------------- *)
-(*  Liveness (backward dataflow) and live range extraction                *)
-(* --------------------------------------------------------------------- *)
-
-let compute_liveness g =
-  let domain_set = BitSet.create' g.size in
-  for i = 0 to g.size - 1 do
-    BitSet.set domain_set i
-  done;
-  let preds = Array.make (Array.length g.succs) [] in
-  Array.iteri g.succs ~f:(fun i l ->
-      List.iter l ~f:(fun j -> preds.(j) <- i :: preds.(j)));
-  let inv_graph =
-    { G.domain = domain_set; iter_children = (fun f i -> List.iter ~f preds.(i)) }
-  in
-  let transfer state node_id =
-    let live_out =
-      List.fold_left g.succs.(node_id) ~init:Var.Set.empty ~f:(fun acc id ->
-          Var.Set.union acc state.(id))
-    in
-    let def = defs_of_action g.actions.(node_id) in
-    let use = uses_of_action g.actions.(node_id) in
-    Var.Set.union use (Var.Set.diff live_out def)
-  in
-  Solver.f g.size inv_graph transfer
-
-module Live_range = struct
-  type interval =
-    { start_pos : int
-    ; end_pos : int
-    }
-
-  type t =
-    { id : Var.t
-    ; mutable ranges : interval list (* sorted by start_pos *)
-    ; mutable free : bool (* dead and available for reuse: in [free_pool] *)
-    }
-
-  let create v = { id = v; ranges = []; free = false }
-
-  let add_range t start_pos end_pos =
-    let rec loop s e acc = function
-      | [] -> List.rev ({ start_pos = s; end_pos = e } :: acc)
-      | r :: rest ->
-          if e < r.start_pos - 1
-          then List.rev_append acc ({ start_pos = s; end_pos = e } :: r :: rest)
-          else if s > r.end_pos + 1
-          then loop s e (r :: acc) rest
-          else
-            let new_start = min s r.start_pos in
-            let new_end = max e r.end_pos in
-            loop new_start new_end acc rest
-    in
-    t.ranges <-
-      (match t.ranges with
-      | [] -> [ { start_pos; end_pos } ]
-      | r :: _ when r.start_pos > end_pos + 1 -> { start_pos; end_pos } :: t.ranges
-      | _ -> loop start_pos end_pos [] t.ranges)
-
-  let add_ranges t other_ranges =
-    match t.ranges, other_ranges with
-    | [], l | l, [] -> t.ranges <- l
-    | l1, l2 ->
-        let rec loop acc l1 l2 =
-          match l1, l2 with
-          | [], l | l, [] -> List.rev_append acc l
-          | h1 :: t1, h2 :: t2 ->
-              if h1.start_pos < h2.start_pos then step acc h1 t1 l2 else step acc h2 t2 l1
-        and step acc current rest other =
-          match acc with
-          | prev :: acc_rest when prev.end_pos + 1 >= current.start_pos ->
-              let merged = { prev with end_pos = max prev.end_pos current.end_pos } in
-              loop (merged :: acc_rest) rest other
-          | _ -> loop (current :: acc) rest other
-        in
-        t.ranges <- loop [] l1 l2
-
-  let get_start_pos t =
-    match t.ranges with
-    | [] -> max_int
-    | r :: _ -> r.start_pos
-
-  let get_first_hole t =
-    match t.ranges with
-    | [] -> 0
-    | r :: _ -> r.end_pos + 1
-
-  let rec advance t position =
-    match t.ranges with
-    | [] -> `Dead
-    | r :: rem ->
-        if r.end_pos < position
-        then (
-          t.ranges <- rem;
-          advance t position)
-        else if r.start_pos > position
-        then `Inactive
-        else `Active
-
-  let intersects t1 t2 =
-    let rec loop l1 l2 =
-      match l1, l2 with
-      | [], _ | _, [] -> false
-      | r1 :: rest1, r2 :: rest2 ->
-          if r1.end_pos < r2.start_pos
-          then loop rest1 l2
-          else if r2.end_pos < r1.start_pos
-          then loop l1 rest2
-          else true
-    in
-    loop t1.ranges t2.ranges
-end
-
-(* Compute live ranges. Uses the same 2x position granularity as
-   [Js_variable_coalescing]: each CFG node at linear position i maps to
-   positions 2*i (pre, for uses) and 2*i+1 (post, for defs). *)
-let compute_live_ranges g live_in_map candidates param_vars =
-  let visited = Array.make g.size false in
-  let layout = Array.make g.size 0 in
-  let i = ref g.size in
-  let rec list_rev_iter ~f l =
-    match l with
-    | [] -> ()
-    | x :: r ->
-        list_rev_iter ~f r;
-        f x
-  in
-  let rec dfs n =
-    if not visited.(n)
-    then (
-      visited.(n) <- true;
-      list_rev_iter g.succs.(n) ~f:dfs;
-      decr i;
-      layout.(!i) <- n)
-  in
-  dfs g.entry;
-  let num_reachable = g.size - !i in
-  let layout = if !i = 0 then layout else Array.sub layout ~pos:!i ~len:num_reachable in
-  let node_order = Array.make g.size (-1) in
-  Array.iteri layout ~f:(fun i n -> node_order.(n) <- i);
-  let ranges = Var.Hashtbl.create (Var.Set.cardinal candidates) in
-  Var.Set.iter (fun v -> Var.Hashtbl.add ranges v (Live_range.create v)) candidates;
-  let active_ranges = Var.Hashtbl.create 64 in
-  let commit_range v start_pos end_pos =
-    let r = Var.Hashtbl.find ranges v in
-    Live_range.add_range r start_pos end_pos
-  in
-  for order = num_reachable - 1 downto 0 do
-    let node_id = layout.(order) in
-    let start_idx = 2 * order in
-    let end_idx = (2 * order) + 1 in
-    let succs = g.succs.(node_id) in
-    let is_fallthrough =
-      match succs with
-      | [ s ] -> order < num_reachable - 1 && layout.(order + 1) = s
-      | _ -> false
-    in
-    if not is_fallthrough
-    then (
-      let live_out =
-        List.fold_left succs ~init:Var.Set.empty ~f:(fun acc sid ->
-            Var.Set.union acc live_in_map.(sid))
-      in
-      let to_remove = ref [] in
-      Var.Hashtbl.iter
-        (fun v high ->
-          if not (Var.Set.mem v live_out)
-          then (
-            commit_range v (end_idx + 1) high;
-            to_remove := v :: !to_remove))
-        active_ranges;
-      List.iter !to_remove ~f:(Var.Hashtbl.remove active_ranges);
-      Var.Set.iter
-        (fun v ->
-          if not (Var.Hashtbl.mem active_ranges v)
-          then Var.Hashtbl.add active_ranges v end_idx)
-        live_out);
-    let defs = defs_of_action g.actions.(node_id) in
-    Var.Set.iter
-      (fun v ->
-        match Var.Hashtbl.find_opt active_ranges v with
-        | Some high ->
-            commit_range v end_idx high;
-            Var.Hashtbl.remove active_ranges v
-        | None -> commit_range v end_idx end_idx)
-      defs;
-    let uses = uses_of_action g.actions.(node_id) in
-    Var.Set.iter
-      (fun v ->
-        if not (Var.Hashtbl.mem active_ranges v)
-        then Var.Hashtbl.add active_ranges v start_idx)
-      uses;
-    (* Try-catch range extension: reaching a [catch_entry] in RPO means we
-       have processed the catch targets. Whatever is live here must be
-       considered live throughout the try body, because an exception can
-       fire anywhere in the body and jump to a catch target. Extend every
-       currently-active range back to the start of the body, then clear
-       the active set so the body's own liveness is computed without
-       double-counting the exception path.
-
-       [body_entry] is a dummy [Nop] shim whose only predecessor is the
-       Try wrapper, so its RPO order is guaranteed to be strictly less
-       than [catch_entry]'s. *)
-    match Int.Hashtbl.find_opt g.try_blocks node_id with
-    | None -> ()
-    | Some body_entry_id ->
-        let body_order = node_order.(body_entry_id) in
-        assert (body_order < order);
-        let body_start_idx = 2 * body_order in
-        Var.Hashtbl.iter (fun v high -> commit_range v body_start_idx high) active_ranges;
-        Var.Hashtbl.clear active_ranges
-  done;
-  Var.Hashtbl.iter (fun v high -> commit_range v 0 high) active_ranges;
-  Var.Set.iter (fun v -> commit_range v 0 0) param_vars;
-  ranges
-
-(* --------------------------------------------------------------------- *)
-(*  Linear scan register allocation                                      *)
-(* --------------------------------------------------------------------- *)
-
-module Active_pqueue = Pqueue.Make (struct
-  type t = Live_range.t
-
-  let compare r r' = compare (Live_range.get_first_hole r) (Live_range.get_first_hole r')
-end)
-
-module Inactive_pqueue = Pqueue.Make (struct
-  type t = int * Var.t
-
-  let compare (p, _) (p', _) = compare (p : int) p'
-end)
-
-let allocate_registers subst types ranges hints =
-  let hint_count = ref 0 in
-  let opportunistic_count = ref 0 in
-  let sorted_intervals =
-    let intervals = Var.Hashtbl.fold (fun _ r acc -> r :: acc) ranges [] in
-    List.sort
-      ~cmp:(fun a b ->
-        Int.compare (Live_range.get_start_pos a) (Live_range.get_start_pos b))
-      intervals
-  in
-  let active = ref Active_pqueue.empty in
-  let inactive_queue = ref Inactive_pqueue.empty in
-  let inactive = Var.Hashtbl.create 128 in
-  (* Ranges that are dead. A range taken from the pool through a copy
-     hint stays in the list, but no longer has its [free] flag set: such
-     entries are skipped and discarded. The range is pushed again when it
-     dies again. *)
-  let free_pool = ref [] in
-  let release r =
-    r.Live_range.free <- true;
-    free_pool := r :: !free_pool
-  in
-  (* Representative of every interval allocated so far, itself included.
-     [subst] only records the variables that were merged away, but a copy
-     hint needs the slot of its source even when the source kept its own. *)
-  let repr_of = Var.Hashtbl.create 128 in
-  let rec update_active_queue position =
-    match Active_pqueue.find_min !active with
-    | exception Not_found -> ()
-    | r -> (
-        if Live_range.get_first_hole r <= position
-        then
-          let active' = Active_pqueue.remove_min !active in
-          match Live_range.advance r position with
-          | `Dead ->
-              release r;
-              active := active';
-              update_active_queue position
-          | `Inactive ->
-              inactive_queue :=
-                Inactive_pqueue.add (Live_range.get_start_pos r, r.id) !inactive_queue;
-              Var.Hashtbl.replace inactive r.id r;
-              active := active';
-              update_active_queue position
-          | `Active ->
-              active := Active_pqueue.add r active';
-              update_active_queue position)
-  in
-  let rec update_inactive_queue position =
-    match Inactive_pqueue.find_min !inactive_queue with
-    | exception Not_found -> ()
-    | p, v -> (
-        if p <= position
-        then
-          let inactive' = Inactive_pqueue.remove_min !inactive_queue in
-          match Var.Hashtbl.find_opt inactive v with
-          | None ->
-              inactive_queue := inactive';
-              update_inactive_queue position
-          | Some r -> (
-              match Live_range.advance r position with
-              | `Dead ->
-                  release r;
-                  inactive_queue := inactive';
-                  Var.Hashtbl.remove inactive v;
-                  update_inactive_queue position
-              | `Inactive ->
-                  inactive_queue :=
-                    Inactive_pqueue.add (Live_range.get_start_pos r, r.id) inactive';
-                  update_inactive_queue position
-              | `Active ->
-                  active := Active_pqueue.add r !active;
-                  inactive_queue := inactive';
-                  Var.Hashtbl.remove inactive v;
-                  update_inactive_queue position))
-  in
-  let type_of v = Var.Hashtbl.find types v in
-  let compatible a b = Poly.equal (type_of a) (type_of b) in
-  let get_free_matching wanted =
-    let rec loop kept pool =
-      match pool with
-      | [] ->
-          free_pool := List.rev kept;
-          None
-      | r :: rs ->
-          if not r.Live_range.free
-          then loop kept rs
-          else if compatible r.Live_range.id wanted
-          then (
-            r.free <- false;
-            free_pool := List.rev_append kept rs;
-            Some r)
-          else loop (r :: kept) rs
-    in
-    loop [] !free_pool
-  in
-  List.iter sorted_intervals ~f:(fun current ->
-      let position = Live_range.get_start_pos current in
-      update_active_queue position;
-      update_inactive_queue position;
-      let hint_repr =
-        match Var.Hashtbl.find_opt hints current.Live_range.id with
-        | None -> None
-        | Some src -> (
-            match Var.Hashtbl.find_opt repr_of src with
-            | None -> None
-            | Some var -> (
-                if not (compatible var current.id)
-                then None
-                else
-                  let r = Var.Hashtbl.find ranges var in
-                  match Live_range.advance r position with
-                  | `Dead ->
-                      r.free <- false;
-                      Some r
-                  | `Inactive ->
-                      if Live_range.intersects r current
-                      then None
-                      else (
-                        Var.Hashtbl.remove inactive r.id;
-                        Some r)
-                  | `Active -> None))
-      in
-      let repr =
-        match hint_repr with
-        | Some r ->
-            incr hint_count;
-            r
-        | None -> (
-            let candidate =
-              let rec loop q count =
-                if count >= 50 || Inactive_pqueue.is_empty q
-                then None
-                else
-                  let _, v = Inactive_pqueue.find_min q in
-                  let q' = Inactive_pqueue.remove_min q in
-                  match Var.Hashtbl.find_opt inactive v with
-                  | None -> loop q' count
-                  | Some iv ->
-                      if
-                        compatible iv.id current.id
-                        && not (Live_range.intersects iv current)
-                      then Some iv
-                      else loop q' (count + 1)
-              in
-              loop !inactive_queue 0
-            in
-            match candidate with
-            | Some r ->
-                incr opportunistic_count;
-                Var.Hashtbl.remove inactive r.id;
-                r
-            | None -> (
-                match get_free_matching current.id with
-                | Some r ->
-                    incr opportunistic_count;
-                    r
-                | None -> current))
-      in
-      if not (Var.equal current.id repr.id)
-      then (
-        Var.forget_generated_name current.id;
-        Var.forget_generated_name repr.id;
-        Live_range.add_ranges repr current.Live_range.ranges;
-        Var.Hashtbl.replace subst current.id repr.id);
-      Var.Hashtbl.replace repr_of current.id repr.id;
-      active := Active_pqueue.add repr !active);
-  !hint_count, !opportunistic_count
+  Builder.finish builder ~entry
 
 (* --------------------------------------------------------------------- *)
 (*  Body rewriting                                                       *)
@@ -866,11 +364,16 @@ let f ~param_names ~param_types ~locals instrs =
     incr total_calls;
     total_candidates := !total_candidates + num_candidates;
     let g = build_cfg ~candidates ~param_vars instrs in
-    let live_in_map = compute_liveness g in
-    let ranges = compute_live_ranges g live_in_map candidates param_vars in
+    let live_in_map = liveness g in
+    let ranges = live_ranges g live_in_map ~candidates ~param_vars in
     let subst = Var.Hashtbl.create num_candidates in
+    let type_of v = Var.Hashtbl.find types v in
     let hint_count, opportunistic_count =
-      allocate_registers subst types ranges g.coalescing_hints
+      allocate
+        ~compatible:(fun a b -> Poly.equal (type_of a) (type_of b))
+        g
+        ranges
+        ~assign:(fun x r -> if not (Var.equal x r) then Var.Hashtbl.replace subst x r)
     in
     total_hint_count := !total_hint_count + hint_count;
     total_opportunistic_count := !total_opportunistic_count + opportunistic_count;
