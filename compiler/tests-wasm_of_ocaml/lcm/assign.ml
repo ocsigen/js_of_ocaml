@@ -85,7 +85,24 @@ let f6 n =
   done;
   List.fold_left ( +. ) 0. !l
 
+(* The conversion of an assigned variable is not tracked by the LCM
+   analyses, but is still available in the following blocks. The variable
+   holds boxed floats, as it is initialized from a list element. *)
+let f7 l n =
+  let r = ref (List.hd l) in
+  (try
+     for i = 1 to n do
+       consume_f (!r *. 2.);
+       if i = k then raise Exit;
+       consume_f (!r *. 3.);
+       r := !r +. 1.
+     done
+   with Exit -> r := !r *. 10.);
+  !r
+
 let () =
+  assert (Float.equal (f7 [ 1.5 ] 10) 55.);
+  assert (Float.equal (f7 [ 1.5 ] 3) 4.5);
   assert (Float.equal (f1 10) 33.);
   assert (Float.equal (f1 3) 7.5);
   assert (Float.equal (f2 3) 204.);
