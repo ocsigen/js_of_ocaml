@@ -8,27 +8,16 @@ name: Cache cleanup
 # they push more of master's caches out, so more pull requests save
 # their own copies, and jobs start from a cold opam switch.
 #
-# Delete the pull request caches whose key also exists on master, and
+# Whenever a pull request is closed, delete the pull request caches
+# whose key also exists on master (open pull requests included), and
 # all caches of closed pull requests.
 
 on:
-  workflow_run:
-    workflows:
-      - js_of_ocaml
-      - wasm_of_ocaml
-      - janestreet
-      - lint
-      - quickjs
-      - js-parser
-    types:
-      - completed
   # pull_request_target, so that the token can delete caches of pull
   # requests from forks. No code from the pull request is checked out.
   pull_request_target:
     types:
       - closed
-  schedule:
-    - cron: 0 3 * * *
   workflow_dispatch:
 
 concurrency:
