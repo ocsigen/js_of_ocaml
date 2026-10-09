@@ -37,12 +37,16 @@
  (action
   (diff ppx.mlt ppx.mlt.corrected)))
 
+; The gen.mlt snapshot is not compared with OxCaml, whose pretty-printer
+; formats type constraints and arrows differently.
+
 (rule
  (alias runtest)
  (enabled_if
   (and
    (>= %{ocaml_version} 5.3)
-   (< %{ocaml_version} 5.6)))
+   (< %{ocaml_version} 5.6)
+   (not %{oxcaml_supported})))
  ;; (package js_of_ocaml-ppx)
  (action
   (diff gen.mlt gen.mlt.corrected)))

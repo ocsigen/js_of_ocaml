@@ -19,6 +19,7 @@
    (import "fail" "caml_failwith" (func $caml_failwith (param (ref eq))))
    (import "fail" "caml_invalid_argument"
       (func $caml_invalid_argument (param (ref eq))))
+   (import "fail" "caml_raise_zero_divide" (func $caml_raise_zero_divide))
 
    (type $bytes (array (mut i8)))
 
@@ -189,6 +190,22 @@
             (i32.shl (i32.and (local.get $x) (i32.const 0xFF)) (i32.const 8))
             (i32.and
                (i32.shr_u (local.get $x) (i32.const 8)) (i32.const 0xFF)))))
+
+   (func (export "caml_int_unsigned_div")
+      (param $vx (ref eq)) (param $vy (ref eq)) (result (ref eq))
+      (local $x i32) (local $y i32)
+      (local.set $x (i31.get_u (ref.cast (ref i31) (local.get $vx))))
+      (local.set $y (i31.get_u (ref.cast (ref i31) (local.get $vy))))
+      (if (i32.eqz (local.get $y)) (then (call $caml_raise_zero_divide)))
+      (ref.i31 (i32.div_u (local.get $x) (local.get $y))))
+
+   (func (export "caml_int_unsigned_mod")
+      (param $vx (ref eq)) (param $vy (ref eq)) (result (ref eq))
+      (local $x i32) (local $y i32)
+      (local.set $x (i31.get_u (ref.cast (ref i31) (local.get $vx))))
+      (local.set $y (i31.get_u (ref.cast (ref i31) (local.get $vy))))
+      (if (i32.eqz (local.get $y)) (then (call $caml_raise_zero_divide)))
+      (ref.i31 (i32.rem_u (local.get $x) (local.get $y))))
 
    (type $chars (array i8))
 

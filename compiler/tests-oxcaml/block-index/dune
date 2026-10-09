@@ -11,3 +11,9 @@
  (modes js wasm)
  (preprocess
   (pps ppx_optcomp_light)))
+
+(tests
+ (names pointer)
+ (build_if %{oxcaml_supported})
+ (libraries stdlib_stable stdlib_upstream_compatible)
+ (modes js wasm))

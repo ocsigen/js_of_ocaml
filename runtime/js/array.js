@@ -68,11 +68,27 @@ function caml_floatarray_sub(a, i, len) {
   return r;
 }
 
+//Provides: caml_floatarray_sub_local mutable
+//Requires: caml_floatarray_sub
+//Version: >= 5.4
+//If: oxcaml
+function caml_floatarray_sub_local(a, i, len) {
+  return caml_floatarray_sub(a, i, len);
+}
+
 //Provides: caml_uniform_array_sub mutable
 //Requires: caml_array_sub
 //Version: >= 5.3
 function caml_uniform_array_sub(a, i, len) {
   return caml_array_sub(a, i, len);
+}
+
+//Provides: caml_uniform_array_sub_local mutable
+//Requires: caml_uniform_array_sub
+//Version: >= 5.4
+//If: oxcaml
+function caml_uniform_array_sub_local(a, i, len) {
+  return caml_uniform_array_sub(a, i, len);
 }
 
 //Provides: caml_array_append mutable
@@ -101,11 +117,27 @@ function caml_floatarray_append(a1, a2) {
   return r;
 }
 
+//Provides: caml_floatarray_append_local mutable
+//Requires: caml_floatarray_append
+//Version: >= 5.4
+//If: oxcaml
+function caml_floatarray_append_local(a1, a2) {
+  return caml_floatarray_append(a1, a2);
+}
+
 //Provides: caml_uniform_array_append mutable
 //Requires: caml_array_append
 //Version: >= 5.3
 function caml_uniform_array_append(a1, a2) {
   return caml_array_append(a1, a2);
+}
+
+//Provides: caml_uniform_array_append_local mutable
+//Requires: caml_uniform_array_append
+//Version: >= 5.4
+//If: oxcaml
+function caml_uniform_array_append_local(a1, a2) {
+  return caml_uniform_array_append(a1, a2);
 }
 
 //Provides: caml_array_concat mutable
@@ -138,6 +170,14 @@ function caml_floatarray_concat(l) {
   return r;
 }
 
+//Provides: caml_floatarray_concat_local mutable
+//Requires: caml_floatarray_concat
+//Version: >= 5.4
+//If: oxcaml
+function caml_floatarray_concat_local(l) {
+  return caml_floatarray_concat(l);
+}
+
 //Provides: caml_uniform_array_concat mutable
 //Requires: caml_check_concat_length
 //Version: >= 5.4
@@ -152,6 +192,14 @@ function caml_uniform_array_concat(l) {
     l = l[2];
   }
   return a;
+}
+
+//Provides: caml_uniform_array_concat_local mutable
+//Requires: caml_uniform_array_concat
+//Version: >= 5.4
+//If: oxcaml
+function caml_uniform_array_concat_local(l) {
+  return caml_uniform_array_concat(l);
 }
 
 //Provides: caml_array_blit
@@ -319,6 +367,14 @@ function caml_floatarray_make(len, init) {
   return b;
 }
 
+//Provides: caml_floatarray_make_local mutable
+//Requires: caml_floatarray_make
+//Version: >= 5.4
+//If: oxcaml
+function caml_floatarray_make_local(len, init) {
+  return caml_floatarray_make(len, init);
+}
+
 //Provides: caml_floatarray_make_unboxed const (const)
 //Requires: caml_floatarray_make
 //Version: >= 5.3
@@ -326,9 +382,25 @@ function caml_floatarray_make_unboxed(len, init) {
   return caml_floatarray_make(len, init);
 }
 
+//Provides: caml_floatarray_make_unboxed_local mutable
+//Requires: caml_floatarray_make_unboxed
+//Version: >= 5.4
+//If: oxcaml
+function caml_floatarray_make_unboxed_local(len, init) {
+  return caml_floatarray_make_unboxed(len, init);
+}
+
 //Provides: caml_uniform_array_make const (const)
 //Requires: caml_array_make
 //Version: >= 5.3
 function caml_uniform_array_make(len, init) {
   return caml_array_make(len, init);
+}
+
+//Provides: caml_uniform_array_make_local mutable
+//Requires: caml_uniform_array_make
+//Version: >= 5.4
+//If: oxcaml
+function caml_uniform_array_make_local(len, init) {
+  return caml_uniform_array_make(len, init);
 }
