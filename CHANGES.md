@@ -1,5 +1,9 @@
 # dev
 
+## Features/Changes
+* Compiler/Wasm: link with our own linker, which also removes dead code,
+  instead of wasm-merge and wasm-metadce: faster compilation (#2506)
+
 ## Bug fixes
 * Compiler: fix a miscompilation of `Int_trie` by OxCaml's flambda2 at -O2
   and -O3 (#2560)
