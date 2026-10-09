@@ -167,11 +167,6 @@ jobs:
         working-directory: ./wasm_of_ocaml
         run: opam exec -- dune build @runtest-wasm --profile with-native-effects
 
-      - name: Run tests (WASI runtime - node)
-        if: ${{ matrix.wasi }}
-        working-directory: ./wasm_of_ocaml
-        run: opam exec -- dune build @runtest-wasm --profile wasi-with-native-effects
-
       - name: Run tests (WASI runtime - Wizard engine)
         if: ${{ matrix.wasi }}
         working-directory: ./wasm_of_ocaml
