@@ -29,3 +29,7 @@ val f :
 
 val cannot_overflow : t -> Code.Var.t -> bool
 (** Whether the value of this variable is computed without overflow *)
+
+val valid_index : t -> at:Code.Var.t -> obj:Code.Var.t -> Code.prim_arg -> bool
+(** [valid_index st ~at ~obj i] tells whether [i] is a valid index of the
+    array, string or C-layout bigarray [obj] where [at] is defined *)
