@@ -844,10 +844,34 @@ let drop_exception_handler drop_count blocks =
       | { branch = Pushtrap (((addr, _) as cont1), _x, _cont2); _ } as b -> (
           match do_not_raise addr Addr.Set.empty [] blocks with
           | exception May_raise -> blocks
-          | _visited, rewrite ->
+          | visited, rewrite ->
               incr drop_count;
               let b = { b with branch = Branch cont1 } in
               let blocks = Addr.Map.add pc b blocks in
+              (* The parameters of [b] assigned in the body of the [try] are
+                 only read in the exception handler (see [Code.invariant]) *)
+              let blocks =
+                Addr.Set.fold
+                  (fun pc' blocks ->
+                    Addr.Map.update
+                      pc'
+                      (Option.map ~f:(fun b' ->
+                           { b' with
+                             body =
+                               List.filter b'.body ~f:(fun i ->
+                                   match i with
+                                   | Assign (x, _) ->
+                                       not (List.mem ~eq:Var.equal x b.params)
+                                   | Let _
+                                   | Set_field _
+                                   | Offset_ref _
+                                   | Array_set _
+                                   | Event _ -> true)
+                           }))
+                      blocks)
+                  visited
+                  blocks
+              in
               let blocks =
                 List.fold_left
                   ~f:(fun blocks pc2 ->
