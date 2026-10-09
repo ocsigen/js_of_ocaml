@@ -140,8 +140,20 @@ type conversion_kind = wasm_conversion
 module Conv = struct
   type t = conversion_kind * Var.t
 
+  (* In declaration order, as a polymorphic comparison, which is slower *)
+  let kind_index = function
+    | Unbox_i32 -> 0
+    | Unbox_i64 -> 1
+    | Unbox_f64 -> 2
+    | Box_i32 -> 3
+    | Box_i64 -> 4
+    | Box_f64 -> 5
+    | Untag_int -> 6
+    | Normalize_int -> 7
+    | Tag_int -> 8
+
   let compare (k1, v1) (k2, v2) =
-    let c = Poly.compare k1 k2 in
+    let c = Int.compare (kind_index k1) (kind_index k2) in
     if c <> 0 then c else Var.compare v1 v2
 end
 
@@ -162,9 +174,11 @@ module Bits : sig
   val full : int -> t
   (** [full n] contains the conversions of rank [0] to [n - 1] *)
 
-  val mem : t -> int -> bool
-
   val add : t -> int -> unit
+
+  val remove : t -> int -> unit
+
+  val copy : t -> t
 
   val union : t -> t -> t
 
@@ -188,11 +202,15 @@ end = struct
     if r <> 0 then a.(Array.length a - 1) <- (1 lsl r) - 1;
     a
 
-  let mem a i = a.(i / Sys.int_size) land (1 lsl (i mod Sys.int_size)) <> 0
-
   let add a i =
     let j = i / Sys.int_size in
     a.(j) <- a.(j) lor (1 lsl (i mod Sys.int_size))
+
+  let remove a i =
+    let j = i / Sys.int_size in
+    a.(j) <- a.(j) land lnot (1 lsl (i mod Sys.int_size))
+
+  let copy = Array.copy
 
   let union a b = Array.mapi ~f:(fun i x -> x lor b.(i)) a
 
@@ -800,85 +818,226 @@ type block_props =
 let remove_conversions_of_var convs v =
   ConvSet.filter (fun (_, arg) -> not (Var.equal arg v)) convs
 
-(* A ConvMap with a reverse index from variables to the conv keys they appear in,
-   enabling O(log n) removal when a variable is killed instead of O(n) filtering. *)
-module ConvTracker : sig
+(* The ranks of the conversions of a function. The conversions tracked by
+   the data flow analyses have ranks [0] to [n - 1], in increasing order;
+   other conversions get larger ranks when they are first added to a
+   [Tracker]. *)
+module Ranks : sig
   type t
 
-  val of_map : Var.t ConvMap.t -> t
+  val create : ConvSet.t -> t
 
-  val to_map : t -> Var.t ConvMap.t
+  val tracked : t -> int
+  (** The number of tracked conversions *)
 
-  val find_opt : Conv.t -> t -> Var.t option
+  val find : t -> Conv.t -> int option
 
-  val add : Conv.t -> Var.t -> t -> t
+  val get : t -> Conv.t -> int
+  (** Allocates a rank if needed *)
 
-  val kill_var : Var.t -> t -> t
+  val conv : t -> int -> Conv.t
+end = struct
+  module Tbl = Hashtbl.Make (struct
+    type t = Conv.t
 
-  val kill_at_call : t -> t
+    let equal a b = Conv.compare a b = 0
+
+    let hash (k, v) = Hashtbl.hash (Conv.kind_index k, Var.idx v)
+  end)
+
+  type t =
+    { ranks : int Tbl.t
+    ; convs : Conv.t Int_trie.t ref
+    ; tracked : int
+    ; mutable next : int
+    }
+
+  let create convs =
+    let ranks = Tbl.create 16 in
+    let n, convs_by_rank =
+      ConvSet.fold
+        (fun conv (i, m) ->
+          Tbl.add ranks conv i;
+          i + 1, Int_trie.add i conv m)
+        convs
+        (0, Int_trie.empty)
+    in
+    { ranks; convs = ref convs_by_rank; tracked = n; next = n }
+
+  let tracked t = t.tracked
+
+  let find t conv = Tbl.find_opt t.ranks conv
+
+  let get t conv =
+    match Tbl.find_opt t.ranks conv with
+    | Some i -> i
+    | None ->
+        let i = t.next in
+        t.next <- i + 1;
+        Tbl.add t.ranks conv i;
+        t.convs := Int_trie.add i conv !(t.convs);
+        i
+
+  let conv t i = Int_trie.find i !(t.convs)
+end
+
+(* The available conversions at a point of a block, with the variable
+   holding their result. The map is indexed by the ranks of the
+   conversions, with a reverse index from variables to the conversions
+   they appear in, so that killing a variable is cheap. The set of the
+   tracked conversions in the map is also kept as a bit vector, so that it
+   can be combined cheaply with the result of the data flow analyses. *)
+module Tracker : sig
+  type t
+
+  val empty : Ranks.t -> t
+
+  val entry : Ranks.t -> t list -> avin:Bits.t -> t * int list
+  (** [entry ranks preds ~avin] is the tracker at the entry of a block,
+      given the trackers at the exit of its processed predecessors and the
+      conversions available at its entry. The conversions which are
+      available in all predecessors with the same variable are kept. The
+      other conversions of [avin] present in all predecessors are returned,
+      by increasing rank. *)
+
+  val find_opt : Ranks.t -> Conv.t -> t -> Var.t option
+
+  val mem : Ranks.t -> Conv.t -> t -> bool
+
+  val add : Ranks.t -> Conv.t -> Var.t -> t -> t
+
+  val kill_var : Ranks.t -> Var.t -> t -> t
+
+  val kill_at_call : Ranks.t -> t -> t
   (** Remove the conversions whose result should not be kept live across a
       call *)
 end = struct
   type t =
-    { fwd : Var.t ConvMap.t
-    ; rev : ConvSet.t Var.Map.t (* var -> set of conv keys mentioning it *)
-    ; at_call : ConvSet.t (* keys removed at calls; may contain keys already removed *)
+    { fwd : Var.t Int_trie.t
+    ; dom : Bits.t
+          (* The tracked conversions of [fwd]. It is updated in place: a
+             tracker must not be used once it has been updated. *)
+    ; extra : int list (* The other conversions of [fwd], possibly removed since *)
+    ; rev : int list Var.Map.t
+          (* var -> conversions mentioning it; may contain conversions
+             already removed *)
+    ; at_call : int list
+          (* conversions removed at calls; may contain conversions already
+             removed *)
     }
 
-  let at_call_add conv s = if not_live_across_calls conv then ConvSet.add conv s else s
+  let empty ranks =
+    { fwd = Int_trie.empty
+    ; dom = Bits.empty (Ranks.tracked ranks)
+    ; extra = []
+    ; rev = Var.Map.empty
+    ; at_call = []
+    }
 
-  let rev_add v conv rev =
+  let entry ranks preds ~avin =
+    match preds with
+    | [] -> empty ranks, []
+    | hd :: tl ->
+        let dom =
+          List.fold_left
+            ~f:(fun d p -> Bits.inter d p.dom)
+            ~init:(Bits.inter hd.dom avin)
+            tl
+        in
+        let common = Bits.copy dom in
+        let differing = ref [] in
+        if not (List.is_empty tl)
+        then
+          Bits.iter
+            ~f:(fun i ->
+              let v = Int_trie.find i hd.fwd in
+              if
+                not
+                  (List.for_all
+                     ~f:(fun p ->
+                       match Int_trie.find_opt i p.fwd with
+                       | Some v' -> Var.equal v v'
+                       | None -> false)
+                     tl)
+              then (
+                differing := i :: !differing;
+                Bits.remove dom i))
+            common;
+        let fwd =
+          List.fold_left ~f:(fun m i -> Int_trie.remove i m) ~init:hd.fwd hd.extra
+        in
+        let fwd = ref fwd in
+        Bits.iter ~f:(fun i -> fwd := Int_trie.remove i !fwd) (Bits.diff hd.dom dom);
+        ( { fwd = !fwd; dom; extra = []; rev = hd.rev; at_call = hd.at_call }
+        , List.rev !differing )
+
+  let find_opt ranks conv t =
+    match Ranks.find ranks conv with
+    | Some i -> Int_trie.find_opt i t.fwd
+    | None -> None
+
+  let mem ranks conv t =
+    match Ranks.find ranks conv with
+    | Some i -> Int_trie.mem i t.fwd
+    | None -> false
+
+  let rev_add v i rev =
     Var.Map.update
       v
       (function
-        | None -> Some (ConvSet.singleton conv)
-        | Some s -> Some (ConvSet.add conv s))
+        | None -> Some [ i ]
+        | Some l -> Some (i :: l))
       rev
 
-  let of_map fwd =
-    let rev =
-      ConvMap.fold
-        (fun ((_, arg) as conv) mapped acc -> rev_add arg conv (rev_add mapped conv acc))
-        fwd
-        Var.Map.empty
-    in
-    let at_call = ConvMap.fold (fun conv _ s -> at_call_add conv s) fwd ConvSet.empty in
-    { fwd; rev; at_call }
-
-  let to_map t = t.fwd
-
-  let find_opt conv t = ConvMap.find_opt conv t.fwd
-
-  let add conv mapped t =
+  let add ranks conv mapped t =
+    let i = Ranks.get ranks conv in
     let _, arg = conv in
-    let fwd = ConvMap.add conv mapped t.fwd in
-    let rev = rev_add arg conv (rev_add mapped conv t.rev) in
-    { fwd; rev; at_call = at_call_add conv t.at_call }
+    let extra =
+      if i < Ranks.tracked ranks
+      then (
+        Bits.add t.dom i;
+        t.extra)
+      else i :: t.extra
+    in
+    { fwd = Int_trie.add i mapped t.fwd
+    ; dom = t.dom
+    ; extra
+    ; rev = rev_add arg i (rev_add mapped i t.rev)
+    ; at_call = (if not_live_across_calls conv then i :: t.at_call else t.at_call)
+    }
 
-  let kill_var v t =
+  let remove ranks i t =
+    if i < Ranks.tracked ranks then Bits.remove t.dom i;
+    Int_trie.remove i t.fwd
+
+  let kill_var ranks v t =
     match Var.Map.find_opt v t.rev with
     | None -> t
-    | Some convs ->
+    | Some l ->
         let fwd =
-          ConvSet.fold
-            (fun conv fwd ->
-              match ConvMap.find_opt conv fwd with
+          List.fold_left
+            ~f:(fun fwd i ->
+              match Int_trie.find_opt i fwd with
               | Some mapped ->
-                  let _, arg = conv in
+                  let _, arg = Ranks.conv ranks i in
                   if Var.equal arg v || Var.equal mapped v
-                  then ConvMap.remove conv fwd
+                  then remove ranks i { t with fwd }
                   else fwd
               | None -> fwd)
-            convs
-            t.fwd
+            ~init:t.fwd
+            l
         in
-        let rev = Var.Map.remove v t.rev in
-        { t with fwd; rev }
+        { t with fwd; rev = Var.Map.remove v t.rev }
 
-  (* The reverse index may then mention removed keys, which [kill_var]
-     ignores *)
-  let kill_at_call t =
-    { t with fwd = ConvSet.fold ConvMap.remove t.at_call t.fwd; at_call = ConvSet.empty }
+  let kill_at_call ranks t =
+    { t with
+      fwd =
+        List.fold_left
+          ~f:(fun fwd i -> remove ranks i { t with fwd })
+          ~init:t.fwd
+          t.at_call
+    ; at_call = []
+    }
 end
 
 (* The conversions of each operand *)
@@ -1683,13 +1842,14 @@ let process_function
     let is_safe conv = is_safe_conversion types conv in
     let convs_by_operand = conversions_by_operand all_convs in
     (* The rank of each conversion, for its bit vector representation *)
-    let n_convs = ConvSet.cardinal all_convs in
+    let ranks = Ranks.create all_convs in
+    let n_convs = Ranks.tracked ranks in
     let conv_of_rank = Array.of_list (ConvSet.elements all_convs) in
-    let rank_of_conv = ref ConvMap.empty in
-    Array.iteri
-      ~f:(fun i conv -> rank_of_conv := ConvMap.add conv i !rank_of_conv)
-      conv_of_rank;
-    let rank_of_conv conv = ConvMap.find_opt conv !rank_of_conv in
+    let rank_of_conv conv =
+      match Ranks.find ranks conv with
+      | Some i when i < n_convs -> Some i
+      | _ -> None
+    in
     (* The conversions of the assigned variables are not tracked: they are
        left where they are, and are never available at the beginning of a
        block *)
@@ -1702,11 +1862,6 @@ let process_function
           | None -> ())
         convs;
       b
-    in
-    let mem_conv convs conv =
-      match rank_of_conv conv with
-      | Some i -> Bits.mem convs i
-      | None -> false
     in
     let all_convs = Bits.full n_convs in
     let no_convs = Bits.empty n_convs in
@@ -2023,64 +2178,34 @@ let process_function
             preds_pc
         in
         let all_preds_processed = List.length processed_preds = List.length preds_pc in
-        let conv_in =
-          match processed_preds with
-          | [] -> ConvMap.empty
-          | hd :: tl ->
-              List.fold_left
-                ~f:(fun acc pred_conv_out ->
-                  ConvMap.filter
-                    (fun k v ->
-                      match ConvMap.find_opt k pred_conv_out with
-                      | Some v' when Var.equal v v' -> true
-                      | _ -> false)
-                    acc)
-                ~init:hd
-                tl
+        (* The conversions available in all processed predecessors with the
+           same variable are inherited. Those present in all predecessors
+           with different variables are merged by a phi, at fully-processed
+           merge points. *)
+        let conv_in, differing =
+          Tracker.entry ranks processed_preds ~avin:(Addr.Map.find pc avin)
         in
-        let pc_avin = Addr.Map.find pc avin in
-        let safe_conv_in = ConvMap.filter (fun k _ -> mem_conv pc_avin k) conv_in in
-        (* Handle conversions present in ALL predecessors with different variables:
-           create a phi to merge them. Only at fully-processed merge points. *)
-        let safe_conv_in =
-          if all_preds_processed && List.length preds_pc > 1
-          then
-            let pred_maps =
-              List.filter_map ~f:(fun p -> Addr.Map.find_opt p !conv_out_map) preds_pc
-            in
-            match pred_maps with
-            | [] | [ _ ] -> safe_conv_in
-            | first :: rest ->
-                ConvMap.fold
-                  (fun conv _var acc ->
-                    if ConvMap.mem conv acc
-                    then acc (* already in conv_in with same variable *)
-                    else if not (mem_conv pc_avin conv)
-                    then acc
-                    else if
-                      (* Check: all preds have it? *)
-                      List.for_all ~f:(fun m -> ConvMap.mem conv m) rest
-                    then (
-                      let kind, _ = conv in
-                      let phi_var = Var.fresh () in
-                      let typ =
-                        ConvMap.find_opt conv !conv_types
-                        |> Option.value ~default:(type_of_kind kind)
-                      in
-                      Typing.set_var_type types phi_var typ;
-                      phi_info :=
-                        Addr.Map.update
-                          pc
-                          (function
-                            | None -> Some [ conv, phi_var ]
-                            | Some l -> Some ((conv, phi_var) :: l))
-                          !phi_info;
-                      ConvMap.add conv phi_var acc)
-                    else acc)
-                  first
-                  safe_conv_in
-          else safe_conv_in
-        in
+        let merge_phis = ref [] in
+        if all_preds_processed && List.length preds_pc > 1
+        then
+          List.iter
+            ~f:(fun i ->
+              let ((kind, _) as conv) = conv_of_rank.(i) in
+              let phi_var = Var.fresh () in
+              let typ =
+                ConvMap.find_opt conv !conv_types
+                |> Option.value ~default:(type_of_kind kind)
+              in
+              Typing.set_var_type types phi_var typ;
+              phi_info :=
+                Addr.Map.update
+                  pc
+                  (function
+                    | None -> Some [ conv, phi_var ]
+                    | Some l -> Some ((conv, phi_var) :: l))
+                  !phi_info;
+              merge_phis := (conv, phi_var) :: !merge_phis)
+            differing;
         let to_insert =
           let b = Bits.diff (Addr.Map.find pc latest) (Addr.Map.find pc !isolatedout) in
           let s = ref [] in
@@ -2088,7 +2213,13 @@ let process_function
           List.rev !s
         in
         let inserted_rev = ref [] in
-        let conv_to_var = ref (ConvTracker.of_map safe_conv_in) in
+        let conv_to_var =
+          ref
+            (List.fold_left
+               ~f:(fun t (conv, phi_var) -> Tracker.add ranks conv phi_var t)
+               ~init:conv_in
+               (List.rev !merge_phis))
+        in
         (* Partial redundancy elimination: for each conversion in to_insert,
            check if some predecessors already have it. If so, insert only at
            the missing predecessors and create a phi to merge the results.
@@ -2104,7 +2235,7 @@ let process_function
                 List.filter
                   ~f:(fun p ->
                     match Addr.Map.find_opt p !conv_out_map with
-                    | Some m -> ConvMap.mem conv m
+                    | Some m -> Tracker.mem ranks conv m
                     | None -> false)
                   preds_pc
               in
@@ -2112,7 +2243,7 @@ let process_function
                 List.filter
                   ~f:(fun p ->
                     match Addr.Map.find_opt p !conv_out_map with
-                    | Some m -> not (ConvMap.mem conv m)
+                    | Some m -> not (Tracker.mem ranks conv m)
                     | None -> true)
                   preds_pc
               in
@@ -2139,12 +2270,12 @@ let process_function
                     st.conversions_inserted <- st.conversions_inserted + 1;
                     let pred_conv_out =
                       Addr.Map.find_opt pred_pc !conv_out_map
-                      |> Option.value ~default:ConvMap.empty
+                      |> Option.value ~default:(Tracker.empty ranks)
                     in
                     conv_out_map :=
                       Addr.Map.add
                         pred_pc
-                        (ConvMap.add conv tmp pred_conv_out)
+                        (Tracker.add ranks conv tmp pred_conv_out)
                         !conv_out_map)
                   preds_without;
                 phi_info :=
@@ -2154,7 +2285,7 @@ let process_function
                       | None -> Some [ conv, phi_var ]
                       | Some l -> Some ((conv, phi_var) :: l))
                     !phi_info;
-                conv_to_var := ConvTracker.add conv phi_var !conv_to_var)
+                conv_to_var := Tracker.add ranks conv phi_var !conv_to_var)
               else to_insert_remaining := ConvSet.add conv !to_insert_remaining
             else to_insert_remaining := ConvSet.add conv !to_insert_remaining)
           to_insert;
@@ -2167,7 +2298,7 @@ let process_function
               |> Option.value ~default:(type_of_kind kind)
             in
             Typing.set_var_type types tmp typ;
-            conv_to_var := ConvTracker.add conv tmp !conv_to_var;
+            conv_to_var := Tracker.add ranks conv tmp !conv_to_var;
             st.conversions_inserted <- st.conversions_inserted + 1;
             inserted_rev :=
               Let (tmp, Prim (prim_of_kind kind, [ Pv arg ])) :: !inserted_rev)
@@ -2180,19 +2311,19 @@ let process_function
             let i = Subst.Excluding_Binders.instr subst_var i in
             match i with
             | Let (v, Prim (p, [ Pv arg ])) -> (
-                conv_to_var := ConvTracker.kill_var v !conv_to_var;
+                conv_to_var := Tracker.kill_var ranks v !conv_to_var;
                 subst := Var.Map.remove v !subst;
                 match kind_of_prim p with
                 | Some kind -> (
                     let conv = kind, arg in
-                    match ConvTracker.find_opt conv !conv_to_var with
+                    match Tracker.find_opt ranks conv !conv_to_var with
                     | Some tmp ->
                         st.conversions_eliminated <- st.conversions_eliminated + 1;
                         subst := Var.Map.add v tmp !subst;
                         all_substs := Var.Map.add v tmp !all_substs
                     | None ->
                         body_rev := i :: !body_rev;
-                        conv_to_var := ConvTracker.add conv v !conv_to_var)
+                        conv_to_var := Tracker.add ranks conv v !conv_to_var)
                 | None -> body_rev := i :: !body_rev)
             | Let (v, Prim (((Lt | Le | Ult | Eq | Neq) as p), args)) ->
                 (* Compare the normalized copy of an integer when one is
@@ -2205,7 +2336,7 @@ let process_function
                           match Typing.var_type types x with
                           | Int Unnormalized -> (
                               match
-                                ConvTracker.find_opt (Normalize_int, x) !conv_to_var
+                                Tracker.find_opt ranks (Normalize_int, x) !conv_to_var
                               with
                               | Some x' -> Pv x'
                               | None -> a)
@@ -2213,20 +2344,20 @@ let process_function
                       | Pc _ -> a)
                     args
                 in
-                conv_to_var := ConvTracker.kill_var v !conv_to_var;
+                conv_to_var := Tracker.kill_var ranks v !conv_to_var;
                 subst := Var.Map.remove v !subst;
                 body_rev := Let (v, Prim (p, args)) :: !body_rev
             | Let (v, Apply _) ->
                 conv_to_var :=
-                  ConvTracker.kill_at_call (ConvTracker.kill_var v !conv_to_var);
+                  Tracker.kill_at_call ranks (Tracker.kill_var ranks v !conv_to_var);
                 subst := Var.Map.remove v !subst;
                 body_rev := i :: !body_rev
             | Let (v, _) ->
-                conv_to_var := ConvTracker.kill_var v !conv_to_var;
+                conv_to_var := Tracker.kill_var ranks v !conv_to_var;
                 subst := Var.Map.remove v !subst;
                 body_rev := i :: !body_rev
             | Assign (v, _) ->
-                conv_to_var := ConvTracker.kill_var v !conv_to_var;
+                conv_to_var := Tracker.kill_var ranks v !conv_to_var;
                 subst := Var.Map.remove v !subst;
                 body_rev := i :: !body_rev
             | Set_field _ | Offset_ref _ | Array_set _ | Event _ ->
@@ -2243,7 +2374,7 @@ let process_function
                 match number_conversion_kind ~from ~into with
                 | Some kind -> (
                     let conv = kind, arg in
-                    match ConvTracker.find_opt conv !conv_to_var with
+                    match Tracker.find_opt ranks conv !conv_to_var with
                     | Some tmp -> tmp
                     | None -> arg)
                 | None -> arg)
@@ -2260,7 +2391,7 @@ let process_function
               ~into:(Typing.Int Typing.Integer.Normalized)
           with
           | Some kind -> (
-              match ConvTracker.find_opt (kind, v) !conv_to_var with
+              match Tracker.find_opt ranks (kind, v) !conv_to_var with
               | Some tmp -> tmp
               | None -> v)
           | None -> v
@@ -2274,7 +2405,7 @@ let process_function
                   number_conversion_kind ~from:(Typing.var_type types y) ~into:return_type
                 with
                 | Some kind -> (
-                    match ConvTracker.find_opt (kind, y) !conv_to_var with
+                    match Tracker.find_opt ranks (kind, y) !conv_to_var with
                     | Some tmp -> tmp
                     | None -> y)
                 | None -> y
@@ -2286,7 +2417,7 @@ let process_function
                   number_conversion_kind ~from:(Typing.var_type types y) ~into:Typing.Top
                 with
                 | Some kind -> (
-                    match ConvTracker.find_opt (kind, y) !conv_to_var with
+                    match Tracker.find_opt ranks (kind, y) !conv_to_var with
                     | Some tmp -> tmp
                     | None -> y)
                 | None -> y
@@ -2301,7 +2432,7 @@ let process_function
         let new_block =
           { block with body = List.rev !inserted_rev @ List.rev !body_rev; branch }
         in
-        conv_out_map := Addr.Map.add pc (ConvTracker.to_map !conv_to_var) !conv_out_map;
+        conv_out_map := Addr.Map.add pc !conv_to_var !conv_out_map;
         result := Addr.Map.add pc new_block !result)
       rpo;
     (* Post-pass: patch block params and predecessor branches for phi insertions. *)
@@ -2319,8 +2450,9 @@ let process_function
           ~f:(fun pred_pc ->
             let pred_block = Addr.Map.find pred_pc !result in
             let pred_conv_out =
-              Addr.Map.find_opt pred_pc !conv_out_map
-              |> Option.value ~default:ConvMap.empty
+              match Addr.Map.find_opt pred_pc !conv_out_map with
+              | Some t -> t
+              | None -> Tracker.empty ranks
             in
             let extend_cont ((pc', args) as cont) =
               if pc' = target_pc
@@ -2328,7 +2460,7 @@ let process_function
                 let extra =
                   List.map
                     ~f:(fun (conv, _phi_var) ->
-                      match ConvMap.find_opt conv pred_conv_out with
+                      match Tracker.find_opt ranks conv pred_conv_out with
                       | Some v -> v
                       | None ->
                           (* Should not happen: conversion is in AVIN so all preds
