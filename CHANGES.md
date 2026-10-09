@@ -127,6 +127,8 @@
   start from 1 in all error messages, as editors expect (#2464, #2491)
 
 ## Bug fixes
+* Compiler/Wasm: fix a crash when a variable assigned in a `try` body is
+  stored in a global
 * Compiler/Wasm: fix several bugs of the Wasm linker (instruction decoding,
   retargeting of active segments, type checks of imports) (#2504)
 * Wasm: `Genarray.get`/`set` check the number of indices

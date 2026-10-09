@@ -15,6 +15,16 @@
  (modes wasm))
 
 (tests
+ (names globalize_assign)
+ (modes wasm)
+ ; With -g, ocamlc does not turn the reference into a mutable variable
+ (flags
+  (:standard \ -g))
+ (ocamlc_flags ())
+ (wasm_of_ocaml
+  (flags :standard -w no-missing-debug-event)))
+
+(tests
  (names marshal_fixes)
  (modes js wasm))
 
