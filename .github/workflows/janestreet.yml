@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - master
+      - lcm-ci-debug
   schedule:
     # Prime the caches every Monday
     - cron: 0 1 * * MON
@@ -28,15 +29,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - backend: js
-            ocaml-name: ""
-            ocaml-compiler: "5.3"
-          - backend: js
-            ocaml-name: "OxCaml"
-            ocaml-compiler: "ocaml-variants.5.2.0+ox"
-          - backend: wasm
-            ocaml-name: ""
-            ocaml-compiler: "5.3"
           - backend: wasm
             ocaml-name: "OxCaml"
             ocaml-compiler: "ocaml-variants.5.2.0+ox"
@@ -204,4 +196,13 @@ jobs:
       - name: Run Bonsai web components' tests (release profile)
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         working-directory: ./janestreet/lib/bonsai_web_components
-        run: opam exec -- dune runtest --profile release
+        run: |
+          # Debug: log memory, disk and the largest processes every 5 s, so
+          # that the log shows what was going on when the runner died.
+          (while true; do
+             echo "=== $(date +%T) $(free -m | awk '/Mem/{print "mem used " $3 "M avail " $7 "M"}') $(free -m | awk '/Swap/{print "swap used " $3 "M"}') $(df -m / | awk 'NR==2{print "disk avail " $4 "M"}')"
+             ps -eo rss=,etimes=,args= --sort=-rss | head -6 | cut -c1-250
+             sleep 5
+           done) &
+          nproc; free -m; df -h / /tmp
+          opam exec -- dune runtest --profile release --display short
