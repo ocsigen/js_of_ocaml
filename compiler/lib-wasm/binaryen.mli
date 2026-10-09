@@ -22,6 +22,11 @@ type link_input =
   ; source_map_file : string option
   }
 
+val optimizes : Profile.t -> bool
+(** Whether wasm-opt optimizes the generated code at this optimization
+    level. When it does not, our own passes tighten the code instead;
+    those which only redo what wasm-opt does are skipped when it does. *)
+
 val optimize :
      profile:Profile.t
   -> ?options:string list
