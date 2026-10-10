@@ -2533,16 +2533,18 @@ module Loops = struct
 
   let compute blocks entry : t =
     let g = Structure.control_flow_graph blocks entry in
-    let idom = Structure.immediate_dominators g in
+    (* Most functions have no loop: the dominators and the predecessors are
+       only computed once a backward edge is found *)
+    let idom = lazy (Structure.immediate_dominators g) in
     let rec dominates header pc =
       pc = header
       ||
-      match Addr.Hashtbl.find_opt idom pc with
+      match Addr.Hashtbl.find_opt (Lazy.force idom) pc with
       | Some pc' -> dominates header pc'
       | None -> false
     in
-    let preds = CFG.predecessors blocks in
-    let preds pc = Addr.Map.find_opt pc preds |> Option.value ~default:[] in
+    let preds = lazy (CFG.predecessors blocks) in
+    let preds pc = Addr.Map.find_opt pc (Lazy.force preds) |> Option.value ~default:[] in
     List.fold_left
       ~f:(fun loops src ->
         List.fold_left
@@ -2649,8 +2651,15 @@ let append_instrs blocks pc l =
    definition of the boxed value. [params] are the parameters of the
    function. The boxes of free variables are handled by
    [hoist_boxes_out_of_closures]. *)
+(* Whether a block of the function contains an instruction satisfying [f] *)
+let exists_instr f blocks = Addr.Map.exists (fun _ b -> List.exists ~f b.body) blocks
+
 let hoist_boxes_out_of_loops ~types ~free_pc ~params ~(st : lcm_stats) blocks entry =
-  let loops = Loops.compute blocks entry in
+  let loops =
+    if exists_instr (fun i -> Option.is_some (boxing i)) blocks
+    then Loops.compute blocks entry
+    else Addr.Map.empty
+  in
   if Addr.Map.is_empty loops
   then blocks
   else
@@ -2738,7 +2747,20 @@ let hoist_boxes_out_of_loops ~types ~free_pc ~params ~(st : lcm_stats) blocks en
    An untagging is not hoisted out of a loop containing calls, since its
    result should not be kept live across calls ([not_live_across_calls]). *)
 let hoist_unboxes_out_of_loops ~types ~free_pc ~assigned ~(st : lcm_stats) blocks entry =
-  let loops = Loops.compute blocks entry in
+  let loops =
+    if
+      exists_instr
+        (fun i ->
+          match i with
+          | Let (_, Prim (p, [ Pv _ ])) -> (
+              match kind_of_prim p with
+              | Some kind -> not (is_boxing kind)
+              | None -> false)
+          | Let _ | Assign _ | Set_field _ | Offset_ref _ | Array_set _ | Event _ -> false)
+        blocks
+    then Loops.compute blocks entry
+    else Addr.Map.empty
+  in
   if Addr.Map.is_empty loops
   then blocks
   else
@@ -2827,9 +2849,12 @@ type functions =
   { fun_of_block : Addr.t Addr.Hashtbl.t  (** Entry of the function of a block *)
   ; blocks_of_fun : Addr.t list Addr.Hashtbl.t
   ; parent : Addr.t Addr.Hashtbl.t  (** Block where a closure is created *)
-  ; def_fun : Addr.t Var.Hashtbl.t  (** Function where a variable is defined *)
+  ; def_fun : Addr.t Var.Hashtbl.t
+        (** Function where a variable is defined (only for the operands of
+            boxing conversions) *)
   ; def_block : Addr.t Var.Hashtbl.t
-        (** Block where a variable is defined (not for function parameters) *)
+        (** Block where a variable is defined (only for the operands of
+            boxing conversions, and not for function parameters) *)
   }
 
 let functions (p : program) =
@@ -2858,6 +2883,18 @@ let functions (p : program) =
           | Let _ | Assign _ | Set_field _ | Offset_ref _ | Array_set _ | Event _ -> ())
         b.body)
     p.blocks;
+  (* Only the definitions of the operands of boxing conversions are
+     needed: recording all the variables of the program would be costly *)
+  let boxed = Var.Hashtbl.create 1024 in
+  Addr.Map.iter
+    (fun _ b ->
+      List.iter
+        ~f:(fun i ->
+          match boxing i with
+          | Some (_, _, y) -> Var.Hashtbl.replace boxed y ()
+          | None -> ())
+        b.body)
+    p.blocks;
   let def_fun = Var.Hashtbl.create 1024 in
   let def_block = Var.Hashtbl.create 1024 in
   Addr.Map.iter
@@ -2866,8 +2903,10 @@ let functions (p : program) =
       | None -> ()
       | Some f ->
           let def x =
-            Var.Hashtbl.replace def_fun x f;
-            Var.Hashtbl.replace def_block x pc
+            if Var.Hashtbl.mem boxed x
+            then (
+              Var.Hashtbl.replace def_fun x f;
+              Var.Hashtbl.replace def_block x pc)
           in
           List.iter ~f:def b.params;
           List.iter
@@ -2877,7 +2916,11 @@ let functions (p : program) =
                   def x;
                   match e with
                   | Closure (params, (entry, _), _) ->
-                      List.iter ~f:(fun y -> Var.Hashtbl.replace def_fun y entry) params
+                      List.iter
+                        ~f:(fun y ->
+                          if Var.Hashtbl.mem boxed y
+                          then Var.Hashtbl.replace def_fun y entry)
+                        params
                   | _ -> ())
               | Assign _ | Set_field _ | Offset_ref _ | Array_set _ | Event _ -> ())
             b.body)
