@@ -1,6 +1,7 @@
 # dev
 
 ## Features/Changes
+* Compiler: require sedlex 3.8.1 (#2503)
 * Compiler: with OCaml 5.6, use the optimization hints recorded in the bytecode
   (primitive types, immutable blocks, closures, immediates, ...) (#1721, #2488)
 * Compiler: with OCaml 5.6, use the bytecode hint on integer equality tests
@@ -127,6 +128,12 @@
   start from 1 in all error messages, as editors expect (#2464, #2491)
 
 ## Bug fixes
+* Compiler: the JavaScript lexer no longer crashes on a unicode escape out
+  of the code point range (`\u{110000}`) or with too many digits; it is
+  reported as a syntax error (#2503)
+* Compiler: the JavaScript lexer counts the lines of a CR, U+2028 or U+2029
+  inside a string or template literal, so that the locations after it are
+  right, and reports a bare CR inside a string literal like a bare LF (#2503)
 * Compiler/Wasm: fix several bugs of the Wasm linker (instruction decoding,
   retargeting of active segments, type checks of imports) (#2504)
 * Wasm: `Genarray.get`/`set` check the number of indices

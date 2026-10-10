@@ -822,6 +822,14 @@ let%expect_test ("error reporting" [@when target_engine <> "quickjs"]) =
     cannot parse js (from l:4, c:8)@. |}]
 
 (* check that the locations are correct and that the lexer is captures all the token *)
+let utf8_length s =
+  let rec loop i n =
+    if i >= String.length s
+    then n
+    else loop (i + Uchar.utf_decode_length (String.get_utf_8_uchar s i)) (n + 1)
+  in
+  loop 0 0
+
 let check_vs_string s toks =
   let rec space a b =
     if a >= b
@@ -886,9 +894,17 @@ let check_vs_string s toks =
         let str = Js_token.to_string x in
         space pos idx;
         text idx str;
+        let offset = offset + (utf8_length str - String.length str) in
         loop offset (idx + String.length str) rest
   in
   loop 0 0 toks
+
+(* Keep CR, U+2028 and U+2029 visible (and out of the expect blocks). *)
+let escape_line_terminators s =
+  List.fold_left
+    ~f:(fun s (c, r) -> Str.global_replace (Str.regexp_string c) r s)
+    ~init:s
+    [ "\r", "\\r"; "\u{2028}", "\\u{2028}"; "\u{2029}", "\\u{2029}" ]
 
 let parse_print_token ?(invalid = false) ?(extra = false) s =
   let stdout = Util.check_javascript_source s in
@@ -915,6 +931,7 @@ let parse_print_token ?(invalid = false) ?(extra = false) s =
             let s =
               if extra then Js_token.to_string_extra tok else Js_token.to_string tok
             in
+            let s = escape_line_terminators s in
             (match !prev <> pos.Parse_info.line && pos.Parse_info.line <> 0 with
             | true -> Printf.printf "\n%2d: " pos.Parse_info.line
             | false -> ());
@@ -962,6 +979,21 @@ let%expect_test ("invalid ident" [@when target_engine <> "quickjs"]) =
     fake:3:9: lexer error: Unexpected "\\u{1F42B}" (🐫) is not a valid identifier
     cannot parse l:3:8@.
     |}]
+
+let%expect_test "unicode escape with too many digits" =
+  parse_print_token
+    ~invalid:true
+    {|
+    var \u{FFFFFFFFFFFFFFFFFFFF} = 1;
+    var s = "\u{FFFFFFFFFFFFFFFFFFFF}";
+|};
+  [%expect
+    {|
+            2: 4:var, 8:\u{FFFFFFFFFFFFFFFFFFFF}, 33:=, 35:1, 36:;,
+            3: 4:var, 8:s, 10:=, 12:"\\u{FFFFFFFFFFFFFFFFFFFF}", 38:;,
+           fake:2:9: lexer error: Illegal Unicode escape
+           fake:3:15: lexer error: Unexpected unicode escape out of range
+           |}]
 
 let%expect_test "string" =
   parse_print_token
@@ -1022,6 +1054,76 @@ let%expect_test ("multiline string" [@when target_engine <> "quickjs"]) =
     fake:4:1: lexer error: Unexpected token ILLEGAL
     |}];
   [%expect {||}]
+
+let%expect_test ("line terminators in strings" [@when target_engine <> "quickjs"]) =
+  (* A bare CR (and CRLF) in a string literal is an error like a bare LF, and
+     U+2028 / U+2029 are allowed. All of them must advance the line count. *)
+  parse_print_token ~invalid:true "42;\n\"a\rb\";\n42\n";
+  [%expect
+    {|
+     1: 0:42, 2:;,
+     2: 0:"a\rb",
+     3: 2:;,
+     4: 0:42, 0:;,
+    fake:2:3: lexer error: Unexpected token ILLEGAL
+    |}];
+  parse_print_token ~invalid:true "42;\n\"a\r\nb\";\n42\n";
+  [%expect
+    {|
+     1: 0:42, 2:;,
+     2: 0:"a\r\nb",
+     3: 2:;,
+     4: 0:42, 0:;,
+    fake:2:3: lexer error: Unexpected token ILLEGAL
+    |}];
+  parse_print_token "42;\n\"a\u{2028}b\u{2029}c\";\n42\n";
+  [%expect
+    {|
+    1: 0:42, 2:;,
+    2: 0:"a\226\128\168b\226\128\169c",
+    4: 2:;,
+    5: 0:42, 0:;,
+    |}]
+
+let%expect_test "line terminators in templates" =
+  (* Line terminators other than LF inside a template literal must advance the
+     line count too. *)
+  parse_print_token "42;\n`a\rb\rc`;\n42\n";
+  [%expect
+    {|
+           1: 0:42, 2:;,
+           2: 0:`, 1:a\r,
+           3: 0:b\r,
+           4: 0:c, 1:`, 2:;,
+           5: 0:42, 0:;,
+           |}];
+  parse_print_token "42;\n`a\r\nb`;\n42\n";
+  [%expect
+    {|
+     1: 0:42, 2:;,
+     2: 0:`, 1:a\r
+    ,
+     3: 0:b, 1:`, 2:;,
+     4: 0:42, 0:;,
+    |}];
+  parse_print_token "42;\n`a\u{2028}b\u{2029}c`;\n42\n";
+  [%expect
+    {|
+    1: 0:42, 2:;,
+    2: 0:`, 1:a\u{2028},
+    3: 0:b\u{2029},
+    4: 0:c, 1:`, 2:;,
+    5: 0:42, 0:;,
+    |}];
+  parse_print_token "42;\n`a\nb`;\n42\n";
+  [%expect
+    {|
+     1: 0:42, 2:;,
+     2: 0:`, 1:a
+    ,
+     3: 0:b, 1:`, 2:;,
+     4: 0:42, 0:;,
+    |}]
 
 let%expect_test "multiline comments" =
   parse_print_token {|
