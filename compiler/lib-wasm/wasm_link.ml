@@ -3240,14 +3240,22 @@ let f ?(filter_export = fun _ -> true) ?dependencies ?(names = true) files ~outp
         Scan.analysis
           ~visit:(fun kind idx ->
             match kind with
-            | `Global ->
+            | `Global -> (
                 if global_mappings.(i).(idx) >= imported_globals
                 then
-                  failwith
-                    (Printf.sprintf
-                       "In module %s, a table initializer refers to a global which is \
-                        not imported in the linked module"
-                       files.(i).file)
+                  let import = (get_exportable_info intfs.(i).imports Global).(idx) in
+                  match (get_exportable_info resolved_imports.(i) Global).(idx) with
+                  | Resolved (i', _) ->
+                      failwith
+                        (Printf.sprintf
+                           "In module %s, a table initializer refers to the global \
+                            import %s / %s, which is resolved to a definition in module \
+                            %s. A table initializer can only refer to imported globals."
+                           files.(i).file
+                           import.module_
+                           import.name
+                           files.(i').file)
+                  | Unresolved _ -> assert false)
             | `Func | `Ref_func | `Tag | `Elem | `Data | `Type -> ())
           contents.ch.buf
       in
