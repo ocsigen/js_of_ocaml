@@ -212,6 +212,19 @@ let rec fold_node f (node : node) shift prefix acc =
 
 let fold f t acc = fold_node f t.root t.shift 0 acc
 
+let rec exists_node f (node : node) shift prefix i =
+  i <= mask
+  &&
+  let c = Array.unsafe_get node i in
+  ((not (is_absent c))
+  &&
+  if shift = 0
+  then f (prefix lor i) (unslot c)
+  else exists_node f (unslot c) (shift - bits) (prefix lor (i lsl shift)) 0)
+  || exists_node f node shift prefix (i + 1)
+
+let exists f t = exists_node f t.root t.shift 0 0
+
 let rec min_node (node : node) shift prefix i =
   if i = width
   then raise Not_found
