@@ -1070,6 +1070,134 @@ let used_blocks p =
 
 let check_defs = true
 
+(* The variables read by a block, not including the ones read by the
+   closures it defines *)
+let iter_block_reads f block =
+  let cont (_, args) = List.iter ~f args in
+  List.iter block.body ~f:(fun i ->
+      match i with
+      | Let (_, e) -> (
+          match e with
+          | Apply { f = g; args; _ } ->
+              f g;
+              List.iter ~f args
+          | Block (_, a, _, _) -> Array.iter ~f a
+          | Field (x, _, _) -> f x
+          | Closure (_, c, _) -> cont c
+          | Constant _ | Special _ -> ()
+          | Prim (_, l) ->
+              List.iter l ~f:(fun a ->
+                  match a with
+                  | Pv x -> f x
+                  | Pc _ -> ()))
+      | Assign (_, y) -> f y
+      | Set_field (x, _, _, y) ->
+          f x;
+          f y
+      | Offset_ref (x, _) -> f x
+      | Array_set (x, y, z) ->
+          f x;
+          f y;
+          f z
+      | Event _ -> ());
+  match block.branch with
+  | Return x | Raise (x, _) -> f x
+  | Stop -> ()
+  | Branch c | Poptrap c -> cont c
+  | Cond (x, c1, c2) ->
+      f x;
+      cont c1;
+      cont c2
+  | Switch (x, a) ->
+      f x;
+      Array.iter ~f:cont a
+  | Pushtrap (c1, _, c2) ->
+      cont c1;
+      cont c2
+
+(* A variable [x] assigned by [Assign (x, y)] is a parameter of a block [pc]
+   ending with [Pushtrap]: it holds the value of a mutable variable in the
+   exception handler. Its only reads are in the blocks reachable from the
+   handler without going through [pc] again, including the closures they
+   define, but not from the body of the [try], and it is not assigned there.
+   So, [Assign (x, y)] can be considered as passing [y] as an argument to
+   [x], and the facts known about [x] where it is read remain valid until it
+   is bound again. When the exception handler is removed, these assignments
+   can be removed as well. *)
+let check_assigned_variables blocks =
+  let assigns =
+    Addr.Map.fold
+      (fun pc block acc ->
+        List.fold_left block.body ~init:acc ~f:(fun acc i ->
+            match i with
+            | Assign (x, _) ->
+                Var.Map.update
+                  x
+                  (fun s ->
+                    Some (Addr.Set.add pc (Option.value ~default:Addr.Set.empty s)))
+                  acc
+            | Let _ | Set_field _ | Offset_ref _ | Array_set _ | Event _ -> acc))
+      blocks
+      Var.Map.empty
+  in
+  if not (Var.Map.is_empty assigns)
+  then (
+    let reads =
+      Addr.Map.fold
+        (fun pc block acc ->
+          let acc = ref acc in
+          iter_block_reads
+            (fun x ->
+              if Var.Map.mem x assigns
+              then
+                acc :=
+                  Var.Map.update
+                    x
+                    (fun s ->
+                      Some (Addr.Set.add pc (Option.value ~default:Addr.Set.empty s)))
+                    !acc)
+            block;
+          !acc)
+        blocks
+        Var.Map.empty
+    in
+    let bound = ref Var.Set.empty in
+    Addr.Map.iter
+      (fun pc block ->
+        match block.branch with
+        | Pushtrap ((body_pc, _), _, (handler_pc, _)) ->
+            let params = List.filter ~f:(fun x -> Var.Map.mem x assigns) block.params in
+            if not (List.is_empty params)
+            then
+              let rec visit pc' visited =
+                if pc' = pc || Addr.Set.mem pc' visited
+                then visited
+                else
+                  let visited = Addr.Set.add pc' visited in
+                  let visited =
+                    List.fold_left
+                      (Addr.Map.find pc' blocks).body
+                      ~init:visited
+                      ~f:(fun visited i ->
+                        match i with
+                        | Let (_, Closure (_, (pc'', _), _)) -> visit pc'' visited
+                        | _ -> visited)
+                  in
+                  fold_children blocks pc' visit visited
+              in
+              let handler = visit handler_pc Addr.Set.empty in
+              let body = visit body_pc Addr.Set.empty in
+              List.iter params ~f:(fun x ->
+                  assert (not (Var.Set.mem x !bound));
+                  bound := Var.Set.add x !bound;
+                  (match Var.Map.find_opt x reads with
+                  | Some s -> assert (Addr.Set.subset s (Addr.Set.diff handler body))
+                  | None -> ());
+                  assert (Addr.Set.disjoint (Var.Map.find x assigns) handler))
+        | Return _ | Raise _ | Stop | Branch _ | Cond _ | Switch _ | Poptrap _ -> ())
+      blocks;
+    Var.Map.iter (fun x _ -> assert (Var.Set.mem x !bound)) assigns)
+
 let invariant ({ blocks; start; _ } as p) =
   if with_invariant ()
   then (
@@ -1137,4 +1265,5 @@ let invariant ({ blocks; start; _ } as p) =
         List.iter block.body ~f:check_instr;
         check_events block.body;
         check_last block.branch)
-      blocks)
+      blocks;
+    check_assigned_variables blocks)

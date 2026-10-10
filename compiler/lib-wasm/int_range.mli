@@ -16,56 +16,20 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-module Integer : sig
-  type kind =
-    | Ref
-    | Normalized
-    | Unnormalized
-end
-
-type boxed_number =
-  | Int32
-  | Int64
-  | Nativeint
-  | Float
-  | Float32
-
-type boxed_status =
-  | Boxed
-  | Unboxed
-
-type typ =
-  | Top
-  | Int of Integer.kind
-  | Number of boxed_number * boxed_status
-  | Tuple of typ array
-  | Bigarray of Optimization_hint.Bigarray.t
-  | Null
-  | Bot
-
-val constant_type : Code.constant -> typ
-
-val can_unbox_parameters : Call_graph_analysis.t -> Code.Var.t -> bool
-
-val bigarray_element_type : Optimization_hint.Bigarray.kind -> typ
+(** Integer range analysis *)
 
 type t
-
-val var_type : t -> Code.Var.t -> typ
-
-val return_type : t -> Code.Var.t -> typ
-
-val reset : unit -> unit
-
-val register_prim : string -> unbox:bool -> typ -> unit
 
 val f :
      global_flow_state:Global_flow.state
   -> global_flow_info:Global_flow.info
-  -> fun_info:Call_graph_analysis.t
-  -> deadcode_sentinel:Code.Var.t
-  -> int_ranges:Int_range.t option
   -> Code.program
   -> t
-(** The result of the range analysis, when available, is used to find the
-    arithmetic operations which cannot overflow *)
+(** Compute a range for each integer variable of the program *)
+
+val cannot_overflow : t -> Code.Var.t -> bool
+(** Whether the value of this variable is computed without overflow *)
+
+val valid_index : t -> at:Code.Var.t -> obj:Code.Var.t -> Code.prim_arg -> bool
+(** [valid_index st ~at ~obj i] tells whether [i] is a valid index of the
+    array, string or C-layout bigarray [obj] where [at] is defined *)

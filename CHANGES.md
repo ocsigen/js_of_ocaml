@@ -19,6 +19,8 @@
   quadratic with WASI (#2470)
 * Runtime/Wasm: with WASI, `output_value` shares boxed numbers with equal
   contents, unlike native code (#2470)
+* Compiler/wasm: integer range analysis (from `--opt 2`), to skip normalizing
+  integers and remove bound checks when it is safe (#2478)
 * Compiler: with `--effects={cps,double-translation}`, specialize calls to
   known functions using the global flow analysis before the CPS transformation
   (#2456)
