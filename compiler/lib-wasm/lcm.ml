@@ -1092,29 +1092,6 @@ end = struct
     }
 end
 
-(* The conversions of each operand *)
-let conversions_by_operand all_convs =
-  let tbl = Var.Hashtbl.create 16 in
-  ConvSet.iter
-    (fun ((_, v) as conv) ->
-      Var.Hashtbl.replace
-        tbl
-        v
-        (ConvSet.add
-           conv
-           (Var.Hashtbl.find_opt tbl v |> Option.value ~default:ConvSet.empty)))
-    all_convs;
-  tbl
-
-let conversions_of_vars convs_by_operand vars =
-  List.fold_left
-    ~f:(fun acc v ->
-      match Var.Hashtbl.find_opt convs_by_operand v with
-      | Some s -> ConvSet.union acc s
-      | None -> acc)
-    ~init:ConvSet.empty
-    vars
-
 let is_call i =
   match i with
   | Let (_, Apply _) -> true
@@ -1122,9 +1099,9 @@ let is_call i =
 
 (* [not_live_convs] and [unsafe_convs] are the conversions whose result
    should not be kept live across a call, and those which may fail; [bits]
-   converts a set of conversions into a bit vector *)
-let compute_local_props convs_by_operand ~not_live_convs ~unsafe_convs ~bits is_safe block
-    =
+   converts a set of conversions into a bit vector, and [vars_bits] gives
+   the conversions of a list of variables *)
+let compute_local_props ~vars_bits ~not_live_convs ~unsafe_convs ~bits is_safe block =
   (* Block parameters are definitions. They kill conversions involving them. *)
   let killed_vars =
     List.fold_left
@@ -1135,7 +1112,7 @@ let compute_local_props convs_by_operand ~not_live_convs ~unsafe_convs ~bits is_
       ~init:block.params
       block.body
   in
-  let kill = bits (conversions_of_vars convs_by_operand killed_vars) in
+  let kill = vars_bits killed_vars in
   (* A call also ends the availability of the conversions whose result
      should not be kept live across calls *)
   let kill =
@@ -1202,6 +1179,23 @@ module CFG = struct
       blocks;
     !preds
 end
+
+(* The blocks reachable from [entry], in reverse post-order. This is the
+   order of [Structure.blocks_in_reverse_post_order] (successors visited by
+   increasing address), without building the other parts of the control
+   flow graph. *)
+let reverse_post_order blocks entry =
+  let visited = Addr.Hashtbl.create 16 in
+  let l = ref [] in
+  let rec visit pc =
+    if not (Addr.Hashtbl.mem visited pc)
+    then (
+      Addr.Hashtbl.add visited pc ();
+      Addr.Set.iter visit (Code.fold_children blocks pc Addr.Set.add Addr.Set.empty);
+      l := pc :: !l)
+  in
+  visit entry;
+  !l
 
 let split_critical_edges blocks free_pc =
   let preds = CFG.predecessors blocks in
@@ -1892,7 +1886,6 @@ let process_function
     st.conversions_tracked <- st.conversions_tracked + ConvSet.cardinal all_convs;
     let t0 = tick () in
     let is_safe conv = is_safe_conversion types conv in
-    let convs_by_operand = conversions_by_operand all_convs in
     (* The rank of each conversion, for its bit vector representation *)
     let ranks = Ranks.create all_convs in
     let n_convs = Ranks.tracked ranks in
@@ -1915,6 +1908,25 @@ let process_function
         convs;
       b
     in
+    (* The conversions of each operand *)
+    let ranks_by_operand = Var.Hashtbl.create 16 in
+    Array.iteri
+      ~f:(fun i (_, v) ->
+        Var.Hashtbl.replace
+          ranks_by_operand
+          v
+          (i :: (Var.Hashtbl.find_opt ranks_by_operand v |> Option.value ~default:[])))
+      conv_of_rank;
+    let vars_bits vars =
+      let b = Bits.empty n_convs in
+      List.iter
+        ~f:(fun v ->
+          match Var.Hashtbl.find_opt ranks_by_operand v with
+          | Some l -> List.iter ~f:(fun i -> Bits.add b i) l
+          | None -> ())
+        vars;
+      b
+    in
     let all_convs = Bits.full n_convs in
     let no_convs = Bits.empty n_convs in
     let not_live_convs = Bits.empty n_convs in
@@ -1926,17 +1938,13 @@ let process_function
       conv_of_rank;
     let props =
       Addr.Map.map
-        (compute_local_props convs_by_operand ~not_live_convs ~unsafe_convs ~bits is_safe)
+        (compute_local_props ~vars_bits ~not_live_convs ~unsafe_convs ~bits is_safe)
         fun_blocks
     in
     let preds = CFG.predecessors fun_blocks in
     (* Forward analyses process the blocks in reverse post-order (index
        0..n-1), backward analyses in post-order (index n-1..0). *)
-    let rpo_order =
-      Array.of_list
-        (Structure.blocks_in_reverse_post_order
-           (Structure.control_flow_graph fun_blocks entry))
-    in
+    let rpo_order = Array.of_list (reverse_post_order fun_blocks entry) in
     let n_blocks = Array.length rpo_order in
     let rpo_index = Addr.Hashtbl.create n_blocks in
     Array.iteri ~f:(fun i pc -> Addr.Hashtbl.add rpo_index pc i) rpo_order;
@@ -1970,10 +1978,7 @@ let process_function
     (* The conversions of the parameters of each block *)
     let param_convs_of =
       Array.init n_blocks ~f:(fun i ->
-          bits
-            (conversions_of_vars
-               convs_by_operand
-               (Addr.Map.find rpo_order.(i) fun_blocks).params))
+          vars_bits (Addr.Map.find rpo_order.(i) fun_blocks).params)
     in
     (* Step 1: Anticipatability (backward dataflow, all-paths).
 
@@ -2145,8 +2150,7 @@ let process_function
         let b_props = props_of.(ri) in
         Bits.blit ~src:all_convs ~dst:scratch;
         Array.iter
-          ~f:(fun si ->
-            Bits.inter_union_into scratch isolatedin.(si) param_convs_of.(si))
+          ~f:(fun si -> Bits.inter_union_into scratch isolatedin.(si) param_convs_of.(si))
           succ_index.(ri);
         ignore (update isolatedout ri : bool);
         Bits.diff_into scratch b_props.antloc;
