@@ -17,6 +17,10 @@
 
 (module
    (import "fail" "caml_failwith" (func $caml_failwith (param (ref eq))))
+   (import "array" "caml_check_array_length"
+      (func $caml_check_array_length (param i32)))
+   (import "array" "caml_check_float_array_length"
+      (func $caml_check_float_array_length (param i32)))
    (import "custom" "caml_is_custom"
       (func $caml_is_custom (param (ref eq)) (result i32)))
    (import "custom" "caml_dup_custom"
@@ -126,17 +130,23 @@
               (ref.test (ref $cps_closure_last_arg) (local.get $v))))
 
    (func (export "caml_alloc_dummy") (param $size (ref eq)) (result (ref eq))
+      (call $caml_check_array_length
+         (i31.get_u (ref.cast (ref i31) (local.get $size))))
       (array.new $block (ref.i31 (i32.const 0))
                  (i32.add (i31.get_u (ref.cast (ref i31) (local.get $size)))
                           (i32.const 1))))
 
    (func (export "caml_alloc_dummy_float")
       (param $size (ref eq)) (result (ref eq))
+      (call $caml_check_float_array_length
+         (i31.get_u (ref.cast (ref i31) (local.get $size))))
       (array.new $float_array (f64.const 0)
          (i31.get_u (ref.cast (ref i31) (local.get $size)))))
 
    (func (export "caml_alloc_dummy_mixed")
       (param $size (ref eq)) (param (ref eq)) (result (ref eq))
+      (call $caml_check_array_length
+         (i31.get_u (ref.cast (ref i31) (local.get $size))))
       (array.new $block (ref.i31 (i32.const 0))
                  (i32.add (i31.get_u (ref.cast (ref i31) (local.get $size)))
                           (i32.const 1))))
@@ -288,7 +298,9 @@
       (if (i32.eq (i31.get_s (ref.cast (ref i31) (local.get $tg)))
                   (global.get $double_array_tag))
          (then
+            (call $caml_check_float_array_length (local.get $n))
             (return (array.new $float_array (f64.const 0) (local.get $n)))))
+      (call $caml_check_array_length (local.get $n))
       (local.set $res
          (array.new $block
             (ref.i31 (i32.const 0))

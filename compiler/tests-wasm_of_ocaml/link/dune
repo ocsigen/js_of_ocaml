@@ -1,0 +1,12 @@
+; Tests of the Wasm linker. The modules are written in the text format and
+; assembled with Binaryen's wasm-as; the linked modules are run with node.
+
+(executable
+ (name link_driver)
+ (modules link_driver)
+ (libraries js_of_ocaml-compiler wasm_of_ocaml-compiler))
+
+(cram
+ (deps link_driver.exe run.cjs)
+ (enabled_if
+  (<> %{profile} quickjs)))

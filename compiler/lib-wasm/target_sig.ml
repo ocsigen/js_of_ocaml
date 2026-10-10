@@ -260,6 +260,9 @@ module type S = sig
     val dimension : int -> expression -> expression
     (** The [n]-th dimension of a bigarray, as an [i32] *)
 
+    val num_dims : expression -> expression
+    (** The number of dimensions of a bigarray, as an [i32] *)
+
     val get :
          bound_error_index:int
       -> unsafe:bool

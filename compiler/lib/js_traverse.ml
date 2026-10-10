@@ -2020,6 +2020,14 @@ class compact_vardecl =
       body
   end
 
+(* Statements scoped to their enclosing block, which cannot be the body of
+   an [if] or a loop *)
+let is_declaration (s, _) =
+  match s with
+  | Variable_statement ((Let | Const | Using | AwaitUsing), _)
+  | Function_declaration _ | Class_declaration _ -> true
+  | _ -> false
+
 (* - Group variable_statement together *)
 (* - Remove unnecessary block *)
 class clean =
@@ -2067,12 +2075,12 @@ class clean =
       let s = super#statement s in
       let b = function
         | Block [], loc -> Empty_statement, loc
-        | Block [ x ], _ -> x
+        | Block [ x ], _ when not (is_declaration x) -> x
         | b -> b
       in
       let bopt = function
         | Some (Block [], _) -> None
-        | Some (Block [ x ], _) -> Some x
+        | Some (Block [ x ], _) when not (is_declaration x) -> Some x
         | Some (Empty_statement, _) -> None
         | Some b -> Some b
         | None -> None
@@ -2221,29 +2229,15 @@ class simpl =
         | Band -> BandEq
         | Bxor -> BxorEq
         | Bor -> BorEq
-        | Or -> OrEq
-        | And -> AndEq
         | Exp -> ExpEq
-        | Coalesce -> CoalesceEq
         | _ -> assert false
       in
       let has_assign_op op =
         match op with
-        | Mul
-        | Div
-        | Mod
-        | Plus
-        | Minus
-        | Lsl
-        | Asr
-        | Lsr
-        | Band
-        | Bxor
-        | Bor
-        | Or
-        | And
-        | Exp
-        | Coalesce -> true
+        | Mul | Div | Mod | Plus | Minus | Lsl | Asr | Lsr | Band | Bxor | Bor | Exp ->
+            true
+        (* The logical assignments [||=], [&&=] and [??=] are not used: they
+           are ES2021, while the generated code targets ES2020 *)
         | _ -> false
       in
       let is_commutative_op op =
@@ -2313,7 +2307,7 @@ class simpl =
       in
       let s = m#with_in_var_sequence false super#statement s in
       match s with
-      | Block [ x ] -> fst x
+      | Block [ x ] when not (is_declaration x) -> fst x
       | _ -> s
 
     (* Idents mentioned in the live code of the enclosing [var] scopes,

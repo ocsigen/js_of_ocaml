@@ -77,6 +77,7 @@
    test_promise
    test_lwt_promise
    test_weak_gc
+   array_limits
    toplevel_sections))
  (libraries unix compiler-libs.common js_of_ocaml-compiler str)
  ; bigarray_stubs backs test_bigarray; its symbols are disjoint from
@@ -297,3 +298,8 @@
 
 (cram
  (deps %{bin:js_of_ocaml}))
+
+(test
+ (name array_limits)
+ (modules array_limits)
+ (modes js wasm))

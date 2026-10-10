@@ -145,8 +145,8 @@ let eval_prim ~target x =
   | Not, [ Int i ] -> bool (Targetint.is_zero i)
   | Lt, [ Int i; Int j ] -> bool Targetint.(i < j)
   | Le, [ Int i; Int j ] -> bool Targetint.(i <= j)
-  | Eq, [ Int i; Int j ] -> bool Targetint.(i = j)
-  | Neq, [ Int i; Int j ] -> bool Targetint.(i <> j)
+  | Eq _, [ Int i; Int j ] -> bool Targetint.(i = j)
+  | Neq _, [ Int i; Int j ] -> bool Targetint.(i <> j)
   | Ult, [ Int i; Int j ] -> bool (Targetint.unsigned_lt i j)
   | Extern (name, _), l -> (
       match name, l with
@@ -630,12 +630,12 @@ let eval_instr update_count inline_constant ~target info i =
   | Let
       ( x
       , Prim
-          ( ((Eq | Neq | Lt | Le | Ult) as prim)
+          ( ((Eq _ | Neq _ | Lt | Le | Ult) as prim)
           , ([ (Pv y as fst); Pc (Int j) ] | [ (Pc (Int j) as fst); Pv y ]) ) ) -> (
       let pred =
         match prim with
-        | Eq -> fun a b -> Targetint.equal a b
-        | Neq -> fun a b -> not (Targetint.equal a b)
+        | Eq _ -> fun a b -> Targetint.equal a b
+        | Neq _ -> fun a b -> not (Targetint.equal a b)
         | Lt -> fun a b -> Targetint.( < ) a b
         | Le -> fun a b -> Targetint.( <= ) a b
         | Ult -> fun a b -> Targetint.unsigned_lt a b

@@ -337,10 +337,12 @@ function re_search_backward(re, s, pos) {
     startchars = re[2][startchars + 1];
     var len = caml_ml_string_length(s);
     do {
+      // a regexp with a startchars table needs at least one character to
+      // match, so no match starts at the end of the string
       while (
         pos > 0 &&
-        pos < len &&
-        caml_string_get(startchars, caml_string_get(s, pos)) === 0
+        (pos >= len ||
+          caml_string_get(startchars, caml_string_get(s, pos)) === 0)
       )
         pos--;
       var res = re_match(re, s, pos, 0);

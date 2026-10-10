@@ -103,6 +103,7 @@ type t =
   | Hint_ccall of ccall
   | Hint_immediate
   | Hint_variant
+  | Hint_int_equality_test
 
 let print_ccall f h =
   match h with
@@ -200,6 +201,7 @@ let print f h =
   | Hint_immutable_block -> Format.fprintf f "immutable"
   | Hint_immediate -> Format.fprintf f "immediate"
   | Hint_variant -> Format.fprintf f "variant"
+  | Hint_int_equality_test -> Format.fprintf f "int equality test"
   | Hint_arraylength kind ->
       Format.fprintf
         f

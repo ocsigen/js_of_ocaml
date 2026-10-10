@@ -1473,6 +1473,11 @@ module Bigarray = struct
       (Memory.wasm_struct_get ty (Memory.wasm_cast ty a) 3)
       (Arith.const (Int32.of_int n))
 
+  let num_dims a =
+    let* ty = Type.bigarray_type in
+    let* a = Memory.wasm_cast ty a in
+    return (W.StructGet (Some U, ty, 4, a))
+
   let little_endian () =
     if Config.Flag.wasi ()
     then Arith.(const 1l)

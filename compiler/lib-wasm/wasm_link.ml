@@ -545,6 +545,7 @@ module Read = struct
           array_for_all2 valtype_eq p1 p2 && array_for_all2 valtype_eq r1 r2
       | Struct l1, Struct l2 -> array_for_all2 fieldtype_eq l1 l2
       | Array f1, Array f2 -> fieldtype_eq f1 f2
+      | Cont i1, Cont i2 -> i1 = i2
       | _ -> false
 
     let subtype_eq
@@ -567,9 +568,16 @@ module Read = struct
     { types : int RecTypeTbl.t
     ; mutable last_index : int
     ; mutable rev_list : rectype list
+    ; mutable rev_subtyping_info : subtype array list
+          (* Same as [rev_list], but with absolute supertype indices *)
     }
 
-  let create_types () = { types = RecTypeTbl.create 2000; last_index = 0; rev_list = [] }
+  let create_types () =
+    { types = RecTypeTbl.create 2000
+    ; last_index = 0
+    ; rev_list = []
+    ; rev_subtyping_info = []
+    }
 
   let add_rectype types typ =
     try RecTypeTbl.find types.types typ
@@ -578,6 +586,16 @@ module Read = struct
       RecTypeTbl.add types.types typ index;
       types.last_index <- Array.length typ + index;
       types.rev_list <- typ :: types.rev_list;
+      (* Supertypes in the same recursive group are given relative to
+         the start of the group *)
+      types.rev_subtyping_info <-
+        Array.map
+          ~f:(fun (t : subtype) ->
+            match t.supertype with
+            | Some s when s < 0 -> { t with supertype = Some (index + lnot s) }
+            | _ -> t)
+          typ
+        :: types.rev_subtyping_info;
       index
 
   let heaptype st ch =
@@ -813,7 +831,7 @@ module Read = struct
     let exports =
       let tbl = make_exportable_info [] in
       if find_section contents 7 then vec' (export tbl) contents.ch;
-      tbl
+      map_exportable_info (fun _ l -> List.rev l) tbl
     in
     { imports; exports }
 
@@ -850,6 +868,10 @@ module Read = struct
 end
 
 module Scan = struct
+  (* Raised when an index is mapped to an entry which does not exist in
+     the output *)
+  exception Invalid_reference
+
   let debug = false
 
   type maps =
@@ -994,6 +1016,7 @@ module Scan = struct
           if i' < 128 then pos + 2, (i' lsl 7) + (i land 0x7f) else uint32 pos
       in
       let idx' = map idx in
+      if idx' < 0 then raise Invalid_reference;
       if idx <> idx'
       then (
         flush' pos pos';
@@ -1057,7 +1080,11 @@ module Scan = struct
       | 0x6D (* eq *)
       | 0x6C (* i31 *)
       | 0x6B (* struct *)
-      | 0x6A (* array *) -> pos + 1
+      | 0x6A (* array *)
+      | 0x69 (* exn *)
+      | 0x74 (* noexn *)
+      | 0x68 (* cont *)
+      | 0x75 (* nocont *) -> pos + 1
       | c -> failwith (Printf.sprintf "Bad heap type 0x%02X@." c)
     in
     let reftype pos =
@@ -1294,7 +1321,9 @@ module Scan = struct
       | 0xE3 (* resume *) -> pos + 1 |> typeidx |> vector on_clause |> instructions
       | 0xE4 (* resume_throw *) ->
           pos + 1 |> typeidx |> tagidx |> vector on_clause |> instructions
-      | 0xE5 (* switch *) -> pos + 1 |> typeidx |> tagidx |> instructions
+      | 0xE5 (* resume_throw_ref *) ->
+          pos + 1 |> typeidx |> vector on_clause |> instructions
+      | 0xE6 (* switch *) -> pos + 1 |> typeidx |> tagidx |> instructions
       | 0xFB -> pos + 1 |> gc_instruction
       | 0xFC -> (
           if debug then Format.eprintf "  %d@." (get (pos + 1));
@@ -1349,13 +1378,14 @@ module Scan = struct
       | c -> failwith (Printf.sprintf "Bad instruction 0xFB 0x%02X" c)
     and vector_instruction pos =
       if debug then Format.eprintf "  %d@." (get pos);
+      (* [uint32] consumes the sub-opcode: [pos] is now at the immediates *)
       let pos, i = uint32 pos in
       match i with
       | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 92 | 93 (* v128.load / store *)
-        -> pos + 1 |> memarg |> instructions
+        -> pos |> memarg |> instructions
       | 84 | 85 | 86 | 87 | 88 | 89 | 90 | 91 (* v128.load/store_lane *) ->
-          pos + 1 |> memarg |> laneidx |> instructions
-      | 12 (* v128.const *) | 13 (* v128.shuffle *) -> pos + 17 |> instructions
+          pos |> memarg |> laneidx |> instructions
+      | 12 (* v128.const *) | 13 (* v128.shuffle *) -> pos + 16 |> instructions
       | 21
       | 22
       | 23
@@ -1369,7 +1399,7 @@ module Scan = struct
       | 31
       | 32
       | 33
-      | 34 (* xx.extract/replace_lane *) -> pos + 1 |> laneidx |> instructions
+      | 34 (* xx.extract/replace_lane *) -> pos |> laneidx |> instructions
       | ( 162
         | 165
         | 166
@@ -1391,7 +1421,7 @@ module Scan = struct
         | 238 ) as c -> failwith (Printf.sprintf "Bad instruction 0xFD 0x%02X" c)
       | c ->
           if c <= 275
-          then pos + 1 |> instructions
+          then pos |> instructions
           else failwith (Printf.sprintf "Bad instruction 0xFD 0x%02X" c)
     and atomic_instruction pos =
       if debug then Format.eprintf "  %d@." (get pos);
@@ -1409,7 +1439,7 @@ module Scan = struct
       | 72 | 73 | 74 | 75 | 76 | 77 | 78 (* xx.atomic.rmw.cmpxchg *) ->
           pos + 1 |> memarg |> instructions
       | 3 (* memory.fence *) ->
-          let c = get pos + 1 in
+          let c = get (pos + 1) in
           assert (c = 0);
           pos + 2 |> instructions
       | c -> failwith (Printf.sprintf "Bad instruction 0xFE 0x%02X" c)
@@ -1422,7 +1452,8 @@ module Scan = struct
       if debug then Format.eprintf "0x%02X (@%d) catch@." (get pos) pos;
       match get pos with
       | 0x07 (* catch *) -> pos + 1 |> tagidx |> instructions |> opt_catch
-      | 0x05 (* catch_all *) -> pos + 1 |> instructions |> block_end |> instructions
+      | 0x19 (* catch_all *) -> pos + 1 |> instructions |> block_end |> instructions
+      | 0x18 (* delegate *) -> pos + 1 |> labelidx |> instructions
       | _ -> pos |> block_end |> instructions
     and catch pos =
       match get pos with
@@ -1480,13 +1511,34 @@ module Scan = struct
       assert (get pos = 0);
       pos + 1
     in
+    (* An active segment with an implicit table or memory (element kinds
+       0 and 4, data kind 0) refers to index 0. When this table or
+       memory gets another index in the output, the segment is rewritten
+       to its explicit form (element kinds 2 and 6, data kind 2): the
+       [flag] is changed, the index is inserted after it, and for element
+       segments, the element kind or type [mid] is inserted after the
+       offset expression. *)
+    let active_segment ~map ~flag ?mid rest pos =
+      if map 0 = 0
+      then pos + 1 |> expr |> rest
+      else (
+        flush' pos (pos + 1);
+        Buffer.add_char buf flag;
+        output_uint buf (map 0);
+        let pos' = pos + 1 |> expr in
+        Option.iter mid ~f:(fun mid ->
+            flush' pos' pos';
+            Buffer.add_char buf mid);
+        pos' |> rest)
+    in
     let elem pos =
       match get pos with
-      | 0 -> pos + 1 |> expr |> vector funcidx
+      | 0 ->
+          pos |> active_segment ~map:table_map ~flag:'\x02' ~mid:'\x00' (vector funcidx)
       | 1 -> pos + 1 |> elemkind |> vector funcidx
       | 2 -> pos + 1 |> tableidx |> expr |> elemkind |> vector funcidx
       | 3 -> pos + 1 |> elemkind |> vector funcidx
-      | 4 -> pos + 1 |> expr |> vector expr
+      | 4 -> pos |> active_segment ~map:table_map ~flag:'\x06' ~mid:'\x70' (vector expr)
       | 5 -> pos + 1 |> reftype |> vector expr
       | 6 -> pos + 1 |> tableidx |> expr |> reftype |> vector expr
       | 7 -> pos + 1 |> reftype |> vector expr
@@ -1498,7 +1550,7 @@ module Scan = struct
     in
     let data pos =
       match get pos with
-      | 0 -> pos + 1 |> expr |> bytes
+      | 0 -> pos |> active_segment ~map:mem_map ~flag:'\x02' bytes
       | 1 -> pos + 1 |> bytes
       | 2 -> pos + 1 |> memidx |> expr |> bytes
       | c -> failwith (Printf.sprintf "Bad data segment 0x%02X" c)
@@ -1572,7 +1624,9 @@ type import_status =
   | Unresolved of int
 
 let check_limits export import =
-  export.min >= import.min
+  Bool.equal export.shared import.shared
+  && Poly.equal export.index_type import.index_type
+  && export.min >= import.min
   &&
   match export.max, import.max with
   | _, None -> true
@@ -1973,7 +2027,7 @@ let f ?(filter_export = fun _ -> true) files ~output_file =
   let types = Read.create_types () in
   let intfs = Array.map ~f:(fun f -> interface types f.contents) files in
   let type_list = List.rev types.rev_list in
-  let subtyping_info = Array.concat type_list in
+  let subtyping_info = Array.concat (List.rev types.rev_subtyping_info) in
   let st = Write.types buf (Array.of_list type_list) in
   add_section out_ch ~id:1 buf;
 
@@ -1999,20 +2053,29 @@ let f ?(filter_export = fun _ -> true) files ~output_file =
         map_exportable_info
           (fun kind imports ->
             let exports = get_exportable_info exports kind in
+            let unresolved import =
+              match Poly.Hashtbl.find tbl import with
+              | status -> status
+              | exception Not_found ->
+                  let idx = get_exportable_info unresolved_imports kind in
+                  let status = Unresolved idx in
+                  Poly.Hashtbl.replace tbl import status;
+                  set_exportable_info unresolved_imports kind (1 + idx);
+                  import_list := import :: !import_list;
+                  status
+            in
             Array.map
               ~f:(fun (import : import) ->
                 match resolve 0 ~files ~intfs ~subtyping_info ~exports ~kind i import with
-                | i', idx -> Resolved (i', idx)
-                | exception Not_found -> (
-                    match Poly.Hashtbl.find tbl import with
-                    | status -> status
-                    | exception Not_found ->
-                        let idx = get_exportable_info unresolved_imports kind in
-                        let status = Unresolved idx in
-                        Poly.Hashtbl.replace tbl import status;
-                        set_exportable_info unresolved_imports kind (1 + idx);
-                        import_list := import :: !import_list;
-                        status))
+                | i', idx ->
+                    (* An export of an import of another module which
+                       remains unresolved: we use this import directly,
+                       so that [Resolved] always refers to a definition *)
+                    let imports' = get_exportable_info intfs.(i').Read.imports kind in
+                    if idx < Array.length imports'
+                    then unresolved imports'.(idx)
+                    else Resolved (i', idx)
+                | exception Not_found -> unresolved import)
               imports)
           intf.Read.imports)
       intfs
@@ -2074,7 +2137,31 @@ let f ?(filter_export = fun _ -> true) files ~output_file =
   in
   let table_counts =
     write_section_with_scan ~files ~out_ch ~buf ~id:4 ~scan:(fun i maps ->
-        Scan.table_section positions.(i) { maps with func = func_mappings.(i) })
+        (* The table section comes before the global section: a table
+           initializer can only refer to imported globals *)
+        let global =
+          Array.map
+            ~f:(fun status ->
+              match status with
+              | Unresolved u -> u
+              | Resolved _ -> -1)
+            (get_exportable_info resolved_imports.(i) Global)
+        in
+        fun buf code ~count pos ->
+          try
+            Scan.table_section
+              positions.(i)
+              { maps with func = func_mappings.(i); global }
+              buf
+              code
+              ~count
+              pos
+          with Scan.Invalid_reference ->
+            failwith
+              (Printf.sprintf
+                 "In module %s, a table initializer refers to a global which is not \
+                  imported in the linked module"
+                 files.(i).file))
   in
   let table_mappings =
     build_mappings resolved_imports unresolved_imports Table table_counts
@@ -2277,7 +2364,11 @@ let f ?(filter_export = fun _ -> true) files ~output_file =
   let elem_counts =
     write_section_with_scan ~files ~out_ch ~buf ~id:9 ~scan:(fun i maps ->
         Scan.elem_section
-          { maps with func = func_mappings.(i); global = global_mappings.(i) })
+          { maps with
+            func = func_mappings.(i)
+          ; global = global_mappings.(i)
+          ; table = table_mappings.(i)
+          })
   in
   let elem_mappings = build_simple_mappings ~counts:elem_counts in
 

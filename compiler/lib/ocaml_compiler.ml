@@ -535,9 +535,7 @@ module Hint = struct
     | Hint_closures l -> Some (Hint_closures (List.map ~f:import_closure_hint l))
     | Hint_ccall hint ->
         Option.map ~f:(fun h -> Optimization_hint.Hint_ccall h) (import_ccall hint)
-    | Hint_physical_comparison ->
-        (* No corresponding optimization in js_of_ocaml yet; ignore the hint. *)
-        None
+    | Hint_int_equality_test -> Some Hint_int_equality_test
     | Hint_immediate -> Some Hint_immediate
     | Hint_variant -> Some Hint_variant
 end

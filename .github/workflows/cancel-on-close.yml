@@ -1,0 +1,38 @@
+name: Cancel runs of closed pull requests
+
+# The concurrency groups only cancel the runs of a pull request when it
+# is updated. Once it is merged or closed, its queued and running jobs
+# are of no use but still hold runner slots: cancel them.
+
+on:
+  # pull_request_target, so that the token can cancel runs of pull
+  # requests from forks. No code from the pull request is checked out.
+  pull_request_target:
+    types:
+      - closed
+
+permissions:
+  actions: write
+
+jobs:
+  cancel:
+    if: github.repository == 'ocsigen/js_of_ocaml'
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      BRANCH: ${{ github.event.pull_request.head.ref }}
+      HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+    steps:
+      - name: Cancel pending runs
+        run: |
+          gh api --paginate -X GET "repos/$GH_REPO/actions/runs" \
+            -f event=pull_request -f branch="$BRANCH" -f per_page=100 \
+            -q '.workflow_runs[]
+                | select(.status != "completed"
+                         and .head_repository.full_name == env.HEAD_REPO)
+                | [.id, .name] | @tsv' |
+          while IFS=$'\t' read -r id name; do
+            echo "Cancelling $name ($id)"
+            gh api -X POST "repos/$GH_REPO/actions/runs/$id/cancel" || true
+          done

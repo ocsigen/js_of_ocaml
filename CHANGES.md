@@ -4,11 +4,22 @@
 * Compiler: require sedlex 3.8.1 (#2503)
 * Compiler: with OCaml 5.6, use the optimization hints recorded in the bytecode
   (primitive types, immutable blocks, closures, immediates, ...) (#1721, #2488)
+* Compiler: with OCaml 5.6, use the bytecode hint on integer equality tests
+  (wasm: no check for JavaScript values, no boxing of the arguments) (#2494)
 * Compiler/Runtime: support the OCaml 5.6 bit counting primitives
   (`caml_int_clz`, `caml_int_ctz`, `caml_int_popcount`) (#2469)
 * Runtime: support `Sys.filepath_exists` (OCaml 5.6) (#2493)
 * Runtime: with OCaml 5.6, `Weak.get_copy` and the ephemeron `get_*_copy`
   primitives no longer copy, as in the OCaml runtime (#2469)
+* Runtime/Wasm: faster `caml_hash` and `compare`, without a global work stack
+  (#2470)
+* Runtime/Wasm: faster lexer engines, using lexer tables cached as 16-bit
+  arrays (#2470)
+* Runtime/Wasm: `Str` searches skip positions where no match can start (#2470)
+* Runtime/Wasm: faster sharing detection in `output_value`, no longer
+  quadratic with WASI (#2470)
+* Runtime/Wasm: with WASI, `output_value` shares boxed numbers with equal
+  contents, unlike native code (#2470)
 * Compiler: with `--effects={cps,double-translation}`, specialize calls to
   known functions using the global flow analysis before the CPS transformation
   (#2456)
@@ -123,6 +134,12 @@
 * Compiler: the JavaScript lexer counts the lines of a CR, U+2028 or U+2029
   inside a string or template literal, so that the locations after it are
   right, and reports a bare CR inside a string literal like a bare LF (#2503)
+* Compiler/Wasm: fix several bugs of the Wasm linker (instruction decoding,
+  retargeting of active segments, type checks of imports) (#2504)
+* Wasm: `Genarray.get`/`set` check the number of indices
+* Runtime: the functions creating arrays of arbitrary length (`Array.append`,
+  `Array.concat`, `Obj.new_block`, `Weak.create`, ...) check the size limits of
+  OCaml (`Sys.max_array_length`), and `Array.make` accepts these limits (#2499)
 * Runtime: `Str.string_partial_match` stops at a partial match (JS) and no
   longer returns invalid groups (OSEC-2026-21, ocaml/ocaml#15113) (#2492)
 * Compiler/wasm: `x land y` was assumed to fit in 31 bits as soon as one
@@ -227,6 +244,10 @@
 * Compiler: fix reference unboxing when a variable read from an unboxed
   reference is stored into another unboxed reference in a nested closure
   (#2426)
+* Compiler: do not emit the ES2021 logical assignments (`||=`, `&&=`, `??=`),
+  as the generated code targets ES2020 (#XXXX)
+* Compiler: do not remove the braces around a single `let`, `const`, `class`
+  or function declaration when simplifying JavaScript code (#XXXX)
 # 6.4.1 (2026-06-30) - Lille
 
 ## Bug fixes

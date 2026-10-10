@@ -76,6 +76,12 @@ function caml_raise_not_found() {
   caml_raise_constant(caml_global_data["predef:Not_found"]);
 }
 
+//Provides: caml_raise_out_of_memory
+//Requires: caml_raise_constant, caml_global_data
+function caml_raise_out_of_memory() {
+  caml_raise_constant(caml_global_data["predef:Out_of_memory"]);
+}
+
 //Provides: caml_array_bound_error
 //Requires: caml_invalid_argument
 function caml_array_bound_error() {

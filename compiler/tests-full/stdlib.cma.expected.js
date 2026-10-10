@@ -9362,7 +9362,7 @@
       ;
      else{
       _B_ = (ofs + len | 0) < 0 ? 1 : 0;
-      _B_ ||= a.length - 1 < (ofs + len | 0) ? 1 : 0;
+      _B_ = _B_ || (a.length - 1 < (ofs + len | 0) ? 1 : 0);
      }
     }
     return _B_ ?  /*<<float.ml:199:6>>*/ Stdlib[1].call(null, msg) : _B_ /*<<float.ml:199:21>>*/ ;
@@ -13738,7 +13738,9 @@
     var _c_ =  /*<<buffer.ml:150:2>>*/ offset < 0;
     if(_c_)
      ;
-    else{_c_ = len < 0; _c_ ||= (caml_ml_string_length(s) - len | 0) < offset;
+    else{
+     _c_ = len < 0;
+     _c_ = _c_ || (caml_ml_string_length(s) - len | 0) < offset;
     }
     if(_c_)
       /*<<buffer.ml:151:7>>*/ Stdlib[1].call(null, "Buffer.add_substring");
@@ -13765,7 +13767,7 @@
      ;
     else{
      _c_ = len < 0;
-     _c_ ||= (caml_ml_bytes_length(bytes) - len | 0) < offset;
+     _c_ = _c_ || (caml_ml_bytes_length(bytes) - len | 0) < offset;
     }
     if(_c_)
       /*<<buffer.ml:164:7>>*/ Stdlib[1].call(null, "Buffer.add_subbytes");
@@ -20549,11 +20551,13 @@
           a:
           try{
            _ad_ = str_ind$0 === end_ind;
-           _ad_ ||=
-            60
-            !==
-              /*<<camlinternalFormat.ml:2666:32>>*/ caml_string_get
-              (str, str_ind$0);
+           _ad_ =
+            _ad_
+            ||
+             60
+             !==
+               /*<<camlinternalFormat.ml:2666:32>>*/ caml_string_get
+               (str, str_ind$0);
            if(_ad_)
              /*<<camlinternalFormat.ml:2666:58>>*/ throw caml_maybe_attach_backtrace
                    (Stdlib[8], 1);
@@ -23663,7 +23667,9 @@
      var _a_ =  /*<<digest.ml:93:4>>*/ ofs < 0;
      if(_a_)
       ;
-     else{_a_ = len < 0; _a_ ||= (caml_ml_string_length(str) - len | 0) < ofs;
+     else{
+      _a_ = len < 0;
+      _a_ = _a_ || (caml_ml_string_length(str) - len | 0) < ofs;
      }
      if(_a_)
        /*<<digest.ml:94:9>>*/ Stdlib[1].call(null, cst_Digest_substring);
@@ -23674,7 +23680,10 @@
      var _a_ =  /*<<digest.ml:98:4>>*/ ofs < 0;
      if(_a_)
       ;
-     else{_a_ = len < 0; _a_ ||= (caml_ml_bytes_length(b) - len | 0) < ofs;}
+     else{
+      _a_ = len < 0;
+      _a_ = _a_ || (caml_ml_bytes_length(b) - len | 0) < ofs;
+     }
      if(_a_)
        /*<<digest.ml:99:9>>*/ Stdlib[1].call(null, cst_Digest_subbytes);
       /*<<digest.ml:100:4>>*/ return caml_blake2_bytes
@@ -32863,7 +32872,7 @@
          ;
         else{
          _E_ = (dst_pos + blit_length | 0) < 0;
-         _E_ ||= dst_arr.length - 1 < (dst_pos + blit_length | 0);
+         _E_ = _E_ || dst_arr.length - 1 < (dst_pos + blit_length | 0);
         }
        }
       }
@@ -32939,7 +32948,7 @@
        src_pos + len | 0,
        src_length);
      /*<<dynarray.ml:760:2>>*/ _E_ = dst_pos < 0;
-    _E_ ||= dst_length < dst_pos;
+    _E_ = _E_ || dst_length < dst_pos;
     if(_E_)
       /*<<dynarray.ml:761:4>>*/ caml_call3
       (Stdlib_Printf[10].call(null, Stdlib[1], _u_),
@@ -35419,18 +35428,22 @@
     var _n_ =  /*<<filename.ml:99:4>>*/ is_relative(n);
      /*<<filename.ml:99:17>>*/ if(_n_){
      _n_ = caml_ml_string_length(n) < 2 ? 1 : 0;
-     _n_ ||=
-       /*<<filename.ml:100:31>>*/ Stdlib_String[16].call(null, n, 0, 2)
-       !== cst$5
-       ? 1
-       : 0;
+     _n_ =
+      _n_
+      ||
+       ( /*<<filename.ml:100:31>>*/ Stdlib_String[16].call(null, n, 0, 2)
+         !== cst$5
+         ? 1
+         : 0);
       /*<<filename.ml:99:17>>*/ if(_n_){
       _n_ = caml_ml_string_length(n) < 3 ? 1 : 0;
-      _n_ ||=
-        /*<<filename.ml:101:31>>*/ Stdlib_String[16].call(null, n, 0, 3)
-        !== cst$6
-        ? 1
-        : 0;
+      _n_ =
+       _n_
+       ||
+        ( /*<<filename.ml:101:31>>*/ Stdlib_String[16].call(null, n, 0, 3)
+          !== cst$6
+          ? 1
+          : 0);
      }
     }
      /*<<filename.ml:99:17>>*/ return _n_;
@@ -35564,7 +35577,7 @@
     var
      c =  /*<<filename.ml:135:31>>*/ caml_string_get(s, i),
      _l_ =  /*<<filename.ml:135:40>>*/ 47 === c ? 1 : 0;
-    if(_l_) ; else{_l_ = 92 === c ? 1 : 0; _l_ ||= 58 === c ? 1 : 0;}
+    if(_l_) ; else{_l_ = 92 === c ? 1 : 0; _l_ = _l_ || (58 === c ? 1 : 0);}
     return _l_;
     /*<<filename.ml:135:70>>*/ }
    function is_relative$0(n){
@@ -35575,10 +35588,14 @@
        || (47 !==  /*<<filename.ml:137:28>>*/ caml_string_get(n, 0) ? 1 : 0);
      /*<<filename.ml:137:4>>*/ if(_l_){
      _l_ = caml_ml_string_length(n) < 1 ? 1 : 0;
-     _l_ ||= 92 !==  /*<<filename.ml:138:31>>*/ caml_string_get(n, 0) ? 1 : 0;
+     _l_ =
+      _l_
+      || (92 !==  /*<<filename.ml:138:31>>*/ caml_string_get(n, 0) ? 1 : 0);
       /*<<filename.ml:137:4>>*/ if(_l_){
       _l_ = caml_ml_string_length(n) < 2 ? 1 : 0;
-      _l_ ||= 58 !==  /*<<filename.ml:139:31>>*/ caml_string_get(n, 1) ? 1 : 0;
+      _l_ =
+       _l_
+       || (58 !==  /*<<filename.ml:139:31>>*/ caml_string_get(n, 1) ? 1 : 0);
      }
     }
      /*<<filename.ml:137:4>>*/ return _l_;
@@ -35587,32 +35604,40 @@
     var _l_ =  /*<<filename.ml:141:4>>*/ is_relative$0(n);
      /*<<filename.ml:141:17>>*/ if(_l_){
      _l_ = caml_ml_string_length(n) < 2 ? 1 : 0;
-     _l_ ||=
-       /*<<filename.ml:142:31>>*/ Stdlib_String[16].call(null, n, 0, 2)
-       !== cst$5
-       ? 1
-       : 0;
+     _l_ =
+      _l_
+      ||
+       ( /*<<filename.ml:142:31>>*/ Stdlib_String[16].call(null, n, 0, 2)
+         !== cst$5
+         ? 1
+         : 0);
       /*<<filename.ml:141:17>>*/ if(_l_){
       _l_ = caml_ml_string_length(n) < 2 ? 1 : 0;
-      _l_ ||=
-        /*<<filename.ml:143:31>>*/ Stdlib_String[16].call(null, n, 0, 2)
-        !== ".\\"
-        ? 1
-        : 0;
+      _l_ =
+       _l_
+       ||
+        ( /*<<filename.ml:143:31>>*/ Stdlib_String[16].call(null, n, 0, 2)
+          !== ".\\"
+          ? 1
+          : 0);
        /*<<filename.ml:141:17>>*/ if(_l_){
        _l_ = caml_ml_string_length(n) < 3 ? 1 : 0;
-       _l_ ||=
-         /*<<filename.ml:144:31>>*/ Stdlib_String[16].call(null, n, 0, 3)
-         !== cst$6
-         ? 1
-         : 0;
+       _l_ =
+        _l_
+        ||
+         ( /*<<filename.ml:144:31>>*/ Stdlib_String[16].call(null, n, 0, 3)
+           !== cst$6
+           ? 1
+           : 0);
         /*<<filename.ml:141:17>>*/ if(_l_){
         _l_ = caml_ml_string_length(n) < 3 ? 1 : 0;
-        _l_ ||=
-          /*<<filename.ml:145:31>>*/ Stdlib_String[16].call(null, n, 0, 3)
-          !== "..\\"
-          ? 1
-          : 0;
+        _l_ =
+         _l_
+         ||
+          ( /*<<filename.ml:145:31>>*/ Stdlib_String[16].call(null, n, 0, 3)
+            !== "..\\"
+            ? 1
+            : 0);
        }
       }
      }
