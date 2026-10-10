@@ -1328,8 +1328,10 @@ module Scan = struct
       | 0xFC -> (
           if debug then Format.eprintf "  %d@." (get (pos + 1));
           match get (pos + 1) with
-          | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 (* xx.trunc_sat_xxx_x *) ->
-              pos + 2 |> instructions
+          | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 (* xx.trunc_sat_xxx_x *)
+          | 19 (* add128 *)
+          | 20 (* sub128 *)
+          | 21 | 22 (* mul_wide *) -> pos + 2 |> instructions
           | 8 (* memory.init *) -> pos + 2 |> dataidx |> memidx |> instructions
           | 9 (* data.drop *) -> pos + 2 |> dataidx |> instructions
           | 10 (* memory.copy *) -> pos + 2 |> memidx |> memidx |> instructions
@@ -1354,7 +1356,10 @@ module Scan = struct
       | 12 (* array.get_s *)
       | 13 (* array.get_u *)
       | 14 (* array.set *)
-      | 16 (* array.fill *) -> pos + 1 |> typeidx |> instructions
+      | 16 (* array.fill *)
+      | 32 (* struct.new_desc *)
+      | 33 (* struct.new_default_desc *)
+      | 34 (* ref.get_desc *) -> pos + 1 |> typeidx |> instructions
       | 2 (* struct.get *)
       | 3 (* struct.get_s *)
       | 4 (* struct.get_u *)
@@ -1371,9 +1376,12 @@ module Scan = struct
       | 29 (* i31.get_s *)
       | 30 (* i31.get_u *) -> pos + 1 |> instructions
       | 17 (* array.copy *) -> pos + 1 |> typeidx |> typeidx |> instructions
-      | 20 | 21 (* ref_test *) | 22 | 23 (* ref.cast*) ->
+      | 20 | 21 (* ref_test *) | 22 | 23 (* ref.cast*) | 35 | 36 (* ref.cast_desc_eq *) ->
           pos + 1 |> heaptype |> instructions
-      | 24 (* br_on_cast *) | 25 (* br_on_cast_fail *) ->
+      | 24 (* br_on_cast *)
+      | 25 (* br_on_cast_fail *)
+      | 37 (* br_on_cast_desc_eq *)
+      | 38 (* br_on_cast_desc_eq_fail *) ->
           pos + 2 |> labelidx |> heaptype |> heaptype |> instructions
       | c -> failwith (Printf.sprintf "Bad instruction 0xFB 0x%02X" c)
     and vector_instruction pos =
