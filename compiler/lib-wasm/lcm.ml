@@ -186,6 +186,22 @@ module Bits : sig
 
   val diff : t -> t -> t
 
+  (** In-place operations, which update their first argument *)
+
+  val blit : src:t -> dst:t -> unit
+
+  val union_into : t -> t -> unit
+
+  val inter_into : t -> t -> unit
+
+  val diff_into : t -> t -> unit
+
+  val inter_diff_into : t -> t -> t -> unit
+  (** [inter_diff_into a b c] sets [a] to [a ∩ (b \ c)] *)
+
+  val inter_union_into : t -> t -> t -> unit
+  (** [inter_union_into a b c] sets [a] to [a ∩ (b ∪ c)] *)
+
   val equal : t -> t -> bool
 
   val iter : f:(int -> unit) -> t -> unit
@@ -212,11 +228,47 @@ end = struct
 
   let copy = Array.copy
 
-  let union a b = Array.mapi ~f:(fun i x -> x lor b.(i)) a
+  let blit ~src ~dst = Array.blit ~src ~src_pos:0 ~dst ~dst_pos:0 ~len:(Array.length src)
 
-  let inter a b = Array.mapi ~f:(fun i x -> x land b.(i)) a
+  let union_into a b =
+    for i = 0 to Array.length a - 1 do
+      Array.unsafe_set a i (Array.unsafe_get a i lor b.(i))
+    done
 
-  let diff a b = Array.mapi ~f:(fun i x -> x land lnot b.(i)) a
+  let inter_into a b =
+    for i = 0 to Array.length a - 1 do
+      Array.unsafe_set a i (Array.unsafe_get a i land b.(i))
+    done
+
+  let diff_into a b =
+    for i = 0 to Array.length a - 1 do
+      Array.unsafe_set a i (Array.unsafe_get a i land lnot b.(i))
+    done
+
+  let inter_diff_into a b c =
+    for i = 0 to Array.length a - 1 do
+      Array.unsafe_set a i (Array.unsafe_get a i land b.(i) land lnot c.(i))
+    done
+
+  let inter_union_into a b c =
+    for i = 0 to Array.length a - 1 do
+      Array.unsafe_set a i (Array.unsafe_get a i land (b.(i) lor c.(i)))
+    done
+
+  let union a b =
+    let a = Array.copy a in
+    union_into a b;
+    a
+
+  let inter a b =
+    let a = Array.copy a in
+    inter_into a b;
+    a
+
+  let diff a b =
+    let a = Array.copy a in
+    diff_into a b;
+    a
 
   let equal a b =
     let rec loop i = i < 0 || (a.(i) = b.(i) && loop (i - 1)) in
@@ -1897,7 +1949,24 @@ let process_function
       Array.init n_blocks ~f:(fun i ->
           Addr.Map.find_opt rpo_order.(i) preds |> Option.value ~default:[])
     in
+    let index pc = Addr.Hashtbl.find rpo_index pc in
+    let succ_index =
+      Array.map ~f:(fun l -> Array.of_list (List.map ~f:index l)) succs_of
+    in
+    let pred_index =
+      Array.map ~f:(fun l -> Array.of_list (List.map ~f:index l)) preds_of
+    in
     let props_of = Array.init n_blocks ~f:(fun i -> Addr.Map.find rpo_order.(i) props) in
+    (* The new value of a set is computed in [scratch], and only copied when
+       it differs from the current value *)
+    let scratch = Bits.empty n_convs in
+    let update sets ri =
+      if Bits.equal sets.(ri) scratch
+      then false
+      else (
+        sets.(ri) <- Bits.copy scratch;
+        true)
+    in
     (* The conversions of the parameters of each block *)
     let param_convs_of =
       Array.init n_blocks ~f:(fun i ->
@@ -1928,25 +1997,18 @@ let process_function
       for ri = n_blocks - 1 downto 0 do
         st.ant_iterations <- st.ant_iterations + 1;
         let b_props = props_of.(ri) in
-        let succs = succs_of.(ri) in
-        let new_antout =
-          if List.is_empty succs
-          then no_convs
-          else
-            List.fold_left
-              ~f:(fun acc succ ->
-                let si = Addr.Hashtbl.find rpo_index succ in
-                Bits.inter acc (Bits.diff antin.(si) param_convs_of.(si)))
-              ~init:all_convs
-              succs
-        in
-        let new_antin =
-          Bits.union b_props.antloc (Bits.diff new_antout b_props.kill_ant)
-        in
-        if not (Bits.equal antin.(ri) new_antin)
-        then (
-          antin.(ri) <- new_antin;
-          changed := true)
+        let succs = succ_index.(ri) in
+        (* ANTOUT *)
+        if Array.length succs = 0
+        then Bits.blit ~src:no_convs ~dst:scratch
+        else (
+          Bits.blit ~src:all_convs ~dst:scratch;
+          Array.iter
+            ~f:(fun si -> Bits.inter_diff_into scratch antin.(si) param_convs_of.(si))
+            succs);
+        Bits.diff_into scratch b_props.kill_ant;
+        Bits.union_into scratch b_props.antloc;
+        if update antin ri then changed := true
       done
     done;
     (* Step 2: Availability (forward dataflow, all-paths).
@@ -1973,34 +2035,28 @@ let process_function
         st.avail_iterations <- st.avail_iterations + 1;
         let pc = rpo_order.(ri) in
         let b_props = props_of.(ri) in
-        let ps = preds_of.(ri) in
-        let new_avin =
-          if pc = entry || List.is_empty ps
-          then no_convs
-          else
-            List.fold_left
-              ~f:(fun acc p' -> Bits.inter acc avout.(Addr.Hashtbl.find rpo_index p'))
-              ~init:all_convs
-              ps
-        in
-        let new_avout = Bits.union b_props.comp (Bits.diff new_avin b_props.kill) in
-        if not (Bits.equal avout.(ri) new_avout)
-        then (
-          avout.(ri) <- new_avout;
-          changed := true)
+        let ps = pred_index.(ri) in
+        (* AVIN *)
+        if pc = entry || Array.length ps = 0
+        then Bits.blit ~src:no_convs ~dst:scratch
+        else (
+          Bits.blit ~src:all_convs ~dst:scratch;
+          Array.iter ~f:(fun pi -> Bits.inter_into scratch avout.(pi)) ps);
+        Bits.diff_into scratch b_props.kill;
+        Bits.union_into scratch b_props.comp;
+        if update avout ri then changed := true
       done
     done;
     let avin =
       Array.init n_blocks ~f:(fun ri ->
           let pc = rpo_order.(ri) in
-          let ps = preds_of.(ri) in
-          if pc = entry || List.is_empty ps
+          let ps = pred_index.(ri) in
+          if pc = entry || Array.length ps = 0
           then no_convs
           else
-            List.fold_left
-              ~f:(fun acc p' -> Bits.inter acc avout.(Addr.Hashtbl.find rpo_index p'))
-              ~init:all_convs
-              ps)
+            let s = Bits.copy all_convs in
+            Array.iter ~f:(fun pi -> Bits.inter_into s avout.(pi)) ps;
+            s)
     in
     let earliest = Array.init n_blocks ~f:(fun ri -> Bits.diff antin.(ri) avin.(ri)) in
     (* Step 3: Delayability (forward dataflow, all-paths).
@@ -2024,25 +2080,16 @@ let process_function
         st.delay_iterations <- st.delay_iterations + 1;
         let pc = rpo_order.(ri) in
         let b_props = props_of.(ri) in
-        let ps = preds_of.(ri) in
-        let new_delayin =
-          if pc = entry || List.is_empty ps
-          then earliest.(ri)
-          else
-            Bits.union
-              earliest.(ri)
-              (List.fold_left
-                 ~f:(fun acc p' ->
-                   Bits.inter acc delayout.(Addr.Hashtbl.find rpo_index p'))
-                 ~init:all_convs
-                 ps)
-        in
-        delayin.(ri) <- new_delayin;
-        let new_delayout = Bits.diff new_delayin b_props.antloc in
-        if not (Bits.equal delayout.(ri) new_delayout)
-        then (
-          delayout.(ri) <- new_delayout;
-          changed := true)
+        let ps = pred_index.(ri) in
+        if pc = entry || Array.length ps = 0
+        then Bits.blit ~src:earliest.(ri) ~dst:scratch
+        else (
+          Bits.blit ~src:all_convs ~dst:scratch;
+          Array.iter ~f:(fun pi -> Bits.inter_into scratch delayout.(pi)) ps;
+          Bits.union_into scratch earliest.(ri));
+        ignore (update delayin ri : bool);
+        Bits.diff_into scratch b_props.antloc;
+        if update delayout ri then changed := true
       done
     done;
     (* Step 4: Latest (derived, no iteration needed).
@@ -2058,17 +2105,16 @@ let process_function
        covering all uses. *)
     let latest =
       Array.init n_blocks ~f:(fun ri ->
-          let succs = succs_of.(ri) in
+          let succs = succ_index.(ri) in
           let delayin_pc = delayin.(ri) in
           let b_props = props_of.(ri) in
           let delayin_succs_intersect =
-            if List.is_empty succs
+            if Array.length succs = 0
             then no_convs
             else
-              List.fold_left
-                ~f:(fun acc s -> Bits.inter acc delayin.(Addr.Hashtbl.find rpo_index s))
-                ~init:all_convs
-                succs
+              let s = Bits.copy all_convs in
+              Array.iter ~f:(fun si -> Bits.inter_into s delayin.(si)) succs;
+              s
           in
           Bits.inter
             delayin_pc
@@ -2097,23 +2143,15 @@ let process_function
       for ri = n_blocks - 1 downto 0 do
         st.isol_iterations <- st.isol_iterations + 1;
         let b_props = props_of.(ri) in
-        let succs = succs_of.(ri) in
-        let new_isolatedout =
-          List.fold_left
-            ~f:(fun acc s ->
-              let si = Addr.Hashtbl.find rpo_index s in
-              Bits.inter acc (Bits.union isolatedin.(si) param_convs_of.(si)))
-            ~init:all_convs
-            succs
-        in
-        isolatedout.(ri) <- new_isolatedout;
-        let new_isolatedin =
-          Bits.union latest.(ri) (Bits.diff new_isolatedout b_props.antloc)
-        in
-        if not (Bits.equal isolatedin.(ri) new_isolatedin)
-        then (
-          isolatedin.(ri) <- new_isolatedin;
-          changed := true)
+        Bits.blit ~src:all_convs ~dst:scratch;
+        Array.iter
+          ~f:(fun si ->
+            Bits.inter_union_into scratch isolatedin.(si) param_convs_of.(si))
+          succ_index.(ri);
+        ignore (update isolatedout ri : bool);
+        Bits.diff_into scratch b_props.antloc;
+        Bits.union_into scratch latest.(ri);
+        if update isolatedin ri then changed := true
       done
     done;
     (* Convert array results back to maps for the rewrite phase. *)
