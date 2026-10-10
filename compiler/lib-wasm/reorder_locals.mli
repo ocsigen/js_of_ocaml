@@ -16,6 +16,19 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-module Make (_ : Target_sig.S) : sig
-  val f : profile:Profile.t -> context:Code_generation.context -> unit
-end
+(** Reorder a function's [locals] list so frequently-used locals get
+    lower Wasm indices (one-byte LEB128 encoding for indices < 128).
+
+    Parameters are untouched; only the non-parameter [locals] list is
+    reordered. The instruction body is unchanged — the Wasm local
+    index of a variable is determined by its position in
+    [param_names @ locals], so rearranging the list is enough.
+
+    Reference-type locals and numeric-type locals are kept in separate
+    blocks so that the run-length encoding performed by
+    [Wasm_output.coalesce_locals] doesn't get fragmented. *)
+
+val f :
+     locals:(Wasm_ast.var * Wasm_ast.value_type) list
+  -> Wasm_ast.instruction list
+  -> (Wasm_ast.var * Wasm_ast.value_type) list

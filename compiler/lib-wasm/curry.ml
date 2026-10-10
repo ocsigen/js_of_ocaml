@@ -351,35 +351,36 @@ module Make (Target : Target_sig.S) = struct
       ; body
       }
 
-  let f ~context =
+  let post_process ~profile (f : W.module_field) =
+    match f with
+    | W.Function ({ signature; param_names; locals; body; _ } as f) ->
+        let locals, body =
+          post_process_function_body
+            ~profile
+            ~param_names
+            ~param_types:signature.params
+            ~locals
+            body
+        in
+        W.Function { f with locals; body }
+    | _ -> f
+
+  let f ~profile ~context =
+    let add f = context.other_fields <- post_process ~profile f :: context.other_fields in
+    IntMap.iter (fun arity name -> add (apply ~context ~arity ~name)) context.apply_funs;
     IntMap.iter
-      (fun arity name ->
-        let f = apply ~context ~arity ~name in
-        context.other_fields <- f :: context.other_fields)
-      context.apply_funs;
-    IntMap.iter
-      (fun arity name ->
-        let f = cps_apply ~context ~arity ~name in
-        context.other_fields <- f :: context.other_fields)
+      (fun arity name -> add (cps_apply ~context ~arity ~name))
       context.cps_apply_funs;
     IntMap.iter
-      (fun arity name ->
-        let l = curry ~context ~arity ~name in
-        context.other_fields <- List.rev_append l context.other_fields)
+      (fun arity name -> List.iter ~f:add (curry ~context ~arity ~name))
       context.curry_funs;
     IntMap.iter
-      (fun arity name ->
-        let l = cps_curry ~context ~arity ~name in
-        context.other_fields <- List.rev_append l context.other_fields)
+      (fun arity name -> List.iter ~f:add (cps_curry ~context ~arity ~name))
       context.cps_curry_funs;
     IntMap.iter
-      (fun arity name ->
-        let f = dummy ~context ~cps:false ~arity ~name in
-        context.other_fields <- f :: context.other_fields)
+      (fun arity name -> add (dummy ~context ~cps:false ~arity ~name))
       context.dummy_funs;
     IntMap.iter
-      (fun arity name ->
-        let f = dummy ~context ~cps:true ~arity ~name in
-        context.other_fields <- f :: context.other_fields)
+      (fun arity name -> add (dummy ~context ~cps:true ~arity ~name))
       context.cps_dummy_funs
 end
