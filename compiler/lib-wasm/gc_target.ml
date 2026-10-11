@@ -737,26 +737,18 @@ module Value64 = struct
           (store ~typ:I64 v (return e))
           (if_expr
              Type.value
-             (* Branch-free range check:
-                [v in [min_i31s, max_i31s]  <=>  (v - min_i31s) <u (max_i31s - min_i31s + 1)]
+             (* Single range check:
+                [v in [-2^30, 2^30 - 1]  <=>  (v + 2^30) <=u 2^31 - 1]
 
-                Note: [<u] is "unsigned less than", this handles out-of-range negatives:
-                If [v < min_i31s], then [v + 2^30] is still negative:
-                - If the check was signed then the comparison would return true
-                  and we wouldn't catch the larger int.
-                - With the unsigned check, the negative reinterprets as a big u64
-                  number and fails the check as we expect. *)
-             (Arith64.ult_i32
+                The comparison is unsigned: if [v < -2^30], then [v + 2^30]
+                is negative, hence a large unsigned number. The bound is
+                [2^31 - 1] rather than the equivalent [<u 2^31], since on x64
+                [2^31] does not fit in an immediate operand. *)
+             (Arith64.ule_i32
                 (Arith64.( + )
                    (load v)
                    (Arith64.const (Int64.neg (Lazy.force Typing.Integer.min_i31s))))
-                (Arith64.const
-                   Int64.(
-                     add
-                       (sub
-                          (Lazy.force Typing.Integer.max_i31s)
-                          (Lazy.force Typing.Integer.min_i31s))
-                       1L)))
+                (Arith64.const 0x7fffffffL))
              (load v >>| fun e -> W.RefI31 (I32WrapI64 e))
              (* The allocation of a large integer is rare, and its machine
                 code is large: it is performed by a runtime function *)

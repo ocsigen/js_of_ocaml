@@ -119,8 +119,8 @@
          (local.set $l
             (i64.shr_s (i64.shl (local.get $l) (i64.const 1)) (i64.const 1)))
          (if (result (ref eq))
-             (i64.lt_u (i64.add (local.get $l) (i64.const 0x40000000))
-                (i64.const 0x80000000))
+             (i64.le_u (i64.add (local.get $l) (i64.const 0x40000000))
+                (i64.const 0x7fffffff))
             (then (ref.i31 (i32.wrap_i64 (local.get $l))))
             (else (struct.new $ocaml_large_int (local.get $l)))))
       (func $alloc_nat (param $len i32) (param $fill i64) (result (ref $nat))

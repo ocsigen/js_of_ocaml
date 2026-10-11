@@ -566,6 +566,11 @@ module Arith64 = struct
     let* e' = e' in
     return (W.BinOp (I64 (Lt U), e, e'))
 
+  let ule_i32 e e' =
+    let* e = e in
+    let* e' = e' in
+    return (W.BinOp (I64 (Le U), e, e'))
+
   let uge_i32 e e' =
     let* e = e in
     let* e' = e' in

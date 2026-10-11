@@ -158,6 +158,8 @@ module Arith64 : sig
 
   val ult_i32 : expression -> expression -> expression
 
+  val ule_i32 : expression -> expression -> expression
+
   val uge_i32 : expression -> expression -> expression
 
   val to_i32 : expression -> expression
