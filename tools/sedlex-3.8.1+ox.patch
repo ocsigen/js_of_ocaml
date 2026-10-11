@@ -1,0 +1,125 @@
+--- a/src/syntax/ppx_sedlex.ml
++++ b/src/syntax/ppx_sedlex.ml
+@@ -4,7 +4,6 @@
+ 
+ open Ppxlib
+ open Ast_builder.Default
+-open Ast_helper
+ open Sedlex_compiler
+ 
+ (* let ocaml_version = Versions.ocaml_408 *)
+@@ -353,7 +352,9 @@
+     [
+       value_binding ~loc
+         ~pat:(pvar ~loc (state_fun i))
+-        ~expr:(Exp.fun_ ~loc Nolabel None lhs body);
++        ~expr:
++          (Ppxlib_jane.Ast_builder.Default.add_fun_param ~loc Nolabel None lhs
++             body);
+     ]
+   in
+   match accept with
+@@ -596,7 +597,8 @@
+   let rec char_pair_op func name ~encoding ~loc tuple =
+     (* Construct something like Sub(a,b) *)
+       match tuple with
+-      | Some { ppat_desc = Ppat_tuple [p0; p1]; _ } -> (
++      | Some { ppat_desc = Ppat_tuple ([ (None, p0); (None, p1) ], Closed); _ }
++        -> (
+           let r0 =
+             unwrap p0.ppat_loc (Ir.reject_captures name (aux ~encoding p0))
+           in
+@@ -634,10 +636,15 @@
+       | Ppat_or (p1, p2) ->
+           unwrap p.ppat_loc (Ir.alt (aux ~encoding p1) (aux ~encoding p2))
+       (* (p1, p2, ...) — sequence *)
+-      | Ppat_tuple (p :: pl) ->
+-          List.fold_left
+-            (fun acc p -> unwrap p.ppat_loc (Ir.seq acc (aux ~encoding p)))
+-            (aux ~encoding p) pl
++      | Ppat_tuple (labeled_pl, Closed) -> (
++          match Ppxlib_jane.as_unlabeled_tuple labeled_pl with
++            | Some (p :: pl) ->
++                List.fold_left
++                  (fun acc p ->
++                    unwrap p.ppat_loc (Ir.seq acc (aux ~encoding p)))
++                  (aux ~encoding p) pl
++            | Some [] -> err p.ppat_loc "empty tuple unexpected"
++            | None -> err p.ppat_loc "labeled tuples not allowed in regexps")
+       (* Star p — zero-or-more repetition *)
+       | Ppat_construct ({ txt = Lident "Star"; _ }, Some (_, p)) ->
+           unwrap p.ppat_loc (Ir.star (aux ~encoding p))
+@@ -661,14 +668,17 @@
+                 {
+                   ppat_desc =
+                     Ppat_tuple
+-                      [
+-                        p0;
+-                        {
+-                          ppat_desc =
+-                            Ppat_constant (i1 as i2) | Ppat_interval (i1, i2);
+-                          _;
+-                        };
+-                      ];
++                      ( [
++                          (None, p0);
++                          ( None,
++                            {
++                              ppat_desc =
++                                Ppat_constant (i1 as i2)
++                                | Ppat_interval (i1, i2);
++                              _;
++                            } );
++                        ],
++                        Closed );
+                   _;
+                 } ) ) -> (
+           let r = aux ~encoding p0 in
+@@ -868,6 +878,12 @@
+    Unicode categories + user [let%sedlex.regexp] definitions). The [toplevel]
+    flag distinguishes the outermost structure (where partition/table
+    definitions are emitted) from nested modules. *)
++let loc_ghoster =
++  object
++    inherit Ast_traverse.map as super
++    method! location location = super#location { location with loc_ghost = true }
++  end
++
+ let mapper =
+   object (this)
+     inherit Ast_traverse.map as super
+@@ -901,7 +917,8 @@
+         (* match%sedlex <lexbuf> with ... *)
+         | [%expr [%sedlex [%e? { pexp_desc = Pexp_match _; _ } as match_expr]]]
+           ->
+-            fst (handle_sedlex_match_ ~env ~map_rhs:this#expression match_expr)
++            loc_ghoster#expression
++            @@ fst (handle_sedlex_match_ ~env ~map_rhs:this#expression match_expr)
+         (* let <name> = <rhs> in <body>  —  intercept when <rhs> is a regexp *)
+         | [%expr
+             let [%p? { ppat_desc = Ppat_var { txt = name; _ }; _ }] =
+@@ -909,7 +926,9 @@
+             in
+             [%e? _body]] -> (
+             match this#eval_regexp_expr rhs with
+-              | Some r -> (this#define_regexp name r)#expression _body
++              | Some r ->
++                  loc_ghoster#expression
++                  @@ (this#define_regexp name r)#expression _body
+               | None -> super#expression e)
+         (* [%sedlex <not-a-match>]  —  error *)
+         | [%expr [%sedlex [%e? _]]] ->
+@@ -949,11 +968,11 @@
+         let tables = List.map table (get_tables ()) in
+         regexps := regexps';
+         should_set_cookies := true;
+-        tables @ parts @ l)
++        loc_ghoster#structure (tables @ parts) @ l)
+       else fst (this#structure_with_regexps l)
+   end
+ 
+-let map_expression expr = mapper#expression expr
++let map_expression expr = loc_ghoster#expression (mapper#expression expr)
+ 
+ (* ppxlib cookie handlers: regexp definitions survive across compilation
+    units by round-tripping through a ppxlib cookie named "sedlex.regexps". *)

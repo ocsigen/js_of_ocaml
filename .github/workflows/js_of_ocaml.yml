@@ -122,6 +122,10 @@ jobs:
         with:
           token: ${{ github.token }}
 
+      - name: Pin sedlex 3.8.1 (OxCaml)
+        if: ${{ endsWith(matrix.ocaml-compiler, '+ox') }}
+        run: tools/ci_pin_sedlex_oxcaml.sh
+
       - run: opam install . --deps-only --with-test
         # Install the test dependencies
 

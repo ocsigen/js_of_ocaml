@@ -143,6 +143,10 @@ jobs:
             > "$DIR/oxcaml-dune-patches.opam"
           opam pin add oxcaml-dune-patches "$DIR" -k path -n -y
 
+      - name: Pin sedlex 3.8.1 (OxCaml)
+        if: ${{ endsWith(matrix.ocaml-compiler, '+ox') }}
+        run: wasm_of_ocaml/tools/ci_pin_sedlex_oxcaml.sh
+
       - name: Install wasm_of_ocaml and its test dependencies
         working-directory: ./wasm_of_ocaml
         run: |
