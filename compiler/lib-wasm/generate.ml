@@ -189,6 +189,9 @@ module Generate (Target : Target_sig.S) = struct
     ; public_name : Var.t Var.Map.t
           (** Double translation: maps each version of a function to the
               variable bound to their shared closure (see [pair_of]) *)
+    ; implicit_conversions : bool
+          (* Whether the arguments of the primitive being translated may be
+             converted implicitly (see [convert]) *)
     }
 
   let label_index_opt context pc =
@@ -466,9 +469,23 @@ module Generate (Target : Target_sig.S) = struct
     | Normalize_int -> Conv.normalize e
     | Tag_int -> Conv.tag e
 
-  let convert ~(from : Typing.typ) ~(into : Typing.typ) e =
+  let check_conversions = Debug.find "invariant"
+
+  (* The conversions are explicit in the IR, placed by [Lcm]. Those left
+     implicit ([implicit]) are the conversions of constants, performed at
+     compile time, and of the arguments of a primitive which examines their
+     types itself; and the dummy values used on dead paths. With
+     [--debug invariant], any other conversion is an error. *)
+  let convert ?(implicit = false) ~(from : Typing.typ) ~(into : Typing.typ) e =
     match Typing.conversion ~from ~into with
-    | Some c -> conversion c e
+    | Some c ->
+        if (not implicit) && Config.Flag.lcm () && check_conversions ()
+        then
+          failwith
+            (Printf.sprintf
+               "Generate.convert: conversion %s not made explicit"
+               (Code.Print.wasm_conversion_name c));
+        conversion c e
     | None -> (
         match from, into with
         (* Dummy value *)
@@ -487,6 +504,13 @@ module Generate (Target : Target_sig.S) = struct
         convert ~from:Top ~into:typ (JavaScript.from_float y)
     | None ->
         convert
+          ~implicit:
+            (ctx.implicit_conversions
+            ||
+            (* The conversion of a constant is performed at compile time *)
+            match x with
+            | Pc _ -> true
+            | Pv _ -> false)
           ~from:(get_type ctx x)
           ~into:typ
           (match x with
@@ -2425,7 +2449,12 @@ module Generate (Target : Target_sig.S) = struct
     | Prim (p, l) -> (
         match p with
         | Extern (name, hint) when String.Hashtbl.mem internal_primitives name ->
-            let _, _, _, _, f = String.Hashtbl.find internal_primitives name in
+            let _, args, _, _, f = String.Hashtbl.find internal_primitives name in
+            let ctx =
+              match args with
+              | Typing.Any_representation -> { ctx with implicit_conversions = true }
+              | Values | Typed _ -> ctx
+            in
             f ctx context hint l |> box_number_if_needed ctx x
         | Extern (name, _) when String.Hashtbl.mem specialized_primitives name ->
             let ((_, arg_typ, _) as typ) =
@@ -2512,7 +2541,8 @@ module Generate (Target : Target_sig.S) = struct
                | `I32 -> Int Normalized)
              ~into:tz
              ((String.Hashtbl.find js_primitives name)
-                ctx
+                (* The arguments are translated according to their types *)
+                { ctx with implicit_conversions = true }
                 (kind :> [ `Value | `F64 | `I32 ])
                 l))
     | Let (x, e) ->
@@ -3275,6 +3305,7 @@ module Generate (Target : Target_sig.S) = struct
       ; cps_sides
       ; pair_of
       ; public_name
+      ; implicit_conversions = false
       }
     in
     let toplevel_name = Var.fresh_n "toplevel" in
