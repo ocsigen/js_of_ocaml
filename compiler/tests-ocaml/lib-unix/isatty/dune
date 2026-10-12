@@ -11,11 +11,15 @@
  ; fail with "Unbound value In_channel.isatty".
  (build_if
   (>= %{ocaml_version} 5.1))
+ ; WASI has no notion of tty. The test falls back to a fresh pty master
+ ; from /dev/ptmx when there is no controlling terminal, so it does not
+ ; need a tty attached; that fallback only exists on Unix. On Windows the
+ ; CONIN$ fallback does not work through the JS runtime: caml_make_path
+ ; resolves it against the current directory, and Windows only recognizes
+ ; the console names unprefixed.
  (enabled_if
   (and
    (<> %{env:JSOO_TEST_ENGINE=node} wasi)
-   (not %{env:CI=false})))
- ; WASI has no notion of tty
- ; isatty_tty does not work on the CI since we are not running in a tty there
+   (= %{ocaml-config:os_type} Unix)))
  (libraries ocaml_testing unix)
  (modes js wasm))
