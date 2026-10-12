@@ -2139,29 +2139,29 @@ let%expect_test "line terminator before postfix ++ and --" =
 let%expect_test "left-hand side of an assignment" =
   (* Only a LeftHandSideExpression can be assigned to *)
   check `Script "a + b = c";
-  [%expect {| error (l:1, c:6): invalid left-hand side in assignment |}];
+  [%expect {| error (l:1, c:0): invalid left-hand side in assignment |}];
   check `Script "-a = b";
-  [%expect {| error (l:1, c:3): invalid left-hand side in assignment |}];
+  [%expect {| error (l:1, c:0): invalid left-hand side in assignment |}];
   check `Script "a++ = b";
-  [%expect {| error (l:1, c:4): invalid left-hand side in assignment |}];
+  [%expect {| error (l:1, c:0): invalid left-hand side in assignment |}];
   check `Script "typeof a = b";
-  [%expect {| error (l:1, c:9): invalid left-hand side in assignment |}];
+  [%expect {| error (l:1, c:0): invalid left-hand side in assignment |}];
   check `Script "a || b = c";
-  [%expect {| error (l:1, c:7): invalid left-hand side in assignment |}];
+  [%expect {| error (l:1, c:0): invalid left-hand side in assignment |}];
   check `Script "(a, b) = c";
-  [%expect {| (a,b)=c; |}];
+  [%expect {| error (l:1, c:0): invalid left-hand side in assignment |}];
   check `Script "(a = b) = c";
-  [%expect {| (a=b)=c; |}];
+  [%expect {| error (l:1, c:0): invalid left-hand side in assignment |}];
   check `Script "(a) + b = c";
-  [%expect {| error (l:1, c:8): invalid left-hand side in assignment |}];
+  [%expect {| error (l:1, c:0): invalid left-hand side in assignment |}];
   check `Script "x = a + b = c";
-  [%expect {| error (l:1, c:10): invalid left-hand side in assignment |}];
+  [%expect {| error (l:1, c:4): invalid left-hand side in assignment |}];
   check `Script "a + b += c";
-  [%expect {| error (l:1, c:6): invalid left-hand side in assignment |}];
+  [%expect {| error (l:1, c:0): invalid left-hand side in assignment |}];
   check `Script "[a] += b";
-  [%expect {| [a]+=b; |}];
+  [%expect {| error (l:1, c:0): invalid left-hand side in assignment |}];
   check `Script "async function f() { await a = 1 }";
-  [%expect {| error (l:1, c:29): invalid left-hand side in assignment |}];
+  [%expect {| error (l:1, c:21): invalid left-hand side in assignment |}];
   (* Valid targets *)
   check `Script "(a) = b; a.b = c; a[b] = c; f() = b; [a, b] = c; ({a} = b)";
   [%expect {| a=b;a.b=c;a[b]=c;f()=b;[a,b]=c;({a}=b); |}];
@@ -2174,25 +2174,25 @@ let%expect_test "left-hand side of an assignment" =
 let%expect_test "left-hand side of for-in and for-of" =
   (* Likewise, only a LeftHandSideExpression can be iterated *)
   check `Script "for (a + b in c);";
-  [%expect {| error (l:1, c:11): invalid left-hand side in `for ... in` |}];
+  [%expect {| error (l:1, c:5): invalid left-hand side in `for ... in` |}];
   check `Script "for (a = b in c);";
-  [%expect {| error (l:1, c:11): invalid left-hand side in `for ... in` |}];
+  [%expect {| error (l:1, c:5): invalid left-hand side in `for ... in` |}];
   check `Script "for (typeof a of b);";
-  [%expect {| error (l:1, c:14): invalid left-hand side in `for ... of` |}];
+  [%expect {| error (l:1, c:5): invalid left-hand side in `for ... of` |}];
   check `Script "for (a ? b : c in d);";
-  [%expect {| error (l:1, c:15): invalid left-hand side in `for ... in` |}];
+  [%expect {| error (l:1, c:5): invalid left-hand side in `for ... in` |}];
   check `Script "for (a++ in b);";
-  [%expect {| error (l:1, c:9): invalid left-hand side in `for ... in` |}];
+  [%expect {| error (l:1, c:5): invalid left-hand side in `for ... in` |}];
   check `Script "for (a, b of c);";
-  [%expect {| error (l:1, c:10): invalid left-hand side in `for ... of` |}];
+  [%expect {| error (l:1, c:5): invalid left-hand side in `for ... of` |}];
   check `Script "for ((a) => b in c);";
-  [%expect {| error (l:1, c:14): invalid left-hand side in `for ... in` |}];
+  [%expect {| error (l:1, c:5): invalid left-hand side in `for ... in` |}];
   check `Script "for ([a] = b in c);";
-  [%expect {| error (l:1, c:13): invalid left-hand side in `for ... in` |}];
+  [%expect {| error (l:1, c:5): invalid left-hand side in `for ... in` |}];
   check `Script "async function f() { for (await a in b); }";
-  [%expect {| error (l:1, c:34): invalid left-hand side in `for ... in` |}];
+  [%expect {| error (l:1, c:26): invalid left-hand side in `for ... in` |}];
   check `Script "async function f() { for (await using of b); }";
-  [%expect {| error (l:1, c:38): invalid left-hand side in `for ... of` |}];
+  [%expect {| error (l:1, c:26): invalid left-hand side in `for ... of` |}];
   (* Valid targets *)
   check `Script "for ((a) in b); for (a.b of c); for (f() in b); for ([a, {b}] of c);";
   [%expect

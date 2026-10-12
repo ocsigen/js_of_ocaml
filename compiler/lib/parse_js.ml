@@ -952,75 +952,14 @@ let assignment_op (tok : Js_token.t) =
    an [await]. An object or array literal is a destructuring pattern,
    which a compound assignment operator does not allow. [pos] is the
    start of the left-hand side. *)
-(* The left-hand side of an assignment, or of [for ... in]/[for ... of] with
-   [in_for], must be a LeftHandSideExpression. Like the previous parser, a
-   parenthesized expression is accepted on the left of an assignment, and the
-   error is reported at the current token: the operator, [in] or [of]. *)
-let check_assignment_target t ~in_for (e : expression) =
-  let invalid () =
-    let what =
-      match in_for, cur t with
-      | false, _ -> "assignment"
-      | true, T_IN -> "`for ... in`"
-      | true, _ -> "`for ... of`"
-    in
-    error_msg t ("invalid left-hand side in " ^ what)
-  in
+let check_assignment_target ~pos ~what op (e : expression) =
+  let invalid () = raise (Parsing_error (pi pos, "invalid left-hand side in " ^ what)) in
   match e with
-  | (ESeq _ | ECond _ | EArrow _ | EYield _) when in_for -> invalid ()
-  | EBin
-      ( ( Eq
-        | StarEq
-        | SlashEq
-        | ModEq
-        | PlusEq
-        | MinusEq
-        | LslEq
-        | AsrEq
-        | LsrEq
-        | BandEq
-        | BxorEq
-        | BorEq
-        | OrEq
-        | AndEq
-        | ExpEq
-        | CoalesceEq )
-      , _
-      , _ )
-    when in_for -> invalid ()
-  | EBin
-      ( ( Or
-        | And
-        | Bor
-        | Bxor
-        | Band
-        | EqEq
-        | NotEq
-        | EqEqEq
-        | NotEqEq
-        | Lt
-        | Le
-        | Gt
-        | Ge
-        | LtInt
-        | LeInt
-        | GtInt
-        | GeInt
-        | InstanceOf
-        | In
-        | Lsl
-        | Lsr
-        | Asr
-        | Plus
-        | Minus
-        | Mul
-        | Div
-        | Mod
-        | Exp
-        | Coalesce )
-      , _
-      , _ )
-  | EUn _ -> invalid ()
+  | ESeq _ | ECond _ | EBin _ | EUn _ | EArrow _ | EYield _ -> invalid ()
+  | EObj _ | EArr _ -> (
+      match op with
+      | None | Some Eq -> ()
+      | Some _ -> invalid ())
   | _ -> ()
 
 (* Binary operators, with their precedence. [??] is handled separately. *)
@@ -1188,14 +1127,16 @@ and parse_assignment_expression t ctx ~no_in =
 
 (* AssignmentExpression, [yield] and arrow functions excluded *)
 and parse_assignment_rest t ctx ~no_in =
+  let pos = start_pos t in
   let lhs = parse_conditional_expression t ctx ~no_in in
-  parse_assignment_operator t ctx ~no_in lhs
+  parse_assignment_operator t ctx ~no_in ~pos lhs
 
-(* [(AssignmentOperator AssignmentExpression)?], after the left-hand side *)
-and parse_assignment_operator t ctx ~no_in lhs =
+(* [(AssignmentOperator AssignmentExpression)?], after the left-hand side
+   starting at [pos] *)
+and parse_assignment_operator t ctx ~no_in ~pos lhs =
   match assignment_op (cur t) with
   | Some op ->
-      check_assignment_target t ~in_for:false lhs;
+      check_assignment_target ~pos ~what:"assignment" (Some op) lhs;
       let op_pos = start_pos t in
       advance t;
       let rhs = parse_assignment_expression t ctx ~no_in in
@@ -1221,7 +1162,7 @@ and parse_cover_or_arrow t ctx ~no_in =
       expect t T_ARROW;
       let body, concise = parse_concise_body t ctx ~no_in ~async in
       EArrow (({ async; generator = false }, params, body, p pos), concise, AUnknown)
-  | _ -> parse_assignment_operator t ctx ~no_in e
+  | _ -> parse_assignment_operator t ctx ~no_in ~pos e
 
 (* ConciseBody : { FunctionBody } | ExpressionBody
    Also returns whether the body is an expression. *)
@@ -2283,13 +2224,19 @@ and parse_for t ctx =
       let e = EVar (parse_identifier t ctx) in
       parse_for_in_of t ctx ~for_await (Left (assignment_target_of_expr None e))
   | tok -> (
+      let pos = start_pos t in
       let e = parse_expression t ctx ~no_in:true in
       match cur t with
       | T_OF when Poly.equal tok Js_token.T_LET ->
           (* [for ( [lookahead != let] LeftHandSideExpression of] *)
           error_msg t "the left-hand side of `for ... of` cannot start with `let`"
-      | T_IN | T_OF ->
-          check_assignment_target t ~in_for:true e;
+      | (T_IN | T_OF) as tok ->
+          let what =
+            match tok with
+            | T_IN -> "`for ... in`"
+            | _ -> "`for ... of`"
+          in
+          check_assignment_target ~pos ~what None e;
           parse_for_in_of t ctx ~for_await (Left (assignment_target_of_expr None e))
       | _ -> parse_for_rest t ctx (Left (Some e)))
 
