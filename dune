@@ -6,6 +6,10 @@
    (flags
     (:include ci.flags)
     (:standard)))
+  (wasm_of_ocaml
+   (flags
+    (:include ci.flags)
+    (:standard)))
   (binaries
    (tools/node_wrapper.exe as node)
    (tools/node_wrapper.exe as node.exe)))
@@ -18,6 +22,7 @@
   (wasm_of_ocaml
    (compilation_mode separate)
    (flags
+    (:include ci.flags)
     (:standard --effects cps)))
   (binaries
    (tools/node_wrapper.exe as node)
@@ -43,6 +48,7 @@
   (wasm_of_ocaml
    (compilation_mode separate)
    (flags
+    (:include ci.flags)
     (:standard --effects native)))
   (binaries
    (tools/node_wrapper.exe as node)
@@ -50,6 +56,7 @@
  (wasi
   (wasm_of_ocaml
    (flags
+    (:include ci.flags)
     (:standard --pretty --enable wasi))
    ; Wasmtime is slow on large binaries, so use whole program compilation
    (compilation_mode whole_program))
@@ -65,6 +72,7 @@
   (wasm_of_ocaml
    (compilation_mode separate)
    (flags
+    (:include ci.flags)
     (:standard --effects native --enable wasi)))
   (binaries
    (tools/node_wrapper.exe as node)
