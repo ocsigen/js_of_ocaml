@@ -149,7 +149,7 @@ let scinumber =
     ( (decintlit, Opt ('.', Opt underscored_decimal) | '.', underscored_decimal)
     , ('e' | 'E')
     , Opt ('-' | '+')
-    , underscored_digit )]
+    , underscored_decimal )]
 
 let integer = [%sedlex.regexp? underscored_digit]
 
