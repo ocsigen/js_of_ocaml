@@ -27,6 +27,8 @@
   (#2432)
 * Compiler: report JavaScript syntax errors as `file:line:col` followed by
   the offending line; columns start from 1 (#2464, #2471, #2491)
+* Compiler: the JavaScript parser accepts source phase imports
+  (`import source x from "m"`) (#2523)
 * Compiler: drop redundant `break`s out of labelled blocks, turning the
   blocks into `if`/`else` statements or conditional expressions; the nesting
   this introduces is bounded by `--set=break_sink_depth`, and the
