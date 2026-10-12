@@ -22,14 +22,6 @@ type link_input =
   ; source_map_file : string option
   }
 
-val link :
-     ?options:string list
-  -> inputs:link_input list
-  -> opt_output_sourcemap:string option
-  -> output_file:string
-  -> unit
-  -> unit
-
 val optimize :
      profile:Profile.t
   -> ?options:string list
