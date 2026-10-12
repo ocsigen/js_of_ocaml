@@ -1666,10 +1666,7 @@ let%expect_test "html close comment after a multi-line comment" =
   (* [-->] starts a comment at the beginning of a line, where a multi-line
      comment containing a line terminator counts as a line start *)
   check `Script "x/*\n*/--> y\nz";
-  [%expect {|
-           x--
-           >y;z;
-           |}];
+  [%expect {| x;z; |}];
   check `Script "/*\n*/--> y\nz";
   [%expect {| z; |}];
   check `Script "x /* */ --> y";
@@ -1680,7 +1677,4 @@ let%expect_test "html close comment after a multi-line comment" =
   check `Script "x\n--> y\nz";
   [%expect {| x;z; |}];
   check `Script "x /* */ /*\n*/ /* */ --> y\nz";
-  [%expect {|
-           x--
-           >y;z;
-           |}]
+  [%expect {| x;z; |}]
