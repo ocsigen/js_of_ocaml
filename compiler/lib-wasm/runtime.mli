@@ -16,9 +16,29 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+val with_binary_files :
+     options:string list
+  -> Binaryen.link_input list
+  -> (Binaryen.link_input list -> 'a)
+  -> 'a
+(** Convert the input files in text format to binary format with
+    [wasm-opt], passing it [options], and call the continuation with the
+    resulting files. The files are deleted afterwards. *)
+
+val link_input :
+     ?load_source_map:(string -> Source_map.Standard.t)
+  -> Binaryen.link_input
+  -> Wasm_link.input
+(** Linker input for a module in binary format. Its source map, if any, is
+    loaded with [load_source_map]; it is ignored when this function is
+    not provided. *)
+
+val link : inputs:Wasm_link.input list -> output_file:string -> unit
+(** Link the input modules (in binary format), keeping all their code *)
+
 val build :
      allowed_imports:string list option
-  -> link_options:string list
+  -> convert_options:string list
   -> opt_options:string list
   -> variables:(string * Wat_preprocess.value) list
   -> inputs:Wat_preprocess.input list
