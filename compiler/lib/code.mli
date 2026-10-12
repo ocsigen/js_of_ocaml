@@ -280,6 +280,8 @@ module Print : sig
     | Instr of instr
     | Last of last
 
+  val wasm_conversion_name : wasm_conversion -> string
+
   val expr : Format.formatter -> expr -> unit
 
   val constant : Format.formatter -> constant -> unit
