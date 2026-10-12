@@ -138,8 +138,7 @@ let%expect_test _ =
       }
       else if(! _a_[2]) break a;
       _a_ = _a_[2];
-      if(_a_ && ! _a_[1]) break a;
-      return 4;
+      if(! _a_ || _a_[1]) return 4;
      }
      return 1;
     }
@@ -158,8 +157,7 @@ let%expect_test _ =
       }
       else if(! _a_[2]) break a;
       _a_ = _a_[2];
-      if(_a_ && ! _a_[1]) break a;
-      return 4;
+      if(! _a_ || _a_[1]) return 4;
      }
      return 1;
     }
