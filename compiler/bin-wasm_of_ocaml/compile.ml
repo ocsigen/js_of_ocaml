@@ -129,7 +129,7 @@ let build_runtime ~runtime_file =
            else Runtime_files.wat_files @ Runtime_files.wasm_files)
       in
       Runtime.build
-        ~link_options:[ "-g" ]
+        ~convert_options:[ "-g" ]
         ~opt_options:[ "-g"; "-O2" ]
         ~variables
         ~allowed_imports:
@@ -146,36 +146,6 @@ let build_runtime ~runtime_file =
                 ]))
         ~inputs
         ~output_file:runtime_file
-
-(* Our linker only reads binary files: the extra runtime files in text
-   format are converted with [wasm-opt], without running any
-   optimization pass ([--quiet] silences the warning about this). *)
-let with_binary_runtime_files ~profile runtime_inputs f =
-  let rec loop acc (l : Binaryen.link_input list) =
-    match l with
-    | [] -> f (List.rev acc)
-    | input :: rem when Link.Wasm_binary.check_file ~file:input.file ->
-        loop (input :: acc) rem
-    | input :: rem ->
-        Fs.with_intermediate_file (Filename.temp_file input.module_name ".wasm")
-        @@ fun file ->
-        opt_with
-          Fs.with_intermediate_file
-          (Option.map
-             ~f:(fun _ -> Filename.temp_file input.module_name ".wasm.map")
-             input.source_map_file)
-        @@ fun source_map_file ->
-        Binaryen.optimize
-          ~profile
-          ~options:[ "--quiet" ]
-          ~opt_input_sourcemap:input.source_map_file
-          ~opt_output_sourcemap:source_map_file
-          ~input_file:input.file
-          ~output_file:file
-          ();
-        loop ({ input with file; source_map_file } :: acc) rem
-  in
-  loop [] runtime_inputs
 
 (* Link the runtime and the compiled code with our linker, which also
    removes dead code. Dead code is kept when building a dynamically
@@ -263,7 +233,7 @@ let link_and_optimize
   build_runtime ~runtime_file;
   with_runtime_files ~runtime_wasm_files
   @@ fun runtime_inputs ->
-  with_binary_runtime_files ~profile runtime_inputs
+  Runtime.with_binary_files ~options:[] runtime_inputs
   @@ fun runtime_inputs ->
   Fs.with_intermediate_file (Filename.temp_file "linked" ".wasm")
   @@ fun linked_file ->
@@ -305,11 +275,8 @@ let link_runtime ~profile runtime_wasm_files output_file =
     @@ fun temp_file ->
     (with_runtime_files ~runtime_wasm_files
     @@ fun runtime_inputs ->
-    Binaryen.link
-      ~opt_output_sourcemap:None
-      ~inputs:runtime_inputs
-      ~output_file:temp_file
-      ());
+    Runtime.with_binary_files ~options:[] runtime_inputs
+    @@ fun runtime_inputs -> Runtime.link ~inputs:runtime_inputs ~output_file:temp_file);
     Binaryen.optimize
       ~profile
       ~opt_input_sourcemap:None
@@ -320,14 +287,12 @@ let link_runtime ~profile runtime_wasm_files output_file =
     Fs.with_intermediate_file (Filename.temp_file "runtime" ".wasm")
     @@ fun runtime_file ->
     build_runtime ~runtime_file;
-    Binaryen.link
-      ~opt_output_sourcemap:None
+    Runtime.link
       ~inputs:
         (List.map
            ~f:(fun file -> { Binaryen.module_name = "env"; file; source_map_file = None })
            [ runtime_file; extra_runtime ])
       ~output_file
-      ()
 
 let generate_prelude ~out_file =
   Filename.gen_file out_file

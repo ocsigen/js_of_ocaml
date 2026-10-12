@@ -38,7 +38,7 @@ let common_options () =
     ; "--enable-bulk-memory"
     ; "--enable-nontrapping-float-to-int"
     ; "--enable-strings"
-    ; "--enable-multimemory" (* To keep wasm-merge happy *)
+    ; "--enable-multimemory"
     ]
   in
   let l =
@@ -60,24 +60,6 @@ type link_input =
   ; file : string
   ; source_map_file : string option
   }
-
-let link ?options ~inputs ~opt_output_sourcemap ~output_file () =
-  command
-    ("wasm-merge"
-    :: (common_options ()
-       @ Option.value ~default:[] options
-       @ List.flatten
-           (List.map
-              ~f:(fun { file; module_name; source_map_file } ->
-                Filename.quote file
-                :: module_name
-                ::
-                (match source_map_file with
-                | None -> []
-                | Some file -> [ "--input-source-map"; Filename.quote file ]))
-              inputs)
-       @ [ "-o"; Filename.quote output_file ]
-       @ opt_flag "--output-source-map" opt_output_sourcemap))
 
 let optimization_options : Profile.t -> _ = function
   | O1 -> [ "-O2"; "--skip-pass=inlining-optimizing"; "--traps-never-happen" ]
