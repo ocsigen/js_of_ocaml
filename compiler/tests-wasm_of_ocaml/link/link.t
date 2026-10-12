@@ -120,8 +120,8 @@ after tables.
   > (module (global (export "g") funcref (ref.null func)))
   > EOF
   $ asm tinitA
-  $ ./link_driver.exe tinit3.wasm env:tinitA.wasm a:tinit.wasm 2>&1 | grep -o "a table initializer refers to a global which is not imported"
-  a table initializer refers to a global which is not imported
+  $ ./link_driver.exe tinit3.wasm env:tinitA.wasm a:tinit.wasm 2>&1 | grep -o "a table initializer refers to the global import env / g"
+  a table initializer refers to the global import env / g
 
 But it can refer to a global imported from a module which re-exports one of
 its own imports, since this import is still an import of the linked module.

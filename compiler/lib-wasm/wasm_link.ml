@@ -869,8 +869,8 @@ end
 
 module Scan = struct
   (* Raised when an index is mapped to an entry which does not exist in
-     the output *)
-  exception Invalid_reference
+     the output. The source index is given as argument. *)
+  exception Invalid_reference of int
 
   let debug = false
 
@@ -1016,7 +1016,7 @@ module Scan = struct
           if i' < 128 then pos + 2, (i' lsl 7) + (i land 0x7f) else uint32 pos
       in
       let idx' = map idx in
-      if idx' < 0 then raise Invalid_reference;
+      if idx' < 0 then raise (Invalid_reference idx);
       if idx <> idx'
       then (
         flush' pos pos';
@@ -2164,12 +2164,20 @@ let f ?(filter_export = fun _ -> true) files ~output_file =
               code
               ~count
               pos
-          with Scan.Invalid_reference ->
-            failwith
-              (Printf.sprintf
-                 "In module %s, a table initializer refers to a global which is not \
-                  imported in the linked module"
-                 files.(i).file))
+          with Scan.Invalid_reference idx -> (
+            let import = (get_exportable_info intfs.(i).imports Global).(idx) in
+            match (get_exportable_info resolved_imports.(i) Global).(idx) with
+            | Resolved (i', _) ->
+                failwith
+                  (Printf.sprintf
+                     "In module %s, a table initializer refers to the global import %s / \
+                      %s, which is resolved to a definition in module %s. A table \
+                      initializer can only refer to imported globals."
+                     files.(i).file
+                     import.module_
+                     import.name
+                     files.(i').file)
+            | Unresolved _ -> assert false))
   in
   let table_mappings =
     build_mappings resolved_imports unresolved_imports Table table_counts
