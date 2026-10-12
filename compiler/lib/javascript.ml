@@ -120,9 +120,13 @@ end = struct
           | '-' -> false, after_e + 1
           | _ -> false, after_e
         in
-        (* Skip leading zeros but keep at least one digit. *)
+        (* Skip leading zeros but keep at least one digit, and a zero
+           followed by a numeric separator: [1e0_1] must not become [1e_1]. *)
         let rec first_nonzero i =
-          if i < len - 1 && Char.equal (String.get s i) '0'
+          if
+            i < len - 1
+            && Char.equal (String.get s i) '0'
+            && Char.is_digit (String.get s (i + 1))
           then first_nonzero (i + 1)
           else i
         in
