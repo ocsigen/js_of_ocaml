@@ -2034,11 +2034,6 @@ let externref = W.Ref { nullable = true; typ = Extern }
 let handle_exceptions ~result_typ ~fall_through ~context body x exn_handler =
   let* js_tag = register_import ~name:"javascript_exception" (Tag externref) in
   let* ocaml_tag = register_import ~name:"ocaml_exception" (Tag Type.value) in
-  let* f =
-    register_import
-      ~name:"caml_wrap_exception"
-      (Fun { params = [ externref ]; result = [ Type.value ] })
-  in
   block
     { params = []; result = result_typ }
     (let* () =
@@ -2059,6 +2054,11 @@ let handle_exceptions ~result_typ ~fall_through ~context body x exn_handler =
                in
                instr (W.Push e)
              else
+               let* f =
+                 register_import
+                   ~name:"caml_wrap_exception"
+                   (Fun { params = [ externref ]; result = [ Type.value ] })
+               in
                let* exn =
                  block_expr
                    { params = []; result = [ externref ] }
