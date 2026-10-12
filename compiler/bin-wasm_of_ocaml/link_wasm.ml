@@ -23,7 +23,6 @@ open Wasm_of_ocaml_compiler
 type binaryen_options =
   { common : string list
   ; opt : string list
-  ; merge : string list
   }
 
 type options =
@@ -64,11 +63,7 @@ let options =
     let doc = "Pass option $(docv) to $(b,wasm-opt)" in
     Arg.(value & opt_all string [] & info [ "binaryen-opt" ] ~docv:"OPT" ~doc)
   in
-  let merge_options =
-    let doc = "Pass option $(docv) to $(b,wasm-merge)" in
-    Arg.(value & opt_all string [] & info [ "binaryen-merge" ] ~docv:"OPT" ~doc)
-  in
-  let build_t input_modules output_file variables allowed_imports common opt merge =
+  let build_t input_modules output_file variables allowed_imports common opt =
     let allowed_imports =
       if List.is_empty allowed_imports then None else Some (List.concat allowed_imports)
     in
@@ -88,7 +83,7 @@ let options =
           ; output_file
           ; variables
           ; allowed_imports
-          ; binaryen_options = { common; opt; merge }
+          ; binaryen_options = { common; opt }
           ; effects_backend
           }
     | Error msg -> `Error (false, msg)
@@ -101,8 +96,7 @@ let options =
       $ Preprocess.variable_options
       $ allowed_imports
       $ binaryen_options
-      $ opt_options
-      $ merge_options)
+      $ opt_options)
   in
   Term.ret t
 
@@ -111,7 +105,7 @@ let link
     ; output_file
     ; variables
     ; allowed_imports
-    ; binaryen_options = { common; merge; opt }
+    ; binaryen_options = { common; opt }
     ; effects_backend
     } =
   (* So that the --enable-stack-switching option is passed to Binaryen
@@ -127,7 +121,7 @@ let link
   in
   Runtime.build
     ~allowed_imports
-    ~link_options:(common @ merge)
+    ~convert_options:common
     ~opt_options:(common @ opt)
     ~variables:(Preprocess.set_variables variables)
     ~inputs
