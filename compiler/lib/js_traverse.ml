@@ -350,6 +350,9 @@ class map : mapper =
     method import ({ from; kind; withClause } as x) =
       let kind' =
         match kind with
+        | Source i ->
+            let i' = m#ident i in
+            if phys_equal i' i then kind else Source i'
         | DeferNamespace i ->
             let i' = m#ident i in
             if phys_equal i' i then kind else DeferNamespace i'
@@ -885,7 +888,7 @@ class iter : iterator =
 
     method import { from = _; kind; withClause = _ } =
       match kind with
-      | DeferNamespace i -> m#ident i
+      | Source i | DeferNamespace i -> m#ident i
       | Namespace (iopt, i) ->
           Option.iter ~f:m#ident iopt;
           m#ident i
@@ -1434,7 +1437,7 @@ class free =
           Option.iter f ~f:(fun f -> m#block f)
       | Import ({ from = _; kind; withClause = _ }, _) ->
           (match kind with
-          | DeferNamespace i -> m#def_local i
+          | Source i | DeferNamespace i -> m#def_local i
           | Namespace (iopt, i) ->
               Option.iter ~f:m#def_local iopt;
               m#def_local i
@@ -1542,7 +1545,7 @@ let declared scope params body =
              List.iter l' ~f:(fun (_, s) -> m#statements s))
        | _, Import ({ kind; from = _; withClause = _ }, _loc) -> (
            match kind with
-           | DeferNamespace i -> decl_var i
+           | Source i | DeferNamespace i -> decl_var i
            | Namespace (iopt, i) ->
                Option.iter ~f:decl_var iopt;
                decl_var i
