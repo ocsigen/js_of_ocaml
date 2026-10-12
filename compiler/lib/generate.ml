@@ -2166,7 +2166,12 @@ and translate_instrs (ctx : Ctx.t) loc expr_queue instrs =
    [x] as well, so the [break] is redundant. Js_simpl.if_statement
    often turns the result into a conditional expression, since this is
    the usual shape of a phi assignment. The [break] count of [x] is
-   decremented and the label is unmarked when no break remains. *)
+   decremented and the label is unmarked when no break remains.
+
+   Each sunk [if] nests the rest of the list in its else-branch, so the
+   result is as deeply nested as the number of [break]s sunk. Nothing is
+   done above [break_sink_depth] of them, since deep nesting overflows
+   some JS engine parsers (#2122). *)
 and sink_breaks st scope_stack ~fall_through never l =
   match fall_through with
   | Return -> never, l
@@ -2174,7 +2179,8 @@ and sink_breaks st scope_stack ~fall_through never l =
       match
         List.find_map ~f:(fun (pc', s) -> if pc' = x then Some s else None) scope_stack
       with
-      | Some (lbl, used, Forward count) ->
+      | Some (lbl, used, Forward count)
+        when !count > 0 && !count <= Config.Param.break_sinking_max_depth () ->
           let then_branch (s, _) =
             match s with
             | J.Break_statement (Some l') when J.Label.equal lbl l' -> Some []
@@ -2306,7 +2312,7 @@ and compile_block_no_loop st loc queue (pc : Addr.t) ~fall_through scope_stack =
         sink_breaks st scope_stack ~fall_through never (body @ code)
   in
   let never_after, after =
-    if List.length new_scopes > Config.Param.merge_node_max ()
+    if List.length new_scopes > Config.Param.labelled_block_max_depth ()
     then
       (* Too many sibling merge-node targets: a tower of nested labelled
          blocks would nest as deep as [new_scopes], which overflows some JS

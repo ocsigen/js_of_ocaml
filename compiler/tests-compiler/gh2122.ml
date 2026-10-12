@@ -27,7 +27,7 @@
    SpiderMonkey: "too much recursion" at load time, before any code runs).
    See #2122.
 
-   With [merge_node_max] lowered, the same block is instead compiled as a flat
+   With [label_depth] lowered, the same block is instead compiled as a flat
    dispatch loop ([for(;;)] around a [switch]) whose statement-nesting depth is
    constant. *)
 
@@ -52,7 +52,7 @@ let () =
 
 let%expect_test "match with many shared continuations is a flat dispatch loop" =
   (* Force the flat dispatch loop on the [kind] match. *)
-  let flags = [ "--set=merge_node_max=2" ] in
+  let flags = [ "--set=label_depth=2" ] in
   compile_and_run ~flags prog;
   [%expect {| if=1 in=2 match=3 module=4 open=5 while=0 then=1 function=3 |}];
   let program = compile_and_parse ~flags prog in
@@ -137,7 +137,7 @@ let () =
 |}
 
 let%expect_test "non-independent scopes fall through to the join where adjacent" =
-  let flags = [ "--set=merge_node_max=2" ] in
+  let flags = [ "--set=label_depth=2" ] in
   compile_and_run ~flags score_prog;
   [%expect {| 102 202 305 406 504 5 |}];
   let program = compile_and_parse ~flags score_prog in
