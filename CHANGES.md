@@ -7,6 +7,8 @@
   smaller functions, which are faster to optimize (#2423)
 * Compiler/Wasm: support `--effects=double-translation` (#2443)
 * Runtime: fast path for immediates in polymorphic comparisons (#????)
+* Compiler/Wasm: preprocess, validate and assemble the runtime files with Wax
+  (new `wax-lib` dependency); remove `wasm_of_ocaml preprocess` (#2373)
 
 ## Bug fixes
 * Compiler: fix a miscompilation of `Int_trie` by OxCaml's flambda2 at -O2
