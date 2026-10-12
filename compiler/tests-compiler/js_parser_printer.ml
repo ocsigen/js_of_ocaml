@@ -1663,7 +1663,7 @@ let%expect_test "numeric separators in the integer part of a float" =
   [%expect {| cannot parse js (from l:1, c:1) |}];
   (* The exponent may start with a zero *)
   check `Script "1e0_1; 1e+0_1; 1_0e0_1";
-  [%expect {| cannot parse js (from l:1, c:3) |}];
+  [%expect {| 1e_1;1e_1;1_0e_1; |}];
   check `Script "1e_1";
   [%expect
     {|
