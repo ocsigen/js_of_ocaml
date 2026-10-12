@@ -1651,3 +1651,40 @@ let%expect_test "syntax error messages" =
   | exception Parse_js.Parsing_error pi ->
       print_endline (Parse_info.Diagnostic.with_excerpt pi "syntax error"));
   [%expect {| line 1, column 5: syntax error |}]
+
+let%expect_test "numeric separators in the integer part of a float" =
+  check `Script "1_0e+1; 1_0.5e1_0; 123_456.123_456e+123_456; 1e+1_0; 1_0.5_0";
+  [%expect
+    {|
+           cannot parse js (from l:1, c:3)
+           fake:1:1: lexer error: Unexpected recovery
+           |}];
+  check `Script "1__0";
+  [%expect {| cannot parse js (from l:1, c:1) |}];
+  check `Script "1_.0";
+  [%expect {| cannot parse js (from l:1, c:1) |}];
+  check `Script "0_1";
+  [%expect {| cannot parse js (from l:1, c:1) |}]
+
+let%expect_test "html close comment after a multi-line comment" =
+  (* [-->] starts a comment at the beginning of a line, where a multi-line
+     comment containing a line terminator counts as a line start *)
+  check `Script "x/*\n*/--> y\nz";
+  [%expect {|
+           x--
+           >y;z;
+           |}];
+  check `Script "/*\n*/--> y\nz";
+  [%expect {| z; |}];
+  check `Script "x /* */ --> y";
+  [%expect {|
+           x--
+           >y;
+           |}];
+  check `Script "x\n--> y\nz";
+  [%expect {| x;z; |}];
+  check `Script "x /* */ /*\n*/ /* */ --> y\nz";
+  [%expect {|
+           x--
+           >y;z;
+           |}]
