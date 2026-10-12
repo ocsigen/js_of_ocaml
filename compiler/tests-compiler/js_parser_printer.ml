@@ -1660,7 +1660,18 @@ let%expect_test "numeric separators in the integer part of a float" =
   check `Script "1_.0";
   [%expect {| cannot parse js (from l:1, c:1) |}];
   check `Script "0_1";
-  [%expect {| cannot parse js (from l:1, c:1) |}]
+  [%expect {| cannot parse js (from l:1, c:1) |}];
+  (* The exponent may start with a zero *)
+  check `Script "1e0_1; 1e+0_1; 1_0e0_1";
+  [%expect {| cannot parse js (from l:1, c:3) |}];
+  check `Script "1e_1";
+  [%expect
+    {|
+           cannot parse js (from l:1, c:1)
+           fake:1:1: lexer error: Unexpected recovery
+           |}];
+  check `Script "1e1_";
+  [%expect {| cannot parse js (from l:1, c:3) |}]
 
 let%expect_test "html close comment after a multi-line comment" =
   (* [-->] starts a comment at the beginning of a line, where a multi-line
