@@ -47,6 +47,11 @@ jobs:
         with:
           ocaml-compiler: "5.4.0"
 
+      # The runner image ships a stale apt index: without this, installing the
+      # `graphics` depexts (libx11-dev libxft-dev) 404s on superseded .debs.
+      - name: Update apt cache
+        run: sudo apt-get update
+
       - name: Install dependencies
         run: |
           opam install . --deps-only --with-doc
@@ -119,6 +124,11 @@ jobs:
         run: |
           rm -rf relsrc/doc
           cp -a docsrc/doc relsrc/doc
+
+      # The runner image ships a stale apt index: without this, installing the
+      # `graphics` depexts (libx11-dev libxft-dev) 404s on superseded .debs.
+      - name: Update apt cache
+        run: sudo apt-get update
 
       - name: Install dependencies (in the release tree)
         working-directory: relsrc
