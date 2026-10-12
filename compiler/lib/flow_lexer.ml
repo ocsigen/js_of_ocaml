@@ -443,15 +443,19 @@ let token (env : Lex_env.t) lexbuf : result =
       env.lex_first_token_on_line <- true;
       Continue
   | Plus whitespace -> Continue
+  (* Fast paths: a block comment on a single line, a line comment, taken
+     from the lexeme in one go *)
+  | ( "/*"
+    , Star
+        ( Compl ('*' | line_terminator_sequence_start)
+        | Plus '*', Compl ('*' | '/' | line_terminator_sequence_start) )
+    , Plus '*'
+    , '/' ) -> Comment (lexeme lexbuf)
+  | "//", Star (Compl line_terminator_sequence_start) -> Comment (lexeme lexbuf)
   | "/*" ->
       let buf = Buffer.create 127 in
       lexeme_to_buffer lexbuf buf;
       comment env buf lexbuf;
-      Comment (Buffer.contents buf)
-  | "//" ->
-      let buf = Buffer.create 127 in
-      lexeme_to_buffer lexbuf buf;
-      line_comment env buf lexbuf;
       Comment (Buffer.contents buf)
   (* HTML-like comments: <!-- is treated as a single-line comment *)
   | "<!--" ->
@@ -482,6 +486,13 @@ let token (env : Lex_env.t) lexbuf : result =
         Continue)
       else Token (T_ERROR "#!")
   (* Values *)
+  (* Fast path: a string literal without escapes nor line terminators *)
+  | '"', (Star (Compl ('"' | '\\' | line_terminator_sequence_start)) as s), '"'
+  | "'", (Star (Compl ("'" | '\\' | line_terminator_sequence_start)) as s), "'" ->
+      Token
+        (T_STRING
+           ( Stdlib.Utf8_string.of_string_exn (Sedlexing.Utf8.of_submatch s)
+           , Sedlexing.lexeme_length lexbuf - 1 ))
   | "'" | '"' ->
       let quote = lexeme lexbuf in
       let p1 = Sedlexing.lexeme_start lexbuf in
@@ -750,11 +761,7 @@ let regexp (env : Lex_env.t) lexbuf =
       env.lex_first_token_on_line <- true;
       Continue
   | Plus whitespace -> Continue
-  | "//" ->
-      let buf = Buffer.create 127 in
-      lexeme_to_buffer lexbuf buf;
-      line_comment env buf lexbuf;
-      Comment (Buffer.contents buf)
+  | "//", Star (Compl line_terminator_sequence_start) -> Comment (lexeme lexbuf)
   | "/*" ->
       let buf = Buffer.create 127 in
       lexeme_to_buffer lexbuf buf;
