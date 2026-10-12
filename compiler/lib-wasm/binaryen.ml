@@ -76,10 +76,10 @@ let optimize
     ~output_file
     () =
   command
-    (* [--emit-exnref] is needed even though [Wasm_output] and
-       [Wat_output] now emit [try_table] directly when targeting WASI:
-       the runtime [.wat] files still use the legacy [try]/[catch] syntax,
-       and this flag converts them to [try_table] so the whole output is
+    (* [Wasm_output] and [Wat_output] emit [try_table] directly when
+       targeting WASI, and so does Wax when assembling the runtime files;
+       [--emit-exnref] converts any remaining legacy [try]/[catch] (from
+       runtime modules provided in binary form) so the whole output is
        uniformly in the new form. *)
     (("wasm-opt" :: (if Config.Flag.wasi () then [ "--emit-exnref" ] else []))
     @ common_options ()

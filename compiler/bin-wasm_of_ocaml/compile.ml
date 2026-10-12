@@ -79,7 +79,7 @@ let opt_with action x f =
 let preprocessor_variables () =
   (* Keep this variables in sync with gen/gen.ml *)
   [ ( "effects"
-    , Wat_preprocess.String
+    , Wax_link.String
         ((match Config.effects () with
            | `Disabled when not (Config.Flag.wasi ()) ->
                (* We are using the same runtime
@@ -87,16 +87,16 @@ let preprocessor_variables () =
                `Jspi
            | (`Disabled | `Jspi | `Cps | `Double_translation | `Native) as e -> e)
         |> Build_info.string_of_effects_backend) )
-  ; "wasi", Wat_preprocess.Bool (Config.Flag.wasi ())
+  ; "wasi", Wax_link.Bool (Config.Flag.wasi ())
   ]
 
 let with_runtime_files ~runtime_wasm_files f =
   let inputs =
     List.map
-      ~f:(fun file -> { Wat_preprocess.module_name = "env"; file; source = File })
+      ~f:(fun file -> { Wax_link.module_name = "env"; file; source = File })
       runtime_wasm_files
   in
-  Wat_preprocess.with_preprocessed_files ~variables:(preprocessor_variables ()) ~inputs f
+  Wax_link.with_preprocessed_files ~variables:(preprocessor_variables ()) ~inputs f
 
 let build_runtime () =
   let variables = preprocessor_variables () in
@@ -106,7 +106,7 @@ let build_runtime () =
         List.equal
           ~eq:(fun (k1, v1) (k2, v2) ->
             assert (String.equal k1 k2);
-            Wat_preprocess.value_equal v1 v2)
+            Wax_link.value_equal v1 v2)
           flags
           variables)
   with
@@ -119,7 +119,7 @@ let build_runtime () =
       let inputs =
         List.map
           ~f:(fun (module_name, contents) ->
-            { Wat_preprocess.module_name
+            { Wax_link.module_name
             ; file = module_name ^ ".wat"
             ; source = Contents contents
             })
@@ -130,7 +130,6 @@ let build_runtime () =
       Fs.with_intermediate_file (Filename.temp_file "runtime" ".wasm")
       @@ fun runtime_file ->
       Runtime.build
-        ~convert_options:[ "-g" ]
         ~opt_options:[ "-g"; "-O2" ]
         ~variables
         ~allowed_imports:
@@ -225,8 +224,6 @@ let link_and_optimize
   let runtime = build_runtime () in
   with_runtime_files ~runtime_wasm_files
   @@ fun runtime_inputs ->
-  Runtime.with_binary_files ~options:[] runtime_inputs
-  @@ fun runtime_inputs ->
   Fs.with_intermediate_file (Filename.temp_file "linked" ".wasm")
   @@ fun linked_file ->
   opt_with
@@ -266,8 +263,6 @@ let link_runtime ~profile runtime_wasm_files output_file =
     Fs.with_intermediate_file (Filename.temp_file "merged_runtime" ".wasm")
     @@ fun temp_file ->
     (with_runtime_files ~runtime_wasm_files
-    @@ fun runtime_inputs ->
-    Runtime.with_binary_files ~options:[] runtime_inputs
     @@ fun runtime_inputs ->
     Runtime.link
       ~inputs:(List.map ~f:Runtime.link_input runtime_inputs)
