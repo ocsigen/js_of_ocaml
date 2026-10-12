@@ -591,20 +591,16 @@ let () = print_endline (trim " ")
      var j = len - 1 | 0;
      for(;;){
       if(i <= j && is_space(caml_bytes_unsafe_get(s$0, j))){var j$0 = j - 1 | 0; j = j$0; continue;}
-      a:
-      {
-       if(i <= j){
-        var len$0 = (j - i | 0) + 1 | 0;
-        if(0 <= i && 0 <= len$0 && (caml_ml_bytes_length(s$0) - len$0 | 0) >= i){
-         var r = caml_create_bytes(len$0);
-         caml_blit_bytes(s$0, i, r, 0, len$0);
-         var b = r;
-         break a;
-        }
+      if(i <= j){
+       var len$0 = (j - i | 0) + 1 | 0;
+       if(0 > i || 0 > len$0 || (caml_ml_bytes_length(s$0) - len$0 | 0) < i)
         throw caml_maybe_attach_backtrace([0, Invalid_argument, s], 1);
-       }
-       b = empty;
+       var r = caml_create_bytes(len$0);
+       caml_blit_bytes(s$0, i, r, 0, len$0);
+       var b = r;
       }
+      else
+       b = empty;
       return caml_string_of_bytes(copy(b));
      }
     }

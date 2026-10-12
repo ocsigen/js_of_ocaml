@@ -130,6 +130,8 @@
   start from 1 in all error messages, as editors expect (#2464, #2491)
 * Compiler/Wasm: store more long-lived toplevel variables in globals; fix a
   crash when one of them is assigned in a `try` body (#2516)
+* Compiler: drop redundant `break`s out of labelled blocks, turning the
+  blocks into `if`/`else` statements or conditional expressions (#2513)
 
 ## Bug fixes
 * Compiler/Wasm: with `--effects=cps`, fix an assertion failure on a `try` whose

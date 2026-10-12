@@ -2159,44 +2159,59 @@ and translate_instrs (ctx : Ctx.t) loc expr_queue instrs =
   in
   loc, List.rev st_rev, expr_queue
 
-(* [l: { P; if (c) { S; break l; } R }] becomes [P; if (c) { S } else { R }]
-   when this [break] is the only one targeting [l]. *)
-and labelled_block st l count inner =
-  let is_break (s, _) =
-    match s with
-    | J.Break_statement (Some l') -> J.Label.equal l l'
-    | _ -> false
-  in
-  let then_branch (s, _) =
-    match s with
-    | J.Break_statement (Some l') when J.Label.equal l l' -> Some []
-    | J.Block b -> (
-        match List.rev b with
-        | last :: rev_b when is_break last -> Some (List.rev rev_b)
-        | _ -> None)
-    | _ -> None
-  in
-  let rec split rev_prefix rem =
-    match rem with
-    | [] -> None
-    | ((J.If_statement (c, iftrue, None), loc) as s) :: rem -> (
-        match then_branch iftrue with
-        | Some iftrue -> Some (List.rev rev_prefix, c, loc, iftrue, rem)
-        | None -> split (s :: rev_prefix) rem)
-    | s :: rem -> split (s :: rev_prefix) rem
-  in
-  match if count = 1 then split [] inner else None with
-  | Some (prefix, c, loc, iftrue, iffalse) ->
-      prefix
-      @ Js_simpl.if_statement
-          ~function_end:(fun () -> source_location st.cloc)
-          c
-          loc
-          (Js_simpl.block iftrue)
-          false
-          (Js_simpl.block iffalse)
-          false
-  | None -> [ J.Labelled_statement (l, (J.Block inner, J.N)), J.N ]
+(* The statement list [l] is in a position that falls through to
+   [fall_through]. When this target is a labelled block [x] and [l]
+   contains a top-level [if (c) { S; break x }] followed by [R], it is
+   rewritten to [if (c) { S } else { R }]: [S] then falls through to
+   [x] as well, so the [break] is redundant. Js_simpl.if_statement
+   often turns the result into a conditional expression, since this is
+   the usual shape of a phi assignment. The [break] count of [x] is
+   decremented and the label is unmarked when no break remains. *)
+and sink_breaks st scope_stack ~fall_through never l =
+  match fall_through with
+  | Return -> never, l
+  | Block x -> (
+      match
+        List.find_map ~f:(fun (pc', s) -> if pc' = x then Some s else None) scope_stack
+      with
+      | Some (lbl, used, Forward count) ->
+          let then_branch (s, _) =
+            match s with
+            | J.Break_statement (Some l') when J.Label.equal lbl l' -> Some []
+            | J.Block b -> (
+                match List.rev b with
+                | (J.Break_statement (Some l'), _) :: rev_b when J.Label.equal lbl l' ->
+                    Some (List.rev rev_b)
+                | _ -> None)
+            | _ -> None
+          in
+          let rec sink never l =
+            match l with
+            | [] -> never, []
+            | ((J.If_statement (c, iftrue, None), loc) as s) :: rem -> (
+                match then_branch iftrue with
+                | Some iftrue ->
+                    let never_rem, rem = sink never rem in
+                    decr count;
+                    if !count = 0 then used := false;
+                    ( false
+                    , Js_simpl.if_statement
+                        ~function_end:(fun () -> source_location st.cloc)
+                        c
+                        loc
+                        (Js_simpl.block iftrue)
+                        false
+                        (Js_simpl.block rem)
+                        never_rem )
+                | None ->
+                    let never, rem = sink never rem in
+                    never, s :: rem)
+            | s :: rem ->
+                let never, rem = sink never rem in
+                never, s :: rem
+          in
+          sink never l
+      | _ -> never, l)
 
 (* Compile loops. *)
 and compile_block st loc (queue : Q.queue) (pc : Addr.t) scope_stack ~fall_through =
@@ -2276,16 +2291,19 @@ and compile_block_no_loop st loc queue (pc : Addr.t) ~fall_through scope_stack =
   let rec loop ~scope_stack ~fall_through l =
     match l with
     | [] -> compile_conditional st queue ~fall_through loc block.branch scope_stack
-    | x :: xs -> (
+    | x :: xs ->
         let l = J.Label.fresh () in
         let used = ref false in
         let count = ref 0 in
         let scope_stack = (x, (l, used, Forward count)) :: scope_stack in
         let _never_inner, inner = loop ~scope_stack ~fall_through:(Block x) xs in
         let never, code = compile_block st loc Q.empty x scope_stack ~fall_through in
-        match !used with
-        | true -> never, labelled_block st l !count inner @ code
-        | false -> never, inner @ code)
+        let body =
+          match !used with
+          | true -> [ J.Labelled_statement (l, (J.Block inner, J.N)), J.N ]
+          | false -> inner
+        in
+        sink_breaks st scope_stack ~fall_through never (body @ code)
   in
   let never_after, after =
     if List.length new_scopes > Config.Param.merge_node_max ()
