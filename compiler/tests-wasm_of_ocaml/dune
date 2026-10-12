@@ -25,6 +25,20 @@
   (flags :standard -w no-missing-debug-event)))
 
 (tests
+ (names assign)
+ (modes js wasm)
+ ; With -g, ocamlc does not turn the references into mutable variables
+ (flags
+  (:standard \ -g))
+ (ocamlc_flags ())
+ (js_of_ocaml
+  (flags :standard -w no-missing-debug-event)
+  (link_flags :standard -w no-missing-debug-event))
+ (wasm_of_ocaml
+  (flags :standard -w no-missing-debug-event)
+  (link_flags :standard -w no-missing-debug-event)))
+
+(tests
  (names marshal_fixes)
  (modes js wasm))
 
