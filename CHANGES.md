@@ -1,266 +1,160 @@
 # dev
 
 ## Features/Changes
+
+### OCaml versions
+* Compiler/Runtime: support for OCaml 5.6: use the optimization hints
+  recorded in the bytecode, support the bit counting primitives and
+  `Sys.filepath_exists`, `Weak.get_copy` no longer copies
+  (#1721, #2227, #2469, #2488, #2493, #2494)
+* Compiler/Runtime: OxCaml: block index and small-int string-like indexing
+  primitives; OxCaml-specific primitives are gated on `//If: oxcaml`
+  (#2342, #2463)
+* Compiler/Runtime: support building with Introcaml (OCaml fork with runtime
+  introspection), gated by the `introspect` flag (#2409)
+
+### Compiler
 * Compiler: require sedlex 3.8.1 (#2503)
-* Compiler: the JavaScript lexer updates its state in place rather than
-  allocating a new environment per token (#2512)
-* Compiler: with OCaml 5.6, use the optimization hints recorded in the bytecode
-  (primitive types, immutable blocks, closures, immediates, ...) (#1721, #2488)
-* Compiler: with OCaml 5.6, use the bytecode hint on integer equality tests
-  (wasm: no check for JavaScript values, no boxing of the arguments) (#2494)
-* Compiler/Runtime: support the OCaml 5.6 bit counting primitives
-  (`caml_int_clz`, `caml_int_ctz`, `caml_int_popcount`) (#2469)
-* Runtime: support `Sys.filepath_exists` (OCaml 5.6) (#2493)
-* Runtime: with OCaml 5.6, `Weak.get_copy` and the ephemeron `get_*_copy`
-  primitives no longer copy, as in the OCaml runtime (#2469)
-* Runtime/Wasm: faster `caml_hash` and `compare`, without a global work stack
-  (#2470)
-* Runtime/Wasm: faster lexer engines, using lexer tables cached as 16-bit
-  arrays (#2470)
-* Runtime/Wasm: `Str` searches skip positions where no match can start (#2470)
-* Runtime/Wasm: faster sharing detection in `output_value`, no longer
-  quadratic with WASI (#2470)
-* Runtime/Wasm: with WASI, `output_value` shares boxed numbers with equal
-  contents, unlike native code (#2470)
-* Compiler: with `--effects={cps,double-translation}`, specialize calls to
-  known functions using the global flow analysis before the CPS transformation
-  (#2456)
-* Compiler: variable substitution (`Subst`) returns the original blocks,
-  instructions and expressions when they are not affected, rather than
-  rebuilding the whole program each time (#2447)
-* Compiler: `Js_traverse.free` is now an iterator (the class type `freevar`
-  inherits from `iterator`) and no longer modifies the program; the name of a
-  function expression that does not refer to itself is no longer removed, and
-  the `unused-js-vars` warning now reports such names (#2449)
-* Compiler: the worklist of the dataflow solvers is a fixed-size circular
-  buffer rather than a list copied into a queue (#2448)
-* Compiler: `Js_traverse.map` returns the original AST node when nothing
-  changed below it, rather than rebuilding the whole JavaScript program in each
-  of the passes using it (#2446)
-* Compiler: represent the map of blocks of a program as a trie indexed by
-  the bits of the addresses (`Int_trie`), rather than a balanced tree. Looking
-  up a block, which all passes do all the time, follows 3 or 4 pointers rather
-  than about 17 for a large program. Compilation is about 10% faster (#2445)
-* Compiler: speed up the JavaScript printer: buffered output, cheaper location
-  comparisons and line tracking (#2452)
-* Compiler: represent sets of addresses and variables as Patricia trees with
-  bitmap leaves (`Int_set`), which allocate much less than balanced trees for
-  the small sets of large integers the compiler mostly uses (#2454)
-* Compiler/Runtime: support building with Introcaml, an OCaml fork with
-  runtime introspection: parse the `NEXT_RESERVED_BITS` instruction and the
-  extended `Const_block`, skip the reserved header bits in marshaled data, and
-  provide stubs for the new primitives, gated by the `introspect` flag in
-  `//If:` directives and wasm `(@if $introspect ...)` blocks (#2409)
-* Compiler: emit large binary string constants (ocamllex/ocamlyacc/menhir
-  tables, embedded files, marshaled data, ...) as base64 literals decoded once
-  at initialisation, rather than as `\xNN`-escaped string literals. Each
-  non-printable byte costs four characters when escaped but only 4/3 in
-  base64, so generated code embedding binary data gets noticeably smaller
-  (e.g. -14% on the toplevel example). Decoding uses `atob`, or
-  `Uint8Array.fromBase64` when `use-js-string` is disabled, with a JavaScript
-  fallback for engines lacking them (#2432)
-* Lib: add `WebGL2` — bindings to the WebGL2 rendering context. The context
-  inherits every method and constant of `WebGL`, and adds the WebGL2 objects
-  (vertex array objects, queries, samplers, syncs, transform feedback), 3D and
-  immutable textures, multiple render targets, instanced/range drawing, uniform
-  buffer objects, integer vertex attributes and unsigned-integer uniforms, the
-  pixel-buffer-object and `srcOffset` overloads of the data entry points,
-  introspection (`getIndexedParameter`, `getInternalformatParameter`, the new
-  `getParameter`/uniform-type/framebuffer-attachment enumerations), plus the
-  new sized internal formats. `WebGL.contextAttributes` gains `powerPreference`,
-  `desynchronized` and `xrCompatible`. `WebGL2.getContext` requests a `"webgl2"`
-  context. The `webgl` example now uses WebGL2, and a new `webgl2_particles`
-  example demonstrates a GPU particle system driven by transform feedback
-  (#1226)
-* Lib: add `Crypto` — bindings to the Web Crypto API (`crypto`,
-  `getRandomValues`, `randomUUID`, and the Promise-typed `SubtleCrypto`), with a
-  typed `params` variant (one constructor per algorithm) and
-  `to_algorithm`/`of_algorithm` conversions, typed `Key_type`/`Key_usage`/
-  `Key_format` enums, and overloaded `generateKey`/`generateKey_pair`,
-  `importKey`/`importKey_jwk` and `exportKey`/`exportKey_jwk` methods that
-  resolve the spec's union argument/return types (#2380)
-* Lib: add `Notification` and `Clipboard` — bindings to the Notifications API
-  and the (Promise-typed) async Clipboard API (#2379)
-* Lib: add bindings for the Service Worker API (`ServiceWorker`),
-  channel messaging (`MessageChannel`, `MessagePort`, `MessageEvent`) and the
-  Cache API (`Cache`) (#2381)
-* Lib: consolidate the duplicate `messageEvent` class types into a single
-  polymorphic `('target, 'data) Dom_html.messageEvent`; the old per-module
-  types (`Worker.messageEvent`, `EventSource.messageEvent`) are kept as
-  deprecated aliases (#2390)
-* Lib: add `Lwt_js_events.mutation`/`mutations` — wait for `MutationObserver`
-  mutation records as Lwt threads (#250)
-* Lib: remove `js_of_ocaml-lwt.logger` and the `lwt_log` dependency, as
-  upstream `lwt_log` is deprecated (#2378)
-* Toplevel: new `Wrapped` and `Async` APIs returning errors and warnings as
-  first-class values; adds new `js_of_ocaml-toplevel.protocol`,
-  `js_of_ocaml-toplevel.worker` and `js_of_ocaml-toplevel.worker_lwt_client`
-  sublibraries for running the toplevel in a WebWorker. Revives the
-  asynchronous toplevel originally contributed in the unmerged #435 (#66, #833)
-* Lib: add `FontFace` module — partial binding to the CSS Font Loading
-  API, plus a `fonts` property on `Dom_html.document` (#2255)
-* Lib: `Lwt_js_events` `load`/`error`/`abort` and their `seq_loop` variants now
-  accept any element, not only images (#2404)
-* Compiler/Wasm: emit a sourcemap mapping at the very start of each function,
-  since the Chrome profiler attributes the samples within a function to its
-  start offset (#2417)
-* Lib (breaking): `Typed_array.float32Array_fromArray` and
-  `float64Array_fromArray` now take a `number_t js_array t` instead of a
-  `float js_array t`. The previous type was wrong for wasm_of_ocaml, where
-  OCaml floats are not JavaScript numbers; existing callers must build their
-  array from `Js.number_of_float` elements (#2416)
-* Compiler/wasm: add `--setenv`, matching js_of_ocaml: the variable is set both
-  for the static evaluator and for `Sys.getenv` lookups at runtime (#2415)
-* Lib: the native stubs generated for the JavaScript primitives are now weak
-  symbols, so that libraries which link (but do not run) JavaScript primitives
-  in native code can override them with dummy implementations (#2435)
-* Compiler/Wasm: intern string constants: equal string constants now share a
-  single value, which reduces the size of the generated code. Sharing is
-  program-wide with whole-program compilation, and per compilation unit with
-  separate compilation (#2436)
-* Runtime: specialize one- and two-argument partial applications in
-  double-translation mode, avoiding an extra `caml_call_gen` frame (#2437)
-* Compiler/Wasm: with `--effects=cps`, no longer turn mutually recursive
-  functions into CPS: Wasm has proper tail calls, so this is only needed when
-  targeting JavaScript (#2441)
-* Compiler: with `--effects=double-translation`, only generate a CPS version
-  of the functions that may run below an effect handler (#2441)
-* Compiler: report JavaScript syntax errors (runtime files, `jsoo_minify`,
-  `wasm_of_ocaml`) as `file:line:col`, followed by the offending line; columns
-  start from 1 in all error messages, as editors expect (#2464, #2491)
-* Compiler/Wasm: store more long-lived toplevel variables in globals; fix a
-  crash when one of them is assigned in a `try` body (#2516)
+* Compiler: faster compilation (about 25% faster than 6.4.1 on large
+  programs): new `Int_trie` and `Int_set` data structures,
+  sharing-preserving `Subst` and `Js_traverse.map`, `Js_traverse.free` as
+  an iterator, circular-buffer worklists, faster JavaScript printer and
+  lexer (#2445, #2446, #2447, #2448, #2449, #2452, #2454, #2512)
+* Compiler: keep the name of function expressions that do not refer to
+  themselves; the `unused-js-vars` warning now reports such names (#2449)
+* Compiler: emit large binary string constants as base64 literals, which are
+  much smaller than `\xNN`-escaped literals (-14% on the toplevel example)
+  (#2432)
+* Compiler: report JavaScript syntax errors as `file:line:col` followed by
+  the offending line; columns start from 1 (#2464, #2471, #2491)
 * Compiler: drop redundant `break`s out of labelled blocks, turning the
   blocks into `if`/`else` statements or conditional expressions; the nesting
   this introduces is bounded by `--set=break_sink_depth`, and the
   `merge_node_max` parameter is renamed `label_depth` (#2513)
 
+### Effects
+* Compiler: with `--effects={cps,double-translation}`, specialize calls to
+  known functions before the CPS transformation (#2458)
+* Compiler: with `--effects=double-translation`, only generate a CPS version
+  of the functions that may run below an effect handler (#2441)
+* Compiler/Wasm: with `--effects=cps`, no longer turn mutually recursive
+  functions into CPS, since Wasm has proper tail calls (#2441)
+* Runtime: specialize one- and two-argument partial applications in
+  double-translation mode (#2437)
+
+### Wasm
+* Compiler/Wasm: intern string constants (program-wide with whole-program
+  compilation, per compilation unit otherwise) (#2436)
+* Compiler/Wasm: small code generation improvements (negation, physical
+  equality on JavaScript values, bigarray dimensions, result types of
+  runtime primitives) (#2472, #2475)
+* Compiler/Wasm: add `--setenv`, matching js_of_ocaml (#2415)
+* Compiler/Wasm: emit a sourcemap mapping at the start of each function, for
+  the Chrome profiler (#2417)
+* Compiler/Wasm: the linker supports the wide arithmetic and custom
+  descriptor instructions (#2515)
+* Compiler/Wasm: store more long-lived toplevel variables in globals; fix a
+  crash when one of them is assigned in a `try` body (#2516)
+* Runtime/Wasm: faster `caml_hash`, `compare`, lexer engines, `Str`
+  searches and `output_value` sharing detection (with WASI, `output_value`
+  now shares boxed numbers with equal contents); single bound check in
+  fixed-width `Bytes` accesses (#2470, #2505)
+
+### Libraries
+* Lib: add `WebGL2` bindings; the `webgl` example uses WebGL2 and a new
+  `webgl2_particles` example demonstrates transform feedback (#1226, #2388)
+* Lib: add `Crypto` (Web Crypto API) bindings (#2380)
+* Lib: add `Notification` and `Clipboard` bindings (#2379)
+* Lib: add Service Worker, `MessageChannel`/`MessagePort` and Cache API
+  bindings (#2381)
+* Lib: add `FontFace` (CSS Font Loading API) bindings (#2255)
+* Lib: add the Pointer Capture API to `Dom_html.element`, and
+  `getPredictedEvents`, `altitudeAngle` and `azimuthAngle` to `pointerEvent`
+  (#2403)
+* Lib: consolidate the duplicate `messageEvent` class types into
+  `('target, 'data) Dom_html.messageEvent`; the old ones are deprecated
+  aliases (#2382, #2390)
+* Lib: add `Lwt_js_events.mutation`/`mutations` (`MutationObserver`) (#250)
+* Lib: `Lwt_js_events.load`/`error`/`abort` accept any element, not only
+  images (#2404)
+* Lib (breaking): `Typed_array.float32Array_fromArray` and
+  `float64Array_fromArray` take a `number_t js_array t`, as required by
+  wasm_of_ocaml (#2416)
+* Lib (breaking): remove `js_of_ocaml-lwt.logger`, as `lwt_log` is
+  deprecated (#2378)
+* Lib: the native stubs of the JavaScript primitives are weak symbols, so
+  that they can be overridden (#2435)
+
+### Toplevel
+* Toplevel: new `Wrapped` and `Async` APIs, and `protocol`, `worker` and
+  `worker_lwt_client` sublibraries to run the toplevel in a WebWorker
+  (#66, #833, #2377)
+
 ## Bug fixes
-* Compiler: the JavaScript lexer accepts numeric separators in the integer
-  part of a float (`1_0.5`), and an HTML close comment `-->` after a multi-line
-  comment containing a line terminator (#2524)
-* Compiler/Wasm: with `--effects=cps`, fix an assertion failure on a `try` whose
-  body modifies a local reference, when compiled without `-g` (#2519)
-* Compiler: the JavaScript lexer no longer crashes on a unicode escape out
-  of the code point range (`\u{110000}`) or with too many digits; it is
-  reported as a syntax error (#2503)
-* Compiler: the JavaScript lexer counts the lines of a CR, U+2028 or U+2029
-  inside a string or template literal, so that the locations after it are
-  right, and reports a bare CR inside a string literal like a bare LF (#2503)
-* Compiler/Wasm: fix several bugs of the Wasm linker (instruction decoding,
-  retargeting of active segments, type checks of imports) (#2504)
-* Wasm: `Genarray.get`/`set` check the number of indices
-* Runtime: the functions creating arrays of arbitrary length (`Array.append`,
-  `Array.concat`, `Obj.new_block`, `Weak.create`, ...) check the size limits of
-  OCaml (`Sys.max_array_length`), and `Array.make` accepts these limits (#2499)
-* Runtime: `Str.string_partial_match` stops at a partial match (JS) and no
-  longer returns invalid groups (OSEC-2026-21, ocaml/ocaml#15113) (#2492)
-* Compiler/wasm: `x land y` was assumed to fit in 31 bits as soon as one
-  operand did, which is wrong when that operand is negative (#2490)
-* Compiler: fix reference unboxing when a reference allocated in a loop is
-  read after leaving it (#2489)
-* Compiler: with `--effects=cps`, a call result could be unbound in its
-  continuation when a local reference was mutated in a `try` body (#2484)
+
+### Compiler
+* Compiler: fix two reference unboxing bugs (#2426, #2489)
+* Compiler: fix an invariant violation with recursive inlining
+  (#2482, #2495)
+* Compiler: fix variable coalescing with ES classes (#2462)
+* Compiler: fix unsound corner cases of the JavaScript simplification
+  passes: `||` fusion of effectful conditions, dropped `var` declarations
+  when folding an `if`, catch-parameter destructuring defaults (#2393)
+* Compiler: fix the printing of JavaScript code: parentheses around optional
+  chains, no ES2021 logical assignments, keep the braces around a single
+  block-scoped declaration (#2465, #2502)
+* Compiler: keep `static` on the same line as the class element it modifies
+  (Safari 17 misparsed static class fields) (#2420, #2421)
+* Compiler: fix the JavaScript lexer on out-of-range unicode escapes, on
+  CR, U+2028 and U+2029 inside strings and templates, on numeric separators
+  in the integer part of a float, and on an HTML close comment `-->` after a
+  multi-line comment (#2503, #2524)
+
+### Effects
 * Compiler: with `--effects=cps` or `double-translation`, fix mutable local
-  variables read in an exception handler (code compiled without `-g`) (#2484)
-* Runtime: `output_value` marshals forced lazy values as their value, as native
-  code does (#2486)
-* Runtime/Wasm: `caml_hash` follows forwarded values, counts objects and
-  ignores negative counts, as native code does (#2486)
-* Runtime: `caml_alloc_dummy_mixed` takes two arguments, as OxCaml calls it;
-  recursive definitions of mixed records failed to compile (#2461)
-* Runtime: `compare_digits_nat` compares digits as unsigned, and nats
-  marshalled with 32-bit digits can be read on 64-bit platforms (#2460)
-* Compiler: fix variable coalescing with ES classes: the heritage, computed
-  keys and decorators of a class declaration are evaluated at definition
-  time, and class field initializers and static blocks capture the variables
-  they reference (#2462)
-* Compiler: keep the parentheses around an optional chain in JavaScript code
-  (runtime files, `jsoo_minify`): `(a?.b).c` was printed as `a?.b.c`, which
-  is undefined rather than raising an exception when `a` is null, and
-  `` (a?.b)`t` `` and `new (a?.b)()` were printed without their parentheses,
-  which is a syntax error. Reject a template literal in an optional chain
-  (`` a?.b`t` ``), as the grammar requires (#2465)
-* Compiler: fix an invariant violation when a function is inlined both as an
-  argument of another inlined function and directly (#2482, #2495)
-* Compiler: with `--effects=double-translation`, fix calls with too many
-  arguments to a function that does not perform effects (#2455)
-* Runtime/Wasm: with `--effects=native`, performing an effect that no
-  handler can receive (at toplevel, inside a JavaScript callback, or when
-  every handler lets it through) now raises `Effect.Unhandled` instead of
-  failing with a runtime error. With `--effects=native` and
-  `--effects=jspi`, a handler installed inside `assume_no_perform` now
-  handles the effects performed in its body, as documented (#2434)
-* Runtime: convert unit names to OCaml strings before calling the toplevel
-  relocation callback when `use-js-string` is disabled (#2429)
-* Compiler/Wasm: don't run the program on a JSPI stack when `--effects=cps`
-  (#2441)
-* Compiler/Wasm: with `--effects=disabled`, performing an effect on a
-  JSPI-capable engine now raises the intended `Failure` instead of a raw
-  `SuspendError` (#2441)
-* Compiler/Wasm: fix specialized generic bigarray accesses
-  (`Bigarray.Genarray.get`/`set` with a locally allocated index array): the
-  tag offset of the index array was accounted for twice, so each index was
-  read one field too far, returning a wrong value or accessing the array out
-  of bounds (#2427)
-* Compiler: keep `static` on the same line as the class element it modifies.
-  In compact mode the separator was a newline, and Safari 17 reads `static`
-  alone on a line as a field name rather than a modifier, so every static
-  class field became an instance field; `Int64.of_string` then threw on
-  `MlInt64.UNSIGNED_MAX` (#2420)
-* Compiler/Wasm: sourcemaps were silently disabled on Windows: the detection
-  of Binaryen's sourcemap support used Unix redirection syntax, so it always
-  concluded that sourcemaps were unsupported (#2418)
-* Compiler/Wasm runtime: fix toplevels built on Windows — the embedded cmi
-  paths were built with `Filename.concat`, putting `\` separators in the
-  unix-style virtual filesystem, and its lookups did not normalize the `\`
-  separators the program uses when running on Windows; loading Stdlib then
-  failed with `Env.Error` on OCaml >= 5.4 (#2397)
-* Compiler: only fuse `if (e) var x = e; else var x = e2` into
-  `var x = e || e2` when the condition is effect-free; an effectful
-  condition structurally equal to the branch (e.g. two calls to the same
-  function) was evaluated once instead of twice (#2393)
-* Compiler: when simplification folds an `if` with a constant condition,
-  re-emit the `var` declarations of the dropped branch: they are hoisted,
-  so dropping them could turn later assignments into references to an
-  undeclared variable (a ReferenceError in strict mode) or crash the
-  minifier's name allocator (#2393)
-* Compiler: record variable uses occurring in catch-parameter
-  destructuring defaults (`catch ({x = someVar})`) in the free-variable
-  analysis; the short-name allocator could otherwise reuse the name of
-  the referenced variable, making the default read the wrong one (#2393)
-* Wasm: link the zstd and blake2 C runtimes into a single module sharing one
-  linear memory (into libc.wasm for the wasi runtime), so each runtime declares
-  a single memory. Safari (and hence Bun) does not support modules with several
-  memories (#2382)
-* Wasm: embed cmis when building a toplevel with separate compilation.
-  `wasm_of_ocaml --toplevel` now reports `toplevel=true` in its build config
-  and honors the flag when it comes through `--apply-build-config`, so dune
-  builds the toplevel variant of library dependencies and their cmis (Stdlib,
-  compiler-libs, ...) end up in `/static/cmis`. Previously only whole-program
-  compilation embedded them, so a separately-compiled wasm toplevel failed to
-  load Stdlib at startup (#2227)
-* Runtime: fix comparison between an immediate and a custom block that
-  provides a compare op (e.g. zarith), broken by #2290 (#2391)
-* Wasm: resolve `.wasm` assets relative to the runtime file rather than the
-  process entry point, so they load when the program is `require`d (e.g. a CLI
-  wrapper), not only when run directly (#2389)
-* Toplevel: keep the `/static/cmis` directory on the load path across
-  `Toploop.initialize_toplevel_env`, so libraries whose cmis are loaded at
-  runtime stay resolvable; previously the directory was registered only while
-  Stdlib was loaded and then dropped, leaving later lookups unresolved (#833)
-* Tyxml: when the same attribute (e.g. multiple `a_class`) is given several
-  times, keep the first one and ignore the rest, matching browser semantics,
-  instead of letting the last one silently overwrite the others (#968)
-* Preserve leading BOMs when converting OCaml strings to JavaScript strings
+  variables in `try` bodies and exception handlers (#2484)
+* Compiler: with `--effects=double-translation`, fix over-applications of
+  functions that do not perform effects (#2455)
+* Compiler/Wasm: with `--effects=cps`, fix an assertion failure on a `try`
+  whose body modifies a local reference, when compiled without `-g` (#2519)
+* Wasm: unhandled effects raise `Effect.Unhandled` (`--effects=native`) or
+  `Failure` (`--effects=disabled`) instead of failing with a runtime error;
+  handlers installed inside `assume_no_perform` work; `--effects=cps` no
+  longer runs on a JSPI stack (#2434, #2441)
+
+### Wasm
+* Compiler/Wasm: `x land y` was wrongly assumed to fit in 31 bits when only
+  a negative operand did (#2490)
+* Compiler/Wasm: fix specialized `Bigarray.Genarray.get`/`set` accesses,
+  and check the number of indices (#2427, #2505)
+* Compiler/Wasm: fix several bugs of the Wasm linker (#2504)
+* Compiler/Wasm: fix sourcemaps and toplevels on Windows (#2397, #2418)
+* Wasm: embed cmis when building a toplevel with separate compilation
+  (#2227)
+* Wasm: the runtime (zstd, blake2, wasi libc) uses a single linear memory,
+  as Safari does not support modules with several memories (#2405)
+* Wasm: resolve `.wasm` assets relative to the runtime file, so that
+  `require`d programs work (#2389)
+
+### Runtime
+* Runtime: `output_value` marshals forced lazy values as their value, and
+  `caml_hash` (Wasm) follows forwarded values, as native code (#2486)
+* Runtime: the functions creating arrays of arbitrary length check
+  `Sys.max_array_length` (#2499)
+* Runtime: fix `Str.string_partial_match` (OSEC-2026-21) (#2492)
+* Runtime: `caml_alloc_dummy_mixed` takes two arguments (OxCaml) (#2461)
+* Runtime: fix two nat bugs with 32-bit digits (#2460)
+* Runtime: fix comparison between an immediate and a custom block (#2391)
+* Runtime: preserve leading BOMs when converting strings to JavaScript
   (#2414)
-* Compiler: fix reference unboxing when a variable read from an unboxed
-  reference is stored into another unboxed reference in a nested closure
-  (#2426)
-* Compiler: do not emit the ES2021 logical assignments (`||=`, `&&=`, `??=`),
-  as the generated code targets ES2020 (#XXXX)
-* Compiler: do not remove the braces around a single `let`, `const`, `class`
-  or function declaration when simplifying JavaScript code (#XXXX)
+* Runtime: fix the toplevel relocation of unit names with `use-js-string`
+  disabled (#2429)
+
+### Libraries
+* Toplevel: keep `/static/cmis` on the load path across
+  `Toploop.initialize_toplevel_env` (#833, #2377)
+* Tyxml: keep the first of repeated attributes, as browsers do (#968, #2383)
+
 # 6.4.1 (2026-06-30) - Lille
 
 ## Bug fixes
@@ -272,10 +166,6 @@
   instead of `%{dep:...}` in the `md5`/`md5_nat`, `dump_sourcemap` and
   `check-prim` tests, which echo the path verbatim, so dune 3.24's leading-`./`
   path form (ocaml/dune#15156) no longer breaks their expected output (#2384)
-* Lib: add `Element.setPointerCapture`/`releasePointerCapture`/`hasPointerCapture`
-  bindings to `Dom_html.element` (#2403)
-* Lib: add `pointerEvent` bindings `getPredictedEvents`, `altitudeAngle` and
-  `azimuthAngle` (#2403)
 
 # 6.4.0 (2026-06-21) - Lille
 
