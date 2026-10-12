@@ -103,7 +103,9 @@ module Param : sig
 
   val constant_max_depth : unit -> int
 
-  val merge_node_max : unit -> int
+  val labelled_block_max_depth : unit -> int
+
+  val break_sinking_max_depth : unit -> int
 
   type tc =
     | TcNone

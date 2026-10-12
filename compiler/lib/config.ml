@@ -183,16 +183,28 @@ module Param = struct
       ~desc:"set the maximum depth of generated literal JavaScript values"
       (int 10)
 
-  let merge_node_max =
+  let labelled_block_max_depth =
     (* Above this many sibling merge-node branch targets, emit a flat
        selector-driven dispatch loop instead of a tower of nested labelled
        blocks, to bound the statement-nesting depth of generated functions
        (deep nesting overflows some JS engine parsers, e.g. SpiderMonkey). *)
     p
-      ~name:"merge_node_max"
+      ~name:"label_depth"
       ~desc:
         "set the maximum number of nested labelled blocks before switching to a flat \
          dispatch loop"
+      (int 10)
+
+  let break_sinking_max_depth =
+    (* Each break sunk out of a labelled block nests what follows it one
+       level deeper, so this bounds the nesting depth introduced by sinking
+       (deep nesting overflows some JS engine parsers). Setting it to 0
+       disables break sinking. *)
+    p
+      ~name:"break_sink_depth"
+      ~desc:
+        "set the maximum number of breaks sunk out of a labelled block, each adding one \
+         level of nesting (0 disables break sinking)"
       (int 10)
 
   type tc =
