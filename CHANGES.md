@@ -132,6 +132,9 @@
   crash when one of them is assigned in a `try` body (#2516)
 
 ## Bug fixes
+* Compiler: the JavaScript lexer accepts numeric separators in the integer
+  part of a float (`1_0.5`), and an HTML close comment `-->` after a multi-line
+  comment containing a line terminator (#2524)
 * Compiler/Wasm: with `--effects=cps`, fix an assertion failure on a `try` whose
   body modifies a local reference, when compiled without `-g` (#2519)
 * Compiler: the JavaScript lexer no longer crashes on a unicode escape out
