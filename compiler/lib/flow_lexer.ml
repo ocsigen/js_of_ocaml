@@ -320,6 +320,9 @@ let rec comment env buf lexbuf =
   match%sedlex lexbuf with
   | line_terminator_sequence ->
       newline lexbuf;
+      (* A [-->] after a multi-line comment containing a line terminator
+         starts an HTML close comment, as at the beginning of a line *)
+      env.Lex_env.lex_first_token_on_line <- true;
       lexeme_to_buffer lexbuf buf;
       comment env buf lexbuf
   | "*/" -> lexeme_to_buffer lexbuf buf
