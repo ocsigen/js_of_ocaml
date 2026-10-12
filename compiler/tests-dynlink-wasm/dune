@@ -206,6 +206,8 @@
    compile
    --dynlink
    %{read-strings:effects_flags.txt}
+   %{lib:wax-lib.utils:pager_node.js}
+   %{lib:wax-lib.utils:pager_node.wat}
    %{dep:dynlink_loadfile_wp.bc}
    -o
    dynlink_loadfile_wp.js)))
