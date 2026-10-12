@@ -99,7 +99,6 @@
 - [Module `Js_of_ocaml_compiler.Flow`](js_of_ocaml-compiler/Js_of_ocaml_compiler-Flow.md)
 - [Module `Flow_lexer.Lex_env`](js_of_ocaml-compiler/Js_of_ocaml_compiler-Flow_lexer-Lex_env.md)
 - [Module `Flow_lexer.Lex_mode`](js_of_ocaml-compiler/Js_of_ocaml_compiler-Flow_lexer-Lex_mode.md)
-- [Module `Flow_lexer.Lex_result`](js_of_ocaml-compiler/Js_of_ocaml_compiler-Flow_lexer-Lex_result.md)
 - [Module `Flow_lexer.Parse_error`](js_of_ocaml-compiler/Js_of_ocaml_compiler-Flow_lexer-Parse_error.md)
 - [Module `Js_of_ocaml_compiler.Flow_lexer`](js_of_ocaml-compiler/Js_of_ocaml_compiler-Flow_lexer.md)
 - [Module `Js_of_ocaml_compiler.Freevars`](js_of_ocaml-compiler/Js_of_ocaml_compiler-Freevars.md)

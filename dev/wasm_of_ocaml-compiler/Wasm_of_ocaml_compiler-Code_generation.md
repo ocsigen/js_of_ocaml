@@ -87,9 +87,6 @@ val store :
   unit t
 ```
 ```ocaml
-val assign : Wasm_ast.var -> expression -> unit t
-```
-```ocaml
 val drop : expression -> unit t
 ```
 ```ocaml

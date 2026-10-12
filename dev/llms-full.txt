@@ -4386,8 +4386,12 @@ type prim =
   | IsInt of {
     variant_only : bool;
   } (* variant_only: the argument is a value of a variant type, whose immediates are constant constructors *)
-  | Eq
-  | Neq
+  | Eq of {
+    int_only : bool;
+  } (* int_only: both arguments are integers (an integer equality test rather than a physical comparison) *)
+  | Neq of {
+    int_only : bool;
+  }
   | Lt
   | Le
   | Ult
@@ -5702,6 +5706,10 @@ type t
 ```ocaml
 val create : Sedlexing.lexbuf -> t
 ```
+```ocaml
+val take_errors : t -> (Loc.t * Parse_error.t) list
+```
+The errors of the last token, and forget them
 
 
 ---
@@ -5713,24 +5721,6 @@ type t =
   | NORMAL
   | BACKQUOTE
   | REGEXP
-```
-
-
----
-
-# Module `Flow_lexer.Lex_result`
-
-```ocaml
-type t
-```
-```ocaml
-val token : t -> Js_token.t
-```
-```ocaml
-val loc : t -> Loc.t
-```
-```ocaml
-val errors : t -> (Loc.t * Parse_error.t) list
 ```
 
 
@@ -5760,19 +5750,16 @@ module Parse_error : sig ... end
 module Lex_env : sig ... end
 ```
 ```ocaml
-module Lex_result : sig ... end
-```
-```ocaml
 val drop_line : Lex_env.t -> unit
 ```
 ```ocaml
-val regexp : Lex_env.t -> Lex_env.t * Lex_result.t
+val regexp : Lex_env.t -> Js_token.t * Loc.t
 ```
 ```ocaml
-val token : Lex_env.t -> Lex_env.t * Lex_result.t
+val token : Lex_env.t -> Js_token.t * Loc.t
 ```
 ```ocaml
-val lex : Lex_env.t -> Lex_env.t * Lex_result.t
+val lex : Lex_env.t -> Js_token.t * Loc.t
 ```
 ```ocaml
 val is_valid_identifier_name : string -> bool
@@ -9543,6 +9530,7 @@ type t =
   | Hint_ccall of ccall
   | Hint_immediate (* The value produced by the instruction is an immediate *)
   | Hint_variant (* The argument of the instruction is a value of a variant type: if it is an immediate, it is a constant constructor *)
+  | Hint_int_equality_test (* Integer equality or inequality: both arguments are immediates *)
 ```
 ```ocaml
 val print_ccall : Stdlib.Format.formatter -> ccall -> unit
@@ -57399,9 +57387,6 @@ val store :
   unit t
 ```
 ```ocaml
-val assign : Wasm_ast.var -> expression -> unit t
-```
-```ocaml
 val drop : expression -> unit t
 ```
 ```ocaml
@@ -57558,6 +57543,11 @@ val default_value :
 val dimension : int -> expression -> expression
 ```
 The `n`\-th dimension of a bigarray, as an `i32`
+
+```ocaml
+val num_dims : expression -> expression
+```
+The number of dimensions of a bigarray, as an `i32`
 
 ```ocaml
 val get : 
@@ -58062,6 +58052,11 @@ module Make (_ : Target_sig.S) : sig ... end
 val dimension : int -> expression -> expression
 ```
 The `n`\-th dimension of a bigarray, as an `i32`
+
+```ocaml
+val num_dims : expression -> expression
+```
+The number of dimensions of a bigarray, as an `i32`
 
 ```ocaml
 val get : 
@@ -58798,6 +58793,11 @@ val f :
 val dimension : int -> expression -> expression
 ```
 The `n`\-th dimension of a bigarray, as an `i32`
+
+```ocaml
+val num_dims : expression -> expression
+```
+The number of dimensions of a bigarray, as an `i32`
 
 ```ocaml
 val get : 
