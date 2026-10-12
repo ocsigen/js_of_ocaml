@@ -130,6 +130,8 @@
   crash when one of them is assigned in a `try` body (#2516)
 
 ## Bug fixes
+* Compiler/Wasm: with `--effects=cps`, fix an assertion failure on a `try` whose
+  body modifies a local reference, when compiled without `-g` (#2519)
 * Compiler: the JavaScript lexer no longer crashes on a unicode escape out
   of the code point range (`\u{110000}`) or with too many digits; it is
   reported as a syntax error (#2503)

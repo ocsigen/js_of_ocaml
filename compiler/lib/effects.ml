@@ -226,6 +226,15 @@ let cps_cont_of_direct ~st (pc, args) = mk_cps_pc_of_direct ~st pc, args
 
 let closure_of_pc ~st pc = Addr.Map.find pc st.jc.closure_of_jump
 
+(* The parameters of a block ending with [Pushtrap] can be assigned in the
+   body of the [try] (see [Code.invariant]). So such a block keeps its
+   parameters: the closure corresponding to the block binds fresh variables
+   instead and jumps to the block. *)
+let keeps_params block =
+  match block with
+  | { branch = Pushtrap _; params = _ :: _; _ } -> true
+  | _ -> false
+
 let allocate_closure ~st ~params ~body ~branch =
   if debug ()
   then Format.eprintf "@[<v>allocate_closure ~branch:(%a)@]%@." Code.Print.last branch;
@@ -319,11 +328,12 @@ let allocate_continuation ~st ~alloc_jump_closures ~split_closures src_pc x dire
       else if Structure.is_merge_node st.cfg direct_pc
       then [], alloc_jump_closures
       else
+        let direct_closure = Addr.Map.find_opt direct_pc st.jc.closure_of_jump in
         List.partition
           ~f:(fun i ->
-            match i with
-            | Let (_, Closure (_, (pc'', []), _)) ->
-                pc'' = mk_cps_pc_of_direct ~st direct_pc
+            match i, direct_closure with
+            | Let (f, Closure _), Some g -> Var.equal f g
+            | Let (_, Closure _), None -> false
             | _ -> assert false)
           alloc_jump_closures
     in
@@ -528,7 +538,23 @@ let cps_block ~st ~k ~orig_pc block =
               else jump_block.params
             in
             let cps_jump_pc = mk_cps_pc_of_direct ~st jump_pc in
-            Let (cname, Closure (params, (cps_jump_pc, []), (None, None))))
+            let jump_block = Addr.Map.find jump_pc st.blocks in
+            if keeps_params jump_block
+            then
+              let params = List.map ~f:Var.fork params in
+              let entry =
+                add_block
+                  st
+                  { params = []
+                  ; body =
+                      (match jump_block.body with
+                      | (Event _ as i) :: _ -> [ i ]
+                      | _ -> [])
+                  ; branch = Branch (cps_jump_pc, params)
+                  }
+              in
+              Let (cname, Closure (params, (entry, []), (None, None)))
+            else Let (cname, Closure (params, (cps_jump_pc, []), (None, None))))
     | exception Not_found -> []
   in
 
@@ -663,7 +689,10 @@ let cps_block ~st ~k ~orig_pc block =
         body @ last_instrs, last
   in
 
-  { params = (if Addr.Set.mem orig_pc st.blocks_to_transform then [] else block.params)
+  { params =
+      (if Addr.Set.mem orig_pc st.blocks_to_transform && not (keeps_params block)
+       then []
+       else block.params)
   ; body
   ; branch = last
   }
