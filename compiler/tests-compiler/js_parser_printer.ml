@@ -1592,13 +1592,13 @@ let%expect_test "words reserved in strict mode only are identifiers in sloppy mo
   (* They are reserved in strict mode code: modules, classes, and after a
      [use strict] directive *)
   check `Module "var let = 1";
-  [%expect {| error (l:1, c:4): unexpected `let`, expected an identifier |}];
+  [%expect {| error (l:1, c:4): `let` is a reserved word in strict mode code |}];
   check `Script "class C { m() { var static } }";
-  [%expect {| error (l:1, c:20): unexpected `static`, expected an identifier |}];
+  [%expect {| error (l:1, c:20): `static` is a reserved word in strict mode code |}];
   check `Script "function f() { 'use strict'; var public }";
-  [%expect {| error (l:1, c:33): unexpected `public`, expected an identifier |}];
+  [%expect {| error (l:1, c:33): `public` is a reserved word in strict mode code |}];
   check `Script "'use strict'; var let";
-  [%expect {| error (l:1, c:18): unexpected `let`, expected an identifier |}];
+  [%expect {| error (l:1, c:18): `let` is a reserved word in strict mode code |}];
   check `Script "function f() { 'use strict' + 1; var public } function g() { var let }";
   [%expect
     {|
@@ -2088,7 +2088,7 @@ let%expect_test "directive prologue" =
   (* Only a string literal statement is a directive: not a parenthesized one,
      nor an expression starting with a string *)
   check `Script "'use strict'; var let = 1";
-  [%expect {| error (l:1, c:18): unexpected `let`, expected an identifier |}];
+  [%expect {| error (l:1, c:18): `let` is a reserved word in strict mode code |}];
   check `Script "'use\\x20strict'; var let = 1";
   [%expect {|
            "use\x20strict";var
@@ -2105,7 +2105,7 @@ let%expect_test "directive prologue" =
            let=1;
            |}];
   check `Script "'a'; 'use strict'; var let = 1";
-  [%expect {| error (l:1, c:23): unexpected `let`, expected an identifier |}];
+  [%expect {| error (l:1, c:23): `let` is a reserved word in strict mode code |}];
   check `Script "var a; 'use strict'; var let = 1";
   [%expect
     {|
@@ -2209,26 +2209,20 @@ let%expect_test "left-hand side of for-in and for-of" =
 let%expect_test "escaped keywords" =
   (* A reserved word spelled with a Unicode escape is not an identifier *)
   check `Script "var \\u0062reak = 1";
-  [%expect {|
-           var
-           break=1;
-           |}];
+  [%expect {| error (l:1, c:4): `break` is a reserved word |}];
   check `Script "\\u0062reak: 1";
-  [%expect {| \u{62}reak:1; |}];
+  [%expect {| error (l:1, c:0): `break` is a reserved word |}];
   check `Script "x = { bre\\u0061k }";
-  [%expect {| x={break:break}; |}];
+  [%expect {| error (l:1, c:17): unexpected `}`, expected `:`, `(`, `,` or `}` |}];
   check `Script "({ bre\\u0061k } = {})";
-  [%expect {| ({break}={}); |}];
+  [%expect {| error (l:1, c:14): unexpected `}`, expected `:`, `(`, `,` or `}` |}];
   check `Script "var cl\\u0061ss";
-  [%expect {|
-           var
-           class;
-           |}];
+  [%expect {| error (l:1, c:4): `class` is a reserved word |}];
   (* Nor can it be used as the keyword *)
   check `Script "\\u0061sync function f() {}";
   [%expect {| error (l:1, c:11): unexpected `function`, expected `;` |}];
   check `Script "v\\u0061r x";
-  [%expect {| error (l:1, c:9): unexpected identifier `x`, expected `;` |}];
+  [%expect {| error (l:1, c:0): `var` is a reserved word |}];
   (* It is still an IdentifierName *)
   check
     `Script
@@ -2240,23 +2234,15 @@ let%expect_test "escaped keywords" =
            |}];
   (* [yield] and [await] follow the rules of the context *)
   check `Script "function* g() { var yi\\u0065ld; }";
-  [%expect {|
-           function*g(){var
-           yield}
-           |}];
+  [%expect {| error (l:1, c:20): `yield` is a reserved word in a generator |}];
   check `Script "function* g() { yi\\u0065ld: ; }";
-  [%expect {| function*g(){\u{79}ield:;} |}];
+  [%expect {| error (l:1, c:16): `yield` is a reserved word in a generator |}];
   check `Script "async function f() { void \\u0061wait; }";
-  [%expect {|
-    async function
-    f(){void
-    await}
-    |}];
+  [%expect
+    {| error (l:1, c:26): `await` is a reserved word in an async function or a module |}];
   check `Module "var \\u0061wait";
-  [%expect {|
-    var
-    await;
-    |}];
+  [%expect
+    {| error (l:1, c:4): `await` is a reserved word in an async function or a module |}];
   check `Script "var yi\\u0065ld, \\u0061wait";
   [%expect {|
            var
@@ -2269,40 +2255,21 @@ let%expect_test "escaped keywords" =
            let=1;
            |}];
   check `Script "'use strict'; var l\\u0065t = 1";
-  [%expect {|
-           "use strict";var
-           let=1;
-           |}]
+  [%expect {| error (l:1, c:18): `let` is a reserved word in strict mode code |}]
 
 let%expect_test "yield is reserved in strict mode code" =
   check `Script "'use strict'; var yield = 1";
-  [%expect {|
-           "use strict";var
-           yield=1;
-           |}];
+  [%expect {| error (l:1, c:18): `yield` is a reserved word in strict mode code |}];
   check `Script "'use strict'; yield: 1";
-  [%expect {| "use strict";\u{79}ield:1; |}];
+  [%expect {| error (l:1, c:14): `yield` is a reserved word in strict mode code |}];
   check `Script "'use strict'; function f(yield) {}";
-  [%expect {|
-           "use strict";function
-           f(yield){}
-           |}];
+  [%expect {| error (l:1, c:25): `yield` is a reserved word in strict mode code |}];
   check `Script "class C { m() { var yield } }";
-  [%expect {|
-           class
-           C{m(){var
-           yield}}
-           |}];
+  [%expect {| error (l:1, c:20): `yield` is a reserved word in strict mode code |}];
   check `Script "class yield {}";
-  [%expect {|
-           class
-           yield{}
-           |}];
+  [%expect {| error (l:1, c:6): `yield` is a reserved word in strict mode code |}];
   check `Module "var yield";
-  [%expect {|
-           var
-           yield;
-           |}];
+  [%expect {| error (l:1, c:4): `yield` is a reserved word in strict mode code |}];
   (* But not in sloppy mode code, even nested in a generator *)
   check `Script "var yield = 1; yield: ;";
   [%expect {|
@@ -2409,10 +2376,7 @@ let%expect_test "await and yield in class field initializers" =
            D{x=await;}}}
            |}];
   check `Script "function* g() { class C { x = yield } }";
-  [%expect {|
-           function*g(){class
-           C{x=yield;}}
-           |}];
+  [%expect {| error (l:1, c:30): `yield` is a reserved word in strict mode code |}];
   check `Module "class C { x = await }";
   [%expect {|
            class
