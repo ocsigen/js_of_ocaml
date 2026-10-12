@@ -18,17 +18,58 @@
 
 open Stdlib
 
-let build ~allowed_imports ~link_options ~opt_options ~variables ~inputs ~output_file =
+(* Our linker only reads binary files: the files in text format are
+   converted with [wasm-opt], without running any optimization pass
+   ([--quiet] silences the warning about this). *)
+let with_binary_files ~options inputs f =
+  let rec loop acc (l : Binaryen.link_input list) =
+    match l with
+    | [] -> f (List.rev acc)
+    | input :: rem when Link.Wasm_binary.check_file ~file:input.file ->
+        loop (input :: acc) rem
+    | input :: rem ->
+        Fs.with_intermediate_file (Filename.temp_file input.module_name ".wasm")
+        @@ fun file ->
+        let with_source_map_file f =
+          match input.source_map_file with
+          | None -> f None
+          | Some _ ->
+              Fs.with_intermediate_file
+                (Filename.temp_file input.module_name ".wasm.map")
+                (fun file -> f (Some file))
+        in
+        with_source_map_file
+        @@ fun source_map_file ->
+        Binaryen.optimize
+          ~profile:Profile.O1
+          ~options:("--quiet" :: options)
+          ~opt_input_sourcemap:input.source_map_file
+          ~opt_output_sourcemap:source_map_file
+          ~input_file:input.file
+          ~output_file:file
+          ();
+        loop ({ input with file; source_map_file } :: acc) rem
+  in
+  loop [] inputs
+
+let link ~inputs ~output_file =
+  let (_ : Wasm_link.output) =
+    Wasm_link.f
+      (List.map
+         ~f:(fun { Binaryen.module_name; file; _ } ->
+           { Wasm_link.module_name; file; code = None; opt_source_map = None })
+         inputs)
+      ~output_file
+  in
+  ()
+
+let build ~allowed_imports ~convert_options ~opt_options ~variables ~inputs ~output_file =
   Fs.with_intermediate_file (Filename.temp_file "runtime-merged" ".wasm")
   @@ fun merge_file ->
   (Wat_preprocess.with_preprocessed_files ~variables ~inputs
   @@ fun inputs ->
-  Binaryen.link
-    ~options:link_options
-    ~opt_output_sourcemap:None
-    ~inputs
-    ~output_file:merge_file
-    ());
+  with_binary_files ~options:convert_options inputs
+  @@ fun inputs -> link ~inputs ~output_file:merge_file);
   Binaryen.optimize
     ~profile:Profile.O1
     ~options:opt_options
