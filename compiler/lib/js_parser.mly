@@ -1403,6 +1403,15 @@ importDeclaration:
     { let pos = $symbolstartpos in
       Import ({ from; kind = DeferNamespace id; withClause=wc }, pi pos), p pos
     }
+  (* import source x from "m": the phase is parsed as a binding, as
+     [import source from "m"] imports the default export as [source] *)
+  | T_IMPORT phase=importedDefaultBinding id=importedDefaultBinding from=fromClause wc=withClause? sc
+    { let pos = $symbolstartpos in
+      match phase with
+      | S { name = Utf8 "source"; _ } ->
+          Import ({ from; kind = Source id; withClause=wc }, pi pos), p pos
+      | _ -> raise (Js_token.Syntax_error $startpos(phase))
+    }
 
 withClause:
   | T_WITH "{" "}"                          { [] }
@@ -1416,7 +1425,9 @@ withEntry:
 namespaceImport:
   | "*" T_AS id=bindingIdentifier { id }
 
-importClause:
+(* Inlined: the default binding must not be reduced before [from] is
+   seen, as it may also be the [source] of a source phase import *)
+%inline importClause:
   | b=importedDefaultBinding                        { Default b }
   | b=importedDefaultBinding "," id=namespaceImport { Namespace (Some b, id) }
   | id=namespaceImport                              { Namespace (None, id) }

@@ -1692,11 +1692,29 @@ let%expect_test "html close comment after a multi-line comment" =
 
 let%expect_test "source phase imports" =
   check `Module "import source x from 'm'";
-  [%expect {| cannot parse js (from l:1, c:14) |}];
+  [%expect
+    {|
+           import
+           source
+           x
+           from"m";
+           |}];
   check `Module "import source from from 'm'";
-  [%expect {| cannot parse js (from l:1, c:19) |}];
+  [%expect
+    {|
+           import
+           source
+           from
+           from"m";
+           |}];
   check `Module "import source source from 'm'";
-  [%expect {| cannot parse js (from l:1, c:14) |}];
+  [%expect
+    {|
+           import
+           source
+           source
+           from"m";
+           |}];
   (* [source] is the default binding *)
   check `Module "import source from 'm'";
   [%expect {|
@@ -1713,8 +1731,8 @@ let%expect_test "source phase imports" =
   check `Module "import source * as ns from 'm'";
   [%expect {| cannot parse js (from l:1, c:14) |}];
   check `Module "import source x, { a } from 'm'";
-  [%expect {| cannot parse js (from l:1, c:14) |}];
+  [%expect {| cannot parse js (from l:1, c:15) |}];
   check `Module "import defer x from 'm'";
-  [%expect {| cannot parse js (from l:1, c:13) |}];
+  [%expect {| cannot parse js (from l:1, c:7) |}];
   check `Module "import a b from 'm'";
-  [%expect {| cannot parse js (from l:1, c:9) |}]
+  [%expect {| cannot parse js (from l:1, c:7) |}]

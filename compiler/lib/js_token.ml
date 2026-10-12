@@ -478,3 +478,5 @@ let is_keyword = function
   | "defer" -> Some T_DEFER
   | "using" -> Some T_USING
   | s -> is_reserved s
+
+exception Syntax_error of Lexing.position

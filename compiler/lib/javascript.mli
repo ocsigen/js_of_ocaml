@@ -423,7 +423,10 @@ and withClause = (Utf8_string.t * Utf8_string.t) list
 and import_default = ident
 
 and import_kind =
+  | Source of ident
+  (* import source name from "fname" *)
   | DeferNamespace of ident
+  (* import defer * as name from "fname" *)
   | Namespace of import_default option * ident
   (* import * as name from "fname" *)
   (* import defaultname, * as name from "fname" *)

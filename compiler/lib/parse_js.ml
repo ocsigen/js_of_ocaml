@@ -574,7 +574,7 @@ let recover error_checkpoint previous_checkpoint =
         | _ -> checkpoint
       else checkpoint
 
-let parse_aux the_parser yield_await_state (lexbuf : Lexer.t) =
+let parse_aux_exn the_parser yield_await_state (lexbuf : Lexer.t) =
   let init = the_parser (Lexer.curr_pos lexbuf) in
   let rec loop_error checkpoint =
     match State.checkpoint checkpoint with
@@ -643,6 +643,10 @@ let parse_aux the_parser yield_await_state (lexbuf : Lexer.t) =
           ~f:(fun tok -> Printf.eprintf "%s " (Js_token.to_string_extra tok));
       if debug () then Printf.eprintf "\n";
       raise (Parsing_error (Parse_info.t_of_pos p))
+
+let parse_aux the_parser yield_await_state lexbuf =
+  try parse_aux_exn the_parser yield_await_state lexbuf
+  with Js_token.Syntax_error pos -> raise (Parsing_error (Parse_info.t_of_pos pos))
 
 let fail_early =
   object (m)

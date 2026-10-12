@@ -192,3 +192,7 @@ val is_reserved : string -> t option
 val is_keyword : string -> t option
 
 val all_keywords : t list
+
+exception Syntax_error of Lexing.position
+(** Raised by a semantic action of the parser, which {!Parse_js} reports as a
+    parsing error at the given position *)

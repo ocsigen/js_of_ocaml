@@ -1859,6 +1859,11 @@ struct
         | Default i ->
             PP.space f;
             ident f ~kind:`Binding i
+        | Source i ->
+            PP.space f;
+            PP.string f "source";
+            PP.space f;
+            ident f ~kind:`Binding i
         | DeferNamespace i ->
             PP.space f;
             PP.string f "defer";
