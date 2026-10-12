@@ -1654,11 +1654,7 @@ let%expect_test "syntax error messages" =
 
 let%expect_test "numeric separators in the integer part of a float" =
   check `Script "1_0e+1; 1_0.5e1_0; 123_456.123_456e+123_456; 1e+1_0; 1_0.5_0";
-  [%expect
-    {|
-           cannot parse js (from l:1, c:3)
-           fake:1:1: lexer error: Unexpected recovery
-           |}];
+  [%expect {| 1_0e1;1_0.5e1_0;123_456.123_456e123_456;1e1_0;1_0.5_0; |}];
   check `Script "1__0";
   [%expect {| cannot parse js (from l:1, c:1) |}];
   check `Script "1_.0";

@@ -98,7 +98,7 @@ let digit = [%sedlex.regexp? '0' .. '9']
 
 let digit_non_zero = [%sedlex.regexp? '1' .. '9']
 
-let decintlit = [%sedlex.regexp? '0' | '1' .. '9', Star digit]
+let decintlit = [%sedlex.regexp? '0' | '1' .. '9', Star (digit | '_', digit)]
 
 (* DecimalIntegerLiteral *)
 
