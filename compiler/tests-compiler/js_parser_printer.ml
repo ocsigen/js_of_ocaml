@@ -2314,26 +2314,37 @@ let%expect_test "await and yield in class field initializers" =
   (* Initializer[+In, ~Yield, ~Await]: [await] is an identifier, as in a
      plain function; [yield] is reserved as the class body is strict *)
   check `Script "async function f() { class C { x = await } }";
-  [%expect {| error (l:1, c:41): unexpected `}`, expected an expression |}];
-  check `Script "async function f() { class C { x = await 1 } }";
   [%expect
     {|
            async function
            f(){class
-           C{x=await
-           1;}}
+           C{x=await;}}
            |}];
+  check `Script "async function f() { class C { x = await 1 } }";
+  [%expect {| error (l:1, c:41): unexpected number `1`, expected `;` |}];
   check `Script "async () => class { static x = await; accessor y = await }";
-  [%expect {| error (l:1, c:36): unexpected `;`, expected an expression |}];
+  [%expect
+    {|
+           async()=>class{static x=await;accessor
+           y=await;};
+           |}];
   check `Script "class C { static { class D { x = await } } }";
-  [%expect {| error (l:1, c:39): unexpected `}`, expected an expression |}];
+  [%expect
+    {|
+           class
+           C{static{class
+           D{x=await;}}}
+           |}];
   check `Script "function* g() { class C { x = yield } }";
   [%expect {|
            function*g(){class
            C{x=yield;}}
            |}];
   check `Module "class C { x = await }";
-  [%expect {| error (l:1, c:20): unexpected `}`, expected an expression |}];
+  [%expect {|
+           class
+           C{x=await;}
+           |}];
   (* Computed names and static blocks follow the enclosing context *)
   check `Script "async function f() { class C { [await 1] = 2; static { await 3 } } }";
   [%expect

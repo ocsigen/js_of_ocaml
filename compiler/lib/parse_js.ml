@@ -1634,6 +1634,10 @@ and parse_class_element_name t ctx =
 
 (* ClassBody: methods, fields, accessors and static blocks *)
 and parse_class_body t ctx =
+  (* FieldDefinition : ClassElementName Initializer[+In, ~Yield, ~Await]:
+     [await] is an identifier in an initializer, like in a plain function,
+     and [yield] is reserved, as a class body is strict mode code *)
+  let field_ctx = { yield = false; await = false } in
   let rec loop acc =
     match cur t with
     | T_RCURLY -> List.rev acc
@@ -1658,7 +1662,7 @@ and parse_class_body t ctx =
               (* [accessor] on its own line is a field named [accessor] *)
               advance t;
               let name = parse_class_element_name t ctx in
-              let init = parse_initializer_opt t ctx ~no_in:false in
+              let init = parse_initializer_opt t field_ctx ~no_in:false in
               consume_semicolon t;
               CEAccessor (decorators, static, name, init)
           | _ -> (
@@ -1675,7 +1679,7 @@ and parse_class_body t ctx =
                       let m = parse_function_rest t ~pos no_fun in
                       CEMethod (decorators, static, name, Method m)
                   | _ ->
-                      let init = parse_initializer_opt t ctx ~no_in:false in
+                      let init = parse_initializer_opt t field_ctx ~no_in:false in
                       consume_semicolon t;
                       CEField (decorators, static, name, init)))
         in
