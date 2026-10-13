@@ -177,9 +177,40 @@ function caml_list_mount_point() {
   return prev;
 }
 
+//Provides: jsoo_win32_console_name
+//Requires: jsoo_is_win32, caml_jsstring_of_string
+// Windows console device names (CON, CONIN$, CONOUT$). Node resolves a
+// relative path against the current directory and prefixes it with \\?\,
+// which turns off the recognition of device names, so they must reach it as
+// \\.\CONIN$ rather than go through the usual path resolution.
+function jsoo_win32_console_name(name) {
+  if (!jsoo_is_win32) return;
+  var m = /^(?:[\\/]{2}[.?][\\/])?(CON|CONIN\$|CONOUT\$)$/i.exec(
+    caml_jsstring_of_string(name),
+  );
+  if (!m) return;
+  return "\\\\.\\" + m[1].toUpperCase();
+}
+
+//Provides: jsoo_win32_console_device
+//Requires: MlNodeDevice
+function jsoo_win32_console_device() {
+  if (!jsoo_win32_console_device.device)
+    jsoo_win32_console_device.device = new MlNodeDevice("");
+  return jsoo_win32_console_device.device;
+}
+
 //Provides: resolve_fs_device
 //Requires: caml_make_path, jsoo_mount_point, caml_raise_sys_error, caml_get_root, MlNodeDevice, caml_trailing_slash, fs_node_supported
+//Requires: jsoo_win32_console_name, jsoo_win32_console_device
 function resolve_fs_device(name, raise_unix) {
+  var console_name = fs_node_supported() && jsoo_win32_console_name(name);
+  if (console_name)
+    return {
+      path: "",
+      device: jsoo_win32_console_device(),
+      rest: console_name,
+    };
   var path = caml_make_path(name, raise_unix);
   var name = path.join("/");
   var name_slash = caml_trailing_slash(name);

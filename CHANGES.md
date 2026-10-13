@@ -137,6 +137,9 @@
   `require`d programs work (#2389)
 
 ### Runtime
+* Runtime: on Windows, the console device names (`CON`, `CONIN$`, `CONOUT$`)
+  can be opened from node; they were resolved against the current directory
+  (#2525)
 * Runtime: `output_value` marshals forced lazy values as their value, and
   `caml_hash` (Wasm) follows forwarded values, as native code (#2486)
 * Runtime: the functions creating arrays of arbitrary length check

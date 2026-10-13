@@ -13,13 +13,8 @@
   (>= %{ocaml_version} 5.1))
  ; WASI has no notion of tty. The test falls back to a fresh pty master
  ; from /dev/ptmx when there is no controlling terminal, so it does not
- ; need a tty attached; that fallback only exists on Unix. On Windows the
- ; CONIN$ fallback does not work through the JS runtime: caml_make_path
- ; resolves it against the current directory, and Windows only recognizes
- ; the console names unprefixed.
+ ; need a tty attached; on Windows it opens the console through CONIN$.
  (enabled_if
-  (and
-   (<> %{env:JSOO_TEST_ENGINE=node} wasi)
-   (= %{ocaml-config:os_type} Unix)))
+  (<> %{env:JSOO_TEST_ENGINE=node} wasi))
  (libraries ocaml_testing unix)
  (modes js wasm))

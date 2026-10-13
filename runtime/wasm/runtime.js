@@ -81,6 +81,17 @@
   // normalize paths on registration and before each lookup.
   const virtual_path = on_windows ? (p) => p.replaceAll("\\", "/") : (p) => p;
 
+  // Windows console device names (CON, CONIN$, CONOUT$). Node resolves a
+  // relative path against the current directory and prefixes it with \\?\,
+  // which turns off the recognition of device names, so they must reach it
+  // as \\.\CONIN$.
+  const console_name = on_windows
+    ? (p) => {
+        const m = /^(?:[\\/]{2}[.?][\\/])?(CON|CONIN\$|CONOUT\$)$/i.exec(p);
+        return m ? `\\\\.\\${m[1].toUpperCase()}` : p;
+      }
+    : (p) => p;
+
   function register_virtual_file(name, content) {
     name = virtual_path(name);
     virtual_files.set(name, content);
@@ -629,7 +640,7 @@
         return fd;
       }
       return fs.openSync(
-        p,
+        console_name(p),
         open_flags.reduce((f, v, i) => (flags & (1 << i) ? f | v : f), 0),
         perm,
       );
