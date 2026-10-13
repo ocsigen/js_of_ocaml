@@ -61,6 +61,9 @@ type context =
   ; value_type : W.value_type
   ; mutable unit_name : string option
   ; mutable no_tail_call : unit Var.Hashtbl.t
+  ; functions_without_env : unit Var.Hashtbl.t
+        (** Functions which take no environment parameter: their closure
+            is a constant, and they are only called directly *)
   }
 
 let make_context ~value_type =
@@ -86,6 +89,7 @@ let make_context ~value_type =
   ; value_type
   ; unit_name = None
   ; no_tail_call = Var.Hashtbl.create 16
+  ; functions_without_env = Var.Hashtbl.create 128
   }
 
 type var =
