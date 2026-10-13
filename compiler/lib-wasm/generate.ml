@@ -2862,7 +2862,7 @@ module Generate (Target : Target_sig.S) = struct
         ~f:(fun (name, contents) -> W.Data { name; contents })
         (Var.Map.bindings context.data_segments)
     in
-    List.rev_append context.other_fields (imports @ constant_data)
+    Inline_globals.f (List.rev_append context.other_fields (imports @ constant_data))
 
   let init () =
     Typing.reset ();
