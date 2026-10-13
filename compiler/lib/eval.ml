@@ -652,7 +652,28 @@ let eval_instr update_count inline_constant ~target info i =
           Flow.Info.update_def info x c;
           incr update_count;
           [ Let (x, c) ]
-      | None -> [ i ])
+      | None -> (
+          (* [compare a b op 0] is [a op b] on integers. Only the definition
+             of [y] itself is used: values reaching [y] through phis or
+             parameters may have arguments that are out of scope here. *)
+          match Flow.Info.def info y with
+          | Some (Prim (Extern ("caml_int_compare", _), [ a; b ]))
+            when Targetint.is_zero j -> (
+              let e =
+                match prim, fst with
+                | Eq _, _ -> Some (Prim (Eq { int_only = true }, [ a; b ]))
+                | Neq _, _ -> Some (Prim (Neq { int_only = true }, [ a; b ]))
+                | ((Lt | Le) as p), Pv _ -> Some (Prim (p, [ a; b ]))
+                | ((Lt | Le) as p), Pc _ -> Some (Prim (p, [ b; a ]))
+                | _ -> None
+              in
+              match e with
+              | Some e ->
+                  Flow.Info.update_def info x e;
+                  incr update_count;
+                  [ Let (x, e) ]
+              | None -> [ i ])
+          | _ -> [ i ]))
   | Let (x, Prim (Extern ("%direct_obj_tag", _), [ y ])) -> (
       match the_tag_of info y (fun x -> Some x) ( = ) with
       | Some tag ->
