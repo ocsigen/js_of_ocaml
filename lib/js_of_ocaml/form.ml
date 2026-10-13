@@ -86,8 +86,26 @@ let get_input_val ?(get = false) (elt : inputElement t) =
     match to_bytestring elt##._type##toLowerCase with
     | "checkbox" | "radio" ->
         if to_bool elt##.checked then [ name, `String value ] else []
-    | "submit" | "reset" -> []
-    | "text" | "password" -> [ name, `String value ]
+    (* Buttons are not fields. A native submission includes the one that
+       submitted the form, and the coordinates of the click for an image
+       button, but a [Form] has no submitter. [form.elements] does not list
+       image buttons anyway. *)
+    | "submit" | "reset" | "button" | "image" -> []
+    | "hidden"
+    | "text"
+    | "search"
+    | "tel"
+    | "url"
+    | "email"
+    | "password"
+    | "date"
+    | "month"
+    | "week"
+    | "time"
+    | "datetime-local"
+    | "number"
+    | "range"
+    | "color" -> [ name, `String value ]
     | "file" ->
         if get
         then [ name, `String value ]
@@ -110,6 +128,10 @@ let get_input_val ?(get = false) (elt : inputElement t) =
                     | None -> None
                     | Some file -> Some (name, `File file))
                   (Array.to_list (Array.init list##.length (fun i -> list##item i))))
+    (* The DOM only returns the types above (an unknown type reads as
+       "text"). This case is reached with objects which are not DOM inputs,
+       or with a type added to HTML later: its value is sent, as for a text
+       field. *)
     | _ -> [ name, `String value ]
   else []
 
