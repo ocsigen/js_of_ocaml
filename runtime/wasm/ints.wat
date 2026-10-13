@@ -81,14 +81,11 @@
       (local.get $base))
 
    (func $parse_digit (export "parse_digit") (param $c i32) (result i32)
-      (if (i32.and (i32.ge_u (local.get $c) (@char "0"))
-                   (i32.le_u (local.get $c) (@char "9")))
+      (if (i32.lt_u (i32.sub (local.get $c) (@char "0")) (i32.const 10))
          (then (return (i32.sub (local.get $c) (@char "0")))))
-      (if (i32.and (i32.ge_u (local.get $c) (@char "A"))
-                   (i32.le_u (local.get $c) (@char "Z")))
+      (if (i32.lt_u (i32.sub (local.get $c) (@char "A")) (i32.const 26))
          (then (return (i32.sub (local.get $c) (i32.const 55)))))
-      (if (i32.and (i32.ge_u (local.get $c) (@char "a"))
-                   (i32.le_u (local.get $c) (@char "z")))
+      (if (i32.lt_u (i32.sub (local.get $c) (@char "a")) (i32.const 26))
          (then (return (i32.sub (local.get $c) (i32.const 87)))))
       (return (i32.const -1)))
 

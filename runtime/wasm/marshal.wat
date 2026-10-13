@@ -1515,18 +1515,17 @@
             (i32.add (local.get $s64) (i32.const 1)))))
 
    (func $extern_int (param $s (ref $extern_state)) (param $n i32)
-      (if (i32.and (i32.ge_s (local.get $n) (i32.const 0))
-             (i32.lt_s (local.get $n) (i32.const 0x40)))
+      (if (i32.lt_u (local.get $n) (i32.const 0x40))
          (then
             (call $write (local.get $s)
                (i32.add (global.get $PREFIX_SMALL_INT) (local.get $n))))
-      (else (if (i32.and (i32.ge_s (local.get $n) (i32.const -128))
-                   (i32.lt_s (local.get $n) (i32.const 128)))
+      (else (if (i32.lt_u (i32.add (local.get $n) (i32.const 128))
+                          (i32.const 256))
          (then
             (call $writecode8 (local.get $s) (global.get $CODE_INT8)
                (local.get $n)))
-      (else (if (i32.and (i32.ge_s (local.get $n) (i32.const -32768))
-                   (i32.lt_s (local.get $n) (i32.const 32768)))
+      (else (if (i32.lt_u (i32.add (local.get $n) (i32.const 32768))
+                          (i32.const 65536))
          (then
             (call $writecode16 (local.get $s) (global.get $CODE_INT16)
                (local.get $n)))
