@@ -173,6 +173,9 @@ val register_global :
 
 val get_global : Code.Var.t -> Wasm_ast.expression option t
 
+val is_constant_global : context -> Code.Var.t -> bool
+(** Whether a global of the module is never modified once initialized *)
+
 val register_data_segment : Code.Var.t -> string -> unit t
 
 val intern_string : string -> (unit -> Code.Var.t t) -> Code.Var.t t

@@ -351,11 +351,12 @@ module Make (Target : Target_sig.S) = struct
       ; body
       }
 
-  let post_process ~profile (f : W.module_field) =
+  let post_process ~context ~profile (f : W.module_field) =
     match f with
     | W.Function ({ signature; param_names; locals; body; _ } as f) ->
         let locals, body =
           post_process_function_body
+            ~context
             ~profile
             ~param_names
             ~param_types:signature.params
@@ -366,7 +367,9 @@ module Make (Target : Target_sig.S) = struct
     | _ -> f
 
   let f ~profile ~context =
-    let add f = context.other_fields <- post_process ~profile f :: context.other_fields in
+    let add f =
+      context.other_fields <- post_process ~context ~profile f :: context.other_fields
+    in
     IntMap.iter (fun arity name -> add (apply ~context ~arity ~name)) context.apply_funs;
     IntMap.iter
       (fun arity name -> add (cps_apply ~context ~arity ~name))

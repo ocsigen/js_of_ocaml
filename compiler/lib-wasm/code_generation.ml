@@ -223,6 +223,11 @@ let global_is_registered name =
   let* ctx = get_context in
   return (Var.Map.mem name ctx.constant_globals)
 
+let is_constant_global context name =
+  match Var.Map.find_opt name context.constant_globals with
+  | Some { constant = true; _ } -> true
+  | _ -> false
+
 let global_is_constant name =
   let* ctx = get_context in
   return
