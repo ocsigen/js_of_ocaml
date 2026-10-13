@@ -48,10 +48,13 @@ val f :
      ?filter_export:(string -> bool)
   -> ?dependencies:dependency list
   -> ?names:bool
+  -> ?eliminate_duplicates:bool
   -> input list
   -> output_file:string
   -> output
 (** Link the input modules. When [dependencies] is provided, dead code is
     removed: only the exports reachable from the root nodes of the
     dependency graph are kept, and only the entries reachable from them or
-    from the start functions are kept. The name section is omitted if [names] is false. *)
+    from the start functions are kept. The name section is omitted if [names] is false.
+    Unless [eliminate_duplicates] is false, the duplicate functions of each
+    module are removed (wasm-opt does this as well when it runs). *)
