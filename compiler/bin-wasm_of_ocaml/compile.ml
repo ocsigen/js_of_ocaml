@@ -160,6 +160,7 @@ let runtime_input contents =
    linkable module, since code loaded later may use it. *)
 let link_and_remove_dead_code
     ~dynlink
+    ~eliminate_duplicates
     ~opt_sourcemap
     ~runtime
     ~runtime_inputs
@@ -182,6 +183,7 @@ let link_and_remove_dead_code
                  then Runtime_files.wasi_dependencies
                  else Runtime_files.dependencies)))
       ~names:(Config.Flag.pretty ())
+      ~eliminate_duplicates
       (runtime_input runtime
        :: List.map ~f:(Runtime.link_input ?load_source_map) runtime_inputs
       @ List.map
@@ -227,6 +229,7 @@ let link_and_optimize
   let link ~opt_sourcemap output_file =
     link_and_remove_dead_code
       ~dynlink
+      ~eliminate_duplicates:(not (Binaryen.optimizes profile))
       ~opt_sourcemap
       ~runtime
       ~runtime_inputs
