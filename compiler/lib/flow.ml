@@ -47,9 +47,14 @@ module Info = struct
     }
 
   let def t x =
-    match t.info_defs.(Code.Var.idx x) with
-    | Phi _ | Param -> None
-    | Expr x -> Some x
+    (* [Specialize_js] can introduce fresh variables *)
+    let idx = Code.Var.idx x in
+    if idx >= Array.length t.info_defs
+    then None
+    else
+      match t.info_defs.(idx) with
+      | Phi _ | Param -> None
+      | Expr x -> Some x
 
   let possibly_mutable t x = Code.Var.ISet.mem t.info_possibly_mutable x
 
