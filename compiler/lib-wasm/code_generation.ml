@@ -236,6 +236,14 @@ let global_is_registered name =
   let* ctx = get_context in
   return (Var.Map.mem name ctx.constant_globals)
 
+let is_heap_subtype context ty ty' =
+  fst (heap_type_sub ty ty' { var_count = 0; vars = Var.Map.empty; instrs = []; context })
+
+let global_type context name =
+  Option.map
+    ~f:(fun (g : constant_global) -> g.typ)
+    (Var.Map.find_opt name context.constant_globals)
+
 let is_constant_global context name =
   match Var.Map.find_opt name context.constant_globals with
   | Some { constant = true; _ } -> true
