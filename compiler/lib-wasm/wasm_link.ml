@@ -1880,8 +1880,9 @@ let check_export_import_types ~subtyping_info ~files i (desc : importdesc) i' im
          import.name
          files.(i).file)
 
-(* Dead entries are mapped to -1 *)
-let build_mappings ~live resolved_imports unresolved_imports kind counts =
+(* Dead entries are mapped to -1, and the entries [k] such that
+   [aliases.(i).(k) >= 0] to the same index as entry [aliases.(i).(k)] *)
+let build_mappings ?aliases ~live resolved_imports unresolved_imports kind counts =
   let current_offset = ref (get_exportable_info unresolved_imports kind) in
   let mappings =
     Array.mapi
@@ -1905,6 +1906,13 @@ let build_mappings ~live resolved_imports unresolved_imports kind counts =
             else -1))
       counts
   in
+  Option.iter
+    ~f:(fun aliases ->
+      Array.iteri
+        ~f:(fun i map ->
+          Array.iteri ~f:(fun k k' -> if k' >= 0 then map.(k) <- map.(k')) aliases.(i))
+        mappings)
+    aliases;
   Array.iteri
     ~f:(fun i map ->
       let imports = get_exportable_info resolved_imports.(i) kind in
@@ -2091,7 +2099,11 @@ let write_simple_namemap ~name_sections ~name_section_buffer ~buf ~section_id ~m
     mappings;
   add_subsection name_section_buffer ~id:section_id ~count:!count buf
 
+let no_suffix _ _ = None
+
+(* [suffix i k] is appended to the name of the [k]-th entity of module [i] *)
 let write_namemap
+    ~suffix
     ~resolved_imports
     ~unresolved_imports
     ~name_sections
@@ -2144,6 +2156,13 @@ let write_namemap
     Write.uint buf len;
     Buffer.add_substring buf s pos len
   in
+  let write_entry_with_suffix i idx' idx s pos len =
+    match suffix i idx' with
+    | None -> write_entry idx s pos len
+    | Some suffix ->
+        incr count;
+        Write.nameassoc buf idx (String.sub s ~pos ~len ^ suffix)
+  in
   (* Entries must be sorted by index. Only globals are reordered: the
      other entries are already in the right order. *)
   let reordered =
@@ -2168,7 +2187,7 @@ let write_namemap
           then
             if reordered
             then entries := (mapping.(idx), ch.buf, ch.pos, len) :: !entries
-            else write_entry mapping.(idx) ch.buf ch.pos len;
+            else write_entry_with_suffix i idx mapping.(idx) ch.buf ch.pos len;
           ch.pos <- ch.pos + len
         done)
     name_sections;
@@ -2992,12 +3011,106 @@ let write_globals
     ordering.globals;
   Array.length ordering.globals
 
+(* The mappings of [source_map] whose generated column is in the range
+   [\[start, end_)], with columns relative to [start]. The mappings are
+   sorted by generated column, and so are the successive ranges: [cursor]
+   is the position of the first mapping of the next range. *)
+let mappings_in_range mappings cursor ~start ~end_ =
+  let rec skip () =
+    if !cursor < Array.length mappings
+    then
+      match mappings.(!cursor) with
+      | Source_map.Gen { gen_col; _ }
+      | Gen_Ori { gen_col; _ }
+      | Gen_Ori_Name { gen_col; _ } ->
+          if gen_col < start
+          then (
+            incr cursor;
+            skip ())
+  in
+  skip ();
+  let rec collect acc =
+    if !cursor >= Array.length mappings
+    then List.rev acc
+    else
+      let m : Source_map.map = mappings.(!cursor) in
+      let entry =
+        match m with
+        | Gen { gen_col; _ } -> gen_col, (-1, -1, -1, -1)
+        | Gen_Ori { gen_col; ori_source; ori_line; ori_col; _ } ->
+            gen_col, (ori_source, ori_line, ori_col, -1)
+        | Gen_Ori_Name { gen_col; ori_source; ori_line; ori_col; ori_name; _ } ->
+            gen_col, (ori_source, ori_line, ori_col, ori_name)
+      in
+      let col, info = entry in
+      if col >= end_
+      then List.rev acc
+      else (
+        incr cursor;
+        collect ((col - start, info) :: acc))
+  in
+  collect []
+
+(* Duplicate function elimination. Within each input module, a live
+   function whose body (local declarations included) is byte-identical to
+   the body of an earlier live function of the same type is replaced by
+   this function. When the module comes with a source map, the mappings of
+   the two bodies (relative to the start of the bodies) must be identical
+   as well, so that the locations in stack traces remain accurate. Returns,
+   for each module and each function index (imports included), the index
+   of the function which replaces it, or -1. *)
+let duplicate_functions ~files ~functions ~live =
+  Array.mapi
+    ~f:(fun i { contents; source_map_contents; _ } ->
+      let live = live.(i).func in
+      let types = functions.(i) in
+      let offset = Array.length live - Array.length types in
+      let replacements = Array.make (Array.length live) (-1) in
+      let mappings =
+        match source_map_contents with
+        | Some sm when not (Wasm_source_map.is_empty sm) ->
+            Some (Array.of_list (Source_map.Mappings.decode_exn sm.mappings), ref 0)
+        | Some _ | None -> None
+      in
+      let tbl = Poly.Hashtbl.create 1024 in
+      (if Read.find_section contents 10
+       then
+         let ch = contents.ch in
+         let count = Read.uint ch in
+         for k = 0 to count - 1 do
+           let size = Read.uint ch in
+           let start = ch.pos in
+           ch.pos <- start + size;
+           let idx = offset + k in
+           if live.(idx)
+           then
+             let key =
+               ( types.(k)
+               , String.sub ch.buf ~pos:start ~len:size
+               , match mappings with
+                 | None -> []
+                 | Some (mappings, cursor) ->
+                     mappings_in_range mappings cursor ~start ~end_:(start + size) )
+             in
+             match Poly.Hashtbl.find tbl key with
+             | idx' -> replacements.(idx) <- idx'
+             | exception Not_found -> Poly.Hashtbl.add tbl key idx
+         done);
+      replacements)
+    files
+
 type output =
   { source_map : Source_map.t
   ; imports : (string * string) list
   }
 
-let f ?(filter_export = fun _ -> true) ?dependencies ?(names = true) files ~output_file =
+let f
+    ?(filter_export = fun _ -> true)
+    ?dependencies
+    ?(names = true)
+    ?(eliminate_duplicates = true)
+    files
+    ~output_file =
   let files =
     Array.map
       ~f:(fun { module_name; file; code; opt_source_map } ->
@@ -3106,6 +3219,17 @@ let f ?(filter_export = fun _ -> true) ?dependencies ?(names = true) files ~outp
       ~dependencies
   in
   let live = liveness.live in
+  let duplicates =
+    if eliminate_duplicates
+    then duplicate_functions ~files ~functions ~live
+    else Array.map ~f:(fun l -> Array.make (Array.length l.func) (-1)) live
+  in
+  (* The duplicates are removed: they are considered dead, and mapped to
+     the function which replaces them *)
+  Array.iteri
+    ~f:(fun i replacements ->
+      Array.iteri ~f:(fun k k' -> if k' >= 0 then live.(i).func.(k) <- false) replacements)
+    duplicates;
   (* Number the live entries consecutively, across all the arrays. Dead
      entries are mapped to -1. Also return the number of live entries of
      each array. *)
@@ -3213,7 +3337,13 @@ let f ?(filter_export = fun _ -> true) ?dependencies ?(names = true) files ~outp
   add_section out_ch ~id:3 buf;
   let func_counts = Array.map ~f:Array.length functions in
   let func_mappings =
-    build_mappings ~live resolved_imports unresolved_imports Func func_counts
+    build_mappings
+      ~aliases:duplicates
+      ~live
+      resolved_imports
+      unresolved_imports
+      Func
+      func_counts
   in
   let func_count = Array.length func_types in
   check_exports_against_imports
@@ -3597,8 +3727,30 @@ let f ?(filter_export = fun _ -> true) ?dependencies ?(names = true) files ~outp
     let name_section_buffer = Buffer.create 100000 in
     Write.name name_section_buffer "name";
 
+    (* The names of the removed duplicates are dropped. The name of the
+       function which replaces them records how many they are. *)
+    let duplicate_counts =
+      Array.map
+        ~f:(fun replacements ->
+          let counts = Array.make (Array.length replacements) 0 in
+          Array.iter
+            ~f:(fun k' -> if k' >= 0 then counts.(k') <- counts.(k') + 1)
+            replacements;
+          counts)
+        duplicates
+    in
+    let name_mappings =
+      Array.map2
+        ~f:(fun mapping replacements ->
+          Array.mapi ~f:(fun k idx -> if replacements.(k) >= 0 then -1 else idx) mapping)
+        func_mappings
+        duplicates
+    in
     (* 1: functions *)
     write_namemap
+      ~suffix:(fun i k ->
+        let n = duplicate_counts.(i).(k) in
+        if n > 0 then Some (Printf.sprintf " (+%d identical)" n) else None)
       ~resolved_imports
       ~unresolved_imports
       ~name_sections
@@ -3606,21 +3758,21 @@ let f ?(filter_export = fun _ -> true) ?dependencies ?(names = true) files ~outp
       ~buf
       ~kind:Func
       ~section_id:1
-      ~mappings:func_mappings;
+      ~mappings:name_mappings;
     (* 2: locals *)
     write_indirectnamemap
       ~name_sections
       ~name_section_buffer
       ~buf
       ~section_id:2
-      ~mappings:func_mappings;
+      ~mappings:name_mappings;
     (* 3: labels *)
     write_indirectnamemap
       ~name_sections
       ~name_section_buffer
       ~buf
       ~section_id:3
-      ~mappings:func_mappings;
+      ~mappings:name_mappings;
 
     (* 4: types *)
     let type_names = Array.make types.last_index None in
@@ -3644,6 +3796,7 @@ let f ?(filter_export = fun _ -> true) ?dependencies ?(names = true) files ~outp
 
     (* 5: tables *)
     write_namemap
+      ~suffix:no_suffix
       ~resolved_imports
       ~unresolved_imports
       ~name_sections
@@ -3654,6 +3807,7 @@ let f ?(filter_export = fun _ -> true) ?dependencies ?(names = true) files ~outp
       ~mappings:table_mappings;
     (* 6: memories *)
     write_namemap
+      ~suffix:no_suffix
       ~resolved_imports
       ~unresolved_imports
       ~name_sections
@@ -3664,6 +3818,7 @@ let f ?(filter_export = fun _ -> true) ?dependencies ?(names = true) files ~outp
       ~mappings:mem_mappings;
     (* 7: globals *)
     write_namemap
+      ~suffix:no_suffix
       ~resolved_imports
       ~unresolved_imports
       ~name_sections
@@ -3718,6 +3873,7 @@ let f ?(filter_export = fun _ -> true) ?dependencies ?(names = true) files ~outp
 
     (* 11: tags *)
     write_namemap
+      ~suffix:no_suffix
       ~resolved_imports
       ~unresolved_imports
       ~name_sections

@@ -152,6 +152,7 @@ let build_runtime ~runtime_file =
    linkable module, since code loaded later may use it. *)
 let link_and_remove_dead_code
     ~dynlink
+    ~eliminate_duplicates
     ~opt_sourcemap
     ~runtime_file
     ~(runtime_inputs : Binaryen.link_input list)
@@ -176,6 +177,7 @@ let link_and_remove_dead_code
                  then Runtime_files.wasi_dependencies
                  else Runtime_files.dependencies)))
       ~names:(Config.Flag.pretty ())
+      ~eliminate_duplicates
       ({ Wasm_link.module_name = "env"
        ; file = runtime_file
        ; code = None
@@ -244,6 +246,7 @@ let link_and_optimize
   let link ~opt_sourcemap output_file =
     link_and_remove_dead_code
       ~dynlink
+      ~eliminate_duplicates:(not (Binaryen.optimizes profile))
       ~opt_sourcemap
       ~runtime_file
       ~runtime_inputs
