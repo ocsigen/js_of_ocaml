@@ -401,7 +401,16 @@ module Arith = struct
 
   let ( asr ) = binary (Shr S)
 
-  let ( land ) = binary And
+  let ( land ) e e' =
+    let* e = e in
+    let* e' = e' in
+    return
+      (match e, e' with
+      (* [i31.get_s] and [i31.get_u] only differ by the top bit. V8
+         implements [i31.get_u] with a single logical shift. *)
+      | W.I31Get (S, e1), W.Const (I32 0x7fffffffl)
+      | W.Const (I32 0x7fffffffl), W.I31Get (S, e1) -> W.I31Get (U, e1)
+      | _ -> W.BinOp (I32 And, e, e'))
 
   let ( lor ) = binary Or
 
