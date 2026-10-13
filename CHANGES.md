@@ -132,6 +132,9 @@
   crash when one of them is assigned in a `try` body (#2516)
 
 ## Bug fixes
+* Runtime: on Windows, the console device names (`CON`, `CONIN$`, `CONOUT$`)
+  can be opened from node; they were resolved against the current directory
+  (#2525)
 * Compiler/Wasm: with `--effects=cps`, fix an assertion failure on a `try` whose
   body modifies a local reference, when compiled without `-g` (#2519)
 * Compiler: the JavaScript lexer no longer crashes on a unicode escape out
