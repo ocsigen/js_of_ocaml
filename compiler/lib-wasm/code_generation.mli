@@ -173,6 +173,11 @@ val register_global :
 
 val get_global : Code.Var.t -> Wasm_ast.expression option t
 
+val is_heap_subtype : context -> Wasm_ast.heap_type -> Wasm_ast.heap_type -> bool
+
+val global_type : context -> Code.Var.t -> Wasm_ast.value_type option
+(** The type of a global defined by the module *)
+
 val is_constant_global : context -> Code.Var.t -> bool
 (** Whether a global of the module is never modified once initialized *)
 
