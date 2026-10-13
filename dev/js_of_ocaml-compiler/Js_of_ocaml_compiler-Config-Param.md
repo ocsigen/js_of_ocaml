@@ -23,7 +23,10 @@ val tailcall_max_depth : unit -> int
 val constant_max_depth : unit -> int
 ```
 ```ocaml
-val merge_node_max : unit -> int
+val labelled_block_max_depth : unit -> int
+```
+```ocaml
+val break_sinking_max_depth : unit -> int
 ```
 ```ocaml
 type tc = 
