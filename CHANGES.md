@@ -159,6 +159,9 @@
 * Toplevel: keep `/static/cmis` on the load path across
   `Toploop.initialize_toplevel_env` (#833, #2377)
 * Tyxml: keep the first of repeated attributes, as browsers do (#968, #2383)
+* Lib: `Form.form_elements` and `Form.get_form_contents` skip
+  `<input type="button">`, as a native form submission does; a named one
+  was sent as a field with its value (#2466)
 
 # 6.4.1 (2026-06-30) - Lille
 
