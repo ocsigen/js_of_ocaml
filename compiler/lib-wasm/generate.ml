@@ -2645,6 +2645,7 @@ module Generate (Target : Target_sig.S) = struct
               in
               let locals, body =
                 post_process_function_body
+                  ~context:global_context
                   ~profile
                   ~param_names
                   ~param_types:signature.params
