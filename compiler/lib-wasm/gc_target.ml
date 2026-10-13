@@ -1283,6 +1283,14 @@ module Closure = struct
     in
     if List.is_empty free_variables
     then
+      let* () =
+        (* The function ignores its environment. When it is only called
+           directly, the environment parameter is omitted, unless
+           wasm-opt runs: its dead argument elimination removes it. *)
+        if no_code_pointer && not context.wasm_opt
+        then Code.Var.Hashtbl.replace context.functions_without_env f ();
+        return ()
+      in
       let* typ =
         if no_code_pointer
         then Type.empty_closure_type ()
@@ -1377,8 +1385,11 @@ module Closure = struct
     if List.is_empty free_variables
     then
       (* The closures are all constants and the environment is empty. *)
-      let* _ = add_var (Code.Var.fresh ()) in
-      return ()
+      if Code.Var.Hashtbl.mem context.functions_without_env f
+      then return ()
+      else
+        let* _ = add_var (Code.Var.fresh ()) in
+        return ()
     else
       let cps_layout = cps || pair in
       let env_type_id = Option.value ~default:(-1) info.id in
