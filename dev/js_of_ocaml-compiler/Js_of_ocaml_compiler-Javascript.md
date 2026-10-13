@@ -397,6 +397,7 @@ and import_default = ident
 ```
 ```ocaml
 and import_kind = 
+  | Source of ident
   | DeferNamespace of ident
   | Namespace of import_default option * ident
   | Named of import_default option * (Stdlib.Utf8_string.t * ident) list

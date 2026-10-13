@@ -178,3 +178,7 @@ val is_keyword : string -> t option
 ```ocaml
 val all_keywords : t list
 ```
+```ocaml
+exception Syntax_error of Stdlib.Lexing.position
+```
+Raised by a semantic action of the parser, which [`Parse_js`](./Js_of_ocaml_compiler-Parse_js.md) reports as a parsing error at the given position
