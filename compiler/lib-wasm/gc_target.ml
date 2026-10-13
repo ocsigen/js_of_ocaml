@@ -2248,7 +2248,7 @@ let handle_exceptions ~result_typ ~fall_through ~context body x exn_handler =
      let* () = no_event in
      exn_handler ~result_typ ~fall_through ~context)
 
-let post_process_function_body ~profile ~param_names ~param_types ~locals body =
+let post_process_function_body ~context ~profile ~param_names ~param_types ~locals body =
   match Binaryen.optimizes profile with
   | false ->
       (* When [wasm-opt] does not run (at [--opt 1], both for .cmo/.cma
@@ -2260,7 +2260,9 @@ let post_process_function_body ~profile ~param_names ~param_types ~locals body =
       let pass flag f (locals, body) = if flag () then f ~locals body else locals, body in
       let locals, body =
         (locals, body)
-        |> pass Config.Flag.wasm_local_sink Local_sink.f
+        |> pass
+             Config.Flag.wasm_local_sink
+             (Local_sink.f ~constant_global:(is_constant_global context))
         |> pass Config.Flag.wasm_cast_reuse Cast_reuse.f
         |> pass
              Config.Flag.wasm_var_coalescing
