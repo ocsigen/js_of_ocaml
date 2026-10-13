@@ -2262,7 +2262,9 @@ let post_process_function_body ~context ~profile ~param_names ~param_types ~loca
         (locals, body)
         |> pass
              Config.Flag.wasm_local_sink
-             (Local_sink.f ~constant_global:(is_constant_global context))
+             (Local_sink.f
+                ~constant_global:(is_constant_global context)
+                ~params:(List.combine param_names param_types))
         |> pass Config.Flag.wasm_cast_reuse Cast_reuse.f
         |> pass
              Config.Flag.wasm_var_coalescing

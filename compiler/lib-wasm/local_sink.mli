@@ -31,11 +31,16 @@
     [e] itself, and [x] is removed from [locals] if it is no longer
     accessed.
 
-    [constant_global g] tells whether global [g] is never modified once
+    A conditional whose two branches only set the same local is first
+    turned into a [local.set] of a conditional expression.
+
+    [params] gives the types of the parameters. [constant_global g]
+    tells whether global [g] is never modified once
     initialized, so that its reads commute with any code. *)
 
 val f :
      constant_global:(Wasm_ast.var -> bool)
+  -> params:(Wasm_ast.var * Wasm_ast.value_type) list
   -> locals:(Wasm_ast.var * Wasm_ast.value_type) list
   -> Wasm_ast.instruction list
   -> (Wasm_ast.var * Wasm_ast.value_type) list * Wasm_ast.instruction list
