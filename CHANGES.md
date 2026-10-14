@@ -30,12 +30,18 @@
 * Compiler: the JavaScript parser accepts source phase imports
   (`import source x from "m"`) (#2523)
 * Compiler: replace the Menhir-based JavaScript parser with a hand-written
-  recursive-descent parser (#2467)
+  recursive-descent parser; it also treats a line terminator hidden in a
+  comment as one after `throw`, as required by the spec (#2467)
 * Compiler: syntax errors in JavaScript files are now explained: the message
   tells which token is unexpected and what was expected instead
-  (``unexpected `{`, expected `,` or `)` ``), or which rule is broken (`a getter
-  has no parameter`), and shows the offending line. `Parse_js.Parsing_error`
-  now carries this message along with the location (#2467)
+  (``unexpected `{`, expected `,` or `)` ``), or which rule is broken (`invalid
+  left-hand side in assignment`), and shows the offending line. `Parse_js.Parsing_error`
+  now carries this message along with the location. A program nested too
+  deeply for the stack is reported as a syntax error as well (#2467)
+* Compiler: checked against test262 and the test suites of other parsers, the
+  JavaScript parser also accepts `using of = x`, `await` as an identifier in
+  class field initializers and a class field named `accessor` on its own line
+  (#2467)
 * Compiler: drop redundant `break`s out of labelled blocks, turning the
   blocks into `if`/`else` statements or conditional expressions; the nesting
   this introduces is bounded by `--set=break_sink_depth`, and the
