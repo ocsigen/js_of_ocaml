@@ -233,11 +233,25 @@ module Generate (Target : Target_sig.S) = struct
     | Array { cast = false; _ }
     | Top | Int _ | Number _ | Bigarray _ | Null | Bot -> false
 
+  (* Whether a value of this type has a more precise reference type
+     than a generic value *)
+  let has_ref_type (t : Typing.typ) =
+    match t with
+    | Number (_, Boxed_precise) -> true
+    | _ -> is_cast t
+
   let rec convert ~(from : Typing.typ) ~(into : Typing.typ) e =
     match from, into with
     | _, (Tuple { cast = true; _ } | Array { cast = true; _ }) ->
         (* A value with a cast type already has a block type *)
         if is_cast from then e else Value.as_block (convert ~from ~into:Top e)
+    | Number (n, Boxed_precise), Number (n', Boxed_precise) when Poly.equal n n' -> e
+    | Number (n', Unboxed), Number (n, Boxed_precise) when not (Poly.equal n n') ->
+        (* Dead code *)
+        Memory.as_box n (convert ~from ~into:Top e)
+    | Number (_, (Boxed | Boxed_precise)), Number (n, Boxed_precise)
+    | ( (Top | Int _ | Tuple _ | Bigarray _ | Array _ | Null | Bot)
+      , Number (n, Boxed_precise) ) -> Memory.as_box n (convert ~from ~into:Top e)
     | Int Unnormalized, Int Normalized -> Arith.((e lsl const 1l) asr const 1l)
     | Int (Normalized | Unnormalized), Int (Normalized | Unnormalized) -> e
     (* Dummy value *)
@@ -252,11 +266,18 @@ module Generate (Target : Target_sig.S) = struct
     | _, Int (Normalized | Unnormalized) -> Value.int_val e
     | Int (Unnormalized | Normalized), _ -> Value.val_int e
     | Number (_, Unboxed), Number (_, Unboxed) -> e
-    | _, Number (Int32, Unboxed) -> Memory.unbox_int32 e
-    | _, Number (Int64, Unboxed) -> Memory.unbox_int64 e
-    | _, Number (Nativeint, Unboxed) -> Memory.unbox_nativeint e
-    | _, Number (Float, Unboxed) -> Memory.unbox_float e
-    | _, Number (Float32, Unboxed) -> Memory.unbox_float32 e
+    | _, Number (n, Unboxed) -> (
+        let cast =
+          match from with
+          | Number (n', Boxed_precise) -> not (Poly.equal n n')
+          | _ -> true
+        in
+        match n with
+        | Int32 -> Memory.unbox_int32 ~cast e
+        | Int64 -> Memory.unbox_int64 ~cast e
+        | Nativeint -> Memory.unbox_nativeint ~cast e
+        | Float -> Memory.unbox_float ~cast e
+        | Float32 -> Memory.unbox_float32 ~cast e)
     | Number (Int32, Unboxed), _ -> Memory.box_int32 e
     | Number (Int64, Unboxed), _ -> Memory.box_int64 e
     | Number (Nativeint, Unboxed), _ -> Memory.box_nativeint e
@@ -1778,15 +1799,21 @@ module Generate (Target : Target_sig.S) = struct
   (* The Wasm type of a variable, when it is more precise than a
      generic value *)
   let value_type ty : W.value_type option Code_generation.t =
-    if is_cast ty
-    then
-      let* t = Value.block_type in
-      return (Some t)
-    else return (unboxed_type ty)
+    match ty with
+    | Typing.Number (n, Boxed_precise) ->
+        let* t = Memory.box_type n in
+        return (Some t)
+    | _ ->
+        if is_cast ty
+        then
+          let* t = Value.block_type in
+          return (Some t)
+        else return (unboxed_type ty)
 
   let box_number_if_needed ctx x e =
     match Typing.var_type ctx.types x with
-    | Number (n, Boxed) as into -> convert ~from:(Number (n, Unboxed)) ~into e
+    | Number (n, (Boxed | Boxed_precise)) as into ->
+        convert ~from:(Number (n, Unboxed)) ~into e
     | _ -> e
 
   let is_block (t : Typing.typ) =
@@ -2094,12 +2121,21 @@ module Generate (Target : Target_sig.S) = struct
             | Apply { f; exact = true; _ } -> (
                 match Global_flow.get_unique_closure ctx.global_flow_info f with
                 | Some (g, _) when ctx.live.(Var.idx g) > 0 ->
-                    is_cast (Typing.return_type ctx.types g)
+                    has_ref_type (Typing.return_type ctx.types g)
                 | _ -> false)
             | _ -> false
           in
           let e = translate_expr ctx context x e in
-          let e = if is_cast ty && not already_cast then Value.as_block e else e in
+          let e =
+            if already_cast
+            then e
+            else
+              match ty with
+              | Number (n, Boxed_precise) ->
+                  (* No cast is emitted when the value is boxed here *)
+                  Memory.as_box n e
+              | _ -> if is_cast ty then Value.as_block e else e
+          in
           let* typ = value_type ty in
           store ?typ x e
     | Set_field (x, n, (Non_float | Immediate), y) ->

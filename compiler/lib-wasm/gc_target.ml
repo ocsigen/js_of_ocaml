@@ -512,6 +512,8 @@ let ref_cast typ e =
 module Value = struct
   let block_type =
     let* t = Type.block_type in
+    (* Used to initialize the locals of this type *)
+    let* () = local_placeholder t (fun t -> ArrayNewFixed (t, [])) in
     return (W.Ref { nullable = false; typ = Type t })
 
   let dummy_block =
@@ -715,9 +717,9 @@ module Memory = struct
     let* e = e in
     return (W.StructNew (ty, [ e ]))
 
-  let unbox_float e =
+  let unbox_float ?(cast = true) e =
     let* ty = Type.float_type in
-    wasm_struct_get ty (wasm_cast ty e) 0
+    wasm_struct_get ty (if cast then wasm_cast ty e else e) 0
 
   let allocate ~tag l =
     assert (tag <> 254);
@@ -919,9 +921,9 @@ module Memory = struct
 
   let box_float32 = make_float32
 
-  let unbox_float32 e =
+  let unbox_float32 ?(cast = true) e =
     let* ty = Type.float32_type in
-    wasm_struct_get ty (wasm_cast ty e) 1
+    wasm_struct_get ty (if cast then wasm_cast ty e else e) 1
 
   let make_int32 ~kind e =
     let* custom_operations = Type.custom_operations_type in
@@ -942,9 +944,9 @@ module Memory = struct
 
   let box_int32 e = make_int32 ~kind:`Int32 e
 
-  let unbox_int32 e =
+  let unbox_int32 ?(cast = true) e =
     let* ty = Type.int32_type in
-    wasm_struct_get ty (wasm_cast ty e) 1
+    wasm_struct_get ty (if cast then wasm_cast ty e else e) 1
 
   let make_int64 e =
     let* custom_operations = Type.custom_operations_type in
@@ -962,15 +964,52 @@ module Memory = struct
 
   let box_int64 e = make_int64 e
 
-  let unbox_int64 e =
+  let unbox_int64 ?(cast = true) e =
     let* ty = Type.int64_type in
-    wasm_struct_get ty (wasm_cast ty e) 1
+    wasm_struct_get ty (if cast then wasm_cast ty e else e) 1
 
   let box_nativeint e = make_int32 ~kind:`Nativeint e
 
-  let unbox_nativeint e =
+  let unbox_nativeint ?(cast = true) e =
     let* ty = Type.int32_type in
-    wasm_struct_get ty (wasm_cast ty e) 1
+    wasm_struct_get ty (if cast then wasm_cast ty e else e) 1
+
+  let box_struct_type (n : Typing.boxed_number) =
+    match n with
+    | Float -> Type.float_type
+    | Float32 -> Type.float32_type
+    | Int32 | Nativeint -> Type.int32_type
+    | Int64 -> Type.int64_type
+
+  let box_type n =
+    let* ty = box_struct_type n in
+    let* fields =
+      let custom name value =
+        let* custom_operations = Type.custom_operations_type in
+        let* ops =
+          register_import
+            ~name
+            (Global
+               { mut = false
+               ; typ = Ref { nullable = false; typ = Type custom_operations }
+               })
+        in
+        return [ W.GlobalGet ops; value ]
+      in
+      match n with
+      | Float -> return [ W.Const (F64 0.) ]
+      | Float32 -> custom "float32_ops" (Const (F32 0.))
+      | Int32 -> custom "int32_ops" (Const (I32 0l))
+      | Nativeint -> custom "nativeint_ops" (Const (I32 0l))
+      | Int64 -> custom "int64_ops" (Const (I64 0L))
+    in
+    (* Used to initialize the locals of this type *)
+    let* () = local_placeholder ty (fun ty -> W.StructNew (ty, fields)) in
+    return (W.Ref { nullable = false; typ = Type ty })
+
+  let as_box n e =
+    let* ty = box_struct_type n in
+    wasm_cast ty e
 end
 
 module Constant = struct
@@ -2116,6 +2155,8 @@ let handle_exceptions ~result_typ ~fall_through ~context body x exn_handler =
      let* () = no_event in
      exn_handler ~result_typ ~fall_through ~context)
 
+let local_default context ty = Code.Var.Hashtbl.find_opt context.local_defaults ty
+
 let post_process_function_body ~context ~profile ~param_names ~param_types ~locals body =
   match Binaryen.optimizes profile with
   | false ->
@@ -2142,7 +2183,9 @@ let post_process_function_body ~context ~profile ~param_names ~param_types ~loca
              Config.Flag.wasm_var_coalescing
              (Var_coalescing.f ~param_names ~param_types)
       in
-      let locals, body = Initialize_locals.f ~param_names ~locals body in
+      let locals, body =
+        Initialize_locals.f ~default:(local_default context) ~param_names ~locals body
+      in
       (* Reorder locals so frequently-used ones get low Wasm indices
          (one-byte LEB128 encoding for indices < 128). Otherwise,
          [wasm-opt] handles local reordering. *)
@@ -2152,7 +2195,7 @@ let post_process_function_body ~context ~profile ~param_names ~param_types ~loca
         else locals
       in
       locals, body
-  | true -> Initialize_locals.f ~param_names ~locals body
+  | true -> Initialize_locals.f ~default:(local_default context) ~param_names ~locals body
 
 let entry_point ~toplevel_fun =
   let code =

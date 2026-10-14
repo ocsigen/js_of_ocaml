@@ -70,6 +70,9 @@
   specialize generic array accesses and `Array.length` (#2485)
 * Compiler/Wasm: give values known to be blocks a Wasm block type when they
   are used as blocks, so that they are cast once where they are defined (#2485)
+* Compiler/Wasm: give boxed numbers the type of their box when no cast is
+  needed, and initialize such locals with a placeholder rather than making
+  them nullable (#2485)
 
 ### Libraries
 * Lib: add `WebGL2` bindings; the `webgl` example uses WebGL2 and a new

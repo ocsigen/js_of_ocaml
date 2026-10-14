@@ -56,6 +56,10 @@ type context =
         (** The precise type of the environment parameter of the
             functions only called directly: their callers cast the
             environment argument to it *)
+  ; local_defaults : Wasm_ast.expression Code.Var.Hashtbl.t
+        (** Values used to initialize the locals and the globalized
+            variables of a given type when they may not be initialized
+            before use, rather than making them nullable *)
   }
 
 val make_context : value_type:Wasm_ast.value_type -> context
@@ -234,6 +238,10 @@ val variable_type : Code.Var.t -> Wasm_ast.value_type option t
 val expression_type : Wasm_ast.expression -> Wasm_ast.value_type option t
 
 val array_placeholder : Code.Var.t -> expression
+
+val local_placeholder : Code.Var.t -> (Code.Var.t -> Wasm_ast.expression) -> unit t
+(** Register a constant of the given type, built by the function the
+    first time, to initialize the locals of this type *)
 
 val default_value :
      Wasm_ast.value_type
