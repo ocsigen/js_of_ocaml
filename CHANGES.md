@@ -30,6 +30,9 @@
 * Compiler/Wasm: export the shapes of separately compiled units, so that
   other units can call their functions directly (#2587)
 * Compiler: fix mutually recursive tail calls with `--set tc_depth=0` (#2591)
+* Runtime: `Printf` float formatting matches C: `%e`, `%f` and `%g` round
+  ties to even, and `%g` of values >= 1e21 uses fixed notation while the
+  exponent is below the precision (#2527)
 
 # 6.5.0 (2026-10-22) - Lille
 
