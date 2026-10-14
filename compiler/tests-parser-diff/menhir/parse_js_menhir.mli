@@ -17,6 +17,11 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+(** Previous, Menhir-based implementation of the JavaScript parser. Kept
+    only to check the recursive-descent parser in [Parse_js] against it. *)
+
+open Js_of_ocaml_compiler
+
 module Lexer : sig
   type t
 

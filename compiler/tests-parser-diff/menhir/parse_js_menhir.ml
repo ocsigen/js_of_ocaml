@@ -16,7 +16,9 @@
  * license.txt for more details.
  *)
 
-let debug = Debug.find "js-parser"
+open Js_of_ocaml_compiler
+
+let debug = Debug.find "js-parser-menhir"
 
 let debug () = debug ()
 
