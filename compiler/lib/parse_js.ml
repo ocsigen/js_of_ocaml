@@ -1134,6 +1134,7 @@ and parse_assignment_expression t ctx ~no_in =
       (* x => body *)
       let pos = start_pos t in
       let i = parse_identifier t ctx in
+      if newline_before t then error_msg t "no line break is allowed before `=>`";
       expect t T_ARROW;
       let body, concise = parse_concise_body t ctx ~no_in ~async:false in
       EArrow ((no_fun, list [ param' i ], body, p pos), concise, AUnknown)
@@ -1146,6 +1147,7 @@ and parse_assignment_expression t ctx ~no_in =
           let pos = start_pos t in
           advance t;
           let i = parse_identifier t { ctx with await = true } in
+          if newline_before t then error_msg t "no line break is allowed before `=>`";
           expect t T_ARROW;
           let body, concise = parse_concise_body t ctx ~no_in ~async:true in
           EArrow
@@ -1186,14 +1188,14 @@ and parse_cover_or_arrow t ctx ~no_in =
   let e = parse_conditional_expression t ctx ~no_in in
   match cur t with
   | T_ARROW when (not (newline_before t)) && is_cover t ~since:start ->
-      (* No line terminator before [=>] after a parenthesized parameter
-         list, which the previous parser also checked *)
       let cover = last_cover t in
       let async = cover.c_async in
       let params = formal_parameters_of_cover cover in
       expect t T_ARROW;
       let body, concise = parse_concise_body t ctx ~no_in ~async in
       EArrow (({ async; generator = false }, params, body, p pos), concise, AUnknown)
+  | T_ARROW when is_cover t ~since:start ->
+      error_msg t "no line break is allowed before `=>`"
   | _ -> parse_assignment_operator t ctx ~no_in ~pos e
 
 (* ConciseBody : { FunctionBody } | ExpressionBody
@@ -2604,19 +2606,26 @@ and parse_export_declaration t ~pos ~decorators =
             (Export_names (List.map names ~f:(fun ((_, a, _), (_, b, _)) -> a, b)))
       | _ ->
           consume_semicolon t;
-          let exception Invalid of Lexing.position in
+          let exception Invalid of Lexing.position * string in
           let k =
             try
               ExportNames
                 (List.map names ~f:(fun ((k, id, pos), (_, s, _)) ->
                      match k with
-                     | `Ident | `Reserved -> var pos id, s
-                     | `String -> raise (Invalid pos)))
-            with Invalid pos ->
-              CoverExportFrom
-                (early_error
-                   ~reason:"a string can only be exported from another module (`from`)"
-                   (pi pos))
+                     | `Ident -> var pos id, s
+                     | `Reserved ->
+                         raise
+                           (Invalid
+                              ( pos
+                              , "a reserved word can only be exported from another \
+                                 module (`from`)" ))
+                     | `String ->
+                         raise
+                           (Invalid
+                              ( pos
+                              , "a string can only be exported from another module \
+                                 (`from`)" ))))
+            with Invalid (pos, reason) -> CoverExportFrom (early_error ~reason (pi pos))
           in
           export k)
   | tok, [] -> (

@@ -2054,9 +2054,11 @@ let%expect_test "optional chain after new" =
 let%expect_test "reserved words in an export clause" =
   (* Without a [from] clause, the local names are bindings: no reserved word *)
   check `Module "export { default }";
-  [%expect {| export{default}; |}];
+  [%expect
+    {| error (l:1, c:9): a reserved word can only be exported from another module (`from`) |}];
   check `Module "export { if as x }";
-  [%expect {| export{if as x}; |}];
+  [%expect
+    {| error (l:1, c:9): a reserved word can only be exported from another module (`from`) |}];
   check `Module "var a; export { a as default, a as if }";
   [%expect {|
            var
@@ -2116,11 +2118,11 @@ let%expect_test "directive prologue" =
 
 let%expect_test "line terminator before =>" =
   check `Script "x\n=> y";
-  [%expect {| x=>y; |}];
+  [%expect {| error (l:2, c:0): no line break is allowed before `=>` |}];
   check `Script "async x\n=> y";
-  [%expect {| async x=>y; |}];
+  [%expect {| error (l:2, c:0): no line break is allowed before `=>` |}];
   check `Script "(x)\n=> y";
-  [%expect {| error (l:2, c:0): unexpected `=>`, expected an expression |}]
+  [%expect {| error (l:2, c:0): no line break is allowed before `=>` |}]
 
 let%expect_test "line terminator before postfix ++ and --" =
   (* A line terminator, even inside a comment, ends the statement before a
