@@ -37,6 +37,9 @@ type boxed_status =
 type array_kind =
   { float : bool  (** May be a float array *)
   ; value : bool  (** May be a non-empty block *)
+  ; cast : bool
+        (** Only when [float] is false: represented by a Wasm block
+            reference, the value being cast where it is defined *)
   }
 
 type typ =
@@ -46,9 +49,12 @@ type typ =
   | Tuple of
       { fields : typ array
       ; block : bool
+      ; cast : bool
       }
       (** A block (not a float array) if [block] holds, a block or an
-          integer otherwise *)
+          integer otherwise. When [cast] holds (only for blocks), the
+          value is represented by a Wasm block reference, being cast
+          where it is defined. *)
   | Bigarray of Optimization_hint.Bigarray.t
   | Array of array_kind
       (** An array: the empty array, a float array if [float] holds,

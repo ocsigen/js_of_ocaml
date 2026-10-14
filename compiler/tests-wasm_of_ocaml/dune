@@ -15,9 +15,9 @@
  (modes wasm))
 
 (tests
- (names globalize_assign)
+ (names globalize_assign typed_assign)
  (modes wasm)
- ; With -g, ocamlc does not turn the reference into a mutable variable
+ ; With -g, ocamlc does not turn the references into mutable variables
  (flags
   (:standard \ -g))
  (ocamlc_flags ())
@@ -96,11 +96,12 @@
   (flags :standard --opt 2)))
 
 (tests
- (names array_generic)
+ (names array_generic block_tail_calls)
  (modes wasm)
  ; Generic array accesses are only specialized when the type analysis knows
  ; the representation of the array, which requires whole-program
- ; compilation. Array parameters are only typed with --opt 2 or more.
+ ; compilation. Array parameters are only typed with --opt 2 or more. The
+ ; same holds for values known to be blocks.
  (wasm_of_ocaml
   (compilation_mode whole_program)
   (flags :standard --opt 2)))
