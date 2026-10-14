@@ -121,6 +121,7 @@ open Linear_scan
 let build_cfg ~candidates ~param_vars instrs =
   let builder = Builder.create () in
   let defs = ref [] in
+  let loops = ref [] in
   let try_depth = ref 0 in
   let reserve_id () = Builder.reserve builder in
   let set_node id action succs = Builder.set builder id action succs in
@@ -304,6 +305,13 @@ let build_cfg ~candidates ~param_vars instrs =
         let block_stack' = loop_entry :: block_stack in
         let body_entry = build_instrs block_stack' exit_node l in
         set_node loop_entry Nop [ body_entry ];
+        let written = ref Var.Set.empty in
+        Wasm_traverse.iter_locals
+          ~read:(fun _ -> ())
+          ~write:(fun x ->
+            if Var.Set.mem x candidates then written := Var.Set.add x !written)
+          l;
+        loops := (loop_entry, !written) :: !loops;
         loop_entry
   in
   let end_node = add_node Nop [] in
@@ -313,7 +321,7 @@ let build_cfg ~candidates ~param_vars instrs =
     then body_entry
     else add_node (Def param_vars) [ body_entry ]
   in
-  Builder.finish builder ~entry, Array.of_list !defs
+  Builder.finish builder ~entry, Array.of_list !defs, !loops
 
 (* --------------------------------------------------------------------- *)
 (*  Body rewriting                                                       *)
@@ -408,8 +416,44 @@ let f ~param_names ~param_types ~locals instrs =
   else (
     incr total_calls;
     total_candidates := !total_candidates + num_candidates;
-    let g, defs = build_cfg ~candidates ~param_vars instrs in
+    let g, defs, loops = build_cfg ~candidates ~param_vars instrs in
     let live_in_map = liveness g in
+    (* For each variable, the loops which write it, and the loops in
+       which it is live but never written. We do not merge two such
+       variables: this would add a write inside the loop to a local
+       which has none. V8 creates a loop phi for each local written in
+       the loop body, and does not remove right away such a phi whose
+       back edge is the phi itself (it takes one optimization phase per
+       loop nesting level), so the value would no longer be recognized
+       as the same inside the loop. *)
+    let written_in = Var.Hashtbl.create 16 in
+    let invariant_in = Var.Hashtbl.create 16 in
+    let add tbl x i =
+      Var.Hashtbl.replace
+        tbl
+        x
+        (IntSet.add i (Option.value ~default:IntSet.empty (Var.Hashtbl.find_opt tbl x)))
+    in
+    List.iteri loops ~f:(fun i (entry, written) ->
+        Var.Set.iter (fun x -> add written_in x i) written;
+        Var.Set.iter
+          (fun x -> if Var.Set.mem x candidates then add invariant_in x i)
+          (Var.Set.diff live_in_map.(entry) written));
+    let loop_set tbl x =
+      Option.value ~default:IntSet.empty (Var.Hashtbl.find_opt tbl x)
+    in
+    let loop_compatible r x =
+      IntSet.disjoint (loop_set written_in r) (loop_set invariant_in x)
+      && IntSet.disjoint (loop_set invariant_in r) (loop_set written_in x)
+    in
+    let merge_loops r x =
+      let union tbl =
+        let s = IntSet.union (loop_set tbl r) (loop_set tbl x) in
+        if not (IntSet.is_empty s) then Var.Hashtbl.replace tbl r s
+      in
+      union written_in;
+      union invariant_in
+    in
     let dead =
       Array.map
         ~f:(fun (node, removable) ->
@@ -425,10 +469,14 @@ let f ~param_names ~param_types ~locals instrs =
     let type_of v = Var.Hashtbl.find types v in
     let hint_count, opportunistic_count =
       allocate
-        ~compatible:(fun a b -> Poly.equal (type_of a) (type_of b))
+        ~compatible:(fun a b -> Poly.equal (type_of a) (type_of b) && loop_compatible a b)
         g
         ranges
-        ~assign:(fun x r -> if not (Var.equal x r) then Var.Hashtbl.replace subst x r)
+        ~assign:(fun x r ->
+          if not (Var.equal x r)
+          then (
+            merge_loops r x;
+            Var.Hashtbl.replace subst x r))
     in
     total_hint_count := !total_hint_count + hint_count;
     total_opportunistic_count := !total_opportunistic_count + opportunistic_count;
