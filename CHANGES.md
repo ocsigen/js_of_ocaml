@@ -102,6 +102,9 @@
   specialize generic array accesses and `Array.length` (#2485)
 * Compiler/Wasm: give values known to be blocks a Wasm block type when they
   are used as blocks, so that they are cast once where they are defined (#2485)
+* Compiler/Wasm: give boxed numbers the type of their box when no cast is
+  needed, and initialize such locals with a placeholder rather than making
+  them nullable (#2485)
 * Runtime/Wasm: faster `caml_hash`, `compare`, lexer engines, `Str`
   searches and `output_value` sharing detection (with WASI, `output_value`
   now shares boxed numbers with equal contents); single bound check in

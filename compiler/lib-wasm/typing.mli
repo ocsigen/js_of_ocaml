@@ -32,6 +32,9 @@ type boxed_number =
 
 type boxed_status =
   | Boxed
+  | Boxed_precise
+      (** Represented by a reference to the Wasm struct of the box rather
+          than by a generic value *)
   | Unboxed
 
 type array_kind =
