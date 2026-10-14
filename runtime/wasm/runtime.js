@@ -505,12 +505,33 @@
           e10 += s.length - (prec + 1);
         }
       }
+      // Rounding x at 10^-k is a tie iff 2 * x * 10^k is an odd integer,
+      // that is, iff y = x * 2^(k+1) is an odd integer (5^k is odd) and,
+      // when k < 0, a multiple of 5^-k. Scaling by a power of two is
+      // exact, so this test is exact.
+      function is_tie(x, k) {
+        var y = x * 2 ** (k + 1);
+        return y % 2 === 1 && (k >= 0 || y % 5 ** -k === 0);
+      }
+      // toFixed/toExponential round ties away from zero; C rounds them to
+      // even. s is x rounded at 10^-k, the digit at 10^-k being s[i]: on a
+      // tie, that digit is one too many iff it is odd.
+      function round_half_even(s, i, x, k) {
+        var c = s.charCodeAt(i);
+        return c % 2 === 1 && is_tie(x, k)
+          ? s.slice(0, i) + String.fromCharCode(c - 1) + s.slice(i + 1)
+          : s;
+      }
       function toExponential(x, prec) {
-        return prec > 100 ? exact_exponential(x, prec) : x.toExponential(prec);
+        if (prec > 100) return exact_exponential(x, prec);
+        var s = x.toExponential(prec);
+        var i = s.indexOf("e");
+        return round_half_even(s, i - 1, x, prec - +s.slice(i + 1));
       }
       function toFixed(x, dp) {
         if (dp > 100 || x >= 1e21) return exact_fixed(x, dp);
-        return x.toFixed(dp);
+        var s = x.toFixed(dp);
+        return round_half_even(s, s.length - 1, x, dp);
       }
       switch (conversion) {
         case 0:

@@ -45,8 +45,8 @@ let%expect_test "%g of values >= 1e21" =
     12345678000000000327680
     |}]
 
-(* C rounds exact ties to even; the js and wasm runtimes round them away from
-   zero, like toFixed and toExponential. *)
+(* toFixed and toExponential round exact ties away from zero; C rounds them
+   to even. *)
 let%expect_test "exact ties" =
   p "%.17g" 90.0351715087890625;
   p "%.2f" 0.125;
@@ -56,18 +56,6 @@ let%expect_test "exact ties" =
   p "%.2e" 0.5625;
   p "%.3g" 0.5625;
   p "%.10g" 0.65673828125;
-  [%expect
-    ({|
-    90.035171508789063
-    0.13
-    3
-    4
-    3e+01
-    5.63e-01
-    0.563
-    0.6567382813
-    |}
-    [@when not native])];
   [%expect
     {|
     90.035171508789062
