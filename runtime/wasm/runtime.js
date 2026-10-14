@@ -528,7 +528,7 @@
           s = toExponential(x, prec - 1);
           var j = s.indexOf("e");
           var exp = +s.slice(j + 1);
-          if (exp < -4 || x >= 1e21 || x.toFixed(0).length > prec) {
+          if (exp < -4 || exp >= prec) {
             // remove trailing zeroes
             var i = j - 1;
             while (s.charAt(i) === "0") i--;
