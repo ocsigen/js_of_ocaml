@@ -79,23 +79,29 @@ module type S = sig
 
     val box_float : expression -> expression
 
-    val unbox_float : expression -> expression
+    val unbox_float : ?cast:bool -> expression -> expression
 
     val box_float32 : expression -> expression
 
-    val unbox_float32 : expression -> expression
+    val unbox_float32 : ?cast:bool -> expression -> expression
 
     val box_int32 : expression -> expression
 
-    val unbox_int32 : expression -> expression
+    val unbox_int32 : ?cast:bool -> expression -> expression
 
     val box_int64 : expression -> expression
 
-    val unbox_int64 : expression -> expression
+    val unbox_int64 : ?cast:bool -> expression -> expression
 
     val box_nativeint : expression -> expression
 
-    val unbox_nativeint : expression -> expression
+    val unbox_nativeint : ?cast:bool -> expression -> expression
+
+    val box_type : Typing.boxed_number -> Wasm_ast.value_type Code_generation.t
+    (** The type of a reference to a box *)
+
+    val as_box : Typing.boxed_number -> expression -> expression
+    (** Cast a value to a reference to a box *)
   end
 
   module Type : sig
@@ -305,7 +311,8 @@ module type S = sig
     -> unit Code_generation.t
 
   val post_process_function_body :
-       param_names:Wasm_ast.var list
+       context:Code_generation.context
+    -> param_names:Wasm_ast.var list
     -> locals:(Wasm_ast.var * Wasm_ast.value_type) list
     -> Wasm_ast.instruction list
     -> (Wasm_ast.var * Wasm_ast.value_type) list * Wasm_ast.instruction list
