@@ -251,7 +251,7 @@ let%expect_test "arrow" =
     var
      a =
         /*<<fake:16:10>>*/ x=>
-           /*<<fake:16:17>>*/ y=> /*<<fake:16:22>>*/ x + y /*<<fake:16:27>>*/  /*<<?>>*/ ;
+           /*<<fake:16:17>>*/ y=> /*<<fake:16:22>>*/ x + y /*<<fake:16:27>>*/ ;
     var
      a =
         /*<<fake:17:10>>*/ x=>
@@ -571,11 +571,11 @@ let%expect_test ("declarations are not statements" [@when target_engine <> "quic
      which excludes declarations. *)
   let test s = print ~report:true ~compact:false ~invalid:true s in
   test {| if (a) async function f() {} |};
-  [%expect {| cannot parse js (from l:1, c:14)@. |}];
+  [%expect {| cannot parse js (from l:1, c:8)@. |}];
   test {| while (a) async function* f() {} |};
-  [%expect {| cannot parse js (from l:1, c:17)@. |}];
+  [%expect {| cannot parse js (from l:1, c:11)@. |}];
   test {| l: async function f() {} |};
-  [%expect {| cannot parse js (from l:1, c:10)@. |}];
+  [%expect {| cannot parse js (from l:1, c:4)@. |}];
   test {| if (a) class A {} |};
   [%expect {| cannot parse js (from l:1, c:8)@. |}];
   test {| if (a) let x = 1; |};
@@ -1591,7 +1591,7 @@ let%expect_test "[async of] and [using of] in a for statement" =
   check `Script "for (async of => {}; ;) ;";
   [%expect {| for(async of=>{};;); |}];
   check `Script "x = async of => 1";
-  [%expect {| cannot parse js (from l:1, c:10) |}];
+  [%expect {| x=async of=>1; |}];
   (* [for (async of] is excluded by the grammar *)
   check `Script "for (async of [1]) ;";
   [%expect {| for((async)of[1]); |}];
@@ -1951,9 +1951,9 @@ let%expect_test "source phase imports" =
   check `Module "import source x, { a } from 'm'";
   [%expect {| cannot parse js (from l:1, c:15) |}];
   check `Module "import defer x from 'm'";
-  [%expect {| cannot parse js (from l:1, c:7) |}];
+  [%expect {| cannot parse js (from l:1, c:13) |}];
   check `Module "import a b from 'm'";
-  [%expect {| cannot parse js (from l:1, c:7) |}]
+  [%expect {| cannot parse js (from l:1, c:9) |}]
 
 let%expect_test "decorators and export" =
   (* Decorators come either before [export] or before [class] *)
@@ -2151,7 +2151,7 @@ let%expect_test "left-hand side of for-in and for-of" =
   check `Script "async function f() { for (await a in b); }";
   [%expect {| cannot parse js (from l:1, c:34) |}];
   check `Script "async function f() { for (await using of b); }";
-  [%expect {| cannot parse js (from l:1, c:41) |}];
+  [%expect {| cannot parse js (from l:1, c:38) |}];
   (* Valid targets *)
   check `Script "for ((a) in b); for (a.b of c); for (f() in b); for ([a, {b}] of c);";
   [%expect

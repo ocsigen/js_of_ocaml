@@ -410,6 +410,71 @@ let all_keywords =
   ; T_YIELD
   ]
 
+(* Keywords that are always allowed as identifiers *)
+let is_contextual_keyword = function
+  | T_ACCESSOR
+  | T_AS
+  | T_ASYNC
+  | T_DEFER
+  | T_FROM
+  | T_GET
+  | T_META
+  | T_OF
+  | T_SET
+  | T_TARGET
+  | T_USING -> true
+  | _ -> false
+
+(* The tokens produced by [is_reserved] *)
+let is_reserved_word = function
+  | T_BREAK
+  | T_CASE
+  | T_CATCH
+  | T_CLASS
+  | T_CONST
+  | T_CONTINUE
+  | T_DEBUGGER
+  | T_DEFAULT
+  | T_DELETE
+  | T_DO
+  | T_ELSE
+  | T_ENUM
+  | T_EXPORT
+  | T_EXTENDS
+  | T_FALSE
+  | T_FINALLY
+  | T_FOR
+  | T_FUNCTION
+  | T_IF
+  | T_IMPORT
+  | T_IN
+  | T_INSTANCEOF
+  | T_NEW
+  | T_NULL
+  | T_RETURN
+  | T_SUPER
+  | T_SWITCH
+  | T_THIS
+  | T_THROW
+  | T_TRUE
+  | T_TRY
+  | T_TYPEOF
+  | T_VAR
+  | T_VOID
+  | T_WHILE
+  | T_WITH
+  | T_AWAIT
+  | T_YIELD
+  | T_LET
+  | T_STATIC
+  | T_IMPLEMENTS
+  | T_INTERFACE
+  | T_PACKAGE
+  | T_PRIVATE
+  | T_PROTECTED
+  | T_PUBLIC -> true
+  | _ -> false
+
 let is_reserved = function
   | "break" -> Some T_BREAK
   | "case" -> Some T_CASE
