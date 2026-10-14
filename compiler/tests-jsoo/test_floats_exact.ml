@@ -37,16 +37,9 @@ let%expect_test "format with large precision" =
 
 let p (fmt : _ format) x = print_endline (Printf.sprintf fmt x)
 
-(* C keeps fixed notation while the exponent is below the precision; the js
-   and wasm runtimes switch to exponential notation at 1e21, where toFixed
-   does. *)
 let%expect_test "%g of values >= 1e21" =
   p "%.25g" 1e21;
   p "%.30g" 1.2345678e22;
-  [%expect ({|
-    1e+21
-    1.234567800000000032768e+22
-    |} [@when not native])];
   [%expect {|
     1000000000000000000000
     12345678000000000327680
