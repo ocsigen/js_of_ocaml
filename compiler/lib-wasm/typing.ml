@@ -61,6 +61,7 @@ type boxed_number =
 
 type boxed_status =
   | Boxed
+  | Boxed_precise
   | Unboxed
 
 module Bigarray = struct
@@ -179,7 +180,8 @@ module Domain = struct
             ( n
             , match b, b' with
               | Unboxed, _ | _, Unboxed -> Unboxed
-              | Boxed, Boxed -> Boxed )
+              | Boxed_precise, Boxed_precise -> Boxed_precise
+              | (Boxed | Boxed_precise), (Boxed | Boxed_precise) -> Boxed )
         else Top
     | ( Tuple { fields = t; block = b; cast = c }
       , Tuple { fields = t'; block = b'; cast = c' } ) ->
@@ -263,7 +265,7 @@ module Domain = struct
   let box t =
     match t with
     | Int _ -> Int Ref
-    | Number (n, _) -> Number (n, Boxed)
+    | Number (n, Unboxed) -> Number (n, Boxed)
     | _ -> t
 
   let rec print f t =
@@ -290,6 +292,7 @@ module Domain = struct
           | Float32 -> "float32")
           (match b with
           | Boxed -> "boxed"
+          | Boxed_precise -> "boxed-precise"
           | Unboxed -> "unboxed")
     | Bigarray b -> Bigarray.print f b
     | Array { float; value; cast } ->
@@ -746,15 +749,19 @@ let type_specialized_primitive types global_flow_state name args =
   | _ -> false
 
 let box_numbers p st types =
-  (* We box numbers eagerly if the boxed value is ever used. *)
+  (* We box numbers eagerly if the boxed value is ever used. Returns
+     the variables whose values are boxed where they are defined. *)
   let should_box = Var.ISet.empty () in
+  let boxed = Var.ISet.empty () in
   let rec box y =
     if not (Var.ISet.mem should_box y)
     then (
       Var.ISet.add should_box y;
       let typ = Var.Tbl.get types y in
       (match typ with
-      | Number (n, Unboxed) -> Var.Tbl.set types y (Number (n, Boxed))
+      | Number (n, Unboxed) ->
+          Var.Tbl.set types y (Number (n, Boxed));
+          Var.ISet.add boxed y
       | _ -> ());
       match typ with
       | Number (_, Unboxed) | Top -> (
@@ -769,7 +776,8 @@ let box_numbers p st types =
                     Var.Set.iter box s)
           | Expr _ -> ()
           | Phi { known; _ } -> Var.Set.iter box known)
-      | Number (_, Boxed) | Int _ | Tuple _ | Bigarray _ | Array _ | Null | Bot -> ())
+      | Number (_, (Boxed | Boxed_precise))
+      | Int _ | Tuple _ | Bigarray _ | Array _ | Null | Bot -> ())
   in
   Code.fold_closures
     p
@@ -835,7 +843,8 @@ let box_numbers p st types =
         pc
         p.blocks
         ())
-    ()
+    ();
+  boxed
 
 let can_cast st y =
   (* The parameters of functions with unknown call sites have the
@@ -987,6 +996,71 @@ let cast_blocks p st types =
         ())
     ()
 
+let precise_boxes st types boxed =
+  (* A boxed number is represented by a reference to the Wasm struct
+     of the box when this requires no cast: when it is boxed where it
+     is defined, or when all the values it comes from are (phi
+     arguments, returned values of a direct callee). *)
+  let defs = st.global_flow_state.defs in
+  let return_vals = st.global_flow_info.info_return_vals in
+  let candidates = ref [] in
+  Var.ISet.iter
+    (fun y ->
+      match Var.Tbl.get types y with
+      | Number (_, Boxed) -> candidates := y :: !candidates
+      | _ -> ())
+    st.global_flow_state.vars;
+  let direct_callee y =
+    match defs.(Var.idx y) with
+    | Expr (Apply { f; exact = true; _ }) -> (
+        match Global_flow.get_unique_closure st.global_flow_info ~call:y f with
+        | Some (g, _, false) when can_unbox_return_value st.fun_info g -> Some g
+        | _ -> None)
+    | _ -> None
+  in
+  let bad = Var.ISet.empty () in
+  List.iter !candidates ~f:(fun y ->
+      let ok =
+        can_cast st y
+        &&
+        match defs.(Var.idx y) with
+        | Phi { others; _ } -> not others
+        | Expr (Apply _) -> Option.is_some (direct_callee y)
+        | Expr _ -> Var.ISet.mem boxed y
+      in
+      if not ok then Var.ISet.add bad y);
+  let is_precise z =
+    match Var.Tbl.get types z with
+    | Number (_, Boxed) -> not (Var.ISet.mem bad z)
+    | Bot -> true
+    | Top | Int _ | Number _ | Tuple _ | Bigarray _ | Array _ | Null -> false
+  in
+  let changed = ref true in
+  while !changed do
+    changed := false;
+    List.iter !candidates ~f:(fun y ->
+        if not (Var.ISet.mem bad y)
+        then
+          let b =
+            match defs.(Var.idx y) with
+            | Phi { known; _ } -> not (Var.Set.for_all is_precise known)
+            | Expr _ -> (
+                match direct_callee y with
+                | Some g -> not (Var.Set.for_all is_precise (Var.Map.find g return_vals))
+                | None -> false)
+          in
+          if b
+          then (
+            Var.ISet.add bad y;
+            changed := true))
+  done;
+  List.iter !candidates ~f:(fun y ->
+      if not (Var.ISet.mem bad y)
+      then
+        match Var.Tbl.get types y with
+        | Number (n, Boxed) -> Var.Tbl.set types y (Number (n, Boxed_precise))
+        | _ -> assert false)
+
 let print_opt types global_flow_state f e =
   match e with
   | Prim (Extern (name, _), args)
@@ -1014,8 +1088,9 @@ let f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinel p =
   in
   let types = solver st in
   Var.Tbl.set types deadcode_sentinel (Int Normalized);
-  box_numbers p st types;
+  let boxed = box_numbers p st types in
   cast_blocks p st types;
+  precise_boxes st types boxed;
   if times () then Format.eprintf "  type analysis: %a@." Timer.print t;
   if debug ()
   then (
