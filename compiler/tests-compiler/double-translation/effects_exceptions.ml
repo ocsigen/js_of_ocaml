@@ -59,7 +59,7 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
   [%expect
     {|
     function exceptions$0(s){
-     try{var _c_ = caml_int_of_string(s), n = _c_;}
+     try{var n = caml_int_of_string(s);}
      catch(exn$0){
       var exn = caml_wrap_exception(exn$0);
       if(exn[1] !== Stdlib[7]) throw caml_maybe_attach_backtrace(exn, 0);
@@ -78,8 +78,7 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
      try{
       if(caml_string_equal(s, cst))
        throw caml_maybe_attach_backtrace(Stdlib[8], 1);
-      _c_ = [0, [0, caml_call1(Stdlib[79], cst_toto), n, m]];
-      return _c_;
+      return [0, [0, caml_call1(Stdlib[79], cst_toto), n, m]];
      }
      catch(exn){
       var exn$1 = caml_wrap_exception(exn);
@@ -89,12 +88,11 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
     }
     //end
     function exceptions$1(s, cont){
-     try{var _c_ = caml_int_of_string(s), n = _c_;}
+     try{var n = caml_int_of_string(s);}
      catch(exn){
       var exn$2 = caml_wrap_exception(exn);
       if(exn$2[1] !== Stdlib[7]){
-       _c_ = caml_pop_trap();
-       var exn$0 = caml_maybe_attach_backtrace(exn$2, 0);
+       var _c_ = caml_pop_trap(), exn$0 = caml_maybe_attach_backtrace(exn$2, 0);
        return _c_(exn$0);
       }
       n = 0;
@@ -136,17 +134,16 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
   [%expect
     {|
     function handler_is_loop$0(f, g, l){
-     try{var _c_ = caml_call1(f, 0); return _c_;}
+     try{return caml_call1(f, 0);}
      catch(exn$0){
       var l$0 = l;
       for(;;){
-       _c_ = caml_call1(g, l$0);
-       var variant = _c_[1];
+       var match = caml_call1(g, l$0), variant = match[1];
        if(72330306 > variant){
-        var exn = _c_[2];
+        var exn = match[2];
         throw caml_maybe_attach_backtrace(exn, 1);
        }
-       var l$1 = _c_[2];
+       var l$1 = match[2];
        l$0 = l$1;
       }
      }
@@ -185,7 +182,7 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
   [%expect
     {|
     function handler_is_merge_node$0(g){
-     try{var _b_ = caml_call1(g, 0), s = _b_;}catch(exn){s = cst$1;}
+     try{var s = caml_call1(g, 0);}catch(exn){s = cst$1;}
      return caml_call2(Stdlib[28], s, cst_aaa);
     }
     //end

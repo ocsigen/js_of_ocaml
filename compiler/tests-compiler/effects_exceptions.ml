@@ -59,12 +59,11 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
   [%expect
     {|
     function exceptions(s, cont){
-     try{var _c_ = runtime.caml_int_of_string(s), n = _c_;}
+     try{var n = runtime.caml_int_of_string(s);}
      catch(exn$0){
       var exn = caml_wrap_exception(exn$0);
       if(exn[1] !== Stdlib[7]){
-       _c_ = caml_pop_trap();
-       var exn$2 = caml_maybe_attach_backtrace(exn, 0);
+       var _c_ = caml_pop_trap(), exn$2 = caml_maybe_attach_backtrace(exn, 0);
        return _c_(exn$2);
       }
       n = 0;
