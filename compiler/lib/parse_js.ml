@@ -841,20 +841,42 @@ let formal_parameters_of_cover (cover : cover) =
 
 (* Identifiers *)
 
+(* The keyword that an identifier spelled with Unicode escapes stands
+   for, if any: the lexer produces a plain identifier for [yi\u0065ld]. *)
+let keyword_of_token (tok : Js_token.t) =
+  match tok with
+  | T_IDENTIFIER (Utf8 name, raw) when not (String.equal name raw) -> (
+      match Js_token.is_keyword name with
+      | Some kw -> kw
+      | None -> tok)
+  | _ -> tok
+
 (* IdentifierReference[Yield, Await] / LabelIdentifier[Yield, Await]:
    identifiers and contextual keywords, plus [yield] and [await] when they
    are not keywords in the current context, and the words that are only
    reserved in strict mode code ([let], [static], ...). Strict mode code is
    not known to the parser: the words it reserves are rejected afterwards
-   (see [early_errors]). *)
+   (see [early_errors]). A reserved word spelled with escapes is not an
+   identifier either, and escaped [yield] or [await] follow the same rules
+   as the plain spelling. *)
 let ident_of_token ctx (tok : Js_token.t) =
   match tok with
-  | T_IDENTIFIER (name, _) -> Some name
-  | T_YIELD when not ctx.yield -> Some (utf8_s "yield")
-  | T_AWAIT when not ctx.await -> Some (utf8_s "await")
-  | _ when Js_token.is_contextual_keyword tok || Js_token.is_strict_mode_reserved_word tok
-    -> Some (utf8_s (Js_token.to_string tok))
-  | _ -> None
+  | T_IDENTIFIER ((Utf8 s as name), raw) when String.equal s raw -> Some name
+  | _ -> (
+      let name =
+        match tok with
+        | T_IDENTIFIER (name, _) -> Some name
+        | _ -> None
+      in
+      let kw = keyword_of_token tok in
+      match kw with
+      | T_IDENTIFIER _ -> name
+      | T_YIELD when not ctx.yield -> Some (utf8_s "yield")
+      | T_AWAIT when not ctx.await -> Some (utf8_s "await")
+      | _
+        when Js_token.is_contextual_keyword kw || Js_token.is_strict_mode_reserved_word kw
+        -> Some (utf8_s (Js_token.to_string kw))
+      | _ -> None)
 
 let is_identifier ctx tok = Option.is_some (ident_of_token ctx tok)
 
@@ -874,10 +896,13 @@ let parse_identifier t ctx =
       advance t;
       var pos name
   | None -> (
-      match cur t with
+      match keyword_of_token (cur t) with
       | T_YIELD -> error_msg t "`yield` is a reserved word in a generator"
       | T_AWAIT ->
           error_msg t "`await` is a reserved word in an async function or a module"
+      | tok when Js_token.is_reserved_word tok && not (Poly.equal tok (cur t)) ->
+          (* Spelled with escapes *)
+          error_msg t (Printf.sprintf "`%s` is a reserved word" (Js_token.to_string tok))
       | _ -> error t ~expected:"an identifier")
 
 (* BindingIdentifier[Yield, Await] accepts [yield] and [await] whatever the
@@ -1428,6 +1453,7 @@ and parse_primary_expression t ctx =
       EPrivName n
   | T_NEW -> parse_new t ctx
   | tok when is_identifier ctx tok -> EVar (parse_identifier t ctx)
+  | T_IDENTIFIER _ (* a reserved word spelled with escapes *)
   | T_YIELD
   | T_AWAIT
   | T_LET

@@ -2225,26 +2225,20 @@ let%expect_test "left-hand side of for-in and for-of" =
 let%expect_test "escaped keywords" =
   (* A reserved word spelled with a Unicode escape is not an identifier *)
   check `Script "var \\u0062reak = 1";
-  [%expect {|
-           var
-           break=1;
-           |}];
+  [%expect {| error (l:1, c:4): `break` is a reserved word |}];
   check `Script "\\u0062reak: 1";
-  [%expect {| \u{62}reak:1; |}];
+  [%expect {| error (l:1, c:0): `break` is a reserved word |}];
   check `Script "x = { bre\\u0061k }";
-  [%expect {| x={break:break}; |}];
+  [%expect {| error (l:1, c:17): unexpected `}`, expected `:`, `(`, `,` or `}` |}];
   check `Script "({ bre\\u0061k } = {})";
-  [%expect {| ({break}={}); |}];
+  [%expect {| error (l:1, c:14): unexpected `}`, expected `:`, `(`, `,` or `}` |}];
   check `Script "var cl\\u0061ss";
-  [%expect {|
-           var
-           class;
-           |}];
+  [%expect {| error (l:1, c:4): `class` is a reserved word |}];
   (* Nor can it be used as the keyword *)
   check `Script "\\u0061sync function f() {}";
   [%expect {| error (l:1, c:11): unexpected `function`, expected `;` |}];
   check `Script "v\\u0061r x";
-  [%expect {| error (l:1, c:9): unexpected identifier `x`, expected `;` |}];
+  [%expect {| error (l:1, c:0): `var` is a reserved word |}];
   (* It is still an IdentifierName *)
   check
     `Script
@@ -2256,23 +2250,15 @@ let%expect_test "escaped keywords" =
            |}];
   (* [yield] and [await] follow the rules of the context *)
   check `Script "function* g() { var yi\\u0065ld; }";
-  [%expect {|
-           function*g(){var
-           yield}
-           |}];
+  [%expect {| error (l:1, c:20): `yield` is a reserved word in a generator |}];
   check `Script "function* g() { yi\\u0065ld: ; }";
-  [%expect {| function*g(){\u{79}ield:;} |}];
+  [%expect {| error (l:1, c:16): `yield` is a reserved word in a generator |}];
   check `Script "async function f() { void \\u0061wait; }";
-  [%expect {|
-    async function
-    f(){void
-    await}
-    |}];
+  [%expect
+    {| error (l:1, c:26): `await` is a reserved word in an async function or a module |}];
   check `Module "var \\u0061wait";
-  [%expect {|
-    var
-    await;
-    |}];
+  [%expect
+    {| error (l:1, c:4): `await` is a reserved word in an async function or a module |}];
   check `Script "var yi\\u0065ld, \\u0061wait";
   [%expect {|
            var
