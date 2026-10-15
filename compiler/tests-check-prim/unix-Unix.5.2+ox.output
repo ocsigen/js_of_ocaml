@@ -337,6 +337,9 @@ caml_bytes_getf32u
 caml_bytes_setf32u
 caml_string_getf32u
 
+From +fail.js:
+caml_exn_with_arg
+
 From +fs.js:
 caml_ba_map_file
 caml_ba_map_file_bytecode

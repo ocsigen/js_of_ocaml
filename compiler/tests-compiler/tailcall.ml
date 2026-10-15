@@ -62,8 +62,7 @@ let%expect_test _ =
      }
      function even(x){return caml_trampoline(even$0(0, x));}
      var _b_ = even(1);
-     if(odd(1) === _b_)
-      throw caml_maybe_attach_backtrace([0, Assert_failure, _a_], 1);
+     if(odd(1) === _b_) throw caml_exn_with_arg(Assert_failure, _a_);
      try{odd(5000); _b_ = log_success(0); return _b_;}
      catch(exn){return caml_call1(log_failure, cst_too_much_recursion);}
     }
@@ -104,8 +103,7 @@ let%expect_test _ =
      }
      function even(x){return caml_trampoline(even$0(x));}
      var _b_ = even(1);
-     if(odd(1) === _b_)
-      throw caml_maybe_attach_backtrace([0, Assert_failure, _a_], 1);
+     if(odd(1) === _b_) throw caml_exn_with_arg(Assert_failure, _a_);
      try{odd(5000); _b_ = log_success(0); return _b_;}
      catch(exn){return caml_call1(log_failure, cst_too_much_recursion);}
     }

@@ -47,14 +47,12 @@ end
        "use strict";
        var
         runtime = globalThis.jsoo_runtime,
-        caml_maybe_attach_backtrace = runtime.caml_maybe_attach_backtrace,
+        caml_exn_with_arg = runtime.caml_exn_with_arg,
         Assert_failure = runtime.caml_get_global_predef("Assert_failure"),
         _a_ = [0, runtime.caml_string_of_jsbytes("test.ml"), 12, 38];
        runtime.foo
         (function(param){
-          function f(param){
-           throw caml_maybe_attach_backtrace([0, Assert_failure, _a_], 1);
-          }
+          function f(param){throw caml_exn_with_arg(Assert_failure, _a_);}
           var block = [0, f(0), 24029], dst = block, offset = 1;
           for(;;){
            var dst$0 = [0, f(0), 24029];

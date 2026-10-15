@@ -489,8 +489,7 @@ let add_substitute =
          if(40 === opening)
           var closing = 41;
          else{
-          if(123 !== opening)
-           throw caml_maybe_attach_backtrace([0, Assert_failure, _a_], 1);
+          if(123 !== opening) throw caml_exn_with_arg(Assert_failure, _a_);
           closing = 125;
          }
          var lim = caml_ml_string_length(s), k = 0, stop = new_start;
@@ -594,7 +593,7 @@ let () = print_endline (trim " ")
       if(i <= j){
        var len$0 = (j - i | 0) + 1 | 0;
        if(0 > i || 0 > len$0 || (caml_ml_bytes_length(s$0) - len$0 | 0) < i)
-        throw caml_maybe_attach_backtrace([0, Invalid_argument, s], 1);
+        throw caml_exn_with_arg(Invalid_argument, s);
        var r = caml_create_bytes(len$0);
        caml_blit_bytes(s$0, i, r, 0, len$0);
        var b = r;

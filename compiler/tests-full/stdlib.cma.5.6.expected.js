@@ -553,6 +553,7 @@
     runtime = globalThis.jsoo_runtime,
     caml_atomic_cas_field = runtime.caml_atomic_cas_field,
     caml_create_bytes = runtime.caml_create_bytes,
+    caml_exn_with_arg = runtime.caml_exn_with_arg,
     caml_float_of_string = runtime.caml_float_of_string,
     caml_get_global_predef = runtime.caml_get_global_predef,
     caml_int_of_string = runtime.caml_int_of_string,
@@ -598,12 +599,10 @@
     Undefined_recursive_module =
       caml_get_global_predef("Undefined_recursive_module");
    function failwith(s){
-     /*<<stdlib.ml:29:17>>*/ throw caml_maybe_attach_backtrace
-           ([0, Failure, s], 1);
+     /*<<stdlib.ml:29:17>>*/ throw caml_exn_with_arg(Failure, s);
     /*<<stdlib.ml:29:33>>*/ }
    function invalid_arg(s){
-     /*<<stdlib.ml:30:20>>*/ throw caml_maybe_attach_backtrace
-           ([0, Invalid_argument, s], 1);
+     /*<<stdlib.ml:30:20>>*/ throw caml_exn_with_arg(Invalid_argument, s);
     /*<<stdlib.ml:30:45>>*/ }
    var
     Exit =
@@ -2150,6 +2149,7 @@
    "use strict";
    var
     runtime = globalThis.jsoo_runtime,
+    caml_exn_with_arg = runtime.caml_exn_with_arg,
     caml_get_global = runtime.caml_get_global,
     caml_maybe_attach_backtrace = runtime.caml_maybe_attach_backtrace;
    function caml_call1(f, a0){
@@ -2934,8 +2934,7 @@
                /*<<seq.ml:636:17>>*/ return transpose(tails, _i_);
              }] /*<<seq.ml:636:32>>*/ ;
      /*<<seq.ml:632:11>>*/ if(is_empty(tails))  /*<<seq.ml:633:4>>*/ return 0;
-     /*<<seq.ml:632:27>>*/ throw caml_maybe_attach_backtrace
-           ([0, Assert_failure, _b_], 1);
+     /*<<seq.ml:632:27>>*/ throw caml_exn_with_arg(Assert_failure, _b_);
     /*<<seq.ml:636:33>>*/ }
    function _a_(remainders, xss, _g_){
      /*<<seq.ml:643:8>>*/ _g_ = caml_call1(xss, 0);
@@ -3843,9 +3842,9 @@
    "use strict";
    var
     runtime = globalThis.jsoo_runtime,
+    caml_exn_with_arg = runtime.caml_exn_with_arg,
     caml_format_int = runtime.caml_format_int,
     caml_hash = runtime.caml_hash,
-    caml_maybe_attach_backtrace = runtime.caml_maybe_attach_backtrace,
     Assert_failure = runtime.caml_get_global_predef("Assert_failure"),
     Stdlib = runtime.caml_get_global("Stdlib");
    function succ(u){
@@ -3948,14 +3947,12 @@
     _b_ = [0, cst_uchar_ml, 101, 18];
    function utf_8_byte_length(u){
      /*<<uchar.ml:101:9>>*/ if(0 > u)
-      /*<<uchar.ml:101:18>>*/ throw caml_maybe_attach_backtrace
-            ([0, Assert_failure, _b_], 1);
+      /*<<uchar.ml:101:18>>*/ throw caml_exn_with_arg(Assert_failure, _b_);
      /*<<uchar.ml:102:9>>*/ if(127 >= u)  /*<<uchar.ml:102:24>>*/ return 1;
      /*<<uchar.ml:103:9>>*/ if(2047 >= u)  /*<<uchar.ml:103:24>>*/ return 2;
      /*<<uchar.ml:104:9>>*/ if(65535 >= u)  /*<<uchar.ml:104:24>>*/ return 3;
      /*<<uchar.ml:105:9>>*/ if(1114111 < u)
-      /*<<uchar.ml:106:7>>*/ throw caml_maybe_attach_backtrace
-            ([0, Assert_failure, _a_], 1);
+      /*<<uchar.ml:106:7>>*/ throw caml_exn_with_arg(Assert_failure, _a_);
      /*<<uchar.ml:105:26>>*/ return 4;
     /*<<uchar.ml:106:19>>*/ }
    var
@@ -3963,12 +3960,10 @@
     _d_ = [0, cst_uchar_ml, 109, 18];
    function utf_16_byte_length(u){
      /*<<uchar.ml:109:9>>*/ if(0 > u)
-      /*<<uchar.ml:109:18>>*/ throw caml_maybe_attach_backtrace
-            ([0, Assert_failure, _d_], 1);
+      /*<<uchar.ml:109:18>>*/ throw caml_exn_with_arg(Assert_failure, _d_);
      /*<<uchar.ml:110:9>>*/ if(65535 >= u)  /*<<uchar.ml:110:24>>*/ return 2;
      /*<<uchar.ml:111:9>>*/ if(1114111 < u)
-      /*<<uchar.ml:112:7>>*/ throw caml_maybe_attach_backtrace
-            ([0, Assert_failure, _c_], 1);
+      /*<<uchar.ml:112:7>>*/ throw caml_exn_with_arg(Assert_failure, _c_);
      /*<<uchar.ml:111:26>>*/ return 4;
     /*<<uchar.ml:112:19>>*/ }
    var
@@ -5864,6 +5859,7 @@
     caml_array_make = runtime.caml_array_make,
     caml_array_sub = runtime.caml_array_sub,
     caml_check_bound = runtime.caml_check_bound,
+    caml_exn_with_arg = runtime.caml_exn_with_arg,
     caml_get_global = runtime.caml_get_global,
     caml_maybe_attach_backtrace = runtime.caml_maybe_attach_backtrace,
     caml_wrap_exception = runtime.caml_wrap_exception;
@@ -6510,8 +6506,7 @@
         /*<<array.ml:386:11>>*/ return i31 + 1 | 0;
      }
       /*<<array.ml:387:11>>*/ if(i31 < l)  /*<<array.ml:387:27>>*/ return i31;
-      /*<<array.ml:387:36>>*/ throw caml_maybe_attach_backtrace
-            ([0, Bottom, i], 1);
+      /*<<array.ml:387:36>>*/ throw caml_exn_with_arg(Bottom, i);
      /*<<array.ml:387:52>>*/ }
     var
      l =  /*<<array.ml:415:2>>*/ a.length - 1,
@@ -6572,7 +6567,7 @@
        for(;;){
         var father =  /*<<array.ml:406:4>>*/ (i$3 - 1 | 0) / 3 | 0;
          /*<<array.ml:407:4>>*/ if(i$3 === father)
-         throw caml_maybe_attach_backtrace([0, Assert_failure, _a_], 1);
+         throw caml_exn_with_arg(Assert_failure, _a_);
          /*<<array.ml:408:11>>*/ if
          (0
           <=
@@ -7421,6 +7416,7 @@
     caml_bytes_unsafe_get = runtime.caml_bytes_unsafe_get,
     caml_bytes_unsafe_set = runtime.caml_bytes_unsafe_set,
     caml_create_bytes = runtime.caml_create_bytes,
+    caml_exn_with_arg = runtime.caml_exn_with_arg,
     caml_fill_bytes = runtime.caml_fill_bytes,
     caml_get_global = runtime.caml_get_global,
     caml_int32_bswap = runtime.caml_int32_bswap,
@@ -8484,8 +8480,7 @@
      max =  /*<<bytes.ml:652:2>>*/ caml_ml_bytes_length(b) - 1 | 0,
      u$0 =  /*<<bytes.ml:653:8>>*/ Stdlib_Uchar[10].call(null, u);
      /*<<bytes.ml:654:11>>*/ if(0 > u$0)
-      /*<<bytes.ml:654:20>>*/ throw caml_maybe_attach_backtrace
-            ([0, Assert_failure, _c_], 1);
+      /*<<bytes.ml:654:20>>*/ throw caml_exn_with_arg(Assert_failure, _c_);
      /*<<bytes.ml:655:11>>*/ if(127 >= u$0){
       /*<<bytes.ml:656:6>>*/ caml_bytes_set(b, i, u$0);
       /*<<bytes.ml:656:21>>*/ return 1;
@@ -8511,8 +8506,7 @@
                3) /*<<bytes.ml:679:21>>*/ ;
     }
      /*<<bytes.ml:671:11>>*/ if(1114111 < u$0)
-      /*<<bytes.ml:679:9>>*/ throw caml_maybe_attach_backtrace
-            ([0, Assert_failure, _b_], 1);
+      /*<<bytes.ml:679:9>>*/ throw caml_exn_with_arg(Assert_failure, _b_);
     var last =  /*<<bytes.ml:672:6>>*/ i + 3 | 0;
      /*<<bytes.ml:673:6>>*/ return max < last
             ? 0
@@ -8721,8 +8715,7 @@
      /*<<bytes.ml:764:2>>*/ if(0 <= i && max >= i){
      var u$0 =  /*<<bytes.ml:765:8>>*/ Stdlib_Uchar[10].call(null, u);
       /*<<bytes.ml:766:11>>*/ if(0 > u$0)
-       /*<<bytes.ml:766:20>>*/ throw caml_maybe_attach_backtrace
-             ([0, Assert_failure, _e_], 1);
+       /*<<bytes.ml:766:20>>*/ throw caml_exn_with_arg(Assert_failure, _e_);
       /*<<bytes.ml:767:11>>*/ if(65535 >= u$0){
       var last$0 =  /*<<bytes.ml:768:6>>*/ i + 1 | 0;
        /*<<bytes.ml:769:6>>*/ return max < last$0
@@ -8730,8 +8723,7 @@
               : ( /*<<bytes.ml:769:33>>*/ unsafe_set_uint16_be(b, i, u$0), 2) /*<<bytes.ml:777:21>>*/ ;
      }
       /*<<bytes.ml:770:11>>*/ if(1114111 < u$0)
-       /*<<bytes.ml:777:9>>*/ throw caml_maybe_attach_backtrace
-             ([0, Assert_failure, _d_], 1);
+       /*<<bytes.ml:777:9>>*/ throw caml_exn_with_arg(Assert_failure, _d_);
      var last =  /*<<bytes.ml:771:6>>*/ i + 3 | 0;
       /*<<bytes.ml:772:6>>*/ if(max < last)  /*<<bytes.ml:772:25>>*/ return 0;
      var
@@ -8805,8 +8797,7 @@
      /*<<bytes.ml:818:2>>*/ if(0 <= i && max >= i){
      var u$0 =  /*<<bytes.ml:819:8>>*/ Stdlib_Uchar[10].call(null, u);
       /*<<bytes.ml:820:11>>*/ if(0 > u$0)
-       /*<<bytes.ml:820:20>>*/ throw caml_maybe_attach_backtrace
-             ([0, Assert_failure, _g_], 1);
+       /*<<bytes.ml:820:20>>*/ throw caml_exn_with_arg(Assert_failure, _g_);
       /*<<bytes.ml:821:11>>*/ if(65535 >= u$0){
       var last$0 =  /*<<bytes.ml:822:6>>*/ i + 1 | 0;
        /*<<bytes.ml:823:6>>*/ return max < last$0
@@ -8814,8 +8805,7 @@
               : ( /*<<bytes.ml:823:33>>*/ unsafe_set_uint16_le(b, i, u$0), 2) /*<<bytes.ml:831:21>>*/ ;
      }
       /*<<bytes.ml:824:11>>*/ if(1114111 < u$0)
-       /*<<bytes.ml:831:9>>*/ throw caml_maybe_attach_backtrace
-             ([0, Assert_failure, _f_], 1);
+       /*<<bytes.ml:831:9>>*/ throw caml_exn_with_arg(Assert_failure, _f_);
      var last =  /*<<bytes.ml:825:6>>*/ i + 3 | 0;
       /*<<bytes.ml:826:6>>*/ if(max < last)  /*<<bytes.ml:826:25>>*/ return 0;
      var
@@ -10821,6 +10811,7 @@
     runtime = globalThis.jsoo_runtime,
     caml_array_make = runtime.caml_array_make,
     caml_check_bound = runtime.caml_check_bound,
+    caml_exn_with_arg = runtime.caml_exn_with_arg,
     caml_float_compare = runtime.caml_float_compare,
     caml_floatarray_concat = runtime.caml_floatarray_concat,
     caml_floatarray_create = runtime.caml_floatarray_create,
@@ -11413,8 +11404,7 @@
         /*<<float.ml:461:13>>*/ return i31 + 1 | 0;
      }
       /*<<float.ml:462:13>>*/ if(i31 < l)  /*<<float.ml:462:29>>*/ return i31;
-      /*<<float.ml:462:38>>*/ throw caml_maybe_attach_backtrace
-            ([0, Bottom, i], 1);
+      /*<<float.ml:462:38>>*/ throw caml_exn_with_arg(Bottom, i);
      /*<<float.ml:462:54>>*/ }
     var
      l =  /*<<float.ml:490:4>>*/ a.length - 1,
@@ -11475,7 +11465,7 @@
        for(;;){
         var father =  /*<<float.ml:481:6>>*/ (i$3 - 1 | 0) / 3 | 0;
          /*<<float.ml:482:6>>*/ if(i$3 === father)
-         throw caml_maybe_attach_backtrace([0, Assert_failure, _a_], 1);
+         throw caml_exn_with_arg(Assert_failure, _a_);
          /*<<float.ml:483:13>>*/ if
          (0
           <=
@@ -11860,6 +11850,7 @@
    var
     runtime = globalThis.jsoo_runtime,
     caml_div = runtime.caml_div,
+    caml_exn_with_arg = runtime.caml_exn_with_arg,
     caml_get_global = runtime.caml_get_global,
     caml_hash = runtime.caml_hash,
     caml_int_compare = runtime.caml_int_compare,
@@ -11887,8 +11878,8 @@
         /*<<int32.ml:61:14>>*/ };
    else{
      /*<<?>>*/ if(64 !== match)
-      /*<<int32.ml:67:6>>*/ throw caml_maybe_attach_backtrace
-            ([0, Assert_failure, [0, "int32.ml", 67, 6]], 1);
+      /*<<int32.ml:67:6>>*/ throw caml_exn_with_arg
+            (Assert_failure, [0, "int32.ml", 67, 6]);
      /*<<int32.ml:65:6>>*/ unsigned_to_int =
      function(n){
        /*<<int32.ml:65:15>>*/ return [0, n & -1];
@@ -13165,6 +13156,7 @@
    "use strict";
    var
     runtime = globalThis.jsoo_runtime,
+    caml_exn_with_arg = runtime.caml_exn_with_arg,
     caml_get_global = runtime.caml_get_global,
     caml_maybe_attach_backtrace = runtime.caml_maybe_attach_backtrace;
    function caml_call1(f, a0){
@@ -14031,8 +14023,8 @@
                l$0 =  /*<<set.ml:592:32>>*/ _i_[2],
                left = _i_[1];
                /*<<set.ml:593:10>>*/ if(! l$0)
-                /*<<set.ml:594:18>>*/ throw caml_maybe_attach_backtrace
-                      ([0, Assert_failure, _c_], 1);
+                /*<<set.ml:594:18>>*/ throw caml_exn_with_arg
+                      (Assert_failure, _c_);
               var
                l$1 =  /*<<set.ml:593:10>>*/ l$0[2],
                mid = l$0[1],
@@ -14201,6 +14193,7 @@
    "use strict";
    var
     runtime = globalThis.jsoo_runtime,
+    caml_exn_with_arg = runtime.caml_exn_with_arg,
     caml_get_global = runtime.caml_get_global,
     caml_maybe_attach_backtrace = runtime.caml_maybe_attach_backtrace;
    function caml_call1(f, a0){
@@ -14835,8 +14828,7 @@
          }
          else if(! s2)  /*<<map.ml:410:26>>*/ return 0;
           /*<<map.ml:409:6>>*/ if(! s2)
-           /*<<map.ml:418:10>>*/ throw caml_maybe_attach_backtrace
-                 ([0, Assert_failure, _b_], 1);
+           /*<<map.ml:418:10>>*/ throw caml_exn_with_arg(Assert_failure, _b_);
          var
           r2$0 =  /*<<map.ml:409:6>>*/ s2[4],
           d2$0 = s2[3],
@@ -15564,6 +15556,7 @@
     caml_bytes_set = runtime.caml_bytes_set,
     caml_bytes_unsafe_set = runtime.caml_bytes_unsafe_set,
     caml_create_bytes = runtime.caml_create_bytes,
+    caml_exn_with_arg = runtime.caml_exn_with_arg,
     caml_get_global = runtime.caml_get_global,
     caml_int32_bswap = runtime.caml_int32_bswap,
     caml_int64_bswap = runtime.caml_int64_bswap,
@@ -15905,8 +15898,8 @@
           var closing =  /*<<buffer.ml:220:11>>*/ 41;
          else{
            /*<<buffer.ml:219:14>>*/ if(123 !== opening)
-            /*<<buffer.ml:222:9>>*/ throw caml_maybe_attach_backtrace
-                  ([0, Assert_failure, _a_], 1);
+            /*<<buffer.ml:222:9>>*/ throw caml_exn_with_arg
+                  (Assert_failure, _a_);
            /*<<buffer.ml:221:11>>*/ closing = 125;
          }
          var
@@ -16238,8 +16231,8 @@
    "use strict";
    var
     runtime = globalThis.jsoo_runtime,
+    caml_exn_with_arg = runtime.caml_exn_with_arg,
     caml_get_global = runtime.caml_get_global,
-    caml_maybe_attach_backtrace = runtime.caml_maybe_attach_backtrace,
     Stdlib_Mutex = caml_get_global("Stdlib__Mutex"),
     Stdlib_Condition = caml_get_global("Stdlib__Condition"),
     Stdlib = caml_get_global("Stdlib");
@@ -16261,8 +16254,8 @@
       /*<<semaphore.ml:36:30>>*/ return Stdlib_Mutex[4].call(null, s[1]) /*<<semaphore.ml:41:5>>*/ ;
     }
      /*<<semaphore.ml:39:4>>*/ Stdlib_Mutex[4].call(null, s[1]);
-     /*<<semaphore.ml:39:22>>*/ throw caml_maybe_attach_backtrace
-           ([0, Stdlib[11], "Semaphore.Counting.release: overflow"], 1);
+     /*<<semaphore.ml:39:22>>*/ throw caml_exn_with_arg
+           (Stdlib[11], "Semaphore.Counting.release: overflow");
     /*<<semaphore.ml:41:5>>*/ }
    function acquire(s){
      /*<<semaphore.ml:44:2>>*/ Stdlib_Mutex[2].call(null, s[1]);
@@ -16336,6 +16329,7 @@
     caml_blit_string = runtime.caml_blit_string,
     caml_bytes_set = runtime.caml_bytes_set,
     caml_create_bytes = runtime.caml_create_bytes,
+    caml_exn_with_arg = runtime.caml_exn_with_arg,
     caml_format_float = runtime.caml_format_float,
     caml_format_int = runtime.caml_format_int,
     caml_get_global = runtime.caml_get_global,
@@ -17845,8 +17839,8 @@
                   case 14:
                    break e;
                 }
-                /*<<camlinternalFormat.ml:836:26>>*/ throw caml_maybe_attach_backtrace
-                      ([0, Assert_failure, _o_], 1);
+                /*<<camlinternalFormat.ml:836:26>>*/ throw caml_exn_with_arg
+                      (Assert_failure, _o_);
               case 9:
                var
                 rest1$8 =  /*<<camlinternalFormat.ml:803:17>>*/ ty1[3],
@@ -17885,8 +17879,8 @@
                   case 8:
                    break f;
                 }
-                /*<<camlinternalFormat.ml:846:28>>*/ throw caml_maybe_attach_backtrace
-                      ([0, Assert_failure, _p_], 1);
+                /*<<camlinternalFormat.ml:846:28>>*/ throw caml_exn_with_arg
+                      (Assert_failure, _p_);
               case 10:
                var rest1$9 =  /*<<camlinternalFormat.ml:803:17>>*/ ty1[1];
                if(typeof ty2 !== "number" && 10 === ty2[0]){
@@ -17894,8 +17888,8 @@
                  /*<<camlinternalFormat.ml:813:47>>*/ return [10,
                         trans(rest1$9, rest2$9)] /*<<camlinternalFormat.ml:813:66>>*/ ;
                }
-                /*<<camlinternalFormat.ml:814:21>>*/ throw caml_maybe_attach_backtrace
-                      ([0, Assert_failure, _q_], 1);
+                /*<<camlinternalFormat.ml:814:21>>*/ throw caml_exn_with_arg
+                      (Assert_failure, _q_);
               case 11:
                var rest1$10 =  /*<<camlinternalFormat.ml:803:17>>*/ ty1[1];
                if(typeof ty2 !== "number")
@@ -17907,8 +17901,8 @@
                   case 10:
                    break a;
                 }
-                /*<<camlinternalFormat.ml:818:21>>*/ throw caml_maybe_attach_backtrace
-                      ([0, Assert_failure, _r_], 1);
+                /*<<camlinternalFormat.ml:818:21>>*/ throw caml_exn_with_arg
+                      (Assert_failure, _r_);
               case 12:
                var rest1$11 =  /*<<camlinternalFormat.ml:803:17>>*/ ty1[1];
                if(typeof ty2 !== "number")
@@ -17922,8 +17916,8 @@
                   case 11:
                    break b;
                 }
-                /*<<camlinternalFormat.ml:822:19>>*/ throw caml_maybe_attach_backtrace
-                      ([0, Assert_failure, _s_], 1);
+                /*<<camlinternalFormat.ml:822:19>>*/ throw caml_exn_with_arg
+                      (Assert_failure, _s_);
               case 13:
                var rest1$12 =  /*<<camlinternalFormat.ml:803:17>>*/ ty1[1];
                if(typeof ty2 !== "number")
@@ -17939,8 +17933,8 @@
                   case 12:
                    break c;
                 }
-                /*<<camlinternalFormat.ml:826:22>>*/ throw caml_maybe_attach_backtrace
-                      ([0, Assert_failure, _t_], 1);
+                /*<<camlinternalFormat.ml:826:22>>*/ throw caml_exn_with_arg
+                      (Assert_failure, _t_);
               default:
                var rest1$13 =  /*<<camlinternalFormat.ml:803:17>>*/ ty1[1];
                if(typeof ty2 !== "number")
@@ -17958,11 +17952,11 @@
                   case 13:
                    break d;
                 }
-                /*<<camlinternalFormat.ml:831:30>>*/ throw caml_maybe_attach_backtrace
-                      ([0, Assert_failure, _u_], 1);
+                /*<<camlinternalFormat.ml:831:30>>*/ throw caml_exn_with_arg
+                      (Assert_failure, _u_);
             }
-             /*<<camlinternalFormat.ml:851:23>>*/ throw caml_maybe_attach_backtrace
-                   ([0, Assert_failure, _n_], 1);
+             /*<<camlinternalFormat.ml:851:23>>*/ throw caml_exn_with_arg
+                   (Assert_failure, _n_);
            }
             /*<<camlinternalFormat.ml:803:17>>*/ if(typeof ty2 === "number")
              /*<<camlinternalFormat.ml:849:34>>*/ return 0;
@@ -17981,30 +17975,30 @@
               break f;
              case 9: break;
              default:
-               /*<<camlinternalFormat.ml:850:23>>*/ throw caml_maybe_attach_backtrace
-                     ([0, Assert_failure, _f_], 1);
+               /*<<camlinternalFormat.ml:850:23>>*/ throw caml_exn_with_arg
+                     (Assert_failure, _f_);
            }
           }
-           /*<<camlinternalFormat.ml:847:28>>*/ throw caml_maybe_attach_backtrace
-                 ([0, Assert_failure, _h_], 1);
+           /*<<camlinternalFormat.ml:847:28>>*/ throw caml_exn_with_arg
+                 (Assert_failure, _h_);
          }
-          /*<<camlinternalFormat.ml:837:26>>*/ throw caml_maybe_attach_backtrace
-                ([0, Assert_failure, _g_], 1);
+          /*<<camlinternalFormat.ml:837:26>>*/ throw caml_exn_with_arg
+                (Assert_failure, _g_);
         }
-         /*<<camlinternalFormat.ml:832:30>>*/ throw caml_maybe_attach_backtrace
-               ([0, Assert_failure, _m_], 1);
+         /*<<camlinternalFormat.ml:832:30>>*/ throw caml_exn_with_arg
+               (Assert_failure, _m_);
        }
-        /*<<camlinternalFormat.ml:827:22>>*/ throw caml_maybe_attach_backtrace
-              ([0, Assert_failure, _l_], 1);
+        /*<<camlinternalFormat.ml:827:22>>*/ throw caml_exn_with_arg
+              (Assert_failure, _l_);
       }
-       /*<<camlinternalFormat.ml:823:19>>*/ throw caml_maybe_attach_backtrace
-             ([0, Assert_failure, _k_], 1);
+       /*<<camlinternalFormat.ml:823:19>>*/ throw caml_exn_with_arg
+             (Assert_failure, _k_);
      }
-      /*<<camlinternalFormat.ml:819:21>>*/ throw caml_maybe_attach_backtrace
-            ([0, Assert_failure, _j_], 1);
+      /*<<camlinternalFormat.ml:819:21>>*/ throw caml_exn_with_arg
+            (Assert_failure, _j_);
     }
-     /*<<camlinternalFormat.ml:815:21>>*/ throw caml_maybe_attach_backtrace
-           ([0, Assert_failure, _i_], 1);
+     /*<<camlinternalFormat.ml:815:21>>*/ throw caml_exn_with_arg
+           (Assert_failure, _i_);
     /*<<camlinternalFormat.ml:851:35>>*/ }
    function fmtty_of_fmt(fmtty$4){
     var fmtty =  /*<<camlinternalFormat.ml:863:13>>*/ fmtty$4;
@@ -19640,8 +19634,8 @@
             }
             break;
            case 19:
-             /*<<camlinternalFormat.ml:1558:4>>*/ throw caml_maybe_attach_backtrace
-                   ([0, Assert_failure, _w_], 1);
+             /*<<camlinternalFormat.ml:1558:4>>*/ throw caml_exn_with_arg
+                   (Assert_failure, _w_);
            case 20:
              /*<<camlinternalFormat.ml:1518:17>>*/ _ag_ = 9; continue a;
            case 21:
@@ -19905,8 +19899,8 @@
    function make_ignored_param$0(counter, k, acc, ign, fmt){
      /*<<camlinternalFormat.ml:1613:21>>*/ if(typeof ign === "number"){
      if(2 === ign)
-       /*<<camlinternalFormat.ml:1626:39>>*/ throw caml_maybe_attach_backtrace
-             ([0, Assert_failure, _x_], 1);
+       /*<<camlinternalFormat.ml:1626:39>>*/ throw caml_exn_with_arg
+             (Assert_failure, _x_);
       /*<<camlinternalFormat.ml:1613:21>>*/ return counter < 50
              ? make_invalid_arg(counter + 1 | 0, k, acc, fmt)
              : caml_trampoline_return(make_invalid_arg, [0, k, acc, fmt]) /*<<camlinternalFormat.ml:1629:65>>*/ ;
@@ -20010,11 +20004,11 @@
          /*<<camlinternalFormat.ml:1648:40>>*/ return make_from_fmtty
                 (k, acc, rest$11, fmt) /*<<camlinternalFormat.ml:1648:70>>*/ ;} /*<<camlinternalFormat.ml:1648:31>>*/ ;
       case 13:
-        /*<<camlinternalFormat.ml:1649:31>>*/ throw caml_maybe_attach_backtrace
-              ([0, Assert_failure, _y_], 1);
+        /*<<camlinternalFormat.ml:1649:31>>*/ throw caml_exn_with_arg
+              (Assert_failure, _y_);
       default:
-        /*<<camlinternalFormat.ml:1650:31>>*/ throw caml_maybe_attach_backtrace
-              ([0, Assert_failure, _z_], 1);
+        /*<<camlinternalFormat.ml:1650:31>>*/ throw caml_exn_with_arg
+              (Assert_failure, _z_);
     }
     /*<<camlinternalFormat.ml:1655:61>>*/ }
    function make_from_fmtty(k, acc, fmtty, fmt){
@@ -20281,8 +20275,8 @@
                  }
                  break;
                 case 19:
-                  /*<<camlinternalFormat.ml:1830:8>>*/ throw caml_maybe_attach_backtrace
-                        ([0, Assert_failure, _A_], 1);
+                  /*<<camlinternalFormat.ml:1830:8>>*/ throw caml_exn_with_arg
+                        (Assert_failure, _A_);
                 case 21:
                  break i;
                 case 23:
@@ -21842,8 +21836,8 @@
              /*<<camlinternalFormat.ml:2928:13>>*/ counter = 2;
             break b;
            }
-            /*<<camlinternalFormat.ml:2928:34>>*/ throw caml_maybe_attach_backtrace
-                  ([0, Assert_failure, _Z_], 1);
+            /*<<camlinternalFormat.ml:2928:34>>*/ throw caml_exn_with_arg
+                  (Assert_failure, _Z_);
           }
            /*<<camlinternalFormat.ml:2470:9>>*/ if(get_ign(0)){
            var
@@ -21965,8 +21959,8 @@
              /*<<camlinternalFormat.ml:2984:20>>*/ kind = 5;
             break b;
            }
-            /*<<camlinternalFormat.ml:2986:11>>*/ throw caml_maybe_attach_backtrace
-                  ([0, Assert_failure, _$_], 1);
+            /*<<camlinternalFormat.ml:2986:11>>*/ throw caml_exn_with_arg
+                  (Assert_failure, _$_);
           }
           var
            fconv =  /*<<camlinternalFormat.ml:2987:4>>*/ [0, flag, kind],
@@ -22767,8 +22761,8 @@
        next_ind = _ad_[1];
        /*<<camlinternalFormat.ml:2862:8>>*/ return [0, next_ind, - n | 0];
      }
-      /*<<camlinternalFormat.ml:2866:11>>*/ throw caml_maybe_attach_backtrace
-            ([0, Assert_failure, _X_], 1);
+      /*<<camlinternalFormat.ml:2866:11>>*/ throw caml_exn_with_arg
+            (Assert_failure, _X_);
      /*<<camlinternalFormat.ml:2866:23>>*/ }
     function add_literal(lit_start, str_ind, fmt){
      var
@@ -22982,8 +22976,8 @@
        }
       else{
         /*<<camlinternalFormat.ml:2932:4>>*/ if(! space)
-         /*<<camlinternalFormat.ml:2964:28>>*/ throw caml_maybe_attach_backtrace
-               ([0, Assert_failure, ___], 1);
+         /*<<camlinternalFormat.ml:2964:28>>*/ throw caml_exn_with_arg
+               (Assert_failure, ___);
         /*<<camlinternalFormat.ml:2957:6>>*/ if(! legacy_behavior$0)
          /*<<camlinternalFormat.ml:2959:11>>*/ return incompatible_flag
                 (pct_ind, str_ind, symb, cst$1) /*<<camlinternalFormat.ml:2964:40>>*/ ;
@@ -23243,6 +23237,7 @@
     runtime = globalThis.jsoo_runtime,
     caml_check_bound = runtime.caml_check_bound,
     caml_equal = runtime.caml_equal,
+    caml_exn_with_arg = runtime.caml_exn_with_arg,
     caml_fresh_oo_id = runtime.caml_fresh_oo_id,
     caml_get_global = runtime.caml_get_global,
     caml_maybe_attach_backtrace = runtime.caml_maybe_attach_backtrace,
@@ -23312,7 +23307,7 @@
    }
    var cst_help =  /*<<?>>*/ "-help", _e_ = [0, cst_help];
    function help_action(param){
-     /*<<arg.ml:91:21>>*/ throw caml_maybe_attach_backtrace([0, Stop, _e_], 1);
+     /*<<arg.ml:91:21>>*/ throw caml_exn_with_arg(Stop, _e_);
     /*<<arg.ml:91:51>>*/ }
    var cst_help$0 =  /*<<?>>*/ "--help";
    function add_help(speclist){
@@ -23485,8 +23480,7 @@
         catch(exn){
          var exn$1 =  /*<<?>>*/ caml_wrap_exception(exn);
          if(exn$1 === Stdlib[8])
-           /*<<arg.ml:163:28>>*/ throw caml_maybe_attach_backtrace
-                 ([0, Stop, [0, s]], 1);
+           /*<<arg.ml:163:28>>*/ throw caml_exn_with_arg(Stop, [0, s]);
           /*<<?>>*/ throw caml_maybe_attach_backtrace(exn$1, 0);
         }
        }
@@ -23497,8 +23491,8 @@
             /*<<arg.ml:166:10>>*/ if(! follow$0)
              /*<<arg.ml:167:20>>*/ return;
            var arg =  /*<<arg.ml:166:10>>*/ follow$0[1];
-            /*<<arg.ml:168:24>>*/ throw caml_maybe_attach_backtrace
-                  ([0, Stop, [1, s$0, arg, "no argument"]], 1);
+            /*<<arg.ml:168:24>>*/ throw caml_exn_with_arg
+                  (Stop, [1, s$0, arg, "no argument"]);
            /*<<arg.ml:168:68>>*/ },
         get_arg =
            /*<<arg.ml:169:8>>*/ function(_w_){
@@ -23508,8 +23502,7 @@
            }
             /*<<arg.ml:172:14>>*/ if
             ((current[1] + 1 | 0) >= argv[1].length - 1)
-             /*<<arg.ml:173:19>>*/ throw caml_maybe_attach_backtrace
-                   ([0, Stop, [2, s$0]], 1);
+             /*<<arg.ml:173:19>>*/ throw caml_exn_with_arg(Stop, [2, s$0]);
             /*<<arg.ml:172:58>>*/ _w_ = current[1] + 1 | 0;
            return caml_check_bound(argv[1], _w_)[_w_ + 1] /*<<arg.ml:172:78>>*/ ;
            /*<<arg.ml:174:27>>*/ },
@@ -23531,8 +23524,8 @@
                arg =  /*<<arg.ml:184:22>>*/ get_arg$0(0),
                _w_ =  /*<<arg.ml:185:24>>*/ Stdlib[31].call(null, arg);
                /*<<arg.ml:185:46>>*/ if(! _w_)
-                /*<<arg.ml:186:22>>*/ throw caml_maybe_attach_backtrace
-                      ([0, Stop, [1, s$0, arg, "a boolean"]], 1);
+                /*<<arg.ml:186:22>>*/ throw caml_exn_with_arg
+                      (Stop, [1, s$0, arg, "a boolean"]);
               var s =  /*<<arg.ml:185:46>>*/ _w_[1];
                /*<<arg.ml:187:24>>*/ caml_call1(f$0, s);
                /*<<arg.ml:189:12>>*/ return consume_arg$0(0) /*<<arg.ml:264:54>>*/ ;
@@ -23562,8 +23555,8 @@
                arg$1 =  /*<<arg.ml:209:22>>*/ get_arg$0(0),
                _v_ =  /*<<arg.ml:210:24>>*/ Stdlib[34].call(null, arg$1);
                /*<<arg.ml:210:45>>*/ if(! _v_)
-                /*<<arg.ml:211:22>>*/ throw caml_maybe_attach_backtrace
-                      ([0, Stop, [1, s$0, arg$1, _w_]], 1);
+                /*<<arg.ml:211:22>>*/ throw caml_exn_with_arg
+                      (Stop, [1, s$0, arg$1, _w_]);
               var x =  /*<<arg.ml:210:45>>*/ _v_[1];
                /*<<arg.ml:212:24>>*/ caml_call1(f$2, x);
                /*<<arg.ml:214:12>>*/ return consume_arg$0(0) /*<<arg.ml:264:54>>*/ ;
@@ -23573,8 +23566,8 @@
                arg$2 =  /*<<arg.ml:216:22>>*/ get_arg$0(0),
                _v_ =  /*<<arg.ml:217:24>>*/ Stdlib[34].call(null, arg$2);
                /*<<arg.ml:217:45>>*/ if(! _v_)
-                /*<<arg.ml:218:22>>*/ throw caml_maybe_attach_backtrace
-                      ([0, Stop, [1, s$0, arg$2, _w_]], 1);
+                /*<<arg.ml:218:22>>*/ throw caml_exn_with_arg
+                      (Stop, [1, s$0, arg$2, _w_]);
               var x$0 =  /*<<arg.ml:217:45>>*/ _v_[1];
                /*<<arg.ml:219:24>>*/ r$2[1] = x$0;
                /*<<arg.ml:221:12>>*/ return consume_arg$0(0) /*<<arg.ml:264:54>>*/ ;
@@ -23584,8 +23577,8 @@
                arg$3 =  /*<<arg.ml:223:22>>*/ get_arg$0(0),
                _v_ =  /*<<arg.ml:224:24>>*/ Stdlib[36].call(null, arg$3);
                /*<<arg.ml:224:47>>*/ if(! _v_)
-                /*<<arg.ml:225:22>>*/ throw caml_maybe_attach_backtrace
-                      ([0, Stop, [1, s$0, arg$3, cst_a_float]], 1);
+                /*<<arg.ml:225:22>>*/ throw caml_exn_with_arg
+                      (Stop, [1, s$0, arg$3, cst_a_float]);
               var x$1 =  /*<<arg.ml:224:47>>*/ _v_[1];
                /*<<arg.ml:226:24>>*/ caml_call1(f$3, x$1);
                /*<<arg.ml:228:12>>*/ return consume_arg$0(0) /*<<arg.ml:264:54>>*/ ;
@@ -23595,8 +23588,8 @@
                arg$4 =  /*<<arg.ml:230:22>>*/ get_arg$0(0),
                _v_ =  /*<<arg.ml:231:24>>*/ Stdlib[36].call(null, arg$4);
                /*<<arg.ml:231:47>>*/ if(! _v_)
-                /*<<arg.ml:232:22>>*/ throw caml_maybe_attach_backtrace
-                      ([0, Stop, [1, s$0, arg$4, cst_a_float]], 1);
+                /*<<arg.ml:232:22>>*/ throw caml_exn_with_arg
+                      (Stop, [1, s$0, arg$4, cst_a_float]);
               var x$2 =  /*<<arg.ml:231:47>>*/ _v_[1];
                /*<<arg.ml:233:24>>*/ r$3[1] = x$2;
                /*<<arg.ml:235:12>>*/ return consume_arg$0(0) /*<<arg.ml:264:54>>*/ ;
@@ -23616,11 +23609,9 @@
                 /*<<arg.ml:199:19>>*/ return consume_arg$0(0) /*<<arg.ml:264:54>>*/ ;
               }
                /*<<arg.ml:203:44>>*/ _v_ = make_symlist(cst, " ", cst, symb);
-               /*<<arg.ml:202:42>>*/ throw caml_maybe_attach_backtrace
-                     ([0,
-                       Stop,
-                       [1, s$0, arg$5, Stdlib[28].call(null, "one of: ", _v_)]],
-                      1);
+               /*<<arg.ml:202:42>>*/ throw caml_exn_with_arg
+                     (Stop,
+                      [1, s$0, arg$5, Stdlib[28].call(null, "one of: ", _v_)]);
              case 12:
               var f$5 =  /*<<arg.ml:181:31>>*/ _v_[1];
                /*<<arg.ml:240:12>>*/ no_arg$0(0);
@@ -23653,11 +23644,9 @@
              default:
               var f$7 =  /*<<arg.ml:181:31>>*/ _v_[1];
                /*<<arg.ml:254:12>>*/ if(! allow_expand)
-                /*<<arg.ml:255:14>>*/ throw caml_maybe_attach_backtrace
-                      ([0,
-                        Stdlib[6],
-                        "Arg.Expand is only allowed with Arg.parse_and_expand_argv_dynamic"],
-                       1);
+                /*<<arg.ml:255:14>>*/ throw caml_exn_with_arg
+                      (Stdlib[6],
+                       "Arg.Expand is only allowed with Arg.parse_and_expand_argv_dynamic");
               var
                arg$6 =  /*<<arg.ml:257:22>>*/ get_arg$0(0),
                newarg =  /*<<arg.ml:258:25>>*/ caml_call1(f$7, arg$6);
@@ -24594,6 +24583,7 @@
     caml_array_make = runtime.caml_array_make,
     caml_check_bound = runtime.caml_check_bound,
     caml_domain_dls_get = runtime.caml_domain_dls_get,
+    caml_exn_with_arg = runtime.caml_exn_with_arg,
     caml_get_global = runtime.caml_get_global,
     caml_maybe_attach_backtrace = runtime.caml_maybe_attach_backtrace,
     caml_ml_domain_id = runtime.caml_ml_domain_id,
@@ -24699,8 +24689,7 @@
         /*<<domain.ml:184:26>>*/ caml_check_bound(st$0, idx)[idx + 1];
      /*<<domain.ml:185:38>>*/ if(updated_obj !== none)
       /*<<domain.ml:78:25>>*/ return updated_obj;
-     /*<<domain.ml:187:13>>*/ throw caml_maybe_attach_backtrace
-           ([0, Assert_failure, _a_], 1);
+     /*<<domain.ml:187:13>>*/ throw caml_exn_with_arg(Assert_failure, _a_);
     /*<<domain.ml:189:7>>*/ }
    function set_initial_keys(l){
      /*<<domain.ml:199:4>>*/ return Stdlib_List[19].call
@@ -24730,8 +24719,8 @@
    function before_first_spawn(f){
      /*<<domain.ml:221:5>>*/ if
      (Stdlib_Atomic[3].call(null, first_domain_spawned))
-      /*<<domain.ml:222:4>>*/ throw caml_maybe_attach_backtrace
-            ([0, Stdlib[6], "first domain already spawned"], 1);
+      /*<<domain.ml:222:4>>*/ throw caml_exn_with_arg
+            (Stdlib[6], "first domain already spawned");
     var old_f =  /*<<domain.ml:223:7>>*/ first_spawn_function[1];
     function new_f(param){
       /*<<domain.ml:225:19>>*/ caml_call1(old_f, 0);
@@ -28208,6 +28197,7 @@
     runtime = globalThis.jsoo_runtime,
     caml_array_make = runtime.caml_array_make,
     caml_check_bound = runtime.caml_check_bound,
+    caml_exn_with_arg = runtime.caml_exn_with_arg,
     caml_get_global = runtime.caml_get_global,
     caml_maybe_attach_backtrace = runtime.caml_maybe_attach_backtrace,
     caml_mod = runtime.caml_mod;
@@ -28304,8 +28294,7 @@
      }
       /*<<weak.ml:71:7>>*/ return 0;
     }
-     /*<<weak.ml:70:7>>*/ throw caml_maybe_attach_backtrace
-           ([0, Stdlib[6], "Weak.fill"], 1);
+     /*<<weak.ml:70:7>>*/ throw caml_exn_with_arg(Stdlib[6], "Weak.fill");
     /*<<weak.ml:75:5>>*/ }
    function Make(H){
     var emptybucket =  /*<<weak.ml:102:20>>*/ create(0);
@@ -28740,6 +28729,7 @@
    var
     runtime = globalThis.jsoo_runtime,
     caml_bytes_get = runtime.caml_bytes_get,
+    caml_exn_with_arg = runtime.caml_exn_with_arg,
     caml_get_global = runtime.caml_get_global,
     caml_int_of_string = runtime.caml_int_of_string,
     caml_maybe_attach_backtrace = runtime.caml_maybe_attach_backtrace,
@@ -28941,8 +28931,7 @@
        "Stdlib.Scanf.Scan_failure",
        runtime.caml_fresh_oo_id(0)];
    function bad_input(s){
-     /*<<scanf.ml:405:18>>*/ throw caml_maybe_attach_backtrace
-           ([0, Scan_failure, s], 1);
+     /*<<scanf.ml:405:18>>*/ throw caml_exn_with_arg(Scan_failure, s);
     /*<<scanf.ml:405:40>>*/ }
    var
     _c_ =
@@ -29063,8 +29052,7 @@
        case 32:
          /*<<scanf.ml:515:17>>*/ return 5;
      }
-     /*<<scanf.ml:516:9>>*/ throw caml_maybe_attach_backtrace
-           ([0, Assert_failure, _h_], 1);
+     /*<<scanf.ml:516:9>>*/ throw caml_exn_with_arg(Assert_failure, _h_);
     /*<<scanf.ml:516:21>>*/ }
    function token_int_literal(conv, ib){
      /*<<scanf.ml:523:2>>*/ switch(conv){
@@ -30316,8 +30304,8 @@
                   _t_ =
                      /*<<scanf.ml:1412:16>>*/ make_scanf(ib, fmt$12, readers);
                   /*<<scanf.ml:1412:42>>*/ if(! _t_)
-                   /*<<scanf.ml:1414:13>>*/ throw caml_maybe_attach_backtrace
-                         ([0, Assert_failure, _r_], 1);
+                   /*<<scanf.ml:1414:13>>*/ throw caml_exn_with_arg
+                         (Assert_failure, _r_);
                  var arg_rest =  /*<<scanf.ml:1412:42>>*/ _t_[2];
                   /*<<scanf.ml:1413:28>>*/ return arg_rest;
                 default:
@@ -30866,6 +30854,7 @@
     caml_array_make = runtime.caml_array_make,
     caml_check_bound = runtime.caml_check_bound,
     caml_div = runtime.caml_div,
+    caml_exn_with_arg = runtime.caml_exn_with_arg,
     caml_get_global = runtime.caml_get_global,
     caml_get_public_method = runtime.caml_get_public_method,
     caml_maybe_attach_backtrace = runtime.caml_maybe_attach_backtrace,
@@ -31288,8 +31277,8 @@
     catch(exn$0){
      var exn =  /*<<?>>*/ caml_wrap_exception(exn$0);
      if(exn === Stdlib[8])
-       /*<<camlinternalOO.ml:279:50>>*/ throw caml_maybe_attach_backtrace
-             ([0, Assert_failure, _a_], 1);
+       /*<<camlinternalOO.ml:279:50>>*/ throw caml_exn_with_arg
+             (Assert_failure, _a_);
       /*<<?>>*/ throw caml_maybe_attach_backtrace(exn, 0);
     }
     /*<<camlinternalOO.ml:279:62>>*/ }
@@ -31406,8 +31395,8 @@
     /*<<camlinternalOO.ml:342:33>>*/ }
    function dummy_class(loc){
     function undef(param){
-      /*<<camlinternalOO.ml:345:23>>*/ throw caml_maybe_attach_backtrace
-            ([0, Stdlib[15], loc], 1);
+      /*<<camlinternalOO.ml:345:23>>*/ throw caml_exn_with_arg
+            (Stdlib[15], loc);
      /*<<camlinternalOO.ml:345:61>>*/ }
      /*<<camlinternalOO.ml:346:2>>*/ return [0, undef, undef, 0];
     /*<<camlinternalOO.ml:346:38>>*/ }
@@ -31464,8 +31453,8 @@
    function get_data(param){
      /*<<camlinternalOO.ml:415:15>>*/ if(param)
       /*<<camlinternalOO.ml:417:19>>*/ return param[2];
-     /*<<camlinternalOO.ml:416:13>>*/ throw caml_maybe_attach_backtrace
-           ([0, Assert_failure, _e_], 1);
+     /*<<camlinternalOO.ml:416:13>>*/ throw caml_exn_with_arg
+           (Assert_failure, _e_);
     /*<<camlinternalOO.ml:417:30>>*/ }
    var
     _b_ =
@@ -31490,8 +31479,8 @@
      }
     }
      /*<<camlinternalOO.ml:406:24>>*/ if(! tables)
-      /*<<camlinternalOO.ml:407:13>>*/ throw caml_maybe_attach_backtrace
-            ([0, Assert_failure, _b_], 1);
+      /*<<camlinternalOO.ml:407:13>>*/ throw caml_exn_with_arg
+            (Assert_failure, _b_);
      /*<<camlinternalOO.ml:408:19>>*/ tables[2] = r$0;
      /*<<camlinternalOO.ml:428:20>>*/ return res;
     /*<<camlinternalOO.ml:429:5>>*/ }
@@ -31518,26 +31507,26 @@
       tables$1 =  /*<<camlinternalOO.ml:448:2>>*/ tables$0;
      for(;;){
        /*<<camlinternalOO.ml:412:14>>*/ if(! tables$1)
-        /*<<camlinternalOO.ml:413:13>>*/ throw caml_maybe_attach_backtrace
-              ([0, Assert_failure, _d_], 1);
+        /*<<camlinternalOO.ml:413:13>>*/ throw caml_exn_with_arg
+              (Assert_failure, _d_);
        /*<<camlinternalOO.ml:435:21>>*/ if(tables$1[1] === key){
        var tables_data =  /*<<camlinternalOO.ml:436:12>>*/ get_data(tables$1);
         /*<<camlinternalOO.ml:436:27>>*/ if(! tables_data)
-         /*<<camlinternalOO.ml:437:17>>*/ throw caml_maybe_attach_backtrace
-               ([0, Assert_failure, _g_], 1);
+         /*<<camlinternalOO.ml:437:17>>*/ throw caml_exn_with_arg
+               (Assert_failure, _g_);
        var i$0 =  /*<<camlinternalOO.ml:439:10>>*/ i - 1 | 0;
        i = i$0;
        tables$0 = tables_data;
        break;
       }
        /*<<camlinternalOO.ml:418:15>>*/ if(! tables$1)
-        /*<<camlinternalOO.ml:419:13>>*/ throw caml_maybe_attach_backtrace
-              ([0, Assert_failure, _f_], 1);
+        /*<<camlinternalOO.ml:419:13>>*/ throw caml_exn_with_arg
+              (Assert_failure, _f_);
       var tables =  /*<<camlinternalOO.ml:420:19>>*/ tables$1[3];
        /*<<camlinternalOO.ml:441:27>>*/ if(! tables){
         /*<<camlinternalOO.ml:409:24>>*/ if(! tables$1)
-         /*<<camlinternalOO.ml:410:13>>*/ throw caml_maybe_attach_backtrace
-               ([0, Assert_failure, _c_], 1);
+         /*<<camlinternalOO.ml:410:13>>*/ throw caml_exn_with_arg
+               (Assert_failure, _c_);
        var next =  /*<<camlinternalOO.ml:444:10>>*/ [0, key, 0, 0];
         /*<<camlinternalOO.ml:411:19>>*/ tables$1[3] = next;
         /*<<camlinternalOO.ml:445:30>>*/ return build_path
@@ -31862,6 +31851,7 @@
     runtime = globalThis.jsoo_runtime,
     caml_array_make = runtime.caml_array_make,
     caml_check_bound = runtime.caml_check_bound,
+    caml_exn_with_arg = runtime.caml_exn_with_arg,
     caml_get_global = runtime.caml_get_global,
     caml_maybe_attach_backtrace = runtime.caml_maybe_attach_backtrace,
     caml_obj_tag = runtime.caml_obj_tag,
@@ -32357,16 +32347,16 @@
      new_capacity =
         /*<<dynarray.ml:689:6>>*/ Stdlib[17].call(null, _M_, capacity_request);
      /*<<dynarray.ml:690:4>>*/ if(0 >= new_capacity)
-     throw caml_maybe_attach_backtrace([0, Assert_failure, _t_], 1);
+     throw caml_exn_with_arg(Assert_failure, _t_);
     var
      new_arr =
         /*<<dynarray.ml:692:6>>*/ extend(arr, a[1], a[3], new_capacity);
      /*<<dynarray.ml:693:4>>*/ a[2] = new_arr;
      /*<<dynarray.ml:695:4>>*/ if(0 > capacity_request)
-     throw caml_maybe_attach_backtrace([0, Assert_failure, _s_], 1);
+     throw caml_exn_with_arg(Assert_failure, _s_);
      /*<<dynarray.ml:696:4>>*/ if(capacity_request <= new_arr.length - 1)
      return 0;
-    throw caml_maybe_attach_backtrace([0, Assert_failure, _r_], 1);
+    throw caml_exn_with_arg(Assert_failure, _r_);
     /*<<dynarray.ml:697:5>>*/ }
    function ensure_extra_capacity(a, extra_capacity_request){
      /*<<dynarray.ml:700:29>>*/ return ensure_capacity
@@ -32488,18 +32478,18 @@
        }
       }
       if(_L_)
-        /*<<dynarray.ml:351:13>>*/ throw caml_maybe_attach_backtrace
-              ([0, Assert_failure, _e_], 1);
+        /*<<dynarray.ml:351:13>>*/ throw caml_exn_with_arg
+              (Assert_failure, _e_);
        /*<<dynarray.ml:364:8>>*/ if(src_arr === dst_arr)
-       throw caml_maybe_attach_backtrace([0, Assert_failure, _f_], 1);
+       throw caml_exn_with_arg(Assert_failure, _f_);
        /*<<dynarray.ml:372:8>>*/ _L_ = blit_length - 1 | 0;
       if(_L_ >= 0){
        var i = 0;
        for(;;){
         var v =  /*<<dynarray.ml:373:18>>*/ src_arr[(src_pos + i | 0) + 1];
          /*<<dynarray.ml:376:33>>*/ if(v === src_dummy)
-          /*<<dynarray.ml:377:12>>*/ throw caml_maybe_attach_backtrace
-                ([0, Dummy_found, src_pos + i | 0], 1);
+          /*<<dynarray.ml:377:12>>*/ throw caml_exn_with_arg
+                (Dummy_found, src_pos + i | 0);
          /*<<dynarray.ml:378:10>>*/ dst_arr[(dst_pos + i | 0) + 1] = v;
         var _M_ =  /*<<dynarray.ml:379:35>>*/ i + 1 | 0;
         if(_L_ === i) break;
@@ -33579,8 +33569,8 @@
         for(;;){
          var v$0 =  /*<<dynarray.ml:308:18>>*/ values[i$0 + 1];
           /*<<dynarray.ml:309:29>>*/ if(v$0 === dummy)
-           /*<<dynarray.ml:309:35>>*/ throw caml_maybe_attach_backtrace
-                 ([0, Dummy_found, i$0], 1);
+           /*<<dynarray.ml:309:35>>*/ throw caml_exn_with_arg
+                 (Dummy_found, i$0);
           /*<<dynarray.ml:310:10>>*/ a[i$0 + 1] = v$0;
          var _x_ =  /*<<dynarray.ml:310:46>>*/ i$0 + 1 | 0;
          if(_w_ === i$0){_w_ = a; break a;}
@@ -33596,8 +33586,7 @@
        for(;;){
         var v =  /*<<dynarray.ml:302:22>>*/ values[i + 1];
          /*<<dynarray.ml:302:50>>*/ if(v === dummy)
-          /*<<dynarray.ml:302:56>>*/ throw caml_maybe_attach_backtrace
-                ([0, Dummy_found, i], 1);
+          /*<<dynarray.ml:302:56>>*/ throw caml_exn_with_arg(Dummy_found, i);
          /*<<dynarray.ml:302:50>>*/ _x_ = i + 1 | 0;
         if(_w_ === i){_w_ = values; break;}
         i = _x_;
@@ -33698,6 +33687,7 @@
    "use strict";
    var
     runtime = globalThis.jsoo_runtime,
+    caml_exn_with_arg = runtime.caml_exn_with_arg,
     caml_get_global = runtime.caml_get_global,
     caml_maybe_attach_backtrace = runtime.caml_maybe_attach_backtrace,
     caml_ml_string_length = runtime.caml_ml_string_length,
@@ -34399,8 +34389,7 @@
      _N_ =
         /*<<format.ml:885:28>>*/ Stdlib[28].call
         (null, "Format.pp_set_geometry: ", msg);
-     /*<<format.ml:885:62>>*/ throw caml_maybe_attach_backtrace
-           ([0, Stdlib[6], _N_], 1);
+     /*<<format.ml:885:62>>*/ throw caml_exn_with_arg(Stdlib[6], _N_);
     /*<<format.ml:887:39>>*/ }
    function pp_safe_set_geometry(state, max_indent, margin){
     var geometry =  /*<<format.ml:890:2>>*/ [0, max_indent, margin];
@@ -36159,8 +36148,8 @@
    var
     runtime = globalThis.jsoo_runtime,
     caml_check_bound = runtime.caml_check_bound,
+    caml_exn_with_arg = runtime.caml_exn_with_arg,
     caml_get_global = runtime.caml_get_global,
-    caml_maybe_attach_backtrace = runtime.caml_maybe_attach_backtrace,
     caml_obj_tag = runtime.caml_obj_tag;
    function caml_call1(f, a0){
     return (f.l >= 0 ? f.l : f.l = f.length) === 1
@@ -36193,8 +36182,8 @@
              function(x){
               var fn =  /*<<camlinternalMod.ml:28:38>>*/ modu[i$1 + 1];
                /*<<camlinternalMod.ml:29:9>>*/ if(fn$0 === fn)
-                /*<<camlinternalMod.ml:30:11>>*/ throw caml_maybe_attach_backtrace
-                      ([0, Stdlib[15], loc], 1);
+                /*<<camlinternalMod.ml:30:11>>*/ throw caml_exn_with_arg
+                      (Stdlib[15], loc);
                /*<<camlinternalMod.ml:32:11>>*/ return caml_call1(fn, x) /*<<camlinternalMod.ml:32:16>>*/ ;
              };
           let fn$0 = fn;
@@ -36211,8 +36200,8 @@
              function(_e_){
               var l =  /*<<camlinternalMod.ml:37:28>>*/ modu[i$0 + 1];
                /*<<camlinternalMod.ml:38:11>>*/ if(l$0 === l)
-                /*<<camlinternalMod.ml:39:13>>*/ throw caml_maybe_attach_backtrace
-                      ([0, Stdlib[15], loc], 1);
+                /*<<camlinternalMod.ml:39:13>>*/ throw caml_exn_with_arg
+                      (Stdlib[15], loc);
                /*<<camlinternalMod.ml:41:13>>*/ _e_ = caml_obj_tag(l);
               if(250 === _e_) return l[1];
               if(246 !== _e_ && 244 !== _e_) return l;
@@ -36283,8 +36272,8 @@
            j = _c_;
           }
          }
-          /*<<camlinternalMod.ml:72:22>>*/ throw caml_maybe_attach_backtrace
-                ([0, Assert_failure, _a_], 1);
+          /*<<camlinternalMod.ml:72:22>>*/ throw caml_exn_with_arg
+                (Assert_failure, _a_);
         }
          /*<<camlinternalMod.ml:68:5>>*/ modu[i + 1] = n$0;
        }
@@ -36300,8 +36289,8 @@
      }
       /*<<camlinternalMod.ml:82:2>>*/ return 0;
     }
-     /*<<camlinternalMod.ml:81:19>>*/ throw caml_maybe_attach_backtrace
-           ([0, Assert_failure, _b_], 1);
+     /*<<camlinternalMod.ml:81:19>>*/ throw caml_exn_with_arg
+           (Assert_failure, _b_);
     /*<<camlinternalMod.ml:84:6>>*/ }
    function update_mod(shape, o, n){
      /*<<camlinternalMod.ml:87:2>>*/ if

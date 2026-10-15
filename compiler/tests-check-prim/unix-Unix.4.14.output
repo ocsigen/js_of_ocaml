@@ -112,6 +112,9 @@ caml_bigstring_blit_string_to_ba
 caml_bigstring_memcmp
 caml_hash_mix_bigstring
 
+From +fail.js:
+caml_exn_with_arg
+
 From +fs.js:
 caml_ba_map_file
 caml_ba_map_file_bytecode
