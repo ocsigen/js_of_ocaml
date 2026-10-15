@@ -546,6 +546,19 @@ let maybe_bool ctx x e =
   then e
   else J.ECond (e, one, zero)
 
+(* When the result [x] of an integer comparison with 0 is only used as
+   a condition, [0 === e] can be written [!e], and [0 !== e] just [e]:
+   an integer is falsy only when equal to 0. Returns the compared
+   expression [e]. *)
+let int_test_zero ctx x ~int_only cy cz =
+  if int_only && Bool_context.is_bool_context_only ctx.Ctx.bool_context x
+  then
+    match cy, cz with
+    | J.ENum n, e when J.Num.is_zero n -> Some e
+    | e, J.ENum n when J.Num.is_zero n -> Some e
+    | _ -> None
+  else None
+
 (****)
 
 let source_location loc =
@@ -1949,14 +1962,20 @@ let rec translate_expr ctx loc x e level : (_ * J.statement_list) Expr_builder.t
             let* cy = access' ~ctx y in
             let* cz = access' ~ctx z in
             return (maybe_bool ctx x (J.EBin (J.LeInt, cy, cz)))
-        | Eq _, [ y; z ] ->
+        | Eq { int_only }, [ y; z ] ->
             let* cy = access' ~ctx y in
             let* cz = access' ~ctx z in
-            return (maybe_bool ctx x (J.EBin (J.EqEqEq, cy, cz)))
-        | Neq _, [ y; z ] ->
+            return
+              (match int_test_zero ctx x ~int_only cy cz with
+              | Some e -> Js_simpl.enot e
+              | None -> maybe_bool ctx x (J.EBin (J.EqEqEq, cy, cz)))
+        | Neq { int_only }, [ y; z ] ->
             let* cy = access' ~ctx y in
             let* cz = access' ~ctx z in
-            return (maybe_bool ctx x (J.EBin (J.NotEqEq, cy, cz)))
+            return
+              (match int_test_zero ctx x ~int_only cy cz with
+              | Some e -> e
+              | None -> maybe_bool ctx x (J.EBin (J.NotEqEq, cy, cz)))
         | IsInt _, [ y ] ->
             let* cy = access' ~ctx y in
             return (maybe_bool ctx x (Mlvalue.is_immediate cy))

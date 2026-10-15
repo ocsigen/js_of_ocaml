@@ -45,6 +45,8 @@
   physically equal (`==`) (#2547)
 * Compiler: fold `if (c) return a; return b` into `return c ? a : b`
   (#2533)
+* Compiler: test integers against 0 by truthiness (`!x` rather than
+  `0 === x`) when the result is only used as a condition (#2538)
 
 ### Effects
 * Compiler: with `--effects={cps,double-translation}`, specialize calls to
