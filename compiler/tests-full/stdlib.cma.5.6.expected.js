@@ -6596,14 +6596,12 @@
       }
      }
     }
-     /*<<array.ml:422:2>>*/ _f_ = 1 < l ? 1 : 0;
-    if(_f_){
+     /*<<array.ml:422:2>>*/ if(1 < l){
      var e =  /*<<array.ml:422:25>>*/ caml_check_bound(a, 1)[2];
       /*<<array.ml:422:46>>*/ a[2] = caml_check_bound(a, 0)[1];
       /*<<array.ml:422:57>>*/ a[1] = e;
-      /*<<array.ml:422:66>>*/ _f_ = 0;
     }
-     /*<<array.ml:422:2>>*/ return _f_;
+     /*<<array.ml:422:2>>*/ return 0;
     /*<<array.ml:422:67>>*/ }
    function unsafe_stable_sort_sub(cmp, a, init_ofs, init_len){
     function merge(src1ofs, src1len, src2, src2ofs, src2len, dst, dstofs){
@@ -11499,14 +11497,12 @@
       }
      }
     }
-     /*<<float.ml:497:4>>*/ _m_ = 1 < l ? 1 : 0;
-    if(_m_){
+     /*<<float.ml:497:4>>*/ if(1 < l){
      var e =  /*<<float.ml:497:27>>*/ caml_check_bound(a, 1)[2];
       /*<<float.ml:497:48>>*/ a[2] = caml_check_bound(a, 0)[1];
       /*<<float.ml:497:59>>*/ a[1] = e;
-      /*<<float.ml:497:68>>*/ _m_ = 0;
     }
-     /*<<float.ml:497:4>>*/ return _m_;
+     /*<<float.ml:497:4>>*/ return 0;
     /*<<float.ml:497:69>>*/ }
    function stable_sort(cmp, a){
     function merge(src1ofs, src1len, src2, src2ofs, src2len, dst, dstofs){
@@ -12848,12 +12844,11 @@
      /*<<lexing.ml:225:26>>*/ return lexbuf[12];
     /*<<lexing.ml:225:43>>*/ }
    function new_line(lexbuf){
-    var
-     lcp =  /*<<lexing.ml:228:2>>*/ lexbuf[12],
-     _a_ =  /*<<lexing.ml:229:2>>*/ lcp !== dummy_pos ? 1 : 0,
-     _a_ =
-       _a_ && (lexbuf[12] = [0, lcp[1], lcp[2] + 1 | 0, lcp[4], lcp[4]], 0);
-    return _a_;
+    var lcp =  /*<<lexing.ml:228:2>>*/ lexbuf[12];
+     /*<<lexing.ml:229:2>>*/ if(lcp !== dummy_pos)
+      /*<<lexing.ml:230:4>>*/ lexbuf[12] =
+      [0, lcp[1], lcp[2] + 1 | 0, lcp[4], lcp[4]];
+     /*<<lexing.ml:229:2>>*/ return 0;
     /*<<lexing.ml:234:7>>*/ }
    function flush_input(lb){
      /*<<lexing.ml:241:2>>*/ lb[6] = 0;
@@ -13690,16 +13685,10 @@
         function for_all(p, _i_){
           /*<<set.ml:409:20>>*/ for(;;){
           if(! _i_)  /*<<set.ml:410:17>>*/ return 1;
-          var
-           r =  /*<<set.ml:409:20>>*/ _i_[3],
-           v = _i_[2],
-           l = _i_[1],
-           _i_ =  /*<<set.ml:411:25>>*/ caml_call1(p, v);
-           /*<<set.ml:411:28>>*/ if(_i_){
-            /*<<set.ml:411:32>>*/ _i_ = for_all(p, l);
-            /*<<set.ml:411:43>>*/ if(_i_){_i_ = r; continue;}
-          }
-           /*<<set.ml:411:28>>*/ return _i_;
+          var r =  /*<<set.ml:409:20>>*/ _i_[3], v = _i_[2], l = _i_[1];
+           /*<<set.ml:411:25>>*/ if
+           (caml_call1(p, v) &&  /*<<set.ml:411:32>>*/ for_all(p, l)){ /*<<set.ml:411:43>>*/ _i_ = r; continue;}
+           /*<<set.ml:411:28>>*/ return 0;
          }
          /*<<set.ml:411:58>>*/ }
         function exists(p, _i_){
@@ -14709,13 +14698,10 @@
            r =  /*<<map.ml:341:20>>*/ _j_[4],
            d = _j_[3],
            v = _j_[2],
-           l = _j_[1],
-           _j_ =  /*<<map.ml:343:29>>*/ caml_call2(p, v, d);
-           /*<<map.ml:343:34>>*/ if(_j_){
-            /*<<map.ml:343:38>>*/ _j_ = for_all(p, l);
-            /*<<map.ml:343:49>>*/ if(_j_){_j_ = r; continue;}
-          }
-           /*<<map.ml:343:34>>*/ return _j_;
+           l = _j_[1];
+           /*<<map.ml:343:29>>*/ if
+           (caml_call2(p, v, d) &&  /*<<map.ml:343:38>>*/ for_all(p, l)){ /*<<map.ml:343:49>>*/ _j_ = r; continue;}
+           /*<<map.ml:343:34>>*/ return 0;
          }
          /*<<map.ml:343:64>>*/ }
         function exists(p, _j_){
@@ -15019,21 +15005,18 @@
            e1$0 = e1[4],
            r1 = e1[3],
            d1 = e1[2],
-           v1 = e1[1],
-           _i_ =
-              /*<<map.ml:499:12>>*/ 0 === caml_call2(Ord[1], v1, v2) ? 1 : 0;
-           /*<<map.ml:499:29>>*/ if(_i_){
-            /*<<map.ml:499:37>>*/ _i_ = caml_call2(cmp, d1, d2);
-            /*<<map.ml:499:46>>*/ if(_i_){
-            var
-             e2$1 =  /*<<map.ml:500:40>>*/ cons_enum(r2, e2$0),
-             e1$1 =  /*<<map.ml:500:22>>*/ cons_enum(r1, e1$0);
-             /*<<map.ml:500:39>>*/ e1 = e1$1;
-            e2 = e2$1;
-            continue;
-           }
+           v1 = e1[1];
+           /*<<map.ml:499:12>>*/ if
+           (0 === caml_call2(Ord[1], v1, v2)
+            &&  /*<<map.ml:499:37>>*/ caml_call2(cmp, d1, d2)){
+           var
+            e2$1 =  /*<<map.ml:500:40>>*/ cons_enum(r2, e2$0),
+            e1$1 =  /*<<map.ml:500:22>>*/ cons_enum(r1, e1$0);
+            /*<<map.ml:500:39>>*/ e1 = e1$1;
+           e2 = e2$1;
+           continue;
           }
-           /*<<map.ml:499:29>>*/ return _i_;
+           /*<<map.ml:499:29>>*/ return 0;
          }
          /*<<map.ml:501:56>>*/ }
         function cardinal(_i_){
@@ -27268,11 +27251,8 @@
        i = _k_;
       }
      }
-      /*<<hashtbl.ml:150:4>>*/ _l_ = 0;
     }
-    else
-      /*<<hashtbl.ml:149:2>>*/ _l_ = inplace;
-    return _l_;
+     /*<<hashtbl.ml:149:2>>*/ return 0;
     /*<<hashtbl.ml:154:8>>*/ }
    function resize(indexfun, h){
     var
@@ -30991,19 +30971,16 @@
             0];
     /*<<camlinternalOO.ml:141:32>>*/ }
    function resize(array, new_size){
-    var
-     old_size =  /*<<camlinternalOO.ml:144:2>>*/ array[2].length - 1,
-     _m_ =  /*<<camlinternalOO.ml:145:2>>*/ old_size < new_size ? 1 : 0;
-    if(_m_){
+    var old_size =  /*<<camlinternalOO.ml:144:2>>*/ array[2].length - 1;
+     /*<<camlinternalOO.ml:145:2>>*/ if(old_size < new_size){
      var
       new_buck =
          /*<<camlinternalOO.ml:146:19>>*/ caml_array_make(new_size, dummy_met);
       /*<<camlinternalOO.ml:147:4>>*/ Stdlib_Array[9].call
       (null, array[2], 0, new_buck, 0, old_size);
       /*<<camlinternalOO.ml:147:50>>*/ array[2] = new_buck;
-     _m_ = 0;
     }
-     /*<<camlinternalOO.ml:145:2>>*/ return _m_;
+     /*<<camlinternalOO.ml:145:2>>*/ return 0;
     /*<<camlinternalOO.ml:149:4>>*/ }
    var
     method_count =
@@ -32299,16 +32276,13 @@
      /*<<dynarray.ml:618:9>>*/ return [0, x];
     /*<<dynarray.ml:618:15>>*/ }
    function remove_last(a){
-    var
-     last =  /*<<dynarray.ml:621:2>>*/ a[1] - 1 | 0,
-     _N_ =  /*<<dynarray.ml:622:2>>*/ 0 <= last ? 1 : 0;
-    if(_N_){
+    var last =  /*<<dynarray.ml:621:2>>*/ a[1] - 1 | 0;
+     /*<<dynarray.ml:622:2>>*/ if(0 <= last){
       /*<<dynarray.ml:622:20>>*/ a[1] = last;
-      /*<<dynarray.ml:624:4>>*/ _N_ = a[3];
+     var _N_ =  /*<<dynarray.ml:624:4>>*/ a[3];
      caml_check_bound(a[2], last)[last + 1] = _N_;
-      /*<<dynarray.ml:624:42>>*/ _N_ = 0;
     }
-     /*<<dynarray.ml:622:2>>*/ return _N_;
+     /*<<dynarray.ml:622:2>>*/ return 0;
     /*<<dynarray.ml:625:5>>*/ }
    function truncate(a, n){
      /*<<dynarray.ml:628:2>>*/ if(n < 0)
@@ -32391,12 +32365,9 @@
       /*<<dynarray.ml:714:13>>*/ a[2] = prefix(arr, n);
       /*<<dynarray.ml:714:37>>*/ return 0;
     }
-    var
-     _M_ =  /*<<dynarray.ml:716:7>>*/ cur_capacity < n ? 1 : 0,
-     _M_ =
-       _M_
-       && (a[2] =  /*<<dynarray.ml:718:6>>*/ extend(arr, a[1], a[3], n), 0);
-     /*<<dynarray.ml:716:7>>*/ return _M_;
+     /*<<dynarray.ml:716:7>>*/ if(cur_capacity < n)
+      /*<<dynarray.ml:718:6>>*/ a[2] = extend(arr, a[1], a[3], n);
+     /*<<dynarray.ml:716:7>>*/ return 0;
     /*<<dynarray.ml:719:5>>*/ }
    function reset(param){
      /*<<dynarray.ml:722:2>>*/ param[1] = 0;
@@ -34062,18 +34033,16 @@
      /*<<format.ml:476:44>>*/ return enqueue_string_as(state, size, s) /*<<format.ml:548:45>>*/ ;
    }
    var zero =  /*<<?>>*/ 0;
-   function pp_close_box(state, _N_){
-     /*<<format.ml:556:2>>*/ _N_ = 1 < state[14] ? 1 : 0;
-    if(_N_){
+   function pp_close_box(state, param){
+     /*<<format.ml:556:2>>*/ if(1 < state[14]){
       /*<<format.ml:557:2>>*/ if(state[14] < state[15]){
        /*<<format.ml:560:6>>*/ pp_enqueue(state, [0, zero, 1, 0]);
        /*<<format.ml:561:6>>*/ set_size(state, 1);
        /*<<format.ml:561:39>>*/ set_size(state, 0);
      }
       /*<<format.ml:563:4>>*/ state[14] = state[14] - 1 | 0;
-     _N_ = 0;
     }
-     /*<<format.ml:556:2>>*/ return _N_;
+     /*<<format.ml:556:2>>*/ return 0;
     /*<<format.ml:564:5>>*/ }
    function pp_open_stag(state, tag_name){
      /*<<format.ml:569:2>>*/ if(state[23]){
@@ -34088,16 +34057,14 @@
    function pp_close_stag(state, _N_){
      /*<<format.ml:581:2>>*/ if(state[24])
       /*<<format.ml:582:4>>*/ pp_enqueue(state, [0, zero, 5, 0]);
-     /*<<format.ml:583:2>>*/ _N_ = state[23];
-    if(_N_){
+     /*<<format.ml:583:2>>*/ if(state[23]){
       /*<<format.ml:584:10>>*/ _N_ = Stdlib_Stack[5].call(null, state[4]);
       /*<<format.ml:584:42>>*/ if(_N_){
       var tag_name = _N_[1];
        /*<<format.ml:587:6>>*/ return caml_call1(state[28], tag_name) /*<<format.ml:587:39>>*/ ;
      }
-      /*<<format.ml:585:14>>*/ _N_ = 0;
     }
-     /*<<format.ml:583:2>>*/ return _N_;
+     /*<<format.ml:583:2>>*/ return 0;
     /*<<format.ml:587:39>>*/ }
    function pp_set_print_tags(state, b){
      /*<<format.ml:589:32>>*/ state[23] = b;
@@ -34283,17 +34250,12 @@
      /*<<format.ml:767:4>>*/ return enqueue_advance
             (state, [0, zero, [5, [0, [0, 0]]], 0]) /*<<format.ml:767:30>>*/ ;
    }
-   function pp_close_tbox(state, _N_){
-     /*<<format.ml:772:2>>*/ _N_ = 1 < state[14] ? 1 : 0;
-    if(_N_){
-      /*<<format.ml:773:2>>*/ _N_ = state[14] < state[15] ? 1 : 0;
-     if(_N_){
-       /*<<format.ml:776:5>>*/ enqueue_advance(state, [0, zero, 2, 0]);
-       /*<<format.ml:776:31>>*/ state[14] = state[14] - 1 | 0;
-      _N_ = 0;
-     }
+   function pp_close_tbox(state, param){
+     /*<<format.ml:772:2>>*/ if(1 < state[14] && state[14] < state[15]){
+      /*<<format.ml:776:5>>*/ enqueue_advance(state, [0, zero, 2, 0]);
+      /*<<format.ml:776:31>>*/ state[14] = state[14] - 1 | 0;
     }
-     /*<<format.ml:772:2>>*/ return _N_;
+     /*<<format.ml:772:2>>*/ return 0;
     /*<<format.ml:778:5>>*/ }
    function pp_print_tbreak(state, width, offset){
     var _N_ =  /*<<format.ml:783:2>>*/ state[14] < state[15] ? 1 : 0;
@@ -34312,10 +34274,9 @@
      /*<<format.ml:794:4>>*/ return enqueue_advance(state, [0, zero, 0, 0]) /*<<format.ml:794:30>>*/ ;
    }
    function pp_set_max_boxes(state, n){
-    var
-     _N_ =  /*<<format.ml:804:31>>*/ 1 < n ? 1 : 0,
-     _N_ = _N_ && (state[15] = n, 0);
-    return _N_;
+     /*<<format.ml:804:31>>*/ if(1 < n)
+      /*<<format.ml:804:45>>*/ state[15] = n;
+     /*<<format.ml:804:31>>*/ return 0;
     /*<<format.ml:804:68>>*/ }
    function pp_get_max_boxes(state, param){
      /*<<format.ml:807:32>>*/ return state[15];
@@ -36425,17 +36386,13 @@
       /*<<pqueue.ml:117:36>>*/ return [0, r];
      /*<<pqueue.ml:119:7>>*/ }
     function remove_min(h){
-     var
-      n =  /*<<pqueue.ml:122:14>>*/ Stdlib_Dynarray[6].call(null, h),
-      _b_ =  /*<<pqueue.ml:123:6>>*/ 0 < n ? 1 : 0;
-     if(_b_){
-      var
-       x =  /*<<pqueue.ml:124:16>>*/ Stdlib_Dynarray[20].call(null, h),
-       _b_ =  /*<<pqueue.ml:125:8>>*/ 1 < n ? 1 : 0;
-      if(_b_)
+     var n =  /*<<pqueue.ml:122:14>>*/ Stdlib_Dynarray[6].call(null, h);
+      /*<<pqueue.ml:123:6>>*/ if(0 < n){
+      var x =  /*<<pqueue.ml:124:16>>*/ Stdlib_Dynarray[20].call(null, h);
+       /*<<pqueue.ml:125:8>>*/ if(1 < n)
         /*<<pqueue.ml:125:22>>*/ return sift_down(h, n - 1 | 0, 0, x) /*<<pqueue.ml:126:7>>*/ ;
      }
-      /*<<pqueue.ml:123:6>>*/ return _b_;
+      /*<<pqueue.ml:123:6>>*/ return 0;
      /*<<pqueue.ml:126:7>>*/ }
     var copy =  /*<<?>>*/ Stdlib_Dynarray[10];
     function heapify(h){
@@ -36816,8 +36773,8 @@
       nsize =  /*<<ephemeron.ml:171:6>>*/ osize * 2 | 0;
       /*<<ephemeron.ml:172:6>>*/ clean(h);
      var
-      _j_ =  /*<<ephemeron.ml:172:13>>*/ nsize < Stdlib_Sys[15] ? 1 : 0,
-      _j_ = _j_ && ((osize >>> 1 | 0) <= h[1] ? 1 : 0);
+      _j_ =  /*<<ephemeron.ml:172:13>>*/ nsize < Stdlib_Sys[15],
+      _j_ = _j_ && (osize >>> 1 | 0) <= h[1];
      if(_j_){
       var ndata =  /*<<ephemeron.ml:174:20>>*/ caml_array_make(nsize, 0);
        /*<<ephemeron.ml:175:8>>*/ h[2] = ndata;
@@ -36846,9 +36803,8 @@
         i = _k_;
        }
       }
-       /*<<ephemeron.ml:182:8>>*/ _j_ = 0;
      }
-      /*<<ephemeron.ml:172:13>>*/ return _j_;
+      /*<<ephemeron.ml:172:13>>*/ return 0;
      /*<<ephemeron.ml:185:9>>*/ }
     function add(h, key, info){
      var

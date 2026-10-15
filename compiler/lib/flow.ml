@@ -114,11 +114,39 @@ let expr_deps blocks vars deps defs x e =
   | Block (_, a, _, _) -> Array.iter a ~f:(fun y -> add_dep deps x y)
   | Field (y, _, _) -> add_dep deps x y
 
-let program_deps { blocks; _ } =
+(* Values known along some edges: in the false branch of
+   [Cond (x, _, _)], [x] is 0 (the values tested by a conditional are only
+   falsy when equal to 0, which holds for the JavaScript backend), and in
+   branch [i] of [Switch (x, _)], [x] is [i]. [f x n cont] is called for
+   each such edge [cont]. *)
+let iter_known_edge_values branch ~f =
+  match branch with
+  | Cond (x, _, cont) -> f x 0 cont
+  | Switch (x, a) -> Array.iteri a ~f:(fun i cont -> f x i cont)
+  | Return _ | Raise _ | Stop | Branch _ | Pushtrap _ | Poptrap _ -> ()
+
+(* When [x] is passed along an edge where its value [n] is known, the
+   origin of the corresponding parameter is a synthetic variable
+   [consts n], defined as the constant [n] but not bound in the
+   program. *)
+let refined_cont_deps blocks vars deps defs ~consts x n (pc, args) =
+  let block = Addr.Map.find pc blocks in
+  List.iter2 block.params args ~f:(fun param arg ->
+      let arg = if Var.equal arg x then Int.Hashtbl.find consts n else arg in
+      add_dep deps param arg;
+      add_assign_def vars defs param arg)
+
+let program_deps ~consts { blocks; _ } =
   let nv = Var.count () in
   let vars = Var.ISet.empty () in
   let deps = Array.make nv Var.Set.empty in
   let defs = Array.make nv undefined in
+  Option.iter consts ~f:(fun consts ->
+      Int.Hashtbl.iter
+        (fun n x ->
+          add_var vars x;
+          add_expr_def defs x (Constant (Int (Targetint.of_int_exn n))))
+        consts);
   Addr.Map.iter
     (fun _ block ->
       List.iter block.body ~f:(fun i ->
@@ -134,11 +162,20 @@ let program_deps { blocks; _ } =
       match block.branch with
       | Return _ | Raise _ | Stop -> ()
       | Branch cont | Poptrap cont -> cont_deps blocks vars deps defs cont
-      | Cond (_, cont1, cont2) ->
-          cont_deps blocks vars deps defs cont1;
-          cont_deps blocks vars deps defs cont2
-      | Switch (_, a1) ->
-          Array.iter a1 ~f:(fun cont -> cont_deps blocks vars deps defs cont)
+      | (Cond _ | Switch _) as branch -> (
+          match consts, branch with
+          | None, Cond (_, cont1, cont2) ->
+              cont_deps blocks vars deps defs cont1;
+              cont_deps blocks vars deps defs cont2
+          | None, Switch (_, a1) ->
+              Array.iter a1 ~f:(fun cont -> cont_deps blocks vars deps defs cont)
+          | Some consts, _ ->
+              (match branch with
+              | Cond (_, cont1, _) -> cont_deps blocks vars deps defs cont1
+              | _ -> ());
+              iter_known_edge_values branch ~f:(fun x n cont ->
+                  refined_cont_deps blocks vars deps defs ~consts x n cont)
+          | None, _ -> assert false)
       | Pushtrap (cont, x, cont_h) ->
           add_param_def vars defs x;
           cont_deps blocks vars deps defs cont_h;
@@ -675,7 +712,7 @@ let the_shape_of ~return_values ~pure ~blocks info =
   let set x s = Var.Hashtbl.replace cache x s in
   get, set
 
-let build_subst (info : Info.t) vars =
+let build_subst ~is_synthetic (info : Info.t) vars =
   let nv = Var.count () in
   let subst = Array.init nv ~f:(fun i -> Var.of_idx i) in
   Var.ISet.iter
@@ -685,7 +722,11 @@ let build_subst (info : Info.t) vars =
       (if not u
        then
          let s = Var.Tbl.get info.info_known_origins x in
-         if Var.Set.compare_cardinal_with s 1 = 0 then subst.(x_idx) <- Var.Set.choose s);
+         if Var.Set.compare_cardinal_with s 1 = 0
+         then
+           let y = Var.Set.choose s in
+           (* Synthetic variables are not bound in the program *)
+           if not (is_synthetic y) then subst.(x_idx) <- y);
       (if Var.equal subst.(x_idx) x
        then
          match direct_approx info x with
@@ -702,7 +743,35 @@ let f p =
   Code.invariant p;
   let t = Timer.make () in
   let t1 = Timer.make () in
-  let vars, deps, defs = program_deps p in
+  (* Synthetic variables for the values known along edges, and variables
+     to bind parameters known to be constant (see below). They are
+     created before the analysis so that its tables cover them. *)
+  let consts =
+    match Config.target () with
+    | `JavaScript -> Some (Int.Hashtbl.create 16)
+    | `Wasm -> None
+  in
+  let constant_params = Var.Hashtbl.create 16 in
+  Option.iter consts ~f:(fun consts ->
+      Addr.Map.iter
+        (fun _ block ->
+          iter_known_edge_values block.branch ~f:(fun x n (pc, args) ->
+              List.iter2 (Addr.Map.find pc p.blocks).params args ~f:(fun param arg ->
+                  if Var.equal arg x
+                  then (
+                    if not (Int.Hashtbl.mem consts n)
+                    then Int.Hashtbl.add consts n (Var.fresh ());
+                    if not (Var.Hashtbl.mem constant_params param)
+                    then Var.Hashtbl.add constant_params param (Var.fork param)))))
+        p.blocks);
+  let synthetic =
+    match consts with
+    | None -> Var.Set.empty
+    | Some consts ->
+        Int.Hashtbl.fold (fun _ x acc -> Var.Set.add x acc) consts Var.Set.empty
+  in
+  let is_synthetic y = Var.Set.mem y synthetic in
+  let vars, deps, defs = program_deps ~consts p in
   if times () then Format.eprintf "    flow analysis 1: %a@." Timer.print t1;
   let t2 = Timer.make () in
   let known_origins = solver1 vars deps defs in
@@ -736,7 +805,53 @@ let f p =
     ; info_possibly_mutable = possibly_mutable
     }
   in
-  let s = build_subst info vars in
+  let s = build_subst ~is_synthetic info vars in
+  (* A parameter whose origins include a synthetic variable, and are all
+     the same integer constant, is replaced by this constant, bound at the
+     beginning of its block (which dominates all its uses). *)
+  let materialized = ref 0 in
+  let p =
+    if Var.Set.is_empty synthetic
+    then p
+    else
+      let blocks =
+        Addr.Map.map
+          (fun block ->
+            let lets =
+              List.filter_map block.params ~f:(fun x ->
+                  let idx = Var.idx x in
+                  if
+                    Var.Hashtbl.mem constant_params x
+                    && Var.equal s.(idx) x
+                    && (not (Var.Tbl.get maybe_unknown x))
+                    && Var.Set.exists is_synthetic (Var.Tbl.get known_origins x)
+                  then
+                    match
+                      Var.Set.fold
+                        (fun y acc ->
+                          match acc, defs.(Var.idx y) with
+                          | `Init, Expr (Constant (Int c)) -> `Const c
+                          | `Const c, Expr (Constant (Int c')) when Targetint.equal c c'
+                            -> acc
+                          | _ -> `No)
+                        (Var.Tbl.get known_origins x)
+                        `Init
+                    with
+                    | `Const c ->
+                        let y = Var.Hashtbl.find constant_params x in
+                        s.(idx) <- y;
+                        defs.(Var.idx y) <- Expr (Constant (Int c));
+                        incr materialized;
+                        Some (Let (y, Constant (Int c)))
+                    | `Init | `No -> None
+                  else None)
+            in
+            if List.is_empty lets then block else { block with body = lets @ block.body })
+          p.blocks
+      in
+      { p with blocks }
+  in
+  if stats () then Format.eprintf "Stats - flow constant params: %d@." !materialized;
   let need_stats = stats () || debug_stats () in
   let count_uniq = ref 0 in
   let count_seen = BitSet.create' (if need_stats then Var.count () else 0) in
