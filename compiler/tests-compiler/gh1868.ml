@@ -42,7 +42,7 @@ let wrap f =
   [%expect
     {|
     function wrap$0(f){
-     try{var _a_ = caml_call1(f, 0); return _a_;}
+     try{return caml_call1(f, 0);}
      catch(exn$1){
       var exn = caml_wrap_exception(exn$1);
       for(;;){

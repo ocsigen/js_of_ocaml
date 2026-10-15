@@ -2610,8 +2610,9 @@ and compile_conditional st queue ~fall_through loc last scope_stack : _ * _ =
               , loc )
             ] )
     | Poptrap cont ->
-        let never, code = compile_branch st J.N Q.empty cont scope_stack ~fall_through in
-        never, Q.flush_all queue loc code
+        (* The code generated for the branch is part of the [try] body,
+           so pending expressions can be evaluated there. *)
+        compile_branch st J.N queue cont scope_stack ~fall_through
     | Cond (x, c1, c2) ->
         let cx, loc_before, queue =
           Expr_builder.get queue loc (Expr_builder.access ~ctx x)

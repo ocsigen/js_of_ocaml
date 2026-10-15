@@ -37,6 +37,8 @@
   conditions, no empty `if` branches) (#2500)
 * Compiler: omit the `| 0` coercion after an unsigned right shift by a
   constant (#2531)
+* Compiler: inline pending expressions at the end of a `try` body, avoiding
+  temporaries such as `try{var c = f(x); return c;}` (#2532)
 
 ### Effects
 * Compiler: with `--effects={cps,double-translation}`, specialize calls to
