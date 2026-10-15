@@ -2263,6 +2263,8 @@ class simpl =
       | ECond (EVar x, e1, EVar y) when ident_equal x y -> EBin (And, EVar x, e1)
       (* b ? b : e --> b || e *)
       | ECond (EVar x, EVar y, e2) when ident_equal x y -> EBin (Or, EVar x, e2)
+      (* !c ? a : b --> c ? b : a *)
+      | ECond (EUn (Not, c), e1, e2) -> ECond (c, e2, e1)
       | EUn (Not, (EBin ((EqEqEq | NotEqEq | EqEq | NotEq), _, _) as e)) ->
           Js_simpl.enot e
       | EBin (Plus, e1, e2) -> (
