@@ -95,7 +95,7 @@ let () = my_ref := 2
          let t$1 = t$0;
          var
           this_will_be_undefined =
-            function(_a_){_a_ = t$1 && 1 === t$1[1] ? 1 : 0; return _a_ ? 1 : 2;};
+            function(param){if(t$1 && 1 === t$1[1]) return 1; return 2;};
          if(t$0) var i = t$0[1], match = i; else match = - 1;
          if(0 === match) return this_will_be_undefined(0);
          if(1 === match){
@@ -200,7 +200,7 @@ let () = my_ref := 2
           let t$1 = t$0;
           var
            this_will_be_undefined =
-             function(_a_){_a_ = t$1 && 1 === t$1[1] ? 1 : 0; return _a_ ? 1 : 2;};
+             function(param){if(t$1 && 1 === t$1[1]) return 1; return 2;};
           if(t$0) var i = t$0[1], _a_ = i; else _a_ = - 1;
           if(0 === _a_) break;
           if(1 === _a_) break a;

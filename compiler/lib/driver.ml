@@ -737,6 +737,7 @@ let optimize ~shapes ~profile ~keep_flow_data p =
          | `JavaScript, (`Disabled | `Double_translation) -> Generate_closure.f
          | `JavaScript, `Cps | `Wasm, (`Disabled | `Jspi | `Cps | `Native) -> Fun.id
          | `JavaScript, (`Jspi | `Native) | `Wasm, `Double_translation -> assert false)
+    +> map_fst5 Jump_threading.f
     +> map_fst5 deadcode'
   in
   if times () then Format.eprintf "Start Optimizing...@.";
