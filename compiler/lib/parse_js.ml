@@ -953,83 +953,6 @@ let assignment_op (tok : Js_token.t) =
   | T_NULLISH_ASSIGN -> Some CoalesceEq
   | _ -> None
 
-(* The left-hand side of an assignment, or of a [for ... in] or
-   [for ... of] statement, is a LeftHandSideExpression: not an operator
-   expression, a conditional, a sequence, an arrow function, a [yield] or
-   an [await]. An object or array literal is a destructuring pattern,
-   which a compound assignment operator does not allow. [pos] is the
-   start of the left-hand side. *)
-(* The left-hand side of an assignment, or of [for ... in]/[for ... of] with
-   [in_for], must be a LeftHandSideExpression. Like the previous parser, a
-   parenthesized expression is accepted on the left of an assignment, and the
-   error is reported at the current token: the operator, [in] or [of]. *)
-let check_assignment_target t ~in_for (e : expression) =
-  let invalid () =
-    let what =
-      match in_for, cur t with
-      | false, _ -> "assignment"
-      | true, T_IN -> "`for ... in`"
-      | true, _ -> "`for ... of`"
-    in
-    error_msg t ("invalid left-hand side in " ^ what)
-  in
-  match e with
-  | (ESeq _ | ECond _ | EArrow _ | EYield _) when in_for -> invalid ()
-  | EBin
-      ( ( Eq
-        | StarEq
-        | SlashEq
-        | ModEq
-        | PlusEq
-        | MinusEq
-        | LslEq
-        | AsrEq
-        | LsrEq
-        | BandEq
-        | BxorEq
-        | BorEq
-        | OrEq
-        | AndEq
-        | ExpEq
-        | CoalesceEq )
-      , _
-      , _ )
-    when in_for -> invalid ()
-  | EBin
-      ( ( Or
-        | And
-        | Bor
-        | Bxor
-        | Band
-        | EqEq
-        | NotEq
-        | EqEqEq
-        | NotEqEq
-        | Lt
-        | Le
-        | Gt
-        | Ge
-        | LtInt
-        | LeInt
-        | GtInt
-        | GeInt
-        | InstanceOf
-        | In
-        | Lsl
-        | Lsr
-        | Asr
-        | Plus
-        | Minus
-        | Mul
-        | Div
-        | Mod
-        | Exp
-        | Coalesce )
-      , _
-      , _ )
-  | EUn _ -> invalid ()
-  | _ -> ()
-
 (* Binary operators, with their precedence. [??] is handled separately. *)
 let binary_op ~no_in (tok : Js_token.t) =
   match tok with
@@ -1195,7 +1118,6 @@ and parse_assignment_rest t ctx ~no_in =
 and parse_assignment_operator t ctx ~no_in lhs =
   match assignment_op (cur t) with
   | Some op ->
-      check_assignment_target t ~in_for:false lhs;
       let op_pos = start_pos t in
       advance t;
       let rhs = parse_assignment_expression t ctx ~no_in in
@@ -2231,7 +2153,6 @@ and parse_for t ctx =
           (* [for ( [lookahead != let] LeftHandSideExpression of] *)
           error_msg t "the left-hand side of `for ... of` cannot start with `let`"
       | T_IN | T_OF ->
-          check_assignment_target t ~in_for:true e;
           parse_for_in_of t ctx ~for_await (Left (assignment_target_of_expr None e))
       | _ -> parse_for_rest t ctx (Left (Some e)))
 
@@ -2629,6 +2550,41 @@ let has_use_strict ~directives (body : statement_list) =
   in
   loop body
 
+let is_assignment_op (op : binop) =
+  match op with
+  | Eq
+  | StarEq
+  | SlashEq
+  | ModEq
+  | PlusEq
+  | MinusEq
+  | LslEq
+  | AsrEq
+  | LsrEq
+  | BandEq
+  | BxorEq
+  | BorEq
+  | OrEq
+  | AndEq
+  | ExpEq
+  | CoalesceEq -> true
+  | _ -> false
+
+(* The location of the start of an expression, as far as the tree knows *)
+let rec expression_start (e : expression) =
+  match e with
+  | EVar (S { loc; _ }) -> loc
+  | ECall (_, _, _, loc) | ECallTemplate (_, _, loc) | ENew (_, _, loc) -> loc
+  | EFun (_, (_, _, _, loc)) | EArrow ((_, _, _, loc), _, _) -> loc
+  | EBin (_, e, _)
+  | ESeq (e, _)
+  | ECond (e, _, _)
+  | EUn (_, e)
+  | EDot (e, _, _)
+  | EDotPrivate (e, _, _)
+  | EAccess (e, _, _) -> expression_start e
+  | _ -> N
+
 (* Early errors (ECMA-262 static semantics, "It is a Syntax Error if ..."):
    the rules that depend on where a construct occurs rather than on its
    tokens are checked on the tree once it is built, rather than while
@@ -2720,6 +2676,18 @@ class early_errors ~strict ~directives =
       | _ -> m#error loc "an import call takes one or two arguments, without `...`");
       List.iter args ~f:(function Arg e | ArgSpread e -> m#expression e)
 
+    (* The left-hand side of an assignment, or of a [for ... in] or
+       [for ... of] statement, is a LeftHandSideExpression: not an operator
+       expression, a conditional, a sequence, an arrow function, a [yield]
+       or an [await]. An object or array literal is a destructuring pattern
+       (an assignment target in the tree), except after a compound
+       assignment operator, which does not allow one. *)
+    method private assignment_target what (e : expression) =
+      match e with
+      | ESeq _ | ECond _ | EBin _ | EUn _ | EArrow _ | EYield _ | EObj _ | EArr _ ->
+          m#error (expression_start e) ("invalid left-hand side in " ^ what)
+      | _ -> ()
+
     method! fun_decl ((_, _, body, _) as d) =
       m#in_context
         (strict || has_use_strict ~directives body)
@@ -2754,6 +2722,12 @@ class early_errors ~strict ~directives =
         when strict && is_strict_mode_reserved_name name ->
           (* Labels are not identifiers in the tree, and are not located *)
           m#error N (Printf.sprintf "`%s` is a reserved word in strict mode code" name)
+      | ForIn_statement (Left e, _, _) ->
+          m#assignment_target "`for ... in`" e;
+          super#statement s
+      | ForOf_statement (Left e, _, _) | ForAwaitOf_statement (Left e, _, _) ->
+          m#assignment_target "`for ... of`" e;
+          super#statement s
       | Try_statement (_, Some (Some (_, Some (_, loc)), _), _) ->
           (* CatchParameter : BindingIdentifier | BindingPattern *)
           m#error loc "the parameter of `catch` cannot have an initializer"
@@ -2768,6 +2742,9 @@ class early_errors ~strict ~directives =
       | EClass (id, c) ->
           Option.iter id ~f:(fun id -> m#in_context true (fun () -> m#ident id));
           m#class_decl c
+      | EBin (op, lhs, _) when is_assignment_op op ->
+          m#assignment_target "assignment" lhs;
+          super#expression e
       | EObj l ->
           List.iter l ~f:(function
             | PropertyMethod (_, meth) -> m#accessor meth
