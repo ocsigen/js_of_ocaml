@@ -58,7 +58,12 @@ type typ =
           integer otherwise. When [cast] holds (only for blocks), the
           value is represented by a Wasm block reference, being cast
           where it is defined. *)
-  | Bigarray of Optimization_hint.Bigarray.t
+  | Bigarray of
+      { desc : Optimization_hint.Bigarray.t
+      ; cast : bool
+      }
+      (** When [cast] holds, the value is represented by a Wasm
+          bigarray reference, being cast where it is defined. *)
   | Array of array_kind
       (** An array: the empty array, a float array if [float] holds,
           or a non-empty block if [value] holds *)

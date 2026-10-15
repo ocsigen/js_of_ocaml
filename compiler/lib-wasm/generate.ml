@@ -327,15 +327,23 @@ module Generate (Target : Target_sig.S) = struct
     | Array { cast = false; _ }
     | Top | Int _ | Number _ | Bigarray _ | Null | Bot -> false
 
+  let is_bigarray_cast (t : Typing.typ) =
+    match t with
+    | Bigarray { cast; _ } -> cast
+    | Top | Int _ | Number _ | Tuple _ | Array _ | Null | Bot -> false
+
   (* Whether a value of this type has a more precise reference type
      than a generic value *)
   let has_ref_type (t : Typing.typ) =
     match t with
     | Number (_, Boxed_precise) -> true
-    | _ -> is_cast t
+    | _ -> is_cast t || is_bigarray_cast t
 
   let rec convert ~(from : Typing.typ) ~(into : Typing.typ) e =
     match from, into with
+    | _, Bigarray { cast = true; _ } ->
+        (* A value with a cast type already has a bigarray type *)
+        if is_bigarray_cast from then e else Bigarray.cast (convert ~from ~into:Top e)
     | _, (Tuple { cast = true; _ } | Array { cast = true; _ }) ->
         (* A value with a cast type already has a block type *)
         if is_cast from then e else Value.as_block (convert ~from ~into:Top e)
@@ -1654,7 +1662,8 @@ module Generate (Target : Target_sig.S) = struct
           | Pv indices -> Some (indices, ctx.global_flow_info.info_defs.(Var.idx indices))
           | Pc _ -> None )
       with
-      | Bigarray { kind; layout; _ }, Some (indices, Expr (Block (_, l, _, _, _))) ->
+      | ( Bigarray { desc = { kind; layout; _ }; _ }
+        , Some (indices, Expr (Block (_, l, _, _, _))) ) ->
           Some
             ( kind
             , layout
@@ -1691,7 +1700,7 @@ module Generate (Target : Target_sig.S) = struct
     let caml_ba_get_n ~ctx ~context ~hint ta indices =
       match hint, get_type ctx ta with
       | Some (Optimization_hint.Hint_bigarray { unsafe; kind; layout }), _
-      | _, Bigarray { unsafe; kind; layout } ->
+      | _, Bigarray { desc = { unsafe; kind; layout }; _ } ->
           let indices = List.map ~f:(fun i -> transl_prim_arg ctx ~typ:int_n i) indices in
           caml_ba_get ~ctx ~context ~unsafe ~kind ~layout ta indices
       | _ ->
@@ -1737,7 +1746,7 @@ module Generate (Target : Target_sig.S) = struct
         | _ -> invalid_arity "caml_ba_get_generic" l ~expected:2);
     let caml_ba_float32_get_n ~ctx ~context ta indices =
       match get_type ctx ta with
-      | Bigarray { unsafe; layout; _ } ->
+      | Bigarray { desc = { unsafe; layout; _ }; _ } ->
           let indices = List.map ~f:(fun i -> transl_prim_arg ctx ~typ:int_n i) indices in
           caml_ba_get ~ctx ~context ~unsafe ~kind:Float32_t ~layout ta indices
       | _ ->
@@ -1794,7 +1803,7 @@ module Generate (Target : Target_sig.S) = struct
     let caml_ba_set_n ~ctx ~context ~hint ta indices v =
       match hint, get_type ctx ta with
       | Some (Optimization_hint.Hint_bigarray { unsafe; kind; layout }), _
-      | _, Bigarray { unsafe; kind; layout } ->
+      | _, Bigarray { desc = { unsafe; kind; layout }; _ } ->
           let indices = List.map ~f:(fun i -> transl_prim_arg ctx ~typ:int_n i) indices in
           caml_ba_set ~ctx ~context ~unsafe ~kind ~layout ta indices v
       | _ ->
@@ -1842,7 +1851,7 @@ module Generate (Target : Target_sig.S) = struct
         | _ -> invalid_arity "caml_ba_set_generic" l ~expected:3);
     let caml_ba_float32_set_n ~ctx ~context ta indices v =
       match get_type ctx ta with
-      | Bigarray { unsafe; layout; _ } ->
+      | Bigarray { desc = { unsafe; layout; _ }; _ } ->
           let indices = List.map ~f:(fun i -> transl_prim_arg ctx ~typ:int_n i) indices in
           caml_ba_set ~ctx ~context ~unsafe ~kind:Float32_t ~layout ta indices v
       | _ ->
@@ -1896,6 +1905,9 @@ module Generate (Target : Target_sig.S) = struct
     match ty with
     | Typing.Number (n, Boxed_precise) ->
         let* t = Memory.box_type n in
+        return (Some t)
+    | Bigarray { cast = true; _ } ->
+        let* t = Bigarray.value_type in
         return (Some t)
     | _ ->
         if is_cast ty
@@ -2289,6 +2301,7 @@ module Generate (Target : Target_sig.S) = struct
               | Number (n, Boxed_precise) ->
                   (* No cast is emitted when the value is boxed here *)
                   Memory.as_box n e
+              | Bigarray { cast = true; _ } -> Bigarray.cast e
               | _ -> if is_cast ty then Value.as_block e else e
           in
           let* typ = value_type ty in
