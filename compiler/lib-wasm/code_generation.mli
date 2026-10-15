@@ -53,6 +53,10 @@ type context =
   ; functions_without_env : unit Code.Var.Hashtbl.t
         (** Functions which take no environment parameter: their closure
             is a constant, and they are only called directly *)
+  ; env_param_types : Wasm_ast.ref_type Code.Var.Hashtbl.t
+        (** The precise type of the environment parameter of the
+            functions only called directly: their callers cast the
+            environment argument to it *)
   }
 
 val make_context : value_type:Wasm_ast.value_type -> context

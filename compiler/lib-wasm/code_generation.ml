@@ -71,6 +71,10 @@ type context =
   ; functions_without_env : unit Var.Hashtbl.t
         (** Functions which take no environment parameter: their closure
             is a constant, and they are only called directly *)
+  ; env_param_types : W.ref_type Var.Hashtbl.t
+        (** The precise type of the environment parameter of the
+            functions only called directly: their callers cast the
+            environment argument to it *)
   }
 
 let make_context ~value_type =
@@ -99,6 +103,7 @@ let make_context ~value_type =
   ; no_tail_call = Var.Hashtbl.create 16
   ; wasm_opt = false
   ; functions_without_env = Var.Hashtbl.create 128
+  ; env_param_types = Var.Hashtbl.create 128
   }
 
 type var =
