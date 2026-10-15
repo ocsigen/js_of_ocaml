@@ -1529,7 +1529,15 @@ let _ =
     ; "caml_nativeint_shift_right_unsigned"
     ]
     `Pure
-    (fun cx cy _ -> to_int (J.EBin (J.Lsr, cx, cy)));
+    (fun cx cy _ ->
+      let e = J.EBin (J.Lsr, cx, cy) in
+      match cy with
+      | J.ENum n
+        when let n = Targetint.to_int32 (J.Num.to_targetint n) in
+             Int32.(n >= 1l && n <= 31l) ->
+          (* The result is in [0, 2^31) *)
+          e
+      | _ -> to_int e);
   register_bin_prims
     [ "%int_asr"; "caml_int32_shift_right"; "caml_nativeint_shift_right" ]
     `Pure

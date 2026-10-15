@@ -1732,7 +1732,7 @@
     for(;;){
      if(0 > t){
       var
-       upper_wait_log =  /*<<atomic.ml:77:35>>*/ backoff >>> 10 | 0,
+       upper_wait_log =  /*<<atomic.ml:77:35>>*/ backoff >>> 10,
        wait_log$0 =  /*<<atomic.ml:79:29>>*/ backoff & 31,
        next_wait_log =
           /*<<atomic.ml:102:4>>*/ wait_log$0
@@ -3923,10 +3923,10 @@
      /*<<uchar.ml:69:13>>*/ return caml_hash(10, 100, 0, x) /*<<uchar.ml:69:41>>*/ ;
    }
    function utf_decode_is_valid(d){
-     /*<<uchar.ml:84:37>>*/ return 1 === (d >>> 27 | 0) ? 1 : 0;
+     /*<<uchar.ml:84:37>>*/ return 1 === d >>> 27 ? 1 : 0;
     /*<<uchar.ml:84:58>>*/ }
    function utf_decode_length(d){
-     /*<<uchar.ml:85:35>>*/ return (d >>> 24 | 0) & 7;
+     /*<<uchar.ml:85:35>>*/ return d >>> 24 & 7;
     /*<<uchar.ml:85:65>>*/ }
    function utf_decode_uchar(d){
      /*<<uchar.ml:86:34>>*/ return d & 16777215;
@@ -8315,13 +8315,13 @@
            /*<<bytes.ml:619:23>>*/ if(max < i$0)
             /*<<bytes.ml:619:39>>*/ return dec_invalid(1) /*<<bytes.ml:648:22>>*/ ;
           var b1$4 =  /*<<bytes.ml:620:15>>*/ caml_bytes_unsafe_get(b, i$0);
-           /*<<bytes.ml:620:49>>*/ if(4 !== (b1$4 >>> 5 | 0))
+           /*<<bytes.ml:620:49>>*/ if(4 !== b1$4 >>> 5)
             /*<<bytes.ml:620:55>>*/ return dec_invalid(1) /*<<bytes.ml:648:22>>*/ ;
           var i$1 =  /*<<bytes.ml:621:6>>*/ i$0 + 1 | 0;
            /*<<bytes.ml:621:23>>*/ if(max < i$1)
             /*<<bytes.ml:621:39>>*/ return dec_invalid(2) /*<<bytes.ml:648:22>>*/ ;
           var b2$3 =  /*<<bytes.ml:622:15>>*/ caml_bytes_unsafe_get(b, i$1);
-           /*<<bytes.ml:622:49>>*/ if(2 !== (b2$3 >>> 6 | 0))
+           /*<<bytes.ml:622:49>>*/ if(2 !== b2$3 >>> 6)
             /*<<bytes.ml:622:55>>*/ return dec_invalid(2) /*<<bytes.ml:648:22>>*/ ;
           var
            u$5 =
@@ -8343,13 +8343,13 @@
            /*<<bytes.ml:627:23>>*/ if(max < i$5)
             /*<<bytes.ml:627:39>>*/ return dec_invalid(2) /*<<bytes.ml:648:22>>*/ ;
           var b2$1 =  /*<<bytes.ml:628:15>>*/ caml_bytes_unsafe_get(b, i$5);
-           /*<<bytes.ml:628:49>>*/ if(2 !== (b2$1 >>> 6 | 0))
+           /*<<bytes.ml:628:49>>*/ if(2 !== b2$1 >>> 6)
             /*<<bytes.ml:628:55>>*/ return dec_invalid(2) /*<<bytes.ml:648:22>>*/ ;
           var i$6 =  /*<<bytes.ml:629:6>>*/ i$5 + 1 | 0;
            /*<<bytes.ml:629:23>>*/ if(max < i$6)
             /*<<bytes.ml:629:39>>*/ return dec_invalid(3) /*<<bytes.ml:648:22>>*/ ;
           var b3$1 =  /*<<bytes.ml:630:15>>*/ caml_bytes_unsafe_get(b, i$6);
-           /*<<bytes.ml:630:49>>*/ if(2 !== (b3$1 >>> 6 | 0))
+           /*<<bytes.ml:630:49>>*/ if(2 !== b3$1 >>> 6)
             /*<<bytes.ml:630:55>>*/ return dec_invalid(3) /*<<bytes.ml:648:22>>*/ ;
           var
            u$1 =
@@ -8363,19 +8363,19 @@
            /*<<bytes.ml:641:23>>*/ if(max < i$10)
             /*<<bytes.ml:641:39>>*/ return dec_invalid(1) /*<<bytes.ml:648:22>>*/ ;
           var b1$0 =  /*<<bytes.ml:642:15>>*/ caml_bytes_unsafe_get(b, i$10);
-           /*<<bytes.ml:642:49>>*/ if(8 !== (b1$0 >>> 4 | 0))
+           /*<<bytes.ml:642:49>>*/ if(8 !== b1$0 >>> 4)
             /*<<bytes.ml:642:55>>*/ return dec_invalid(1) /*<<bytes.ml:648:22>>*/ ;
           var i$11 =  /*<<bytes.ml:643:6>>*/ i$10 + 1 | 0;
            /*<<bytes.ml:643:23>>*/ if(max < i$11)
             /*<<bytes.ml:643:39>>*/ return dec_invalid(2) /*<<bytes.ml:648:22>>*/ ;
           var b2 =  /*<<bytes.ml:644:15>>*/ caml_bytes_unsafe_get(b, i$11);
-           /*<<bytes.ml:644:49>>*/ if(2 !== (b2 >>> 6 | 0))
+           /*<<bytes.ml:644:49>>*/ if(2 !== b2 >>> 6)
             /*<<bytes.ml:644:55>>*/ return dec_invalid(2) /*<<bytes.ml:648:22>>*/ ;
           var i$12 =  /*<<bytes.ml:645:6>>*/ i$11 + 1 | 0;
            /*<<bytes.ml:645:23>>*/ if(max < i$12)
             /*<<bytes.ml:645:39>>*/ return dec_invalid(3) /*<<bytes.ml:648:22>>*/ ;
           var b3 =  /*<<bytes.ml:646:15>>*/ caml_bytes_unsafe_get(b, i$12);
-           /*<<bytes.ml:646:49>>*/ if(2 !== (b3 >>> 6 | 0))
+           /*<<bytes.ml:646:49>>*/ if(2 !== b3 >>> 6)
             /*<<bytes.ml:646:55>>*/ return dec_invalid(3) /*<<bytes.ml:648:22>>*/ ;
           var
            u$2 =
@@ -8391,19 +8391,19 @@
            /*<<bytes.ml:633:23>>*/ if(max < i$7)
             /*<<bytes.ml:633:39>>*/ return dec_invalid(1) /*<<bytes.ml:648:22>>*/ ;
           var b1$1 =  /*<<bytes.ml:634:15>>*/ caml_bytes_unsafe_get(b, i$7);
-           /*<<bytes.ml:634:49>>*/ if(2 !== (b1$1 >>> 6 | 0))
+           /*<<bytes.ml:634:49>>*/ if(2 !== b1$1 >>> 6)
             /*<<bytes.ml:634:55>>*/ return dec_invalid(1) /*<<bytes.ml:648:22>>*/ ;
           var i$8 =  /*<<bytes.ml:635:6>>*/ i$7 + 1 | 0;
            /*<<bytes.ml:635:23>>*/ if(max < i$8)
             /*<<bytes.ml:635:39>>*/ return dec_invalid(2) /*<<bytes.ml:648:22>>*/ ;
           var b2$0 =  /*<<bytes.ml:636:15>>*/ caml_bytes_unsafe_get(b, i$8);
-           /*<<bytes.ml:636:49>>*/ if(2 !== (b2$0 >>> 6 | 0))
+           /*<<bytes.ml:636:49>>*/ if(2 !== b2$0 >>> 6)
             /*<<bytes.ml:636:55>>*/ return dec_invalid(2) /*<<bytes.ml:648:22>>*/ ;
           var i$9 =  /*<<bytes.ml:637:6>>*/ i$8 + 1 | 0;
            /*<<bytes.ml:637:23>>*/ if(max < i$9)
             /*<<bytes.ml:637:39>>*/ return dec_invalid(3) /*<<bytes.ml:648:22>>*/ ;
           var b3$0 =  /*<<bytes.ml:638:15>>*/ caml_bytes_unsafe_get(b, i$9);
-           /*<<bytes.ml:638:49>>*/ if(2 !== (b3$0 >>> 6 | 0))
+           /*<<bytes.ml:638:49>>*/ if(2 !== b3$0 >>> 6)
             /*<<bytes.ml:638:55>>*/ return dec_invalid(3) /*<<bytes.ml:648:22>>*/ ;
           var
            u$3 =
@@ -8419,13 +8419,13 @@
         /*<<bytes.ml:607:23>>*/ if(max < i$13)
          /*<<bytes.ml:607:39>>*/ return dec_invalid(1) /*<<bytes.ml:648:22>>*/ ;
        var b1$5 =  /*<<bytes.ml:608:15>>*/ caml_bytes_unsafe_get(b, i$13);
-        /*<<bytes.ml:608:49>>*/ if(5 !== (b1$5 >>> 5 | 0))
+        /*<<bytes.ml:608:49>>*/ if(5 !== b1$5 >>> 5)
          /*<<bytes.ml:608:55>>*/ return dec_invalid(1) /*<<bytes.ml:648:22>>*/ ;
        var i$14 =  /*<<bytes.ml:609:6>>*/ i$13 + 1 | 0;
         /*<<bytes.ml:609:23>>*/ if(max < i$14)
          /*<<bytes.ml:609:39>>*/ return dec_invalid(2) /*<<bytes.ml:648:22>>*/ ;
        var b2$4 =  /*<<bytes.ml:610:15>>*/ caml_bytes_unsafe_get(b, i$14);
-        /*<<bytes.ml:610:49>>*/ if(2 !== (b2$4 >>> 6 | 0))
+        /*<<bytes.ml:610:49>>*/ if(2 !== b2$4 >>> 6)
          /*<<bytes.ml:610:55>>*/ return dec_invalid(2) /*<<bytes.ml:648:22>>*/ ;
        var
         u$0 =
@@ -8438,13 +8438,13 @@
        /*<<bytes.ml:613:23>>*/ if(max < i$2)
         /*<<bytes.ml:613:39>>*/ return dec_invalid(1) /*<<bytes.ml:648:22>>*/ ;
       var b1$3 =  /*<<bytes.ml:614:15>>*/ caml_bytes_unsafe_get(b, i$2);
-       /*<<bytes.ml:614:49>>*/ if(2 !== (b1$3 >>> 6 | 0))
+       /*<<bytes.ml:614:49>>*/ if(2 !== b1$3 >>> 6)
         /*<<bytes.ml:614:55>>*/ return dec_invalid(1) /*<<bytes.ml:648:22>>*/ ;
       var i$3 =  /*<<bytes.ml:615:6>>*/ i$2 + 1 | 0;
        /*<<bytes.ml:615:23>>*/ if(max < i$3)
         /*<<bytes.ml:615:39>>*/ return dec_invalid(2) /*<<bytes.ml:648:22>>*/ ;
       var b2$2 =  /*<<bytes.ml:616:15>>*/ caml_bytes_unsafe_get(b, i$3);
-       /*<<bytes.ml:616:49>>*/ if(2 !== (b2$2 >>> 6 | 0))
+       /*<<bytes.ml:616:49>>*/ if(2 !== b2$2 >>> 6)
         /*<<bytes.ml:616:55>>*/ return dec_invalid(2) /*<<bytes.ml:648:22>>*/ ;
       var
        u$4 =
@@ -8462,7 +8462,7 @@
        /*<<bytes.ml:603:23>>*/ if(max < i$15)
         /*<<bytes.ml:603:39>>*/ return dec_invalid(1) /*<<bytes.ml:648:22>>*/ ;
       var b1 =  /*<<bytes.ml:604:15>>*/ caml_bytes_unsafe_get(b, i$15);
-       /*<<bytes.ml:604:49>>*/ if(2 !== (b1 >>> 6 | 0))
+       /*<<bytes.ml:604:49>>*/ if(2 !== b1 >>> 6)
         /*<<bytes.ml:604:55>>*/ return dec_invalid(1) /*<<bytes.ml:648:22>>*/ ;
       var
        u =  /*<<bytes.ml:582:2>>*/ (b0 & 31) << 6 | b1 & 63,
@@ -8495,7 +8495,7 @@
       /*<<bytes.ml:660:6>>*/ return max < last$1
              ? 0
              : ( /*<<bytes.ml:661:7>>*/ caml_bytes_set
-                (b, i, 192 | u$0 >>> 6 | 0),
+                (b, i, 192 | u$0 >>> 6),
                 /*<<bytes.ml:662:7>>*/ set(b, last$1, 128 | u$0 & 63),
                2) /*<<bytes.ml:679:21>>*/ ;
     }
@@ -8504,9 +8504,8 @@
       /*<<bytes.ml:666:6>>*/ return max < last$0
              ? 0
              : ( /*<<bytes.ml:667:7>>*/ caml_bytes_set
-                (b, i, 224 | u$0 >>> 12 | 0),
-                /*<<bytes.ml:668:7>>*/ set
-                (b, i + 1 | 0, 128 | (u$0 >>> 6 | 0) & 63),
+                (b, i, 224 | u$0 >>> 12),
+                /*<<bytes.ml:668:7>>*/ set(b, i + 1 | 0, 128 | u$0 >>> 6 & 63),
                 /*<<bytes.ml:669:7>>*/ set(b, last$0, 128 | u$0 & 63),
                3) /*<<bytes.ml:679:21>>*/ ;
     }
@@ -8517,11 +8516,9 @@
      /*<<bytes.ml:673:6>>*/ return max < last
             ? 0
             : ( /*<<bytes.ml:674:7>>*/ caml_bytes_set
-               (b, i, 240 | u$0 >>> 18 | 0),
-               /*<<bytes.ml:675:7>>*/ set
-               (b, i + 1 | 0, 128 | (u$0 >>> 12 | 0) & 63),
-               /*<<bytes.ml:676:7>>*/ set
-               (b, i + 2 | 0, 128 | (u$0 >>> 6 | 0) & 63),
+               (b, i, 240 | u$0 >>> 18),
+               /*<<bytes.ml:675:7>>*/ set(b, i + 1 | 0, 128 | u$0 >>> 12 & 63),
+               /*<<bytes.ml:676:7>>*/ set(b, i + 2 | 0, 128 | u$0 >>> 6 & 63),
                /*<<bytes.ml:677:7>>*/ set(b, last, 128 | u$0 & 63),
               4) /*<<bytes.ml:679:21>>*/ ;
    }
@@ -8543,10 +8540,10 @@
              var
               b$12 =
                  /*<<bytes.ml:710:29>>*/ caml_bytes_unsafe_get(b, i + 1 | 0);
-              /*<<bytes.ml:710:44>>*/ if(4 === (b$12 >>> 5 | 0)){
+              /*<<bytes.ml:710:44>>*/ if(4 === b$12 >>> 5){
               var
                b$11 =  /*<<bytes.ml:711:29>>*/ caml_bytes_unsafe_get(b, last);
-               /*<<bytes.ml:711:41>>*/ if(2 === (b$11 >>> 6 | 0)){
+               /*<<bytes.ml:711:41>>*/ if(2 === b$11 >>> 6){
                var i$0 =  /*<<bytes.ml:713:13>>*/ last + 1 | 0;
                i = i$0;
                continue;
@@ -8566,11 +8563,11 @@
               var
                b$7 =
                   /*<<bytes.ml:718:29>>*/ caml_bytes_unsafe_get(b, i + 2 | 0);
-               /*<<bytes.ml:718:44>>*/ if(2 === (b$7 >>> 6 | 0)){
+               /*<<bytes.ml:718:44>>*/ if(2 === b$7 >>> 6){
                var
                 b$6 =
                    /*<<bytes.ml:719:29>>*/ caml_bytes_unsafe_get(b, last$1);
-                /*<<bytes.ml:719:41>>*/ if(2 === (b$6 >>> 6 | 0)){
+                /*<<bytes.ml:719:41>>*/ if(2 === b$6 >>> 6){
                 var i$2 =  /*<<bytes.ml:721:13>>*/ last$1 + 1 | 0;
                 i = i$2;
                 continue;
@@ -8585,15 +8582,15 @@
              var
               b$2 =
                  /*<<bytes.ml:733:29>>*/ caml_bytes_unsafe_get(b, i + 1 | 0);
-              /*<<bytes.ml:733:44>>*/ if(8 === (b$2 >>> 4 | 0)){
+              /*<<bytes.ml:733:44>>*/ if(8 === b$2 >>> 4){
               var
                b$1 =
                   /*<<bytes.ml:734:29>>*/ caml_bytes_unsafe_get(b, i + 2 | 0);
-               /*<<bytes.ml:734:44>>*/ if(2 === (b$1 >>> 6 | 0)){
+               /*<<bytes.ml:734:44>>*/ if(2 === b$1 >>> 6){
                var
                 b$0 =
                    /*<<bytes.ml:735:29>>*/ caml_bytes_unsafe_get(b, last$3);
-                /*<<bytes.ml:735:41>>*/ if(2 === (b$0 >>> 6 | 0)){
+                /*<<bytes.ml:735:41>>*/ if(2 === b$0 >>> 6){
                 var i$4 =  /*<<bytes.ml:737:13>>*/ last$3 + 1 | 0;
                 i = i$4;
                 continue;
@@ -8610,15 +8607,15 @@
              var
               b$5 =
                  /*<<bytes.ml:725:29>>*/ caml_bytes_unsafe_get(b, i + 1 | 0);
-              /*<<bytes.ml:725:44>>*/ if(2 === (b$5 >>> 6 | 0)){
+              /*<<bytes.ml:725:44>>*/ if(2 === b$5 >>> 6){
               var
                b$4 =
                   /*<<bytes.ml:726:29>>*/ caml_bytes_unsafe_get(b, i + 2 | 0);
-               /*<<bytes.ml:726:44>>*/ if(2 === (b$4 >>> 6 | 0)){
+               /*<<bytes.ml:726:44>>*/ if(2 === b$4 >>> 6){
                var
                 b$3 =
                    /*<<bytes.ml:727:29>>*/ caml_bytes_unsafe_get(b, last$2);
-                /*<<bytes.ml:727:41>>*/ if(2 === (b$3 >>> 6 | 0)){
+                /*<<bytes.ml:727:41>>*/ if(2 === b$3 >>> 6){
                 var i$3 =  /*<<bytes.ml:729:13>>*/ last$2 + 1 | 0;
                 i = i$3;
                 continue;
@@ -8634,10 +8631,10 @@
           /*<<bytes.ml:695:8>>*/ if(max >= last$4){
           var
            b$14 =  /*<<bytes.ml:696:29>>*/ caml_bytes_unsafe_get(b, i + 1 | 0);
-           /*<<bytes.ml:696:44>>*/ if(5 === (b$14 >>> 5 | 0)){
+           /*<<bytes.ml:696:44>>*/ if(5 === b$14 >>> 5){
            var
             b$13 =  /*<<bytes.ml:697:29>>*/ caml_bytes_unsafe_get(b, last$4);
-            /*<<bytes.ml:697:41>>*/ if(2 === (b$13 >>> 6 | 0)){
+            /*<<bytes.ml:697:41>>*/ if(2 === b$13 >>> 6){
             var i$5 =  /*<<bytes.ml:699:13>>*/ last$4 + 1 | 0;
             i = i$5;
             continue;
@@ -8650,9 +8647,9 @@
          /*<<bytes.ml:702:8>>*/ if(max >= last$0){
          var
           b$10 =  /*<<bytes.ml:703:29>>*/ caml_bytes_unsafe_get(b, i + 1 | 0);
-          /*<<bytes.ml:703:44>>*/ if(2 === (b$10 >>> 6 | 0)){
+          /*<<bytes.ml:703:44>>*/ if(2 === b$10 >>> 6){
           var b$9 =  /*<<bytes.ml:704:29>>*/ caml_bytes_unsafe_get(b, last$0);
-           /*<<bytes.ml:704:41>>*/ if(2 === (b$9 >>> 6 | 0)){
+           /*<<bytes.ml:704:41>>*/ if(2 === b$9 >>> 6){
            var i$1 =  /*<<bytes.ml:706:13>>*/ last$0 + 1 | 0;
            i = i$1;
            continue;
@@ -8670,7 +8667,7 @@
         var last$5 =  /*<<bytes.ml:688:8>>*/ i + 1 | 0;
          /*<<bytes.ml:689:8>>*/ if(max >= last$5){
          var b$15 =  /*<<bytes.ml:690:29>>*/ caml_bytes_unsafe_get(b, last$5);
-          /*<<bytes.ml:690:41>>*/ if(2 === (b$15 >>> 6 | 0)){
+          /*<<bytes.ml:690:41>>*/ if(2 === b$15 >>> 6){
           var i$6 =  /*<<bytes.ml:692:13>>*/ last$5 + 1 | 0;
           i = i$6;
           continue;
@@ -8736,7 +8733,7 @@
       /*<<bytes.ml:772:6>>*/ if(max < last)  /*<<bytes.ml:772:25>>*/ return 0;
      var
       u$1 =  /*<<bytes.ml:773:6>>*/ u$0 - 65536 | 0,
-      hi =  /*<<bytes.ml:774:6>>*/ 55296 | u$1 >>> 10 | 0,
+      hi =  /*<<bytes.ml:774:6>>*/ 55296 | u$1 >>> 10,
       lo =  /*<<bytes.ml:775:6>>*/ 56320 | u$1 & 1023;
       /*<<bytes.ml:776:6>>*/ unsafe_set_uint16_be(b, i, hi);
       /*<<bytes.ml:776:18>>*/ unsafe_set_uint16_be(b, i + 2 | 0, lo);
@@ -8820,7 +8817,7 @@
       /*<<bytes.ml:826:6>>*/ if(max < last)  /*<<bytes.ml:826:25>>*/ return 0;
      var
       u$1 =  /*<<bytes.ml:827:6>>*/ u$0 - 65536 | 0,
-      hi =  /*<<bytes.ml:828:6>>*/ 55296 | u$1 >>> 10 | 0,
+      hi =  /*<<bytes.ml:828:6>>*/ 55296 | u$1 >>> 10,
       lo =  /*<<bytes.ml:829:6>>*/ 56320 | u$1 & 1023;
       /*<<bytes.ml:830:6>>*/ unsafe_set_uint16_le(b, i, hi);
       /*<<bytes.ml:830:18>>*/ unsafe_set_uint16_le(b, i + 2 | 0, lo);
@@ -11931,7 +11928,7 @@
      /*<<int32.ml:96:13>>*/ if(d < 0)
       /*<<int32.ml:97:7>>*/ return unsigned_lt(n, d) ? zero : one /*<<int32.ml:101:41>>*/ ;
     var
-     q =  /*<<int32.ml:99:23>>*/ caml_div(n >>> 1 | 0, d) << 1,
+     q =  /*<<int32.ml:99:23>>*/ caml_div(n >>> 1, d) << 1,
      r =  /*<<int32.ml:100:18>>*/ n - caml_mul(q, d) | 0;
      /*<<int32.ml:101:7>>*/ return unsigned_lt(r, d) ? q : q + 1 | 0 /*<<int32.ml:101:41>>*/ ;
    }
@@ -11971,23 +11968,23 @@
             : 0 <= d ? q - 1 | 0 : q + 1 | 0 /*<<int32.ml:127:59>>*/ ;
    }
    function leading_zeros(x){
-    var y =  /*<<int32.ml:133:10>>*/ x >>> 16 | 0;
+    var y =  /*<<int32.ml:133:10>>*/ x >>> 16;
      /*<<int32.ml:134:12>>*/ if(y !== 0)
      var n =  /*<<int32.ml:135:2>>*/ 16, x$0 = y;
     else{ /*<<int32.ml:134:12>>*/ n = 32; x$0 = x;}
-    var y$0 =  /*<<int32.ml:135:10>>*/ x$0 >>> 8 | 0;
+    var y$0 =  /*<<int32.ml:135:10>>*/ x$0 >>> 8;
      /*<<int32.ml:136:12>>*/ if(y$0 !== 0)
      var n$0 =  /*<<int32.ml:137:2>>*/ n - 8 | 0, x$1 = y$0;
     else{ /*<<int32.ml:136:12>>*/ n$0 = n; x$1 = x$0;}
-    var y$1 =  /*<<int32.ml:137:10>>*/ x$1 >>> 4 | 0;
+    var y$1 =  /*<<int32.ml:137:10>>*/ x$1 >>> 4;
      /*<<int32.ml:138:12>>*/ if(y$1 !== 0)
      var n$1 =  /*<<int32.ml:139:2>>*/ n$0 - 4 | 0, x$2 = y$1;
     else{ /*<<int32.ml:138:12>>*/ n$1 = n$0; x$2 = x$1;}
-    var y$2 =  /*<<int32.ml:139:10>>*/ x$2 >>> 2 | 0;
+    var y$2 =  /*<<int32.ml:139:10>>*/ x$2 >>> 2;
      /*<<int32.ml:140:12>>*/ if(y$2 !== 0)
      var n$2 =  /*<<int32.ml:141:2>>*/ n$1 - 2 | 0, x$3 = y$2;
     else{ /*<<int32.ml:140:12>>*/ n$2 = n$1; x$3 = x$2;}
-    var y$3 =  /*<<int32.ml:141:10>>*/ x$3 >>> 1 | 0;
+    var y$3 =  /*<<int32.ml:141:10>>*/ x$3 >>> 1;
      /*<<int32.ml:142:12>>*/ return y$3 !== 0 ? n$2 - 2 | 0 : n$2 - x$3 | 0 /*<<int32.ml:142:44>>*/ ;
    }
    function unsigned_bitsize(x){
@@ -12024,14 +12021,13 @@
    }
    function popcount(x){
     var
-     x$0 =  /*<<int32.ml:175:10>>*/ x - ((x >>> 1 | 0) & 1431655765) | 0,
+     x$0 =  /*<<int32.ml:175:10>>*/ x - (x >>> 1 & 1431655765) | 0,
      x$1 =
-        /*<<int32.ml:176:10>>*/ (x$0 & 858993459)
-       + ((x$0 >>> 2 | 0) & 858993459)
+        /*<<int32.ml:176:10>>*/ (x$0 & 858993459) + (x$0 >>> 2 & 858993459)
        | 0,
-     x$2 =  /*<<int32.ml:178:10>>*/ (x$1 + (x$1 >>> 4 | 0) | 0) & 252645135,
-     x$3 =  /*<<int32.ml:179:10>>*/ x$2 + (x$2 >>> 8 | 0) | 0,
-     x$4 =  /*<<int32.ml:180:10>>*/ x$3 + (x$3 >>> 16 | 0) | 0;
+     x$2 =  /*<<int32.ml:178:10>>*/ (x$1 + (x$1 >>> 4) | 0) & 252645135,
+     x$3 =  /*<<int32.ml:179:10>>*/ x$2 + (x$2 >>> 8) | 0,
+     x$4 =  /*<<int32.ml:180:10>>*/ x$3 + (x$3 >>> 16) | 0;
      /*<<int32.ml:181:2>>*/ return x$4 & 63;
     /*<<int32.ml:181:20>>*/ }
    function seeded_hash(seed, x){
@@ -12486,7 +12482,7 @@
      /*<<nativeint.ml:83:13>>*/ if(d < 0)
       /*<<nativeint.ml:84:7>>*/ return unsigned_lt(n, d) ? zero : one /*<<nativeint.ml:88:41>>*/ ;
     var
-     q =  /*<<nativeint.ml:86:23>>*/ caml_div(n >>> 1 | 0, d) << 1,
+     q =  /*<<nativeint.ml:86:23>>*/ caml_div(n >>> 1, d) << 1,
      r =  /*<<nativeint.ml:87:18>>*/ n - caml_mul(q, d) | 0;
      /*<<nativeint.ml:88:7>>*/ return unsigned_lt(r, d) ? q : q + 1 | 0 /*<<nativeint.ml:88:41>>*/ ;
    }
@@ -16389,7 +16385,7 @@
    }
    function add_in_char_set(char_set, c){
     var
-     str_ind =  /*<<camlinternalFormat.ml:29:2>>*/ c >>> 3 | 0,
+     str_ind =  /*<<camlinternalFormat.ml:29:2>>*/ c >>> 3,
      mask = 1 << (c & 7),
      _al_ =
         /*<<camlinternalFormat.ml:31:30>>*/ runtime.caml_bytes_get
@@ -16426,7 +16422,7 @@
     /*<<camlinternalFormat.ml:43:34>>*/ }
    function is_in_char_set(char_set, c){
     var
-     str_ind =  /*<<camlinternalFormat.ml:48:2>>*/ c >>> 3 | 0,
+     str_ind =  /*<<camlinternalFormat.ml:48:2>>*/ c >>> 3,
      mask = 1 << (c & 7);
      /*<<camlinternalFormat.ml:49:15>>*/ return 0
             !== (caml_string_get(char_set, str_ind) & mask)
@@ -25685,7 +25681,7 @@
      for(;;){
       var x =  /*<<digest.ml:25:22>>*/ caml_string_get(d, i);
        /*<<digest.ml:26:34>>*/  /*<<digest.ml:26:54>>*/ caml_bytes_unsafe_set
-       (result, i * 2 | 0,  /*<<digest.ml:26:34>>*/ char_hex(x >>> 4 | 0));
+       (result, i * 2 | 0,  /*<<digest.ml:26:34>>*/ char_hex(x >>> 4));
        /*<<digest.ml:27:36>>*/  /*<<digest.ml:27:60>>*/ caml_bytes_unsafe_set
        (result,
         (i * 2 | 0) + 1 | 0,
@@ -26754,7 +26750,7 @@
    function int32aux(s, n){
      /*<<random.ml:227:4>>*/ for(;;){
      var
-      r =  /*<<random.ml:227:38>>*/ bits32(s) >>> 1 | 0,
+      r =  /*<<random.ml:227:38>>*/ bits32(s) >>> 1,
       v =  /*<<random.ml:228:12>>*/ caml_mod(r, n);
       /*<<random.ml:230:46>>*/ if
       (((Stdlib_Int32[13] - n | 0) + 1 | 0) >= (r - v | 0))
@@ -36817,7 +36813,7 @@
       /*<<ephemeron.ml:172:6>>*/ clean(h);
      var
       _j_ =  /*<<ephemeron.ml:172:13>>*/ nsize < Stdlib_Sys[15] ? 1 : 0,
-      _j_ = _j_ && ((osize >>> 1 | 0) <= h[1] ? 1 : 0);
+      _j_ = _j_ && (osize >>> 1 <= h[1] ? 1 : 0);
      if(_j_){
       var ndata =  /*<<ephemeron.ml:174:20>>*/ caml_array_make(nsize, 0);
        /*<<ephemeron.ml:175:8>>*/ h[2] = ndata;
