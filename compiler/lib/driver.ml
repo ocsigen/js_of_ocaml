@@ -261,6 +261,7 @@ let generate
     { program; variable_uses; trampolined_calls; deadcode_sentinel; in_cps; shapes = _ } =
   if times () then Format.eprintf "Start Generation...@.";
   let should_export = should_export wrap_with_fun in
+  let program = Branch_sinking.f ~variable_uses program in
   Generate.f
     program
     ~exported_runtime

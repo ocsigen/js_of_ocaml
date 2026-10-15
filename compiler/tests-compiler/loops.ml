@@ -91,18 +91,18 @@ let rec fun_with_loop acc = function
       if(1 === x && ! _a_[2]) break;
       var xs = _a_[2], a$2 = acc, i = 0;
       for(;;){
-       var a = [0, 1, a$2], _a_ = i + 1 | 0;
+       var a = [0, 1, a$2];
        if(10 === i){acc = [0, x, a]; _a_ = xs; break;}
        a$2 = a;
-       i = _a_;
+       i = i + 1 | 0;
       }
      }
      var a$1 = acc, i$0 = 0;
      for(;;){
-      var a$0 = [0, 1, a$1], _a_ = i$0 + 1 | 0;
+      var a$0 = [0, 1, a$1];
       if(10 === i$0) return a$0;
       a$1 = a$0;
-      i$0 = _a_;
+      i$0 = i$0 + 1 | 0;
      }
     }
     //end
@@ -126,15 +126,14 @@ let for_for_while () =
   print_fun_decl program (Some "for_for_while");
   [%expect
     {|
-    function for_for_while(_a_){
+    function for_for_while(param){
      var k = 1;
      for(;;){
       var j = 1;
       for(;;)
        if(10 <= runtime.caml_mul(k, j)){
-        _a_ = j + 1 | 0;
-        if(10 === j){_a_ = k + 1 | 0; if(10 === k) return 0; k = _a_; break;}
-        j = _a_;
+        if(10 === j){if(10 === k) return 0; k = k + 1 | 0; break;}
+        j = j + 1 | 0;
        }
        else
         id[1]++;
@@ -162,15 +161,14 @@ let for_for_while () =
   print_fun_decl program (Some "for_for_while");
   [%expect
     {|
-    function for_for_while(_a_){
+    function for_for_while(param){
      var k = 1;
      for(;;){
       var j = 1;
       for(;;)
        if(10 <= caml_div(k, j)){
-        _a_ = j + 1 | 0;
-        if(10 === j){_a_ = k + 1 | 0; if(10 === k) return 0; k = _a_; break;}
-        j = _a_;
+        if(10 === j){if(10 === k) return 0; k = k + 1 | 0; break;}
+        j = j + 1 | 0;
        }
        else{
         try{caml_div(k, j);}
