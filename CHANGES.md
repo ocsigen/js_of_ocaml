@@ -73,6 +73,8 @@
 * Compiler/Wasm: give boxed numbers the type of their box when no cast is
   needed, and initialize such locals with a placeholder rather than making
   them nullable (#2485)
+* Compiler/Wasm: likewise give values known to be bigarrays a Wasm bigarray
+  type, so that loops do not cast them at each access (#2485)
 
 ### Libraries
 * Lib: add `WebGL2` bindings; the `webgl` example uses WebGL2 and a new

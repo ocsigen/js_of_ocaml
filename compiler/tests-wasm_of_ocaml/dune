@@ -15,7 +15,7 @@
  (modes wasm))
 
 (tests
- (names globalize_assign typed_assign)
+ (names globalize_assign typed_assign bigarray_cast)
  (modes wasm)
  ; With -g, ocamlc does not turn the references into mutable variables
  (flags

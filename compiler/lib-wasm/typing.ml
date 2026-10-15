@@ -151,7 +151,12 @@ type typ =
           block or an integer otherwise; if it's a block, an
           overapproximation of the possible values of each of its
           fields is given by [fields] *)
-  | Bigarray of Optimization_hint.Bigarray.t
+  | Bigarray of
+      { desc : Optimization_hint.Bigarray.t
+      ; cast : bool
+      }
+      (** When [cast] holds, the value is represented by a Wasm
+          bigarray reference, being cast where it is defined. *)
   | Array of array_kind
       (** An array: the empty array (which is a block with no field), a
           float array if [float] holds, or a non-empty block if [value]
@@ -199,7 +204,8 @@ module Domain = struct
           }
     | (Int _ | Null), Tuple { fields; _ } | Tuple { fields; _ }, (Int _ | Null) ->
         Tuple { fields; block = false; cast = false }
-    | Bigarray b, Bigarray b' when Bigarray.equal b b' -> t
+    | Bigarray { desc = b; cast = c }, Bigarray { desc = b'; cast = c' }
+      when Bigarray.equal b b' -> Bigarray { desc = b; cast = c && c' }
     | Array a, Array a' ->
         Array
           { float = a.float || a'.float
@@ -232,7 +238,8 @@ module Domain = struct
         && Bool.equal c c'
         && Array.length t = Array.length t'
         && Array.for_all2 ~f:equal t t'
-    | Bigarray b, Bigarray b' -> Bigarray.equal b b'
+    | Bigarray { desc = b; cast = c }, Bigarray { desc = b'; cast = c' } ->
+        Bigarray.equal b b' && Bool.equal c c'
     | Array a, Array a' ->
         Bool.equal a.float a'.float
         && Bool.equal a.value a'.value
@@ -294,7 +301,9 @@ module Domain = struct
           | Boxed -> "boxed"
           | Boxed_precise -> "boxed-precise"
           | Unboxed -> "unboxed")
-    | Bigarray b -> Bigarray.print f b
+    | Bigarray { desc; cast } ->
+        Bigarray.print f desc;
+        if cast then Format.fprintf f "!"
     | Array { float; value; cast } ->
         Format.fprintf
           f
@@ -440,7 +449,7 @@ let bigarray_element_type (kind : Optimization_hint.Bigarray.kind) =
 let bigarray_type ~approx ba =
   match arg_type ~approx ba with
   | Bot -> Bot
-  | Bigarray { kind; _ } -> bigarray_element_type kind
+  | Bigarray { desc = { kind; _ }; _ } -> bigarray_element_type kind
   | _ -> Top
 
 let primitive_types = String.Hashtbl.create 16
@@ -517,9 +526,12 @@ let prim_type ~st ~approx prim hint args =
       match args with
       | [ Pc (Int kind); Pc (Int layout); _ ] ->
           Bigarray
-            (Bigarray.make
-               ~kind:(Targetint.to_int_exn kind)
-               ~layout:(Targetint.to_int_exn layout))
+            { desc =
+                Bigarray.make
+                  ~kind:(Targetint.to_int_exn kind)
+                  ~layout:(Targetint.to_int_exn layout)
+            ; cast = false
+            }
       | _ -> Top)
   | "caml_ba_get_1" | "caml_ba_get_2" | "caml_ba_get_3" -> (
       match hint, args with
@@ -658,9 +670,12 @@ let propagate st approx x : Domain.t =
                                   | ( Expr (Constant (Int kind))
                                     , Expr (Constant (Int layout)) ) ->
                                       Bigarray
-                                        (Bigarray.make
-                                           ~kind:(Targetint.to_int_exn kind)
-                                           ~layout:(Targetint.to_int_exn layout))
+                                        { desc =
+                                            Bigarray.make
+                                              ~kind:(Targetint.to_int_exn kind)
+                                              ~layout:(Targetint.to_int_exn layout)
+                                        ; cast = false
+                                        }
                                   | _ -> raise Not_found
                                 with Not_found -> Var.Tbl.get approx y)
                             | _ -> Var.Tbl.get approx y)
@@ -876,12 +891,12 @@ let castable_functions st types =
         can_cast st y
         &&
         match Var.Tbl.get types y with
-        | Tuple { block = true; _ } | Array { float = false; _ } -> (
+        | Tuple { block = true; _ } | Array { float = false; _ } | Bigarray _ -> (
             match defs.(Var.idx y) with
             | Expr (Apply _) -> Option.is_some (unique_callee y)
             | Phi _ | Expr _ -> true)
         | Bot -> true
-        | Top | Int _ | Number _ | Tuple _ | Bigarray _ | Array _ | Null -> false
+        | Top | Int _ | Number _ | Tuple _ | Array _ | Null -> false
       in
       if not ok then Var.ISet.add bad y);
   let is_bad_function g =
@@ -909,10 +924,10 @@ let castable_functions st types =
   fun g -> can_unbox_return_value st.fun_info g && not (is_bad_function g)
 
 let cast_blocks p st types =
-  (* A value known to be a block is given the type of a Wasm block
-     reference, and is cast where it is defined, if it is used as a
-     block. This is propagated to the values it comes from, so that it
-     is cast only once. *)
+  (* A value known to be a block (resp. a bigarray) is given the type
+     of a Wasm block (resp. bigarray) reference, and is cast where it
+     is defined, if it is used as such. This is propagated to the
+     values it comes from, so that it is cast only once. *)
   let castable = castable_functions st types in
   let visited = Var.ISet.empty () in
   let rec cast y =
@@ -926,7 +941,10 @@ let cast_blocks p st types =
       | Array ({ float = false; _ } as a) ->
           Var.Tbl.set types y (Array { a with cast = true });
           propagate y
-      | Top | Int _ | Number _ | Tuple _ | Bigarray _ | Array _ | Null | Bot -> ())
+      | Bigarray r ->
+          Var.Tbl.set types y (Bigarray { r with cast = true });
+          propagate y
+      | Top | Int _ | Number _ | Tuple _ | Array _ | Null | Bot -> ())
   and propagate y =
     match st.global_flow_state.defs.(Var.idx y) with
     | Phi { known; _ } -> Var.Set.iter cast known
@@ -947,6 +965,14 @@ let cast_blocks p st types =
   let cast_arg a =
     match a with
     | Pv y -> cast y
+    | Pc _ -> ()
+  in
+  let cast_bigarray_arg a =
+    match a with
+    | Pv y -> (
+        match Var.Tbl.get types y with
+        | Bigarray _ -> cast y
+        | _ -> ())
     | Pc _ -> ()
   in
   Code.fold_closures
@@ -974,6 +1000,27 @@ let cast_blocks p st types =
                               | "%direct_obj_tag" )
                             , _ ) )
                       , a :: _ ) -> cast_arg a
+                  | Prim
+                      ( Extern
+                          ( ( "caml_ba_get_1"
+                            | "caml_ba_get_2"
+                            | "caml_ba_get_3"
+                            | "caml_ba_float32_get_1"
+                            | "caml_ba_float32_get_2"
+                            | "caml_ba_float32_get_3"
+                            | "caml_ba_get_generic"
+                            | "caml_ba_set_1"
+                            | "caml_ba_set_2"
+                            | "caml_ba_set_3"
+                            | "caml_ba_set_generic"
+                            | "caml_ba_float32_set_1"
+                            | "caml_ba_float32_set_2"
+                            | "caml_ba_float32_set_3"
+                            | "caml_ba_dim_1"
+                            | "caml_ba_dim_2"
+                            | "caml_ba_dim_3" )
+                          , _ )
+                      , a :: _ ) -> cast_bigarray_arg a
                   | Field (_, _, Float)
                   | Prim _ | Apply _ | Block _ | Closure _ | Constant _ | Special _ -> ())
               | Set_field (y, _, (Non_float | Immediate), _)
