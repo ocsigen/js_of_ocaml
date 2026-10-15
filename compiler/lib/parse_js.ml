@@ -803,13 +803,17 @@ let formal_parameters_of_cover (cover : cover) =
 
 (* IdentifierReference[Yield, Await] / LabelIdentifier[Yield, Await]:
    identifiers and contextual keywords, plus [yield] and [await] when they
-   are not keywords in the current context. *)
+   are not keywords in the current context, and the words that are only
+   reserved in strict mode code ([let], [static], ...). Strict mode code is
+   not known to the parser: the words it reserves are rejected afterwards
+   (see [early_errors]). *)
 let ident_of_token ctx (tok : Js_token.t) =
   match tok with
   | T_IDENTIFIER (name, _) -> Some name
   | T_YIELD when not ctx.yield -> Some (utf8_s "yield")
   | T_AWAIT when not ctx.await -> Some (utf8_s "await")
-  | _ when Js_token.is_contextual_keyword tok -> Some (utf8_s (Js_token.to_string tok))
+  | _ when Js_token.is_contextual_keyword tok || Js_token.is_strict_mode_reserved_word tok
+    -> Some (utf8_s (Js_token.to_string tok))
   | _ -> None
 
 let is_identifier ctx tok = Option.is_some (ident_of_token ctx tok)
@@ -887,7 +891,7 @@ let starts_expression (tok : Js_token.t) =
   | T_TYPEOF
   | T_VOID
   | T_DELETE -> true
-  | _ -> Js_token.is_contextual_keyword tok
+  | _ -> Js_token.is_contextual_keyword tok || Js_token.is_strict_mode_reserved_word tok
 
 let assignment_op (tok : Js_token.t) =
   match tok with
@@ -1980,10 +1984,21 @@ and parse_statement_list_item t ctx =
 
 and declaration_ahead t ctx =
   match cur t with
-  | T_FUNCTION | T_CLASS | T_AT | T_LET | T_CONST -> true
+  | T_FUNCTION | T_CLASS | T_AT | T_CONST -> true
+  | T_LET -> let_declaration_ahead t
   | T_ASYNC -> async_function_ahead t
   | T_USING | T_AWAIT -> using_declaration_ahead t ctx
   | _ -> false
+
+(* [let] starts a declaration when followed by an identifier, [[] or [{].
+   Otherwise, it is an identifier. *)
+and let_declaration_ahead t =
+  match peek_tok t 1 with
+  | T_LBRACKET | T_LCURLY -> true
+  | tok ->
+      (* A BindingIdentifier: [yield] and [await] are included, whatever
+         the context *)
+      is_identifier no_ctx tok
 
 (* Declaration : HoistableDeclaration | ClassDeclaration | LexicalDeclaration *)
 and parse_declaration t ctx =
@@ -2100,11 +2115,13 @@ and parse_statement t ctx =
       stmt (Labelled_statement (label, body))
   | T_FUNCTION | T_CLASS | T_AT -> error_msg t declaration_not_allowed
   | T_ASYNC when async_function_ahead t -> error_msg t declaration_not_allowed
+  | T_LET when Poly.equal (peek_tok t 1) Js_token.T_LBRACKET ->
+      error_msg t "an expression statement cannot start with `let [`"
   | T_EXPORT ->
       error_msg t "export declarations are only allowed at the top level of a module"
   | _ ->
       (* ExpressionStatement, which cannot start with [function], [async
-         function] or [class] (above) *)
+         function], [class] or [let []] (above) *)
       let e = parse_expression t ctx ~no_in:false in
       consume_semicolon t;
       stmt (Expression_statement e)
@@ -2128,9 +2145,12 @@ and parse_for t ctx =
   expect t T_LPAREN;
   match cur t with
   | T_SEMICOLON -> parse_for_rest t ctx (Left None)
-  | (T_VAR | T_LET | T_CONST) as tok ->
+  | (T_VAR | T_CONST) as tok ->
       advance t;
       parse_for_declaration t ctx ~for_await (variable_kind tok)
+  | T_LET when let_declaration_ahead t ->
+      advance t;
+      parse_for_declaration t ctx ~for_await Let
   | T_USING when using_declaration_ahead t ctx -> parse_for_using t ctx ~for_await
   | T_AWAIT
     when ctx.await
@@ -2528,24 +2548,137 @@ let parse_script_or_module t ~module_ =
   in
   loop []
 
+(* The words that are only reserved in strict mode code *)
+let is_strict_mode_reserved_name = function
+  | "implements"
+  | "interface"
+  | "let"
+  | "package"
+  | "private"
+  | "protected"
+  | "public"
+  | "static"
+  | "yield" -> true
+  | _ -> false
+
+(* Whether a function body or a script starts with a directive prologue
+   containing a Use Strict Directive *)
+let has_use_strict body =
+  let rec loop (l : statement_list) =
+    match l with
+    | (Expression_statement (EStr (Utf8 s)), _) :: rem ->
+        String.equal s "use strict" || loop rem
+    | _ -> false
+  in
+  loop body
+
 (* Early errors (ECMA-262 static semantics, "It is a Syntax Error if ..."):
    the rules that depend on where a construct occurs rather than on its
    tokens are checked on the tree once it is built, rather than while
    parsing. The cover grammars record their early errors in the tree
    ([Javascript.early_error]). Import and export declarations are only built
    at the top level of a module, so there is nothing to check about their
-   position. *)
-class early_errors =
-  object
-    inherit Js_traverse.iter
+   position.
+
+   [strict] tells whether the code being checked is strict mode code: a
+   module, a class, or a script or a function whose body starts with a
+   [use strict] directive. A function's directive also applies to its name
+   and its parameters. *)
+class early_errors ~strict =
+  object (m)
+    inherit Js_traverse.iter as super
+
+    val mutable strict = strict
+
+    (* The location of the statement being checked, for the nodes that are
+       not located *)
+    val mutable loc = Parse_info.zero
+
+    method private error : 'a. location -> string -> 'a =
+      fun l msg ->
+        let pi =
+          match l with
+          | Pi pi -> pi
+          | N | U -> loc
+        in
+        raise (Parsing_error (pi, msg))
+
+    method private in_context strict' f =
+      let s = strict in
+      strict <- strict';
+      f ();
+      strict <- s
 
     method! early_error p =
       raise (Parsing_error (p.loc, Option.value ~default:"syntax error" p.reason))
+
+    method! statements l =
+      List.iter l ~f:(fun (s, l) ->
+          (match l with
+          | Pi pi -> loc <- pi
+          | N | U -> ());
+          m#statement s)
+
+    method! ident i =
+      match i with
+      | S { name = Utf8 name; loc = l; _ }
+        when strict && is_strict_mode_reserved_name name ->
+          m#error l (Printf.sprintf "`%s` is a reserved word in strict mode code" name)
+      | S _ | V _ -> ()
+
+    (* A lexical declaration cannot bind [let] *)
+    method private lexical_binding kind (b : binding) =
+      match kind, b with
+      | (Let | Const | Using | AwaitUsing), BindingIdent (S { name = Utf8 "let"; loc; _ })
+        -> m#error loc "`let` cannot be declared by `let`, `const` or `using`"
+      | _ -> ()
+
+    method! fun_decl ((_, _, body, _) as d) =
+      m#in_context (strict || has_use_strict body) (fun () -> super#fun_decl d)
+
+    (* All the parts of a class are strict mode code, but its decorators,
+       which are evaluated in the enclosing code *)
+    method! class_decl c =
+      List.iter c.decorators ~f:m#expression;
+      m#in_context true (fun () -> super#class_decl { c with decorators = [] })
+
+    method! for_binding kind b =
+      m#lexical_binding kind b;
+      super#for_binding kind b
+
+    method! statement s =
+      match s with
+      | Function_declaration (_, (_, _, body, _)) ->
+          (* The name is strict mode code if the body is *)
+          m#in_context (strict || has_use_strict body) (fun () -> super#statement s)
+      | Class_declaration (id, c) ->
+          m#in_context true (fun () -> m#ident id);
+          m#class_decl c
+      | Variable_statement (kind, l) ->
+          List.iter l ~f:(function
+            | DeclIdent (i, _) -> m#lexical_binding kind (BindingIdent i)
+            | DeclPattern _ -> ());
+          super#statement s
+      | Labelled_statement (Label.S (Utf8 name), _)
+        when strict && is_strict_mode_reserved_name name ->
+          (* Labels are not identifiers in the tree, and are not located *)
+          m#error N (Printf.sprintf "`%s` is a reserved word in strict mode code" name)
+      | _ -> super#statement s
+
+    method! expression e =
+      match e with
+      | EFun (_, (_, _, body, _)) ->
+          m#in_context (strict || has_use_strict body) (fun () -> super#expression e)
+      | EClass (id, c) ->
+          Option.iter id ~f:(fun id -> m#in_context true (fun () -> m#ident id));
+          m#class_decl c
+      | _ -> super#expression e
   end
 
-let check_program p =
-  let c = new early_errors in
-  List.iter p ~f:(fun (_, (s, _)) -> c#statement s)
+let check_program ~module_ p =
+  let body = List.map p ~f:snd in
+  let c = new early_errors ~strict:(module_ || has_use_strict body) in
+  c#statements body
 
 (* The parser uses the native stack: a program nested very deeply (tens of
    thousands of brackets, with the stack of OCaml 4) overflows it. Report
@@ -2575,7 +2708,7 @@ let parse_aux ~keep_tokens script_or_module lex =
         raise e
     | Stack_overflow -> nested_too_deeply t
   in
-  (try check_program p with Stack_overflow -> nested_too_deeply t);
+  (try check_program ~module_ p with Stack_overflow -> nested_too_deeply t);
   p, t
 
 (* Group the statements under the annotations they follow *)
@@ -2608,7 +2741,7 @@ let parse_expr lex =
     try
       let e = parse_expression t no_ctx ~no_in:false in
       expect t T_EOF;
-      (new early_errors)#expression e;
+      (new early_errors ~strict:false)#expression e;
       e
     with Stack_overflow -> nested_too_deeply t
   in
