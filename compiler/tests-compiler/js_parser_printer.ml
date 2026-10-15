@@ -2288,6 +2288,44 @@ let%expect_test "yield is reserved in strict mode code" =
            yield}}
            |}]
 
+let%expect_test "arrow function parameters" =
+  (* The cover, a parenthesized expression or an [async (...)] call, becomes
+     the parameters *)
+  check `Script "({a = 1}, [b, , c = 2], ...d) => d";
+  [%expect {| ({a=1},[b,,c=2],...d)=>d; |}];
+  check `Script "(a, b,) => 1; (a, ...b) => 1; async (a, ...b) => 1";
+  [%expect {| (a,b)=>1;(a,...b)=>1;async(a,...b)=>1; |}];
+  check `Script "async ({await: x}) => 1";
+  [%expect {| async({await:x})=>1; |}];
+  check `Script "async (a = () => await) => 1";
+  [%expect {| async(a=()=>await)=>1; |}];
+  check `Script "(a = (b = (c = (d = 1) => 1) => 1) => 1) => 1";
+  [%expect {| (a=(b=(c=(d=1)=>1)=>1)=>1)=>1; |}];
+  (* Patterns with default values were read as assignment targets *)
+  check `Script "(({a} = {a: 1}) => {}); ([a = 1], []) => 2";
+  [%expect {| ({a}={a:1})=>{};([a=1],[])=>2; |}];
+  check `Script "({a: b = 1, c = 2} = x, [d = 3, {e} = y] = z) => 1";
+  [%expect {| ({a:b=1,c=2}=x,[d=3,{e}=y]=z)=>1; |}];
+  (* Elements that are not parameters *)
+  check `Script "(a + b) => 1";
+  [%expect {| error (l:1, c:3): unexpected `+`, expected `,` or `)` |}];
+  check `Script "([...a, b]) => 1";
+  [%expect {| error (l:1, c:6): unexpected `,`, expected `]` |}];
+  check `Script "({...a, b}) => 1";
+  [%expect {| error (l:1, c:6): unexpected `,`, expected `}` |}];
+  check `Script "({ m(){} }) => 1";
+  [%expect {| error (l:1, c:4): unexpected `(`, expected `,` or `}` |}];
+  check `Script "async (...b, c) => 1";
+  [%expect {| error (l:1, c:11): unexpected `,`, expected `)` |}];
+  check `Script "async (...b,) => 1";
+  [%expect {| error (l:1, c:11): unexpected `,`, expected `)` |}];
+  check `Script "(...a = 1) => 1";
+  [%expect {| error (l:1, c:6): unexpected `=`, expected `)` |}];
+  check `Script "((a)) => 1";
+  [%expect {| error (l:1, c:1): unexpected `(`, expected an identifier |}];
+  check `Script "async (a = (await) => 1) => 1";
+  [%expect {| error (l:1, c:17): unexpected `)`, expected an expression |}]
+
 let%expect_test "await in the parameters of an async arrow function" =
   (* [async (...)] is first parsed as a call, in which [await] is an
      identifier; [await] is a keyword in the parameters *)
