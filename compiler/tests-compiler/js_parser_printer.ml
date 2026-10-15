@@ -2122,7 +2122,10 @@ let%expect_test "directive prologue" =
            let=1;
            |}];
   check `Script "('use strict'); var let = 1";
-  [%expect {| error (l:1, c:20): `let` is a reserved word in strict mode code |}];
+  [%expect {|
+           "use strict";var
+           let=1;
+           |}];
   check `Script "'use strict'.length; var let = 1";
   [%expect {|
            "use strict".length;var

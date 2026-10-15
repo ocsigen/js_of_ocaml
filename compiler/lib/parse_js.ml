@@ -310,6 +310,15 @@ module Stream : sig
   val last_cover : t -> cover
   (** The elements of the last recorded cover *)
 
+  (** {2 Directives} *)
+
+  val record_use_strict : t -> statement -> unit
+  (** A statement is a Use Strict Directive. Directives are told apart by
+      their tokens, which the tree does not keep: [("use strict")] and
+      ["use\x20strict"] are not Use Strict Directives. *)
+
+  val use_strict_directives : t -> statement list
+
   val begin_cover : t -> unit
 
   val end_cover : t -> (expression * Lexing.position) list
@@ -348,6 +357,7 @@ end = struct
           (* Indices of the first and last tokens of the last
            parenthesized expression or [async (...)] call *)
     ; mutable cover : cover option (* its elements *)
+    ; mutable use_strict : statement list (* the Use Strict Directives *)
     ; mutable cover_depth : int (* number of covers being parsed *)
     ; mutable assigns : (expression * Lexing.position) list
           (* assignments parsed inside them, see [cover] *)
@@ -370,6 +380,7 @@ end = struct
     ; cover_start = -1
     ; cover_end = -1
     ; cover = None
+    ; use_strict = []
     ; cover_depth = 0
     ; assigns = []
     }
@@ -534,6 +545,10 @@ end = struct
 
   let is_cover t ~since = t.cover_start = since && t.cover_end = t.prev_real
 
+  let record_use_strict t s = t.use_strict <- s :: t.use_strict
+
+  let use_strict_directives t = t.use_strict
+
   let last_cover t =
     match t.cover with
     | Some c -> c
@@ -627,6 +642,31 @@ let comma_list t ~close f = (comma_list_gen t ~close ~rest:None f).list
 let comma_list_rest t ~close ~rest f = comma_list_gen t ~close ~rest:(Some rest) f
 
 (****)
+
+(* Directive prologues: the string literal statements at the beginning of
+   a script or of a function body. [tok] is the first token of the
+   statement: a parenthesized string is not a directive. *)
+let is_directive (tok : Js_token.t) (s, _) =
+  match tok, s with
+  | T_STRING _, Expression_statement (EStr _) -> true
+  | _ -> false
+
+(* A Use Strict Directive is spelled exactly ["use strict"], without escape
+   sequences. The second component of [T_STRING] is the length of the raw
+   contents, plus one for the closing quote. *)
+let is_use_strict (tok : Js_token.t) s =
+  is_directive tok s
+  &&
+  match tok with
+  | T_STRING (Utf8 "use strict", n) -> n = String.length "use strict" + 1
+  | _ -> false
+
+(* Record the Use Strict Directives of a directive prologue: [prologue]
+   tells whether the statements so far, [s] excluded, are all directives *)
+let directive t ~prologue tok s =
+  let prologue = prologue && is_directive tok s in
+  if prologue && is_use_strict tok s then record_use_strict t (fst s);
+  prologue
 
 (* The [Yield] and [Await] grammar parameters: whether [yield] and [await]
    are keywords rather than identifiers *)
@@ -1710,14 +1750,14 @@ and parse_function_declaration t ctx ~pos ~async =
 
 (* FunctionBody / StatementList, up to the closing brace *)
 and parse_function_body t ctx =
-  let rec loop acc =
+  let rec loop prologue acc =
     match cur t with
     | T_RCURLY | T_EOF -> List.rev acc
-    | _ ->
+    | tok ->
         let s = parse_statement_list_item t ctx in
-        loop (s :: acc)
+        loop (directive t ~prologue tok s) (s :: acc)
   in
-  loop []
+  loop true []
 
 (* [( FormalParameters )] *)
 and parse_formal_parameters t ctx =
@@ -2536,17 +2576,17 @@ and parse_export_declaration t ~pos ~decorators =
    Each item comes with the annotations that precede it. *)
 let parse_script_or_module t ~module_ =
   let ctx = { yield = false; await = module_ } in
-  let rec loop acc =
+  let rec loop prologue acc =
     match cur t with
     | T_EOF -> List.rev acc
-    | _ ->
+    | tok ->
         let annots = annots_before t in
         let s =
           if module_ then parse_module_item t ctx else parse_statement_list_item t ctx
         in
-        loop ((annots, s) :: acc)
+        loop (directive t ~prologue tok s) ((annots, s) :: acc)
   in
-  loop []
+  loop true []
 
 (* The words that are only reserved in strict mode code *)
 let is_strict_mode_reserved_name = function
@@ -2562,12 +2602,12 @@ let is_strict_mode_reserved_name = function
   | _ -> false
 
 (* Whether a function body or a script starts with a directive prologue
-   containing a Use Strict Directive *)
-let has_use_strict body =
+   containing a Use Strict Directive, among the given ones *)
+let has_use_strict ~directives (body : statement_list) =
   let rec loop (l : statement_list) =
     match l with
-    | (Expression_statement (EStr (Utf8 s)), _) :: rem ->
-        String.equal s "use strict" || loop rem
+    | ((Expression_statement (EStr _) as s), _) :: rem ->
+        List.memq s ~set:directives || loop rem
     | _ -> false
   in
   loop body
@@ -2584,7 +2624,7 @@ let has_use_strict body =
    module, a class, or a script or a function whose body starts with a
    [use strict] directive. A function's directive also applies to its name
    and its parameters. *)
-class early_errors ~strict =
+class early_errors ~strict ~directives =
   object (m)
     inherit Js_traverse.iter as super
 
@@ -2634,7 +2674,9 @@ class early_errors ~strict =
       | _ -> ()
 
     method! fun_decl ((_, _, body, _) as d) =
-      m#in_context (strict || has_use_strict body) (fun () -> super#fun_decl d)
+      m#in_context
+        (strict || has_use_strict ~directives body)
+        (fun () -> super#fun_decl d)
 
     (* All the parts of a class are strict mode code, but its decorators,
        which are evaluated in the enclosing code *)
@@ -2650,7 +2692,9 @@ class early_errors ~strict =
       match s with
       | Function_declaration (_, (_, _, body, _)) ->
           (* The name is strict mode code if the body is *)
-          m#in_context (strict || has_use_strict body) (fun () -> super#statement s)
+          m#in_context
+            (strict || has_use_strict ~directives body)
+            (fun () -> super#statement s)
       | Class_declaration (id, c) ->
           m#in_context true (fun () -> m#ident id);
           m#class_decl c
@@ -2668,16 +2712,20 @@ class early_errors ~strict =
     method! expression e =
       match e with
       | EFun (_, (_, _, body, _)) ->
-          m#in_context (strict || has_use_strict body) (fun () -> super#expression e)
+          m#in_context
+            (strict || has_use_strict ~directives body)
+            (fun () -> super#expression e)
       | EClass (id, c) ->
           Option.iter id ~f:(fun id -> m#in_context true (fun () -> m#ident id));
           m#class_decl c
       | _ -> super#expression e
   end
 
-let check_program ~module_ p =
+let check_program ~module_ ~directives p =
   let body = List.map p ~f:snd in
-  let c = new early_errors ~strict:(module_ || has_use_strict body) in
+  let c =
+    new early_errors ~strict:(module_ || has_use_strict ~directives body) ~directives
+  in
   c#statements body
 
 (* The parser uses the native stack: a program nested very deeply (tens of
@@ -2708,7 +2756,8 @@ let parse_aux ~keep_tokens script_or_module lex =
         raise e
     | Stack_overflow -> nested_too_deeply t
   in
-  (try check_program ~module_ p with Stack_overflow -> nested_too_deeply t);
+  (try check_program ~module_ ~directives:(use_strict_directives t) p
+   with Stack_overflow -> nested_too_deeply t);
   p, t
 
 (* Group the statements under the annotations they follow *)
@@ -2741,7 +2790,7 @@ let parse_expr lex =
     try
       let e = parse_expression t no_ctx ~no_in:false in
       expect t T_EOF;
-      (new early_errors ~strict:false)#expression e;
+      (new early_errors ~strict:false ~directives:(use_strict_directives t))#expression e;
       e
     with Stack_overflow -> nested_too_deeply t
   in
