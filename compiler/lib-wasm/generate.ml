@@ -1800,8 +1800,8 @@ module Generate (Target : Target_sig.S) = struct
                      args
                      params)
               in
-              (* The environment argument is removed by
-                 [remove_env_arguments] if [g] does not take one *)
+              (* The environment argument is removed or cast by
+                 [fix_env_arguments] *)
               convert
                 ~from:(Typing.return_type ctx.types g)
                 ~into:(Typing.var_type ctx.types x)
@@ -2397,6 +2397,11 @@ module Generate (Target : Target_sig.S) = struct
             ~closures:ctx.closures
             ~cps:(Var.Set.mem f ctx.in_cps)
             ~no_code_pointer:(Call_graph_analysis.direct_calls_only ctx.fun_info f)
+            ~precise_env:
+              ((* wasm-opt narrows the type of this parameter when it
+                  runs *)
+               (not ctx.global_context.wasm_opt)
+              && Typing.can_unbox_parameters ctx.fun_info f)
             f
       | None -> return ()
     in
@@ -2450,6 +2455,11 @@ module Generate (Target : Target_sig.S) = struct
       | Some f ->
           if Typing.can_unbox_parameters ctx.fun_info f
           then
+            let env_typ : W.value_type =
+              match Var.Hashtbl.find_opt ctx.global_context.env_param_types f with
+              | Some typ -> Ref typ
+              | None -> Type.value
+            in
             { W.params =
                 (List.map
                    ~f:(fun x ->
@@ -2457,7 +2467,7 @@ module Generate (Target : Target_sig.S) = struct
                        ~default:Type.value
                        (unboxed_type (Typing.var_type ctx.types x)))
                    params
-                @ if without_env then [] else [ Type.value ])
+                @ if without_env then [] else [ env_typ ])
             ; result = [ Option.value ~default:Type.value (unboxed_type return_type) ]
             }
           else Type.func_type (param_count - 1)
@@ -2481,16 +2491,24 @@ module Generate (Target : Target_sig.S) = struct
     :: acc
 
   (* Remove the environment argument of the direct calls to the
-     functions which do not take one. Whether a function takes an
-     environment is decided when its closure is translated, which can
-     happen after a call to it is translated. The environment argument
-     is the last one, and is either a variable or a constant: dropping
-     it has no effect. *)
-  let remove_env_arguments ~functions_without_env body =
+     functions which do not take one, and cast it to the type of the
+     environment parameter of the functions which have a precise one
+     ([Cast_elim] removes the casts of arguments which already have
+     this type). Whether a function takes an environment is decided
+     when its closure is translated, and the type of its environment
+     parameter when its body is translated, which can both happen
+     after a call to it is translated. The environment argument is the
+     last one, and is either a variable or a constant: dropping it has
+     no effect. *)
+  let fix_env_arguments ~(context : Code_generation.context) body =
     let args f l =
-      if Var.Hashtbl.mem functions_without_env f
+      if Var.Hashtbl.mem context.functions_without_env f
       then List.rev (List.tl (List.rev l))
-      else l
+      else
+        match Var.Hashtbl.find_opt context.env_param_types f, List.rev l with
+        | Some typ, env :: rem -> List.rev (W.RefCast (typ, env) :: rem)
+        | Some _, [] -> assert false
+        | None, _ -> l
     in
     let rec expression e =
       match Wasm_traverse.map_expression ~expression ~instructions e with
@@ -2654,12 +2672,11 @@ module Generate (Target : Target_sig.S) = struct
           match f with
           | W.Function ({ param_names; signature; locals; body; _ } as f) ->
               let body =
-                if Var.Hashtbl.length global_context.functions_without_env = 0
+                if
+                  Var.Hashtbl.length global_context.functions_without_env = 0
+                  && Var.Hashtbl.length global_context.env_param_types = 0
                 then body
-                else
-                  remove_env_arguments
-                    ~functions_without_env:global_context.functions_without_env
-                    body
+                else fix_env_arguments ~context:global_context body
               in
               let locals, body =
                 post_process_function_body

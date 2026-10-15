@@ -184,8 +184,12 @@ module type S = sig
       -> closures:Closure_conversion.closure Code.Var.Map.t
       -> cps:bool
       -> no_code_pointer:bool
+      -> precise_env:bool
       -> Code.Var.t
       -> unit Code_generation.t
+    (** Bind the free variables of a function to the fields of its
+        environment. With [precise_env], the environment parameter is
+        given the precise type of the closure. *)
 
     val curry_allocate :
          cps:bool

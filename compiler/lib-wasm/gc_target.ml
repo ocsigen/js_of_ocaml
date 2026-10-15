@@ -1292,7 +1292,18 @@ module Closure = struct
               (load f)
           else res
 
-  let bind_environment ~context ~closures ~cps ~no_code_pointer f =
+  (* The environment parameter [f] of a function only called directly
+     can be given the precise type [typ] of its closure, the callers
+     casting the argument (see [Generate]). *)
+  let add_env_param ~context ~precise_env f typ =
+    if precise_env
+    then (
+      let ref_typ = { W.nullable = false; typ = Type typ } in
+      Code.Var.Hashtbl.replace context.env_param_types f ref_typ;
+      add_var ~typ:(W.Ref ref_typ) f)
+    else add_var f
+
+  let bind_environment ~context ~closures ~cps ~no_code_pointer ~precise_env f =
     let info = Code.Var.Map.find f closures in
     let free_variables = get_free_variables ~context info in
     if List.is_empty free_variables
@@ -1313,7 +1324,7 @@ module Closure = struct
           let* typ =
             Type.env_type ~cps ~arity ~no_code_pointer ~env_type_id ~env_type:[]
           in
-          let* _ = add_var f in
+          let* _ = add_env_param ~context ~precise_env f typ in
           let env = Code.Var.fresh_n "env" in
           let* () =
             store
@@ -1340,7 +1351,7 @@ module Closure = struct
               ~env_type_id
               ~env_type:[]
           in
-          let* _ = add_var f in
+          let* _ = add_env_param ~context ~precise_env f typ in
           let env = Code.Var.fresh_n "env" in
           let* env_typ = Type.rec_env_type ~function_count ~env_type_id ~env_type:[] in
           let* () =
