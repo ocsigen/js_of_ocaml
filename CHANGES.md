@@ -43,6 +43,8 @@
   variable, which shrinks the generated code and speeds up compilation of
   programs with many duplicated constants; identical literals may now be
   physically equal (`==`) (#2547)
+* Compiler: fold `if (c) return a; return b` into `return c ? a : b`
+  (#2533)
 
 ### Effects
 * Compiler: with `--effects={cps,double-translation}`, specialize calls to

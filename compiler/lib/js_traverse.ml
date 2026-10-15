@@ -2403,6 +2403,15 @@ class simpl =
               , Some (Expression_statement (EBin (Eq, v2, e2)), _) )
             when expression_equal v1 v2 ->
               (Expression_statement (EBin (Eq, v1, ECond (cond, e1, e2))), loc) :: acc
+          (* if (e1) return e2; return e3 --> return e1 ? e2 : e3 *)
+          | Return_statement (Some e, rloc) ->
+              let rec fold acc e rloc loc =
+                match acc with
+                | (If_statement (cond, (Return_statement (Some e1, _), _), None), if_loc)
+                  :: acc -> fold acc (ECond (cond, e1, e)) rloc if_loc
+                | _ -> (Return_statement (Some e, rloc), loc) :: acc
+              in
+              fold acc e rloc loc
           (* The following optimizations cause the generated JS to compress less.
              (* if (e1) e2 else e3 --> e1 ? e2 : e3 *)
              | If_statement
