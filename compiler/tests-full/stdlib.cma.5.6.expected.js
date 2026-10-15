@@ -1178,10 +1178,10 @@
      /*<<either.ml:19:14>>*/ return [1, v];
     /*<<either.ml:19:21>>*/ }
    function is_left(param){
-     /*<<either.ml:21:14>>*/ return ! param[0] ? 1 : 0 /*<<either.ml:23:18>>*/ ;
+     /*<<either.ml:21:14>>*/ return param[0] ? 0 : 1 /*<<either.ml:23:18>>*/ ;
    }
    function is_right(param){
-     /*<<either.ml:25:15>>*/ return ! param[0] ? 0 : 1 /*<<either.ml:27:17>>*/ ;
+     /*<<either.ml:25:15>>*/ return param[0] ? 1 : 0 /*<<either.ml:27:17>>*/ ;
    }
    function get_left(param){
      /*<<either.ml:29:15>>*/ if(param[0])
@@ -3476,10 +3476,10 @@
      /*<<result.ml:38:46>>*/ return caml_call1(f, e) /*<<result.ml:38:58>>*/ ;
    }
    function is_ok(param){
-     /*<<result.ml:39:12>>*/ return ! param[0] ? 1 : 0 /*<<result.ml:39:52>>*/ ;
+     /*<<result.ml:39:12>>*/ return param[0] ? 0 : 1 /*<<result.ml:39:52>>*/ ;
    }
    function is_error(param){
-     /*<<result.ml:40:15>>*/ return ! param[0] ? 0 : 1 /*<<result.ml:40:55>>*/ ;
+     /*<<result.ml:40:15>>*/ return param[0] ? 1 : 0 /*<<result.ml:40:55>>*/ ;
    }
    function equal(ok, error, r0, r1){
      /*<<result.ml:42:29>>*/ if(! r0[0]){
@@ -3848,12 +3848,11 @@
    function pred(u){
      /*<<uchar.ml:40:2>>*/ return u === 57344
             ? 55295
-            : !
-              u
-              ?  /*<<uchar.ml:41:18>>*/ Stdlib
+            : u
+              ? u - 1 | 0
+              :  /*<<uchar.ml:41:18>>*/ Stdlib
                  [1].call
-                (null, "U+0000 has no predecessor")
-              : u - 1 | 0 /*<<uchar.ml:42:7>>*/ ;
+                (null, "U+0000 has no predecessor") /*<<uchar.ml:42:7>>*/ ;
    }
    function is_valid(i){
     var
@@ -18166,7 +18165,7 @@
    function fmtty_of_padding_fmtty(pad, fmtty){
      /*<<camlinternalFormat.ml:952:19>>*/ return typeof pad === "number"
             ? fmtty
-            : ! pad[0] ? fmtty : [2, fmtty] /*<<camlinternalFormat.ml:955:35>>*/ ;
+            : pad[0] ? [2, fmtty] : fmtty /*<<camlinternalFormat.ml:955:35>>*/ ;
    }
    function fmtty_of_precision_fmtty(prec, fmtty){
      /*<<camlinternalFormat.ml:960:20>>*/ return typeof prec === "number"
@@ -19242,9 +19241,9 @@
       else{
        var
         left$0 =
-           /*<<camlinternalFormat.ml:1443:10>>*/ ! left
-           ? ( /*<<camlinternalFormat.ml:1443:29>>*/ put(95), 3)
-           : left,
+           /*<<camlinternalFormat.ml:1443:10>>*/ left
+           ? left
+           : ( /*<<camlinternalFormat.ml:1443:29>>*/ put(95), 3),
         left$1 =  /*<<camlinternalFormat.ml:1443:50>>*/ left$0 - 1 | 0;
         /*<<camlinternalFormat.ml:1443:61>>*/ put(c);
         /*<<camlinternalFormat.ml:1443:66>>*/ left$2 = left$1;
@@ -24347,16 +24346,16 @@
      /*<<printexc.ml:196:6>>*/ return Stdlib_Buffer[2].call(null, b) /*<<printexc.ml:199:59>>*/ ;
    }
    function backtrace_slot_is_raise(param){
-     /*<<printexc.ml:201:30>>*/ return ! param[0] ? param[1] : param[1] /*<<printexc.ml:203:36>>*/ ;
+     /*<<printexc.ml:201:30>>*/ return param[0] ? param[1] : param[1] /*<<printexc.ml:203:36>>*/ ;
    }
    function backtrace_slot_is_inline(param){
-     /*<<printexc.ml:205:31>>*/ return ! param[0] ? param[8] : 0 /*<<printexc.ml:207:31>>*/ ;
+     /*<<printexc.ml:205:31>>*/ return param[0] ? 0 : param[8] /*<<printexc.ml:207:31>>*/ ;
    }
    function backtrace_slot_location(param){
-     /*<<printexc.ml:218:30>>*/ return ! param[0]
-            ? [0,
-              [0, param[2], param[3], param[4], param[5], param[6], param[7]]]
-            : 0 /*<<printexc.ml:228:5>>*/ ;
+     /*<<printexc.ml:218:30>>*/ return param[0]
+            ? 0
+            : [0,
+              [0, param[2], param[3], param[4], param[5], param[6], param[7]]] /*<<printexc.ml:228:5>>*/ ;
    }
    function backtrace_slot_defname(param){
      /*<<printexc.ml:230:29>>*/ if(! param[0] && param[9] !== cst)
@@ -24376,7 +24375,7 @@
        /*<<printexc.ml:249:18>>*/ _v_ = 0;
      else{
        /*<<printexc.ml:250:27>>*/ _v_ =
-       ! caml_check_bound(backtrace, i)[i + 1][0] ? 1 : 0;
+       caml_check_bound(backtrace, i)[i + 1][0] ? 0 : 1;
        /*<<printexc.ml:250:40>>*/ if(! _v_){
        var i$0 = i - 1 | 0;
        i = i$0;
@@ -28776,7 +28775,7 @@
    function name_of_input(ib){
     var match =  /*<<scanf.ml:207:4>>*/ ib[9];
     if(typeof match === "number")
-     return ! match ? "unnamed function" : "unnamed character string" /*<<scanf.ml:211:47>>*/ ;
+     return match ? "unnamed character string" : "unnamed function" /*<<scanf.ml:211:47>>*/ ;
      /*<<scanf.ml:207:4>>*/ if(! match[0])
       /*<<scanf.ml:208:26>>*/ return "unnamed Stdlib input channel";
     var fname =  /*<<scanf.ml:207:4>>*/ match[1];
@@ -34326,7 +34325,7 @@
             : _f_ /*<<format.ml:867:12>>*/ ;
    }
    function check_geometry(geometry){
-     /*<<format.ml:870:8>>*/ return ! validate_geometry(geometry)[0] ? 1 : 0 /*<<format.ml:872:20>>*/ ;
+     /*<<format.ml:870:8>>*/ return validate_geometry(geometry)[0] ? 0 : 1 /*<<format.ml:872:20>>*/ ;
    }
    function pp_get_margin(state, param){
      /*<<format.ml:874:29>>*/ return state[6];
@@ -34353,9 +34352,9 @@
     /*<<format.ml:887:39>>*/ }
    function pp_safe_set_geometry(state, max_indent, margin){
     var geometry =  /*<<format.ml:890:2>>*/ [0, max_indent, margin];
-     /*<<format.ml:891:8>>*/ return ! validate_geometry(geometry)[0]
-            ?  /*<<format.ml:895:4>>*/ pp_set_full_geometry(state, geometry)
-            : 0 /*<<format.ml:895:39>>*/ ;
+     /*<<format.ml:891:8>>*/ return validate_geometry(geometry)[0]
+            ? 0
+            :  /*<<format.ml:895:4>>*/ pp_set_full_geometry(state, geometry) /*<<format.ml:895:39>>*/ ;
    }
    function pp_get_geometry(state, param){
      /*<<format.ml:898:76>>*/ return [0, state[8], state[6]];
