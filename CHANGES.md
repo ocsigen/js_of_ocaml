@@ -34,14 +34,23 @@
   comment as one after `throw`, as required by the spec (#2467)
 * Compiler: syntax errors in JavaScript files are now explained: the message
   tells which token is unexpected and what was expected instead
-  (``unexpected `{`, expected `,` or `)` ``), or which rule is broken (`invalid
-  left-hand side in assignment`), and shows the offending line. `Parse_js.Parsing_error`
+  (``unexpected `{`, expected `,` or `)` ``), or which rule is broken (`a getter
+  has no parameter`), and shows the offending line. `Parse_js.Parsing_error`
   now carries this message along with the location. A program nested too
   deeply for the stack is reported as a syntax error as well (#2467)
-* Compiler: checked against test262 and the test suites of other parsers, the
-  JavaScript parser also accepts `using of = x`, `await` as an identifier in
-  class field initializers and a class field named `accessor` on its own line
-  (#2467)
+* Compiler: the JavaScript parser now accepts every valid program of test262
+  (`test/language`). In particular, `let`, `static`, `implements`, `interface`,
+  `package`, `private`, `protected` and `public` are accepted as identifiers
+  outside of strict mode code (modules, classes, code following a `use strict`
+  directive). It also rejects some invalid programs it used to accept: getters
+  and setters with the wrong number of parameters, an initializer in a `catch`
+  parameter, malformed `import(...)` calls, `for (async of ...)`, reserved
+  words in an export clause, an expression that is not a valid
+  target on the left of an assignment or of `for ... in`/`for ... of`,
+  reserved words spelled with Unicode escapes used as identifiers, `yield` as
+  an identifier in strict mode code. Checked against the test suites of
+  other parsers, it also accepts `using of = x` and `await` as an identifier
+  in class field initializers (#2467, #2528)
 * Compiler: drop redundant `break`s out of labelled blocks, turning the
   blocks into `if`/`else` statements or conditional expressions; the nesting
   this introduces is bounded by `--set=break_sink_depth`, and the
