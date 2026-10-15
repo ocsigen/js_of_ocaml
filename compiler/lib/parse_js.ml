@@ -29,17 +29,18 @@
      the lexer to re-lex the token in that case.
 
    - Tokens, including comments, are lexed on demand into an array
-     ([Stream]). Only a window of them is kept: those that can still be
-     looked at, from the last consumed token or from a held backtracking
-     point; [parse'] asks for all of them, to return the token list. This
-     gives the parser arbitrary lookahead and allows the arrow-function
-     cover grammars (CoverParenthesizedExpressionAndArrowParameterList and
-     CoverCallExpressionAndAsyncArrowHead) to be handled by re-parsing: a
-     parenthesized expression or an [async (...)] call is first parsed as
-     an expression, recording the span of tokens it covers. If, at the
+     ([Stream]). Only a window of them is kept: the ones from the last
+     consumed token on, which can still be looked at; [parse'] asks for all
+     of them, to return the token list.
+
+   - The arrow-function cover grammars
+     (CoverParenthesizedExpressionAndArrowParameterList and
+     CoverCallExpressionAndAsyncArrowHead) are handled by refinement, as in
+     the spec: a parenthesized expression or an [async (...)] call is
+     parsed as an expression, and its elements are recorded. If, at the
      AssignmentExpression level, the expression is exactly that cover and
-     is followed by [=>], the parser rewinds to the start of the cover and
-     parses formal parameters instead.
+     is followed by [=>], the elements are converted into formal
+     parameters ([formal_parameters_of_cover]) rather than parsed again.
 
    - Automatic semicolon insertion (ASI) follows ECMA-262 12.10: a
      semicolon is inserted before [}], at end of input, or when the
@@ -196,6 +197,25 @@ let dummy_loc = Loc.create dummy_pos dummy_pos
 let same_line loc1 loc2 = Loc.line_end loc1 = Loc.line loc2
 
 (* The parser only accesses the tokens through this interface. *)
+(* The elements of a parenthesized expression or of an [async (...)] call,
+   kept while it may turn out to be the parameters of an arrow function *)
+type cover_item =
+  | Item of expression (* an element or an argument *)
+  | Item_parenthesized of expression
+    (* an element between its own parentheses, which is not a parameter *)
+  | Item_rest of binding (* [...b] in parentheses, parsed as a binding *)
+  | Item_spread of expression (* [...e] in the arguments of [async (...)] *)
+
+type cover =
+  { c_async : bool
+  ; c_items : (cover_item * Lexing.position) list
+  ; c_trailing_comma : Lexing.position option (* a comma before the [)] *)
+  ; c_assigns : (expression * Lexing.position) list
+        (* The assignments parsed inside the cover: the position of the [=],
+           keyed by the right-hand side (physically), which locates a default
+           value once the assignment is read as a parameter *)
+  }
+
 module Stream : sig
   type t
 
@@ -273,29 +293,32 @@ module Stream : sig
   (** Replace the current token, keeping its location. This only matters
       for the token list returned by [parse']. *)
 
-  (** {2 Backtracking}, for the arrow-function cover grammars *)
+  (** {2 Covers}, for the arrow-function cover grammars *)
 
-  type mark
+  val cur_index : t -> int
+  (** Index of the current token in the stream *)
 
-  val mark : t -> mark
+  val record_cover : t -> start:int -> cover -> unit
+  (** The tokens from index [start] to the last consumed one form a
+      parenthesized expression or an [async (...)] call, whose elements are
+      given: they may turn out to be the parameters of an arrow function. *)
 
-  val hold : t -> mark -> unit
-  (** Keep the tokens from the mark on, so that one can [reset] to it,
-      until the matching [release]. Holds can be nested. *)
-
-  val release : t -> unit
-
-  val reset : t -> mark -> unit
-  (** Go back to a mark which is being held *)
-
-  val record_cover : t -> start:mark -> unit
-  (** The tokens from [start] to the last consumed one form a parenthesized
-      expression or an [async (...)] call: they may have to be parsed again
-      as the parameters of an arrow function. *)
-
-  val is_cover : t -> since:mark -> bool
-  (** Whether the tokens consumed since the mark are exactly the last
+  val is_cover : t -> since:int -> bool
+  (** Whether the tokens consumed since index [since] are exactly the last
       recorded cover *)
+
+  val last_cover : t -> cover
+  (** The elements of the last recorded cover *)
+
+  val begin_cover : t -> unit
+
+  val end_cover : t -> (expression * Lexing.position) list
+  (** Delimit the parsing of a cover: the assignments recorded meanwhile, with
+      [record_assign], are returned by [end_cover] *)
+
+  val record_assign : t -> expression -> Lexing.position -> unit
+  (** An assignment was parsed, with the given right-hand side and position
+      of the [=]. Only recorded inside a cover. *)
 
   (** {2 Whole stream} *)
 
@@ -324,8 +347,10 @@ end = struct
     ; mutable cover_end : int
           (* Indices of the first and last tokens of the last
            parenthesized expression or [async (...)] call *)
-    ; mutable holds : int
-    ; mutable held_from : int (* first token to keep, when [holds > 0] *)
+    ; mutable cover : cover option (* its elements *)
+    ; mutable cover_depth : int (* number of covers being parsed *)
+    ; mutable assigns : (expression * Lexing.position) list
+          (* assignments parsed inside them, see [cover] *)
     }
 
   let dummy_token = Js_token.T_EOF, dummy_loc
@@ -344,8 +369,9 @@ end = struct
     ; prev_real = -1
     ; cover_start = -1
     ; cover_end = -1
-    ; holds = 0
-    ; held_from = 0
+    ; cover = None
+    ; cover_depth = 0
+    ; assigns = []
     }
 
   let get t i = t.toks.(i - t.base)
@@ -353,16 +379,11 @@ end = struct
   let set t i tok = t.toks.(i - t.base) <- tok
 
   (* The array is full: forget the tokens that cannot be looked at any
-     more, that is, the ones before the last consumed token and before
-     the tokens being held. Grow the array if this does not free enough
-     room; shrink it back once a large region is no longer held, so that
-     tokens do not linger. *)
+     more, that is, the ones before the last consumed token. Grow the array
+     if this does not free enough room; shrink it back when it is mostly
+     empty, so that tokens do not linger. *)
   let make_room t =
-    let first =
-      if t.keep_tokens
-      then t.base
-      else max t.base (if t.holds > 0 then min t.held_from t.prev_real else t.prev_real)
-    in
+    let first = if t.keep_tokens then t.base else max t.base t.prev_real in
     let live = t.len - first in
     let size = Array.length t.toks in
     let toks =
@@ -471,7 +492,7 @@ end = struct
       let i = t.prev_real + 1 in
       assert (i < t.len);
       match get t i with
-      | T_VIRTUAL_SEMICOLON, _ -> () (* already there (re-parse) *)
+      | T_VIRTUAL_SEMICOLON, _ -> ()
       | _ ->
           push t dummy_token;
           Array.blit
@@ -497,58 +518,38 @@ end = struct
 
   let relex_regexp t =
     ignore (cur_raw t);
-    if t.pos <> t.len - 1
-    then
-      (* The tokens after the [/] are known: the token before it changed
-         meaning when the arguments of a call [async (...)] were parsed
-         again as the parameters of an async arrow function, where [await]
-         is a keyword rather than an identifier. The parameters are invalid
-         either way. *)
-      error_msg
-        t
-        "`await` is a reserved word in the parameters of an async arrow function";
+    (* The [/] is the last token lexed: peeking never lexes past a [/] that
+       may start a regular expression (see the lookahead section above) *)
+    if t.pos <> t.len - 1 then error t ~expected:"an expression";
     set t t.pos (Lexer.lex_as_regexp t.lexbuf)
 
   let retag_current t tok =
     let _, loc = cur_raw t in
     set t t.pos (tok, loc)
 
-  type mark =
-    { m_pos : int
-    ; m_prev_end : Lexing.position
-    ; m_prev_line_end : int
-    ; m_prev_real : int
-    }
+  let record_cover t ~start cover =
+    t.cover_start <- start;
+    t.cover_end <- t.prev_real;
+    t.cover <- Some cover
 
-  let mark t =
-    ignore (cur_raw t);
-    { m_pos = t.pos
-    ; m_prev_end = t.prev_end
-    ; m_prev_line_end = t.prev_line_end
-    ; m_prev_real = t.prev_real
-    }
+  let is_cover t ~since = t.cover_start = since && t.cover_end = t.prev_real
 
-  let hold t m =
-    (* The tokens after [m_prev_real] are needed after a [reset] *)
-    if t.holds = 0 then t.held_from <- max 0 m.m_prev_real;
-    t.holds <- t.holds + 1
+  let last_cover t =
+    match t.cover with
+    | Some c -> c
+    | None -> assert false
 
-  let release t =
-    assert (t.holds > 0);
-    t.holds <- t.holds - 1
+  let begin_cover t = t.cover_depth <- t.cover_depth + 1
 
-  let reset t m =
-    assert (t.holds > 0 && m.m_pos >= t.base);
-    t.pos <- m.m_pos;
-    t.prev_end <- m.m_prev_end;
-    t.prev_line_end <- m.m_prev_line_end;
-    t.prev_real <- m.m_prev_real
+  let end_cover t =
+    t.cover_depth <- t.cover_depth - 1;
+    let assigns = t.assigns in
+    (* An enclosing cover may still need them *)
+    if t.cover_depth = 0 then t.assigns <- [];
+    assigns
 
-  let record_cover t ~start =
-    t.cover_start <- start.m_pos;
-    t.cover_end <- t.prev_real
-
-  let is_cover t ~since = t.cover_start = since.m_pos && t.cover_end = t.prev_real
+  let record_assign t rhs pos =
+    if t.cover_depth > 0 then t.assigns <- (rhs, pos) :: t.assigns
 
   let annots_before t =
     let rec loop i acc =
@@ -638,6 +639,165 @@ let no_ctx = { yield = false; await = false }
 
 (* Inside the parameters and the body of a function *)
 let function_ctx { async; generator } = { yield = generator; await = async }
+
+(* What the parameters of an async arrow function cannot contain (ECMA-262
+   15.9.1): a yield or await expression, or [await] as an identifier, which
+   the cover of [async (...)] accepts when the enclosing context is not
+   async. Nested functions, classes and arrow function bodies set their own
+   context and are not looked into. *)
+let check_async_parameters ~pos e =
+  let invalid msg = raise (Parsing_error (pi pos, msg)) in
+  let o =
+    object (self)
+      inherit Js_traverse.iter as super
+
+      method! ident =
+        function
+        | S { name = Utf8 "await"; _ } ->
+            invalid
+              "`await` is a reserved word in the parameters of an async arrow function"
+        | _ -> ()
+
+      method! expression e =
+        match e with
+        | EYield _ ->
+            invalid "`yield` is not allowed in the parameters of an async arrow function"
+        | EUn (Await, _) ->
+            invalid "`await` is not allowed in the parameters of an async arrow function"
+        | EFun _ | EClass _ -> ()
+        | EArrow ((_, params, _, _), _, _) -> self#formal_parameter_list params
+        | _ -> super#expression e
+    end
+  in
+  o#expression e
+
+(* Refinement of a cover into ArrowFormalParameters (ECMA-262 13.2.1.1,
+   15.3.1 and 15.9.1): each element must read as a BindingElement, with a
+   rest element only in last position. An element [pattern = default] was
+   turned into an assignment target ([Javascript.assignment_target_of_expr])
+   when it was parsed as an assignment: the target forms are read as well. *)
+let formal_parameters_of_cover (cover : cover) =
+  let invalid pos msg = raise (Parsing_error (pi pos, msg)) in
+  let not_a_parameter pos =
+    invalid
+      pos
+      "an arrow function parameter must be an identifier or a destructuring pattern"
+  in
+  let check_async pos e = if cover.c_async then check_async_parameters ~pos e in
+  (* The default values are located at their [=] *)
+  let initializer_ pos (init : expression) : initialiser =
+    check_async pos init;
+    ( init
+    , match List.assq_opt init cover.c_assigns with
+      | Some eq_pos -> p eq_pos
+      | None -> N )
+  in
+  let initializer_opt pos = function
+    | None -> None
+    | Some (init, (Pi _ as loc)) ->
+        (* A CoverInitializedName, located when it was parsed *)
+        check_async pos init;
+        Some (init, loc)
+    | Some (init, (N | U)) -> Some (initializer_ pos init)
+  in
+  let rec binding pos (e : expression) =
+    match e with
+    | EVar id ->
+        check_async pos e;
+        BindingIdent id
+    | EObj props -> BindingPattern (ObjectBinding (object_pattern pos props))
+    | EArr elts -> BindingPattern (ArrayBinding (array_pattern pos elts))
+    | EAssignTarget (ObjectTarget elts) ->
+        BindingPattern (ObjectBinding (object_target_pattern pos elts))
+    | EAssignTarget (ArrayTarget elts) ->
+        BindingPattern (ArrayBinding (array_target_pattern pos elts))
+    | _ -> not_a_parameter pos
+  and element pos (e : expression) : binding_element =
+    match e with
+    | EBin (Eq, target, init) -> binding pos target, Some (initializer_ pos init)
+    | _ -> binding pos e, None
+  and object_rest pos e acc =
+    match binding pos e with
+    | BindingIdent id -> { list = List.rev acc; rest = Some id }
+    | BindingPattern _ ->
+        invalid pos "the rest of an object pattern must be an identifier"
+  and object_target_pattern pos elts =
+    let rec loop acc = function
+      | [] -> { list = List.rev acc; rest = None }
+      | [ TargetPropertySpread e ] -> object_rest pos e acc
+      | TargetPropertySpread _ :: _ ->
+          invalid pos "a rest element must be the last one of a destructuring pattern"
+      | TargetPropertyId (Prop_and_ident id, init) :: l ->
+          check_async pos (EVar id);
+          loop (Prop_ident (Prop_and_ident id, initializer_opt pos init) :: acc) l
+      | TargetProperty (name, e, init) :: l ->
+          loop (Prop_binding (name, (binding pos e, initializer_opt pos init)) :: acc) l
+      | TargetPropertyMethod _ :: _ ->
+          invalid pos "a method is not allowed in a destructuring pattern"
+    in
+    loop [] elts
+  and array_target_pattern pos elts =
+    let rec loop acc = function
+      | [] -> { list = List.rev acc; rest = None }
+      | [ TargetElementSpread e ] -> { list = List.rev acc; rest = Some (binding pos e) }
+      | TargetElementSpread _ :: _ ->
+          invalid pos "a rest element must be the last one of a destructuring pattern"
+      | TargetElementHole :: l -> loop (None :: acc) l
+      | TargetElementId (id, init) :: l ->
+          check_async pos (EVar id);
+          loop (Some (BindingIdent id, initializer_opt pos init) :: acc) l
+      | TargetElement e :: l -> loop (Some (element pos e) :: acc) l
+    in
+    loop [] elts
+  and object_pattern pos props =
+    let rec loop acc = function
+      | [] -> { list = List.rev acc; rest = None }
+      | [ PropertySpread e ] -> object_rest pos e acc
+      | PropertySpread _ :: _ ->
+          invalid pos "a rest element must be the last one of a destructuring pattern"
+      | Property (PNI n, EVar (S { name = n'; _ } as id)) :: l when Utf8_string.equal n n'
+        ->
+          check_async pos (EVar id);
+          loop (Prop_ident (Prop_and_ident id, None) :: acc) l
+      | CoverInitializedName (_, id, ((init, _) as i)) :: l ->
+          check_async pos (EVar id);
+          check_async pos init;
+          loop (Prop_ident (Prop_and_ident id, Some i) :: acc) l
+      | Property (name, e) :: l -> loop (Prop_binding (name, element pos e) :: acc) l
+      | PropertyMethod _ :: _ ->
+          invalid pos "a method is not allowed in a destructuring pattern"
+    in
+    loop [] props
+  and array_pattern pos elts =
+    let rec loop acc = function
+      | [] -> { list = List.rev acc; rest = None }
+      | [ ElementSpread e ] -> { list = List.rev acc; rest = Some (binding pos e) }
+      | ElementSpread _ :: _ ->
+          invalid pos "a rest element must be the last one of a destructuring pattern"
+      | ElementHole :: l -> loop (None :: acc) l
+      | Element e :: l -> loop (Some (element pos e) :: acc) l
+    in
+    loop [] elts
+  in
+  let rest_last pos =
+    match cover.c_trailing_comma with
+    | Some comma_pos -> invalid comma_pos "a rest parameter cannot be followed by a comma"
+    | None -> ignore pos
+  in
+  let rec loop acc = function
+    | [] -> { list = List.rev acc; rest = None }
+    | [ (Item_rest b, pos) ] ->
+        rest_last pos;
+        { list = List.rev acc; rest = Some b }
+    | [ (Item_spread e, pos) ] ->
+        rest_last pos;
+        { list = List.rev acc; rest = Some (binding pos e) }
+    | ((Item_rest _ | Item_spread _), pos) :: _ ->
+        invalid pos "a rest parameter must be the last one"
+    | (Item_parenthesized _, pos) :: _ -> not_a_parameter pos
+    | (Item e, pos) :: l -> loop (element pos e :: acc) l
+  in
+  loop [] cover.c_items
 
 (* Identifiers *)
 
@@ -992,40 +1152,32 @@ and parse_assignment_operator t ctx ~no_in lhs =
   match assignment_op (cur t) with
   | Some op ->
       check_assignment_target t ~in_for:false lhs;
+      let op_pos = start_pos t in
       advance t;
       let rhs = parse_assignment_expression t ctx ~no_in in
+      record_assign t rhs op_pos;
       EBin (op, assignment_target_of_expr (Some op) lhs, rhs)
   | None -> lhs
 
 (* An expression starting with [(] or [async (]: either an arrow function
    or an expression starting with a parenthesized expression or a call. The
    expression is parsed first; if it turns out to be exactly a cover
-   followed by [=>], it is re-parsed as arrow parameters. *)
+   followed by [=>], its elements are refined into arrow parameters. *)
 and parse_cover_or_arrow t ctx ~no_in =
   let pos = start_pos t in
-  let m = mark t in
-  hold t m;
+  let start = cur_index t in
   let e = parse_conditional_expression t ctx ~no_in in
   match cur t with
-  | T_ARROW when (not (newline_before t)) && is_cover t ~since:m ->
+  | T_ARROW when (not (newline_before t)) && is_cover t ~since:start ->
       (* No line terminator before [=>] after a parenthesized parameter
          list, which the previous parser also checked *)
-      reset t m;
-      release t;
-      let async = accept t T_ASYNC in
-      (* ArrowFormalParameters[?Yield, ?Await], or [~Yield, +Await] after
-         [async] *)
-      let params =
-        if async
-        then parse_formal_parameters t { yield = false; await = true }
-        else parse_formal_parameters t ctx
-      in
+      let cover = last_cover t in
+      let async = cover.c_async in
+      let params = formal_parameters_of_cover cover in
       expect t T_ARROW;
       let body, concise = parse_concise_body t ~no_in ~async in
       EArrow (({ async; generator = false }, params, body, p pos), concise, AUnknown)
-  | _ ->
-      release t;
-      parse_assignment_operator t ctx ~no_in e
+  | _ -> parse_assignment_operator t ctx ~no_in e
 
 (* ConciseBody : { FunctionBody } | ExpressionBody
    Also returns whether the body is an expression. *)
@@ -1154,12 +1306,19 @@ and parse_left_hand_side_expression t ctx =
   let start = start_pos t in
   match cur t with
   | T_ASYNC when Poly.equal (peek_tok t 1) Js_token.T_LPAREN && next_on_same_line t ->
-      (* CoverCallExpressionAndAsyncArrowHead: parsed as a call; see
-         [parse_cover_or_arrow] *)
-      let cover_start = mark t in
+      (* CoverCallExpressionAndAsyncArrowHead: parsed as a call whose
+         arguments are recorded; see [parse_cover_or_arrow] *)
+      let cover_start = cur_index t in
       let async = parse_identifier t ctx in
-      let args = parse_arguments t ctx in
-      record_cover t ~start:cover_start;
+      let cover = parse_cover_arguments t ctx in
+      record_cover t ~start:cover_start cover;
+      let args =
+        List.map cover.c_items ~f:(fun (item, _) ->
+            match item with
+            | Item e | Item_parenthesized e -> Arg e
+            | Item_spread e -> ArgSpread e
+            | Item_rest _ -> assert false)
+      in
       parse_suffixes
         t
         ctx
@@ -1307,53 +1466,107 @@ and parse_primary_expression t ctx =
 (* CoverParenthesizedExpressionAndArrowParameterList, parsed as an
    expression; see [parse_cover_or_arrow] *)
 and parse_cover_parenthesized_expression t ctx =
-  let cover_start = mark t in
+  let cover_start = cur_index t in
   expect t T_LPAREN;
-  let cover_rest () =
-    (* [...] binding, only valid as arrow parameters *)
-    let ellipsis_pos = start_pos t in
-    expect t T_ELLIPSIS;
-    ignore (parse_binding_element t ctx);
-    expect t T_RPAREN;
-    `Cover
-      (early_error
-         ~reason:"a rest element is only allowed in the parameters of an arrow function"
-         (pi ellipsis_pos))
-  in
-  let res =
+  begin_cover t;
+  let rparen_pos = start_pos t in
+  let items = ref [] in
+  let trailing_comma = ref None in
+  let rec loop () =
+    let pos = start_pos t in
     match cur t with
-    | T_RPAREN ->
-        let rparen_pos = start_pos t in
+    | T_ELLIPSIS ->
+        (* [...] binding, only valid as arrow parameters, in last position *)
         advance t;
-        `Cover
-          (early_error
-             ~reason:"empty parentheses must be followed by `=>`"
-             (pi rparen_pos))
-    | T_ELLIPSIS -> cover_rest ()
-    | _ ->
-        let rec loop e =
-          match cur t with
-          | T_COMMA -> (
-              advance t;
-              match cur t with
-              | T_RPAREN ->
-                  advance t;
-                  `Expr e
-              | T_ELLIPSIS -> cover_rest ()
-              | _ ->
-                  let e2 = parse_assignment_expression t ctx ~no_in:false in
-                  loop (ESeq (e, e2)))
-          | T_RPAREN ->
-              advance t;
-              `Expr e
-          | _ -> error t ~expected:"`,` or `)`"
-        in
-        loop (parse_assignment_expression t ctx ~no_in:false)
+        let b = parse_binding t ctx in
+        items := (Item_rest b, pos) :: !items;
+        expect t T_RPAREN
+    | _ -> (
+        let item = parse_cover_item t ctx in
+        items := (item, pos) :: !items;
+        match cur t with
+        | T_RPAREN -> advance t
+        | T_COMMA ->
+            let comma_pos = start_pos t in
+            advance t;
+            if accept t T_RPAREN then trailing_comma := Some comma_pos else loop ()
+        | _ -> error t ~expected:"`,` or `)`")
   in
-  record_cover t ~start:cover_start;
-  match res with
-  | `Expr e -> e
-  | `Cover e -> CoverParenthesizedExpressionAndArrowParameterList e
+  if not (accept t T_RPAREN) then loop ();
+  let items = List.rev !items in
+  let assigns = end_cover t in
+  record_cover
+    t
+    ~start:cover_start
+    { c_async = false
+    ; c_items = items
+    ; c_trailing_comma = !trailing_comma
+    ; c_assigns = assigns
+    };
+  (* As an expression: the elements form a sequence; empty parentheses and
+     a rest element are only valid as arrow parameters *)
+  match items with
+  | [] ->
+      CoverParenthesizedExpressionAndArrowParameterList
+        (early_error ~reason:"empty parentheses must be followed by `=>`" (pi rparen_pos))
+  | _ -> (
+      match
+        List.find_opt items ~f:(fun (item, _) ->
+            match item with
+            | Item_rest _ -> true
+            | Item _ | Item_parenthesized _ | Item_spread _ -> false)
+      with
+      | Some (_, pos) ->
+          CoverParenthesizedExpressionAndArrowParameterList
+            (early_error
+               ~reason:
+                 "a rest element is only allowed in the parameters of an arrow function"
+               (pi pos))
+      | None ->
+          List.fold_left items ~init:None ~f:(fun acc (item, _) ->
+              match item, acc with
+              | (Item e | Item_parenthesized e), None -> Some e
+              | (Item e | Item_parenthesized e), Some e1 -> Some (ESeq (e1, e))
+              | (Item_rest _ | Item_spread _), _ -> assert false)
+          |> Option.get)
+
+(* An element of a cover: an AssignmentExpression, or an expression between
+   its own parentheses *)
+and parse_cover_item t ctx =
+  let start = cur_index t in
+  let e = parse_assignment_expression t ctx ~no_in:false in
+  if is_cover t ~since:start then Item_parenthesized e else Item e
+
+(* Arguments, recorded as a cover: with the position of each one and of a
+   comma ending the list *)
+and parse_cover_arguments t ctx =
+  expect t T_LPAREN;
+  begin_cover t;
+  let items = ref [] in
+  let trailing_comma = ref None in
+  let rec loop () =
+    let pos = start_pos t in
+    let item =
+      if accept t T_ELLIPSIS
+      then Item_spread (parse_assignment_expression t ctx ~no_in:false)
+      else parse_cover_item t ctx
+    in
+    items := (item, pos) :: !items;
+    match cur t with
+    | T_RPAREN -> advance t
+    | T_COMMA ->
+        let comma_pos = start_pos t in
+        advance t;
+        if accept t T_RPAREN then trailing_comma := Some comma_pos else loop ()
+    | _ -> error t ~expected:"`,` or `)`"
+  in
+  if not (accept t T_RPAREN) then loop ();
+  let assigns = end_cover t in
+  { c_async = true
+  ; c_items = List.rev !items
+  ; c_trailing_comma = !trailing_comma
+  ; c_assigns = assigns
+  }
 
 (* Arguments : ( ArgumentList? ) *)
 and parse_arguments t ctx =

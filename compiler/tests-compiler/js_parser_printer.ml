@@ -2308,40 +2308,46 @@ let%expect_test "arrow function parameters" =
   [%expect {| ({a:b=1,c=2}=x,[d=3,{e}=y]=z)=>1; |}];
   (* Elements that are not parameters *)
   check `Script "(a + b) => 1";
-  [%expect {| error (l:1, c:3): unexpected `+`, expected `,` or `)` |}];
+  [%expect
+    {| error (l:1, c:1): an arrow function parameter must be an identifier or a destructuring pattern |}];
   check `Script "([...a, b]) => 1";
-  [%expect {| error (l:1, c:6): unexpected `,`, expected `]` |}];
+  [%expect
+    {| error (l:1, c:1): a rest element must be the last one of a destructuring pattern |}];
   check `Script "({...a, b}) => 1";
-  [%expect {| error (l:1, c:6): unexpected `,`, expected `}` |}];
+  [%expect
+    {| error (l:1, c:1): a rest element must be the last one of a destructuring pattern |}];
   check `Script "({ m(){} }) => 1";
-  [%expect {| error (l:1, c:4): unexpected `(`, expected `,` or `}` |}];
+  [%expect {| error (l:1, c:1): a method is not allowed in a destructuring pattern |}];
   check `Script "async (...b, c) => 1";
-  [%expect {| error (l:1, c:11): unexpected `,`, expected `)` |}];
+  [%expect {| error (l:1, c:7): a rest parameter must be the last one |}];
   check `Script "async (...b,) => 1";
-  [%expect {| error (l:1, c:11): unexpected `,`, expected `)` |}];
+  [%expect {| error (l:1, c:11): a rest parameter cannot be followed by a comma |}];
   check `Script "(...a = 1) => 1";
   [%expect {| error (l:1, c:6): unexpected `=`, expected `)` |}];
   check `Script "((a)) => 1";
-  [%expect {| error (l:1, c:1): unexpected `(`, expected an identifier |}];
+  [%expect
+    {| error (l:1, c:1): an arrow function parameter must be an identifier or a destructuring pattern |}];
   check `Script "async (a = (await) => 1) => 1";
-  [%expect {| error (l:1, c:17): unexpected `)`, expected an expression |}]
+  [%expect
+    {| error (l:1, c:7): `await` is a reserved word in the parameters of an async arrow function |}]
 
 let%expect_test "await in the parameters of an async arrow function" =
   (* [async (...)] is first parsed as a call, in which [await] is an
      identifier; [await] is a keyword in the parameters *)
   check `Script "async (a = await/r/g) => {}";
   [%expect
-    {| error (l:1, c:16): `await` is a reserved word in the parameters of an async arrow function |}];
+    {| error (l:1, c:7): `await` is a reserved word in the parameters of an async arrow function |}];
   check `Script "async (a = async (b = await/r/g) => {}) => {}";
   [%expect
-    {| error (l:1, c:27): `await` is a reserved word in the parameters of an async arrow function |}];
+    {| error (l:1, c:18): `await` is a reserved word in the parameters of an async arrow function |}];
   check `Script "async (await) => {}";
   [%expect
-    {| error (l:1, c:7): `await` is a reserved word in an async function or a module |}];
+    {| error (l:1, c:7): `await` is a reserved word in the parameters of an async arrow function |}];
   check `Script "async (a = await 1) => {}";
   [%expect {| error (l:1, c:17): unexpected number `1`, expected `,` or `)` |}];
   check `Script "function* g() { async (a = yield/r/g) => {} }";
-  [%expect {| error (l:1, c:32): unexpected regular expression, expected `,` or `)` |}];
+  [%expect
+    {| error (l:1, c:23): `yield` is not allowed in the parameters of an async arrow function |}];
   (* A nested function restores the meaning of [await] *)
   check `Script "async (a = function () { await/r/g }) => {}";
   [%expect {| async(a=function(){await/r/g})=>{}; |}];
