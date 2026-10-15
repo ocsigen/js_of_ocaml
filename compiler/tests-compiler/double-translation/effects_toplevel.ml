@@ -52,9 +52,9 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
            [11, caml_string_of_jsbytes("abc"), 0],
            caml_string_of_jsbytes("abc")];
        function g(param){return caml_call1(Stdlib_Printf[2], _a_);}
-       function f(_a_){
+       function f(param){
         var i = 1;
-        for(;;){g(); _a_ = i + 1 | 0; if(5 === i) return; i = _a_;}
+        for(;;){g(); if(5 === i) return; i = i + 1 | 0;}
        }
        g();
        f();

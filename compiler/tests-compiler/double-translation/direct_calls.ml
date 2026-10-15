@@ -223,12 +223,7 @@ let%expect_test "direct calls with --effects=double-translation" =
        function test3(x){
         function F(symbol){
          var for$ = 0, r = [0, 0];
-         for(;;){
-          r[1]++;
-          var _e_ = for$ + 1 | 0;
-          if(2 === for$) break;
-          for$ = _e_;
-         }
+         for(;;){r[1]++; if(2 === for$) break; for$ = for$ + 1 | 0;}
          function f(x){return x + 1 | 0;}
          return [0, , f];
         }
@@ -248,9 +243,8 @@ let%expect_test "direct calls with --effects=double-translation" =
          var for$ = 0, r = [0, 0];
          for(;;){
           r[1]++;
-          var _e_ = for$ + 1 | 0;
           if(2 === for$){var f$0 = f(); return [0, , f$0];}
-          for$ = _e_;
+          for$ = for$ + 1 | 0;
          }
         }
         return F;
