@@ -35,6 +35,8 @@
   `merge_node_max` parameter is renamed `label_depth` (#2513)
 * Compiler: simplify the generated JavaScript (`!x` for negated
   conditions, no empty `if` branches) (#2500)
+* Compiler: omit the `| 0` coercion after an unsigned right shift by a
+  constant (#2531)
 
 ### Effects
 * Compiler: with `--effects={cps,double-translation}`, specialize calls to
