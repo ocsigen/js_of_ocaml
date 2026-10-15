@@ -1651,6 +1651,14 @@ module Math = struct
 end
 
 module Bigarray = struct
+  let value_type =
+    let* ty = Type.bigarray_type in
+    return (W.Ref { nullable = false; typ = Type ty })
+
+  let cast e =
+    let* ty = Type.bigarray_type in
+    Memory.wasm_cast ty e
+
   let dimension n a =
     let* ty = Type.bigarray_type in
     Memory.wasm_array_get
