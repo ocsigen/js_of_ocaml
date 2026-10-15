@@ -65,7 +65,7 @@ let print ?(debuginfo = true) ?(report = false) ?(invalid = false) ~compact sour
     | true, "" -> print_endline "invalid file but node --check didn't complain"
     | true, _ -> ());
     print_endline stdout
-  with Parse_js.Parsing_error pi as e ->
+  with Parse_js.Parsing_error (pi, _) as e ->
     if report
     then
       Printf.printf
@@ -251,7 +251,7 @@ let%expect_test "arrow" =
     var
      a =
         /*<<fake:16:10>>*/ x=>
-           /*<<fake:16:17>>*/ y=> /*<<fake:16:22>>*/ x + y /*<<fake:16:27>>*/  /*<<?>>*/ ;
+           /*<<fake:16:17>>*/ y=> /*<<fake:16:22>>*/ x + y /*<<fake:16:27>>*/ ;
     var
      a =
         /*<<fake:17:10>>*/ x=>
@@ -571,11 +571,11 @@ let%expect_test ("declarations are not statements" [@when target_engine <> "quic
      which excludes declarations. *)
   let test s = print ~report:true ~compact:false ~invalid:true s in
   test {| if (a) async function f() {} |};
-  [%expect {| cannot parse js (from l:1, c:14)@. |}];
+  [%expect {| cannot parse js (from l:1, c:8)@. |}];
   test {| while (a) async function* f() {} |};
-  [%expect {| cannot parse js (from l:1, c:17)@. |}];
+  [%expect {| cannot parse js (from l:1, c:11)@. |}];
   test {| l: async function f() {} |};
-  [%expect {| cannot parse js (from l:1, c:10)@. |}];
+  [%expect {| cannot parse js (from l:1, c:4)@. |}];
   test {| if (a) class A {} |};
   [%expect {| cannot parse js (from l:1, c:8)@. |}];
   test {| if (a) let x = 1; |};
@@ -832,7 +832,7 @@ let%expect_test ("error reporting" [@when target_engine <> "quickjs"]) =
     var = 5;
     }
     |}
-   with Parse_js.Parsing_error pi ->
+   with Parse_js.Parsing_error (pi, _) ->
      Printf.printf
        "cannot parse js (from l:%d, c:%d)@."
        pi.Parse_info.line
@@ -933,7 +933,7 @@ let parse_print_token ?(invalid = false) ?(extra = false) s =
   | true, _ -> ());
   let lex = Parse_js.Lexer.of_string ~filename:"fake" s in
   match Parse_js.parse' `Module lex with
-  | exception Parse_js.Parsing_error pi ->
+  | exception Parse_js.Parsing_error (pi, _) ->
       Printf.eprintf "cannot parse l:%d:%d@." pi.Parse_info.line pi.Parse_info.col
   | _p, tokens ->
       check_vs_string s tokens;
@@ -1526,22 +1526,19 @@ let check kind src =
       Pretty_print.set_compact pp true;
       let _ = Js_output.program pp p in
       print_endline (Buffer.contents buffer)
-  | exception Parse_js.Parsing_error pi ->
-      Printf.printf
-        "cannot parse js (from l:%d, c:%d)\n"
-        pi.Parse_info.line
-        pi.Parse_info.col
+  | exception Parse_js.Parsing_error (pi, msg) ->
+      Printf.printf "error (l:%d, c:%d): %s\n" pi.Parse_info.line pi.Parse_info.col msg
   | exception Assert_failure (file, _, _) ->
       Printf.printf "exception: assertion failed in %s\n" file
   | exception e -> Printf.printf "exception: %s\n" (Printexc.to_string e)
 
 let%expect_test "words reserved in strict mode only are identifiers in sloppy mode" =
   check `Script "var let = 1, static, implements, interface, package; let = 2";
-  [%expect {| cannot parse js (from l:1, c:4) |}];
+  [%expect {| error (l:1, c:4): unexpected `let`, expected an identifier |}];
   check `Script "var private, protected, public; public.x(static)";
-  [%expect {| cannot parse js (from l:1, c:4) |}];
+  [%expect {| error (l:1, c:4): unexpected `private`, expected an identifier |}];
   check `Script "for (var let in o) ; for (let in o) ; let: x; ({ let, static })";
-  [%expect {| cannot parse js (from l:1, c:9) |}];
+  [%expect {| error (l:1, c:9): unexpected `let`, expected an identifier |}];
   (* [let] followed by an identifier, [[] or [{] starts a declaration *)
   check `Script "let x = 1; let [a] = b; let {c} = d; let\ny = 2";
   [%expect
@@ -1552,46 +1549,47 @@ let%expect_test "words reserved in strict mode only are identifiers in sloppy mo
            |}];
   (* ... but declarations are not statements: [let] is then an identifier *)
   check `Script "if (a) let\nx = 1";
-  [%expect {| cannot parse js (from l:1, c:7) |}];
+  [%expect {| error (l:1, c:7): unexpected `let`, expected an identifier |}];
   check `Script "if (a) let\n{}";
-  [%expect {| cannot parse js (from l:1, c:7) |}];
+  [%expect {| error (l:1, c:7): unexpected `let`, expected an identifier |}];
   (* and an expression statement cannot start with [let []] *)
   check `Script "if (a) let [x] = y";
-  [%expect {| cannot parse js (from l:1, c:7) |}];
+  [%expect {| error (l:1, c:7): unexpected `let`, expected an identifier |}];
   (* [let] cannot start the left-hand side of [for ... of], nor be bound by
      a lexical declaration *)
   check `Script "for (let.a in x) ;";
-  [%expect {| cannot parse js (from l:1, c:8) |}];
+  [%expect {| error (l:1, c:8): unexpected `.`, expected an identifier |}];
   check `Script "for (let.a of x) ;";
-  [%expect {| cannot parse js (from l:1, c:8) |}];
+  [%expect {| error (l:1, c:8): unexpected `.`, expected an identifier |}];
   check `Script "let let = 1";
-  [%expect {| cannot parse js (from l:1, c:4) |}];
+  [%expect {| error (l:1, c:4): unexpected `let`, expected an identifier |}];
   check `Script "for (const let of x) ;";
-  [%expect {| cannot parse js (from l:1, c:11) |}];
+  [%expect {| error (l:1, c:11): unexpected `let`, expected an identifier |}];
   check `Script "async function f() { let\nawait 0 }";
-  [%expect {| cannot parse js (from l:2, c:0) |}];
+  [%expect
+    {| error (l:2, c:0): `await` is a reserved word in an async function or a module |}];
   check `Script "using\nlet = 1";
-  [%expect {| cannot parse js (from l:2, c:4) |}];
+  [%expect {| error (l:2, c:4): unexpected `=`, expected an identifier |}];
   (* They are reserved in strict mode code: modules, classes, and after a
      [use strict] directive *)
   check `Module "var let = 1";
-  [%expect {| cannot parse js (from l:1, c:4) |}];
+  [%expect {| error (l:1, c:4): unexpected `let`, expected an identifier |}];
   check `Script "class C { m() { var static } }";
-  [%expect {| cannot parse js (from l:1, c:20) |}];
+  [%expect {| error (l:1, c:20): unexpected `static`, expected an identifier |}];
   check `Script "function f() { 'use strict'; var public }";
-  [%expect {| cannot parse js (from l:1, c:33) |}];
+  [%expect {| error (l:1, c:33): unexpected `public`, expected an identifier |}];
   check `Script "'use strict'; var let";
-  [%expect {| cannot parse js (from l:1, c:18) |}];
+  [%expect {| error (l:1, c:18): unexpected `let`, expected an identifier |}];
   check `Script "function f() { 'use strict' + 1; var public } function g() { var let }";
-  [%expect {| cannot parse js (from l:1, c:37) |}];
+  [%expect {| error (l:1, c:37): unexpected `public`, expected an identifier |}];
   check `Script "{ 'use strict'; var let }";
-  [%expect {| cannot parse js (from l:1, c:20) |}]
+  [%expect {| error (l:1, c:20): unexpected `let`, expected an identifier |}]
 
 let%expect_test "[async of] and [using of] in a for statement" =
   check `Script "for (async of => {}; ;) ;";
   [%expect {| for(async of=>{};;); |}];
   check `Script "x = async of => 1";
-  [%expect {| cannot parse js (from l:1, c:10) |}];
+  [%expect {| x=async of=>1; |}];
   (* [for (async of] is excluded by the grammar *)
   check `Script "for (async of [1]) ;";
   [%expect {| for((async)of[1]); |}];
@@ -1640,9 +1638,9 @@ let%expect_test "a class field named get, set or accessor before a generator" =
            c(){}}
            |}];
   check `Script "class C { get *a() {} }";
-  [%expect {| cannot parse js (from l:1, c:14) |}];
+  [%expect {| error (l:1, c:14): unexpected `*`, expected `;` |}];
   check `Script "x = { get *a() {} }";
-  [%expect {| cannot parse js (from l:1, c:10) |}]
+  [%expect {| error (l:1, c:10): unexpected `*`, expected `:`, `(`, `,` or `}` |}]
 
 let%expect_test "invalid programs" =
   (* A trailing comma is only allowed in arrow parameters *)
@@ -1716,7 +1714,7 @@ let%expect_test "import calls" =
   check `Script "import('a', 'b', 'c')";
   [%expect {| import("a","b","c"); |}];
   check `Script "new import('m')";
-  [%expect {| cannot parse js (from l:1, c:10) |}];
+  [%expect {| error (l:1, c:10): an import call cannot be the operand of `new` |}];
   check `Script "new import.source('m')";
   [%expect {|
            new
@@ -1727,7 +1725,7 @@ let%expect_test "import calls" =
   check `Script "import.source";
   [%expect {| import.source; |}];
   check `Script "typeof import";
-  [%expect {| cannot parse js (from l:1, c:13) |}]
+  [%expect {| error (l:1, c:13): unexpected end of input |}]
 
 let%expect_test "parenthesized optional chains" =
   (* Parentheses delimit an optional chain: when [a] is null,
@@ -1774,13 +1772,13 @@ let%expect_test "accesses built on top of an optional chain" =
 let%expect_test "template literals and optional chains" =
   (* A tagged template cannot be part of an optional chain *)
   check `Script "a?.b`t`";
-  [%expect {| cannot parse js (from l:1, c:4) |}];
+  [%expect {| error (l:1, c:4): a template literal is not allowed in an optional chain |}];
   check `Script "a?.b.c`t`";
-  [%expect {| cannot parse js (from l:1, c:6) |}];
+  [%expect {| error (l:1, c:6): a template literal is not allowed in an optional chain |}];
   check `Script "a?.(1)`t`";
-  [%expect {| cannot parse js (from l:1, c:6) |}];
+  [%expect {| error (l:1, c:6): a template literal is not allowed in an optional chain |}];
   check `Script "a?.`t`";
-  [%expect {| cannot parse js (from l:1, c:3) |}];
+  [%expect {| error (l:1, c:3): a template literal is not allowed in an optional chain |}];
   (* This is fine outside of the chain *)
   check `Script "(a?.b)`t`; a`t`?.b; a.b`t`";
   [%expect {| (a?.b)`t`;a`t`?.b;a.b`t`; |}]
@@ -1798,8 +1796,8 @@ let print_syntax_error ?filename ?(write = true) s =
     close_out oc);
   (match Parse_js.parse `Script (Parse_js.Lexer.of_string ~filename:file s) with
   | _ -> print_endline "no error"
-  | exception Parse_js.Parsing_error pi ->
-      let msg = Parse_info.Diagnostic.with_excerpt pi "syntax error" in
+  | exception Parse_js.Parsing_error (pi, msg) ->
+      let msg = Parse_info.Diagnostic.with_excerpt pi msg in
       let msg =
         if Option.is_none filename && String.starts_with ~prefix:file msg
         then
@@ -1817,14 +1815,15 @@ let%expect_test "syntax error messages" =
   print_syntax_error "var x = 1;\nfunction f(a, b {\n  return a;\n}\n";
   [%expect
     {|
-    FILE:2:17: syntax error
+    FILE:2:17: unexpected `{`, expected `,` or `)`
     2 | function f(a, b {
       |                 ^
     |}];
   (* Tabs are kept to stay aligned *)
   print_syntax_error "\t\tvar = 1;";
-  [%expect {|
-    FILE:1:7: syntax error
+  [%expect
+    {|
+    FILE:1:7: unexpected `=`, expected an identifier
     1 | 		var = 1;
       | 		    ^
     |}];
@@ -1832,14 +1831,15 @@ let%expect_test "syntax error messages" =
   print_syntax_error "var s = \"\xc3\xa9\xe2\x82\xac\"; var = 1;";
   [%expect
     {|
-    FILE:1:19: syntax error
+    FILE:1:19: unexpected `=`, expected an identifier
     1 | var s = "é€"; var = 1;
       |                   ^
     |}];
   (* Line terminators other than '\n' *)
   print_syntax_error "// a\xe2\x80\xa8b\nvar a;\r\nvar b;\rvar = 1;";
-  [%expect {|
-    FILE:5:5: syntax error
+  [%expect
+    {|
+    FILE:5:5: unexpected `=`, expected an identifier
     5 | var = 1;
       |     ^
     |}];
@@ -1854,42 +1854,42 @@ let%expect_test "syntax error messages" =
         (List.init ~len:30 ~f:(fun i -> Printf.sprintf "var b%d=%d;" i i)));
   [%expect
     {|
-    FILE:1:315: syntax error
+    FILE:1:315: unexpected `=`, expected an identifier
     1 | ...5;var a26=26;var a27=27;var a28=28;var a29=29;var = 1;var b0=0;var b1=1;var b2=2;var b3=3;var b4=4;v...
       |                                                      ^
     |}];
   (* No excerpt when the file cannot be read *)
   print_syntax_error ~filename:"does-not-exist.js" ~write:false "var = 1;";
-  [%expect {| does-not-exist.js:1:5: syntax error |}];
+  [%expect {| does-not-exist.js:1:5: unexpected `=`, expected an identifier |}];
   print_syntax_error ~filename:Filename.current_dir_name ~write:false "var = 1;";
-  [%expect {| .:1:5: syntax error |}];
+  [%expect {| .:1:5: unexpected `=`, expected an identifier |}];
   (* No file *)
   (match Parse_js.parse `Script (Parse_js.Lexer.of_string "var = 1;") with
   | _ -> print_endline "no error"
-  | exception Parse_js.Parsing_error pi ->
-      print_endline (Parse_info.Diagnostic.with_excerpt pi "syntax error"));
-  [%expect {| line 1, column 5: syntax error |}]
+  | exception Parse_js.Parsing_error (pi, msg) ->
+      print_endline (Parse_info.Diagnostic.with_excerpt pi msg));
+  [%expect {| line 1, column 5: unexpected `=`, expected an identifier |}]
 
 let%expect_test "numeric separators in the integer part of a float" =
   check `Script "1_0e+1; 1_0.5e1_0; 123_456.123_456e+123_456; 1e+1_0; 1_0.5_0";
   [%expect {| 1_0e1;1_0.5e1_0;123_456.123_456e123_456;1e1_0;1_0.5_0; |}];
   check `Script "1__0";
-  [%expect {| cannot parse js (from l:1, c:1) |}];
+  [%expect {| error (l:1, c:1): unexpected identifier `__0`, expected `;` |}];
   check `Script "1_.0";
-  [%expect {| cannot parse js (from l:1, c:1) |}];
+  [%expect {| error (l:1, c:1): unexpected identifier `_`, expected `;` |}];
   check `Script "0_1";
-  [%expect {| cannot parse js (from l:1, c:1) |}];
+  [%expect {| error (l:1, c:1): unexpected identifier `_1`, expected `;` |}];
   (* The exponent may start with a zero *)
   check `Script "1e0_1; 1e+0_1; 1_0e0_1";
   [%expect {| 1e0_1;1e0_1;1_0e0_1; |}];
   check `Script "1e_1";
   [%expect
     {|
-           cannot parse js (from l:1, c:1)
-           fake:1:1: lexer error: Unexpected recovery
-           |}];
+    error (l:1, c:1): unexpected identifier `e_1`, expected `;`
+    fake:1:1: lexer error: Unexpected recovery
+    |}];
   check `Script "1e1_";
-  [%expect {| cannot parse js (from l:1, c:3) |}]
+  [%expect {| error (l:1, c:3): unexpected identifier `_`, expected `;` |}]
 
 let%expect_test "html close comment after a multi-line comment" =
   (* [-->] starts a comment at the beginning of a line, where a multi-line
@@ -1947,13 +1947,13 @@ let%expect_test "source phase imports" =
            |}];
   (* Only a single binding can be imported in the source phase *)
   check `Module "import source * as ns from 'm'";
-  [%expect {| cannot parse js (from l:1, c:14) |}];
+  [%expect {| error (l:1, c:14): unexpected `*`, expected `from` |}];
   check `Module "import source x, { a } from 'm'";
-  [%expect {| cannot parse js (from l:1, c:15) |}];
+  [%expect {| error (l:1, c:15): unexpected `,`, expected `from` |}];
   check `Module "import defer x from 'm'";
-  [%expect {| cannot parse js (from l:1, c:7) |}];
+  [%expect {| error (l:1, c:13): unexpected identifier `x`, expected `from` |}];
   check `Module "import a b from 'm'";
-  [%expect {| cannot parse js (from l:1, c:7) |}]
+  [%expect {| error (l:1, c:9): unexpected identifier `b`, expected `from` |}]
 
 let%expect_test "decorators and export" =
   (* Decorators come either before [export] or before [class] *)
@@ -1998,31 +1998,41 @@ let%expect_test "decorators and export" =
            |}];
   (* ... but not both *)
   check `Module "@a export @b class A {}";
-  [%expect {| cannot parse js (from l:1, c:10) |}];
+  [%expect
+    {| error (l:1, c:10): decorators before `export` must be followed by `class` or `default class` |}];
   check `Module "@a export default @b class {}";
-  [%expect {| cannot parse js (from l:1, c:18) |}];
+  [%expect
+    {| error (l:1, c:18): decorators before `export` must be followed by `class` or `default class` |}];
   (* Only classes can be decorated *)
   check `Module "@dec export function f() {}";
-  [%expect {| cannot parse js (from l:1, c:12) |}];
+  [%expect
+    {| error (l:1, c:12): decorators before `export` must be followed by `class` or `default class` |}];
   check `Module "@dec export default function () {}";
-  [%expect {| cannot parse js (from l:1, c:20) |}];
+  [%expect
+    {| error (l:1, c:20): decorators before `export` must be followed by `class` or `default class` |}];
   check `Module "@dec export default 1";
-  [%expect {| cannot parse js (from l:1, c:20) |}];
+  [%expect
+    {| error (l:1, c:20): decorators before `export` must be followed by `class` or `default class` |}];
   check `Module "@dec export var x";
-  [%expect {| cannot parse js (from l:1, c:12) |}];
+  [%expect
+    {| error (l:1, c:12): decorators before `export` must be followed by `class` or `default class` |}];
   check `Module "@dec export { a }";
-  [%expect {| cannot parse js (from l:1, c:12) |}];
+  [%expect
+    {| error (l:1, c:12): decorators before `export` must be followed by `class` or `default class` |}];
   check `Module "@dec export * from 'm'";
-  [%expect {| cannot parse js (from l:1, c:12) |}];
+  [%expect
+    {| error (l:1, c:12): decorators before `export` must be followed by `class` or `default class` |}];
   check `Script "@dec function f() {}";
-  [%expect {| cannot parse js (from l:1, c:5) |}]
+  [%expect {| error (l:1, c:5): decorators must be followed by `class` |}]
 
 let%expect_test "optional chain after new" =
   (* An optional chain cannot be the callee of [new] *)
   check `Script "new a?.b()";
-  [%expect {| cannot parse js (from l:1, c:5) |}];
+  [%expect
+    {| error (l:1, c:5): an optional chain cannot be the callee of `new`: add parentheses |}];
   check `Script "new a?.b";
-  [%expect {| cannot parse js (from l:1, c:5) |}];
+  [%expect
+    {| error (l:1, c:5): an optional chain cannot be the callee of `new`: add parentheses |}];
   check `Script "new (a?.b)()";
   [%expect {| new(a?.b)(); |}]
 
@@ -2045,8 +2055,7 @@ let%expect_test "line terminator after accessor" =
   check `Script "class A { accessor\n x }";
   [%expect {|
            class
-           A{accessor
-           x;}
+           A{accessor;x;}
            |}];
   check `Script "class A { accessor x }";
   [%expect {|
@@ -2055,23 +2064,26 @@ let%expect_test "line terminator after accessor" =
            x;}
            |}];
   check `Script "class A { accessor\n x() {} }";
-  [%expect {| cannot parse js (from l:2, c:2) |}]
+  [%expect {|
+           class
+           A{accessor;x(){}}
+           |}]
 
 let%expect_test "directive prologue" =
   (* Only a string literal statement is a directive: not a parenthesized one,
      nor an expression starting with a string *)
   check `Script "'use strict'; var let = 1";
-  [%expect {| cannot parse js (from l:1, c:18) |}];
+  [%expect {| error (l:1, c:18): unexpected `let`, expected an identifier |}];
   check `Script "'use\\x20strict'; var let = 1";
-  [%expect {| cannot parse js (from l:1, c:21) |}];
+  [%expect {| error (l:1, c:21): unexpected `let`, expected an identifier |}];
   check `Script "('use strict'); var let = 1";
-  [%expect {| cannot parse js (from l:1, c:20) |}];
+  [%expect {| error (l:1, c:20): unexpected `let`, expected an identifier |}];
   check `Script "'use strict'.length; var let = 1";
-  [%expect {| cannot parse js (from l:1, c:25) |}];
+  [%expect {| error (l:1, c:25): unexpected `let`, expected an identifier |}];
   check `Script "'a'; 'use strict'; var let = 1";
-  [%expect {| cannot parse js (from l:1, c:23) |}];
+  [%expect {| error (l:1, c:23): unexpected `let`, expected an identifier |}];
   check `Script "var a; 'use strict'; var let = 1";
-  [%expect {| cannot parse js (from l:1, c:25) |}]
+  [%expect {| error (l:1, c:25): unexpected `let`, expected an identifier |}]
 
 let%expect_test "line terminator before =>" =
   check `Script "x\n=> y";
@@ -2079,7 +2091,7 @@ let%expect_test "line terminator before =>" =
   check `Script "async x\n=> y";
   [%expect {| async x=>y; |}];
   check `Script "(x)\n=> y";
-  [%expect {| cannot parse js (from l:2, c:0) |}]
+  [%expect {| error (l:2, c:0): unexpected `=>`, expected an expression |}]
 
 let%expect_test "line terminator before postfix ++ and --" =
   (* A line terminator, even inside a comment, ends the statement before a
@@ -2091,36 +2103,36 @@ let%expect_test "line terminator before postfix ++ and --" =
   check `Script "a /*\n*/ --b";
   [%expect {| a;--b; |}];
   check `Script "a /* */ ++b";
-  [%expect {| cannot parse js (from l:1, c:10) |}];
+  [%expect {| error (l:1, c:10): unexpected identifier `b`, expected `;` |}];
   check `Script "a++\nb";
   [%expect {| a++;b; |}]
 
 let%expect_test "left-hand side of an assignment" =
   (* Only a LeftHandSideExpression can be assigned to *)
   check `Script "a + b = c";
-  [%expect {| cannot parse js (from l:1, c:6) |}];
+  [%expect {| error (l:1, c:6): invalid left-hand side in assignment |}];
   check `Script "-a = b";
-  [%expect {| cannot parse js (from l:1, c:3) |}];
+  [%expect {| error (l:1, c:3): invalid left-hand side in assignment |}];
   check `Script "a++ = b";
-  [%expect {| cannot parse js (from l:1, c:4) |}];
+  [%expect {| error (l:1, c:4): invalid left-hand side in assignment |}];
   check `Script "typeof a = b";
-  [%expect {| cannot parse js (from l:1, c:9) |}];
+  [%expect {| error (l:1, c:9): invalid left-hand side in assignment |}];
   check `Script "a || b = c";
-  [%expect {| cannot parse js (from l:1, c:7) |}];
+  [%expect {| error (l:1, c:7): invalid left-hand side in assignment |}];
   check `Script "(a, b) = c";
   [%expect {| (a,b)=c; |}];
   check `Script "(a = b) = c";
   [%expect {| (a=b)=c; |}];
   check `Script "(a) + b = c";
-  [%expect {| cannot parse js (from l:1, c:8) |}];
+  [%expect {| error (l:1, c:8): invalid left-hand side in assignment |}];
   check `Script "x = a + b = c";
-  [%expect {| cannot parse js (from l:1, c:10) |}];
+  [%expect {| error (l:1, c:10): invalid left-hand side in assignment |}];
   check `Script "a + b += c";
-  [%expect {| cannot parse js (from l:1, c:6) |}];
+  [%expect {| error (l:1, c:6): invalid left-hand side in assignment |}];
   check `Script "[a] += b";
   [%expect {| [a]+=b; |}];
   check `Script "async function f() { await a = 1 }";
-  [%expect {| cannot parse js (from l:1, c:29) |}];
+  [%expect {| error (l:1, c:29): invalid left-hand side in assignment |}];
   (* Valid targets *)
   check `Script "(a) = b; a.b = c; a[b] = c; f() = b; [a, b] = c; ({a} = b)";
   [%expect {| a=b;a.b=c;a[b]=c;f()=b;[a,b]=c;({a}=b); |}];
@@ -2133,25 +2145,25 @@ let%expect_test "left-hand side of an assignment" =
 let%expect_test "left-hand side of for-in and for-of" =
   (* Likewise, only a LeftHandSideExpression can be iterated *)
   check `Script "for (a + b in c);";
-  [%expect {| cannot parse js (from l:1, c:11) |}];
+  [%expect {| error (l:1, c:11): invalid left-hand side in `for ... in` |}];
   check `Script "for (a = b in c);";
-  [%expect {| cannot parse js (from l:1, c:11) |}];
+  [%expect {| error (l:1, c:11): invalid left-hand side in `for ... in` |}];
   check `Script "for (typeof a of b);";
-  [%expect {| cannot parse js (from l:1, c:14) |}];
+  [%expect {| error (l:1, c:14): invalid left-hand side in `for ... of` |}];
   check `Script "for (a ? b : c in d);";
-  [%expect {| cannot parse js (from l:1, c:15) |}];
+  [%expect {| error (l:1, c:15): invalid left-hand side in `for ... in` |}];
   check `Script "for (a++ in b);";
-  [%expect {| cannot parse js (from l:1, c:9) |}];
+  [%expect {| error (l:1, c:9): invalid left-hand side in `for ... in` |}];
   check `Script "for (a, b of c);";
-  [%expect {| cannot parse js (from l:1, c:10) |}];
+  [%expect {| error (l:1, c:10): invalid left-hand side in `for ... of` |}];
   check `Script "for ((a) => b in c);";
-  [%expect {| cannot parse js (from l:1, c:14) |}];
+  [%expect {| error (l:1, c:14): invalid left-hand side in `for ... in` |}];
   check `Script "for ([a] = b in c);";
-  [%expect {| cannot parse js (from l:1, c:13) |}];
+  [%expect {| error (l:1, c:13): invalid left-hand side in `for ... in` |}];
   check `Script "async function f() { for (await a in b); }";
-  [%expect {| cannot parse js (from l:1, c:34) |}];
+  [%expect {| error (l:1, c:34): invalid left-hand side in `for ... in` |}];
   check `Script "async function f() { for (await using of b); }";
-  [%expect {| cannot parse js (from l:1, c:41) |}];
+  [%expect {| error (l:1, c:38): invalid left-hand side in `for ... of` |}];
   (* Valid targets *)
   check `Script "for ((a) in b); for (a.b of c); for (f() in b); for ([a, {b}] of c);";
   [%expect
@@ -2185,9 +2197,9 @@ let%expect_test "escaped keywords" =
            |}];
   (* Nor can it be used as the keyword *)
   check `Script "\\u0061sync function f() {}";
-  [%expect {| cannot parse js (from l:1, c:11) |}];
+  [%expect {| error (l:1, c:11): unexpected `function`, expected `;` |}];
   check `Script "v\\u0061r x";
-  [%expect {| cannot parse js (from l:1, c:9) |}];
+  [%expect {| error (l:1, c:9): unexpected identifier `x`, expected `;` |}];
   (* It is still an IdentifierName *)
   check
     `Script
@@ -2276,19 +2288,66 @@ let%expect_test "yield is reserved in strict mode code" =
            yield}}
            |}]
 
+let%expect_test "arrow function parameters" =
+  (* The cover, a parenthesized expression or an [async (...)] call, becomes
+     the parameters *)
+  check `Script "({a = 1}, [b, , c = 2], ...d) => d";
+  [%expect {| ({a=1},[b,,c=2],...d)=>d; |}];
+  check `Script "(a, b,) => 1; (a, ...b) => 1; async (a, ...b) => 1";
+  [%expect {| (a,b)=>1;(a,...b)=>1;async(a,...b)=>1; |}];
+  check `Script "async ({await: x}) => 1";
+  [%expect {| async({await:x})=>1; |}];
+  check `Script "async (a = () => await) => 1";
+  [%expect {| async(a=()=>await)=>1; |}];
+  check `Script "(a = (b = (c = (d = 1) => 1) => 1) => 1) => 1";
+  [%expect {| (a=(b=(c=(d=1)=>1)=>1)=>1)=>1; |}];
+  (* Patterns with default values were read as assignment targets *)
+  check `Script "(({a} = {a: 1}) => {}); ([a = 1], []) => 2";
+  [%expect {| ({a}={a:1})=>{};([a=1],[])=>2; |}];
+  check `Script "({a: b = 1, c = 2} = x, [d = 3, {e} = y] = z) => 1";
+  [%expect {| ({a:b=1,c=2}=x,[d=3,{e}=y]=z)=>1; |}];
+  (* Elements that are not parameters *)
+  check `Script "(a + b) => 1";
+  [%expect
+    {| error (l:1, c:1): an arrow function parameter must be an identifier or a destructuring pattern |}];
+  check `Script "([...a, b]) => 1";
+  [%expect
+    {| error (l:1, c:1): a rest element must be the last one of a destructuring pattern |}];
+  check `Script "({...a, b}) => 1";
+  [%expect
+    {| error (l:1, c:1): a rest element must be the last one of a destructuring pattern |}];
+  check `Script "({ m(){} }) => 1";
+  [%expect {| error (l:1, c:1): a method is not allowed in a destructuring pattern |}];
+  check `Script "async (...b, c) => 1";
+  [%expect {| error (l:1, c:7): a rest parameter must be the last one |}];
+  check `Script "async (...b,) => 1";
+  [%expect {| error (l:1, c:11): a rest parameter cannot be followed by a comma |}];
+  check `Script "(...a = 1) => 1";
+  [%expect {| error (l:1, c:6): unexpected `=`, expected `)` |}];
+  check `Script "((a)) => 1";
+  [%expect
+    {| error (l:1, c:1): an arrow function parameter must be an identifier or a destructuring pattern |}];
+  check `Script "async (a = (await) => 1) => 1";
+  [%expect
+    {| error (l:1, c:7): `await` is a reserved word in the parameters of an async arrow function |}]
+
 let%expect_test "await in the parameters of an async arrow function" =
   (* [async (...)] is first parsed as a call, in which [await] is an
      identifier; [await] is a keyword in the parameters *)
   check `Script "async (a = await/r/g) => {}";
-  [%expect {| cannot parse js (from l:1, c:16) |}];
+  [%expect
+    {| error (l:1, c:7): `await` is a reserved word in the parameters of an async arrow function |}];
   check `Script "async (a = async (b = await/r/g) => {}) => {}";
-  [%expect {| cannot parse js (from l:1, c:27) |}];
+  [%expect
+    {| error (l:1, c:18): `await` is a reserved word in the parameters of an async arrow function |}];
   check `Script "async (await) => {}";
-  [%expect {| cannot parse js (from l:1, c:7) |}];
+  [%expect
+    {| error (l:1, c:7): `await` is a reserved word in the parameters of an async arrow function |}];
   check `Script "async (a = await 1) => {}";
-  [%expect {| cannot parse js (from l:1, c:17) |}];
+  [%expect {| error (l:1, c:17): unexpected number `1`, expected `,` or `)` |}];
   check `Script "function* g() { async (a = yield/r/g) => {} }";
-  [%expect {| cannot parse js (from l:1, c:32) |}];
+  [%expect
+    {| error (l:1, c:23): `yield` is not allowed in the parameters of an async arrow function |}];
   (* A nested function restores the meaning of [await] *)
   check `Script "async (a = function () { await/r/g }) => {}";
   [%expect {| async(a=function(){await/r/g})=>{}; |}];
@@ -2299,26 +2358,37 @@ let%expect_test "await and yield in class field initializers" =
   (* Initializer[+In, ~Yield, ~Await]: [await] is an identifier, as in a
      plain function; [yield] is reserved as the class body is strict *)
   check `Script "async function f() { class C { x = await } }";
-  [%expect {| cannot parse js (from l:1, c:41) |}];
-  check `Script "async function f() { class C { x = await 1 } }";
   [%expect
     {|
            async function
            f(){class
-           C{x=await
-           1;}}
+           C{x=await;}}
            |}];
+  check `Script "async function f() { class C { x = await 1 } }";
+  [%expect {| error (l:1, c:41): unexpected number `1`, expected `;` |}];
   check `Script "async () => class { static x = await; accessor y = await }";
-  [%expect {| cannot parse js (from l:1, c:36) |}];
+  [%expect
+    {|
+           async()=>class{static x=await;accessor
+           y=await;};
+           |}];
   check `Script "class C { static { class D { x = await } } }";
-  [%expect {| cannot parse js (from l:1, c:39) |}];
+  [%expect
+    {|
+           class
+           C{static{class
+           D{x=await;}}}
+           |}];
   check `Script "function* g() { class C { x = yield } }";
   [%expect {|
            function*g(){class
            C{x=yield;}}
            |}];
   check `Module "class C { x = await }";
-  [%expect {| cannot parse js (from l:1, c:20) |}];
+  [%expect {|
+           class
+           C{x=await;}
+           |}];
   (* Computed names and static blocks follow the enclosing context *)
   check `Script "async function f() { class C { [await 1] = 2; static { await 3 } } }";
   [%expect
@@ -2356,7 +2426,7 @@ let%expect_test "using declarations binding of" =
            x);
            |}];
   check `Script "for (using of of x);";
-  [%expect {| cannot parse js (from l:1, c:17) |}];
+  [%expect {| error (l:1, c:17): unexpected identifier `x`, expected `)` |}];
   check `Script "async function f() { for (await using of of x); }";
   [%expect
     {|
