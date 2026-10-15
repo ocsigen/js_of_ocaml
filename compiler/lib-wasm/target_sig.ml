@@ -263,6 +263,12 @@ module type S = sig
   end
 
   module Bigarray : sig
+    val value_type : Wasm_ast.value_type Code_generation.t
+    (** The type of a reference to a bigarray *)
+
+    val cast : expression -> expression
+    (** Cast a value known to be a bigarray *)
+
     val dimension : int -> expression -> expression
     (** The [n]-th dimension of a bigarray, as an [i32] *)
 
