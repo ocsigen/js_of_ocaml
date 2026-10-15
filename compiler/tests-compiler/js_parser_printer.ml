@@ -2055,8 +2055,7 @@ let%expect_test "line terminator after accessor" =
   check `Script "class A { accessor\n x }";
   [%expect {|
            class
-           A{accessor
-           x;}
+           A{accessor;x;}
            |}];
   check `Script "class A { accessor x }";
   [%expect {|
@@ -2065,7 +2064,10 @@ let%expect_test "line terminator after accessor" =
            x;}
            |}];
   check `Script "class A { accessor\n x() {} }";
-  [%expect {| error (l:2, c:2): unexpected `(`, expected `;` |}]
+  [%expect {|
+           class
+           A{accessor;x(){}}
+           |}]
 
 let%expect_test "directive prologue" =
   (* Only a string literal statement is a directive: not a parenthesized one,

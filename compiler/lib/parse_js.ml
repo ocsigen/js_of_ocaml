@@ -1641,7 +1641,8 @@ and parse_class_body t ctx =
         in
         let elt =
           match cur t with
-          | T_ACCESSOR when not (accessor_keyword_is_name t) ->
+          | T_ACCESSOR when (not (accessor_keyword_is_name t)) && next_on_same_line t ->
+              (* [accessor] on its own line is a field named [accessor] *)
               advance t;
               let name = parse_class_element_name t ctx in
               let init = parse_initializer_opt t ctx ~no_in:false in
