@@ -1117,13 +1117,14 @@ let iter_block_reads f block =
 
 (* A variable [x] assigned by [Assign (x, y)] is a parameter of a block [pc]
    ending with [Pushtrap]: it holds the value of a mutable variable in the
-   exception handler. Its only reads are in the blocks reachable from the
-   handler without going through [pc] again, including the closures they
-   define, but not from the body of the [try], and it is not assigned there.
-   So, [Assign (x, y)] can be considered as passing [y] as an argument to
-   [x], and the facts known about [x] where it is read remain valid until it
-   is bound again. When the exception handler is removed, these assignments
-   can be removed as well. *)
+   exception handler. Its only reads are in the arguments of the handler
+   continuation of [pc], which are evaluated in the handler, and in the
+   blocks reachable from the handler without going through [pc] again,
+   including the closures they define, but not from the body of the [try].
+   It is not assigned there. So, [Assign (x, y)] can be considered as
+   passing [y] as an argument to [x], and the facts known about [x] where it
+   is read remain valid until it is bound again. When the exception handler
+   is removed, these assignments can be removed as well. *)
 let check_assigned_variables blocks =
   let assigns =
     Addr.Map.fold
@@ -1146,17 +1147,25 @@ let check_assigned_variables blocks =
       Addr.Map.fold
         (fun pc block acc ->
           let acc = ref acc in
-          iter_block_reads
-            (fun x ->
-              if Var.Map.mem x assigns
-              then
-                acc :=
-                  Var.Map.update
-                    x
-                    (fun s ->
-                      Some (Addr.Set.add pc (Option.value ~default:Addr.Set.empty s)))
-                    !acc)
-            block;
+          let add x =
+            if Var.Map.mem x assigns
+            then
+              acc :=
+                Var.Map.update
+                  x
+                  (fun s ->
+                    Some (Addr.Set.add pc (Option.value ~default:Addr.Set.empty s)))
+                  !acc
+          in
+          (match block.branch with
+          | Pushtrap (cont, x, (handler_pc, args)) ->
+              iter_block_reads
+                add
+                { block with branch = Pushtrap (cont, x, (handler_pc, [])) };
+              List.iter args ~f:(fun y ->
+                  if not (List.mem ~eq:Var.equal y block.params) then add y)
+          | Return _ | Raise _ | Stop | Branch _ | Cond _ | Switch _ | Poptrap _ ->
+              iter_block_reads add block);
           !acc)
         blocks
         Var.Map.empty
