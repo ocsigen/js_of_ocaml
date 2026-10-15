@@ -1457,8 +1457,19 @@ and parse_primary_expression t ctx =
   | T_IMPORT -> (
       advance t;
       match cur t with
-      | T_PERIOD | T_LPAREN -> vartok pos T_IMPORT
-      | _ -> error t)
+      | T_LPAREN -> vartok pos T_IMPORT
+      | T_PERIOD -> (
+          (* [import.meta], [import.source(] or [import.defer(]: the name
+             is a keyword, which cannot be spelled with escapes *)
+          match peek_tok t 1 with
+          | T_META | T_DEFER | T_IDENTIFIER (Utf8 "source", "source") ->
+              vartok pos T_IMPORT
+          | _ ->
+              advance t;
+              error t ~expected:"`meta`, `source` or `defer`")
+      | T_LCURLY | T_MULT | T_STRING _ | T_IDENTIFIER _ | T_DEFER ->
+          error_msg t "import declarations are only allowed at the top level of a module"
+      | _ -> error t ~expected:"`(` or `.`")
   | T_TRUE ->
       advance t;
       EBool true
@@ -1566,13 +1577,22 @@ and parse_cover_parenthesized_expression t ctx =
                ~reason:
                  "a rest element is only allowed in the parameters of an arrow function"
                (pi pos))
-      | None ->
-          List.fold_left items ~init:None ~f:(fun acc (item, _) ->
-              match item, acc with
-              | (Item e | Item_parenthesized e), None -> Some e
-              | (Item e | Item_parenthesized e), Some e1 -> Some (ESeq (e1, e))
-              | (Item_rest _ | Item_spread _), _ -> assert false)
-          |> Option.get)
+      | None -> (
+          match !trailing_comma with
+          | Some comma_pos ->
+              CoverParenthesizedExpressionAndArrowParameterList
+                (early_error
+                   ~reason:
+                     "a trailing comma is only allowed in the parameters of an arrow \
+                      function"
+                   (pi comma_pos))
+          | None ->
+              List.fold_left items ~init:None ~f:(fun acc (item, _) ->
+                  match item, acc with
+                  | (Item e | Item_parenthesized e), None -> Some e
+                  | (Item e | Item_parenthesized e), Some e1 -> Some (ESeq (e1, e))
+                  | (Item_rest _ | Item_spread _), _ -> assert false)
+              |> Option.get))
 
 (* An element of a cover: an AssignmentExpression, or an expression between
    its own parentheses *)
@@ -2200,11 +2220,8 @@ and parse_for t ctx =
                && Poly.equal (peek_tok t 3) Js_token.T_OF) ->
       (* [for (await using of of x)] declares [of] *)
       parse_for_using t ctx ~for_await
-  | T_ASYNC
-    when Poly.equal (peek_tok t 1) Js_token.T_OF
-         && not (Poly.equal (peek_tok t 2) Js_token.T_ARROW) ->
-      (* [for (async of x)] iterates with the variable [async], as the
-         previous parser accepted *)
+  | T_ASYNC when for_await && Poly.equal (peek_tok t 1) Js_token.T_OF ->
+      (* Unlike [for (async of], [for await (async of] is allowed *)
       let e = EVar (parse_identifier t ctx) in
       parse_for_in_of t ctx ~for_await (Left (assignment_target_of_expr None e))
   | tok -> (
@@ -2673,6 +2690,36 @@ class early_errors ~strict ~directives =
         -> m#error loc "`let` cannot be declared by `let`, `const` or `using`"
       | _ -> ()
 
+    (* MethodDefinition : get ClassElementName ( ) { FunctionBody }
+                        | set ClassElementName ( PropertySetParameterList ) ...
+       PropertySetParameterList : FormalParameter *)
+    method private accessor x =
+      match x with
+      | MethodGet (_, { list = []; rest = None }, _, _) -> ()
+      | MethodGet (_, _, _, loc) -> m#error loc "a getter has no parameter"
+      | MethodSet (_, { list = [ _ ]; rest = None }, _, _) -> ()
+      | MethodSet (_, _, _, loc) ->
+          m#error loc "a setter has exactly one parameter, which is not a rest"
+      | Method _ -> ()
+
+    method! class_element x =
+      (match x with
+      | CEMethod (_, _, _, meth) -> m#accessor meth
+      | CEField _ | CEAccessor _ | CEStaticBLock _ -> ());
+      super#class_element x
+
+    (* ImportCall : import ( AssignmentExpression ,? )
+                  | import ( AssignmentExpression , AssignmentExpression ,? )
+       ImportMeta : import . meta
+       as well as the [import.source(...)] and [import.defer(...)]
+       proposals. The parser builds [import] as a variable, which can only
+       occur in these forms. *)
+    method private import_call loc args =
+      (match args with
+      | [ Arg _ ] | [ Arg _; Arg _ ] -> ()
+      | _ -> m#error loc "an import call takes one or two arguments, without `...`");
+      List.iter args ~f:(function Arg e | ArgSpread e -> m#expression e)
+
     method! fun_decl ((_, _, body, _) as d) =
       m#in_context
         (strict || has_use_strict ~directives body)
@@ -2707,6 +2754,9 @@ class early_errors ~strict ~directives =
         when strict && is_strict_mode_reserved_name name ->
           (* Labels are not identifiers in the tree, and are not located *)
           m#error N (Printf.sprintf "`%s` is a reserved word in strict mode code" name)
+      | Try_statement (_, Some (Some (_, Some (_, loc)), _), _) ->
+          (* CatchParameter : BindingIdentifier | BindingPattern *)
+          m#error loc "the parameter of `catch` cannot have an initializer"
       | _ -> super#statement s
 
     method! expression e =
@@ -2718,6 +2768,26 @@ class early_errors ~strict ~directives =
       | EClass (id, c) ->
           Option.iter id ~f:(fun id -> m#in_context true (fun () -> m#ident id));
           m#class_decl c
+      | EObj l ->
+          List.iter l ~f:(function
+            | PropertyMethod (_, meth) -> m#accessor meth
+            | Property _ | PropertySpread _ | CoverInitializedName _ -> ());
+          super#expression e
+      | ECall (EVar (S { name = Utf8 "import"; _ }), _, args, loc)
+      | ECall
+          ( EDot (EVar (S { name = Utf8 "import"; _ }), _, Utf8 ("source" | "defer"))
+          , _
+          , args
+          , loc ) -> m#import_call loc args
+      | EDot (EVar (S { name = Utf8 "import"; _ }), _, Utf8 "meta") -> ()
+      | ENew
+          ( EDot (EVar (S { name = Utf8 "import"; _ }), _, Utf8 ("source" | "defer"))
+          , _
+          , loc ) -> m#error loc "an import call cannot be the operand of `new`"
+      | EVar (S { name = Utf8 "import"; loc; _ }) ->
+          m#error
+            loc
+            "`import` is only followed by `(`, or by `.meta`, `.source(` or `.defer(`"
       | _ -> super#expression e
   end
 
