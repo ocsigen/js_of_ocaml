@@ -1,6 +1,11 @@
 # Module `Js_of_ocaml_compiler.Js_simpl`
 
 ```ocaml
+val enot : Javascript.expression -> Javascript.expression
+```
+Negation of a condition (the result is only meaningful as a condition).
+
+```ocaml
 val if_statement : 
   function_end:(unit -> Javascript.location) ->
   Javascript.expression ->
