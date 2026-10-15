@@ -313,7 +313,7 @@ end
      93:              ? 0 === pos ? cst_Raised_at : cst_Re_raised_at
      94:              : 0 === pos ? cst_Raised_by_primitive_operat : cst_Called_from /*<<test.ml:49:75>>*/ ;
      95:     }
-     96:      /*<<test.ml:51:2>>*/ if(0 === slot[0]){
+     96:      /*<<test.ml:51:2>>*/ if(! slot[0]){
      97:      var
      98:       _f_ =  /*<<test.ml:58:6>>*/ slot[5],
      99:       _g_ = slot[4],
@@ -355,14 +355,14 @@ end
     135:      /*<<test.ml:69:6>>*/ return 0;
     136:     /*<<test.ml:73:10>>*/ }
     137:    function compare(left, right, e1, e2){
-    138:      /*<<test.ml:77:35>>*/ if(0 === e1[0]){
+    138:      /*<<test.ml:77:35>>*/ if(! e1[0]){
     139:      var v1 = e1[1];
-    140:      if(0 !== e2[0])  /*<<test.ml:80:23>>*/ return -1;
+    140:      if(e2[0])  /*<<test.ml:80:23>>*/ return -1;
     141:      var v2 =  /*<<test.ml:77:35>>*/ e2[1];
     142:       /*<<test.ml:78:24>>*/ return caml_call2(left, v1, v2) /*<<test.ml:81:24>>*/ ;
     143:     }
     144:     var v1$0 =  /*<<test.ml:77:35>>*/ e1[1];
-    145:     if(0 === e2[0])  /*<<test.ml:81:23>>*/ return 1;
+    145:     if(! e2[0])  /*<<test.ml:81:23>>*/ return 1;
     146:     var v2$0 =  /*<<test.ml:77:35>>*/ e2[1];
     147:      /*<<test.ml:79:26>>*/ return caml_call2(right, v1$0, v2$0) /*<<test.ml:81:24>>*/ ;
     148:    }
@@ -390,7 +390,7 @@ end
     170:   (globalThis));
     171:
     172: //# sourceMappingURL=test.map
-     |}
+    |}
     [@when ocaml_version >= (5, 6, 0)])];
   [%expect
     ({|
@@ -490,7 +490,7 @@ end
      93:              ? 0 === pos ? cst_Raised_at : cst_Re_raised_at
      94:              : 0 === pos ? cst_Raised_by_primitive_operat : cst_Called_from /*<<test.ml:49:75>>*/ ;
      95:     }
-     96:      /*<<test.ml:51:2>>*/ if(0 === slot[0]){
+     96:      /*<<test.ml:51:2>>*/ if(! slot[0]){
      97:      var
      98:       _f_ =  /*<<test.ml:58:6>>*/ slot[5],
      99:       _g_ = slot[4],
@@ -532,14 +532,14 @@ end
     135:      /*<<test.ml:69:6>>*/ return 0;
     136:     /*<<test.ml:73:10>>*/ }
     137:    function compare(left, right, e1, e2){
-    138:      /*<<test.ml:77:35>>*/ if(0 === e1[0]){
+    138:      /*<<test.ml:77:35>>*/ if(! e1[0]){
     139:      var v1 = e1[1];
-    140:      if(0 !== e2[0])  /*<<test.ml:80:23>>*/ return -1;
+    140:      if(e2[0])  /*<<test.ml:80:23>>*/ return -1;
     141:      var v2 =  /*<<test.ml:77:35>>*/ e2[1];
     142:       /*<<test.ml:78:24>>*/ return caml_call2(left, v1, v2) /*<<test.ml:81:24>>*/ ;
     143:     }
     144:     var v1$0 =  /*<<test.ml:77:35>>*/ e1[1];
-    145:     if(0 === e2[0])  /*<<test.ml:81:23>>*/ return 1;
+    145:     if(! e2[0])  /*<<test.ml:81:23>>*/ return 1;
     146:     var v2$0 =  /*<<test.ml:77:35>>*/ e2[1];
     147:      /*<<test.ml:79:26>>*/ return caml_call2(right, v1$0, v2$0) /*<<test.ml:81:24>>*/ ;
     148:    }
@@ -567,5 +567,5 @@ end
     170:   (globalThis));
     171:
     172: //# sourceMappingURL=test.map
-     |}
+    |}
     [@when ocaml_version < (5, 6, 0)])]
