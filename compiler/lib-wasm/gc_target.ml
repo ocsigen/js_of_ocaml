@@ -2337,7 +2337,9 @@ let post_process_function_body ~context ~profile ~param_names ~param_types ~loca
          the body. [Local_sink] runs first: shortening live ranges and
          dropping [local.set]s simplifies the input to [Var_coalescing].
          [Cast_reuse] runs before [Var_coalescing], so that the locals it
-         introduces get coalesced. *)
+         introduces get coalesced. With [--pretty], variables with a
+         user-given name are kept apart only at [--opt 1]: at higher
+         levels, performance matters more than their name. *)
       let pass flag f (locals, body) = if flag () then f ~locals body else locals, body in
       let locals, body =
         (locals, body)
@@ -2353,7 +2355,15 @@ let post_process_function_body ~context ~profile ~param_names ~param_types ~loca
         |> pass Config.Flag.wasm_cast_reuse Cast_reuse.f
         |> pass
              Config.Flag.wasm_var_coalescing
-             (Var_coalescing.f ~param_names ~param_types)
+             (Var_coalescing.f
+                ~keep_names:
+                  (Config.Flag.pretty ()
+                  &&
+                  match profile with
+                  | O1 -> true
+                  | O2 | O3 -> false)
+                ~param_names
+                ~param_types)
       in
       Initialize_locals.f ~default:(local_default context) ~param_names ~locals body
   | true -> Initialize_locals.f ~default:(local_default context) ~param_names ~locals body

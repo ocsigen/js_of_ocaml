@@ -26,10 +26,14 @@
     Parameters are valid coalescing targets: a local whose live range does
     not overlap a parameter's can be rewritten to use the parameter's
     index. Two parameters never merge because they are all live at
-    function entry. *)
+    function entry.
+
+    With [keep_names], variables with a user-given name are not
+    coalesced, so that their name remains in the Wasm name section. *)
 
 val f :
-     param_names:Code.Var.t list
+     keep_names:bool
+  -> param_names:Code.Var.t list
   -> param_types:Wasm_ast.value_type list
   -> locals:(Code.Var.t * Wasm_ast.value_type) list
   -> Wasm_ast.instruction list
