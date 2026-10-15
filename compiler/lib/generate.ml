@@ -325,6 +325,7 @@ module Share = struct
         ; "caml_wrap_exception"
         ; "caml_list_of_js_array"
         ; "caml_maybe_attach_backtrace"
+        ; "caml_exn_with_arg"
         ; "jsoo_effect_not_supported"
         ; "caml_int64_create_lo_mi_hi"
         ; "caml_stack_check_depth"
@@ -1601,9 +1602,20 @@ let _ =
    {[ throw (caml_exn_with_js_backtrace(e,false)) ]}
 *)
 let throw_statement ctx cx k loc =
-  match (k : [ `Normal | `Reraise | `Notrace ]) with
-  | `Notrace -> [ J.Throw_statement cx, loc ]
-  | (`Normal | `Reraise) as m ->
+  match (k : [ `Normal | `Reraise | `Notrace ]), cx with
+  | `Notrace, _ -> [ J.Throw_statement cx, loc ]
+  (* [raise (E arg)]: the exception is built and the backtrace attached by
+     a single runtime function. *)
+  | `Normal, J.EArr [ J.Element (J.ENum tag); J.Element exn; J.Element arg ]
+    when J.Num.is_zero tag && Primitive.exists "caml_exn_with_arg" ->
+      [ ( J.Throw_statement
+            (J.call
+               (Share.get_prim (runtime_fun ctx) "caml_exn_with_arg" ctx.share)
+               [ exn; arg ]
+               loc)
+        , loc )
+      ]
+  | ((`Normal | `Reraise) as m), _ ->
       let force =
         match m with
         | `Normal -> true

@@ -28,6 +28,13 @@ function caml_raise_with_arg(tag, arg) {
   throw caml_maybe_attach_backtrace([0, tag, arg]);
 }
 
+//Provides: caml_exn_with_arg
+//Requires: caml_maybe_attach_backtrace
+// Used by the code generator to compile [raise (E arg)]
+function caml_exn_with_arg(tag, arg) {
+  return caml_maybe_attach_backtrace([0, tag, arg], 1);
+}
+
 //Provides: caml_raise_with_args (const, mutable)
 //Requires: caml_maybe_attach_backtrace
 function caml_raise_with_args(tag, args) {

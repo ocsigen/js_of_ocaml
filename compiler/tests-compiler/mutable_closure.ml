@@ -165,7 +165,7 @@ let%expect_test _ =
         caml_call2(list_map, function(f){return caml_call1(f, 0);}, indirect[1]),
       direct$0 = direct[1];
      if(runtime.caml_equal(indirect$0, direct$0)) return 0;
-     throw caml_maybe_attach_backtrace([0, Assert_failure, _a_], 1);
+     throw caml_exn_with_arg(Assert_failure, _a_);
     }
     //end
     |}]
