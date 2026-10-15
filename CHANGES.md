@@ -47,6 +47,7 @@
   (#2533)
 * Compiler: test integers against 0 by truthiness (`!x` rather than
   `0 === x`) when the result is only used as a condition (#2538)
+* Compiler: simplify `!c ? a : b` into `c ? b : a` (#2538)
 
 ### Effects
 * Compiler: with `--effects={cps,double-translation}`, specialize calls to

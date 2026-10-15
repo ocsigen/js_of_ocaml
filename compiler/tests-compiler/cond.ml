@@ -105,7 +105,7 @@ let rip_relative_kind_beq x y =
     function rip_relative_kind_beq(x, y){
      switch(x){
        case 0:
-        return ! y ? 1 : 0;
+        return y ? 0 : 1;
        case 1:
         return 1 === y ? 1 : 0;
        default: return 2 === y ? 1 : 0;
@@ -152,7 +152,7 @@ let rip_relative_kind_beq x y =
     function rip_relative_kind_beq(x, y){
      switch(x){
        case 0:
-        var i = ! y ? 1 : 2; break;
+        var i = y ? 2 : 1; break;
        case 1:
         i = 1 === y ? 1 : 2; break;
        default: i = 2 === y ? 1 : 2;

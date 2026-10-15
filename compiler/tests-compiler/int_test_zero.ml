@@ -52,7 +52,7 @@ let%expect_test "tests on block tags" =
      return 0;
     }
     //end
-    function h(param){return ! param[0] ? 1 : 0;}
+    function h(param){return param[0] ? 0 : 1;}
     //end
     |}]
 
