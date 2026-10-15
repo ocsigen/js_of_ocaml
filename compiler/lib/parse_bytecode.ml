@@ -303,9 +303,15 @@ end = struct
      Both events are interesting. They are returned by this function
      in the expected order: first after the function call, then before
      the continuation. *)
-  let find_locs { events_by_pc; _ } pc =
-    List.filter_map (Int.Hashtbl.find_all events_by_pc pc) ~f:(fun { event; source } ->
-        if dummy_location event.ev_loc then None else Some (source, event))
+  let find_locs { events_by_pc; enabled; _ } pc =
+    (* When the events are only read for the variable names, their
+       locations are not needed: leaving them out of the code avoids
+       constraining the optimizations. *)
+    if not enabled
+    then []
+    else
+      List.filter_map (Int.Hashtbl.find_all events_by_pc pc) ~f:(fun { event; source } ->
+          if dummy_location event.ev_loc then None else Some (source, event))
 
   let event_location ~position ~source ~event =
     let pos =
