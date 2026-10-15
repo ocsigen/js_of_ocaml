@@ -186,12 +186,39 @@ module Share = struct
       if c <> 0 then c else String.compare s1 s2
   end)
 
+  (* Hash-consing of structured constants: each distinct constant gets
+     an integer id, computed from the ids of its fields. [intern] returns a tree of ids mirroring the
+     constant, which is then traversed along with it, so that the work
+     is linear in the size of the constants. *)
+  type key =
+    | Leaf of Code.constant
+    | Node of int * int array
+
+  module Key = Hashtbl.Make (struct
+    type t = key
+
+    let equal a b =
+      match a, b with
+      | Leaf a, Leaf b -> Code.Constant.equal a b
+      | Node (t, a), Node (t', a') -> t = t' && Array.equal Int.equal a a'
+      | Leaf _, Node _ | Node _, Leaf _ -> false
+
+    let hash = Hashtbl.hash
+  end)
+
+  type idtree =
+    { id : int
+    ; size : int  (** Approximate size in the generated code *)
+    ; fields : idtree array
+    }
+
   type 'a aux =
     { byte_strings : 'a StringMap.t
     ; utf_strings : 'a StringMap.t
     ; base64_strings : 'a Base64Map.t
     ; applies : 'a AppMap.t
     ; prims : 'a StringMap.t
+    ; constants : 'a IntMap.t  (** Structured constants, by id *)
     }
 
   let empty_aux =
@@ -200,11 +227,15 @@ module Share = struct
     ; utf_strings = StringMap.empty
     ; base64_strings = Base64Map.empty
     ; applies = AppMap.empty
+    ; constants = IntMap.empty
     }
 
   type t =
     { count : int aux
     ; mutable vars : J.ident aux
+    ; interned : (int * int) Key.t  (** Id and size of each constant *)
+    ; mutable constant_decls : (J.ident * J.expression) list
+          (** Shared structured constants, most recent first *)
     ; alias_prims : bool
     ; alias_strings : bool
     ; alias_apply : bool
@@ -261,17 +292,138 @@ module Share = struct
     | Byte_literal -> add_byte_string c.contents t
     | Base64 -> add_base64_string (c.target, c.contents) t
 
-  let rec get_constant c t =
+  let float_size f =
+    String.length (J.Num.to_string ~minify:true (J.Num.of_float (Int64.float_of_bits f)))
+
+  (* Approximate size of a constant in the generated code *)
+  let leaf_size c =
+    match c with
+    | Int i -> String.length (Targetint.to_string i)
+    | Int32 i | NativeInt i -> String.length (Int32.to_string i)
+    | Float f | Float32 f -> float_size f
+    | Float_array a ->
+        (* [254,f1,...,fn] *)
+        Array.fold_left a ~init:5 ~f:(fun n f -> n + 1 + float_size f)
+    | String s -> String.length s + 2
+    | Int64 i ->
+        (* A call [f(lo,mi,hi)] to [caml_int64_create_lo_mi_hi] *)
+        let digits n = String.length (Int64.to_string n) in
+        6
+        + digits (Int64.logand i 0xffffffL)
+        + digits (Int64.logand (Int64.shift_right i 24) 0xffffffL)
+        + digits (Int64.logand (Int64.shift_right i 48) 0xffffL)
+    | NativeString (Byte s) -> String.length s + 2
+    | NativeString (Utf (Utf8 s)) -> String.length s + 2
+    | Null_ -> 4
+    | Tuple _ -> assert false
+
+  let add_key st key size fields =
+    let id, size =
+      match Key.find_opt st key with
+      | Some p -> p
+      | None ->
+          let p = Key.length st, Lazy.force size in
+          Key.add st key p;
+          p
+    in
+    { id; size; fields }
+
+  let rec intern st c =
+    match c with
+    | Tuple (tag, a, _) ->
+        (* The kind of block does not matter for code generation *)
+        let fields = Array.map a ~f:(fun c -> intern st c) in
+        let size =
+          (* [[tag,f1,...,fn]] *)
+          lazy
+            (Array.fold_left
+               fields
+               ~init:(2 + String.length (string_of_int tag))
+               ~f:(fun n f -> n + 1 + f.size))
+        in
+        add_key st (Node (tag, Array.map fields ~f:(fun f -> f.id))) size fields
+    | _ -> add_key st (Leaf c) (lazy (leaf_size c)) [||]
+
+  let add_constant id t =
+    { t with
+      constants =
+        IntMap.update id (fun n -> Some (Option.value ~default:0 n + 1)) t.constants
+    }
+
+  let rec add_strings c t =
     match c with
     | String s -> add_string_constant (String_constant.of_string s) t
     | NativeString s -> add_string_constant (String_constant.of_native_string s) t
-    | Tuple (_, args, _) -> Array.fold_left args ~init:t ~f:(fun t c -> get_constant c t)
+    | Tuple (_, args, _) -> Array.fold_left args ~init:t ~f:(fun t c -> add_strings c t)
     | _ -> t
 
-  let add_args args t =
+  (* Only the occurrences of the constant itself are counted here, the
+     occurrences of its fields are computed by [generation_counts]. *)
+  let get_constant st c t =
+    let t = add_strings c t in
+    match c with
+    | Tuple _ -> add_constant (intern st c).id t
+    | _ -> t
+
+  (* Unshared, a constant generated [n] times costs [n * size]. Shared,
+     it costs [size + 4] for its declaration [,xy=...] (assuming a
+     two-letter variable name), plus [2] per occurrence. Thus, each
+     occurrence but the first saves [size - 2], for a fixed cost of 6. *)
+  let worth_sharing ~n ~size = (n - 1) * (size - 2) > 6
+
+  (* From the number of occurrences of each constant in the program,
+     computes the number of times each constant is generated, counting
+     the occurrences as fields of other constants. The fields of a
+     shared constant are generated only once, in its declaration. Ids
+     are allocated bottom-up, so a constant is processed after all the
+     constants containing it. *)
+  let generation_counts interned counts =
+    let len = Key.length interned in
+    let keys = Array.make len (Leaf Null_) and sizes = Array.make len 0 in
+    Key.iter
+      (fun key (id, size) ->
+        keys.(id) <- key;
+        sizes.(id) <- size)
+      interned;
+    let counts =
+      Array.init len ~f:(fun id -> Option.value ~default:0 (IntMap.find_opt id counts))
+    in
+    (* Number of cells of each list, or -1 *)
+    let list_length = Array.make len (-1) in
+    Array.iteri keys ~f:(fun id key ->
+        match key with
+        | Leaf (Int i) when Targetint.is_zero i -> list_length.(id) <- 0
+        | Node (0, [| _; l |]) when list_length.(l) >= 0 ->
+            list_length.(id) <- list_length.(l) + 1
+        | _ -> ());
+    let max_depth = Config.Param.constant_max_depth () in
+    for id = len - 1 downto 0 do
+      let n = counts.(id) in
+      match keys.(id) with
+      | Node (_, fields) when n > 0 ->
+          let n = if worth_sharing ~n ~size:sizes.(id) then 1 else n in
+          if list_length.(id) > max_depth
+          then
+            (* Generated as an array of its elements, see [constant_rec_tuple] *)
+            let rec add_elements id =
+              match keys.(id) with
+              | Node (_, [| x; l |]) ->
+                  counts.(x) <- counts.(x) + n;
+                  add_elements l
+              | _ -> ()
+            in
+            add_elements id
+          else Array.iter fields ~f:(fun f -> counts.(f) <- counts.(f) + n)
+      | Node _ | Leaf _ -> ()
+    done;
+    let res = ref IntMap.empty in
+    Array.iteri counts ~f:(fun id n -> if n > 0 then res := IntMap.add id n !res);
+    !res
+
+  let add_args st args t =
     List.fold_left args ~init:t ~f:(fun t a ->
         match a with
-        | Pc c -> get_constant c t
+        | Pc c -> get_constant st c t
         | _ -> t)
 
   let get
@@ -286,6 +438,8 @@ module Share = struct
       | None -> Config.Flag.use_js_string () && not (Config.Flag.share_constant ())
       | Some x -> x
     in
+    let interned = Key.create 16 in
+    let get_constant = get_constant interned and add_args = add_args interned in
     let count =
       Addr.Map.fold
         (fun _ block share ->
@@ -334,7 +488,15 @@ module Share = struct
         ~init:count
         ~f:(fun acc x -> add_special_prim_if_exists x acc)
     in
-    { count; vars = empty_aux; alias_strings; alias_prims; alias_apply }
+    let count = { count with constants = generation_counts interned count.constants } in
+    { count
+    ; vars = empty_aux
+    ; interned
+    ; constant_decls = []
+    ; alias_strings
+    ; alias_prims
+    ; alias_apply
+    }
 
   let get_byte_string gen s t =
     if not t.alias_strings
@@ -379,6 +541,25 @@ module Share = struct
         t.vars <-
           { t.vars with base64_strings = Base64Map.add key v t.vars.base64_strings };
         J.EVar v
+
+  (* Structured constants are immutable: identical ones occurring
+     several times are bound once to a variable when this is smaller.
+     Returns this variable, if any; [gen] generates the constant the
+     first time. *)
+  let get_tuple gen (tree : idtree) t =
+    match IntMap.find_opt tree.id t.vars.constants with
+    | Some v -> Some (J.EVar v)
+    | None ->
+        let n = Option.value ~default:0 (IntMap.find_opt tree.id t.count.constants) in
+        if worth_sharing ~n ~size:tree.size
+        then (
+          let e = gen () in
+          let x = Var.fresh_n "cst_block" in
+          let v = J.V x in
+          t.vars <- { t.vars with constants = IntMap.add tree.id v t.vars.constants };
+          t.constant_decls <- (v, e) :: t.constant_decls;
+          Some (J.EVar v))
+        else None
 
   let get_prim gen s t =
     let s = Primitive.resolve s in
@@ -653,7 +834,7 @@ let string_constant ~ctx (c : String_constant.t) =
       (* Converted in the shared header, see [generate_shared_value] *)
       Share.get_base64_string (c.target, c.contents) share
 
-let rec constant_rec ~ctx x level instrs =
+let rec constant_rec ~ctx x (tree : Share.idtree) level instrs =
   match x with
   | String s -> string_constant ~ctx (String_constant.of_string s), instrs
   | NativeString s -> string_constant ~ctx (String_constant.of_native_string s), instrs
@@ -672,19 +853,48 @@ let rec constant_rec ~ctx x level instrs =
       and mi = int (Int64.to_int (Int64.logand (Int64.shift_right i 24) 0xffffffL))
       and hi = int (Int64.to_int (Int64.logand (Int64.shift_right i 48) 0xffffL)) in
       J.call p [ lo; mi; hi ] J.N, instrs
+  | Tuple _ -> (
+      let share = ctx.Ctx.share in
+      match
+        Share.get_tuple
+          (fun () ->
+            let e, parts = constant_rec_tuple ~ctx x tree 0 [] in
+            (* The parts of a large constant are declared first *)
+            List.iter (List.rev parts) ~f:(fun (st, _) ->
+                match st with
+                | J.Variable_statement (_, [ J.DeclIdent (v, Some (e, _)) ]) ->
+                    share.Share.constant_decls <- (v, e) :: share.Share.constant_decls
+                | _ -> assert false);
+            e)
+          tree
+          share
+      with
+      | Some e -> e, instrs
+      | None -> constant_rec_tuple ~ctx x tree level instrs)
+  | Int i -> targetint i, instrs
+  | Int32 i | NativeInt i -> targetint (Targetint.of_int32_exn i), instrs
+  | Null_ -> s_var "null", instrs
+
+and constant_rec_tuple ~ctx x (tree : Share.idtree) level instrs =
+  match x with
   | Tuple (tag, a, _) -> (
       let constant_max_depth = Config.Param.constant_max_depth () in
-      let rec detect_list n acc = function
-        | Tuple (0, [| x; l |], _) -> detect_list (succ n) (x :: acc) l
+      let rec detect_list n acc x (tree : Share.idtree) =
+        match x with
+        | Tuple (0, [| x; l |], _) ->
+            detect_list (succ n) ((x, tree.fields.(0)) :: acc) l tree.fields.(1)
         | Int maybe_zero when Targetint.is_zero maybe_zero ->
             if n > constant_max_depth then Some acc else None
         | _ -> None
       in
-      match detect_list 0 [] x with
+      match detect_list 0 [] x tree with
       | Some elts_rev ->
           let elements, instrs =
-            List.fold_left elts_rev ~init:([], instrs) ~f:(fun (arr, instrs) elt ->
-                let js, instrs = constant_rec ~ctx elt level instrs in
+            List.fold_left
+              elts_rev
+              ~init:([], instrs)
+              ~f:(fun (arr, instrs) (elt, tree) ->
+                let js, instrs = constant_rec ~ctx elt tree level instrs in
                 js :: arr, instrs)
           in
           let p =
@@ -695,8 +905,12 @@ let rec constant_rec ~ctx x level instrs =
           let split = level = constant_max_depth in
           let level = if split then 0 else level + 1 in
           let l, instrs =
-            List.fold_left (Array.to_list a) ~init:([], instrs) ~f:(fun (l, instrs) cc ->
-                let js, instrs = constant_rec ~ctx cc level instrs in
+            List.fold_left2
+              (Array.to_list a)
+              (Array.to_list tree.fields)
+              ~init:([], instrs)
+              ~f:(fun (l, instrs) cc tree ->
+                let js, instrs = constant_rec ~ctx cc tree level instrs in
                 js :: l, instrs)
           in
           let l, instrs =
@@ -714,12 +928,11 @@ let rec constant_rec ~ctx x level instrs =
             else List.map ~f:(fun x -> J.Element x) (List.rev l), instrs
           in
           Mlvalue.Block.make ~tag ~args:l, instrs)
-  | Int i -> targetint i, instrs
-  | Int32 i | NativeInt i -> targetint (Targetint.of_int32_exn i), instrs
-  | Null_ -> s_var "null", instrs
+  | _ -> assert false
 
 let constant ~ctx x level =
-  let expr, instr = constant_rec ~ctx x level [] in
+  let tree = Share.intern ctx.Ctx.share.Share.interned x in
+  let expr, instr = constant_rec ~ctx x tree level [] in
   expr, List.rev instr
 
 module Q : sig
@@ -2797,10 +3010,15 @@ let generate_shared_value ctx =
     List.map (StringMap.bindings share.Share.vars.Share.utf_strings) ~f:(fun (s, v) ->
         v, (str_js_utf8 s, J.U))
   in
+  (* Shared structured constants come last, as they can refer to strings,
+     primitives, and the shared constants declared before them *)
+  let constants =
+    List.rev_map share.Share.constant_decls ~f:(fun (v, e) -> v, (e, J.U))
+  in
   (* Primitives are declared before the base64 strings they decode *)
-  let strings =
+  let shared =
     ( J.variable_declaration
-        (runtime @ byte_strings @ utf_strings @ prims @ base64_strings)
+        (runtime @ byte_strings @ utf_strings @ prims @ base64_strings @ constants)
     , J.U )
   in
   if not (Config.Flag.inline_callgen ())
@@ -2813,8 +3031,8 @@ let generate_shared_value ctx =
           | J.EFun (_, decl) -> J.Function_declaration (v, decl), J.U
           | _ -> assert false)
     in
-    strings :: applies
-  else [ strings ]
+    shared :: applies
+  else [ shared ]
 
 let compile_program ctx pc =
   if debug () then Format.eprintf "@[<v 2>";

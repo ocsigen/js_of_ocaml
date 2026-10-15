@@ -39,6 +39,9 @@
   constant (#2531)
 * Compiler: inline pending expressions at the end of a `try` body, avoiding
   temporaries such as `try{var c = f(x); return c;}` (#2532)
+* Compiler: share identical structured constants (for instance the
+  ASTs of format strings) instead of generating a copy for each
+  occurrence (#2540)
 
 ### Effects
 * Compiler: with `--effects={cps,double-translation}`, specialize calls to

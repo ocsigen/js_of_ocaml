@@ -117,7 +117,11 @@ with Exit ->
         caml_get_global = runtime.caml_get_global,
         caml_maybe_attach_backtrace = runtime.caml_maybe_attach_backtrace,
         caml_string_of_jsbytes = runtime.caml_string_of_jsbytes,
-        caml_wrap_exception = runtime.caml_wrap_exception;
+        caml_wrap_exception = runtime.caml_wrap_exception,
+        cst_block =
+          [0,
+           [4, 0, 0, 0, [12, 32, [4, 0, 0, 0, [12, 10, 0]]]],
+           caml_string_of_jsbytes("%d %d\n")];
        function caml_call3(f, a0, a1, a2){
         return (f.l >= 0 ? f.l : f.l = f.length) === 3
                 ? f(a0, a1, a2)
@@ -128,14 +132,6 @@ with Exit ->
         Stdlib_Printf = caml_get_global("Stdlib__Printf"),
         _a_ = 0,
         _c_ = _a_,
-        _f_ =
-          [0,
-           [4, 0, 0, 0, [12, 32, [4, 0, 0, 0, [12, 10, 0]]]],
-           caml_string_of_jsbytes("%d %d\n")],
-        _e_ =
-          [0,
-           [4, 0, 0, 0, [12, 32, [4, 0, 0, 0, [12, 10, 0]]]],
-           caml_string_of_jsbytes("%d %d\n")],
         _d_ = 0;
        try{
         _a_ = _a_ + 1 | 0;
@@ -149,15 +145,15 @@ with Exit ->
          _c_ = _a_;
          throw caml_maybe_attach_backtrace(Stdlib[3], 1);
         }
-        catch(_g_){
-         caml_call3(Stdlib_Printf[3], _f_, _b_ | 0, _d_);
+        catch(_e_){
+         caml_call3(Stdlib_Printf[3], cst_block, _b_ | 0, _d_);
          throw caml_maybe_attach_backtrace(Stdlib[3], 1);
         }
        }
-       catch(_f_){
-        _b_ = caml_wrap_exception(_f_);
+       catch(_e_){
+        _b_ = caml_wrap_exception(_e_);
         if(_b_ !== Stdlib[3]) throw caml_maybe_attach_backtrace(_b_, 0);
-        caml_call3(Stdlib_Printf[3], _e_, _c_ | 0, _d_);
+        caml_call3(Stdlib_Printf[3], cst_block, _c_ | 0, _d_);
         runtime.caml_register_global([0], "Test");
         0;
         return;
@@ -203,7 +199,8 @@ with Exit ->
         caml_get_global = runtime.caml_get_global,
         caml_maybe_attach_backtrace = runtime.caml_maybe_attach_backtrace,
         caml_string_of_jsbytes = runtime.caml_string_of_jsbytes,
-        caml_wrap_exception = runtime.caml_wrap_exception;
+        caml_wrap_exception = runtime.caml_wrap_exception,
+        cst_block = [0, [4, 0, 0, 0, [12, 10, 0]], caml_string_of_jsbytes("%d\n")];
        function caml_call2(f, a0, a1){
         return (f.l >= 0 ? f.l : f.l = f.length) === 2
                 ? f(a0, a1)
@@ -213,27 +210,25 @@ with Exit ->
         Stdlib = caml_get_global("Stdlib"),
         Stdlib_Printf = caml_get_global("Stdlib__Printf"),
         _a_ = 0,
-        _c_ = _a_,
-        _b_ = [0, [4, 0, 0, 0, [12, 10, 0]], caml_string_of_jsbytes("%d\n")],
-        _e_ = [0, [4, 0, 0, 0, [12, 10, 0]], caml_string_of_jsbytes("%d\n")];
+        _c_ = _a_;
        try{
-        var _d_ = _a_;
+        var _b_ = _a_;
         try{
          _a_ = _a_ + 1 | 0;
          0;
-         _d_ = _a_;
+         _b_ = _a_;
          _c_ = _a_;
          throw caml_maybe_attach_backtrace(Stdlib[3], 1);
         }
-        catch(_f_){
-         caml_call2(Stdlib_Printf[3], _b_, _d_);
+        catch(_d_){
+         caml_call2(Stdlib_Printf[3], cst_block, _b_);
          throw caml_maybe_attach_backtrace(Stdlib[3], 1);
         }
        }
-       catch(_f_){
-        _b_ = caml_wrap_exception(_f_);
+       catch(_d_){
+        _b_ = caml_wrap_exception(_d_);
         if(_b_ !== Stdlib[3]) throw caml_maybe_attach_backtrace(_b_, 0);
-        caml_call2(Stdlib_Printf[3], _e_, _c_);
+        caml_call2(Stdlib_Printf[3], cst_block, _c_);
         runtime.caml_register_global([0], "Test");
         0;
         return;
