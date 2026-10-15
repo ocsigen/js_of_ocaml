@@ -391,14 +391,14 @@ and rewrite_instrs r l =
 (*  Entry point                                                          *)
 (* --------------------------------------------------------------------- *)
 
-let f ~param_names ~param_types ~locals instrs =
+let f ~keep_names ~param_names ~param_types ~locals instrs =
   let t = Timer.make () in
   let num_params = List.length param_names in
   assert (List.length param_types = num_params);
-  (* In pretty mode, only coalesce compiler-generated variables so
+  (* With [keep_names], only coalesce compiler-generated variables so
      user-given OCaml names survive in the Wasm name section (and are
      visible in browser devtools). *)
-  let eligible v = (not (Config.Flag.pretty ())) || Var.generated_name v in
+  let eligible v = (not keep_names) || Var.generated_name v in
   let types = Var.Hashtbl.create (num_params + List.length locals) in
   let param_vars =
     List.fold_left2 param_names param_types ~init:Var.Set.empty ~f:(fun acc v t ->
