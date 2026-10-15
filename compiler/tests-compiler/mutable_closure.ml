@@ -156,9 +156,8 @@ let%expect_test _ =
       direct[1] = [0, f(i), _b_];
       let f$2 = f;
       indirect[1] = [0, function(param){return f$2(i$0);}, indirect[1]];
-      _b_ = i + 1 | 0;
       if(3 === i) break;
-      i = _b_;
+      i = i + 1 | 0;
      }
      var
       indirect$0 =

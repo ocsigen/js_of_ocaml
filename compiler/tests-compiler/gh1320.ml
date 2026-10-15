@@ -57,9 +57,8 @@ let () = myfun ()
       let f$0 = f, g$0 = g;
       _b_ = g(i);
       caml_call2(Stdlib_Printf[3], _a_, _b_);
-      _b_ = i + 1 | 0;
       if(4 === i) return 0;
-      i = _b_;
+      i = i + 1 | 0;
      }
     }
     //end
