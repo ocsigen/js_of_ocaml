@@ -1111,6 +1111,7 @@ and parse_assignment_expression t ctx ~no_in =
       (* x => body *)
       let pos = start_pos t in
       let i = parse_identifier t ctx in
+      if newline_before t then error_msg t "no line break is allowed before `=>`";
       expect t T_ARROW;
       let body, concise = parse_concise_body t ~no_in ~async:false in
       EArrow ((no_fun, list [ param' i ], body, p pos), concise, AUnknown)
@@ -1123,6 +1124,7 @@ and parse_assignment_expression t ctx ~no_in =
           let pos = start_pos t in
           advance t;
           let i = parse_identifier t { ctx with await = true } in
+          if newline_before t then error_msg t "no line break is allowed before `=>`";
           expect t T_ARROW;
           let body, concise = parse_concise_body t ~no_in ~async:true in
           EArrow
@@ -1160,14 +1162,14 @@ and parse_cover_or_arrow t ctx ~no_in =
   let e = parse_conditional_expression t ctx ~no_in in
   match cur t with
   | T_ARROW when (not (newline_before t)) && is_cover t ~since:start ->
-      (* No line terminator before [=>] after a parenthesized parameter
-         list, which the previous parser also checked *)
       let cover = last_cover t in
       let async = cover.c_async in
       let params = formal_parameters_of_cover cover in
       expect t T_ARROW;
       let body, concise = parse_concise_body t ~no_in ~async in
       EArrow (({ async; generator = false }, params, body, p pos), concise, AUnknown)
+  | T_ARROW when is_cover t ~since:start ->
+      error_msg t "no line break is allowed before `=>`"
   | _ -> parse_assignment_operator t ctx ~no_in e
 
 (* ConciseBody : { FunctionBody } | ExpressionBody
@@ -2713,6 +2715,22 @@ class early_errors ~strict ~directives =
       | ESeq _ | ECond _ | EBin _ | EUn _ | EArrow _ | EYield _ | EObj _ | EArr _ ->
           m#error (expression_start e) ("invalid left-hand side in " ^ what)
       | _ -> ()
+
+    (* Without a [from] clause, the local names of an export clause are
+       IdentifierReferences, not reserved words: [export { default }] *)
+    method! export x =
+      (match x with
+      | ExportNames l ->
+          List.iter l ~f:(fun (id, _) ->
+              match id with
+              | S { name = Utf8 name; loc; _ }
+                when Option.is_some (Js_token.is_reserved name) ->
+                  m#error
+                    loc
+                    "a reserved word can only be exported from another module (`from`)"
+              | S _ | V _ -> ())
+      | _ -> ());
+      super#export x
 
     method! fun_decl ((_, _, body, _) as d) =
       m#in_context
