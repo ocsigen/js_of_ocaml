@@ -2528,11 +2528,14 @@ let parse_script_or_module t ~module_ =
   in
   loop []
 
-(* The early errors recorded while parsing the cover grammars (see
-   [Javascript.early_error]). Import and export declarations are only
-   built at the top level of a module, so there is nothing to check about
-   their position. *)
-let fail_early =
+(* Early errors (ECMA-262 static semantics, "It is a Syntax Error if ..."):
+   the rules that depend on where a construct occurs rather than on its
+   tokens are checked on the tree once it is built, rather than while
+   parsing. The cover grammars record their early errors in the tree
+   ([Javascript.early_error]). Import and export declarations are only built
+   at the top level of a module, so there is nothing to check about their
+   position. *)
+class early_errors =
   object
     inherit Js_traverse.iter
 
@@ -2540,7 +2543,9 @@ let fail_early =
       raise (Parsing_error (p.loc, Option.value ~default:"syntax error" p.reason))
   end
 
-let check_program p = List.iter p ~f:(fun (_, (s, _)) -> fail_early#statement s)
+let check_program p =
+  let c = new early_errors in
+  List.iter p ~f:(fun (_, (s, _)) -> c#statement s)
 
 (* The parser uses the native stack: a program nested very deeply (tens of
    thousands of brackets, with the stack of OCaml 4) overflows it. Report
@@ -2570,7 +2575,7 @@ let parse_aux ~keep_tokens script_or_module lex =
         raise e
     | Stack_overflow -> nested_too_deeply t
   in
-  check_program p;
+  (try check_program p with Stack_overflow -> nested_too_deeply t);
   p, t
 
 (* Group the statements under the annotations they follow *)
@@ -2600,9 +2605,11 @@ let parse script_or_module lex =
 let parse_expr lex =
   let t = create ~keep_tokens:false lex in
   let e =
-    try parse_expression t no_ctx ~no_in:false
+    try
+      let e = parse_expression t no_ctx ~no_in:false in
+      expect t T_EOF;
+      (new early_errors)#expression e;
+      e
     with Stack_overflow -> nested_too_deeply t
   in
-  expect t T_EOF;
-  fail_early#expression e;
   e
