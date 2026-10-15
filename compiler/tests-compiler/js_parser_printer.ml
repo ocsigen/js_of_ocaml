@@ -1534,11 +1534,26 @@ let check kind src =
 
 let%expect_test "words reserved in strict mode only are identifiers in sloppy mode" =
   check `Script "var let = 1, static, implements, interface, package; let = 2";
-  [%expect {| error (l:1, c:4): unexpected `let`, expected an identifier |}];
+  [%expect
+    {|
+           var
+           let=1,static,implements,interface,package;(let=2);
+           |}];
   check `Script "var private, protected, public; public.x(static)";
-  [%expect {| error (l:1, c:4): unexpected `private`, expected an identifier |}];
+  [%expect
+    {|
+           var
+           private,protected,public;public.x(static);
+           |}];
   check `Script "for (var let in o) ; for (let in o) ; let: x; ({ let, static })";
-  [%expect {| error (l:1, c:9): unexpected `let`, expected an identifier |}];
+  [%expect
+    {|
+           for(var
+           let
+           in
+           o);for((let)in
+           o);\u{6c}et:x;({let:let,static:static});
+           |}];
   (* [let] followed by an identifier, [[] or [{] starts a declaration *)
   check `Script "let x = 1; let [a] = b; let {c} = d; let\ny = 2";
   [%expect
@@ -1549,41 +1564,55 @@ let%expect_test "words reserved in strict mode only are identifiers in sloppy mo
            |}];
   (* ... but declarations are not statements: [let] is then an identifier *)
   check `Script "if (a) let\nx = 1";
-  [%expect {| error (l:1, c:7): unexpected `let`, expected an identifier |}];
+  [%expect {| if(a)(let);x=1; |}];
   check `Script "if (a) let\n{}";
-  [%expect {| error (l:1, c:7): unexpected `let`, expected an identifier |}];
+  [%expect {| if(a)(let);{} |}];
   (* and an expression statement cannot start with [let []] *)
   check `Script "if (a) let [x] = y";
-  [%expect {| error (l:1, c:7): unexpected `let`, expected an identifier |}];
+  [%expect {| error (l:1, c:7): an expression statement cannot start with `let [` |}];
   (* [let] cannot start the left-hand side of [for ... of], nor be bound by
      a lexical declaration *)
   check `Script "for (let.a in x) ;";
-  [%expect {| error (l:1, c:8): unexpected `.`, expected an identifier |}];
+  [%expect {|
+           for((let.a)in
+           x);
+           |}];
   check `Script "for (let.a of x) ;";
-  [%expect {| error (l:1, c:8): unexpected `.`, expected an identifier |}];
+  [%expect
+    {| error (l:1, c:11): the left-hand side of `for ... of` cannot start with `let` |}];
   check `Script "let let = 1";
-  [%expect {| error (l:1, c:4): unexpected `let`, expected an identifier |}];
+  [%expect {| error (l:1, c:4): `let` cannot be declared by `let`, `const` or `using` |}];
   check `Script "for (const let of x) ;";
-  [%expect {| error (l:1, c:11): unexpected `let`, expected an identifier |}];
+  [%expect {| error (l:1, c:11): `let` cannot be declared by `let`, `const` or `using` |}];
   check `Script "async function f() { let\nawait 0 }";
   [%expect
     {| error (l:2, c:0): `await` is a reserved word in an async function or a module |}];
   check `Script "using\nlet = 1";
-  [%expect {| error (l:2, c:4): unexpected `=`, expected an identifier |}];
+  [%expect {| using;(let=1); |}];
   (* They are reserved in strict mode code: modules, classes, and after a
      [use strict] directive *)
   check `Module "var let = 1";
-  [%expect {| error (l:1, c:4): unexpected `let`, expected an identifier |}];
+  [%expect {| error (l:1, c:4): `let` is a reserved word in strict mode code |}];
   check `Script "class C { m() { var static } }";
-  [%expect {| error (l:1, c:20): unexpected `static`, expected an identifier |}];
+  [%expect {| error (l:1, c:20): `static` is a reserved word in strict mode code |}];
   check `Script "function f() { 'use strict'; var public }";
-  [%expect {| error (l:1, c:33): unexpected `public`, expected an identifier |}];
+  [%expect {| error (l:1, c:33): `public` is a reserved word in strict mode code |}];
   check `Script "'use strict'; var let";
-  [%expect {| error (l:1, c:18): unexpected `let`, expected an identifier |}];
+  [%expect {| error (l:1, c:18): `let` is a reserved word in strict mode code |}];
   check `Script "function f() { 'use strict' + 1; var public } function g() { var let }";
-  [%expect {| error (l:1, c:37): unexpected `public`, expected an identifier |}];
+  [%expect
+    {|
+           function
+           f(){"use strict"+1;var
+           public}function
+           g(){var
+           let}
+           |}];
   check `Script "{ 'use strict'; var let }";
-  [%expect {| error (l:1, c:20): unexpected `let`, expected an identifier |}]
+  [%expect {|
+           {"use strict";var
+           let}
+           |}]
 
 let%expect_test "[async of] and [using of] in a for statement" =
   check `Script "for (async of => {}; ;) ;";
@@ -1592,7 +1621,7 @@ let%expect_test "[async of] and [using of] in a for statement" =
   [%expect {| x=async of=>1; |}];
   (* [for (async of] is excluded by the grammar *)
   check `Script "for (async of [1]) ;";
-  [%expect {| for((async)of[1]); |}];
+  [%expect {| error (l:1, c:14): unexpected `[`, expected `=>` |}];
   check `Script "for ((async) of [1]) ; for (async.x of [1]) ;";
   [%expect {| for((async)of[1]);for((async.x)of[1]); |}];
   (* ... but not [for await (async of] *)
@@ -1645,53 +1674,38 @@ let%expect_test "a class field named get, set or accessor before a generator" =
 let%expect_test "invalid programs" =
   (* A trailing comma is only allowed in arrow parameters *)
   check `Script "(a,)";
-  [%expect {| a; |}];
+  [%expect
+    {| error (l:1, c:2): a trailing comma is only allowed in the parameters of an arrow function |}];
   check `Script "(a, b,)";
-  [%expect {| a,b; |}];
+  [%expect
+    {| error (l:1, c:5): a trailing comma is only allowed in the parameters of an arrow function |}];
   check `Script "(a, b,) => 1";
   [%expect {| (a,b)=>1; |}];
   (* The parameter of [catch] has no initializer *)
   check `Script "try {} catch (e = 1) {}";
-  [%expect {| try{}catch(e=1){} |}];
+  [%expect {| error (l:1, c:16): the parameter of `catch` cannot have an initializer |}];
   check `Script "try {} catch ([e = 1]) {}";
   [%expect {| try{}catch([e=1]){} |}];
   (* A getter has no parameter, a setter exactly one *)
   check `Script "x = { get a(b) {} }";
-  [%expect {|
-           x={get
-           a(b){}};
-           |}];
+  [%expect {| error (l:1, c:12): a getter has no parameter |}];
   check `Script "x = { set a() {} }";
-  [%expect {|
-    x={set
-    a(){}};
-    |}];
+  [%expect
+    {| error (l:1, c:12): a setter has exactly one parameter, which is not a rest |}];
   check `Script "x = { set a(b, c) {} }";
-  [%expect {|
-    x={set
-    a(b,c){}};
-    |}];
+  [%expect
+    {| error (l:1, c:13): a setter has exactly one parameter, which is not a rest |}];
   check `Script "x = { set a(...b) {} }";
-  [%expect {|
-    x={set
-    a(...b){}};
-    |}];
+  [%expect
+    {| error (l:1, c:12): a setter has exactly one parameter, which is not a rest |}];
   check `Script "x = { set a(b,) {} }";
-  [%expect {|
-    x={set
-    a(b){}};
-    |}];
+  [%expect
+    {| error (l:1, c:13): a setter has exactly one parameter, which is not a rest |}];
   check `Script "class C { get a(b) {} }";
-  [%expect {|
-           class
-           C{get
-           a(b){}}
-           |}];
+  [%expect {| error (l:1, c:16): a getter has no parameter |}];
   check `Script "class C { static set #a(b, c) {} }";
-  [%expect {|
-    class
-    C{static set#a(b,c){}}
-    |}];
+  [%expect
+    {| error (l:1, c:25): a setter has exactly one parameter, which is not a rest |}];
   check `Script "x = { get a() {}, set a([b] = c) {}, get() {}, set(a, b) {} }";
   [%expect
     {|
@@ -1708,24 +1722,25 @@ let%expect_test "import calls" =
     "import.meta.url; import.source('m'); import.defer('m'); new (import('m'))";
   [%expect {| import.meta.url;import.source("m");import.defer("m");new(import("m")); |}];
   check `Script "import()";
-  [%expect {| import(); |}];
+  [%expect
+    {| error (l:1, c:6): an import call takes one or two arguments, without `...` |}];
   check `Script "import(...a)";
-  [%expect {| import(...a); |}];
+  [%expect
+    {| error (l:1, c:6): an import call takes one or two arguments, without `...` |}];
   check `Script "import('a', 'b', 'c')";
-  [%expect {| import("a","b","c"); |}];
+  [%expect
+    {| error (l:1, c:6): an import call takes one or two arguments, without `...` |}];
   check `Script "new import('m')";
-  [%expect {| error (l:1, c:10): an import call cannot be the operand of `new` |}];
+  [%expect {| error (l:1, c:4): an import call cannot be the operand of `new` |}];
   check `Script "new import.source('m')";
-  [%expect {|
-           new
-           import.source("m");
-           |}];
+  [%expect {| error (l:1, c:4): an import call cannot be the operand of `new` |}];
   check `Script "import.foo";
-  [%expect {| import.foo; |}];
+  [%expect
+    {| error (l:1, c:7): unexpected identifier `foo`, expected `meta`, `source` or `defer` |}];
   check `Script "import.source";
-  [%expect {| import.source; |}];
+  [%expect {| error (l:1, c:13): unexpected end of input, expected `(` |}];
   check `Script "typeof import";
-  [%expect {| error (l:1, c:13): unexpected end of input |}]
+  [%expect {| error (l:1, c:13): unexpected end of input, expected `(` or `.` |}]
 
 let%expect_test "parenthesized optional chains" =
   (* Parentheses delimit an optional chain: when [a] is null,
@@ -2039,9 +2054,11 @@ let%expect_test "optional chain after new" =
 let%expect_test "reserved words in an export clause" =
   (* Without a [from] clause, the local names are bindings: no reserved word *)
   check `Module "export { default }";
-  [%expect {| export{default}; |}];
+  [%expect
+    {| error (l:1, c:9): a reserved word can only be exported from another module (`from`) |}];
   check `Module "export { if as x }";
-  [%expect {| export{if as x}; |}];
+  [%expect
+    {| error (l:1, c:9): a reserved word can only be exported from another module (`from`) |}];
   check `Module "var a; export { a as default, a as if }";
   [%expect {|
            var
@@ -2073,25 +2090,39 @@ let%expect_test "directive prologue" =
   (* Only a string literal statement is a directive: not a parenthesized one,
      nor an expression starting with a string *)
   check `Script "'use strict'; var let = 1";
-  [%expect {| error (l:1, c:18): unexpected `let`, expected an identifier |}];
+  [%expect {| error (l:1, c:18): `let` is a reserved word in strict mode code |}];
   check `Script "'use\\x20strict'; var let = 1";
-  [%expect {| error (l:1, c:21): unexpected `let`, expected an identifier |}];
+  [%expect {|
+           "use\x20strict";var
+           let=1;
+           |}];
   check `Script "('use strict'); var let = 1";
-  [%expect {| error (l:1, c:20): unexpected `let`, expected an identifier |}];
+  [%expect {|
+           "use strict";var
+           let=1;
+           |}];
   check `Script "'use strict'.length; var let = 1";
-  [%expect {| error (l:1, c:25): unexpected `let`, expected an identifier |}];
+  [%expect {|
+           "use strict".length;var
+           let=1;
+           |}];
   check `Script "'a'; 'use strict'; var let = 1";
-  [%expect {| error (l:1, c:23): unexpected `let`, expected an identifier |}];
+  [%expect {| error (l:1, c:23): `let` is a reserved word in strict mode code |}];
   check `Script "var a; 'use strict'; var let = 1";
-  [%expect {| error (l:1, c:25): unexpected `let`, expected an identifier |}]
+  [%expect
+    {|
+           var
+           a;"use strict";var
+           let=1;
+           |}]
 
 let%expect_test "line terminator before =>" =
   check `Script "x\n=> y";
-  [%expect {| x=>y; |}];
+  [%expect {| error (l:2, c:0): no line break is allowed before `=>` |}];
   check `Script "async x\n=> y";
-  [%expect {| async x=>y; |}];
+  [%expect {| error (l:2, c:0): no line break is allowed before `=>` |}];
   check `Script "(x)\n=> y";
-  [%expect {| error (l:2, c:0): unexpected `=>`, expected an expression |}]
+  [%expect {| error (l:2, c:0): no line break is allowed before `=>` |}]
 
 let%expect_test "line terminator before postfix ++ and --" =
   (* A line terminator, even inside a comment, ends the statement before a
@@ -2110,29 +2141,29 @@ let%expect_test "line terminator before postfix ++ and --" =
 let%expect_test "left-hand side of an assignment" =
   (* Only a LeftHandSideExpression can be assigned to *)
   check `Script "a + b = c";
-  [%expect {| error (l:1, c:6): invalid left-hand side in assignment |}];
+  [%expect {| error (l:1, c:0): invalid left-hand side in assignment |}];
   check `Script "-a = b";
-  [%expect {| error (l:1, c:3): invalid left-hand side in assignment |}];
+  [%expect {| error (l:1, c:0): invalid left-hand side in assignment |}];
   check `Script "a++ = b";
-  [%expect {| error (l:1, c:4): invalid left-hand side in assignment |}];
+  [%expect {| error (l:1, c:0): invalid left-hand side in assignment |}];
   check `Script "typeof a = b";
-  [%expect {| error (l:1, c:9): invalid left-hand side in assignment |}];
+  [%expect {| error (l:1, c:0): invalid left-hand side in assignment |}];
   check `Script "a || b = c";
-  [%expect {| error (l:1, c:7): invalid left-hand side in assignment |}];
+  [%expect {| error (l:1, c:0): invalid left-hand side in assignment |}];
   check `Script "(a, b) = c";
-  [%expect {| (a,b)=c; |}];
+  [%expect {| error (l:1, c:0): invalid left-hand side in assignment |}];
   check `Script "(a = b) = c";
-  [%expect {| (a=b)=c; |}];
+  [%expect {| error (l:1, c:0): invalid left-hand side in assignment |}];
   check `Script "(a) + b = c";
-  [%expect {| error (l:1, c:8): invalid left-hand side in assignment |}];
+  [%expect {| error (l:1, c:0): invalid left-hand side in assignment |}];
   check `Script "x = a + b = c";
-  [%expect {| error (l:1, c:10): invalid left-hand side in assignment |}];
+  [%expect {| error (l:1, c:4): invalid left-hand side in assignment |}];
   check `Script "a + b += c";
-  [%expect {| error (l:1, c:6): invalid left-hand side in assignment |}];
+  [%expect {| error (l:1, c:0): invalid left-hand side in assignment |}];
   check `Script "[a] += b";
-  [%expect {| [a]+=b; |}];
+  [%expect {| error (l:1, c:0): invalid left-hand side in assignment |}];
   check `Script "async function f() { await a = 1 }";
-  [%expect {| error (l:1, c:29): invalid left-hand side in assignment |}];
+  [%expect {| error (l:1, c:21): invalid left-hand side in assignment |}];
   (* Valid targets *)
   check `Script "(a) = b; a.b = c; a[b] = c; f() = b; [a, b] = c; ({a} = b)";
   [%expect {| a=b;a.b=c;a[b]=c;f()=b;[a,b]=c;({a}=b); |}];
@@ -2145,25 +2176,25 @@ let%expect_test "left-hand side of an assignment" =
 let%expect_test "left-hand side of for-in and for-of" =
   (* Likewise, only a LeftHandSideExpression can be iterated *)
   check `Script "for (a + b in c);";
-  [%expect {| error (l:1, c:11): invalid left-hand side in `for ... in` |}];
+  [%expect {| error (l:1, c:5): invalid left-hand side in `for ... in` |}];
   check `Script "for (a = b in c);";
-  [%expect {| error (l:1, c:11): invalid left-hand side in `for ... in` |}];
+  [%expect {| error (l:1, c:5): invalid left-hand side in `for ... in` |}];
   check `Script "for (typeof a of b);";
-  [%expect {| error (l:1, c:14): invalid left-hand side in `for ... of` |}];
+  [%expect {| error (l:1, c:5): invalid left-hand side in `for ... of` |}];
   check `Script "for (a ? b : c in d);";
-  [%expect {| error (l:1, c:15): invalid left-hand side in `for ... in` |}];
+  [%expect {| error (l:1, c:5): invalid left-hand side in `for ... in` |}];
   check `Script "for (a++ in b);";
-  [%expect {| error (l:1, c:9): invalid left-hand side in `for ... in` |}];
+  [%expect {| error (l:1, c:5): invalid left-hand side in `for ... in` |}];
   check `Script "for (a, b of c);";
-  [%expect {| error (l:1, c:10): invalid left-hand side in `for ... of` |}];
+  [%expect {| error (l:1, c:5): invalid left-hand side in `for ... of` |}];
   check `Script "for ((a) => b in c);";
-  [%expect {| error (l:1, c:14): invalid left-hand side in `for ... in` |}];
+  [%expect {| error (l:1, c:5): invalid left-hand side in `for ... in` |}];
   check `Script "for ([a] = b in c);";
-  [%expect {| error (l:1, c:13): invalid left-hand side in `for ... in` |}];
+  [%expect {| error (l:1, c:5): invalid left-hand side in `for ... in` |}];
   check `Script "async function f() { for (await a in b); }";
-  [%expect {| error (l:1, c:34): invalid left-hand side in `for ... in` |}];
+  [%expect {| error (l:1, c:26): invalid left-hand side in `for ... in` |}];
   check `Script "async function f() { for (await using of b); }";
-  [%expect {| error (l:1, c:38): invalid left-hand side in `for ... of` |}];
+  [%expect {| error (l:1, c:26): invalid left-hand side in `for ... of` |}];
   (* Valid targets *)
   check `Script "for ((a) in b); for (a.b of c); for (f() in b); for ([a, {b}] of c);";
   [%expect
@@ -2180,26 +2211,20 @@ let%expect_test "left-hand side of for-in and for-of" =
 let%expect_test "escaped keywords" =
   (* A reserved word spelled with a Unicode escape is not an identifier *)
   check `Script "var \\u0062reak = 1";
-  [%expect {|
-           var
-           break=1;
-           |}];
+  [%expect {| error (l:1, c:4): `break` is a reserved word |}];
   check `Script "\\u0062reak: 1";
-  [%expect {| \u{62}reak:1; |}];
+  [%expect {| error (l:1, c:0): `break` is a reserved word |}];
   check `Script "x = { bre\\u0061k }";
-  [%expect {| x={break:break}; |}];
+  [%expect {| error (l:1, c:17): unexpected `}`, expected `:`, `(`, `,` or `}` |}];
   check `Script "({ bre\\u0061k } = {})";
-  [%expect {| ({break}={}); |}];
+  [%expect {| error (l:1, c:14): unexpected `}`, expected `:`, `(`, `,` or `}` |}];
   check `Script "var cl\\u0061ss";
-  [%expect {|
-           var
-           class;
-           |}];
+  [%expect {| error (l:1, c:4): `class` is a reserved word |}];
   (* Nor can it be used as the keyword *)
   check `Script "\\u0061sync function f() {}";
   [%expect {| error (l:1, c:11): unexpected `function`, expected `;` |}];
   check `Script "v\\u0061r x";
-  [%expect {| error (l:1, c:9): unexpected identifier `x`, expected `;` |}];
+  [%expect {| error (l:1, c:0): `var` is a reserved word |}];
   (* It is still an IdentifierName *)
   check
     `Script
@@ -2211,23 +2236,15 @@ let%expect_test "escaped keywords" =
            |}];
   (* [yield] and [await] follow the rules of the context *)
   check `Script "function* g() { var yi\\u0065ld; }";
-  [%expect {|
-           function*g(){var
-           yield}
-           |}];
+  [%expect {| error (l:1, c:20): `yield` is a reserved word in a generator |}];
   check `Script "function* g() { yi\\u0065ld: ; }";
-  [%expect {| function*g(){\u{79}ield:;} |}];
+  [%expect {| error (l:1, c:16): `yield` is a reserved word in a generator |}];
   check `Script "async function f() { void \\u0061wait; }";
-  [%expect {|
-    async function
-    f(){void
-    await}
-    |}];
+  [%expect
+    {| error (l:1, c:26): `await` is a reserved word in an async function or a module |}];
   check `Module "var \\u0061wait";
-  [%expect {|
-    var
-    await;
-    |}];
+  [%expect
+    {| error (l:1, c:4): `await` is a reserved word in an async function or a module |}];
   check `Script "var yi\\u0065ld, \\u0061wait";
   [%expect {|
            var
@@ -2240,40 +2257,21 @@ let%expect_test "escaped keywords" =
            let=1;
            |}];
   check `Script "'use strict'; var l\\u0065t = 1";
-  [%expect {|
-           "use strict";var
-           let=1;
-           |}]
+  [%expect {| error (l:1, c:18): `let` is a reserved word in strict mode code |}]
 
 let%expect_test "yield is reserved in strict mode code" =
   check `Script "'use strict'; var yield = 1";
-  [%expect {|
-           "use strict";var
-           yield=1;
-           |}];
+  [%expect {| error (l:1, c:18): `yield` is a reserved word in strict mode code |}];
   check `Script "'use strict'; yield: 1";
-  [%expect {| "use strict";\u{79}ield:1; |}];
+  [%expect {| error (l:1, c:14): `yield` is a reserved word in strict mode code |}];
   check `Script "'use strict'; function f(yield) {}";
-  [%expect {|
-           "use strict";function
-           f(yield){}
-           |}];
+  [%expect {| error (l:1, c:25): `yield` is a reserved word in strict mode code |}];
   check `Script "class C { m() { var yield } }";
-  [%expect {|
-           class
-           C{m(){var
-           yield}}
-           |}];
+  [%expect {| error (l:1, c:20): `yield` is a reserved word in strict mode code |}];
   check `Script "class yield {}";
-  [%expect {|
-           class
-           yield{}
-           |}];
+  [%expect {| error (l:1, c:6): `yield` is a reserved word in strict mode code |}];
   check `Module "var yield";
-  [%expect {|
-           var
-           yield;
-           |}];
+  [%expect {| error (l:1, c:4): `yield` is a reserved word in strict mode code |}];
   (* But not in sloppy mode code, even nested in a generator *)
   check `Script "var yield = 1; yield: ;";
   [%expect {|
@@ -2380,10 +2378,7 @@ let%expect_test "await and yield in class field initializers" =
            D{x=await;}}}
            |}];
   check `Script "function* g() { class C { x = yield } }";
-  [%expect {|
-           function*g(){class
-           C{x=yield;}}
-           |}];
+  [%expect {| error (l:1, c:30): `yield` is a reserved word in strict mode code |}];
   check `Module "class C { x = await }";
   [%expect {|
            class
