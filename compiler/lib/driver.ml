@@ -725,6 +725,7 @@ let optimize ~shapes ~profile ~keep_flow_data p =
   in
   let opt =
     Specialize.switches
+    +> Cond_propagation.f
     +> specialize_js_once_before
     +> (match (profile : Profile.t) with
       | O1 -> o1
@@ -737,6 +738,7 @@ let optimize ~shapes ~profile ~keep_flow_data p =
          | `JavaScript, (`Disabled | `Double_translation) -> Generate_closure.f
          | `JavaScript, `Cps | `Wasm, (`Disabled | `Jspi | `Cps | `Native) -> Fun.id
          | `JavaScript, (`Jspi | `Native) | `Wasm, `Double_translation -> assert false)
+    +> map_fst5 Cond_propagation.f
     +> map_fst5 deadcode'
   in
   if times () then Format.eprintf "Start Optimizing...@.";

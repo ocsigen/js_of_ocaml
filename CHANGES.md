@@ -1,3 +1,9 @@
+# dev
+
+## Features/Changes
+* Compiler: propagate the value of the variable tested by a conditional into
+  the branch where it is known (#NNNN)
+
 # 6.5.0~beta1 - Lille
 
 ## Features/Changes
