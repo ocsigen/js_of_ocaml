@@ -644,8 +644,7 @@ let build_runtime_arguments
     match Config.effects () with
     | `Jspi -> ("enable_jspi", Javascript.EBool true) :: props
     | `Native -> ("native_effects", Javascript.EBool true) :: props
-    | `Disabled | `Cps -> props
-    | `Double_translation -> assert false
+    | `Disabled | `Cps | `Double_translation -> props
   in
   let props =
     if List.is_empty embedded_files

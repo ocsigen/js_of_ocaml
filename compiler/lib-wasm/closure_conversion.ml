@@ -27,28 +27,66 @@ type closure =
 
 module SCC = Strongly_connected_components.Make (Var)
 
+(* Double translation: [Let (x, caml_cps_closure (d, c))] binds [x] to a
+   closure holding the code pointers of both the direct-style version [d]
+   and the CPS version [c] of a function (see [Effects.rewrite_direct_block]
+   and [Gc_target.double_translation]). The code refers to the function
+   through [x]. *)
+let cps_pair i =
+  match i with
+  | Let (x, Prim (Extern ("caml_cps_closure", _), [ Pv d; Pv c ])) -> Some (x, d, c)
+  | _ -> None
+
+(* Consecutive closure definitions form a run, which [f] reorders (and
+   groups into recursive components). The [caml_cps_closure] instructions
+   pairing the two versions of a function are part of the run; [f] returns
+   the two versions consecutively, and the instruction is emitted right after
+   them, before any closure capturing the variable it binds. *)
 let iter_closures ~f instrs =
-  let rec iter_closures_rec f instr_acc clos_acc instrs =
-    let push_closures clos_acc instr_acc =
+  let rec iter_closures_rec f instr_acc clos_acc pairs_acc instrs =
+    let push_closures clos_acc pairs_acc instr_acc =
       if Var.Map.is_empty clos_acc
       then instr_acc
       else
-        let l = f clos_acc in
-        List.rev_map
-          ~f:(fun g ->
+        let l = f clos_acc (List.rev_map ~f:fst pairs_acc) in
+        let pair_instrs =
+          List.fold_left
+            ~f:(fun m ((_, _, c), i) -> Var.Map.add c i m)
+            ~init:Var.Map.empty
+            pairs_acc
+        in
+        List.fold_left
+          ~f:(fun acc g ->
             let params, cont, cloc = Var.Map.find g clos_acc in
-            Let (g, Closure (params, cont, cloc)))
+            let acc = Let (g, Closure (params, cont, cloc)) :: acc in
+            match Var.Map.find_opt g pair_instrs with
+            | Some i -> i :: acc
+            | None -> acc)
+          ~init:instr_acc
           l
-        @ instr_acc
     in
     match instrs with
-    | [] -> List.rev (push_closures clos_acc instr_acc)
+    | [] -> List.rev (push_closures clos_acc pairs_acc instr_acc)
     | Let (g, Closure (params, cont, cloc)) :: rem ->
-        iter_closures_rec f instr_acc (Var.Map.add g (params, cont, cloc) clos_acc) rem
-    | i :: rem ->
-        iter_closures_rec f (i :: push_closures clos_acc instr_acc) Var.Map.empty rem
+        iter_closures_rec
+          f
+          instr_acc
+          (Var.Map.add g (params, cont, cloc) clos_acc)
+          pairs_acc
+          rem
+    | i :: rem -> (
+        match cps_pair i with
+        | Some ((_, d, c) as pair) when Var.Map.mem d clos_acc && Var.Map.mem c clos_acc
+          -> iter_closures_rec f instr_acc clos_acc ((pair, i) :: pairs_acc) rem
+        | Some _ | None ->
+            iter_closures_rec
+              f
+              (i :: push_closures clos_acc pairs_acc instr_acc)
+              Var.Map.empty
+              []
+              rem)
   in
-  iter_closures_rec f [] Var.Map.empty instrs
+  iter_closures_rec f [] Var.Map.empty [] instrs
 
 let collect_free_vars program var_depth depth pc closures =
   let vars = ref Var.Set.empty in
@@ -101,7 +139,7 @@ let rec traverse var_depth closures program pc depth =
           block.body
       in
       let body =
-        iter_closures block.body ~f:(fun l ->
+        iter_closures block.body ~f:(fun l pairs ->
             let free_vars =
               Var.Map.fold
                 (fun f (_, (pc', _), _) free_vars ->
@@ -112,13 +150,38 @@ let rec traverse var_depth closures program pc depth =
                 l
                 Var.Map.empty
             in
-            let domain = Var.Map.fold (fun f _ s -> Var.Set.add f s) l Var.Set.empty in
+            (* The two versions of a function share a closure (see
+               [cps_pair]), which the code refers to by the variable [x]
+               bound to it: they form a single node, named [x]. *)
+            let pairs =
+              List.fold_left
+                ~f:(fun m (x, d, c) -> Var.Map.add x (d, c) m)
+                ~init:Var.Map.empty
+                pairs
+            in
+            let free_vars =
+              Var.Map.fold
+                (fun x (d, c) free_vars ->
+                  let fv =
+                    Var.Set.union (Var.Map.find d free_vars) (Var.Map.find c free_vars)
+                  in
+                  Var.Map.add x fv (Var.Map.remove d (Var.Map.remove c free_vars)))
+                pairs
+                free_vars
+            in
+            let domain =
+              Var.Map.fold (fun f _ s -> Var.Set.add f s) free_vars Var.Set.empty
+            in
             let graph = Var.Map.map (fun s -> Var.Set.inter s domain) free_vars in
             let components = SCC.connected_components_sorted_from_roots_to_leaf graph in
+            let arity f =
+              let params, _, _ = Var.Map.find f l in
+              List.length params
+            in
             let l =
               Array.map
                 ~f:(fun component ->
-                  let fun_lst =
+                  let node_lst =
                     match component with
                     | SCC.No_loop x -> [ x ]
                     | SCC.Has_loop l -> l
@@ -131,24 +194,56 @@ let rec traverse var_depth closures program pc depth =
                            (List.fold_left
                               ~f:(fun fv x -> Var.Set.union fv (Var.Map.find x free_vars))
                               ~init:Var.Set.empty
-                              fun_lst)
-                         fun_lst)
+                              node_lst)
+                         node_lst)
                   in
                   let functions =
-                    let arities =
-                      Var.Map.fold
-                        (fun f (params, _, _) m -> Var.Map.add f (List.length params) m)
-                        l
-                        Var.Map.empty
-                    in
-                    List.map ~f:(fun f -> f, Var.Map.find f arities) fun_lst
+                    List.map
+                      ~f:(fun x ->
+                        let f =
+                          match Var.Map.find_opt x pairs with
+                          | Some (d, _) -> d
+                          | None -> x
+                        in
+                        f, arity f)
+                      node_lst
                   in
                   List.iter
-                    ~f:(fun (f, _) ->
-                      closures :=
-                        Var.Map.add f { functions; free_variables; id = None } !closures)
-                    functions;
-                  fun_lst)
+                    ~f:(fun x ->
+                      match Var.Map.find_opt x pairs with
+                      | None ->
+                          closures :=
+                            Var.Map.add
+                              x
+                              { functions; free_variables; id = None }
+                              !closures
+                      | Some (d, c) ->
+                          closures :=
+                            Var.Map.add
+                              d
+                              { functions; free_variables; id = None }
+                              !closures;
+                          (* The CPS version takes the continuation as an
+                             additional parameter. It is looked up by name
+                             in [functions]. *)
+                          let functions =
+                            List.map
+                              ~f:(fun ((f, n) as p) ->
+                                if Var.equal f d then c, n + 1 else p)
+                              functions
+                          in
+                          closures :=
+                            Var.Map.add
+                              c
+                              { functions; free_variables; id = None }
+                              !closures)
+                    node_lst;
+                  List.concat_map
+                    ~f:(fun x ->
+                      match Var.Map.find_opt x pairs with
+                      | Some (d, c) -> [ d; c ]
+                      | None -> [ x ])
+                    node_lst)
                 components
             in
             List.concat (List.rev (Array.to_list l)))
