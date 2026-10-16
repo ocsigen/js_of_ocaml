@@ -75,6 +75,9 @@ module Flag = struct
 
   let effects = o ~name:"effects" ~default:false
 
+  let oxcaml_use_unyielding_debuginfo_for_effect_cps =
+    o ~name:"oxcaml-use-unyielding-debuginfo-for-effect-cps" ~default:true
+
   let staticeval = o ~name:"staticeval" ~default:true
 
   let share_constant = o ~name:"share" ~default:true
