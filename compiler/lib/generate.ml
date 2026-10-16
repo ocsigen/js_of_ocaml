@@ -218,7 +218,7 @@ module Share = struct
     ; base64_strings : 'a Base64Map.t
     ; applies : 'a AppMap.t
     ; prims : 'a StringMap.t
-    ; constants : 'a IntMap.t  (** Structured constants, by id *)
+    ; constants : 'a IntMap.t  (** Structured constants and boxed integers, by id *)
     }
 
   let empty_aux =
@@ -358,11 +358,12 @@ module Share = struct
     | _ -> t
 
   (* Only the occurrences of the constant itself are counted here, the
-     occurrences of its fields are computed by [generation_counts]. *)
+     occurrences of its fields are computed by [generation_counts]. A new
+     object is allocated for each occurrence of an Int64 constant. *)
   let get_constant st c t =
     let t = add_strings c t in
     match c with
-    | Tuple _ -> add_constant (intern st c).id t
+    | Tuple _ | Int64 _ -> add_constant (intern st c).id t
     | _ -> t
 
   (* Unshared, a constant generated [n] times costs [n * size]. Shared,
@@ -542,11 +543,11 @@ module Share = struct
           { t.vars with base64_strings = Base64Map.add key v t.vars.base64_strings };
         J.EVar v
 
-  (* Structured constants are immutable: identical ones occurring
-     several times are bound once to a variable when this is smaller.
-     Returns this variable, if any; [gen] generates the constant the
-     first time. *)
-  let get_tuple gen (tree : idtree) t =
+  (* Structured constants and boxed integers are immutable: identical
+     ones occurring several times are bound once to a variable when this
+     is smaller. Returns this variable, if any; [gen] generates the
+     constant the first time. *)
+  let get_shared ~name gen (tree : idtree) t =
     match IntMap.find_opt tree.id t.vars.constants with
     | Some v -> Some (J.EVar v)
     | None ->
@@ -554,7 +555,7 @@ module Share = struct
         if worth_sharing ~n ~size:tree.size
         then (
           let e = gen () in
-          let x = Var.fresh_n "cst_block" in
+          let x = Var.fresh_n name in
           let v = J.V x in
           t.vars <- { t.vars with constants = IntMap.add tree.id v t.vars.constants };
           t.constant_decls <- (v, e) :: t.constant_decls;
@@ -845,18 +846,24 @@ let rec constant_rec ~ctx x (tree : Share.idtree) level instrs =
           ~tag:Obj.double_array_tag
           ~args:(Array.to_list (Array.map a ~f:(fun x -> J.Element (float_const x))))
       , instrs )
-  | Int64 i ->
-      let p =
-        Share.get_prim (runtime_fun ctx) "caml_int64_create_lo_mi_hi" ctx.Ctx.share
+  | Int64 i -> (
+      let gen () =
+        let p =
+          Share.get_prim (runtime_fun ctx) "caml_int64_create_lo_mi_hi" ctx.Ctx.share
+        in
+        let lo = int (Int64.to_int (Int64.logand i 0xffffffL))
+        and mi = int (Int64.to_int (Int64.logand (Int64.shift_right i 24) 0xffffffL))
+        and hi = int (Int64.to_int (Int64.logand (Int64.shift_right i 48) 0xffffL)) in
+        J.call p [ lo; mi; hi ] J.N
       in
-      let lo = int (Int64.to_int (Int64.logand i 0xffffffL))
-      and mi = int (Int64.to_int (Int64.logand (Int64.shift_right i 24) 0xffffffL))
-      and hi = int (Int64.to_int (Int64.logand (Int64.shift_right i 48) 0xffffL)) in
-      J.call p [ lo; mi; hi ] J.N, instrs
+      match Share.get_shared ~name:"cst_int64" gen tree ctx.Ctx.share with
+      | Some e -> e, instrs
+      | None -> gen (), instrs)
   | Tuple _ -> (
       let share = ctx.Ctx.share in
       match
-        Share.get_tuple
+        Share.get_shared
+          ~name:"cst_block"
           (fun () ->
             let e, parts = constant_rec_tuple ~ctx x tree 0 [] in
             (* The parts of a large constant are declared first *)
@@ -3010,7 +3017,7 @@ let generate_shared_value ctx =
     List.map (StringMap.bindings share.Share.vars.Share.utf_strings) ~f:(fun (s, v) ->
         v, (str_js_utf8 s, J.U))
   in
-  (* Shared structured constants come last, as they can refer to strings,
+  (* Shared constants come last, as they can refer to strings,
      primitives, and the shared constants declared before them *)
   let constants =
     List.rev_map share.Share.constant_decls ~f:(fun (v, e) -> v, (e, J.U))

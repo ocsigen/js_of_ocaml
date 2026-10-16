@@ -10373,37 +10373,33 @@
     caml_lessthan = runtime.caml_lessthan,
     caml_maybe_attach_backtrace = runtime.caml_maybe_attach_backtrace,
     caml_wrap_exception = runtime.caml_wrap_exception,
-    _a_ = caml_int64_create_lo_mi_hi(1, 0, 0),
-    zero = caml_int64_create_lo_mi_hi(0, 0, 0),
-    one = caml_int64_create_lo_mi_hi(1, 0, 0),
-    minus_one = caml_int64_create_lo_mi_hi(16777215, 16777215, 65535),
+    cst_int64 = caml_int64_create_lo_mi_hi(0, 0, 0),
+    cst_int64$0 = caml_int64_create_lo_mi_hi(16777215, 16777215, 65535),
+    cst_int64$1 = caml_int64_create_lo_mi_hi(1, 0, 0),
     min_int = caml_int64_create_lo_mi_hi(0, 0, 32768),
     max_int = caml_int64_create_lo_mi_hi(16777215, 16777215, 32767),
     Stdlib = runtime.caml_get_global("Stdlib"),
-    _b_ = caml_int64_create_lo_mi_hi(1, 0, 0),
-    _c_ = caml_int64_create_lo_mi_hi(0, 0, 0),
-    _d_ = caml_int64_create_lo_mi_hi(16777215, 16777215, 65535);
+    _a_ = cst_int64$1;
    function succ(n){
      /*<<int64.ml:46:13>>*/ return caml_int64_add(n, _a_) /*<<int64.ml:46:21>>*/ ;
    }
    function pred(n){
-     /*<<int64.ml:47:13>>*/ return caml_int64_sub(n, _b_) /*<<int64.ml:47:21>>*/ ;
+     /*<<int64.ml:47:13>>*/ return caml_int64_sub(n, cst_int64$1) /*<<int64.ml:47:21>>*/ ;
    }
    function abs(n){
-     /*<<int64.ml:48:15>>*/ return caml_greaterequal(n, _c_)
+     /*<<int64.ml:48:15>>*/ return caml_greaterequal(n, cst_int64)
             ? n
             :  /*<<int64.ml:48:35>>*/ runtime.caml_int64_neg(n) /*<<int64.ml:48:40>>*/ ;
    }
    function lognot(n){
-     /*<<int64.ml:51:15>>*/ return runtime.caml_int64_xor(n, _d_) /*<<int64.ml:51:29>>*/ ;
+     /*<<int64.ml:51:15>>*/ return runtime.caml_int64_xor(n, cst_int64$0) /*<<int64.ml:51:29>>*/ ;
    }
    var
     max_int$0 =
-       /*<<int64.ml:54:16>>*/ runtime.caml_int64_of_int32(Stdlib[19]),
-    _e_ =  /*<<int64.ml:55:2>>*/ caml_int64_create_lo_mi_hi(0, 0, 0);
+       /*<<int64.ml:54:16>>*/ runtime.caml_int64_of_int32(Stdlib[19]);
    function unsigned_to_int(n){
      /*<<int64.ml:56:7>>*/ if
-     (caml_greaterequal(n, _e_)
+     (caml_greaterequal(n, cst_int64)
       &&  /*<<int64.ml:56:18>>*/ caml_lessequal(n, max_int$0))
       /*<<int64.ml:57:6>>*/ return [0, runtime.caml_int64_to_int32(n)];
      /*<<int64.ml:59:6>>*/ return 0;
@@ -10442,6 +10438,7 @@
    function max(x, y){
      /*<<int64.ml:89:21>>*/ return caml_greaterequal(x, y) ? x : y /*<<int64.ml:89:41>>*/ ;
    }
+   var zero =  /*<<?>>*/ cst_int64, one = cst_int64$1;
    function unsigned_div(n, d){
      /*<<int64.ml:95:5>>*/ if(caml_lessthan(d, zero))
       /*<<int64.ml:96:7>>*/ return unsigned_lt(n, d) ? zero : one /*<<int64.ml:100:41>>*/ ;
@@ -10476,7 +10473,7 @@
     ([0,
       zero,
       one,
-      minus_one,
+      cst_int64$0,
       unsigned_div,
       unsigned_rem,
       succ,
@@ -24364,7 +24361,9 @@
     caml_lxm_next = runtime.caml_lxm_next,
     caml_mod = runtime.caml_mod,
     caml_notequal = runtime.caml_notequal,
-    caml_sys_random_seed = runtime.caml_sys_random_seed;
+    caml_sys_random_seed = runtime.caml_sys_random_seed,
+    cst_int64 = caml_int64_create_lo_mi_hi(1, 0, 0),
+    cst_int64$0 = caml_int64_create_lo_mi_hi(0, 0, 0);
    function caml_call1(f, a0){
     return (f.l >= 0 ? f.l : f.l = f.length) === 1
             ? f(a0)
@@ -24391,21 +24390,22 @@
     Stdlib_String = caml_get_global("Stdlib__String"),
     Stdlib_Bigarray = caml_get_global("Stdlib__Bigarray"),
     Stdlib_Nativeint = caml_get_global("Stdlib__Nativeint"),
-    _a_ = caml_int64_create_lo_mi_hi(1, 0, 0),
-    _b_ = caml_int64_create_lo_mi_hi(0, 0, 0),
-    _c_ = caml_int64_create_lo_mi_hi(0, 0, 0),
-    _d_ = caml_int64_create_lo_mi_hi(2, 0, 0),
-    _e_ = caml_int64_create_lo_mi_hi(1, 0, 0);
+    _a_ = caml_int64_create_lo_mi_hi(2, 0, 0);
    function create(param){
      /*<<random.ml:31:4>>*/ return caml_call3(Stdlib_Bigarray[20][1], 7, 0, 4) /*<<random.ml:31:34>>*/ ;
    }
    function set(s, i1, i2, i3, i4){
      /*<<random.ml:34:26>>*/  /*<<random.ml:34:4>>*/ caml_ba_set_1
-     (s, 0,  /*<<random.ml:34:26>>*/ runtime.caml_int64_or(i1, _a_));
+     (s, 0,  /*<<random.ml:34:26>>*/ runtime.caml_int64_or(i1, cst_int64));
      /*<<random.ml:35:4>>*/ caml_ba_set_1(s, 1, i2);
-    var i3$0 =  /*<<random.ml:36:30>>*/ caml_notequal(i3, _b_) ? i3 : _e_;
+    var
+     i3$0 =
+        /*<<random.ml:36:30>>*/ caml_notequal(i3, cst_int64$0)
+        ? i3
+        : cst_int64;
      /*<<random.ml:36:4>>*/ caml_ba_set_1(s, 2, i3$0);
-    var i4$0 =  /*<<random.ml:37:30>>*/ caml_notequal(i4, _c_) ? i4 : _d_;
+    var
+     i4$0 =  /*<<random.ml:37:30>>*/ caml_notequal(i4, cst_int64$0) ? i4 : _a_;
      /*<<random.ml:37:4>>*/ return caml_ba_set_1(s, 3, i4$0) /*<<random.ml:37:55>>*/ ;
    }
    function mk(i1, i2, i3, i4){
@@ -24420,31 +24420,31 @@
      (null, serialization_prefix, 0, buf, 0, 5);
     var i =  /*<<random.ml:64:44>>*/ 0;
     for(;;){
-     var _o_ =  /*<<random.ml:66:47>>*/ runtime.caml_ba_get_1(s, i);
+     var _g_ =  /*<<random.ml:66:47>>*/ runtime.caml_ba_get_1(s, i);
       /*<<random.ml:66:6>>*/ Stdlib_Bytes[86].call
-      (null, buf, 5 + (i * 8 | 0) | 0, _o_);
-      /*<<random.ml:66:63>>*/ _o_ = i + 1 | 0;
+      (null, buf, 5 + (i * 8 | 0) | 0, _g_);
+      /*<<random.ml:66:63>>*/ _g_ = i + 1 | 0;
      if(3 === i)
        /*<<random.ml:68:4>>*/ return Stdlib_Bytes[44].call(null, buf) /*<<random.ml:68:30>>*/ ;
-      /*<<random.ml:66:63>>*/ i = _o_;
+      /*<<random.ml:66:63>>*/ i = _g_;
     }
     /*<<random.ml:68:30>>*/ }
    function of_binary_string(buf){
     var
-     _o_ =  /*<<random.ml:73:4>>*/ runtime.caml_ml_string_length(buf) !== 37,
-     _o_ =
-       _o_
+     _g_ =  /*<<random.ml:73:4>>*/ runtime.caml_ml_string_length(buf) !== 37,
+     _g_ =
+       _g_
        ||
         !
          /*<<random.ml:74:14>>*/ Stdlib_String[11].call
          (null, serialization_prefix, buf);
-     /*<<random.ml:73:4>>*/ if(_o_){
-      /*<<random.ml:77:8>>*/ _o_ =
+     /*<<random.ml:73:4>>*/ if(_g_){
+      /*<<random.ml:77:8>>*/ _g_ =
       Stdlib[28].call
        (null,
         "Random.State.of_binary_string: expected a format compatible with OCaml ",
         Stdlib_Sys[52]);
-      /*<<random.ml:76:6>>*/ Stdlib[2].call(null, _o_);
+      /*<<random.ml:76:6>>*/ Stdlib[2].call(null, _g_);
     }
     var
      i1 =  /*<<random.ml:79:13>>*/ Stdlib_String[66].call(null, buf, 5),
@@ -24462,18 +24462,18 @@
     var
      n =  /*<<random.ml:97:4>>*/ seed.length - 1,
      b =  /*<<random.ml:98:12>>*/ caml_create_bytes((n * 8 | 0) + 1 | 0),
-     _n_ =  /*<<random.ml:99:4>>*/ n - 1 | 0;
-    if(_n_ >= 0){
+     _f_ =  /*<<random.ml:99:4>>*/ n - 1 | 0;
+    if(_f_ >= 0){
      var i = 0;
      for(;;){
       var
-       _m_ =
+       _e_ =
           /*<<random.ml:100:49>>*/  /*<<random.ml:100:35>>*/ caml_int64_of_int32
           ( /*<<random.ml:100:49>>*/ runtime.caml_check_bound(seed, i)[i + 1]);
-       /*<<random.ml:100:6>>*/ Stdlib_Bytes[86].call(null, b, i * 8 | 0, _m_);
-       /*<<random.ml:100:58>>*/ _m_ = i + 1 | 0;
-      if(_n_ === i) break;
-      i = _m_;
+       /*<<random.ml:100:6>>*/ Stdlib_Bytes[86].call(null, b, i * 8 | 0, _e_);
+       /*<<random.ml:100:58>>*/ _e_ = i + 1 | 0;
+      if(_f_ === i) break;
+      i = _e_;
      }
     }
      /*<<random.ml:102:4>>*/ caml_bytes_set(b, n * 8 | 0, 1);
@@ -24481,15 +24481,15 @@
      /*<<random.ml:104:4>>*/ caml_bytes_set(b, n * 8 | 0, 2);
     var
      d2 =  /*<<random.ml:105:13>>*/ Stdlib_Digest[4].call(null, b),
-     _n_ =  /*<<random.ml:109:10>>*/ Stdlib_String[66].call(null, d2, 8),
-     _m_ =  /*<<random.ml:108:10>>*/ Stdlib_String[66].call(null, d2, 0),
-     _o_ =  /*<<random.ml:107:10>>*/ Stdlib_String[66].call(null, d1, 8);
+     _f_ =  /*<<random.ml:109:10>>*/ Stdlib_String[66].call(null, d2, 8),
+     _e_ =  /*<<random.ml:108:10>>*/ Stdlib_String[66].call(null, d2, 0),
+     _g_ =  /*<<random.ml:107:10>>*/ Stdlib_String[66].call(null, d1, 8);
      /*<<random.ml:106:10>>*/ return  /*<<random.ml:106:36>>*/ set
             (s,
               /*<<random.ml:106:10>>*/ Stdlib_String[66].call(null, d1, 0),
-             _o_,
-             _m_,
-             _n_) /*<<random.ml:109:36>>*/ ;
+             _g_,
+             _e_,
+             _f_) /*<<random.ml:109:36>>*/ ;
    }
    function make(seed){
     var s =  /*<<random.ml:112:12>>*/ create(0);
@@ -24528,11 +24528,11 @@
      /*<<random.ml:161:4>>*/ if(0 >= bound)
       /*<<random.ml:162:6>>*/ return Stdlib[1].call(null, "Random.full_int") /*<<random.ml:173:22>>*/ ;
     var
-     _m_ =
+     _e_ =
         /*<<random.ml:170:6>>*/ bound <= 1073741823
         ? max_int31
         : bound <= 2147483647 ? max_int32 : Stdlib[19];
-    return int_aux(s, bound, _m_) /*<<random.ml:173:22>>*/ ;
+    return int_aux(s, bound, _e_) /*<<random.ml:173:22>>*/ ;
    }
    function int_in_range_aux(s, min, max, mask, nbits){
     var span =  /*<<random.ml:193:4>>*/ (max - min | 0) + 1 | 0;
@@ -24602,9 +24602,6 @@
        /*<<random.ml:243:67>>*/ return r;
     }
     /*<<random.ml:254:39>>*/ }
-   var
-    _f_ =  /*<<?>>*/ caml_int64_create_lo_mi_hi(1, 0, 0),
-    _g_ = caml_int64_create_lo_mi_hi(0, 0, 0);
    function int64aux(s, n){
      /*<<random.ml:262:4>>*/ for(;;){
      var
@@ -24617,12 +24614,13 @@
        caml_greaterthan
         (caml_int64_sub(r, v),
           /*<<random.ml:265:24>>*/ caml_int64_add
-          ( /*<<random.ml:265:28>>*/ caml_int64_sub(Stdlib_Int64[9], n), _f_)))
+          ( /*<<random.ml:265:28>>*/ caml_int64_sub(Stdlib_Int64[9], n),
+           cst_int64)))
        /*<<random.ml:267:9>>*/ return v;
     }
     /*<<random.ml:267:10>>*/ }
    function int64(s, bound){
-     /*<<random.ml:270:7>>*/ return caml_lessequal(bound, _g_)
+     /*<<random.ml:270:7>>*/ return caml_lessequal(bound, cst_int64$0)
             ?  /*<<random.ml:271:9>>*/ Stdlib[1].call(null, "Random.int64")
             :  /*<<random.ml:272:9>>*/ int64aux(s, bound) /*<<random.ml:272:25>>*/ ;
    }
@@ -24647,12 +24645,10 @@
     }
     /*<<random.ml:289:39>>*/ }
    var
-    _j_ =  /*<<?>>*/ caml_int64_create_lo_mi_hi(14371852, 15349651, 22696),
-    _k_ = caml_int64_create_lo_mi_hi(12230193, 11438743, 35013),
-    _l_ = caml_int64_create_lo_mi_hi(1424933, 15549263, 2083),
-    _m_ = caml_int64_create_lo_mi_hi(9492471, 4696708, 43520),
-    _h_ = caml_int64_create_lo_mi_hi(0, 0, 0),
-    _i_ = caml_int64_create_lo_mi_hi(0, 0, 0),
+    _b_ =  /*<<?>>*/ caml_int64_create_lo_mi_hi(14371852, 15349651, 22696),
+    _c_ = caml_int64_create_lo_mi_hi(12230193, 11438743, 35013),
+    _d_ = caml_int64_create_lo_mi_hi(1424933, 15549263, 2083),
+    _e_ = caml_int64_create_lo_mi_hi(9492471, 4696708, 43520),
     nativebits =
       32 === Stdlib_Nativeint[9]
        ? function
@@ -24695,14 +24691,15 @@
      var
       b = caml_lxm_next(s),
       n =  /*<<random.ml:317:12>>*/ caml_int64_shift_right_unsigne(b, 11);
-      /*<<random.ml:318:7>>*/ if(caml_notequal(n, _h_))
+      /*<<random.ml:318:7>>*/ if(caml_notequal(n, cst_int64$0))
        /*<<random.ml:318:20>>*/ return runtime.caml_int64_to_float(n)
              * 1.1102230246251565e-16
              * bound /*<<random.ml:321:41>>*/ ;
     }
    }
    function bool(s){
-     /*<<random.ml:324:15>>*/ return caml_lessthan(caml_lxm_next(s), _i_) /*<<random.ml:324:26>>*/ ;
+     /*<<random.ml:324:15>>*/ return caml_lessthan
+            (caml_lxm_next(s), cst_int64$0) /*<<random.ml:324:26>>*/ ;
    }
    function split(s){
     var
@@ -24713,7 +24710,7 @@
      /*<<random.ml:330:4>>*/ return mk(i1, i2, i3, i4) /*<<random.ml:330:18>>*/ ;
    }
    function mk_default(param){
-     /*<<random.ml:335:2>>*/ return mk(_m_, _l_, _k_, _j_) /*<<random.ml:338:31>>*/ ;
+     /*<<random.ml:335:2>>*/ return mk(_e_, _d_, _c_, _b_) /*<<random.ml:338:31>>*/ ;
    }
    var
     random_key =
