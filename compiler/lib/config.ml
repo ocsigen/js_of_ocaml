@@ -73,6 +73,8 @@ module Flag = struct
 
   let inline = o ~name:"inline" ~default:true
 
+  let clone_higher_order = o ~name:"clone-higher-order" ~default:true
+
   let effects = o ~name:"effects" ~default:false
 
   let staticeval = o ~name:"staticeval" ~default:true

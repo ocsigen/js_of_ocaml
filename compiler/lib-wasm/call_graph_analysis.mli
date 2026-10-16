@@ -20,4 +20,29 @@ type t
 
 val direct_calls_only : t -> Code.Var.t -> bool
 
+val known_callee :
+     Global_flow.info
+  -> t
+  -> wrappable:(Code.Var.t -> bool)
+  -> bool
+  -> Code.Var.t
+  -> Code.Var.t option
+(** [known_callee info t ~wrappable exact f] is the function called at
+    a call site [Apply { f; exact; _ }] when it is the only possible
+    callee and the call can be a direct call: the function is only
+    called directly, or it is [wrappable]. *)
+
+val raising_functions :
+     Code.program
+  -> Global_flow.info
+  -> t
+  -> wrappable:(Code.Var.t -> bool)
+  -> (Code.Var.t -> bool)
+  -> unit Code.Var.Hashtbl.t
+(** Functions which signal exceptions by returning null. The
+    functions that are not only called directly ([direct_calls_only]
+    is false) must be wrapped: the function called through closures
+    converts the null value back into an exception. Only functions
+    satisfying [wrappable] are considered for this. *)
+
 val f : Code.program -> Global_flow.info -> t
