@@ -39,6 +39,8 @@
   constant (#2531)
 * Compiler: inline pending expressions at the end of a `try` body, avoiding
   temporaries such as `try{var c = f(x); return c;}` (#2532)
+* Compiler: fold `if (c) return a; return b` into `return c ? a : b`
+  (#2533)
 
 ### Effects
 * Compiler: with `--effects={cps,double-translation}`, specialize calls to
