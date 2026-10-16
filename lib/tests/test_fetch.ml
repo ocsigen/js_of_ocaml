@@ -81,7 +81,9 @@ let%expect_test ("request constructor (no init) defaults to GET" [@when not quic
     GET
     |}]
 
-let%expect_test ("requestInit fields round-trip through Request" [@when not quickjs]) =
+(* bun's [Request] drops [referrerPolicy: "no-referrer"] and [keepalive: true]. *)
+let%expect_test
+    ("requestInit fields round-trip through Request" [@when (not quickjs) && not bun]) =
   let init = Fetch.empty_request_init () in
   init##._method := Js.string "POST";
   init##.body := Js.Unsafe.inject (Js.string "hello");
