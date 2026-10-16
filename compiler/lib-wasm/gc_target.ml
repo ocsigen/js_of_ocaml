@@ -565,6 +565,45 @@ module Value = struct
     in
     return (W.Call (f, [ x; y ]))
 
+  (* Whether evaluating an expression has no effect and cannot trap, so
+     that it can be dropped. This is conservative: only the expressions
+     occurring as conditions in [if_expr] are considered. *)
+  let rec effect_free e =
+    match e with
+    | W.Const _ | LocalGet _ | GlobalGet _ | RefFunc _ | RefNull _ -> true
+    | RefTest (_, e') | RefI31 e' -> effect_free e'
+    | RefEq (e1, e2) -> effect_free e1 && effect_free e2
+    | _ -> false
+
+  let if_expr ty cond ift iff =
+    let* cond = cond in
+    let* ift = ift in
+    let* iff = iff in
+    match cond with
+    | W.Const (I32 n) -> return (if Int32.equal n 0l then iff else ift)
+    | _ ->
+        if Poly.equal ift iff && effect_free cond
+        then return ift
+        else return (W.IfExpr (ty, cond, ift, iff))
+
+  let map f x =
+    let* x = x in
+    return (f x)
+
+  let ( >>| ) x f = map f x
+
+  (* Like [int_val], but returns 0 rather than failing when the value is not
+     an integer: used for an untagging executed speculatively *)
+  let int_val_no_trap i =
+    let v = Code.Var.fresh () in
+    seq
+      (store v i)
+      (if_expr
+         I32
+         (load v >>| fun e -> W.RefTest ({ nullable = false; typ = I31 }, e))
+         (int_val (load v))
+         (Arith.const 0l))
+
   let js_eqeqeq ~negate x y =
     let xv = Code.Var.fresh () in
     let yv = Code.Var.fresh () in

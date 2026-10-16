@@ -73,6 +73,10 @@ module Flag = struct
 
   let inline = o ~name:"inline" ~default:true
 
+  let lcm = o ~name:"lcm" ~default:true
+
+  let lcm_hoist = o ~name:"lcm-hoist" ~default:true
+
   let effects = o ~name:"effects" ~default:false
 
   let staticeval = o ~name:"staticeval" ~default:true

@@ -67,6 +67,8 @@
   searches and `output_value` sharing detection (with WASI, `output_value`
   now shares boxed numbers with equal contents); single bound check in
   fixed-width `Bytes` accesses (#2470, #2505)
+* Compiler/Wasm: place number conversions (boxing, tagging) with a Lazy Code
+  Motion pass (`--disable lcm`), and pass parameters untagged or unboxed (#2479)
 
 ### Libraries
 * Lib: add `WebGL2` bindings; the `webgl` example uses WebGL2 and a new

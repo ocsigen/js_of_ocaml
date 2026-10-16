@@ -119,6 +119,21 @@ type field_type =
   | Immediate  (** A field known to contain an immediate value *)
   | Float
 
+type wasm_conversion =
+  | Unbox_i32
+  | Unbox_i64
+  | Unbox_nativeint
+  | Unbox_f64
+  | Unbox_f32
+  | Box_i32
+  | Box_i64
+  | Box_nativeint
+  | Box_f64
+  | Box_f32
+  | Untag_int
+  | Normalize_int
+  | Tag_int
+
 type prim =
   | Vectlength of Optimization_hint.array_kind
   | Array_get of field_type  (** [Non_float] or [Immediate], never [Float] *)
@@ -134,6 +149,7 @@ type prim =
   | Lt
   | Le
   | Ult
+  | Wasm_conversion of wasm_conversion
 
 type array_or_not =
   | Array
@@ -240,6 +256,8 @@ module Print : sig
   type xinstr =
     | Instr of instr
     | Last of last
+
+  val wasm_conversion_name : wasm_conversion -> string
 
   val expr : Format.formatter -> expr -> unit
 
