@@ -101,6 +101,9 @@ let specialize (p, info) =
 
 let eval (p, info) = if Config.Flag.staticeval () then Eval.f info p, info else p, info
 
+let cond_propagation p =
+  if Config.Flag.cond_propagation () then Cond_propagation.f p else p
+
 let flow p =
   if debug () then Format.eprintf "Data flow...@.";
   Flow.f p
@@ -760,6 +763,7 @@ let optimize ~shapes ~profile ~keep_flow_data p =
   in
   let opt =
     Specialize.switches
+    +> cond_propagation
     +> specialize_js_once_before
     +> (match (profile : Profile.t) with
       | O1 -> o1
@@ -767,8 +771,21 @@ let optimize ~shapes ~profile ~keep_flow_data p =
       | O3 -> o3)
     +> specialize_js_once_after
     +> clone_higher_order profile
+    (* Second run of [cond_propagation], for the opportunities exposed by the
+       optimization rounds. For JavaScript, it comes just before the last dead
+       code elimination. For Wasm, it must come before
+       [effects_and_exact_calls]: the Wasm backend reuses the flow information
+       computed there, which knows nothing about the variables this pass
+       introduces. *)
+    +> (match Config.target () with
+      | `Wasm -> cond_propagation
+      | `JavaScript -> Fun.id)
     +> effects_and_exact_calls ~keep_flow_data ~deadcode_sentinel ~shapes profile
     +> generate_closures
+    +> map_fst5
+         (match Config.target () with
+         | `JavaScript -> cond_propagation
+         | `Wasm -> Fun.id)
     +> map_fst5 deadcode'
   in
   if times () then Format.eprintf "Start Optimizing...@.";

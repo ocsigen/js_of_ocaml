@@ -89,6 +89,8 @@ module Flag = struct
 
   let staticeval = o ~name:"staticeval" ~default:true
 
+  let cond_propagation = o ~name:"cond-propagation" ~default:true
+
   let share_constant = o ~name:"share" ~default:true
 
   let strictmode = o ~name:"strict" ~default:true

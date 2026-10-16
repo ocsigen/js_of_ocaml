@@ -53,7 +53,7 @@ let%expect_test "function literal passed to an unknown function" =
     function test(iter){
      var r = [0, 0];
      function _a_(a){
-      var v = a + r[1] | 0, _a_ = 0 < v ? 1 : 0, _a_ = _a_ && (r[1] = v, 0);
+      var v = a + r[1] | 0, _a_ = 0 < v ? (r[1] = v, 0) : 0;
       return _a_;
      }
      (iter.l >= 0 ? iter.l : iter.l = iter.length) === 1
