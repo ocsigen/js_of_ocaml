@@ -1,3 +1,9 @@
+# dev
+
+## Features/Changes
+* Compiler/wasm: integer range analysis (from `--opt 2`), to skip normalizing
+  integers and remove bound checks when it is safe (#2478)
+
 # 6.5.0~beta1 - Lille
 
 ## Features/Changes

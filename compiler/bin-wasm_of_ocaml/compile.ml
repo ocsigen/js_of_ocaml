@@ -296,6 +296,7 @@ let generate_prelude ~out_file =
     Generate.f
       ~context
       ~unit_name:(Some "prelude")
+      ~profile
       ~live_vars:variable_uses
       ~in_cps
       ~deadcode_sentinel
@@ -534,6 +535,7 @@ let run
       Generate.f
         ~context
         ~unit_name
+        ~profile
         ~live_vars:variable_uses
         ~in_cps
         ~deadcode_sentinel
