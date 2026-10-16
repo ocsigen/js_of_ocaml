@@ -61,6 +61,7 @@ type context =
   ; value_type : W.value_type
   ; mutable unit_name : string option
   ; mutable no_tail_call : unit Var.Hashtbl.t
+  ; local_defaults : W.expression Var.Hashtbl.t
   }
 
 let make_context ~value_type =
@@ -86,6 +87,7 @@ let make_context ~value_type =
   ; value_type
   ; unit_name = None
   ; no_tail_call = Var.Hashtbl.create 16
+  ; local_defaults = Var.Hashtbl.create 8
   }
 
 type var =
@@ -627,20 +629,29 @@ let placeholder_value typ f =
 
 let array_placeholder typ = placeholder_value typ (fun typ -> ArrayNewFixed (typ, []))
 
+let local_placeholder typ f =
+  let* e = placeholder_value typ f in
+  fun st ->
+    Var.Hashtbl.replace st.context.local_defaults typ e;
+    (), st
+
 let default_value val_typ st =
   match val_typ with
   | W.Ref { typ = I31 | Eq | Any; _ } -> (W.RefI31 (Const (I32 0l)), val_typ, None), st
   | W.Ref { typ = Type typ; nullable = false } -> (
-      match (Var.Hashtbl.find st.context.types typ).typ with
-      | Array _ ->
-          (let* placeholder = array_placeholder typ in
-           return (placeholder, val_typ, None))
-            st
-      | Struct _ | Func _ ->
-          ( ( W.RefNull (Type typ)
-            , W.Ref { typ = Type typ; nullable = true }
-            , Some { W.typ = Type typ; nullable = false } )
-          , st ))
+      match Var.Hashtbl.find_opt st.context.local_defaults typ with
+      | Some e -> (e, val_typ, None), st
+      | None -> (
+          match (Var.Hashtbl.find st.context.types typ).typ with
+          | Array _ ->
+              (let* placeholder = array_placeholder typ in
+               return (placeholder, val_typ, None))
+                st
+          | Struct _ | Func _ ->
+              ( ( W.RefNull (Type typ)
+                , W.Ref { typ = Type typ; nullable = true }
+                , Some { W.typ = Type typ; nullable = false } )
+              , st )))
   | I32 -> (Const (I32 0l), val_typ, None), st
   | F32 -> (Const (F32 0.), val_typ, None), st
   | I64 -> (Const (I64 0L), val_typ, None), st
