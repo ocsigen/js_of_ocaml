@@ -39,6 +39,8 @@
   constant (#2531)
 * Compiler: inline pending expressions at the end of a `try` body, avoiding
   temporaries such as `try{var c = f(x); return c;}` (#2532)
+* Compiler: jump threading: redirect an edge to a block that only tests a
+  value known on this edge to the branch the test selects (#2497)
 
 ### Effects
 * Compiler: with `--effects={cps,double-translation}`, specialize calls to
