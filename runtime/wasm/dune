@@ -27,7 +27,7 @@
   (run
    ../../compiler/bin-wasm_of_ocaml/wasmoo_link_wasm.exe
    --binaryen=-g
-   --binaryen-opt=-O3
+   --binaryen-opt=--remove-unused-module-elements
    --set=effects=jspi
    --disable=wasi
    --allowed-imports=bindings,Math,js,wasm:js-string,wasm:text-encoder,wasm:text-decoder
@@ -46,7 +46,7 @@
   (run
    ../../compiler/bin-wasm_of_ocaml/wasmoo_link_wasm.exe
    --binaryen=-g
-   --binaryen-opt=-O3
+   --binaryen-opt=--remove-unused-module-elements
    --set=effects=cps
    --disable=wasi
    --allowed-imports=bindings,Math,js,wasm:js-string,wasm:text-encoder,wasm:text-decoder
@@ -64,7 +64,7 @@
   (run
    ../../compiler/bin-wasm_of_ocaml/wasmoo_link_wasm.exe
    --binaryen=-g
-   --binaryen-opt=-O3
+   --binaryen-opt=--remove-unused-module-elements
    --set=effects=disabled
    --enable=wasi
    --allowed-imports=wasi_snapshot_preview1,OCaml
@@ -82,7 +82,7 @@
   (run
    ../../compiler/bin-wasm_of_ocaml/wasmoo_link_wasm.exe
    --binaryen=-g
-   --binaryen-opt=-O3
+   --binaryen-opt=--remove-unused-module-elements
    --set=effects=cps
    --enable=wasi
    %{target}

@@ -11,13 +11,13 @@
  (modes js wasm))
 
 (tests
- (names marshal_regressions int_and)
+ (names marshal_regressions int_and globalize_box)
  (modes wasm))
 
 (tests
- (names globalize_assign)
+ (names globalize_assign typed_assign bigarray_cast)
  (modes wasm)
- ; With -g, ocamlc does not turn the reference into a mutable variable
+ ; With -g, ocamlc does not turn the references into mutable variables
  (flags
   (:standard \ -g))
  (ocamlc_flags ())
@@ -90,6 +90,17 @@
   (flags :standard --opt 2)))
 
 (tests
+ (names array_generic block_tail_calls)
+ (modes wasm)
+ ; Generic array accesses are only specialized when the type analysis knows
+ ; the representation of the array, which requires whole-program
+ ; compilation. Array parameters are only typed with --opt 2 or more. The
+ ; same holds for values known to be blocks.
+ (wasm_of_ocaml
+  (compilation_mode whole_program)
+  (flags :standard --opt 2)))
+
+(tests
  (names string_interning)
  (modes wasm))
 
@@ -98,6 +109,22 @@
  (modes js wasm)
  ; Without -g, ocamlc turns local references into mutable variables,
  ; which exercises Assign instructions
+ (ocamlc_flags ())
+ ; Source maps are enabled in dev mode, where they warn about the missing
+ ; debug information. (Passing --no-source-map instead would fail in
+ ; release mode, where dune passes it already and the option cannot be
+ ; repeated.)
+ (js_of_ocaml
+  (flags :standard -w no-missing-debug-event)
+  (link_flags :standard -w no-missing-debug-event))
+ (wasm_of_ocaml
+  (flags :standard -w no-missing-debug-event)
+  (link_flags :standard -w no-missing-debug-event)))
+
+(tests
+ (names local_sink_exn dead_store_exn)
+ (modes js wasm)
+ ; The bugs only show up without debug information
  (ocamlc_flags ())
  ; Source maps are enabled in dev mode, where they warn about the missing
  ; debug information. (Passing --no-source-map instead would fail in

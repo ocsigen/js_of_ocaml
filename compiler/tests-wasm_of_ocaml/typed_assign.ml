@@ -1,0 +1,30 @@
+(* Wasm_of_ocaml compiler
+ * http://www.ocsigen.org/js_of_ocaml/
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, with linking exception;
+ * either version 2.1 of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ *)
+
+(* Regression test: the variable [x] is the target of [Assign]
+   instructions in the [try] body. As its value is used as a block, it
+   is given a block type, which its assignments must use. *)
+
+let () =
+  let x = ref (1, 2) in
+  (try
+     x := 3, 4;
+     if Array.length Sys.argv > 0 then failwith "a";
+     x := 5, 6
+   with _ -> ());
+  assert (fst !x = 3 && snd !x = 4)

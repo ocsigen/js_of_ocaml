@@ -497,9 +497,23 @@ module Type = struct
           })
 end
 
+(* Cast [e] to a non-nullable reference to [typ], unless it already has
+   this type. *)
+let ref_cast typ e =
+  let* e = e in
+  let cast = W.RefCast ({ nullable = false; typ }, e) in
+  let* t = expression_type e in
+  match t with
+  | Some (Ref { nullable = false; typ = typ' }) ->
+      let* b = heap_type_sub typ' typ in
+      return (if b then e else cast)
+  | Some (Ref { nullable = true; _ } | I32 | I64 | F32 | F64) | None -> return cast
+
 module Value = struct
   let block_type =
     let* t = Type.block_type in
+    (* Used to initialize the locals of this type *)
+    let* () = local_placeholder t (fun t -> ArrayNewFixed (t, [])) in
     return (W.Ref { nullable = false; typ = Type t })
 
   let dummy_block =
@@ -508,8 +522,7 @@ module Value = struct
 
   let as_block e =
     let* t = Type.block_type in
-    let* e = e in
-    return (W.RefCast ({ nullable = false; typ = Type t }, e))
+    ref_cast (Type t) e
 
   let unit = return (W.RefI31 (Const (I32 0l)))
 
@@ -653,19 +666,25 @@ module Value = struct
   let int_asr = Arith.( asr )
 end
 
+let store_in_global ?(name = "const") c =
+  let name = Code.Var.fresh_n name in
+  let* typ = expression_type c in
+  let* () =
+    register_global name { mut = false; typ = Option.value ~default:Type.value typ } c
+  in
+  return (W.GlobalGet name)
+
 module Memory = struct
-  let wasm_cast ty e =
-    let* e = e in
-    return (W.RefCast ({ nullable = false; typ = Type ty }, e))
+  let wasm_cast ty e = ref_cast (Type ty) e
 
   let wasm_struct_get ty e i =
     let* e = e in
     match e with
-    | W.RefCast ({ typ; _ }, GlobalGet nm) -> (
+    | W.RefCast (_, GlobalGet nm) | GlobalGet nm -> (
         let* init = get_global nm in
         match init with
         | Some (W.StructNew (ty', l)) ->
-            let* b = heap_type_sub (Type ty') typ in
+            let* b = heap_type_sub (Type ty') (Type ty) in
             if b
             then
               let e' = List.nth l i in
@@ -698,9 +717,9 @@ module Memory = struct
     let* e = e in
     return (W.StructNew (ty, [ e ]))
 
-  let unbox_float e =
+  let unbox_float ?(cast = true) e =
     let* ty = Type.float_type in
-    wasm_struct_get ty (wasm_cast ty e) 0
+    wasm_struct_get ty (if cast then wasm_cast ty e else e) 0
 
   let allocate ~tag l =
     assert (tag <> 254);
@@ -902,9 +921,9 @@ module Memory = struct
 
   let box_float32 = make_float32
 
-  let unbox_float32 e =
+  let unbox_float32 ?(cast = true) e =
     let* ty = Type.float32_type in
-    wasm_struct_get ty (wasm_cast ty e) 1
+    wasm_struct_get ty (if cast then wasm_cast ty e else e) 1
 
   let make_int32 ~kind e =
     let* custom_operations = Type.custom_operations_type in
@@ -919,13 +938,15 @@ module Memory = struct
     in
     let* ty = Type.int32_type in
     let* e = e in
-    return (W.StructNew (ty, [ GlobalGet int32_ops; e ]))
+    let e' = W.StructNew (ty, [ GlobalGet int32_ops; e ]) in
+    let* b = is_constant_expression e in
+    if b then store_in_global e' else return e'
 
   let box_int32 e = make_int32 ~kind:`Int32 e
 
-  let unbox_int32 e =
+  let unbox_int32 ?(cast = true) e =
     let* ty = Type.int32_type in
-    wasm_struct_get ty (wasm_cast ty e) 1
+    wasm_struct_get ty (if cast then wasm_cast ty e else e) 1
 
   let make_int64 e =
     let* custom_operations = Type.custom_operations_type in
@@ -937,30 +958,64 @@ module Memory = struct
     in
     let* ty = Type.int64_type in
     let* e = e in
-    return (W.StructNew (ty, [ GlobalGet int64_ops; e ]))
+    let e' = W.StructNew (ty, [ GlobalGet int64_ops; e ]) in
+    let* b = is_constant_expression e in
+    if b then store_in_global e' else return e'
 
   let box_int64 e = make_int64 e
 
-  let unbox_int64 e =
+  let unbox_int64 ?(cast = true) e =
     let* ty = Type.int64_type in
-    wasm_struct_get ty (wasm_cast ty e) 1
+    wasm_struct_get ty (if cast then wasm_cast ty e else e) 1
 
   let box_nativeint e = make_int32 ~kind:`Nativeint e
 
-  let unbox_nativeint e =
+  let unbox_nativeint ?(cast = true) e =
     let* ty = Type.int32_type in
-    wasm_struct_get ty (wasm_cast ty e) 1
+    wasm_struct_get ty (if cast then wasm_cast ty e else e) 1
+
+  let box_struct_type (n : Typing.boxed_number) =
+    match n with
+    | Float -> Type.float_type
+    | Float32 -> Type.float32_type
+    | Int32 | Nativeint -> Type.int32_type
+    | Int64 -> Type.int64_type
+
+  let box_type n =
+    let* ty = box_struct_type n in
+    let* fields =
+      let custom name value =
+        let* custom_operations = Type.custom_operations_type in
+        let* ops =
+          register_import
+            ~name
+            (Global
+               { mut = false
+               ; typ = Ref { nullable = false; typ = Type custom_operations }
+               })
+        in
+        return [ W.GlobalGet ops; value ]
+      in
+      match n with
+      | Float -> return [ W.Const (F64 0.) ]
+      | Float32 -> custom "float32_ops" (Const (F32 0.))
+      | Int32 -> custom "int32_ops" (Const (I32 0l))
+      | Nativeint -> custom "nativeint_ops" (Const (I32 0l))
+      | Int64 -> custom "int64_ops" (Const (I64 0L))
+    in
+    (* Used to initialize the locals of this type *)
+    let* () = local_placeholder ty (fun ty -> W.StructNew (ty, fields)) in
+    return (W.Ref { nullable = false; typ = Type ty })
+
+  let as_box n e =
+    let* ty = box_struct_type n in
+    wasm_cast ty e
 end
 
 module Constant = struct
   (* dune-build-info use a 64-byte placeholder. This ensures that such
      strings are encoded as a sequence of bytes in the wasm module. *)
   let string_length_threshold = 64
-
-  let store_in_global ?(name = "const") c =
-    let name = Code.Var.fresh_n name in
-    let* () = register_global name { mut = false; typ = Type.value } c in
-    return (W.GlobalGet name)
 
   let byte_string s =
     let b = Buffer.create (String.length s) in
@@ -1176,6 +1231,14 @@ module Closure = struct
     in
     if List.is_empty free_variables
     then
+      let* () =
+        (* The function ignores its environment. When it is only called
+           directly, the environment parameter is omitted, unless
+           wasm-opt runs: its dead argument elimination removes it. *)
+        if no_code_pointer && not context.wasm_opt
+        then Code.Var.Hashtbl.replace context.functions_without_env f ();
+        return ()
+      in
       let* typ =
         if no_code_pointer
         then Type.empty_closure_type ()
@@ -1284,14 +1347,28 @@ module Closure = struct
               (load f)
           else res
 
-  let bind_environment ~context ~closures ~cps ~no_code_pointer f =
+  (* The environment parameter [f] of a function only called directly
+     can be given the precise type [typ] of its closure, the callers
+     casting the argument (see [Generate]). *)
+  let add_env_param ~context ~precise_env f typ =
+    if precise_env
+    then (
+      let ref_typ = { W.nullable = false; typ = Type typ } in
+      Code.Var.Hashtbl.replace context.env_param_types f ref_typ;
+      add_var ~typ:(W.Ref ref_typ) f)
+    else add_var f
+
+  let bind_environment ~context ~closures ~cps ~no_code_pointer ~precise_env f =
     let info = Code.Var.Map.find f closures in
     let free_variables = get_free_variables ~context info in
     if List.is_empty free_variables
     then
       (* The closures are all constants and the environment is empty. *)
-      let* _ = add_var (Code.Var.fresh ()) in
-      return ()
+      if Code.Var.Hashtbl.mem context.functions_without_env f
+      then return ()
+      else
+        let* _ = add_var (Code.Var.fresh ()) in
+        return ()
     else
       let env_type_id = Option.value ~default:(-1) info.id in
       let _, arity = List.find ~f:(fun (f', _) -> Code.Var.equal f f') info.functions in
@@ -1302,7 +1379,7 @@ module Closure = struct
           let* typ =
             Type.env_type ~cps ~arity ~no_code_pointer ~env_type_id ~env_type:[]
           in
-          let* _ = add_var f in
+          let* _ = add_env_param ~context ~precise_env f typ in
           let env = Code.Var.fresh_n "env" in
           let* () =
             store
@@ -1329,7 +1406,7 @@ module Closure = struct
               ~env_type_id
               ~env_type:[]
           in
-          let* _ = add_var f in
+          let* _ = add_env_param ~context ~precise_env f typ in
           let env = Code.Var.fresh_n "env" in
           let* env_typ = Type.rec_env_type ~function_count ~env_type_id ~env_type:[] in
           let* () =
@@ -1466,6 +1543,14 @@ module Math = struct
 end
 
 module Bigarray = struct
+  let value_type =
+    let* ty = Type.bigarray_type in
+    return (W.Ref { nullable = false; typ = Type ty })
+
+  let cast e =
+    let* ty = Type.bigarray_type in
+    Memory.wasm_cast ty e
+
   let dimension n a =
     let* ty = Type.bigarray_type in
     Memory.wasm_array_get
@@ -2078,7 +2163,57 @@ let handle_exceptions ~result_typ ~fall_through ~context body x exn_handler =
      let* () = no_event in
      exn_handler ~result_typ ~fall_through ~context)
 
-let post_process_function_body = Initialize_locals.f
+let local_default context ty = Code.Var.Hashtbl.find_opt context.local_defaults ty
+
+let post_process_function_body ~context ~profile ~param_names ~param_types ~locals body =
+  match Binaryen.optimizes profile with
+  | false ->
+      (* When [wasm-opt] does not run (at [--opt 1], both for .cmo/.cma
+         and for executables), our own passes are the only ones tightening
+         the body. [Local_sink] runs first: shortening live ranges and
+         dropping [local.set]s simplifies the input to [Var_coalescing].
+         [Cast_reuse] runs before [Var_coalescing], so that the locals it
+         introduces get coalesced. With [--pretty], variables with a
+         user-given name are kept apart only at [--opt 1]: at higher
+         levels, performance matters more than their name. *)
+      let pass flag f (locals, body) = if flag () then f ~locals body else locals, body in
+      let locals, body =
+        (locals, body)
+        |> pass
+             Config.Flag.wasm_local_sink
+             (Local_sink.f
+                ~constant_global:(is_constant_global context)
+                ~params:(List.combine param_names param_types))
+        |> (fun (locals, body) ->
+        ( locals
+        , Cast_elim.f ~context ~params:(List.combine param_names param_types) ~locals body
+        ))
+        |> pass Config.Flag.wasm_cast_reuse Cast_reuse.f
+        |> pass
+             Config.Flag.wasm_var_coalescing
+             (Var_coalescing.f
+                ~keep_names:
+                  (Config.Flag.pretty ()
+                  &&
+                  match profile with
+                  | O1 -> true
+                  | O2 | O3 -> false)
+                ~param_names
+                ~param_types)
+      in
+      let locals, body =
+        Initialize_locals.f ~default:(local_default context) ~param_names ~locals body
+      in
+      (* Reorder locals so frequently-used ones get low Wasm indices
+         (one-byte LEB128 encoding for indices < 128). Otherwise,
+         [wasm-opt] handles local reordering. *)
+      let locals =
+        if Config.Flag.wasm_reorder_locals ()
+        then Reorder_locals.f ~locals body
+        else locals
+      in
+      locals, body
+  | true -> Initialize_locals.f ~default:(local_default context) ~param_names ~locals body
 
 let entry_point ~toplevel_fun =
   let code =
