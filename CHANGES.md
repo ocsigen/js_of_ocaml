@@ -145,6 +145,9 @@
   `require`d programs work (#2389)
 
 ### Runtime
+* Runtime: `Printf` float formatting matches C: `%e`, `%f` and `%g` round
+  ties to even, and `%g` of values >= 1e21 uses fixed notation while the
+  exponent is below the precision (#2527)
 * Runtime: on Windows, the console device names (`CON`, `CONIN$`, `CONOUT$`)
   can be opened from node; they were resolved against the current directory
   (#2525)
