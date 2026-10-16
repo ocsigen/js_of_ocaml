@@ -768,25 +768,36 @@ type cond_of =
   | Non_zero
   | Unknown
 
+(* The value tested by a conditional is either an integer or a block
+   corresponding to a variant, so it is false exactly when it is the integer
+   zero. This is what the Wasm backend implements
+   ([Value.check_is_not_zero] compares the value with the integer zero); the
+   JavaScript backend relies on JavaScript falsiness, which agrees on these
+   values.
+
+   The two backends do not agree on the other constants: the empty string
+   and the float zeros are falsy in JavaScript but are blocks for the Wasm
+   backend, and the null value of OxCaml is falsy in JavaScript but is
+   represented by a struct by the Wasm backend. None of them can be tested
+   by a conditional, so we just give up on them. *)
 let the_cond_of info x =
   get_approx
     info
     (fun x ->
       match Flow.Info.def info x with
       | Some (Constant (Int x)) -> if Targetint.is_zero x then Zero else Non_zero
-      | Some (Constant Null_) -> Zero
+      | Some (Constant (Tuple _)) | Some (Block (_, _, _, _)) -> Non_zero
       | Some
           (Constant
              ( Int32 _
              | NativeInt _
              | Float _
              | Float32 _
-             | Tuple _
              | String _
              | NativeString _
              | Float_array _
-             | Int64 _ )) -> Non_zero
-      | Some (Block (_, _, _, _)) -> Non_zero
+             | Int64 _
+             | Null_ )) -> Unknown
       | Some (Field _ | Closure _ | Prim _ | Apply _ | Special _) -> Unknown
       | None -> Unknown)
     Unknown
