@@ -1,3 +1,9 @@
+# dev
+
+## Features/Changes
+* Compiler: statically evaluate calls to known pure functions whose arguments
+  are all constants (#2153)
+
 # 6.5.0~beta1 - Lille
 
 ## Features/Changes
