@@ -116,12 +116,11 @@ let link
   then Js_of_ocaml_compiler.Config.Flag.enable "wasi";
   let inputs =
     List.map
-      ~f:(fun (module_name, file) -> { Wat_preprocess.module_name; file; source = File })
+      ~f:(fun (module_name, file) -> { Wax_link.module_name; file; source = File })
       input_modules
   in
   Runtime.build
     ~allowed_imports
-    ~convert_options:common
     ~opt_options:(common @ opt)
     ~variables:(Preprocess.set_variables variables)
     ~inputs

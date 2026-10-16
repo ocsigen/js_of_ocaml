@@ -24,9 +24,4 @@ type variables =
 
 val variable_options : variables Cmdliner.Term.t
 
-val set_variables :
-  variables -> (string * Wasm_of_ocaml_compiler.Wat_preprocess.value) list
-
-val command : unit Cmdliner.Cmd.t
-
-val command_alias : unit Cmdliner.Cmd.t
+val set_variables : variables -> (string * Wasm_of_ocaml_compiler.Wax_link.value) list

@@ -285,6 +285,8 @@
    %{dep:examples.ml}
    --export
    %{dep:export_wasm.txt}
+   %{lib:wax-lib.utils:pager_node.js}
+   %{lib:wax-lib.utils:pager_node.wat}
    %{dep:toplevel_wasm.bc}
    -o
    toplevel_wasm.js)))

@@ -98,6 +98,8 @@
    --toplevel
    -w
    no-missing-effects-backend
+   %{lib:wax-lib.utils:pager_node.js}
+   %{lib:wax-lib.utils:pager_node.wat}
    %{dep:test_toplevel_wasm.bc}
    -o
    test_toplevel_wasm.js)))
