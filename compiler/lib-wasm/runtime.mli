@@ -17,13 +17,15 @@
  *)
 
 val with_binary_files :
-     options:string list
+     ?all:bool
+  -> options:string list
   -> Binaryen.link_input list
   -> (Binaryen.link_input list -> 'a)
   -> 'a
 (** Convert the input files in text format to binary format with
     [wasm-opt], passing it [options], and call the continuation with the
-    resulting files. The files are deleted afterwards. *)
+    resulting files. The files are deleted afterwards. With [all], the
+    files in binary format are converted as well. *)
 
 val link : inputs:Binaryen.link_input list -> output_file:string -> unit
 (** Link the input modules (in binary format), keeping all their code *)

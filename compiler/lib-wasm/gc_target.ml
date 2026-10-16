@@ -1176,6 +1176,14 @@ module Closure = struct
     in
     if List.is_empty free_variables
     then
+      let* () =
+        (* The function ignores its environment. When it is only called
+           directly, the environment parameter is omitted, unless
+           wasm-opt runs: its dead argument elimination removes it. *)
+        if no_code_pointer && not context.wasm_opt
+        then Code.Var.Hashtbl.replace context.functions_without_env f ();
+        return ()
+      in
       let* typ =
         if no_code_pointer
         then Type.empty_closure_type ()
@@ -1284,14 +1292,28 @@ module Closure = struct
               (load f)
           else res
 
-  let bind_environment ~context ~closures ~cps ~no_code_pointer f =
+  (* The environment parameter [f] of a function only called directly
+     can be given the precise type [typ] of its closure, the callers
+     casting the argument (see [Generate]). *)
+  let add_env_param ~context ~precise_env f typ =
+    if precise_env
+    then (
+      let ref_typ = { W.nullable = false; typ = Type typ } in
+      Code.Var.Hashtbl.replace context.env_param_types f ref_typ;
+      add_var ~typ:(W.Ref ref_typ) f)
+    else add_var f
+
+  let bind_environment ~context ~closures ~cps ~no_code_pointer ~precise_env f =
     let info = Code.Var.Map.find f closures in
     let free_variables = get_free_variables ~context info in
     if List.is_empty free_variables
     then
       (* The closures are all constants and the environment is empty. *)
-      let* _ = add_var (Code.Var.fresh ()) in
-      return ()
+      if Code.Var.Hashtbl.mem context.functions_without_env f
+      then return ()
+      else
+        let* _ = add_var (Code.Var.fresh ()) in
+        return ()
     else
       let env_type_id = Option.value ~default:(-1) info.id in
       let _, arity = List.find ~f:(fun (f', _) -> Code.Var.equal f f') info.functions in
@@ -1302,7 +1324,7 @@ module Closure = struct
           let* typ =
             Type.env_type ~cps ~arity ~no_code_pointer ~env_type_id ~env_type:[]
           in
-          let* _ = add_var f in
+          let* _ = add_env_param ~context ~precise_env f typ in
           let env = Code.Var.fresh_n "env" in
           let* () =
             store
@@ -1329,7 +1351,7 @@ module Closure = struct
               ~env_type_id
               ~env_type:[]
           in
-          let* _ = add_var f in
+          let* _ = add_env_param ~context ~precise_env f typ in
           let env = Code.Var.fresh_n "env" in
           let* env_typ = Type.rec_env_type ~function_count ~env_type_id ~env_type:[] in
           let* () =
@@ -2078,7 +2100,43 @@ let handle_exceptions ~result_typ ~fall_through ~context body x exn_handler =
      let* () = no_event in
      exn_handler ~result_typ ~fall_through ~context)
 
-let post_process_function_body = Initialize_locals.f
+let post_process_function_body ~context ~profile ~param_names ~param_types ~locals body =
+  match Binaryen.optimizes profile with
+  | false ->
+      (* When [wasm-opt] does not run (at [--opt 1], both for .cmo/.cma
+         and for executables), our own passes are the only ones tightening
+         the body. [Local_sink] runs first: shortening live ranges and
+         dropping [local.set]s simplifies the input to [Var_coalescing].
+         [Cast_reuse] runs before [Var_coalescing], so that the locals it
+         introduces get coalesced. *)
+      let pass flag f (locals, body) = if flag () then f ~locals body else locals, body in
+      let locals, body =
+        (locals, body)
+        |> pass
+             Config.Flag.wasm_local_sink
+             (Local_sink.f
+                ~constant_global:(is_constant_global context)
+                ~params:(List.combine param_names param_types))
+        |> (fun (locals, body) ->
+        ( locals
+        , Cast_elim.f ~context ~params:(List.combine param_names param_types) ~locals body
+        ))
+        |> pass Config.Flag.wasm_cast_reuse Cast_reuse.f
+        |> pass
+             Config.Flag.wasm_var_coalescing
+             (Var_coalescing.f ~param_names ~param_types)
+      in
+      let locals, body = Initialize_locals.f ~param_names ~locals body in
+      (* Reorder locals so frequently-used ones get low Wasm indices
+         (one-byte LEB128 encoding for indices < 128). Otherwise,
+         [wasm-opt] handles local reordering. *)
+      let locals =
+        if Config.Flag.wasm_reorder_locals ()
+        then Reorder_locals.f ~locals body
+        else locals
+      in
+      locals, body
+  | true -> Initialize_locals.f ~param_names ~locals body
 
 let entry_point ~toplevel_fun =
   let code =

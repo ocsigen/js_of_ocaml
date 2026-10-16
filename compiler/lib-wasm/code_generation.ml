@@ -61,6 +61,17 @@ type context =
   ; value_type : W.value_type
   ; mutable unit_name : string option
   ; mutable no_tail_call : unit Var.Hashtbl.t
+  ; mutable wasm_opt : bool
+        (** Whether wasm-opt will optimize the generated code (see
+            [Binaryen.optimizes]): the optimizations which only redo
+            what it does are then skipped *)
+  ; functions_without_env : unit Var.Hashtbl.t
+        (** Functions which take no environment parameter: their closure
+            is a constant, and they are only called directly *)
+  ; env_param_types : W.ref_type Var.Hashtbl.t
+        (** The precise type of the environment parameter of the
+            functions only called directly: their callers cast the
+            environment argument to it *)
   }
 
 let make_context ~value_type =
@@ -86,6 +97,9 @@ let make_context ~value_type =
   ; value_type
   ; unit_name = None
   ; no_tail_call = Var.Hashtbl.create 16
+  ; wasm_opt = false
+  ; functions_without_env = Var.Hashtbl.create 128
+  ; env_param_types = Var.Hashtbl.create 128
   }
 
 type var =
@@ -222,6 +236,19 @@ let register_global name ?exported_name ?(constant = false) typ init st =
 let global_is_registered name =
   let* ctx = get_context in
   return (Var.Map.mem name ctx.constant_globals)
+
+let is_heap_subtype context ty ty' =
+  fst (heap_type_sub ty ty' { var_count = 0; vars = Var.Map.empty; instrs = []; context })
+
+let global_type context name =
+  Option.map
+    ~f:(fun (g : constant_global) -> g.typ)
+    (Var.Map.find_opt name context.constant_globals)
+
+let is_constant_global context name =
+  match Var.Map.find_opt name context.constant_globals with
+  | Some { constant = true; _ } -> true
+  | _ -> false
 
 let global_is_constant name =
   let* ctx = get_context in

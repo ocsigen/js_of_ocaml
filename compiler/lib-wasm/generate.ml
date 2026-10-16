@@ -1800,6 +1800,8 @@ module Generate (Target : Target_sig.S) = struct
                      args
                      params)
               in
+              (* The environment argument is removed or cast by
+                 [fix_env_arguments] *)
               convert
                 ~from:(Typing.return_type ctx.types g)
                 ~into:(Typing.var_type ctx.types x)
@@ -2395,16 +2397,26 @@ module Generate (Target : Target_sig.S) = struct
             ~closures:ctx.closures
             ~cps:(Var.Set.mem f ctx.in_cps)
             ~no_code_pointer:(Call_graph_analysis.direct_calls_only ctx.fun_info f)
+            ~precise_env:
+              ((* wasm-opt narrows the type of this parameter when it
+                  runs *)
+               (not ctx.global_context.wasm_opt)
+              && Typing.can_unbox_parameters ctx.fun_info f)
             f
       | None -> return ()
     in
     (*
   Format.eprintf "=== %d ===@." pc;
 *)
+    let without_env =
+      match name_opt with
+      | None -> false
+      | Some f -> Var.Hashtbl.mem ctx.global_context.functions_without_env f
+    in
     let param_names =
       match name_opt with
       | None -> []
-      | Some f -> params @ [ f ]
+      | Some f -> if without_env then params else params @ [ f ]
     in
     let param_count = List.length param_names in
     (match name_opt with
@@ -2437,6 +2449,29 @@ module Generate (Target : Target_sig.S) = struct
            | Some loc -> event loc
            | None -> return ())
     in
+    let signature =
+      match name_opt with
+      | None -> Type.primitive_type param_count
+      | Some f ->
+          if Typing.can_unbox_parameters ctx.fun_info f
+          then
+            let env_typ : W.value_type =
+              match Var.Hashtbl.find_opt ctx.global_context.env_param_types f with
+              | Some typ -> Ref typ
+              | None -> Type.value
+            in
+            { W.params =
+                (List.map
+                   ~f:(fun x ->
+                     Option.value
+                       ~default:Type.value
+                       (unboxed_type (Typing.var_type ctx.types x)))
+                   params
+                @ if without_env then [] else [ env_typ ])
+            ; result = [ Option.value ~default:Type.value (unboxed_type return_type) ]
+            }
+          else Type.func_type (param_count - 1)
+    in
     (* The function is post-processed in [f] below. *)
     W.Function
       { name =
@@ -2448,28 +2483,45 @@ module Generate (Target : Target_sig.S) = struct
           | None -> Option.map ~f:(fun name -> name ^ ".init") unit_name
           | Some _ -> None)
       ; typ = None
-      ; signature =
-          (match name_opt with
-          | None -> Type.primitive_type param_count
-          | Some f ->
-              if Typing.can_unbox_parameters ctx.fun_info f
-              then
-                { W.params =
-                    List.map
-                      ~f:(fun x ->
-                        Option.value
-                          ~default:Type.value
-                          (unboxed_type (Typing.var_type ctx.types x)))
-                      params
-                    @ [ Type.value ]
-                ; result = [ Option.value ~default:Type.value (unboxed_type return_type) ]
-                }
-              else Type.func_type (param_count - 1))
+      ; signature
       ; param_names
       ; locals
       ; body
       }
     :: acc
+
+  (* Remove the environment argument of the direct calls to the
+     functions which do not take one, and cast it to the type of the
+     environment parameter of the functions which have a precise one
+     ([Cast_elim] removes the casts of arguments which already have
+     this type). Whether a function takes an environment is decided
+     when its closure is translated, and the type of its environment
+     parameter when its body is translated, which can both happen
+     after a call to it is translated. The environment argument is the
+     last one, and is either a variable or a constant: dropping it has
+     no effect. *)
+  let fix_env_arguments ~(context : Code_generation.context) body =
+    let args f l =
+      if Var.Hashtbl.mem context.functions_without_env f
+      then List.rev (List.tl (List.rev l))
+      else
+        match Var.Hashtbl.find_opt context.env_param_types f, List.rev l with
+        | Some typ, env :: rem -> List.rev (W.RefCast (typ, env) :: rem)
+        | Some _, [] -> assert false
+        | None, _ -> l
+    in
+    let rec expression e =
+      match Wasm_traverse.map_expression ~expression ~instructions e with
+      | W.Call (f, l) -> W.Call (f, args f l)
+      | e -> e
+    and instructions l = List.map ~f:instruction l
+    and instruction i =
+      match Wasm_traverse.map_instruction ~expression ~instructions i with
+      | W.CallInstr (f, l) -> W.CallInstr (f, args f l)
+      | Return_call (f, l) -> Return_call (f, args f l)
+      | i -> i
+    in
+    instructions body
 
   let init_function ~context ~to_link =
     let name = Code.Var.fresh_n "initialize" in
@@ -2560,6 +2612,7 @@ module Generate (Target : Target_sig.S) = struct
     add_start_function ~context (init_function ~context ~to_link)
 
   let f
+      ~profile
       ~context:global_context
       ~unit_name
       (p : Code.program)
@@ -2571,6 +2624,7 @@ module Generate (Target : Target_sig.S) = struct
       ~fun_info
       ~types =
     global_context.unit_name <- unit_name;
+    global_context.wasm_opt <- Binaryen.optimizes profile;
     let p, closures = Closure_conversion.f p in
     (*
   Code.Print.program (fun _ _ -> "") p;
@@ -2610,13 +2664,29 @@ module Generate (Target : Target_sig.S) = struct
     in
     (* The functions are post-processed once they have all been
        generated, so that this can rely on information about the whole
-       module. *)
+       module. The direct calls are fixed before, since the
+       post-processing could move code into the environment arguments. *)
     let functions =
       List.map
         ~f:(fun f ->
           match f with
-          | W.Function ({ param_names; locals; body; _ } as f) ->
-              let locals, body = post_process_function_body ~param_names ~locals body in
+          | W.Function ({ param_names; signature; locals; body; _ } as f) ->
+              let body =
+                if
+                  Var.Hashtbl.length global_context.functions_without_env = 0
+                  && Var.Hashtbl.length global_context.env_param_types = 0
+                then body
+                else fix_env_arguments ~context:global_context body
+              in
+              let locals, body =
+                post_process_function_body
+                  ~context:global_context
+                  ~profile
+                  ~param_names
+                  ~param_types:signature.params
+                  ~locals
+                  body
+              in
               W.Function { f with locals; body }
           | _ -> f)
         functions
@@ -2625,7 +2695,7 @@ module Generate (Target : Target_sig.S) = struct
     global_context.other_fields <- List.rev_append functions global_context.other_fields;
     let js_code = StringMap.bindings global_context.fragments in
     global_context.fragments <- StringMap.empty;
-    Curry.f ~context:global_context;
+    Curry.f ~profile ~context:global_context;
     toplevel_name, js_code
 
   let output ~context =
@@ -2644,7 +2714,7 @@ module Generate (Target : Target_sig.S) = struct
         ~f:(fun (name, contents) -> W.Data { name; contents })
         (Var.Map.bindings context.data_segments)
     in
-    List.rev_append context.other_fields (imports @ constant_data)
+    Inline_globals.f (List.rev_append context.other_fields (imports @ constant_data))
 
   let init () =
     Typing.reset ();
@@ -2752,7 +2822,15 @@ let init = G.init
 
 let start () = make_context ~value_type:Gc_target.Type.value
 
-let f ~context ~unit_name p ~live_vars ~in_cps ~deadcode_sentinel ~global_flow_data =
+let f
+    ~profile
+    ~context
+    ~unit_name
+    p
+    ~live_vars
+    ~in_cps
+    ~deadcode_sentinel
+    ~global_flow_data =
   let global_flow_state, global_flow_info = global_flow_data in
   let fun_info = Call_graph_analysis.f p global_flow_info in
   let types =
@@ -2762,8 +2840,20 @@ let f ~context ~unit_name p ~live_vars ~in_cps ~deadcode_sentinel ~global_flow_d
   let p = Structure.norm p in
   let p = fix_switch_branches p in
   let res =
-    G.f ~context ~unit_name ~live_vars ~in_cps ~global_flow_info ~fun_info ~types p
+    G.f
+      ~profile
+      ~context
+      ~unit_name
+      ~live_vars
+      ~in_cps
+      ~global_flow_info
+      ~fun_info
+      ~types
+      p
   in
+  Local_sink.report_stats ();
+  Cast_reuse.report_stats ();
+  Var_coalescing.report_stats ();
   if times () then Format.eprintf "  code gen.: %a@." Timer.print t;
   res
 
@@ -2788,12 +2878,14 @@ let wasm_output ch ~opt_source_map_file ~context =
   if times () then Format.eprintf "  output: %a@." Timer.print t
 
 let compile ~unit_name code =
+  let profile = Profile.O1 in
   let Driver.{ program; variable_uses; in_cps; deadcode_sentinel; _ }, global_flow_data =
-    Driver.optimize_for_wasm ~shapes:false ~profile:O1 code
+    Driver.optimize_for_wasm ~shapes:false ~profile code
   in
   let context = start () in
   let toplevel_name, fragments =
     f
+      ~profile
       ~context
       ~unit_name
       ~live_vars:variable_uses

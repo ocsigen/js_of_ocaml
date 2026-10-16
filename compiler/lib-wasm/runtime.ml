@@ -20,12 +20,13 @@ open Stdlib
 
 (* Our linker only reads binary files: the files in text format are
    converted with [wasm-opt], without running any optimization pass
-   ([--quiet] silences the warning about this). *)
-let with_binary_files ~options inputs f =
+   ([--quiet] silences the warning about this). With [all], the files
+   in binary format are converted as well. *)
+let with_binary_files ?(all = false) ~options inputs f =
   let rec loop acc (l : Binaryen.link_input list) =
     match l with
     | [] -> f (List.rev acc)
-    | input :: rem when Link.Wasm_binary.check_file ~file:input.file ->
+    | input :: rem when (not all) && Link.Wasm_binary.check_file ~file:input.file ->
         loop (input :: acc) rem
     | input :: rem ->
         Fs.with_intermediate_file (Filename.temp_file input.module_name ".wasm")
