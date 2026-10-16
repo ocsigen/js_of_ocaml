@@ -15,6 +15,10 @@
   and -O3 (#2560)
 
 # 6.5.0 (2026-10-22) - Lille
+* Compiler: propagate the value of the variable tested by a conditional into
+  the branch where it is known (#NNNN)
+
+# 6.5.0~beta1 - Lille
 
 ## Features/Changes
 

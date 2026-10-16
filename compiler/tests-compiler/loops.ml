@@ -269,8 +269,8 @@ let f t x =
          break a;
         }
         if(val && ! val[2]){
-         var y = val[1], _a_ = y === (x$0 + 1 | 0);
-         if(_a_) break a;
+         var y = val[1];
+         if(y === (x$0 + 1 | 0)){_a_ = 1; break a;}
          x$0 = y;
          continue;
         }
@@ -436,10 +436,8 @@ let add_substitute =
     function add_substitute(b, f, s){
      var lim$1 = caml_ml_string_length(s), previous = 32, i$4 = 0;
      for(;;){
-      if(i$4 >= lim$1){
-       var _b_ = 92 === previous ? 1 : 0;
-       return _b_ && caml_call2(add_char, b, previous);
-      }
+      if(i$4 >= lim$1)
+       return 92 === previous ? caml_call2(add_char, b, previous) : 0;
       var previous$0 = caml_string_get(s, i$4);
       if(36 === previous$0)
        if(92 === previous){
@@ -463,7 +461,7 @@ let add_substitute =
            b:
            {
             if(lim$0 > i$2){
-             _b_ = caml_string_get(s, i$2);
+             var _b_ = caml_string_get(s, i$2);
              if(91 <= _b_){
               if(97 <= _b_){
                if(123 <= _b_){var stop$0 = i$2; break b;}

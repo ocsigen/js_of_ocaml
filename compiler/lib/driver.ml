@@ -725,12 +725,20 @@ let optimize ~shapes ~profile ~keep_flow_data p =
   in
   let opt =
     Specialize.switches
+    +> Cond_propagation.f
     +> specialize_js_once_before
     +> (match (profile : Profile.t) with
       | O1 -> o1
       | O2 -> o2
       | O3 -> o3)
     +> specialize_js_once_after
+    +> (match Config.target () with
+      | `Wasm ->
+          (* The Wasm backend reuses the flow information computed by
+             [effects_and_exact_calls], which knows nothing about the
+             variables this pass introduces *)
+          Cond_propagation.f
+      | `JavaScript -> Fun.id)
     +> effects_and_exact_calls ~keep_flow_data ~deadcode_sentinel ~shapes profile
     +> map_fst5
          (match Config.target (), Config.effects () with
@@ -738,6 +746,10 @@ let optimize ~shapes ~profile ~keep_flow_data p =
          | `JavaScript, `Cps
          | `Wasm, (`Disabled | `Jspi | `Cps | `Double_translation | `Native) -> Fun.id
          | `JavaScript, (`Jspi | `Native) -> assert false)
+    +> map_fst5
+         (match Config.target () with
+         | `JavaScript -> Cond_propagation.f
+         | `Wasm -> Fun.id)
     +> map_fst5 deadcode'
   in
   if times () then Format.eprintf "Start Optimizing...@.";
