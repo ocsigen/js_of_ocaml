@@ -61,9 +61,8 @@ type link_input =
   ; source_map_file : string option
   }
 
-let optimizes : Profile.t -> bool = function
-  | O1 -> false
-  | O2 | O3 -> true
+(* Experiment: wasm-opt never optimizes the generated code *)
+let optimizes : Profile.t -> bool = fun _ -> false
 
 let optimization_options : Profile.t -> _ = function
   | O1 -> [ "-O2"; "--skip-pass=inlining-optimizing"; "--traps-never-happen" ]

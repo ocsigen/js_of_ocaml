@@ -130,7 +130,7 @@ let build_runtime ~runtime_file =
       in
       Runtime.build
         ~convert_options:[ "-g" ]
-        ~opt_options:[ "-g"; "-O2" ]
+        ~opt_options:[ "-g"; "--remove-unused-module-elements" ]
         ~variables
         ~allowed_imports:
           (Some
@@ -297,6 +297,7 @@ let link_runtime ~profile runtime_wasm_files output_file =
     @@ fun runtime_inputs -> Runtime.link ~inputs:runtime_inputs ~output_file:temp_file);
     Binaryen.optimize
       ~profile
+      ~options:[ "--quiet"; "--remove-unused-module-elements" ]
       ~opt_input_sourcemap:None
       ~opt_output_sourcemap:None
       ~input_file:temp_file
