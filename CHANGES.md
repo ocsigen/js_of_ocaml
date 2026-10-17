@@ -39,6 +39,8 @@
   constant (#2531)
 * Compiler: inline pending expressions at the end of a `try` body, avoiding
   temporaries such as `try{var c = f(x); return c;}` (#2532)
+* Compiler: faster reading of debug events, used with `--pretty` and
+  `--debug-info` (#2548)
 
 ### Effects
 * Compiler: with `--effects={cps,double-translation}`, specialize calls to

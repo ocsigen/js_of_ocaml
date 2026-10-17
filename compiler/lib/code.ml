@@ -171,43 +171,53 @@ end = struct
             set_raw v' name gen
       with Not_found -> ()
 
-    let set v ?(generated = false) nm_orig =
+    let sanitized = String.Hashtbl.create 100
+
+    let sanitize nm_orig =
       let len = String.length nm_orig in
-      if len > 0
+      let buf = Buffer.create (String.length nm_orig) in
+      let idx = ref 0 in
+      while !idx < len && not (Char.is_letter nm_orig.[!idx]) do
+        incr idx
+      done;
+      let pending = ref false in
+      if !idx >= len
       then (
-        let buf = Buffer.create (String.length nm_orig) in
-        let idx = ref 0 in
-        while !idx < len && not (Char.is_letter nm_orig.[!idx]) do
-          incr idx
-        done;
-        let pending = ref false in
-        if !idx >= len
+        pending := true;
+        idx := 0);
+      for i = !idx to len - 1 do
+        if Char.is_letter nm_orig.[i] || Char.is_digit nm_orig.[i]
         then (
-          pending := true;
-          idx := 0);
-        for i = !idx to len - 1 do
-          if Char.is_letter nm_orig.[i] || Char.is_digit nm_orig.[i]
-          then (
-            if !pending then Buffer.add_char buf '_';
-            Buffer.add_char buf nm_orig.[i];
-            pending := false)
-          else pending := true
-        done;
-        let str = Buffer.contents buf in
+          if !pending then Buffer.add_char buf '_';
+          Buffer.add_char buf nm_orig.[i];
+          pending := false)
+        else pending := true
+      done;
+      let str = Buffer.contents buf in
+      let str =
+        match str, nm_orig with
+        | "", ">>=" -> "symbol_bind"
+        | "", ">>|" -> "symbol_map"
+        | "", "^" -> "symbol_concat"
+        | "", _ -> "symbol"
+        | str, _ -> if is_reserved str then str ^ "$" else str
+      in
+      (* protect against large names *)
+      let max_len = 30 in
+      if String.length str > max_len then String.sub str ~pos:0 ~len:max_len else str
+
+    let set v ?(generated = false) nm_orig =
+      if String.length nm_orig > 0
+      then
         let str =
-          match str, nm_orig with
-          | "", ">>=" -> "symbol_bind"
-          | "", ">>|" -> "symbol_map"
-          | "", "^" -> "symbol_concat"
-          | "", _ -> "symbol"
-          | str, _ -> if is_reserved str then str ^ "$" else str
+          match String.Hashtbl.find_opt sanitized nm_orig with
+          | Some str -> str
+          | None ->
+              let str = sanitize nm_orig in
+              String.Hashtbl.add sanitized nm_orig str;
+              str
         in
-        (* protect against large names *)
-        let max_len = 30 in
-        let str =
-          if String.length str > max_len then String.sub str ~pos:0 ~len:max_len else str
-        in
-        set_raw v str generated)
+        set_raw v str generated
 
     let get v = Int.Hashtbl.find_opt names v
 

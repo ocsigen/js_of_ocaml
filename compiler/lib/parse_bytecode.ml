@@ -47,7 +47,7 @@ module Debug : sig
 
   val dbg_section_needed : t -> bool
 
-  val find : t -> Code.Addr.t -> (int * Ident.t) list * Env.summary
+  val find : t -> Code.Addr.t -> Ident.t option array * Env.summary
 
   val find_rec : t -> Code.Addr.t -> (int * Ident.t) list
 
@@ -213,7 +213,16 @@ end = struct
     then Int.Hashtbl.add events_by_pc ev.ev_pos { event = ev; source = unit.source };
     ()
 
-  let read_event_list =
+  let crc_table crcs =
+    let t = String.Hashtbl.create 17 in
+    List.iter crcs ~f:(fun info ->
+        String.Hashtbl.add
+          t
+          (Ocaml_compiler.Import_info.name info)
+          (Ocaml_compiler.Import_info.crc info));
+    t
+
+  let read_events =
     let rewrite_path path =
       if Filename.is_relative path
       then path
@@ -224,39 +233,34 @@ end = struct
     in
     let read_paths ic : string list = List.map (input_value ic) ~f:rewrite_path in
     fun debug ~crcs ~includes ~orig ic ->
-      let crcs =
-        let t = String.Hashtbl.create 17 in
-        List.iter crcs ~f:(fun info ->
-            String.Hashtbl.add
-              t
-              (Ocaml_compiler.Import_info.name info)
-              (Ocaml_compiler.Import_info.crc info));
-        t
-      in
       let evl : debug_event list = input_value ic in
       let paths = read_paths ic @ includes in
       List.iter evl ~f:(read_event ~paths ~crcs ~orig debug)
 
+  let read_event_list debug ~crcs ~includes ~orig ic =
+    read_events debug ~crcs:(crc_table crcs) ~includes ~orig ic
+
   let read t ~crcs ~includes ic =
+    (* Built once: there is an event list per compilation unit *)
+    let crcs = crc_table crcs in
     let len = input_binary_int ic in
     for _i = 0 to len - 1 do
       let orig = input_binary_int ic in
-      read_event_list t ~crcs ~includes ~orig ic
+      read_events t ~crcs ~includes ~orig ic
     done
 
+  (* The identifier bound to each stack slot, indexed from the top of
+     the stack *)
   let find { events_by_pc; _ } pc =
-    try
-      let { event; _ } = Int.Hashtbl.find events_by_pc pc in
-      let l =
+    match Int.Hashtbl.find_opt events_by_pc pc with
+    | None -> [||], Env.Env_empty
+    | Some { event; _ } ->
+        let names = Array.make event.ev_stacksize None in
         Ident.fold_name
-          (fun ident i acc -> (event.ev_stacksize - i, ident) :: acc)
+          (fun ident i () -> names.(event.ev_stacksize - i) <- Some ident)
           event.ev_compenv.ce_stack
-          []
-        |> List.sort ~cmp:(fun (i, _) (j, _) -> compare i j)
-      in
-
-      l, event.ev_typenv
-    with Not_found -> [], Env.Env_empty
+          ();
+        names, event.ev_typenv
 
   let find_rec { events_by_pc; _ } pc =
     try
@@ -798,40 +802,41 @@ module State = struct
     | 'A' .. 'Z' -> true
     | _ -> false
 
-  let rec name_rec debug st i l s summary =
-    match l, s with
-    | [], _ -> ()
-    | (j, ident) :: lrem, Var v :: srem when i = j ->
-        (if maybe_module ident && not (Code.Var.Hashtbl.mem st.immutable v)
-         then
-           match Ident.Tbl.find st.module_or_not ident with
-           | Module -> Code.Var.Hashtbl.add st.immutable v ()
-           | Not_module -> ()
-           | (exception Not_found) | Unknown -> (
-               match Ocaml_compiler.is_module_in_summary ident summary with
-               | Module ->
-                   Ident.Tbl.add st.module_or_not ident Module;
-                   Code.Var.Hashtbl.add st.immutable v ()
-               | Not_module -> Ident.Tbl.add st.module_or_not ident Not_module
-               | Unknown -> ()));
-        let name = Ident.name ident in
-        let generated =
-          (String.length name > 1 && Char.equal name.[0] '*')
-          ||
-          match name with
-          | "param" | "switcher" | "tag" -> true
-          | _ -> false
-        in
-        Var.set_name v ~generated name;
-        name_rec debug st (i + 1) lrem srem summary
-    | (j, _) :: _, _ :: srem when i < j -> name_rec debug st (i + 1) l srem summary
-    | _ -> assert false
+  let rec name_rec debug st i names s summary =
+    if i < Array.length names
+    then
+      match names.(i), s with
+      | None, _ :: srem -> name_rec debug st (i + 1) names srem summary
+      | Some ident, Var v :: srem ->
+          (if maybe_module ident && not (Code.Var.Hashtbl.mem st.immutable v)
+           then
+             match Ident.Tbl.find st.module_or_not ident with
+             | Module -> Code.Var.Hashtbl.add st.immutable v ()
+             | Not_module -> ()
+             | (exception Not_found) | Unknown -> (
+                 match Ocaml_compiler.is_module_in_summary ident summary with
+                 | Module ->
+                     Ident.Tbl.add st.module_or_not ident Module;
+                     Code.Var.Hashtbl.add st.immutable v ()
+                 | Not_module -> Ident.Tbl.add st.module_or_not ident Not_module
+                 | Unknown -> ()));
+          let name = Ident.name ident in
+          let generated =
+            (String.length name > 1 && Char.equal name.[0] '*')
+            ||
+            match name with
+            | "param" | "switcher" | "tag" -> true
+            | _ -> false
+          in
+          Var.set_name v ~generated name;
+          name_rec debug st (i + 1) names srem summary
+      | Some _, _ | None, [] -> assert false
 
   let name_vars st debug pc =
     if Debug.names debug
     then
-      let l, summary = Debug.find debug pc in
-      name_rec debug st 0 l st.stack summary
+      let names, summary = Debug.find debug pc in
+      name_rec debug st 0 names st.stack summary
 
   let rec make_stack i state =
     if i = 0
