@@ -94,7 +94,7 @@ let%expect_test "direct calls without --effects=cps" =
       }
      }
      f(function(x){return x + 1 | 0;}, 7);
-     f(function(x){return caml_call2(Stdlib[28], x, cst_a$0);}, cst_a);
+     f(function(x){return caml_call2(Stdlib[28], x, cst_a);}, cst_a);
      return 0;
     }
     //end
@@ -209,8 +209,7 @@ let%expect_test "direct calls with --effects=cps" =
                return caml_exact_trampoline_cps_call$0
                        (f,
                         function(x, cont){
-                         return caml_trampoline_cps_call3
-                                 (Stdlib[28], x, cst_a$0, cont);
+                         return caml_trampoline_cps_call3(Stdlib[28], x, cst_a, cont);
                         },
                         cst_a,
                         function(_b_){return cont(0);});

@@ -36,33 +36,27 @@ let k () = 1L
   Util.print_program program;
   [%expect
     {|
-  (function(globalThis){
-     "use strict";
-     var
-      runtime = globalThis.jsoo_runtime,
-      caml_int64_create_lo_mi_hi = runtime.caml_int64_create_lo_mi_hi,
-      caml_string_of_jsbytes = runtime.caml_string_of_jsbytes,
-      _c_ =
-        [0,
-         caml_string_of_jsbytes("abc"),
-         [0, caml_string_of_jsbytes("def"), 0]],
-      _d_ =
-        [0,
-         caml_string_of_jsbytes("abc"),
-         [0, caml_string_of_jsbytes("def"), 0]],
-      _e_ = caml_int64_create_lo_mi_hi(1, 0, 0),
-      _f_ = caml_int64_create_lo_mi_hi(1, 0, 0),
-      _a_ = [0, 1, 2];
-     function f(param){return _a_;}
-     var _b_ = [0, 1, 2];
-     function g(param){return _b_;}
-     function h(param){return _c_;}
-     function i(param){return _d_;}
-     function j(param){return _e_;}
-     function k(param){return _f_;}
-     runtime.caml_register_global([0, f, g, h, i, j, k], "Test");
-     return;
-    }
-    (globalThis));
-  //end
-  |}]
+    (function(globalThis){
+       "use strict";
+       var
+        runtime = globalThis.jsoo_runtime,
+        caml_int64_create_lo_mi_hi = runtime.caml_int64_create_lo_mi_hi,
+        caml_string_of_jsbytes = runtime.caml_string_of_jsbytes,
+        _c_ = caml_int64_create_lo_mi_hi(1, 0, 0),
+        _b_ =
+          [0,
+           caml_string_of_jsbytes("abc"),
+           [0, caml_string_of_jsbytes("def"), 0]],
+        _a_ = [0, 1, 2];
+       function f(param){return _a_;}
+       function g(param){return _a_;}
+       function h(param){return _b_;}
+       function i(param){return _b_;}
+       function j(param){return _c_;}
+       function k(param){return _c_;}
+       runtime.caml_register_global([0, f, g, h, i, j, k], "Test");
+       return;
+      }
+      (globalThis));
+    //end
+    |}]

@@ -111,7 +111,7 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
       n = 0;
      }
      try{
-      if(caml_string_equal(s, cst$0))
+      if(caml_string_equal(s, cst))
        throw caml_maybe_attach_backtrace(Stdlib[8], 1);
       var m = 7;
      }
@@ -137,22 +137,22 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
      catch(exn){
       var exn$2 = caml_wrap_exception(exn);
       if(exn$2[1] !== Stdlib[7]){
-       var _h_ = caml_pop_trap(), exn$0 = caml_maybe_attach_backtrace(exn$2, 0);
-       return _h_(exn$0);
+       var _f_ = caml_pop_trap(), exn$0 = caml_maybe_attach_backtrace(exn$2, 0);
+       return _f_(exn$0);
       }
       n = 0;
      }
      try{
-      if(caml_string_equal(s, cst$0))
+      if(caml_string_equal(s, cst))
        throw caml_maybe_attach_backtrace(Stdlib[8], 1);
       var m = 7;
      }
      catch(exn$0){
       var exn$1 = caml_wrap_exception(exn$0);
       if(exn$1 !== Stdlib[8]){
-       _h_ = caml_pop_trap();
+       _f_ = caml_pop_trap();
        var exn = caml_maybe_attach_backtrace(exn$1, 0);
-       return _h_(exn);
+       return _f_(exn);
       }
       m = 0;
      }
@@ -166,26 +166,25 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
       return caml_trampoline_cps_call2
               (Stdlib[79],
                cst_toto,
-               function(_h_){caml_pop_trap(); return cont([0, [0, _h_, n, m]]);});
-     _h_ = Stdlib[8];
+               function(_f_){caml_pop_trap(); return cont([0, [0, _f_, n, m]]);});
+     _f_ = Stdlib[8];
      var raise = caml_pop_trap();
-     return raise(caml_maybe_attach_backtrace(_h_, 1));
+     return raise(caml_maybe_attach_backtrace(_f_, 1));
     }
     //end
     var exceptions = caml_cps_closure(exceptions$0, exceptions$1);
     //end
     function cond1$0(b){
      var
-      ic =
-        b ? caml_call1(Stdlib[79], cst_toto$0) : caml_call1(Stdlib[79], cst_titi);
+      ic = b ? caml_call1(Stdlib[79], cst_toto) : caml_call1(Stdlib[79], cst_titi);
      return [0, ic, 7];
     }
     //end
     function cond1$1(b, cont){
-     function _h_(ic){return cont([0, ic, 7]);}
+     function _f_(ic){return cont([0, ic, 7]);}
      return b
-             ? caml_trampoline_cps_call2(Stdlib[79], cst_toto$0, _h_)
-             : caml_trampoline_cps_call2(Stdlib[79], cst_titi, _h_);
+             ? caml_trampoline_cps_call2(Stdlib[79], cst_toto, _f_)
+             : caml_trampoline_cps_call2(Stdlib[79], cst_titi, _f_);
     }
     //end
     var cond1 = caml_cps_closure(cond1$0, cond1$1);
@@ -194,30 +193,30 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
      if(b)
       caml_call1(Stdlib_Printf[3], _a_);
      else
-      caml_call1(Stdlib_Printf[3], _b_);
+      caml_call1(Stdlib_Printf[3], _a_);
      return 7;
     }
     //end
     function cond2$1(b, cont){
-     function _h_(_h_){return cont(7);}
+     function _f_(_f_){return cont(7);}
      return b
-             ? caml_trampoline_cps_call2(Stdlib_Printf[3], _a_, _h_)
-             : caml_trampoline_cps_call2(Stdlib_Printf[3], _b_, _h_);
+             ? caml_trampoline_cps_call2(Stdlib_Printf[3], _a_, _f_)
+             : caml_trampoline_cps_call2(Stdlib_Printf[3], _a_, _f_);
     }
     //end
     var cond2 = caml_cps_closure(cond2$0, cond2$1);
     //end
     function cond3$0(b){
-     var x = b ? 1 : (caml_call1(Stdlib_Printf[3], _c_), 0);
+     var x = b ? 1 : (caml_call1(Stdlib_Printf[3], _a_), 0);
      return x;
     }
     //end
     function cond3$1(b, cont){
-     function _g_(x){return cont(x);}
+     function _e_(x){return cont(x);}
      return b
-             ? _g_(1)
+             ? _e_(1)
              : caml_trampoline_cps_call2
-               (Stdlib_Printf[3], _c_, function(_h_){return _g_(0);});
+               (Stdlib_Printf[3], _a_, function(_f_){return _e_(0);});
     }
     //end
     var cond3 = caml_cps_closure(cond3$0, cond3$1);
@@ -235,63 +234,63 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
              (Stdlib[79],
               cst_static_examples_ml,
               function(ic){
-               function _f_(_g_){
+               function _d_(_e_){
                 return caml_trampoline_cps_call2
                         (Stdlib[83],
                          ic,
                          function(line){
                           return b
-                                  ? caml_trampoline_cps_call2(Stdlib[53], line, _f_)
-                                  : caml_exact_trampoline_call1(_f_, 0);
+                                  ? caml_trampoline_cps_call2(Stdlib[53], line, _d_)
+                                  : caml_exact_trampoline_call1(_d_, 0);
                          });
                }
-               return _f_(0);
+               return _d_(0);
               });
     }
     //end
     var loop1 = caml_cps_closure(loop1$0, loop1$1);
     //end
     function loop2$0(param){
-     var ic = caml_call1(Stdlib[79], cst_static_examples_ml$0);
-     caml_call1(Stdlib_Printf[3], _d_);
+     var ic = caml_call1(Stdlib[79], cst_static_examples_ml);
+     caml_call1(Stdlib_Printf[3], _b_);
      for(;;){var line = caml_call1(Stdlib[83], ic); caml_call1(Stdlib[53], line);}
     }
     //end
     function loop2$1(param, cont){
      return caml_trampoline_cps_call2
              (Stdlib[79],
-              cst_static_examples_ml$0,
+              cst_static_examples_ml,
               function(ic){
-               function _e_(_f_){
+               function _c_(_d_){
                 return caml_trampoline_cps_call2
                         (Stdlib[83],
                          ic,
                          function(line){
-                          return caml_trampoline_cps_call2(Stdlib[53], line, _e_);
+                          return caml_trampoline_cps_call2(Stdlib[53], line, _c_);
                          });
                }
-               return caml_trampoline_cps_call2(Stdlib_Printf[3], _d_, _e_);
+               return caml_trampoline_cps_call2(Stdlib_Printf[3], _b_, _c_);
               });
     }
     //end
     var loop2 = caml_cps_closure(loop2$0, loop2$1);
     //end
     function loop3$0(param){
-     var l = caml_call1(list_rev, _e_), x = l;
+     var l = caml_call1(list_rev, _c_), x = l;
      for(;;){if(! x) return l; var r = x[2]; x = r;}
     }
     //end
     function loop3$1(param, cont){
      return caml_trampoline_cps_call2
              (list_rev,
-              _e_,
+              _c_,
               function(l){
-               function _e_(x){
+               function _c_(x){
                 if(! x) return cont(l);
                 var r = x[2];
-                return caml_exact_trampoline_call1(_e_, r);
+                return caml_exact_trampoline_call1(_c_, r);
                }
-               return _e_(l);
+               return _c_(l);
               });
     }
     //end

@@ -151,7 +151,6 @@ let%expect_test "direct calls with --effects=double-translation" =
        var
         dummy = 0,
         _a_ = [0, [4, 0, 0, 0, 0], caml_string_of_jsbytes("%d")],
-        cst_a$0 = caml_string_of_jsbytes("a"),
         cst_a = caml_string_of_jsbytes("a"),
         Stdlib = caml_get_global("Stdlib"),
         Stdlib_Printf = caml_get_global("Stdlib__Printf"),
@@ -197,9 +196,9 @@ let%expect_test "direct calls with --effects=double-translation" =
        function _d_(){return function(x){};}
        function _e_(){
         return caml_cps_closure
-                (function(x){return caml_call2(Stdlib[28], x, cst_a$0);},
+                (function(x){return caml_call2(Stdlib[28], x, cst_a);},
                  function(x, cont){
-                  return caml_trampoline_cps_call3(Stdlib[28], x, cst_a$0, cont);
+                  return caml_trampoline_cps_call3(Stdlib[28], x, cst_a, cont);
                  });
        }
        function test2$0(param){

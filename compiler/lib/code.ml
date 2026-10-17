@@ -360,6 +360,34 @@ type constant =
 module Constant = struct
   type t = constant
 
+  let rec equal a b =
+    match a, b with
+    | String a, String b -> String.equal a b
+    | NativeString a, NativeString b -> Native_string.equal a b
+    | Float a, Float b | Float32 a, Float32 b | Int64 a, Int64 b -> Int64.equal a b
+    | Float_array a, Float_array b -> Array.equal Int64.equal a b
+    | Int a, Int b -> Targetint.equal a b
+    | Int32 a, Int32 b | NativeInt a, NativeInt b -> Int32.equal a b
+    | Tuple (ta, a, ka), Tuple (tb, b, kb) ->
+        ta = tb
+        && (match ka, kb with
+          | Array, Array | NotArray, NotArray | Unknown, Unknown -> true
+          | (Array | NotArray | Unknown), _ -> false)
+        && Array.equal equal a b
+    | Null_, Null_ -> true
+    | ( ( String _
+        | NativeString _
+        | Float _
+        | Float32 _
+        | Float_array _
+        | Int _
+        | Int32 _
+        | Int64 _
+        | NativeInt _
+        | Tuple _
+        | Null_ )
+      , _ ) -> false
+
   let rec ocaml_equal a b =
     match a, b with
     | String a, String b -> Some (String.equal a b)
