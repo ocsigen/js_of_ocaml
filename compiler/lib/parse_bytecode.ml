@@ -213,7 +213,16 @@ end = struct
     then Int.Hashtbl.add events_by_pc ev.ev_pos { event = ev; source = unit.source };
     ()
 
-  let read_event_list =
+  let crc_table crcs =
+    let t = String.Hashtbl.create 17 in
+    List.iter crcs ~f:(fun info ->
+        String.Hashtbl.add
+          t
+          (Ocaml_compiler.Import_info.name info)
+          (Ocaml_compiler.Import_info.crc info));
+    t
+
+  let read_events =
     let rewrite_path path =
       if Filename.is_relative path
       then path
@@ -224,24 +233,20 @@ end = struct
     in
     let read_paths ic : string list = List.map (input_value ic) ~f:rewrite_path in
     fun debug ~crcs ~includes ~orig ic ->
-      let crcs =
-        let t = String.Hashtbl.create 17 in
-        List.iter crcs ~f:(fun info ->
-            String.Hashtbl.add
-              t
-              (Ocaml_compiler.Import_info.name info)
-              (Ocaml_compiler.Import_info.crc info));
-        t
-      in
       let evl : debug_event list = input_value ic in
       let paths = read_paths ic @ includes in
       List.iter evl ~f:(read_event ~paths ~crcs ~orig debug)
 
+  let read_event_list debug ~crcs ~includes ~orig ic =
+    read_events debug ~crcs:(crc_table crcs) ~includes ~orig ic
+
   let read t ~crcs ~includes ic =
+    (* Built once: there is an event list per compilation unit *)
+    let crcs = crc_table crcs in
     let len = input_binary_int ic in
     for _i = 0 to len - 1 do
       let orig = input_binary_int ic in
-      read_event_list t ~crcs ~includes ~orig ic
+      read_events t ~crcs ~includes ~orig ic
     done
 
   let find { events_by_pc; _ } pc =
