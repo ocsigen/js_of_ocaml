@@ -98,19 +98,19 @@ let h x = not x
   print_fun_decl p (Some "h");
   [%expect
     {|
-           function f(mem, l, x){
-            if(! caml_call2(mem, x, l)) caml_call1(Stdlib[46], cst_absent);
-            return caml_call1(Stdlib[46], cst_done);
-           }
-           //end
-           function g(a, b){
-            if(a !== b) caml_call1(Stdlib[46], cst_different);
-            return caml_call1(Stdlib[46], cst_done$0);
-           }
-           //end
-           function h(x){return 1 - x;}
-           //end
-           |}]
+    function f(mem, l, x){
+     if(! caml_call2(mem, x, l)) caml_call1(Stdlib[46], cst_absent);
+     return caml_call1(Stdlib[46], cst_done);
+    }
+    //end
+    function g(a, b){
+     if(a !== b) caml_call1(Stdlib[46], cst_different);
+     return caml_call1(Stdlib[46], cst_done);
+    }
+    //end
+    function h(x){return 1 - x;}
+    //end
+    |}]
 
 (* Peephole simplifications on JavaScript code *)
 

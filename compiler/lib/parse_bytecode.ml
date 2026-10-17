@@ -617,6 +617,14 @@ let const i = Constant (Int (Targetint.of_int_exn i))
 
 (* Globals *)
 
+module Literals = Hashtbl.Make (struct
+  type t = Code.constant
+
+  let equal = Code.Constant.equal
+
+  let hash = Hashtbl.hash
+end)
+
 type globals =
   { mutable vars : Var.t option array
   ; mutable is_const : bool array
@@ -624,6 +632,7 @@ type globals =
   ; mutable named_value : Global_name.t option array
   ; mutable cache_ids : Var.t list
   ; constants : Code.constant array
+  ; literals : Var.t Literals.t  (** Variables bound to non-inlined constants *)
   ; primitives : string array
   }
 
@@ -634,6 +643,7 @@ let make_globals size constants primitives =
   ; named_value = Array.make size None
   ; cache_ids = []
   ; constants
+  ; literals = Literals.create 16
   ; primitives
   }
 
@@ -914,9 +924,19 @@ let register_global g i rem =
         Var.set_name var name;
         register_global_instrs var ~name:gn rem
 
+let is_literal g i = i < Array.length g.constants && not g.is_exported.(i)
+
+(* The compiler allocates a slot for each occurrence of a literal.
+   Literals are immutable, so slots holding identical ones can share
+   the same variable. *)
+let share_literal g i =
+  if Option.is_none g.vars.(i) && is_literal g i
+  then g.vars.(i) <- Literals.find_opt g.literals g.constants.(i)
+
 let get_global state instrs i =
   State.size_globals state (i + 1);
   let g = State.globals state in
+  share_literal g i;
   match g.vars.(i) with
   | Some x ->
       (* Registered global *)
@@ -940,6 +960,7 @@ let get_global state instrs i =
             let x, state = State.fresh_var state in
             if debug_parser () then Format.printf "%a = CONST(%d)@." Var.print x i;
             g.vars.(i) <- Some x;
+            if is_literal g i then Literals.add g.literals g.constants.(i) x;
             (match g.named_value.(i) with
             | None | Some (Glob_predef _) -> ()
             | Some (Glob_compunit (Compunit name)) -> (

@@ -354,28 +354,31 @@ let%expect_test "string sharing" =
         str_abc_def = "abc\\def",
         str_npi = "npiπ",
         str_abcdef = "abcdef",
-        str_npi_xcf_x80 = "npi\xcf\x80";
+        str_npi_xcf_x80 = "npi\xcf\x80",
+        s3 = str_abcdef,
+        s6 = str_npi_xcf_x80,
+        s9 = str_abc_def;
        runtime.caml_register_global
         ([0,
           [0],
           str_abcdef,
           str_abcdef,
-          str_abcdef,
+          s3,
           str_npi,
           str_npi_xcf_x80,
-          str_npi_xcf_x80,
+          s6,
           str_abc_def,
           str_abc_def,
-          str_abc_def,
+          s9,
           str_abcdef,
           str_abcdef,
-          str_abcdef,
+          s3,
           str_npi,
           str_npi_xcf_x80,
-          str_npi_xcf_x80,
+          s6,
           str_abc_def,
           str_abc_def,
-          str_abc_def],
+          s9],
          "Test");
        return;
       }
@@ -392,28 +395,31 @@ let%expect_test "string sharing" =
         cst_npi = "npi\xcf\x80",
         cst_abc_def = "abc\\def",
         cst_abcdef = "abcdef",
-        cst_npi$0 = "npiπ";
+        cst_npi$0 = "npiπ",
+        s3 = cst_abcdef,
+        s6 = cst_npi,
+        s9 = cst_abc_def;
        runtime.caml_register_global
         ([0,
           [0],
           cst_abcdef,
           cst_abcdef,
-          cst_abcdef,
+          s3,
           cst_npi$0,
           cst_npi,
-          cst_npi,
+          s6,
           cst_abc_def,
           cst_abc_def,
-          cst_abc_def,
+          s9,
           cst_abcdef,
           cst_abcdef,
-          cst_abcdef,
+          s3,
           cst_npi$0,
           cst_npi,
-          cst_npi,
+          s6,
           cst_abc_def,
           cst_abc_def,
-          cst_abc_def],
+          s9],
          "Test");
        return;
       }
@@ -434,9 +440,6 @@ let%expect_test "string sharing" =
         s6 = caml_string_of_jsbytes(str_npi_xcf_x80),
         str_abc_def = "abc\\def",
         s9 = caml_string_of_jsbytes(str_abc_def),
-        s3_bis = caml_string_of_jsbytes(str_abcdef),
-        s6_bis = caml_string_of_jsbytes(str_npi_xcf_x80),
-        s9_bis = caml_string_of_jsbytes(str_abc_def),
         str_npi = "npiπ";
        runtime.caml_register_global
         ([0,
@@ -452,13 +455,13 @@ let%expect_test "string sharing" =
           s9,
           str_abcdef,
           str_abcdef,
-          s3_bis,
+          s3,
           str_npi,
           str_npi_xcf_x80,
-          s6_bis,
+          s6,
           str_abc_def,
           str_abc_def,
-          s9_bis],
+          s9],
          "Test");
        return;
       }
@@ -475,10 +478,7 @@ let%expect_test "string sharing" =
         caml_string_of_jsbytes = runtime.caml_string_of_jsbytes,
         s3 = caml_string_of_jsbytes("abcdef"),
         s6 = caml_string_of_jsbytes("npi\xcf\x80"),
-        s9 = caml_string_of_jsbytes("abc\\def"),
-        s3_bis = caml_string_of_jsbytes("abcdef"),
-        s6_bis = caml_string_of_jsbytes("npi\xcf\x80"),
-        s9_bis = caml_string_of_jsbytes("abc\\def");
+        s9 = caml_string_of_jsbytes("abc\\def");
        runtime.caml_register_global
         ([0,
           [0],
@@ -493,13 +493,13 @@ let%expect_test "string sharing" =
           s9,
           "abcdef",
           "abcdef",
-          s3_bis,
+          s3,
           "npiπ",
           "npi\xcf\x80",
-          s6_bis,
+          s6,
           "abc\\def",
           "abc\\def",
-          s9_bis],
+          s9],
          "Test");
        return;
       }
