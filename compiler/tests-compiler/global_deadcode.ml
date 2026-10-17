@@ -44,30 +44,30 @@ let%expect_test "Eliminates unused functions from functor" =
     function create(l, v, r){
      if(l) var h = l[4], hl = h; else hl = 0;
      if(r) var h$0 = r[4], hr = h$0; else hr = 0;
-     var _f_ = hr <= hl ? hl + 1 | 0 : hr + 1 | 0;
-     return [0, l, v, r, _f_];
+     var _c_ = hr <= hl ? hl + 1 | 0 : hr + 1 | 0;
+     return [0, l, v, r, _c_];
     }
     function bal(l, v, r){
      if(l) var h = l[4], hl = h; else hl = 0;
      if(r) var h$0 = r[4], hr = h$0; else hr = 0;
      if((hr + 2 | 0) < hl){
-      if(! l) return invalid_arg(_c_);
-      var lr = l[3], lv = l[2], ll = l[1], _f_ = height(lr);
-      if(_f_ <= height(ll)) return create(ll, lv, create(lr, v, r));
-      if(! lr) return invalid_arg(_b_);
-      var lrr = lr[3], lrv = lr[2], lrl = lr[1], _f_ = create(lrr, v, r);
-      return create(create(ll, lv, lrl), lrv, _f_);
+      if(! l) return invalid_arg(_a_);
+      var lr = l[3], lv = l[2], ll = l[1], _c_ = height(lr);
+      if(_c_ <= height(ll)) return create(ll, lv, create(lr, v, r));
+      if(! lr) return invalid_arg(_a_);
+      var lrr = lr[3], lrv = lr[2], lrl = lr[1], _c_ = create(lrr, v, r);
+      return create(create(ll, lv, lrl), lrv, _c_);
      }
      if((hl + 2 | 0) >= hr){
-      _f_ = hr <= hl ? hl + 1 | 0 : hr + 1 | 0;
-      return [0, l, v, r, _f_];
+      _c_ = hr <= hl ? hl + 1 | 0 : hr + 1 | 0;
+      return [0, l, v, r, _c_];
      }
-     if(! r) return invalid_arg(_e_);
-     var rr = r[3], rv = r[2], rl = r[1], _f_ = height(rl);
-     if(_f_ <= height(rr)) return create(create(l, v, rl), rv, rr);
-     if(! rl) return invalid_arg(_d_);
-     var rlr = rl[3], rlv = rl[2], rll = rl[1], _f_ = create(rlr, rv, rr);
-     return create(create(l, v, rll), rlv, _f_);
+     if(! r) return invalid_arg(_a_);
+     var rr = r[3], rv = r[2], rl = r[1], _c_ = height(rl);
+     if(_c_ <= height(rr)) return create(create(l, v, rl), rv, rr);
+     if(! rl) return invalid_arg(_a_);
+     var rlr = rl[3], rlv = rl[2], rll = rl[1], _c_ = create(rlr, rv, rr);
+     return create(create(l, v, rll), rlv, _c_);
     }
     function add(x, t){
      if(! t) return [0, 0, x, 0, 1];
@@ -78,12 +78,12 @@ let%expect_test "Eliminates unused functions from functor" =
      return l === ll ? t : bal(ll, v, r);
     }
     function singleton(x){return [0, 0, x, 0, 1];}
-    function find(x, _e_){
+    function find(x, _c_){
      for(;;){
-      if(! _e_) throw caml_maybe_attach_backtrace(Not_found, 1);
-      var r = _e_[3], v = _e_[2], l = _e_[1], c = caml_call2(Ord[1], x, v);
+      if(! _c_) throw caml_maybe_attach_backtrace(Not_found, 1);
+      var r = _c_[3], v = _c_[2], l = _c_[1], c = caml_call2(Ord[1], x, v);
       if(0 === c) return v;
-      _e_ = 0 <= c ? r : l;
+      _c_ = 0 <= c ? r : l;
      }
     }
     return [0, 0, add, singleton, find];

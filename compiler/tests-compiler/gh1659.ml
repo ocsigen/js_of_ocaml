@@ -35,7 +35,7 @@ let () = Printf.printf "nan = nan => %B\n" (equals nan1 nan2);;
   [%expect
     {|
     x = (0., 0.); x = x => true
-    (0., 0.) = (0., 0.) => false
+    (0., 0.) = (0., 0.) => true
     0. = -0. => true
     nan = nan => false
     |}]
@@ -56,7 +56,7 @@ let () = Printf.printf "nan = nan => %B\n" (equals nan1 nan2);;
   [%expect
     {|
     x = (0., 0.); x = x => true
-    (0., 0.) = (0., 0.) => false
+    (0., 0.) = (0., 0.) => true
     0. = -0. => true
     nan = nan => false
     |}]

@@ -39,6 +39,10 @@
   constant (#2531)
 * Compiler: inline pending expressions at the end of a `try` body, avoiding
   temporaries such as `try{var c = f(x); return c;}` (#2532)
+* Compiler: bind identical literals of a bytecode program to a single
+  variable, which shrinks the generated code and speeds up compilation of
+  programs with many duplicated constants; identical literals may now be
+  physically equal (`==`) (#2547)
 
 ### Effects
 * Compiler: with `--effects={cps,double-translation}`, specialize calls to
