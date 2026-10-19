@@ -48,8 +48,10 @@
 * Compiler: test integers against 0 by truthiness (`!x` rather than
   `0 === x`) when the result is only used as a condition (#2538)
 * Compiler: simplify `!c ? a : b` into `c ? b : a` (#2538)
+* Compiler: compare integers directly rather than comparing the result
+  of `compare` with 0 (#2529)
 * Compiler: faster reading of debug events, used with `--pretty` and
-  `--debug-info` (#2548)
+  `--debug-info` (#2541, #2548)
 
 ### Effects
 * Compiler: with `--effects={cps,double-translation}`, specialize calls to
@@ -66,7 +68,8 @@
   compilation, per compilation unit otherwise) (#2436)
 * Compiler/Wasm: small code generation improvements (negation, physical
   equality on JavaScript values, bigarray dimensions, result types of
-  runtime primitives) (#2472, #2475)
+  runtime primitives, masking of i31 values, range checks in the runtime)
+  (#2472, #2475, #2529)
 * Compiler/Wasm: add `--setenv`, matching js_of_ocaml (#2415)
 * Compiler/Wasm: emit a sourcemap mapping at the start of each function, for
   the Chrome profiler (#2417)
