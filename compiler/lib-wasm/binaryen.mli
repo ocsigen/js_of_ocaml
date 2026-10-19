@@ -22,25 +22,15 @@ type link_input =
   ; source_map_file : string option
   }
 
-val link :
-     ?options:string list
-  -> inputs:link_input list
-  -> opt_output_sourcemap:string option
-  -> output_file:string
-  -> unit
-  -> unit
-
-val dead_code_elimination :
-     dependencies:string
-  -> opt_input_sourcemap:string option
-  -> input_file:string
-  -> opt_output_sourcemap:string option
-  -> output_file:string
-  -> Stdlib.StringSet.t
+val optimizes : Profile.t -> bool
+(** Whether wasm-opt optimizes the generated code at this optimization
+    level. When it does not, our own passes tighten the code instead;
+    those which only redo what wasm-opt does are skipped when it does. *)
 
 val optimize :
      profile:Profile.t
   -> ?options:string list
+  -> ?reorder_functions:bool
   -> opt_input_sourcemap:string option
   -> input_file:string
   -> opt_output_sourcemap:string option

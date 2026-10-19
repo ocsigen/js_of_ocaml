@@ -67,6 +67,18 @@
   searches and `output_value` sharing detection (with WASI, `output_value`
   now shares boxed numbers with equal contents); single bound check in
   fixed-width `Bytes` accesses (#2470, #2505)
+* Compiler/Wasm: link with our own linker, which also removes dead code,
+  instead of wasm-merge and wasm-metadce: faster compilation (#2506)
+* Compiler/Wasm: skip wasm-opt at --opt 1 (#2238)
+* Compiler/Wasm: track whether a value is a float array or a block array, to
+  specialize generic array accesses and `Array.length` (#2485)
+* Compiler/Wasm: give values known to be blocks a Wasm block type when they
+  are used as blocks, so that they are cast once where they are defined (#2485)
+* Compiler/Wasm: give boxed numbers the type of their box when no cast is
+  needed, and initialize such locals with a placeholder rather than making
+  them nullable (#2485)
+* Compiler/Wasm: likewise give values known to be bigarrays a Wasm bigarray
+  type, so that loops do not cast them at each access (#2485)
 
 ### Libraries
 * Lib: add `WebGL2` bindings; the `webgl` example uses WebGL2 and a new

@@ -61,6 +61,18 @@ type context =
   ; value_type : W.value_type
   ; mutable unit_name : string option
   ; mutable no_tail_call : unit Var.Hashtbl.t
+  ; mutable wasm_opt : bool
+        (** Whether wasm-opt will optimize the generated code (see
+            [Binaryen.optimizes]): the optimizations which only redo
+            what it does are then skipped *)
+  ; functions_without_env : unit Var.Hashtbl.t
+        (** Functions which take no environment parameter: their closure
+            is a constant, and they are only called directly *)
+  ; env_param_types : W.ref_type Var.Hashtbl.t
+        (** The precise type of the environment parameter of the
+            functions only called directly: their callers cast the
+            environment argument to it *)
+  ; local_defaults : W.expression Var.Hashtbl.t
   }
 
 let make_context ~value_type =
@@ -86,6 +98,10 @@ let make_context ~value_type =
   ; value_type
   ; unit_name = None
   ; no_tail_call = Var.Hashtbl.create 16
+  ; wasm_opt = false
+  ; functions_without_env = Var.Hashtbl.create 128
+  ; env_param_types = Var.Hashtbl.create 128
+  ; local_defaults = Var.Hashtbl.create 8
   }
 
 type var =
@@ -222,6 +238,19 @@ let register_global name ?exported_name ?(constant = false) typ init st =
 let global_is_registered name =
   let* ctx = get_context in
   return (Var.Map.mem name ctx.constant_globals)
+
+let is_heap_subtype context ty ty' =
+  fst (heap_type_sub ty ty' { var_count = 0; vars = Var.Map.empty; instrs = []; context })
+
+let global_type context name =
+  Option.map
+    ~f:(fun (g : constant_global) -> g.typ)
+    (Var.Map.find_opt name context.constant_globals)
+
+let is_constant_global context name =
+  match Var.Map.find_opt name context.constant_globals with
+  | Some { constant = true; _ } -> true
+  | _ -> false
 
 let global_is_constant name =
   let* ctx = get_context in
@@ -627,20 +656,29 @@ let placeholder_value typ f =
 
 let array_placeholder typ = placeholder_value typ (fun typ -> ArrayNewFixed (typ, []))
 
+let local_placeholder typ f =
+  let* e = placeholder_value typ f in
+  fun st ->
+    Var.Hashtbl.replace st.context.local_defaults typ e;
+    (), st
+
 let default_value val_typ st =
   match val_typ with
   | W.Ref { typ = I31 | Eq | Any; _ } -> (W.RefI31 (Const (I32 0l)), val_typ, None), st
   | W.Ref { typ = Type typ; nullable = false } -> (
-      match (Var.Hashtbl.find st.context.types typ).typ with
-      | Array _ ->
-          (let* placeholder = array_placeholder typ in
-           return (placeholder, val_typ, None))
-            st
-      | Struct _ | Func _ ->
-          ( ( W.RefNull (Type typ)
-            , W.Ref { typ = Type typ; nullable = true }
-            , Some { W.typ = Type typ; nullable = false } )
-          , st ))
+      match Var.Hashtbl.find_opt st.context.local_defaults typ with
+      | Some e -> (e, val_typ, None), st
+      | None -> (
+          match (Var.Hashtbl.find st.context.types typ).typ with
+          | Array _ ->
+              (let* placeholder = array_placeholder typ in
+               return (placeholder, val_typ, None))
+                st
+          | Struct _ | Func _ ->
+              ( ( W.RefNull (Type typ)
+                , W.Ref { typ = Type typ; nullable = true }
+                , Some { W.typ = Type typ; nullable = false } )
+              , st )))
   | I32 -> (Const (I32 0l), val_typ, None), st
   | F32 -> (Const (F32 0.), val_typ, None), st
   | I64 -> (Const (I64 0L), val_typ, None), st

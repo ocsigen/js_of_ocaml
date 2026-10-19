@@ -1,0 +1,8 @@
+(library
+ (name test_wasm_link)
+ (modules test_wasm_link)
+ (inline_tests)
+ (enabled_if %{lib-available:wasm_of_ocaml-compiler})
+ (preprocess
+  (pps ppx_expect_light))
+ (libraries js_of_ocaml-compiler wasm_of_ocaml-compiler))

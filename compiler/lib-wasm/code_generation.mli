@@ -45,6 +45,21 @@ type context =
   ; value_type : Wasm_ast.value_type
   ; mutable unit_name : string option
   ; mutable no_tail_call : unit Code.Var.Hashtbl.t
+  ; mutable wasm_opt : bool
+        (** Whether wasm-opt will optimize the generated code (see
+            [Binaryen.optimizes]): the optimizations which only redo
+            what it does are then skipped *)
+  ; functions_without_env : unit Code.Var.Hashtbl.t
+        (** Functions which take no environment parameter: their closure
+            is a constant, and they are only called directly *)
+  ; env_param_types : Wasm_ast.ref_type Code.Var.Hashtbl.t
+        (** The precise type of the environment parameter of the
+            functions only called directly: their callers cast the
+            environment argument to it *)
+  ; local_defaults : Wasm_ast.expression Code.Var.Hashtbl.t
+        (** Values used to initialize the locals and the globalized
+            variables of a given type when they may not be initialized
+            before use, rather than making them nullable *)
   }
 
 val make_context : value_type:Wasm_ast.value_type -> context
@@ -140,6 +155,11 @@ val define_var : Wasm_ast.var -> expression -> unit t
 
 val is_small_constant : Wasm_ast.expression -> bool t
 
+val is_constant_expression : Wasm_ast.expression -> bool t
+(** Whether the expression can be used in a global initializer. Unlike
+    [is_small_constant], this excludes mutable globals that are only
+    written once. *)
+
 val event : Parse_info.t -> unit t
 
 val no_event : unit t
@@ -172,6 +192,14 @@ val register_global :
   -> unit t
 
 val get_global : Code.Var.t -> Wasm_ast.expression option t
+
+val is_heap_subtype : context -> Wasm_ast.heap_type -> Wasm_ast.heap_type -> bool
+
+val global_type : context -> Code.Var.t -> Wasm_ast.value_type option
+(** The type of a global defined by the module *)
+
+val is_constant_global : context -> Code.Var.t -> bool
+(** Whether a global of the module is never modified once initialized *)
 
 val register_data_segment : Code.Var.t -> string -> unit t
 
@@ -207,7 +235,13 @@ val function_body :
 
 val variable_type : Code.Var.t -> Wasm_ast.value_type option t
 
+val expression_type : Wasm_ast.expression -> Wasm_ast.value_type option t
+
 val array_placeholder : Code.Var.t -> expression
+
+val local_placeholder : Code.Var.t -> (Code.Var.t -> Wasm_ast.expression) -> unit t
+(** Register a constant of the given type, built by the function the
+    first time, to initialize the locals of this type *)
 
 val default_value :
      Wasm_ast.value_type
