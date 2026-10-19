@@ -18,12 +18,16 @@
 (module
    (import "fail" "caml_invalid_argument" (func $caml_invalid_argument (param (ref eq))))
    (import "obj" "null" (global $null_value (ref eq)))
-   (import "bigarray" "caml_ba_get_1"
-      (func $caml_ba_get_1
-         (param (ref eq)) (param (ref eq)) (result (ref eq))))
-   (import "bigarray" "caml_ba_set_1"
-      (func $caml_ba_set_1
-         (param (ref eq)) (param (ref eq)) (param (ref eq)) (result (ref eq))))
+   (import "bigarray" "caml_ba_uint8_geti8"
+      (func $caml_ba_uint8_geti8 (param (ref eq)) (param i32) (result i32)))
+   (import "string" "caml_bytes_geti8"
+      (func $caml_bytes_geti8 (param (ref eq)) (param i32) (result i32)))
+   (import "bigarray" "caml_ba_uint8_set8"
+      (func $caml_ba_uint8_set8
+         (param (ref eq)) (param i32) (param i32) (result (ref eq))))
+   (import "string" "caml_bytes_set8"
+      (func $caml_bytes_set8
+         (param (ref eq)) (param i32) (param i32) (result (ref eq))))
 
    (type $block (array (mut (ref eq))))
    (type $string (array (mut i8)))
@@ -51,26 +55,24 @@
    (func $string_like_get
       (param $kind i32) (param $base (ref eq)) (param $idx_block (ref $block))
       (result (ref eq))
-      (local $offset (ref eq))
-      (local.set $offset
-         (array.get $block (local.get $idx_block) (i32.const 1)))
+      (local $i i32)
+      (local.set $i
+         ;; Offset field of a runtime-built string-like index; always an
+         ;; [i31].
+         (i31.get_s
+            (ref.cast (ref i31)
+               (array.get $block (local.get $idx_block) (i32.const 1)))))
       (if (i32.eq (local.get $kind) (i32.const 4))
          (then
-            (return_call $caml_ba_get_1
-               (local.get $base) (local.get $offset))))
-      ;; Strings and bytes have the same representation. Unlike in the JS
-      ;; runtime, we cannot dispatch to [caml_string_unsafe_get] or
-      ;; [caml_bytes_unsafe_get] here: on WASM those primitives are inlined
-      ;; by the compiler (see [generate.ml]) rather than defined as runtime
-      ;; functions, so we inline the same [array.get_u] they compile to. (The
-      ;; runtime's [caml_bytes_geti8] is not suitable: it sign-extends and
-      ;; bounds-checks.)
+            (return
+               (ref.i31
+                  (call $caml_ba_uint8_geti8
+                     (local.get $base) (local.get $i))))))
+      ;; Strings and bytes have the same representation, so
+      ;; [caml_bytes_geti8] (also exported as [caml_string_geti8]) handles
+      ;; both. Like [caml_ba_uint8_geti8], it bounds-checks.
       (ref.i31
-         (array.get_u $string
-            (ref.cast (ref $string) (local.get $base))
-            ;; Offset field of a runtime-built string-like index; always an
-            ;; [i31].
-            (i31.get_s (ref.cast (ref i31) (local.get $offset))))))
+         (call $caml_bytes_geti8 (local.get $base) (local.get $i))))
 
    ;; caml_get_idx_bytecode : base -> idx -> result
    ;; idx is a block (tag 0) of integer field positions.
@@ -145,22 +147,24 @@
       (param $kind i32) (param $base (ref eq)) (param $idx_block (ref $block))
       (param $v (ref eq))
       (result (ref eq))
-      (local $offset (ref eq))
-      (local.set $offset
-         (array.get $block (local.get $idx_block) (i32.const 1)))
+      (local $i i32)
+      (local $b i32)
+      ;; The offset field of a runtime-built string-like index is always an
+      ;; [i31], and [$v] is a [bits8] value, so it is an [i31] too.
+      (local.set $i
+         (i31.get_s
+            (ref.cast (ref i31)
+               (array.get $block (local.get $idx_block) (i32.const 1)))))
+      (local.set $b (i31.get_s (ref.cast (ref i31) (local.get $v))))
       (if (i32.eq (local.get $kind) (i32.const 4))
          (then
-            (return_call $caml_ba_set_1
-               (local.get $base) (local.get $offset) (local.get $v))))
-      ;; [caml_bytes_unsafe_set] is compiler-inlined on WASM (see the note in
-      ;; [string_like_get] above), so we inline the same [array.set].
-      (array.set $string
-         (ref.cast (ref $string) (local.get $base))
-         ;; The offset field of a runtime-built string-like index is always an
-         ;; [i31], and [$v] is a byte, so it always fits in an [i31].
-         (i31.get_s (ref.cast (ref i31) (local.get $offset)))
-         (i31.get_s (ref.cast (ref i31) (local.get $v))))
-      (ref.i31 (i32.const 0)))
+            (return_call $caml_ba_uint8_set8
+               (local.get $base) (local.get $i) (local.get $b))))
+      ;; Strings and bytes have the same representation. Like
+      ;; [caml_ba_uint8_set8], [caml_bytes_set8] bounds-checks and keeps only
+      ;; the low byte.
+      (return_call $caml_bytes_set8
+         (local.get $base) (local.get $i) (local.get $b)))
 
    ;; caml_set_idx_bytecode : base -> idx -> value -> unit
    ;; idx is a block (tag 0) of integer field positions.

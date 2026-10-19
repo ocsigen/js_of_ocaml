@@ -44,7 +44,7 @@
 
 //Provides: caml_get_idx_bytecode mutable (mutable, const)
 //Requires: caml_invalid_argument
-//Requires: caml_string_unsafe_get, caml_bytes_unsafe_get, caml_ba_get_1
+//Requires: caml_string_geti8, caml_bytes_geti8, caml_ba_uint8_geti8
 //Version: >= 5.2
 //If: oxcaml
 function caml_get_idx_bytecode(base, idx) {
@@ -59,12 +59,17 @@ function caml_get_idx_bytecode(base, idx) {
     }
     // The tag of a string-like index tells us how to index into the base
     // value (see the note on block indices above).
+
+    // These are bounds checked and sign extended. We could add
+    // [caml_string_geti8u]-like primitives (which already exist for the
+    // wider reads).
+
     case 2:
-      return caml_string_unsafe_get(base, idx[1]);
+      return caml_string_geti8(base, idx[1]);
     case 3:
-      return caml_bytes_unsafe_get(base, idx[1]);
+      return caml_bytes_geti8(base, idx[1]);
     case 4:
-      return caml_ba_get_1(base, idx[1]);
+      return caml_ba_uint8_geti8(base, idx[1]);
     default:
       caml_invalid_argument(
         "caml_get_idx_bytecode: attempted to read from an invalid index",
@@ -74,7 +79,7 @@ function caml_get_idx_bytecode(base, idx) {
 
 //Provides: caml_set_idx_bytecode (mutable, const, mutable)
 //Requires: caml_invalid_argument
-//Requires: caml_bytes_unsafe_set, caml_ba_set_1
+//Requires: caml_bytes_set8, caml_ba_uint8_set8
 //Version: >= 5.2
 //If: oxcaml
 function caml_set_idx_bytecode(base, idx, v) {
@@ -91,11 +96,16 @@ function caml_set_idx_bytecode(base, idx, v) {
     // The tag of a string-like index tells us how to index into the base
     // value (see the note on block indices above). Note that writing through
     // a tag-2 (string) index is invalid: strings are immutable.
+
+    // These are bounds checked. We could add a [caml_ba_uint8_set8u]-like
+    // primitive (which already exists for the wider writes). We don't use
+    // [caml_bytes_unsafe_set] for consistency.
+
     case 3:
-      caml_bytes_unsafe_set(base, idx[1], v);
+      caml_bytes_set8(base, idx[1], v);
       return 0;
     case 4:
-      caml_ba_set_1(base, idx[1], v);
+      caml_ba_uint8_set8(base, idx[1], v);
       return 0;
     default:
       caml_invalid_argument(

@@ -17,3 +17,8 @@
  (build_if %{oxcaml_supported})
  (libraries stdlib_stable stdlib_upstream_compatible)
  (modes js wasm))
+
+(tests
+ (names stringlike)
+ (build_if %{oxcaml_supported})
+ (modes js wasm))
