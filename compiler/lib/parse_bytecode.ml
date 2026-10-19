@@ -163,13 +163,15 @@ end = struct
   let create ~include_cmis enabled =
     let names = enabled || Config.Flag.pretty () in
     let unyielding_info =
-      (* This information allows emitting direct-style calls in CPS context, so
-         it is only of use when double translation is enabled. *)
+      (* This information allows emitting direct-style calls in CPS context
+         (double translation), or keeping functions in direct style by
+         running their CPS callees to completion (CPS translation), so it is
+         only of use when the program is CPS-translated. *)
       Config.Flag.oxcaml_use_unyielding_debuginfo_for_effect_cps ()
       &&
       match Config.effects () with
-      | `Double_translation -> true
-      | `Disabled | `Cps | `Jspi | `Native -> false
+      | `Double_translation | `Cps -> true
+      | `Disabled | `Jspi | `Native -> false
     in
     { events_by_pc = Int.Hashtbl.create 17
     ; units = UnitTable.create 17
