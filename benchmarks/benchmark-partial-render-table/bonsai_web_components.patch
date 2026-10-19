@@ -1,0 +1,15 @@
+diff --git a/partial_render_table/bench/bin/dune b/partial_render_table/bench/bin/dune
+index 86b85f9..04ee5e7 100644
+--- a/partial_render_table/bench/bin/dune
++++ b/partial_render_table/bench/bin/dune
+@@ -1,5 +1,9 @@
+ (executables
+- (modes byte exe)
++ (modes byte exe js wasm)
++ (js_of_ocaml
++  (flags :standard --opt 2 --pretty --disable use-js-string))
++ (wasm_of_ocaml
++  (flags :standard --opt 2 --pretty))
+  (names main)
+  (libraries bonsai_bench bonsai_web
+    bonsai_web_partial_render_table_configs_for_testing core core_bench.js
