@@ -28,6 +28,11 @@ let forked_packages =
   ; "virtual_dom"
   ]
 
+let fixed_packages = [ "bonsai_web"; "bonsai_web_components"; "virtual_dom" ]
+
+(* The forked packages enable their inline tests themselves *)
+let inline_tests = []
+
 (* Extra line spliced in the (env (_ ...)) block of the generated
    dune-workspace *)
 let dune_workspace_extra_env = {|  (ocamlopt_flags -zero-alloc-check none)

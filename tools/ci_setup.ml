@@ -14,6 +14,8 @@ module type CONFIG = sig
 
   val forked_packages : string list
 
+  val fixed_packages : string list
+
   val dune_workspace_extra_env : string
 
   val keep_package : OpamFile.OPAM.t -> bool
@@ -27,6 +29,11 @@ module type CONFIG = sig
   val default_branch : string option
 
   val patches : target_is_wasm:bool -> (string * string) list
+
+  (* Libraries whose inline tests are run, as (package, dune file, extra
+     fields of the [inline_tests] field). The field is added to the first
+     library of the dune file. *)
+  val inline_tests : (string * string * string) list
 end
 
 module Config =
@@ -64,8 +71,7 @@ let do_pin = StringSet.of_list Config.do_pin
 
 let forked_packages = StringSet.of_list Config.forked_packages
 
-let fixed_packages =
-  StringSet.of_list [ "bonsai_web"; "bonsai_web_components"; "virtual_dom" ]
+let fixed_packages = StringSet.of_list Config.fixed_packages
 
 let dune_workspace =
   {|(lang dune 3.17)
@@ -237,37 +243,47 @@ let () =
   install_others others;
   sync_exec (fun () -> clone "ocaml-uri" "https://github.com/mirage/ocaml-uri") [ () ];
   sync_exec (fun () -> exec_async "opam install uri --deps-only") [ () ];
-  sync_exec
-    (fun nm ->
-      let branch =
-        if is_fixed nm
-        then Some Config.fixed_branch
-        else if is_forked nm
-        then Some Config.forked_branch
-        else Config.default_branch
-      in
-      let commit =
-        if is_fixed nm || is_forked nm
-        then None
-        else
+  (* The directory where each package is cloned, and how; several packages
+     can share a repository *)
+  let source nm =
+    if is_fixed nm || is_forked nm
+    then
+      ( nm
+      , fun () ->
+          clone
+            ~branch:(if is_fixed nm then Config.fixed_branch else Config.forked_branch)
+            nm
+            (Printf.sprintf "https://github.com/ocaml-wasm/%s" nm) )
+    else
+      let _, opam = List.assoc nm packages in
+      let url = Option.get (OpamFile.OPAM.get_url opam) in
+      match url with
+      | { OpamUrl.backend = `git; hash = Some ref; transport; path } ->
+          (* git+https://github.com/<org>/<repository>.git#<ref> *)
+          let dir = Filename.remove_extension (Filename.basename path) in
+          ( dir
+          , fun () ->
+              Format.eprintf "Cloning %s#%s@." dir ref;
+              clone ~branch:ref dir (Printf.sprintf "%s://%s" transport path) )
+      | _ ->
+          (* An archive named after the commit *)
           let commit =
-            let _, opam = List.assoc nm packages in
-            let url = OpamUrl.to_string (Option.get (OpamFile.OPAM.get_url opam)) in
-            let tar_file = Filename.basename url in
+            let tar_file = Filename.basename (OpamUrl.to_string url) in
             String.sub tar_file 0 (String.index tar_file '.')
           in
-          Format.eprintf "Cloning %s#%s@." nm commit;
-          Some commit
-      in
-      clone'
-        ?branch
-        ?commit
-        nm
-        (Printf.sprintf
-           "https://github.com/%s/%s"
-           (if is_fixed nm || is_forked nm then "ocaml-wasm" else "janestreet")
-           nm))
-    (StringSet.elements (StringSet.diff js omitted_js))
+          ( nm
+          , fun () ->
+              Format.eprintf "Cloning %s#%s@." nm commit;
+              clone'
+                ?branch:Config.default_branch
+                ~commit
+                nm
+                (Printf.sprintf "https://github.com/janestreet/%s" nm) )
+  in
+  StringSet.elements (StringSet.diff js omitted_js)
+  |> List.map source
+  |> List.sort_uniq (fun (dir, _) (dir', _) -> String.compare dir dir')
+  |> sync_exec (fun (_, clone) -> clone ())
 
 let () =
   List.iter
@@ -295,6 +311,29 @@ let () =
           failwith (Printf.sprintf "%s %d while patching %s" name i dir))
     patches;
   List.iter (fun p -> Sys.remove (Printf.sprintf "%s/lib/%s" jane_root p)) removes
+
+(* Enable the inline tests of the libraries listed in the configuration *)
+let () =
+  let library = Re.(compile (str "(library")) in
+  List.iter
+    (fun (pkg, file, extra) ->
+      let f = Printf.sprintf "%s/lib/%s/%s" jane_root pkg file in
+      let contents = In_channel.(with_open_bin f @@ input_all) in
+      match Re.exec_opt library contents with
+      | None -> failwith (Printf.sprintf "No library in %s" f)
+      | Some g ->
+          let i = Re.Group.stop g 0 in
+          Out_channel.with_open_bin f
+          @@ fun ch ->
+          output_string ch (String.sub contents 0 i);
+          Printf.fprintf
+            ch
+            "\n\
+            \ (inline_tests (flags -drop-tag no-js -drop-tag 64-bits-only -drop-tag \
+             no-wasm) (modes js wasm)%s)"
+            extra;
+          output_string ch (String.sub contents i (String.length contents - i)))
+    Config.inline_tests
 
 (****)
 
