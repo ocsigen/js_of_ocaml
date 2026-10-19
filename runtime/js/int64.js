@@ -339,6 +339,24 @@ function caml_int64_mod(x, y) {
   return x.mod(y);
 }
 
+//Provides: caml_int64_unsigned_div
+//Requires: caml_raise_zero_divide
+//Version: >= 5.2
+//If: oxcaml
+function caml_int64_unsigned_div(x, y) {
+  if (y.isZero()) caml_raise_zero_divide();
+  return x.udivmod(y).quotient;
+}
+
+//Provides: caml_int64_unsigned_mod
+//Requires: caml_raise_zero_divide
+//Version: >= 5.2
+//If: oxcaml
+function caml_int64_unsigned_mod(x, y) {
+  if (y.isZero()) caml_raise_zero_divide();
+  return x.udivmod(y).modulus;
+}
+
 //Provides: caml_int64_of_int32 const
 //Requires: MlInt64
 //Alias: caml_int64_of_int

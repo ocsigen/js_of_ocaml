@@ -109,6 +109,20 @@ function caml_memprof_participate(_config) {
   return 0;
 }
 
+//Provides: caml_memprof_enlist
+//Version: >= 5.4
+//If: oxcaml
+function caml_memprof_enlist(_t) {
+  return 0;
+}
+
+//Provides: caml_memprof_enlist_all_domains
+//Version: >= 5.4
+//If: oxcaml
+function caml_memprof_enlist_all_domains(_t) {
+  return 0;
+}
+
 //Provides: caml_eventlog_resume
 //Version: <= 5.2
 //(actually < 5.0, but OxCaml still references it)
@@ -119,6 +133,20 @@ function caml_eventlog_resume(_unit) {
 //Provides: caml_eventlog_pause
 //Version: <= 5.2
 //(actually < 5.0, but OxCaml still references it)
+function caml_eventlog_pause(_unit) {
+  return 0;
+}
+
+//Provides: caml_eventlog_resume
+//Version: > 5.2
+//If: oxcaml
+function caml_eventlog_resume(_unit) {
+  return 0;
+}
+
+//Provides: caml_eventlog_pause
+//Version: > 5.2
+//If: oxcaml
 function caml_eventlog_pause(_unit) {
   return 0;
 }

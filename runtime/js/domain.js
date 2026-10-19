@@ -188,6 +188,13 @@ function caml_recommended_domain_count(_unit) {
   return 1;
 }
 
+//Provides: caml_max_domain_count
+//Version: >= 5.2
+//If: oxcaml
+function caml_max_domain_count(_unit) {
+  return 1;
+}
+
 //Provides: caml_ml_domain_index
 //Requires: caml_domain_id
 //Version: >= 5.03
@@ -295,6 +302,22 @@ function caml_ml_domain_cpu_relax(_unit) {
 //Version: >= 5.5
 function caml_domain_count(_unit) {
   return 1;
+}
+
+//Provides: caml_domain_set_tick_interval_usec_bytecode
+//Requires: caml_failwith
+//Version: >= 5.2
+//If: oxcaml
+function caml_domain_set_tick_interval_usec_bytecode(_interval_usec) {
+  caml_failwith("[Domain.Tick] not implemented");
+}
+
+//Provides: caml_effective_tick_interval_usec_bytecode
+//Version: >= 5.2
+//If: oxcaml
+function caml_effective_tick_interval_usec_bytecode(_unit) {
+  // Preemption is not implemented: there is no tick
+  return 0;
 }
 
 //Provides: caml_atomic_load_field

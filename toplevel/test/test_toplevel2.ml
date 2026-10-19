@@ -44,7 +44,11 @@ let () = print_endline "hello";;
 
 let () =
   let open Js_of_ocaml.Js in
-  Unsafe.fun_call (Unsafe.js_expr "require") [| Unsafe.coerce (string "./re.cmis.js") |]
+  ignore
+    (Unsafe.fun_call
+       (Unsafe.js_expr "require")
+       [| Unsafe.coerce (string "./re.cmis.js") |]);
+  Topdirs.dir_directory "/static/cmis"
 
 let () =
   Js_of_ocaml_toplevel.Direct.execute
