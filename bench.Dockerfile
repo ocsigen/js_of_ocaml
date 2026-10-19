@@ -3,7 +3,7 @@ WORKDIR /bench-dir
 
 RUN sudo apt-get update \
  && sudo apt-get install -qq -yy --no-install-recommends \
-      pkg-config libgmp-dev jq time
+      pkg-config libgmp-dev zlib1g-dev jq time
 
 RUN sudo ln -sf /usr/bin/opam-2.3 /usr/bin/opam
 RUN opam remote add origin https://github.com/ocaml/opam-repository.git \
@@ -38,6 +38,12 @@ COPY --chown=opam:opam js_of_ocaml-compiler.opam .
 RUN opam install -y --deps-only ./js_of_ocaml-compiler.opam \
  && opam clean
 
+# Real-world programs: query-json, herd (herdtools7) and Alt-Ergo. Installed
+# first since Alt-Ergo (through dolmen) requires an older menhir, which
+# js_of_ocaml and the Jane Street packages below then use as well.
+RUN opam install -y --deps-only query-json.0.6.1 herdtools7.7.58 alt-ergo.2.6.4 \
+ && opam clean
+
 # Enable the wasm_of_ocaml backend in the top-level dune-workspace, for
 # `make bench`
 ENV WASM_OF_OCAML=true
@@ -46,7 +52,8 @@ ENV WASM_OF_OCAML=true
 # Camlboy and the Jane Street packages
 RUN opam pin add -n bigstringaf https://github.com/inhabitedtype/bigstringaf.git#master
 
-# Partial Render Table and bin_prot packages. The browser package needs a
+# Partial Render Table and bin_prot packages, and Zarith's stubs (with Wasm
+# support since v0.18) for herd and Alt-Ergo. The browser package needs a
 # patch for the parameterized Dom_html.messageEvent of js_of_ocaml > 6.3.0
 # (https://github.com/janestreet/browser/pull/1), hence a recent
 # js_of_ocaml; `make bench` then rebuilds them with the current sources.
@@ -58,7 +65,7 @@ RUN opam pin add -yn --with-version=dev https://github.com/ocsigen/js_of_ocaml.g
  && git clone --depth 1 -b $RELOADED_TAG https://github.com/public-release-reloaded/bonsai_web_components.git ../bonsai_web_components \
  && git -C ../bonsai_web_components apply $PWD/prt-patches/bonsai_web_components.patch \
  && opam install -y --deps-only ../bonsai_web_components/bonsai_web_components.opam \
- && opam install -y bonsai_bench core_bench incr_map ppx_bin_prot \
+ && opam install -y bonsai_bench core_bench incr_map ppx_bin_prot zarith_stubs_js \
  && (opam exec -- dune build --root ../bonsai_web_components --profile release partial_render_table/bench/bin/main.bc-for-jsoo || true) \
  && opam clean
 

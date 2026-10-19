@@ -23,6 +23,9 @@ bench:
 	$(MAKE) -C benchmark-partial-render-table bench
 	$(MAKE) -C benchmark-camlboy bench
 	$(MAKE) -C benchmark-others bench
+	$(MAKE) -C benchmark-query-json bench
+	$(MAKE) -C benchmark-herd bench
+	$(MAKE) -C benchmark-alt-ergo bench
 
 microbenchmarks:
 	@date -u +"%FT%TZ - Microbenchmarks: starting"
