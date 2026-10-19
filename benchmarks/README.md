@@ -28,3 +28,8 @@ make
 | run.config      | Configure available js interpreter             |
 | report.exe      | Generate reports using gnuplot                 |
 | report-*.config | config read by report.exe to generate a report |
+
+The `benchmark-*` directories contain the benchmarks run by
+[current-bench](https://bench.ci.dev/ocsigen/js_of_ocaml). See
+[CANDIDATES.md](CANDIDATES.md) for notes on real-world programs considered
+as benchmarks.

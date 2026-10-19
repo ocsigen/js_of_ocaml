@@ -1,0 +1,40 @@
+diff --git a/src/bin/common/solving_loop.ml b/src/bin/common/solving_loop.ml
+index 795cf9b..848aa46 100644
+--- a/src/bin/common/solving_loop.ml
++++ b/src/bin/common/solving_loop.ml
+@@ -1032,7 +1032,7 @@ let main () =
+       let st =
+         let open Pipeline in
+         let op_i ?name f = op ?name (fun st x -> f st x, ()) in
+-        run ~finally g st
++        run ~finally ~alarm:Dolmen_loop.Alarm.dummy g st
+           (fix
+              (op ~name:"expand" Parser.expand)
+              (op ~name:"debug_pre" debug_parsed_pipe
+diff --git a/src/lib/util/my_unix.ml b/src/lib/util/my_unix.ml
+index e1431da..27ff34d 100644
+--- a/src/lib/util/my_unix.ml
++++ b/src/lib/util/my_unix.ml
+@@ -33,14 +33,21 @@ module Default_Unix = struct
+ 
+   let cur_time () = (times()).tms_utime
+ 
++  let armed = ref false
++
+   let set_timeout timelimit =
+-    if Stdlib.(<>) timelimit 0. then
++    if Stdlib.(<>) timelimit 0. then begin
++      armed := true;
+       ignore (Unix.setitimer Unix.ITIMER_VIRTUAL
+                 { Unix.it_value = timelimit; Unix.it_interval = 0. })
++    end
+ 
+   let unset_timeout () =
++    if !armed then begin
++    armed := false;
+     ignore (Unix.setitimer Unix.ITIMER_VIRTUAL
+               { Unix.it_value = 0.; Unix.it_interval = 0. })
++    end
+ 
+ end
+ 
