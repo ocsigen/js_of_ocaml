@@ -1,0 +1,35 @@
+diff --git a/extra/coercion.ml b/extra/coercion.ml
+index bbdcf81..f9a049c 100644
+--- a/extra/coercion.ml
++++ b/extra/coercion.ml
+@@ -234,11 +234,13 @@ let of_jsoo_media_event (event : Dom_html.mediaEvent Js.t) =
+ 
+ (* Message Event *)
+ let to_jsoo_message_event (event : message_event Js.t) =
+-  let event : Dom_html.messageEvent Js.t = Js.Unsafe.coerce event in
++  let event : (Js.Unsafe.top, Js.Unsafe.any Js.opt) Dom_html.messageEvent Js.t =
++    Js.Unsafe.coerce event
++  in
+   event
+ ;;
+ 
+-let of_jsoo_message_event (event : Dom_html.messageEvent Js.t) =
++let of_jsoo_message_event (event : (_, _) Dom_html.messageEvent Js.t) =
+   let event : message_event Js.t = Js.Unsafe.coerce event in
+   event
+ ;;
+diff --git a/extra/coercion.mli b/extra/coercion.mli
+index 6499688..d8c57ee 100644
+--- a/extra/coercion.mli
++++ b/extra/coercion.mli
+@@ -112,6 +112,8 @@ val to_jsoo_media_event : event Js.t -> Dom_html.mediaEvent Js.t
+ val of_jsoo_media_event : Dom_html.mediaEvent Js.t -> event Js.t
+ 
+ (** Message Event conversions *)
+-val to_jsoo_message_event : message_event Js.t -> Dom_html.messageEvent Js.t
++val to_jsoo_message_event
++  :  message_event Js.t
++  -> (Js.Unsafe.top, Js.Unsafe.any Js.opt) Dom_html.messageEvent Js.t
+ 
+-val of_jsoo_message_event : Dom_html.messageEvent Js.t -> message_event Js.t
++val of_jsoo_message_event : (_, _) Dom_html.messageEvent Js.t -> message_event Js.t
