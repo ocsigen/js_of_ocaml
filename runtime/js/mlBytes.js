@@ -623,7 +623,7 @@ function caml_uint8_array_of_string(s) {
   return a;
 }
 
-//Provides: caml_create_string const
+//Provides: caml_create_string
 //Requires: MlBytes, caml_invalid_argument
 //If: !js-string
 function caml_create_string(len) {
@@ -631,14 +631,14 @@ function caml_create_string(len) {
   return new MlBytes(len ? 2 : 9, "", len);
 }
 
-//Provides: caml_create_string const
+//Provides: caml_create_string
 //Requires: caml_invalid_argument
 //If: js-string
 function caml_create_string(_len) {
   caml_invalid_argument("String.create");
 }
 
-//Provides: caml_create_bytes const
+//Provides: caml_create_bytes
 //Requires: MlBytes,caml_invalid_argument
 //Alias: caml_create_local_bytes
 function caml_create_bytes(len) {

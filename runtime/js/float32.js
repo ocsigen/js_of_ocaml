@@ -73,7 +73,7 @@ function caml_float32_of_string(x) {
   return Math.fround(caml_parse_float(x, "float32_of_string"));
 }
 
-//Provides: caml_format_float32 const
+//Provides: caml_format_float32
 //Requires: caml_format_float
 //Version: >= 5.2
 //If: oxcaml

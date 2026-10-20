@@ -156,6 +156,9 @@
   `require`d programs work (#2389)
 
 ### Runtime
+* Runtime: the primitives which can raise (`Array.make`, `Bytes.create`,
+  `Marshal.to_string`, formatting, ...) are no longer annotated as pure or
+  mutable, so that an ignored call is not removed (#2552)
 * Runtime: on Windows, the console device names (`CON`, `CONIN$`, `CONOUT$`)
   can be opened from node; they were resolved against the current directory
   (#2525)

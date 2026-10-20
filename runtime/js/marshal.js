@@ -183,7 +183,7 @@ function caml_float_of_bytes(a) {
   return caml_int64_float_of_bits(caml_int64_of_bytes(a));
 }
 
-//Provides: caml_input_value_from_bytes mutable
+//Provides: caml_input_value_from_bytes
 //Requires: JsStringReader, UInt8ArrayReader
 //Requires: caml_input_value_from_reader
 //Requires: caml_ml_bytes_content
@@ -281,7 +281,7 @@ var caml_custom_ops = {
   },
 };
 
-//Provides: caml_input_value_from_reader mutable
+//Provides: caml_input_value_from_reader
 //Requires: caml_failwith
 //Requires: caml_float_of_bytes, caml_custom_ops, caml_max_float_array_length
 //Requires: UInt8ArrayReader
@@ -559,7 +559,7 @@ var caml_marshal_header_size = 20;
 //Version: >= 5.1.0
 var caml_marshal_header_size = 16;
 
-//Provides: caml_marshal_data_size mutable
+//Provides: caml_marshal_data_size
 //Requires: caml_failwith, caml_bytes_unsafe_get
 //Requires: caml_uint8_array_of_bytes
 //Requires: UInt8ArrayReader
@@ -876,13 +876,13 @@ var caml_output_val = (function () {
   };
 })();
 
-//Provides: caml_output_value_to_string mutable
+//Provides: caml_output_value_to_string
 //Requires: caml_output_val, caml_string_of_uint8_array
 function caml_output_value_to_string(v, flags) {
   return caml_string_of_uint8_array(caml_output_val(v, flags));
 }
 
-//Provides: caml_output_value_to_bytes mutable
+//Provides: caml_output_value_to_bytes
 //Requires: caml_output_val, caml_bytes_of_uint8_array
 function caml_output_value_to_bytes(v, flags) {
   return caml_bytes_of_uint8_array(caml_output_val(v, flags));

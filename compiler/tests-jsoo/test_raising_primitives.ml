@@ -27,20 +27,16 @@ let check f =
 
 let%expect_test "Marshal.to_string" =
   check (fun () -> ignore (Marshal.to_string (fun x -> x + 1) []));
-  [%expect ({| no exception |} [@when not native])];
   [%expect {| raised |}]
 
 let%expect_test "Array.make" =
   check (fun () -> ignore (Array.make (Sys.opaque_identity (-1)) 0));
-  [%expect ({| no exception |} [@when not native])];
   [%expect {| raised |}]
 
 let%expect_test "Array.create_float" =
   check (fun () -> ignore (Array.create_float (Sys.opaque_identity (-1))));
-  [%expect ({| no exception |} [@when not native])];
   [%expect {| raised |}]
 
 let%expect_test "Bytes.create" =
   check (fun () -> ignore (Bytes.create (Sys.opaque_identity (-1))));
-  [%expect ({| no exception |} [@when not native])];
   [%expect {| raised |}]
