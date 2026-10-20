@@ -27,8 +27,8 @@ type state =
   | OPEN
   | CLOSED
 
-type 'a messageEvent = ('a, js_string t) Dom_html.messageEvent
-[@@ocaml.deprecated "[since 6.5] Use Dom_html.messageEvent instead."]
+class type ['a] messageEvent = ['a, js_string t] Dom_html.messageEvent
+  [@@ocaml.deprecated "[since 6.5] Use Dom_html.messageEvent instead."]
 (** The type parameter ['a] is the type of the event target; the [data]
     payload of an [EventSource] message is always [js_string t].
 

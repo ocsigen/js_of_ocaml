@@ -27,8 +27,8 @@ type state =
   | OPEN
   | CLOSED
 
-type 'a messageEvent = ('a, js_string t) Dom_html.messageEvent
-[@@ocaml.deprecated "[since 6.5] Use Dom_html.messageEvent instead."]
+class type ['a] messageEvent = ['a, js_string t] Dom_html.messageEvent
+  [@@ocaml.deprecated "[since 6.5] Use Dom_html.messageEvent instead."]
 
 class type eventSource = object ('self)
   method url : js_string t readonly_prop

@@ -56,8 +56,8 @@ and errorEvent = object
   method error : Unsafe.any readonly_prop
 end
 
-type 'a messageEvent = (element, 'a) Dom_html.messageEvent
-[@@ocaml.deprecated "[since 6.5] Use Dom_html.messageEvent instead."]
+class type ['a] messageEvent = [element, 'a] Dom_html.messageEvent
+  [@@ocaml.deprecated "[since 6.5] Use Dom_html.messageEvent instead."]
 (** The type parameter ['a] is the type of the [data] payload.
 
     @deprecated Use {!Dom_html.messageEvent}, the single shared binding. *)
