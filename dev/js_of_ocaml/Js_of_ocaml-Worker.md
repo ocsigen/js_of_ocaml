@@ -11,11 +11,10 @@ class type ['a, 'b] worker = object ... end
 class type  errorEvent = object ... end
 ```
 ```ocaml
-type 'a messageEvent = (Dom_html.element, 'a) Dom_html.messageEvent
+class type 'a messageEvent = [Dom_html.element, 'a] Js_of_ocaml__.Dom_html.messageEvent
 ```
 The type parameter `'a` is the type of the `data` payload.
 
-deprecated Use Dom\_html.messageEvent, the single shared binding.
 ```ocaml
 val create : string -> ('a, 'b) worker Js.t
 ```
