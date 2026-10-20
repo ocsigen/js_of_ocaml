@@ -95,7 +95,7 @@
   (#2403)
 * Lib: consolidate the duplicate `messageEvent` class types into
   `('target, 'data) Dom_html.messageEvent`; the old ones are deprecated
-  aliases (#2382, #2390)
+  class type aliases (#2382, #2390, #2555)
 * Lib: add `Lwt_js_events.mutation`/`mutations` (`MutationObserver`) (#250)
 * Lib: `Lwt_js_events.load`/`error`/`abort` accept any element, not only
   images (#2404)

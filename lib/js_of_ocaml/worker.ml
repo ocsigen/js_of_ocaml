@@ -48,8 +48,8 @@ and errorEvent = object
   method error : Unsafe.any readonly_prop
 end
 
-type 'a messageEvent = (element, 'a) Dom_html.messageEvent
-[@@ocaml.deprecated "[since 6.5] Use Dom_html.messageEvent instead."]
+class type ['a] messageEvent = [element, 'a] Dom_html.messageEvent
+  [@@ocaml.deprecated "[since 6.5] Use Dom_html.messageEvent instead."]
 
 let worker = Unsafe.global##._Worker
 
