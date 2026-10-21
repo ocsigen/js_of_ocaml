@@ -19,7 +19,8 @@
   programs): new `Int_trie` and `Int_set` data structures,
   sharing-preserving `Subst` and `Js_traverse.map`, `Js_traverse.free` as
   an iterator, circular-buffer worklists, faster JavaScript printer and
-  lexer (#2445, #2446, #2447, #2448, #2449, #2452, #2454, #2512)
+  lexer, sharing-preserving `Eval` and `Specialize_js` (#2445, #2446,
+  #2447, #2448, #2449, #2452, #2453, #2454, #2512)
 * Compiler: keep the name of function expressions that do not refer to
   themselves; the `unused-js-vars` warning now reports such names (#2449)
 * Compiler: emit large binary string constants as base64 literals, which are
