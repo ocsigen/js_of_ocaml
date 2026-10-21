@@ -45,6 +45,10 @@ type context =
   ; value_type : Wasm_ast.value_type
   ; mutable unit_name : string option
   ; mutable no_tail_call : unit Code.Var.Hashtbl.t
+  ; local_defaults : Wasm_ast.expression Code.Var.Hashtbl.t
+        (** Values used to initialize the locals and the globalized
+            variables of a given type when they may not be initialized
+            before use, rather than making them nullable *)
   }
 
 val make_context : value_type:Wasm_ast.value_type -> context
@@ -140,6 +144,11 @@ val define_var : Wasm_ast.var -> expression -> unit t
 
 val is_small_constant : Wasm_ast.expression -> bool t
 
+val is_constant_expression : Wasm_ast.expression -> bool t
+(** Whether the expression can be used in a global initializer. Unlike
+    [is_small_constant], this excludes mutable globals that are only
+    written once. *)
+
 val event : Parse_info.t -> unit t
 
 val no_event : unit t
@@ -207,7 +216,13 @@ val function_body :
 
 val variable_type : Code.Var.t -> Wasm_ast.value_type option t
 
+val expression_type : Wasm_ast.expression -> Wasm_ast.value_type option t
+
 val array_placeholder : Code.Var.t -> expression
+
+val local_placeholder : Code.Var.t -> (Code.Var.t -> Wasm_ast.expression) -> unit t
+(** Register a constant of the given type, built by the function the
+    first time, to initialize the locals of this type *)
 
 val default_value :
      Wasm_ast.value_type
