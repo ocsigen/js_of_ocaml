@@ -150,7 +150,7 @@ end = struct
     match e with
     | Constant _ -> e
     | Apply { f; args; exact } -> Apply { f = s f; args = List.map args ~f:s; exact }
-    | Block (n, a, k, mut) -> Block (n, Array.map a ~f:s, k, mut)
+    | Block (n, a, k, mut, d) -> Block (n, Array.map a ~f:s, k, mut, d)
     | Field (x, n, typ) -> Field (s x, n, typ)
     | Closure (l, pc, loc) -> Closure (l, subst_cont s pc, loc)
     | Special _ -> e

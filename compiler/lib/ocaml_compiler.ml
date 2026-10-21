@@ -38,10 +38,10 @@ end = struct
     | Const_immstring s -> String s
     | Const_float_array sl ->
         let l = List.map ~f:(fun f -> Int64.bits_of_float (float_of_string f)) sl in
-        Float_array (Array.of_list l)
+        Float_array (Array.of_list l, Code.Block_desc.none)
     | Const_block (tag, l) ->
         let l = Array.of_list (List.map l ~f:of_const) in
-        Tuple (tag, l, Unknown)
+        Tuple (tag, l, Unknown, Code.Block_desc.none)
 end
 [@@if ocaml_version < (5, 1, 0)]
 

@@ -265,7 +265,8 @@ module Share = struct
     match c with
     | String s -> add_string_constant (String_constant.of_string s) t
     | NativeString s -> add_string_constant (String_constant.of_native_string s) t
-    | Tuple (_, args, _) -> Array.fold_left args ~init:t ~f:(fun t c -> get_constant c t)
+    | Tuple (_, args, _, _) ->
+        Array.fold_left args ~init:t ~f:(fun t c -> get_constant c t)
     | _ -> t
 
   let add_args args t =
@@ -672,7 +673,7 @@ let rec constant_rec ~ctx x level instrs =
   | NativeString s -> string_constant ~ctx (String_constant.of_native_string s), instrs
   | Float f -> float_const f, instrs
   | Float32 f -> float_const f, instrs
-  | Float_array a ->
+  | Float_array (a, _) ->
       ( Mlvalue.Array.make
           ~tag:Obj.double_array_tag
           ~args:(Array.to_list (Array.map a ~f:(fun x -> J.Element (float_const x))))
@@ -685,10 +686,10 @@ let rec constant_rec ~ctx x level instrs =
       and mi = int (Int64.to_int (Int64.logand (Int64.shift_right i 24) 0xffffffL))
       and hi = int (Int64.to_int (Int64.logand (Int64.shift_right i 48) 0xffffL)) in
       J.call p [ lo; mi; hi ] J.N, instrs
-  | Tuple (tag, a, _) -> (
+  | Tuple (tag, a, _, _) -> (
       let constant_max_depth = Config.Param.constant_max_depth () in
       let rec detect_list n acc = function
-        | Tuple (0, [| x; l |], _) -> detect_list (succ n) (x :: acc) l
+        | Tuple (0, [| x; l |], _, _) -> detect_list (succ n) (x :: acc) l
         | Int maybe_zero when Targetint.is_zero maybe_zero ->
             if n > constant_max_depth then Some acc else None
         | _ -> None
@@ -1672,7 +1673,7 @@ let rec translate_expr ctx loc x e level : (_ * J.statement_list) Expr_builder.t
       let* args = list_map (access ~ctx) args in
       let* f = access ~ctx f in
       return (apply_fun ctx f args exact trampolined in_cps loc, [])
-  | Block (tag, a, array_or_not, _mut) ->
+  | Block (tag, a, array_or_not, _mut, _desc) ->
       let* contents =
         list_map
           (fun x ->
