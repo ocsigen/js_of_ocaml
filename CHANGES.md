@@ -1,4 +1,4 @@
-# 6.5.0~beta1 - Lille
+# 6.5.0~beta2 - Lille
 
 ## Features/Changes
 
