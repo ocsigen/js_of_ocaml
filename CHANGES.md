@@ -1,3 +1,12 @@
+# dev
+
+## Features/Changes
+* Compiler/Runtime: with Introcaml, support runtime introspection
+  (`Introspect.Print` and friends) in JavaScript: blocks carrying a
+  descriptor are allocated as instances of an `Array` subclass holding the
+  descriptor index, and the block descriptors of the program are embedded;
+  can be disabled with `--disable introspection` (#2409)
+
 # 6.5.0~beta2 - Lille
 
 ## Features/Changes
