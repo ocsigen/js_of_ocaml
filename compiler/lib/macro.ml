@@ -70,7 +70,7 @@ class macro_mapper ~flags =
                   | J.Arg e -> J.Element (m#expression e)
                   | J.ArgSpread _ -> assert false)
               in
-              Mlvalue.Block.make ~tag ~args
+              Mlvalue.Block.make ~tag ~args ()
           | "TAG", [ J.Arg e ] -> Mlvalue.Block.tag (m#expression e)
           | "SET_TAG", [ J.Arg e; J.Arg tag ] ->
               Mlvalue.Block.set_tag (m#expression e) (m#expression tag)

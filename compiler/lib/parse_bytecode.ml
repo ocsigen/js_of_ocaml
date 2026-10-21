@@ -516,7 +516,8 @@ end
 
 (* Parse constants *)
 module Constants : sig
-  val parse : Obj.t -> Code.constant
+  val parse : ?with_desc:bool -> Obj.t -> Code.constant
+  (** [with_desc] (default [true]): record the Introcaml descriptor of blocks *)
 
   val inlined : target:[ `JavaScript | `Wasm ] -> Code.constant -> bool
 end = struct
@@ -563,7 +564,8 @@ end = struct
 
   let block_desc _ = Block_desc.none [@@if not introspect]
 
-  let rec parse x =
+  let rec parse ?(with_desc = true) x =
+    let parse x = parse ~with_desc x in
     if is_null x
     then Null_
     else if Obj.is_block x
@@ -578,7 +580,7 @@ end = struct
         Float_array
           ( Array.init (Obj.size x) ~f:(fun i ->
                 Int64.bits_of_float (Obj.double_field x i))
-          , block_desc x )
+          , if with_desc then block_desc x else Block_desc.none )
       else if tag = Obj.custom_tag
       then
         match ident_of_custom x with
@@ -603,7 +605,7 @@ end = struct
           ( tag
           , Array.init (Obj.size x) ~f:(fun i -> parse (Obj.field x i))
           , Unknown
-          , block_desc x )
+          , if with_desc then block_desc x else Block_desc.none )
       else assert false
     else
       let i : int = Obj.magic x in
@@ -3084,6 +3086,8 @@ module Toc : sig
 
   val read_crcs : t -> in_channel -> Ocaml_compiler.Import_info.t list
 
+  val read_block_descs : t -> in_channel -> Obj.t option
+
   val read_prim : t -> in_channel -> string
 
   val read_symb : t -> in_channel -> Ocaml_compiler.Symtable.GlobalMap.t
@@ -3129,6 +3133,13 @@ end = struct
     let orig_symbols : Ocaml_compiler.Symtable.GlobalMap.t = input_value ic in
     orig_symbols
 
+  (* Introcaml: the block descriptors of the program, marshaled as an
+     [Introspect.Desc.t list] *)
+  let read_block_descs toc ic =
+    match seek_section toc ic "BDSC" with
+    | exception Not_found -> None
+    | _ -> Some (input_value ic)
+
   let read_crcs toc ic =
     ignore (seek_section toc ic "CRCS");
     let orig_crcs : Ocaml_compiler.Import_info.table = input_value ic in
@@ -3164,6 +3175,18 @@ type link_info =
   ; aliases : (string * string) list
   }
 [@@ocaml.warning "-unused-field"]
+
+(* Introcaml: make the block descriptors available to [Introspect] at
+   runtime (JavaScript only; there is no introspection support in Wasm) *)
+let emit_block_descs descs body =
+  match descs, Config.target () with
+  | Some descs, `JavaScript when Obj.is_block descs && Config.Flag.introspection () ->
+      let c = Var.fresh_n "block_descs" in
+      (* The descriptors' own blocks do not need descriptors *)
+      Let (c, Constant (Constants.parse ~with_desc:false descs))
+      :: Let (Var.fresh (), Prim (Extern ("caml_register_block_descs", None), [ Pv c ]))
+      :: body
+  | (Some _ | None), (`JavaScript | `Wasm) -> body
 
 let emit_link_info ~symbols ~primitives ~crcs ~num_globals body =
   let primitives =
@@ -3221,6 +3244,7 @@ let from_exe
   let init_data = Array.map ~f:Constants.parse init_data in
   let orig_symbols = Toc.read_symb toc ic in
   let orig_crcs = Toc.read_crcs toc ic in
+  let block_descs = Toc.read_block_descs toc ic in
   let keep =
     match exported_unit with
     | None -> fun _ -> true
@@ -3302,6 +3326,7 @@ let from_exe
         body
     else body
   in
+  let body = emit_block_descs block_descs body in
   (* List interface files *)
   let is_module =
     let is_ident_char = function
@@ -3575,6 +3600,10 @@ let from_compilation_units ~includes:_ ~include_cmis ~hints ~debug_data l =
                 :: l
             | false, None -> l)
         | _ -> l)
+  in
+  let body =
+    List.fold_left l ~init:body ~f:(fun body (compunit, _) ->
+        emit_block_descs (Ocaml_compiler.Cmo_format.block_descs compunit) body)
   in
   let cmis =
     if include_cmis
