@@ -50,9 +50,9 @@ module Excluding_Binders = struct
         if phys_equal f' f && phys_equal args' args
         then e
         else Apply { f = f'; args = args'; exact }
-    | Block (n, a, k, mut) ->
+    | Block (n, a, k, mut, d) ->
         let a' = Array.map_sharing a ~f:s in
-        if phys_equal a' a then e else Block (n, a', k, mut)
+        if phys_equal a' a then e else Block (n, a', k, mut, d)
     | Field (x, n, typ) ->
         let x' = s x in
         if phys_equal x' x then e else Field (x', n, typ)
@@ -181,7 +181,7 @@ module Including_Binders = struct
     match e with
     | Constant _ -> e
     | Apply { f; args; exact } -> Apply { f = s f; args = List.map args ~f:s; exact }
-    | Block (n, a, k, mut) -> Block (n, Array.map a ~f:s, k, mut)
+    | Block (n, a, k, mut, d) -> Block (n, Array.map a ~f:s, k, mut, d)
     | Field (x, n, typ) -> Field (s x, n, typ)
     | Closure (l, pc, loc) -> Closure (List.map l ~f:s, subst_cont s pc, loc)
     | Special _ -> e
@@ -228,7 +228,7 @@ module Including_Binders = struct
       match e with
       | Constant _ -> e
       | Apply { f; args; exact } -> Apply { f = s f; args = List.map args ~f:s; exact }
-      | Block (n, a, k, mut) -> Block (n, Array.map a ~f:s, k, mut)
+      | Block (n, a, k, mut, d) -> Block (n, Array.map a ~f:s, k, mut, d)
       | Field (x, n, typ) -> Field (s x, n, typ)
       | Closure (l, pc, loc) -> Closure (List.map l ~f:s, subst_cont m s pc, loc)
       | Special _ -> e

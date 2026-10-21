@@ -558,6 +558,11 @@ end = struct
 
   let is_null _ = false [@@if not oxcaml]
 
+  (* Introcaml: the reserved header bits identify the block's descriptor *)
+  let block_desc x = Block_desc.of_int (Obj.get_reserved x) [@@if introspect]
+
+  let block_desc _ = Block_desc.none [@@if not introspect]
+
   let rec parse x =
     if is_null x
     then Null_
@@ -571,8 +576,9 @@ end = struct
       else if tag = Obj.double_array_tag
       then
         Float_array
-          (Array.init (Obj.size x) ~f:(fun i ->
-               Int64.bits_of_float (Obj.double_field x i)))
+          ( Array.init (Obj.size x) ~f:(fun i ->
+                Int64.bits_of_float (Obj.double_field x i))
+          , block_desc x )
       else if tag = Obj.custom_tag
       then
         match ident_of_custom x with
@@ -593,7 +599,11 @@ end = struct
         | None -> assert false
       else if tag < Obj.no_scan_tag
       then
-        Tuple (tag, Array.init (Obj.size x) ~f:(fun i -> parse (Obj.field x i)), Unknown)
+        Tuple
+          ( tag
+          , Array.init (Obj.size x) ~f:(fun i -> parse (Obj.field x i))
+          , Unknown
+          , block_desc x )
       else assert false
     else
       let i : int = Obj.magic x in
@@ -691,7 +701,14 @@ module State = struct
     ; globals : globals
     ; immutable : unit Code.Var.Hashtbl.t
     ; module_or_not : Ocaml_compiler.module_or_not Ident.Tbl.t
+    ; reserved : Code.Block_desc.t
+          (* Introcaml: descriptor of the next allocated block, set by
+             NEXT_RESERVED_BITS and consumed by the following MAKEBLOCK *)
     }
+
+  let set_reserved st reserved = { st with reserved }
+
+  let next_reserved_bits st = st.reserved, { st with reserved = Block_desc.none }
 
   let fresh_var state =
     let x = Var.fresh () in
@@ -784,6 +801,7 @@ module State = struct
     ; globals = g
     ; immutable
     ; module_or_not = Ident.Tbl.create 0
+    ; reserved = Block_desc.none
     }
 
   let rec print_stack f l =
@@ -1646,21 +1664,33 @@ and compile infos pc state (instrs : instr list) =
 
         if debug_parser () then Format.printf "%a = ATOM(0)@." Var.print x;
         let imm = is_immutable instr infos pc in
-        compile infos (pc + 1) state (Let (x, Block (0, [||], Unknown, imm)) :: instrs)
+        compile
+          infos
+          (pc + 1)
+          state
+          (Let (x, Block (0, [||], Unknown, imm, Block_desc.none)) :: instrs)
     | ATOM ->
         let i = getu code (pc + 1) in
         let x, state = State.fresh_var state in
 
         if debug_parser () then Format.printf "%a = ATOM(%d)@." Var.print x i;
         let imm = is_immutable instr infos pc in
-        compile infos (pc + 2) state (Let (x, Block (i, [||], Unknown, imm)) :: instrs)
+        compile
+          infos
+          (pc + 2)
+          state
+          (Let (x, Block (i, [||], Unknown, imm, Block_desc.none)) :: instrs)
     | PUSHATOM0 ->
         let state = State.push state in
         let x, state = State.fresh_var state in
 
         if debug_parser () then Format.printf "%a = ATOM(0)@." Var.print x;
         let imm = is_immutable instr infos pc in
-        compile infos (pc + 1) state (Let (x, Block (0, [||], Unknown, imm)) :: instrs)
+        compile
+          infos
+          (pc + 1)
+          state
+          (Let (x, Block (0, [||], Unknown, imm, Block_desc.none)) :: instrs)
     | PUSHATOM ->
         let state = State.push state in
 
@@ -1668,7 +1698,11 @@ and compile infos pc state (instrs : instr list) =
         let x, state = State.fresh_var state in
         if debug_parser () then Format.printf "%a = ATOM(%d)@." Var.print x i;
         let imm = is_immutable instr infos pc in
-        compile infos (pc + 2) state (Let (x, Block (i, [||], Unknown, imm)) :: instrs)
+        compile
+          infos
+          (pc + 2)
+          state
+          (Let (x, Block (i, [||], Unknown, imm, Block_desc.none)) :: instrs)
     | MAKE_FAUX_MIXEDBLOCK | MAKEBLOCK ->
         let size = getu code (pc + 1) in
         let tag = getu code (pc + 2) in
@@ -1684,11 +1718,12 @@ and compile infos pc state (instrs : instr list) =
           done;
           Format.printf "}@.");
         let imm = is_immutable instr infos pc in
+        let desc, state = State.next_reserved_bits state in
         compile
           infos
           (pc + 3)
           state
-          (Let (x, Block (tag, Array.of_list contents, Unknown, imm)) :: instrs)
+          (Let (x, Block (tag, Array.of_list contents, Unknown, imm, desc)) :: instrs)
     | MAKEBLOCK1 ->
         let tag = getu code (pc + 1) in
         let y = State.accu state in
@@ -1696,11 +1731,12 @@ and compile infos pc state (instrs : instr list) =
 
         if debug_parser () then Format.printf "%a = { 0 = %a; }@." Var.print x Var.print y;
         let imm = is_immutable instr infos pc in
+        let desc, state = State.next_reserved_bits state in
         compile
           infos
           (pc + 2)
           state
-          (Let (x, Block (tag, [| y |], Unknown, imm)) :: instrs)
+          (Let (x, Block (tag, [| y |], Unknown, imm, desc)) :: instrs)
     | MAKEBLOCK2 ->
         let tag = getu code (pc + 1) in
         let y = State.accu state in
@@ -1711,11 +1747,12 @@ and compile infos pc state (instrs : instr list) =
         then
           Format.printf "%a = { 0 = %a; 1 = %a; }@." Var.print x Var.print y Var.print z;
         let imm = is_immutable instr infos pc in
+        let desc, state = State.next_reserved_bits state in
         compile
           infos
           (pc + 2)
           (State.pop 1 state)
-          (Let (x, Block (tag, [| y; z |], Unknown, imm)) :: instrs)
+          (Let (x, Block (tag, [| y; z |], Unknown, imm, desc)) :: instrs)
     | MAKEBLOCK3 ->
         let tag = getu code (pc + 1) in
         let y = State.accu state in
@@ -1736,11 +1773,12 @@ and compile infos pc state (instrs : instr list) =
             Var.print
             t;
         let imm = is_immutable instr infos pc in
+        let desc, state = State.next_reserved_bits state in
         compile
           infos
           (pc + 2)
           (State.pop 2 state)
-          (Let (x, Block (tag, [| y; z; t |], Unknown, imm)) :: instrs)
+          (Let (x, Block (tag, [| y; z; t |], Unknown, imm, desc)) :: instrs)
     | MAKEFLOATBLOCK ->
         let size = getu code (pc + 1) in
         let state = State.push state in
@@ -1755,11 +1793,12 @@ and compile infos pc state (instrs : instr list) =
           done;
           Format.printf "}@.");
         let imm = is_immutable instr infos pc in
+        let desc, state = State.next_reserved_bits state in
         compile
           infos
           (pc + 2)
           state
-          (Let (x, Block (254, Array.of_list contents, Unknown, imm)) :: instrs)
+          (Let (x, Block (254, Array.of_list contents, Unknown, imm, desc)) :: instrs)
     | GETFIELD0 ->
         let y = State.accu state in
         let x, state = State.fresh_var state in
@@ -2974,7 +3013,10 @@ and compile infos pc state (instrs : instr list) =
                  ( Extern ("%with_stack_bind", None)
                  , [ Pv valuec; Pv exnc; Pv effc; Pv dyn; Pv bind; Pv f; Pv arg ] ) )
           :: instrs)
-    | NEXT_RESERVED_BITS -> compile infos (pc + 2) state instrs
+    | NEXT_RESERVED_BITS ->
+        let bits = getu code (pc + 1) in
+        if debug_parser () then Format.printf "NEXT_RESERVED_BITS(%x)@." bits;
+        compile infos (pc + 2) (State.set_reserved state (Block_desc.of_int bits)) instrs
     | EVENT | BREAK | FIRST_UNIMPLEMENTED_OP -> assert false)
 
 (****)
@@ -3002,9 +3044,9 @@ let parse_bytecode code globals hints debug_data =
           (fun _ (state, instr, last) ->
             let instr =
               List.map instr ~f:(function
-                | Let (x, Block (tag, args, k, Maybe_mutable))
+                | Let (x, Block (tag, args, k, Maybe_mutable, d))
                   when Code.Var.Hashtbl.mem immutable x ->
-                    Let (x, Block (tag, args, k, Immutable))
+                    Let (x, Block (tag, args, k, Immutable, d))
                 | x -> x)
             in
             { params =
@@ -3661,7 +3703,8 @@ let predefined_exceptions () =
                        Symtable.init with [-index - 1] *)
                     Targetint.of_int_exn
                       (-index - 1))) )
-        ; Let (exn, Block (248, [| v_name; v_index |], NotArray, Immutable))
+        ; Let
+            (exn, Block (248, [| v_name; v_index |], NotArray, Immutable, Block_desc.none))
         ]
         @ register_global_instrs exn ~name:(Glob_predef (Predef name)) ?by_index [])
     |> List.concat

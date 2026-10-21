@@ -140,6 +140,26 @@ type array_or_not =
   | NotArray
   | Unknown
 
+(** Introspection metadata attached to a block: the reserved header bits
+    Introcaml associates to the block's descriptor (see [Introspect.Desc]). *)
+module Block_desc : sig
+  type t
+
+  val none : t
+  (** The block has no descriptor. *)
+
+  val is_none : t -> bool
+
+  val of_int : int -> t
+  (** From the reserved header bits, [0] meaning {!none}. *)
+
+  val to_int : t -> int
+
+  val equal : t -> t -> bool
+
+  val print : Format.formatter -> t -> unit
+end
+
 module Native_string : sig
   type t = private
     | Byte of string
@@ -157,12 +177,12 @@ type constant =
   | NativeString of Native_string.t
   | Float of Int64.t
   | Float32 of Int64.t
-  | Float_array of Int64.t array
+  | Float_array of Int64.t array * Block_desc.t
   | Int of Targetint.t
   | Int32 of Int32.t  (** Only produced when compiling to WebAssembly. *)
   | Int64 of Int64.t
   | NativeInt of Int32.t  (** Only produced when compiling to WebAssembly. *)
-  | Tuple of int * constant array * array_or_not
+  | Tuple of int * constant array * array_or_not * Block_desc.t
   | Null_
 
 module Constant : sig
@@ -201,7 +221,7 @@ type expr =
       ; args : Var.t list
       ; exact : bool (* if true, then # of arguments = # of parameters *)
       }
-  | Block of int * Var.t array * array_or_not * mutability
+  | Block of int * Var.t array * array_or_not * mutability * Block_desc.t
   | Field of Var.t * int * field_type
   | Closure of
       Var.t list * cont * (Optimization_hint.closure_hint option * Parse_info.t option)

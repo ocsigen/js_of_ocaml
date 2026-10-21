@@ -123,7 +123,7 @@ let box p vars =
     let create_box x =
       match Var.Map.find_opt x boxes with
       | Some x_box ->
-          emit (Let (x_box, Block (0, [| x |], NotArray, Maybe_mutable)));
+          emit (Let (x_box, Block (0, [| x |], NotArray, Maybe_mutable, Block_desc.none)));
           values := Var.Map.add x x !values
       | None -> ()
     in

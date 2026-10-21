@@ -198,7 +198,7 @@ let usages prog (global_info : Global_flow.info) scoped_live_vars :
         List.iter
           ~f:(fun a -> if variable_may_escape a global_info then add_use Compute x a)
           args
-    | Block (_, vars, _, _) -> Array.iter ~f:(add_use Compute x) vars
+    | Block (_, vars, _, _, _) -> Array.iter ~f:(add_use Compute x) vars
     | Field (z, _, _) -> add_use Compute x z
     | Constant _ -> ()
     | Special _ -> ()
@@ -255,7 +255,7 @@ let expr_vars e =
   | Apply { f; args; _ } ->
       let vars = Var.Set.add f vars in
       List.fold_left ~f:(fun acc x -> Var.Set.add x acc) ~init:vars args
-  | Block (_, params, _, _) ->
+  | Block (_, params, _, _, _) ->
       Array.fold_left ~f:(fun acc x -> Var.Set.add x acc) ~init:vars params
   | Field (z, _, _) -> Var.Set.add z vars
   | Prim (_, args) ->
@@ -324,7 +324,7 @@ let liveness prog pure_funs (global_info : Global_flow.info) =
               List.iter
                 ~f:(fun x -> if variable_may_escape x global_info then add_top scope x)
                 args
-          | Block (_, _, _, _)
+          | Block (_, _, _, _, _)
           | Field (_, _, _)
           | Closure (_, _, _)
           | Constant _
@@ -377,7 +377,7 @@ let propagate defs scoped_live_vars ~state ~dep:y ~target:x ~action:usage_kind =
       (* If y is a live block, then x is the join of liveness fields that are x *)
       | Live fields as l -> (
           match Var.Tbl.get defs y with
-          | Expr (Block (_, vars, _, _)) ->
+          | Expr (Block (_, vars, _, _, _)) ->
               let live = ref Domain.bot in
               Array.iteri
                 ~f:(fun i v ->
@@ -458,7 +458,7 @@ let zero prog pure_funs sentinel live_table =
     match instr with
     | Let (x, e) -> (
         match e with
-        | Block (start, vars, is_array, mut) -> (
+        | Block (start, vars, is_array, mut, desc) -> (
             match Var.Tbl.get live_table x with
             | Live fields ->
                 let vars =
@@ -467,7 +467,7 @@ let zero prog pure_funs sentinel live_table =
                     vars
                   |> compact_vars
                 in
-                let e = Block (start, vars, is_array, mut) in
+                let e = Block (start, vars, is_array, mut, desc) in
                 Let (x, e)
             | _ -> instr)
         | Apply ap ->
