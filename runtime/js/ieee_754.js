@@ -438,7 +438,7 @@ function caml_fma_float(x, y, z) {
   return fs + adjust(f - fs / scale, i.e) * scale;
 }
 
-//Provides: caml_format_float const
+//Provides: caml_format_float
 //Requires: caml_str_repeat, caml_parse_format, caml_finish_formatting
 function caml_format_float(fmt, x) {
   // Exact decimal expansion through BigInt, for precisions beyond
