@@ -86,6 +86,14 @@ let%expect_test "TAG(a)" =
   print_macro_transformed "TAG(a)";
   [%expect {| a[0]; |}]
 
+let%expect_test "SET_TAG(a, b)" =
+  print_macro_transformed "SET_TAG(a, b)";
+  [%expect {| a[0] = b; |}]
+
+let%expect_test "SET_TAG(a)" =
+  print_macro_transformed "SET_TAG(a)";
+  [%expect {| failure: macro SET_TAG called with inappropriate arguments |}]
+
 let%expect_test "LENGTH(a)" =
   print_macro_transformed "LENGTH(a)";
   [%expect {| a.length - 1; |}]

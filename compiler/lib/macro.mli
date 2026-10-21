@@ -17,4 +17,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+val link_time_names : string list
+(** The macros expanded only when [flags] is [true], at link time *)
+
 val f : flags:bool -> Javascript.program -> Javascript.program * bool

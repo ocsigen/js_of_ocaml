@@ -23,45 +23,43 @@ type m =
   | Replace
   | Count of int ref
 
+(* Macros which depend on the compiler flags, so expanded at link time *)
+let link_time_names = [ "FLAG"; "CONFIG"; "BUILD_CONFIG" ]
+
 class macro_mapper ~flags =
   object (m)
     inherit Js_traverse.map as super
 
     method expression x =
       let module J = Javascript in
+      let at_link_time f =
+        match flags with
+        | Replace -> f ()
+        | Count count ->
+            incr count;
+            super#expression x
+      in
       match x with
       | J.ECall (J.EVar (J.S { name = Utf8 name; _ }), (ANormal | ANullish), args, _) -> (
           match name, args with
-          | "FLAG", [ J.Arg (J.EStr (Utf8 s)) ] -> (
-              match flags with
-              | Replace ->
+          | "FLAG", [ J.Arg (J.EStr (Utf8 s)) ] ->
+              at_link_time (fun () ->
                   let i = if Config.Flag.find s then Targetint.one else Targetint.zero in
-                  J.ENum (J.Num.of_targetint i)
-              | Count count ->
-                  incr count;
-                  super#expression x)
-          | "CONFIG", [ J.Arg (J.EStr (Utf8 "effects")) ] -> (
-              match flags with
-              | Replace ->
+                  J.ENum (J.Num.of_targetint i))
+          | "CONFIG", [ J.Arg (J.EStr (Utf8 "effects")) ] ->
+              at_link_time (fun () ->
                   let s = Build_info.string_of_effects_backend (Config.effects ()) in
-                  J.EStr (Utf8_string.of_string_exn s)
-              | Count count ->
-                  incr count;
-                  super#expression x)
+                  J.EStr (Utf8_string.of_string_exn s))
           | "CONFIG", [ J.Arg (J.EStr (Utf8 s)) ] ->
               failwith ("unsupported CONFIG parameter " ^ s)
-          | "BUILD_CONFIG", [] -> (
-              match flags with
-              | Replace ->
+          | "BUILD_CONFIG", [] ->
+              at_link_time (fun () ->
                   let target = Config.target () in
                   let entries =
                     Build_info.get_non_default_values (Build_info.config_keys target)
                   in
                   let s = Build_info.to_config_string entries in
-                  J.EStr (Utf8_string.of_string_exn s)
-              | Count count ->
-                  incr count;
-                  super#expression x)
+                  J.EStr (Utf8_string.of_string_exn s))
           | "BLOCK", J.Arg (J.ENum tag) :: (_ :: _ as args)
             when List.for_all args ~f:(function
                    | J.Arg _ -> true
@@ -74,6 +72,8 @@ class macro_mapper ~flags =
               in
               Mlvalue.Block.make ~tag ~args
           | "TAG", [ J.Arg e ] -> Mlvalue.Block.tag (m#expression e)
+          | "SET_TAG", [ J.Arg e; J.Arg tag ] ->
+              Mlvalue.Block.set_tag (m#expression e) (m#expression tag)
           | "LENGTH", [ J.Arg e ] -> Mlvalue.Array.length (m#expression e)
           | "FIELD", [ J.Arg e; J.Arg (J.ENum n) ] ->
               let idx = Targetint.to_int_exn (J.Num.to_targetint n) in
@@ -81,7 +81,9 @@ class macro_mapper ~flags =
           | "FIELD", [ _; J.Arg (J.EUn (J.Neg, _)) ] ->
               failwith "Negative field indexes are not allowed"
           | "ISBLOCK", [ J.Arg e ] -> Mlvalue.is_block (m#expression e)
-          | (("BLOCK" | "TAG" | "LENGTH" | "FIELD" | "ISBLOCK" | "FLAG") as name), _ ->
+          | ( (("BLOCK" | "TAG" | "SET_TAG" | "LENGTH" | "FIELD" | "ISBLOCK" | "FLAG") as
+               name)
+            , _ ) ->
               failwith
                 (Format.sprintf "macro %s called with inappropriate arguments" name)
           | _ -> super#expression x)

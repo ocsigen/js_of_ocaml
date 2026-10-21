@@ -27,7 +27,7 @@ function caml_compare_val_tag(a) {
     return 1252; // ocaml string (if different from bytes)
   else if (Array.isArray(a) && a[0] === a[0] >>> 0 && a[0] <= 255) {
     // Look like an ocaml block
-    var tag = a[0] | 0;
+    var tag = TAG(a);
     // ignore double_array_tag because we cannot accurately set
     // this tag when we create an array of float.
     return tag === 254 ? 0 : tag;

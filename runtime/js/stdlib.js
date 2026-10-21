@@ -288,7 +288,7 @@ function caml_build_symbols(symb) {
   if (symb) {
     for (var i = 1; i < symb.length; i++) {
       var gn = symb[i][1];
-      var is_predef = gn[0];
+      var is_predef = TAG(gn);
       var name = caml_jsstring_of_string(gn[1]);
       var idx = symb[i][2];
       max = Math.max(max, idx);

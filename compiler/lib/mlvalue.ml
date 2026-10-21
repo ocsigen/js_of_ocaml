@@ -24,6 +24,8 @@ let zero = J.ENum (J.Num.of_targetint Targetint.zero)
 
 let one = J.ENum (J.Num.of_targetint Targetint.one)
 
+let int n = J.ENum (J.Num.of_targetint (Targetint.of_int_exn n))
+
 (* JavaScript engines recognize the pattern 'typeof x==="number"'; if the string is
    shared, less efficient code is generated. *)
 let type_of_is_number binop e =
@@ -34,15 +36,13 @@ let is_block e = type_of_is_number J.NotEqEq e
 let is_immediate e = type_of_is_number J.EqEqEq e
 
 module Block = struct
-  let make ~tag ~args =
-    let tag_elt = J.Element (J.ENum (J.Num.of_targetint (Targetint.of_int_exn tag))) in
-    J.EArr (tag_elt :: args)
+  let make ~tag ~args = J.EArr (J.Element (int tag) :: args)
 
   let tag e = J.EAccess (e, ANormal, zero)
 
-  let field e idx =
-    let adjusted = J.ENum (J.Num.of_targetint (Targetint.of_int_exn (idx + 1))) in
-    J.EAccess (e, ANormal, adjusted)
+  let set_tag e tag = J.EBin (J.Eq, J.EAccess (e, ANormal, zero), tag)
+
+  let field e idx = J.EAccess (e, ANormal, int (idx + 1))
 end
 
 module Array = struct

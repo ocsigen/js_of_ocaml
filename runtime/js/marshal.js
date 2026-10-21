@@ -746,7 +746,7 @@ var caml_output_val = (function () {
         }
         writer.size_32 += 2 + ((sz_32_64[0] + 3) >> 2);
         writer.size_64 += 2 + ((sz_32_64[1] + 7) >> 3);
-      } else if (Array.isArray(v) && v[0] === 254) {
+      } else if (Array.isArray(v) && TAG(v) === 254) {
         // float array (Double_array_tag): emit a CODE_DOUBLE_ARRAY
         // block (raw doubles) like the native runtime, so other
         // runtimes can read it
@@ -767,7 +767,8 @@ var caml_output_val = (function () {
         writer.size_32 += 1 + nfloats * 2;
         writer.size_64 += 1 + nfloats;
       } else if (Array.isArray(v) && v[0] === (v[0] | 0)) {
-        if (v[0] === 250 /* Forward_tag */) {
+        var tag = TAG(v);
+        if (tag === 250 /* Forward_tag */) {
           // A forwarded value, such as a forced lazy value, is marshaled as
           // the value it points to, as in the native runtime, unless this
           // value is a lazy value or a float, whose type it would change.
@@ -775,7 +776,7 @@ var caml_output_val = (function () {
           if (
             !(
               Array.isArray(f) &&
-              (f[0] === 250 || f[0] === 246 || f[0] === 244)
+              (TAG(f) === 250 || TAG(f) === 246 || TAG(f) === 244)
             ) &&
             !(typeof f === "number" && f !== (f | 0))
           ) {
@@ -783,16 +784,16 @@ var caml_output_val = (function () {
             return;
           }
         }
-        if (v[0] === 251) {
+        if (tag === 251) {
           caml_failwith("output_value: abstract value (Abstract)");
         }
-        if (caml_is_continuation_tag(v[0]))
+        if (caml_is_continuation_tag(tag))
           caml_invalid_argument("output_value: continuation value");
         if (v.length > 1 && memo(v)) return;
-        if (v[0] < 16 && v.length - 1 < 8)
+        if (tag < 16 && v.length - 1 < 8)
           writer.write(
             8,
-            0x80 /*cst.PREFIX_SMALL_BLOCK*/ + v[0] + ((v.length - 1) << 4),
+            0x80 /*cst.PREFIX_SMALL_BLOCK*/ + tag + ((v.length - 1) << 4),
           );
         else {
           if (v.length - 1 >= 0x400000 /* 2^22 */)
@@ -802,7 +803,7 @@ var caml_output_val = (function () {
           writer.write_code(
             32,
             0x08 /*cst.CODE_BLOCK32*/,
-            ((v.length - 1) << 10) | v[0],
+            ((v.length - 1) << 10) | tag,
           );
         }
         writer.size_32 += v.length;
