@@ -38,7 +38,7 @@
 //Version: >= 5.2
 //If: oxcaml
 function caml_unsafe_get_idx_bytecode(base, idx) {
-  if (idx[0] !== 0) {
+  if (TAG(idx) !== 0) {
     caml_invalid_argument(
       "caml_get_idx_bytecode: attempted to read from an invalid index",
     );
@@ -56,7 +56,7 @@ function caml_unsafe_get_idx_bytecode(base, idx) {
 //Version: >= 5.2
 //If: oxcaml
 function caml_unsafe_set_idx_bytecode(base, idx, v) {
-  if (idx[0] !== 0) {
+  if (TAG(idx) !== 0) {
     caml_invalid_argument(
       "caml_set_idx_bytecode: attempted to write to an invalid index",
     );

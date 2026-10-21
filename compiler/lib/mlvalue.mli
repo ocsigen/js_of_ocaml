@@ -22,6 +22,10 @@ module Block : sig
 
   val tag : Javascript.expression -> Javascript.expression
 
+  val set_tag : Javascript.expression -> Javascript.expression -> Javascript.expression
+  (** [set_tag e tag] updates the tag of block [e] in place. [e] may be
+      evaluated more than once. *)
+
   val field : Javascript.expression -> int -> Javascript.expression
 end
 

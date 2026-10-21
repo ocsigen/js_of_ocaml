@@ -82,7 +82,7 @@ function caml_array_append(a1, a2) {
   var l1 = a1.length,
     l2 = a2.length;
   var l = l1 + l2 - 1;
-  caml_check_concat_length(l - 1, a1[0] === 254 || a2[0] === 254);
+  caml_check_concat_length(l - 1, TAG(a1) === 254 || TAG(a2) === 254);
   var a = new Array(l);
   a[0] = 0;
   var i = 1,
@@ -117,7 +117,7 @@ function caml_array_concat(l) {
   for (var l0 = l; l0 !== 0; l0 = l0[2]) {
     var b = l0[1];
     len += b.length - 1;
-    if (b[0] === 254) isfloat = true;
+    if (TAG(b) === 254) isfloat = true;
   }
   caml_check_concat_length(len, isfloat);
   var a = [0];
