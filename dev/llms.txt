@@ -890,6 +890,7 @@
 - [Class type `XmlHttpRequest.xmlHttpRequestUpload`](js_of_ocaml/Js_of_ocaml-XmlHttpRequest-class-type-xmlHttpRequestUpload.md)
 - [Module `Js_of_ocaml.XmlHttpRequest`](js_of_ocaml/Js_of_ocaml-XmlHttpRequest.md)
 - [Module `Js_of_ocaml`](js_of_ocaml/Js_of_ocaml.md)
+- [Module `Js_of_ocaml_devtools`](js_of_ocaml/Js_of_ocaml_devtools.md)
 - [Module `Wasm_of_ocaml_compiler.Binaryen`](wasm_of_ocaml-compiler/Wasm_of_ocaml_compiler-Binaryen.md)
 - [Module `Wasm_of_ocaml_compiler.Call_graph_analysis`](wasm_of_ocaml-compiler/Wasm_of_ocaml_compiler-Call_graph_analysis.md)
 - [Module `Wasm_of_ocaml_compiler.Closure_conversion`](wasm_of_ocaml-compiler/Wasm_of_ocaml_compiler-Closure_conversion.md)

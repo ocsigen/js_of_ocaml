@@ -56,6 +56,9 @@ The same opam package also provides the `js_of_ocaml.deriving` library — the r
 
 [`Deriving_Json`](./Deriving_Json.md) Typesafe IO (based on the deriving library).
 [`Deriving_Json_lexer`](./Deriving_Json_lexer.md)
+and the `js_of_ocaml.devtools` library, which displays OCaml values in the browser developer tools when the compiler is built with Introcaml:
+
+[`Js_of_ocaml_devtools`](./Js_of_ocaml_devtools.md) Browser developer tools integration (library js\_of\_ocaml.devtools).
 
 ## `js_of_ocaml-lwt` — Lwt support
 

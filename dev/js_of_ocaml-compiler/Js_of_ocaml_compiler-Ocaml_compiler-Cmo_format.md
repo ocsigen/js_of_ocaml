@@ -27,3 +27,7 @@ val hints_pos : t -> int
 ```ocaml
 val hints_size : t -> int
 ```
+```ocaml
+val block_descs : t -> Stdlib.Obj.t option
+```
+Introcaml: the block descriptors of the unit (`Block_desc.library`), `None` when the compiler has no introspection support.

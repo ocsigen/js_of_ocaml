@@ -76,6 +76,11 @@ val inline_callgen : unit -> bool
 val safe_string : unit -> bool
 ```
 ```ocaml
+val introspection : unit -> bool
+```
+Introcaml: attach their descriptor to allocated blocks and embed the block descriptors, so that `Introspect` can print values. Only enabled by default when the compiler supports introspection.
+
+```ocaml
 val use_js_string : unit -> bool
 ```
 ```ocaml
