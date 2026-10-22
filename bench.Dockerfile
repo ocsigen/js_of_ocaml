@@ -1,4 +1,4 @@
-FROM ocaml/opam:debian-ocaml-5.3
+FROM ocaml/opam:debian-ocaml-5.5
 WORKDIR /bench-dir
 
 RUN sudo apt-get update \
@@ -23,43 +23,54 @@ RUN curl -Lq https://github.com/WebAssembly/binaryen/releases/download/$BINARYEN
   | tar zxf -
 ENV PATH="/bench-dir/$BINARYEN/bin:$PATH"
 
-# Jane Street opam packages
+# Jane Street packages for OCaml 5.5 (Partial Render Table, bin_prot):
+# Jane Street's own preview packages require ppxlib < 0.36, hence
+# OCaml <= 5.3, so use the "public release reloaded" repository instead
+# (https://discuss.ocaml.org/t/jane-street-libraries-base-core-async-etc-with-5-5/18469)
 RUN mkdir janestreet \
- && cd janestreet \
- && git clone --depth 20 https://github.com/janestreet/opam-repository \
- && cd opam-repository \
- && git checkout 2819773f29b6f6c14b918eae3cb40c8ff6b22d0e \
- && opam remote add js .
+ && git clone https://github.com/public-release-reloaded/opam-repository janestreet/opam-repository \
+ && git -C janestreet/opam-repository checkout c5daed22034c1806f9f307d67bf8d899cad0903f \
+ && opam repository add reloaded ./janestreet/opam-repository
 
 # Install dependencies
 WORKDIR /bench-dir/js_of_ocaml
 COPY --chown=opam:opam js_of_ocaml-compiler.opam .
 RUN opam install -y --deps-only ./js_of_ocaml-compiler.opam \
  && opam install opam-format stringext uucp cstruct \
- && opam pin add ppxlib -n 0.35.0 \
  && opam clean
 
-# Enable the wasm_of_ocaml backend in the ci_setup-generated dune-workspace,
-# both for the bonsai bench build below and for `make bench` later on.
+# Enable the js_of_ocaml and wasm_of_ocaml backends in the
+# ci_setup-generated dune-workspace, both for the bonsai bench build below
+# and for `make bench` later on.
+ENV JS_OF_OCAML=true
 ENV WASM_OF_OCAML=true
 
 # Enable the build of tools/ci_setup.exe (needs opam-format)
 ENV BUILD_CI_SETUP=true
 
-# Prepare partial render table benchmark
+# Prepare partial render table benchmark. The Jane Street sources are
+# cloned into ../janestreet and built there, so that `make bench` only has
+# to rebuild what depends on js_of_ocaml. The browser package needs the
+# parameterized Dom_html.messageEvent of js_of_ocaml > 6.3.0, hence a
+# recent js_of_ocaml for the initial build.
 COPY --chown=opam:opam dune-project ./
 COPY --chown=opam:opam tools ./tools
-RUN opam exec -- dune exec tools/ci_setup.exe ../janestreet . \
+COPY --chown=opam:opam benchmarks/benchmark-partial-render-table/bonsai_web_components.patch ./
+RUN opam pin add -yn --with-version=dev https://github.com/ocsigen/js_of_ocaml.git#15b280e880a46450b8abaa033d43bcbb722bbef4 \
+ && opam exec -- dune exec tools/ci_setup.exe ../janestreet . \
+ && git -C ../janestreet/lib/bonsai_web_components apply $PWD/bonsai_web_components.patch \
  && (opam exec -- dune build --root ../janestreet --profile release lib/bonsai_web_components/partial_render_table/bench/bin/main.bc-for-jsoo || true) \
- && opam remove js_of_ocaml-compiler ojs \
+ && opam remove -y js_of_ocaml-compiler ojs \
  && opam clean
 
 # Bin_prot packages
-RUN opam pin add -n https://github.com/janestreet/bin_prot.git#125e336faacd2e2e8c7a1fed2231bde1cebfebdd \
- && opam install ppx_bin_prot
+RUN opam install -y ppx_bin_prot
 
 # Digestif (pure OCaml hash functions)
 RUN opam install digestif
+
+# Camlboy
+RUN opam install -y bigstringaf ppx_deriving
 
 # Copy sources
 COPY --chown=opam:opam . ./
