@@ -348,14 +348,14 @@ function caml_input_value_from_reader(reader) {
     // tag in the header word (see caml_obj_get_reserved)
     var reserved = 0;
     if (code === 0x1a /*cst.CODE_RESERVED_BITS*/) {
-      reserved = (reader.read32u() & 0x3fffff) << 8;
+      reserved = reader.read32u();
       code = reader.read8u();
     }
     if (code >= 0x40 /*cst.PREFIX_SMALL_INT*/) {
       if (code >= 0x80 /*cst.PREFIX_SMALL_BLOCK*/) {
         var tag = code & 0xf;
         var size = (code >> 4) & 0x7;
-        var v = [tag | reserved];
+        var v = [HEADER(tag, reserved)];
         if (size === 0) return v;
         if (intern_obj_table) intern_obj_table[obj_counter++] = v;
         if (tag === 248) objects.push(v);
@@ -396,7 +396,7 @@ function caml_input_value_from_reader(reader) {
             var tag = header & 0xff;
             // unsigned: bit 31 of the header is set for sizes >= 2^21
             var size = header >>> 10;
-            var v = [tag | reserved];
+            var v = [HEADER(tag, reserved)];
             if (size === 0) return v;
             if (intern_obj_table) intern_obj_table[obj_counter++] = v;
             if (tag === 248) objects.push(v);
@@ -430,7 +430,7 @@ function caml_input_value_from_reader(reader) {
           case 0x0e: //cst.CODE_DOUBLE_ARRAY8_LITTLE:
             var len = reader.read8u();
             var v = new Array(len + 1);
-            v[0] = 254 | reserved;
+            v[0] = HEADER(254, reserved);
             var t = new Array(8);
             if (intern_obj_table) intern_obj_table[obj_counter++] = v;
             for (var i = 1; i <= len; i++) {
@@ -441,7 +441,7 @@ function caml_input_value_from_reader(reader) {
           case 0x0d: //cst.CODE_DOUBLE_ARRAY8_BIG:
             var len = reader.read8u();
             var v = new Array(len + 1);
-            v[0] = 254 | reserved;
+            v[0] = HEADER(254, reserved);
             var t = new Array(8);
             if (intern_obj_table) intern_obj_table[obj_counter++] = v;
             for (var i = 1; i <= len; i++) {
@@ -456,7 +456,7 @@ function caml_input_value_from_reader(reader) {
                 "input_value: object too large to be read back on a 32-bit platform",
               );
             var v = new Array(len + 1);
-            v[0] = 254 | reserved;
+            v[0] = HEADER(254, reserved);
             if (intern_obj_table) intern_obj_table[obj_counter++] = v;
             var t = new Array(8);
             for (var i = 1; i <= len; i++) {
@@ -471,7 +471,7 @@ function caml_input_value_from_reader(reader) {
                 "input_value: object too large to be read back on a 32-bit platform",
               );
             var v = new Array(len + 1);
-            v[0] = 254 | reserved;
+            v[0] = HEADER(254, reserved);
             if (intern_obj_table) intern_obj_table[obj_counter++] = v;
             var t = new Array(8);
             for (var i = 1; i <= len; i++) {
@@ -705,7 +705,7 @@ var caml_output_val = (function () {
     // Introcaml: emit the reserved header bits of a block, as the native
     // runtime does with Marshal.Reserved_bits
     function write_reserved(v) {
-      var reserved = v[0] >>> 8;
+      var reserved = RESERVED(v);
       if (reserved_bits && reserved !== 0)
         writer.write_code(32, 0x1a /*cst.CODE_RESERVED_BITS*/, reserved);
     }

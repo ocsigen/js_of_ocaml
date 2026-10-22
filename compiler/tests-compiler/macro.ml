@@ -97,6 +97,34 @@ let%expect_test "SET_TAG(a, b)" =
   print_macro_transformed ~flags:true "SET_TAG(a, b)";
   [%expect {| a[0] = b; |}]
 
+let%expect_test "HEADER(a, b)" =
+  (* Expanded at link time, as it depends on the [introspection] flag *)
+  print_macro_transformed "HEADER(a, b)";
+  [%expect {| HEADER(a, b); |}];
+  print_macro_transformed ~flags:true "HEADER(a, b)";
+  [%expect {| a; |}]
+
+let%expect_test "MAX_HEADER()" =
+  (* Expanded at link time, as it depends on the [introspection] flag *)
+  print_macro_transformed "MAX_HEADER()";
+  [%expect {| MAX_HEADER(); |}];
+  print_macro_transformed ~flags:true "MAX_HEADER()";
+  [%expect {| 255; |}]
+
+let%expect_test "RESERVED(a)" =
+  print_macro_transformed "RESERVED(a)";
+  [%expect {| a[0] >>> 8; |}]
+
+let%expect_test "SET_RESERVED(a, b)" =
+  print_macro_transformed "SET_RESERVED(a, b)";
+  [%expect {| a[0] = a[0] & 255 | (b & 4194303) << 8; |}];
+  print_macro_transformed "SET_RESERVED(a, 0)";
+  [%expect {| a[0] = a[0] & 255; |}]
+
+let%expect_test "RESERVED_BITS()" =
+  print_macro_transformed "RESERVED_BITS()";
+  [%expect {| 22; |}]
+
 let%expect_test "SET_TAG(a)" =
   print_macro_transformed "SET_TAG(a)";
   [%expect {| failure: macro SET_TAG called with inappropriate arguments |}]

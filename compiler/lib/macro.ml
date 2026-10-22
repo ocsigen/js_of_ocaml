@@ -24,7 +24,8 @@ type m =
   | Count of int ref
 
 (* Macros which depend on the compiler flags, so expanded at link time *)
-let link_time_names = [ "FLAG"; "CONFIG"; "BUILD_CONFIG"; "TAG"; "SET_TAG" ]
+let link_time_names =
+  [ "FLAG"; "CONFIG"; "BUILD_CONFIG"; "TAG"; "SET_TAG"; "HEADER"; "MAX_HEADER" ]
 
 class macro_mapper ~flags =
   object (m)
@@ -77,6 +78,19 @@ class macro_mapper ~flags =
           | "SET_TAG", [ J.Arg e; J.Arg tag ] ->
               at_link_time (fun () ->
                   Mlvalue.Block.set_tag (m#expression e) (m#expression tag))
+          | "HEADER", [ J.Arg tag; J.Arg reserved ] ->
+              (* Depends on the [introspection] flag *)
+              at_link_time (fun () ->
+                  Mlvalue.Block.header
+                    ~tag:(m#expression tag)
+                    ~reserved:(m#expression reserved))
+          | "MAX_HEADER", [] -> at_link_time (fun () -> Mlvalue.Block.max_header ())
+          | "RESERVED", [ J.Arg e ] -> Mlvalue.Block.reserved (m#expression e)
+          | "SET_RESERVED", [ J.Arg e; J.Arg bits ] ->
+              Mlvalue.Block.set_reserved (m#expression e) (m#expression bits)
+          | "RESERVED_BITS", [] ->
+              J.ENum
+                (J.Num.of_targetint (Targetint.of_int_exn Mlvalue.Block.reserved_bits))
           | "LENGTH", [ J.Arg e ] -> Mlvalue.Array.length (m#expression e)
           | "FIELD", [ J.Arg e; J.Arg (J.ENum n) ] ->
               let idx = Targetint.to_int_exn (J.Num.to_targetint n) in
@@ -84,8 +98,18 @@ class macro_mapper ~flags =
           | "FIELD", [ _; J.Arg (J.EUn (J.Neg, _)) ] ->
               failwith "Negative field indexes are not allowed"
           | "ISBLOCK", [ J.Arg e ] -> Mlvalue.is_block (m#expression e)
-          | ( (("BLOCK" | "TAG" | "SET_TAG" | "LENGTH" | "FIELD" | "ISBLOCK" | "FLAG") as
-               name)
+          | ( (( "BLOCK"
+               | "TAG"
+               | "SET_TAG"
+               | "HEADER"
+               | "MAX_HEADER"
+               | "RESERVED"
+               | "SET_RESERVED"
+               | "RESERVED_BITS"
+               | "LENGTH"
+               | "FIELD"
+               | "ISBLOCK"
+               | "FLAG" ) as name)
             , _ ) ->
               failwith
                 (Format.sprintf "macro %s called with inappropriate arguments" name)

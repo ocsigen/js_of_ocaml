@@ -131,8 +131,9 @@ function caml_obj_dup(x) {
   if (typeof x === "number") return x;
   var r = x.slice();
   // A fresh block carries no descriptor, as in the native runtime
-  // (see caml_obj_get_reserved)
-  if (Array.isArray(r)) r[0] &= 255;
+  // (see caml_obj_get_reserved). Blocks have no reserved bits without
+  // introspection, and the extra write slows down [Array.copy].
+  if (FLAG("introspection") && Array.isArray(r)) SET_RESERVED(r, 0);
   return r;
 }
 
@@ -380,26 +381,31 @@ function caml_register_block_descs(descs) {
 // Must match [Config.reserved_header_bits] of the compiler that produced
 // the bytecode: descriptor indices are hashes truncated to that many bits.
 function caml_obj_reserved_bits(_unit) {
-  return 22;
+  return RESERVED_BITS();
 }
 
 //Provides: caml_obj_get_reserved
 //If: introspect
 // The reserved header bits of a block (its descriptor index) are stored in
-// the header word, above the tag: [x[0] = tag | (bits << 8)]. With 22 bits,
-// the header fits in 30 bits and remains a small integer. Blocks allocated by the
-// runtime have none.
+// the header word, above the tag (see [Mlvalue.Block] in the compiler).
+// Blocks allocated by the runtime have none.
 function caml_obj_get_reserved(obj) {
-  if (Array.isArray(obj) && obj[0] === obj[0] >>> 0) return obj[0] >>> 8;
+  if (Array.isArray(obj) && obj[0] === obj[0] >>> 0) return RESERVED(obj);
   return 0;
 }
 
 //Provides: caml_obj_set_reserved
 //If: introspect
+// Without introspection, tags are read without masking the reserved bits
 function caml_obj_set_reserved(obj, bits) {
-  if (!Array.isArray(obj) || obj.length < 2 || obj[0] !== obj[0] >>> 0)
+  if (
+    !FLAG("introspection") ||
+    !Array.isArray(obj) ||
+    obj.length < 2 ||
+    obj[0] !== obj[0] >>> 0
+  )
     return 0;
-  obj[0] = (obj[0] & 255) | ((bits & 0x3fffff) << 8);
+  SET_RESERVED(obj, bits);
   return 1;
 }
 
