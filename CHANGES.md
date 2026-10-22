@@ -52,6 +52,9 @@
   of `compare` with 0 (#2529)
 * Compiler: faster reading of debug events, used with `--pretty` and
   `--debug-info` (#2541, #2548)
+* Compiler: turn local functions whose calls all share the same
+  continuation into blocks of the enclosing function, as `ocamlopt` does
+  (#NNNN)
 
 ### Effects
 * Compiler: with `--effects={cps,double-translation}`, specialize calls to
