@@ -130,14 +130,19 @@ let for_for_while () =
      var k = 1;
      for(;;){
       var j = 1;
+      a:
       for(;;)
-       if(10 <= runtime.caml_mul(k, j)){
-        _a_ = j + 1 | 0;
-        if(10 === j){_a_ = k + 1 | 0; if(10 === k) return 0; k = _a_; break;}
-        j = _a_;
-       }
-       else
+       for(;;){
+        if(10 <= runtime.caml_mul(k, j)){
+         _a_ = j + 1 | 0;
+         if(10 !== j){j = _a_; break;}
+         _a_ = k + 1 | 0;
+         if(10 === k) return 0;
+         k = _a_;
+         break a;
+        }
         id[1]++;
+       }
      }
     }
     //end
@@ -166,13 +171,17 @@ let for_for_while () =
      var k = 1;
      for(;;){
       var j = 1;
+      a:
       for(;;)
-       if(10 <= caml_div(k, j)){
-        _a_ = j + 1 | 0;
-        if(10 === j){_a_ = k + 1 | 0; if(10 === k) return 0; k = _a_; break;}
-        j = _a_;
-       }
-       else{
+       for(;;){
+        if(10 <= caml_div(k, j)){
+         _a_ = j + 1 | 0;
+         if(10 !== j){j = _a_; break;}
+         _a_ = k + 1 | 0;
+         if(10 === k) return 0;
+         k = _a_;
+         break a;
+        }
         try{caml_div(k, j);}
         catch(exn){throw caml_maybe_attach_backtrace(Stdlib[8], 1);}
         id[1]++;
@@ -581,22 +590,22 @@ let () = print_endline (trim " ")
      var
       s$0 = copy(caml_bytes_of_string(x)),
       len = caml_ml_bytes_length(s$0),
-      i = 0;
+      ofs = 0;
      for(;;){
-      if(i >= len) break;
-      if(! is_space(caml_bytes_unsafe_get(s$0, i))) break;
-      var i$0 = i + 1 | 0;
-      i = i$0;
+      if(ofs >= len) break;
+      if(! is_space(caml_bytes_unsafe_get(s$0, ofs))) break;
+      var i = ofs + 1 | 0;
+      ofs = i;
      }
      var j = len - 1 | 0;
      for(;;){
-      if(i <= j && is_space(caml_bytes_unsafe_get(s$0, j))){var j$0 = j - 1 | 0; j = j$0; continue;}
-      if(i <= j){
-       var len$0 = (j - i | 0) + 1 | 0;
-       if(0 > i || 0 > len$0 || (caml_ml_bytes_length(s$0) - len$0 | 0) < i)
+      if(ofs <= j && is_space(caml_bytes_unsafe_get(s$0, j))){var j$0 = j - 1 | 0; j = j$0; continue;}
+      if(ofs <= j){
+       var len$0 = (j - ofs | 0) + 1 | 0;
+       if(0 > ofs || 0 > len$0 || (caml_ml_bytes_length(s$0) - len$0 | 0) < ofs)
         throw caml_maybe_attach_backtrace([0, Invalid_argument, s], 1);
        var r = caml_create_bytes(len$0);
-       caml_blit_bytes(s$0, i, r, 0, len$0);
+       caml_blit_bytes(s$0, ofs, r, 0, len$0);
        var b = r;
       }
       else

@@ -36,6 +36,8 @@ module Flag : sig
 
   val inline : unit -> bool
 
+  val contify : unit -> bool
+
   val share_constant : unit -> bool
 
   val staticeval : unit -> bool
