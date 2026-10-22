@@ -189,7 +189,7 @@ function caml_array_set(array, index, newval) {
   return 0;
 }
 
-//Provides: caml_array_get mutable (mutable, const)
+//Provides: caml_array_get (mutable, const)
 //Requires: caml_array_bound_error
 //Alias: caml_array_get_float
 //Alias: caml_floatarray_get
