@@ -41,6 +41,11 @@ type array_or_not =
   | Unknown
 ```
 ```ocaml
+module Block_desc : sig ... end
+```
+Introspection metadata attached to a block: the reserved header bits Introcaml associates to the block's descriptor (see `Introspect.Desc`).
+
+```ocaml
 module Native_string : sig ... end
 ```
 ```ocaml
@@ -49,12 +54,12 @@ type constant =
   | NativeString of Native_string.t
   | Float of Stdlib.Int64.t
   | Float32 of Stdlib.Int64.t
-  | Float_array of Stdlib.Int64.t array
+  | Float_array of Stdlib.Int64.t array * Block_desc.t
   | Int of Targetint.t
   | Int32 of Stdlib.Int32.t (* Only produced when compiling to WebAssembly. *)
   | Int64 of Stdlib.Int64.t
   | NativeInt of Stdlib.Int32.t (* Only produced when compiling to WebAssembly. *)
-  | Tuple of int * constant array * array_or_not
+  | Tuple of int * constant array * array_or_not * Block_desc.t
   | Null_
 ```
 ```ocaml
@@ -93,7 +98,7 @@ type expr =
     args : Var.t list;
     exact : bool;
   }
-  | Block of int * Var.t array * array_or_not * mutability
+  | Block of int * Var.t array * array_or_not * mutability * Block_desc.t
   | Field of Var.t * int * field_type
   | Closure of Var.t list
     * cont

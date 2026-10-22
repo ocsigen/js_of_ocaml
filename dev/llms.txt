@@ -49,6 +49,7 @@
 - [Module `Builtins.File`](js_of_ocaml-compiler/Js_of_ocaml_compiler-Builtins-File.md)
 - [Module `Js_of_ocaml_compiler.Builtins`](js_of_ocaml-compiler/Js_of_ocaml_compiler-Builtins.md)
 - [Module `Code.Addr`](js_of_ocaml-compiler/Js_of_ocaml_compiler-Code-Addr.md)
+- [Module `Code.Block_desc`](js_of_ocaml-compiler/Js_of_ocaml_compiler-Code-Block_desc.md)
 - [Module `Code.Constant`](js_of_ocaml-compiler/Js_of_ocaml_compiler-Code-Constant.md)
 - [Module `Code.Native_string`](js_of_ocaml-compiler/Js_of_ocaml_compiler-Code-Native_string.md)
 - [Module `Code.Print`](js_of_ocaml-compiler/Js_of_ocaml_compiler-Code-Print.md)
