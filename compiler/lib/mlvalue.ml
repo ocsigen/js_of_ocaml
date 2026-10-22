@@ -35,34 +35,67 @@ let is_block e = type_of_is_number J.NotEqEq e
 
 let is_immediate e = type_of_is_number J.EqEqEq e
 
-(* Introcaml: a block descriptor is stored in the header word, above the
-   tag, so that blocks remain plain arrays: [x[0] = tag | (desc << 8)]. The
-   descriptor is at most [caml_obj_reserved_bits] (22) bits wide, so the
-   header stays a small integer. *)
-let desc_shift = 8
+(* Introcaml: the reserved header bits of a block (its descriptor) are
+   stored in the header word, above the tag, so that blocks remain plain
+   arrays: [x[0] = tag | (bits << 8)]. With the 22 bits reserved by
+   Introcaml, the header fits in 30 bits: it stays non-negative under
+   bitwise operators, and a small integer in JavaScript engines. *)
+let tag_bits = 8
+
+let reserved_bits = 22
+
+let tag_mask = (1 lsl tag_bits) - 1
+
+let reserved_mask = (1 lsl reserved_bits) - 1
 
 let header ~tag ~desc =
   int
     (if Config.Flag.introspection ()
-     then tag lor (Code.Block_desc.to_int desc lsl desc_shift)
+     then tag lor ((Code.Block_desc.to_int desc land reserved_mask) lsl tag_bits)
      else tag)
 
 module Block = struct
   let make ~tag ~desc ~args = J.EArr (J.Element (header ~tag ~desc) :: args)
 
+  let reserved_bits = reserved_bits
+
+  let shifted_reserved bits =
+    J.EBin (J.Lsl, J.EBin (J.Band, bits, int reserved_mask), int tag_bits)
+
+  let header ~tag ~reserved =
+    if Config.Flag.introspection ()
+    then J.EBin (J.Bor, tag, shifted_reserved reserved)
+    else tag
+
+  let max_header () =
+    int
+      (if Config.Flag.introspection ()
+       then (1 lsl (tag_bits + reserved_bits)) - 1
+       else tag_mask)
+
   let tag e =
     let hd = J.EAccess (e, ANormal, zero) in
-    if Config.Flag.introspection ()
-    then J.EBin (J.Band, hd, int ((1 lsl desc_shift) - 1))
-    else hd
+    if Config.Flag.introspection () then J.EBin (J.Band, hd, int tag_mask) else hd
 
   let set_tag e tag =
     let hd = J.EAccess (e, ANormal, zero) in
     if Config.Flag.introspection ()
     then
-      let desc = J.EBin (J.Band, hd, int (-(1 lsl desc_shift))) in
-      J.EBin (J.Eq, hd, J.EBin (J.Bor, desc, tag))
+      let reserved = J.EBin (J.Band, hd, int (lnot tag_mask)) in
+      J.EBin (J.Eq, hd, J.EBin (J.Bor, reserved, tag))
     else J.EBin (J.Eq, hd, tag)
+
+  let reserved e = J.EBin (J.Lsr, J.EAccess (e, ANormal, zero), int tag_bits)
+
+  let set_reserved e bits =
+    let hd = J.EAccess (e, ANormal, zero) in
+    let tag = J.EBin (J.Band, hd, int tag_mask) in
+    J.EBin
+      ( J.Eq
+      , hd
+      , match bits with
+        | J.ENum n when Targetint.is_zero (J.Num.to_targetint n) -> tag
+        | _ -> J.EBin (J.Bor, tag, shifted_reserved bits) )
 
   let field e idx = J.EAccess (e, ANormal, int (idx + 1))
 end
