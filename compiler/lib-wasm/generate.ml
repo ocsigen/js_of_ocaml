@@ -2872,8 +2872,8 @@ module Generate (Target : Target_sig.S) = struct
        generation, but need to be registered so that
        [Primitive.get_external] reports them as available for the
        toplevel. *)
-    Primitive.register "caml_array_get_addr" `Mutable None None;
-    Primitive.register "caml_array_set_addr" `Mutable None None;
+    Primitive.register "caml_array_get_addr" `Mutator None None;
+    Primitive.register "caml_array_set_addr" `Mutator None None;
     String.Hashtbl.iter
       (fun name (k, unbox, typ, _) ->
         Primitive.register name k None None;
