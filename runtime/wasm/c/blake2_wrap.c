@@ -50,8 +50,8 @@ static char g_key  [BLAKE2_KEY_MAX];
 static char g_out  [BLAKE2_OUT_MAX];
 static char g_chunk[BLAKE2_CHUNK_SIZE];
 
-/* Address getters — binaryen -O3 inlines them after wasm-merge so there's
-   no per-call overhead. */
+/* Address getters — binaryen -O3 inlines them once the runtime modules are
+   linked so there's no per-call overhead. */
 
 __attribute__((export_name("blake2_state_buf")))
 int state_buf_addr(void) { return (int)(uintptr_t)g_state; }
