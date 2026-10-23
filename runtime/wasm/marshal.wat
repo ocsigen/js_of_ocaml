@@ -35,6 +35,7 @@
          (param (ref eq)) (param (ref eq)) (result (ref eq))))
    (import "obj" "caml_is_closure"
       (func $caml_is_closure (param (ref eq)) (result i32)))
+   (import "obj" "tag_mask" (global $tag_mask i32))
    (import "effect" "caml_is_continuation"
       (func $caml_is_continuation (param (ref eq)) (result i32)))
    (import "io" "caml_really_putblock"
@@ -506,7 +507,7 @@
       (local $next (ref null $stack_item))
       (local $item (ref $stack_item))
       (local $code i32)
-      (local $header i32) (local $tg i32) (local $size i32)
+      (local $header i32) (local $tg i32) (local $size i32) (local $reserved i32)
       (local $len i32) (local $pos i32) (local $pos' i32) (local $ofs i32)
       (local $b (ref $block))
       (local $str (ref $bytes))
@@ -539,10 +540,21 @@
            (block $read_double_array
             (block $read_shared
              (local.set $code (call $read8u (local.get $s)))
+             (local.set $reserved (i32.const 0))
              (if (i32.eq (local.get $code) (global.get $CODE_RESERVED_BITS))
                 (then
-                   ;; Introcaml: reserved header bits of the next block; ignored
-                   (drop (call $read32 (local.get $s)))
+                   ;; Introcaml: reserved header bits of the next block,
+                   ;; stored above its tag in the header (see
+                   ;; caml_obj_get_reserved); dropped without introspection
+                   ;; support
+                   (local.set $reserved
+                      (@if $introspect
+                      (@then
+                         (i32.and (call $read32 (local.get $s))
+                            (i32.const 0x3fffff)))
+                      (@else
+                         (drop (call $read32 (local.get $s)))
+                         (i32.const 0))))
                    (local.set $code (call $read8u (local.get $s)))))
              (if (i32.ge_u (local.get $code) (global.get $PREFIX_SMALL_INT))
                 (then
@@ -701,7 +713,9 @@
             (array.new $block (ref.i31 (i32.const 0))
                (i32.add (local.get $size) (i32.const 1))))
          (array.set $block (local.get $b) (i32.const 0)
-            (ref.i31 (local.get $tg)))
+            (ref.i31
+               (i32.or (local.get $tg)
+                  (i32.shl (local.get $reserved) (i32.const 8)))))
          (if (local.get $size)
             (then
                (call $register_object (local.get $s) (local.get $b))
@@ -713,12 +727,18 @@
         ;; done
         (array.set $block (local.get $dest) (local.get $pos) (local.get $v))
         (if
-           ;; If this is an object, refresh its ID
-           (i32.and
-             (i32.eq (local.get $pos) (i32.const 2))
-             (ref.eq
-                     (array.get $block (local.get $dest) (i32.const 0))
-                     (ref.i31 (global.get $object_tag))))
+           ;; If this is an object, refresh its ID ($res, which holds the
+           ;; result, has no header)
+           (if (result i32) (i32.eq (local.get $pos) (i32.const 2))
+              (then
+                 (i32.eq
+                    (i32.and
+                       (i31.get_u
+                          (ref.cast (ref i31)
+                             (array.get $block (local.get $dest) (i32.const 0))))
+                       (global.get $tag_mask))
+                    (global.get $object_tag)))
+              (else (i32.const 0)))
            (then
              ;; Predefined exception slots have a negative ID
              ;; and should not be refreshed
@@ -871,6 +891,7 @@
       (struct
          ;; Flags
          (field $no_sharing i32)
+         (field $reserved_bits i32)
          (field $user_provided_output i32)
          ;; Header information
          (field $obj_counter (mut i32))
@@ -899,7 +920,7 @@
       (param $pos i32) (param $user_provided_output i32)
       (result (ref $extern_state))
       (local $b (ref $block))
-      (local $no_sharing i32)
+      (local $no_sharing i32) (local $reserved_bits i32)
       (loop $parse_flags
          (drop (block $done (result (ref eq))
             (local.set $b
@@ -907,10 +928,15 @@
             (if (ref.eq (array.get $block (local.get $b) (i32.const 1))
                    (ref.i31 (i32.const 0)))
                (then (local.set $no_sharing (i32.const 1))))
+            ;; Introcaml: Marshal.Reserved_bits
+            (if (ref.eq (array.get $block (local.get $b) (i32.const 1))
+                   (ref.i31 (i32.const 4)))
+               (then (local.set $reserved_bits (i32.const 1))))
             (local.set $flags (array.get $block (local.get $b) (i32.const 2)))
             (br $parse_flags))))
       (struct.new $extern_state
          (local.get $no_sharing)
+         (local.get $reserved_bits)
          (local.get $user_provided_output)
          (i32.const 0)
          (i32.const 0)
@@ -1417,7 +1443,7 @@
       (i31.get_s (ref.as_non_null (local.get $r))))
 
    (func $extern_mark_block
-      (param $s (ref $extern_state)) (param $b (ref $block)) (param $tg i32)
+      (param $s (ref $extern_state)) (param $b (ref $block)) (param $hd i32)
       ;; Records the position of a block by storing a negative mark in its
       ;; field 0, as there is no identity hash for references: the i31
       ;; -(2 * position + forward + 1), where forward is 1 for a
@@ -1451,14 +1477,16 @@
             (struct.set $extern_state $trail_tags (local.get $s)
                (local.get $tags))))
       (array.set $block (local.get $trail) (local.get $n) (local.get $b))
-      (array.set $int_array (local.get $tags) (local.get $n) (local.get $tg))
+      (array.set $int_array (local.get $tags) (local.get $n) (local.get $hd))
       (struct.set $extern_state $trail_len (local.get $s)
          (i32.add (local.get $n) (i32.const 1)))
       (array.set $block (local.get $b) (i32.const 0)
          (ref.i31
             (i32.sub (i32.const -1)
                (i32.or (i32.shl (local.get $pos) (i32.const 1))
-                  (i32.eq (local.get $tg) (global.get $forward_tag)))))))
+                  (i32.eq
+                     (i32.and (local.get $hd) (global.get $tag_mask))
+                     (global.get $forward_tag)))))))
 
    (func $keep_forward (param $v (ref eq)) (result i32)
       ;; Whether a Forward_tag block pointing to $v is marshalled as such
@@ -1479,6 +1507,7 @@
                (return
                   (i32.and (i32.sub (i32.const -1) (local.get $tg))
                      (i32.const 1)))))
+         (local.set $tg (i32.and (local.get $tg) (global.get $tag_mask)))
          (return
             (i32.or (i32.eq (local.get $tg) (global.get $forward_tag))
                (i32.or (i32.eq (local.get $tg) (global.get $lazy_tag))
@@ -1672,7 +1701,7 @@
       (local $iv (ref i31)) (local $flv (ref $float))
       (local $blk (ref $block))
       (local $fa (ref $float_array))
-      (local $tg i32) (local $sz i32)
+      (local $hd i32) (local $tg i32) (local $sz i32)
       (local $pos i32) (local $f (ref eq))
       (local $r_0 i32)
       (local $r_1 i32)
@@ -1687,20 +1716,21 @@
                (local.set $blk
                   (br_on_cast_fail $not_block (ref eq) (ref $block)
                      (local.get $v)))
-               ;; the tag, or a negative mark for a block already marshalled
-               ;; (see $extern_mark_block)
-               (local.set $tg
+               ;; the header, or a negative mark for a block already
+               ;; marshalled (see $extern_mark_block)
+               (local.set $hd
                   (i31.get_s
                      (ref.cast (ref i31)
                         (array.get $block (local.get $blk) (i32.const 0)))))
-               (if (i32.lt_s (local.get $tg) (i32.const 0))
+               (if (i32.lt_s (local.get $hd) (i32.const 0))
                   (then
                      (call $extern_shared_reference (local.get $s)
                         (i32.sub
                            (struct.get $extern_state $obj_counter (local.get $s))
-                           (i32.shr_u (i32.sub (i32.const -1) (local.get $tg))
+                           (i32.shr_u (i32.sub (i32.const -1) (local.get $hd))
                               (i32.const 1))))
                      (br $next_item)))
+               (local.set $tg (i32.and (local.get $hd) (global.get $tag_mask)))
                ;; a forwarded value, such as a forced lazy value, is
                ;; marshalled as the value it points to, as in the native
                ;; runtime
@@ -1719,7 +1749,19 @@
                         (local.get $s) (i32.const 0) (local.get $tg))
                      (br $next_item)))
                (call $extern_mark_block
-                  (local.get $s) (local.get $blk) (local.get $tg))
+                  (local.get $s) (local.get $blk) (local.get $hd))
+(@if $introspect
+(@then
+               ;; Introcaml: the reserved header bits, as the native runtime
+               ;; does with Marshal.Reserved_bits
+               (if (i32.and
+                      (struct.get $extern_state $reserved_bits (local.get $s))
+                      (i32.ne (local.get $hd) (local.get $tg)))
+                  (then
+                     (call $writecode32 (local.get $s)
+                        (global.get $CODE_RESERVED_BITS)
+                        (i32.shr_u (local.get $hd) (i32.const 8)))))
+))
                (call $extern_header
                   (local.get $s) (local.get $sz) (local.get $tg))
                (call $extern_size

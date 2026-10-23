@@ -16,6 +16,7 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
+   (import "obj" "tag_mask" (global $tag_mask i32))
    (import "fail" "caml_invalid_argument"
       (func $caml_invalid_argument (param (ref eq))))
    (import "fail" "caml_raise_out_of_memory" (func $caml_raise_out_of_memory))
@@ -153,8 +154,14 @@
             (br_on_cast_fail $not_block (ref eq) (ref $block) (local.get $a)))
          (local.set $a2 (array.new $block (ref.i31 (i32.const 0))
                            (i32.add (local.get $len) (i32.const 1))))
+         ;; The tag, without the descriptor
          (array.set $block (local.get $a2) (i32.const 0)
-            (array.get $block (local.get $a1) (i32.const 0)))
+            (ref.i31
+               (i32.and
+                  (i31.get_u
+                     (ref.cast (ref i31)
+                        (array.get $block (local.get $a1) (i32.const 0))))
+                  (global.get $tag_mask))))
          (array.copy $block $block
             (local.get $a2) (i32.const 1) (local.get $a1)
             (i32.add (i31.get_u (ref.cast (ref i31) (local.get $i)))

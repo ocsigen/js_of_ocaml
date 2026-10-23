@@ -1,3 +1,10 @@
+# dev
+
+## Features/Changes
+
+* Compiler/Runtime: with Introcaml, support runtime introspection in Wasm
+  (float arrays carry no descriptor)
+
 # 6.5.0 (2026-10-22) - Lille
 
 ## Features/Changes

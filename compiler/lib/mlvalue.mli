@@ -26,6 +26,13 @@ module Block : sig
   (** Introcaml: with introspection enabled, [desc] is stored in the header
       word, above the tag. *)
 
+  val header_word : tag:int -> desc:Code.Block_desc.t -> int
+  (** The header word of a block with the given tag and descriptor; the
+      descriptor is dropped when introspection is disabled. *)
+
+  val tag_mask : int
+  (** Masks the tag of a header word. *)
+
   val reserved_bits : int
   (** The number of reserved header bits (Introcaml), which hold the
       descriptor of a block. *)
