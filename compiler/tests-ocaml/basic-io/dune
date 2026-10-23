@@ -4,4 +4,4 @@
  (deps
   (sandbox preserve_file_kind))
  (action
-  (run node %{test} wc.ml)))
+  (run node %{test} %{dep:wc.ml})))
