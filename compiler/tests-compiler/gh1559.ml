@@ -63,10 +63,12 @@ end
 let () = my_ref := 2
 |}
   in
-  Util.compile_and_run prog;
+  (* Keep the closure created in the loop *)
+  let flags = [ "--disable"; "contify" ] in
+  Util.compile_and_run ~flags prog;
   [%expect {|
     1 |}];
-  let program = Util.compile_and_parse prog in
+  let program = Util.compile_and_parse ~flags prog in
   Util.print_program program;
   [%expect
     {|

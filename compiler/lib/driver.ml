@@ -40,6 +40,13 @@ let tailcall p =
   if debug () then Format.eprintf "Tail-call optimization...@.";
   Tailcall.f p
 
+let contify p =
+  if Config.Flag.inline () && Config.Flag.contify ()
+  then (
+    if debug () then Format.eprintf "Contification...@.";
+    Contify.f p)
+  else p
+
 let deadcode' p =
   if debug () then Format.eprintf "Dead-code...@.";
   let pure_fun = Pure_fun.f p in
@@ -235,6 +242,7 @@ let rec loop max name round i (p : 'a) : 'a =
 let round profile : 'a -> 'a =
   print
   +> tailcall
+  +> contify
   +> Ref_unboxing.f
   +> (flow +> specialize +> eval +> fst)
   +> inline profile
@@ -243,16 +251,27 @@ let round profile : 'a -> 'a =
 
 (* o1 *)
 
+(* Contification works better without the redundant block parameters
+   introduced by the bytecode parser: local functions are then
+   contified before being inlined into toplevel code. *)
+let prepare p =
+  if Config.Flag.inline () && Config.Flag.contify () && Config.Flag.deadcode ()
+  then fst (deadcode' (phi p))
+  else p
+
 let o1 =
-  loop 2 "round" (round Profile.O1) 1 +> (flow +> specialize +> eval +> fst) +> print
+  prepare
+  +> loop 2 "round" (round Profile.O1) 1
+  +> (flow +> specialize +> eval +> fst)
+  +> print
 
 (* o2 *)
 
-let o2 = loop 10 "round" (round Profile.O2) 1 +> print
+let o2 = prepare +> loop 10 "round" (round Profile.O2) 1 +> print
 
 (* o3 *)
 
-let o3 = loop 30 "round" (round Profile.O3) 1 +> print
+let o3 = prepare +> loop 30 "round" (round Profile.O3) 1 +> print
 
 let generate
     ~exported_runtime
