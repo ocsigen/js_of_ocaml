@@ -39,7 +39,8 @@ let is_immediate e = type_of_is_number J.EqEqEq e
    stored in the header word, above the tag, so that blocks remain plain
    arrays: [x[0] = tag | (bits << 8)]. With the 22 bits reserved by
    Introcaml, the header fits in 30 bits: it stays non-negative under
-   bitwise operators, and a small integer in JavaScript engines. *)
+   bitwise operators, and a small integer in JavaScript engines. The Wasm
+   backend uses the same layout for the i31 header of its blocks. *)
 let tag_bits = 8
 
 let reserved_bits = 22
@@ -48,14 +49,19 @@ let tag_mask = (1 lsl tag_bits) - 1
 
 let reserved_mask = (1 lsl reserved_bits) - 1
 
-let header ~tag ~desc =
-  int
-    (if Config.Flag.introspection ()
-     then tag lor ((Code.Block_desc.to_int desc land reserved_mask) lsl tag_bits)
-     else tag)
+let header_word ~tag ~desc =
+  if Config.Flag.introspection ()
+  then tag lor ((Code.Block_desc.to_int desc land reserved_mask) lsl tag_bits)
+  else tag
+
+let header ~tag ~desc = int (header_word ~tag ~desc)
 
 module Block = struct
   let make ~tag ~desc ~args = J.EArr (J.Element (header ~tag ~desc) :: args)
+
+  let header_word = header_word
+
+  let tag_mask = tag_mask
 
   let reserved_bits = reserved_bits
 

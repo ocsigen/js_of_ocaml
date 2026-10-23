@@ -9,6 +9,8 @@
 * Runtime: fast path for immediates in polymorphic comparisons (#????)
 * Compiler/Wasm: preprocess, validate and assemble the runtime files with Wax
   (new `wax-lib` dependency); remove `wasm_of_ocaml preprocess` (#2373)
+* Compiler/Runtime: with Introcaml, support runtime introspection in Wasm
+  (float arrays carry no descriptor)
 
 ## Bug fixes
 * Compiler: fix a miscompilation of `Int_trie` by OxCaml's flambda2 at -O2

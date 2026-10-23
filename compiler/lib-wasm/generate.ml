@@ -1954,7 +1954,7 @@ module Generate (Target : Target_sig.S) = struct
           let* apply = need_apply_fun ~cps ~arity:(List.length args) in
           let* args = expression_list (fun x -> load_and_box ctx x) args in
           return (W.Call (apply, args @ [ closure ]))
-    | Block (tag, a, _, _, _) ->
+    | Block (tag, a, _, _, desc) ->
         if tag = 254
         then
           Memory.allocate_float_array
@@ -1964,6 +1964,7 @@ module Generate (Target : Target_sig.S) = struct
                (Array.to_list a))
         else
           Memory.allocate
+            ~desc
             ~tag
             (expression_list (fun x -> load_and_box ctx x) (Array.to_list a))
     | Field (y, n, (Non_float | Immediate)) -> Memory.field (load_and_box ctx y) n

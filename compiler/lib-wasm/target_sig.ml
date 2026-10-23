@@ -24,7 +24,11 @@ module type S = sig
       [Gc_target.double_translation]) *)
 
   module Memory : sig
-    val allocate : tag:int -> Wasm_ast.expression list Code_generation.t -> expression
+    val allocate :
+         ?desc:Code.Block_desc.t
+      -> tag:int
+      -> Wasm_ast.expression list Code_generation.t
+      -> expression
 
     val allocate_float_array : Wasm_ast.expression list Code_generation.t -> expression
 
@@ -62,6 +66,7 @@ module type S = sig
         continuation. *)
 
     val tag : expression -> expression
+    (** The tag of a block, without its Introcaml descriptor *)
 
     val field : expression -> int -> expression
 

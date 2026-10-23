@@ -98,6 +98,7 @@
       (func $caml_is_closure (param (ref eq)) (result i32)))
    (import "obj" "caml_is_last_arg"
       (func $caml_is_last_arg (param (ref eq)) (result i32)))
+   (import "obj" "tag_mask" (global $tag_mask i32))
    (import "jsstring" "jsstring_of_bytes"
       (func $jsstring_of_bytes (param (ref $bytes)) (result anyref)))
    (import "jsstring" "bytes_of_jsstring"
@@ -677,8 +678,13 @@
       (param $vexn (ref eq)) (result (ref eq))
       (local $exn (ref $block))
       (local.set $exn (ref.cast (ref $block) (local.get $vexn)))
-      (if (ref.eq (array.get $block (local.get $exn) (i32.const 0))
-                  (ref.i31 (i32.const 0)))
+      (if (i32.eq
+             (i32.and
+                (i31.get_u
+                   (ref.cast (ref i31)
+                      (array.get $block (local.get $exn) (i32.const 0))))
+                (global.get $tag_mask))
+             (i32.const 0))
          (then
             (if (ref.eq (array.get $block (local.get $exn) (i32.const 1))
                    (call $caml_named_value (global.get $jsError)))
@@ -697,8 +703,13 @@
       (param $vexn (ref eq)) (result (ref eq))
       (local $exn (ref $block))
       (local.set $exn (ref.cast (ref $block) (local.get $vexn)))
-      (if (ref.eq (array.get $block (local.get $exn) (i32.const 0))
-                  (ref.i31 (i32.const 0)))
+      (if (i32.eq
+             (i32.and
+                (i31.get_u
+                   (ref.cast (ref i31)
+                      (array.get $block (local.get $exn) (i32.const 0))))
+                (global.get $tag_mask))
+             (i32.const 0))
          (then
             (if (ref.eq (array.get $block (local.get $exn) (i32.const 1))
                    (call $caml_named_value (global.get $jsError)))

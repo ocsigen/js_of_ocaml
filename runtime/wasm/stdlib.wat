@@ -32,6 +32,7 @@
    (import "obj" "caml_callback_2"
       (func $caml_callback_2
          (param (ref eq)) (param (ref eq)) (param (ref eq)) (result (ref eq))))
+   (import "obj" "tag_mask" (global $tag_mask i32))
    (import "string" "caml_string_concat"
       (func $caml_string_concat
          (param (ref eq)) (param (ref eq)) (result (ref eq))))
@@ -303,12 +304,14 @@
                   (local.set $name
                      (call $make_symbol_key
                         ;; is_predef = tag of global_name block
-                        (i31.get_u
-                           (ref.cast (ref i31)
-                              (array.get $block
-                                 (ref.cast (ref $block)
-                                    (array.get $block (local.get $pair) (i32.const 1)))
-                                 (i32.const 0))))
+                        (i32.and
+                           (i31.get_u
+                              (ref.cast (ref i31)
+                                 (array.get $block
+                                    (ref.cast (ref $block)
+                                       (array.get $block (local.get $pair) (i32.const 1)))
+                                    (i32.const 0))))
+                           (global.get $tag_mask))
                         (ref.cast (ref $bytes)
                            (array.get $block
                               (ref.cast (ref $block)

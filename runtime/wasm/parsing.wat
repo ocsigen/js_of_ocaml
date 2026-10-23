@@ -16,6 +16,7 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
+   (import "obj" "tag_mask" (global $tag_mask i32))
    (import "io" "caml_stderr" (global $caml_stderr (mut (ref eq))))
    (import "io" "caml_ml_output"
       (func $caml_ml_output
@@ -186,9 +187,11 @@
                (call $token_name
                   (array.get $block (local.get $tables)
                      (global.get $tbl_names_block))
-                  (i31.get_u
-                     (ref.cast (ref i31)
-                        (array.get $block (local.get $b) (i32.const 0))))))
+                  (i32.and
+                     (i31.get_u
+                        (ref.cast (ref i31)
+                           (array.get $block (local.get $b) (i32.const 0))))
+                     (global.get $tag_mask))))
             (call $output (@string "("))
             (local.set $v (array.get $block (local.get $b) (i32.const 1)))
             (if (ref.test (ref i31) (local.get $v))
@@ -326,10 +329,12 @@
                                 (array.get $block (local.get $tables)
                                    (global.get $tbl_transl_block)))
                              (i32.add
-                                (i31.get_u
-                                   (ref.cast (ref i31)
-                                      (array.get $block
-                                         (local.get $arg) (i32.const 0))))
+                                (i32.and
+                                   (i31.get_u
+                                      (ref.cast (ref i31)
+                                         (array.get $block
+                                            (local.get $arg) (i32.const 0))))
+                                   (global.get $tag_mask))
                                 (i32.const 1))))
                        (array.set $block (local.get $env) (global.get $env_lval)
                           (array.get $block (local.get $arg) (i32.const 1)))

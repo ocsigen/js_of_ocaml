@@ -19,6 +19,7 @@
    (import "obj" "object_tag" (global $object_tag i32))
    (import "obj" "forward_tag" (global $forward_tag i32))
    (import "obj" "abstract_tag" (global $abstract_tag i32))
+   (import "obj" "tag_mask" (global $tag_mask i32))
    (import "jsstring" "jsstring_test"
       (func $jsstring_test (param anyref) (result i32)))
    (import "jsstring" "jsstring_hash"
@@ -253,9 +254,11 @@
                      (br_on_cast_fail $not_block (ref eq) (ref $block)
                         (local.get $v)))
                   (local.set $tg
-                     (i31.get_u
-                        (ref.cast (ref i31)
-                           (array.get $block (local.get $bv) (i32.const 0)))))
+                     (i32.and
+                        (i31.get_u
+                           (ref.cast (ref i31)
+                              (array.get $block (local.get $bv) (i32.const 0))))
+                        (global.get $tag_mask)))
                   (if (i32.eq (local.get $tg) (global.get $forward_tag))
                      (then
                         (local.set $i (i32.const 0))
@@ -270,10 +273,13 @@
                                     (local.get $v)))
                               (br_if $loop
                                  (i32.eqz
-                                    (ref.eq
-                                       (array.get $block (local.get $bv)
-                                          (i32.const 0))
-                                       (ref.i31 (global.get $forward_tag)))))
+                                    (i32.eq
+                                       (i32.and
+                                          (i31.get_u
+                                             (ref.cast (ref i31)
+                                                (array.get $block (local.get $bv) (i32.const 0))))
+                                          (global.get $tag_mask))
+                                       (global.get $forward_tag))))
                               (local.set $i
                                  (i32.add (local.get $i) (i32.const 1)))
                               ;; give up on this object

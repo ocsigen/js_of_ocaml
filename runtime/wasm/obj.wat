@@ -132,6 +132,16 @@
    (global $string_tag i32 (i32.const 252))
    (global $float_tag i32 (i32.const 253))
    (global $double_array_tag (export "double_array_tag") i32 (i32.const 254))
+
+   ;; Introcaml: the reserved header bits of a block (its descriptor) are
+   ;; stored in its header, above the tag: [tag | (bits << 8)] (see
+   ;; [Mlvalue.Block] in the compiler). Tags are read with this mask, which
+   ;; is folded away when there is no introspection support.
+(@if $introspect
+(@then
+   (global $tag_mask (export "tag_mask") i32 (i32.const 0xff)))
+(@else
+   (global $tag_mask (export "tag_mask") i32 (i32.const -1))))
    (global $custom_tag i32 (i32.const 255))
 
    (func (export "caml_obj_is_stack")
@@ -279,8 +289,15 @@
          (local.set $orig (br_on_cast_fail $not_block (ref eq) (ref $block)
             (local.get $v)))
          (local.set $len (array.len (local.get $orig)))
+         ;; A fresh block carries no descriptor, as in the native runtime
          (local.set $res
-            (array.new $block (array.get $block (local.get $orig) (i32.const 0))
+            (array.new $block
+               (ref.i31
+                  (i32.and
+                     (i31.get_u
+                        (ref.cast (ref i31)
+                           (array.get $block (local.get $orig) (i32.const 0))))
+                     (global.get $tag_mask)))
                (local.get $len)))
          (array.copy $block $block
             (local.get $res) (i32.const 1) (local.get $orig) (i32.const 1)
@@ -351,9 +368,15 @@
          (then (return (ref.i31 (i32.const 1000)))))
       (drop (block $not_block (result (ref eq))
          (return
-            (array.get $block
-              (br_on_cast_fail $not_block (ref eq) (ref $block) (local.get $v))
-              (i32.const 0)))))
+            (ref.i31
+               (i32.and
+                  (i31.get_u
+                     (ref.cast (ref i31)
+                        (array.get $block
+                          (br_on_cast_fail $not_block (ref eq) (ref $block)
+                             (local.get $v))
+                          (i32.const 0))))
+                  (global.get $tag_mask))))))
       (if (ref.test (ref $bytes) (local.get $v))
          (then (return (ref.i31 (global.get $string_tag)))))
       (if (ref.test (ref $float) (local.get $v))
@@ -368,12 +391,23 @@
          (then (return (ref.i31 (global.get $cont_tag)))))
       (ref.i31 (global.get $abstract_tag)))
 
+   ;; Updates the tag of a block, keeping its descriptor
+   (func $set_tag (param $b (ref $block)) (param $tg i32)
+      (array.set $block (local.get $b) (i32.const 0)
+         (ref.i31
+            (i32.or
+               (i32.and
+                  (i31.get_u
+                     (ref.cast (ref i31)
+                        (array.get $block (local.get $b) (i32.const 0))))
+                  (i32.xor (global.get $tag_mask) (i32.const -1)))
+               (local.get $tg)))))
+
    (func (export "caml_obj_make_forward")
       (param $b (ref eq)) (param $v (ref eq)) (result (ref eq))
       (local $block (ref $block))
       (local.set $block (ref.cast (ref $block) (local.get $b)))
-      (array.set $block (local.get $block)
-         (i32.const 0) (ref.i31 (global.get $forward_tag)))
+      (call $set_tag (local.get $block) (global.get $forward_tag))
       (array.set $block (local.get $block) (i32.const 1) (local.get $v))
       (ref.i31 (i32.const 0)))
 
@@ -386,11 +420,16 @@
       (param $v (ref eq)) (param $o i32) (param $n i32) (result i32)
       (local $b (ref $block))
       (local.set $b (ref.cast (ref $block) (local.get $v)))
-      (if (result i32) (ref.eq (array.get $block (local.get $b) (i32.const 0))
-                               (ref.i31 (local.get $o)))
+      (if (result i32)
+          (i32.eq
+             (i32.and
+                (i31.get_u
+                   (ref.cast (ref i31)
+                      (array.get $block (local.get $b) (i32.const 0))))
+                (global.get $tag_mask))
+             (local.get $o))
          (then
-            (array.set $block (local.get $b) (i32.const 0)
-               (ref.i31 (local.get $n)))
+            (call $set_tag (local.get $b) (local.get $n))
             (i32.const 1))
          (else
             (i32.const 0))))
@@ -670,23 +709,93 @@
 
 (@if $introspect
 (@then
-   ;; A reference cell holding the (empty) list of block descriptors
-   (global $block_descs (ref eq)
+   ;; A reference cell holding the list of block descriptors
+   (global $block_descs (ref $block)
       (array.new_fixed $block 2 (ref.i31 (i32.const 0)) (ref.i31 (i32.const 0))))
 
    (func (export "caml_compiler_block_descs")
       (param (ref eq)) (result (ref eq))
       (global.get $block_descs))
 
+   ;; Prepend the descriptors of a program or a compilation unit to the list
+   ;; [Introspect.Desc.compiler_descriptors ()] watches: it registers the new
+   ;; prefix, up to the list it has already seen.
+   (func (export "caml_register_block_descs")
+      (param $descs (ref eq)) (result (ref eq))
+      (local $l (ref eq)) (local $rev (ref eq)) (local $res (ref eq))
+      (local $cell (ref $block))
+      (local.set $rev (ref.i31 (i32.const 0)))
+      (local.set $l (local.get $descs))
+      (loop $reverse
+         (drop (block $done (result (ref eq))
+            (local.set $cell
+               (br_on_cast_fail $done (ref eq) (ref $block) (local.get $l)))
+            (local.set $rev
+               (array.new_fixed $block 3 (ref.i31 (i32.const 0))
+                  (array.get $block (local.get $cell) (i32.const 1))
+                  (local.get $rev)))
+            (local.set $l (array.get $block (local.get $cell) (i32.const 2)))
+            (br $reverse))))
+      (local.set $res (array.get $block (global.get $block_descs) (i32.const 1)))
+      (loop $prepend
+         (drop (block $done (result (ref eq))
+            (local.set $cell
+               (br_on_cast_fail $done (ref eq) (ref $block) (local.get $rev)))
+            (local.set $res
+               (array.new_fixed $block 3 (ref.i31 (i32.const 0))
+                  (array.get $block (local.get $cell) (i32.const 1))
+                  (local.get $res)))
+            (local.set $rev (array.get $block (local.get $cell) (i32.const 2)))
+            (br $prepend))))
+      (array.set $block (global.get $block_descs) (i32.const 1) (local.get $res))
+      (ref.i31 (i32.const 0)))
+
+   ;; Must match [Config.reserved_header_bits] of the compiler that produced
+   ;; the bytecode: descriptor indices are hashes truncated to that many bits.
    (func (export "caml_obj_reserved_bits") (param (ref eq)) (result (ref eq))
+      (ref.i31 (i32.const 22)))
+
+   ;; The reserved header bits of a block; other values have none
+   (func (export "caml_obj_get_reserved") (param $v (ref eq)) (result (ref eq))
+      (drop (block $not_block (result (ref eq))
+         (return
+            (ref.i31
+               (i32.shr_u
+                  (i31.get_u
+                     (ref.cast (ref i31)
+                        (array.get $block
+                           (br_on_cast_fail $not_block (ref eq) (ref $block)
+                              (local.get $v))
+                           (i32.const 0))))
+                  (i32.const 8))))))
       (ref.i31 (i32.const 0)))
 
-   (func (export "caml_obj_get_reserved") (param (ref eq)) (result (ref eq))
+   (func (export "caml_obj_set_reserved")
+      (param $v (ref eq)) (param $bits (ref eq)) (result (ref eq))
+      (local $b (ref $block))
+      (drop (block $not_block (result (ref eq))
+         (local.set $b
+            (br_on_cast_fail $not_block (ref eq) (ref $block) (local.get $v)))
+         ;; Atoms are shared, as in the native runtime
+         (br_if $not_block (ref.i31 (i32.const 0))
+            (i32.lt_u (array.len (local.get $b)) (i32.const 2)))
+         (array.set $block (local.get $b) (i32.const 0)
+            (ref.i31
+               (i32.or
+                  (i32.and
+                     (i31.get_u
+                        (ref.cast (ref i31)
+                           (array.get $block (local.get $b) (i32.const 0))))
+                     (global.get $tag_mask))
+                  (i32.shl
+                     (i32.and (i31.get_u (ref.cast (ref i31) (local.get $bits)))
+                        (i32.const 0x3fffff))
+                     (i32.const 8)))))
+         (return (ref.i31 (i32.const 1)))))
       (ref.i31 (i32.const 0)))
 
-   (func (export "caml_obj_set_reserved") (param (ref eq) (ref eq)) (result (ref eq))
-      (ref.i31 (i32.const 0)))
-
+   ;; The descriptors of the program are registered with
+   ;; [caml_register_block_descs] instead.
    (func (export "caml_read_bdsc_section") (param (ref eq)) (result (ref eq))
       (ref.i31 (i32.const 0)))
 ))
