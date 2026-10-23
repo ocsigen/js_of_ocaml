@@ -756,6 +756,29 @@
          (return (ref.i31 (i32.const 1)))))
       (ref.i31 (i32.const 0)))
 
+   ;; [Obj.size] of a value that is not a block (see [gen_array_length] in
+   ;; the compiler): never fails, as in the native runtime, so that
+   ;; [Introspect] can look at any value. Sizes are in 32-bit words, except
+   ;; for float arrays, whose length is that of the array.
+   (func (export "caml_obj_size_other") (param $v (ref eq)) (result i32)
+      (drop (block $not_float_array (result (ref eq))
+         (return
+            (array.len
+               (br_on_cast_fail $not_float_array (ref eq) (ref $float_array)
+                  (local.get $v))))))
+      (drop (block $not_string (result (ref eq))
+         (return
+            (i32.shr_u
+               (i32.add
+                  (array.len
+                     (br_on_cast_fail $not_string (ref eq) (ref $bytes)
+                        (local.get $v)))
+                  (i32.const 4))
+               (i32.const 2)))))
+      (if (ref.test (ref $float) (local.get $v))
+         (then (return (i32.const 2))))
+      (i32.const 0))
+
    ;; The descriptors of the program are registered with
    ;; [caml_register_block_descs] instead.
    (func (export "caml_read_bdsc_section") (param (ref eq)) (result (ref eq))

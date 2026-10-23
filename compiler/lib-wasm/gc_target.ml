@@ -764,7 +764,21 @@ module Memory = struct
                in
                instr (Br (1, Some e))))
        in
-       let* e = float_array_length (load a) in
+       let* e =
+         if Config.Flag.introspection ()
+         then
+           (* [Obj.size] is also used on values other than arrays, which
+              Introcaml's [Introspect] can print *)
+           let* f =
+             register_import
+               ~name:"caml_obj_size_other"
+               ~import_module:"env"
+               (Fun { params = [ Type.value ]; result = [ I32 ] })
+           in
+           let* a = load a in
+           return (W.Call (f, [ a ]))
+         else float_array_length (load a)
+       in
        instr (W.Push e))
 
   let array_get e e' = wasm_array_get e Arith.(e' + const 1l)
