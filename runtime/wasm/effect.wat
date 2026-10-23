@@ -51,10 +51,10 @@
 
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
-   (type $function_1 (func (param (ref eq) (ref eq)) (result (ref eq))))
+   (type $function_1 (sub (func (param (ref eq) (ref eq)) (result (ref eq)))))
    (type $closure (sub (struct (field $func (ref $function_1)))))
    (type $function_3
-      (func (param (ref eq) (ref eq) (ref eq) (ref eq)) (result (ref eq))))
+      (sub (func (param (ref eq) (ref eq) (ref eq) (ref eq)) (result (ref eq)))))
    (type $closure_3
       (sub $closure
          (struct (field $func (ref $function_1)) (field $direct (ref $function_3)))))
@@ -72,7 +72,7 @@
 
    (@string $effect_unhandled "Effect.Unhandled")
 
-   (func $raise_unhandled
+   (func $raise_unhandled (type $function_1)
       (param $eff (ref eq)) (param (ref eq)) (result (ref eq))
       (block $null
          (call $caml_raise_with_arg
@@ -327,7 +327,7 @@
 
 (@if (< $ocaml_version (5 6 0))
 (@then
-   (func $call_effect_handler
+   (func $call_effect_handler (type $function_1)
       (param $tail (ref eq)) (param $venv (ref eq)) (result (ref eq))
       (local $env (ref $call_handler_env))
       (local $handler (ref $closure_3))
@@ -342,12 +342,12 @@
          (struct.get $closure_3 1 (local.get $handler)))))
 (@else
    (type $function_2
-      (func (param (ref eq) (ref eq) (ref eq)) (result (ref eq))))
+      (sub (func (param (ref eq) (ref eq) (ref eq)) (result (ref eq)))))
    (type $closure_2
       (sub $closure
          (struct (field $func (ref $function_1)) (field $direct (ref $function_2)))))
 
-   (func $call_effect_handler
+   (func $call_effect_handler (type $function_1)
       (param $_tail (ref eq)) (param $venv (ref eq)) (result (ref eq))
       (local $env (ref $call_handler_env))
       (local $handler (ref $closure_2))
@@ -575,10 +575,10 @@
 (@if (= $effects "cps")
 (@then
    (type $function_2
-      (func (param (ref eq) (ref eq) (ref eq)) (result (ref eq))))
+      (sub (func (param (ref eq) (ref eq) (ref eq)) (result (ref eq)))))
    (type $function_4
-      (func (param (ref eq) (ref eq) (ref eq) (ref eq) (ref eq))
-         (result (ref eq))))
+      (sub (func (param (ref eq) (ref eq) (ref eq) (ref eq) (ref eq))
+              (result (ref eq)))))
    (type $cps_closure (sub (struct (field $func (ref $function_2)))))
    (type $cps_closure_0 (sub (struct (field $func (ref $function_1)))))
    (type $cps_closure_2
@@ -624,7 +624,7 @@
             (struct.get $cps_fiber $exn_stack (global.get $cps_fiber_stack))))
       (ref.i31 (i32.const 0)))
 
-   (func $raise_exception
+   (func $raise_exception (type $function_1)
       (param $exn (ref eq)) (param (ref eq)) (result (ref eq))
       (throw $ocaml_exception (local.get $exn)))
 
@@ -646,12 +646,13 @@
       (param $exn (ref eq)) (param (ref eq)) (result (ref eq))
       (local.get $exn))
 
-   (func $identity (param $v (ref eq)) (param (ref eq)) (result (ref eq))
+   (func $identity (type $function_1)
+      (param $v (ref eq)) (param (ref eq)) (result (ref eq))
       (local.get $v))
 
    (global $identity_closure (ref $closure) (struct.new $closure (ref.func $identity)))
 
-   (func $trampoline_iterator
+   (func $trampoline_iterator (type $function_1)
       (param $f (ref eq)) (param $venv (ref eq)) (result (ref eq))
       (local $env (ref $iterator))
       (local $i i32) (local $args (ref $block))
@@ -671,7 +672,7 @@
          (struct.get $cps_closure 0
             (ref.cast (ref $cps_closure) (local.get $f)))))
 
-   (func $apply_iterator
+   (func $apply_iterator (type $function_1)
       (param $f (ref eq)) (param $venv (ref eq)) (result (ref eq))
       (local $env (ref $iterator))
       (local $i i32) (local $args (ref $block))
@@ -701,7 +702,7 @@
          (i32.const 1)
          (ref.cast (ref $block) (local.get $args))))
 
-   (func $dummy_cps_fun
+   (func $dummy_cps_fun (type $function_2)
       (param (ref eq)) (param (ref eq)) (param (ref eq)) (result (ref eq))
       (unreachable))
 
@@ -954,7 +955,8 @@
          (struct.get $cps_closure 0
             (ref.cast (ref $cps_closure) (local.get $handler)))))
 
-   (func $value_handler (param $x (ref eq)) (param (ref eq)) (result (ref eq))
+   (func $value_handler (type $function_1)
+      (param $x (ref eq)) (param (ref eq)) (result (ref eq))
       (return_call $cps_call_handler
           (struct.get $cps_fiber $value (global.get $cps_fiber_stack))
           (local.get $x)))
@@ -962,7 +964,8 @@
    (global $value_handler_closure (ref $closure)
       (struct.new $closure (ref.func $value_handler)))
 
-   (func $exn_handler (param $x (ref eq)) (param (ref eq)) (result (ref eq))
+   (func $exn_handler (type $function_1)
+      (param $x (ref eq)) (param (ref eq)) (result (ref eq))
       (return_call $cps_call_handler
           (struct.get $cps_fiber $exn (global.get $cps_fiber_stack))
           (local.get $x)))
