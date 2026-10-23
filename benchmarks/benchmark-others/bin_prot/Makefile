@@ -1,4 +1,4 @@
-.PHONY: bench perform
+.PHONY: bench run perform
 
 export NAME=Others
 export SUBNAME=bin_prot
@@ -6,6 +6,13 @@ export SUBNAME=bin_prot
 SHELL=/bin/bash -o pipefail
 
 bench:
+	@if opam list --installed --check ppx_bin_prot; then \
+	  $(MAKE) run; \
+	else \
+	  echo "Skipping $(NAME)/$(SUBNAME) (ppx_bin_prot is not installed)"; \
+	fi
+
+run:
 	@date -u +"%FT%TZ - $(NAME)/$(SUBNAME): starting"
 	dune build --profile release --root .
 	node _build/default/bench.bc.js 400000
