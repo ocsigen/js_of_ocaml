@@ -49,23 +49,22 @@
 
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
-   (type $function_1 (func (param (ref eq) (ref eq)) (result (ref eq))))
+   (type $function_1 (func (param (ref eq) (ref struct)) (result (ref eq))))
    (type $closure (sub (struct (;(field i32);) (field $func (ref $function_1)))))
-(@if (< $ocaml_version (5 6 0))
-(@then
+   ;; Effect handlers take 3 arguments before OCaml 5.6, 2 afterwards
    (type $function_3
-      (func (param (ref eq) (ref eq) (ref eq) (ref eq)) (result (ref eq))))
+      (func (param (ref eq) (ref eq) (ref eq) (ref struct)) (result (ref eq))))
    (type $closure_3
       (sub $closure
          (struct (field $func (ref $function_1)) (field $direct (ref $function_3)))))
-)
-(@else
    (type $function_2
-      (func (param (ref eq) (ref eq) (ref eq)) (result (ref eq))))
+      (func (param (ref eq) (ref eq) (ref struct)) (result (ref eq))))
    (type $closure_2
       (sub $closure
          (struct (field $func (ref $function_1)) (field $direct (ref $function_2)))))
-))
+
+   (type $dummy_env (struct))
+   (global $dummy_env (ref struct) (struct.new $dummy_env))
 
    ;; Effect types
 
@@ -95,7 +94,7 @@
    (@string $effect_unhandled "Effect.Unhandled")
 
    (func $raise_unhandled
-      (param $eff (ref eq)) (param (ref eq)) (result (ref eq))
+      (param $eff (ref eq)) (param (ref struct)) (result (ref eq))
       (block $null
          (call $caml_raise_with_arg
             (br_on_null $null
@@ -155,6 +154,8 @@
       (local $exn (ref eq))
       (local $val (ref eq)) (local $continuation (ref $continuation))
       (local $saved_effect_allowed i32)
+      (local $cl (ref $closure)) (local $cl_2 (ref $closure_2))
+      (local $cl_3 (ref $closure_3))
       (if (ref.eq (local.get $vfiber) (ref.i31 (i32.const 0)))
          (then
             (call $caml_raise_constant
@@ -183,10 +184,10 @@
                   ;; handle return
                   (global.set $effect_allowed (local.get $saved_effect_allowed))
                   (return_call_ref $function_1 (local.get $res)
-                     (local.tee $f
-                        (struct.get $fiber $value (local.get $fiber)))
-                     (struct.get $closure 0
-                        (ref.cast (ref $closure) (local.get $f)))))
+                     (local.tee $cl
+                        (ref.cast (ref $closure)
+                           (struct.get $fiber $value (local.get $fiber))))
+                     (struct.get $closure 0 (local.get $cl))))
             (local.set $continuation)
             (local.set $val)
             ;; handle effect
@@ -203,10 +204,10 @@
                ;; last_fiber: only ever handed back to %reperform, which
                ;; ignores it (no stack relinking is needed here)
                (local.get $fiber)
-               (local.tee $f
-                  (struct.get $fiber $effect (local.get $fiber)))
-               (struct.get $closure_3 1
-                  (ref.cast (ref $closure_3) (local.get $f))))
+               (local.tee $cl_3
+                  (ref.cast (ref $closure_3)
+                     (struct.get $fiber $effect (local.get $fiber))))
+               (struct.get $closure_3 1 (local.get $cl_3)))
 )
 (@else
             (return_call_ref $function_2
@@ -214,17 +215,17 @@
                (array.new_fixed $block 3 (ref.i31 (global.get $cont_tag))
                   (local.get $fiber)
                   (local.get $fiber))
-               (local.tee $f
-                  (struct.get $fiber $effect (local.get $fiber)))
-               (struct.get $closure_2 1
-                  (ref.cast (ref $closure_2) (local.get $f))))
+               (local.tee $cl_2
+                  (ref.cast (ref $closure_2)
+                     (struct.get $fiber $effect (local.get $fiber))))
+               (struct.get $closure_2 1 (local.get $cl_2)))
 ))))
       ;; handle exception
       (global.set $effect_allowed (local.get $saved_effect_allowed))
       (return_call_ref $function_1 (local.get $exn)
-         (local.tee $f
-            (struct.get $fiber $exn (local.get $fiber)))
-         (struct.get $closure 0 (ref.cast (ref $closure) (local.get $f)))))
+         (local.tee $cl
+            (ref.cast (ref $closure) (struct.get $fiber $exn (local.get $fiber))))
+         (struct.get $closure 0 (local.get $cl))))
 
    (func (export "%resume")
       (param $vfiber (ref eq)) (param $f (ref eq)) (param $v (ref eq))
@@ -259,26 +260,26 @@
          (local.get $res_1)))
 
    (func (export "%perform") (param $eff (ref eq)) (result (ref eq))
-      (local $res_0 (ref eq)) (local $res_1 (ref eq))
+      (local $res_0 (ref eq)) (local $res_1 (ref eq)) (local $cl (ref $closure))
       (if (i32.eqz (global.get $effect_allowed))
          (then
             (return_call $raise_unhandled
-               (local.get $eff) (ref.i31 (i32.const 0)))))
+               (local.get $eff) (global.get $dummy_env))))
       (suspend $effect (local.get $eff))
       (local.set $res_1)
       (local.set $res_0)
       (return_call_ref $function_1 (local.get $res_1)
-         (local.get $res_0)
-         (struct.get $closure 0
-            (ref.cast (ref $closure) (local.get $res_0)))))
+         (local.tee $cl (ref.cast (ref $closure) (local.get $res_0)))
+         (struct.get $closure 0 (local.get $cl))))
 
    ;; Allocate a stack
 
    (func $initial_cont
-      (param $f (ref eq)) (param $x (ref eq)) (result (ref eq))
+      (param $vf (ref eq)) (param $x (ref eq)) (result (ref eq))
+      (local $f (ref $closure))
       (return_call_ref $function_1 (local.get $x)
-         (local.get $f)
-         (struct.get $closure 0 (ref.cast (ref $closure) (local.get $f)))))
+         (local.tee $f (ref.cast (ref $closure) (local.get $vf)))
+         (struct.get $closure 0 (local.get $f))))
 
    (func (export "caml_alloc_stack")
       (param $value (ref eq)) (param $exn (ref eq)) (param $effect (ref eq))
