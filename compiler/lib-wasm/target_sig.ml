@@ -20,7 +20,11 @@ module type S = sig
   type expression = Code_generation.expression
 
   module Memory : sig
-    val allocate : tag:int -> Wasm_ast.expression list Code_generation.t -> expression
+    val allocate :
+         ?desc:Code.Block_desc.t
+      -> tag:int
+      -> Wasm_ast.expression list Code_generation.t
+      -> expression
 
     val allocate_float_array : Wasm_ast.expression list Code_generation.t -> expression
 
@@ -46,6 +50,7 @@ module type S = sig
       -> unit Code_generation.t
 
     val tag : expression -> expression
+    (** The tag of a block, without its Introcaml descriptor *)
 
     val field : expression -> int -> expression
 

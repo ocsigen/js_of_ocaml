@@ -16,6 +16,7 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
+   (import "obj" "tag_mask" (global $tag_mask i32))
    (import "fail" "caml_invalid_argument" (func $caml_invalid_argument (param (ref eq))))
 
    (type $block (array (mut (ref eq))))
@@ -46,9 +47,11 @@
          (i32.sub (array.len (local.get $idx_block)) (i32.const 1)))
       ;; Invalid (non-zero-tag) index: raise.
       (if (i32.ne
-              (i31.get_s
-                 (ref.cast (ref i31)
-                    (array.get $block (local.get $idx_block) (i32.const 0))))
+              (i32.and
+                 (i31.get_s
+                    (ref.cast (ref i31)
+                       (array.get $block (local.get $idx_block) (i32.const 0))))
+                 (global.get $tag_mask))
               (i32.const 0))
          (then
             (call $caml_invalid_argument
@@ -104,9 +107,11 @@
          (i32.sub (array.len (local.get $idx_block)) (i32.const 1)))
       ;; Invalid (non-zero-tag) index: raise.
       (if (i32.ne
-              (i31.get_s
-                 (ref.cast (ref i31)
-                    (array.get $block (local.get $idx_block) (i32.const 0))))
+              (i32.and
+                 (i31.get_s
+                    (ref.cast (ref i31)
+                       (array.get $block (local.get $idx_block) (i32.const 0))))
+                 (global.get $tag_mask))
               (i32.const 0))
          (then
             (call $caml_invalid_argument

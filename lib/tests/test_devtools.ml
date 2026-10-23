@@ -74,7 +74,12 @@ and expand ~max_depth f depth obj config =
       else header
 
 let expand ?(max_depth = 100) v =
-  expand ~max_depth (formatter ()) 0 (Js.Unsafe.inject v) (Js.Unsafe.inject Js.undefined)
+  expand
+    ~max_depth
+    (formatter ())
+    0
+    (Js.Unsafe.inject (Js_of_ocaml_devtools.inspect v))
+    (Js.Unsafe.inject Js.undefined)
 
 let show ?max_depth v = print_endline (expand ?max_depth v)
 
@@ -266,6 +271,22 @@ let%expect_test "closures, references, cycles" =
   show (r, fun x -> x);
   show (Some (ref 3), ref (ref 1));
   [%expect
+    ({|
+    (ref [1], <closure>)
+      0: ref [1]
+        [1]
+          0: 1
+      1: <closure>
+    (Some (ref 3), ref (ref 1))
+      0: Some (ref 3)
+        ref 3
+          3
+      1: ref (ref 1)
+        ref 1
+          1
+    |}
+    [@when wasm])];
+  [%expect
     {|
     (ref [1], <closure>)
       0: ref [1]
@@ -325,6 +346,14 @@ let%expect_test "strings" =
   let long = String.make 70 'x' in
   show ("short", long, Bytes.of_string long);
   [%expect
+    ({|
+    ("short", "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
+      0: "short"
+      1: <native>
+      2: <native>
+    |}
+    [@when wasm])];
+  [%expect
     {|
            ("short", "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", Bytes.of_string "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"...
              0: "short"
@@ -335,12 +364,43 @@ let%expect_test "strings" =
 let%expect_test "int32 and nativeint" =
   let f = formatter () in
   let claims v =
-    Js.Opt.test (f##header (Js.Unsafe.inject v) (Js.Unsafe.inject Js.undefined))
+    Js.Opt.test
+      (f##header
+         (Js.Unsafe.inject (Js_of_ocaml_devtools.inspect v))
+         (Js.Unsafe.inject Js.undefined))
   in
   Printf.printf "top-level claims: int32=%b nativeint=%b\n" (claims 7l) (claims 9n);
   show (Int32.max_int, Int32.min_int, -7l, 0l);
   show (Nativeint.max_int, Nativeint.min_int, -9n, 0n);
   show (Some 7l, [ 1l; -2l ], [| 3n |], { x = 1; name = "n" }, ref 5n);
+  [%expect
+    ({|
+    top-level claims: int32=true nativeint=true
+    (2147483647l, -2147483648l, -7l, 0l)
+      0: 2147483647l
+      1: -2147483648l
+      2: -7l
+      3: 0l
+    (2147483647n, -2147483648n, -9n, 0n)
+      0: 2147483647n
+      1: -2147483648n
+      2: -9n
+      3: 0n
+    (Some 7l, [1l; -2l], [|3n|], {x = 1; name = "n"}, ref 5n)
+      0: Some 7l
+        7l
+      1: [1l; -2l]
+        0: 1l
+        1: -2l
+      2: [|3n|]
+        0: 3n
+      3: {x = 1; name = "n"}
+        x: 1
+        name: "n"
+      4: ref 5n
+        5n
+    |}
+    [@when wasm])];
   [%expect
     {|
     top-level claims: int32=false nativeint=false
@@ -372,6 +432,22 @@ let%expect_test "int32 and nativeint" =
 (* Floats are unboxed numbers: integral ones cannot be told from integers *)
 let%expect_test "floats" =
   show (1.0, 3.14, -0.5, 1e100, nan, infinity, neg_infinity, Some 2.5, [ 0.25 ]);
+  [%expect
+    ({|
+    (1., 3.14, -0.5, 1e+100, nan, infinity, neg_infinity, Some 2.5, [0.25])
+      0: 1.
+      1: 3.14
+      2: -0.5
+      3: 1e+100
+      4: nan
+      5: infinity
+      6: neg_infinity
+      7: Some 2.5
+        2.5
+      8: [0.25]
+        0: 0.25
+    |}
+    [@when wasm])];
   [%expect
     {|
            (1, 3.14, -0.5, 1e+100, nan, infinity, neg_infinity, Some 2.5, [0.25])
@@ -421,13 +497,16 @@ let%expect_test "plain JavaScript values are left to the console" =
     "%b %b %b\n"
     (claims (Js.Unsafe.obj [||]))
     (claims (Js.array [| 1; 2 |]))
-    (claims (Some 1));
+    (claims (Js_of_ocaml_devtools.inspect (Some 1)));
   [%expect {| false false true |}]
 
 let%expect_test "bytes, boxed integers and bigarrays" =
   let f = formatter () in
   let claims v =
-    Js.Opt.test (f##header (Js.Unsafe.inject v) (Js.Unsafe.inject Js.undefined))
+    Js.Opt.test
+      (f##header
+         (Js.Unsafe.inject (Js_of_ocaml_devtools.inspect v))
+         (Js.Unsafe.inject Js.undefined))
   in
   let ba = Bigarray.Array1.of_array Bigarray.int Bigarray.c_layout [| 1; 2 |] in
   Printf.printf
@@ -438,6 +517,21 @@ let%expect_test "bytes, boxed integers and bigarrays" =
   show (Bytes.of_string "a\"b", 42L, 7l, 9n, ba, Some ba);
   show (Bytes.of_string "abc");
   show 42L;
+  [%expect
+    ({|
+    top-level claims: bytes=true int64=true bigarray=true
+    ("a\"b", 42L, 7l, 9n, <bigarray 2>, Some <bigarray 2>)
+      0: "a\"b"
+      1: 42L
+      2: 7l
+      3: 9n
+      4: <bigarray 2>
+      5: Some <bigarray 2>
+        <bigarray 2>
+    "abc"
+    42L
+    |}
+    [@when wasm])];
   [%expect
     {|
     top-level claims: bytes=true int64=true bigarray=false
