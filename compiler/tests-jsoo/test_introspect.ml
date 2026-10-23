@@ -17,9 +17,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-(* Introcaml only: polymorphic printing through [Introspect] works in
-   JavaScript, where blocks carry their descriptor in their header word, above
-   the tag. Not run on wasm, which has no support yet. *)
+(* Introcaml only: polymorphic printing through [Introspect], blocks
+   carrying their descriptor in their header word, above the tag. *)
 [@@@if introspect]
 
 type color =
@@ -91,13 +90,19 @@ type float_record =
    literal is one, as are records built from non-constant fields), those
    built by the runtime do not. A constant float record is a Lambda
    [Const_float_array], which carries no descriptor in Introcaml (yet): it is
-   emitted without reserved bits, so none is recovered. *)
+   emitted without reserved bits, so none is recovered. In Wasm, float blocks
+   have no header, hence no descriptor. *)
 let%expect_test "float blocks" =
   let f x = { fa = x; fb = 2.5 } in
+  let wasm =
+    match Sys.backend_type with
+    | Other "wasm_of_ocaml" -> true
+    | Native | Bytecode | Other _ -> false
+  in
   Printf.printf
     "%b %b %b %b\n"
-    (Obj.get_reserved (Obj.repr [| 1.5; 2.5 |]) <> 0)
-    (Obj.get_reserved (Obj.repr (f 1.5)) <> 0)
+    (Obj.get_reserved (Obj.repr [| 1.5; 2.5 |]) <> 0 <> wasm)
+    (Obj.get_reserved (Obj.repr (f 1.5)) <> 0 <> wasm)
     (Obj.get_reserved (Obj.repr (Array.map (fun x -> x +. 1.) [| 1.5 |])) = 0)
     (Obj.get_reserved (Obj.repr { fa = 1.5; fb = 2.5 }) <> 0);
   [%expect {| true true true false |}]
