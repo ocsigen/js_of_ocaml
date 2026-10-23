@@ -44,9 +44,15 @@ type slot = private int list
 
 type node = slot array
 
-external slot : 'a -> slot = "%identity"
+(* Not [%identity]: slots also hold nodes, which [int list] does not
+   describe. OxCaml's flambda2 trusts the shape of a value converted
+   with [%identity] (for [int list], an immediate or a block of size 2),
+   and with -O2 or -O3 drops the code storing a node into a slot as
+   unreachable. [Obj.magic] is OxCaml's [%obj_magic], which it does not
+   see through; in upstream OCaml it is [%identity]. *)
+let slot : 'a -> slot = Obj.magic
 
-external unslot : slot -> 'a = "%identity"
+let unslot : slot -> 'a = Obj.magic
 
 let absent : slot = slot (ref 0)
 
