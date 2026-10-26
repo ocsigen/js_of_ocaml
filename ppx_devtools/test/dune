@@ -3,4 +3,11 @@
  (inline_tests
   (modes js wasm best))
  (preprocess
-  (pps ppx_devtools.optcomp ppx_devtools.expect -- -axes Test_axes)))
+  (pps
+   ppx_devtools.optcomp
+   ppx_devtools.expect
+   --
+   -axes
+   Test_axes
+   -axes
+   Test_axes_override)))

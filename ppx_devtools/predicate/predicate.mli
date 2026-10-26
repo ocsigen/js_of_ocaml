@@ -73,15 +73,16 @@ val eval_compile_time : t -> bool
     constructs that are not meaningful at compile time (e.g. [backend],
     the runtime shorthands or extension axes). *)
 
-val reify : ?axes:string -> loc:Location.t -> t -> expression
+val reify : ?axes:string list -> loc:Location.t -> t -> expression
 (** Reify the predicate into an OCaml expression of type [bool] that evaluates it
     at runtime against [Ppx_devtools_expect_runtime.Axes]. Supports [ocaml_version],
     [os_type], [oxcaml], [backend] and the runtime shorthands.
 
-    Any other identifier [x] is an extension axis, reified as [M.x] where [M] is
-    the [axes] module path. Its expected type depends on how it is used: [bool]
-    on its own, otherwise the type of what it is compared with ([string],
-    [int], or [int list] for a version tuple).
+    Any other identifier [x] is an extension axis, looked up in the [axes]
+    module paths: it is reified as [let open! M1 in ... let open! Mn in x], so
+    the last module defining [x] wins. Its expected type depends on how it is
+    used: [bool] on its own, otherwise the type of what it is compared with
+    ([string], [int], or [int list] for a version tuple).
 
     Raises {!Invalid} on constructs that are only meaningful at compile time
-    (e.g. [ast_version]) and on unknown identifiers when [axes] is not given. *)
+    (e.g. [ast_version]) and on unknown identifiers when [axes] is empty. *)
