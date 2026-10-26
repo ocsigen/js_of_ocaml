@@ -6,3 +6,6 @@ let flavour = "override"
 let extra = true
 
 let compare = false
+
+(* Overrides a predefined axis. *)
+let cygwin = true

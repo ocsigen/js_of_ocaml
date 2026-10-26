@@ -19,7 +19,19 @@ let backend =
   | Other "wasm_of_ocaml" -> "wasm"
   | Other s -> s
 
+let js = String.equal backend "js"
+
+let wasm = String.equal backend "wasm"
+
+let native = String.equal backend "native"
+
 let os_type = Sys.os_type
+
+let win32 = String.equal os_type "Win32"
+
+let unix = String.equal os_type "Unix"
+
+let cygwin = String.equal os_type "Cygwin"
 
 let ocaml_version =
   (* Parse the leading [maj.min.patch] of [Sys.ocaml_version], stopping at the
@@ -60,28 +72,4 @@ let oxcaml =
     ocaml_release.extra
   with
   | Some (Plus, "ox") -> true
-  | _ -> false
-
-let rec version_compare v v' =
-  match v, v' with
-  | [ x ], [ y ] -> compare (x : int) y
-  | [], [] -> 0
-  | [], y :: _ -> compare 0 y
-  | x :: _, [] -> compare x 0
-  | x :: xs, y :: ys -> (
-      match compare (x : int) y with
-      | 0 -> version_compare xs ys
-      | n -> n)
-
-let int_size_64 = Sys.int_size >= 63
-
-let tag_dropped = function
-  | "disabled" -> true
-  | "no-js" -> String.equal backend "js"
-  | "js-only" -> not (String.equal backend "js")
-  | "no-wasm" -> String.equal backend "wasm"
-  | "wasm-only" -> not (String.equal backend "wasm")
-  | "native-only" -> not (String.equal backend "native")
-  | "64-bits-only" -> not int_size_64
-  | "32-bits-only" -> int_size_64
   | _ -> false

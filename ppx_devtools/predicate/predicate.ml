@@ -246,38 +246,26 @@ let eval_compile_time t =
 
 (* -- Reification to runtime code ------------------------------------------- *)
 
-(* A bare identifier used as a boolean is either a runtime axis shorthand
-   ([js]/[wasm]/...), [oxcaml] or an extension axis. *)
-let shorthand = function
-  | "js" -> Some ("backend", "js")
-  | "wasm" -> Some ("backend", "wasm")
-  | "native" -> Some ("backend", "native")
-  | "win32" -> Some ("os_type", "Win32")
-  | "unix" -> Some ("os_type", "Unix")
-  | "cygwin" -> Some ("os_type", "Cygwin")
-  | _ -> None
+(* Atoms that are only meaningful at compile time. *)
+let compile_time_only = function
+  | "ast_version" | "arch_sixtyfour" | "introspect" -> true
+  | _ -> false
 
-let builtin = function
-  | "ocaml_version"
-  | "ast_version"
-  | "arch_sixtyfour"
-  | "oxcaml"
-  | "introspect"
-  | "os_type"
-  | "backend" -> true
-  | name -> Option.is_some (shorthand name)
-
-(* An identifier that is not built in is an extension axis, resolved in the
-   [axes] modules: [x] becomes [let open! M1 in let open! M2 in x], so the last
-   module defining [x] wins. The opens only scope the identifier, not the code
+(* Every other identifier is an axis, looked up in the predefined axes
+   ([Ppx_devtools_expect_runtime.Axes]) and then in the [axes] modules: [x]
+   becomes [let open! Axes in let open! M1 in ... x], so the last module
+   defining [x] wins. The opens only scope the identifier, not the code
    generated around it. Its type ([bool], [string], [int] or [int list])
    follows from the context it is used in. *)
-let extension ~axes (t : t) : expression =
-  match t, axes with
-  | Ident (loc, name), _ :: _ when not (builtin name) ->
+let axis ~axes (t : t) : expression =
+  match t with
+  | Ident (loc, name) when not (compile_time_only name) ->
       let open Ast_builder.Default in
       let e =
-        List.fold_right axes ~init:(evar ~loc name) ~f:(fun m e ->
+        List.fold_right
+          ("Ppx_devtools_expect_runtime.Axes" :: axes)
+          ~init:(evar ~loc name)
+          ~f:(fun m e ->
             pexp_open
               ~loc
               (open_infos
@@ -297,28 +285,25 @@ let extension ~axes (t : t) : expression =
       }
   | _ -> raise (Invalid (loc_of t))
 
-(* Atom whose runtime value is a string. *)
 let reify_string ~axes (t : t) : expression =
   let loc = loc_of t in
   match t with
-  | Ident (_, "os_type") -> [%expr Ppx_devtools_expect_runtime.Axes.os_type]
-  | Ident (_, "backend") -> [%expr Ppx_devtools_expect_runtime.Axes.backend]
   | String (_, s) -> Ast_builder.Default.estring ~loc s
-  | _ -> extension ~axes t
+  | _ -> axis ~axes t
 
 let reify_int ~axes (t : t) : expression =
   let loc = loc_of t in
   match t with
   | Int (_, i) -> Ast_builder.Default.eint ~loc i
-  | _ -> extension ~axes t
+  | _ -> axis ~axes t
 
 let reify_version ~axes (t : t) : expression =
   let loc = loc_of t in
   match t with
-  | Ident (_, "ocaml_version") -> [%expr Ppx_devtools_expect_runtime.Axes.ocaml_version]
-  | Tuple (_, l) -> Ast_builder.Default.elist ~loc (List.map l ~f:(reify_int ~axes:[]))
-  | _ -> extension ~axes t
+  | Tuple (_, l) -> Ast_builder.Default.elist ~loc (List.map l ~f:(reify_int ~axes))
+  | _ -> axis ~axes t
 
+(* The type of a comparison is given by its literal side. *)
 type kind =
   | K_version
   | K_string
@@ -327,9 +312,7 @@ type kind =
 
 let kind_of (t : t) : kind =
   match t with
-  | Ident (_, "ocaml_version") -> K_version
   | Tuple _ -> K_version
-  | Ident (_, ("os_type" | "backend")) -> K_string
   | String _ -> K_string
   | Int _ -> K_int
   | _ -> K_unknown
@@ -349,12 +332,7 @@ let rec reify_bool ~axes (t : t) : expression =
   let loc = loc_of t in
   match t with
   | Bool (_, b) -> Ast_builder.Default.ebool ~loc b
-  | Ident (_, "oxcaml") -> [%expr Ppx_devtools_expect_runtime.Axes.oxcaml]
-  | Ident (_, name) -> (
-      match shorthand name with
-      | Some (axis, value) ->
-          reify_cmp ~axes loc "=" (Ident (loc, axis)) (String (loc, value))
-      | None -> extension ~axes t)
+  | Ident _ -> axis ~axes t
   | App (loc, "not", [ a ]) -> [%expr not [%e reify_bool ~axes a]]
   | App (loc, "&&", [ a; b ]) ->
       [%expr [%e reify_bool ~axes a] && [%e reify_bool ~axes b]]
@@ -374,7 +352,7 @@ and reify_cmp ~axes loc op a b =
   | K_version ->
       let cmp =
         [%expr
-          Ppx_devtools_expect_runtime.Axes.version_compare
+          Ppx_devtools_expect_runtime.version_compare
             [%e reify_version ~axes a]
             [%e reify_version ~axes b]]
       in
