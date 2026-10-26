@@ -289,15 +289,10 @@
          (local.set $orig (br_on_cast_fail $not_block (ref eq) (ref $block)
             (local.get $v)))
          (local.set $len (array.len (local.get $orig)))
-         ;; A fresh block carries no descriptor, as in the native runtime
+         ;; The copy keeps the descriptor of the block (in its header), as in
+         ;; the native runtime
          (local.set $res
-            (array.new $block
-               (ref.i31
-                  (i32.and
-                     (i31.get_u
-                        (ref.cast (ref i31)
-                           (array.get $block (local.get $orig) (i32.const 0))))
-                     (global.get $tag_mask)))
+            (array.new $block (array.get $block (local.get $orig) (i32.const 0))
                (local.get $len)))
          (array.copy $block $block
             (local.get $res) (i32.const 1) (local.get $orig) (i32.const 1)

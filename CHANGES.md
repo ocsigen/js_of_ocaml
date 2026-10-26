@@ -13,6 +13,8 @@
   (float arrays carry no descriptor)
 * Lib: the DevTools formatter of `js_of_ocaml.devtools` supports Wasm: it
   displays the values of paused Wasm frames, and `inspect` wraps values to log
+* Runtime: with Introcaml, `Obj.dup` keeps the descriptor of a block, as
+  Introcaml now does
 
 ## Bug fixes
 * Compiler: fix a miscompilation of `Int_trie` by OxCaml's flambda2 at -O2
