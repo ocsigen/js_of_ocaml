@@ -737,7 +737,7 @@
                (then
                   (return
                      (array.get $block (local.get $exn) (i32.const 2)))))))
-      (call $value_of_js (ref.null extern)))
+      (struct.new $js (ref.null extern)))
 ))
 
    (func (export "caml_exn_with_js_backtrace")
