@@ -98,13 +98,22 @@ let variant_of_payload ~ext_loc (payload : payload) : variant =
       }
   | PStr [ { pstr_desc = Pstr_eval (lit, eval_attrs); _ } ] -> (
       match lit.pexp_desc with
-      | Pexp_constant (Pconst_string (s, _, _)) ->
+      | Pexp_constant (Pconst_string (s, str_loc, delim)) ->
           let condition = when_condition ~expr_attrs:lit.pexp_attributes ~eval_attrs in
+          (* [lit.pexp_loc] spans the parentheses and the attribute of
+             [({| ... |} [@when COND])], so promoting over it would drop the
+             guard. [str_loc] covers the contents of the literal only: extend
+             it over the delimiters. *)
+          let delim_len =
+            match delim with
+            | None -> 1
+            | Some d -> String.length d + 2
+          in
           { is_default = Option.is_none condition
           ; condition
           ; expected = s
-          ; payload_start = lit.pexp_loc.loc_start.pos_cnum
-          ; payload_end = lit.pexp_loc.loc_end.pos_cnum
+          ; payload_start = str_loc.loc_start.pos_cnum - delim_len
+          ; payload_end = str_loc.loc_end.pos_cnum + delim_len
           }
       | _ -> invalid ~loc:lit.pexp_loc "[%%expect] expects a string literal payload")
   | _ -> invalid ~loc:ext_loc "[%%expect] expects a string literal payload"
