@@ -1,6 +1,0 @@
-(library
- (name test_expect_light)
- (inline_tests
-  (modes js wasm best))
- (preprocess
-  (pps ppx_devtools-optcomp ppx_devtools-expect test_expect_axes_ppx)))
