@@ -479,14 +479,12 @@ let exit () =
   | reports ->
       Printf.eprintf "\n%s\n" (String.make 70 '=');
       List.iter (fun s -> output_string stderr s) reports);
-  Corrected.write ~root:cfg.source_tree_root !all_corrections;
+  let unreadable = Corrected.write ~root:cfg.source_tree_root !all_corrections in
   flush stderr;
   let failed = if dune_mode then !errors else !mismatches + !errors in
   if failed > 0
-  then begin
-    Printf.eprintf "ppx_devtools.expect: FAILED %d / %d tests\n%!" failed !ran;
-    Stdlib.exit 2
-  end;
+  then Printf.eprintf "ppx_devtools.expect: FAILED %d / %d tests\n%!" failed !ran;
+  if failed > 0 || unreadable > 0 then Stdlib.exit 2;
   (* Force process termination instead of returning, like ppx_inline_test's
      runner. Under js_of_ocaml/wasm_of_ocaml this stops a dangling async
      operation left by a test (e.g. an un-awaited [fetch]) from keeping node

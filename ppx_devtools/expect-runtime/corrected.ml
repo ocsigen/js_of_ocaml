@@ -83,8 +83,11 @@ let write_file path data =
 (* [filename]s are relative to the build context root; [root] is the path of
    that root relative to the runner's cwd (dune's [-source-tree-root]). Both the
    source read and the [.corrected] write go through [root] so they land next to
-   the in-build copy of the source that dune diffs for promotion. *)
+   the in-build copy of the source that dune diffs for promotion. Returns the
+   number of sources that could not be read: their mismatches would otherwise
+   be lost. *)
 let write ~root corrections =
+  let unreadable = ref 0 in
   let tbl = Hashtbl.create 16 in
   List.iter
     (fun c ->
@@ -95,7 +98,11 @@ let write ~root corrections =
     (fun filename cs ->
       let path = Filename.concat root filename in
       match read_file path with
-      | None -> ()
+      | None ->
+          incr unreadable;
+          Printf.eprintf
+            "ppx_devtools.expect: cannot read %s to write its corrected version\n%!"
+            filename
       | Some source ->
           let edits =
             List.map
@@ -125,4 +132,5 @@ let write ~root corrections =
             edits;
           Buffer.add_substring buf source !pos (String.length source - !pos);
           write_file (path ^ ".corrected") (Buffer.contents buf))
-    tbl
+    tbl;
+  !unreadable
