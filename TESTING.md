@@ -1,15 +1,19 @@
 # Inline tests: `ppx_devtools-expect` + `ppx_devtools-optcomp`
 
-js_of_ocaml ships its own, self-contained inline-test toolchain (a small
+js_of_ocaml uses a small, self-contained inline-test toolchain (a
 `ppx_expect` replacement) so the test suite can run unmodified across the
 JavaScript, WebAssembly and native backends and across the OCaml versions we
-support. It lives in three sibling directories:
+support. It comes from [ppx_devtools](https://github.com/ocsigen/ppx_devtools),
+as two opam packages:
 
-| directory | what it provides |
+| package | what it provides |
 |---|---|
-| `ppx_devtools/expect/` | the `let%expect_test` / `[%expect]` rewriter + a runner |
-| `ppx_devtools/optcomp/` | compile-time gating with `[@@@if]` / `[@@if]` |
-| `ppx_devtools/predicate/` | the predicate grammar shared by both |
+| `ppx_devtools-expect` | the `let%expect_test` / `[%expect]` rewriter + a runner |
+| `ppx_devtools-optcomp` | compile-time gating with `[@@@if]` / `[@@if]` |
+
+Until ppx_devtools is released, the opam files pin both packages to a commit
+of its repository (`pin-depends`), so `opam install . --deps-only` installs
+them.
 
 Tests are predominantly inline expect tests (not cram), so most of what you
 write looks like `let%expect_test … [%expect {| … |}]`.

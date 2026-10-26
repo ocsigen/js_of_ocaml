@@ -1,5 +1,0 @@
-(library
- (name ppx_devtools_optcomp)
- (public_name ppx_devtools-optcomp)
- (libraries compiler-libs.common ppxlib ppx_devtools-optcomp.predicate)
- (kind ppx_rewriter))
