@@ -82,6 +82,6 @@ val reify : resolve:(string -> string option) -> loc:Location.t -> t -> expressi
     its own, otherwise the type of the literal it is compared with ([string],
     [int], or [int list] for a version tuple).
 
-    Raises {!Invalid} on constructs that are only meaningful at compile time
-    (e.g. [ast_version]), on identifiers that [resolve] does not know, and on
-    comparisons between two identifiers. *)
+    Raises {!Invalid} on identifiers that [resolve] does not know (such as the
+    compile-time-only [ast_version]) and on comparisons between two
+    identifiers. *)

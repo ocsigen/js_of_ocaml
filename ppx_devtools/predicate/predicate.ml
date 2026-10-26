@@ -246,17 +246,12 @@ let eval_compile_time t =
 
 (* -- Reification to runtime code ------------------------------------------- *)
 
-(* Atoms that are only meaningful at compile time. *)
-let compile_time_only = function
-  | "ast_version" | "arch_sixtyfour" | "introspect" -> true
-  | _ -> false
-
 (* Every other identifier is an axis: [resolve] maps it to the fully qualified
    name of its runtime value. Its type ([bool], [string], [int] or [int list])
    follows from the context it is used in. *)
 let axis ~resolve (t : t) : expression =
   match t with
-  | Ident (loc, name) when not (compile_time_only name) -> (
+  | Ident (loc, name) -> (
       match resolve name with
       | Some path -> Ast_builder.Default.evar ~loc path
       | None -> raise (Invalid loc))
