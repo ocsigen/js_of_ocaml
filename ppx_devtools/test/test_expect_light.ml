@@ -82,5 +82,5 @@ end
 
 let%expect_test "operators shadowed by the test module" =
   print_string "not shadowed";
-  [%expect ({| shadowed |} [@when (not (level > 3)) && enabled])];
-  [%expect {| not shadowed |}]
+  [%expect ({| not shadowed |} [@when (not (level > 3)) && enabled])];
+  [%expect {| shadowed |}]

@@ -25,6 +25,28 @@ let rec version_compare v v' =
       | 0 -> version_compare xs ys
       | n -> n)
 
+module Ops = struct
+  external not : bool -> bool = "%boolnot"
+
+  external ( && ) : bool -> bool -> bool = "%sequand"
+
+  external ( || ) : bool -> bool -> bool = "%sequor"
+
+  external ( = ) : 'a -> 'a -> bool = "%equal"
+
+  external ( <> ) : 'a -> 'a -> bool = "%notequal"
+
+  external ( < ) : 'a -> 'a -> bool = "%lessthan"
+
+  external ( > ) : 'a -> 'a -> bool = "%greaterthan"
+
+  external ( <= ) : 'a -> 'a -> bool = "%lessequal"
+
+  external ( >= ) : 'a -> 'a -> bool = "%greaterequal"
+
+  let string_compare = String.compare
+end
+
 let int_size_64 = Sys.int_size >= 63
 
 (* Whether the standard inline-test tag [t] causes a test to be skipped given

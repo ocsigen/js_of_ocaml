@@ -26,6 +26,31 @@ val version_compare : int list -> int list -> int
 (** Lexicographic comparison of version components, used by reified version
     comparisons. *)
 
+(** The operators used by reified predicates. The generated code refers to
+    them through this module, which, unlike [Stdlib] and its operators, the
+    test module cannot shadow. *)
+module Ops : sig
+  external not : bool -> bool = "%boolnot"
+
+  external ( && ) : bool -> bool -> bool = "%sequand"
+
+  external ( || ) : bool -> bool -> bool = "%sequor"
+
+  external ( = ) : 'a -> 'a -> bool = "%equal"
+
+  external ( <> ) : 'a -> 'a -> bool = "%notequal"
+
+  external ( < ) : 'a -> 'a -> bool = "%lessthan"
+
+  external ( > ) : 'a -> 'a -> bool = "%greaterthan"
+
+  external ( <= ) : 'a -> 'a -> bool = "%lessequal"
+
+  external ( >= ) : 'a -> 'a -> bool = "%greaterequal"
+
+  val string_compare : string -> string -> int
+end
+
 type variant =
   { condition : unit -> bool (* reified [%expect.when] predicate *)
   ; is_default : bool (* [true] for a plain [%expect] with no [.when] *)
