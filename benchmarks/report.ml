@@ -228,6 +228,7 @@ let gnuplot_output ch no_header (h, t) =
   for i = 0 to n - 1 do
     let nm =
       match List.nth h i with
+      | Some Measure.{ title = Some title; _ } -> title
       | Some Measure.{ name; _ } -> name
       | None -> ""
     in
