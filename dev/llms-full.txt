@@ -1848,6 +1848,7 @@ Use `--enable <opt>` or `--disable <opt>` to control these flags:
 | `optcall` | true | JavaScript call optimizations |
 | `constant-sinking` | true | Move constant declarations closer to usage sites |
 | `var-coalescing` | true | Coalesce JavaScript variables with disjoint lifespans |
+| `split-toplevel` | true | Wasm: split the toplevel function into smaller functions, which are easier to optimize for Wasm engines |
 
 ### Runtime behavior
 
@@ -1878,6 +1879,7 @@ Use `--set <param>=<value>` to tune compiler behavior:
 | `inlining-limit` | 150 | Size threshold for function inlining |
 | `tc_depth` | 50 | Max tail-call depth before trampoline |
 | `tc` | trampoline | Tail-call mode: `trampoline` or `none` |
+| `toplevel_split_size` | 10000 | Wasm: minimum size (in AST nodes) of the pieces the toplevel function is split into |
 
 ## Warnings
 
@@ -1904,7 +1906,7 @@ Available warnings:
 
 Use `--debug <section>` to enable debug output for compiler internals:
 
-`times`, `stats`, `deadcode`, `globaldeadcode`, `inlining`, `constant-sinking`, `gen`, `linker`, `sourcemap`, `flow`, `parser`, `var-coalescing`
+`times`, `stats`, `deadcode`, `globaldeadcode`, `inlining`, `constant-sinking`, `gen`, `linker`, `sourcemap`, `flow`, `parser`, `var-coalescing`, `split`
 
 ## Subcommands
 
@@ -4784,6 +4786,9 @@ val toplevel : unit -> bool
 val wasi : unit -> bool
 ```
 ```ocaml
+val split_toplevel : unit -> bool
+```
+```ocaml
 val enable : string -> unit
 ```
 ```ocaml
@@ -4822,6 +4827,9 @@ val labelled_block_max_depth : unit -> int
 ```
 ```ocaml
 val break_sinking_max_depth : unit -> int
+```
+```ocaml
+val toplevel_split_size : unit -> int
 ```
 ```ocaml
 type tc = 
@@ -59007,6 +59015,24 @@ module Util : sig ... end
 
 ---
 
+# Module `Wasm_of_ocaml_compiler.Split_toplevel`
+
+```ocaml
+val f : 
+  name:Js_of_ocaml_compiler.Code.Var.t ->
+  locals:(Wasm_ast.var * Wasm_ast.value_type) list ->
+  Wasm_ast.instruction list ->
+  (Wasm_ast.var * Wasm_ast.value_type) list
+  * Wasm_ast.instruction list
+  * Wasm_ast.module_field list
+```
+Split a large function into smaller ones.
+
+`f ~name ~locals body` outlines large runs of instructions of the body `body` of a parameterless function into separate functions. It returns the locals and body of the residual function, and the new functions. Neither the residual body nor the new functions have been post-processed (see `Initialize_locals`).
+
+
+---
+
 # Module `Wasm_of_ocaml_compiler.Tail_call`
 
 ```ocaml
@@ -60096,6 +60122,9 @@ module Runtime : sig ... end
 ```
 ```ocaml
 module Sexp : sig ... end
+```
+```ocaml
+module Split_toplevel : sig ... end
 ```
 ```ocaml
 module Tail_call : sig ... end

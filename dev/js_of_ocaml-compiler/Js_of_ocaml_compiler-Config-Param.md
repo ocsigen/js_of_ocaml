@@ -29,6 +29,9 @@ val labelled_block_max_depth : unit -> int
 val break_sinking_max_depth : unit -> int
 ```
 ```ocaml
+val toplevel_split_size : unit -> int
+```
+```ocaml
 type tc = 
   | TcNone
   | TcTrampoline

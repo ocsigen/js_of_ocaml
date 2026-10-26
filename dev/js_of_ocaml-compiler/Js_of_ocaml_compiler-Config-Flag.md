@@ -105,6 +105,9 @@ val toplevel : unit -> bool
 val wasi : unit -> bool
 ```
 ```ocaml
+val split_toplevel : unit -> bool
+```
+```ocaml
 val enable : string -> unit
 ```
 ```ocaml

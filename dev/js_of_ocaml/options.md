@@ -169,6 +169,7 @@ Use `--enable <opt>` or `--disable <opt>` to control these flags:
 | `optcall` | true | JavaScript call optimizations |
 | `constant-sinking` | true | Move constant declarations closer to usage sites |
 | `var-coalescing` | true | Coalesce JavaScript variables with disjoint lifespans |
+| `split-toplevel` | true | Wasm: split the toplevel function into smaller functions, which are easier to optimize for Wasm engines |
 
 ### Runtime behavior
 
@@ -199,6 +200,7 @@ Use `--set <param>=<value>` to tune compiler behavior:
 | `inlining-limit` | 150 | Size threshold for function inlining |
 | `tc_depth` | 50 | Max tail-call depth before trampoline |
 | `tc` | trampoline | Tail-call mode: `trampoline` or `none` |
+| `toplevel_split_size` | 10000 | Wasm: minimum size (in AST nodes) of the pieces the toplevel function is split into |
 
 ## Warnings
 
@@ -225,7 +227,7 @@ Available warnings:
 
 Use `--debug <section>` to enable debug output for compiler internals:
 
-`times`, `stats`, `deadcode`, `globaldeadcode`, `inlining`, `constant-sinking`, `gen`, `linker`, `sourcemap`, `flow`, `parser`, `var-coalescing`
+`times`, `stats`, `deadcode`, `globaldeadcode`, `inlining`, `constant-sinking`, `gen`, `linker`, `sourcemap`, `flow`, `parser`, `var-coalescing`, `split`
 
 ## Subcommands
 

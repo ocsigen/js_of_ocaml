@@ -922,6 +922,7 @@
 - [Module `Wasm_of_ocaml_compiler.Runtime`](wasm_of_ocaml-compiler/Wasm_of_ocaml_compiler-Runtime.md)
 - [Module `Sexp.Util`](wasm_of_ocaml-compiler/Wasm_of_ocaml_compiler-Sexp-Util.md)
 - [Module `Wasm_of_ocaml_compiler.Sexp`](wasm_of_ocaml-compiler/Wasm_of_ocaml_compiler-Sexp.md)
+- [Module `Wasm_of_ocaml_compiler.Split_toplevel`](wasm_of_ocaml-compiler/Wasm_of_ocaml_compiler-Split_toplevel.md)
 - [Module `Wasm_of_ocaml_compiler.Tail_call`](wasm_of_ocaml-compiler/Wasm_of_ocaml_compiler-Tail_call.md)
 - [Module `S.Bigarray`](wasm_of_ocaml-compiler/Wasm_of_ocaml_compiler-Target_sig-module-type-S-Bigarray.md)
 - [Module `S.Closure`](wasm_of_ocaml-compiler/Wasm_of_ocaml_compiler-Target_sig-module-type-S-Closure.md)
