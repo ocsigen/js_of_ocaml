@@ -1,7 +1,7 @@
 (executables
  (names cubes)
  (libraries js_of_ocaml-lwt)
- (modes js wasm)
+ (modes byte js wasm)
  (preprocess
   (pps js_of_ocaml-ppx)))
 

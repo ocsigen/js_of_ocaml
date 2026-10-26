@@ -122,6 +122,7 @@ module Measure = struct
     ; trend : string option
     ; path : string
     ; color : string option
+    ; title : string option (* Legend of the graphs *)
     }
 end
 
@@ -133,6 +134,7 @@ let times =
     ; trend = Some "lower-is-better"
     ; path = Filename.concat "results/times" hostname
     ; color = None
+    ; title = None
     }
 
 let sizes =
@@ -143,6 +145,7 @@ let sizes =
     ; trend = Some "lower-is-better"
     ; path = "results/sizes"
     ; color = None
+    ; title = None
     }
 
 let compiletimes =
@@ -153,6 +156,7 @@ let compiletimes =
     ; trend = Some "lower-is-better"
     ; path = Filename.concat "results/compiletimes" hostname
     ; color = None
+    ; title = None
     }
 
 module Spec : sig
@@ -382,7 +386,9 @@ let read_report_config ?(column_ref = -1) file =
       | None -> None
       | Some d -> Some (String.concat ~sep:", " [ d; title ])
     in
-    let measure = Measure.{ measure with name; description; color = Some color } in
+    let measure =
+      Measure.{ measure with name; description; color = Some color; title = Some title }
+    in
     info := Some (dir1, dir2, measure, refe) :: !info
   in
   (try
