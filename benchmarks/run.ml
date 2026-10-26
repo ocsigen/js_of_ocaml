@@ -268,7 +268,16 @@ let _ =
   compile "ocamlc" src Spec.ml code Spec.byte;
   compile "ocamlopt" src Spec.ml code Spec.opt;
   compile_wasmoo "--opt=2" code Spec.byte code Spec.wasm_of_ocaml;
+  compile_wasmoo "--opt=1" code Spec.byte code Spec.wasm_of_ocaml_o1;
+  compile_wasmoo
+    ~effects:`Cps
+    "--opt=2"
+    code
+    Spec.byte
+    code
+    Spec.wasm_of_ocaml_effects_cps;
   compile_jsoo "--opt=2" code Spec.byte code Spec.js_of_ocaml;
+  compile_jsoo "--opt=1" code Spec.byte code Spec.js_of_ocaml_o1;
   compile_jsoo "--opt=3" code Spec.byte code Spec.js_of_ocaml_o3;
   compile_jsoo
     "--opt=2 --enable=use-js-string"
@@ -297,12 +306,25 @@ let _ =
   file_size param code Spec.byte sizes Spec.byte;
   file_size param code Spec.js_of_ocaml sizes (Spec.sub_spec Spec.js_of_ocaml "full");
   file_size
+    param
+    code
+    Spec.wasm_of_ocaml
+    sizes
+    (Spec.sub_spec Spec.wasm_of_ocaml "loader");
+  file_size
     ~wasm:true
     param
     code
     Spec.wasm_of_ocaml
     sizes
     (Spec.sub_spec Spec.wasm_of_ocaml "full");
+  file_size
+    ~wasm:true
+    param
+    code
+    Spec.wasm_of_ocaml_effects_cps
+    sizes
+    (Spec.sub_spec Spec.wasm_of_ocaml_effects_cps "full");
   compr_file_size
     param
     code
@@ -360,6 +382,7 @@ let _ =
     sizes
     (Spec.sub_spec Spec.js_of_ocaml "runtime");
   gen_size param code Spec.js_of_ocaml sizes (Spec.sub_spec Spec.js_of_ocaml "generated");
+  gen_size param code Spec.js_of_ocaml_o1 sizes Spec.js_of_ocaml_o1;
   gen_size param code Spec.js_of_ocaml_o3 sizes Spec.js_of_ocaml_o3;
   gen_size param code Spec.js_of_ocaml_js_string sizes Spec.js_of_ocaml_js_string;
   gen_size param code Spec.js_of_ocaml_inline sizes Spec.js_of_ocaml_inline;
@@ -379,6 +402,7 @@ let _ =
   if filter_bench ("", Spec.byte) then measure ~param ~code ~meas:times ~spec:Spec.byte "";
   let all_spec =
     [ Some Spec.js_of_ocaml
+    ; Some Spec.js_of_ocaml_o1
     ; Some Spec.js_of_ocaml_o3
     ; Some Spec.js_of_ocaml_js_string
     ; Some Spec.js_of_ocaml_unsafe
@@ -389,6 +413,7 @@ let _ =
     ; Some Spec.js_of_ocaml_effects_cps
     ; Some Spec.js_of_ocaml_effects_double_translation
     ; Some Spec.wasm_of_ocaml
+    ; Some Spec.wasm_of_ocaml_effects_cps
     ]
   in
   let interpreters, suites =
