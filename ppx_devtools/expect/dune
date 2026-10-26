@@ -8,16 +8,17 @@
   (pps ppxlib.metaquot))
  (inline_tests.backend
   (runner_libraries ppx_devtools.expect.runtime)
+  ; Flat lists: the parenthesized form is written unquoted to the installed
+  ; dune-package, which dune then fails to read back.
   (flags
-   ("inline-test-runner"
-    %{library-name}
-    -partition
-    %{partition}
-    -source-tree-root
-    %{workspace_root}
-    -diff-cmd
-    -))
-  (list_partitions_flags
-   ("inline-test-runner" %{library-name} -list-partitions))
+   inline-test-runner
+   %{library-name}
+   -partition
+   %{partition}
+   -source-tree-root
+   %{workspace_root}
+   -diff-cmd
+   -)
+  (list_partitions_flags inline-test-runner %{library-name} -list-partitions)
   (generate_runner
    (echo "let () = Ppx_devtools_expect_runtime.exit ()\n"))))

@@ -22,7 +22,9 @@
  (depends
   (ocaml (>= 4.13))
   (ppxlib (>= 0.33))
-  out-channel-redirect))
+  out-channel-redirect
+  (num :with-test)
+  (re (and (>= 1.9.0) :with-test))))
 
 (package
  (name js_of_ocaml-compiler)
