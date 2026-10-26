@@ -289,15 +289,19 @@ let kind_of (t : t) : kind =
   | Int _ -> K_int
   | _ -> K_unknown
 
+(* The generated code is compiled in the test module, which may shadow the
+   operators, and even [Stdlib] (js_of_ocaml's compiler library has its own):
+   take them all from the runtime library. *)
+
 let rel_to_int loc op (a : expression) (b : expression) : expression =
   (* [a] and [b] are int-valued expressions; combine with the comparison. *)
   match op with
-  | "<=" -> [%expr [%e a] <= [%e b]]
-  | ">=" -> [%expr [%e a] >= [%e b]]
-  | "<" -> [%expr [%e a] < [%e b]]
-  | ">" -> [%expr [%e a] > [%e b]]
-  | "=" -> [%expr [%e a] = [%e b]]
-  | "<>" -> [%expr [%e a] <> [%e b]]
+  | "<=" -> [%expr Ppx_devtools_expect_runtime.Ops.( <= ) [%e a] [%e b]]
+  | ">=" -> [%expr Ppx_devtools_expect_runtime.Ops.( >= ) [%e a] [%e b]]
+  | "<" -> [%expr Ppx_devtools_expect_runtime.Ops.( < ) [%e a] [%e b]]
+  | ">" -> [%expr Ppx_devtools_expect_runtime.Ops.( > ) [%e a] [%e b]]
+  | "=" -> [%expr Ppx_devtools_expect_runtime.Ops.( = ) [%e a] [%e b]]
+  | "<>" -> [%expr Ppx_devtools_expect_runtime.Ops.( <> ) [%e a] [%e b]]
   | _ -> raise (Invalid loc)
 
 let rec reify_bool ~resolve (t : t) : expression =
@@ -305,11 +309,18 @@ let rec reify_bool ~resolve (t : t) : expression =
   match t with
   | Bool (_, b) -> Ast_builder.Default.ebool ~loc b
   | Ident _ -> axis ~resolve t
-  | App (loc, "not", [ a ]) -> [%expr not [%e reify_bool ~resolve a]]
+  | App (loc, "not", [ a ]) ->
+      [%expr Ppx_devtools_expect_runtime.Ops.not [%e reify_bool ~resolve a]]
   | App (loc, "&&", [ a; b ]) ->
-      [%expr [%e reify_bool ~resolve a] && [%e reify_bool ~resolve b]]
+      [%expr
+        Ppx_devtools_expect_runtime.Ops.( && )
+          [%e reify_bool ~resolve a]
+          [%e reify_bool ~resolve b]]
   | App (loc, "||", [ a; b ]) ->
-      [%expr [%e reify_bool ~resolve a] || [%e reify_bool ~resolve b]]
+      [%expr
+        Ppx_devtools_expect_runtime.Ops.( || )
+          [%e reify_bool ~resolve a]
+          [%e reify_bool ~resolve b]]
   | App (loc, (("<=" | ">=" | ">" | "<" | "=" | "<>") as op), [ a; b ]) ->
       reify_cmp ~resolve loc op a b
   | _ -> raise (Invalid loc)
@@ -330,11 +341,11 @@ and reify_cmp ~resolve loc op a b =
       in
       rel_to_int loc op cmp [%expr 0]
   | K_string ->
-      (* Fully qualify: the test module may [open] something that shadows
-         [String] (e.g. js_of_ocaml's [Typed_array]). *)
       let cmp =
         [%expr
-          Stdlib.String.compare [%e reify_string ~resolve a] [%e reify_string ~resolve b]]
+          Ppx_devtools_expect_runtime.Ops.string_compare
+            [%e reify_string ~resolve a]
+            [%e reify_string ~resolve b]]
       in
       rel_to_int loc op cmp [%expr 0]
   | K_int -> rel_to_int loc op (reify_int ~resolve a) (reify_int ~resolve b)
