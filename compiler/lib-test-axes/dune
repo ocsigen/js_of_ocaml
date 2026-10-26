@@ -1,0 +1,3 @@
+(library
+ (name jsoo_test_axes)
+ (libraries js_of_ocaml-compiler.runtime))

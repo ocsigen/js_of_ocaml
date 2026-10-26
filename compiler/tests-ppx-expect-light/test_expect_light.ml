@@ -43,3 +43,16 @@ let%expect_test "gated away" =
   print_string "should never be checked";
   [%expect {| deliberately wrong |}]
 [@@if ocaml_version < (4, 0, 0)]
+
+let%expect_test "extension axes" =
+  print_string "extended";
+  [%expect ({| boolean axis |} [@when disabled])];
+  [%expect ({| string axis |} [@when flavour <> "vanilla"])];
+  [%expect ({| int axis |} [@when level > 3])];
+  [%expect ({| version axis |} [@when version >= (1, 3)])];
+  [%expect ({| extended |} [@when enabled && flavour = "vanilla" && level = 3])];
+  [%expect {| default |}]
+
+let%expect_test ("gated by an extension axis" [@when disabled]) =
+  print_string "should never be checked";
+  [%expect {| deliberately wrong |}]

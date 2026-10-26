@@ -4,7 +4,12 @@
 
 (library
  (name jsoo_compiler_test)
- (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
+ (libraries
+  js_of_ocaml_compiler
+  unix
+  str
+  jsoo_compiler_expect_tests_helper
+  jsoo_test_axes)
  (inline_tests
   ;; Depend on the profile-selected [node] wrapper (defined in the root dune's
   ;; env) so dune materialises the right one on PATH before the runner execs it
@@ -16,4 +21,4 @@
  (flags
   (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_optcomp_light ppx_expect_light)))
+  (pps ppx_optcomp_light ppx_expect_light -- -axes Jsoo_test_axes)))
