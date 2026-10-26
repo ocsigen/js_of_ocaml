@@ -186,6 +186,8 @@ module Spec : sig
 
   val js_of_ocaml : t
 
+  val js_of_ocaml_o1 : t
+
   val js_of_ocaml_o3 : t
 
   val js_of_ocaml_js_string : t
@@ -209,6 +211,10 @@ module Spec : sig
   val js_of_ocaml_effects_cps : t
 
   val js_of_ocaml_effects_double_translation : t
+
+  val wasm_of_ocaml_o1 : t
+
+  val wasm_of_ocaml_effects_cps : t
 end = struct
   type t =
     { dir : string
@@ -255,6 +261,8 @@ end = struct
 
   let js_of_ocaml = create "js_of_ocaml" ".js"
 
+  let js_of_ocaml_o1 = create "o1" ".js"
+
   let js_of_ocaml_o3 = create "o3" ".js"
 
   let js_of_ocaml_js_string = create "jsstring" ".js"
@@ -278,6 +286,10 @@ end = struct
   let js_of_ocaml_effects_cps = create "effects-cps" ".js"
 
   let js_of_ocaml_effects_double_translation = create "effects-double-translation" ".js"
+
+  let wasm_of_ocaml_o1 = create "wasm-o1" ".js"
+
+  let wasm_of_ocaml_effects_cps = create "wasm-effects-cps" ".js"
 end
 
 let rec mkdir d =
