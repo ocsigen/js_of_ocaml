@@ -130,7 +130,7 @@
  (deps split_toplevel.ml split_toplevel_switch.ml))
 
 (tests
- (names js_float_args js_int_args)
+ (names js_float_args js_int_args js_string_cache)
  (modes js wasm)
  (libraries js_of_ocaml)
  ; The js_of_ocaml library is not compatible with WASI
