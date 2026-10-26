@@ -19,7 +19,7 @@ depends: [
   "ocamlfind" {>= "1.5.1"}
   "graphics" {with-test}
   "num" {with-test}
-  "ppx_devtools"
+  "ppx_devtools-optcomp"
   "ppxlib" {>= "0.33"}
   "re" {>= "1.9.0" & with-test}
   "odoc" {with-doc}

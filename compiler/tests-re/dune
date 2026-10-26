@@ -16,4 +16,4 @@
  (inline_tests
   (modes js wasm best))
  (preprocess
-  (pps ppx_devtools.expect jsoo_test_axes_ppx)))
+  (pps ppx_devtools-expect jsoo_test_axes_ppx)))

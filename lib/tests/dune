@@ -1,4 +1,4 @@
-; jsoo's lib tests. ppx_devtools.expect runs each file as its own inline-test
+; jsoo's lib tests. ppx_devtools-expect runs each file as its own inline-test
 ; partition, so a single library still keeps per-file parallelism.
 
 ; These tests depend on the js_of_ocaml library, which is not compatible with
@@ -27,8 +27,8 @@
  (preprocess
   (pps
    ppx_js_internal
-   ppx_devtools.optcomp
-   ppx_devtools.expect
+   ppx_devtools-optcomp
+   ppx_devtools-expect
    jsoo_test_axes_ppx)))
 
 ; Introcaml only (the tests are gated by [@@@if introspect]): the DevTools
@@ -41,4 +41,4 @@
  (inline_tests
   (modes js))
  (preprocess
-  (pps ppx_js_internal ppx_devtools.optcomp ppx_devtools.expect)))
+  (pps ppx_js_internal ppx_devtools-optcomp ppx_devtools-expect)))

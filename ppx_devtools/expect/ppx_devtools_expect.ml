@@ -375,5 +375,5 @@ let impl_mapper =
   end
 
 let () =
-  Driver.register_transformation "ppx_devtools.expect" ~impl:(fun str ->
+  Driver.register_transformation "ppx_devtools-expect" ~impl:(fun str ->
       impl_mapper#structure str)

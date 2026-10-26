@@ -13,7 +13,7 @@
  *)
 
 (** js_of_ocaml-specific axes of [[@when]] predicates. Test libraries using them
-    are preprocessed with [(pps ... ppx_devtools.expect jsoo_test_axes_ppx)],
+    are preprocessed with [(pps ... ppx_devtools-expect jsoo_test_axes_ppx)],
     which registers them, so that, for instance, [[@when not quickjs]] reads
     [Jsoo_test_axes.quickjs]. *)
 

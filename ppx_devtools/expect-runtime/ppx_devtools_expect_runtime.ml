@@ -310,7 +310,7 @@ let parse_argv () =
     | arg ->
         (* Fail on an unrecognised argument rather than skipping it: an unknown
            flag may carry behaviour we are silently dropping. *)
-        Printf.eprintf "ppx_devtools.expect: unknown argument %S\n%!" arg;
+        Printf.eprintf "ppx_devtools-expect: unknown argument %S\n%!" arg;
         Stdlib.exit 1);
     incr i
   done;
@@ -505,7 +505,7 @@ let exit () =
   flush stderr;
   let failed = if dune_mode then !errors else !mismatches + !errors in
   if failed > 0
-  then Printf.eprintf "ppx_devtools.expect: FAILED %d / %d tests\n%!" failed !ran;
+  then Printf.eprintf "ppx_devtools-expect: FAILED %d / %d tests\n%!" failed !ran;
   if failed > 0 || unreadable > 0 then Stdlib.exit 2;
   (* Force process termination instead of returning, like ppx_inline_test's
      runner. Under js_of_ocaml/wasm_of_ocaml this stops a dangling async

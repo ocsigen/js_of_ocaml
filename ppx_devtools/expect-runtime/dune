@@ -1,4 +1,4 @@
 (library
  (name ppx_devtools_expect_runtime)
- (public_name ppx_devtools.expect.runtime)
+ (public_name ppx_devtools-expect.runtime)
  (libraries out-channel-redirect))

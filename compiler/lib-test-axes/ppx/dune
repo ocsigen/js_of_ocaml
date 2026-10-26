@@ -1,5 +1,5 @@
 (library
  (name jsoo_test_axes_ppx)
  (kind ppx_rewriter)
- (libraries ppx_devtools.expect)
+ (libraries ppx_devtools-expect)
  (ppx_runtime_libraries jsoo_test_axes))

@@ -101,7 +101,7 @@ let write ~root corrections =
       | None ->
           incr unreadable;
           Printf.eprintf
-            "ppx_devtools.expect: cannot read %s to write its corrected version\n%!"
+            "ppx_devtools-expect: cannot read %s to write its corrected version\n%!"
             filename
       | Some source ->
           let edits =
