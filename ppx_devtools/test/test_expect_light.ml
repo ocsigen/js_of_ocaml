@@ -67,3 +67,20 @@ let%expect_test "overridden predefined axis" =
   print_string "overridden";
   [%expect ({| overridden |} [@when cygwin])];
   [%expect {| default |}]
+
+(* Generated predicates must not use the operators of the test module. Keep
+   this at the end of the file: it shadows them for what follows. *)
+open struct
+  [@@@warning "-32"]
+
+  let ( > ) (_ : int) (_ : int) = true
+
+  let ( && ) (_ : bool) (_ : bool) = false
+
+  let not (_ : bool) = true
+end
+
+let%expect_test "operators shadowed by the test module" =
+  print_string "not shadowed";
+  [%expect ({| shadowed |} [@when (not (level > 3)) && enabled])];
+  [%expect {| not shadowed |}]
