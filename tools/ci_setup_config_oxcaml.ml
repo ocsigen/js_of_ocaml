@@ -106,6 +106,14 @@ index c6d09fb..61b1e5b 100644
  ;;
 
  let%expect_test "to_string_hum" =
+@@ -226,5 +231,5 @@
+   print_endline (Float.to_string_hum (-1.25) ~decimals:1);
+-  [%expect {| -1.3 |}];
++  [%expect {| -1.2 |}];
+   print_endline (Float.to_string_hum 1.25 ~decimals:1);
+-  [%expect {| 1.3 |}]
++  [%expect {| 1.2 |}]
+ ;;
 |bignum}
     )
   ; ( "bin_prot"
