@@ -1,12 +1,13 @@
 (library
- (name ppx_expect_light)
+ (name ppx_devtools_expect)
+ (public_name ppx_devtools.expect)
  (kind ppx_rewriter)
- (libraries compiler-libs.common ppxlib ppx_light_predicate)
- (ppx_runtime_libraries ppx_expect_light_runtime)
+ (libraries compiler-libs.common ppxlib ppx_devtools.predicate)
+ (ppx_runtime_libraries ppx_devtools.expect.runtime)
  (preprocess
   (pps ppxlib.metaquot))
  (inline_tests.backend
-  (runner_libraries ppx_expect_light_runtime)
+  (runner_libraries ppx_devtools.expect.runtime)
   (flags
    ("inline-test-runner"
     %{library-name}
@@ -19,4 +20,4 @@
   (list_partitions_flags
    ("inline-test-runner" %{library-name} -list-partitions))
   (generate_runner
-   (echo "let () = Ppx_expect_light_runtime.exit ()\n"))))
+   (echo "let () = Ppx_devtools_expect_runtime.exit ()\n"))))

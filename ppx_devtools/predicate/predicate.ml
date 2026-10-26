@@ -280,8 +280,8 @@ let extension ~axes (t : t) : expression =
 let reify_string ~axes (t : t) : expression =
   let loc = loc_of t in
   match t with
-  | Ident (_, "os_type") -> [%expr Ppx_expect_light_runtime.Axes.os_type]
-  | Ident (_, "backend") -> [%expr Ppx_expect_light_runtime.Axes.backend]
+  | Ident (_, "os_type") -> [%expr Ppx_devtools_expect_runtime.Axes.os_type]
+  | Ident (_, "backend") -> [%expr Ppx_devtools_expect_runtime.Axes.backend]
   | String (_, s) -> Ast_builder.Default.estring ~loc s
   | _ -> extension ~axes t
 
@@ -294,7 +294,7 @@ let reify_int ~axes (t : t) : expression =
 let reify_version ~axes (t : t) : expression =
   let loc = loc_of t in
   match t with
-  | Ident (_, "ocaml_version") -> [%expr Ppx_expect_light_runtime.Axes.ocaml_version]
+  | Ident (_, "ocaml_version") -> [%expr Ppx_devtools_expect_runtime.Axes.ocaml_version]
   | Tuple (_, l) -> Ast_builder.Default.elist ~loc (List.map l ~f:(reify_int ~axes:None))
   | _ -> extension ~axes t
 
@@ -328,7 +328,7 @@ let rec reify_bool ~axes (t : t) : expression =
   let loc = loc_of t in
   match t with
   | Bool (_, b) -> Ast_builder.Default.ebool ~loc b
-  | Ident (_, "oxcaml") -> [%expr Ppx_expect_light_runtime.Axes.oxcaml]
+  | Ident (_, "oxcaml") -> [%expr Ppx_devtools_expect_runtime.Axes.oxcaml]
   | Ident (_, name) -> (
       match shorthand name with
       | Some (axis, value) ->
@@ -353,7 +353,7 @@ and reify_cmp ~axes loc op a b =
   | K_version ->
       let cmp =
         [%expr
-          Ppx_expect_light_runtime.Axes.version_compare
+          Ppx_devtools_expect_runtime.Axes.version_compare
             [%e reify_version ~axes a]
             [%e reify_version ~axes b]]
       in

@@ -12,4 +12,4 @@
  (flags
   (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_optcomp_light ppx_expect_light)))
+  (pps ppx_devtools.optcomp ppx_devtools.expect)))

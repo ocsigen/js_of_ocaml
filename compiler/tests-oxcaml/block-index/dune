@@ -10,4 +10,4 @@
  (libraries stdlib_upstream_compatible)
  (modes js wasm)
  (preprocess
-  (pps ppx_optcomp_light)))
+  (pps ppx_devtools.optcomp)))

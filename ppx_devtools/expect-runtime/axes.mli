@@ -13,7 +13,7 @@
  *)
 
 (** Runtime environment axes, detected once. These values back the code emitted
-    by {!Ppx_light_predicate.Predicate.reify} for [%expect.when] conditions. *)
+    by {!Ppx_devtools_predicate.Predicate.reify} for [%expect.when] conditions. *)
 
 val backend : string
 (** ["js"] / ["wasm"] / ["native"] (from [Sys.backend_type]). *)
@@ -29,7 +29,7 @@ val oxcaml : bool
 
 val version_compare : int list -> int list -> int
 (** Lexicographic comparison of version components, like
-    {!Ppx_light_predicate.Predicate.Version.compare}. *)
+    {!Ppx_devtools_predicate.Predicate.Version.compare}. *)
 
 val tag_dropped : string -> bool
 (** [tag_dropped t] is [true] when the standard inline-test tag [t] should cause

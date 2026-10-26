@@ -18,29 +18,29 @@
  *)
 
 (** A small, self-contained reimplementation of the [ppx_expect] rewriter,
-    paired with {!Ppx_expect_light_runtime}.
+    paired with {!Ppx_devtools_expect_runtime}.
 
     It expands:
     - [let%expect_test "description" = body] (optionally [_] for no
       description, optionally carrying a [\[@tags "a", "b"\]] attribute) into a
-      call to [Ppx_expect_light_runtime.register_test].
+      call to [Ppx_devtools_expect_runtime.register_test].
     - [%expect {| ... |}] / [%expect] assertion points into
-      [Ppx_expect_light_runtime.check ~index]. Consecutive assertion points are
+      [Ppx_devtools_expect_runtime.check ~index]. Consecutive assertion points are
       coalesced into a single group of variants checked against the output
       captured since the previous group.
     - [%expect {| ... |} \[@when COND\]] conditional variants. [COND] is a
-      predicate in the {!Ppx_light_predicate.Predicate} grammar; it is reified
-      into a runtime test against {!Ppx_expect_light_runtime.Axes}. With
+      predicate in the {!Ppx_devtools_predicate.Predicate} grammar; it is reified
+      into a runtime test against {!Ppx_devtools_expect_runtime.Axes}. With
       [-axes M], identifiers that are not built in refer to values of [M]. A plain
       [%expect] (no [\[@when\]]) is the default variant of its group.
-    - [%expect.output] into [Ppx_expect_light_runtime.read_output ()], returning
+    - [%expect.output] into [Ppx_devtools_expect_runtime.read_output ()], returning
       the output captured since the previous assertion point. *)
 
 open StdLabels
 open Ppxlib
-module Predicate = Ppx_light_predicate.Predicate
+module Predicate = Ppx_devtools_predicate.Predicate
 
-let runtime = "Ppx_expect_light_runtime"
+let runtime = "Ppx_devtools_expect_runtime"
 
 (* One variant of an assertion point, gathered from a single [%expect ...]. *)
 type variant =
@@ -229,7 +229,7 @@ let evariant ~loc (v : variant) : expression =
     | None -> [%expr fun () -> false]
   in
   [%expr
-    { Ppx_expect_light_runtime.condition = [%e condition]
+    { Ppx_devtools_expect_runtime.condition = [%e condition]
     ; is_default = [%e Ast_builder.Default.ebool ~loc v.is_default]
     ; expected = [%e estring ~loc v.expected]
     ; payload_start = [%e Ast_builder.Default.eint ~loc v.payload_start]
@@ -331,7 +331,7 @@ let expand_test ~loc (vb : value_binding) : structure_item =
   in
   [%stri
     let () =
-      Ppx_expect_light_runtime.register_test
+      Ppx_devtools_expect_runtime.register_test
         ~lib:[%e estring ~loc !library_name]
         ~filename:[%e estring ~loc filename]
         ~description:[%e estring ~loc description]
@@ -358,5 +358,5 @@ let impl_mapper =
   end
 
 let () =
-  Driver.register_transformation "ppx_expect_light" ~impl:(fun str ->
+  Driver.register_transformation "ppx_devtools.expect" ~impl:(fun str ->
       impl_mapper#structure str)

@@ -2,29 +2,29 @@
 
 let%expect_test "guarded variant, parenthesized" =
   print_string "actual";
-  [%expect ({| actual |} [@when ocaml_version >= (4, 0, 0)])];
+  [%expect ({| stale |} [@when ocaml_version >= (4, 0, 0)])];
   [%expect {| default |}]
 
 let%expect_test "guarded multiline variant, parenthesized" =
   print_string "line 1\nline 2";
   [%expect ({|
-            line 1
-            line 2
-            |} [@when ocaml_version >= (4, 0, 0)])];
+    stale 1
+    stale 2
+    |} [@when ocaml_version >= (4, 0, 0)])];
   [%expect {| default |}]
 
 let%expect_test "guarded variant, regular string" =
   print_string "actual";
-  [%expect ({| actual |} [@when ocaml_version >= (4, 0, 0)])];
+  [%expect ("stale" [@when ocaml_version >= (4, 0, 0)])];
   [%expect {| default |}]
 
 let%expect_test "default variant" =
   print_string "actual";
   [%expect ({| other |} [@when ocaml_version < (4, 0, 0)])];
-  [%expect {| actual |}]
+  [%expect {| stale |}]
 
 let%expect_test "empty" =
   print_string "actual";
-  [%expect {| actual |}]
+  [%expect]
 
-let () = Ppx_expect_light_runtime.exit ()
+let () = Ppx_devtools_expect_runtime.exit ()

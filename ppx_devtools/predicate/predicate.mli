@@ -17,8 +17,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-(** Shared predicate grammar used by [ppx_optcomp_light] (compile-time gating via
-    [@if]/[@@if]/[@@@if]) and by [ppx_expect_light] (runtime gating via
+(** Shared predicate grammar used by [ppx_devtools.optcomp] (compile-time gating via
+    [@if]/[@@if]/[@@@if]) and by [ppx_devtools.expect] (runtime gating via
     [%expect.when ...]).
 
     The grammar is a boolean expression over a few atoms combined with the usual
@@ -75,7 +75,7 @@ val eval_compile_time : t -> bool
 
 val reify : ?axes:string -> loc:Location.t -> t -> expression
 (** Reify the predicate into an OCaml expression of type [bool] that evaluates it
-    at runtime against [Ppx_expect_light_runtime.Axes]. Supports [ocaml_version],
+    at runtime against [Ppx_devtools_expect_runtime.Axes]. Supports [ocaml_version],
     [os_type], [oxcaml], [backend] and the runtime shorthands.
 
     Any other identifier [x] is an extension axis, reified as [M.x] where [M] is
