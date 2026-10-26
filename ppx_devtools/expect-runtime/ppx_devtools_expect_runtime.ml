@@ -261,7 +261,7 @@ let parse_argv () =
     | arg ->
         (* Fail on an unrecognised argument rather than skipping it: an unknown
            flag may carry behaviour we are silently dropping. *)
-        Printf.eprintf "ppx_expect_light: unknown argument %S\n%!" arg;
+        Printf.eprintf "ppx_devtools.expect: unknown argument %S\n%!" arg;
         Stdlib.exit 1);
     incr i
   done;
@@ -457,7 +457,7 @@ let exit () =
   let failed = if dune_mode then !errors else !mismatches + !errors in
   if failed > 0
   then begin
-    Printf.eprintf "ppx_expect_light: FAILED %d / %d tests\n%!" failed !ran;
+    Printf.eprintf "ppx_devtools.expect: FAILED %d / %d tests\n%!" failed !ran;
     Stdlib.exit 2
   end;
   (* Force process termination instead of returning, like ppx_inline_test's

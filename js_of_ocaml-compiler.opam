@@ -15,7 +15,7 @@ depends: [
   "dune" {>= "3.20"}
   "ocaml" {>= "4.13" & < "5.7"}
   "num" {with-test}
-  "out-channel-redirect" {with-test}
+  "ppx_devtools"
   "ppxlib" {>= "0.33"}
   "ocaml-compiler-libs" {>= "v0.12.4"}
   "re" {with-test}

@@ -1,4 +1,4 @@
-; jsoo's lib tests. ppx_expect_light runs each file as its own inline-test
+; jsoo's lib tests. ppx_devtools.expect runs each file as its own inline-test
 ; partition, so a single library still keeps per-file parallelism.
 
 ; These tests depend on the js_of_ocaml library, which is not compatible with
@@ -27,8 +27,8 @@
  (preprocess
   (pps
    ppx_js_internal
-   ppx_optcomp_light
-   ppx_expect_light
+   ppx_devtools.optcomp
+   ppx_devtools.expect
    --
    -axes
    Jsoo_test_axes)))
@@ -43,4 +43,4 @@
  (inline_tests
   (modes js))
  (preprocess
-  (pps ppx_js_internal ppx_optcomp_light ppx_expect_light)))
+  (pps ppx_js_internal ppx_devtools.optcomp ppx_devtools.expect)))

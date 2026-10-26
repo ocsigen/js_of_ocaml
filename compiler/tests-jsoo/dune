@@ -18,7 +18,7 @@
  (inline_tests
   (modes js wasm best))
  (preprocess
-  (pps ppx_expect_light)))
+  (pps ppx_devtools.expect)))
 
 (rule
  ; Guard against future OxCaml changes peepholing UGEINT away the same
@@ -48,7 +48,7 @@
    (sandbox preserve_file_kind))
   (modes js wasm best))
  (preprocess
-  (pps ppx_expect_light -- -axes Jsoo_test_axes)))
+  (pps ppx_devtools.expect -- -axes Jsoo_test_axes)))
 
 (library
  (name jsoo_testsuite)
@@ -97,7 +97,7 @@
    (sandbox preserve_file_kind))
   (modes js wasm best))
  (preprocess
-  (pps ppx_optcomp_light ppx_expect_light -- -axes Jsoo_test_axes)))
+  (pps ppx_devtools.optcomp ppx_devtools.expect -- -axes Jsoo_test_axes)))
 
 ; Introcaml-only (the tests are gated by [@@@if introspect]): polymorphic
 ; printing through Introspect. Not run on wasm, which has no introspection
@@ -110,7 +110,7 @@
  (inline_tests
   (modes js best))
  (preprocess
-  (pps ppx_optcomp_light ppx_expect_light)))
+  (pps ppx_devtools.optcomp ppx_devtools.expect)))
 
 (test
  (name test_float16)
@@ -128,7 +128,7 @@
  (inline_tests
   (modes js wasm best))
  (preprocess
-  (pps ppx_expect_light)))
+  (pps ppx_devtools.expect)))
 
 (library
  (name jsoo_test_runtime_value)
@@ -143,7 +143,7 @@
  (inline_tests
   (modes js wasm))
  (preprocess
-  (pps ppx_expect_light)))
+  (pps ppx_devtools.expect)))
 
 ; compare_custom checks polymorphic comparison between an immediate and a
 ; custom block whose ops register a [compare] operation (as zarith_stubs_js
@@ -161,12 +161,12 @@
  (inline_tests
   (modes js))
  (preprocess
-  (pps ppx_expect_light)))
+  (pps ppx_devtools.expect)))
 
 ; test_sys drives the jsoo fake filesystem (Sys_js, jsoo_create_file, Unix) under
 ; the /static mount, which only exists on the JavaScript runtime, so it is
 ; js-only (never wasm, native or WASI). It also needs OCaml >= 5, gated in the
-; source as a floating [@@@if] (hence ppx_optcomp_light).
+; source as a floating [@@@if] (hence ppx_devtools.optcomp).
 
 (library
  (name jsoo_testsuite_sys)
@@ -179,7 +179,7 @@
    (sandbox preserve_file_kind))
   (modes js))
  (preprocess
-  (pps ppx_optcomp_light ppx_expect_light)))
+  (pps ppx_devtools.optcomp ppx_devtools.expect)))
 
 ; js_of_ocaml runtime-behaviour tests with one shared signature: they use Js
 ; values / runtime features, so they run on the JavaScript and wasm runtimes
@@ -213,7 +213,7 @@
    (sandbox preserve_file_kind))
   (modes js wasm))
  (preprocess
-  (pps ppx_expect_light)))
+  (pps ppx_devtools.expect)))
 
 ; Sys.filepath_exists is new in OCaml 5.6.
 
@@ -227,7 +227,7 @@
    (sandbox preserve_file_kind))
   (modes js wasm best))
  (preprocess
-  (pps ppx_expect_light)))
+  (pps ppx_devtools.expect)))
 
 ; Bigstring.of_arrayBuffer produces a char bigarray; uses Js, js and wasm only.
 
@@ -240,7 +240,7 @@
   (modes js wasm))
  (libraries js_of_ocaml)
  (preprocess
-  (pps js_of_ocaml-ppx ppx_expect_light)))
+  (pps js_of_ocaml-ppx ppx_devtools.expect)))
 
 ; The js accessor lives in the optional +toplevel.js runtime fragment, so it
 ; is linked explicitly; --toplevel is deliberately NOT passed, so the bytecode
@@ -306,7 +306,7 @@
   (modes js))
  (libraries js_of_ocaml jsoo_test_axes)
  (preprocess
-  (pps js_of_ocaml-ppx ppx_expect_light -- -axes Jsoo_test_axes)))
+  (pps js_of_ocaml-ppx ppx_devtools.expect -- -axes Jsoo_test_axes)))
 
 (ocamlyacc calc_parser)
 

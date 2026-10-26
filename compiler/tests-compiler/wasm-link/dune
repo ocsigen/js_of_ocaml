@@ -4,5 +4,5 @@
  (inline_tests)
  (enabled_if %{lib-available:wasm_of_ocaml-compiler})
  (preprocess
-  (pps ppx_expect_light))
+  (pps ppx_devtools.expect))
  (libraries js_of_ocaml-compiler wasm_of_ocaml-compiler))

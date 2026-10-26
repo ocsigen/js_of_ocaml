@@ -1,4 +1,4 @@
-# Inline tests: `ppx_expect_light` + `ppx_optcomp_light`
+# Inline tests: `ppx_devtools.expect` + `ppx_devtools.optcomp`
 
 js_of_ocaml ships its own, self-contained inline-test toolchain (a small
 `ppx_expect` replacement) so the test suite can run unmodified across the
@@ -7,9 +7,9 @@ support. It lives in three sibling directories:
 
 | directory | what it provides |
 |---|---|
-| `compiler/ppx-expect-light/` | the `let%expect_test` / `[%expect]` rewriter + a runner |
-| `compiler/ppx-optcomp-light/` | compile-time gating with `[@@@if]` / `[@@if]` |
-| `compiler/ppx-light-predicate/` | the predicate grammar shared by both |
+| `ppx_devtools/expect/` | the `let%expect_test` / `[%expect]` rewriter + a runner |
+| `ppx_devtools/optcomp/` | compile-time gating with `[@@@if]` / `[@@if]` |
+| `ppx_devtools/predicate/` | the predicate grammar shared by both |
 
 Tests are predominantly inline expect tests (not cram), so most of what you
 write looks like `let%expect_test … [%expect {| … |}]`.
@@ -22,10 +22,10 @@ write looks like `let%expect_test … [%expect {| … |}]`.
  (inline_tests
   (modes js wasm best))      ; run under js_of_ocaml, wasm_of_ocaml, and native
  (preprocess
-  (pps ppx_optcomp_light ppx_expect_light)))
+  (pps ppx_devtools.optcomp ppx_devtools.expect)))
 ```
 
-- Add `ppx_optcomp_light` to `(pps …)` only if the module uses `[@@if]` /
+- Add `ppx_devtools.optcomp` to `(pps …)` only if the module uses `[@@if]` /
   `[@@@if]` (it is harmless otherwise, but keep the list minimal).
 - `(modes …)`: `js`, `wasm`, `best` (native). Pick what makes sense; a test that
   uses `Js.*` values cannot run `best`, so use `(modes js wasm)`.
@@ -56,7 +56,7 @@ accept it with `dune promote`.
 There are two independent ways to make a test behave differently across
 configurations. **Choosing the right one matters:**
 
-| | `[@@if]` / `[@@@if]` (`ppx_optcomp_light`) | `[@when]` / `[@tags]` (`ppx_expect_light`) |
+| | `[@@if]` / `[@@@if]` (`ppx_devtools.optcomp`) | `[@when]` / `[@tags]` (`ppx_devtools.expect`) |
 |---|---|---|
 | when | **compile time** — the gated code is *removed* | **run time** — the code is compiled, the test is *skipped* (or a snapshot variant chosen) |
 | use when | the code **wouldn't compile** on the excluded config (uses an API/syntax that doesn't exist there) | the code compiles everywhere but should be **skipped** or produce **different output** on some backend/engine/version |
@@ -127,7 +127,7 @@ let%expect_test ("JS calling convention" [@tags "js-only"]) = …
 ### 3.3 Predicate grammar
 
 Both ppxs parse the same expression grammar
-(`Ppx_light_predicate.Predicate`): boolean `not`, `&&`, `||`; comparisons `=`,
+(`Ppx_devtools_predicate.Predicate`): boolean `not`, `&&`, `||`; comparisons `=`,
 `<>`, `<`, `<=`, `>`, `>=`; integer/string literals; and version tuples like
 `(5, 2, 0)` compared against `ocaml_version`.
 
@@ -140,7 +140,7 @@ run time:
   `os_type` (shorthands `win32` / `unix` / `cygwin`), `ocaml_version`,
   `oxcaml`.
 - Run time, js_of_ocaml-specific (`[@when]`, in libraries preprocessed with
-  `(pps ... ppx_expect_light -- -axes Jsoo_test_axes)` and depending on
+  `(pps ... ppx_devtools.expect -- -axes Jsoo_test_axes)` and depending on
   `jsoo_test_axes`): `host_engine` (shorthands `node` / `quickjs` / `bun` /
   `wasi`), `target_engine`, `effects` (`"disabled"` / `"cps"` / …). See
   `compiler/lib-test-axes/jsoo_test_axes.mli`.

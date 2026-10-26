@@ -14,6 +14,17 @@
 (license "GPL-2.0-or-later" "LGPL-2.1-or-later WITH OCaml-LGPL-linking-exception")
 
 (package
+ (name ppx_devtools)
+ (synopsis "Lightweight ppxes for conditional compilation and expect tests")
+ (description
+  "ppx_devtools.optcomp gates code at compile time with [@if] attributes. ppx_devtools.expect is an inline expect-test ppx in the style of ppx_expect, with conditional snapshots; tests run natively, with js_of_ocaml and with wasm_of_ocaml.")
+ (license "LGPL-2.1-or-later WITH OCaml-LGPL-linking-exception")
+ (depends
+  (ocaml (>= 4.13))
+  (ppxlib (>= 0.33))
+  out-channel-redirect))
+
+(package
  (name js_of_ocaml-compiler)
  (synopsis "Compiler from OCaml bytecode to JavaScript")
  (description
@@ -21,7 +32,7 @@
  (depends
   (ocaml (and (>= 4.13) (< 5.7)))
   (num :with-test)
-  (out-channel-redirect :with-test)
+  ppx_devtools
   (ppxlib (>= 0.33))
   (ocaml-compiler-libs (>= v0.12.4))
   (re :with-test)
@@ -62,9 +73,9 @@
  (depends
   (ocaml (>= 4.13))
   (js_of_ocaml (= :version))
+  ppx_devtools
   (ppxlib (>= 0.33))
   (num :with-test)
-  (out-channel-redirect :with-test)
   (re (and (>= 1.9.0) :with-test))
 ))
 
@@ -76,6 +87,7 @@
  (depends
   (ocaml (>= 4.13))
   (js_of_ocaml (= :version))
+  ppx_devtools
   (ppxlib (>= 0.33))
   (num :with-test)
   (re (and (>= 1.9.0) :with-test))
@@ -94,6 +106,7 @@
 ;;(cohttp-lwt-unix (and (>= 6.0.0) :with-test))
   (graphics :with-test)
   (num :with-test)
+  ppx_devtools
   (ppxlib (>= 0.33))
   (re (and (>= 1.9.0) :with-test)))
  (depopts
@@ -124,7 +137,7 @@
   (ocaml (>= 4.13))
   (js_of_ocaml-compiler (= :version))
   (num :with-test)
-  (out-channel-redirect :with-test)
+  ppx_devtools
   (ppxlib (>= 0.33))
   (re (and (>= 1.9.0) :with-test))
 ))
@@ -138,7 +151,7 @@
   (ocaml (>= 4.14))
   (js_of_ocaml (= :version))
   (num :with-test)
-  (out-channel-redirect :with-test)
+  ppx_devtools
   (ppxlib (>= 0.33))
   (re :with-test)
   (cmdliner (>= 2.0))

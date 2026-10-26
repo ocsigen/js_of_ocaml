@@ -4,7 +4,7 @@
 (executable
  (name promote_me)
  (preprocess
-  (pps ppx_expect_light)))
+  (pps ppx_devtools.expect)))
 
 (rule
  (targets promote_me.ml.corrected)

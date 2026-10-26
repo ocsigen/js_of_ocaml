@@ -1,4 +1,0 @@
-(library
- (name ppx_optcomp_light)
- (libraries compiler-libs.common ppxlib ppx_light_predicate)
- (kind ppx_rewriter))

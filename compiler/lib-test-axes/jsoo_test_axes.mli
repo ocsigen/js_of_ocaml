@@ -13,8 +13,9 @@
  *)
 
 (** js_of_ocaml-specific axes of [[@when]] predicates. Test libraries using them
-    are preprocessed with [(pps ... ppx_expect_light -axes Jsoo_test_axes)], so
-    that, for instance, [[@when not quickjs]] reads [Jsoo_test_axes.quickjs]. *)
+    are preprocessed with
+    [(pps ... ppx_devtools.expect -- -axes Jsoo_test_axes)], so that, for
+    instance, [[@when not quickjs]] reads [Jsoo_test_axes.quickjs]. *)
 
 val target_engine : string
 (** The engine a generated program runs under, from [JSOO_TEST_ENGINE] (or

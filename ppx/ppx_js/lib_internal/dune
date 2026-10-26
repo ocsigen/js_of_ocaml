@@ -3,4 +3,4 @@
  (libraries compiler-libs.common ppxlib)
  (kind ppx_rewriter)
  (preprocess
-  (pps ppx_optcomp_light ppxlib.metaquot)))
+  (pps ppx_devtools.optcomp ppxlib.metaquot)))
