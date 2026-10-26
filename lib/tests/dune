@@ -21,7 +21,7 @@
  (name jsoo_lib_expect_tests)
  (modules
   (:standard \ test_devtools))
- (libraries js_of_ocaml unix jsoo_test_axes)
+ (libraries js_of_ocaml unix)
  (inline_tests
   (modes js wasm))
  (preprocess
@@ -29,9 +29,7 @@
    ppx_js_internal
    ppx_devtools.optcomp
    ppx_devtools.expect
-   --
-   -axes
-   Jsoo_test_axes)))
+   jsoo_test_axes_ppx)))
 
 ; Introcaml only (the tests are gated by [@@@if introspect]): the DevTools
 ; formatter, which is installed under js_of_ocaml only.

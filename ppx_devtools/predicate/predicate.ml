@@ -251,57 +251,34 @@ let compile_time_only = function
   | "ast_version" | "arch_sixtyfour" | "introspect" -> true
   | _ -> false
 
-(* Every other identifier is an axis, looked up in the predefined axes
-   ([Ppx_devtools_expect_runtime.Axes]) and then in the [axes] modules: [x]
-   becomes [let open! Axes in let open! M1 in ... x], so the last module
-   defining [x] wins. The opens only scope the identifier, not the code
-   generated around it. Its type ([bool], [string], [int] or [int list])
+(* Every other identifier is an axis: [resolve] maps it to the fully qualified
+   name of its runtime value. Its type ([bool], [string], [int] or [int list])
    follows from the context it is used in. *)
-let axis ~axes (t : t) : expression =
+let axis ~resolve (t : t) : expression =
   match t with
-  | Ident (loc, name) when not (compile_time_only name) ->
-      let open Ast_builder.Default in
-      let e =
-        List.fold_right
-          ("Ppx_devtools_expect_runtime.Axes" :: axes)
-          ~init:(evar ~loc name)
-          ~f:(fun m e ->
-            pexp_open
-              ~loc
-              (open_infos
-                 ~loc
-                 ~override:Override
-                 ~expr:(pmod_ident ~loc (Located.mk ~loc (Longident.parse m))))
-              e)
-      in
-      (* Not every module is used, and later ones may shadow earlier ones. *)
-      { e with
-        pexp_attributes =
-          [ attribute
-              ~loc
-              ~name:(Located.mk ~loc "ocaml.warning")
-              ~payload:(PStr [ pstr_eval ~loc (estring ~loc "-33-44-45-66") [] ])
-          ]
-      }
+  | Ident (loc, name) when not (compile_time_only name) -> (
+      match resolve name with
+      | Some path -> Ast_builder.Default.evar ~loc path
+      | None -> raise (Invalid loc))
   | _ -> raise (Invalid (loc_of t))
 
-let reify_string ~axes (t : t) : expression =
+let reify_string ~resolve (t : t) : expression =
   let loc = loc_of t in
   match t with
   | String (_, s) -> Ast_builder.Default.estring ~loc s
-  | _ -> axis ~axes t
+  | _ -> axis ~resolve t
 
-let reify_int ~axes (t : t) : expression =
+let reify_int ~resolve (t : t) : expression =
   let loc = loc_of t in
   match t with
   | Int (_, i) -> Ast_builder.Default.eint ~loc i
-  | _ -> axis ~axes t
+  | _ -> axis ~resolve t
 
-let reify_version ~axes (t : t) : expression =
+let reify_version ~resolve (t : t) : expression =
   let loc = loc_of t in
   match t with
-  | Tuple (_, l) -> Ast_builder.Default.elist ~loc (List.map l ~f:(reify_int ~axes))
-  | _ -> axis ~axes t
+  | Tuple (_, l) -> Ast_builder.Default.elist ~loc (List.map l ~f:(reify_int ~resolve))
+  | _ -> axis ~resolve t
 
 (* The type of a comparison is given by its literal side. *)
 type kind =
@@ -328,21 +305,21 @@ let rel_to_int loc op (a : expression) (b : expression) : expression =
   | "<>" -> [%expr [%e a] <> [%e b]]
   | _ -> raise (Invalid loc)
 
-let rec reify_bool ~axes (t : t) : expression =
+let rec reify_bool ~resolve (t : t) : expression =
   let loc = loc_of t in
   match t with
   | Bool (_, b) -> Ast_builder.Default.ebool ~loc b
-  | Ident _ -> axis ~axes t
-  | App (loc, "not", [ a ]) -> [%expr not [%e reify_bool ~axes a]]
+  | Ident _ -> axis ~resolve t
+  | App (loc, "not", [ a ]) -> [%expr not [%e reify_bool ~resolve a]]
   | App (loc, "&&", [ a; b ]) ->
-      [%expr [%e reify_bool ~axes a] && [%e reify_bool ~axes b]]
+      [%expr [%e reify_bool ~resolve a] && [%e reify_bool ~resolve b]]
   | App (loc, "||", [ a; b ]) ->
-      [%expr [%e reify_bool ~axes a] || [%e reify_bool ~axes b]]
+      [%expr [%e reify_bool ~resolve a] || [%e reify_bool ~resolve b]]
   | App (loc, (("<=" | ">=" | ">" | "<" | "=" | "<>") as op), [ a; b ]) ->
-      reify_cmp ~axes loc op a b
+      reify_cmp ~resolve loc op a b
   | _ -> raise (Invalid loc)
 
-and reify_cmp ~axes loc op a b =
+and reify_cmp ~resolve loc op a b =
   let kind =
     match kind_of a, kind_of b with
     | K_unknown, k | k, K_unknown -> k
@@ -353,20 +330,21 @@ and reify_cmp ~axes loc op a b =
       let cmp =
         [%expr
           Ppx_devtools_expect_runtime.version_compare
-            [%e reify_version ~axes a]
-            [%e reify_version ~axes b]]
+            [%e reify_version ~resolve a]
+            [%e reify_version ~resolve b]]
       in
       rel_to_int loc op cmp [%expr 0]
   | K_string ->
       (* Fully qualify: the test module may [open] something that shadows
          [String] (e.g. js_of_ocaml's [Typed_array]). *)
       let cmp =
-        [%expr Stdlib.String.compare [%e reify_string ~axes a] [%e reify_string ~axes b]]
+        [%expr
+          Stdlib.String.compare [%e reify_string ~resolve a] [%e reify_string ~resolve b]]
       in
       rel_to_int loc op cmp [%expr 0]
-  | K_int -> rel_to_int loc op (reify_int ~axes a) (reify_int ~axes b)
+  | K_int -> rel_to_int loc op (reify_int ~resolve a) (reify_int ~resolve b)
   | K_unknown -> raise (Invalid loc)
 
-let reify ?(axes = []) ~loc t =
-  let e = reify_bool ~axes t in
+let reify ~resolve ~loc t =
+  let e = reify_bool ~resolve t in
   { e with pexp_loc = loc }

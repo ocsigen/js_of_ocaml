@@ -12,9 +12,8 @@
  * GNU Lesser General Public License for more details.
  *)
 
-(** Predefined axes of [[@when]] predicates. Generated code looks up the
-    identifiers of a predicate in this module first, then in the modules given
-    with [-axes]. *)
+(** Predefined axes of [[@when]] predicates. Further axes can be added with
+    [Ppx_devtools_expect.register_axes]. *)
 
 val backend : string
 (** ["js"] / ["wasm"] / ["native"] (from [Sys.backend_type]). *)

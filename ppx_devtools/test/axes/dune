@@ -1,0 +1,5 @@
+; Values of the extension axes of the tests, registered by ../axes-ppx.
+
+(library
+ (name test_expect_axes)
+ (wrapped false))
