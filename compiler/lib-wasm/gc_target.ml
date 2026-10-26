@@ -514,14 +514,24 @@ end
 (* Cast [e] to a non-nullable reference to [typ], unless it already has
    this type. *)
 let ref_cast typ e =
+  let rec cast (e : W.expression) =
+    match e with
+    | Seq (l, e') ->
+        (* Cast the value of the sequence rather than the sequence, so
+           that a cast of a local stays visible to [Cast_reuse] *)
+        let* e' = cast e' in
+        return (W.Seq (l, e'))
+    | _ -> (
+        let cast = W.RefCast ({ nullable = false; typ }, e) in
+        let* t = expression_type e in
+        match t with
+        | Some (Ref { nullable = false; typ = typ' }) ->
+            let* b = heap_type_sub typ' typ in
+            return (if b then e else cast)
+        | Some (Ref { nullable = true; _ } | I32 | I64 | F32 | F64) | None -> return cast)
+  in
   let* e = e in
-  let cast = W.RefCast ({ nullable = false; typ }, e) in
-  let* t = expression_type e in
-  match t with
-  | Some (Ref { nullable = false; typ = typ' }) ->
-      let* b = heap_type_sub typ' typ in
-      return (if b then e else cast)
-  | Some (Ref { nullable = true; _ } | I32 | I64 | F32 | F64) | None -> return cast
+  cast e
 
 module Value = struct
   let block_type =
