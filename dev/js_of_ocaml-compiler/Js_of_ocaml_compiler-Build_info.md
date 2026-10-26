@@ -17,7 +17,7 @@ val effects_backends_javascript :
 ```
 ```ocaml
 val effects_backends_wasm : 
-  (string * [ `Jspi | `Cps | `Native | `Disabled ]) list
+  (string * [ `Jspi | `Cps | `Double_translation | `Native | `Disabled ]) list
 ```
 ```ocaml
 type config_key = 

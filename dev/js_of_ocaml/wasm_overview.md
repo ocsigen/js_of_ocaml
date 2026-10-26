@@ -51,14 +51,15 @@ Extra libraries distributed with OCaml (such as Thread) are not supported in gen
 Compared to js\_of\_ocaml:
 
 - The default effect handler mode is `jspi` (instead of `disabled`)
-- The `--effects` flag accepts `jspi` instead of `double-translation`
+- The `--effects` flag also accepts `jspi` and `native`
 - There is no `build-fs` subcommand; use the `--file` flag instead
 
 ### Effect handlers
 
-OCaml 5\.x code using effect handlers can be compiled in three ways:
+OCaml 5\.x code using effect handlers can be compiled in four ways:
 
 - **`--effects=cps`** \- Uses the CPS transformation from js\_of\_ocaml
+- **`--effects=double-translation`** \- Uses the double translation from js\_of\_ocaml: functions are also kept in direct style, which is used when no effect handler is involved
 - **`--effects=jspi`** (default) \- Uses the [JavaScript-Promise Integration extension](https://github.com/WebAssembly/js-promise-integration)
 - **`--effects=native`** \- Uses the [WebAssembly Stack Switching proposal](https://github.com/WebAssembly/stack-switching)
 The CPS transformation is not the default since the generated code is slower, larger, and less readable. However, the JSPI extension is currently only available in Chrome 137 and Node.js 25 (or higher), and performing effects is slower when using it. Use `--effects=cps` for other browsers.

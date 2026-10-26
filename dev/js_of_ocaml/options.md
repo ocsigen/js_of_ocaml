@@ -47,6 +47,7 @@ For **wasm\_of\_ocaml** (default: `jspi`):
 
 - **`jspi`** \- JavaScript-Promise Integration (default). Available in Chrome 137, Node.js 25, and higher. Use `cps` for other browsers. Performing effects is slower than with `cps`.
 - **`cps`** \- CPS transformation for effect support
+- **`double-translation`** \- Keep both direct and CPS versions; choose at runtime
 - **`native`** \- WebAssembly stack switching (wasm\_of\_ocaml only). Available, behind the `--experimental-wasm-wasmfx` flag, in Chrome 148 or higher, or in a recent Node.js canary release (V8 version 14\.7.100 or higher).
 - **`disabled`** \- No effect handler support
 See [Effect handlers](./effects.md) for details.

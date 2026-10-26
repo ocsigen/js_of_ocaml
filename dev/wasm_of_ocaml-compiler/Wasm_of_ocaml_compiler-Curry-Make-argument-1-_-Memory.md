@@ -36,6 +36,20 @@ val check_function_arity :
   unit Code_generation.t
 ```
 ```ocaml
+val call_continuation : expression -> expression -> expression
+```
+`call_continuation k res` applies the continuation `k` to `res`
+
+```ocaml
+val cps_call_or_direct : 
+  arity:int ->
+  Js_of_ocaml_compiler.Code.Var.t ->
+  expression list ->
+  expression
+```
+With double translation, CPS call to a function which is not known statically: if the function has no CPS version, its direct-style version is called and the result is passed to the continuation (the last argument). The calls are tail calls, so this can only be used when the result of the call is immediately returned. The call must be exact, unless there is a single argument besides the continuation.
+
+```ocaml
 val tag : expression -> expression
 ```
 ```ocaml

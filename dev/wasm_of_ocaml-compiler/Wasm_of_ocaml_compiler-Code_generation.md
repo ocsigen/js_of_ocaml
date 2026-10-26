@@ -29,6 +29,9 @@ type context = {
                        Js_of_ocaml_compiler.Stdlib.IntMap.t;
   mutable cps_curry_funs : Js_of_ocaml_compiler.Code.Var.t
                            Js_of_ocaml_compiler.Stdlib.IntMap.t;
+  mutable pair_curry_funs : (Js_of_ocaml_compiler.Code.Var.t
+                           * Js_of_ocaml_compiler.Code.Var.t)
+                            Js_of_ocaml_compiler.Stdlib.IntMap.t;
   mutable dummy_funs : Js_of_ocaml_compiler.Code.Var.t
                        Js_of_ocaml_compiler.Stdlib.IntMap.t;
   mutable cps_dummy_funs : Js_of_ocaml_compiler.Code.Var.t
@@ -116,6 +119,9 @@ val add_var : ?typ:Wasm_ast.value_type -> Wasm_ast.var -> Wasm_ast.var t
 ```
 ```ocaml
 val define_var : Wasm_ast.var -> expression -> unit t
+```
+```ocaml
+val get_constant : Wasm_ast.var -> Wasm_ast.expression option t
 ```
 ```ocaml
 val is_small_constant : Wasm_ast.expression -> bool t
@@ -209,6 +215,11 @@ val need_apply_fun : cps:bool -> arity:int -> Js_of_ocaml_compiler.Code.Var.t t
 ```
 ```ocaml
 val need_curry_fun : cps:bool -> arity:int -> Js_of_ocaml_compiler.Code.Var.t t
+```
+```ocaml
+val need_pair_curry_fun : 
+  arity:int ->
+  (Js_of_ocaml_compiler.Code.Var.t * Js_of_ocaml_compiler.Code.Var.t) t
 ```
 ```ocaml
 val need_dummy_fun : cps:bool -> arity:int -> Js_of_ocaml_compiler.Code.Var.t t

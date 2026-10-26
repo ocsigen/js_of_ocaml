@@ -4,6 +4,11 @@
 type expression = Code_generation.expression
 ```
 ```ocaml
+val double_translation : unit -> bool
+```
+Whether some functions have both a direct-style and a CPS version (see `Gc_target.double_translation`)
+
+```ocaml
 module Memory : sig ... end
 ```
 ```ocaml

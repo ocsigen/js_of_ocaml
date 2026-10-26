@@ -12,15 +12,16 @@ Since CPS code is usually slower, this can avoid performance degradations. You c
 
 ## Wasm\_of\_ocaml
 
-Wasm\_of\_ocaml provides three effect handler implementations:
+Wasm\_of\_ocaml provides four effect handler implementations:
 
 - **`--effects=jspi`** (default) uses the JavaScript-Promise Integration extension. It does not require any code transformation but requires a runtime that supports JSPI.
 - **`--effects=cps`** uses the same CPS transformation as js\_of\_ocaml.
+- **`--effects=double-translation`** uses the same [double translation](./#double-translation) as js\_of\_ocaml.
 - **`--effects=native`** uses the [WebAssembly Stack Switching proposal](https://github.com/WebAssembly/stack-switching) (typed continuations). It provides the best performance but requires a runtime with support for the WasmFX extension (currently available, behind the `--experimental-wasm-wasmfx` flag, in Chrome 148 or higher, or in a recent Node.js canary release (V8 version 14\.7.100 or higher)).
 
 ### Effects and JavaScript frames
 
-As with C frames in the native OCaml runtime, an effect cannot be performed across a JavaScript frame. When OCaml code calls into JavaScript, which then calls back into OCaml (for instance through a callback registered with [`Js_of_ocaml.Js.wrap_callback`](./Js_of_ocaml-Js.md#val-wrap_callback)), performing an effect inside the callback raises `Effect.Unhandled`, even if a handler is installed on the other side of the JavaScript frame. A handler installed inside the callback works as usual with `--effects=cps` and `--effects=native`.
+As with C frames in the native OCaml runtime, an effect cannot be performed across a JavaScript frame. When OCaml code calls into JavaScript, which then calls back into OCaml (for instance through a callback registered with [`Js_of_ocaml.Js.wrap_callback`](./Js_of_ocaml-Js.md#val-wrap_callback)), performing an effect inside the callback raises `Effect.Unhandled`, even if a handler is installed on the other side of the JavaScript frame. A handler installed inside the callback works as usual with `--effects=cps`, `--effects=double-translation` and `--effects=native`.
 
 With `--effects=jspi`, effect handlers cannot be used inside JavaScript callbacks at all: JSPI can only suspend Wasm code that runs on its own stack, which is the case for the main program and for fibers, but not for code entered from JavaScript through a callback. Installing a handler inside a callback (for instance with `Effect.Deep.try_with`) fails with a `Failure "SuspendError: ..."` exception. Use `--effects=cps` or `--effects=native` if callbacks need effect handlers.
 
