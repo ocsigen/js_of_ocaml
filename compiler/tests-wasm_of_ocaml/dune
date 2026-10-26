@@ -128,3 +128,25 @@
 (cram
  (applies_to split_toplevel_pieces)
  (deps split_toplevel.ml split_toplevel_switch.ml))
+
+(tests
+ (names js_float_args)
+ (modes js wasm)
+ (libraries js_of_ocaml)
+ ; The js_of_ocaml library is not compatible with WASI
+ (build_if
+  (<> %{env:JSOO_TEST_ENGINE=node} wasi))
+ ; Without -g, ocamlc turns the reference into a mutable variable
+ (flags
+  (:standard \ -g))
+ (ocamlc_flags ())
+ (js_of_ocaml
+  (flags :standard -w no-missing-debug-event)
+  (link_flags :standard -w no-missing-debug-event))
+ (wasm_of_ocaml
+  (flags :standard -w no-missing-debug-event)
+  (link_flags :standard -w no-missing-debug-event)))
+
+(cram
+ (applies_to globalize_js_float)
+ (deps globalize_js_float.ml))

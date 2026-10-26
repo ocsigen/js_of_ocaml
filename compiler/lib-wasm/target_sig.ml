@@ -307,11 +307,37 @@ module type S = sig
       -> expression
   end
 
+  module JavaScript : sig
+    val from_float : expression -> expression
+    (** Convert an unboxed float into a JavaScript number *)
+
+    val to_float : expression -> expression
+    (** Convert a JavaScript value into an unboxed float *)
+  end
+
+  type js_arg =
+    [ `Value of expression
+    | `F64 of expression  (** An unboxed float passed as a JavaScript number *)
+    ]
+
   val internal_primitives :
     (string
     * Primitive.kind
     * ((Code.prim_arg -> expression) -> Code.prim_arg list -> expression))
     list
+
+  val js_primitives :
+    (string
+    * Primitive.kind
+    * (   (Code.prim_arg -> expression)
+       -> (Code.prim_arg -> js_arg)
+       -> [ `Value | `F64 ]
+          (* Whether the result is expected as an unboxed float, for a JavaScript
+               value converted with [caml_js_to_float] *)
+       -> Code.prim_arg list
+       -> expression))
+    list
+  (** The primitives calling JavaScript code *)
 
   val handle_exceptions :
        result_typ:Wasm_ast.value_type list

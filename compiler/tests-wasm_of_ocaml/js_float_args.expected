@@ -1,0 +1,16 @@
+number:NaN number:-0 number:Infinity number:1e+300
+1.5
+number:3.25
+3.25
+number:4.5
+number:5.5 number:6.5
+number:6.5 number:7.5
+number:6.5
+number:7.5 string:s
+number:8.5
+1.25 -0.5 2.5 -1
+1.25
+1.25
+1.25
+1.25
+1.25 0
