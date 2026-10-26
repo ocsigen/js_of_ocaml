@@ -38,6 +38,7 @@
  ; own library and OFF BY DEFAULT: opt in with JSOO_TEST_MD5_LARGE=true, e.g.
  ; via `make test-md5-large`.
  (name jsoo_testsuite_md5_large)
+ (libraries jsoo_test_axes)
  (modules test_md5_large)
  ; Off by default (the env opt-in stays in dune); the quickjs/wasi gating
  ; lives in the source as a [@when ...] predicate.
@@ -47,7 +48,7 @@
    (sandbox preserve_file_kind))
   (modes js wasm best))
  (preprocess
-  (pps ppx_expect_light)))
+  (pps ppx_expect_light -- -axes Jsoo_test_axes)))
 
 (library
  (name jsoo_testsuite)
@@ -80,7 +81,12 @@
    array_limits
    toplevel_sections
    test_introspect))
- (libraries unix compiler-libs.common js_of_ocaml-compiler str)
+ (libraries
+  unix
+  compiler-libs.common
+  js_of_ocaml-compiler
+  str
+  jsoo_test_axes)
  ; bigarray_stubs backs test_bigarray; its symbols are disjoint from
  ; jsoo_runtime_stubs and the C is version-agnostic.
  (foreign_stubs
@@ -91,7 +97,7 @@
    (sandbox preserve_file_kind))
   (modes js wasm best))
  (preprocess
-  (pps ppx_optcomp_light ppx_expect_light)))
+  (pps ppx_optcomp_light ppx_expect_light -- -axes Jsoo_test_axes)))
 
 ; Introcaml-only (the tests are gated by [@@@if introspect]): polymorphic
 ; printing through Introspect. Not run on wasm, which has no introspection
@@ -298,9 +304,9 @@
  (modules test_text_codec_fallback)
  (inline_tests
   (modes js))
- (libraries js_of_ocaml)
+ (libraries js_of_ocaml jsoo_test_axes)
  (preprocess
-  (pps js_of_ocaml-ppx ppx_expect_light)))
+  (pps js_of_ocaml-ppx ppx_expect_light -- -axes Jsoo_test_axes)))
 
 (ocamlyacc calc_parser)
 

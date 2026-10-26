@@ -12,8 +12,8 @@
 (library
  (name tests_re_replace)
  (modules str_replace)
- (libraries str)
+ (libraries str jsoo_test_axes)
  (inline_tests
   (modes js wasm best))
  (preprocess
-  (pps ppx_expect_light)))
+  (pps ppx_expect_light -- -axes Jsoo_test_axes)))

@@ -31,16 +31,15 @@
       64]); compile-time only.
     - [oxcaml] — whether the compiler is the OxCaml flavour.
     - [os_type] — [Sys.os_type] ("Unix" / "Win32" / "Cygwin").
-    - [backend] / [host_engine] / [target_engine] / [effects] — runtime only
-      (see {!reify}). [host_engine] is the engine the test process runs on
-      ("native" for a native test); [target_engine] is the engine a generated
-      program runs under (from [JSOO_TEST_ENGINE]). [effects] is the js_of_ocaml
-      [--effects] mode ("disabled" / "cps" / "double-translation" / "jspi").
     - [introspect] — whether the compiler was built with introspection support
+      ([Sys.introspection_enabled]); compile-time only.
+    - [backend] — ["native"] / ["js"] / ["wasm"]; runtime only (see {!reify}).
 
-    plus the runtime-only shorthands [js], [wasm], [native], [node], [quickjs],
-    [wasi], [win32], [unix], [cygwin] ([node]/[quickjs]/[wasi] resolve to
-    [host_engine]). *)
+    plus the runtime-only shorthands [js], [wasm], [native], [win32], [unix],
+    [cygwin].
+
+    At runtime, other identifiers are extension axes: they are resolved in a
+    module given to {!reify}. *)
 
 open Ppxlib
 
@@ -70,14 +69,19 @@ val parse : expression -> t
 
 val eval_compile_time : t -> bool
 (** Evaluate the predicate now, at preprocessing time. Resolves [ocaml_version],
-    [ast_version], [arch_sixtyfour], [oxcaml] and [os_type]. Raises {!Invalid} on
+    [ast_version], [arch_sixtyfour], [oxcaml], [introspect] and [os_type]. Raises {!Invalid} on
     constructs that are not meaningful at compile time (e.g. [backend],
-    [host_engine], [target_engine], or the runtime shorthands). *)
+    the runtime shorthands or extension axes). *)
 
-val reify : loc:Location.t -> t -> expression
+val reify : ?axes:string -> loc:Location.t -> t -> expression
 (** Reify the predicate into an OCaml expression of type [bool] that evaluates it
     at runtime against [Ppx_expect_light_runtime.Axes]. Supports [ocaml_version],
-    [os_type], [oxcaml], [backend], [host_engine], [target_engine], [effects]
-    and the runtime shorthands. Raises
-    {!Invalid} on constructs that are only meaningful at compile time (e.g.
-    [ast_version]). *)
+    [os_type], [oxcaml], [backend] and the runtime shorthands.
+
+    Any other identifier [x] is an extension axis, reified as [M.x] where [M] is
+    the [axes] module path. Its expected type depends on how it is used: [bool]
+    on its own, otherwise the type of what it is compared with ([string],
+    [int], or [int list] for a version tuple).
+
+    Raises {!Invalid} on constructs that are only meaningful at compile time
+    (e.g. [ast_version]) and on unknown identifiers when [axes] is not given. *)

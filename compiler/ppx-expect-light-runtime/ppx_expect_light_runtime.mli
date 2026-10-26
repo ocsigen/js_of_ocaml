@@ -20,7 +20,7 @@
     rewriter; they are not meant to be used directly. *)
 
 module Axes : module type of Axes
-(** Runtime axes ([backend]/[engine]/...) referenced by reified
+(** Runtime axes ([backend]/[os_type]/...) referenced by reified
     [%expect.when] conditions. *)
 
 type variant =

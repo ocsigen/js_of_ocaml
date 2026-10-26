@@ -247,53 +247,56 @@ let eval_compile_time t =
 (* -- Reification to runtime code ------------------------------------------- *)
 
 (* A bare identifier used as a boolean is either a runtime axis shorthand
-   ([js]/[wasm]/...) or [oxcaml]. *)
+   ([js]/[wasm]/...), [oxcaml] or an extension axis. *)
 let shorthand = function
   | "js" -> Some ("backend", "js")
   | "wasm" -> Some ("backend", "wasm")
   | "native" -> Some ("backend", "native")
-  | "node" -> Some ("host_engine", "node")
-  | "quickjs" -> Some ("host_engine", "quickjs")
-  | "bun" -> Some ("host_engine", "bun")
-  | "wasi" -> Some ("host_engine", "wasi")
   | "win32" -> Some ("os_type", "Win32")
   | "unix" -> Some ("os_type", "Unix")
   | "cygwin" -> Some ("os_type", "Cygwin")
   | _ -> None
 
+let builtin = function
+  | "ocaml_version"
+  | "ast_version"
+  | "arch_sixtyfour"
+  | "oxcaml"
+  | "introspect"
+  | "os_type"
+  | "backend" -> true
+  | name -> Option.is_some (shorthand name)
+
+(* An identifier that is not built in is an extension axis, resolved to the
+   value of the same name in the [axes] module. Its type ([bool], [string],
+   [int] or [int list]) follows from the context it is used in. *)
+let extension ~axes (t : t) : expression =
+  match t, axes with
+  | Ident (loc, name), Some m when not (builtin name) ->
+      Ast_builder.Default.evar ~loc (m ^ "." ^ name)
+  | _ -> raise (Invalid (loc_of t))
+
 (* Atom whose runtime value is a string. *)
-let reify_string (t : t) : expression =
+let reify_string ~axes (t : t) : expression =
   let loc = loc_of t in
   match t with
   | Ident (_, "os_type") -> [%expr Ppx_expect_light_runtime.Axes.os_type]
   | Ident (_, "backend") -> [%expr Ppx_expect_light_runtime.Axes.backend]
-  | Ident (_, "host_engine") -> [%expr Ppx_expect_light_runtime.Axes.host_engine]
-  | Ident (_, "target_engine") -> [%expr Ppx_expect_light_runtime.Axes.target_engine]
-  | Ident (_, "effects") ->
-      (* [caml_jsoo_flags_effects] is a js/wasm-only primitive (its native stub
-         aborts). Emitting the [external] here, at the use site, keeps the
-         symbol out of the shared runtime library — which is also linked into
-         native test runners that never reference [effects]. *)
-      [%expr
-        let module M = struct
-          external get : unit -> string = "caml_jsoo_flags_effects"
-        end in
-        M.get ()]
   | String (_, s) -> Ast_builder.Default.estring ~loc s
-  | _ -> raise (Invalid loc)
+  | _ -> extension ~axes t
 
-let reify_int (t : t) : expression =
+let reify_int ~axes (t : t) : expression =
   let loc = loc_of t in
   match t with
   | Int (_, i) -> Ast_builder.Default.eint ~loc i
-  | _ -> raise (Invalid loc)
+  | _ -> extension ~axes t
 
-let reify_version (t : t) : expression =
+let reify_version ~axes (t : t) : expression =
   let loc = loc_of t in
   match t with
   | Ident (_, "ocaml_version") -> [%expr Ppx_expect_light_runtime.Axes.ocaml_version]
-  | Tuple (_, l) -> Ast_builder.Default.elist ~loc (List.map l ~f:reify_int)
-  | _ -> raise (Invalid loc)
+  | Tuple (_, l) -> Ast_builder.Default.elist ~loc (List.map l ~f:(reify_int ~axes:None))
+  | _ -> extension ~axes t
 
 type kind =
   | K_version
@@ -305,8 +308,7 @@ let kind_of (t : t) : kind =
   match t with
   | Ident (_, "ocaml_version") -> K_version
   | Tuple _ -> K_version
-  | Ident (_, ("os_type" | "backend" | "host_engine" | "target_engine" | "effects")) ->
-      K_string
+  | Ident (_, ("os_type" | "backend")) -> K_string
   | String _ -> K_string
   | Int _ -> K_int
   | _ -> K_unknown
@@ -322,23 +324,26 @@ let rel_to_int loc op (a : expression) (b : expression) : expression =
   | "<>" -> [%expr [%e a] <> [%e b]]
   | _ -> raise (Invalid loc)
 
-let rec reify_bool (t : t) : expression =
+let rec reify_bool ~axes (t : t) : expression =
   let loc = loc_of t in
   match t with
   | Bool (_, b) -> Ast_builder.Default.ebool ~loc b
   | Ident (_, "oxcaml") -> [%expr Ppx_expect_light_runtime.Axes.oxcaml]
   | Ident (_, name) -> (
       match shorthand name with
-      | Some (axis, value) -> reify_cmp loc "=" (Ident (loc, axis)) (String (loc, value))
-      | None -> raise (Invalid loc))
-  | App (loc, "not", [ a ]) -> [%expr not [%e reify_bool a]]
-  | App (loc, "&&", [ a; b ]) -> [%expr [%e reify_bool a] && [%e reify_bool b]]
-  | App (loc, "||", [ a; b ]) -> [%expr [%e reify_bool a] || [%e reify_bool b]]
+      | Some (axis, value) ->
+          reify_cmp ~axes loc "=" (Ident (loc, axis)) (String (loc, value))
+      | None -> extension ~axes t)
+  | App (loc, "not", [ a ]) -> [%expr not [%e reify_bool ~axes a]]
+  | App (loc, "&&", [ a; b ]) ->
+      [%expr [%e reify_bool ~axes a] && [%e reify_bool ~axes b]]
+  | App (loc, "||", [ a; b ]) ->
+      [%expr [%e reify_bool ~axes a] || [%e reify_bool ~axes b]]
   | App (loc, (("<=" | ">=" | ">" | "<" | "=" | "<>") as op), [ a; b ]) ->
-      reify_cmp loc op a b
+      reify_cmp ~axes loc op a b
   | _ -> raise (Invalid loc)
 
-and reify_cmp loc op a b =
+and reify_cmp ~axes loc op a b =
   let kind =
     match kind_of a, kind_of b with
     | K_unknown, k | k, K_unknown -> k
@@ -349,18 +354,20 @@ and reify_cmp loc op a b =
       let cmp =
         [%expr
           Ppx_expect_light_runtime.Axes.version_compare
-            [%e reify_version a]
-            [%e reify_version b]]
+            [%e reify_version ~axes a]
+            [%e reify_version ~axes b]]
       in
       rel_to_int loc op cmp [%expr 0]
   | K_string ->
       (* Fully qualify: the test module may [open] something that shadows
          [String] (e.g. js_of_ocaml's [Typed_array]). *)
-      let cmp = [%expr Stdlib.String.compare [%e reify_string a] [%e reify_string b]] in
+      let cmp =
+        [%expr Stdlib.String.compare [%e reify_string ~axes a] [%e reify_string ~axes b]]
+      in
       rel_to_int loc op cmp [%expr 0]
-  | K_int -> rel_to_int loc op (reify_int a) (reify_int b)
+  | K_int -> rel_to_int loc op (reify_int ~axes a) (reify_int ~axes b)
   | K_unknown -> raise (Invalid loc)
 
-let reify ~loc t =
-  let e = reify_bool t in
+let reify ?axes ~loc t =
+  let e = reify_bool ~axes t in
   { e with pexp_loc = loc }

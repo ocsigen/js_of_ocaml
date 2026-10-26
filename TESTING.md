@@ -116,7 +116,6 @@ let%expect_test "float32 marshalling" =
 Built-in tags:
 
 `disabled`, `js-only` / `no-js`, `wasm-only` / `no-wasm`, `native-only`,
-`quickjs-only` / `no-quickjs`, `wasi-only` / `no-wasi`,
 `64-bits-only` / `32-bits-only`.
 
 ```ocaml
@@ -136,11 +135,15 @@ The **atoms differ** because one is evaluated at compile time and the other at
 run time:
 
 - Compile time (`[@@if]` / `[@@@if]`): `ocaml_version`, `ast_version`,
-  `oxcaml`, `os_type`, `arch_sixtyfour`.
+  `oxcaml`, `introspect`, `os_type`, `arch_sixtyfour`.
 - Run time (`[@when]`): `backend` (shorthands `js` / `wasm` / `native`),
-  `host_engine` (shorthands `node` / `quickjs` / `wasi`), `target_engine`,
   `os_type` (shorthands `win32` / `unix` / `cygwin`), `ocaml_version`,
-  `effects` (`"disabled"` / `"cps"` / …), `oxcaml`.
+  `oxcaml`.
+- Run time, js_of_ocaml-specific (`[@when]`, in libraries preprocessed with
+  `(pps ... ppx_expect_light -- -axes Jsoo_test_axes)` and depending on
+  `jsoo_test_axes`): `host_engine` (shorthands `node` / `quickjs` / `bun` /
+  `wasi`), `target_engine`, `effects` (`"disabled"` / `"cps"` / …). See
+  `compiler/lib-test-axes/jsoo_test_axes.mli`.
 
 So `[@when js && not quickjs]`, `[@when effects <> "cps"]`,
 `[@when not native]`, `[@@if os_type <> "Win32"]`,

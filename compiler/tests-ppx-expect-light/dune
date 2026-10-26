@@ -3,4 +3,4 @@
  (inline_tests
   (modes js wasm best))
  (preprocess
-  (pps ppx_optcomp_light ppx_expect_light)))
+  (pps ppx_optcomp_light ppx_expect_light -- -axes Test_axes)))
