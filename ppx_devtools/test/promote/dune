@@ -26,15 +26,15 @@
   (diff promote_me.expected promote_me.ml.corrected)))
 
 ; Mismatches must not be lost when the source cannot be read to write the
-; [.corrected] file.
+; [.corrected] file: the runner must fail.
 
 (rule
- (targets missing_source.output)
+ (alias runtest)
  (action
   (with-accepted-exit-codes
-   (or 0 2)
+   2
    (with-outputs-to
-    missing_source.output
+    %{null}
     (run
      %{exe:promote_me.exe}
      inline-test-runner
@@ -42,8 +42,3 @@
      missing
      -diff-cmd
      -)))))
-
-(rule
- (alias runtest)
- (action
-  (diff missing_source.expected missing_source.output)))
