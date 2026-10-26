@@ -28,18 +28,20 @@
    (import "fail" "caml_failwith" (func $caml_failwith (param (ref eq))))
    (import "string" "caml_string_concat"
       (func $caml_string_concat (param (ref eq) (ref eq)) (result (ref eq))))
-   (import "jslib" "wrap" (func $wrap (param anyref) (result (ref eq))))
-   (import "jslib" "unwrap" (func $unwrap (param (ref eq)) (result anyref)))
+   (import "jslib" "value_of_js"
+      (func $value_of_js (param externref) (result (ref eq))))
+   (import "jslib" "js_of_value"
+      (func $js_of_value (param (ref eq)) (result externref)))
    (import "jslib" "caml_jsstring_of_string"
       (func $caml_jsstring_of_string (param (ref eq)) (result (ref eq))))
    (import "jslib" "caml_string_of_jsstring"
       (func $caml_string_of_jsstring (param (ref eq)) (result (ref eq))))
    (import "bindings" "get_ocaml_unit_list"
-      (func $get_ocaml_unit_list (result anyref)))
+      (func $get_ocaml_unit_list (result externref)))
    (import "bindings" "get_prim_list"
-      (func $get_prim_list (result anyref)))
+      (func $get_prim_list (result externref)))
    (import "bindings" "get_crcs"
-      (func $get_crcs (result anyref)))
+      (func $get_crcs (result externref)))
    (import "bigarray" "caml_ba_to_typed_array"
       (func $caml_ba_to_typed_array (param (ref eq)) (result (ref eq))))
    (import "bigarray" "caml_string_of_uint8_array"

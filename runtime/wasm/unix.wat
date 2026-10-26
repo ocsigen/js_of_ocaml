@@ -93,33 +93,37 @@
       (func $mktime
          (param i32) (param i32) (param i32) (param i32) (param i32) (param i32)
          (result f64)))
-   (import "bindings" "utimes" (func $utimes (param anyref f64 f64)))
-   (import "bindings" "stat" (func $stat (param anyref i32) (result (ref eq))))
-   (import "bindings" "lstat" (func $lstat (param anyref i32) (result (ref eq))))
+   (import "bindings" "utimes" (func $utimes (param externref f64 f64)))
+   (import "bindings" "stat" (func $stat (param externref i32) (result (ref eq))))
+   (import "bindings" "lstat"
+      (func $lstat (param externref i32) (result (ref eq))))
    (import "bindings" "fstat"
       (func $fstat (param (ref eq) i32) (result (ref eq))))
-   (import "bindings" "chmod" (func $chmod (param anyref (ref eq))))
+   (import "bindings" "chmod" (func $chmod (param externref (ref eq))))
    (import "bindings" "fchmod" (func $fchmod (param (ref eq) (ref eq))))
-   (import "bindings" "rename" (func $rename (param anyref) (param anyref)))
-   (import "bindings" "getcwd" (func $getcwd (result anyref)))
-   (import "bindings" "chdir" (func $chdir (param anyref)))
-   (import "bindings" "mkdir" (func $mkdir (param anyref) (param i32)))
-   (import "bindings" "opendir" (func $opendir (param anyref) (result anyref)))
-   (import "bindings" "readdir" (func $readdir (param anyref) (result anyref)))
-   (import "bindings" "closedir" (func $closedir (param anyref)))
-   (import "bindings" "rmdir" (func $rmdir (param anyref)))
-   (import "bindings" "link" (func $link (param anyref anyref)))
-   (import "bindings" "symlink" (func $symlink (param anyref anyref i32)))
-   (import "bindings" "readlink" (func $readlink (param anyref) (result anyref)))
-   (import "bindings" "unlink" (func $unlink (param anyref)))
-   (import "bindings" "truncate" (func $truncate (param anyref (ref eq))))
-   (import "bindings" "truncate" (func $truncate_64 (param anyref f64)))
+   (import "bindings" "rename" (func $rename (param externref) (param externref)))
+   (import "bindings" "getcwd" (func $getcwd (result externref)))
+   (import "bindings" "chdir" (func $chdir (param externref)))
+   (import "bindings" "mkdir" (func $mkdir (param externref) (param i32)))
+   (import "bindings" "opendir"
+      (func $opendir (param externref) (result externref)))
+   (import "bindings" "readdir"
+      (func $readdir (param externref) (result externref)))
+   (import "bindings" "closedir" (func $closedir (param externref)))
+   (import "bindings" "rmdir" (func $rmdir (param externref)))
+   (import "bindings" "link" (func $link (param externref externref)))
+   (import "bindings" "symlink" (func $symlink (param externref externref i32)))
+   (import "bindings" "readlink"
+      (func $readlink (param externref) (result externref)))
+   (import "bindings" "unlink" (func $unlink (param externref)))
+   (import "bindings" "truncate" (func $truncate (param externref (ref eq))))
+   (import "bindings" "truncate" (func $truncate_64 (param externref f64)))
    (import "bindings" "ftruncate" (func $ftruncate (param (ref eq) (ref eq))))
    (import "bindings" "ftruncate" (func $ftruncate_64 (param (ref eq) f64)))
    (import "bindings" "file_size" (func $file_size (param i32) (result i64)))
-   (import "bindings" "access" (func $access (param anyref) (param i32)))
+   (import "bindings" "access" (func $access (param externref) (param i32)))
    (import "bindings" "open"
-      (func $open_fn (param anyref) (param i32) (param i32) (result i32)))
+      (func $open_fn (param externref) (param i32) (param i32) (result i32)))
    (import "bindings" "write"
       (func $write (param i32 (ref extern) i32 i32 i64) (result i32)))
    (import "bindings" "write"
@@ -138,9 +142,11 @@
    (import "bindings" "getegid" (func $getegid (result i32)))
    (import "js" "unix_error" (global $unix_error_js (ref extern)))
    (import "js" "caml_strerror"
-      (func $caml_strerror (param i32) (result (ref any))))
-   (import "jslib" "wrap" (func $wrap (param anyref) (result (ref eq))))
-   (import "jslib" "unwrap" (func $unwrap (param (ref eq)) (result anyref)))
+      (func $caml_strerror (param i32) (result (ref extern))))
+   (import "jslib" "value_of_js"
+      (func $value_of_js (param externref) (result (ref eq))))
+   (import "jslib" "js_of_value"
+      (func $js_of_value (param (ref eq)) (result externref)))
    (import "jslib" "caml_js_meth_call"
       (func $caml_js_meth_call
          (param (ref eq) (ref eq) (ref eq)) (result (ref eq))))
@@ -417,7 +423,7 @@
       (local $code (ref eq))
       (local $errno (ref eq))
       (local $variant (ref eq))
-      (local.set $exn (call $wrap (any.convert_extern (local.get $exception))))
+      (local.set $exn (call $value_of_js (local.get $exception)))
       (local.set $code (call $caml_js_get (local.get $exn) (global.get $code_str)))
       (local.set $variant
          (call $caml_js_meth_call (global.get $unix_error)
@@ -469,7 +475,7 @@
                            (ref.cast (ref $block) (local.get $err))
                            (i32.const 1))))))))
       (return_call $caml_string_of_jsstring
-         (call $wrap (call $caml_strerror (local.get $errno)))))
+         (call $value_of_js (call $caml_strerror (local.get $errno)))))
 ))
 
 (@if $wasi
@@ -776,7 +782,8 @@
       (try
          (do
             (call $utimes
-               (call $unwrap (call $caml_jsstring_of_string (local.get $path)))
+               (call $js_of_value
+                  (call $caml_jsstring_of_string (local.get $path)))
                (local.get $at) (local.get $mt)))
          (catch $javascript_exception
             (call $caml_unix_error (ref.null eq))))
@@ -921,7 +928,8 @@
       (try (result (ref eq))
          (do
             (call $stat
-               (call $unwrap (call $caml_jsstring_of_string (local.get $path)))
+               (call $js_of_value
+                  (call $caml_jsstring_of_string (local.get $path)))
                (i32.const 0)))
          (catch $javascript_exception
             (call $caml_unix_error (ref.null eq))
@@ -932,7 +940,8 @@
       (try (result (ref eq))
          (do
             (call $stat
-               (call $unwrap (call $caml_jsstring_of_string (local.get $path)))
+               (call $js_of_value
+                  (call $caml_jsstring_of_string (local.get $path)))
                (i32.const 1)))
          (catch $javascript_exception
             (call $caml_unix_error (ref.null eq))
@@ -943,7 +952,8 @@
       (try (result (ref eq))
          (do
             (call $lstat
-               (call $unwrap (call $caml_jsstring_of_string (local.get $path)))
+               (call $js_of_value
+                  (call $caml_jsstring_of_string (local.get $path)))
                (i32.const 0)))
          (catch $javascript_exception
             (call $caml_unix_error (ref.null eq))
@@ -954,7 +964,8 @@
       (try (result (ref eq))
          (do
             (call $lstat
-               (call $unwrap (call $caml_jsstring_of_string (local.get $path)))
+               (call $js_of_value
+                  (call $caml_jsstring_of_string (local.get $path)))
                (i32.const 1)))
          (catch $javascript_exception
             (call $caml_unix_error (ref.null eq))
@@ -1013,7 +1024,8 @@
       (try
          (do
             (call $chmod
-               (call $unwrap (call $caml_jsstring_of_string (local.get $path)))
+               (call $js_of_value
+                  (call $caml_jsstring_of_string (local.get $path)))
                (local.get $perms)))
          (catch $javascript_exception
             (call $caml_unix_error (ref.null eq))))
@@ -1086,8 +1098,8 @@
       (try
          (do
             (call $rename
-               (call $unwrap (call $caml_jsstring_of_string (local.get $o)))
-               (call $unwrap (call $caml_jsstring_of_string (local.get $n)))))
+               (call $js_of_value (call $caml_jsstring_of_string (local.get $o)))
+               (call $js_of_value (call $caml_jsstring_of_string (local.get $n)))))
          (catch $javascript_exception
             (call $caml_unix_error (ref.null eq))))
       (ref.i31 (i32.const 0)))
@@ -1129,7 +1141,7 @@
       (param (ref eq)) (result (ref eq))
       (try (result (ref eq))
          (do
-            (call $caml_string_of_jsstring (call $wrap (call $getcwd))))
+            (call $caml_string_of_jsstring (call $value_of_js (call $getcwd))))
          (catch $javascript_exception
             (call $caml_unix_error (ref.null eq))
             (ref.i31 (i32.const 0)))))
@@ -1139,7 +1151,8 @@
       (try
          (do
             (call $chdir
-               (call $unwrap (call $caml_jsstring_of_string (local.get $name)))))
+               (call $js_of_value
+                  (call $caml_jsstring_of_string (local.get $name)))))
          (catch $javascript_exception
             (call $caml_unix_error (ref.null eq))))
       (ref.i31 (i32.const 0)))
@@ -1160,7 +1173,8 @@
       (try
          (do
             (call $mkdir
-               (call $unwrap (call $caml_jsstring_of_string (local.get $name)))
+               (call $js_of_value
+                  (call $caml_jsstring_of_string (local.get $name)))
                (i31.get_u (ref.cast (ref i31) (local.get $perm)))))
          (catch $javascript_exception
             (call $caml_unix_error (ref.null eq))))
@@ -1357,9 +1371,9 @@
       (param $name (ref eq)) (result (ref eq))
       (try (result (ref eq))
          (do
-            (call $wrap
+            (call $value_of_js
                (call $opendir
-                  (call $unwrap
+                  (call $js_of_value
                      (call $caml_jsstring_of_string (local.get $name))))))
          (catch $javascript_exception
             (call $caml_unix_error (ref.null eq))
@@ -1380,9 +1394,9 @@
             (try (result (ref eq))
                (do
                   (call $caml_string_of_jsstring
-                     (call $wrap
+                     (call $value_of_js
                        (br_on_null $end
-                          (call $readdir (call $unwrap (local.get $dir)))))))
+                          (call $readdir (call $js_of_value (local.get $dir)))))))
                (catch $javascript_exception
                   (drop)
                   (call $throw_ebadf (@string "readdir"))
@@ -1395,7 +1409,7 @@
       (param $dir (ref eq)) (result (ref eq))
       (try
          (do
-            (call $closedir (call $unwrap (local.get $dir))))
+            (call $closedir (call $js_of_value (local.get $dir))))
          (catch $javascript_exception
             (drop)
             (call $throw_ebadf (@string "closedir"))))
@@ -1456,7 +1470,7 @@
       (try
          (do
             (call $unlink
-               (call $unwrap (call $caml_jsstring_of_string (local.get $p)))))
+               (call $js_of_value (call $caml_jsstring_of_string (local.get $p)))))
          (catch $javascript_exception
             (call $caml_unix_error (ref.null eq))))
       (ref.i31 (i32.const 0)))
@@ -1477,7 +1491,7 @@
       (try
          (do
             (call $rmdir
-               (call $unwrap (call $caml_jsstring_of_string (local.get $p)))))
+               (call $js_of_value (call $caml_jsstring_of_string (local.get $p)))))
          (catch $javascript_exception
             (call $caml_unix_error (ref.null eq))))
       (ref.i31 (i32.const 0)))
@@ -1552,8 +1566,8 @@
       (try
          (do
             (call $link
-               (call $unwrap (call $caml_jsstring_of_string (local.get $d)))
-               (call $unwrap (call $caml_jsstring_of_string (local.get $s)))))
+               (call $js_of_value (call $caml_jsstring_of_string (local.get $d)))
+               (call $js_of_value (call $caml_jsstring_of_string (local.get $s)))))
          (catch $javascript_exception
             (call $caml_unix_error (ref.null eq))))
       (ref.i31 (i32.const 0)))
@@ -1623,8 +1637,8 @@
       (try
          (do
             (call $symlink
-               (call $unwrap (call $caml_jsstring_of_string (local.get $t)))
-               (call $unwrap (call $caml_jsstring_of_string (local.get $p)))
+               (call $js_of_value (call $caml_jsstring_of_string (local.get $t)))
+               (call $js_of_value (call $caml_jsstring_of_string (local.get $p)))
                (local.get $kind)))
          (catch $javascript_exception
             (call $caml_unix_error (ref.null eq))))
@@ -1665,9 +1679,9 @@
       (try
          (do
             (return_call $caml_string_of_jsstring
-               (call $wrap
+               (call $value_of_js
                   (call $readlink
-                     (call $unwrap
+                     (call $js_of_value
                         (call $caml_jsstring_of_string (local.get $path)))))))
          (catch $javascript_exception
             (call $caml_unix_error (ref.null eq))))
@@ -1734,7 +1748,8 @@
       (try
          (do
             (call $truncate
-               (call $unwrap (call $caml_jsstring_of_string (local.get $path)))
+               (call $js_of_value
+                  (call $caml_jsstring_of_string (local.get $path)))
                (local.get $len)))
          (catch $javascript_exception
             (call $caml_unix_error (ref.null eq))))
@@ -1748,7 +1763,8 @@
       (try
          (do
             (call $truncate_64
-               (call $unwrap (call $caml_jsstring_of_string (local.get $path)))
+               (call $js_of_value
+                  (call $caml_jsstring_of_string (local.get $path)))
                (f64.convert_i64_s (local.get $len))))
          (catch $javascript_exception
             (call $caml_unix_error (ref.null eq))))
@@ -1845,7 +1861,8 @@
       (try
          (do
             (call $access
-               (call $unwrap (call $caml_jsstring_of_string (local.get $path)))
+               (call $js_of_value
+                  (call $caml_jsstring_of_string (local.get $path)))
                (local.get $flags)))
          (catch $javascript_exception
             (call $caml_unix_error (ref.null eq))))
@@ -1942,7 +1959,7 @@
          (do
             (local.set $fd
                (call $open_fn
-                  (call $unwrap
+                  (call $js_of_value
                      (call $caml_jsstring_of_string (local.get $path)))
                   (local.get $flags)
                   (i31.get_u (ref.cast (ref i31) (local.get $perm))))))

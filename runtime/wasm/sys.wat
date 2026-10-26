@@ -55,12 +55,10 @@
    (import "bindings" "ta_get_i32"
       (func $ta_get_i32 (param (ref extern)) (param i32) (result i32)))
    (import "bindings" "random_seed" (func $random_seed (result (ref extern))))
-   (import "jslib" "unwrap" (func $unwrap (param (ref eq)) (result anyref)))
-   (import "jslib" "wrap" (func $wrap (param anyref) (result (ref eq))))
-   (import "jslib" "value_of_js"
-      (func $value_of_js (param externref) (result (ref eq))))
    (import "jslib" "js_of_value"
       (func $js_of_value (param (ref eq)) (result externref)))
+   (import "jslib" "value_of_js"
+      (func $value_of_js (param externref) (result (ref eq))))
    (import "jslib" "caml_jsstring_of_string"
       (func $caml_jsstring_of_string (param (ref eq)) (result (ref eq))))
    (import "jslib" "caml_string_of_jsstring"
@@ -75,7 +73,7 @@
    (import "bindings" "on_arm64" (global $on_arm64 i32))
    (import "bindings" "isatty"
       (func $isatty (param (ref eq)) (result (ref eq))))
-   (import "bindings" "system" (func $system (param anyref) (result (ref eq))))
+   (import "bindings" "system" (func $system (param externref) (result (ref eq))))
    (import "bindings" "getenv" (func $getenv (param externref) (result externref)))
    (import "bindings" "time" (func $time (result f64)))
    (import "fail" "javascript_exception"
@@ -386,7 +384,8 @@
          (do
             (return
                (call $system
-                  (call $unwrap (call $caml_jsstring_of_string (local.get $cmd))))))
+                  (call $js_of_value
+                     (call $caml_jsstring_of_string (local.get $cmd))))))
          (catch $javascript_exception
             (call $caml_handle_sys_error)))
       (return (ref.i31 (i32.const 0))))
@@ -599,7 +598,7 @@
       (call $caml_raise_sys_error
          (call $caml_string_of_jsstring
             (call $caml_js_meth_call
-               (call $wrap (any.convert_extern (local.get $exn)))
+               (call $value_of_js (local.get $exn))
                (global.get $toString)
                (array.new_fixed $block 1 (ref.i31 (i32.const 0)))))))
 ))

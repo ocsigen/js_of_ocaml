@@ -25,7 +25,8 @@
 
    (import "jslib" "caml_jsstring_of_string"
       (func $caml_jsstring_of_string (param (ref eq)) (result (ref eq))))
-   (import "jslib" "unwrap" (func $unwrap (param (ref eq)) (result anyref)))
+   (import "jslib" "js_of_value"
+      (func $js_of_value (param (ref eq)) (result externref)))
    (import "obj" "caml_callback_1"
       (func $caml_callback_1
          (param (ref eq)) (param (ref eq)) (result (ref eq))))
@@ -48,7 +49,7 @@
 (@else
    (import "fail" "javascript_exception"
       (tag $javascript_exception (param externref)))
-   (import "bindings" "write" (func $write (param i32) (param anyref)))
+   (import "bindings" "write" (func $write (param i32) (param externref)))
    (import "bindings" "exit" (func $exit (param i32)))
 ))
 
@@ -511,7 +512,7 @@
 )
 (@else
                (call $write (i32.const 2)
-                  (call $unwrap
+                  (call $js_of_value
                      (call $caml_jsstring_of_string (local.get $msg))))
 ))
             )

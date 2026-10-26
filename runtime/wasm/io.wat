@@ -19,8 +19,10 @@
    (import "fail" "caml_raise_end_of_file" (func $caml_raise_end_of_file))
    (import "fail" "caml_raise_sys_error"
       (func $caml_raise_sys_error (param (ref eq))))
-   (import "jslib" "wrap" (func $wrap (param anyref) (result (ref eq))))
-   (import "jslib" "unwrap" (func $unwrap (param (ref eq)) (result anyref)))
+   (import "jslib" "value_of_js"
+      (func $value_of_js (param externref) (result (ref eq))))
+   (import "jslib" "js_of_value"
+      (func $js_of_value (param (ref eq)) (result externref)))
    (import "jslib" "caml_jsstring_of_string"
       (func $caml_jsstring_of_string (param (ref eq)) (result (ref eq))))
    (import "jslib" "caml_list_of_js_array"
@@ -59,7 +61,7 @@
 )
 (@else
    (import "bindings" "open"
-      (func $open_fn (param anyref) (param i32) (param i32) (result i32)))
+      (func $open_fn (param externref) (param i32) (param i32) (result i32)))
    (import "bindings" "close" (func $close (param i32)))
    (import "bindings" "write"
       (func $write
@@ -82,7 +84,7 @@
       (func $register_channel (param (ref eq))))
    (import "bindings" "unregister_channel"
       (func $unregister_channel (param (ref eq))))
-   (import "bindings" "channel_list" (func $channel_list (result anyref)))
+   (import "bindings" "channel_list" (func $channel_list (result externref)))
    (import "jslib" "caml_js_fun_call"
       (func $caml_js_fun_call
          (param (ref eq)) (param (ref eq)) (result (ref eq))))
@@ -514,7 +516,7 @@
          (do
             (local.set $fd
                (call $open_fn
-                  (call $unwrap
+                  (call $js_of_value
                      (call $caml_jsstring_of_string (local.get $path)))
                   (local.get $flags)
                   (i31.get_u (ref.cast (ref i31) (local.get $perm))))))
@@ -616,7 +618,8 @@
 (@else
    (func (export "caml_ml_out_channels_list")
       (param (ref eq)) (result (ref eq))
-      (return_call $caml_list_of_js_array (call $wrap (call $channel_list))))
+      (return_call $caml_list_of_js_array
+         (call $value_of_js (call $channel_list))))
 ))
 
    (func (export "caml_ml_open_descriptor_in")

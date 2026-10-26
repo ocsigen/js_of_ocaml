@@ -18,16 +18,18 @@
 (module
    (import "bigarray" "caml_uint8_array_of_string"
       (func $caml_uint8_array_of_string (param (ref eq)) (result (ref eq))))
-   (import "jslib" "unwrap" (func $unwrap (param (ref eq)) (result anyref)))
-   (import "jslib" "wrap" (func $wrap (param anyref) (result (ref eq))))
+   (import "jslib" "js_of_value"
+      (func $js_of_value (param (ref eq)) (result externref)))
+   (import "jslib" "value_of_js"
+      (func $value_of_js (param externref) (result (ref eq))))
    (import "jslib" "caml_jsstring_of_string"
       (func $caml_jsstring_of_string (param (ref eq)) (result (ref eq))))
    (import "bindings" "load_module"
-      (func $load_module (param anyref) (result anyref)))
+      (func $load_module (param externref) (result externref)))
    (import "bindings" "load_wasmo"
-      (func $load_wasmo (param anyref)))
+      (func $load_wasmo (param externref)))
    (import "bindings" "register_fragments"
-      (func $register_fragments (param anyref) (param anyref)))
+      (func $register_fragments (param externref) (param externref)))
    (import "stdlib" "link_info"
       (global $link_info (mut (ref $block))))
 
@@ -37,23 +39,25 @@
 (@then
    (func (export "caml_wasm_load_module")
       (param $str (ref eq)) (result (ref eq))
-      (call $wrap
+      (call $value_of_js
          (call $load_module
-            (call $unwrap
+            (call $js_of_value
                (call $caml_uint8_array_of_string (local.get $str))))))
 
    (func (export "caml_wasm_load_wasmo")
       (param $str (ref eq)) (result (ref eq))
       (call $load_wasmo
-         (call $unwrap
+         (call $js_of_value
             (call $caml_uint8_array_of_string (local.get $str))))
       (ref.i31 (i32.const 0)))
 
    (func (export "caml_wasm_register_fragments")
       (param $unit_name (ref eq)) (param $source (ref eq)) (result (ref eq))
       (call $register_fragments
-         (call $unwrap (call $caml_jsstring_of_string (local.get $unit_name)))
-         (call $unwrap (call $caml_jsstring_of_string (local.get $source))))
+         (call $js_of_value
+            (call $caml_jsstring_of_string (local.get $unit_name)))
+         (call $js_of_value
+            (call $caml_jsstring_of_string (local.get $source))))
       (ref.i31 (i32.const 0)))
 ))
 

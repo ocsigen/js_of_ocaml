@@ -17,26 +17,28 @@
 
 ;; Helpers for the [Js_of_ocaml.Promise] binding. Implementations live in
 ;; runtime/js/promise.js — the Wasm side just bridges between OCaml's
-;; (ref eq) representation and the JS [anyref] world.
+;; (ref eq) representation and the JS [externref] world.
 
 (module
 
 (@if (not $wasi)
 (@then
-   (import "jslib" "wrap" (func $wrap (param anyref) (result (ref eq))))
-   (import "jslib" "unwrap" (func $unwrap (param (ref eq)) (result anyref)))
+   (import "jslib" "value_of_js"
+      (func $value_of_js (param externref) (result (ref eq))))
+   (import "jslib" "js_of_value"
+      (func $js_of_value (param (ref eq)) (result externref)))
    (import "js" "caml_jsoo_promise_wrap"
-      (func $caml_jsoo_promise_wrap_js (param anyref) (result anyref)))
+      (func $caml_jsoo_promise_wrap_js (param externref) (result externref)))
    (import "js" "caml_jsoo_promise_unwrap"
-      (func $caml_jsoo_promise_unwrap_js (param anyref) (result anyref)))
+      (func $caml_jsoo_promise_unwrap_js (param externref) (result externref)))
 
    (func (export "caml_jsoo_promise_wrap") (param $v (ref eq)) (result (ref eq))
-      (return_call $wrap
-         (call $caml_jsoo_promise_wrap_js (call $unwrap (local.get $v)))))
+      (return_call $value_of_js
+         (call $caml_jsoo_promise_wrap_js (call $js_of_value (local.get $v)))))
 
    (func (export "caml_jsoo_promise_unwrap") (param $v (ref eq)) (result (ref eq))
-      (return_call $wrap
-         (call $caml_jsoo_promise_unwrap_js (call $unwrap (local.get $v)))))
+      (return_call $value_of_js
+         (call $caml_jsoo_promise_unwrap_js (call $js_of_value (local.get $v)))))
 ))
 
 )
