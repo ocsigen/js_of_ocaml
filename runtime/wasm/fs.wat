@@ -55,25 +55,27 @@
 )
 (@else
    (import "bindings" "on_windows" (global $on_windows i32))
-   (import "bindings" "getcwd" (func $getcwd (result anyref)))
-   (import "bindings" "chdir" (func $chdir (param anyref)))
-   (import "bindings" "mkdir" (func $mkdir (param anyref) (param i32)))
-   (import "bindings" "rmdir" (func $rmdir (param anyref)))
-   (import "bindings" "unlink" (func $unlink (param anyref)))
-   (import "bindings" "tmpdir" (func $tmpdir (result anyref)))
+   (import "bindings" "getcwd" (func $getcwd (result externref)))
+   (import "bindings" "chdir" (func $chdir (param externref)))
+   (import "bindings" "mkdir" (func $mkdir (param externref) (param i32)))
+   (import "bindings" "rmdir" (func $rmdir (param externref)))
+   (import "bindings" "unlink" (func $unlink (param externref)))
+   (import "bindings" "tmpdir" (func $tmpdir (result externref)))
    (import "bindings" "read_dir"
-      (func $read_dir (param anyref) (result (ref extern))))
+      (func $read_dir (param externref) (result (ref extern))))
    (import "bindings" "file_exists"
-      (func $file_exists (param anyref) (result (ref eq))))
+      (func $file_exists (param externref) (result (ref eq))))
    (import "bindings" "filepath_exists"
-      (func $filepath_exists (param anyref) (result (ref eq))))
+      (func $filepath_exists (param externref) (result (ref eq))))
    (import "bindings" "is_directory"
-      (func $is_directory (param anyref) (result (ref eq))))
+      (func $is_directory (param externref) (result (ref eq))))
    (import "bindings" "is_file"
-      (func $is_file (param anyref) (result (ref eq))))
-   (import "bindings" "rename" (func $rename (param anyref) (param anyref)))
-   (import "jslib" "wrap" (func $wrap (param anyref) (result (ref eq))))
-   (import "jslib" "unwrap" (func $unwrap (param (ref eq)) (result anyref)))
+      (func $is_file (param externref) (result (ref eq))))
+   (import "bindings" "rename" (func $rename (param externref) (param externref)))
+   (import "jslib" "value_of_js"
+      (func $value_of_js (param externref) (result (ref eq))))
+   (import "jslib" "js_of_value"
+      (func $js_of_value (param (ref eq)) (result externref)))
    (import "jslib" "caml_string_of_jsstring"
       (func $caml_string_of_jsstring (param (ref eq)) (result (ref eq))))
    (import "jslib" "caml_jsstring_of_string"
@@ -94,9 +96,9 @@
    (import "fail" "caml_raise_sys_error"
       (func $caml_raise_sys_error (param (ref eq))))
    (import "bindings" "register_file"
-      (func $register_file (param anyref) (param anyref)))
+      (func $register_file (param externref) (param externref)))
    (import "bindings" "read_file"
-      (func $read_file (param anyref) (result anyref)))
+      (func $read_file (param externref) (result externref)))
 
    (type $bytes (array (mut i8)))
    (type $block (array (mut (ref eq))))
@@ -433,7 +435,7 @@
       (param (ref eq)) (result (ref eq))
       (try (result (ref eq))
          (do
-            (call $caml_string_of_jsstring (call $wrap (call $getcwd))))
+            (call $caml_string_of_jsstring (call $value_of_js (call $getcwd))))
          (catch $javascript_exception
             (call $caml_handle_sys_error)
             (ref.i31 (i32.const 0)))))
@@ -473,7 +475,8 @@
       (try
          (do
             (call $chdir
-               (call $unwrap (call $caml_jsstring_of_string (local.get $name)))))
+               (call $js_of_value
+                  (call $caml_jsstring_of_string (local.get $name)))))
          (catch $javascript_exception
             (call $caml_handle_sys_error)))
       (ref.i31 (i32.const 0)))
@@ -492,7 +495,8 @@
       (try
          (do
             (call $mkdir
-               (call $unwrap (call $caml_jsstring_of_string (local.get $name)))
+               (call $js_of_value
+                  (call $caml_jsstring_of_string (local.get $name)))
                (i31.get_u (ref.cast (ref i31) (local.get $perm)))))
          (catch $javascript_exception
             (call $caml_handle_sys_error)))
@@ -631,7 +635,7 @@
          (do
             (call $caml_js_to_string_array
                (call $read_dir
-                  (call $unwrap
+                  (call $js_of_value
                      (call $caml_jsstring_of_string (local.get $name))))))
          (catch $javascript_exception
             (call $caml_handle_sys_error)
@@ -651,7 +655,8 @@
       (try
          (do
             (call $rmdir
-               (call $unwrap (call $caml_jsstring_of_string (local.get $name)))))
+               (call $js_of_value
+                  (call $caml_jsstring_of_string (local.get $name)))))
          (catch $javascript_exception
             (call $caml_handle_sys_error)))
       (ref.i31 (i32.const 0)))
@@ -670,7 +675,8 @@
       (try
          (do
             (call $unlink
-               (call $unwrap (call $caml_jsstring_of_string (local.get $name)))))
+               (call $js_of_value
+                  (call $caml_jsstring_of_string (local.get $name)))))
          (catch $javascript_exception
             (call $caml_handle_sys_error)))
       (ref.i31 (i32.const 0)))
@@ -721,8 +727,9 @@
       (try
          (do
             (call $rename
-               (call $unwrap (call $caml_jsstring_of_string (local.get $o)))
-               (call $unwrap (call $caml_jsstring_of_string (local.get $n)))))
+               (call $js_of_value (call $caml_jsstring_of_string (local.get $o)))
+               (call $js_of_value
+                  (call $caml_jsstring_of_string (local.get $n)))))
          (catch $javascript_exception
             (call $caml_handle_sys_error)))
       (ref.i31 (i32.const 0)))
@@ -784,14 +791,15 @@
    (func (export "caml_sys_file_exists")
       (param $name (ref eq)) (result (ref eq))
       (return_call $file_exists
-         (call $unwrap (call $caml_jsstring_of_string (local.get $name)))))
+         (call $js_of_value (call $caml_jsstring_of_string (local.get $name)))))
 
    (func (export "caml_sys_filepath_exists")
       (param $name (ref eq)) (result (ref eq))
       (try (result (ref eq))
          (do
             (call $filepath_exists
-               (call $unwrap (call $caml_jsstring_of_string (local.get $name)))))
+               (call $js_of_value
+                  (call $caml_jsstring_of_string (local.get $name)))))
          (catch $javascript_exception
             (call $caml_handle_sys_error)
             (ref.i31 (i32.const 0)))))
@@ -814,16 +822,17 @@
 (@else
    (func (export "caml_read_file_content")
       (param $name (ref eq)) (result (ref eq))
-      (local $res anyref)
+      (local $res externref)
       (local.set $res
          (call $read_file
-            (call $unwrap (call $caml_jsstring_of_string (local.get $name)))))
+            (call $js_of_value
+               (call $caml_jsstring_of_string (local.get $name)))))
       (if (ref.is_null (local.get $res))
          (then
             (call $caml_raise_no_such_file (local.get $name))
             (return (ref.i31 (i32.const 0)))))
       (return_call $caml_string_of_uint8_array
-         (call $wrap (local.get $res))))
+         (call $value_of_js (local.get $res))))
 ))
 
 (@if $wasi
@@ -836,8 +845,9 @@
    (func (export "caml_create_file")
       (param $name (ref eq)) (param $content (ref eq)) (result (ref eq))
       (call $register_file
-         (call $unwrap (call $caml_jsstring_of_string (local.get $name)))
-         (call $unwrap (call $caml_uint8_array_of_string (local.get $content))))
+         (call $js_of_value (call $caml_jsstring_of_string (local.get $name)))
+         (call $js_of_value
+            (call $caml_uint8_array_of_string (local.get $content))))
       (ref.i31 (i32.const 0)))
 ))
 
@@ -876,7 +886,7 @@
       (try (result (ref eq))
          (do
             (call $is_directory
-               (call $unwrap
+               (call $js_of_value
                   (call $caml_jsstring_of_string (local.get $name)))))
          (catch $javascript_exception
             (call $caml_handle_sys_error)
@@ -896,7 +906,7 @@
       (try (result (ref eq))
          (do
             (call $is_file
-               (call $unwrap
+               (call $js_of_value
                   (call $caml_jsstring_of_string (local.get $name)))))
          (catch $javascript_exception
             (call $caml_handle_sys_error)
@@ -912,7 +922,8 @@
    (func (export "caml_sys_temp_dir_name") (param (ref eq)) (result (ref eq))
       (if (global.get $on_windows)
          (then
-            (return_call $caml_string_of_jsstring (call $wrap (call $tmpdir)))))
+            (return_call $caml_string_of_jsstring
+               (call $value_of_js (call $tmpdir)))))
       (@string ""))
 ))
 

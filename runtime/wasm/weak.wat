@@ -24,9 +24,9 @@
 
 (@if $wasi
 (@then
-   (func $wrap (param $v (ref eq)) (result (ref eq))
+   (func $value_of_js (param $v (ref eq)) (result (ref eq))
       (local.get $v))
-   (func $unwrap (param $v (ref eq)) (result (ref eq))
+   (func $js_of_value (param $v (ref eq)) (result (ref eq))
       (local.get $v))
    (func $weak_new (param $v (ref eq)) (result (ref eq))
       (local.get $v))
@@ -35,16 +35,19 @@
 )
 (@else
    (import "bindings" "weak_new"
-      (func $weak_new (param (ref eq)) (result anyref)))
+      (func $weak_new (param (ref eq)) (result externref)))
    (import "bindings" "weak_deref"
-      (func $weak_deref (param anyref) (result eqref)))
-   (import "bindings" "weak_map_new" (func $weak_map_new (result (ref any))))
+      (func $weak_deref (param externref) (result eqref)))
+   (import "bindings" "weak_map_new"
+      (func $weak_map_new (result (ref extern))))
    (import "bindings" "map_get"
-      (func $map_get (param (ref any)) (param (ref eq)) (result anyref)))
+      (func $map_get (param (ref any)) (param (ref eq)) (result externref)))
    (import "bindings" "map_set"
       (func $map_set (param (ref any)) (param (ref eq)) (param (ref any))))
-   (import "jslib" "unwrap" (func $unwrap (param (ref eq)) (result anyref)))
-   (import "jslib" "wrap" (func $wrap (param anyref) (result (ref eq))))
+   (import "jslib" "js_of_value"
+      (func $js_of_value (param (ref eq)) (result externref)))
+   (import "jslib" "value_of_js"
+      (func $value_of_js (param externref) (result (ref eq))))
 ))
 
    (type $block (array (mut (ref eq))))
@@ -93,7 +96,8 @@
                      (br_if $loop (ref.test (ref i31) (local.get $v)))
                      (local.set $v
                         (br_on_null $released
-                           (call $weak_deref (call $unwrap (local.get $v)))))
+                           (call $weak_deref
+                              (call $js_of_value (local.get $v)))))
                      ;; The data is wrapped in weak maps only when a live
                      ;; key threads it; unwrap lazily so that JS-valued
                      ;; data with no such key (e.g. a string with an int
@@ -103,11 +107,14 @@
                         (then
                            (local.set $traversed (i32.const 1))
                            (local.set $m
-                              (ref.as_non_null (call $unwrap (local.get $d))))))
+                              (ref.as_non_null
+                                 (any.convert_extern
+                                    (call $js_of_value (local.get $d)))))))
                      (local.set $m
                         (br_on_null $released
-                           (call $map_get (ref.as_non_null (local.get $m))
-                              (local.get $v))))
+                           (any.convert_extern
+                              (call $map_get (ref.as_non_null (local.get $m))
+                                 (local.get $v)))))
                      (br $loop))))
             (if (local.get $traversed)
                (then (local.set $d (ref.cast (ref eq) (local.get $m)))))
@@ -172,8 +179,8 @@
                (block $released
                   (local.set $v
                      (br_on_null $released
-                        (call $weak_deref (call $unwrap (local.get $v)))))
-                  (local.set $m' (call $weak_map_new))
+                        (call $weak_deref (call $js_of_value (local.get $v)))))
+                  (local.set $m' (any.convert_extern (call $weak_map_new)))
                   (call $map_set (local.get $m') (local.get $v)
                      (local.get $m))
                   (local.set $m (local.get $m'))
@@ -181,7 +188,7 @@
                (array.set $block (local.get $x) (local.get $i)
                   (global.get $caml_ephe_none))
                (br $loop))))
-      (local.set $dat (call $wrap (local.get $m)))
+      (local.set $dat (call $value_of_js (extern.convert_any (local.get $m))))
 ))
       (array.set $block (local.get $x) (global.get $caml_ephe_data_offset)
          (local.get $dat))
@@ -230,7 +237,7 @@
             (block $released
                (local.set $v
                   (br_on_null $released
-                     (call $weak_deref (call $unwrap (local.get $v)))))
+                     (call $weak_deref (call $js_of_value (local.get $v)))))
                (br $value))
             (array.set $block (local.get $x) (local.get $i)
                (global.get $caml_ephe_none))
@@ -290,7 +297,7 @@
             (br_if $value
                (i32.eqz
                   (ref.is_null
-                     (call $weak_deref (call $unwrap (local.get $v))))))
+                     (call $weak_deref (call $js_of_value (local.get $v))))))
             (array.set $block (local.get $x) (local.get $i)
                (global.get $caml_ephe_none))
             (array.set $block (local.get $x) (global.get $caml_ephe_data_offset)
@@ -319,7 +326,7 @@
          (else
             (local.set $d (call $caml_ephe_get_data (local.get $vx)))
             (array.set $block (local.get $x) (local.get $i)
-               (call $wrap (call $weak_new (local.get $v))))))
+               (call $value_of_js (call $weak_new (local.get $v))))))
       (call $caml_ephe_set_data_opt (local.get $vx) (local.get $d))
       (ref.i31 (i32.const 0)))
 

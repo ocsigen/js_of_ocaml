@@ -18,8 +18,10 @@
 (module
 (@if (not $wasi)
 (@then
-   (import "jslib" "wrap" (func $wrap (param anyref) (result (ref eq))))
-   (import "jslib" "unwrap" (func $unwrap (param (ref eq)) (result anyref)))
+   (import "jslib" "value_of_js"
+      (func $value_of_js (param externref) (result (ref eq))))
+   (import "jslib" "js_of_value"
+      (func $js_of_value (param (ref eq)) (result externref)))
    (import "jslib" "caml_js_global"
       (func $caml_js_global (param (ref eq)) (result (ref eq))))
    (import "jslib" "caml_js_get"
@@ -29,14 +31,14 @@
    (import "jslib" "caml_js_from_array"
       (func $caml_js_from_array (param (ref eq)) (result (ref eq))))
    (import "js" "caml_js_html_entities"
-      (func $caml_js_html_entities_js (param anyref) (result anyref)))
+      (func $caml_js_html_entities_js (param externref) (result externref)))
 
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
 
    (func (export "caml_js_html_entities") (param $v (ref eq)) (result (ref eq))
-      (return_call $wrap
-         (call $caml_js_html_entities_js (call $unwrap (local.get $v)))))
+      (return_call $value_of_js
+         (call $caml_js_html_entities_js (call $js_of_value (local.get $v)))))
 
    (@string $console "console")
 

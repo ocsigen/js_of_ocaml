@@ -16,8 +16,10 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
-   (import "jslib" "wrap" (func $wrap (param anyref) (result (ref eq))))
-   (import "jslib" "unwrap" (func $unwrap (param (ref eq)) (result anyref)))
+   (import "jslib" "value_of_js"
+      (func $value_of_js (param externref) (result (ref eq))))
+   (import "jslib" "js_of_value"
+      (func $js_of_value (param (ref eq)) (result externref)))
    (import "jslib" "caml_js_get"
       (func $caml_js_get (param (ref eq)) (param (ref eq)) (result (ref eq))))
    (import "bigarray" "caml_ba_to_typed_array"
@@ -57,7 +59,7 @@
 )
 (@else
    (import "bindings" "ta_create"
-      (func $ta_create (param i32) (param anyref) (result anyref)))
+      (func $ta_create (param i32) (param externref) (result externref)))
    (import "bindings" "dv_get_i32"
       (func $dv_get_i32_unaligned (param externref i32 i32) (result i32)))
    (import "bindings" "dv_get_ui8"
@@ -70,7 +72,7 @@
    (import "bindings" "ta_set"
       (func $ta_set (param (ref extern)) (param (ref extern)) (param i32)))
    (import "bindings" "ta_bytes"
-      (func $ta_bytes (param anyref) (result anyref)))
+      (func $ta_bytes (param externref) (result externref)))
 ))
    (import "hash" "caml_hash_mix_int"
       (func $caml_hash_mix_int (param i32) (param i32) (result i32)))
@@ -130,12 +132,12 @@
 
    (func (export "bigstring_of_array_buffer") (param $v (ref eq)) (result (ref eq))
        (return_call $caml_ba_char_of_typed_array
-          (call $wrap
-             (call $ta_create (i32.const 12) (call $unwrap (local.get $v))))))
+          (call $value_of_js
+             (call $ta_create (i32.const 12) (call $js_of_value (local.get $v))))))
 
    (func (export "bigstring_of_typed_array") (param $v (ref eq)) (result (ref eq))
        (return_call $caml_ba_char_of_typed_array
-          (call $wrap (call $ta_bytes (call $unwrap (local.get $v))))))
+          (call $value_of_js (call $ta_bytes (call $js_of_value (local.get $v))))))
 ))
 
    (func (export "caml_bigstring_memset")

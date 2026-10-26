@@ -21,8 +21,10 @@
    (import "fail" "caml_invalid_argument"
       (func $caml_invalid_argument (param (ref eq))))
    (import "fail" "caml_failwith" (func $caml_failwith (param (ref eq))))
-   (import "jslib" "wrap" (func $wrap (param anyref) (result (ref eq))))
-   (import "jslib" "unwrap" (func $unwrap (param (ref eq)) (result anyref)))
+   (import "jslib" "value_of_js"
+      (func $value_of_js (param externref) (result (ref eq))))
+   (import "jslib" "js_of_value"
+      (func $js_of_value (param (ref eq)) (result externref)))
    (import "int32" "caml_copy_int32"
       (func $caml_copy_int32 (param i32) (result (ref eq))))
    (import "int32" "Int32_val"
@@ -1301,7 +1303,7 @@
       (local $len i32)
       (local.set $ba_data
          (call $ta_normalize
-            (ref.as_non_null (extern.convert_any (call $unwrap (local.get $v))))))
+            (ref.as_non_null (call $js_of_value (local.get $v)))))
       (local.set $ba_kind (call $ta_kind (local.get $ba_data)))
       (if (i32.lt_s (local.get $ba_kind) (i32.const 0))
          (then (call $caml_invalid_argument (global.get $ta_unsupported_kind))))
@@ -1327,7 +1329,7 @@
       (local $len i32)
       (local.set $ba_data
          (call $ta_normalize
-            (ref.as_non_null (extern.convert_any (call $unwrap (local.get $v))))))
+            (ref.as_non_null (call $js_of_value (local.get $v)))))
       (local.set $len (call $ta_length (local.get $ba_data)))
       (if (i32.lt_s (local.get $len) (i32.const 0))
          (then (call $caml_invalid_argument (global.get $ta_too_large))))
@@ -1341,10 +1343,9 @@
          (i32.const 0)))
 
    (func (export "caml_ba_to_typed_array") (param $vba (ref eq)) (result (ref eq))
-      (call $wrap
-         (any.convert_extern
-            (struct.get $bigarray $ba_data
-               (ref.cast (ref $bigarray) (local.get $vba))))))
+      (call $value_of_js
+         (struct.get $bigarray $ba_data
+            (ref.cast (ref $bigarray) (local.get $vba)))))
 
    (@string $ba_kind_unsupported
       "caml_ba_kind_of_typed_array: unsupported kind")
@@ -1355,7 +1356,7 @@
       (local.set $kind
          (call $ta_kind
             (ref.as_non_null
-               (extern.convert_any (call $unwrap (local.get $ta))))))
+               (call $js_of_value (local.get $ta)))))
       (if (i32.lt_s (local.get $kind) (i32.const 0))
          (then (call $caml_invalid_argument
                   (global.get $ba_kind_unsupported))))
@@ -3186,7 +3187,7 @@
       (local $a (ref extern)) (local $len i32)
       (local $s (ref $bytes))
       (local.set $a
-         (ref.as_non_null (extern.convert_any (call $unwrap (local.get $v)))))
+         (ref.as_non_null (call $js_of_value (local.get $v))))
       (local.set $len (call $ta_length (local.get $a)))
       (local.set $s (array.new $bytes (i32.const 0) (local.get $len)))
       (call $caml_blit_dataview_to_bytes
@@ -3211,7 +3212,7 @@
          (local.get $s) (i32.const 0)
          (call $dv_make (local.get $ta)) (i32.const 0)
          (local.get $len))
-      (call $wrap (any.convert_extern (local.get $ta))))
+      (call $value_of_js (local.get $ta)))
 ))
 
    (func (export "caml_ba_get_kind") (param $vba (ref eq)) (result i32)

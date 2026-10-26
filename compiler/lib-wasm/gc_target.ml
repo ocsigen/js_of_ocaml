@@ -1810,8 +1810,6 @@ module Bigarray = struct
 end
 
 module JavaScript = struct
-  let anyref = W.Ref { nullable = true; typ = Any }
-
   let externref = W.Ref { nullable = true; typ = Extern }
 
   let invoke_fragment name args =
@@ -2123,14 +2121,14 @@ let internal_primitives =
             register_import
               ~import_module:"js"
               ~name
-              (Global { mut = false; typ = JavaScript.anyref })
+              (Global { mut = false; typ = JavaScript.externref })
           in
-          let* wrap =
+          let* value_of_js =
             register_import
-              ~name:"wrap"
-              (Fun { params = [ JavaScript.anyref ]; result = [ Type.value ] })
+              ~name:"value_of_js"
+              (Fun { params = [ JavaScript.externref ]; result = [ Type.value ] })
           in
-          return (W.Call (wrap, [ GlobalGet x ]))
+          return (W.Call (value_of_js, [ GlobalGet x ]))
       | _ -> failwith "Jsoo_runtime.Js.runtime_value expects a string literal.");
   !l
 
