@@ -288,7 +288,9 @@ clean: _noperf
 copy-extra-bc:
 	mkdir -p programs
 	dune exec ./stripdebug.exe -- $(shell which ocamlc.byte) programs/ocamlc
-	dune build --profile bench_no_debug ../compiler/bin-js_of_ocaml/js_of_ocaml.bc ../examples/
+	dune build --profile bench_no_debug ../compiler/bin-js_of_ocaml/js_of_ocaml.bc \
+	  ../examples/boulderdash/boulderdash.bc ../examples/cubes/cubes.bc \
+	  ../examples/minesweeper/main.bc ../examples/planet/planet.bc
 	cp -f ../_build/default/compiler/bin-js_of_ocaml/js_of_ocaml.bc programs/js_of_ocaml
 	cp -f ../_build/default/examples/boulderdash/boulderdash.bc programs/boulderdash
 	cp -f ../_build/default/examples/cubes/cubes.bc programs/cubes

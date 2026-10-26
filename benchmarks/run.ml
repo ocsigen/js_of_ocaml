@@ -25,6 +25,7 @@ module Param = struct
   type t =
     { warm_up_time : float
     ; min_measures : int
+    ; max_measures : int
     ; max_confidence : float
     ; max_duration : float
     ; verbose : bool
@@ -33,6 +34,7 @@ module Param = struct
   let default =
     { warm_up_time = 1.0
     ; min_measures = 10
+    ; max_measures = 30
     ; max_confidence = 0.03
     ; max_duration = 120.
     ; verbose = false
@@ -94,7 +96,8 @@ let need_more ~print (param : Param.t) l =
   else
     let m, i = mean_with_confidence a in
     if print then Format.eprintf "==> %f +/- %f / %f %d\r%!" m i (i /. m) n;
-    n < param.min_measures || i /. m > param.max_confidence /. 2.
+    n < param.min_measures
+    || (n < param.max_measures && i /. m > param.max_confidence /. 2.)
 
 let warm_up (param : Param.t) cmd =
   let t = ref 0. in
@@ -235,6 +238,7 @@ let _ =
                   | Some (p1, p2, _measure, _) -> (
                       match String.split_on_char ~sep:'/' p1 with
                       | [ "results"; "times"; _host; interpreter ] -> [ interpreter, p2 ]
+                      | [ "results"; "times"; _host ] -> [ "", p2 ]
                       | _ -> []))))
         |> List.sort_uniq ~cmp:compare
         |> fun required ->
@@ -266,22 +270,27 @@ let _ =
   compile_wasmoo "--opt=2" code Spec.byte code Spec.wasm_of_ocaml;
   compile_jsoo "--opt=2" code Spec.byte code Spec.js_of_ocaml;
   compile_jsoo "--opt=3" code Spec.byte code Spec.js_of_ocaml_o3;
-  compile_jsoo "--enable=use-js-string" code Spec.byte code Spec.js_of_ocaml_js_string;
-  compile_jsoo "--disable inline" code Spec.byte code Spec.js_of_ocaml_inline;
-  compile_jsoo "--disable deadcode" code Spec.byte code Spec.js_of_ocaml_deadcode;
-  compile_jsoo "--disable compact" code Spec.byte code Spec.js_of_ocaml_compact;
-  compile_jsoo "--disable optcall" code Spec.byte code Spec.js_of_ocaml_call;
-  compile_jsoo ~effects:`Cps "" code Spec.byte code Spec.js_of_ocaml_effects_cps;
+  compile_jsoo
+    "--opt=2 --enable=use-js-string"
+    code
+    Spec.byte
+    code
+    Spec.js_of_ocaml_js_string;
+  compile_jsoo "--opt=2 --disable inline" code Spec.byte code Spec.js_of_ocaml_inline;
+  compile_jsoo "--opt=2 --disable deadcode" code Spec.byte code Spec.js_of_ocaml_deadcode;
+  compile_jsoo "--opt=2 --disable compact" code Spec.byte code Spec.js_of_ocaml_compact;
+  compile_jsoo "--opt=2 --disable optcall" code Spec.byte code Spec.js_of_ocaml_call;
+  compile_jsoo ~effects:`Cps "--opt=2" code Spec.byte code Spec.js_of_ocaml_effects_cps;
   compile_jsoo
     ~effects:`Double_translation
-    ""
+    "--opt=2"
     code
     Spec.byte
     code
     Spec.js_of_ocaml_effects_double_translation;
   compile "ocamlc -unsafe" src Spec.ml code Spec.byte_unsafe;
   compile "ocamlopt" src Spec.ml code Spec.opt_unsafe;
-  compile_jsoo "" code Spec.byte_unsafe code Spec.js_of_ocaml_unsafe;
+  compile_jsoo "--opt=2" code Spec.byte_unsafe code Spec.js_of_ocaml_unsafe;
   Format.eprintf "Sizes@.";
   let sizes = sizes.Measure.path in
   ml_size param src Spec.ml sizes Spec.ml;
