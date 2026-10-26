@@ -14,6 +14,33 @@
 
 module Axes = Axes
 
+let rec version_compare v v' =
+  match v, v' with
+  | [ x ], [ y ] -> compare (x : int) y
+  | [], [] -> 0
+  | [], y :: _ -> compare 0 y
+  | x :: _, [] -> compare x 0
+  | x :: xs, y :: ys -> (
+      match compare (x : int) y with
+      | 0 -> version_compare xs ys
+      | n -> n)
+
+let int_size_64 = Sys.int_size >= 63
+
+(* Whether the standard inline-test tag [t] causes a test to be skipped given
+   the current axes (e.g. ["wasm-only"] is dropped unless running on wasm).
+   Unknown tags are never dropped here. *)
+let tag_dropped = function
+  | "disabled" -> true
+  | "no-js" -> Axes.js
+  | "js-only" -> not Axes.js
+  | "no-wasm" -> Axes.wasm
+  | "wasm-only" -> not Axes.wasm
+  | "native-only" -> not Axes.native
+  | "64-bits-only" -> not int_size_64
+  | "32-bits-only" -> int_size_64
+  | _ -> false
+
 type variant =
   { condition : unit -> bool
   ; is_default : bool
@@ -279,7 +306,7 @@ let parse_argv () =
   }
 
 let tags_skipped cfg tags =
-  List.exists (fun t -> Axes.tag_dropped t || List.mem t cfg.drop) tags
+  List.exists (fun t -> tag_dropped t || List.mem t cfg.drop) tags
   || List.exists (fun req -> not (List.mem req tags)) cfg.require
 
 (* [-only-test] location match, mirroring ppx_inline_test: the test's filename

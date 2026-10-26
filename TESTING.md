@@ -144,7 +144,8 @@ run time:
   `jsoo_test_axes`): `host_engine` (shorthands `node` / `quickjs` / `bun` /
   `wasi`), `target_engine`, `effects` (`"disabled"` / `"cps"` / …). See
   `compiler/lib-test-axes/jsoo_test_axes.mli`. `-axes` can be repeated; the
-  last module defining an identifier takes precedence.
+  last module defining an identifier takes precedence, the predefined axes
+  above coming first.
 
 So `[@when js && not quickjs]`, `[@when effects <> "cps"]`,
 `[@when not native]`, `[@@if os_type <> "Win32"]`,

@@ -20,8 +20,11 @@
     rewriter; they are not meant to be used directly. *)
 
 module Axes : module type of Axes
-(** Runtime axes ([backend]/[os_type]/...) referenced by reified
-    [%expect.when] conditions. *)
+(** Predefined axes of [[@when]] predicates. *)
+
+val version_compare : int list -> int list -> int
+(** Lexicographic comparison of version components, used by reified version
+    comparisons. *)
 
 type variant =
   { condition : unit -> bool (* reified [%expect.when] predicate *)

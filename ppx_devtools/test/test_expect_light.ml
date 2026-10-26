@@ -62,3 +62,8 @@ let%expect_test "axis named like a Stdlib value" =
   print_string "ok";
   [%expect ({| ok |} [@when not compare])];
   [%expect {| default |}]
+
+let%expect_test "overridden predefined axis" =
+  print_string "overridden";
+  [%expect ({| overridden |} [@when cygwin])];
+  [%expect {| default |}]

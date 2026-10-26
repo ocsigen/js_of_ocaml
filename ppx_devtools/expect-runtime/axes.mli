@@ -12,26 +12,36 @@
  * GNU Lesser General Public License for more details.
  *)
 
-(** Runtime environment axes, detected once. These values back the code emitted
-    by {!Ppx_devtools_predicate.Predicate.reify} for [%expect.when] conditions. *)
+(** Predefined axes of [[@when]] predicates. Generated code looks up the
+    identifiers of a predicate in this module first, then in the modules given
+    with [-axes]. *)
 
 val backend : string
 (** ["js"] / ["wasm"] / ["native"] (from [Sys.backend_type]). *)
 
+val js : bool
+(** [backend = "js"] *)
+
+val wasm : bool
+(** [backend = "wasm"] *)
+
+val native : bool
+(** [backend = "native"] *)
+
 val os_type : string
 (** [Sys.os_type]. *)
+
+val win32 : bool
+(** [os_type = "Win32"] *)
+
+val unix : bool
+(** [os_type = "Unix"] *)
+
+val cygwin : bool
+(** [os_type = "Cygwin"] *)
 
 val ocaml_version : int list
 (** The running OCaml version as a list of integers, e.g. [[5; 2; 0]]. *)
 
 val oxcaml : bool
 (** Whether the compiler is the OxCaml flavour. *)
-
-val version_compare : int list -> int list -> int
-(** Lexicographic comparison of version components, like
-    {!Ppx_devtools_predicate.Predicate.Version.compare}. *)
-
-val tag_dropped : string -> bool
-(** [tag_dropped t] is [true] when the standard inline-test tag [t] should cause
-    a test to be skipped given the current axes (e.g. ["wasm-only"] is dropped
-    unless [backend = "wasm"]). Unknown tags are never dropped here. *)
