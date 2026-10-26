@@ -267,13 +267,34 @@ let builtin = function
   | "backend" -> true
   | name -> Option.is_some (shorthand name)
 
-(* An identifier that is not built in is an extension axis, resolved to the
-   value of the same name in the [axes] module. Its type ([bool], [string],
-   [int] or [int list]) follows from the context it is used in. *)
+(* An identifier that is not built in is an extension axis, resolved in the
+   [axes] modules: [x] becomes [let open! M1 in let open! M2 in x], so the last
+   module defining [x] wins. The opens only scope the identifier, not the code
+   generated around it. Its type ([bool], [string], [int] or [int list])
+   follows from the context it is used in. *)
 let extension ~axes (t : t) : expression =
   match t, axes with
-  | Ident (loc, name), Some m when not (builtin name) ->
-      Ast_builder.Default.evar ~loc (m ^ "." ^ name)
+  | Ident (loc, name), _ :: _ when not (builtin name) ->
+      let open Ast_builder.Default in
+      let e =
+        List.fold_right axes ~init:(evar ~loc name) ~f:(fun m e ->
+            pexp_open
+              ~loc
+              (open_infos
+                 ~loc
+                 ~override:Override
+                 ~expr:(pmod_ident ~loc (Located.mk ~loc (Longident.parse m))))
+              e)
+      in
+      (* Not every module is used, and later ones may shadow earlier ones. *)
+      { e with
+        pexp_attributes =
+          [ attribute
+              ~loc
+              ~name:(Located.mk ~loc "ocaml.warning")
+              ~payload:(PStr [ pstr_eval ~loc (estring ~loc "-33-44-45-66") [] ])
+          ]
+      }
   | _ -> raise (Invalid (loc_of t))
 
 (* Atom whose runtime value is a string. *)
@@ -295,7 +316,7 @@ let reify_version ~axes (t : t) : expression =
   let loc = loc_of t in
   match t with
   | Ident (_, "ocaml_version") -> [%expr Ppx_devtools_expect_runtime.Axes.ocaml_version]
-  | Tuple (_, l) -> Ast_builder.Default.elist ~loc (List.map l ~f:(reify_int ~axes:None))
+  | Tuple (_, l) -> Ast_builder.Default.elist ~loc (List.map l ~f:(reify_int ~axes:[]))
   | _ -> extension ~axes t
 
 type kind =
@@ -368,6 +389,6 @@ and reify_cmp ~axes loc op a b =
   | K_int -> rel_to_int loc op (reify_int ~axes a) (reify_int ~axes b)
   | K_unknown -> raise (Invalid loc)
 
-let reify ?axes ~loc t =
+let reify ?(axes = []) ~loc t =
   let e = reify_bool ~axes t in
   { e with pexp_loc = loc }
