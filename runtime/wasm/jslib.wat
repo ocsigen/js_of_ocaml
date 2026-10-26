@@ -504,14 +504,96 @@
                                  (local.get $acc)))))))))
       (return_call $js_of_value (local.get $acc)))
 
+   ;; Cache of the conversions of short strings into JavaScript strings.
+   ;; Strings used as property names, such as attribute names, are often
+   ;; converted repeatedly. Converting them once avoids the cost of the
+   ;; conversion, and above all lets the JavaScript engine reuse the same
+   ;; string object: a fresh string must be looked up in the table of
+   ;; internalized strings each time it is used as a property name. The keys
+   ;; are copies of the converted strings, which may be bytes mutated later
+   ;; on.
+   (type $string_cache_keys (array (mut (ref null $bytes))))
+   (type $string_cache_values (array (mut (ref null eq))))
+   (global $string_cache_size_log i32 (i32.const 10))
+   (global $string_cache_max_length i32 (i32.const 16))
+   (global $string_cache_keys (ref $string_cache_keys)
+      (array.new_default $string_cache_keys (i32.const 1024)))
+   (global $string_cache_values (ref $string_cache_values)
+      (array.new_default $string_cache_values (i32.const 1024)))
+   ;; Hashes of strings which missed the cache. A string is only inserted in
+   ;; the cache when it misses it while its hash is in this table, that is,
+   ;; when it is converted again: strings converted only once then do not pay
+   ;; for their insertion (copying the key and storing new objects in the
+   ;; cache). This table is larger than the cache, so that a string converted
+   ;; again after many other conversions is still found there.
+   (type $string_cache_hashes (array (mut i32)))
+   (global $string_cache_seen_size_log i32 (i32.const 13))
+   (global $string_cache_seen (ref $string_cache_hashes)
+      (array.new_default $string_cache_hashes (i32.const 8192)))
+
    (export "caml_js_from_string" (func $caml_jsstring_of_bytes))
    (func $caml_jsstring_of_bytes (export "caml_jsstring_of_string")
       (param $vs (ref eq)) (result (ref eq))
-      (local $s (ref $bytes))
+      (local $s (ref $bytes)) (local $k (ref $bytes))
+      (local $len i32) (local $i i32) (local $h i32) (local $full i32)
+      (local $v (ref eq))
       (local.set $s (ref.cast (ref $bytes) (local.get $vs)))
-      (return
-         (struct.new $js
-            (call $jsstring_of_bytes (local.get $s)))))
+      (local.set $len (array.len (local.get $s)))
+      (if (i32.gt_u (local.get $len) (global.get $string_cache_max_length))
+         (then
+            (return
+               (struct.new $js (call $jsstring_of_bytes (local.get $s))))))
+      (local.set $h (local.get $len))
+      (loop $hash
+         (if (i32.lt_u (local.get $i) (local.get $len))
+            (then
+               (local.set $h
+                  (i32.add (i32.mul (local.get $h) (i32.const 31))
+                     (array.get_u $bytes (local.get $s) (local.get $i))))
+               (local.set $i (i32.add (local.get $i) (i32.const 1)))
+               (br $hash))))
+      (local.set $full (i32.mul (local.get $h) (i32.const 0x9e3779b1)))
+      (local.set $h
+         (i32.shr_u (local.get $full)
+            (i32.sub (i32.const 32) (global.get $string_cache_size_log))))
+      (block $miss
+         (local.set $k
+            (br_on_null $miss
+               (array.get $string_cache_keys (global.get $string_cache_keys)
+                  (local.get $h))))
+         (br_if $miss (i32.ne (array.len (local.get $k)) (local.get $len)))
+         (local.set $i (i32.const 0))
+         (loop $compare
+            (if (i32.lt_u (local.get $i) (local.get $len))
+               (then
+                  (br_if $miss
+                     (i32.ne (array.get_u $bytes (local.get $k) (local.get $i))
+                        (array.get_u $bytes (local.get $s) (local.get $i))))
+                  (local.set $i (i32.add (local.get $i) (i32.const 1)))
+                  (br $compare))))
+         (return
+            (ref.as_non_null
+               (array.get $string_cache_values (global.get $string_cache_values)
+                  (local.get $h)))))
+      (local.set $v (struct.new $js (call $jsstring_of_bytes (local.get $s))))
+      (local.set $i
+         (i32.shr_u (local.get $full)
+            (i32.sub (i32.const 32) (global.get $string_cache_seen_size_log))))
+      (if (i32.ne (array.get $string_cache_hashes (global.get $string_cache_seen)
+                     (local.get $i))
+                  (local.get $full))
+         (then
+            (array.set $string_cache_hashes (global.get $string_cache_seen)
+               (local.get $i) (local.get $full))
+            (return (local.get $v))))
+      (local.set $k (array.new_default $bytes (local.get $len)))
+      (array.copy $bytes $bytes
+         (local.get $k) (i32.const 0) (local.get $s) (i32.const 0) (local.get $len))
+      (array.set $string_cache_keys (global.get $string_cache_keys)
+         (local.get $h) (local.get $k))
+      (array.set $string_cache_values (global.get $string_cache_values)
+         (local.get $h) (local.get $v))
+      (local.get $v))
 
    (func (export "caml_jsstring_of_substring")
       (param $s (ref eq)) (param $i (ref eq)) (param $l (ref eq))
