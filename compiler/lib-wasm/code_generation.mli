@@ -26,7 +26,7 @@ type context =
   ; string_globals : Code.Var.t String.Hashtbl.t
   ; mutable constant_globals : constant_global Code.Var.Map.t
   ; mutable other_fields : Wasm_ast.module_field list
-  ; mutable imports : (Code.Var.t * Wasm_ast.import_desc) StringMap.t StringMap.t
+  ; mutable imports : (Code.Var.t * Wasm_ast.import_desc) list StringMap.t StringMap.t
   ; type_names : Code.Var.t String.Hashtbl.t
   ; types : Wasm_ast.type_field Code.Var.Hashtbl.t
   ; mutable closure_envs : Code.Var.t Code.Var.Map.t

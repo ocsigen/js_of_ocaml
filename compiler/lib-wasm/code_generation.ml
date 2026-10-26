@@ -43,7 +43,7 @@ type context =
   ; string_globals : Var.t String.Hashtbl.t
   ; mutable constant_globals : constant_global Var.Map.t
   ; mutable other_fields : W.module_field list
-  ; mutable imports : (Var.t * Wasm_ast.import_desc) StringMap.t StringMap.t
+  ; mutable imports : (Var.t * Wasm_ast.import_desc) list StringMap.t StringMap.t
   ; type_names : Var.t String.Hashtbl.t
   ; types : Wasm_ast.type_field Var.Hashtbl.t
   ; mutable closure_envs : Var.t Var.Map.t
@@ -252,26 +252,24 @@ let register_import ?(allow_tail_call = true) ?(import_module = "env") ~name typ
         "caml_nat_dynlink_dummy_function"
     | _ -> name
   in
+  (* The same name can be imported with several types *)
+  let imports =
+    Option.value
+      ~default:StringMap.empty
+      (StringMap.find_opt import_module st.context.imports)
+  in
+  let l = Option.value ~default:[] (StringMap.find_opt name imports) in
   let x =
-    try
-      let x, typ' =
-        StringMap.find name (StringMap.find import_module st.context.imports)
-      in
-      (*ZZZ error message*)
-      assert (Poly.equal typ typ');
-      x
-    with Not_found ->
-      let x = Var.fresh_n name in
-      st.context.imports <-
-        StringMap.update
-          import_module
-          (fun m ->
-            Some
-              (match m with
-              | None -> StringMap.singleton name (x, typ)
-              | Some m -> StringMap.add name (x, typ) m))
-          st.context.imports;
-      x
+    match List.find_opt ~f:(fun (_, typ') -> Poly.equal typ typ') l with
+    | Some (x, _) -> x
+    | None ->
+        let x = Var.fresh_n name in
+        st.context.imports <-
+          StringMap.add
+            import_module
+            (StringMap.add name ((x, typ) :: l) imports)
+            st.context.imports;
+        x
   in
   if not allow_tail_call then Var.Hashtbl.replace st.context.no_tail_call x ();
   x, st

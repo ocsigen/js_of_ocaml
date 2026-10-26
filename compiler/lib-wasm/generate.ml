@@ -42,6 +42,113 @@ let effects_cps () =
   | `Cps -> true
   | `Disabled | `Jspi | `Double_translation | `Native -> false
 
+(* Find the conversions [x = caml_js_from_float(y)] such that all uses of [x]
+   are arguments of JavaScript calls in the same function: [y] can then be
+   passed directly to these calls as a [f64].
+
+   Also find the conversions [z = caml_js_to_float(r)] where [r] is only used
+   there and is the result of a JavaScript call immediately preceding the
+   conversion: this call can then directly return a [f64], stored in [z].
+   The conversion may raise an exception or call a [valueOf] method, so it
+   must be performed exactly when it was in the original program. *)
+let js_float_conversions p =
+  let defs = Var.Hashtbl.create 16 in
+  let result_defs = Var.Hashtbl.create 16 in
+  let to_float_defs = Var.Hashtbl.create 16 in
+  let uses = Var.Hashtbl.create 128 in
+  let js_uses = Var.Hashtbl.create 16 in
+  let incr x =
+    Var.Hashtbl.replace uses x (1 + Option.value ~default:0 (Var.Hashtbl.find_opt uses x))
+  in
+  Code.fold_closures
+    p
+    (fun _ _ (fn, _) _ () ->
+      Code.traverse
+        { fold = Code.fold_children }
+        (fun pc () ->
+          let block = Addr.Map.find pc p.blocks in
+          Freevars.iter_block_free_vars incr block;
+          (* The result of the previous instruction, if a JavaScript call *)
+          let prev = ref None in
+          List.iter
+            ~f:(fun i ->
+              let is_prev =
+                let p = !prev in
+                fun r ->
+                  match p with
+                  | Some r' -> Var.equal r r'
+                  | None -> false
+              in
+              (match i with
+              | Event _ -> ()
+              | Let (r, Prim (Extern (name, _), _)) -> (
+                  match name with
+                  | "%caml_js_opt_call"
+                  | "%caml_js_opt_fun_call"
+                  | "%caml_js_opt_meth_call"
+                  | "caml_js_get" -> prev := Some r
+                  | _ -> prev := None)
+              | _ -> prev := None);
+              match i with
+              | Let (x, Prim (Extern ("caml_js_from_float", _), [ Pv y ])) ->
+                  Var.Hashtbl.replace defs x (y, fn)
+              | Let (z, Prim (Extern ("caml_js_to_float", _), [ Pv r ])) when is_prev r ->
+                  Var.Hashtbl.replace to_float_defs z (r, fn)
+              | Let (r, Prim (Extern (name, _), args)) -> (
+                  (match name with
+                  | "%caml_js_opt_call"
+                  | "%caml_js_opt_fun_call"
+                  | "%caml_js_opt_meth_call"
+                  | "%caml_js_opt_new"
+                  | "%caml_js_opt_object"
+                  | "caml_js_set" ->
+                      List.iter
+                        ~f:(fun a ->
+                          match a with
+                          | Pv x ->
+                              Var.Hashtbl.replace
+                                js_uses
+                                x
+                                (match Var.Hashtbl.find_opt js_uses x with
+                                | None -> fn, 1
+                                | Some (fn', n) ->
+                                    (* -1: used in several functions *)
+                                    fn', if fn = fn' && n >= 0 then n + 1 else -1)
+                          | Pc _ -> ())
+                        args
+                  | _ -> ());
+                  match name with
+                  | "%caml_js_opt_call"
+                  | "%caml_js_opt_fun_call"
+                  | "%caml_js_opt_meth_call"
+                  | "caml_js_get" -> Var.Hashtbl.replace result_defs r fn
+                  | _ -> ())
+              | _ -> ())
+            block.body)
+        fn
+        p.blocks
+        ())
+    ();
+  let folded = Var.Hashtbl.create 16 in
+  Var.Hashtbl.iter
+    (fun x (y, fn) ->
+      match Var.Hashtbl.find_opt js_uses x with
+      | Some (fn', n) when fn = fn' && n = Var.Hashtbl.find uses x ->
+          Var.Hashtbl.add folded x y
+      | _ -> ())
+    defs;
+  let results = Var.Hashtbl.create 16 in
+  let result_targets = Var.Hashtbl.create 16 in
+  Var.Hashtbl.iter
+    (fun z (r, fn) ->
+      match Var.Hashtbl.find_opt result_defs r with
+      | Some fn' when fn = fn' && Var.Hashtbl.find uses r = 1 ->
+          Var.Hashtbl.add results r z;
+          Var.Hashtbl.add result_targets z ()
+      | _ -> ())
+    to_float_defs;
+  folded, results, result_targets
+
 module Generate (Target : Target_sig.S) = struct
   open Target
 
@@ -51,6 +158,13 @@ module Generate (Target : Target_sig.S) = struct
     ; global_flow_info : Global_flow.info
     ; fun_info : Call_graph_analysis.t
     ; types : Typing.t
+    ; js_float_args : Var.t Var.Hashtbl.t
+          (* [x] is bound to [y] when the conversion [x = caml_js_from_float(y)] is
+             folded into the JavaScript calls using [x] *)
+    ; js_float_results : Var.t Var.Hashtbl.t
+          (* [r] is bound to [z] when the conversion [z = caml_js_to_float(r)] is
+             folded into the JavaScript call defining [r] *)
+    ; js_float_result_targets : unit Var.Hashtbl.t
     ; blocks : block Addr.Map.t
     ; closures : Closure_conversion.closure Var.Map.t
     ; global_context : Code_generation.context
@@ -349,13 +463,41 @@ module Generate (Target : Target_sig.S) = struct
 
   let load_and_box ctx x = convert ~from:(Typing.var_type ctx.types x) ~into:Top (load x)
 
-  let transl_prim_arg ctx ?(typ = Typing.Top) x =
-    convert
-      ~from:(get_type ctx x)
-      ~into:typ
-      (match x with
-      | Pv x -> load x
-      | Pc c -> Constant.translate ~unboxed:false c)
+  let rec transl_prim_arg ctx ?(typ = Typing.Top) x =
+    match folded_js_float ctx x with
+    | Some y ->
+        (* The definition of [x] was not generated *)
+        convert ~from:Top ~into:typ (JavaScript.from_float y)
+    | None ->
+        convert
+          ~from:(get_type ctx x)
+          ~into:typ
+          (match x with
+          | Pv x -> load x
+          | Pc c -> Constant.translate ~unboxed:false c)
+
+  (* The unboxed float [y] when the conversion [x = caml_js_from_float(y)] is
+     folded into the JavaScript calls using [x] *)
+  and folded_js_float ctx x =
+    match x with
+    | Pv x -> (
+        match folded_js_float_var ctx x with
+        | Some y -> Some (transl_prim_arg ctx ~typ:(Number (Float, Unboxed)) (Pv y))
+        | None -> None)
+    | Pc _ -> None
+
+  (* A toplevel variable [x] used far from its definition is stored in a
+     global (see [Globalize]). The conversion is then not folded: this would
+     keep [y] alive in a local until the last use of [x]. *)
+  and folded_js_float_var ctx x =
+    if Var.Set.mem x ctx.global_context.globalized_variables
+    then None
+    else Var.Hashtbl.find_opt ctx.js_float_args x
+
+  let transl_js_arg ctx x : js_arg =
+    match folded_js_float ctx x with
+    | Some y -> `F64 y
+    | None -> `Value (transl_prim_arg ctx x)
 
   let translate_int_comparison ctx op x y =
     match get_type ctx x, get_type ctx y with
@@ -399,6 +541,15 @@ module Generate (Target : Target_sig.S) = struct
           (transl_prim_arg ctx ~typ:Top x)
           (transl_prim_arg ctx ~typ:Top y)
 
+  let js_primitives =
+    let h = String.Hashtbl.create 16 in
+    List.iter
+      ~f:(fun (nm, _, f) ->
+        String.Hashtbl.add h nm (fun ctx result l ->
+            f (fun x -> transl_prim_arg ctx x) (fun x -> transl_js_arg ctx x) result l))
+      Target.js_primitives;
+    h
+
   let internal_primitives =
     let h = String.Hashtbl.create 128 in
     List.iter
@@ -408,6 +559,11 @@ module Generate (Target : Target_sig.S) = struct
           nm
           (k, false, Typing.Top, fun ctx _ _ l -> f (fun x -> transl_prim_arg ctx x) l))
       internal_primitives;
+    List.iter
+      ~f:(fun (nm, k, _) ->
+        let f = String.Hashtbl.find js_primitives nm in
+        String.Hashtbl.add h nm (k, false, Typing.Top, fun ctx _ _ l -> f ctx `Value l))
+      Target.js_primitives;
     h
 
   let register_prim name ?(unbox = false) ?(ret_typ = Typing.Top) kind f =
@@ -759,6 +915,8 @@ module Generate (Target : Target_sig.S) = struct
              (BinOp (I64 (Shr U), W.UnOp (I64 ReinterpretF, f), W.Const (I64 63L)))));
     register_un_prim "caml_neg_float" `Pure ~typ:float_u ~ret_typ:float_u (fun f ->
         float_un_op Neg f);
+    register_un_prim "caml_js_from_float" `Pure ~typ:float_u JavaScript.from_float;
+    register_un_prim "caml_js_to_float" `Pure ~ret_typ:float_u JavaScript.to_float;
     register_un_prim "caml_abs_float" `Pure ~typ:float_u ~ret_typ:float_u (fun f ->
         float_un_op Abs f);
     register_un_prim "caml_ceil_float" `Pure ~typ:float_u ~ret_typ:float_u (fun f ->
@@ -2183,6 +2341,19 @@ module Generate (Target : Target_sig.S) = struct
           ?typ:(unboxed_type tx)
           x
           (convert ~from:(Typing.var_type ctx.types y) ~into:tx (load y))
+    | Let (x, _)
+      when Option.is_some (folded_js_float_var ctx x)
+           || Var.Hashtbl.mem ctx.js_float_result_targets x -> return ()
+    | Let (r, Prim (Extern (name, _), l)) when Var.Hashtbl.mem ctx.js_float_results r ->
+        let z = Var.Hashtbl.find ctx.js_float_results r in
+        let tz = Typing.var_type ctx.types z in
+        store
+          ?typ:(unboxed_type tz)
+          z
+          (convert
+             ~from:(Number (Float, Unboxed))
+             ~into:tz
+             ((String.Hashtbl.find js_primitives name) ctx `F64 l))
     | Let (x, e) ->
         if ctx.live.(Var.idx x) = 0
         then drop (translate_expr ctx context x e)
@@ -2768,6 +2939,9 @@ module Generate (Target : Target_sig.S) = struct
       ~types =
     global_context.unit_name <- unit_name;
     let p, closures = Closure_conversion.f p in
+    let js_float_args, js_float_results, js_float_result_targets =
+      js_float_conversions p
+    in
     (*
   Code.Print.program (fun _ _ -> "") p;
 *)
@@ -2787,6 +2961,9 @@ module Generate (Target : Target_sig.S) = struct
       ; global_flow_info
       ; fun_info
       ; types
+      ; js_float_args
+      ; js_float_results
+      ; js_float_result_targets
       ; blocks = p.blocks
       ; closures
       ; global_context
@@ -2851,9 +3028,12 @@ module Generate (Target : Target_sig.S) = struct
       List.concat
         (List.map
            ~f:(fun (import_module, m) ->
-             List.map
-               ~f:(fun (import_name, (name, desc)) ->
-                 W.Import { import_module; import_name; name; desc })
+             List.concat_map
+               ~f:(fun (import_name, l) ->
+                 List.rev_map
+                   ~f:(fun (name, desc) ->
+                     W.Import { import_module; import_name; name; desc })
+                   l)
                (StringMap.bindings m))
            (StringMap.bindings context.imports))
     in

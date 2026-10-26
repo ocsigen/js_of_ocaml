@@ -1809,43 +1809,86 @@ module Bigarray = struct
       Value.unit
 end
 
+type js_arg =
+  [ `Value of expression
+  | `F64 of expression
+  ]
+
 module JavaScript = struct
   let externref = W.Ref { nullable = true; typ = Extern }
 
-  let invoke_fragment name args =
+  (* Call a JavaScript function imported from [import_module]. Unboxed floats
+     are passed as [f64], and the result is returned as a [f64] when it is
+     used as an unboxed float: the JavaScript engine then performs the
+     conversion. *)
+  let call ?(result = `Value) ~import_module name (args : js_arg list) =
     let* f =
-      let* unit = unit_name in
       register_import
-        ~import_module:
-          (match unit with
-          | None -> "fragments"
-          | Some unit -> unit ^ ".fragments")
+        ~import_module
         ~name
-        (Fun { params = List.map ~f:(fun _ -> externref) args; result = [ externref ] })
-    in
-    let* wrap =
-      register_import
-        ~name:"value_of_js"
-        (Fun { params = [ externref ]; result = [ Type.value ] })
-    in
-    let* unwrap =
-      register_import
-        ~name:"js_of_value"
-        (Fun { params = [ Type.value ]; result = [ externref ] })
+        (Fun
+           { params =
+               List.map
+                 ~f:(fun (a : js_arg) ->
+                   match a with
+                   | `Value _ -> externref
+                   | `F64 _ -> W.F64)
+                 args
+           ; result =
+               [ (match result with
+                 | `Value -> externref
+                 | `F64 -> F64)
+               ]
+           })
     in
     let* args =
       expression_list
-        (fun e ->
-          let* e = e in
-          return (W.Call (unwrap, [ e ])))
+        (fun (a : js_arg) ->
+          match a with
+          | `Value e ->
+              let* unwrap =
+                register_import
+                  ~name:"js_of_value"
+                  (Fun { params = [ Type.value ]; result = [ externref ] })
+              in
+              let* e = e in
+              return (W.Call (unwrap, [ e ]))
+          | `F64 e -> e)
         args
     in
-    return (W.Call (wrap, [ Call (f, args) ]))
+    match result with
+    | `F64 -> return (W.Call (f, args))
+    | `Value ->
+        let* wrap =
+          register_import
+            ~name:"value_of_js"
+            (Fun { params = [ externref ]; result = [ Type.value ] })
+        in
+        return (W.Call (wrap, [ Call (f, args) ]))
+
+  let invoke_fragment ?result name args =
+    let* unit = unit_name in
+    call
+      ?result
+      ~import_module:
+        (match unit with
+        | None -> "fragments"
+        | Some unit -> unit ^ ".fragments")
+      name
+      args
+
+  let identity ?result arg = call ?result ~import_module:"bindings" "identity" [ arg ]
+
+  let from_float e = identity (`F64 e)
+
+  let to_float e = identity ~result:`F64 (`Value e)
 end
 
-let internal_primitives =
+let internal_primitives, js_primitives =
   let l = ref [] in
+  let js = ref [] in
   let register name ?(kind = `Mutator) f = l := (name, kind, f) :: !l in
+  let register_js name ?(kind = `Mutator) f = js := (name, kind, f) :: !js in
   let module J = Javascript in
   let call_prim ~transl_prim_arg name args =
     let arity = List.length args in
@@ -1885,7 +1928,7 @@ let internal_primitives =
               in
               JavaScript.invoke_fragment
                 name
-                [ call_prim ~transl_prim_arg "caml_jsstring_of_string" l ]
+                [ `Value (call_prim ~transl_prim_arg "caml_jsstring_of_string" l) ]
             in
             if expr
             then eval "eval_expr" {|(x)=>eval?.('"use strict";('+x+')')|}
@@ -1897,7 +1940,7 @@ let internal_primitives =
     ~f:(register_js_code ~expr:true)
     [ "caml_js_expr", `Mutator; "caml_pure_js_expr", `Pure; "caml_js_var", `Mutable ];
   register_js_code ~expr:false ("caml_js_eval_string", `Mutator);
-  register "%caml_js_opt_call" (fun transl_prim_arg l ->
+  register_js "%caml_js_opt_call" (fun _ transl_js_arg result l ->
       let arity = List.length l - 2 in
       let name = Printf.sprintf "call_%d" arity in
       let* () =
@@ -1926,9 +1969,9 @@ let internal_primitives =
               , true
               , AUnknown ))
       in
-      let l = List.map ~f:transl_prim_arg l in
-      JavaScript.invoke_fragment name l);
-  register "%caml_js_opt_fun_call" (fun transl_prim_arg l ->
+      let l = List.map ~f:transl_js_arg l in
+      JavaScript.invoke_fragment ~result name l);
+  register_js "%caml_js_opt_fun_call" (fun _ transl_js_arg result l ->
       let arity = List.length l - 1 in
       let name = Printf.sprintf "fun_call_%d" arity in
       let* () =
@@ -1954,9 +1997,9 @@ let internal_primitives =
               , true
               , AUnknown ))
       in
-      let l = List.map ~f:transl_prim_arg l in
-      JavaScript.invoke_fragment name l);
-  register "%caml_js_opt_meth_call" (fun transl_prim_arg l ->
+      let l = List.map ~f:transl_js_arg l in
+      JavaScript.invoke_fragment ~result name l);
+  register_js "%caml_js_opt_meth_call" (fun _ transl_js_arg result l ->
       match l with
       | o :: Code.Pc (NativeString (Utf meth)) :: args ->
           let arity = List.length args in
@@ -1987,11 +2030,11 @@ let internal_primitives =
                   , true
                   , AUnknown ))
           in
-          let o = transl_prim_arg o in
-          let args = List.map ~f:transl_prim_arg args in
-          JavaScript.invoke_fragment name (o :: args)
+          let o = transl_js_arg o in
+          let args = List.map ~f:transl_js_arg args in
+          JavaScript.invoke_fragment ~result name (o :: args)
       | _ -> assert false);
-  register "%caml_js_opt_new" (fun transl_prim_arg l ->
+  register_js "%caml_js_opt_new" (fun _ transl_js_arg result l ->
       let arity = List.length l - 1 in
       let name = Printf.sprintf "new_%d" arity in
       let* () =
@@ -2020,9 +2063,9 @@ let internal_primitives =
               , true
               , AUnknown ))
       in
-      let l = List.map ~f:transl_prim_arg l in
-      JavaScript.invoke_fragment name l);
-  register "caml_js_get" (fun transl_prim_arg l ->
+      let l = List.map ~f:transl_js_arg l in
+      JavaScript.invoke_fragment ~result name l);
+  register_js "caml_js_get" (fun transl_prim_arg _ result l ->
       match l with
       | [ x; Code.Pc (NativeString (Utf prop)) ] when J.is_ident' prop ->
           let name =
@@ -2040,10 +2083,14 @@ let internal_primitives =
                   , true
                   , AUnknown ))
           in
-          JavaScript.invoke_fragment name [ transl_prim_arg x ]
-      | [ _; _ ] -> call_prim ~transl_prim_arg "caml_js_get" l
+          JavaScript.invoke_fragment ~result name [ `Value (transl_prim_arg x) ]
+      | [ _; _ ] -> (
+          let e = call_prim ~transl_prim_arg "caml_js_get" l in
+          match result with
+          | `Value -> e
+          | `F64 -> JavaScript.to_float e)
       | _ -> assert false);
-  register "caml_js_set" (fun transl_prim_arg l ->
+  register_js "caml_js_set" (fun transl_prim_arg transl_js_arg _ l ->
       match l with
       | [ x; Code.Pc (NativeString (Utf prop)); y ] when J.is_ident' prop ->
           let name =
@@ -2068,12 +2115,12 @@ let internal_primitives =
                   , true
                   , AUnknown ))
           in
-          let l = List.map ~f:transl_prim_arg [ x; y ] in
+          let l = List.map ~f:transl_js_arg [ x; y ] in
           JavaScript.invoke_fragment name l
       | [ _; _; _ ] -> call_prim ~transl_prim_arg "caml_js_set" l
       | _ -> assert false);
   let counter = ref (-1) in
-  register "%caml_js_opt_object" (fun transl_prim_arg l ->
+  register_js "%caml_js_opt_object" (fun _ transl_js_arg result l ->
       let rec split kl vl l =
         match l with
         | [] -> List.rev kl, List.rev vl
@@ -2112,8 +2159,8 @@ let internal_primitives =
               , true
               , AUnknown ))
       in
-      let l = List.map ~f:transl_prim_arg vl in
-      JavaScript.invoke_fragment name l);
+      let l = List.map ~f:transl_js_arg vl in
+      JavaScript.invoke_fragment ~result name l);
   register "caml_jsoo_runtime_value" (fun _ l ->
       match l with
       | [ Pc (String name) ] when J.is_ident name ->
@@ -2130,7 +2177,7 @@ let internal_primitives =
           in
           return (W.Call (value_of_js, [ GlobalGet x ]))
       | _ -> failwith "Jsoo_runtime.Js.runtime_value expects a string literal.");
-  !l
+  !l, !js
 
 let externref = W.Ref { nullable = true; typ = Extern }
 
