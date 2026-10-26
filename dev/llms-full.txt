@@ -10437,6 +10437,10 @@ type t = {
   sections : section list;
 }
 ```
+```ocaml
+val to_standard : t -> Standard.t
+```
+Flatten an index map into a single standard map. The sources, names and source contents of the sections are concatenated (without deduplication) and the mappings are combined directly in their encoded form, without decoding them. The source root is kept if all sections share it; otherwise, each section's root is prepended to its sources.
 
 
 ---
@@ -10603,6 +10607,11 @@ type t =
   | Standard of Standard.t
   | Index of Index.t
 ```
+```ocaml
+val to_standard : t -> Standard.t
+```
+Flatten an index map into a standard map (see [`Index.to_standard`](./Js_of_ocaml_compiler-Source_map-Index.md#val-to_standard))
+
 ```ocaml
 val to_string : t -> string
 ```
@@ -57378,27 +57387,10 @@ type link_input = {
 }
 ```
 ```ocaml
-val link : 
-  ?options:string list ->
-  inputs:link_input list ->
-  opt_output_sourcemap:string option ->
-  output_file:string ->
-  unit ->
-  unit
-```
-```ocaml
-val dead_code_elimination : 
-  dependencies:string ->
-  opt_input_sourcemap:string option ->
-  input_file:string ->
-  opt_output_sourcemap:string option ->
-  output_file:string ->
-  Js_of_ocaml_compiler.Stdlib.StringSet.t
-```
-```ocaml
 val optimize : 
   profile:Js_of_ocaml_compiler.Profile.t ->
   ?options:string list ->
+  ?reorder_functions:bool ->
   opt_input_sourcemap:string option ->
   input_file:string ->
   opt_output_sourcemap:string option ->
@@ -58936,9 +58928,31 @@ val gen_dir : string -> (string -> 'a) -> 'a
 # Module `Wasm_of_ocaml_compiler.Runtime`
 
 ```ocaml
+val with_binary_files : 
+  options:string list ->
+  Binaryen.link_input list ->
+  (Binaryen.link_input list -> 'a) ->
+  'a
+```
+Convert the input files in text format to binary format with `wasm-opt`, passing it `options`, and call the continuation with the resulting files. The files are deleted afterwards.
+
+```ocaml
+val link_input : 
+  ?load_source_map:(string -> Js_of_ocaml_compiler.Source_map.Standard.t) ->
+  Binaryen.link_input ->
+  Wasm_link.input
+```
+Linker input for a module in binary format. Its source map, if any, is loaded with `load_source_map`; it is ignored when this function is not provided.
+
+```ocaml
+val link : inputs:Wasm_link.input list -> output_file:string -> unit
+```
+Link the input modules (in binary format), keeping all their code
+
+```ocaml
 val build : 
   allowed_imports:string list option ->
-  link_options:string list ->
+  convert_options:string list ->
   opt_options:string list ->
   variables:(string * Wat_preprocess.value) list ->
   inputs:Wat_preprocess.input list ->
@@ -59844,12 +59858,37 @@ type input = {
 }
 ```
 ```ocaml
+type dependency = {
+  name : string;
+  export : string option;
+  import : (string * string) option;
+  reaches : string list;
+  root : bool;
+}
+```
+A node of the dependency graph used for dead code elimination, in the format of `wasm-metadce`: `export` and `import` associate the node to an export and an import of the linked module; `reaches` lists the nodes this node depends on (by name).
+
+```ocaml
+val parse_dependencies : string -> dependency list
+```
+Parse a dependency graph in the JSON format of `wasm-metadce`
+
+```ocaml
+type output = {
+  source_map : Js_of_ocaml_compiler.Source_map.t;
+  imports : (string * string) list; (* The imports of the linked module, as pairs (module name, name) *)
+}
+```
+```ocaml
 val f : 
   ?filter_export:(string -> bool) ->
+  ?dependencies:dependency list ->
+  ?names:bool ->
   input list ->
   output_file:string ->
-  Js_of_ocaml_compiler.Source_map.t
+  output
 ```
+Link the input modules. When `dependencies` is provided, dead code is removed: only the exports reachable from the root nodes of the dependency graph are kept, and only the entries reachable from them or from the start functions are kept. The name section is omitted if `names` is false.
 
 
 ---
@@ -59887,10 +59926,13 @@ type resize_data = {
 ```
 ```ocaml
 val resize : 
+  ?dead_ranges:(int * int) list ->
   resize_data ->
   Js_of_ocaml_compiler.Source_map.Standard.t ->
   Js_of_ocaml_compiler.Source_map.Standard.t
 ```
+Shift the generated columns according to `resize_data`. The mappings whose generated column is in one of the `dead_ranges` `[start, end)` (sorted and disjoint) are removed first.
+
 ```ocaml
 val concatenate : 
   (int * Js_of_ocaml_compiler.Source_map.Standard.t) list ->

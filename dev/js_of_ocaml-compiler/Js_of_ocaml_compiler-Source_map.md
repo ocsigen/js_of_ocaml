@@ -43,6 +43,11 @@ type t =
   | Index of Index.t
 ```
 ```ocaml
+val to_standard : t -> Standard.t
+```
+Flatten an index map into a standard map (see [`Index.to_standard`](./Js_of_ocaml_compiler-Source_map-Index.md#val-to_standard))
+
+```ocaml
 val to_string : t -> string
 ```
 ```ocaml

@@ -15,10 +15,13 @@ type resize_data = {
 ```
 ```ocaml
 val resize : 
+  ?dead_ranges:(int * int) list ->
   resize_data ->
   Js_of_ocaml_compiler.Source_map.Standard.t ->
   Js_of_ocaml_compiler.Source_map.Standard.t
 ```
+Shift the generated columns according to `resize_data`. The mappings whose generated column is in one of the `dead_ranges` `[start, end)` (sorted and disjoint) are removed first.
+
 ```ocaml
 val concatenate : 
   (int * Js_of_ocaml_compiler.Source_map.Standard.t) list ->
