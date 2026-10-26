@@ -14,13 +14,13 @@
 
 let target_engine =
   match Sys.getenv_opt "JSOO_TEST_ENGINE" with
-  | Some e when not (String.equal e "") -> e
-  | _ -> (
+  | None | Some "" -> (
       (* [JSOO_ENGINE] selects the engine that runs the generated code (node,
          bun, ...); reflect it here so engine-specific test guards apply. *)
       match Sys.getenv_opt "JSOO_ENGINE" with
-      | Some e when not (String.equal e "") -> e
-      | _ -> "node")
+      | None | Some "" -> "node"
+      | Some e -> e)
+  | Some e -> e
 
 let host_engine =
   match Sys.backend_type with
