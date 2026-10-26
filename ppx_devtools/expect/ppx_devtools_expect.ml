@@ -30,9 +30,8 @@
       captured since the previous group.
     - [%expect {| ... |} \[@when COND\]] conditional variants. [COND] is a
       predicate in the {!Ppx_devtools_predicate.Predicate} grammar; it is reified
-      into a runtime test against {!Ppx_devtools_expect_runtime.Axes}. With
-      [-axes M] (which can be repeated, the last module taking precedence),
-      identifiers that are not built in refer to values of [M]. A plain
+      into a runtime test against {!Ppx_devtools_expect_runtime.Axes}. Further axes
+      can be added with {!register_axes}. A plain
       [%expect] (no [\[@when\]]) is the default variant of its group.
     - [%expect.output] into [Ppx_devtools_expect_runtime.read_output ()], returning
       the output captured since the previous assertion point. *)
@@ -54,17 +53,28 @@ type variant =
 
 let invalid ~loc fmt = Location.raise_errorf ~loc fmt
 
-(* Modules providing the extension axes of [@when] predicates (see
-   {!Predicate.reify}). *)
-let axes = ref []
+(* Resolvers of the identifiers of [@when] predicates, most recent first. The
+   predefined axes come last. *)
+let resolvers =
+  ref
+    [ (fun name ->
+        match name with
+        | "backend"
+        | "js"
+        | "wasm"
+        | "native"
+        | "os_type"
+        | "win32"
+        | "unix"
+        | "cygwin"
+        | "ocaml_version"
+        | "oxcaml" -> Some ("Ppx_devtools_expect_runtime.Axes." ^ name)
+        | _ -> None)
+    ]
 
-let () =
-  Driver.add_arg
-    "-axes"
-    (Arg.String (fun m -> axes := !axes @ [ m ]))
-    ~doc:
-      "MODULE Resolve the unknown identifiers of [@when] predicates in MODULE (can be \
-       repeated; the last module takes precedence)"
+let register_axes f = resolvers := f :: !resolvers
+
+let resolve name = List.find_map !resolvers ~f:(fun f -> f name)
 
 (* Pull the optional [@when COND] off the literal (or off the [Pstr_eval] item)
    and reify it into a [bool] expression evaluated against the runtime axes. *)
@@ -91,9 +101,11 @@ let when_condition ~expr_attrs ~eval_attrs =
         with Predicate.Invalid loc -> invalid ~loc "invalid [@when] predicate"
       in
       let e =
-        try Predicate.reify ~axes:!axes ~loc:cond.pexp_loc t
+        try Predicate.reify ~resolve ~loc:cond.pexp_loc t
         with Predicate.Invalid loc ->
-          invalid ~loc "[@when] predicate is not meaningful at runtime"
+          invalid
+            ~loc
+            "[@when] predicate uses an unknown axis or is not meaningful at runtime"
       in
       Some e
 
@@ -293,9 +305,11 @@ let when_of_attributes (attrs : attribute list) : expression option =
         with Predicate.Invalid loc -> invalid ~loc "invalid [@when] predicate"
       in
       Some
-        (try Predicate.reify ~axes:!axes ~loc:cond.pexp_loc t
+        (try Predicate.reify ~resolve ~loc:cond.pexp_loc t
          with Predicate.Invalid loc ->
-           invalid ~loc "[@when] predicate is not meaningful at runtime")
+           invalid
+             ~loc
+             "[@when] predicate uses an unknown axis or is not meaningful at runtime")
 
 (* dune passes the library name being preprocessed as the [library-name]
    ppxlib cookie; record it so each test knows which library it belongs to. *)

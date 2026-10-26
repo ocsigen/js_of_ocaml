@@ -1,5 +1,4 @@
-(* Second [-axes] module: overrides [flavour] from [Test_axes] and adds
-   [extra]. *)
+(* Registered after [Test_axes]: overrides [flavour] and adds [extra]. *)
 
 let flavour = "override"
 

@@ -57,7 +57,7 @@ let%expect_test ("gated by an extension axis" [@when disabled]) =
   print_string "should never be checked";
   [%expect {| deliberately wrong |}]
 
-(* An axis named like a [Stdlib] value does not shadow the generated code. *)
+(* An axis named like a [Stdlib] value. *)
 let%expect_test "axis named like a Stdlib value" =
   print_string "ok";
   [%expect ({| ok |} [@when not compare])];

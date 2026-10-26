@@ -38,8 +38,8 @@
     plus the runtime-only shorthands [js], [wasm], [native], [win32], [unix],
     [cygwin].
 
-    At runtime, identifiers are looked up in modules (see {!reify}), so further
-    axes can be added with [-axes]. *)
+    At runtime, identifiers are resolved by a function given to {!reify}, so
+    further axes can be added. *)
 
 open Ppxlib
 
@@ -73,18 +73,15 @@ val eval_compile_time : t -> bool
     constructs that are not meaningful at compile time (e.g. [backend],
     the runtime shorthands or extension axes). *)
 
-val reify : ?axes:string list -> loc:Location.t -> t -> expression
+val reify : resolve:(string -> string option) -> loc:Location.t -> t -> expression
 (** Reify the predicate into an OCaml expression of type [bool] that evaluates it
     at runtime.
 
-    Identifiers are axes, looked up in [Ppx_devtools_expect_runtime.Axes] (which
-    defines [ocaml_version], [os_type], [oxcaml], [backend] and the [js] /
-    [wasm] / [native] / [win32] / [unix] / [cygwin] shorthands) and then in the
-    [axes] module paths: [x] is reified as
-    [let open! Axes in let open! M1 in ... let open! Mn in x], so the last module
-    defining [x] wins. Its expected type depends on how it is used: [bool] on
+    Identifiers are axes: [resolve x] gives the fully qualified name of the
+    runtime value of [x]. Its expected type depends on how it is used: [bool] on
     its own, otherwise the type of the literal it is compared with ([string],
     [int], or [int list] for a version tuple).
 
     Raises {!Invalid} on constructs that are only meaningful at compile time
-    (e.g. [ast_version]) and on comparisons between two identifiers. *)
+    (e.g. [ast_version]), on identifiers that [resolve] does not know, and on
+    comparisons between two identifiers. *)

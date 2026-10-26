@@ -1,5 +1,5 @@
-(* Extension axes of the [@when] predicates of this library (see [-axes] in
-   the dune file). *)
+(* Extension axes of the [@when] predicates of the tests (registered by
+   ../axes-ppx). *)
 
 let enabled = true
 

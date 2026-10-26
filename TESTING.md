@@ -140,12 +140,12 @@ run time:
   `os_type` (shorthands `win32` / `unix` / `cygwin`), `ocaml_version`,
   `oxcaml`.
 - Run time, js_of_ocaml-specific (`[@when]`, in libraries preprocessed with
-  `(pps ... ppx_devtools.expect -- -axes Jsoo_test_axes)` and depending on
-  `jsoo_test_axes`): `host_engine` (shorthands `node` / `quickjs` / `bun` /
-  `wasi`), `target_engine`, `effects` (`"disabled"` / `"cps"` / …). See
-  `compiler/lib-test-axes/jsoo_test_axes.mli`. `-axes` can be repeated; the
-  last module defining an identifier takes precedence, the predefined axes
-  above coming first.
+  `(pps ... ppx_devtools.expect jsoo_test_axes_ppx)`): `host_engine`
+  (shorthands `node` / `quickjs` / `bun` / `wasi`), `target_engine`,
+  `effects` (`"disabled"` / `"cps"` / …). See
+  `compiler/lib-test-axes/jsoo_test_axes.mli`. Such axes are registered by a
+  ppx with `Ppx_devtools_expect.register_axes`, its
+  `(ppx_runtime_libraries ...)` providing their values.
 
 So `[@when js && not quickjs]`, `[@when effects <> "cps"]`,
 `[@when not native]`, `[@@if os_type <> "Win32"]`,
