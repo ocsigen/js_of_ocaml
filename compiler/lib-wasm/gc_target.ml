@@ -76,7 +76,7 @@ module Type = struct
           ; final = true
           ; typ =
               W.Struct
-                [ { mut = false; typ = Value (Ref { nullable = true; typ = Any }) } ]
+                [ { mut = false; typ = Value (Ref { nullable = true; typ = Extern }) } ]
           })
 
   let compare_type =
@@ -1123,8 +1123,7 @@ module Constant = struct
             (Global { mut = false; typ = Ref { nullable = false; typ = Extern } })
         in
         let* ty = Type.js_type in
-        return
-          (Const_named ("str_" ^ s), W.StructNew (ty, [ AnyConvertExtern (GlobalGet x) ]))
+        return (Const_named ("str_" ^ s), W.StructNew (ty, [ GlobalGet x ]))
     | String s ->
         let* ty = Type.string_type in
         (* Equal string constants are interned.
@@ -1813,6 +1812,8 @@ end
 module JavaScript = struct
   let anyref = W.Ref { nullable = true; typ = Any }
 
+  let externref = W.Ref { nullable = true; typ = Extern }
+
   let invoke_fragment name args =
     let* f =
       let* unit = unit_name in
@@ -1822,15 +1823,17 @@ module JavaScript = struct
           | None -> "fragments"
           | Some unit -> unit ^ ".fragments")
         ~name
-        (Fun { params = List.map ~f:(fun _ -> anyref) args; result = [ anyref ] })
+        (Fun { params = List.map ~f:(fun _ -> externref) args; result = [ externref ] })
     in
     let* wrap =
-      register_import ~name:"wrap" (Fun { params = [ anyref ]; result = [ Type.value ] })
+      register_import
+        ~name:"value_of_js"
+        (Fun { params = [ externref ]; result = [ Type.value ] })
     in
     let* unwrap =
       register_import
-        ~name:"unwrap"
-        (Fun { params = [ Type.value ]; result = [ anyref ] })
+        ~name:"js_of_value"
+        (Fun { params = [ Type.value ]; result = [ externref ] })
     in
     let* args =
       expression_list
