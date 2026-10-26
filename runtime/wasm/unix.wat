@@ -136,7 +136,7 @@
    (import "bindings" "geteuid" (func $geteuid (result i32)))
    (import "bindings" "getgid" (func $getgid (result i32)))
    (import "bindings" "getegid" (func $getegid (result i32)))
-   (import "js" "unix_error" (global $unix_error_js (ref any)))
+   (import "js" "unix_error" (global $unix_error_js (ref extern)))
    (import "js" "caml_strerror"
       (func $caml_strerror (param i32) (result (ref any))))
    (import "jslib" "wrap" (func $wrap (param anyref) (result (ref eq))))
@@ -151,7 +151,7 @@
    (import "jslib" "caml_jsstring_of_string"
       (func $caml_jsstring_of_string (param (ref eq)) (result (ref eq))))
    (import "jsstring" "jsstring_test"
-      (func $jsstring_test (param anyref) (result i32)))
+      (func $jsstring_test (param externref) (result i32)))
 ))
    (import "stdlib" "caml_named_value"
       (func $caml_named_value (param (ref eq)) (result (ref null eq))))
@@ -194,7 +194,7 @@
    (type $block (array (mut (ref eq))))
    (type $float (struct (field $f f64)))
    (type $float_array (array (mut f64)))
-   (type $js (struct (field $js anyref)))
+   (type $js (struct (field $js externref)))
 
    (type $fd_offset
       (struct
@@ -394,7 +394,7 @@
    (global $unix_error (ref eq) (struct.new $js (global.get $unix_error_js)))
 
    (func $ensure_string (param $s (ref eq)) (result (ref eq))
-      (local $str anyref)
+      (local $str externref)
       (drop (block $not_jsstring (result anyref)
          (local.set $str
             (struct.get $js 0

@@ -80,13 +80,13 @@
    (import "js" "gr_fill_poly_for_wasm"
       (func $gr_fill_poly (param anyref i32)))
    (import "js" "gr_create_image_for_wasm"
-      (func $gr_create_image (param i32 i32) (result anyref)))
+      (func $gr_create_image (param i32 i32) (result externref)))
    (import "js" "gr_draw_image_for_wasm"
       (func $gr_draw_image (param anyref i32 i32)))
    (import "js" "gr_blit_image_for_wasm"
       (func $gr_blit_image (param anyref i32 i32)))
    (import "js" "gr_make_image_for_wasm"
-      (func $gr_make_image (param anyref i32 i32) (result anyref)))
+      (func $gr_make_image (param externref i32 i32) (result externref)))
    (import "js" "gr_dump_image_width_for_wasm"
       (func $gr_dump_image_width (param anyref) (result i32)))
    (import "js" "gr_dump_image_height_for_wasm"
@@ -103,7 +103,7 @@
    ;; Types
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
-   (type $js (struct (field $js anyref)))
+   (type $js (struct (field $js externref)))
 
    ;; String constants
    (@string $graphic_failure "Graphics.Graphic_failure")
@@ -436,7 +436,7 @@
                (br $outer))))
       (struct.new $js
          (call $gr_make_image
-            (any.convert_extern (local.get $flat))
+            (local.get $flat)
             (local.get $w) (local.get $h))))
 
    (func (export "caml_gr_dump_image")
