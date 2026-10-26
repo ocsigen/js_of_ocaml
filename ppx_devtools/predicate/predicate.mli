@@ -17,8 +17,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-(** Shared predicate grammar used by [ppx_devtools.optcomp] (compile-time gating via
-    [@if]/[@@if]/[@@@if]) and by [ppx_devtools.expect] (runtime gating via
+(** Shared predicate grammar used by [ppx_devtools-optcomp] (compile-time gating via
+    [@if]/[@@if]/[@@@if]) and by [ppx_devtools-expect] (runtime gating via
     [%expect.when ...]).
 
     The grammar is a boolean expression over a few atoms combined with the usual

@@ -36,7 +36,7 @@
     and module in signature (Psig_module)
 
     For toplevel extensions to be gated we must run before context-free
-    rewriters such as ppx_devtools.expect expand them; this is achieved by
+    rewriters such as ppx_devtools-expect expand them; this is achieved by
     registering the implementation transformation as a [Before]
     instrumentation (see registration at the end of the file).
 *)
@@ -124,7 +124,7 @@ let extension_if_attrs ((_, payload) : extension) ext_attrs =
   List.filter (ext_attrs @ inner) ~f:is_if_attr
 
 (* Remove the [@if] attributes once they have been evaluated, so that the
-   downstream rewriters (e.g. ppx_devtools.expect) do not choke on a leftover
+   downstream rewriters (e.g. ppx_devtools-expect) do not choke on a leftover
    attribute in an unexpected position. *)
 let strip_extension_if ((name, payload) : extension) ext_attrs =
   let payload =
@@ -216,4 +216,4 @@ let () =
          traverse#structure
          ~position:Ppxlib.Driver.Instrument.Before)
     ~intf:traverse#signature
-    "ppx_devtools.optcomp"
+    "ppx_devtools-optcomp"

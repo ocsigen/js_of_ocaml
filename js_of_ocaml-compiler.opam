@@ -15,7 +15,8 @@ depends: [
   "dune" {>= "3.20"}
   "ocaml" {>= "4.13" & < "5.7"}
   "num" {with-test}
-  "ppx_devtools"
+  "ppx_devtools-optcomp"
+  "ppx_devtools-expect" {with-test}
   "ppxlib" {>= "0.33"}
   "ocaml-compiler-libs" {>= "v0.12.4"}
   "re" {with-test}

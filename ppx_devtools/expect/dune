@@ -1,13 +1,13 @@
 (library
  (name ppx_devtools_expect)
- (public_name ppx_devtools.expect)
+ (public_name ppx_devtools-expect)
  (kind ppx_rewriter)
- (libraries compiler-libs.common ppxlib ppx_devtools.predicate)
- (ppx_runtime_libraries ppx_devtools.expect.runtime)
+ (libraries compiler-libs.common ppxlib ppx_devtools-optcomp.predicate)
+ (ppx_runtime_libraries ppx_devtools-expect.runtime)
  (preprocess
   (pps ppxlib.metaquot))
  (inline_tests.backend
-  (runner_libraries ppx_devtools.expect.runtime)
+  (runner_libraries ppx_devtools-expect.runtime)
   ; Flat lists: the parenthesized form is written unquoted to the installed
   ; dune-package, which dune then fails to read back.
   (flags

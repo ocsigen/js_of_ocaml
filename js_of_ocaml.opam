@@ -16,7 +16,8 @@ depends: [
   "ocaml" {>= "4.13"}
   "js_of_ocaml-compiler" {= version}
   "num" {with-test}
-  "ppx_devtools"
+  "ppx_devtools-optcomp"
+  "ppx_devtools-expect" {with-test}
   "ppxlib" {>= "0.33"}
   "re" {>= "1.9.0" & with-test}
   "odoc" {with-doc}

@@ -1,6 +1,6 @@
-; One library for all modules; ppx_devtools.expect runs each file as its own
+; One library for all modules; ppx_devtools-expect runs each file as its own
 ; inline-test partition, so test parallelism is preserved. Gating lives in the
-; sources (ppx_devtools.optcomp [@@@if] / ppx_devtools.expect [@when]).
+; sources (ppx_devtools-optcomp [@@@if] / ppx_devtools-expect [@when]).
 
 (library
  (name jsoo_compiler_test)
@@ -16,4 +16,4 @@
  (flags
   (:standard -open Jsoo_compiler_expect_tests_helper))
  (preprocess
-  (pps ppx_devtools.optcomp ppx_devtools.expect jsoo_test_axes_ppx)))
+  (pps ppx_devtools-optcomp ppx_devtools-expect jsoo_test_axes_ppx)))

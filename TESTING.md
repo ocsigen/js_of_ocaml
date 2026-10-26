@@ -1,4 +1,4 @@
-# Inline tests: `ppx_devtools.expect` + `ppx_devtools.optcomp`
+# Inline tests: `ppx_devtools-expect` + `ppx_devtools-optcomp`
 
 js_of_ocaml ships its own, self-contained inline-test toolchain (a small
 `ppx_expect` replacement) so the test suite can run unmodified across the
@@ -22,10 +22,10 @@ write looks like `let%expect_test … [%expect {| … |}]`.
  (inline_tests
   (modes js wasm best))      ; run under js_of_ocaml, wasm_of_ocaml, and native
  (preprocess
-  (pps ppx_devtools.optcomp ppx_devtools.expect)))
+  (pps ppx_devtools-optcomp ppx_devtools-expect)))
 ```
 
-- Add `ppx_devtools.optcomp` to `(pps …)` only if the module uses `[@@if]` /
+- Add `ppx_devtools-optcomp` to `(pps …)` only if the module uses `[@@if]` /
   `[@@@if]` (it is harmless otherwise, but keep the list minimal).
 - `(modes …)`: `js`, `wasm`, `best` (native). Pick what makes sense; a test that
   uses `Js.*` values cannot run `best`, so use `(modes js wasm)`.
@@ -56,7 +56,7 @@ accept it with `dune promote`.
 There are two independent ways to make a test behave differently across
 configurations. **Choosing the right one matters:**
 
-| | `[@@if]` / `[@@@if]` (`ppx_devtools.optcomp`) | `[@when]` / `[@tags]` (`ppx_devtools.expect`) |
+| | `[@@if]` / `[@@@if]` (`ppx_devtools-optcomp`) | `[@when]` / `[@tags]` (`ppx_devtools-expect`) |
 |---|---|---|
 | when | **compile time** — the gated code is *removed* | **run time** — the code is compiled, the test is *skipped* (or a snapshot variant chosen) |
 | use when | the code **wouldn't compile** on the excluded config (uses an API/syntax that doesn't exist there) | the code compiles everywhere but should be **skipped** or produce **different output** on some backend/engine/version |
@@ -140,7 +140,7 @@ run time:
   `os_type` (shorthands `win32` / `unix` / `cygwin`), `ocaml_version`,
   `oxcaml`.
 - Run time, js_of_ocaml-specific (`[@when]`, in libraries preprocessed with
-  `(pps ... ppx_devtools.expect jsoo_test_axes_ppx)`): `host_engine`
+  `(pps ... ppx_devtools-expect jsoo_test_axes_ppx)`): `host_engine`
   (shorthands `node` / `quickjs` / `bun` / `wasi`), `target_engine`,
   `effects` (`"disabled"` / `"cps"` / …). See
   `compiler/lib-test-axes/jsoo_test_axes.mli`. Such axes are registered by a
