@@ -35,12 +35,12 @@ let bun = String.equal host_engine "bun"
 
 let wasi = String.equal host_engine "wasi"
 
+(* Not [Jsoo_runtime.Sys.Config.effects]: linking [jsoo_runtime] would bring
+   its weak C stubs, which can take precedence over the stubs of the test
+   libraries. The native stub of this library is never called. *)
+external effects_ : unit -> string = "caml_jsoo_flags_effects"
+
 let effects =
   match Sys.backend_type with
   | Native | Bytecode -> "native"
-  | Other _ -> (
-      match Jsoo_runtime.Sys.Config.effects () with
-      | `Disabled -> "disabled"
-      | `Cps -> "cps"
-      | `Double_translation -> "double-translation"
-      | `Jspi -> "jspi")
+  | Other _ -> effects_ ()

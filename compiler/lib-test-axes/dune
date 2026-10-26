@@ -1,3 +1,5 @@
 (library
  (name jsoo_test_axes)
- (libraries js_of_ocaml-compiler.runtime))
+ (foreign_stubs
+  (language c)
+  (names jsoo_test_axes_stubs)))
