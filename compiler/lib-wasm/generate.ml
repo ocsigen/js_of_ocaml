@@ -497,7 +497,10 @@ module Generate (Target : Target_sig.S) = struct
   let transl_js_arg ctx x : js_arg =
     match folded_js_float ctx x with
     | Some y -> `F64 y
-    | None -> `Value (transl_prim_arg ctx x)
+    | None -> (
+        match get_type ctx x with
+        | Int _ -> `I32 (transl_prim_arg ctx ~typ:(Int Normalized) x)
+        | _ -> `Value (transl_prim_arg ctx x))
 
   let translate_int_comparison ctx op x y =
     match get_type ctx x, get_type ctx y with

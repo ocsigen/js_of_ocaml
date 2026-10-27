@@ -1812,15 +1812,16 @@ end
 type js_arg =
   [ `Value of expression
   | `F64 of expression
+  | `I32 of expression
   ]
 
 module JavaScript = struct
   let externref = W.Ref { nullable = true; typ = Extern }
 
   (* Call a JavaScript function imported from [import_module]. Unboxed floats
-     are passed as [f64], and the result is returned as a [f64] when it is
-     used as an unboxed float: the JavaScript engine then performs the
-     conversion. *)
+     and untagged integers are passed as [f64] and [i32], and the result is
+     returned as a [f64] when it is used as an unboxed float: the JavaScript
+     engine then performs the conversion. *)
   let call ?(result = `Value) ~import_module name (args : js_arg list) =
     let* f =
       register_import
@@ -1832,7 +1833,8 @@ module JavaScript = struct
                  ~f:(fun (a : js_arg) ->
                    match a with
                    | `Value _ -> externref
-                   | `F64 _ -> W.F64)
+                   | `F64 _ -> W.F64
+                   | `I32 _ -> W.I32)
                  args
            ; result =
                [ (match result with
@@ -1853,7 +1855,7 @@ module JavaScript = struct
               in
               let* e = e in
               return (W.Call (unwrap, [ e ]))
-          | `F64 e -> e)
+          | `F64 e | `I32 e -> e)
         args
     in
     match result with
