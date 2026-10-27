@@ -6,6 +6,9 @@ RUN sudo apt-get update \
       pkg-config libgmp-dev jq time
 
 RUN sudo ln -sf /usr/bin/opam-2.3 /usr/bin/opam
+
+# Change this value to force a fresh `opam update` (Docker caches the layer)
+ARG OPAM_UPDATE_STAMP=2026-10-27
 RUN opam remote add origin https://github.com/ocaml/opam-repository.git \
  && opam update
 
