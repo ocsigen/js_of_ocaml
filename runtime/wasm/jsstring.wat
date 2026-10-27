@@ -67,6 +67,9 @@
    (global $string_builtins_available (mut i32) (i32.const 0))
 
    (global $utf16_buffer_size i32 (i32.const 1024))
+   ;; Longer strings are converted faster into JavaScript strings by the
+   ;; JavaScript TextDecoder than by fromCharCodeArray (V8, JavaScriptCore)
+   (global $from_char_code_array_max_length i32 (i32.const 512))
    (global $buffer (mut (ref $wstring))
       (array.new $wstring (i32.const 0) (i32.const 0)))
 
@@ -131,7 +134,8 @@
                   (i32.add (local.get $pos) (local.get $len))))))
       (if $continue
          (i32.and (global.get $string_builtins_available)
-            (i32.le_u (local.get $len) (global.get $utf16_buffer_size)))
+            (i32.le_u (local.get $len)
+               (global.get $from_char_code_array_max_length)))
          (then
             (loop $loop
                (if (i32.lt_u (local.get $i) (local.get $len))
