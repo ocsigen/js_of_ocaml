@@ -16,6 +16,7 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
+   (import "obj" "tag_mask" (global $tag_mask i32))
    (import "fail" "caml_is_special_exception"
       (func $caml_is_special_exception (param (ref eq)) (result i32)))
    (import "ints" "caml_format_int"
@@ -85,8 +86,13 @@
       (local $s (ref $bytes))
       (local.set $exn (ref.cast (ref $block) (local.get $vexn)))
       (if (result (ref eq))
-          (ref.eq (array.get $block (local.get $exn) (i32.const 0))
-                  (ref.i31 (i32.const 0)))
+          (i32.eq
+             (i32.and
+                (i31.get_u
+                   (ref.cast (ref i31)
+                      (array.get $block (local.get $exn) (i32.const 0))))
+                (global.get $tag_mask))
+             (i32.const 0))
          (then
             (local.set $buf
                (struct.new $buffer
@@ -114,9 +120,13 @@
                      (local.set $bucket (ref.cast (ref $block) (local.get $v)))
                      (br_if $default
                         (i32.eqz
-                           (ref.eq
-                              (array.get $block (local.get $bucket) (i32.const 0))
-                              (ref.i31 (i32.const 0)))))
+                           (i32.eq
+                              (i32.and
+                                 (i31.get_u
+                                    (ref.cast (ref i31)
+                                       (array.get $block (local.get $bucket) (i32.const 0))))
+                                 (global.get $tag_mask))
+                              (i32.const 0))))
                     (local.set $i (i32.const 1))
                     (br $continue (local.get $bucket)))
                  (local.set $i (i32.const 2))

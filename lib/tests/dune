@@ -32,13 +32,13 @@
    jsoo_test_axes_ppx)))
 
 ; Introcaml only (the tests are gated by [@@@if introspect]): the DevTools
-; formatter, which is installed under js_of_ocaml only.
+; formatter.
 
 (library
  (name jsoo_lib_expect_tests_introspect)
  (modules test_devtools)
  (libraries js_of_ocaml js_of_ocaml.devtools)
  (inline_tests
-  (modes js))
+  (modes js wasm))
  (preprocess
   (pps ppx_js_internal ppx_devtools-optcomp ppx_devtools-expect)))

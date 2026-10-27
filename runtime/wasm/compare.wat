@@ -25,6 +25,7 @@
    (import "obj" "caml_is_closure"
       (func $caml_is_closure (param (ref eq)) (result i32)))
    (import "obj" "null" (global $null_value (ref eq)))
+   (import "obj" "tag_mask" (global $tag_mask i32))
    (import "fail" "caml_invalid_argument"
       (func $caml_invalid_argument (param (ref eq))))
    (import "effect" "caml_is_continuation"
@@ -169,10 +170,12 @@
                      (br_on_cast_fail $v2_not_forward (ref eq) (ref $block)
                         (local.get $v2)))
                   (local.set $t2
-                     (i31.get_u
-                        (ref.cast (ref i31)
-                           (array.get $block (local.get $b2)
-                              (i32.const 0)))))
+                     (i32.and
+                        (i31.get_u
+                           (ref.cast (ref i31)
+                              (array.get $block (local.get $b2)
+                                 (i32.const 0))))
+                        (global.get $tag_mask)))
                   (if (i32.eq (local.get $t2) (global.get $forward_tag))
                      (then
                         (local.set $v2
@@ -202,9 +205,11 @@
                         (br_on_cast_fail $v1_not_forward (ref eq) (ref $block)
                            (local.get $v1)))
                      (local.set $t1
-                        (i31.get_u (ref.cast (ref i31)
-                                      (array.get $block (local.get $b1)
-                                         (i32.const 0)))))
+                        (i32.and
+                           (i31.get_u (ref.cast (ref i31)
+                                         (array.get $block (local.get $b1)
+                                            (i32.const 0))))
+                           (global.get $tag_mask)))
                      (if (i32.eq (local.get $t1) (global.get $forward_tag))
                         (then
                            (local.set $v1
@@ -233,16 +238,20 @@
                      (br_on_cast_fail $v1_not_block (ref eq) (ref $block)
                         (local.get $v1)))
                   (local.set $t1
-                     (i31.get_u
-                        (ref.cast (ref i31)
-                           (array.get $block (local.get $b1) (i32.const 0)))))
+                     (i32.and
+                        (i31.get_u
+                           (ref.cast (ref i31)
+                              (array.get $block (local.get $b1) (i32.const 0))))
+                        (global.get $tag_mask)))
                   (local.set $b2
                      (br_on_cast_fail $heterogeneous (ref eq) (ref $block)
                         (local.get $v2)))
                   (local.set $t2
-                     (i31.get_u
-                        (ref.cast (ref i31)
-                           (array.get $block (local.get $b2) (i32.const 0)))))
+                     (i32.and
+                        (i31.get_u
+                           (ref.cast (ref i31)
+                              (array.get $block (local.get $b2) (i32.const 0))))
+                        (global.get $tag_mask)))
                   (drop (br_if $heterogeneous (ref.i31 (i32.const 0))
                      (i32.ne (local.get $t1) (local.get $t2))))
                   ;; forward tag

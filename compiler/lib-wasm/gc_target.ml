@@ -716,18 +716,29 @@ module Memory = struct
     let* ty = Type.float_type in
     wasm_struct_get ty (wasm_cast ty e) 0
 
-  let allocate ~tag l =
+  (* Introcaml: the descriptor is stored in the header, above the tag (see
+     [Mlvalue.Block]) *)
+  let header ~tag ~desc =
+    W.RefI31 (Const (I32 (Int32.of_int (Mlvalue.Block.header_word ~tag ~desc))))
+
+  let allocate ?(desc = Code.Block_desc.none) ~tag l =
     assert (tag <> 254);
     let* l = l in
     let* ty = Type.block_type in
-    return (W.ArrayNewFixed (ty, RefI31 (Const (I32 (Int32.of_int tag))) :: l))
+    return (W.ArrayNewFixed (ty, header ~tag ~desc :: l))
 
   let allocate_float_array l =
     let* l = l in
     let* ty = Type.float_array_type in
     return (W.ArrayNewFixed (ty, l))
 
-  let tag e = wasm_array_get e (Arith.const 0l)
+  let tag e =
+    let hd = wasm_array_get e (Arith.const 0l) in
+    if Config.Flag.introspection ()
+    then
+      Value.val_int
+        Arith.(Value.int_val hd land const (Int32.of_int Mlvalue.Block.tag_mask))
+    else hd
 
   let check_is_float_array e =
     let* float_array = Type.float_array_type in
@@ -1061,7 +1072,7 @@ module Constant = struct
   let rec translate_rec c =
     match c with
     | Code.Int i -> return (Const, W.RefI31 (Const (I32 (Targetint.to_int32 i))))
-    | Tuple (tag, a, _, _) ->
+    | Tuple (tag, a, _, desc) ->
         let* ty = Type.block_type in
         let* l =
           Array.fold_left
@@ -1081,7 +1092,7 @@ module Constant = struct
               | Mutated -> W.RefI31 (Const (I32 0l)))
             l
         in
-        let c = W.ArrayNewFixed (ty, RefI31 (Const (I32 (Int32.of_int tag))) :: l') in
+        let c = W.ArrayNewFixed (ty, Memory.header ~tag ~desc :: l') in
         if
           List.exists
             ~f:(fun (const, _) ->

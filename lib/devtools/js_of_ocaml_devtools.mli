@@ -32,6 +32,10 @@
     to its fields (with their names for records and constructors) rather than
     to the array of its raw representation.
 
+    Under Wasm_of_ocaml, the values of a paused Wasm frame (its local
+    variables) are displayed the same way. OCaml values are opaque to the
+    console there: log them through {!inspect}.
+
     Custom formatters must be enabled in the DevTools settings
     (Settings > Preferences > Console > Enable custom formatters). *)
 
@@ -39,7 +43,14 @@ val register_formatters : unit -> unit
 (** Install the formatter in [globalThis.devtoolsFormatters], creating the array
     if needed. Calling it more than once installs it once.
 
-    This is a no-op when the compiler has no introspection support or when the
-    program does not run under Js_of_ocaml (native code, Wasm_of_ocaml). When
-    the program was compiled with [--disable introspection], the formatter is
-    installed but no value carries a descriptor, so nothing is reformatted. *)
+    This is a no-op when the compiler has no introspection support or in
+    native code. When the program was compiled with
+    [--disable introspection], the formatter is installed but no value
+    carries a descriptor: under Js_of_ocaml, nothing is reformatted; under
+    Wasm_of_ocaml, values are displayed from their representation only. *)
+
+val inspect : 'a -> Jsoo_runtime.Js.t
+(** A JavaScript value that the formatter displays as the given OCaml value,
+    to be logged, e.g. [console.log (inspect v)]: under Wasm_of_ocaml, a
+    wrapper object, as OCaml values are opaque to the console; the value
+    itself under Js_of_ocaml. *)

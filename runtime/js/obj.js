@@ -129,12 +129,9 @@ function caml_obj_with_tag(tag, x) {
 function caml_obj_dup(x) {
   if (x === null) return null;
   if (typeof x === "number") return x;
-  var r = x.slice();
-  // A fresh block carries no descriptor, as in the native runtime
-  // (see caml_obj_get_reserved). Blocks have no reserved bits without
-  // introspection, and the extra write slows down [Array.copy].
-  if (FLAG("introspection") && Array.isArray(r)) SET_RESERVED(r, 0);
-  return r;
+  // The copy keeps the descriptor of the block (in its header word), as in
+  // the native runtime
+  return x.slice();
 }
 
 //Provides: caml_obj_truncate (mutable, const)

@@ -3177,16 +3177,16 @@ type link_info =
 [@@ocaml.warning "-unused-field"]
 
 (* Introcaml: make the block descriptors available to [Introspect] at
-   runtime (JavaScript only; there is no introspection support in Wasm) *)
+   runtime *)
 let emit_block_descs descs body =
-  match descs, Config.target () with
-  | Some descs, `JavaScript when Obj.is_block descs && Config.Flag.introspection () ->
+  match descs with
+  | Some descs when Obj.is_block descs && Config.Flag.introspection () ->
       let c = Var.fresh_n "block_descs" in
       (* The descriptors' own blocks do not need descriptors *)
       Let (c, Constant (Constants.parse ~with_desc:false descs))
       :: Let (Var.fresh (), Prim (Extern ("caml_register_block_descs", None), [ Pv c ]))
       :: body
-  | (Some _ | None), (`JavaScript | `Wasm) -> body
+  | Some _ | None -> body
 
 let emit_link_info ~symbols ~primitives ~crcs ~num_globals body =
   let primitives =
