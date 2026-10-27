@@ -434,6 +434,38 @@ let trivial_function ~context info =
      | `JavaScript -> 1)
   && closure_count ~context info = 0
 
+(* With Wasm, we also inline functions which only select a value
+   according to their argument, such as [function A -> t.a | B -> t.b]:
+   a switch whose branches each return a constant or a field. Their size
+   is mostly the switch, which is cheap and can often be resolved at the
+   call site. *)
+let selector_function ~context info =
+  (match Config.target () with
+    | `Wasm -> true
+    | `JavaScript -> false)
+  && (not info.recursive)
+  && body_size ~context info <= 16
+  && closure_count ~context info = 0
+  &&
+  let not_event i =
+    match i with
+    | Event _ -> false
+    | _ -> true
+  in
+  let arm (pc, _) =
+    let block = Addr.Map.find pc context.p.blocks in
+    match block.branch, List.filter ~f:not_event block.body with
+    | Return _, ([] | [ Let (_, (Field _ | Constant _)) ]) -> true
+    | _ -> false
+  in
+  let block = Addr.Map.find (fst info.cont) context.p.blocks in
+  List.is_empty (List.filter ~f:not_event block.body)
+  &&
+  match block.branch with
+  | Switch (_, a) -> Array.for_all ~f:arm a
+  | Cond (_, cont1, cont2) -> arm cont1 && arm cont2
+  | _ -> false
+
 (* The parameters of a function whose only uses are reads and updates of
    their contents, as for a reference that [Ref_unboxing] can unbox *)
 let ref_parameters ~context info =
@@ -657,6 +689,7 @@ and should_inline ~context info args =
                   false
               | _ -> body_size ~context info < Config.Param.inlining_limit ())
            || trivial_function ~context info
+           || selector_function ~context info
            || small_function ~context info args
            || ref_argument_function ~context info args
            || guard_function ~context info)
