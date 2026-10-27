@@ -64,7 +64,7 @@ module Wasm_source_map : sig ... end
 module Wat_output : sig ... end
 ```
 ```ocaml
-module Wat_preprocess : sig ... end
+module Wax_link : sig ... end
 ```
 ```ocaml
 module Zip : sig ... end

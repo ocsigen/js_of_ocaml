@@ -59020,15 +59020,6 @@ val gen_dir : string -> (string -> 'a) -> 'a
 # Module `Wasm_of_ocaml_compiler.Runtime`
 
 ```ocaml
-val with_binary_files : 
-  options:string list ->
-  Binaryen.link_input list ->
-  (Binaryen.link_input list -> 'a) ->
-  'a
-```
-Convert the input files in text format to binary format with `wasm-opt`, passing it `options`, and call the continuation with the resulting files. The files are deleted afterwards.
-
-```ocaml
 val link_input : 
   ?load_source_map:(string -> Js_of_ocaml_compiler.Source_map.Standard.t) ->
   Binaryen.link_input ->
@@ -59044,10 +59035,9 @@ Link the input modules (in binary format), keeping all their code
 ```ocaml
 val build : 
   allowed_imports:string list option ->
-  convert_options:string list ->
   opt_options:string list ->
-  variables:(string * Wat_preprocess.value) list ->
-  inputs:Wat_preprocess.input list ->
+  variables:(string * Wax_link.value) list ->
+  inputs:Wax_link.input list ->
   output_file:string ->
   unit
 ```
@@ -60105,7 +60095,7 @@ val f : Stdlib.out_channel -> Wasm_ast.module_field list -> unit
 
 ---
 
-# Module `Wasm_of_ocaml_compiler.Wat_preprocess`
+# Module `Wasm_of_ocaml_compiler.Wax_link`
 
 ```ocaml
 type value = 
@@ -60117,17 +60107,10 @@ type value =
 val value_equal : value -> value -> bool
 ```
 ```ocaml
-val f : 
-  variables:(string * value) list ->
-  filename:string ->
-  contents:string ->
-  string
-```
-```ocaml
 type source = 
-  | Binary (* Binary file (skipped by the preprocessor) *)
+  | Binary (* Binary file (assembled already, passed through) *)
   | File (* Not read yet *)
-  | Contents of string (* File contents to preprocess *)
+  | Contents of string (* File contents to assemble *)
 ```
 ```ocaml
 type input = {
@@ -60143,6 +60126,9 @@ val with_preprocessed_files :
   (Binaryen.link_input list -> 'a) ->
   'a
 ```
+Preprocess and assemble runtime modules using the Wax toolchain.
+
+Each text input (WAT or Wax, by extension) has its conditional annotations specialized against `variables`, and is assembled to a WebAssembly binary temporary file. Binary inputs are passed through unchanged. The resulting files are handed to `action` as [`Binaryen.link_input`](./Wasm_of_ocaml_compiler-Binaryen.md#type-link_input)s, suitable for our linker ([`Runtime.link`](./Wasm_of_ocaml_compiler-Runtime.md#val-link)), which only accepts binary inputs.
 
 
 ---
@@ -60261,7 +60247,7 @@ module Wasm_source_map : sig ... end
 module Wat_output : sig ... end
 ```
 ```ocaml
-module Wat_preprocess : sig ... end
+module Wax_link : sig ... end
 ```
 ```ocaml
 module Zip : sig ... end

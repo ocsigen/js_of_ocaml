@@ -940,7 +940,7 @@
 - [Module `Wasm_of_ocaml_compiler.Wasm_output`](wasm_of_ocaml-compiler/Wasm_of_ocaml_compiler-Wasm_output.md)
 - [Module `Wasm_of_ocaml_compiler.Wasm_source_map`](wasm_of_ocaml-compiler/Wasm_of_ocaml_compiler-Wasm_source_map.md)
 - [Module `Wasm_of_ocaml_compiler.Wat_output`](wasm_of_ocaml-compiler/Wasm_of_ocaml_compiler-Wat_output.md)
-- [Module `Wasm_of_ocaml_compiler.Wat_preprocess`](wasm_of_ocaml-compiler/Wasm_of_ocaml_compiler-Wat_preprocess.md)
+- [Module `Wasm_of_ocaml_compiler.Wax_link`](wasm_of_ocaml-compiler/Wasm_of_ocaml_compiler-Wax_link.md)
 - [Module `Wasm_of_ocaml_compiler.Zip`](wasm_of_ocaml-compiler/Wasm_of_ocaml_compiler-Zip.md)
 - [Module `Wasm_of_ocaml_compiler`](wasm_of_ocaml-compiler/Wasm_of_ocaml_compiler.md)
 - [Module `Wasm_of_ocaml_compiler_dynlink`](wasm_of_ocaml-compiler/Wasm_of_ocaml_compiler_dynlink.md)
