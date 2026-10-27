@@ -131,13 +131,26 @@ let measure_one param code (meas : Measure.t) spec nm cmd =
     l)
   else l
 
-let measure ~param ~code ~(meas : Measure.t) ~spec cmd =
-  List.iter (Spec.find_names ~root:code spec) ~f:(fun nm ->
-      let cmd = if cmd = "" then cmd else cmd ^ " " in
-      let cmd = Format.sprintf "%s%s" cmd (Spec.file ~root:code spec nm) in
-      Format.eprintf "Measure %s@." cmd;
-      try ignore (measure_one param code meas spec nm cmd)
-      with Failure s -> Format.eprintf "Failure: %s@." s)
+(* Each job is a (code, meas, spec, cmd) tuple. We measure benchmark by
+   benchmark, so that the variants of a benchmark are measured close in time
+   and the ratios are not skewed by slow changes of the machine speed. *)
+let measure ~param jobs =
+  let jobs =
+    List.map jobs ~f:(fun (code, meas, spec, cmd) ->
+        code, meas, spec, cmd, Spec.find_names ~root:code spec)
+  in
+  let names =
+    List.sort_uniq ~cmp:compare (List.concat_map jobs ~f:(fun (_, _, _, _, l) -> l))
+  in
+  List.iter names ~f:(fun nm ->
+      List.iter jobs ~f:(fun (code, (meas : Measure.t), spec, cmd, l) ->
+          if List.mem nm ~set:l
+          then (
+            let cmd = if cmd = "" then cmd else cmd ^ " " in
+            let cmd = Format.sprintf "%s%s" cmd (Spec.file ~root:code spec nm) in
+            Format.eprintf "Measure %s@." cmd;
+            try ignore (measure_one param code meas spec nm cmd)
+            with Failure s -> Format.eprintf "Failure: %s@." s)))
 
 (****)
 
@@ -280,7 +293,7 @@ let _ =
   compile_jsoo "--opt=1" code Spec.byte code Spec.js_of_ocaml_o1;
   compile_jsoo "--opt=3" code Spec.byte code Spec.js_of_ocaml_o3;
   compile_jsoo
-    "--opt=2 --enable=use-js-string"
+    "--opt=2 --disable=use-js-string"
     code
     Spec.byte
     code
@@ -398,8 +411,10 @@ let _ =
     Spec.js_of_ocaml_effects_double_translation;
   if compile_only then exit 0;
   Format.eprintf "Measure@.";
-  if filter_bench ("", Spec.opt) then measure ~param ~code ~meas:times ~spec:Spec.opt "";
-  if filter_bench ("", Spec.byte) then measure ~param ~code ~meas:times ~spec:Spec.byte "";
+  let jobs =
+    (if filter_bench ("", Spec.opt) then [ code, times, Spec.opt, "" ] else [])
+    @ if filter_bench ("", Spec.byte) then [ code, times, Spec.byte, "" ] else []
+  in
   let all_spec =
     [ Some Spec.js_of_ocaml
     ; Some Spec.js_of_ocaml_o1
@@ -425,24 +440,14 @@ let _ =
         | [] -> [])
       , [ Some Spec.js_of_ocaml; Some Spec.wasm_of_ocaml ] )
   in
-  List.iter interpreters ~f:(fun (comp, dir) ->
-      (* Measure the time taken by an implementation in Javascript for comparison *)
-      if filter_bench (dir, Spec.js)
-      then
-        measure
-          ~param
-          ~code:src
-          ~meas:Measure.{ times with path = Filename.concat times.path dir }
-          ~spec:Spec.js
-          comp;
-      List.iter suites ~f:(function
-        | None -> ()
-        | Some suite ->
-            if filter_bench (dir, suite)
-            then
-              measure
-                ~param
-                ~code
-                ~meas:Measure.{ times with path = Filename.concat times.path dir }
-                ~spec:suite
-                comp))
+  let jobs =
+    jobs
+    @ List.concat_map interpreters ~f:(fun (comp, dir) ->
+        let meas = Measure.{ times with path = Filename.concat times.path dir } in
+        (* Measure the time taken by an implementation in Javascript for comparison *)
+        (if filter_bench (dir, Spec.js) then [ src, meas, Spec.js, comp ] else [])
+        @ List.filter_map suites ~f:(function
+          | Some suite when filter_bench (dir, suite) -> Some (code, meas, suite, comp)
+          | _ -> None))
+  in
+  measure ~param jobs
