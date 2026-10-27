@@ -51,105 +51,105 @@ let effects_cps () =
    of a JavaScript call immediately preceding the conversion: this call can
    then directly return a [f64] or an [i32], stored in [z]. The conversion
    may raise an exception or call a [valueOf] method, so it must be
-   performed exactly when it was in the original program. *)
-let js_conversions p =
-  let defs = Var.Hashtbl.create 16 in
-  let result_defs = Var.Hashtbl.create 16 in
-  let conversion_defs = Var.Hashtbl.create 16 in
-  let uses = Var.Hashtbl.create 128 in
-  let js_uses = Var.Hashtbl.create 16 in
-  let incr x =
-    Var.Hashtbl.replace uses x (1 + Option.value ~default:0 (Var.Hashtbl.find_opt uses x))
+   performed exactly when it was in the original program.
+
+   A variable used in another function than the one defining it is a free
+   variable of a closure. *)
+let js_conversions p closures =
+  let is_js_call name =
+    match name with
+    | "%caml_js_opt_call"
+    | "%caml_js_opt_fun_call"
+    | "%caml_js_opt_meth_call"
+    | "%caml_js_opt_new"
+    | "%caml_js_opt_object"
+    | "caml_js_set" -> true
+    | _ -> false
   in
-  Code.fold_closures
-    p
-    (fun _ _ (fn, _) _ () ->
-      Code.traverse
-        { fold = Code.fold_children }
-        (fun pc () ->
-          let block = Addr.Map.find pc p.blocks in
-          Freevars.iter_block_free_vars incr block;
-          (* The result of the previous instruction, if a JavaScript call *)
-          let prev = ref None in
-          List.iter
-            ~f:(fun i ->
-              let is_prev =
-                let p = !prev in
-                fun r ->
-                  match p with
-                  | Some r' -> Var.equal r r'
-                  | None -> false
-              in
-              (match i with
-              | Event _ -> ()
-              | Let (r, Prim (Extern (name, _), _)) -> (
-                  match name with
-                  | "%caml_js_opt_call"
-                  | "%caml_js_opt_fun_call"
-                  | "%caml_js_opt_meth_call"
-                  | "caml_js_get" -> prev := Some r
-                  | _ -> prev := None)
-              | _ -> prev := None);
-              match i with
-              | Let (x, Prim (Extern ("caml_js_from_float", _), [ Pv y ])) ->
-                  Var.Hashtbl.replace defs x (y, fn)
-              | Let (z, Prim (Extern ("caml_js_to_float", _), [ Pv r ])) when is_prev r ->
-                  Var.Hashtbl.replace conversion_defs z (r, fn, `F64)
-              | Let (z, Prim (Extern ("caml_js_to_bool", _), [ Pv r ])) when is_prev r ->
-                  Var.Hashtbl.replace conversion_defs z (r, fn, `I32)
-              | Let (r, Prim (Extern (name, _), args)) -> (
-                  (match name with
-                  | "%caml_js_opt_call"
-                  | "%caml_js_opt_fun_call"
-                  | "%caml_js_opt_meth_call"
-                  | "%caml_js_opt_new"
-                  | "%caml_js_opt_object"
-                  | "caml_js_set" ->
-                      List.iter
-                        ~f:(fun a ->
-                          match a with
-                          | Pv x ->
-                              Var.Hashtbl.replace
-                                js_uses
-                                x
-                                (match Var.Hashtbl.find_opt js_uses x with
-                                | None -> fn, 1
-                                | Some (fn', n) ->
-                                    (* -1: used in several functions *)
-                                    fn', if fn = fn' && n >= 0 then n + 1 else -1)
-                          | Pc _ -> ())
-                        args
-                  | _ -> ());
-                  match name with
-                  | "%caml_js_opt_call"
-                  | "%caml_js_opt_fun_call"
-                  | "%caml_js_opt_meth_call"
-                  | "caml_js_get" -> Var.Hashtbl.replace result_defs r fn
-                  | _ -> ())
-              | _ -> ())
-            block.body)
-        fn
-        p.blocks
-        ())
-    ();
+  let returns_js_value name =
+    match name with
+    | "%caml_js_opt_call"
+    | "%caml_js_opt_fun_call"
+    | "%caml_js_opt_meth_call"
+    | "caml_js_get" -> true
+    | _ -> false
+  in
+  let float_defs = Var.Hashtbl.create 16 in
+  let conversion_defs = Var.Hashtbl.create 16 in
+  Addr.Map.iter
+    (fun _ block ->
+      ignore
+        (List.fold_left
+           ~f:(fun prev i ->
+             match i with
+             | Event _ -> prev
+             | _ -> (
+                 let is_prev r =
+                   match prev with
+                   | Some r' -> Var.equal r r'
+                   | None -> false
+                 in
+                 (match i with
+                 | Let (x, Prim (Extern ("caml_js_from_float", _), [ Pv y ])) ->
+                     Var.Hashtbl.replace float_defs x y
+                 | Let (z, Prim (Extern ("caml_js_to_float", _), [ Pv r ])) when is_prev r
+                   -> Var.Hashtbl.replace conversion_defs z (r, `F64)
+                 | Let (z, Prim (Extern ("caml_js_to_bool", _), [ Pv r ])) when is_prev r
+                   -> Var.Hashtbl.replace conversion_defs z (r, `I32)
+                 | _ -> ());
+                 match i with
+                 | Let (r, Prim (Extern (name, _), _)) when returns_js_value name ->
+                     Some r
+                 | _ -> None))
+           ~init:None
+           block.body))
+    p.blocks;
   let folded = Var.Hashtbl.create 16 in
-  Var.Hashtbl.iter
-    (fun x (y, fn) ->
-      match Var.Hashtbl.find_opt js_uses x with
-      | Some (fn', n) when fn = fn' && n = Var.Hashtbl.find uses x ->
-          Var.Hashtbl.add folded x y
-      | _ -> ())
-    defs;
   let results = Var.Hashtbl.create 16 in
   let result_targets = Var.Hashtbl.create 16 in
-  Var.Hashtbl.iter
-    (fun z (r, fn, kind) ->
-      match Var.Hashtbl.find_opt result_defs r with
-      | Some fn' when fn = fn' && Var.Hashtbl.find uses r = 1 ->
+  if Var.Hashtbl.length float_defs > 0 || Var.Hashtbl.length conversion_defs > 0
+  then (
+    (* We only count the uses of the candidate variables *)
+    let candidate = Var.Tbl.make () false in
+    Var.Hashtbl.iter (fun x _ -> Var.Tbl.set candidate x true) float_defs;
+    Var.Hashtbl.iter (fun _ (r, _) -> Var.Tbl.set candidate r true) conversion_defs;
+    Var.Map.iter
+      (fun _ { Closure_conversion.free_variables; _ } ->
+        List.iter ~f:(fun x -> Var.Tbl.set candidate x false) free_variables)
+      closures;
+    let uses = Var.Tbl.make () 0 in
+    let js_uses = Var.Tbl.make () 0 in
+    let incr tbl x = Var.Tbl.set tbl x (Var.Tbl.get tbl x + 1) in
+    Addr.Map.iter
+      (fun _ block ->
+        Freevars.iter_block_free_vars
+          (fun x -> if Var.Tbl.get candidate x then incr uses x)
+          block;
+        List.iter
+          ~f:(fun i ->
+            match i with
+            | Let (_, Prim (Extern (name, _), args)) when is_js_call name ->
+                List.iter
+                  ~f:(fun a ->
+                    match a with
+                    | Pv x when Var.Tbl.get candidate x -> incr js_uses x
+                    | Pv _ | Pc _ -> ())
+                  args
+            | _ -> ())
+          block.body)
+      p.blocks;
+    Var.Hashtbl.iter
+      (fun x y ->
+        if Var.Tbl.get candidate x && Var.Tbl.get uses x = Var.Tbl.get js_uses x
+        then Var.Hashtbl.add folded x y)
+      float_defs;
+    Var.Hashtbl.iter
+      (fun z (r, kind) ->
+        if Var.Tbl.get candidate r && Var.Tbl.get uses r = 1
+        then (
           Var.Hashtbl.add results r (z, kind);
-          Var.Hashtbl.add result_targets z ()
-      | _ -> ())
-    conversion_defs;
+          Var.Hashtbl.add result_targets z ()))
+      conversion_defs);
   folded, results, result_targets
 
 module Generate (Target : Target_sig.S) = struct
@@ -2953,7 +2953,7 @@ module Generate (Target : Target_sig.S) = struct
       ~types =
     global_context.unit_name <- unit_name;
     let p, closures = Closure_conversion.f p in
-    let js_float_args, js_results, js_result_targets = js_conversions p in
+    let js_float_args, js_results, js_result_targets = js_conversions p closures in
     (*
   Code.Print.program (fun _ _ -> "") p;
 *)
