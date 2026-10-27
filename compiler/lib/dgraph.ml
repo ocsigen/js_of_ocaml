@@ -248,6 +248,14 @@ end = struct
     ; set : NSet.t (* Nodes of the domain which are not in the queue *)
     }
 
+  let grow a dummy =
+    let b = Array.make (max 16 (2 * Array.length a)) dummy in
+    Array.blit ~src:a ~src_pos:0 ~dst:b ~dst_pos:0 ~len:(Array.length a);
+    b
+
+  (* Beyond this depth, the depth-first traversal uses an explicit stack *)
+  let max_depth = 1000
+
   (* An array large enough to hold all the nodes of [domain] *)
   let make_data domain =
     (* [ISet] has no [cardinal] *)
@@ -265,18 +273,81 @@ end = struct
   let create domain iter_children =
     let data = make_data domain in
     let to_visit = NSet.copy domain in
-    let pos = ref (Array.length data) in
-    let rec traverse x =
-      if NSet.mem to_visit x
-      then (
-        NSet.remove to_visit x;
-        iter_children traverse x;
+    let count = Array.length data in
+    if count = 0
+    then { data; head = 0; length = 0; set = to_visit }
+    else
+      let x = data.(0) in
+      let pos = ref count in
+      let finish y =
         decr pos;
-        data.(!pos) <- x)
-    in
-    NSet.iter traverse domain;
-    assert (!pos = 0);
-    { data; head = 0; length = Array.length data; set = to_visit }
+        data.(!pos) <- y
+      in
+      (* The graphs can be thousands of nodes deep, which overflows
+         the call stack, in particular in Wasm. So, beyond [max_depth],
+         we switch from a recursive traversal to a slower one with an
+         explicit stack, which visits the nodes in the same order.
+         [stack] holds the nodes to visit; the children of a node are
+         pushed in reverse order, so that the first one is visited
+         first. [path] holds the nodes whose children are being
+         visited, and [heights] the height of [stack] below these
+         children: a node is finished once [stack] is back to this
+         height. *)
+      let stack = ref [||] in
+      let sp = ref 0 in
+      let push y =
+        if NSet.mem to_visit y
+        then (
+          if !sp = Array.length !stack then stack := grow !stack x;
+          !stack.(!sp) <- y;
+          incr sp)
+      in
+      let path = ref [||] in
+      let heights = ref [||] in
+      let path_length = ref 0 in
+      let visit root =
+        push root;
+        while !sp > 0 do
+          decr sp;
+          let y = !stack.(!sp) in
+          if NSet.mem to_visit y
+          then (
+            NSet.remove to_visit y;
+            let height = !sp in
+            iter_children push y;
+            if !sp = height
+            then finish y
+            else (
+              Array.reverse_sub_in_place !stack ~pos:height ~len:(!sp - height);
+              if !path_length = Array.length !path
+              then (
+                path := grow !path x;
+                heights := grow !heights 0);
+              !path.(!path_length) <- y;
+              !heights.(!path_length) <- height;
+              incr path_length));
+          while !path_length > 0 && !heights.(!path_length - 1) = !sp do
+            decr path_length;
+            finish !path.(!path_length)
+          done
+        done
+      in
+      let depth = ref 0 in
+      let rec traverse y =
+        if NSet.mem to_visit y
+        then
+          if !depth = max_depth
+          then visit y
+          else (
+            NSet.remove to_visit y;
+            incr depth;
+            iter_children traverse y;
+            decr depth;
+            finish y)
+      in
+      NSet.iter traverse domain;
+      assert (!pos = 0);
+      { data; head = 0; length = count; set = to_visit }
 
   let create_filtered domain p =
     let data = make_data domain in
