@@ -11,6 +11,8 @@
 ## Bug fixes
 * Compiler: fix a miscompilation of `Int_trie` by OxCaml's flambda2 at -O2
   and -O3 (#2560)
+* Compiler: fix a stack overflow in the dataflow solvers on deep graphs,
+  when the compiler itself runs in Wasm (#2568)
 
 # 6.5.0 (2026-10-22) - Lille
 
