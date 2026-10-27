@@ -18,9 +18,18 @@
 
 open Util
 
+(* With OxCaml, calls proven unable to perform an effect stay direct even in
+   CPS context (see the unyielding tests). Disable this so that the output is
+   the same as with mainstream OCaml. *)
+let flags =
+  if Js_of_ocaml_compiler.Config.oxcaml
+  then [ "--disable"; "oxcaml-use-unyielding-debuginfo-for-effect-cps" ]
+  else []
+
 let%expect_test "direct calls with --effects=double-translation" =
   let code =
     compile_and_parse
+      ~flags
       ~effects:`Double_translation
       {|
          let l = ref []

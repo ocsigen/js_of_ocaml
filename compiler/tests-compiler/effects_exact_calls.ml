@@ -21,6 +21,14 @@ open! Util
 (* The last test uses the [Effect] stdlib module, so it needs OCaml >= 5. *)
 [@@@if ocaml_version >= (5, 0, 0)]
 
+(* With OxCaml, calls proven unable to perform an effect stay direct even in
+   CPS context (see the unyielding tests). Disable this so that the output is
+   the same as with mainstream OCaml. *)
+let flags =
+  if Js_of_ocaml_compiler.Config.oxcaml
+  then [ "--disable"; "oxcaml-use-unyielding-debuginfo-for-effect-cps" ]
+  else []
+
 (* [write] has arity 1 and returns an arity-1 closure. It is bound by
    destructuring a tuple returned by [make], so the local flow analysis used
    inside the optimization loop cannot see its arity; only [Global_flow] can.
@@ -49,7 +57,7 @@ let overapplication_code =
 |}
 
 let%expect_test "over-application of a known-arity function / effects disabled" =
-  let program = compile_and_parse ~effects:`Disabled overapplication_code in
+  let program = compile_and_parse ~flags ~effects:`Disabled overapplication_code in
   print_fun_decl program (Some "test");
   [%expect
     {|
@@ -86,7 +94,9 @@ let%expect_test "over-application of a known-arity function / double translation
      of going through [caml_call_gen] with both arguments at once. The
      call to [!cb] keeps [test] CPS-translated, so that both versions are
      emitted. *)
-  let program = compile_and_parse ~effects:`Double_translation overapplication_code in
+  let program =
+    compile_and_parse ~flags ~effects:`Double_translation overapplication_code
+  in
   print_double_fun_decl program "test";
   [%expect
     {|
@@ -143,7 +153,7 @@ let%expect_test "over-application of a known-arity function / double translation
     |}]
 
 let%expect_test "over-application of a known-arity function / cps" =
-  let program = compile_and_parse ~effects:`Cps overapplication_code in
+  let program = compile_and_parse ~flags ~effects:`Cps overapplication_code in
   print_fun_decl program (Some "test");
   [%expect
     {|
@@ -208,11 +218,11 @@ let%expect_test "over-application executes correctly in all effects modes" =
          let () = test ()
 |}
   in
-  compile_and_run ~effects:`Disabled code;
+  compile_and_run ~flags ~effects:`Disabled code;
   [%expect {| outer(1) inner(2) 3 |}];
-  compile_and_run ~effects:`Cps code;
+  compile_and_run ~flags ~effects:`Cps code;
   [%expect {| outer(1) inner(2) 3 |}];
-  compile_and_run ~effects:`Double_translation code;
+  compile_and_run ~flags ~effects:`Double_translation code;
   [%expect {| outer(1) inner(2) 3 |}]
 
 let%expect_test "over-application whose first application performs an effect" =
@@ -254,7 +264,7 @@ let%expect_test "over-application whose first application performs an effect" =
            print_int r; print_newline ()
 |}
   in
-  compile_and_run ~effects:`Cps code;
+  compile_and_run ~flags ~effects:`Cps code;
   [%expect {| 13 |}];
-  compile_and_run ~effects:`Double_translation code;
+  compile_and_run ~flags ~effects:`Double_translation code;
   [%expect {| 13 |}]
