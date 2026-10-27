@@ -50,6 +50,7 @@
   (js_of_ocaml (= :version))
   (js_of_ocaml-ppx (= :version))
   (lwt (and (>= 2.4.4) (<> 5.9.2)))
+  (ppx_devtools-optcomp :with-test)
   (num :with-test)
   (re (and (>= 1.9.0) :with-test)))
  (depopts
@@ -115,6 +116,7 @@
   (react (>= 1.2.2))
   (reactiveData (>= 0.2))
   (tyxml (>= 4.6))
+  (ppx_devtools-optcomp :with-test)
   (num :with-test)
   (re (and (>= 1.9.0) :with-test))
 ))
