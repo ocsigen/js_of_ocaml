@@ -318,6 +318,7 @@ module type S = sig
   type js_arg =
     [ `Value of expression
     | `F64 of expression  (** An unboxed float passed as a JavaScript number *)
+    | `I32 of expression  (** An untagged integer passed as a JavaScript number *)
     ]
 
   val internal_primitives :
