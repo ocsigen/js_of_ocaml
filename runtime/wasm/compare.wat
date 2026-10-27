@@ -542,17 +542,41 @@
 
    (func (export "caml_equal")
       (param $v1 (ref eq)) (param $v2 (ref eq)) (result i32)
+      (if (ref.test (ref i31) (local.get $v1))
+         (then
+            (if (ref.test (ref i31) (local.get $v2))
+               (then
+                  (return
+                     (i32.eq
+                        (i31.get_s (ref.cast (ref i31) (local.get $v1)))
+                        (i31.get_s (ref.cast (ref i31) (local.get $v2)))))))))
       (i32.eqz
          (call $compare_val (local.get $v1) (local.get $v2) (i32.const 0))))
 
    (func (export "caml_notequal")
       (param $v1 (ref eq)) (param $v2 (ref eq)) (result i32)
+      (if (ref.test (ref i31) (local.get $v1))
+         (then
+            (if (ref.test (ref i31) (local.get $v2))
+               (then
+                  (return
+                     (i32.ne
+                        (i31.get_s (ref.cast (ref i31) (local.get $v1)))
+                        (i31.get_s (ref.cast (ref i31) (local.get $v2)))))))))
       (i32.ne (i32.const 0)
          (call $compare_val (local.get $v1) (local.get $v2) (i32.const 0))))
 
    (func (export "caml_lessthan")
       (param $v1 (ref eq)) (param $v2 (ref eq)) (result i32)
       (local $res i32)
+      (if (ref.test (ref i31) (local.get $v1))
+         (then
+            (if (ref.test (ref i31) (local.get $v2))
+               (then
+                  (return
+                     (i32.lt_s
+                        (i31.get_s (ref.cast (ref i31) (local.get $v1)))
+                        (i31.get_s (ref.cast (ref i31) (local.get $v2)))))))))
       (local.set $res
          (call $compare_val (local.get $v1) (local.get $v2) (i32.const 0)))
       (i32.and (i32.lt_s (local.get $res) (i32.const 0))
@@ -561,6 +585,14 @@
    (func (export "caml_lessequal")
       (param $v1 (ref eq)) (param $v2 (ref eq)) (result i32)
       (local $res i32)
+      (if (ref.test (ref i31) (local.get $v1))
+         (then
+            (if (ref.test (ref i31) (local.get $v2))
+               (then
+                  (return
+                     (i32.le_s
+                        (i31.get_s (ref.cast (ref i31) (local.get $v1)))
+                        (i31.get_s (ref.cast (ref i31) (local.get $v2)))))))))
       (local.set $res
          (call $compare_val (local.get $v1) (local.get $v2) (i32.const 0)))
       (i32.and (i32.le_s (local.get $res) (i32.const 0))
@@ -568,11 +600,27 @@
 
    (func (export "caml_greaterthan")
       (param $v1 (ref eq)) (param $v2 (ref eq)) (result i32)
+      (if (ref.test (ref i31) (local.get $v1))
+         (then
+            (if (ref.test (ref i31) (local.get $v2))
+               (then
+                  (return
+                     (i32.gt_s
+                        (i31.get_s (ref.cast (ref i31) (local.get $v1)))
+                        (i31.get_s (ref.cast (ref i31) (local.get $v2)))))))))
       (i32.lt_s (i32.const 0)
          (call $compare_val (local.get $v1) (local.get $v2) (i32.const 0))))
 
    (func (export "caml_greaterequal")
       (param $v1 (ref eq)) (param $v2 (ref eq)) (result i32)
+      (if (ref.test (ref i31) (local.get $v1))
+         (then
+            (if (ref.test (ref i31) (local.get $v2))
+               (then
+                  (return
+                     (i32.ge_s
+                        (i31.get_s (ref.cast (ref i31) (local.get $v1)))
+                        (i31.get_s (ref.cast (ref i31) (local.get $v2)))))))))
       (i32.le_s (i32.const 0)
          (call $compare_val (local.get $v1) (local.get $v2) (i32.const 0))))
 )

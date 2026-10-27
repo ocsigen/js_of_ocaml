@@ -6,6 +6,7 @@
 * Compiler/Wasm: split the huge toplevel function of large programs into
   smaller functions, which are faster to optimize (#2423)
 * Compiler/Wasm: support `--effects=double-translation` (#2443)
+* Runtime: fast path for immediates in polymorphic comparisons (#????)
 
 ## Bug fixes
 * Compiler: fix a miscompilation of `Int_trie` by OxCaml's flambda2 at -O2
