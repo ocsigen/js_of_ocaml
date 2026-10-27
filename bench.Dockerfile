@@ -61,6 +61,12 @@ RUN opam exec -- dune exec tools/ci_setup.exe ../janestreet . \
 RUN opam pin add -n https://github.com/janestreet/bin_prot.git#125e336faacd2e2e8c7a1fed2231bde1cebfebdd \
  && opam install ppx_bin_prot
 
+# The Wax-based assembler rejects a select on reference operands without a
+# result type; patch the installed runtime until the fix is released (the
+# janestreet checkout above is patched by ci_setup)
+RUN sed -i 's/(select (local\.get/(select (result (ref eq)) (local.get/' \
+      "$(opam var lib)/ocaml_intrinsics_kernel/runtime.wat"
+
 # Digestif (pure OCaml hash functions)
 RUN opam install digestif
 
