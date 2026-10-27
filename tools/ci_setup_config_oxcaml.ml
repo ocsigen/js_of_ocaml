@@ -106,6 +106,14 @@ index c6d09fb..61b1e5b 100644
  ;;
 
  let%expect_test "to_string_hum" =
+@@ -226,5 +231,5 @@
+   print_endline (Float.to_string_hum (-1.25) ~decimals:1);
+-  [%expect {| -1.3 |}];
++  [%expect {| -1.2 |}];
+   print_endline (Float.to_string_hum 1.25 ~decimals:1);
+-  [%expect {| 1.3 |}]
++  [%expect {| 1.2 |}]
+ ;;
 |bignum}
     )
   ; ( "bin_prot"
@@ -362,5 +370,22 @@ diff --git a/standalone/css_inliner.ml b/standalone/css_inliner.ml
 
  let command =
 |}
+    )
+  ; ( "bonsai_web_components"
+    , (* %.0f now rounds ties to even, as in C: 4.5 prints as 4 *)
+      {bwc|
+diff --git a/not_connected_warning_box/test/bonsai_web_ui_not_connected_warning_box_test.ml b/not_connected_warning_box/test/bonsai_web_ui_not_connected_warning_box_test.ml
+--- a/not_connected_warning_box/test/bonsai_web_ui_not_connected_warning_box_test.ml
++++ b/not_connected_warning_box/test/bonsai_web_ui_not_connected_warning_box_test.ml
+@@ -45,7 +45,7 @@
+     <div>
+       <div> Warning! </div>
+       <div>
+-        You've been disconnected from the server for 5s. There is no need to refresh the page, since the web client will reconnect automatically when the server becomes available again.
++        You've been disconnected from the server for 4s. There is no need to refresh the page, since the web client will reconnect automatically when the server becomes available again.
+       </div>
+     </div>
+     |}];
+|bwc}
     )
   ]
