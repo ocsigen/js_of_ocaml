@@ -332,7 +332,8 @@
       // ZZZ not supported in Safari yet
       new WebAssembly.Tag({ parameters: ["externref"], results: [] }),
     identity: (x) => x,
-    from_bool: (x) => !!x,
+    true: true,
+    false: false,
     get: (x, y) => x[y],
     set: (x, y, z) => (x[y] = z),
     delete: (x, y) => delete x[y],

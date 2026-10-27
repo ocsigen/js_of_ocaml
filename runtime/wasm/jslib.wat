@@ -25,7 +25,8 @@
    (import "bindings" "identity" (func $to_bool (param externref) (result i32)))
    (import "bindings" "identity" (func $to_int32 (param externref) (result i32)))
    (import "bindings" "identity" (func $from_int32 (param i32) (result externref)))
-   (import "bindings" "from_bool" (func $from_bool (param i32) (result externref)))
+   (import "bindings" "true" (global $true externref))
+   (import "bindings" "false" (global $false externref))
    (import "bindings" "get"
       (func $get (param (ref extern)) (param externref) (result externref)))
    (import "bindings" "set"
@@ -186,9 +187,13 @@
       (ref.i31
          (call $to_bool (call $js_of_value (local.get $v)))))
 
+   (global $js_true (ref eq) (struct.new $js (global.get $true)))
+   (global $js_false (ref eq) (struct.new $js (global.get $false)))
+
    (func (export "caml_js_from_bool") (param $v (ref eq)) (result (ref eq))
-      (struct.new $js
-         (call $from_bool (i31.get_s (ref.cast (ref i31) (local.get $v))))))
+      (select (result (ref eq))
+         (global.get $js_true) (global.get $js_false)
+         (i31.get_s (ref.cast (ref i31) (local.get $v)))))
 
    (func (export "caml_js_to_int32") (param $v (ref eq)) (result (ref eq))
       (return_call $caml_copy_int32
