@@ -7,6 +7,4 @@
 - [js_of_ocaml-ppx_deriving_json](js_of_ocaml-ppx_deriving_json/index.md)
 - [js_of_ocaml-toplevel](js_of_ocaml-toplevel/index.md)
 - [js_of_ocaml-tyxml](js_of_ocaml-tyxml/index.md)
-- [ppx_devtools-expect](ppx_devtools-expect/index.md)
-- [ppx_devtools-optcomp](ppx_devtools-optcomp/index.md)
 - [wasm_of_ocaml-compiler](wasm_of_ocaml-compiler/index.md)

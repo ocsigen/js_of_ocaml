@@ -35,8 +35,6 @@
 - [js\_of\_ocaml-toplevel index](js_of_ocaml-toplevel/index.md)
 - [js\_of\_ocaml-tyxml index](js_of_ocaml-tyxml/index.md)
 - [Js\_of\_ocaml](js_of_ocaml/index.md)
-- [ppx\_devtools-expect index](ppx_devtools-expect/index.md)
-- [ppx\_devtools-optcomp index](ppx_devtools-optcomp/index.md)
 - [wasm\_of\_ocaml-compiler index](wasm_of_ocaml-compiler/index.md)
 
 ## API
@@ -893,14 +891,6 @@
 - [Module `Js_of_ocaml.XmlHttpRequest`](js_of_ocaml/Js_of_ocaml-XmlHttpRequest.md)
 - [Module `Js_of_ocaml`](js_of_ocaml/Js_of_ocaml.md)
 - [Module `Js_of_ocaml_devtools`](js_of_ocaml/Js_of_ocaml_devtools.md)
-- [Module `Ppx_devtools_expect`](ppx_devtools-expect/Ppx_devtools_expect.md)
-- [Module `Ppx_devtools_expect_runtime.Axes`](ppx_devtools-expect/Ppx_devtools_expect_runtime-Axes.md)
-- [Module `Ppx_devtools_expect_runtime.Ops`](ppx_devtools-expect/Ppx_devtools_expect_runtime-Ops.md)
-- [Module `Ppx_devtools_expect_runtime`](ppx_devtools-expect/Ppx_devtools_expect_runtime.md)
-- [Module `Ppx_devtools_optcomp`](ppx_devtools-optcomp/Ppx_devtools_optcomp.md)
-- [Module `Predicate.Version`](ppx_devtools-optcomp/Ppx_devtools_predicate-Predicate-Version.md)
-- [Module `Ppx_devtools_predicate.Predicate`](ppx_devtools-optcomp/Ppx_devtools_predicate-Predicate.md)
-- [Module `Ppx_devtools_predicate`](ppx_devtools-optcomp/Ppx_devtools_predicate.md)
 - [Module `Wasm_of_ocaml_compiler.Binaryen`](wasm_of_ocaml-compiler/Wasm_of_ocaml_compiler-Binaryen.md)
 - [Module `Wasm_of_ocaml_compiler.Call_graph_analysis`](wasm_of_ocaml-compiler/Wasm_of_ocaml_compiler-Call_graph_analysis.md)
 - [Module `Wasm_of_ocaml_compiler.Closure_conversion`](wasm_of_ocaml-compiler/Wasm_of_ocaml_compiler-Closure_conversion.md)
