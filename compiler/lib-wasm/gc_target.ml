@@ -1820,8 +1820,8 @@ module JavaScript = struct
 
   (* Call a JavaScript function imported from [import_module]. Unboxed floats
      and untagged integers are passed as [f64] and [i32], and the result is
-     returned as a [f64] when it is used as an unboxed float: the JavaScript
-     engine then performs the conversion. *)
+     returned as a [f64] or an [i32] when it is used as an unboxed float or an
+     untagged integer: the JavaScript engine then performs the conversion. *)
   let call ?(result = `Value) ~import_module name (args : js_arg list) =
     let* f =
       register_import
@@ -1839,7 +1839,8 @@ module JavaScript = struct
            ; result =
                [ (match result with
                  | `Value -> externref
-                 | `F64 -> F64)
+                 | `F64 -> F64
+                 | `I32 -> I32)
                ]
            })
     in
@@ -1859,7 +1860,7 @@ module JavaScript = struct
         args
     in
     match result with
-    | `F64 -> return (W.Call (f, args))
+    | `F64 | `I32 -> return (W.Call (f, args))
     | `Value ->
         let* wrap =
           register_import
@@ -1884,6 +1885,9 @@ module JavaScript = struct
   let from_float e = identity (`F64 e)
 
   let to_float e = identity ~result:`F64 (`Value e)
+
+  (* The conversion to [i32] is the same as for [caml_js_to_bool] *)
+  let to_bool e = identity ~result:`I32 (`Value e)
 end
 
 let internal_primitives, js_primitives =
@@ -2090,7 +2094,8 @@ let internal_primitives, js_primitives =
           let e = call_prim ~transl_prim_arg "caml_js_get" l in
           match result with
           | `Value -> e
-          | `F64 -> JavaScript.to_float e)
+          | `F64 -> JavaScript.to_float e
+          | `I32 -> JavaScript.to_bool e)
       | _ -> assert false);
   register_js "caml_js_set" (fun transl_prim_arg transl_js_arg _ l ->
       match l with
