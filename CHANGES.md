@@ -9,6 +9,9 @@
 * Runtime: fast path for immediates in polymorphic comparisons (#????)
 * Compiler/Wasm: preprocess, validate and assemble the runtime files with Wax
   (new `wax-lib` dependency); remove `wasm_of_ocaml preprocess` (#2373)
+* Compiler/Wasm: faster calls to JavaScript: JavaScript values are
+  represented as externref, floats, integers and booleans are passed as
+  f64 and i32, and the conversions of short strings are cached (#2563)
 
 ## Bug fixes
 * Compiler: fix a miscompilation of `Int_trie` by OxCaml's flambda2 at -O2
