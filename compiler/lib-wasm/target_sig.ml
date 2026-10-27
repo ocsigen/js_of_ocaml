@@ -313,6 +313,9 @@ module type S = sig
 
     val to_float : expression -> expression
     (** Convert a JavaScript value into an unboxed float *)
+
+    val to_bool : expression -> expression
+    (** Convert a JavaScript boolean into an untagged integer *)
   end
 
   type js_arg =
@@ -332,9 +335,11 @@ module type S = sig
     * Primitive.kind
     * (   (Code.prim_arg -> expression)
        -> (Code.prim_arg -> js_arg)
-       -> [ `Value | `F64 ]
+       -> [ `Value | `F64 | `I32 ]
           (* Whether the result is expected as an unboxed float, for a JavaScript
-               value converted with [caml_js_to_float] *)
+               value converted with [caml_js_to_float], or as an untagged
+               integer, for a JavaScript value converted with
+               [caml_js_to_bool] *)
        -> Code.prim_arg list
        -> expression))
     list

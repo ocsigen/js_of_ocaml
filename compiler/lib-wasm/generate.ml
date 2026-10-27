@@ -46,15 +46,16 @@ let effects_cps () =
    are arguments of JavaScript calls in the same function: [y] can then be
    passed directly to these calls as a [f64].
 
-   Also find the conversions [z = caml_js_to_float(r)] where [r] is only used
-   there and is the result of a JavaScript call immediately preceding the
-   conversion: this call can then directly return a [f64], stored in [z].
-   The conversion may raise an exception or call a [valueOf] method, so it
-   must be performed exactly when it was in the original program. *)
-let js_float_conversions p =
+   Also find the conversions [z = caml_js_to_float(r)] and
+   [z = caml_js_to_bool(r)] where [r] is only used there and is the result
+   of a JavaScript call immediately preceding the conversion: this call can
+   then directly return a [f64] or an [i32], stored in [z]. The conversion
+   may raise an exception or call a [valueOf] method, so it must be
+   performed exactly when it was in the original program. *)
+let js_conversions p =
   let defs = Var.Hashtbl.create 16 in
   let result_defs = Var.Hashtbl.create 16 in
-  let to_float_defs = Var.Hashtbl.create 16 in
+  let conversion_defs = Var.Hashtbl.create 16 in
   let uses = Var.Hashtbl.create 128 in
   let js_uses = Var.Hashtbl.create 16 in
   let incr x =
@@ -93,7 +94,9 @@ let js_float_conversions p =
               | Let (x, Prim (Extern ("caml_js_from_float", _), [ Pv y ])) ->
                   Var.Hashtbl.replace defs x (y, fn)
               | Let (z, Prim (Extern ("caml_js_to_float", _), [ Pv r ])) when is_prev r ->
-                  Var.Hashtbl.replace to_float_defs z (r, fn)
+                  Var.Hashtbl.replace conversion_defs z (r, fn, `F64)
+              | Let (z, Prim (Extern ("caml_js_to_bool", _), [ Pv r ])) when is_prev r ->
+                  Var.Hashtbl.replace conversion_defs z (r, fn, `I32)
               | Let (r, Prim (Extern (name, _), args)) -> (
                   (match name with
                   | "%caml_js_opt_call"
@@ -140,13 +143,13 @@ let js_float_conversions p =
   let results = Var.Hashtbl.create 16 in
   let result_targets = Var.Hashtbl.create 16 in
   Var.Hashtbl.iter
-    (fun z (r, fn) ->
+    (fun z (r, fn, kind) ->
       match Var.Hashtbl.find_opt result_defs r with
       | Some fn' when fn = fn' && Var.Hashtbl.find uses r = 1 ->
-          Var.Hashtbl.add results r z;
+          Var.Hashtbl.add results r (z, kind);
           Var.Hashtbl.add result_targets z ()
       | _ -> ())
-    to_float_defs;
+    conversion_defs;
   folded, results, result_targets
 
 module Generate (Target : Target_sig.S) = struct
@@ -161,10 +164,11 @@ module Generate (Target : Target_sig.S) = struct
     ; js_float_args : Var.t Var.Hashtbl.t
           (* [x] is bound to [y] when the conversion [x = caml_js_from_float(y)] is
              folded into the JavaScript calls using [x] *)
-    ; js_float_results : Var.t Var.Hashtbl.t
-          (* [r] is bound to [z] when the conversion [z = caml_js_to_float(r)] is
-             folded into the JavaScript call defining [r] *)
-    ; js_float_result_targets : unit Var.Hashtbl.t
+    ; js_results : (Var.t * [ `F64 | `I32 ]) Var.Hashtbl.t
+          (* [r] is bound to [z] when the conversion [z = caml_js_to_float(r)]
+             ([`F64]) or [z = caml_js_to_bool(r)] ([`I32]) is folded into the
+             JavaScript call defining [r] *)
+    ; js_result_targets : unit Var.Hashtbl.t
     ; blocks : block Addr.Map.t
     ; closures : Closure_conversion.closure Var.Map.t
     ; global_context : Code_generation.context
@@ -920,6 +924,7 @@ module Generate (Target : Target_sig.S) = struct
         float_un_op Neg f);
     register_un_prim "caml_js_from_float" `Pure ~typ:float_u JavaScript.from_float;
     register_un_prim "caml_js_to_float" `Pure ~ret_typ:float_u JavaScript.to_float;
+    register_un_prim "caml_js_to_bool" `Pure ~ret_typ:int_n JavaScript.to_bool;
     register_un_prim "caml_abs_float" `Pure ~typ:float_u ~ret_typ:float_u (fun f ->
         float_un_op Abs f);
     register_un_prim "caml_ceil_float" `Pure ~typ:float_u ~ret_typ:float_u (fun f ->
@@ -2346,17 +2351,23 @@ module Generate (Target : Target_sig.S) = struct
           (convert ~from:(Typing.var_type ctx.types y) ~into:tx (load y))
     | Let (x, _)
       when Option.is_some (folded_js_float_var ctx x)
-           || Var.Hashtbl.mem ctx.js_float_result_targets x -> return ()
-    | Let (r, Prim (Extern (name, _), l)) when Var.Hashtbl.mem ctx.js_float_results r ->
-        let z = Var.Hashtbl.find ctx.js_float_results r in
+           || Var.Hashtbl.mem ctx.js_result_targets x -> return ()
+    | Let (r, Prim (Extern (name, _), l)) when Var.Hashtbl.mem ctx.js_results r ->
+        let z, kind = Var.Hashtbl.find ctx.js_results r in
         let tz = Typing.var_type ctx.types z in
         store
           ?typ:(unboxed_type tz)
           z
           (convert
-             ~from:(Number (Float, Unboxed))
+             ~from:
+               (match kind with
+               | `F64 -> Number (Float, Unboxed)
+               | `I32 -> Int Normalized)
              ~into:tz
-             ((String.Hashtbl.find js_primitives name) ctx `F64 l))
+             ((String.Hashtbl.find js_primitives name)
+                ctx
+                (kind :> [ `Value | `F64 | `I32 ])
+                l))
     | Let (x, e) ->
         if ctx.live.(Var.idx x) = 0
         then drop (translate_expr ctx context x e)
@@ -2942,9 +2953,7 @@ module Generate (Target : Target_sig.S) = struct
       ~types =
     global_context.unit_name <- unit_name;
     let p, closures = Closure_conversion.f p in
-    let js_float_args, js_float_results, js_float_result_targets =
-      js_float_conversions p
-    in
+    let js_float_args, js_results, js_result_targets = js_conversions p in
     (*
   Code.Print.program (fun _ _ -> "") p;
 *)
@@ -2965,8 +2974,8 @@ module Generate (Target : Target_sig.S) = struct
       ; fun_info
       ; types
       ; js_float_args
-      ; js_float_results
-      ; js_float_result_targets
+      ; js_results
+      ; js_result_targets
       ; blocks = p.blocks
       ; closures
       ; global_context
