@@ -310,6 +310,7 @@ let generate_prelude ~out_file =
   let context = Generate.start () in
   let _ =
     Generate.f
+      ~profile
       ~context
       ~unit_name:(Some "prelude")
       ~live_vars:variable_uses
@@ -548,6 +549,7 @@ let run
     let context = Generate.start () in
     let toplevel_name, generated_js =
       Generate.f
+        ~profile
         ~context
         ~unit_name
         ~live_vars:variable_uses
