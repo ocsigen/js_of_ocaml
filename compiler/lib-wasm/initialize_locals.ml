@@ -220,7 +220,7 @@ let has_default (ty : Wasm_ast.heap_type) =
   | Any | Eq | I31 -> true
   | Func | Extern | Array | Struct | None_ | Type _ -> false
 
-let f ~param_names ~locals instrs =
+let f ~default ~param_names ~locals instrs =
   let ctx =
     { initialized = Code.Var.Set.empty; uninitialized = ref Code.Var.Set.empty }
   in
@@ -233,6 +233,7 @@ let f ~param_names ~locals instrs =
     locals;
   scan_instructions ctx instrs;
   let local_types = Code.Var.Hashtbl.create 16 in
+  let local_defaults = Code.Var.Hashtbl.create 16 in
   let locals =
     List.map
       ~f:(fun ((var, typ) as local) ->
@@ -240,8 +241,17 @@ let f ~param_names ~locals instrs =
         | Ref ({ nullable = false; typ } as ref_typ) ->
             if Code.Var.Set.mem var !(ctx.uninitialized) && not (has_default typ)
             then (
-              Code.Var.Hashtbl.add local_types var ref_typ;
-              var, Wasm_ast.Ref { nullable = true; typ })
+              match
+                match typ with
+                | Type ty -> default ty
+                | Any | Eq | I31 | Func | Extern | Array | Struct | None_ -> None
+              with
+              | Some e ->
+                  Code.Var.Hashtbl.add local_defaults var e;
+                  local
+              | None ->
+                  Code.Var.Hashtbl.add local_types var ref_typ;
+                  var, Wasm_ast.Ref { nullable = true; typ })
             else local
         | I32 | I64 | F32 | F64 | Ref { nullable = true; _ } -> local)
       locals
@@ -251,7 +261,13 @@ let f ~param_names ~locals instrs =
       ~f:(fun i ->
         if Code.Var.Hashtbl.mem local_types i
         then None
-        else Some (Wasm_ast.LocalSet (i, RefI31 (Const (I32 0l)))))
+        else
+          Some
+            (Wasm_ast.LocalSet
+               ( i
+               , match Code.Var.Hashtbl.find_opt local_defaults i with
+                 | Some e -> e
+                 | None -> RefI31 (Const (I32 0l)) )))
       (Code.Var.Set.elements !(ctx.uninitialized))
   in
   let instrs =
