@@ -45,7 +45,7 @@ let () = print_string big; print_string small; print_string tables.(0)
        var
         runtime = globalThis.jsoo_runtime,
         caml_string_of_base64 = runtime.caml_string_of_base64,
-        _c_ =
+        _a_ =
           caml_string_of_base64
            ("AAEA/wACAP8AAQD/AAIA/wABAP8AAgD/AAEA/wACAP8AAQD/AAIA/wABAP8AAgD/"),
         _b_ =
@@ -60,8 +60,9 @@ let () = print_string big; print_string small; print_string tables.(0)
        caml_call1(Stdlib[42], _b_);
        var cst = "\xc3\xa9";
        caml_call1(Stdlib[42], cst);
-       var _a_ = [0, _c_, _c_], _d_ = runtime.caml_check_bound(_a_, 0)[1];
-       caml_call1(Stdlib[42], _d_);
+       _a_ = [0, _a_, _a_];
+       var _c_ = runtime.caml_check_bound(_a_, 0)[1];
+       caml_call1(Stdlib[42], _c_);
        runtime.caml_register_global([0, _b_, cst, _a_], "Test");
        return;
       }
@@ -92,7 +93,7 @@ let () = print_string big; print_string small; print_string tables.(0)
        var
         runtime = globalThis.jsoo_runtime,
         caml_string_of_base64 = runtime.caml_string_of_base64,
-        _c_ =
+        _a_ =
           caml_string_of_base64
            ("AAEA/wACAP8AAQD/AAIA/wABAP8AAgD/AAEA/wACAP8AAQD/AAIA/wABAP8AAgD/"),
         _b_ =
@@ -108,8 +109,9 @@ let () = print_string big; print_string small; print_string tables.(0)
         Stdlib = runtime.caml_get_global("Stdlib");
        caml_call1(Stdlib[42], _b_);
        caml_call1(Stdlib[42], cst);
-       var _a_ = [0, _c_, _c_], _d_ = runtime.caml_check_bound(_a_, 0)[1];
-       caml_call1(Stdlib[42], _d_);
+       _a_ = [0, _a_, _a_];
+       var _c_ = runtime.caml_check_bound(_a_, 0)[1];
+       caml_call1(Stdlib[42], _c_);
        runtime.caml_register_global([0, _b_, cst, _a_], "Test");
        return;
       }
