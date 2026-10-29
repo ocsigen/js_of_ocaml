@@ -17,16 +17,18 @@
   ../../examples/boulderdash/index.html
   ../../examples/boulderdash/maps.txt
   (source_tree ../../examples/boulderdash/maps/)
-  (source_tree ../../examples/boulderdash/sprites/))
- (action (bash "mkdir -p boulderdash && cp -r ../../examples/boulderdash/boulderdash.bc.js ../../examples/boulderdash/index.html ../../examples/boulderdash/maps.txt ../../examples/boulderdash/maps ../../examples/boulderdash/sprites boulderdash")))
+  (source_tree ../../examples/boulderdash/sprites/)
+  ../../examples/boulderdash/boulderdash.bc.wasm.js)
+ (action (bash "mkdir -p boulderdash && cp -r ../../examples/boulderdash/boulderdash.bc.js ../../examples/boulderdash/index.html ../../examples/boulderdash/maps.txt ../../examples/boulderdash/maps ../../examples/boulderdash/sprites ../../examples/boulderdash/boulderdash.bc.wasm.js boulderdash")))
 
 (rule
  (alias doc-manual)
  (targets (dir cubes))
  (deps
   ../../examples/cubes/cubes.bc.js
-  ../../examples/cubes/index.html)
- (action (bash "mkdir -p cubes && cp -r ../../examples/cubes/cubes.bc.js ../../examples/cubes/index.html cubes")))
+  ../../examples/cubes/index.html
+  ../../examples/cubes/cubes.bc.wasm.js)
+ (action (bash "mkdir -p cubes && cp -r ../../examples/cubes/cubes.bc.js ../../examples/cubes/index.html ../../examples/cubes/cubes.bc.wasm.js cubes")))
 
 (rule
  (alias doc-manual)
@@ -34,16 +36,18 @@
  (deps
   ../../examples/graph_viewer/viewer_js.bc.js
   ../../examples/graph_viewer/scene.json
-  ../../examples/graph_viewer/index.html)
- (action (bash "mkdir -p graph_viewer && cp -r ../../examples/graph_viewer/viewer_js.bc.js ../../examples/graph_viewer/scene.json ../../examples/graph_viewer/index.html graph_viewer")))
+  ../../examples/graph_viewer/index.html
+  ../../examples/graph_viewer/viewer_js.bc.wasm.js)
+ (action (bash "mkdir -p graph_viewer && cp -r ../../examples/graph_viewer/viewer_js.bc.js ../../examples/graph_viewer/scene.json ../../examples/graph_viewer/index.html ../../examples/graph_viewer/viewer_js.bc.wasm.js graph_viewer")))
 
 (rule
  (alias doc-manual)
  (targets (dir graphics))
  (deps
   ../../examples/graphics/main.bc.js
-  ../../examples/graphics/index.html)
- (action (bash "mkdir -p graphics && cp -r ../../examples/graphics/main.bc.js ../../examples/graphics/index.html graphics")))
+  ../../examples/graphics/index.html
+  ../../examples/graphics/main.bc.wasm.js)
+ (action (bash "mkdir -p graphics && cp -r ../../examples/graphics/main.bc.js ../../examples/graphics/index.html ../../examples/graphics/main.bc.wasm.js graphics")))
 
 (rule
  (alias doc-manual)
@@ -55,8 +59,9 @@
   ../../examples/hyperbolic/messages.json
   ../../examples/hyperbolic/tree.json
   (source_tree ../../examples/hyperbolic/icons/)
-  (source_tree ../../examples/hyperbolic/thumbnails/))
- (action (bash "mkdir -p hyperbolic && cp -r ../../examples/hyperbolic/hypertree.bc.js ../../examples/hyperbolic/index.html ../../examples/hyperbolic/image_info.json ../../examples/hyperbolic/messages.json ../../examples/hyperbolic/tree.json ../../examples/hyperbolic/icons ../../examples/hyperbolic/thumbnails hyperbolic")))
+  (source_tree ../../examples/hyperbolic/thumbnails/)
+  ../../examples/hyperbolic/hypertree.bc.wasm.js)
+ (action (bash "mkdir -p hyperbolic && cp -r ../../examples/hyperbolic/hypertree.bc.js ../../examples/hyperbolic/index.html ../../examples/hyperbolic/image_info.json ../../examples/hyperbolic/messages.json ../../examples/hyperbolic/tree.json ../../examples/hyperbolic/icons ../../examples/hyperbolic/thumbnails ../../examples/hyperbolic/hypertree.bc.wasm.js hyperbolic")))
 
 (rule
  (alias doc-manual)
@@ -64,8 +69,9 @@
  (deps
   ../../examples/minesweeper/main.bc.js
   ../../examples/minesweeper/index.html
-  (source_tree ../../examples/minesweeper/sprites/))
- (action (bash "mkdir -p minesweeper && cp -r ../../examples/minesweeper/main.bc.js ../../examples/minesweeper/index.html ../../examples/minesweeper/sprites minesweeper")))
+  (source_tree ../../examples/minesweeper/sprites/)
+  ../../examples/minesweeper/main.bc.wasm.js)
+ (action (bash "mkdir -p minesweeper && cp -r ../../examples/minesweeper/main.bc.js ../../examples/minesweeper/index.html ../../examples/minesweeper/sprites ../../examples/minesweeper/main.bc.wasm.js minesweeper")))
 
 (rule
  (alias doc-manual)
@@ -73,8 +79,9 @@
  (deps
   ../../examples/planet/planet.bc.js
   ../../examples/planet/index.html
-  ../../examples/planet/texture.jpg)
- (action (bash "mkdir -p planet && cp -r ../../examples/planet/planet.bc.js ../../examples/planet/index.html ../../examples/planet/texture.jpg planet")))
+  ../../examples/planet/texture.jpg
+  ../../examples/planet/planet.bc.wasm.js)
+ (action (bash "mkdir -p planet && cp -r ../../examples/planet/planet.bc.js ../../examples/planet/index.html ../../examples/planet/texture.jpg ../../examples/planet/planet.bc.wasm.js planet")))
 
 (rule
  (alias doc-manual)
@@ -82,29 +89,33 @@
  (deps
   ../../examples/webgl/webgldemo.bc.js
   ../../examples/webgl/monkey.model
-  ../../examples/webgl/index.html)
- (action (bash "mkdir -p webgl && cp -r ../../examples/webgl/webgldemo.bc.js ../../examples/webgl/monkey.model ../../examples/webgl/index.html webgl")))
+  ../../examples/webgl/index.html
+  ../../examples/webgl/webgldemo.bc.wasm.js)
+ (action (bash "mkdir -p webgl && cp -r ../../examples/webgl/webgldemo.bc.js ../../examples/webgl/monkey.model ../../examples/webgl/index.html ../../examples/webgl/webgldemo.bc.wasm.js webgl")))
 
 (rule
  (alias doc-manual)
  (targets (dir webgl2_particles))
  (deps
   ../../examples/webgl2_particles/particles.bc.js
-  ../../examples/webgl2_particles/index.html)
- (action (bash "mkdir -p webgl2_particles && cp -r ../../examples/webgl2_particles/particles.bc.js ../../examples/webgl2_particles/index.html webgl2_particles")))
+  ../../examples/webgl2_particles/index.html
+  ../../examples/webgl2_particles/particles.bc.wasm.js)
+ (action (bash "mkdir -p webgl2_particles && cp -r ../../examples/webgl2_particles/particles.bc.js ../../examples/webgl2_particles/index.html ../../examples/webgl2_particles/particles.bc.wasm.js webgl2_particles")))
 
 (rule
  (alias doc-manual)
  (targets (dir wiki))
  (deps
   ../../examples/wiki/main.bc.js
-  ../../examples/wiki/index.html)
- (action (bash "mkdir -p wiki && cp -r ../../examples/wiki/main.bc.js ../../examples/wiki/index.html wiki")))
+  ../../examples/wiki/index.html
+  ../../examples/wiki/main.bc.wasm.js)
+ (action (bash "mkdir -p wiki && cp -r ../../examples/wiki/main.bc.js ../../examples/wiki/index.html ../../examples/wiki/main.bc.wasm.js wiki")))
 
 (rule
  (alias doc-manual)
  (targets (dir wysiwyg))
  (deps
   ../../examples/wysiwyg/main.bc.js
-  ../../examples/wysiwyg/index.html)
- (action (bash "mkdir -p wysiwyg && cp -r ../../examples/wysiwyg/main.bc.js ../../examples/wysiwyg/index.html wysiwyg")))
+  ../../examples/wysiwyg/index.html
+  ../../examples/wysiwyg/main.bc.wasm.js)
+ (action (bash "mkdir -p wysiwyg && cp -r ../../examples/wysiwyg/main.bc.js ../../examples/wysiwyg/index.html ../../examples/wysiwyg/main.bc.wasm.js wysiwyg")))

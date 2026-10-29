@@ -106,7 +106,7 @@ opam install odoc yojson ocp-indent graphics higlo
 # Full test suite
 make tests
 
-# WebAssembly tests (requires WASM_OF_OCAML=true)
+# WebAssembly tests
 make tests-wasm
 
 # Run specific test
