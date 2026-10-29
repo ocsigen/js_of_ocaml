@@ -10,10 +10,7 @@ Or a single one:
 $> dune build @examples/<path-to-example-project>/default
 ```
 
-Set the environment variable WASM_OF_OCAML=true to compile to Wasm:
-```
-$> WASM_OF_OCAML=true dune build @examples/boulderdash/default
-```
+The examples are compiled both to JavaScript and to Wasm.
 
 Compilation artifacts can be found in `${REPO_ROOT}/_build/default/examples/`.
 

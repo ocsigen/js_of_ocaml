@@ -44,7 +44,6 @@
  (target plugin.wasmo)
  (enabled_if
   (and
-   %{env:WASM_OF_OCAML=false}
    (<> %{profile} with-native-effects)
    (<> %{env:JSOO_TEST_ENGINE=node} wasi)))
  (action
@@ -61,7 +60,6 @@
  (deps plugin.wasmo)
  (enabled_if
   (and
-   %{env:WASM_OF_OCAML=false}
    (<> %{profile} with-native-effects)
    (<> %{env:JSOO_TEST_ENGINE=node} wasi)))
  (action
@@ -73,7 +71,6 @@
  (alias runtest-wasm)
  (enabled_if
   (and
-   %{env:WASM_OF_OCAML=false}
    (<> %{profile} with-native-effects)
    (<> %{env:JSOO_TEST_ENGINE=node} wasi)))
  (action
@@ -105,7 +102,6 @@
  (deps plugin_compiled.wasmo)
  (enabled_if
   (and
-   %{env:WASM_OF_OCAML=false}
    (<> %{profile} with-native-effects)
    (<> %{env:JSOO_TEST_ENGINE=node} wasi)))
  (action
@@ -117,7 +113,6 @@
  (alias runtest-wasm)
  (enabled_if
   (and
-   %{env:WASM_OF_OCAML=false}
    (<> %{profile} with-native-effects)
    (<> %{env:JSOO_TEST_ENGINE=node} wasi)))
  (action
@@ -138,7 +133,6 @@
  (deps plugin.cmo plugin2.cma)
  (enabled_if
   (and
-   %{env:WASM_OF_OCAML=false}
    (<> %{profile} with-native-effects)
    (<> %{env:JSOO_TEST_ENGINE=node} wasi)))
  (action
@@ -150,7 +144,6 @@
  (alias runtest-wasm)
  (enabled_if
   (and
-   %{env:WASM_OF_OCAML=false}
    (<> %{profile} with-native-effects)
    (<> %{env:JSOO_TEST_ENGINE=node} wasi)))
  (action
@@ -197,9 +190,7 @@
   dynlink_loadfile_wp.js
   (dir dynlink_loadfile_wp.assets))
  (enabled_if
-  (and
-   %{env:WASM_OF_OCAML=false}
-   (<> %{profile} wasi)))
+  (<> %{profile} wasi))
  (action
   (run
    %{bin:wasm_of_ocaml}
@@ -216,9 +207,7 @@
  (target dynlink_loadfile_wp.out)
  (deps plugin.cmo plugin2.cma plugin_uses_dep.cmo plugin_js.cmo)
  (enabled_if
-  (and
-   %{env:WASM_OF_OCAML=false}
-   (<> %{profile} wasi)))
+  (<> %{profile} wasi))
  (action
   (with-outputs-to
    %{target}
@@ -227,8 +216,6 @@
 (rule
  (alias runtest-wasm)
  (enabled_if
-  (and
-   %{env:WASM_OF_OCAML=false}
-   (<> %{profile} wasi)))
+  (<> %{profile} wasi))
  (action
   (diff dynlink_loadfile_wp.out.expected dynlink_loadfile_wp.out)))
