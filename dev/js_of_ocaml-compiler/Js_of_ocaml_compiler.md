@@ -145,6 +145,11 @@ module Lambda_lifting : sig ... end
 module Lambda_lifting_simple : sig ... end
 ```
 ```ocaml
+module Linear_scan : sig ... end
+```
+Variable coalescing by linear scan, shared by `Js_variable_coalescing` and the Wasm backend's `Var_coalescing`.
+
+```ocaml
 module Link_js : sig ... end
 ```
 ```ocaml

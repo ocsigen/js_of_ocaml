@@ -8,6 +8,11 @@ type link_input = {
 }
 ```
 ```ocaml
+val optimizes : Js_of_ocaml_compiler.Profile.t -> bool
+```
+Whether wasm-opt optimizes the generated code at this optimization level. When it does not, our own passes tighten the code instead; those which only redo what wasm-opt does are skipped when it does.
+
+```ocaml
 val optimize : 
   profile:Js_of_ocaml_compiler.Profile.t ->
   ?options:string list ->

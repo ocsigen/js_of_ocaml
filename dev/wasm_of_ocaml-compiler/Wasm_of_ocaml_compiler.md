@@ -7,6 +7,11 @@ module Binaryen : sig ... end
 module Call_graph_analysis : sig ... end
 ```
 ```ocaml
+module Cast_reuse : sig ... end
+```
+Reuse of casts for the Wasm backend.
+
+```ocaml
 module Closure_conversion : sig ... end
 ```
 ```ocaml
@@ -31,6 +36,11 @@ module Initialize_locals : sig ... end
 module Link : sig ... end
 ```
 ```ocaml
+module Local_sink : sig ... end
+```
+Local.set sinking for the Wasm backend.
+
+```ocaml
 module Runtime : sig ... end
 ```
 ```ocaml
@@ -49,6 +59,11 @@ module Target_sig : sig ... end
 module Typing : sig ... end
 ```
 ```ocaml
+module Var_coalescing : sig ... end
+```
+Liveness analysis and variable coalescing for the Wasm backend.
+
+```ocaml
 module Wasm_ast : sig ... end
 ```
 ```ocaml
@@ -60,6 +75,11 @@ module Wasm_output : sig ... end
 ```ocaml
 module Wasm_source_map : sig ... end
 ```
+```ocaml
+module Wasm_traverse : sig ... end
+```
+Shallow traversals of the Wasm AST.
+
 ```ocaml
 module Wat_output : sig ... end
 ```

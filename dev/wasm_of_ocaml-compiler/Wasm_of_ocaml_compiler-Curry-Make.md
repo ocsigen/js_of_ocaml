@@ -9,5 +9,8 @@ module _ : Target_sig.S
 ## Signature
 
 ```ocaml
-val f : context:Code_generation.context -> unit
+val f : 
+  profile:Js_of_ocaml_compiler.Profile.t ->
+  context:Code_generation.context ->
+  unit
 ```

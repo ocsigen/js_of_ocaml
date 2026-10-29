@@ -52,6 +52,15 @@ val constant_sinking : unit -> bool
 val var_coalescing : unit -> bool
 ```
 ```ocaml
+val wasm_var_coalescing : unit -> bool
+```
+```ocaml
+val wasm_local_sink : unit -> bool
+```
+```ocaml
+val wasm_cast_reuse : unit -> bool
+```
+```ocaml
 val debugger : unit -> bool
 ```
 ```ocaml

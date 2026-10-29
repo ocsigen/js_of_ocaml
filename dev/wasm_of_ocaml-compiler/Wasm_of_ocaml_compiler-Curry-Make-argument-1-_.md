@@ -79,7 +79,9 @@ val handle_exceptions :
 ```
 ```ocaml
 val post_process_function_body : 
+  profile:Js_of_ocaml_compiler.Profile.t ->
   param_names:Wasm_ast.var list ->
+  param_types:Wasm_ast.value_type list ->
   locals:(Wasm_ast.var * Wasm_ast.value_type) list ->
   Wasm_ast.instruction list ->
   (Wasm_ast.var * Wasm_ast.value_type) list * Wasm_ast.instruction list

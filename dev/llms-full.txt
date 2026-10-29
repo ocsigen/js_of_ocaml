@@ -4736,6 +4736,15 @@ val constant_sinking : unit -> bool
 val var_coalescing : unit -> bool
 ```
 ```ocaml
+val wasm_var_coalescing : unit -> bool
+```
+```ocaml
+val wasm_local_sink : unit -> bool
+```
+```ocaml
+val wasm_cast_reuse : unit -> bool
+```
+```ocaml
 val debugger : unit -> bool
 ```
 ```ocaml
@@ -9042,6 +9051,126 @@ After lambda-lifting of `fib`, it will look like:
 let y \= \-3 in (\* ... \*) let fib' y \= let rec fib\_l n \= match n with \| 0 \| 1 \-\> 1 \| \_ \-\> fib\_l (n-1) \+ fib\_l (n-2) \+ y in fib\_l in let fib \= fib' y in fib 42
 
 `fib_l` is the lifted version of `fib`, `fib'` is the lifting closure.
+
+
+---
+
+# Module `Linear_scan.Builder`
+
+Graph construction.
+
+```ocaml
+type t
+```
+```ocaml
+val create : unit -> t
+```
+```ocaml
+val reserve : t -> node
+```
+A fresh node, to be defined later with `set`.
+
+```ocaml
+val set : t -> node -> action -> node list -> unit
+```
+```ocaml
+val add : t -> action -> node list -> node
+```
+```ocaml
+val hint : t -> Code.Var.t -> Code.Var.t -> unit
+```
+`hint b x y`: `x` is a copy of `y`.
+
+```ocaml
+val try_block : t -> catch_entry:node -> body_entry:node -> unit
+```
+```ocaml
+val finish : t -> entry:node -> graph
+```
+
+
+---
+
+# Module `Linear_scan.Live_range`
+
+```ocaml
+type interval = {
+  start_pos : int;
+  end_pos : int;
+}
+```
+```ocaml
+type t = {
+  id : Code.Var.t;
+  mutable ranges : interval list;
+  mutable free : bool;
+}
+```
+```ocaml
+val print : Stdlib.Format.formatter -> t -> unit
+```
+
+
+---
+
+# Module `Js_of_ocaml_compiler.Linear_scan`
+
+Variable coalescing by linear scan, shared by `Js_variable_coalescing` and the Wasm backend's `Var_coalescing`.
+
+The client builds a control-flow graph of a function, whose nodes use or define variables; we compute the live range of each variable and assign each variable a representative, so that variables with the same representative have disjoint live ranges.
+
+```ocaml
+type node = int
+```
+```ocaml
+type action = 
+  | Use of Code.Var.Set.t
+  | Def of Code.Var.Set.t
+  | DefUse of Code.Var.Set.t * Code.Var.Set.t (* defs, uses *)
+  | Nop
+```
+```ocaml
+type graph = {
+  entry : node;
+  size : int;
+  actions : action array;
+  succs : node list array;
+  hints : Code.Var.t Js_of_ocaml_compiler.Code.Var.Hashtbl.t; (* x -> y when x is a copy of y: x should preferably get the representative of y, making the copy a no-op. *)
+  try_blocks : node Stdlib.Int.Hashtbl.t; (* catch_entry -> body_entry. Every variable live at catch_entry is live throughout the try body, since an exception can be raised anywhere in the body. body_entry must come before catch_entry in reverse postorder. *)
+}
+```
+```ocaml
+module Builder : sig ... end
+```
+Graph construction.
+
+```ocaml
+val liveness : graph -> Code.Var.Set.t array
+```
+The variables live at the entry of each node.
+
+```ocaml
+module Live_range : sig ... end
+```
+```ocaml
+val live_ranges : 
+  graph ->
+  Code.Var.Set.t array ->
+  candidates:Code.Var.Set.t ->
+  param_vars:Code.Var.Set.t ->
+  Live_range.t Js_of_ocaml_compiler.Code.Var.Hashtbl.t
+```
+Live ranges of the `candidates`, given the result of `liveness`. The parameters `param_vars` are all live at the start of the function.
+
+```ocaml
+val allocate : 
+  ?compatible:(Code.Var.t -> Code.Var.t -> bool) ->
+  graph ->
+  Live_range.t Js_of_ocaml_compiler.Code.Var.Hashtbl.t ->
+  assign:(Code.Var.t -> Code.Var.t -> unit) ->
+  int * int
+```
+Calls `assign x r` with the representative `r` of each variable `x` (possibly `x` itself). Only `compatible` variables (by default, all of them) get the same representative. Returns the number of variables coalesced through a copy hint and opportunistically.
 
 
 ---
@@ -15909,6 +16038,11 @@ module Lambda_lifting : sig ... end
 ```ocaml
 module Lambda_lifting_simple : sig ... end
 ```
+```ocaml
+module Linear_scan : sig ... end
+```
+Variable coalescing by linear scan, shared by `Js_variable_coalescing` and the Wasm backend's `Var_coalescing`.
+
 ```ocaml
 module Link_js : sig ... end
 ```
@@ -57416,6 +57550,11 @@ type link_input = {
 }
 ```
 ```ocaml
+val optimizes : Js_of_ocaml_compiler.Profile.t -> bool
+```
+Whether wasm-opt optimizes the generated code at this optimization level. When it does not, our own passes tighten the code instead; those which only redo what wasm-opt does are skipped when it does.
+
+```ocaml
 val optimize : 
   profile:Js_of_ocaml_compiler.Profile.t ->
   ?options:string list ->
@@ -57445,6 +57584,28 @@ val f :
   Js_of_ocaml_compiler.Global_flow.info ->
   t
 ```
+
+
+---
+
+# Module `Wasm_of_ocaml_compiler.Cast_reuse`
+
+Reuse of casts for the Wasm backend.
+
+When a local is cast to the same type several times without being written in between, the result of the first cast is kept in a fresh local and reused instead of casting again. This matters for code run by V8's baseline compiler, which does not remove redundant casts.
+
+Returns the extended `locals` list and the rewritten body.
+
+```ocaml
+val f : 
+  locals:(Wasm_ast.var * Wasm_ast.value_type) list ->
+  Wasm_ast.instruction list ->
+  (Wasm_ast.var * Wasm_ast.value_type) list * Wasm_ast.instruction list
+```
+```ocaml
+val report_stats : unit -> unit
+```
+Emit aggregated time/stats logs accumulated across all `f` calls and reset the counters. Honours the `times` and `stats` debug flags.
 
 
 ---
@@ -57582,6 +57743,8 @@ type context = {
   value_type : Wasm_ast.value_type;
   mutable unit_name : string option;
   mutable no_tail_call : unit Js_of_ocaml_compiler.Code.Var.Hashtbl.t;
+  mutable wasm_opt : bool; (* Whether wasm-opt will optimize the generated code (see Binaryen.optimizes): the optimizations which only redo what it does are then skipped *)
+  functions_without_env : unit Js_of_ocaml_compiler.Code.Var.Hashtbl.t; (* Functions which take no environment parameter: their closure is a constant, and they are only called directly *)
 }
 ```
 ```ocaml
@@ -58325,7 +58488,9 @@ val handle_exceptions :
 ```
 ```ocaml
 val post_process_function_body : 
+  profile:Js_of_ocaml_compiler.Profile.t ->
   param_names:Wasm_ast.var list ->
+  param_types:Wasm_ast.value_type list ->
   locals:(Wasm_ast.var * Wasm_ast.value_type) list ->
   Wasm_ast.instruction list ->
   (Wasm_ast.var * Wasm_ast.value_type) list * Wasm_ast.instruction list
@@ -58350,7 +58515,10 @@ module _ : Target_sig.S
 ## Signature
 
 ```ocaml
-val f : context:Code_generation.context -> unit
+val f : 
+  profile:Js_of_ocaml_compiler.Profile.t ->
+  context:Code_generation.context ->
+  unit
 ```
 
 
@@ -58903,7 +59071,9 @@ val handle_exceptions :
 ```
 ```ocaml
 val post_process_function_body : 
+  profile:Js_of_ocaml_compiler.Profile.t ->
   param_names:Wasm_ast.var list ->
+  param_types:Wasm_ast.value_type list ->
   locals:(Wasm_ast.var * Wasm_ast.value_type) list ->
   Wasm_ast.instruction list ->
   (Wasm_ast.var * Wasm_ast.value_type) list * Wasm_ast.instruction list
@@ -58927,6 +59097,7 @@ val start : unit -> Code_generation.context
 ```
 ```ocaml
 val f : 
+  profile:Js_of_ocaml_compiler.Profile.t ->
   context:Code_generation.context ->
   unit_name:string option ->
   Js_of_ocaml_compiler.Code.program ->
@@ -59099,6 +59270,28 @@ val source_name : int option -> int option -> string -> string
 ```ocaml
 val gen_dir : string -> (string -> 'a) -> 'a
 ```
+
+
+---
+
+# Module `Wasm_of_ocaml_compiler.Local_sink`
+
+Local.set sinking for the Wasm backend.
+
+For each `local.set x e` in a function, the pass tries to push the write forward to the first subsequent `local.get x`, turning the `set`/`get` pair into a single `local.tee`. The sink is applied only when it does not cross another write to `x` (no intervening `local.set x` / `local.tee x`), does not cross a control-flow boundary, and does not reorder effects unsafely (conservatively, we require `e` or the intervening code to be effect-free).
+
+When the `local.get x` is the only read of `x`, it is replaced by `e` itself, and `x` is removed from `locals` if it is no longer accessed.
+
+```ocaml
+val f : 
+  locals:(Wasm_ast.var * Wasm_ast.value_type) list ->
+  Wasm_ast.instruction list ->
+  (Wasm_ast.var * Wasm_ast.value_type) list * Wasm_ast.instruction list
+```
+```ocaml
+val report_stats : unit -> unit
+```
+Emit aggregated time/stats logs accumulated across all `f` calls and reset the counters. Honours the `times` and `stats` debug flags.
 
 
 ---
@@ -59743,7 +59936,9 @@ val handle_exceptions :
 ```
 ```ocaml
 val post_process_function_body : 
+  profile:Js_of_ocaml_compiler.Profile.t ->
   param_names:Wasm_ast.var list ->
+  param_types:Wasm_ast.value_type list ->
   locals:(Wasm_ast.var * Wasm_ast.value_type) list ->
   Wasm_ast.instruction list ->
   (Wasm_ast.var * Wasm_ast.value_type) list * Wasm_ast.instruction list
@@ -59844,6 +60039,31 @@ val f :
   Js_of_ocaml_compiler.Code.program ->
   t
 ```
+
+
+---
+
+# Module `Wasm_of_ocaml_compiler.Var_coalescing`
+
+Liveness analysis and variable coalescing for the Wasm backend.
+
+Merges Wasm locals (including parameters) with disjoint live ranges so that a single local is reused. This shrinks the function's `locals` declaration and eliminates redundant `local.set`/`local.get` copies.
+
+Parameters are valid coalescing targets: a local whose live range does not overlap a parameter's can be rewritten to use the parameter's index. Two parameters never merge because they are all live at function entry.
+
+```ocaml
+val f : 
+  param_names:Js_of_ocaml_compiler.Code.Var.t list ->
+  param_types:Wasm_ast.value_type list ->
+  locals:(Js_of_ocaml_compiler.Code.Var.t * Wasm_ast.value_type) list ->
+  Wasm_ast.instruction list ->
+  (Js_of_ocaml_compiler.Code.Var.t * Wasm_ast.value_type) list
+  * Wasm_ast.instruction list
+```
+```ocaml
+val report_stats : unit -> unit
+```
+Emit aggregated time/stats logs accumulated across all `f` calls and reset the counters. Honours the `times` and `stats` debug flags.
 
 
 ---
@@ -60139,11 +60359,12 @@ val f :
   ?filter_export:(string -> bool) ->
   ?dependencies:dependency list ->
   ?names:bool ->
+  ?eliminate_duplicates:bool ->
   input list ->
   output_file:string ->
   output
 ```
-Link the input modules. When `dependencies` is provided, dead code is removed: only the exports reachable from the root nodes of the dependency graph are kept, and only the entries reachable from them or from the start functions are kept. The name section is omitted if `names` is false.
+Link the input modules. When `dependencies` is provided, dead code is removed: only the exports reachable from the root nodes of the dependency graph are kept, and only the entries reachable from them or from the start functions are kept. The name section is omitted if `names` is false. Unless `eliminate_duplicates` is false, the duplicate functions of each module are removed (wasm-opt does this as well when it runs).
 
 
 ---
@@ -60211,6 +60432,81 @@ val blackbox_filename : string
 ```ocaml
 val blackbox_contents : string
 ```
+
+
+---
+
+# Module `Wasm_of_ocaml_compiler.Wasm_traverse`
+
+Shallow traversals of the Wasm AST.
+
+These functions apply `expression` to each direct sub-expression of a node and `instructions` to each instruction list it contains, in evaluation order: operands from left to right, the arguments of `call_ref` before the function, the condition of an `if` before its branches, the instructions of a `Seq` before its expression. A pass handles the constructs it cares about and delegates the others to these functions.
+
+```ocaml
+val iter_expression : 
+  expression:(Wasm_ast.expression -> unit) ->
+  instructions:(Wasm_ast.instruction list -> unit) ->
+  Wasm_ast.expression ->
+  unit
+```
+```ocaml
+val iter_instruction : 
+  expression:(Wasm_ast.expression -> unit) ->
+  instructions:(Wasm_ast.instruction list -> unit) ->
+  Wasm_ast.instruction ->
+  unit
+```
+```ocaml
+val map_expression : 
+  expression:(Wasm_ast.expression -> Wasm_ast.expression) ->
+  instructions:(Wasm_ast.instruction list -> Wasm_ast.instruction list) ->
+  Wasm_ast.expression ->
+  Wasm_ast.expression
+```
+```ocaml
+val map_instruction : 
+  expression:(Wasm_ast.expression -> Wasm_ast.expression) ->
+  instructions:(Wasm_ast.instruction list -> Wasm_ast.instruction list) ->
+  Wasm_ast.instruction ->
+  Wasm_ast.instruction
+```
+```ocaml
+val fold_map_expression : 
+  expression:('a -> Wasm_ast.expression -> Wasm_ast.expression * 'a) ->
+  instructions:
+    ('a -> Wasm_ast.instruction list -> Wasm_ast.instruction list * 'a) ->
+  'a ->
+  Wasm_ast.expression ->
+  Wasm_ast.expression * 'a
+```
+The accumulator is threaded through the children in evaluation order, including through both branches of an `if`: a pass for which branches must not see each other handles `if` itself.
+
+```ocaml
+val fold_map_instruction : 
+  expression:('a -> Wasm_ast.expression -> Wasm_ast.expression * 'a) ->
+  instructions:
+    ('a -> Wasm_ast.instruction list -> Wasm_ast.instruction list * 'a) ->
+  'a ->
+  Wasm_ast.instruction ->
+  Wasm_ast.instruction * 'a
+```
+```ocaml
+val iter_locals_expression : 
+  read:(Wasm_ast.var -> unit) ->
+  write:(Wasm_ast.var -> unit) ->
+  Wasm_ast.expression ->
+  unit
+```
+Same as `iter_locals`, for an expression.
+
+```ocaml
+val iter_locals : 
+  read:(Wasm_ast.var -> unit) ->
+  write:(Wasm_ast.var -> unit) ->
+  Wasm_ast.instruction list ->
+  unit
+```
+Deep traversal: call `read` on the variable of each `local.get` and `write` on the variable of each `local.set` or `local.tee` in the whole instruction list, in evaluation order.
 
 
 ---
@@ -60319,6 +60615,11 @@ module Binaryen : sig ... end
 module Call_graph_analysis : sig ... end
 ```
 ```ocaml
+module Cast_reuse : sig ... end
+```
+Reuse of casts for the Wasm backend.
+
+```ocaml
 module Closure_conversion : sig ... end
 ```
 ```ocaml
@@ -60343,6 +60644,11 @@ module Initialize_locals : sig ... end
 module Link : sig ... end
 ```
 ```ocaml
+module Local_sink : sig ... end
+```
+Local.set sinking for the Wasm backend.
+
+```ocaml
 module Runtime : sig ... end
 ```
 ```ocaml
@@ -60361,6 +60667,11 @@ module Target_sig : sig ... end
 module Typing : sig ... end
 ```
 ```ocaml
+module Var_coalescing : sig ... end
+```
+Liveness analysis and variable coalescing for the Wasm backend.
+
+```ocaml
 module Wasm_ast : sig ... end
 ```
 ```ocaml
@@ -60372,6 +60683,11 @@ module Wasm_output : sig ... end
 ```ocaml
 module Wasm_source_map : sig ... end
 ```
+```ocaml
+module Wasm_traverse : sig ... end
+```
+Shallow traversals of the Wasm AST.
+
 ```ocaml
 module Wat_output : sig ... end
 ```

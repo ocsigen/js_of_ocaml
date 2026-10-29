@@ -8,6 +8,7 @@ val start : unit -> Code_generation.context
 ```
 ```ocaml
 val f : 
+  profile:Js_of_ocaml_compiler.Profile.t ->
   context:Code_generation.context ->
   unit_name:string option ->
   Js_of_ocaml_compiler.Code.program ->
