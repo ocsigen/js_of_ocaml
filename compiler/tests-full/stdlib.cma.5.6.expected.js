@@ -3008,14 +3008,15 @@
             function(_d_){ /*<<seq.ml:718:11>>*/ return ints(_c_, _d_);}] /*<<seq.ml:718:23>>*/ ;
     /*<<seq.ml:718:24>>*/ }
    function ints_in_range(first, last, param){
-     /*<<seq.ml:721:2>>*/ if(first > last)  /*<<seq.ml:724:4>>*/ return 0;
+     /*<<seq.ml:721:2>>*/ if(first >= last)
+      /*<<seq.ml:723:7>>*/ return first === last ? [0, first, empty] : 0 /*<<seq.ml:726:7>>*/ ;
     var _b_ =  /*<<seq.ml:722:17>>*/ first + 1 | 0;
      /*<<seq.ml:722:55>>*/ return [0,
             first,
             function(_c_){
               /*<<seq.ml:722:17>>*/ return ints_in_range(_b_, last, _c_);
             }] /*<<seq.ml:722:55>>*/ ;
-    /*<<seq.ml:724:7>>*/ }
+    /*<<seq.ml:726:7>>*/ }
     /*<<?>>*/ runtime.caml_register_global
     ([0,
       is_empty,
