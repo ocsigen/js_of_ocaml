@@ -17,7 +17,7 @@
  (target test_array_wasm.ml.corrected)
  (enabled_if
   (and
-   %{env:WASM_OF_OCAML=false}
+   %{arch_sixtyfour}
    (<> %{env:JSOO_TEST_ENGINE=node} wasi)))
  (action
   (run node %{dep:../expect_wasm.bc.wasm.js} %{dep:test_array_wasm.ml})))
@@ -28,6 +28,6 @@
   (and
    (>= %{ocaml_version} 5.2)
    (<> %{env:JSOO_TEST_ENGINE=node} wasi)
-   %{env:WASM_OF_OCAML=false}))
+   %{arch_sixtyfour}))
  (action
   (diff test_array.ml test_array_wasm.ml.corrected)))

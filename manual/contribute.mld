@@ -70,7 +70,7 @@ make tests-wasm
 # Run a specific test directory
 dune build @compiler/tests-jsoo/runtest
 dune build @compiler/tests-ocaml/runtest-js
-WASM_OF_OCAML=true dune build @compiler/tests-ocaml/runtest-wasm
+dune build @compiler/tests-ocaml/runtest-wasm
 
 # Run javascript parser tests
 cd compiler/tests-js-parser

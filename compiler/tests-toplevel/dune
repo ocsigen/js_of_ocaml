@@ -108,7 +108,6 @@
  (target test_toplevel_wasm.bc.wasm.js.actual)
  (enabled_if
   (and
-   %{env:WASM_OF_OCAML=false}
    (<> %{env:JSOO_TEST_ENGINE=node} wasi)
    (>= %{ocaml_version} 5.4)))
  (action
@@ -131,7 +130,6 @@
  (alias runtest-wasm)
  (enabled_if
   (and
-   %{env:WASM_OF_OCAML=false}
    (<> %{env:JSOO_TEST_ENGINE=node} wasi)
    (>= %{ocaml_version} 5.4)))
  (action

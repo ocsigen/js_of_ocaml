@@ -110,8 +110,12 @@ let has_key name fields =
       | _ -> false)
     fields
 
+(* The Wasm loaders ([*.bc.wasm.js]) are not shipped with the manual: they
+   would also need their [*.bc.wasm.assets] directory. *)
+let is_wasm_loader f = Filename.check_suffix f ".wasm.js"
+
 (* Extract file deps from (alias (name default) (deps ...)) stanzas,
-   skipping those with enabled_if (which are wasm-only aliases). *)
+   skipping those with enabled_if and the Wasm loaders. *)
 let extract_default_alias_deps sexps =
   List.fold_left
     (fun acc sexp ->
@@ -125,7 +129,8 @@ let extract_default_alias_deps sexps =
                   List.fold_left
                     (fun acc dep ->
                       match dep with
-                      | Atom f when not (String.contains f '%') -> f :: acc
+                      | Atom f when not (String.contains f '%' || is_wasm_loader f) ->
+                          f :: acc
                       | List [ Atom "glob_files"; Atom pattern ] -> (
                           match String.rindex_opt pattern '/' with
                           | Some idx -> String.sub pattern 0 (idx + 1) :: acc
