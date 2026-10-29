@@ -16,11 +16,12 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-(* Usage: link_driver [-deps FILE] [-names] [-filter NAME]* OUTPUT NAME:FILE...
+(* Usage: link_driver [-deps FILE] [-dce] [-names] [-filter NAME]* OUTPUT NAME:FILE...
 
    Link the Wasm modules [FILE] (imported under module name [NAME]) into
    [OUTPUT]. With [-deps], dead code is removed using the given dependency
-   graph (in the format of wasm-metadce). If [FILE.map] exists, it is used
+   graph (in the format of wasm-metadce). With [-dce], dead code is removed
+   but all exports are kept. If [FILE.map] exists, it is used
    as the source map of [FILE], and the source map of the output is
    written to [OUTPUT.map]. *)
 
@@ -30,6 +31,7 @@ open Wasm_of_ocaml_compiler
 
 let () =
   let dependencies = ref None in
+  let remove_dead_code = ref false in
   let names = ref false in
   let filter = ref [] in
   let args = ref [] in
@@ -38,6 +40,7 @@ let () =
       , Arg.String
           (fun f -> dependencies := Some (Wasm_link.parse_dependencies (Fs.read_file f)))
       , "FILE dependency graph" )
+    ; "-dce", Arg.Set remove_dead_code, " remove dead code, keeping all exports"
     ; "-names", Arg.Set names, " emit the name section"
     ; "-filter", Arg.String (fun s -> filter := s :: !filter), "NAME export to keep"
     ]
@@ -71,6 +74,7 @@ let () =
       let { Wasm_link.source_map; _ } =
         Wasm_link.f
           ?filter_export
+          ~remove_dead_code:!remove_dead_code
           ?dependencies:!dependencies
           ~names:!names
           inputs

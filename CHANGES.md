@@ -25,6 +25,8 @@
 * Compiler: split switches with more than 256 cases (instead of 60), or whose
   case values span more than 1000, which the JavaScriptCore interpreter
   compiles to a sequence of tests (#2612)
+* Compiler/Wasm: Binaryen is now optional; without `wasm-opt`, the generated
+  code is not optimized and a `missing-wasm-opt` warning is emitted (#2571)
 
 ## Bug fixes
 * Compiler/Wasm: box variables typed as integers before using them as a

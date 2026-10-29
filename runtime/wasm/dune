@@ -6,15 +6,17 @@
   (glob_files runtime-*.wasm)
   runtime.js))
 
+; Whether the runtimes are optimized ("optimized" or "unoptimized"):
+; Binaryen is optional. Since this is rerun at each build, the runtimes
+; are rebuilt when Binaryen is installed or removed.
+
 (rule
  (target binaryen-version-check)
  (deps check_binaryen.ml (universe))
  (action
-  (progn
-   (run ocaml %{deps})
-   (with-stdout-to
-    %{target}
-    (echo "ok")))))
+  (with-stdout-to
+   %{target}
+   (run ocaml %{deps}))))
 
 (rule
  (target runtime-standard.wasm)
@@ -76,6 +78,7 @@
 (rule
  (target runtime-wasi.wasm)
  (deps
+  binaryen-version-check
   args
   (glob_files *.wat)
   libc.wasm)
@@ -94,6 +97,7 @@
 (rule
  (target runtime-cps-wasi.wasm)
  (deps
+  binaryen-version-check
   args
   (glob_files *.wat)
   libc.wasm)
@@ -111,6 +115,7 @@
 (rule
  (target runtime-double-translation-wasi.wasm)
  (deps
+  binaryen-version-check
   args
   (glob_files *.wat)
   libc.wasm)

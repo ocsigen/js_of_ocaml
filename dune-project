@@ -155,11 +155,11 @@
   menhirLib
   menhirSdk
   (yojson (>= 2.1))
-  (wax-lib (>= 0.3.0))
-  conf-binaryen)
+  (wax-lib (>= 0.3.0)))
  (depopts
   ocamlfind
-  opam-format)
+  opam-format
+  conf-binaryen)
  (conflicts
   (ocamlfind (< 1.5.1))
   (js_of_ocaml (< 3.0))
