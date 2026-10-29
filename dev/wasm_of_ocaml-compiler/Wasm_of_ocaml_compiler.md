@@ -33,6 +33,9 @@ module Globalize : sig ... end
 module Initialize_locals : sig ... end
 ```
 ```ocaml
+module Inline_globals : sig ... end
+```
+```ocaml
 module Link : sig ... end
 ```
 ```ocaml

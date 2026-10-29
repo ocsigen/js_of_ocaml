@@ -923,6 +923,7 @@
 - [Module `Wasm_of_ocaml_compiler.Generate`](wasm_of_ocaml-compiler/Wasm_of_ocaml_compiler-Generate.md)
 - [Module `Wasm_of_ocaml_compiler.Globalize`](wasm_of_ocaml-compiler/Wasm_of_ocaml_compiler-Globalize.md)
 - [Module `Wasm_of_ocaml_compiler.Initialize_locals`](wasm_of_ocaml-compiler/Wasm_of_ocaml_compiler-Initialize_locals.md)
+- [Module `Wasm_of_ocaml_compiler.Inline_globals`](wasm_of_ocaml-compiler/Wasm_of_ocaml_compiler-Inline_globals.md)
 - [Module `Link.Wasm_binary`](wasm_of_ocaml-compiler/Wasm_of_ocaml_compiler-Link-Wasm_binary.md)
 - [Module `Wasm_of_ocaml_compiler.Link`](wasm_of_ocaml-compiler/Wasm_of_ocaml_compiler-Link.md)
 - [Module `Wasm_of_ocaml_compiler.Local_sink`](wasm_of_ocaml-compiler/Wasm_of_ocaml_compiler-Local_sink.md)
