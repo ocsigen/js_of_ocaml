@@ -65,6 +65,10 @@ jobs:
 
     runs-on: ${{ matrix.os }}
 
+    # OCaml trunk moves under our feet: a failure there should neither
+    # cancel the other jobs (fail-fast) nor fail the workflow
+    continue-on-error: ${{ matrix.ocaml-name == '5.6+trunk' }}
+
     name:
        ${{ matrix.wasi && 'WASI / ' || '' }}${{ matrix.ocaml-name != '' && matrix.ocaml-name || matrix.ocaml-compiler }} / ${{ matrix.os-name }}
 
