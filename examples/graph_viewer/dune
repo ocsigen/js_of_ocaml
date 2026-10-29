@@ -30,5 +30,4 @@
 
 (alias
  (name default)
- (enabled_if %{env:WASM_OF_OCAML=false})
  (deps viewer_js.bc.wasm.js))

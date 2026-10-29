@@ -5,7 +5,7 @@ tests:
 	dune build @runtest @runtest-js
 
 tests-wasm:
-	WASM_OF_OCAML=true dune build @runtest-wasm
+	dune build @runtest-wasm
 
 # Run the JS test suite using QuickJS-NG (`qjs`) in place of `node`.
 # Override the engine binary with JSOO_QUICKJS_BIN if `qjs` is not on PATH.
@@ -19,7 +19,7 @@ tests-bun:
 # bun (JavaScriptCore) exposes the JSPI API but does not actually switch
 # stacks, so the default (JSPI) effects mode cannot run there; use CPS effects.
 tests-bun-wasm:
-	JSOO_ENGINE=bun WASM_OF_OCAML=true dune build @runtest-wasm --profile with-effects
+	JSOO_ENGINE=bun dune build @runtest-wasm --profile with-effects
 
 # Validates the Babel downleveling recipe documented in
 # manual/browser-compat.wiki. Requires `npm install` at the repo root
@@ -31,7 +31,7 @@ test-babel-downlevel:
 # digests a 2 GiB sparse file (~40s in JS), so it is not part of `make tests`.
 test-md5-large:
 	JSOO_TEST_MD5_LARGE=true dune build @runtest @runtest-js
-	JSOO_TEST_MD5_LARGE=true WASM_OF_OCAML=true dune build @runtest-wasm
+	JSOO_TEST_MD5_LARGE=true dune build @runtest-wasm
 
 test runtest runtests: tests
 
