@@ -24,8 +24,15 @@ val link_input :
     loaded with [load_source_map]; it is ignored when this function is
     not provided. *)
 
-val link : inputs:Wasm_link.input list -> output_file:string -> unit
-(** Link the input modules (in binary format), keeping all their code *)
+val link :
+     ?remove_dead_code:bool
+  -> inputs:Wasm_link.input list
+  -> output_file:string
+  -> unit
+  -> unit
+(** Link the input modules (in binary format), keeping all their code unless
+    [remove_dead_code] is set: then, all exports are kept but the code
+    and imports they do not use are removed. *)
 
 val build :
      allowed_imports:string list option

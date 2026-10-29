@@ -22,10 +22,19 @@ type link_input =
   ; source_map_file : string option
   }
 
+val available : unit -> bool
+(** Whether Binaryen's [wasm-opt] is available. When it is not,
+    [optimize] copies its input unchanged. *)
+
 val optimizes : Profile.t -> bool
 (** Whether wasm-opt optimizes the generated code at this optimization
-    level. When it does not, our own passes tighten the code instead;
-    those which only redo what wasm-opt does are skipped when it does. *)
+    level (and is available). When it does not, our own passes tighten the
+    code instead; those which only redo what wasm-opt does are skipped when
+    it does. *)
+
+val warn_if_unavailable : Profile.t -> unit
+(** Warn that the generated code is not optimized when [wasm-opt] would
+    be used at this optimization level but is not available. *)
 
 val optimize :
      profile:Profile.t

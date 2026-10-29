@@ -16,6 +16,8 @@ type t =
   | `Deprecated_primitive
   | `Unused_js_variable
   | `Free_variables_in_primitive
+  | (* wasm *)
+    `Missing_wasm_opt
   ]
 
 module StringTable = Hashtbl.Make (struct
@@ -52,6 +54,8 @@ let default = function
   | `Overriding_primitive | `Overriding_primitive_purity -> true
   | `Deprecated_primitive -> true
   | `Unused_js_variable -> false
+  (* wasm *)
+  | `Missing_wasm_opt -> true
 
 let all =
   [ (* Parsing bytecode *)
@@ -69,6 +73,8 @@ let all =
   ; `Deprecated_primitive
   ; `Unused_js_variable
   ; `Free_variables_in_primitive
+  ; (* wasm *)
+    `Missing_wasm_opt
   ]
 
 let name = function
@@ -88,6 +94,8 @@ let name = function
   | `Overriding_primitive_purity -> "overriding-primitive-purity"
   | `Deprecated_primitive -> "deprecated-primitive"
   | `Unused_js_variable -> "unused-js-vars"
+  (* wasm *)
+  | `Missing_wasm_opt -> "missing-wasm-opt"
 
 let parse : string -> t option =
   let h = StringTable.create 18 in

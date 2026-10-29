@@ -101,14 +101,20 @@ let with_runtime_files ~runtime_wasm_files f =
 let build_runtime () =
   let variables = preprocessor_variables () in
   match
-    List.find_opt Runtime_files.precompiled_runtimes ~f:(fun (flags, _) ->
-        assert (List.length flags = List.length variables);
-        List.equal
-          ~eq:(fun (k1, v1) (k2, v2) ->
-            assert (String.equal k1 k2);
-            Wax_link.value_equal v1 v2)
-          flags
-          variables)
+    (* The precompiled runtimes are not optimized if Binaryen was not
+       available when building wasm_of_ocaml. If it has been installed
+       since, we build an optimized runtime instead. *)
+    if (not Runtime_files.runtimes_optimized) && Binaryen.available ()
+    then None
+    else
+      List.find_opt Runtime_files.precompiled_runtimes ~f:(fun (flags, _) ->
+          assert (List.length flags = List.length variables);
+          List.equal
+            ~eq:(fun (k1, v1) (k2, v2) ->
+              assert (String.equal k1 k2);
+              Wax_link.value_equal v1 v2)
+            flags
+            variables)
   with
   | Some (_, contents) -> contents
   | None ->
@@ -236,6 +242,7 @@ let link_and_optimize
       wat_files
       output_file
   in
+  Binaryen.warn_if_unavailable profile;
   let primitives =
     if not (Binaryen.optimizes profile)
     then
@@ -276,9 +283,13 @@ let link_runtime ~profile runtime_wasm_files output_file =
     @@ fun temp_file ->
     (with_runtime_files ~runtime_wasm_files
     @@ fun runtime_inputs ->
+    (* Without Binaryen, the imports which are not used are removed by
+       the linker: they may not be provided by the runtime *)
     Runtime.link
+      ~remove_dead_code:(not (Binaryen.available ()))
       ~inputs:(List.map ~f:Runtime.link_input runtime_inputs)
-      ~output_file:temp_file);
+      ~output_file:temp_file
+      ());
     Binaryen.optimize
       ~profile
       ~opt_input_sourcemap:None
@@ -293,6 +304,7 @@ let link_runtime ~profile runtime_wasm_files output_file =
             { Binaryen.module_name = "env"; file = extra_runtime; source_map_file = None }
         ]
       ~output_file
+      ()
 
 let generate_prelude ~out_file =
   Filename.gen_file out_file

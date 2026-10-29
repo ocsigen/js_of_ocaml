@@ -175,3 +175,12 @@
 (cram
  (applies_to globalize_js_float)
  (deps globalize_js_float.ml))
+
+; An extra runtime file in separate compilation (see extra_runtime.ml)
+
+(tests
+ (names extra_runtime)
+ (modes wasm)
+ (wasm_of_ocaml
+  (compilation_mode separate)
+  (wasm_files extra_runtime.wat)))
