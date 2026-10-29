@@ -1230,6 +1230,18 @@ module Array = struct
         incr i
       done;
       !i = len_a
+
+  (* Reverse the [len] elements of [a] starting at [pos] *)
+  let reverse_sub_in_place a ~pos ~len =
+    let i = ref pos in
+    let j = ref (pos + len - 1) in
+    while !i < !j do
+      let t = a.(!i) in
+      a.(!i) <- a.(!j);
+      a.(!j) <- t;
+      incr i;
+      decr j
+    done
 end
 
 module Filename = struct
