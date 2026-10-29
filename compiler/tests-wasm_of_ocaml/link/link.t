@@ -375,3 +375,25 @@ Tables and memories are always kept, so their import nodes are reached:
   $ wasm-dis memimp2.wasm | grep export
    (export "main" (func $0))
    (export "cb_mem" (func $1))
+
+Without a dependency graph, [-dce] keeps all the exports and removes what
+they do not reach, including unused imports. This is how the runtime is
+built when Binaryen is not available.
+
+  $ cat > dce.wat <<EOF
+  > (module
+  >   (import "env" "used" (func \$used (result i32)))
+  >   (import "env" "unused" (func \$unused (result i32)))
+  >   (func \$dead (result i32) (call \$unused))
+  >   (func (export "main") (result i32) (call \$used))
+  >   (func (export "other") (result i32) (i32.const 2)))
+  > EOF
+  $ asm dce
+  $ ./link_driver.exe -dce dce2.wasm a:dce.wasm
+  $ wasm-dis dce2.wasm | grep -E "import|export|^ \(func "
+   (import "env" "used" (func $fimport$0 (result i32)))
+   (export "main" (func $0))
+   (export "other" (func $1))
+   (func $0 (result i32)
+    (call $fimport$0)
+   (func $1 (result i32)

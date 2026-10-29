@@ -31,6 +31,7 @@
   ../../runtime/wasm/runtime-wasi.js
   ../../runtime/wasm/deps-wasi.json
   ../../runtime/wasm/libc.wasm
+  ../../runtime/wasm/binaryen-version-check
   (glob_files ../../runtime/wasm/*.wat)
   (glob_files ../../runtime/wasm/runtime-*.wasm)
   (glob_files ../../runtime/wasm/*-impl.wasm))
