@@ -46,6 +46,7 @@ type output =
 
 val f :
      ?filter_export:(string -> bool)
+  -> ?remove_dead_code:bool
   -> ?dependencies:dependency list
   -> ?names:bool
   -> ?eliminate_duplicates:bool
@@ -55,6 +56,9 @@ val f :
 (** Link the input modules. When [dependencies] is provided, dead code is
     removed: only the exports reachable from the root nodes of the
     dependency graph are kept, and only the entries reachable from them or
-    from the start functions are kept. The name section is omitted if [names] is false.
-    Unless [eliminate_duplicates] is false, the duplicate functions of each
-    module are removed (wasm-opt does this as well when it runs). *)
+    from the start functions are kept. When [remove_dead_code] is true and
+    no [dependencies] are given, all exports are kept and the entries
+    not reachable from them are removed. The name section is omitted if
+    [names] is false. Unless [eliminate_duplicates] is false, the duplicate
+    functions of each module are removed (wasm-opt does this as well when
+    it runs). *)

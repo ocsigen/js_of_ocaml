@@ -129,11 +129,19 @@ let main () =
       , js_wasi_launcher
       , wasi_deps
       , wasi_libc
+      , binaryen_status
       , wat_files
       , runtimes
       , impl_modules ) =
     match Array.to_list Sys.argv with
-    | _ :: js_launcher :: deps :: js_wasi_launcher :: wasi_deps :: wasi_libc :: rest ->
+    | _
+      :: js_launcher
+      :: deps
+      :: js_wasi_launcher
+      :: wasi_deps
+      :: wasi_libc
+      :: binaryen_status
+      :: rest ->
         assert (Filename.check_suffix js_launcher ".js");
         assert (Filename.check_suffix js_wasi_launcher ".js");
         assert (Filename.check_suffix deps ".json");
@@ -157,6 +165,7 @@ let main () =
         , js_wasi_launcher
         , wasi_deps
         , wasi_libc
+        , binaryen_status
         , wat_files
         , runtimes
         , impl_modules )
@@ -170,6 +179,13 @@ let main () =
   Format.printf "let js_wasi_launcher = {|\n%s\n|}@." (Fs.read_file js_wasi_launcher);
   Format.printf "let wasi_dependencies = {|\n%s\n|}@." (Fs.read_file wasi_deps);
   Format.printf "let wasi_libc = %S@." (Fs.read_file wasi_libc);
+  (* Whether the precompiled runtimes were optimized by Binaryen *)
+  Format.printf
+    "let runtimes_optimized = %b@."
+    (match String.trim (Fs.read_file binaryen_status) with
+    | "optimized" -> true
+    | "unoptimized" -> false
+    | s -> failwith ("Unexpected Binaryen status " ^ s));
   Format.printf
     "let wat_files = [%a]@."
     (Format.pp_print_list (fun f file ->

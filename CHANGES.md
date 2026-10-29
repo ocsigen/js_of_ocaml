@@ -33,6 +33,8 @@
 * Compiler: name variables in a more regular order, which compresses better
   (#2598)
 * Runtime/Wasm: compute `mod_float` in Wasm rather than calling JavaScript (#2629)
+* Compiler/Wasm: Binaryen is now optional; without `wasm-opt`, the generated
+  code is not optimized and a `missing-wasm-opt` warning is emitted (#2571)
 
 ## Bug fixes
 * Toplevel: `js_of_ocaml-toplevel` depends on `js_of_ocaml-ppx`, so that
