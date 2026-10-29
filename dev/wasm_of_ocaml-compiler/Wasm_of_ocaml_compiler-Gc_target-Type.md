@@ -4,6 +4,9 @@
 val value : Wasm_ast.value_type
 ```
 ```ocaml
+val value_or_exn : Wasm_ast.value_type
+```
+```ocaml
 val func_type : int -> Wasm_ast.func_type
 ```
 ```ocaml

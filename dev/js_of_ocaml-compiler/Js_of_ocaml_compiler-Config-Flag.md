@@ -28,6 +28,9 @@ val compact : unit -> bool
 val inline : unit -> bool
 ```
 ```ocaml
+val clone_higher_order : unit -> bool
+```
+```ocaml
 val share_constant : unit -> bool
 ```
 ```ocaml

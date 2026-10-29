@@ -48,6 +48,7 @@
 - [Module `Js_of_ocaml_compiler.Build_path_prefix_map`](js_of_ocaml-compiler/Js_of_ocaml_compiler-Build_path_prefix_map.md)
 - [Module `Builtins.File`](js_of_ocaml-compiler/Js_of_ocaml_compiler-Builtins-File.md)
 - [Module `Js_of_ocaml_compiler.Builtins`](js_of_ocaml-compiler/Js_of_ocaml_compiler-Builtins.md)
+- [Module `Js_of_ocaml_compiler.Clone_higher_order`](js_of_ocaml-compiler/Js_of_ocaml_compiler-Clone_higher_order.md)
 - [Module `Code.Addr`](js_of_ocaml-compiler/Js_of_ocaml_compiler-Code-Addr.md)
 - [Module `Code.Block_desc`](js_of_ocaml-compiler/Js_of_ocaml_compiler-Code-Block_desc.md)
 - [Module `Code.Constant`](js_of_ocaml-compiler/Js_of_ocaml_compiler-Code-Constant.md)

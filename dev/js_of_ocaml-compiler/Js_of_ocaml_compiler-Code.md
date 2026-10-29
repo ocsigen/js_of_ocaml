@@ -215,6 +215,11 @@ val preorder_traverse :
   'c
 ```
 ```ocaml
+val raises_outside_handlers : block Addr.Map.t -> Addr.t -> bool
+```
+Whether the code starting at `pc` (typically, a function body) may execute a `Raise` outside of the body of an exception handler
+
+```ocaml
 val last_instr : instr list -> instr option
 ```
 Last instruction of a block body, ignoring events

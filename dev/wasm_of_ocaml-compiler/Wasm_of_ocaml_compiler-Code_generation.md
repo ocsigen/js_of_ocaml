@@ -229,6 +229,7 @@ val need_dummy_fun : cps:bool -> arity:int -> Js_of_ocaml_compiler.Code.Var.t t
 ```ocaml
 val function_body : 
   context:context ->
+  return_exn:bool ->
   param_names:Js_of_ocaml_compiler.Code.Var.t list ->
   body:unit t ->
   (Wasm_ast.var * Wasm_ast.value_type) list * Wasm_ast.instruction list

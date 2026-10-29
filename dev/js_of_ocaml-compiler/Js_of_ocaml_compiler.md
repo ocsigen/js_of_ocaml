@@ -29,6 +29,9 @@ Rewrite paths for reproducible builds
 module Builtins : sig ... end
 ```
 ```ocaml
+module Clone_higher_order : sig ... end
+```
+```ocaml
 module Code : sig ... end
 ```
 ```ocaml

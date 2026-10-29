@@ -4031,6 +4031,16 @@ val register :
 
 ---
 
+# Module `Js_of_ocaml_compiler.Clone_higher_order`
+
+```ocaml
+val f : Code.program -> Code.program
+```
+Duplicate higher-order functions for each combination of known closures passed as the parameters they call, and redirect the corresponding call sites to the copies.
+
+
+---
+
 # Module `Code.Addr`
 
 ```ocaml
@@ -4629,6 +4639,11 @@ val preorder_traverse :
   'c
 ```
 ```ocaml
+val raises_outside_handlers : block Addr.Map.t -> Addr.t -> bool
+```
+Whether the code starting at `pc` (typically, a function body) may execute a `Raise` outside of the body of an exception handler
+
+```ocaml
 val last_instr : instr list -> instr option
 ```
 Last instruction of a block body, ignoring events
@@ -4710,6 +4725,9 @@ val compact : unit -> bool
 ```
 ```ocaml
 val inline : unit -> bool
+```
+```ocaml
+val clone_higher_order : unit -> bool
 ```
 ```ocaml
 val share_constant : unit -> bool
@@ -15921,6 +15939,9 @@ Rewrite paths for reproducible builds
 
 ```ocaml
 module Builtins : sig ... end
+```
+```ocaml
+module Clone_higher_order : sig ... end
 ```
 ```ocaml
 module Code : sig ... end
@@ -57579,6 +57600,28 @@ type t
 val direct_calls_only : t -> Js_of_ocaml_compiler.Code.Var.t -> bool
 ```
 ```ocaml
+val known_callee : 
+  Js_of_ocaml_compiler.Global_flow.info ->
+  t ->
+  wrappable:(Js_of_ocaml_compiler.Code.Var.t -> bool) ->
+  bool ->
+  Js_of_ocaml_compiler.Code.Var.t ->
+  Js_of_ocaml_compiler.Code.Var.t option
+```
+`known_callee info t ~wrappable exact f` is the function called at a call site `Apply { f; exact; _ }` when it is the only possible callee and the call can be a direct call: the function is only called directly, or it is `wrappable`.
+
+```ocaml
+val raising_functions : 
+  Js_of_ocaml_compiler.Code.program ->
+  Js_of_ocaml_compiler.Global_flow.info ->
+  t ->
+  wrappable:(Js_of_ocaml_compiler.Code.Var.t -> bool) ->
+  (Js_of_ocaml_compiler.Code.Var.t -> bool) ->
+  unit Js_of_ocaml_compiler.Code.Var.Hashtbl.t
+```
+Functions which signal exceptions by returning null. The functions that are not only called directly (`direct_calls_only` is false) must be wrapped: the function called through closures converts the null value back into an exception. Only functions satisfying `wrappable` are considered for this.
+
+```ocaml
 val f : 
   Js_of_ocaml_compiler.Code.program ->
   Js_of_ocaml_compiler.Global_flow.info ->
@@ -57929,6 +57972,7 @@ val need_dummy_fun : cps:bool -> arity:int -> Js_of_ocaml_compiler.Code.Var.t t
 ```ocaml
 val function_body : 
   context:context ->
+  return_exn:bool ->
   param_names:Js_of_ocaml_compiler.Code.Var.t list ->
   body:unit t ->
   (Wasm_ast.var * Wasm_ast.value_type) list * Wasm_ast.instruction list
@@ -58302,6 +58346,9 @@ val unbox_nativeint : expression -> expression
 
 ```ocaml
 val value : Wasm_ast.value_type
+```
+```ocaml
+val value_or_exn : Wasm_ast.value_type
 ```
 ```ocaml
 val func_type : int -> Wasm_ast.func_type
@@ -58887,6 +58934,9 @@ val unbox_nativeint : expression -> expression
 val value : Wasm_ast.value_type
 ```
 ```ocaml
+val value_or_exn : Wasm_ast.value_type
+```
+```ocaml
 val func_type : int -> Wasm_ast.func_type
 ```
 ```ocaml
@@ -59400,6 +59450,7 @@ Split a large function into smaller ones.
 
 ```ocaml
 val f : 
+  return_exn:bool ->
   no_tail_call:unit Js_of_ocaml_compiler.Code.Var.Hashtbl.t ->
   Wasm_ast.instruction list ->
   Wasm_ast.instruction list
@@ -59760,6 +59811,9 @@ val unbox_nativeint : expression -> expression
 
 ```ocaml
 val value : Wasm_ast.value_type
+```
+```ocaml
+val value_or_exn : Wasm_ast.value_type
 ```
 ```ocaml
 val func_type : int -> Wasm_ast.func_type
