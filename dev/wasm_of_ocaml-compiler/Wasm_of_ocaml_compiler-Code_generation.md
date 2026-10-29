@@ -11,7 +11,7 @@ type context = {
                    Js_of_ocaml_compiler.Stdlib.String.Hashtbl.t;
   mutable constant_globals : constant_global Js_of_ocaml_compiler.Code.Var.Map.t;
   mutable other_fields : Wasm_ast.module_field list;
-  mutable imports : (Js_of_ocaml_compiler.Code.Var.t * Wasm_ast.import_desc)
+  mutable imports : (Js_of_ocaml_compiler.Code.Var.t * Wasm_ast.import_desc) list
                     Js_of_ocaml_compiler.Stdlib.StringMap.t
                     Js_of_ocaml_compiler.Stdlib.StringMap.t;
   type_names : Js_of_ocaml_compiler.Code.Var.t

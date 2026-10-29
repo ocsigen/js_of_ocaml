@@ -30,6 +30,16 @@ module Math : sig ... end
 module Bigarray : sig ... end
 ```
 ```ocaml
+module JavaScript : sig ... end
+```
+```ocaml
+type js_arg = [ 
+  | `Value of expression
+  | `F64 of expression (* An unboxed float passed as a JavaScript number *)
+  | `I32 of expression (* An untagged integer passed as a JavaScript number *)
+ ]
+```
+```ocaml
 val internal_primitives : 
   (string
    * Js_of_ocaml_compiler.Primitive.kind
@@ -38,6 +48,19 @@ val internal_primitives :
    expression))
     list
 ```
+```ocaml
+val js_primitives : 
+  (string
+   * Js_of_ocaml_compiler.Primitive.kind
+   * ((Js_of_ocaml_compiler.Code.prim_arg -> expression) ->
+   (Js_of_ocaml_compiler.Code.prim_arg -> js_arg) ->
+   [ `Value | `F64 | `I32 ] ->
+   Js_of_ocaml_compiler.Code.prim_arg list ->
+   expression))
+    list
+```
+The primitives calling JavaScript code
+
 ```ocaml
 val handle_exceptions : 
   result_typ:Wasm_ast.value_type list ->
