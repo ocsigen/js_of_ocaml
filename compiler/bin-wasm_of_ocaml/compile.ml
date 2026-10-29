@@ -101,14 +101,20 @@ let with_runtime_files ~runtime_wasm_files f =
 let build_runtime () =
   let variables = preprocessor_variables () in
   match
-    List.find_opt Runtime_files.precompiled_runtimes ~f:(fun (flags, _) ->
-        assert (List.length flags = List.length variables);
-        List.equal
-          ~eq:(fun (k1, v1) (k2, v2) ->
-            assert (String.equal k1 k2);
-            Wax_link.value_equal v1 v2)
-          flags
-          variables)
+    (* The precompiled runtimes are not optimized if Binaryen was not
+       available when building wasm_of_ocaml. If it has been installed
+       since, we build an optimized runtime instead. *)
+    if (not Runtime_files.runtimes_optimized) && Binaryen.available ()
+    then None
+    else
+      List.find_opt Runtime_files.precompiled_runtimes ~f:(fun (flags, _) ->
+          assert (List.length flags = List.length variables);
+          List.equal
+            ~eq:(fun (k1, v1) (k2, v2) ->
+              assert (String.equal k1 k2);
+              Wax_link.value_equal v1 v2)
+            flags
+            variables)
   with
   | Some (_, contents) -> contents
   | None ->
@@ -236,6 +242,7 @@ let link_and_optimize
       wat_files
       output_file
   in
+  Binaryen.warn_if_unavailable profile;
   let primitives =
     if not (Binaryen.optimizes profile)
     then

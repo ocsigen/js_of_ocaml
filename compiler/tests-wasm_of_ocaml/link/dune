@@ -1,5 +1,8 @@
 ; Tests of the Wasm linker. The modules are written in the text format and
 ; assembled with Binaryen's wasm-as; the linked modules are run with node.
+; Binaryen is optional, so the tests only run when it is installed (an
+; installed Binaryen older than the required version already makes the
+; runtime build fail, see runtime/wasm/check_binaryen.ml).
 
 (executable
  (name link_driver)
@@ -9,4 +12,7 @@
 (cram
  (deps link_driver.exe run.cjs)
  (enabled_if
-  (<> %{profile} quickjs)))
+  (and
+   (<> %{profile} quickjs)
+   %{bin-available:wasm-as}
+   %{bin-available:wasm-dis})))

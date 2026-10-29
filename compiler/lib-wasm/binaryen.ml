@@ -28,6 +28,11 @@ let command cmdline =
   let res = Sys.command ((if times () then "BINARYEN_PASS_DEBUG=1 " else "") ^ cmdline) in
   if res <> 0 then failwith ("the following command terminated unsuccessfully: " ^ cmdline)
 
+let available =
+  lazy (Sys.command (Printf.sprintf "wasm-opt --version > %s 2>&1" Filename.null) = 0)
+
+let available () = Lazy.force available
+
 let common_options () =
   let l =
     [ "--enable-gc"
@@ -61,9 +66,18 @@ type link_input =
   ; source_map_file : string option
   }
 
-let optimizes : Profile.t -> bool = function
+let uses_wasm_opt : Profile.t -> bool = function
   | O1 -> false
   | O2 | O3 -> true
+
+let optimizes profile = uses_wasm_opt profile && available ()
+
+let warn_if_unavailable profile =
+  if uses_wasm_opt profile && not (available ())
+  then
+    Warning.warn
+      `Missing_wasm_opt
+      "Binaryen's wasm-opt was not found: the generated code is not optimized.@."
 
 let optimization_options : Profile.t -> _ = function
   | O1 -> [ "-O2"; "--skip-pass=inlining-optimizing"; "--traps-never-happen" ]
@@ -79,18 +93,30 @@ let optimize
     ~opt_output_sourcemap
     ~output_file
     () =
-  command
-    (* [Wasm_output] and [Wat_output] emit [try_table] directly when
-       targeting WASI, and so does Wax when assembling the runtime files;
-       [--emit-exnref] converts any remaining legacy [try]/[catch] (from
-       runtime modules provided in binary form) so the whole output is
-       uniformly in the new form. *)
-    (("wasm-opt" :: (if Config.Flag.wasi () then [ "--emit-exnref" ] else []))
-    @ common_options ()
-    @ (match options with
-      | Some o -> o
-      | None -> optimization_options profile)
-    @ (if reorder_functions then [ "--reorder-functions" ] else [])
-    @ [ Filename.quote input_file; "-o"; Filename.quote output_file ]
-    @ opt_flag "--input-source-map" opt_input_sourcemap
-    @ opt_flag "--output-source-map" opt_output_sourcemap)
+  if not (available ())
+  then (
+    (* Binaryen is optional: without it, the module is left unoptimized *)
+    Fs.write_file ~name:output_file ~contents:(Fs.read_file input_file);
+    match opt_input_sourcemap, opt_output_sourcemap with
+    | Some input, Some output -> Fs.write_file ~name:output ~contents:(Fs.read_file input)
+    | None, Some output ->
+        Source_map.to_file
+          (Standard (Source_map.Standard.empty ~inline_source_content:false))
+          output
+    | _, None -> ())
+  else
+    command
+      (* [Wasm_output] and [Wat_output] emit [try_table] directly when
+         targeting WASI, and so does Wax when assembling the runtime files;
+         [--emit-exnref] converts any remaining legacy [try]/[catch] (from
+         runtime modules provided in binary form) so the whole output is
+         uniformly in the new form. *)
+      (("wasm-opt" :: (if Config.Flag.wasi () then [ "--emit-exnref" ] else []))
+      @ common_options ()
+      @ (match options with
+        | Some o -> o
+        | None -> optimization_options profile)
+      @ (if reorder_functions then [ "--reorder-functions" ] else [])
+      @ [ Filename.quote input_file; "-o"; Filename.quote output_file ]
+      @ opt_flag "--input-source-map" opt_input_sourcemap
+      @ opt_flag "--output-source-map" opt_output_sourcemap)

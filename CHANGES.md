@@ -13,6 +13,8 @@
   represented as externref, floats, integers and booleans are passed as
   f64 and i32, and the conversions of short strings are cached (#2563)
 * Compiler/Wasm: skip wasm-opt at --opt 1 (#2238)
+* Compiler/Wasm: Binaryen is now optional; without `wasm-opt`, the generated
+  code is not optimized and a `missing-wasm-opt` warning is emitted (#????)
 
 ## Bug fixes
 * Compiler: fix a miscompilation of `Int_trie` by OxCaml's flambda2 at -O2

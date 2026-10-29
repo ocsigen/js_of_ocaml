@@ -2558,8 +2558,9 @@ let type_groups (types : Read.types) =
    functions, the exports that are kept, tables, active data and
    element segments. If [dependencies] is provided, the exports that
    are kept are the ones reachable from its root nodes; an import node
-   is reached when the corresponding import is live. Without
-   [dependencies], everything is live. *)
+   is reached when the corresponding import is live. Otherwise, all
+   exports are kept, and everything is live unless [remove_dead_code]
+   is set. *)
 let compute_liveness
     ~files
     ~types
@@ -2571,11 +2572,12 @@ let compute_liveness
     ~start_type
     ~intfs
     ~filter_export
+    ~remove_dead_code
     ~dependencies =
   let import_count i kind =
     Array.length (get_exportable_info resolved_imports.(i) kind)
   in
-  let dce = Option.is_some dependencies in
+  let dce = remove_dead_code || Option.is_some dependencies in
   let section_size (contents : Read.t) id =
     if Read.find_section contents id then Read.uint contents.ch else 0
   in
@@ -2766,6 +2768,8 @@ let compute_liveness
           ~f:(fun (i, kind, idx) -> mark i kind idx)
           (String.Hashtbl.find_all exports name))
     in
+    if Option.is_none dependencies
+    then String.Hashtbl.iter (fun name _ -> keep_export name) exports;
     (* Dependency graph *)
     let dependencies = Option.value ~default:[] dependencies in
     let nodes = String.Hashtbl.create 128 in
@@ -3146,6 +3150,7 @@ type output =
 
 let f
     ?(filter_export = fun _ -> true)
+    ?(remove_dead_code = false)
     ?dependencies
     ?(names = true)
     ?(eliminate_duplicates = true)
@@ -3256,6 +3261,7 @@ let f
       ~start_type
       ~intfs
       ~filter_export
+      ~remove_dead_code
       ~dependencies
   in
   let live = liveness.live in
