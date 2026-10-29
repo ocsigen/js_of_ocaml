@@ -162,7 +162,7 @@ available at run time (`[@when]`), and `arch_sixtyfour` **only** at compile time
 ```bash
 dune runtest <dir>                              # js + native, default profile
 dune promote                                    # accept changed output
-WASM_OF_OCAML=true dune build @runtest-wasm     # wasm
+dune build @runtest-wasm                        # wasm
 dune build @runtest --profile quickjs           # run JS under QuickJS (qjs)
 make tests                                       # the whole suite (needs a recent Node)
 ```

@@ -84,10 +84,10 @@
 (tests
  (names gh2093)
  (modes wasm)
+ (build_if
+  (>= %{ocaml_version} 5))
  (enabled_if
-  (and
-   (>= %{ocaml_version} 5)
-   (<> %{profile} wasi)))
+  (<> %{profile} wasi))
  (wasm_of_ocaml
   (compilation_mode whole_program)
   (flags :standard)))
