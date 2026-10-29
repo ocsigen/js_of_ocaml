@@ -39,6 +39,9 @@
 (executable
  (name expect_wasm)
  (modules expect_wasm)
+ ; With OCaml 4.14, the embedded cmis make the JavaScript loader larger
+ ; than the maximum string size on 32-bit hosts
+ (enabled_if %{arch_sixtyfour})
  (libraries
   wasm_of_ocaml-compiler.dynlink
   toplevel_expect_test
