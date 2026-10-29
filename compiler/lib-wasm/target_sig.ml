@@ -95,23 +95,29 @@ module type S = sig
 
     val box_float : expression -> expression
 
-    val unbox_float : expression -> expression
+    val unbox_float : ?cast:bool -> expression -> expression
 
     val box_float32 : expression -> expression
 
-    val unbox_float32 : expression -> expression
+    val unbox_float32 : ?cast:bool -> expression -> expression
 
     val box_int32 : expression -> expression
 
-    val unbox_int32 : expression -> expression
+    val unbox_int32 : ?cast:bool -> expression -> expression
 
     val box_int64 : expression -> expression
 
-    val unbox_int64 : expression -> expression
+    val unbox_int64 : ?cast:bool -> expression -> expression
 
     val box_nativeint : expression -> expression
 
-    val unbox_nativeint : expression -> expression
+    val unbox_nativeint : ?cast:bool -> expression -> expression
+
+    val box_type : Typing.boxed_number -> Wasm_ast.value_type Code_generation.t
+    (** The type of a reference to a box *)
+
+    val as_box : Typing.boxed_number -> expression -> expression
+    (** Cast a value to a reference to a box *)
   end
 
   module Type : sig
@@ -205,10 +211,14 @@ module type S = sig
       -> cps:bool
       -> ?pair:bool
       -> no_code_pointer:bool
+      -> precise_env:bool
       -> Code.Var.t
       -> unit Code_generation.t
-    (** [pair] indicates that the function is the direct-style version of a
-        function with a CPS version (double translation) *)
+    (** Bind the free variables of a function to the fields of its
+        environment. [pair] indicates that the function is the
+        direct-style version of a function with a CPS version (double
+        translation). With [precise_env], the environment parameter is
+        given the precise type of the closure. *)
 
     val curry_allocate :
          ?cps_f:Code.Var.t
@@ -281,6 +291,12 @@ module type S = sig
   end
 
   module Bigarray : sig
+    val value_type : Wasm_ast.value_type Code_generation.t
+    (** The type of a reference to a bigarray *)
+
+    val cast : expression -> expression
+    (** Cast a value known to be a bigarray *)
+
     val dimension : int -> expression -> expression
     (** The [n]-th dimension of a bigarray, as an [i32] *)
 
@@ -361,7 +377,8 @@ module type S = sig
     -> unit Code_generation.t
 
   val post_process_function_body :
-       profile:Profile.t
+       context:Code_generation.context
+    -> profile:Profile.t
     -> param_names:Wasm_ast.var list
     -> param_types:Wasm_ast.value_type list
     -> locals:(Wasm_ast.var * Wasm_ast.value_type) list

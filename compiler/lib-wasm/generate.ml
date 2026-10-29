@@ -409,23 +409,24 @@ module Generate (Target : Target_sig.S) = struct
   module Conv = struct
     let box_float e = counted "box_f64" (Memory.box_float e)
 
-    let unbox_float e = counted "unbox_f64" (Memory.unbox_float e)
+    let unbox_float ?cast e = counted "unbox_f64" (Memory.unbox_float ?cast e)
 
     let box_float32 e = counted "box_f32" (Memory.box_float32 e)
 
-    let unbox_float32 e = counted "unbox_f32" (Memory.unbox_float32 e)
+    let unbox_float32 ?cast e = counted "unbox_f32" (Memory.unbox_float32 ?cast e)
 
     let box_int32 e = counted "box_i32" (Memory.box_int32 e)
 
-    let unbox_int32 e = counted "unbox_i32" (Memory.unbox_int32 e)
+    let unbox_int32 ?cast e = counted "unbox_i32" (Memory.unbox_int32 ?cast e)
 
     let box_int64 e = counted "box_i64" (Memory.box_int64 e)
 
-    let unbox_int64 e = counted "unbox_i64" (Memory.unbox_int64 e)
+    let unbox_int64 ?cast e = counted "unbox_i64" (Memory.unbox_int64 ?cast e)
 
     let box_nativeint e = counted "box_nativeint" (Memory.box_nativeint e)
 
-    let unbox_nativeint e = counted "unbox_nativeint" (Memory.unbox_nativeint e)
+    let unbox_nativeint ?cast e =
+      counted "unbox_nativeint" (Memory.unbox_nativeint ?cast e)
 
     let tag e = counted "tag" (Value.val_int e)
 
@@ -437,8 +438,40 @@ module Generate (Target : Target_sig.S) = struct
     let shift e = counted "shift" Arith.(e lsl const 1l)
   end
 
-  let convert ~(from : Typing.typ) ~(into : Typing.typ) e =
+  let is_cast (t : Typing.typ) =
+    match t with
+    | Tuple { cast = true; _ } | Array { cast = true; _ } -> true
+    | Tuple { cast = false; _ }
+    | Array { cast = false; _ }
+    | Top | Int _ | Number _ | Bigarray _ | Null | Bot -> false
+
+  let is_bigarray_cast (t : Typing.typ) =
+    match t with
+    | Bigarray { cast; _ } -> cast
+    | Top | Int _ | Number _ | Tuple _ | Array _ | Null | Bot -> false
+
+  (* Whether a value of this type has a more precise reference type
+     than a generic value *)
+  let has_ref_type (t : Typing.typ) =
+    match t with
+    | Number (_, Boxed_precise) -> true
+    | _ -> is_cast t || is_bigarray_cast t
+
+  let rec convert ~(from : Typing.typ) ~(into : Typing.typ) e =
     match from, into with
+    | _, Bigarray { cast = true; _ } ->
+        (* A value with a cast type already has a bigarray type *)
+        if is_bigarray_cast from then e else Bigarray.cast (convert ~from ~into:Top e)
+    | _, (Tuple { cast = true; _ } | Array { cast = true; _ }) ->
+        (* A value with a cast type already has a block type *)
+        if is_cast from then e else Value.as_block (convert ~from ~into:Top e)
+    | Number (n, Boxed_precise), Number (n', Boxed_precise) when Poly.equal n n' -> e
+    | Number (n', Unboxed), Number (n, Boxed_precise) when not (Poly.equal n n') ->
+        (* Dead code *)
+        Memory.as_box n (convert ~from ~into:Top e)
+    | Number (_, (Boxed | Boxed_precise)), Number (n, Boxed_precise)
+    | ( (Top | Int _ | Tuple _ | Bigarray _ | Array _ | Null | Bot)
+      , Number (n, Boxed_precise) ) -> Memory.as_box n (convert ~from ~into:Top e)
     | Int Unnormalized, Int Normalized -> Conv.normalize e
     | Int (Normalized | Unnormalized), Int (Normalized | Unnormalized) -> e
     (* Dummy value *)
@@ -453,11 +486,18 @@ module Generate (Target : Target_sig.S) = struct
     | _, Int (Normalized | Unnormalized) -> Conv.untag e
     | Int (Unnormalized | Normalized), _ -> Conv.tag e
     | Number (_, Unboxed), Number (_, Unboxed) -> e
-    | _, Number (Int32, Unboxed) -> Conv.unbox_int32 e
-    | _, Number (Int64, Unboxed) -> Conv.unbox_int64 e
-    | _, Number (Nativeint, Unboxed) -> Conv.unbox_nativeint e
-    | _, Number (Float, Unboxed) -> Conv.unbox_float e
-    | _, Number (Float32, Unboxed) -> Conv.unbox_float32 e
+    | _, Number (n, Unboxed) -> (
+        let cast =
+          match from with
+          | Number (n', Boxed_precise) -> not (Poly.equal n n')
+          | _ -> true
+        in
+        match n with
+        | Int32 -> Conv.unbox_int32 ~cast e
+        | Int64 -> Conv.unbox_int64 ~cast e
+        | Nativeint -> Conv.unbox_nativeint ~cast e
+        | Float -> Conv.unbox_float ~cast e
+        | Float32 -> Conv.unbox_float32 ~cast e)
     | Number (Int32, Unboxed), _ -> Conv.box_int32 e
     | Number (Int64, Unboxed), _ -> Conv.box_int64 e
     | Number (Nativeint, Unboxed), _ -> Conv.box_nativeint e
@@ -539,8 +579,8 @@ module Generate (Target : Target_sig.S) = struct
         (if negate then Value.phys_neq else Value.phys_eq)
           (transl_prim_arg ctx ~typ:Top x)
           (transl_prim_arg ctx ~typ:Top y)
-    | (Int _ | Number _ | Tuple _ | Bigarray _ | Null), _
-    | _, (Int _ | Number _ | Tuple _ | Bigarray _ | Null)
+    | (Int _ | Number _ | Tuple _ | Bigarray _ | Array _ | Null), _
+    | _, (Int _ | Number _ | Tuple _ | Bigarray _ | Array _ | Null)
     | Top, Top (* when [int_only] or wasi is enabled *) ->
         (* Only Top may contain JavaScript values, and the arguments of an
            integer equality test are never JavaScript values *)
@@ -1788,7 +1828,8 @@ module Generate (Target : Target_sig.S) = struct
           | Pv indices -> Some (indices, ctx.global_flow_info.info_defs.(Var.idx indices))
           | Pc _ -> None )
       with
-      | Bigarray { kind; layout; _ }, Some (indices, Expr (Block (_, l, _, _, _))) ->
+      | ( Bigarray { desc = { kind; layout; _ }; _ }
+        , Some (indices, Expr (Block (_, l, _, _, _))) ) ->
           Some
             ( kind
             , layout
@@ -1825,7 +1866,7 @@ module Generate (Target : Target_sig.S) = struct
     let caml_ba_get_n ~ctx ~context ~hint ta indices =
       match hint, get_type ctx ta with
       | Some (Optimization_hint.Hint_bigarray { unsafe; kind; layout }), _
-      | _, Bigarray { unsafe; kind; layout } ->
+      | _, Bigarray { desc = { unsafe; kind; layout }; _ } ->
           let indices = List.map ~f:(fun i -> transl_prim_arg ctx ~typ:int_n i) indices in
           caml_ba_get ~ctx ~context ~unsafe ~kind ~layout ta indices
       | _ ->
@@ -1871,7 +1912,7 @@ module Generate (Target : Target_sig.S) = struct
         | _ -> invalid_arity "caml_ba_get_generic" l ~expected:2);
     let caml_ba_float32_get_n ~ctx ~context ta indices =
       match get_type ctx ta with
-      | Bigarray { unsafe; layout; _ } ->
+      | Bigarray { desc = { unsafe; layout; _ }; _ } ->
           let indices = List.map ~f:(fun i -> transl_prim_arg ctx ~typ:int_n i) indices in
           caml_ba_get ~ctx ~context ~unsafe ~kind:Float32_t ~layout ta indices
       | _ ->
@@ -1928,7 +1969,7 @@ module Generate (Target : Target_sig.S) = struct
     let caml_ba_set_n ~ctx ~context ~hint ta indices v =
       match hint, get_type ctx ta with
       | Some (Optimization_hint.Hint_bigarray { unsafe; kind; layout }), _
-      | _, Bigarray { unsafe; kind; layout } ->
+      | _, Bigarray { desc = { unsafe; kind; layout }; _ } ->
           let indices = List.map ~f:(fun i -> transl_prim_arg ctx ~typ:int_n i) indices in
           caml_ba_set ~ctx ~context ~unsafe ~kind ~layout ta indices v
       | _ ->
@@ -1976,7 +2017,7 @@ module Generate (Target : Target_sig.S) = struct
         | _ -> invalid_arity "caml_ba_set_generic" l ~expected:3);
     let caml_ba_float32_set_n ~ctx ~context ta indices v =
       match get_type ctx ta with
-      | Bigarray { unsafe; layout; _ } ->
+      | Bigarray { desc = { unsafe; layout; _ }; _ } ->
           let indices = List.map ~f:(fun i -> transl_prim_arg ctx ~typ:int_n i) indices in
           caml_ba_set ~ctx ~context ~unsafe ~kind:Float32_t ~layout ta indices v
       | _ ->
@@ -2024,10 +2065,55 @@ module Generate (Target : Target_sig.S) = struct
     | Number (Float32, Unboxed) -> Some F32
     | _ -> None
 
+  (* The Wasm type of a variable, when it is more precise than a
+     generic value *)
+  let value_type ty : W.value_type option Code_generation.t =
+    match ty with
+    | Typing.Number (n, Boxed_precise) ->
+        let* t = Memory.box_type n in
+        return (Some t)
+    | Bigarray { cast = true; _ } ->
+        let* t = Bigarray.value_type in
+        return (Some t)
+    | _ ->
+        if is_cast ty
+        then
+          let* t = Value.block_type in
+          return (Some t)
+        else return (unboxed_type ty)
+
   let box_number_if_needed ctx x e =
     match Typing.var_type ctx.types x with
-    | Number (n, Boxed) as into -> convert ~from:(Number (n, Unboxed)) ~into e
+    | Number (n, (Boxed | Boxed_precise)) as into ->
+        convert ~from:(Number (n, Unboxed)) ~into e
     | _ -> e
+
+  let is_block (t : Typing.typ) =
+    match t with
+    | Tuple { block = true; _ } | Array _ | Bigarray _ -> true
+    | Tuple { block = false; _ } | Top | Int _ | Number _ | Null | Bot -> false
+
+  (* Use the array representation known from the type analysis to
+     avoid dynamic tests *)
+  let specialized_array_primitive ctx p l =
+    match l with
+    | [] -> None
+    | a :: _ -> (
+        match p, Typing.array_kind (get_type ctx a) with
+        | _, Generic -> None
+        | Vectlength k, k' -> if Poly.equal k k' then None else Some (Vectlength k')
+        | Extern (("caml_check_bound_gen" | "caml_check_bound_float"), h), Value ->
+            Some (Extern ("caml_check_bound", h))
+        | Extern ("caml_check_bound_gen", h), Float ->
+            Some (Extern ("caml_check_bound_float", h))
+        | Extern ("caml_array_unsafe_get", _), Value -> Some (Array_get Non_float)
+        | Extern ("caml_array_unsafe_get", h), Float ->
+            Some (Extern ("caml_floatarray_unsafe_get", h))
+        | Extern ("caml_array_unsafe_set", h), Value ->
+            Some (Extern ("caml_array_unsafe_set_addr", h))
+        | Extern ("caml_array_unsafe_set", h), Float ->
+            Some (Extern ("caml_floatarray_unsafe_set", h))
+        | _ -> None)
 
   let rec translate_expr ctx context x e =
     match e with
@@ -2078,8 +2164,8 @@ module Generate (Target : Target_sig.S) = struct
                    args
                    params)
             in
-            (* The environment argument is removed by
-               [remove_env_arguments] if [g] does not take one *)
+            (* The environment argument is removed or cast by
+               [fix_env_arguments] *)
             return (g, W.Call (g, args @ [ cl ]))
           in
           match unique with
@@ -2287,6 +2373,13 @@ module Generate (Target : Target_sig.S) = struct
         translate_int_equality ctx ~int_only ~negate:false x y
     | Prim (Neq { int_only }, [ x; y ]) ->
         translate_int_equality ctx ~int_only ~negate:true x y
+    | Prim (p, l) when Option.is_some (specialized_array_primitive ctx p l) ->
+        translate_expr
+          ctx
+          context
+          x
+          (Prim (Option.get (specialized_array_primitive ctx p l), l))
+    | Prim (IsInt _, [ y ]) when is_block (get_type ctx y) -> Arith.const 0l
     | Prim (Array_get _, [ x; y ]) ->
         Memory.array_get (transl_prim_arg ctx x) (transl_prim_arg ctx ~typ:int_n y)
     | Prim (Extern ("caml_array_unsafe_get", _), [ x; y ]) ->
@@ -2346,9 +2439,10 @@ module Generate (Target : Target_sig.S) = struct
         (* Like the assignment of a block parameter (see
            [parallel_renaming]): [x] may have been globalized *)
         let tx = Typing.var_type ctx.types x in
+        let* typ = value_type tx in
         store
           ~always:true
-          ?typ:(unboxed_type tx)
+          ?typ
           x
           (convert ~from:(Typing.var_type ctx.types y) ~into:tx (load y))
     | Let (x, _)
@@ -2374,10 +2468,31 @@ module Generate (Target : Target_sig.S) = struct
         if ctx.live.(Var.idx x) = 0
         then drop (translate_expr ctx context x e)
         else
-          store
-            ?typ:(unboxed_type (Typing.var_type ctx.types x))
-            x
-            (translate_expr ctx context x e)
+          let ty = Typing.var_type ctx.types x in
+          let already_cast =
+            (* Direct calls convert their result to the type of [x] *)
+            match e with
+            | Apply { f; exact = true; _ } -> (
+                match Global_flow.get_unique_closure ctx.global_flow_info ~call:x f with
+                | Some (g, _, false) when ctx.live.(Var.idx g) > 0 ->
+                    has_ref_type (Typing.return_type ctx.types g)
+                | _ -> false)
+            | _ -> false
+          in
+          let e = translate_expr ctx context x e in
+          let e =
+            if already_cast
+            then e
+            else
+              match ty with
+              | Number (n, Boxed_precise) ->
+                  (* No cast is emitted when the value is boxed here *)
+                  Memory.as_box n e
+              | Bigarray { cast = true; _ } -> Bigarray.cast e
+              | _ -> if is_cast ty then Value.as_block e else e
+          in
+          let* typ = value_type ty in
+          store ?typ x e
     | Set_field (x, n, (Non_float | Immediate), y) ->
         Memory.set_field (load_and_box ctx x) n (load_and_box ctx y)
     | Set_field (x, n, Float, y) ->
@@ -2447,7 +2562,8 @@ module Generate (Target : Target_sig.S) = struct
       l
       ~f:(fun continuation (y, ty, x, tx) ->
         let* () = continuation in
-        store ~always:true ?typ:(unboxed_type ty) y (convert ~from:tx ~into:ty (load x)))
+        let* typ = value_type ty in
+        store ~always:true ?typ y (convert ~from:tx ~into:ty (load x)))
       ~init:(return ())
 
   let exception_name = "ocaml_exception"
@@ -2606,6 +2722,8 @@ module Generate (Target : Target_sig.S) = struct
     in
     let g = Structure.build_graph ctx.blocks pc in
     let dom = Structure.dominator_tree g in
+    (* Computed when translating the body *)
+    let signature = ref None in
     let rec translate_tree result_typ fall_through pc context =
       let block = Addr.Map.find pc ctx.blocks in
       let keep_ouside pc' =
@@ -2739,7 +2857,8 @@ module Generate (Target : Target_sig.S) = struct
       List.fold_left
         ~f:(fun l x ->
           let* _ = l in
-          let* _ = add_var ?typ:(unboxed_type (Typing.var_type ctx.types x)) x in
+          let* typ = value_type (Typing.var_type ctx.types x) in
+          let* _ = add_var ?typ x in
           return ())
         ~init:(return ())
         params
@@ -2756,6 +2875,11 @@ module Generate (Target : Target_sig.S) = struct
               ~cps:(Var.Set.mem f ctx.in_cps)
               ~pair
               ~no_code_pointer:(Call_graph_analysis.direct_calls_only ctx.fun_info f)
+              ~precise_env:
+                ((* wasm-opt narrows the type of this parameter when it
+                    runs *)
+                 (not ctx.global_context.wasm_opt)
+                && Typing.can_unbox_parameters ctx.fun_info f)
               f
           in
           (* Double translation: the code refers to a function with two
@@ -2810,12 +2934,22 @@ module Generate (Target : Target_sig.S) = struct
              | _ -> no_event
            in
            let* () = build_initial_env in
+           let* result_typ = value_type return_type in
+           let result_typ = Option.value ~default:Type.value result_typ in
+           let* param_typs =
+             expression_list
+               (fun x ->
+                 let* typ = value_type (Typing.var_type ctx.types x) in
+                 return (Option.value ~default:Type.value typ))
+               params
+           in
+           signature := Some (param_typs, result_typ);
            let* () =
              wrap_with_handlers
                p
                ~dom
                pc
-               ~result_typ:[ Option.value ~default:Type.value (unboxed_type return_type) ]
+               ~result_typ:[ result_typ ]
                ~fall_through:`Return
                ~context:[]
                (fun ~result_typ ~fall_through ~context ->
@@ -2831,15 +2965,14 @@ module Generate (Target : Target_sig.S) = struct
       | Some f ->
           if Typing.can_unbox_parameters ctx.fun_info f
           then
-            { W.params =
-                (List.map
-                   ~f:(fun x ->
-                     Option.value
-                       ~default:Type.value
-                       (unboxed_type (Typing.var_type ctx.types x)))
-                   params
-                @ if without_env then [] else [ Type.value ])
-            ; result = [ Option.value ~default:Type.value (unboxed_type return_type) ]
+            let param_typs, result_typ = Option.get !signature in
+            let env_typ : W.value_type =
+              match Var.Hashtbl.find_opt ctx.global_context.env_param_types f with
+              | Some typ -> Ref typ
+              | None -> Type.value
+            in
+            { W.params = (param_typs @ if without_env then [] else [ env_typ ])
+            ; result = [ result_typ ]
             }
           else Type.func_type (param_count - 1)
     in
@@ -2862,16 +2995,24 @@ module Generate (Target : Target_sig.S) = struct
     :: acc
 
   (* Remove the environment argument of the direct calls to the
-     functions which do not take one. Whether a function takes an
-     environment is decided when its closure is translated, which can
-     happen after a call to it is translated. The environment argument
-     is the last one, and is either a variable or a constant: dropping
-     it has no effect. *)
-  let remove_env_arguments ~functions_without_env body =
+     functions which do not take one, and cast it to the type of the
+     environment parameter of the functions which have a precise one
+     ([Cast_elim] removes the casts of arguments which already have
+     this type). Whether a function takes an environment is decided
+     when its closure is translated, and the type of its environment
+     parameter when its body is translated, which can both happen
+     after a call to it is translated. The environment argument is the
+     last one, and is either a variable or a constant: dropping it has
+     no effect. *)
+  let fix_env_arguments ~(context : Code_generation.context) body =
     let args f l =
-      if Var.Hashtbl.mem functions_without_env f
+      if Var.Hashtbl.mem context.functions_without_env f
       then List.rev (List.tl (List.rev l))
-      else l
+      else
+        match Var.Hashtbl.find_opt context.env_param_types f, List.rev l with
+        | Some typ, env :: rem -> List.rev (W.RefCast (typ, env) :: rem)
+        | Some _, [] -> assert false
+        | None, _ -> l
     in
     let rec expression e =
       match Wasm_traverse.map_expression ~expression ~instructions e with
@@ -3061,15 +3202,15 @@ module Generate (Target : Target_sig.S) = struct
           match f with
           | W.Function ({ param_names; signature; locals; body; _ } as f) ->
               let body =
-                if Var.Hashtbl.length global_context.functions_without_env = 0
+                if
+                  Var.Hashtbl.length global_context.functions_without_env = 0
+                  && Var.Hashtbl.length global_context.env_param_types = 0
                 then body
-                else
-                  remove_env_arguments
-                    ~functions_without_env:global_context.functions_without_env
-                    body
+                else fix_env_arguments ~context:global_context body
               in
               let locals, body =
                 post_process_function_body
+                  ~context:global_context
                   ~profile
                   ~param_names
                   ~param_types:signature.params

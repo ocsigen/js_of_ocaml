@@ -29,7 +29,10 @@
         patterns.
      5. Rewrite [LocalGet]/[LocalSet]/[LocalTee] through the substitution
         and drop [LocalSet(x, LocalGet x)] copies introduced by merging.
-     6. Rebuild the [locals] list with only representatives.
+        A write whose value is never read (the local is dead after it) is
+        removed as well.
+     6. Rebuild the [locals] list with only the representatives that are
+        still used.
 
    Parameters participate as candidates — they are all live at entry
    (enforced by a synthetic Def-of-all-params entry node) so two
@@ -108,8 +111,18 @@ open Linear_scan
    graph; control flows in forward execution order from the returned
    entry node through to [exit_node]. *)
 
+(* The nodes of the writes to candidate locals are recorded in [defs],
+   with whether the write may be removed when dead. The nodes are created
+   in the reverse of the evaluation order (this is why the [else] branch
+   of a conditional is built before the [then] branch), so that [defs]
+   lists the writes in evaluation order. A write inside a [try] body is
+   never removed: an exception raised later in the body can reach the
+   handler, and this edge is not part of the graph. *)
 let build_cfg ~candidates ~param_vars instrs =
   let builder = Builder.create () in
+  let defs = ref [] in
+  let loops = ref [] in
+  let try_depth = ref 0 in
   let reserve_id () = Builder.reserve builder in
   let set_node id action succs = Builder.set builder id action succs in
   let add_node action succs = Builder.add builder action succs in
@@ -130,7 +143,10 @@ let build_cfg ~candidates ~param_vars instrs =
   in
   let def_node x exit_node =
     if Var.Set.mem x candidates
-    then add_node (Def (Var.Set.singleton x)) [ exit_node ]
+    then (
+      let node = add_node (Def (Var.Set.singleton x)) [ exit_node ] in
+      defs := (node, !try_depth = 0) :: !defs;
+      node)
     else exit_node
   in
   let rec build_expr block_stack exit_node (e : W.expression) =
@@ -180,8 +196,8 @@ let build_cfg ~candidates ~param_vars instrs =
         (* Evaluate [cond], then branch to [e1] or [e2]. [br 0] inside
            either branch targets the continuation after the IfExpr. *)
         let block_stack' = exit_node :: block_stack in
-        let then_entry = build_expr block_stack' exit_node e1 in
         let else_entry = build_expr block_stack' exit_node e2 in
+        let then_entry = build_expr block_stack' exit_node e1 in
         let branch = add_node Nop [ then_entry; else_entry ] in
         build_expr block_stack branch cond
     | BlockExpr (_, l) ->
@@ -197,7 +213,9 @@ let build_cfg ~candidates ~param_vars instrs =
            enclosing block stack (not counting the [Try] itself), so they
            are resolved against [block_stack]. *)
         let block_stack' = exit_node :: block_stack in
+        incr try_depth;
         let inner_body_entry = build_instrs block_stack' exit_node body in
+        decr try_depth;
         (* Wrap the body entry in a fresh [Nop] node whose only
            predecessor is the [Try] wrapper we are about to create. This
            ensures that in the DFS used to compute the RPO layout,
@@ -275,8 +293,8 @@ let build_cfg ~candidates ~param_vars instrs =
         (* [If] is a Wasm block: [br 0] inside a branch targets the
            continuation after the if. Push [exit_node] onto [block_stack]. *)
         let block_stack' = exit_node :: block_stack in
-        let then_entry = build_instrs block_stack' exit_node l1 in
         let else_entry = build_instrs block_stack' exit_node l2 in
+        let then_entry = build_instrs block_stack' exit_node l1 in
         let branch = add_node Nop [ then_entry; else_entry ] in
         build_expr block_stack branch cond
     | Block (_, l) ->
@@ -287,6 +305,13 @@ let build_cfg ~candidates ~param_vars instrs =
         let block_stack' = loop_entry :: block_stack in
         let body_entry = build_instrs block_stack' exit_node l in
         set_node loop_entry Nop [ body_entry ];
+        let written = ref Var.Set.empty in
+        Wasm_traverse.iter_locals
+          ~read:(fun _ -> ())
+          ~write:(fun x ->
+            if Var.Set.mem x candidates then written := Var.Set.add x !written)
+          l;
+        loops := (loop_entry, !written) :: !loops;
         loop_entry
   in
   let end_node = add_node Nop [] in
@@ -296,7 +321,7 @@ let build_cfg ~candidates ~param_vars instrs =
     then body_entry
     else add_node (Def param_vars) [ body_entry ]
   in
-  Builder.finish builder ~entry
+  Builder.finish builder ~entry, Array.of_list !defs, !loops
 
 (* --------------------------------------------------------------------- *)
 (*  Body rewriting                                                       *)
@@ -307,45 +332,73 @@ let subst_var subst x =
   | None -> x
   | Some y -> y
 
-let rec rewrite_expr subst (e : W.expression) : W.expression =
+(* [dead] tells, for each write to a candidate local in evaluation
+   order, whether its value is never read. *)
+type rewrite =
+  { subst : Var.t Var.Hashtbl.t
+  ; candidates : Var.Set.t
+  ; dead : bool array
+  ; mutable next_def : int
+  }
+
+let is_dead r x =
+  Var.Set.mem x r.candidates
+  &&
+  let i = r.next_def in
+  r.next_def <- i + 1;
+  r.dead.(i)
+
+(* Expressions which can be dropped without changing anything *)
+let removable (e : W.expression) =
   match e with
-  | LocalGet x -> LocalGet (subst_var subst x)
-  | LocalTee (x, e') -> LocalTee (subst_var subst x, rewrite_expr subst e')
+  | LocalGet _ | Const _ | GlobalGet _ | RefFunc _ | RefNull _ | RefI31 (Const _) -> true
+  | _ -> false
+
+let rec rewrite_expr r (e : W.expression) : W.expression =
+  match e with
+  | LocalGet x -> LocalGet (subst_var r.subst x)
+  | LocalTee (x, e') ->
+      let e' = rewrite_expr r e' in
+      if is_dead r x then e' else LocalTee (subst_var r.subst x, e')
   | _ ->
       Wasm_traverse.map_expression
-        ~expression:(rewrite_expr subst)
-        ~instructions:(rewrite_instrs subst)
+        ~expression:(rewrite_expr r)
+        ~instructions:(rewrite_instrs r)
         e
 
 (* Also drop the [local.set x (local.get x)] copies introduced by
    merging. *)
-and rewrite_instrs subst l =
+and rewrite_instrs r l =
   List.filter_map l ~f:(fun (i : W.instruction) ->
       match i with
       | LocalSet (x, e) -> (
-          let x = subst_var subst x in
-          match rewrite_expr subst e with
-          | LocalGet y when Var.equal x y -> None
-          | e -> Some (W.LocalSet (x, e)))
+          let e = rewrite_expr r e in
+          if is_dead r x
+          then if removable e then None else Some (W.Drop e)
+          else
+            let x = subst_var r.subst x in
+            match e with
+            | LocalGet y when Var.equal x y -> None
+            | e -> Some (W.LocalSet (x, e)))
       | _ ->
           Some
             (Wasm_traverse.map_instruction
-               ~expression:(rewrite_expr subst)
-               ~instructions:(rewrite_instrs subst)
+               ~expression:(rewrite_expr r)
+               ~instructions:(rewrite_instrs r)
                i))
 
 (* --------------------------------------------------------------------- *)
 (*  Entry point                                                          *)
 (* --------------------------------------------------------------------- *)
 
-let f ~param_names ~param_types ~locals instrs =
+let f ~keep_names ~param_names ~param_types ~locals instrs =
   let t = Timer.make () in
   let num_params = List.length param_names in
   assert (List.length param_types = num_params);
-  (* In pretty mode, only coalesce compiler-generated variables so
+  (* With [keep_names], only coalesce compiler-generated variables so
      user-given OCaml names survive in the Wasm name section (and are
      visible in browser devtools). *)
-  let eligible v = (not (Config.Flag.pretty ())) || Var.generated_name v in
+  let eligible v = (not keep_names) || Var.generated_name v in
   let types = Var.Hashtbl.create (num_params + List.length locals) in
   let param_vars =
     List.fold_left2 param_names param_types ~init:Var.Set.empty ~f:(fun acc v t ->
@@ -363,26 +416,86 @@ let f ~param_names ~param_types ~locals instrs =
   else (
     incr total_calls;
     total_candidates := !total_candidates + num_candidates;
-    let g = build_cfg ~candidates ~param_vars instrs in
+    let g, defs, loops = build_cfg ~candidates ~param_vars instrs in
     let live_in_map = liveness g in
+    (* For each variable, the loops which write it, and the loops in
+       which it is live but never written. We do not merge two such
+       variables: this would add a write inside the loop to a local
+       which has none. V8 creates a loop phi for each local written in
+       the loop body, and does not remove right away such a phi whose
+       back edge is the phi itself (it takes one optimization phase per
+       loop nesting level), so the value would no longer be recognized
+       as the same inside the loop. *)
+    let written_in = Var.Hashtbl.create 16 in
+    let invariant_in = Var.Hashtbl.create 16 in
+    let add tbl x i =
+      Var.Hashtbl.replace
+        tbl
+        x
+        (IntSet.add i (Option.value ~default:IntSet.empty (Var.Hashtbl.find_opt tbl x)))
+    in
+    List.iteri loops ~f:(fun i (entry, written) ->
+        Var.Set.iter (fun x -> add written_in x i) written;
+        Var.Set.iter
+          (fun x -> if Var.Set.mem x candidates then add invariant_in x i)
+          (Var.Set.diff live_in_map.(entry) written));
+    let loop_set tbl x =
+      Option.value ~default:IntSet.empty (Var.Hashtbl.find_opt tbl x)
+    in
+    let loop_compatible r x =
+      IntSet.disjoint (loop_set written_in r) (loop_set invariant_in x)
+      && IntSet.disjoint (loop_set invariant_in r) (loop_set written_in x)
+    in
+    let merge_loops r x =
+      let union tbl =
+        let s = IntSet.union (loop_set tbl r) (loop_set tbl x) in
+        if not (IntSet.is_empty s) then Var.Hashtbl.replace tbl r s
+      in
+      union written_in;
+      union invariant_in
+    in
+    let dead =
+      Array.map
+        ~f:(fun (node, removable) ->
+          removable
+          &&
+          match g.actions.(node), g.succs.(node) with
+          | Def s, [ next ] -> not (Var.Set.mem (Var.Set.choose s) live_in_map.(next))
+          | _ -> assert false)
+        defs
+    in
     let ranges = live_ranges g live_in_map ~candidates ~param_vars in
     let subst = Var.Hashtbl.create num_candidates in
     let type_of v = Var.Hashtbl.find types v in
     let hint_count, opportunistic_count =
       allocate
-        ~compatible:(fun a b -> Poly.equal (type_of a) (type_of b))
+        ~compatible:(fun a b -> Poly.equal (type_of a) (type_of b) && loop_compatible a b)
         g
         ranges
-        ~assign:(fun x r -> if not (Var.equal x r) then Var.Hashtbl.replace subst x r)
+        ~assign:(fun x r ->
+          if not (Var.equal x r)
+          then (
+            merge_loops r x;
+            Var.Hashtbl.replace subst x r))
     in
     total_hint_count := !total_hint_count + hint_count;
     total_opportunistic_count := !total_opportunistic_count + opportunistic_count;
     let res =
-      if Var.Hashtbl.length subst = 0
+      if Var.Hashtbl.length subst = 0 && not (Array.exists ~f:Fun.id dead)
       then locals, instrs
       else
-        ( List.filter locals ~f:(fun (v, _) -> not (Var.Hashtbl.mem subst v))
-        , rewrite_instrs subst instrs )
+        let r = { subst; candidates; dead; next_def = 0 } in
+        let instrs = rewrite_instrs r instrs in
+        assert (r.next_def = Array.length dead);
+        (* Only keep the representatives which are still accessed *)
+        let used = Var.Hashtbl.create 16 in
+        Wasm_traverse.iter_locals
+          ~read:(fun x -> Var.Hashtbl.replace used x ())
+          ~write:(fun x -> Var.Hashtbl.replace used x ())
+          instrs;
+        ( List.filter locals ~f:(fun (v, _) ->
+              (not (Var.Hashtbl.mem subst v)) && Var.Hashtbl.mem used v)
+        , instrs )
     in
     total_time := !total_time +. Timer.get t;
     res)

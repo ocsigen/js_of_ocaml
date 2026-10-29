@@ -130,7 +130,7 @@ let build_runtime () =
       Fs.with_intermediate_file (Filename.temp_file "runtime" ".wasm")
       @@ fun runtime_file ->
       Runtime.build
-        ~opt_options:[ "-g"; "-O2" ]
+        ~opt_options:[ "-g"; "--remove-unused-module-elements" ]
         ~variables
         ~allowed_imports:
           (Some
@@ -281,6 +281,7 @@ let link_runtime ~profile runtime_wasm_files output_file =
       ~output_file:temp_file);
     Binaryen.optimize
       ~profile
+      ~options:[ "--quiet"; "--remove-unused-module-elements" ]
       ~opt_input_sourcemap:None
       ~opt_output_sourcemap:None
       ~input_file:temp_file
