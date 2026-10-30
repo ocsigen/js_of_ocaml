@@ -38,12 +38,6 @@ let debug = Debug.find "clone"
 
 let times = Debug.find "times"
 
-(* Maximal size of a cloned function, in number of instructions *)
-let max_size = 300
-
-(* Maximal number of copies of a function *)
-let max_clones = 4
-
 let rec iter_closure_blocks blocks pc ~f =
   Code.preorder_traverse
     { fold = fold_children }
@@ -63,7 +57,7 @@ exception Too_large
 (* Size of a closure, in number of instructions, if at most
    [max_size]. We stop as soon as the limit is exceeded, so as not to
    traverse large functions. *)
-let closure_size blocks pc =
+let closure_size ~max_size blocks pc =
   let n = ref 0 in
   try
     iter_closure_blocks blocks pc ~f:(fun block ->
@@ -98,6 +92,10 @@ type candidate =
 
 let f p =
   let t = Timer.make () in
+  (* The code growth allowed for each function, in number of
+     instructions: a function of size [n] is cloned at most
+     [budget / n] times. *)
+  let budget = Config.Param.clone_higher_order_budget () in
   let closures = Var.Hashtbl.create 1024 in
   Addr.Map.iter
     (fun _ block ->
@@ -110,7 +108,7 @@ let f p =
   let candidates = Var.Hashtbl.create 16 in
   Var.Hashtbl.iter
     (fun f (params, ((pc, _) as cont), info) ->
-      match closure_size p.blocks pc with
+      match closure_size ~max_size:budget p.blocks pc with
       | None -> ()
       | Some size -> (
           match called_parameters p.blocks params pc with
@@ -210,7 +208,7 @@ let f p =
       then (
         let l =
           List.sort l ~cmp:(fun (_, n) (_, n') -> compare n' n)
-          |> List.filteri ~f:(fun i _ -> i < max_clones)
+          |> List.filteri ~f:(fun i _ -> i < budget / c.size)
         in
         List.iter l ~f:(fun (key, _) ->
             let p', f', params', cont' =

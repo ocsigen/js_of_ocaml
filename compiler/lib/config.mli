@@ -131,6 +131,8 @@ module Param : sig
   (* | TcWhile *)
   val tailcall_optim : unit -> tc
 
+  val clone_higher_order_budget : unit -> int
+
   val lambda_lifting_threshold : unit -> int
 
   val lambda_lifting_baseline : unit -> int
