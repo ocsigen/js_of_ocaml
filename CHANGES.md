@@ -13,6 +13,7 @@
   represented as externref, floats, integers and booleans are passed as
   f64 and i32, and the conversions of short strings are cached (#2563)
 * Compiler/Wasm: skip wasm-opt at --opt 1 (#2238)
+* Compiler/Wasm: require Binaryen 120 (#2580)
 
 ## Bug fixes
 * Compiler: fix a miscompilation of `Int_trie` by OxCaml's flambda2 at -O2
