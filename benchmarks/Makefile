@@ -1,11 +1,11 @@
 # graphs without precompiled programs:
-GRAPHSNOPR = time.pdf time-optim.pdf nativejs.pdf
+GRAPHSNOPR = time.pdf time-optim-jsoo.pdf nativejs.pdf
 
 # graphs with precompiled programs:
-GRAPHSPR = size.pdf size-optim.pdf compiletime.pdf
+GRAPHSPR = size.pdf size-optim-jsoo.pdf compiletime.pdf
 
 # graphs showing the impact of supporting effects
-GRAPHSEFF = time-effects.pdf size-effects.pdf size-bzip2-effects.pdf \
+GRAPHSEFF = time-effects-jsoo.pdf size-effects-jsoo.pdf size-bzip2-effects-jsoo.pdf \
 	time-effects-wasm.pdf size-effects-wasm.pdf
 
 # For full benchs:
@@ -74,7 +74,7 @@ __run:
 	touch __run
 
 __run_effects:
-	$(RUN) -fast report-time-effects.config report-time-effects-wasm.config
+	$(RUN) -fast report-time-effects-jsoo.config report-time-effects-wasm.config
 	touch __run_effects
 
 fastrun:
@@ -149,8 +149,8 @@ size.gpl: __run __missingsizes
 # the second one (stacked parts of the bars) below the first one
 
 
-time-optim.svg: __run
-	$(REPORT) -config report-time-optim.config \
+time-optim-jsoo.svg: __run
+	$(REPORT) -config report-time-optim-jsoo.config \
 	 -omit binary_trees \
 	 -omit fannkuch_redux \
 	 -omit fannkuch_redux_2 \
@@ -158,8 +158,8 @@ time-optim.svg: __run
 	 -max 2.5 -svg 7 400 150 -edgecaption -ylabel "Execution time" \
 	 > $@
 
-size-optim.svg: __run __missingsizes
-	$(REPORT) -config report-size-optim.config \
+size-optim-jsoo.svg: __run __missingsizes
+	$(REPORT) -config report-size-optim-jsoo.config \
 	 -omit binary_trees \
 	 -omit fannkuch_redux \
 	 -omit fannkuch_redux_2 \
@@ -175,8 +175,8 @@ size-optim.svg: __run __missingsizes
 	 -max 2.5 -svg 7 650 150 -edgecaption -ylabel Size \
 	 > $@
 
-time-effects.svg: __run_effects
-	$(REPORT) -config report-time-effects.config \
+time-effects-jsoo.svg: __run_effects
+	$(REPORT) -config report-time-effects-jsoo.config \
 	 -omit binary_trees \
 	 -omit fannkuch_redux \
 	 -omit fannkuch_redux_2 \
@@ -189,8 +189,8 @@ time-effects.svg: __run_effects
 	 -min 0.5 -max 1.5 -svg 7 400 150 -edgecaption -ylabel "Execution time" \
 	 > $@
 
-size-effects.svg: __run_effects
-	$(REPORT) -config report-size-effects.config \
+size-effects-jsoo.svg: __run_effects
+	$(REPORT) -config report-size-effects-jsoo.config \
 	 -omit binary_trees \
 	 -omit fannkuch_redux \
 	 -omit fannkuch_redux_2 \
@@ -237,8 +237,8 @@ size-effects-wasm.svg: __run_effects
 	 -min 0.9 -max 1.6 -svg 7 650 150 -edgecaption -ylabel Size \
 	 > $@
 
-size-gzipped-effects.svg: __run_effects
-	$(REPORT) -config report-size-gzipped-effects.config \
+size-gzipped-effects-jsoo.svg: __run_effects
+	$(REPORT) -config report-size-gzipped-effects-jsoo.config \
 	 -omit binary_trees \
 	 -omit fannkuch_redux \
 	 -omit fannkuch_redux_2 \
@@ -254,8 +254,8 @@ size-gzipped-effects.svg: __run_effects
 	 -max 1.2 -min 0.8 -svg 7 650 150 -edgecaption -ylabel Size \
 	 > $@
 
-size-bzip2-effects.svg: __run_effects
-	$(REPORT) -config report-size-bzip2-effects.config \
+size-bzip2-effects-jsoo.svg: __run_effects
+	$(REPORT) -config report-size-bzip2-effects-jsoo.config \
 	 -omit binary_trees \
 	 -omit fannkuch_redux \
 	 -omit fannkuch_redux_2 \
