@@ -8,3 +8,10 @@ f2: @2 set nop nop
 f3: @2 nop @3 set set
 f4: @3 set set set
 nested loops: 1 outlined functions
+raising calls, toplevel: call handler
+outlined: set set set
+outlined: block[ set set br_on_null 0 return 0 ] return 1
+outlined: set set set
+outlined: block[ set set br_on_null 0 return 0 ] return 1
+outlined: set set set
+outlined: block[ call br_if 0 (call) call br_if 0 (call) call set set ]
