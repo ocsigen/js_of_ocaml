@@ -117,9 +117,9 @@
   (link_flags :standard -w no-missing-debug-event)))
 
 (tests
- (names local_sink_exn)
+ (names local_sink_exn dead_store_exn)
  (modes js wasm)
- ; The bug only shows up without debug information
+ ; The bugs only show up without debug information
  (ocamlc_flags ())
  ; Source maps are enabled in dev mode, where they warn about the missing
  ; debug information. (Passing --no-source-map instead would fail in
