@@ -12,7 +12,7 @@
 #
 # Environment: WASM_OF_OCAML (compiler, default: the in-tree build),
 # CONFIGS (configurations to compare, see run_one.sh), JOBS (parallel
-# jobs, default 8). Binaryen and node must be in PATH.
+# jobs, default 8). node must be in PATH.
 set -e
 HERE=$(cd "$(dirname "$0")" && pwd)
 ROOT=$(cd "$HERE/../.." && pwd)
