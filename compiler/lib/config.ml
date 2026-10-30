@@ -85,6 +85,8 @@ module Flag = struct
 
   let clone_higher_order = o ~name:"clone-higher-order" ~default:true
 
+  let int_range = o ~name:"int-range" ~default:true
+
   let effects = o ~name:"effects" ~default:false
 
   let staticeval = o ~name:"staticeval" ~default:true
