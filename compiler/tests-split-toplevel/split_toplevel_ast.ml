@@ -166,3 +166,49 @@ let () =
     Split_toplevel.f ~name:(Code.Var.fresh_n "toplevel") ~locals:!locals body
   in
   Printf.printf "nested loops: %d outlined functions\n" (List.length fields)
+
+(* A call to a function signaling exceptions by returning null, under
+   the exception handler wrapping the toplevel code: the [br_on_null]
+   escaping the outlined code branches to a block wrapping the body of
+   the outlined function, which then returns the exit code telling the
+   call site to perform the branch. *)
+let () =
+  let raising = Code.Var.fresh_n "raising" in
+  let call = W.Drop (Br_on_null (0, Call (raising, []))) in
+  let handler = W.GlobalSet (g, Const (I32 2l)) in
+  let body =
+    [ W.Block
+        ( { params = []; result = [] }
+        , filler () @ [ call ] @ filler () @ [ call ] @ filler () )
+    ; handler
+    ]
+  in
+  let rec print_instr (i : W.instruction) =
+    match i with
+    | Block (_, l) ->
+        print_string " block[";
+        List.iter print_instr l;
+        print_string " ]"
+    | Drop (Br_on_null (d, Call _)) -> Printf.printf " br_on_null %d" d
+    | Br_if (d, Call _) -> Printf.printf " br_if %d (call)" d
+    | Return (Some (Const (I32 n))) -> Printf.printf " return %ld" n
+    | Push (Const (I32 n)) -> Printf.printf " push %ld" n
+    | GlobalSet (_, Const (I32 1l)) -> print_string " set"
+    | GlobalSet (_, Const (I32 2l)) -> print_string " handler"
+    | CallInstr _ -> print_string " call"
+    | _ -> print_string " ?"
+  in
+  let _, body, fields =
+    Split_toplevel.f ~name:(Code.Var.fresh_n "toplevel") ~locals:[] body
+  in
+  print_string "raising calls, toplevel:";
+  List.iter print_instr body;
+  print_newline ();
+  List.iter
+    (function
+      | W.Function { body; _ } ->
+          print_string "outlined:";
+          List.iter print_instr body;
+          print_newline ()
+      | _ -> ())
+    fields
