@@ -41,6 +41,17 @@ not counted as a use from outside, so that it is cloned.
   10 128 10 8 4
   11 7
 
+The code growth is bounded for each function by a budget, in number of
+instructions: with a budget of 10, the function [iterate], of size 9, is
+cloned only once.
+
+  $ wasm_of_ocaml --opt 2 --pretty --set clone-budget=10 --debug clone prog.bc \
+  >   -o prog.js 2>&1 | grep '{iterate}' | sed 's/^clone v[0-9]*/clone /'
+  clone {iterate} (size 9): 1 copies (1 other uses)
+  $ node prog.js
+  10 128 10 8 4
+  11 7
+
 No cloning at -O1, where the flow analysis does not track function
 parameters.
 
