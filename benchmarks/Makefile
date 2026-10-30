@@ -276,8 +276,13 @@ compiletime.svg: __run __precomp __missingcompiletimes
 	 -omit binary_trees \
 	 -omit fannkuch_redux \
 	 -omit loop \
-	 -max 4 -svg 7 500 150 -edgecaption -ylabel "Compile time" \
-	 > $@
+	 -max 2.5 -svg 7 500 150 -edgecaption -ylabel "Compile time" -script \
+	| perl -pe 'BEGIN{undef $$/;} s/^set multiplot\n/set multiplot\nset tmargin 3\n/m; s/e\nplot/e\nunset key\nplot/' \
+	| gnuplot > $@
+# Js_of_ocaml and Wasm_of_ocaml compile the output of ocamlc: their bars are
+# stacked on top of the ocamlc time, drawn by the second plot. The perl
+# invocation above removes the key of the second plot, and gives both plots
+# the same top margin so that they are aligned.
 
 nativejs.svg: __run
 	$(REPORT) -config report-nativejs.config \

@@ -57,16 +57,27 @@ let rec merge f l1 l2 =
 
 let merge_blank = List.map ~f:(fun (n2, v2) -> n2, (0.0, 0.0) :: v2)
 
-let read_column ~measure path spec refe :
+(* [dir] can be a sum [dir1+dir2+...] of several specs: the column is then
+   the sum of their measures *)
+let read_column ~measure path dir refe :
     (Measure.t option list * (string * (float * float) list) list) option =
+  let specs =
+    List.map (String.split_on_char ~sep:'+' dir) ~f:(fun d -> Spec.create d "")
+  in
   let l =
-    List.map
-      (Spec.find_names ~root:path (Spec.no_ext spec))
+    List.filter_map
+      (Spec.find_names ~root:path (Spec.no_ext (List.hd specs)))
       ~f:(fun nm ->
-        let l = read_measures path spec nm in
-        let a = Array.of_list l in
-        let m, i = mean_with_confidence a in
-        nm, [ m, i ])
+        let measures = List.map specs ~f:(fun spec -> read_measures path spec nm) in
+        if List.exists measures ~f:(fun l -> List.length l = 0)
+        then None
+        else
+          Some
+            ( nm
+            , [ List.fold_left measures ~init:(0., 0.) ~f:(fun (m, i) l ->
+                    let m', i' = mean_with_confidence (Array.of_list l) in
+                    m +. m', i +. i')
+              ] ))
   in
   if refe then reference := Some l;
   Some ([ Some measure ], l)
@@ -345,8 +356,7 @@ let output ~format conf =
       output_table
         (List.map conf ~f:(function
           | None -> read_blank_column ()
-          | Some (dir1, dir2, measure, refe) ->
-              read_column ~measure dir1 (Spec.create dir2 "") refe))
+          | Some (dir1, dir2, measure, refe) -> read_column ~measure dir1 dir2 refe))
         (output_function !no_header);
       no_header := true);
   close ()
