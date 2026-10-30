@@ -141,7 +141,7 @@ size.gpl: __run __missingsizes
 	 -append planet \
 	 -append js_of_ocaml \
 	 -append ocamlc \
-	 -max 4.5 -ylabel Size -script \
+	 -max 2 -ylabel Size -script \
 	 -svg 7 650 150 \
 	| perl -pe 'BEGIN{undef $$/;} s/^set multiplot\n/set multiplot\nset rmargin at screen 0.80\nset key at screen 0.805,0.93 left top Left reverse samplen 2\n/m; s/e\nplot/e\nset key at screen 0.805,0.6 left top Left reverse samplen 2\nplot/smg' \
 	 > $@
@@ -294,7 +294,7 @@ size-bzip2-effects-jsoo.svg: __run_effects
 	 -append planet \
 	 -append js_of_ocaml \
 	 -append ocamlc \
-	 -max 1.1 -min 0.95 -svg 7 650 150 -edgecaption -ylabel Size \
+	 -max 1.6 -min 0.9 -svg 7 650 150 -edgecaption -ylabel "Size (bzip2)" \
 	 > $@
 
 compiletime.svg: __run __precomp __missingcompiletimes
