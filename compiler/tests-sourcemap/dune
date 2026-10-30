@@ -46,6 +46,8 @@
  (target dump_sourcemap_wasm.output)
  (enabled_if
   (= %{profile} dev))
+ ; wasm_of_ocaml drops the mappings to source files it cannot find
+ (deps a.ml b.ml c.ml d.ml test_bc.ml)
  (action
   (progn
    (run
