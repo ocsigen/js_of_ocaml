@@ -13,7 +13,7 @@ The easiest way to install wasm\_of\_ocaml is to use opam:
 ```
 opam install wasm_of_ocaml-compiler js_of_ocaml js_of_ocaml-ppx js_of_ocaml-lwt
 ```
-Binaryen version 119 or later is required. The opam command above will install it automatically if needed.
+Binaryen version 120 or later is required. The opam command above will install it automatically if needed.
 
 ## Usage
 

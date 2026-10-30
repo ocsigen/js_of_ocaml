@@ -59,7 +59,7 @@ To compile to WebAssembly instead of JavaScript:
 ```
 opam install wasm_of_ocaml-compiler
 ```
-**Additional requirement**: Binaryen 119 or later must be installed on your system. See [Binaryen installation](https://github.com/WebAssembly/binaryen).
+**Additional requirement**: Binaryen 120 or later must be installed on your system. See [Binaryen installation](https://github.com/WebAssembly/binaryen).
 
 See [wasm\_of\_ocaml](./wasm_overview.md) for usage.
 
