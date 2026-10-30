@@ -257,6 +257,14 @@ module Param = struct
       ~desc:"Set tailcall optimisation"
       (enum [ "trampoline", TcTrampoline (* default *); "none", TcNone ])
 
+  let clone_higher_order_budget =
+    p
+      ~name:"clone-budget"
+      ~desc:
+        "set the maximal number of instructions added by cloning a higher-order function \
+         for the functions it is passed"
+      (int 300)
+
   let lambda_lifting_threshold =
     (* When we reach this depth, we start looking for functions to be lifted *)
     p
