@@ -35,9 +35,5 @@ jobs:
         uses: ocaml/setup-ocaml@v3
         with:
           ocaml-compiler: "5.5"
-      - name: Set-up Binaryen
-        uses: Aandreba/setup-binaryen@v1.0.0
-        with:
-          token: ${{ github.token }}
       - run: opam install .
       - run: opam exec -- dune build @runtest-parser

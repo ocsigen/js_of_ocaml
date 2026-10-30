@@ -91,11 +91,6 @@ jobs:
             ox: https://github.com/oxcaml/opam-repository.git#${{ env.OXCAML_OPAM_REPO_REF }}
         if: ${{ endsWith(matrix.ocaml-compiler, '+ox') }}
 
-      - name: Set-up Binaryen
-        uses: Aandreba/setup-binaryen@v1.0.0
-        with:
-          token: ${{ github.token }}
-
       - name: Pin js_of_ocaml
         working-directory: ./js_of_ocaml
         run: opam pin . -n --with-version 6.0.1+ox

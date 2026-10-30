@@ -19,13 +19,6 @@ RUN curl -q https://nodejs.org/download/v8-canary/$NODE_VERSION/$NODE.tar.xz \
   | tar xJf -
 ENV PATH="/bench-dir/$NODE/bin:$PATH"
 
-# Install binaryen
-ENV BINARYEN_VERSION=version_122
-ENV BINARYEN=binaryen-$BINARYEN_VERSION
-RUN curl -Lq https://github.com/WebAssembly/binaryen/releases/download/$BINARYEN_VERSION/$BINARYEN-x86_64-linux.tar.gz \
-  | tar zxf -
-ENV PATH="/bench-dir/$BINARYEN/bin:$PATH"
-
 # Jane Street opam packages
 RUN mkdir janestreet \
  && cd janestreet \
