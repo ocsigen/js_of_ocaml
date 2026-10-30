@@ -99,6 +99,8 @@ module Flag = struct
 
   let excwrap = o ~name:"excwrap" ~default:true
 
+  let exn_sentinel = o ~name:"exn-sentinel" ~default:true
+
   let improved_stacktrace = o ~name:"with-js-error" ~default:false
 
   let inline_callgen = o ~name:"callgen" ~default:false

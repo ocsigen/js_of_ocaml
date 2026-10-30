@@ -176,7 +176,11 @@ caml_div
 caml_mod
 
 From +jslib.js:
+caml_exn_sentinel
 caml_is_js
+caml_pending_exn
+caml_raise_sentinel
+caml_take_exn
 caml_trampoline
 caml_trampoline_return
 
