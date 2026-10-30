@@ -38,7 +38,9 @@ jobs:
           - ocaml-name: "5.4.0+32bit"
             ocaml-compiler: "ocaml-variants.5.4.0+options,ocaml-option-32bit"
 
-    runs-on: ubuntu-latest
+    # OCaml 4.13 and 5.0 do not build with the C23 default of the GCC of
+    # Ubuntu 26.04 (ubuntu-latest)
+    runs-on: ${{ (matrix.ocaml-compiler == '4.13' || matrix.ocaml-compiler == '5.0') && 'ubuntu-24.04' || 'ubuntu-latest' }}
 
     name: ${{ matrix.ocaml-name != '' && matrix.ocaml-name || matrix.ocaml-compiler }} / Ubuntu
 
