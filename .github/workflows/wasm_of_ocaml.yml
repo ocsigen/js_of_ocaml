@@ -115,11 +115,6 @@ jobs:
         if: matrix.ocaml-name == '5.6+trunk'
         run: opam pin add -n ppxlib https://github.com/hhugo/ppxlib.git#support-5.6
 
-      - name: Set-up Binaryen
-        uses: Aandreba/setup-binaryen@v1.0.0
-        with:
-          token: ${{ github.token }}
-
       # Work-around a race between reinstalling mingw-w64-shims
       # (because of conf-pkg-config optional dep) and installing other
       # packages that implicitly depend on mingw-w64-shims.
