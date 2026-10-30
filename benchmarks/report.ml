@@ -57,16 +57,27 @@ let rec merge f l1 l2 =
 
 let merge_blank = List.map ~f:(fun (n2, v2) -> n2, (0.0, 0.0) :: v2)
 
-let read_column ~measure path spec refe :
+(* [dir] can be a sum [dir1+dir2+...] of several specs: the column is then
+   the sum of their measures *)
+let read_column ~measure path dir refe :
     (Measure.t option list * (string * (float * float) list) list) option =
+  let specs =
+    List.map (String.split_on_char ~sep:'+' dir) ~f:(fun d -> Spec.create d "")
+  in
   let l =
-    List.map
-      (Spec.find_names ~root:path (Spec.no_ext spec))
+    List.filter_map
+      (Spec.find_names ~root:path (Spec.no_ext (List.hd specs)))
       ~f:(fun nm ->
-        let l = read_measures path spec nm in
-        let a = Array.of_list l in
-        let m, i = mean_with_confidence a in
-        nm, [ m, i ])
+        let measures = List.map specs ~f:(fun spec -> read_measures path spec nm) in
+        if List.exists measures ~f:(fun l -> List.length l = 0)
+        then None
+        else
+          Some
+            ( nm
+            , [ List.fold_left measures ~init:(0., 0.) ~f:(fun (m, i) l ->
+                    let m', i' = mean_with_confidence (Array.of_list l) in
+                    m +. m', i +. i')
+              ] ))
   in
   if refe then reference := Some l;
   Some ([ Some measure ], l)
@@ -122,11 +133,13 @@ let normalize (h, t) =
   | Some rr ->
       ( h
       , List.map t ~f:(fun (nm, l) ->
-            let r, _ = List.hd (List.assoc nm rr) in
-            if r <> r
-            then (
-              Format.eprintf "No reference available for '%s'@." nm;
-              exit 1);
+            let r =
+              match List.assoc_opt nm rr with
+              | Some ((r, _) :: _) when r = r -> r
+              | _ ->
+                  Format.eprintf "No reference available for '%s'@." nm;
+                  exit 1
+            in
             nm, List.map l ~f:(fun (v, i) -> v /. r, i /. r)) )
 
 let stats (h, t) =
@@ -255,10 +268,43 @@ let filter (h, t) =
   in
   h, l1 @ app
 
+let column_title (m : Measure.t) =
+  match m.title with
+  | Some t -> t
+  | None -> m.name
+
+(* A benchmark is only shown if all columns have a measure for it. Warn
+   about the ones dropped for lack of data, unless they were omitted
+   explicitly. *)
+let warn_dropped (l : (Measure.t option list * (string * _) list) option list) old_table t
+    =
+  let columns =
+    List.filter_map l ~f:(function
+      | Some ([ Some m ], c) -> Some (column_title m, List.map c ~f:fst)
+      | _ -> None)
+  in
+  let names = List.sort_uniq ~cmp:compare (List.concat_map columns ~f:snd) in
+  let names =
+    match old_table with
+    | None -> names
+    | Some o -> List.filter names ~f:(fun nm -> List.mem_assoc nm ~map:o)
+  in
+  List.iter names ~f:(fun nm ->
+      if not (List.mem_assoc nm ~map:t || List.mem nm ~set:!omitted)
+      then
+        Format.eprintf
+          "Warning: '%s' left out of the graph, no data for: %s@."
+          nm
+          (String.concat
+             ~sep:", "
+             (List.filter_map columns ~f:(fun (title, c) ->
+                  if List.mem nm ~set:c then None else Some title))))
+
 let output_table =
   let old_table = ref None in
   fun (l : (Measure.t option list * _) option list) f ->
     let t = merge_columns l !old_table in
+    warn_dropped l !old_table (snd t);
     old_table := Some (snd t);
     let t = filter t in
     let t = normalize t in
@@ -345,8 +391,7 @@ let output ~format conf =
       output_table
         (List.map conf ~f:(function
           | None -> read_blank_column ()
-          | Some (dir1, dir2, measure, refe) ->
-              read_column ~measure dir1 (Spec.create dir2 "") refe))
+          | Some (dir1, dir2, measure, refe) -> read_column ~measure dir1 dir2 refe))
         (output_function !no_header);
       no_header := true);
   close ()

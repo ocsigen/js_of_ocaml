@@ -81,13 +81,17 @@ some optimizations disabled. The
 
 {{image:files/performances/compiletime.png}Relative compilation times}
 
-Js_of_ocaml compiles these programs faster than [ocamlopt], although slower
-than [ocamlc].
+Js_of_ocaml and Wasm_of_ocaml compile the bytecode produced by [ocamlc]: their
+bars include the time taken by [ocamlc] (the darker part), and the chart is
+relative to [ocamlc] followed by Js_of_ocaml. The example programs
+(boulderdash, …, ocamlc) are compiled from existing bytecode files, so no
+[ocamlc] time is included for them. Compiling with [ocamlc] and then
+Js_of_ocaml is about 10% faster than compiling with [ocamlopt] on these
+programs.
 
 At the default optimization level ([--opt=1]), Wasm_of_ocaml does not run
-Binaryen, and compiles as fast as Js_of_ocaml (about 30% faster on the
-largest programs). At higher levels, it optimizes the generated code with
-Binaryen's [wasm-opt], which makes compilation about three times longer.
+Binaryen, and compiles as fast as Js_of_ocaml (up to 30% faster on the
+largest programs).
 
 {1:effects-impact Effect handlers impact}
 
