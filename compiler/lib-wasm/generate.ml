@@ -483,8 +483,9 @@ module Generate (Target : Target_sig.S) = struct
      implicit ([implicit]) are the conversions of constants, performed at
      compile time; those of the arguments of a JavaScript primitive which
      examines their types itself ([Any_representation]), but for boxings;
-     and the dummy values used on dead paths. With [--debug invariant], any
-     other conversion is an error. *)
+     the untagging of the first operand of [%int_lsr]; and the dummy values
+     used on dead paths. With [--debug invariant], any other conversion is
+     an error. *)
   let convert ?(implicit = false) ~(from : Typing.typ) ~(into : Typing.typ) e =
     match Typing.conversion ~from ~into with
     | Some c ->
@@ -981,7 +982,32 @@ module Generate (Target : Target_sig.S) = struct
     register_arith_bin_prim "%int_and" `Pure ~typ:int_u Value.int_and;
     register_arith_bin_prim "%int_xor" `Pure ~typ:int_u Value.int_xor;
     register_arith_bin_prim "%int_lsl" `Pure ~typ:int_u Value.int_lsl;
-    register_bin_prim "%int_lsr" `Pure ~tx:int_u ~ty:int_u ~ret_typ:int_n Value.int_lsr;
+    register_prim
+      "%int_lsr"
+      `Pure
+      ~args:
+        (binary_args (fun _ tx _ ->
+             ( (match tx with
+               | Int (Normalized | Unnormalized) -> int_u
+               | _ -> tx)
+             , int_u )))
+      ~ret_typ:int_n
+      (fun ctx _ _ l ->
+        match l with
+        | [ x; y ] ->
+            (* A tagged first operand is untagged here rather than by
+               [Lcm]: [Value.int_lsr] masks it, and an untagging followed
+               by this masking is a single [i31.get_u]. [Lcm] still
+               substitutes an untagged copy when one is available. *)
+            let ctx_x =
+              match get_type ctx x with
+              | Int (Normalized | Unnormalized) -> ctx
+              | _ -> { ctx with implicit_conversions = true }
+            in
+            Value.int_lsr
+              (transl_prim_arg ctx_x ~typ:int_u x)
+              (transl_prim_arg ctx ~typ:int_u y)
+        | _ -> invalid_arity "%int_lsr" l ~expected:2);
     register_bin_prim "%int_asr" `Pure ~tx:int_n ~ty:int_u ~ret_typ:int_n Value.int_asr;
     register_un_prim "%direct_obj_tag" `Pure ~ret_typ:(Int Ref) Memory.tag;
     register_bin_prim_ctx "caml_check_bound" ~ty:int_n (fun context x y ->
