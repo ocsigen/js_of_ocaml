@@ -586,6 +586,17 @@ let lower_conversions
           in
           Some
             (List.mapi ~f:(fun i a -> if i = 0 || i > indices then own a else int_n) args)
+      | Extern ("%int_lsr", _) -> (
+          (* [lsr] masks its first operand to 31 bits. The code generator
+             untags a tagged operand with [i31.get_u], which performs the
+             masking, rather than untagging it and masking the result. An
+             untagged copy is still used when one is available (see
+             [process_function]). *)
+          let int_u = Typing.Int Typing.Integer.Unnormalized in
+          match args with
+          | [ Pv v; _ ] when not (is_int (Pv v)) ->
+              Some [ Typing.var_type types v; int_u ]
+          | _ -> Some [ int_u; int_u ])
       | Extern (nm, _) -> (
           match Typing.prim_sig nm with
           | Typed target_types, _ -> Some target_types
@@ -2502,6 +2513,20 @@ let process_function
                 conv_to_var := Tracker.kill_var ranks v !conv_to_var;
                 subst := Var.Map.remove v !subst;
                 body_rev := Let (v, Prim (p, args)) :: !body_rev
+            | Let (v, Prim ((Extern ("%int_lsr", _) as p), [ Pv x; y ]))
+              when match Typing.var_type types x with
+                   | Int (Normalized | Unnormalized) -> false
+                   | _ -> true ->
+                (* Shift the untagged copy of a tagged integer when one is
+                   available (see [lower_conversions]) *)
+                let x =
+                  match Tracker.find_opt ranks (Untag_int, x) !conv_to_var with
+                  | Some x' -> x'
+                  | None -> x
+                in
+                conv_to_var := Tracker.kill_var ranks v !conv_to_var;
+                subst := Var.Map.remove v !subst;
+                body_rev := Let (v, Prim (p, [ Pv x; y ])) :: !body_rev
             | Let (v, Apply _) ->
                 conv_to_var :=
                   Tracker.kill_at_call ranks (Tracker.kill_var ranks v !conv_to_var);
