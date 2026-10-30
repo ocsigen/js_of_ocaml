@@ -1,8 +1,8 @@
 # graphs without precompiled programs:
-GRAPHSNOPR = time.pdf time-optim-jsoo.pdf nativejs.pdf
+GRAPHSNOPR = time.pdf time-optim-jsoo.pdf time-optim-wasm.pdf nativejs.pdf
 
 # graphs with precompiled programs:
-GRAPHSPR = size.pdf size-optim-jsoo.pdf compiletime.pdf
+GRAPHSPR = size.pdf size-optim-jsoo.pdf size-optim-wasm.pdf compiletime.pdf
 
 # graphs showing the impact of supporting effects
 GRAPHSEFF = time-effects-jsoo.pdf size-effects-jsoo.pdf size-bzip2-effects-jsoo.pdf \
@@ -173,6 +173,32 @@ size-optim-jsoo.svg: __run __missingsizes
 	 -append js_of_ocaml \
 	 -append ocamlc \
 	 -max 2.5 -svg 7 650 150 -edgecaption -ylabel Size \
+	 > $@
+
+time-optim-wasm.svg: __run
+	$(REPORT) -config report-time-optim-wasm.config \
+	 -omit binary_trees \
+	 -omit fannkuch_redux \
+	 -omit fannkuch_redux_2 \
+	 -omit loop \
+	 -min 0.5 -max 1.5 -svg 7 400 150 -edgecaption -ylabel "Execution time" \
+	 > $@
+
+size-optim-wasm.svg: __run __missingsizes
+	$(REPORT) -config report-size-optim-wasm.config \
+	 -omit binary_trees \
+	 -omit fannkuch_redux \
+	 -omit fannkuch_redux_2 \
+	 -omit boyer_no_exc \
+	 -omit kb_no_exc \
+	 -omit loop \
+	 -append boulderdash \
+	 -append cubes \
+	 -append minesweeper \
+	 -append planet \
+	 -append js_of_ocaml \
+	 -append ocamlc \
+	 -min 0.9 -max 1.1 -svg 7 650 150 -edgecaption -ylabel Size \
 	 > $@
 
 time-effects-jsoo.svg: __run_effects

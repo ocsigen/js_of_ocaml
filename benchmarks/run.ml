@@ -282,6 +282,8 @@ let _ =
   compile "ocamlopt" src Spec.ml code Spec.opt;
   compile_wasmoo "--opt=2" code Spec.byte code Spec.wasm_of_ocaml;
   compile_wasmoo "--opt=1" code Spec.byte code Spec.wasm_of_ocaml_o1;
+  compile_wasmoo "--opt=2" code Spec.byte code Spec.wasm_of_ocaml_o2;
+  compile_wasmoo "--opt=3" code Spec.byte code Spec.wasm_of_ocaml_o3;
   compile_wasmoo
     ~effects:`Cps
     "--opt=2"
@@ -313,6 +315,7 @@ let _ =
   compile "ocamlc -unsafe" src Spec.ml code Spec.byte_unsafe;
   compile "ocamlopt" src Spec.ml code Spec.opt_unsafe;
   compile_jsoo "--opt=2" code Spec.byte_unsafe code Spec.js_of_ocaml_unsafe;
+  compile_wasmoo "--opt=2" code Spec.byte_unsafe code Spec.wasm_of_ocaml_unsafe;
   Format.eprintf "Sizes@.";
   let sizes = sizes.Measure.path in
   ml_size param src Spec.ml sizes Spec.ml;
@@ -338,6 +341,10 @@ let _ =
     Spec.wasm_of_ocaml_effects_cps
     sizes
     (Spec.sub_spec Spec.wasm_of_ocaml_effects_cps "full");
+  List.iter
+    [ Spec.wasm_of_ocaml_o1; Spec.wasm_of_ocaml_o3; Spec.wasm_of_ocaml_unsafe ]
+    ~f:(fun spec ->
+      file_size ~wasm:true param code spec sizes (Spec.sub_spec spec "full"));
   compr_file_size
     param
     code
@@ -429,6 +436,10 @@ let _ =
     ; Some Spec.js_of_ocaml_effects_double_translation
     ; Some Spec.wasm_of_ocaml
     ; Some Spec.wasm_of_ocaml_effects_cps
+    ; Some Spec.wasm_of_ocaml_o1
+    ; Some Spec.wasm_of_ocaml_o2
+    ; Some Spec.wasm_of_ocaml_o3
+    ; Some Spec.wasm_of_ocaml_unsafe
     ]
   in
   let interpreters, suites =

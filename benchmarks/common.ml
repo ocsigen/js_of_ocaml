@@ -214,6 +214,12 @@ module Spec : sig
 
   val wasm_of_ocaml_o1 : t
 
+  val wasm_of_ocaml_o2 : t
+
+  val wasm_of_ocaml_o3 : t
+
+  val wasm_of_ocaml_unsafe : t
+
   val wasm_of_ocaml_effects_cps : t
 end = struct
   type t =
@@ -288,6 +294,14 @@ end = struct
   let js_of_ocaml_effects_double_translation = create "effects-double-translation" ".js"
 
   let wasm_of_ocaml_o1 = create "wasm-o1" ".js"
+
+  (* Same as [wasm_of_ocaml], measured with the other Wasm optimization
+     levels as their reference *)
+  let wasm_of_ocaml_o2 = create "wasm-o2" ".js"
+
+  let wasm_of_ocaml_o3 = create "wasm-o3" ".js"
+
+  let wasm_of_ocaml_unsafe = create "unsafe/wasm_of_ocaml" ".js"
 
   let wasm_of_ocaml_effects_cps = create "wasm-effects-cps" ".js"
 end
