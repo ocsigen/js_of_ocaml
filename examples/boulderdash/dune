@@ -1,7 +1,7 @@
 (executables
  (names boulderdash)
  (libraries js_of_ocaml-lwt)
- (modes js wasm)
+ (modes byte js wasm)
  (js_of_ocaml
   (compilation_mode separate)
   ;; dummy runtime file to opt out of dune's shared standalone runtime,

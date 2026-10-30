@@ -1,11 +1,12 @@
 # graphs without precompiled programs:
-GRAPHSNOPR = time.pdf time-optim.pdf nativejs.pdf
+GRAPHSNOPR = time.pdf time-optim-jsoo.pdf time-optim-wasm.pdf nativejs.pdf
 
 # graphs with precompiled programs:
-GRAPHSPR = size.pdf size-optim.pdf compiletime.pdf
+GRAPHSPR = size.pdf size-optim-jsoo.pdf size-optim-wasm.pdf compiletime.pdf
 
 # graphs showing the impact of supporting effects
-GRAPHSEFF = time-effects.pdf size-effects.pdf size-bzip2-effects.pdf
+GRAPHSEFF = time-effects-jsoo.pdf size-effects-jsoo.pdf size-bzip2-effects-jsoo.pdf \
+	time-effects-wasm.pdf size-effects-wasm.pdf
 
 # For full benchs:
 all: _perf graphsnopr graphspr graphseff _noperf
@@ -73,7 +74,7 @@ __run:
 	touch __run
 
 __run_effects:
-	$(RUN) -fast report-time-effects.config
+	$(RUN) -fast report-time-effects-jsoo.config report-time-effects-wasm.config
 	touch __run_effects
 
 fastrun:
@@ -119,8 +120,9 @@ time.svg: __run
 	 -omit binary_trees \
 	 -omit fannkuch_redux \
 	 -omit loop \
-	 -max 5.5 -svg 7 500 150 -edgecaption -ylabel "Execution time" \
-	 > $@
+	 -max 2 -svg 7 500 250 -edgecaption -ylabel "Execution time" -script \
+	| perl -pe 's/^plot/set tmargin 4.5\nplot/' \
+	| gnuplot > $@
 
 size.svg: size.gpl
 	gnuplot < $^ > $@
@@ -141,13 +143,14 @@ size.gpl: __run __missingsizes
 	 -append ocamlc \
 	 -max 4.5 -ylabel Size -script \
 	 -svg 7 650 150 \
-	| perl -pe 'BEGIN{undef $$/;} s/e\nplot/e\nset key at 19.83,2.87\nplot/smg' \
+	| perl -pe 'BEGIN{undef $$/;} s/^set multiplot\n/set multiplot\nset rmargin at screen 0.80\nset key at screen 0.805,0.93 left top Left reverse samplen 2\n/m; s/e\nplot/e\nset key at screen 0.805,0.6 left top Left reverse samplen 2\nplot/smg' \
 	 > $@
-# You'll need to adjust the perl invocation above to align the "Generated code" caption
+# The perl invocation above puts both legends to the right of the plot,
+# the second one (stacked parts of the bars) below the first one
 
 
-time-optim.svg: __run
-	$(REPORT) -config report-time-optim.config \
+time-optim-jsoo.svg: __run
+	$(REPORT) -config report-time-optim-jsoo.config \
 	 -omit binary_trees \
 	 -omit fannkuch_redux \
 	 -omit fannkuch_redux_2 \
@@ -155,8 +158,8 @@ time-optim.svg: __run
 	 -max 2.5 -svg 7 400 150 -edgecaption -ylabel "Execution time" \
 	 > $@
 
-size-optim.svg: __run __missingsizes
-	$(REPORT) -config report-size-optim.config \
+size-optim-jsoo.svg: __run __missingsizes
+	$(REPORT) -config report-size-optim-jsoo.config \
 	 -omit binary_trees \
 	 -omit fannkuch_redux \
 	 -omit fannkuch_redux_2 \
@@ -172,22 +175,17 @@ size-optim.svg: __run __missingsizes
 	 -max 2.5 -svg 7 650 150 -edgecaption -ylabel Size \
 	 > $@
 
-time-effects.svg: __run_effects
-	$(REPORT) -config report-time-effects.config \
+time-optim-wasm.svg: __run
+	$(REPORT) -config report-time-optim-wasm.config \
 	 -omit binary_trees \
 	 -omit fannkuch_redux \
 	 -omit fannkuch_redux_2 \
 	 -omit loop \
-	 -omit boulderdash \
-	 -omit cubes \
-	 -omit minesweeper \
-	 -omit planet \
-	 -omit ocamlc \
 	 -min 0.5 -max 1.5 -svg 7 400 150 -edgecaption -ylabel "Execution time" \
 	 > $@
 
-size-effects.svg: __run_effects
-	$(REPORT) -config report-size-effects.config \
+size-optim-wasm.svg: __run __missingsizes
+	$(REPORT) -config report-size-optim-wasm.config \
 	 -omit binary_trees \
 	 -omit fannkuch_redux \
 	 -omit fannkuch_redux_2 \
@@ -200,11 +198,73 @@ size-effects.svg: __run_effects
 	 -append planet \
 	 -append js_of_ocaml \
 	 -append ocamlc \
-	 -min 0.8 -max 1.25 -svg 7 650 150 -edgecaption -ylabel Size \
+	 -min 0.9 -max 1.1 -svg 7 650 150 -edgecaption -ylabel Size \
 	 > $@
 
-size-gzipped-effects.svg: __run_effects
-	$(REPORT) -config report-size-gzipped-effects.config \
+time-effects-jsoo.svg: __run_effects
+	$(REPORT) -config report-time-effects-jsoo.config \
+	 -omit binary_trees \
+	 -omit fannkuch_redux \
+	 -omit fannkuch_redux_2 \
+	 -omit loop \
+	 -omit boulderdash \
+	 -omit cubes \
+	 -omit minesweeper \
+	 -omit planet \
+	 -omit ocamlc \
+	 -min 0.5 -max 1.5 -svg 7 400 150 -edgecaption -ylabel "Execution time" \
+	 > $@
+
+size-effects-jsoo.svg: __run_effects
+	$(REPORT) -config report-size-effects-jsoo.config \
+	 -omit binary_trees \
+	 -omit fannkuch_redux \
+	 -omit fannkuch_redux_2 \
+	 -omit boyer_no_exc \
+	 -omit kb_no_exc \
+	 -omit loop \
+	 -append boulderdash \
+	 -append cubes \
+	 -append minesweeper \
+	 -append planet \
+	 -append js_of_ocaml \
+	 -append ocamlc \
+	 -min 0.9 -max 1.6 -svg 7 650 150 -edgecaption -ylabel Size \
+	 > $@
+
+time-effects-wasm.svg: __run_effects
+	$(REPORT) -config report-time-effects-wasm.config \
+	 -omit binary_trees \
+	 -omit fannkuch_redux \
+	 -omit fannkuch_redux_2 \
+	 -omit loop \
+	 -omit boulderdash \
+	 -omit cubes \
+	 -omit minesweeper \
+	 -omit planet \
+	 -omit ocamlc \
+	 -min 0.5 -max 1.5 -svg 7 400 150 -edgecaption -ylabel "Execution time" \
+	 > $@
+
+size-effects-wasm.svg: __run_effects
+	$(REPORT) -config report-size-effects-wasm.config \
+	 -omit binary_trees \
+	 -omit fannkuch_redux \
+	 -omit fannkuch_redux_2 \
+	 -omit boyer_no_exc \
+	 -omit kb_no_exc \
+	 -omit loop \
+	 -append boulderdash \
+	 -append cubes \
+	 -append minesweeper \
+	 -append planet \
+	 -append js_of_ocaml \
+	 -append ocamlc \
+	 -min 0.9 -max 1.6 -svg 7 650 150 -edgecaption -ylabel Size \
+	 > $@
+
+size-gzipped-effects-jsoo.svg: __run_effects
+	$(REPORT) -config report-size-gzipped-effects-jsoo.config \
 	 -omit binary_trees \
 	 -omit fannkuch_redux \
 	 -omit fannkuch_redux_2 \
@@ -220,8 +280,8 @@ size-gzipped-effects.svg: __run_effects
 	 -max 1.2 -min 0.8 -svg 7 650 150 -edgecaption -ylabel Size \
 	 > $@
 
-size-bzip2-effects.svg: __run_effects
-	$(REPORT) -config report-size-bzip2-effects.config \
+size-bzip2-effects-jsoo.svg: __run_effects
+	$(REPORT) -config report-size-bzip2-effects-jsoo.config \
 	 -omit binary_trees \
 	 -omit fannkuch_redux \
 	 -omit fannkuch_redux_2 \
@@ -242,15 +302,20 @@ compiletime.svg: __run __precomp __missingcompiletimes
 	 -omit binary_trees \
 	 -omit fannkuch_redux \
 	 -omit loop \
-	 -max 2 -svg 7 500 150 -edgecaption -ylabel "Compile time" \
-	 > $@
+	 -max 2.5 -svg 7 500 150 -edgecaption -ylabel "Compile time" -script \
+	| perl -pe 'BEGIN{undef $$/;} s/^set multiplot\n/set multiplot\nset tmargin 3\n/m; s/e\nplot/e\nunset key\nplot/' \
+	| gnuplot > $@
+# Js_of_ocaml and Wasm_of_ocaml compile the output of ocamlc: their bars are
+# stacked on top of the ocamlc time, drawn by the second plot. The perl
+# invocation above removes the key of the second plot, and gives both plots
+# the same top margin so that they are aligned.
 
 nativejs.svg: __run
 	$(REPORT) -config report-nativejs.config \
 	 -omit binary_trees \
 	 -omit fannkuch_redux \
 	 -omit loop \
-	 -max 2.8 -svg 7 200 150 -edgecaption -ylabel "Execution time" \
+	 -max 2.8 -svg 7 250 150 -edgecaption -ylabel "Execution time" \
 	 > $@
 
 
@@ -288,7 +353,9 @@ clean: _noperf
 copy-extra-bc:
 	mkdir -p programs
 	dune exec ./stripdebug.exe -- $(shell which ocamlc.byte) programs/ocamlc
-	dune build --profile bench_no_debug ../compiler/bin-js_of_ocaml/js_of_ocaml.bc ../examples/
+	dune build --profile bench_no_debug ../compiler/bin-js_of_ocaml/js_of_ocaml.bc \
+	  ../examples/boulderdash/boulderdash.bc ../examples/cubes/cubes.bc \
+	  ../examples/minesweeper/main.bc ../examples/planet/planet.bc
 	cp -f ../_build/default/compiler/bin-js_of_ocaml/js_of_ocaml.bc programs/js_of_ocaml
 	cp -f ../_build/default/examples/boulderdash/boulderdash.bc programs/boulderdash
 	cp -f ../_build/default/examples/cubes/cubes.bc programs/cubes

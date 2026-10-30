@@ -25,6 +25,7 @@ module Param = struct
   type t =
     { warm_up_time : float
     ; min_measures : int
+    ; max_measures : int
     ; max_confidence : float
     ; max_duration : float
     ; verbose : bool
@@ -33,6 +34,7 @@ module Param = struct
   let default =
     { warm_up_time = 1.0
     ; min_measures = 10
+    ; max_measures = 30
     ; max_confidence = 0.03
     ; max_duration = 120.
     ; verbose = false
@@ -94,7 +96,8 @@ let need_more ~print (param : Param.t) l =
   else
     let m, i = mean_with_confidence a in
     if print then Format.eprintf "==> %f +/- %f / %f %d\r%!" m i (i /. m) n;
-    n < param.min_measures || i /. m > param.max_confidence /. 2.
+    n < param.min_measures
+    || (n < param.max_measures && i /. m > param.max_confidence /. 2.)
 
 let warm_up (param : Param.t) cmd =
   let t = ref 0. in
@@ -128,13 +131,26 @@ let measure_one param code (meas : Measure.t) spec nm cmd =
     l)
   else l
 
-let measure ~param ~code ~(meas : Measure.t) ~spec cmd =
-  List.iter (Spec.find_names ~root:code spec) ~f:(fun nm ->
-      let cmd = if cmd = "" then cmd else cmd ^ " " in
-      let cmd = Format.sprintf "%s%s" cmd (Spec.file ~root:code spec nm) in
-      Format.eprintf "Measure %s@." cmd;
-      try ignore (measure_one param code meas spec nm cmd)
-      with Failure s -> Format.eprintf "Failure: %s@." s)
+(* Each job is a (code, meas, spec, cmd) tuple. We measure benchmark by
+   benchmark, so that the variants of a benchmark are measured close in time
+   and the ratios are not skewed by slow changes of the machine speed. *)
+let measure ~param jobs =
+  let jobs =
+    List.map jobs ~f:(fun (code, meas, spec, cmd) ->
+        code, meas, spec, cmd, Spec.find_names ~root:code spec)
+  in
+  let names =
+    List.sort_uniq ~cmp:compare (List.concat_map jobs ~f:(fun (_, _, _, _, l) -> l))
+  in
+  List.iter names ~f:(fun nm ->
+      List.iter jobs ~f:(fun (code, (meas : Measure.t), spec, cmd, l) ->
+          if List.mem nm ~set:l
+          then (
+            let cmd = if cmd = "" then cmd else cmd ^ " " in
+            let cmd = Format.sprintf "%s%s" cmd (Spec.file ~root:code spec nm) in
+            Format.eprintf "Measure %s@." cmd;
+            try ignore (measure_one param code meas spec nm cmd)
+            with Failure s -> Format.eprintf "Failure: %s@." s)))
 
 (****)
 
@@ -235,6 +251,7 @@ let _ =
                   | Some (p1, p2, _measure, _) -> (
                       match String.split_on_char ~sep:'/' p1 with
                       | [ "results"; "times"; _host; interpreter ] -> [ interpreter, p2 ]
+                      | [ "results"; "times"; _host ] -> [ "", p2 ]
                       | _ -> []))))
         |> List.sort_uniq ~cmp:compare
         |> fun required ->
@@ -264,29 +281,52 @@ let _ =
   compile "ocamlc" src Spec.ml code Spec.byte;
   compile "ocamlopt" src Spec.ml code Spec.opt;
   compile_wasmoo "--opt=2" code Spec.byte code Spec.wasm_of_ocaml;
+  compile_wasmoo "--opt=1" code Spec.byte code Spec.wasm_of_ocaml_o1;
+  compile_wasmoo "--opt=2" code Spec.byte code Spec.wasm_of_ocaml_o2;
+  compile_wasmoo "--opt=3" code Spec.byte code Spec.wasm_of_ocaml_o3;
+  compile_wasmoo
+    ~effects:`Cps
+    "--opt=2"
+    code
+    Spec.byte
+    code
+    Spec.wasm_of_ocaml_effects_cps;
   compile_jsoo "--opt=2" code Spec.byte code Spec.js_of_ocaml;
+  compile_jsoo "--opt=1" code Spec.byte code Spec.js_of_ocaml_o1;
   compile_jsoo "--opt=3" code Spec.byte code Spec.js_of_ocaml_o3;
-  compile_jsoo "--enable=use-js-string" code Spec.byte code Spec.js_of_ocaml_js_string;
-  compile_jsoo "--disable inline" code Spec.byte code Spec.js_of_ocaml_inline;
-  compile_jsoo "--disable deadcode" code Spec.byte code Spec.js_of_ocaml_deadcode;
-  compile_jsoo "--disable compact" code Spec.byte code Spec.js_of_ocaml_compact;
-  compile_jsoo "--disable optcall" code Spec.byte code Spec.js_of_ocaml_call;
-  compile_jsoo ~effects:`Cps "" code Spec.byte code Spec.js_of_ocaml_effects_cps;
+  compile_jsoo
+    "--opt=2 --disable=use-js-string"
+    code
+    Spec.byte
+    code
+    Spec.js_of_ocaml_js_string;
+  compile_jsoo "--opt=2 --disable inline" code Spec.byte code Spec.js_of_ocaml_inline;
+  compile_jsoo "--opt=2 --disable deadcode" code Spec.byte code Spec.js_of_ocaml_deadcode;
+  compile_jsoo "--opt=2 --disable compact" code Spec.byte code Spec.js_of_ocaml_compact;
+  compile_jsoo "--opt=2 --disable optcall" code Spec.byte code Spec.js_of_ocaml_call;
+  compile_jsoo ~effects:`Cps "--opt=2" code Spec.byte code Spec.js_of_ocaml_effects_cps;
   compile_jsoo
     ~effects:`Double_translation
-    ""
+    "--opt=2"
     code
     Spec.byte
     code
     Spec.js_of_ocaml_effects_double_translation;
   compile "ocamlc -unsafe" src Spec.ml code Spec.byte_unsafe;
   compile "ocamlopt" src Spec.ml code Spec.opt_unsafe;
-  compile_jsoo "" code Spec.byte_unsafe code Spec.js_of_ocaml_unsafe;
+  compile_jsoo "--opt=2" code Spec.byte_unsafe code Spec.js_of_ocaml_unsafe;
+  compile_wasmoo "--opt=2" code Spec.byte_unsafe code Spec.wasm_of_ocaml_unsafe;
   Format.eprintf "Sizes@.";
   let sizes = sizes.Measure.path in
   ml_size param src Spec.ml sizes Spec.ml;
   file_size param code Spec.byte sizes Spec.byte;
   file_size param code Spec.js_of_ocaml sizes (Spec.sub_spec Spec.js_of_ocaml "full");
+  file_size
+    param
+    code
+    Spec.wasm_of_ocaml
+    sizes
+    (Spec.sub_spec Spec.wasm_of_ocaml "loader");
   file_size
     ~wasm:true
     param
@@ -294,6 +334,17 @@ let _ =
     Spec.wasm_of_ocaml
     sizes
     (Spec.sub_spec Spec.wasm_of_ocaml "full");
+  file_size
+    ~wasm:true
+    param
+    code
+    Spec.wasm_of_ocaml_effects_cps
+    sizes
+    (Spec.sub_spec Spec.wasm_of_ocaml_effects_cps "full");
+  List.iter
+    [ Spec.wasm_of_ocaml_o1; Spec.wasm_of_ocaml_o3; Spec.wasm_of_ocaml_unsafe ]
+    ~f:(fun spec ->
+      file_size ~wasm:true param code spec sizes (Spec.sub_spec spec "full"));
   compr_file_size
     param
     code
@@ -351,6 +402,7 @@ let _ =
     sizes
     (Spec.sub_spec Spec.js_of_ocaml "runtime");
   gen_size param code Spec.js_of_ocaml sizes (Spec.sub_spec Spec.js_of_ocaml "generated");
+  gen_size param code Spec.js_of_ocaml_o1 sizes Spec.js_of_ocaml_o1;
   gen_size param code Spec.js_of_ocaml_o3 sizes Spec.js_of_ocaml_o3;
   gen_size param code Spec.js_of_ocaml_js_string sizes Spec.js_of_ocaml_js_string;
   gen_size param code Spec.js_of_ocaml_inline sizes Spec.js_of_ocaml_inline;
@@ -366,10 +418,13 @@ let _ =
     Spec.js_of_ocaml_effects_double_translation;
   if compile_only then exit 0;
   Format.eprintf "Measure@.";
-  if filter_bench ("", Spec.opt) then measure ~param ~code ~meas:times ~spec:Spec.opt "";
-  if filter_bench ("", Spec.byte) then measure ~param ~code ~meas:times ~spec:Spec.byte "";
+  let jobs =
+    (if filter_bench ("", Spec.opt) then [ code, times, Spec.opt, "" ] else [])
+    @ if filter_bench ("", Spec.byte) then [ code, times, Spec.byte, "" ] else []
+  in
   let all_spec =
     [ Some Spec.js_of_ocaml
+    ; Some Spec.js_of_ocaml_o1
     ; Some Spec.js_of_ocaml_o3
     ; Some Spec.js_of_ocaml_js_string
     ; Some Spec.js_of_ocaml_unsafe
@@ -380,6 +435,11 @@ let _ =
     ; Some Spec.js_of_ocaml_effects_cps
     ; Some Spec.js_of_ocaml_effects_double_translation
     ; Some Spec.wasm_of_ocaml
+    ; Some Spec.wasm_of_ocaml_effects_cps
+    ; Some Spec.wasm_of_ocaml_o1
+    ; Some Spec.wasm_of_ocaml_o2
+    ; Some Spec.wasm_of_ocaml_o3
+    ; Some Spec.wasm_of_ocaml_unsafe
     ]
   in
   let interpreters, suites =
@@ -391,24 +451,14 @@ let _ =
         | [] -> [])
       , [ Some Spec.js_of_ocaml; Some Spec.wasm_of_ocaml ] )
   in
-  List.iter interpreters ~f:(fun (comp, dir) ->
-      (* Measure the time taken by an implementation in Javascript for comparison *)
-      if filter_bench (dir, Spec.js)
-      then
-        measure
-          ~param
-          ~code:src
-          ~meas:Measure.{ times with path = Filename.concat times.path dir }
-          ~spec:Spec.js
-          comp;
-      List.iter suites ~f:(function
-        | None -> ()
-        | Some suite ->
-            if filter_bench (dir, suite)
-            then
-              measure
-                ~param
-                ~code
-                ~meas:Measure.{ times with path = Filename.concat times.path dir }
-                ~spec:suite
-                comp))
+  let jobs =
+    jobs
+    @ List.concat_map interpreters ~f:(fun (comp, dir) ->
+        let meas = Measure.{ times with path = Filename.concat times.path dir } in
+        (* Measure the time taken by an implementation in Javascript for comparison *)
+        (if filter_bench (dir, Spec.js) then [ src, meas, Spec.js, comp ] else [])
+        @ List.filter_map suites ~f:(function
+          | Some suite when filter_bench (dir, suite) -> Some (code, meas, suite, comp)
+          | _ -> None))
+  in
+  measure ~param jobs
