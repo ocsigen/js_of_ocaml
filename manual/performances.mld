@@ -58,13 +58,15 @@ JavaScript on bdd, fib and raytrace, as fast on fft, and slower on splay.
 
 {1:optimization-levels Compiler optimization levels}
 
+{2 Js_of_ocaml}
+
 {{image:files/performances/size-optim-jsoo.png}Relative size}
 {{image:files/performances/time-optim-jsoo.png}Relative execution times}
 
-These charts compare the optimization level used in the other charts
-([--opt=2]) with the default level ([--opt=1]), with [--opt=3], and with
-some optimizations disabled. The
-[-unsafe] variant is compiled from bytecode built with [ocamlc -unsafe].
+These charts are relative to Js_of_ocaml with [--opt=2], the level used in
+the other charts. They show the other optimization levels and the effect of
+disabling some optimizations. The [-unsafe] variant is compiled from bytecode
+built with [ocamlc -unsafe].
 - [--opt=1], [--opt=2] and [--opt=3] perform the same on these benchmarks.
 - Dead code elimination matters most for size: without it, the generated code
   is 2 to 17 times larger.
@@ -76,6 +78,19 @@ some optimizations disabled. The
   makes the code slightly smaller.
 - Removing bounds checking ([-unsafe]) mostly helps array-intensive code
   (quicksort, soli).
+
+{2 Wasm_of_ocaml}
+
+{{image:files/performances/size-optim-wasm.png}Relative size}
+{{image:files/performances/time-optim-wasm.png}Relative execution times}
+
+These charts are relative to Wasm_of_ocaml with [--opt=2], which uses
+Binaryen's [wasm-opt] to optimize the generated code.
+- At the default level ([--opt=1]), Binaryen is not run: the code is up to 6%
+  larger and slightly slower (7% on average, up to 38% on quicksort).
+- [--opt=3] brings little over [--opt=2] on these benchmarks.
+- Removing bounds checking ([-unsafe]) makes the code about 4% faster on
+  average (up to 15% on soli).
 
 {1:compile-time Compilation time}
 
