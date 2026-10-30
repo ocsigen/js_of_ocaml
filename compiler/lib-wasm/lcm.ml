@@ -2394,6 +2394,20 @@ let process_function types entry fun_blocks ~assigned ~global_flow_info ~(st : l
                 conv_to_var := Tracker.kill_var ranks v !conv_to_var;
                 subst := Var.Map.remove v !subst;
                 body_rev := Let (v, Prim (p, args)) :: !body_rev
+            | Let (v, Prim ((Extern ("%int_lsr", _) as p), [ Pv x; y ]))
+              when match Typing.var_type types x with
+                   | Int (Normalized | Unnormalized) -> false
+                   | _ -> true ->
+                (* Shift the untagged copy of a tagged integer when one is
+                   available (see [%int_lsr] in [Generate]) *)
+                let x =
+                  match Tracker.find_opt ranks (Untag_int, x) !conv_to_var with
+                  | Some x' -> x'
+                  | None -> x
+                in
+                conv_to_var := Tracker.kill_var ranks v !conv_to_var;
+                subst := Var.Map.remove v !subst;
+                body_rev := Let (v, Prim (p, [ Pv x; y ])) :: !body_rev
             | Let (v, Apply _) ->
                 conv_to_var :=
                   Tracker.kill_at_call ranks (Tracker.kill_var ranks v !conv_to_var);
