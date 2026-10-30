@@ -28,9 +28,16 @@ type t =
         (** Functions returning the sentinel value on exception *)
   ; raising_calls : Code.Var.Set.t
         (** Variables bound to the result of a call to a raising function *)
+  ; cold_raises : Code.Var.Set.t
+        (** Exceptions which are seldom caught, and are thus thrown *)
   }
 
 val empty : t
+
+val cold_exceptions : ?info:Global_flow.info -> Code.program -> Code.Var.t -> bool
+(** Whether a raised exception is one which is seldom caught
+    ([Match_failure], [Assert_failure], [Undefined_recursive_module]).
+    Raising it does not make a function raising: it is thrown. *)
 
 val f : Code.program -> Global_flow.info -> Code.program * t
 (** A raising function which can be called through closures is split

@@ -104,7 +104,7 @@ let clone_higher_order (profile : Profile.t) p =
   | `JavaScript, (O2 | O3)
     when Config.Flag.clone_higher_order () && exn_sentinel_enabled () ->
       if debug () then Format.eprintf "Clone higher-order functions...@.";
-      Clone_higher_order.f p
+      Clone_higher_order.f ~cold:(Raising_calls.cold_exceptions p) p
   | `Wasm, _ | `JavaScript, _ -> p
 
 let specialize (p, info) =

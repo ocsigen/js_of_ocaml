@@ -26,15 +26,85 @@ let times = Debug.find "times"
 type t =
   { raising_funcs : Var.Set.t
   ; raising_calls : Var.Set.t
+  ; cold_raises : Var.Set.t
   }
 
-let empty = { raising_funcs = Var.Set.empty; raising_calls = Var.Set.empty }
+let empty =
+  { raising_funcs = Var.Set.empty
+  ; raising_calls = Var.Set.empty
+  ; cold_raises = Var.Set.empty
+  }
+
+(* Exceptions which are seldom caught (Match_failure, Assert_failure
+   and Undefined_recursive_module): raising them does not make a
+   function raising, they are thrown. *)
+let cold_exceptions ?info p =
+  let defs = Var.Hashtbl.create 1024 in
+  Addr.Map.iter
+    (fun _ block ->
+      List.iter block.body ~f:(fun i ->
+          match i with
+          | Let (x, e) -> Var.Hashtbl.replace defs x e
+          | _ -> ()))
+    p.blocks;
+  (* The values [x] may be bound to *)
+  let values x =
+    match Var.Hashtbl.find_opt defs x, info with
+    | Some (Block _ | Constant _), _ -> Some (Var.Set.singleton x)
+    | _, None -> None
+    | _, Some info -> (
+        if Var.idx x >= Var.Tbl.length info.Global_flow.info_approximation
+        then None
+        else
+          match Var.Tbl.get info.Global_flow.info_approximation x with
+          | Values { known; others = false } -> Some known
+          | Values { others = true; _ } | Top -> None)
+  in
+  let cold_tag t =
+    let id =
+      match Var.Hashtbl.find_opt defs t with
+      | Some (Constant (Tuple (248, [| _; Int n |], _, _))) -> Some n
+      | Some (Block (248, [| _; id |], _, _, _)) -> (
+          match Var.Hashtbl.find_opt defs id with
+          | Some (Constant (Int n)) -> Some n
+          | _ -> None)
+      | _ -> None
+    in
+    match id with
+    | Some n ->
+        List.mem ~eq:Targetint.equal n (List.map ~f:Targetint.of_int_exn [ -8; -11; -12 ])
+    | None -> false
+  in
+  fun x ->
+    match values x with
+    | None -> false
+    | Some s ->
+        Var.Set.for_all
+          (fun v ->
+            match Var.Hashtbl.find_opt defs v with
+            | Some (Block (0, a, _, _, _)) when Array.length a > 0 -> (
+                match values a.(0) with
+                | None -> false
+                | Some s -> Var.Set.for_all cold_tag s)
+            | _ -> false)
+          s
 
 let f p info =
   let t = Timer.make () in
   let call_info = Call_graph_analysis.f p info in
+  let cold = cold_exceptions ~info p in
+  let cold_raises =
+    Addr.Map.fold
+      (fun _ block s ->
+        match block.branch with
+        | Raise (x, _) when cold x -> Var.Set.add x s
+        | _ -> s)
+      p.blocks
+      Var.Set.empty
+  in
   let raising =
     Call_graph_analysis.raising_functions
+      ~cold
       p
       info
       call_info
@@ -229,9 +299,11 @@ let f p info =
   if debug ()
   then
     Format.eprintf
-      "raising functions: %d (wrapped: %d), raising calls: %d@."
+      "raising functions: %d (wrapped: %d), raising calls: %d, cold raises: %d@."
       (Var.Set.cardinal raising_funcs)
       (Var.Hashtbl.length bodies)
-      (Var.Set.cardinal !raising_calls);
+      (Var.Set.cardinal !raising_calls)
+      (Var.Set.cardinal cold_raises);
   if times () then Format.eprintf "  raising calls: %a@." Timer.print t;
-  { p with blocks; free_pc = !free_pc }, { raising_funcs; raising_calls = !raising_calls }
+  ( { p with blocks; free_pc = !free_pc }
+  , { raising_funcs; raising_calls = !raising_calls; cold_raises } )

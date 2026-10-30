@@ -200,7 +200,7 @@ let call_graph p info call_info ~wrappable ~tail_calls eligible =
 
    Without tail calls ([tail_calls] is false), none of this matters:
    a call to a raising function is never a tail call to begin with. *)
-let raising_functions p info call_info ~wrappable ~tail_calls eligible =
+let raising_functions ?cold p info call_info ~wrappable ~tail_calls eligible =
   (* Only closures can be called directly *)
   let wrappable f =
     wrappable f
@@ -231,7 +231,7 @@ let raising_functions p info call_info ~wrappable ~tail_calls eligible =
           if
             (direct_calls_only call_info name || wrappable name)
             && eligible name
-            && Code.raises_outside_handlers p.blocks pc
+            && Code.raises_outside_handlers ?cold p.blocks pc
           then Var.Hashtbl.add h name ())
     ();
   propagate h callers eligible;

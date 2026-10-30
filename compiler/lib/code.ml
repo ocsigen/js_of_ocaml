@@ -933,14 +933,14 @@ let rec preorder_traverse' { fold } f pc visited blocks acc =
 let preorder_traverse fold f pc blocks acc =
   snd (preorder_traverse' fold f pc Addr.Set.empty blocks acc)
 
-let raises_outside_handlers blocks pc =
+let raises_outside_handlers ?(cold = fun _ -> false) blocks pc =
   traverse
     { fold = fold_children_skip_try_body }
     (fun pc b ->
       b
       ||
       match (Addr.Map.find pc blocks).branch with
-      | Raise _ -> true
+      | Raise (x, _) -> not (cold x)
       | _ -> false)
     pc
     blocks

@@ -96,7 +96,7 @@ type candidate =
   ; size : int
   }
 
-let f p =
+let f ?cold p =
   let t = Timer.make () in
   let closures = Var.Hashtbl.create 1024 in
   Addr.Map.iter
@@ -123,7 +123,7 @@ let f p =
     try Var.Hashtbl.find raising g
     with Not_found ->
       let _, (pc, _), _ = Var.Hashtbl.find closures g in
-      let b = Code.raises_outside_handlers p.blocks pc in
+      let b = Code.raises_outside_handlers ?cold p.blocks pc in
       Var.Hashtbl.add raising g b;
       b
   in
