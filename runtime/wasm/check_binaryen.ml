@@ -16,7 +16,7 @@ let () =
   match line with
   | Some line -> (
       match Scanf.sscanf line "wasm-opt version %d" Fun.id with
-      | version when version >= min_version -> ()
+      | version when version >= min_version -> print_endline "optimized"
       | version ->
           Printf.eprintf
             "Error: wasm-opt version %d is too old. Binaryen >= %d is required.\n"
@@ -30,7 +30,7 @@ let () =
             min_version;
           exit 1)
   | None ->
-      Printf.eprintf
-        "Error: wasm-opt not found. Binaryen >= %d is required.\n"
-        min_version;
-      exit 1
+      (* Binaryen is optional: without it, the runtime is not optimized. We
+         do not warn, since this is run at each build; the compiler warns
+         when linking a program instead. *)
+      print_endline "unoptimized"

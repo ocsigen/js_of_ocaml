@@ -82,7 +82,7 @@ opam install odoc yojson ocp-indent graphics higlo
 **Requirements:**
 - OCaml 4.13 to 5.5
 - Dune 3.19+
-- For wasm_of_ocaml: Binaryen 119+
+- For wasm_of_ocaml: Binaryen 119+ (optional, used to optimize the output)
 
 ## Code Style
 
@@ -106,7 +106,7 @@ opam install odoc yojson ocp-indent graphics higlo
 # Full test suite
 make tests
 
-# WebAssembly tests (requires WASM_OF_OCAML=true)
+# WebAssembly tests
 make tests-wasm
 
 # Run specific test

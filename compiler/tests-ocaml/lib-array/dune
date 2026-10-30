@@ -16,9 +16,7 @@
 (rule
  (target test_array_wasm.ml.corrected)
  (enabled_if
-  (and
-   %{env:WASM_OF_OCAML=false}
-   (<> %{env:JSOO_TEST_ENGINE=node} wasi)))
+  (<> %{env:JSOO_TEST_ENGINE=node} wasi))
  (action
   (run node %{dep:../expect_wasm.bc.wasm.js} %{dep:test_array_wasm.ml})))
 
@@ -27,7 +25,6 @@
  (enabled_if
   (and
    (>= %{ocaml_version} 5.2)
-   (<> %{env:JSOO_TEST_ENGINE=node} wasi)
-   %{env:WASM_OF_OCAML=false}))
+   (<> %{env:JSOO_TEST_ENGINE=node} wasi)))
  (action
   (diff test_array.ml test_array_wasm.ml.corrected)))

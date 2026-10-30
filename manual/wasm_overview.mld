@@ -18,8 +18,17 @@ The easiest way to install wasm_of_ocaml is to use opam:
 opam install wasm_of_ocaml-compiler js_of_ocaml js_of_ocaml-ppx js_of_ocaml-lwt
 v}
 
-Binaryen version 119 or later is required. The opam command above will
-install it automatically if needed.
+Binaryen version 119 or later is recommended: Wasm_of_ocaml uses its
+[wasm-opt] tool to optimize the generated code. It is optional, but
+without it the generated code is larger and slower, and a
+[missing-wasm-opt] warning is emitted when linking a program (it can be
+disabled with [-w no-missing-wasm-opt]). Install it with
+[opam install conf-binaryen].
+
+If Binaryen is installed after Wasm_of_ocaml, it is used right away. The
+precompiled runtime was then built without it, so an optimized runtime is
+built each time a program is linked, which takes a fraction of a second;
+reinstalling Wasm_of_ocaml avoids this.
 
 {1:usage Usage}
 
