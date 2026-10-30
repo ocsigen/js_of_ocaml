@@ -58,8 +58,8 @@ JavaScript on bdd, fib and raytrace, as fast on fft, and slower on splay.
 
 {1:optimization-levels Compiler optimization levels}
 
-{{image:files/performances/size-optim.png}Relative size}
-{{image:files/performances/time-optim.png}Relative execution times}
+{{image:files/performances/size-optim-jsoo.png}Relative size}
+{{image:files/performances/time-optim-jsoo.png}Relative execution times}
 
 These charts compare the optimization level used in the other charts
 ([--opt=2]) with the default level ([--opt=1]), with [--opt=3], and with
@@ -93,9 +93,9 @@ Binaryen's [wasm-opt], which makes compilation about three times longer.
 
 {2 Js_of_ocaml}
 
-{{image:files/performances/size-effects.png}Relative size}
-{{image:files/performances/size-bzip2-effects.png}Relative size (compressed with bzip2)}
-{{image:files/performances/time-effects.png}Relative execution times}
+{{image:files/performances/size-effects-jsoo.png}Relative size}
+{{image:files/performances/size-bzip2-effects-jsoo.png}Relative size (compressed with bzip2)}
+{{image:files/performances/time-effects-jsoo.png}Relative execution times}
 
 The performance impact of supporting effect handlers:
 
