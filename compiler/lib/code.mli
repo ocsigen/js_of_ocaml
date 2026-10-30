@@ -332,9 +332,10 @@ val traverse :
 val preorder_traverse :
   fold_blocs_poly -> (Addr.t -> 'c -> 'c) -> Addr.t -> block Addr.Map.t -> 'c -> 'c
 
-val raises_outside_handlers : block Addr.Map.t -> Addr.t -> bool
+val raises_outside_handlers : ?cold:(Var.t -> bool) -> block Addr.Map.t -> Addr.t -> bool
 (** Whether the code starting at [pc] (typically, a function body) may
-    execute a [Raise] outside of the body of an exception handler *)
+    execute a [Raise] outside of the body of an exception handler,
+    ignoring the exceptions [cold] holds of *)
 
 val iter_trap_scopes :
   block Addr.Map.t -> Addr.t -> f:(Addr.t -> Addr.t list -> unit) -> unit

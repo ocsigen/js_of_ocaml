@@ -33,7 +33,8 @@ val known_callee :
     called directly, or it is [wrappable]. *)
 
 val raising_functions :
-     Code.program
+     ?cold:(Code.Var.t -> bool)
+  -> Code.program
   -> Global_flow.info
   -> t
   -> wrappable:(Code.Var.t -> bool)
@@ -46,6 +47,7 @@ val raising_functions :
     converts the null value back into an exception. Only functions
     satisfying [wrappable] are considered for this. When [tail_calls]
     is true, tail calls are actual tail calls (Wasm), which restricts
-    the functions that can be raising. *)
+    the functions that can be raising. Exceptions [cold] holds of do
+    not make a function raising. *)
 
 val f : Code.program -> Global_flow.info -> t

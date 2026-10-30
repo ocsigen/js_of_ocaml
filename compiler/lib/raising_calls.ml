@@ -26,9 +26,14 @@ let times = Debug.find "times"
 type t =
   { raising_funcs : Var.Set.t
   ; raising_calls : Var.Set.t
+  ; cold_raises : Var.Set.t
   }
 
-let empty = { raising_funcs = Var.Set.empty; raising_calls = Var.Set.empty }
+let empty =
+  { raising_funcs = Var.Set.empty
+  ; raising_calls = Var.Set.empty
+  ; cold_raises = Var.Set.empty
+  }
 
 let enabled () =
   match Config.target (), Config.effects () with
@@ -36,11 +41,111 @@ let enabled () =
   | `JavaScript, (`Cps | `Double_translation | `Jspi | `Native)
   | `Wasm, (`Disabled | `Cps | `Double_translation | `Jspi | `Native) -> false
 
+(* Predefined exceptions which are seldom caught: raising them does
+   not make a function raising, they are thrown. *)
+let cold_names = [ "Match_failure"; "Assert_failure"; "Undefined_recursive_module" ]
+
+let cold_exceptions ?info p =
+  let def =
+    match info with
+    | Some info ->
+        fun x ->
+          if Var.idx x < Array.length info.Global_flow.info_defs
+          then
+            match info.Global_flow.info_defs.(Var.idx x) with
+            | Expr e -> Some e
+            | Phi _ -> None
+          else None
+    | None ->
+        let defs = Var.Hashtbl.create 1024 in
+        Addr.Map.iter
+          (fun _ block ->
+            List.iter block.body ~f:(fun i ->
+                match i with
+                | Let (x, e) -> Var.Hashtbl.replace defs x e
+                | _ -> ()))
+          p.blocks;
+        Var.Hashtbl.find_opt defs
+  in
+  (* Predefined exceptions are registered in Symtable.init with
+     [-index - 1] *)
+  let cold_ids =
+    Runtimedef.builtin_exceptions
+    |> Array.to_list
+    |> List.mapi ~f:(fun i name -> i, name)
+    |> List.filter_map ~f:(fun (i, name) ->
+        if List.mem ~eq:String.equal name cold_names
+        then Some (Targetint.of_int_exn (-i - 1))
+        else None)
+  in
+  let cold_id n = List.mem ~eq:Targetint.equal n cold_ids in
+  (* Separate compilation: predefined exceptions are retrieved by name *)
+  let predef e =
+    match e with
+    | Some (Prim (Extern ("caml_get_global_predef", _), [ Pc (NativeString name) ])) ->
+        Some name
+    | _ -> None
+  in
+  (* The values [x] may be bound to *)
+  let values x =
+    let e = def x in
+    match e, info with
+    | Some (Block _ | Constant _), _ -> Some (Var.Set.singleton x)
+    | _ when Option.is_some (predef e) -> Some (Var.Set.singleton x)
+    | _, None -> None
+    | _, Some info -> (
+        if Var.idx x >= Var.Tbl.length info.Global_flow.info_approximation
+        then None
+        else
+          match Var.Tbl.get info.Global_flow.info_approximation x with
+          | Values { known; others = false } -> Some known
+          | Values { others = true; _ } | Top -> None)
+  in
+  let cold_tag t =
+    let e = def t in
+    match e with
+    | Some (Constant (Tuple (248, [| _; Int n |], _, _))) -> cold_id n
+    | Some (Block (248, [| _; id |], _, _, _)) -> (
+        match def id with
+        | Some (Constant (Int n)) -> cold_id n
+        | _ -> false)
+    | _ -> (
+        match predef e with
+        | Some name ->
+            List.exists cold_names ~f:(fun name' ->
+                Native_string.equal name (Native_string.of_string name'))
+        | None -> false)
+  in
+  fun x ->
+    match values x with
+    | None -> false
+    | Some s ->
+        Var.Set.for_all
+          (fun v ->
+            match def v with
+            | Some (Block (0, a, _, _, _)) when Array.length a > 0 -> (
+                match values a.(0) with
+                | None -> false
+                | Some s -> Var.Set.for_all cold_tag s)
+            | _ -> false)
+          s
+
 let f p info =
   let t = Timer.make () in
   let call_info = Call_graph_analysis.f p info in
+  let cold = cold_exceptions ~info p in
+  let cold_raises =
+    Addr.Map.fold
+      (fun _ block s ->
+        match block.branch with
+        | Raise (x, _) when cold x -> Var.Set.add x s
+        | _ -> s)
+      p.blocks
+      Var.Set.empty
+  in
   let raising =
     Call_graph_analysis.raising_functions
+      ~cold
       p
       info
       call_info
@@ -237,9 +342,11 @@ let f p info =
   if debug ()
   then
     Format.eprintf
-      "raising functions: %d (wrapped: %d), raising calls: %d@."
+      "raising functions: %d (wrapped: %d), raising calls: %d, cold raises: %d@."
       (Var.Set.cardinal raising_funcs)
       (Var.Hashtbl.length bodies)
-      (Var.Set.cardinal !raising_calls);
+      (Var.Set.cardinal !raising_calls)
+      (Var.Set.cardinal cold_raises);
   if times () then Format.eprintf "  raising calls: %a@." Timer.print t;
-  { p with blocks; free_pc = !free_pc }, { raising_funcs; raising_calls = !raising_calls }
+  ( { p with blocks; free_pc = !free_pc }
+  , { raising_funcs; raising_calls = !raising_calls; cold_raises } )

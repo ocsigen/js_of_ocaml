@@ -121,10 +121,9 @@ let%expect_test "generated code" =
         return - 1;
        }
        function checked$0(x, l){
-        return 100 < x
-                ? caml_raise_sentinel
-                  (caml_maybe_attach_backtrace([0, Assert_failure, _a_], 1))
-                : find$0(x, l);
+        if(100 < x)
+         throw caml_maybe_attach_backtrace([0, Assert_failure, _a_], 1);
+        return find$0(x, l);
        }
        function checked(x, l){
         var _a_ = checked$0(x, l);
