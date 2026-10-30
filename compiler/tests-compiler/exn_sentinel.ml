@@ -121,10 +121,9 @@ let%expect_test "generated code" =
         return - 1;
        }
        function checked$0(x, l){
-        return 100 < x
-                ? caml_raise_sentinel
-                  (caml_maybe_attach_backtrace([0, Assert_failure, _a_], 1))
-                : find$0(x, l);
+        if(100 < x)
+         throw caml_maybe_attach_backtrace([0, Assert_failure, _a_], 1);
+        return find$0(x, l);
        }
        function checked(x, l){
         var _a_ = checked$0(x, l);
@@ -345,6 +344,57 @@ let%expect_test "raising body" =
            4
            -6
            7
+           |}]
+
+let prog'' =
+  {|
+let rec find x = function
+  | [] -> raise Not_found
+  | y :: r -> if x = y then y else find x r
+
+(* Invalid_argument is thrown, even from a raising function. In a
+   whole program, the analysis knows it comes from Stdlib. *)
+let rec checked msg x l =
+  if x < 0 then raise (Invalid_argument msg);
+  if x > 100 then checked msg (x - 1) l else find x l
+
+let () =
+  print_int (try checked "a" (Sys.opaque_identity 1) [ 1 ] with Not_found -> -1);
+  print_newline ();
+  print_int (try checked "b" (Sys.opaque_identity 2) [ 1 ] with Not_found -> -1);
+  print_newline ();
+  print_int (try checked "c" (Sys.opaque_identity (-1)) [ 1 ] with Invalid_argument _ -> -2);
+  print_newline ()
+|}
+
+let%expect_test "cold exception" =
+  let program = compile_and_parse_whole_program prog'' in
+  print_fun_decl program (Some "checked");
+  [%expect
+    {|
+           function checked(msg, x$1, l){
+            var x = x$1;
+            for(;;){
+             if(x < 0) throw caml_maybe_attach_backtrace([0, Invalid_argument, msg], 1);
+             if(100 >= x){var param = l; break;}
+             var x$0 = x - 1 | 0;
+             x = x$0;
+            }
+            for(;;){
+             if(! param)
+              return caml_raise_sentinel(caml_maybe_attach_backtrace(Not_found, 1));
+             var r = param[2], y = param[1];
+             if(caml_equal(x, y)) return y;
+             param = r;
+            }
+           }
+           //end
+           |}];
+  compile_and_run prog'';
+  [%expect {|
+           1
+           -1
+           -2
            |}]
 
 (* The argument of [raise_notrace] is evaluated even when the handler

@@ -1798,9 +1798,11 @@ let break_to_handler ~label ~exn ~used ~pure cx loc =
   @ [ J.Break_statement (Some label), J.N ]
 
 (* Raise exception [cx] *)
-let raise_statement ctx ~pure cx k loc =
+let raise_statement ctx x ~pure cx k loc =
   match !(ctx.Ctx.exn_ctx) with
   | Throw -> throw_statement ctx cx k loc
+  | Return_sentinel when Var.Set.mem x ctx.Ctx.raising.cold_raises ->
+      throw_statement ctx cx k loc
   | Return_sentinel ->
       [ ( J.Return_statement
             ( Some
@@ -2801,7 +2803,7 @@ and compile_conditional st queue ~fall_through loc last scope_stack : _ * _ =
         let instrs =
           let* cx, pure = access_pure ~ctx x in
           let* loc = statement_loc loc in
-          return (raise_statement st.ctx ~pure cx k loc)
+          return (raise_statement st.ctx x ~pure cx k loc)
         in
         true, flush_all queue loc instrs
     | Stop ->

@@ -33,7 +33,8 @@ val known_callee :
     called directly, or it is [wrappable]. *)
 
 val raising_functions :
-     ?on_call:
+     ?cold:(Code.Var.t -> bool)
+  -> ?on_call:
        (   Code.Var.t option
         -> Code.Addr.t
         -> Code.Var.t
@@ -55,6 +56,7 @@ val raising_functions :
     exception. Only functions satisfying [wrappable] are considered
     for this. When [tail_calls] is true, tail calls are actual tail
     calls (Wasm), which restricts the functions that can be raising.
+    Exceptions [cold] holds of do not make a function raising.
     [on_call h pc x ~f g ~in_handler] is called on each call
     [Let (x, Apply { f; _ })] of block [pc] of function [h] (or of the
     toplevel code) whose callee [g] is known, and tells whether it
