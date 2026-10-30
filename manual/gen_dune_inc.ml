@@ -209,7 +209,7 @@ let () =
  (alias doc-manual)
  (targets (dir %s))
  (deps@;<0 2>@[<v 0>%a@])
- (action (bash "mkdir -p %s && cp -r %s %s")))
+ (action (bash "mkdir -p %s && cp -rL %s %s")))
 |}
         dst
         (Format.pp_print_list ~pp_sep fmt_dep)
