@@ -55,7 +55,9 @@ try raise Not_found with
   [%expect
     {|
     function some_name(param){
-     try{throw caml_maybe_attach_backtrace(Stdlib[8], 1);}catch(f){return 0;}
+     a:
+     try{caml_maybe_attach_backtrace(Stdlib[8], 1); break a;}catch(f){}
+     return 0;
     }
     //end
     |}]

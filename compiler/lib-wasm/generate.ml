@@ -3416,6 +3416,7 @@ let f
         match Config.effects () with
         | `Disabled | `Jspi | `Native -> true
         | `Cps | `Double_translation -> false)
+      ~tail_calls:true
       (fun f ->
         match Typing.return_type types f with
         | Int (Normalized | Unnormalized) | Number (_, Unboxed) -> false
