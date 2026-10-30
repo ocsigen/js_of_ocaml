@@ -1,4 +1,4 @@
-let min_version = 119
+let min_version = 120
 
 let () =
   let tmp = Filename.temp_file "binaryen" ".version" in

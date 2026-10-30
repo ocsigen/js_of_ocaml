@@ -34,7 +34,7 @@ See the
 [opam](https://github.com/ocsigen/js_of_ocaml/blob/master/js_of_ocaml-compiler.opam)
 files for version constraints.
 
-wasm_of_ocaml-compiler additionally depends on a system installation of binaryen (version 119 or later)
+wasm_of_ocaml-compiler additionally depends on a system installation of binaryen (version 120 or later)
 
 ## Supported engines
 
