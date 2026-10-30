@@ -70,6 +70,8 @@ module Flag : sig
 
   val excwrap : unit -> bool
 
+  val exn_sentinel : unit -> bool
+
   val improved_stacktrace : unit -> bool
 
   val inline_callgen : unit -> bool

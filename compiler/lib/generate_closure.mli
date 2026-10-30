@@ -20,7 +20,10 @@
 
 open Code
 
-val f : trampolined_calls:Var.Set.t -> program -> program
+val f :
+  trampolined_calls:Var.Set.t -> ?on_split:(Var.t -> Var.t -> unit) -> program -> program
 (** Implement tail calls between mutually recursive functions with
     trampolines. [trampolined_calls] are the calls which return a
-    trampoline when the stack is too deep (see {!Effects.f}). *)
+    trampoline when the stack is too deep (see {!Effects.f}).
+    When a closure [f] is split into a trampoline wrapper [f] and an
+    inner function [new_f], [on_split f new_f] is called. *)

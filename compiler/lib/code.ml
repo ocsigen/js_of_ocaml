@@ -946,6 +946,32 @@ let raises_outside_handlers blocks pc =
     blocks
     false
 
+let iter_trap_scopes blocks pc ~f =
+  let rec traverse pc visited traps =
+    if Addr.Set.mem pc visited
+    then visited
+    else
+      let visited = Addr.Set.add pc visited in
+      f pc traps;
+      let block = Addr.Map.find pc blocks in
+      fold_children
+        blocks
+        pc
+        (fun pc' visited ->
+          let traps =
+            match block.branch with
+            | Pushtrap ((body_pc, _), _, _) when pc' = body_pc -> body_pc :: traps
+            | Poptrap _ -> (
+                match traps with
+                | _ :: rem -> rem
+                | [] -> assert false)
+            | _ -> traps
+          in
+          traverse pc' visited traps)
+        visited
+  in
+  ignore (traverse pc Addr.Set.empty [])
+
 let fold_closures_innermost_first { start; blocks; _ } f accu =
   let rec visit blocks pc f accu =
     traverse
