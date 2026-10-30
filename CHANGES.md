@@ -13,6 +13,13 @@
   represented as externref, floats, integers and booleans are passed as
   f64 and i32, and the conversions of short strings are cached (#2563)
 * Compiler/Wasm: skip wasm-opt at --opt 1 (#2238)
+* Compiler/Wasm: functions called under an exception handler signal an
+  exception by returning null rather than throwing, which is much cheaper (#2098)
+* Compiler/Wasm: at -O2 and -O3, clone higher-order functions for each
+  combination of known functions they are passed, when one of them may raise,
+  so that calls to these functions become direct calls (#2098)
+* Compiler/Wasm: raising functions which can also be called through a closure
+  return null too when called directly, using a wrapper otherwise (#2098)
 * Compiler/Wasm: require Binaryen 120 (#2580)
 
 ## Bug fixes
@@ -107,13 +114,6 @@
   searches and `output_value` sharing detection (with WASI, `output_value`
   now shares boxed numbers with equal contents); single bound check in
   fixed-width `Bytes` accesses (#2470, #2505)
-* Compiler/wasm: functions called under an exception handler signal an
-  exception by returning null rather than throwing, which is much cheaper (#2098)
-* Compiler/wasm: at -O2 and -O3, clone higher-order functions for each
-  combination of known functions they are passed, when one of them may raise,
-  so that calls to these functions become direct calls (#2098)
-* Compiler/wasm: raising functions which can also be called through a closure
-  return null too when called directly, using a wrapper otherwise (#2098)
 
 ### Libraries
 * Lib: add `WebGL2` bindings; the `webgl` example uses WebGL2 and a new
