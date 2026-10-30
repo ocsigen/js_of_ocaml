@@ -306,6 +306,7 @@ let generate_prelude ~out_file =
           ; deadcode_sentinel
           ; shapes = _
           ; trampolined_calls = _
+          ; raising = _
           }
       , global_flow_data ) =
     Driver.optimize_for_wasm ~profile ~shapes:false code
@@ -544,6 +545,7 @@ let run
             ; deadcode_sentinel
             ; shapes
             ; trampolined_calls = _
+            ; raising = _
             }
         , global_flow_data ) =
       Driver.optimize_for_wasm ~profile ~shapes:true code

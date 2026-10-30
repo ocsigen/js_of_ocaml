@@ -68,13 +68,18 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
       }
       n = 0;
      }
-     try{
-      if(caml_string_equal(s, cst))
-       throw caml_maybe_attach_backtrace(Stdlib[8], 1);
-      var m = 7;
-     }
-     catch(exn){
-      var exn$0 = caml_wrap_exception(exn);
+     a:
+     {
+      b:
+      try{
+       if(caml_string_equal(s, cst)){
+        var exn$0 = caml_maybe_attach_backtrace(Stdlib[8], 1);
+        break b;
+       }
+       var m = 7;
+       break a;
+      }
+      catch(exn){exn$0 = caml_wrap_exception(exn);}
       if(exn$0 !== Stdlib[8]){
        _c_ = caml_pop_trap();
        var exn$1 = caml_maybe_attach_backtrace(exn$0, 0);

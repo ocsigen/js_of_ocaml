@@ -27,6 +27,7 @@ type optimized_result =
   ; in_cps : Effects.in_cps
   ; deadcode_sentinel : Code.Var.t
   ; shapes : Shape.t StringMap.t
+  ; raising : Raising_calls.t
   }
 
 val optimize_for_wasm :

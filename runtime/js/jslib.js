@@ -232,6 +232,32 @@ function caml_exn_with_js_backtrace(exn, force) {
   return exn;
 }
 
+// Functions called under an exception handler can signal an exception
+// by storing it in [caml_pending_exn] and returning [caml_exn_sentinel]
+// instead of throwing it, which is much cheaper.
+
+//Provides: caml_exn_sentinel
+var caml_exn_sentinel = {};
+
+//Provides: caml_pending_exn
+var caml_pending_exn = 0;
+
+//Provides: caml_raise_sentinel
+//Requires: caml_pending_exn, caml_exn_sentinel
+function caml_raise_sentinel(exn) {
+  caml_pending_exn = exn;
+  return caml_exn_sentinel;
+}
+
+//Provides: caml_take_exn
+//Requires: caml_pending_exn
+function caml_take_exn() {
+  // Clear the pending exception, so that it does not remain reachable
+  var exn = caml_pending_exn;
+  caml_pending_exn = 0;
+  return exn;
+}
+
 //Provides: caml_js_error_option_of_exception
 function caml_js_error_option_of_exception(exn) {
   if (exn.js_error) {
