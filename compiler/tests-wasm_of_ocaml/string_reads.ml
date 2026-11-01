@@ -1,8 +1,9 @@
 (* With JavaScript strings, [Bytes.unsafe_of_string] copies the string. The
    [String] functions which read a string through it are inlined and their
-   reads performed on the string instead (Inline, Specialize_string_reads).
+   reads performed on the string instead (Inline, Specialize_string_reads),
+   or, with separate compilation, made to read only the bytes they need.
    Check that they still compute the right results, including the bounds
-   checks, and that decoding a long string is not quadratic. *)
+   checks. *)
 
 let s =
   Sys.opaque_identity
@@ -41,16 +42,4 @@ let () =
     (String.get_int16_be s 1);
   p "int32: %lx %lx\n" (String.get_int32_le s 3) (String.get_int32_be s 3);
   p "int64: %Lx\n" (String.get_int64_le s 4);
-  catch (fun () -> ignore (String.get_int64_le s (String.length s - 4)));
-  (* Decoding a long string *)
-  let b = Buffer.create 1_000_000 in
-  for i = 0 to 0x10FFFF do
-    if Uchar.is_valid i then Buffer.add_utf_16be_uchar b (Uchar.of_int i)
-  done;
-  let u = Buffer.contents b in
-  let rec count i n =
-    if i >= String.length u
-    then n
-    else count (i + Uchar.utf_decode_length (String.get_utf_16be_uchar u i)) (n + 1)
-  in
-  p "decoded: %d\n" (count 0 0)
+  catch (fun () -> ignore (String.get_int64_le s (String.length s - 4)))

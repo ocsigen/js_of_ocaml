@@ -289,6 +289,57 @@
       (call $string_load
          (local.get $v) (local.get $p) (i32.const 8) (i32.const 0)))
 
+   ;; The (at most [$vn]) bytes of the string [$v] starting at position
+   ;; [$vi], which must be a valid position. The standard library's
+   ;; [String.get_utf_8_uchar], [String.get_int32_le]... are compiled to read
+   ;; such a window rather than a copy of the whole string.
+   (func (export "caml_string_window")
+      (param $v (ref eq)) (param $vi (ref eq)) (param $vn (ref eq))
+      (result (ref eq))
+      (local $s (ref $string)) (local $b (ref $bytes))
+      (local $i i32) (local $n i32) (local $len i32)
+      (local.set $s (ref.cast (ref $string) (local.get $v)))
+      (local.set $i (i31.get_s (ref.cast (ref i31) (local.get $vi))))
+      (local.set $len (call $js_length (struct.get $string 0 (local.get $s))))
+      (if (i32.ge_u (local.get $i) (local.get $len))
+         (then (call $caml_bound_error) (unreachable)))
+      (local.set $n (i31.get_s (ref.cast (ref i31) (local.get $vn))))
+      (if (i32.gt_u (local.get $n) (i32.sub (local.get $len) (local.get $i)))
+         (then (local.set $n (i32.sub (local.get $len) (local.get $i)))))
+      (local.set $b (array.new $bytes (i32.const 0) (local.get $n)))
+      (call $string_blit
+         (local.get $s) (local.get $i) (local.get $b) (i32.const 0)
+         (local.get $n))
+      (local.get $b))
+
+   (@string $String_sub "String.sub / Bytes.sub")
+
+   ;; A copy of the bytes of [$v] from [$vofs] of length [$vlen]: the
+   ;; standard library's [String.sub] is compiled to this rather than to
+   ;; [Bytes.sub] applied to a copy of the whole string.
+   (func (export "caml_string_sub_bytes")
+      (param $v (ref eq)) (param $vofs (ref eq)) (param $vlen (ref eq))
+      (result (ref eq))
+      (local $s (ref $string)) (local $b (ref $bytes))
+      (local $ofs i32) (local $len i32)
+      (local.set $s (ref.cast (ref $string) (local.get $v)))
+      (local.set $ofs (i31.get_s (ref.cast (ref i31) (local.get $vofs))))
+      (local.set $len (i31.get_s (ref.cast (ref i31) (local.get $vlen))))
+      (if (i32.or (i32.or (i32.lt_s (local.get $ofs) (i32.const 0))
+                          (i32.lt_s (local.get $len) (i32.const 0)))
+             (i32.gt_s (local.get $ofs)
+                (i32.sub
+                   (call $js_length (struct.get $string 0 (local.get $s)))
+                   (local.get $len))))
+         (then
+            (call $caml_invalid_argument (global.get $String_sub))
+            (unreachable)))
+      (local.set $b (array.new $bytes (i32.const 0) (local.get $len)))
+      (call $string_blit
+         (local.get $s) (local.get $ofs) (local.get $b) (i32.const 0)
+         (local.get $len))
+      (local.get $b))
+
    (func (export "caml_string_concat")
       (param $vs1 (ref eq)) (param $vs2 (ref eq)) (result (ref eq))
       (struct.new $string

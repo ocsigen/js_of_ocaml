@@ -38,3 +38,10 @@ val f : Code.program -> Code.program
 (** When [caml_bytes_of_string] copies the string, perform the reads of a byte
     array [x = caml_bytes_of_string s] on [s] instead when [x] is only read
     through primitives with a string counterpart, and remove the copy. *)
+
+val stdlib_string : Code.program -> Code.program
+(** When [caml_bytes_of_string] copies the string and the program is the
+    [Stdlib__String] compilation unit (separate compilation), make the
+    functions reading a few bytes at a given position ([get_utf_8_uchar],
+    [get_int32_le], ...) read a window of the string rather than a copy of the
+    whole string, and [sub] copy only the substring. *)

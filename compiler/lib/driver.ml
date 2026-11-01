@@ -737,7 +737,8 @@ let optimize ~shapes ~profile ~keep_flow_data p =
     Code.Var.fresh_n "dummy"
   in
   let opt =
-    Specialize.switches
+    Specialize_string_reads.stdlib_string
+    +> Specialize.switches
     +> specialize_js_once_before
     +> (match (profile : Profile.t) with
       | O1 -> o1
