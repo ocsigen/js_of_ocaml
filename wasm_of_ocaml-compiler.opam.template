@@ -17,7 +17,9 @@ build: [
 ]
 
 # ppx_devtools is not released yet (ocsigen/js_of_ocaml#2551).
+# The JavaScript string literals of wax-lib are not released yet.
 pin-depends: [
   ["ppx_devtools-optcomp.dev" "git+https://github.com/ocsigen/ppx_devtools.git#f62719d5087fa8d7f2bd0616c1fa91fd660eb27e"]
   ["ppx_devtools-expect.dev" "git+https://github.com/ocsigen/ppx_devtools.git#f62719d5087fa8d7f2bd0616c1fa91fd660eb27e"]
+  ["wax-lib.dev" "git+https://github.com/ocsigen/wax.git#js-string-literals"]
 ]
