@@ -16,6 +16,8 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
+   (@string_imports "str")
+   (@string_type $string)
    (import "jslib" "value_of_js"
       (func $value_of_js (param externref) (result (ref eq))))
    (import "jslib" "js_of_value"
@@ -76,8 +78,19 @@
 ))
    (import "hash" "caml_hash_mix_int"
       (func $caml_hash_mix_int (param i32) (param i32) (result i32)))
+   (import "string" "string_get"
+      (func $string_get (param (ref $string)) (param i32) (result i32)))
+   (import "string" "string_slice"
+      (func $string_slice
+         (param (ref $string)) (param i32) (param i32)
+         (result (ref $bytes) i32)))
 
    (type $bytes (array (mut i8)))
+(@if $use_js_string
+(@then
+   (type $string (struct (field externref))))
+(@else
+   (type $string (array (mut i8)))))
 
    (func (export "caml_hash_mix_bigstring")
       (param $h i32) (param $b (ref eq)) (result i32)
@@ -241,11 +254,11 @@
       (local $i i32) (local $pos1 i32) (local $pos2 i32) (local $len i32)
       (local $c1 i32) (local $c2 i32)
       (local $v1 (ref extern))
-      (local $s2 (ref $bytes))
+      (local $s2 (ref $string))
       (local $w1 i32) (local $w2 i32) (local $xored i32) (local $j i32)
       (local.set $v1 (call $caml_ba_get_view (local.get $s1)))
       (local.set $pos1 (i31.get_s (ref.cast (ref i31) (local.get $vpos1))))
-      (local.set $s2 (ref.cast (ref $bytes) (local.get $vs2)))
+      (local.set $s2 (ref.cast (ref $string) (local.get $vs2)))
       (local.set $pos2 (i31.get_s (ref.cast (ref i31) (local.get $vpos2))))
       (local.set $len (i31.get_s (ref.cast (ref i31) (local.get $vlen))))
       ;; Main loop: compare 4 bytes at a time
@@ -261,18 +274,18 @@
             (local.set $w2
                (i32.or
                   (i32.or
-                     (array.get_u $bytes (local.get $s2) (local.get $j))
+                     (call $string_get (local.get $s2) (local.get $j))
                      (i32.shl
-                        (array.get_u $bytes (local.get $s2)
+                        (call $string_get (local.get $s2)
                            (i32.add (local.get $j) (i32.const 1)))
                         (i32.const 8)))
                   (i32.or
                      (i32.shl
-                        (array.get_u $bytes (local.get $s2)
+                        (call $string_get (local.get $s2)
                            (i32.add (local.get $j) (i32.const 2)))
                         (i32.const 16))
                      (i32.shl
-                        (array.get_u $bytes (local.get $s2)
+                        (call $string_get (local.get $s2)
                            (i32.add (local.get $j) (i32.const 3)))
                         (i32.const 24)))))
             (if (i32.eq (local.get $w1) (local.get $w2))
@@ -328,7 +341,7 @@
                   (call $dv_get_ui8 (local.get $v1)
                      (i32.add (local.get $pos1) (local.get $i))))
                (local.set $c2
-                  (array.get_u $bytes (local.get $s2)
+                  (call $string_get (local.get $s2)
                      (i32.add (local.get $pos2) (local.get $i))))
                (local.set $i (i32.add (local.get $i) (i32.const 1)))
                (br_if $loop (i32.eq (local.get $c1) (local.get $c2)))
@@ -569,8 +582,20 @@
                (br $loop))))
       (ref.i31 (i32.const 0)))
 
-   (export "caml_bigstring_blit_string_to_ba"
-      (func $caml_bigstring_blit_bytes_to_ba))
+   (func (export "caml_bigstring_blit_string_to_ba")
+      (param $str1 (ref eq)) (param $vpos1 (ref eq))
+      (param $ba2 (ref eq)) (param $vpos2 (ref eq))
+      (param $vlen (ref eq)) (result (ref eq))
+      (local $b (ref $bytes)) (local $pos i32)
+      (call $string_slice (ref.cast (ref $string) (local.get $str1))
+         (i31.get_s (ref.cast (ref i31) (local.get $vpos1)))
+         (i31.get_s (ref.cast (ref i31) (local.get $vlen))))
+      (local.set $pos)
+      (local.set $b)
+      (return_call $caml_bigstring_blit_bytes_to_ba
+         (local.get $b) (ref.i31 (local.get $pos)) (local.get $ba2)
+         (local.get $vpos2) (local.get $vlen)))
+
    (func $caml_bigstring_blit_bytes_to_ba
       (export "caml_bigstring_blit_bytes_to_ba")
       (param $str1 (ref eq)) (param $vpos1 (ref eq))

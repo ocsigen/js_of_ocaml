@@ -16,6 +16,8 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
+   (@string_imports "str")
+   (@string_type $string)
    (import "fail" "caml_failwith" (func $caml_failwith (param (ref eq))))
    (import "array" "caml_check_array_length"
       (func $caml_check_array_length (param i32)))
@@ -32,9 +34,19 @@
    (import "effect" "caml_cps_trampoline"
       (func $caml_cps_trampoline (param (ref eq) (ref eq)) (result (ref eq))))
 ))
+(@if $use_js_string
+(@then
+   (import "jsstring" "jsstring_test"
+      (func $jsstring_test (param externref) (result i32)))
+))
 
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
+(@if $use_js_string
+(@then
+   (type $string (struct (field externref))))
+(@else
+   (type $string (array (mut i8)))))
    (type $float (struct (field $f f64)))
    (type $float_array (array (mut f64)))
    (type $function_1 (func (param (ref eq) (ref eq)) (result (ref eq))))
@@ -312,6 +324,12 @@
                (struct.get $float 0
                   (br_on_cast_fail $not_float (ref eq) (ref $float)
                      (local.get $v)))))))
+(@if $use_js_string
+(@then
+      ;; OCaml strings are immutable JavaScript strings
+      (if (ref.test (ref $string) (local.get $v))
+         (then (return (local.get $v))))
+))
       (call $caml_dup_custom (local.get $v)))
 
    (func (export "caml_obj_with_tag")
@@ -366,6 +384,16 @@
          (then (return (ref.i31 (global.get $closure_tag)))))
       (if (call $caml_is_continuation (local.get $v))
          (then (return (ref.i31 (global.get $cont_tag)))))
+(@if $use_js_string
+(@then
+      (drop (block $not_string (result (ref eq))
+         (if (call $jsstring_test
+                (struct.get $string 0
+                   (br_on_cast_fail $not_string (ref eq) (ref $string)
+                      (local.get $v))))
+            (then (return (ref.i31 (global.get $string_tag)))))
+         (ref.i31 (i32.const 0))))
+))
       (ref.i31 (global.get $abstract_tag)))
 
    (func (export "caml_obj_make_forward")

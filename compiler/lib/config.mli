@@ -146,6 +146,11 @@ val target : unit -> [ `JavaScript | `Wasm ]
 
 val set_target : [ `JavaScript | `Wasm ] -> unit
 
+val wasm_use_js_string : unit -> bool
+(** Whether OCaml strings are JavaScript strings in Wasm code: when
+    [use-js-string] is enabled and the target is not WASI, which has no
+    JavaScript host. *)
+
 type effects_backend =
   [ `Disabled
   | `Cps

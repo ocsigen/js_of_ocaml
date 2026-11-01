@@ -772,15 +772,13 @@ module Generate (Target : Target_sig.S) = struct
       `Pure
       ~ty:int_n
       ~ret_typ:int_n
-      Memory.bytes_get;
+      Memory.string_get;
     register_bin_prim
       "caml_bytes_unsafe_get"
       `Mutable
       ~ty:int_n
       ~ret_typ:int_n
       Memory.bytes_get;
-    register_tern_prim "caml_string_unsafe_set" ~ty:int_n ~tz:int_u (fun x y z ->
-        seq (Memory.bytes_set x y z) Value.unit);
     register_tern_prim "caml_bytes_unsafe_set" ~ty:int_n ~tz:int_u (fun x y z ->
         seq (Memory.bytes_set x y z) Value.unit);
     let bytes_get context x y =
@@ -789,7 +787,13 @@ module Generate (Target : Target_sig.S) = struct
          instr (W.Br_if (label_index context bound_error_pc, cond)))
         (Memory.bytes_get x y)
     in
-    register_bin_prim_ctx "caml_string_get" ~ty:int_n ~ret_typ:int_n bytes_get;
+    let string_get context x y =
+      seq
+        (let* cond = Arith.uge y (Memory.string_length x) in
+         instr (W.Br_if (label_index context bound_error_pc, cond)))
+        (Memory.string_get x y)
+    in
+    register_bin_prim_ctx "caml_string_get" ~ty:int_n ~ret_typ:int_n string_get;
     register_bin_prim_ctx "caml_bytes_get" ~ty:int_n ~ret_typ:int_n bytes_get;
     let bytes_set context x y z =
       seq
@@ -798,10 +802,9 @@ module Generate (Target : Target_sig.S) = struct
          Memory.bytes_set x y z)
         Value.unit
     in
-    register_tern_prim_ctx "caml_string_set" ~ty:int_n ~tz:int_u bytes_set;
     register_tern_prim_ctx "caml_bytes_set" ~ty:int_n ~tz:int_u bytes_set;
     register_un_prim "caml_ml_string_length" `Pure ~ret_typ:int_n (fun x ->
-        Memory.bytes_length x);
+        Memory.string_length x);
     register_un_prim "caml_ml_bytes_length" `Pure ~ret_typ:int_n (fun x ->
         Memory.bytes_length x);
     (* Dimensions are nonnegative [i32]; the runtime wraps those that do
@@ -2557,7 +2560,6 @@ module Generate (Target : Target_sig.S) = struct
                     ( Extern
                         ( ( "caml_string_get"
                           | "caml_bytes_get"
-                          | "caml_string_set"
                           | "caml_bytes_set"
                           | "caml_check_bound"
                           | "caml_check_bound_gen"

@@ -16,6 +16,8 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
+   (@string_imports "str")
+   (@string_type $string)
    (import "fail" "caml_failwith" (func $caml_failwith (param (ref eq))))
    (import "fail" "ocaml_exception" (tag $ocaml_exception (param (ref eq))))
    (import "fail" "javascript_exception"
@@ -50,7 +52,22 @@
       (func $caml_init_custom_operations))
    (import "custom" "caml_find_custom_operations"
       (func $caml_find_custom_operations
-         (param (ref $bytes)) (result (ref null $custom_operations))))
+         (param (ref $string)) (result (ref null $custom_operations))))
+   (import "string" "string_to_bytes"
+      (func $string_to_bytes (param (ref $string)) (result (ref $bytes))))
+   (import "string" "string_length"
+      (func $string_length (param (ref $string)) (result i32)))
+   (import "string" "string_slice"
+      (func $string_slice
+         (param (ref $string)) (param i32) (param i32)
+         (result (ref $bytes) i32)))
+   (import "string" "string_of_bytes"
+      (func $string_of_bytes (param (ref $bytes)) (result (ref $string))))
+(@if $use_js_string
+(@then
+   (import "jsstring" "jsstring_test"
+      (func $jsstring_test (param externref) (result i32)))
+))
    (type $block (array (mut (ref eq))))
    (type $int_array (array (mut i32)))
 (@if (not $wasi)
@@ -64,7 +81,44 @@
 
    (@string $input_val_from_string "input_value_from_string")
 
-   (export "caml_input_value_from_string" (func $caml_input_value_from_bytes))
+   (func (export "caml_input_value_from_string")
+      (param $vstr (ref eq)) (param $vofs (ref eq)) (result (ref eq))
+      (local $str (ref $string)) (local $ofs i32) (local $len i32)
+      (local $b (ref $bytes)) (local $o i32)
+      (local $h (ref $marshal_header))
+      ;; Only the bytes of the marshalled value are read: first its header,
+      ;; to get its size, then the whole value
+      (local.set $str (ref.cast (ref $string) (local.get $vstr)))
+      (local.set $ofs (i31.get_u (ref.cast (ref i31) (local.get $vofs))))
+      ;; The number of bytes available
+      (local.set $len (call $string_length (local.get $str)))
+      (local.set $len
+         (if (result i32) (i32.gt_u (local.get $ofs) (local.get $len))
+            (then (i32.const 0))
+            (else (i32.sub (local.get $len) (local.get $ofs)))))
+      (call $string_slice (local.get $str) (local.get $ofs)
+         (select (local.get $len) (i32.const 64)
+            (i32.lt_u (local.get $len) (i32.const 64))))
+      (local.set $o)
+      (local.set $b)
+      (local.set $h
+         (call $parse_header
+            (call $get_intern_state (local.get $b) (local.get $o))
+            (global.get $input_val_from_string)))
+      (if (i32.gt_u
+             (i32.add (struct.get $marshal_header $header_len (local.get $h))
+                (struct.get $marshal_header $data_len (local.get $h)))
+             (local.get $len))
+         (then
+            (call $fail_bad_length (global.get $input_val_from_string))))
+      (call $string_slice (local.get $str) (local.get $ofs)
+         (i32.add (struct.get $marshal_header $header_len (local.get $h))
+            (struct.get $marshal_header $data_len (local.get $h))))
+      (local.set $o)
+      (local.set $b)
+      (return_call $caml_input_value_from_bytes
+         (local.get $b) (ref.i31 (local.get $o))))
+
    (func $caml_input_value_from_bytes (export "caml_input_value_from_bytes")
       (param $vstr (ref eq)) (param $vofs (ref eq)) (result (ref eq))
       (local $str (ref $bytes))
@@ -144,6 +198,11 @@
       (return_call $intern_rec (local.get $s) (local.get $h)))
 
    (type $bytes (array (mut i8)))
+(@if $use_js_string
+(@then
+   (type $string (struct (field externref))))
+(@else
+   (type $string (array (mut i8)))))
    (type $float (struct (field $f f64)))
    (type $float_array (array (mut f64)))
    (type $js (struct (field $js externref)))
@@ -162,7 +221,7 @@
    (type $dup (func (param (ref eq)) (result (ref eq))))
    (type $custom_operations
       (struct
-         (field $id (ref $bytes))
+         (field $id (ref $string))
          (field $compare (ref null $compare))
          (field $compare_ext (ref null $compare))
          (field $hash (ref null $hash))
@@ -444,8 +503,8 @@
             (br_on_null $unknown
                (call
                   $caml_find_custom_operations
-                  (call $readstr
-                     (local.get $s)))))
+                  (call $string_of_bytes
+                     (call $readstr (local.get $s))))))
          (block $no_length
             (if (i32.eq (local.get $code) (global.get $CODE_CUSTOM_FIXED))
                (then
@@ -693,7 +752,8 @@
           ;; read_string
           (local.set $str (array.new $bytes (i32.const 0) (local.get $len)))
           (call $readblock (local.get $s) (local.get $str))
-          (local.set $v (local.get $str))
+          ;; (bytes and strings are not told apart: we produce a string)
+          (local.set $v (call $string_of_bytes (local.get $str)))
           (call $register_object (local.get $s) (local.get $v))
           (br $done))
          ;; read_block
@@ -1226,7 +1286,9 @@
    (func $is_int_custom (param $ops (ref $custom_operations)) (result i32)
       ;; int32, int64 and nativeint, whose identifiers are "_i", "_j", "_n"
       (local $id (ref $bytes)) (local $c i32)
-      (local.set $id (struct.get $custom_operations $id (local.get $ops)))
+      (local.set $id
+         (call $string_to_bytes
+            (struct.get $custom_operations $id (local.get $ops))))
       (if (i32.ne (array.len (local.get $id)) (i32.const 2))
          (then (return (i32.const 0))))
       (if (i32.ne (array.get_u $bytes (local.get $id) (i32.const 0))
@@ -1617,7 +1679,8 @@
                      (local.get $ops))))
             (call $write (local.get $s) (global.get $CODE_CUSTOM_FIXED))
             (call $writeblock (local.get $s)
-               (struct.get $custom_operations $id (local.get $ops)))
+               (call $string_to_bytes
+                  (struct.get $custom_operations $id (local.get $ops))))
             (call $write (local.get $s) (i32.const 0))
             (call_ref $serialize
                (local.get $s) (local.get $v) (local.get $serialize))
@@ -1640,7 +1703,8 @@
          ;; variable length
          (call $write (local.get $s) (global.get $CODE_CUSTOM_LEN))
          (call $writeblock (local.get $s)
-            (struct.get $custom_operations $id (local.get $ops)))
+            (call $string_to_bytes
+               (struct.get $custom_operations $id (local.get $ops))))
          (call $write (local.get $s) (i32.const 0))
          (local.set $pos
             (call $reserve_extern_output (local.get $s) (i32.const 12)))
@@ -1746,6 +1810,19 @@
                         (struct.get $extern_state $obj_counter (local.get $s))
                         (local.get $pos)))
                   (br $next_item)))
+(@if $use_js_string
+(@then
+            ;; an OCaml string is marshalled from its bytes
+            (if (ref.test (ref $string) (local.get $v))
+               (then
+                  (if (call $jsstring_test
+                         (struct.get $string 0
+                            (ref.cast (ref $string) (local.get $v))))
+                     (then
+                        (local.set $v
+                           (call $string_to_bytes
+                              (ref.cast (ref $string) (local.get $v))))))))
+))
             (drop (block $not_string (result (ref eq))
                (local.set $str
                   (br_on_cast_fail $not_string (ref eq) (ref $bytes)
@@ -1882,7 +1959,13 @@
       (local.get $len) (local.get $header) (local.get $s))
 
    (func (export "caml_output_value_to_string")
-      (export "caml_output_value_to_bytes")
+      (param $v (ref eq)) (param $flags (ref eq)) (result (ref eq))
+      (call $string_of_bytes
+         (ref.cast (ref $bytes)
+            (call $caml_output_value_to_bytes
+               (local.get $v) (local.get $flags)))))
+
+   (func $caml_output_value_to_bytes (export "caml_output_value_to_bytes")
       (param $v (ref eq)) (param $flags (ref eq)) (result (ref eq))
       (local $r_0 i32)
       (local $r_1 (ref $bytes))

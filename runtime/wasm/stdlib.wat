@@ -16,6 +16,8 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
+   (@string_imports "str")
+   (@string_type $string)
    (import "hash" "caml_string_hash"
       (func $caml_string_hash
          (param (ref eq)) (param (ref eq)) (result (ref eq))))
@@ -54,11 +56,15 @@
 ))
 
    (type $block (array (mut (ref eq))))
-   (type $bytes (array (mut i8)))
+(@if $use_js_string
+(@then
+   (type $string (struct (field externref))))
+(@else
+   (type $string (array (mut i8)))))
 
    (type $assoc
       (struct
-         (field $name (ref $bytes))
+         (field $name (ref $string))
          (field $value (mut (ref eq)))
          (field $next (mut (ref null $assoc)))))
 
@@ -76,23 +82,13 @@
 
    ;; Build a symbol key: for predefs, prepend "predef:" to the name.
    ;; For compunits (is_predef=0), return name unchanged.
-   (func $make_symbol_key (param $is_predef i32) (param $name (ref $bytes))
-      (result (ref $bytes))
-      (local $len i32)
-      (local $key (ref $bytes))
+   (func $make_symbol_key (param $is_predef i32) (param $name (ref $string))
+      (result (ref $string))
       (if (i32.eqz (local.get $is_predef))
          (then (return (local.get $name))))
-      (local.set $len (array.len (local.get $name)))
-      (local.set $key
-         (array.new $bytes (i32.const 0) (i32.add (local.get $len) (i32.const 7))))
-      (array.copy $bytes $bytes
-         (local.get $key) (i32.const 0)
-         (global.get $predef_prefix) (i32.const 0) (i32.const 7))
-      (array.copy $bytes $bytes
-         (local.get $key) (i32.const 7)
-         (local.get $name) (i32.const 0)
-         (local.get $len))
-      (local.get $key))
+      (ref.cast (ref $string)
+         (call $caml_string_concat
+            (global.get $predef_prefix) (local.get $name))))
    (global $symbol_table_size (mut i32) (i32.const 1))
 
    (func $assoc_find
@@ -154,7 +150,7 @@
       (array.set $assoc_array
          (global.get $named_value_table) (local.get $h)
          (struct.new $assoc
-            (ref.cast (ref $bytes) (local.get $name))
+            (ref.cast (ref $string) (local.get $name))
             (local.get $value) (local.get $next)))
       (ref.i31 (i32.const 0)))
 
@@ -262,7 +258,7 @@
       (local $h i32)
       (local $max i32)
       (local $idx i32)
-      (local $name (ref $bytes))
+      (local $name (ref $string))
       (global.set $link_info (ref.cast (ref $block) (local.get $info)))
       ;; Compute next_idx from symbols field
       (if (ref.test (ref $block)
@@ -310,7 +306,7 @@
                                  (ref.cast (ref $block)
                                     (array.get $block (local.get $pair) (i32.const 1)))
                                  (i32.const 0))))
-                        (ref.cast (ref $bytes)
+                        (ref.cast (ref $string)
                            (array.get $block
                               (ref.cast (ref $block)
                                  (array.get $block (local.get $pair) (i32.const 1)))
@@ -350,14 +346,14 @@
    ;; Look up a name in the symbol hash table and return the symtable index.
    ;; Returns -1 if not found or if symbols is not set.
    (func $lookup_symbol (param $name (ref eq)) (param $kind i32) (result i32)
-      (local $key (ref $bytes))
+      (local $key (ref $string))
       (if (ref.test (ref i31)
              (array.get $block (global.get $link_info)
                 (global.get $LINK_INFO_SYMBOLS)))
          (then (return (i32.const -1))))
       (local.set $key
          (call $make_symbol_key (local.get $kind)
-            (ref.cast (ref $bytes) (local.get $name))))
+            (ref.cast (ref $string) (local.get $name))))
       (block $not_found
          (return
             (i31.get_u

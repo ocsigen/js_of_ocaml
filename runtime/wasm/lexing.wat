@@ -16,10 +16,21 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
+   (@string_imports "str")
+   (@string_type $string)
    (import "fail" "caml_failwith" (func $caml_failwith (param (ref eq))))
+   (import "string" "string_get"
+      (func $string_get (param (ref $string)) (param i32) (result i32)))
+   (import "string" "string_to_bytes"
+      (func $string_to_bytes (param (ref $string)) (result (ref $bytes))))
 
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
+(@if $use_js_string
+(@then
+   (type $string (struct (field externref))))
+(@else
+   (type $string (array (mut i8)))))
 
    ;; The lexer tables are strings of signed 16-bit little-endian
    ;; integers. Reading an entry byte per byte costs two array accesses
@@ -51,8 +62,9 @@
       (local $s (ref $bytes)) (local $t (ref $lex_table))
       (local $j i32) (local $len i32)
       (local.set $s
-         (ref.cast (ref $bytes)
-            (array.get $block (local.get $tbl) (local.get $i))))
+         (call $string_to_bytes
+            (ref.cast (ref $string)
+               (array.get $block (local.get $tbl) (local.get $i)))))
       ;; an odd trailing byte cannot be part of a valid entry
       (local.set $len (i32.shr_u (array.len (local.get $s)) (i32.const 1)))
       (local.set $t (array.new_default $lex_table (local.get $len)))
@@ -263,7 +275,7 @@
       (unreachable))
 
    (func $run_mem
-      (param $s (ref $bytes)) (param $i i32) (param $lexbuf (ref $block))
+      (param $s (ref $string)) (param $i i32) (param $lexbuf (ref $block))
       (param $curr_pos (ref eq))
       (local $dst i32) (local $src i32)
       (local $mem (ref $block))
@@ -271,11 +283,11 @@
          (ref.cast (ref $block)
             (array.get $block (local.get $lexbuf) (global.get $lex_mem))))
       (loop $loop
-         (local.set $dst (array.get_u $bytes (local.get $s) (local.get $i)))
+         (local.set $dst (call $string_get (local.get $s) (local.get $i)))
          (if (i32.eq (local.get $dst) (i32.const 0xff))
             (then (return)))
          (local.set $src
-            (array.get_u $bytes (local.get $s)
+            (call $string_get (local.get $s)
               (i32.add (local.get $i) (i32.const 1))))
          (local.set $i (i32.add (local.get $i) (i32.const 2)))
          (array.set $block (local.get $mem)
@@ -290,7 +302,7 @@
       (unreachable))
 
    (func $run_tag
-      (param $s (ref $bytes)) (param $i i32) (param $lexbuf (ref $block))
+      (param $s (ref $string)) (param $i i32) (param $lexbuf (ref $block))
       (return_call $run_mem (local.get $s) (local.get $i) (local.get $lexbuf)
          (ref.i31 (i32.const -1))))
 
@@ -307,7 +319,7 @@
       (local $pos i32) (local $base i32) (local $backtrk i32)
       (local $pc_off i32) (local $base_code i32)
       (local $tbls (ref $lex_tables))
-      (local $lex_code (ref $bytes))
+      (local $lex_code (ref $string))
       (local $lex_base (ref $lex_table))
       (local $lex_base_code (ref $lex_table))
       (local $lex_backtrk (ref $lex_table))
@@ -338,7 +350,7 @@
          (else
             (local.set $state (i32.sub (i32.const -1) (local.get $state)))))
       (local.set $lex_code
-         (ref.cast (ref $bytes)
+         (ref.cast (ref $string)
             (array.get $block (local.get $tbl) (global.get $lex_code_field))))
       (local.set $tbls (call $get_tables (local.get $tbl)))
       (local.set $lex_base (struct.get $lex_tables $base (local.get $tbls)))

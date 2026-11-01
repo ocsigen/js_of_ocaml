@@ -287,6 +287,8 @@ let set_target (t : [ `JavaScript | `Wasm ]) =
   | `Wasm -> Targetint.set_num_bits 31);
   target_ := (t :> [ `JavaScript | `Wasm | `None ])
 
+let wasm_use_js_string () = Flag.use_js_string () && not (Flag.wasi ())
+
 type effects_backend =
   [ `Disabled
   | `Cps

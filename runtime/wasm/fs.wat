@@ -16,6 +16,8 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
+   (@string_imports "str")
+   (@string_type $string)
 (@if $wasi
 (@then
    (type $path_op (func (param i32 i32 i32) (result i32)))
@@ -101,6 +103,11 @@
       (func $read_file (param externref) (result externref)))
 
    (type $bytes (array (mut i8)))
+(@if $use_js_string
+(@then
+   (type $string (struct (field externref))))
+(@else
+   (type $string (array (mut i8)))))
    (type $block (array (mut (ref eq))))
 
 (@if $wasi
@@ -144,7 +151,7 @@
                                     (i32.add (local.get $i) (i32.const 2)))
                                  (br $loop))))))))))
       (if (i32.eq (local.get $i) (local.get $len))
-         (then (return (@string ""))))
+         (then (return (@string $bytes ""))))
       ;; [$i] points at the first non-prefix character. When some leading
       ;; component was stripped ([$i] > 1, e.g. "./x" or "//x") keep one
       ;; leading slash by copying from [$i - 1]. For a plain relative prefix
@@ -196,9 +203,9 @@
             (global.set $preopens_initialized (i32.const 1))))
       (global.get $preopens))
 
-   (global $current_dir (mut (ref $bytes)) (@string ""))
+   (global $current_dir (mut (ref $bytes)) (@string $bytes ""))
 
-   (@string $root_dir "/")
+   (@string $root_dir $bytes "/")
 
    (func $make_absolute
       (param $path (ref $bytes)) (result (ref $bytes))
@@ -340,7 +347,7 @@
             (br $loop)))
       (if (i32.eq (local.get $i) (i32.const -1))
          (then ;; not found
-            (return (i32.const -1) (@string ""))))
+            (return (i32.const -1) (@string $bytes ""))))
       ;; skip leading slashes
       (local.set $len (local.get $i))
       (loop $loop
@@ -360,7 +367,7 @@
                   (i32.sub (array.len (local.get $path)) (local.get $i)))
                (return
                   (local.get $fd) (local.get $rel_path)))))
-      (return (local.get $fd) (@string ".")))
+      (return (local.get $fd) (@string $bytes ".")))
 
    (func $wasi_resolve_path (export "wasi_resolve_path")
       (param $vpath (ref eq))

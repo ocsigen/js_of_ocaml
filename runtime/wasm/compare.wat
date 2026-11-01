@@ -16,6 +16,8 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
+   (@string_imports "str")
+   (@string_type $string)
    (import "bindings" "equals"
       (func $equals (param externref) (param externref) (result i32)))
    (import "obj" "forward_tag" (global $forward_tag i32))
@@ -39,6 +41,11 @@
 
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
+(@if $use_js_string
+(@then
+   (type $string (struct (field externref))))
+(@else
+   (type $string (array (mut i8)))))
    (type $float (struct (field $f f64)))
    (type $float_array (array (mut f64)))
    (type $js (struct (field $js externref)))
@@ -54,7 +61,7 @@
    (type $dup (func (param (ref eq)) (result (ref eq))))
    (type $custom_operations
       (struct
-         (field $id (ref $bytes))
+         (field $id (ref $string))
          (field $compare (ref null $compare))
          (field $compare_ext (ref null $compare))
          (field $hash (ref null $hash))

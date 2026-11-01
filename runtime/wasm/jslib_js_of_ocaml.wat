@@ -16,6 +16,7 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
+   (@string_imports "str")
 (@if (not $wasi)
 (@then
    (import "jslib" "value_of_js"
@@ -34,19 +35,19 @@
       (func $caml_js_html_entities_js (param externref) (result externref)))
 
    (type $block (array (mut (ref eq))))
-   (type $bytes (array (mut i8)))
+   (type $js (struct (field externref)))
 
    (func (export "caml_js_html_entities") (param $v (ref eq)) (result (ref eq))
       (return_call $value_of_js
          (call $caml_js_html_entities_js (call $js_of_value (local.get $v)))))
 
-   (@string $console "console")
+   (@string $console $js "console")
 
    (func (export "caml_js_get_console") (param (ref eq)) (result (ref eq))
       (return_call $caml_js_get (call $caml_js_global (ref.i31 (i32.const 0)))
          (global.get $console)))
 
-   (@string $XMLHttpRequest "XMLHttpRequest")
+   (@string $XMLHttpRequest $js "XMLHttpRequest")
 
    (func (export "caml_xmlhttprequest_create") (param (ref eq)) (result (ref eq))
       (return_call $caml_js_new

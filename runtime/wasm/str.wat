@@ -16,11 +16,30 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
+   (@string_imports "str")
+   (@string_type $string)
    (import "fail" "caml_invalid_argument"
       (func $caml_invalid_argument (param (ref eq))))
    (import "fail" "caml_failwith" (func $caml_failwith (param (ref eq))))
+   (import "string" "string_length"
+      (func $string_length (param (ref $string)) (result i32)))
+   (import "string" "string_get"
+      (func $string_get (param (ref $string)) (param i32) (result i32)))
+   (import "string" "string_blit"
+      (func $string_blit
+         (param (ref $string)) (param i32) (param (ref $bytes)) (param i32)
+         (param i32)))
+   (import "string" "string_to_bytes"
+      (func $string_to_bytes (param (ref $string)) (result (ref $bytes))))
+   (import "string" "string_of_bytes"
+      (func $string_of_bytes (param (ref $bytes)) (result (ref $string))))
 
    (type $bytes (array (mut i8)))
+(@if $use_js_string
+(@then
+   (type $string (struct (field externref))))
+(@else
+   (type $string (array (mut i8)))))
    (type $block (array (mut (ref eq))))
 
    (type $char_table (array i8))
@@ -67,24 +86,24 @@
                (i32.shr_u (local.get $c) (i32.const 3)))
             (i32.and (local.get $c) (i32.const 7)))))
 
-   (func $in_bitset (param $s (ref $bytes)) (param $c i32) (result i32)
+   (func $in_bitset (param $s (ref $string)) (param $c i32) (result i32)
       (i32.and (i32.const 1)
          (i32.shr_u
-            (array.get_u $bytes (local.get $s)
+            (call $string_get (local.get $s)
                (i32.shr_u (local.get $c) (i32.const 3)))
             (i32.and (local.get $c) (i32.const 7)))))
 
    (func $re_match
-      (param $vre (ref eq)) (param $s (ref $bytes)) (param $pos i32)
+      (param $vre (ref eq)) (param $s (ref $string)) (param $pos i32)
       (param $accept_partial_match i32) (result (ref eq))
       (local $res (ref $block))
-      (local $s' (ref $bytes)) (local $set (ref $bytes))
+      (local $s' (ref $string)) (local $set (ref $string))
       (local $len i32) (local $instr i32) (local $idx i32) (local $i i32)
       (local $j i32) (local $l i32)
       (local $re (ref $block))
       (local $prog (ref $block))
       (local $cpool (ref $block))
-      (local $normtable (ref $bytes))
+      (local $normtable (ref $string))
       (local $numgroups i32)
       (local $numregisters i32)
       (local $group_start (ref $int_array))
@@ -94,7 +113,7 @@
       (local $stack (ref null $stack))
       (local $u (ref $undo))
       (local $p (ref $pos))
-      (local.set $len (array.len (local.get $s)))
+      (local.set $len (call $string_length (local.get $s)))
       (local.set $re (ref.cast (ref $block) (local.get $vre)))
       (local.set $prog
          (ref.cast (ref $block)
@@ -103,7 +122,7 @@
          (ref.cast (ref $block)
             (array.get $block (local.get $re) (i32.const 2))))
       (local.set $normtable
-         (ref.cast (ref $bytes)
+         (ref.cast (ref $string)
             (array.get $block (local.get $re) (i32.const 3))))
       (local.set $numgroups
          (i31.get_s
@@ -166,7 +185,7 @@
                                (i32.shr_u (local.get $instr) (i32.const 8)))
                             (br_if $backtrack
                                (i32.ne (local.get $idx)
-                                  (array.get_u $bytes
+                                  (call $string_get
                                      (local.get $s) (local.get $pos))))
                             (local.set $pos
                                (i32.add (local.get $pos) (i32.const 1)))
@@ -178,9 +197,9 @@
                               (i32.shr_u (local.get $instr) (i32.const 8)))
                            (br_if $backtrack
                               (i32.ne (local.get $idx)
-                                 (array.get_u $bytes
+                                 (call $string_get
                                     (local.get $normtable)
-                                    (array.get_u $bytes
+                                    (call $string_get
                                        (local.get $s) (local.get $pos)))))
                            (local.set $pos
                               (i32.add (local.get $pos) (i32.const 1)))
@@ -189,11 +208,11 @@
                           (local.set $idx
                              (i32.shr_u (local.get $instr) (i32.const 8)))
                           (local.set $s'
-                             (ref.cast (ref $bytes)
+                             (ref.cast (ref $string)
                                 (array.get $block (local.get $cpool)
                                    (i32.add (local.get $idx) (i32.const 1)))))
                           (local.set $i (i32.const 0))
-                          (local.set $l (array.len (local.get $s')))
+                          (local.set $l (call $string_length (local.get $s')))
                           (loop $loop
                              (if (i32.lt_u (local.get $i) (local.get $l))
                                 (then
@@ -202,9 +221,9 @@
                                          (local.get $pos) (local.get $len)))
                                    (br_if $backtrack
                                       (i32.ne
-                                         (array.get_u $bytes (local.get $s')
+                                         (call $string_get (local.get $s')
                                             (local.get $i))
-                                         (array.get_u $bytes (local.get $s)
+                                         (call $string_get (local.get $s)
                                             (local.get $pos))))
                                    (local.set $pos
                                       (i32.add (local.get $pos) (i32.const 1)))
@@ -216,11 +235,11 @@
                          (local.set $idx
                             (i32.shr_u (local.get $instr) (i32.const 8)))
                          (local.set $s'
-                            (ref.cast (ref $bytes)
+                            (ref.cast (ref $string)
                                (array.get $block (local.get $cpool)
                                   (i32.add (local.get $idx) (i32.const 1)))))
                          (local.set $i (i32.const 0))
-                         (local.set $l (array.len (local.get $s')))
+                         (local.set $l (call $string_length (local.get $s')))
                          (loop $loop
                             (if (i32.lt_u (local.get $i) (local.get $l))
                                (then
@@ -229,11 +248,11 @@
                                         (local.get $pos) (local.get $len)))
                                   (br_if $backtrack
                                      (i32.ne
-                                        (array.get_u $bytes (local.get $s')
+                                        (call $string_get (local.get $s')
                                            (local.get $i))
-                                        (array.get_u $bytes
+                                        (call $string_get
                                            (local.get $normtable)
-                                           (array.get_u $bytes (local.get $s)
+                                           (call $string_get (local.get $s)
                                               (local.get $pos)))))
                                   (local.set $pos
                                      (i32.add (local.get $pos) (i32.const 1)))
@@ -249,11 +268,11 @@
                         (br_if $backtrack
                            (i32.eqz
                               (call $in_bitset
-                                 (ref.cast (ref $bytes)
+                                 (ref.cast (ref $string)
                                     (array.get $block (local.get $cpool)
                                        (i32.add (local.get $idx)
                                           (i32.const 1))))
-                                 (array.get_u $bytes (local.get $s)
+                                 (call $string_get (local.get $s)
                                     (local.get $pos)))))
                         (local.set $pos
                            (i32.add (local.get $pos) (i32.const 1)))
@@ -262,7 +281,7 @@
                        (br_if $continue (i32.eqz (local.get $pos)))
                        (br_if $continue
                           (i32.eq (@char "\n")
-                             (array.get_u $bytes (local.get $s)
+                             (call $string_get (local.get $s)
                                 (i32.sub (local.get $pos) (i32.const 1)))))
                        (br $backtrack))
                       ;; EOL
@@ -270,7 +289,7 @@
                          (i32.eq (local.get $pos) (local.get $len)))
                       (br_if $continue
                          (i32.eq (@char "\n")
-                            (array.get_u $bytes (local.get $s)
+                            (call $string_get (local.get $s)
                                (local.get $pos))))
                       (br $backtrack))
                      ;; WORDBOUNDARY
@@ -280,7 +299,7 @@
                               (i32.eq (local.get $pos) (local.get $len)))
                            (br_if $continue
                               (call $is_word_letter
-                                 (array.get_u $bytes (local.get $s)
+                                 (call $string_get (local.get $s)
                                     (local.get $pos))))
                            (br $backtrack))
                         (else
@@ -288,7 +307,7 @@
                               (then
                                  (br_if $continue
                                     (call $is_word_letter
-                                       (array.get_u $bytes (local.get $s)
+                                       (call $string_get (local.get $s)
                                           (i32.sub (local.get $pos)
                                              (i32.const 1)))))
                                  (br $backtrack))
@@ -296,11 +315,11 @@
                                  (br_if $continue
                                     (i32.ne
                                        (call $is_word_letter
-                                          (array.get_u $bytes (local.get $s)
+                                          (call $string_get (local.get $s)
                                              (i32.sub (local.get $pos)
                                                 (i32.const 1))))
                                        (call $is_word_letter
-                                          (array.get_u $bytes (local.get $s)
+                                          (call $string_get (local.get $s)
                                              (local.get $pos)))))
                                  (br $backtrack))))))
                     ;; BEGGROUP
@@ -348,9 +367,9 @@
                               (i32.eq (local.get $pos) (local.get $len)))
                            (br_if $backtrack
                               (i32.ne
-                                 (array.get_u $bytes (local.get $s)
+                                 (call $string_get (local.get $s)
                                     (local.get $i))
-                                 (array.get_u $bytes (local.get $s)
+                                 (call $string_get (local.get $s)
                                     (local.get $pos))))
                            (local.set $pos
                               (i32.add (local.get $pos) (i32.const 1)))
@@ -363,10 +382,10 @@
                  (if (i32.lt_u (local.get $pos) (local.get $len))
                     (then
                        (if (call $in_bitset
-                              (ref.cast (ref $bytes)
+                              (ref.cast (ref $string)
                                  (array.get $block (local.get $cpool)
                                     (i32.add (local.get $idx) (i32.const 1))))
-                              (array.get_u $bytes (local.get $s)
+                              (call $string_get (local.get $s)
                                  (local.get $pos)))
                           (then
                              (local.set $pos
@@ -375,14 +394,14 @@
                 ;; SIMPLESTAR
                 (local.set $idx (i32.shr_u (local.get $instr) (i32.const 8)))
                 (local.set $set
-                   (ref.cast (ref $bytes)
+                   (ref.cast (ref $string)
                       (array.get $block (local.get $cpool)
                       (i32.add (local.get $idx) (i32.const 1)))))
                 (loop $loop
                    (if (i32.lt_u (local.get $pos) (local.get $len))
                       (then
                          (if (call $in_bitset (local.get $set)
-                                (array.get_u $bytes (local.get $s)
+                                (call $string_get (local.get $s)
                                    (local.get $pos)))
                             (then
                                (local.set $pos
@@ -393,20 +412,20 @@
                (br_if $prefix_match (i32.eq (local.get $pos) (local.get $len)))
                (local.set $idx (i32.shr_u (local.get $instr) (i32.const 8)))
                (local.set $set
-                  (ref.cast (ref $bytes)
+                  (ref.cast (ref $string)
                      (array.get $block (local.get $cpool)
                      (i32.add (local.get $idx) (i32.const 1)))))
                (br_if $backtrack
                   (i32.eqz
                      (call $in_bitset (local.get $set)
-                        (array.get_u $bytes (local.get $s) (local.get $pos)))))
+                        (call $string_get (local.get $s) (local.get $pos)))))
                (loop $loop
                   (local.set $pos (i32.add (local.get $pos) (i32.const 1)))
                   (if (i32.lt_u (local.get $pos) (local.get $len))
                      (then
                         (br_if $loop
                            (call $in_bitset (local.get $set)
-                              (array.get_u $bytes (local.get $s)
+                              (call $string_get (local.get $s)
                                  (local.get $pos)))))))
                (br $continue))
               ;; GOTO
@@ -522,24 +541,25 @@
             (ref.cast (ref i31) (array.get $block (local.get $re) (i32.const 6)))))
       (if (i32.lt_s (local.get $i) (i32.const 0))
          (then (return (ref.null none))))
-      (ref.cast (ref $bytes)
-         (array.get $block
-            (ref.cast (ref $block)
-               (array.get $block (local.get $re) (i32.const 2)))
-            (i32.add (local.get $i) (i32.const 1)))))
+      (call $string_to_bytes
+         (ref.cast (ref $string)
+            (array.get $block
+               (ref.cast (ref $block)
+                  (array.get $block (local.get $re) (i32.const 2)))
+               (i32.add (local.get $i) (i32.const 1))))))
 
    (@string $search_forward "Str.search_forward")
 
    (func (export "re_search_forward")
       (param $re (ref eq)) (param $vs (ref eq)) (param $vpos (ref eq))
       (result (ref eq))
-      (local $s (ref $bytes))
+      (local $s (ref $string))
       (local $pos i32) (local $len i32)
       (local $res (ref eq))
       (local $startchars (ref null $bytes))
-      (local.set $s (ref.cast (ref $bytes) (local.get $vs)))
+      (local.set $s (ref.cast (ref $string) (local.get $vs)))
       (local.set $pos (i31.get_s (ref.cast (ref i31) (local.get $vpos))))
-      (local.set $len (array.len (local.get $s)))
+      (local.set $len (call $string_length (local.get $s)))
       (if (i32.gt_u (local.get $pos) (local.get $len))
          (then (call $caml_invalid_argument (global.get $search_forward))))
       (local.set $startchars (call $get_startchars (local.get $re)))
@@ -552,7 +572,7 @@
                         (i32.ge_u (local.get $pos) (local.get $len)))
                      (br_if $skipped
                         (array.get_u $bytes (local.get $startchars)
-                           (array.get_u $bytes (local.get $s)
+                           (call $string_get (local.get $s)
                               (local.get $pos))))
                      (local.set $pos (i32.add (local.get $pos) (i32.const 1)))
                      (br $skip)))))
@@ -571,13 +591,13 @@
    (func (export "re_search_backward")
       (param $re (ref eq)) (param $vs (ref eq)) (param $vpos (ref eq))
       (result (ref eq))
-      (local $s (ref $bytes))
+      (local $s (ref $string))
       (local $pos i32) (local $len i32)
       (local $res (ref eq))
       (local $startchars (ref null $bytes))
-      (local.set $s (ref.cast (ref $bytes) (local.get $vs)))
+      (local.set $s (ref.cast (ref $string) (local.get $vs)))
       (local.set $pos (i31.get_s (ref.cast (ref i31) (local.get $vpos))))
-      (local.set $len (array.len (local.get $s)))
+      (local.set $len (call $string_length (local.get $s)))
       (if (i32.gt_u (local.get $pos) (local.get $len))
          (then
             (call $caml_invalid_argument (global.get $search_backward))))
@@ -596,7 +616,7 @@
                         (then
                            (br_if $skipped
                               (array.get_u $bytes (local.get $startchars)
-                                 (array.get_u $bytes (local.get $s)
+                                 (call $string_get (local.get $s)
                                     (local.get $pos))))))
                      (local.set $pos (i32.sub (local.get $pos) (i32.const 1)))
                      (br $skip)))))
@@ -615,12 +635,12 @@
    (func (export "re_string_match")
       (param $re (ref eq)) (param $vs (ref eq)) (param $vpos (ref eq))
       (result (ref eq))
-      (local $s (ref $bytes))
+      (local $s (ref $string))
       (local $pos i32) (local $len i32)
       (local $res (ref eq))
-      (local.set $s (ref.cast (ref $bytes) (local.get $vs)))
+      (local.set $s (ref.cast (ref $string) (local.get $vs)))
       (local.set $pos (i31.get_s (ref.cast (ref i31) (local.get $vpos))))
-      (local.set $len (array.len (local.get $s)))
+      (local.set $len (call $string_length (local.get $s)))
       (if (i32.gt_u (local.get $pos) (local.get $len))
          (then (call $caml_invalid_argument (global.get $string_match))))
       (local.set $res
@@ -636,12 +656,12 @@
    (func (export "re_partial_match")
       (param $re (ref eq)) (param $vs (ref eq)) (param $vpos (ref eq))
       (result (ref eq))
-      (local $s (ref $bytes))
+      (local $s (ref $string))
       (local $pos i32) (local $len i32)
       (local $res (ref eq))
-      (local.set $s (ref.cast (ref $bytes) (local.get $vs)))
+      (local.set $s (ref.cast (ref $string) (local.get $vs)))
       (local.set $pos (i31.get_s (ref.cast (ref i31) (local.get $vpos))))
-      (local.set $len (array.len (local.get $s)))
+      (local.set $len (call $string_length (local.get $s)))
       (if (i32.gt_u (local.get $pos) (local.get $len))
          (then
             (call $caml_invalid_argument (global.get $string_partial_match))))
@@ -661,14 +681,15 @@
       (result (ref eq))
       (local $repl (ref $bytes))
       (local $groups (ref $block))
-      (local $orig (ref $bytes))
+      (local $orig (ref $string))
       (local $res (ref $bytes))
       (local $i i32) (local $j i32) (local $l i32) (local $len i32)
       (local $c i32) (local $start i32) (local $end i32)
-      (local.set $repl (ref.cast (ref $bytes) (local.get $vrepl)))
+      (local.set $repl
+         (call $string_to_bytes (ref.cast (ref $string) (local.get $vrepl))))
       (local.set $l (array.len (local.get $repl)))
       (local.set $groups (ref.cast (ref $block) (local.get $vgroups)))
-      (local.set $orig (ref.cast (ref $bytes) (local.get $vorig)))
+      (local.set $orig (ref.cast (ref $string) (local.get $vorig)))
       (loop $loop
          (if (i32.lt_u (local.get $i) (local.get $l))
             (then
@@ -765,11 +786,11 @@
                         (array.get $block (local.get $groups)
                            (i32.add (local.get $c) (i32.const 2))))))
                (local.set $len (i32.sub (local.get $end) (local.get $start)))
-               (array.copy $bytes $bytes
-                  (local.get $res) (local.get $j)
+               (call $string_blit
                   (local.get $orig) (local.get $start)
+                  (local.get $res) (local.get $j)
                   (local.get $len))
                (local.set $j (i32.add (local.get $j) (local.get $len)))
                (br $loop))))
-      (local.get $res))
+      (call $string_of_bytes (local.get $res)))
 )

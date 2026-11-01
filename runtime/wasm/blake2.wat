@@ -50,8 +50,21 @@
          (func $blake2_update (param i32)))
       (import "c" "blake2_finalize"
          (func $blake2_finalize (param i32)))))
+   (import "string" "string_to_bytes"
+      (func $string_to_bytes (param (ref $string)) (result (ref $bytes))))
+   (import "string" "string_slice"
+      (func $string_slice
+         (param (ref $string)) (param i32) (param i32)
+         (result (ref $bytes) i32)))
+   (import "string" "string_of_bytes"
+      (func $string_of_bytes (param (ref $bytes)) (result (ref $string))))
 
    (type $bytes (array (mut i8)))
+(@if $use_js_string
+(@then
+   (type $string (struct (field externref))))
+(@else
+   (type $string (array (mut i8)))))
 
    ;; Must match BLAKE2_STATE_SIZE in blake2_wrap.c.  A _Static_assert there
    ;; rejects shrinking blake2b_state past this value at C compile time.
@@ -138,9 +151,9 @@
          (call $state_buf) (local.get $state) (i32.const 0)
          (global.get $blake2_state_size)))
 
-   ;; Run blake2_finalize and copy the digest into a fresh byte array.
+   ;; Run blake2_finalize and return the digest as a fresh string.
    (func $do_final
-      (param $state (ref $bytes)) (param $hashlen i32) (result (ref $bytes))
+      (param $state (ref $bytes)) (param $hashlen i32) (result (ref $string))
       (local $output (ref $bytes))
       (call $bytes_to_mem
          (local.get $state) (i32.const 0)
@@ -151,21 +164,33 @@
       (call $mem_to_bytes
          (call $out_buf) (local.get $output) (i32.const 0)
          (local.get $hashlen))
-      (local.get $output))
+      (call $string_of_bytes (local.get $output)))
 
    (func (export "caml_blake2_create")
       (param $hashlen (ref eq)) (param $key (ref eq)) (result (ref eq))
       (call $do_create
          (i31.get_u (ref.cast (ref i31) (local.get $hashlen)))
-         (ref.cast (ref $bytes) (local.get $key))))
+         (call $string_to_bytes (ref.cast (ref $string) (local.get $key)))))
 
    (func (export "caml_blake2_update")
       (param $ctx (ref eq)) (param $buf (ref eq)) (param $ofs (ref eq))
       (param $len (ref eq)) (result (ref eq))
+      (local $b (ref $bytes)) (local $o i32)
+      ;; The buffer is a string before OCaml 5.3, a bytes afterwards
+(@if (< $ocaml_version (5 3 0))
+(@then
+      (call $string_slice (ref.cast (ref $string) (local.get $buf))
+         (i31.get_u (ref.cast (ref i31) (local.get $ofs)))
+         (i31.get_u (ref.cast (ref i31) (local.get $len))))
+      (local.set $o)
+      (local.set $b))
+(@else
+      (local.set $b (ref.cast (ref $bytes) (local.get $buf)))
+      (local.set $o (i31.get_u (ref.cast (ref i31) (local.get $ofs))))))
       (call $do_update
          (ref.cast (ref $bytes) (local.get $ctx))
-         (ref.cast (ref $bytes) (local.get $buf))
-         (i31.get_u (ref.cast (ref i31) (local.get $ofs)))
+         (local.get $b)
+         (local.get $o)
          (i31.get_u (ref.cast (ref i31) (local.get $len))))
       (ref.i31 (i32.const 0)))
 
@@ -175,7 +200,19 @@
          (ref.cast (ref $bytes) (local.get $ctx))
          (i31.get_u (ref.cast (ref i31) (local.get $hashlen)))))
 
-   (func (export "caml_blake2_string") (export "caml_blake2_bytes")
+   (func (export "caml_blake2_string")
+      (param $hashlen (ref eq)) (param $key (ref eq)) (param $buf (ref eq))
+      (param $ofs (ref eq)) (param $len (ref eq)) (result (ref eq))
+      (local $b (ref $bytes)) (local $o i32)
+      (call $string_slice (ref.cast (ref $string) (local.get $buf))
+         (i31.get_u (ref.cast (ref i31) (local.get $ofs)))
+         (i31.get_u (ref.cast (ref i31) (local.get $len))))
+      (local.set $o)
+      (local.set $b)
+      (return_call $caml_blake2_bytes (local.get $hashlen) (local.get $key)
+         (local.get $b) (ref.i31 (local.get $o)) (local.get $len)))
+
+   (func $caml_blake2_bytes (export "caml_blake2_bytes")
       (param $hashlen (ref eq)) (param $key (ref eq)) (param $buf (ref eq))
       (param $ofs (ref eq)) (param $len (ref eq)) (result (ref eq))
       (local $state (ref $bytes))
@@ -185,7 +222,7 @@
       (local.set $state
          (call $do_create
             (local.get $hl)
-            (ref.cast (ref $bytes) (local.get $key))))
+            (call $string_to_bytes (ref.cast (ref $string) (local.get $key)))))
       (call $do_update
          (local.get $state)
          (ref.cast (ref $bytes) (local.get $buf))

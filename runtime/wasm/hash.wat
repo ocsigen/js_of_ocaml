@@ -23,11 +23,18 @@
       (func $jsstring_test (param externref) (result i32)))
    (import "jsstring" "jsstring_hash"
       (func $jsstring_hash (param i32) (param externref) (result i32)))
+   (import "string" "string_to_bytes"
+      (func $string_to_bytes (param (ref $string)) (result (ref $bytes))))
 
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
    (type $float (struct (field $f f64)))
    (type $js (struct (field $js externref)))
+(@if $use_js_string
+(@then
+   (type $string (struct (field externref))))
+(@else
+   (type $string (array (mut i8)))))
 
    (type $compare
       (func (param (ref eq)) (param (ref eq)) (param i32) (result i32)))
@@ -40,7 +47,7 @@
    (type $dup (func (param (ref eq)) (result (ref eq))))
    (type $custom_operations
       (struct
-         (field $id (ref $bytes))
+         (field $id (ref $string))
          (field $compare (ref null $compare))
          (field $compare_ext (ref null $compare))
          (field $hash (ref null $hash))
@@ -122,6 +129,11 @@
       (return_call $caml_hash_mix_int (local.get $h) (local.get $i)))
 
    (func $caml_hash_mix_string (export "caml_hash_mix_string")
+      (param $h i32) (param $s (ref $string)) (result i32)
+      (return_call $caml_hash_mix_bytes
+         (local.get $h) (call $string_to_bytes (local.get $s))))
+
+   (func $caml_hash_mix_bytes
       (param $h i32) (param $s (ref $bytes)) (result i32)
       (local $i i32) (local $len i32) (local $w i32)
       (local.set $len (array.len (local.get $s)))
@@ -244,7 +256,7 @@
                      (br_on_cast_fail $not_string (ref eq) (ref $bytes)
                         (local.get $v)))
                   (local.set $h
-                     (call $caml_hash_mix_string (local.get $h)
+                     (call $caml_hash_mix_bytes (local.get $h)
                         (local.get $sv)))
                   (local.set $num (i32.sub (local.get $num) (i32.const 1)))
                   (br $next)))
@@ -445,6 +457,6 @@
             (call $caml_hash_mix_final
                (call $caml_hash_mix_string
                   (i31.get_s (ref.cast (ref i31) (local.get $vh)))
-                  (ref.cast (ref $bytes) (local.get $vs))))
+                  (ref.cast (ref $string) (local.get $vs))))
             (i32.const 0x3FFFFFFF))))
 )

@@ -88,6 +88,7 @@ let preprocessor_variables () =
            | (`Disabled | `Jspi | `Cps | `Double_translation | `Native) as e -> e)
         |> Build_info.string_of_effects_backend) )
   ; "wasi", Wax_link.Bool (Config.Flag.wasi ())
+  ; "use_js_string", Wax_link.Bool (Config.wasm_use_js_string ())
   ]
 
 let with_runtime_files ~runtime_wasm_files f =
@@ -140,6 +141,7 @@ let build_runtime () =
                 [ "bindings"
                 ; "Math"
                 ; "js"
+                ; "str"
                 ; "wasm:js-string"
                 ; "wasm:text-encoder"
                 ; "wasm:text-decoder"

@@ -16,12 +16,18 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
+   (@string_imports "str")
+   (@string_type $string)
    (import "fail" "caml_invalid_argument"
       (func $caml_invalid_argument (param (ref eq))))
    (import "fail" "caml_raise_out_of_memory" (func $caml_raise_out_of_memory))
 
    (type $block (array (mut (ref eq))))
-   (type $bytes (array (mut i8)))
+(@if $use_js_string
+(@then
+   (type $string (struct (field externref))))
+(@else
+   (type $string (array (mut i8)))))
    (type $float (struct (field $f f64)))
    (type $float_array (array (mut f64)))
 

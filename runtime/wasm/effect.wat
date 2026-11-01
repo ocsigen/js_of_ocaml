@@ -16,6 +16,8 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
+   (@string_imports "str")
+   (@string_type $string)
    (import "fail" "caml_raise_constant"
       (func $caml_raise_constant (param (ref eq))))
    (import "fail" "caml_raise_with_arg"
@@ -50,7 +52,11 @@
 ))
 
    (type $block (array (mut (ref eq))))
-   (type $bytes (array (mut i8)))
+(@if $use_js_string
+(@then
+   (type $string (struct (field externref))))
+(@else
+   (type $string (array (mut i8)))))
    (type $function_1 (func (param (ref eq) (ref eq)) (result (ref eq))))
    (type $closure (sub (struct (field $func (ref $function_1)))))
    (type $function_3

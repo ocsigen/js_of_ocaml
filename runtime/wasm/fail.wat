@@ -16,6 +16,8 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
+   (@string_imports "str")
+   (@string_type $string)
    (import "stdlib" "caml_global_data"
       (global $caml_global_data (mut (ref $block))))
 (@if $wasi
@@ -27,7 +29,11 @@
 ))
 
    (type $block (array (mut (ref eq))))
-   (type $bytes (array (mut i8)))
+(@if $use_js_string
+(@then
+   (type $string (struct (field externref))))
+(@else
+   (type $string (array (mut i8)))))
 
    (tag $ocaml_exception (export "ocaml_exception") (param (ref eq)))
    (export "javascript_exception" (tag $javascript_exception))

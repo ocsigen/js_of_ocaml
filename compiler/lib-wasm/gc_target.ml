@@ -34,6 +34,8 @@ let double_translation () =
   | `Double_translation -> true
   | `Disabled | `Cps | `Jspi | `Native -> false
 
+let use_js_string = Config.wasm_use_js_string
+
 module Type = struct
   let value = W.Ref { nullable = false; typ = Eq }
 
@@ -47,13 +49,33 @@ module Type = struct
           ; typ = W.Array { mut = true; typ = Value value }
           })
 
-  let string_type =
-    register_type "string" (fun () ->
+  let bytes_type =
+    register_type "bytes" (fun () ->
         return
           { supertype = None
           ; final = true
           ; typ = W.Array { mut = true; typ = Packed I8 }
           })
+
+  (* An OCaml string: a byte array, or, with [use-js-string], a JavaScript
+     string wrapped in a struct (the same type as [js_type]). *)
+  let string_type =
+    register_type "string" (fun () ->
+        return
+          (if use_js_string ()
+           then
+             { supertype = None
+             ; final = true
+             ; typ =
+                 W.Struct
+                   [ { mut = false; typ = Value (Ref { nullable = true; typ = Extern }) }
+                   ]
+             }
+           else
+             { supertype = None
+             ; final = true
+             ; typ = W.Array { mut = true; typ = Packed I8 }
+             }))
 
   let float_type =
     register_type "float" (fun () ->
@@ -839,13 +861,41 @@ module Memory = struct
        wasm_array_set ~ty:Type.float_array_type (load a) (load i) (unbox_float (load v)))
 
   let bytes_length e =
-    let* ty = Type.string_type in
+    let* ty = Type.bytes_type in
     let* e = wasm_cast ty e in
     return (W.ArrayLen e)
 
-  let bytes_get e e' = wasm_array_get ~signage:U ~ty:Type.string_type e e'
+  let bytes_get e e' = wasm_array_get ~signage:U ~ty:Type.bytes_type e e'
 
-  let bytes_set e e' e'' = wasm_array_set ~ty:Type.string_type e e' e''
+  let bytes_set e e' e'' = wasm_array_set ~ty:Type.bytes_type e e' e''
+
+  (* The JavaScript string held by an OCaml string, with [use-js-string]. *)
+  let string_value e =
+    let* ty = Type.string_type in
+    wasm_struct_get ty (wasm_cast ty e) 0
+
+  let js_string_builtin name params result =
+    register_import
+      ~import_module:"wasm:js-string"
+      ~name
+      (Fun { W.params = Ref { nullable = true; typ = Extern } :: params; result })
+
+  let string_length e =
+    if use_js_string ()
+    then
+      let* f = js_string_builtin "length" [] [ I32 ] in
+      let* e = string_value e in
+      return (W.Call (f, [ e ]))
+    else bytes_length e
+
+  let string_get e e' =
+    if use_js_string ()
+    then
+      let* f = js_string_builtin "charCodeAt" [ I32 ] [ I32 ] in
+      let* e = string_value e in
+      let* e' = e' in
+      return (W.Call (f, [ e; e' ]))
+    else bytes_get e e'
 
   let field e idx = wasm_array_get e (Arith.const (Int32.of_int (idx + 1)))
 
@@ -1126,6 +1176,28 @@ module Constant = struct
         in
         let* ty = Type.js_type in
         return (Const_named ("str_" ^ s), W.StructNew (ty, [ GlobalGet x ]))
+    | String s when use_js_string () ->
+        (* A JavaScript string holding the bytes of [s] as characters, imported
+           as a string constant. Equal string constants are interned. *)
+        let* ty = Type.string_type in
+        let* x =
+          intern_string s (fun () ->
+              let* js =
+                register_import
+                  ~import_module:"str"
+                  ~name:(byte_string s)
+                  (Global { mut = false; typ = Ref { nullable = false; typ = Extern } })
+              in
+              let x = Code.Var.fresh_n ("str_" ^ s) in
+              let* () =
+                register_global
+                  x
+                  { mut = false; typ = Ref { nullable = false; typ = Type ty } }
+                  (W.StructNew (ty, [ GlobalGet js ]))
+              in
+              return x)
+        in
+        return (Const, W.GlobalGet x)
     | String s ->
         let* ty = Type.string_type in
         (* Equal string constants are interned.

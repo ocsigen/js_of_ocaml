@@ -16,6 +16,15 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
+   (@string_imports "str")
+   (@string_type $string)
+   ;; An OCaml string, with [use_js_string]: a JavaScript string whose
+   ;; characters are the bytes of the string.
+(@if $use_js_string
+(@then
+   (type $string (struct (field externref))))
+(@else
+   (type $string (array (mut i8)))))
    (import "obj" "caml_callback_1"
       (func $caml_callback_1
          (param (ref eq)) (param (ref eq)) (result (ref eq))))
@@ -24,7 +33,6 @@
 
    (type $float (struct (field $f f64)))
    (type $block (array (mut (ref eq))))
-   (type $bytes (array (mut i8)))
 
    (func (export "caml_gc_minor") (param (ref eq)) (result (ref eq))
       (ref.i31 (i32.const 0)))

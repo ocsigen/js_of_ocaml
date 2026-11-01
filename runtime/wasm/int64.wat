@@ -16,6 +16,8 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
+   (@string_imports "str")
+   (@string_type $string)
    (import "ints" "parse_sign_and_base"
       (func $parse_sign_and_base
          (param (ref $bytes)) (result i32 i32 i32 i32)))
@@ -32,8 +34,17 @@
       (global $lowercase_hex_table (ref $chars)))
    (import "ints" "uppercase_hex_table"
       (global $uppercase_hex_table (ref $chars)))
+   (import "string" "string_to_bytes"
+      (func $string_to_bytes (param (ref $string)) (result (ref $bytes))))
+   (import "string" "string_of_bytes"
+      (func $string_of_bytes (param (ref $bytes)) (result (ref $string))))
 
    (type $bytes (array (mut i8)))
+(@if $use_js_string
+(@then
+   (type $string (struct (field externref))))
+(@else
+   (type $string (array (mut i8)))))
    (type $compare
       (func (param (ref eq)) (param (ref eq)) (param i32) (result i32)))
    (type $hash
@@ -45,7 +56,7 @@
    (type $dup (func (param (ref eq)) (result (ref eq))))
    (type $custom_operations
       (struct
-         (field $id (ref $bytes))
+         (field $id (ref $string))
          (field $compare (ref null $compare))
          (field $compare_ext (ref null $compare))
          (field $hash (ref null $hash))
@@ -187,7 +198,8 @@
    (func (export "caml_int64_of_string") (param $v (ref eq)) (result (ref eq))
       (local $s (ref $bytes))
       (local $i i32) (local $signedness i32) (local $sign i32) (local $base i32)
-      (local.set $s (ref.cast (ref $bytes) (local.get $v)))
+      (local.set $s
+         (call $string_to_bytes (ref.cast (ref $string) (local.get $v))))
       (call $parse_sign_and_base (local.get $s))
       (local.set $base)
       (local.set $sign)
@@ -225,7 +237,7 @@
          (br_if $write (i64.ne (local.get $d) (i64.const 0))))
       (if (local.get $negative)
          (then (array.set $bytes (local.get $s) (i32.const 0) (@char "-"))))
-      (local.get $s))
+      (call $string_of_bytes (local.get $s)))
 
    (type $chars (array i8))
 
@@ -240,7 +252,8 @@
       (local $i i32)
       (local $n i64)
       (local $chars (ref $chars))
-      (local.set $s (ref.cast (ref $bytes) (local.get $vs)))
+      (local.set $s
+         (call $string_to_bytes (ref.cast (ref $string) (local.get $vs))))
       (local.set $d (struct.get $int64 1 (ref.cast (ref $int64) (local.get $vd))))
       (if (i32.eq (array.len (local.get $s)) (i32.const 2))
          (then
@@ -318,7 +331,7 @@
                         (array.set $bytes (local.get $s) (i32.const 1)
                            (select (@char "X") (@char "x")
                               (local.get $uppercase)))))))))
-      (local.get $s))
+      (call $string_of_bytes (local.get $s)))
 
    (@string $unsupported "caml_reinterpret_unboxed_int64_as_tagged_int63 is not supported in wasm.")
 
