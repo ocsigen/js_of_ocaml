@@ -27,6 +27,8 @@
   and -O3 (#2560)
 * Compiler: fix a stack overflow in the dataflow solvers on deep graphs,
   when the compiler itself runs in Wasm (#2568)
+* Compiler/Wasm: export the shapes of separately compiled units, so that
+  other units can call their functions directly (#2587)
 
 # 6.5.0 (2026-10-22) - Lille
 
