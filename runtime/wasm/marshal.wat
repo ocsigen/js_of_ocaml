@@ -81,6 +81,26 @@
 
    (@string $input_val_from_string "input_value_from_string")
 
+   ;; At most [$n] bytes of the string [$str] from position [$ofs], as a
+   ;; byte array and the position of the first of them in it (see
+   ;; [string_slice]), and the number of bytes of the string from [$ofs]
+   (func $string_slice_from
+      (param $str (ref $string)) (param $ofs i32) (param $n i32)
+      (result (ref $bytes) i32 i32)
+      (local $len i32)
+      (local.set $len (call $string_length (local.get $str)))
+      (local.set $len
+         (if (result i32) (i32.gt_u (local.get $ofs) (local.get $len))
+            (then (i32.const 0))
+            (else (i32.sub (local.get $len) (local.get $ofs)))))
+      (call $string_slice (local.get $str) (local.get $ofs)
+         (select (local.get $len) (local.get $n)
+            (i32.lt_u (local.get $len) (local.get $n))))
+      (local.get $len))
+
+   ;; A marshalling header has at most 55 bytes
+   (global $max_header_size i32 (i32.const 64))
+
    (func (export "caml_input_value_from_string")
       (param $vstr (ref eq)) (param $vofs (ref eq)) (result (ref eq))
       (local $str (ref $string)) (local $ofs i32) (local $len i32)
@@ -90,15 +110,9 @@
       ;; to get its size, then the whole value
       (local.set $str (ref.cast (ref $string) (local.get $vstr)))
       (local.set $ofs (i31.get_u (ref.cast (ref i31) (local.get $vofs))))
-      ;; The number of bytes available
-      (local.set $len (call $string_length (local.get $str)))
-      (local.set $len
-         (if (result i32) (i32.gt_u (local.get $ofs) (local.get $len))
-            (then (i32.const 0))
-            (else (i32.sub (local.get $len) (local.get $ofs)))))
-      (call $string_slice (local.get $str) (local.get $ofs)
-         (select (local.get $len) (i32.const 64)
-            (i32.lt_u (local.get $len) (i32.const 64))))
+      (call $string_slice_from (local.get $str) (local.get $ofs)
+         (global.get $max_header_size))
+      (local.set $len)
       (local.set $o)
       (local.set $b)
       (local.set $h
@@ -890,7 +904,20 @@
       (i32.const 20))
 ))
 
-   (func (export "caml_marshal_data_size")
+   (func (export "caml_marshal_data_size_from_string")
+      (param $vstr (ref eq)) (param $vofs (ref eq)) (result (ref eq))
+      (local $b (ref $bytes)) (local $o i32)
+      ;; Only the header is read
+      (call $string_slice_from (ref.cast (ref $string) (local.get $vstr))
+         (i31.get_u (ref.cast (ref i31) (local.get $vofs)))
+         (global.get $max_header_size))
+      (drop)
+      (local.set $o)
+      (local.set $b)
+      (return_call $caml_marshal_data_size
+         (local.get $b) (ref.i31 (local.get $o))))
+
+   (func $caml_marshal_data_size (export "caml_marshal_data_size")
       (param $buf (ref eq)) (param $ofs (ref eq)) (result (ref eq))
       (local $s (ref $intern_state))
       (local $magic i32) (local $header_len i32) (local $data_len i32)

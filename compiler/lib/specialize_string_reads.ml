@@ -49,6 +49,8 @@ let string_primitive name =
   | "caml_bytes_getf32" -> Some "caml_string_getf32"
   | "caml_bytes_getf32u" -> Some "caml_string_getf32u"
   | "caml_blit_bytes" -> Some "caml_blit_string"
+  | "caml_input_value_from_bytes" -> Some "caml_input_value_from_string"
+  | "caml_marshal_data_size" -> Some "caml_marshal_data_size_from_string"
   | _ -> None
 
 let enabled () =
