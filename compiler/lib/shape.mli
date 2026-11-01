@@ -24,6 +24,8 @@ type desc =
       { arity : int
       ; pure : bool
       ; res : t
+      ; prim : string option
+            (** The function is this primitive (with all its arguments) *)
       }
 
 and t =

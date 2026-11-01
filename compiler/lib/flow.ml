@@ -483,6 +483,7 @@ type prop =
       ; pure : bool
       ; res_vars : Var.Set.t
       ; res_shapes : Shape.Set.t
+      ; prim : string option
       }
 
 let merge_prop p1 p2 =
@@ -508,6 +509,7 @@ let merge_prop p1 p2 =
         ; pure = f1.pure && f2.pure
         ; res_vars = Var.Set.union f1.res_vars f2.res_vars
         ; res_shapes = Shape.Set.union f1.res_shapes f2.res_shapes
+        ; prim = (if Option.equal String.equal f1.prim f2.prim then f1.prim else None)
         }
   | _ -> PTop
 
@@ -530,11 +532,16 @@ let shape_to_prop s =
         { fields_vars = Array.make len Var.Set.empty
         ; fields_shapes = Array.of_list (List.map ~f:Shape.Set.singleton fields)
         }
-  | Function { arity; pure; res } ->
+  | Function { arity; pure; res; prim } ->
       PFunction
-        { arity; pure; res_vars = Var.Set.empty; res_shapes = Shape.Set.singleton res }
+        { arity
+        ; pure
+        ; res_vars = Var.Set.empty
+        ; res_shapes = Shape.Set.singleton res
+        ; prim
+        }
 
-let the_shape_of ~return_values ~pure ~blocks info =
+let the_shape_of ?(closure_prim = fun _ -> None) ~return_values ~pure ~blocks info =
   let cache = Var.Hashtbl.create 17 in
   let set_cache = ref VarSetShapeSetMap.empty in
   let eval_var_cache = Var.Hashtbl.create 17 in
@@ -607,8 +614,8 @@ let the_shape_of ~return_values ~pure ~blocks info =
         Shape.Block
           (List.init ~len:(Array.length fields_vars) ~f:(fun i ->
                compute_set fields_vars.(i) fields_shapes.(i)))
-    | PFunction { arity; pure; res_vars; res_shapes } ->
-        Shape.Function { arity; pure; res = compute_set res_vars res_shapes }
+    | PFunction { arity; pure; res_vars; res_shapes; prim } ->
+        Shape.Function { arity; pure; res = compute_set res_vars res_shapes; prim }
   and eval_var x =
     match Var.Hashtbl.find_opt eval_var_cache x with
     | Some p -> p
@@ -640,19 +647,33 @@ let the_shape_of ~return_values ~pure ~blocks info =
               ; pure = Pure_fun.pure pure x
               ; res_vars
               ; res_shapes = Shape.Set.empty
+              ; prim = closure_prim x
               }
         | Expr (Special (Alias_prim name)) -> (
             try
               let arity = Primitive.arity name in
               let pure = Primitive.is_pure name in
+              (* Other compilation units can then call the primitive
+                 directly (only with Wasm, to keep the JavaScript output
+                 unchanged) *)
+              let prim =
+                match Config.target () with
+                | `Wasm -> Some name
+                | `JavaScript -> None
+              in
               PFunction
-                { arity; pure; res_vars = Var.Set.empty; res_shapes = Shape.Set.empty }
+                { arity
+                ; pure
+                ; res_vars = Var.Set.empty
+                ; res_shapes = Shape.Set.empty
+                ; prim
+                }
             with Not_found -> PTop)
         | Expr (Apply { f; args; _ }) ->
             let f_shape = compute_set (Var.Set.singleton f) Shape.Set.empty in
             let rec loop n' shape =
               match shape.Shape.desc with
-              | Function { arity = n; pure; res } ->
+              | Function { arity = n; pure; res; _ } ->
                   if n = n'
                   then shape_to_prop res
                   else if n' < n
@@ -662,6 +683,7 @@ let the_shape_of ~return_values ~pure ~blocks info =
                       ; pure
                       ; res_vars = Var.Set.empty
                       ; res_shapes = Shape.Set.singleton res
+                      ; prim = None
                       }
                   else loop (n' - n) res
               | Block _ | Top -> PTop

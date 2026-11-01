@@ -151,8 +151,41 @@ let collects_shapes ~shapes (p : Code.program) =
         let _, info = Flow.f p in
         let pure = Pure_fun.f p in
         let return_values = Code.return_values p in
+        let closure_prim =
+          match Config.target () with
+          | `JavaScript -> fun _ -> None
+          | `Wasm ->
+              (* Closures [fun x1 ... xn -> prim x1 ... xn]: other compilation
+                 units can call the primitive directly *)
+              let prims = Code.Var.Hashtbl.create 16 in
+              Code.Addr.Map.iter
+                (fun _ block ->
+                  List.iter block.Code.body ~f:(fun i ->
+                      match i with
+                      | Code.Let (f, Closure (params, (pc, _), _)) -> (
+                          let block = Code.Addr.Map.find pc p.blocks in
+                          let body =
+                            List.filter block.body ~f:(fun i ->
+                                match i with
+                                | Code.Event _ -> false
+                                | _ -> true)
+                          in
+                          match body, block.branch with
+                          | [ Let (y, Prim (Extern (prim, _), args)) ], Return y'
+                            when Code.Var.equal y y'
+                                 && List.compare_lengths params args = 0
+                                 && List.for_all2 params args ~f:(fun x a ->
+                                     match a with
+                                     | Code.Pv a -> Code.Var.equal x a
+                                     | Pc _ -> false) ->
+                              Code.Var.Hashtbl.replace prims f prim
+                          | _ -> ())
+                      | _ -> ()))
+                p.blocks;
+              Code.Var.Hashtbl.find_opt prims
+        in
         let shape, _set_shape =
-          Flow.the_shape_of ~return_values ~pure ~blocks:true info
+          Flow.the_shape_of ~closure_prim ~return_values ~pure ~blocks:true info
         in
         StringMap.filter_map
           (fun _ x ->
