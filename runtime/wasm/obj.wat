@@ -372,8 +372,15 @@
             (array.get $block
               (br_on_cast_fail $not_block (ref eq) (ref $block) (local.get $v))
               (i32.const 0)))))
+(@if $use_js_string
+(@then
+      ;; Only strings have the string tag: code which finds this tag treats
+      ;; the value as a string (for instance [Printexc.to_string])
       (if (ref.test (ref $bytes) (local.get $v))
-         (then (return (ref.i31 (global.get $string_tag)))))
+         (then (return (ref.i31 (global.get $abstract_tag))))))
+(@else
+      (if (ref.test (ref $bytes) (local.get $v))
+         (then (return (ref.i31 (global.get $string_tag)))))))
       (if (ref.test (ref $float) (local.get $v))
          (then (return (ref.i31 (global.get $float_tag)))))
       (if (ref.test (ref $float_array) (local.get $v))
