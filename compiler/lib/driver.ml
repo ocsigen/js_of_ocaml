@@ -132,6 +132,12 @@ let collects_shapes ~shapes (p : Code.program) =
                   | Byte s | Utf (Utf8 s) -> s
                 in
                 shapes := StringMap.add name block !shapes
+            | Code.Let
+                ( _
+                , Prim (Extern ("caml_register_global", _), [ Pv block; Pc (String name) ])
+                ) ->
+                (* Wasm *)
+                shapes := StringMap.add name block !shapes
             | _ -> ()))
       p.blocks;
     let map =
