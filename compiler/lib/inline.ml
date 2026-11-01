@@ -193,6 +193,7 @@ type info =
   ; init_code : int cache
   ; returns_a_block : bool cache
   ; interesting_params : (Var.t * int) list cache
+  ; read_only_params : Var.Set.t cache
   }
 
 type context =
@@ -206,6 +207,8 @@ type context =
   ; current_function : Var.t option  (** Name of the current function *)
   ; enclosing_function : Var.t option
         (** Name of the function enclosing the current function *)
+  ; bytes_of_string : unit Var.Hashtbl.t
+        (** Variables [x = caml_bytes_of_string s], when this is a copy *)
   }
 (** Current context into which we consider inlining some functions. *)
 
@@ -382,6 +385,63 @@ let interesting_parameters ~context info =
           blocks
           [])
 
+(** Parameters only read through primitives with a string counterpart, or
+    passed to a known function which only reads them, in the function and
+    the closures it contains (see {!Specialize_string_reads}). *)
+let rec read_only_params ~context info =
+  cache ~info info.read_only_params (fun pc ->
+      let params = ref (Var.Set.of_list info.params) in
+      let other x = params := Var.Set.remove x !params in
+      let blocks = context.p.blocks in
+      let rec visit pc =
+        Code.traverse
+          { fold = fold_children }
+          (fun pc () ->
+            let block = Addr.Map.find pc blocks in
+            List.iter block.body ~f:(fun i ->
+                match i with
+                | Let (_, Apply { f; args; exact = true; _ })
+                  when match Var.Map.find_opt f context.env with
+                       | Some info' ->
+                           (not info'.recursive)
+                           && List.compare_lengths args info'.params = 0
+                       | None -> false ->
+                    let info' = Var.Map.find f context.env in
+                    let params' = read_only_params ~context info' in
+                    List.iter2 args info'.params ~f:(fun arg param ->
+                        if not (Var.Set.mem param params') then other arg)
+                | Let (_, Closure (_, (pc', _), _)) -> visit pc'
+                | _ ->
+                    Specialize_string_reads.iter_instr_read_only_uses
+                      ~read:(fun _ -> ())
+                      ~other
+                      i);
+            Freevars.iter_last_free_var other block.branch)
+          pc
+          blocks
+          ()
+      in
+      if not (List.is_empty info.params) then visit pc;
+      !params)
+
+(*
+  When strings are JavaScript strings, [Bytes.unsafe_of_string] copies the
+  string. We inline a function receiving such a copy when it only reads it,
+  so that the reads can be performed on the string instead and the copy
+  removed (see {!Specialize_string_reads}). This typically inlines a [Bytes]
+  function in its [String] counterpart (for instance
+  [Bytes.get_utf_8_uchar] in [String.get_utf_8_uchar]).
+*)
+let reads_copied_string ~context info args =
+  (not info.recursive)
+  && Var.Hashtbl.length context.bytes_of_string > 0
+  && List.compare_lengths args info.params = 0
+  && full_size ~context info <= 300
+  &&
+  let params = read_only_params ~context info in
+  List.exists2 args info.params ~f:(fun arg param ->
+      Var.Hashtbl.mem context.bytes_of_string arg && Var.Set.mem param params)
+
 (*
    We are very aggressive at optimizing functor-like code, even if
    this might duplicate quite a lot of code, since this is likely to
@@ -496,7 +556,8 @@ and should_inline ~context info args =
                   false
               | _ -> body_size ~context info < Config.Param.inlining_limit ())
            || trivial_function ~context info
-           || small_function ~context info args)
+           || small_function ~context info args
+           || reads_copied_string ~context info args)
 
 let trace_inlining ~context info x args =
   if debug ()
@@ -719,6 +780,20 @@ let inline_in_block ~context pc block p =
   in
   { p with blocks = Addr.Map.add pc { block with body; branch } p.blocks }
 
+let copied_strings p =
+  let s = Var.Hashtbl.create 16 in
+  if Specialize_string_reads.enabled ()
+  then
+    Addr.Map.iter
+      (fun _ block ->
+        List.iter block.body ~f:(fun i ->
+            match i with
+            | Let (x, Prim (Extern ("caml_bytes_of_string", _), [ Pv _ ])) ->
+                Var.Hashtbl.replace s x ()
+            | _ -> ()))
+      p.blocks;
+  s
+
 let inline ~profile ~inline_count p ~live_vars =
   if debug () then Format.eprintf "====== inlining ======@.";
   (visit_closures
@@ -782,6 +857,7 @@ let inline ~profile ~inline_count p ~live_vars =
                ; init_code = ref None
                ; returns_a_block = ref None
                ; interesting_params = ref None
+               ; read_only_params = ref None
                }
                context.env
          | None -> context.env
@@ -796,6 +872,7 @@ let inline ~profile ~inline_count p ~live_vars =
      ; has_closures = ref (lazy false)
      ; current_function = None
      ; enclosing_function = None
+     ; bytes_of_string = copied_strings p
      })
     .p
 

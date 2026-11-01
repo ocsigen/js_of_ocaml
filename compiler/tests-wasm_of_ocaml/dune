@@ -100,6 +100,13 @@
  (modes wasm))
 
 (tests
+ (names string_reads)
+ (modes wasm)
+ ; The [String] functions are inlined across compilation units
+ (wasm_of_ocaml
+  (compilation_mode whole_program)))
+
+(tests
  (names handler_shortcut)
  (modes js wasm)
  ; Without -g, ocamlc turns local references into mutable variables,
