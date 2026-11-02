@@ -45,6 +45,22 @@ about 30% once compressed.
 It consists of a JavaScript loader of about 16 to 20 KB, which accounts for
 half of the output for the smallest programs, and a WebAssembly module.
 
+{1:compile-time Compilation time}
+
+{{image:files/performances/compiletime.png}Relative compilation times}
+
+Js_of_ocaml and Wasm_of_ocaml compile the bytecode produced by [ocamlc]: their
+bars include the time taken by [ocamlc] (the darker part), and the chart is
+relative to [ocamlc] followed by Js_of_ocaml. The example programs
+(boulderdash, …, ocamlc) are compiled from existing bytecode files, so no
+[ocamlc] time is included for them. Compiling with [ocamlc] and then
+Js_of_ocaml is about 10% faster than compiling with [ocamlopt] on these
+programs.
+
+At the default optimization level ([--opt=1]), Wasm_of_ocaml does not run
+Binaryen, and compiles as fast as Js_of_ocaml (up to 30% faster on the
+largest programs).
+
 {1:vs-handwritten Comparison with handwritten JavaScript}
 
 {{image:files/performances/nativejs.png}Relative execution times}
@@ -92,22 +108,6 @@ Binaryen's [wasm-opt] to optimize the generated code.
 - [--opt=3] brings little over [--opt=2] on these benchmarks.
 - Removing bounds checking ([-unsafe]) makes the code about 4% faster on
   average (up to 15% on soli).
-
-{1:compile-time Compilation time}
-
-{{image:files/performances/compiletime.png}Relative compilation times}
-
-Js_of_ocaml and Wasm_of_ocaml compile the bytecode produced by [ocamlc]: their
-bars include the time taken by [ocamlc] (the darker part), and the chart is
-relative to [ocamlc] followed by Js_of_ocaml. The example programs
-(boulderdash, …, ocamlc) are compiled from existing bytecode files, so no
-[ocamlc] time is included for them. Compiling with [ocamlc] and then
-Js_of_ocaml is about 10% faster than compiling with [ocamlopt] on these
-programs.
-
-At the default optimization level ([--opt=1]), Wasm_of_ocaml does not run
-Binaryen, and compiles as fast as Js_of_ocaml (up to 30% faster on the
-largest programs).
 
 {1:effects-impact Effect handlers impact}
 
