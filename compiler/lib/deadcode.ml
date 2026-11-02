@@ -332,7 +332,7 @@ let merge_blocks p =
   then Code.check_updates ~name:"merge block" previous_p p ~updates:!merged;
   p
 
-let remove_empty_blocks st (p : Code.program) : Code.program =
+let remove_empty_blocks st (p : Code.program) =
   let shortcuts = Addr.Hashtbl.create 16 in
   let rec resolve_rec visited ((pc, args) as cont) =
     if Addr.Set.mem pc visited
@@ -347,7 +347,13 @@ let remove_empty_blocks st (p : Code.program) : Code.program =
   in
   let resolve cont =
     let cont' = resolve_rec Addr.Set.empty cont in
-    if not (Code.cont_equal cont cont') then st.block_shortcut <- st.block_shortcut + 1;
+    if not (Code.cont_equal cont cont')
+    then (
+      st.block_shortcut <- st.block_shortcut + 1;
+      (* Keep the use counts up to date: the arguments of the empty
+         blocks we skip can mention other variables *)
+      List.iter (snd cont) ~f:(fun x -> st.live.(Var.idx x) <- st.live.(Var.idx x) - 1);
+      List.iter (snd cont') ~f:(fun x -> st.live.(Var.idx x) <- st.live.(Var.idx x) + 1));
     cont'
   in
   let register_block_if_empty pc block =
@@ -399,6 +405,8 @@ let remove_empty_blocks st (p : Code.program) : Code.program =
                 then (
                   let decr_usage x = st.live.(Var.idx x) <- st.live.(Var.idx x) - 1 in
                   decr_usage x;
+                  (* Only one of the two continuations remains *)
+                  List.iter (snd cont2') ~f:decr_usage;
                   let body =
                     List.fold_right
                       ~f:(fun i rem ->
@@ -433,7 +441,7 @@ let remove_empty_blocks st (p : Code.program) : Code.program =
       p.blocks
       (Addr.Map.to_rev_seq p.blocks)
   in
-  { p with blocks }
+  { p with blocks }, shortcuts
 
 let f pure_funs ({ blocks; _ } as p : Code.program) =
   let previous_p = p in
@@ -507,7 +515,7 @@ let f pure_funs ({ blocks; _ } as p : Code.program) =
     in
     { p with blocks }
   in
-  let p = remove_empty_blocks st p in
+  let p, shortcuts = remove_empty_blocks st p in
   if times () then Format.eprintf "  dead code elim.: %a@." Timer.print t;
   if stats ()
   then
@@ -526,7 +534,20 @@ let f pure_funs ({ blocks; _ } as p : Code.program) =
       p
       ~updates:
         (st.deleted_instrs + st.deleted_blocks + st.deleted_params + st.block_shortcut);
-  let p = remove_unused_blocks p in
+  let p =
+    let p' = remove_unused_blocks p in
+    (* The variables used by the empty blocks we skipped and just
+       removed have fewer uses *)
+    Addr.Hashtbl.iter
+      (fun pc _ ->
+        if not (Addr.Map.mem pc p'.blocks)
+        then
+          Freevars.iter_block_free_vars
+            (fun x -> st.live.(Var.idx x) <- st.live.(Var.idx x) - 1)
+            (Addr.Map.find pc p.blocks))
+      shortcuts;
+    p'
+  in
   if stats ()
   then (
     let live = ref 0 in
