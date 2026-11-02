@@ -2,7 +2,7 @@
 GRAPHSNOPR = time.pdf time-optim-jsoo.pdf time-optim-wasm.pdf nativejs.pdf
 
 # graphs with precompiled programs:
-GRAPHSPR = size.pdf size-optim-jsoo.pdf size-deadcode-jsoo.pdf size-optim-wasm.pdf compiletime.pdf compiletime-examples.pdf
+GRAPHSPR = size.pdf size-bzip2.pdf size-optim-jsoo.pdf size-deadcode-jsoo.pdf size-optim-wasm.pdf compiletime.pdf compiletime-examples.pdf
 
 # graphs showing the impact of supporting effects
 GRAPHSEFF = time-effects-jsoo.pdf size-effects-jsoo.pdf size-bzip2-effects-jsoo.pdf \
@@ -125,6 +125,28 @@ time.svg: __run
 	 -max 2 -svg 7 500 250 -edgecaption -ylabel "Execution time" -script \
 	| perl -pe 's/^plot/set tmargin 4.5\nplot/' \
 	| gnuplot > $@
+
+size-bzip2.svg: __run __missingsizes
+	$(REPORT) -config report-size-bzip2.config \
+	 -omit binary_trees \
+	 -omit fannkuch_redux \
+	 -omit fannkuch_redux_2 \
+	 -omit boyer_no_exc \
+	 -omit kb_no_exc \
+	 -omit loop \
+	 -append boulderdash \
+	 -append cubes \
+	 -append minesweeper \
+	 -append planet \
+	 -append js_of_ocaml \
+	 -append ocamlc \
+	 -max 2 -ylabel Size -script \
+	 -svg 7 650 150 \
+	| perl -pe 'BEGIN{undef $$/;} s/^set multiplot\n/set multiplot\nset rmargin at screen 0.80\nset key at screen 0.805,0.93 left top Left reverse samplen 2\n/m; s/e\nplot/e\nset key at screen 0.805,0.6 left top Left reverse samplen 2\nplot/smg' \
+	| gnuplot > $@
+# The uncompressed sizes are drawn first, and the compressed sizes over them
+# (same scale). As for size.svg, the perl invocation puts both legends to the
+# right of the plot.
 
 size.svg: size.gpl
 	gnuplot < $^ > $@
