@@ -320,7 +320,12 @@ let _ =
   let sizes = sizes.Measure.path in
   ml_size param src Spec.ml sizes Spec.ml;
   file_size param code Spec.byte sizes Spec.byte;
-  file_size param code Spec.js_of_ocaml sizes (Spec.sub_spec Spec.js_of_ocaml "full");
+  List.iter
+    [ Spec.js_of_ocaml
+    ; Spec.js_of_ocaml_effects_cps
+    ; Spec.js_of_ocaml_effects_double_translation
+    ]
+    ~f:(fun spec -> file_size param code spec sizes (Spec.sub_spec spec "full"));
   file_size
     param
     code
