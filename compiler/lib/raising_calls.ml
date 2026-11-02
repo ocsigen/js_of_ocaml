@@ -37,8 +37,9 @@ let empty =
 
 let enabled () =
   match Config.target (), Config.effects () with
-  | `JavaScript, `Disabled -> Config.Flag.exn_sentinel () && Config.Flag.optcall ()
-  | `JavaScript, (`Cps | `Double_translation | `Jspi | `Native)
+  | `JavaScript, (`Disabled | `Cps | `Double_translation) ->
+      Config.Flag.exn_sentinel () && Config.Flag.optcall ()
+  | `JavaScript, (`Jspi | `Native)
   | `Wasm, (`Disabled | `Cps | `Double_translation | `Jspi | `Native) -> false
 
 (* Predefined exceptions which are seldom caught: raising them does
@@ -130,7 +131,7 @@ let cold_exceptions ?info p =
             | _ -> false)
           s
 
-let f p info =
+let f ~in_cps ~trampolined_calls p info =
   let t = Timer.make () in
   let call_info = Call_graph_analysis.f p info in
   let cold = cold_exceptions ~info p in
@@ -143,15 +144,56 @@ let f p info =
       p.blocks
       Var.Set.empty
   in
+  (* With effects, the result of a CPS call or of a trampolined call is
+     not tested: such calls are not rewritten, so that they call the
+     wrapper of a wrapped function, and the functions only called
+     directly that they call cannot be raising. A CPS call to a function
+     with a CPS version (double translation) is fine, as it calls the
+     CPS version. CPS functions cannot be raising: their result is the
+     one of their continuation. *)
+  let cps_site x = Var.Set.mem x in_cps || Var.Set.mem x trampolined_calls in
+  let unchecked_callees = Var.Hashtbl.create 16 in
+  if not (Var.Set.is_empty in_cps && Var.Set.is_empty trampolined_calls)
+  then
+    Addr.Map.iter
+      (fun _ block ->
+        List.iter block.body ~f:(fun i ->
+            match i with
+            | Let (x, Apply { f; _ }) when cps_site x -> (
+                if Var.idx f < Var.Tbl.length info.Global_flow.info_approximation
+                then
+                  match Var.Tbl.get info.Global_flow.info_approximation f with
+                  | Top -> ()
+                  | Values { known; _ } ->
+                      Var.Set.iter
+                        (fun g ->
+                          if
+                            not
+                              (Var.Set.mem x in_cps
+                              && Var.Hashtbl.mem info.Global_flow.info_cps_versions g)
+                          then Var.Hashtbl.replace unchecked_callees g ())
+                        known)
+            | _ -> ()))
+      p.blocks;
   let raising =
     Call_graph_analysis.raising_functions
       ~cold
       p
       info
       call_info
-      ~wrappable:(fun _ -> true)
+      ~wrappable:(fun _ ->
+        (* With double translation, a wrapper gets the CPS version of
+           the function, if any ([caml_cps_closure]). With CPS, the
+           functions called through closures are in CPS. *)
+        match Config.effects () with
+        | `Disabled | `Double_translation -> true
+        | `Cps | `Jspi | `Native -> false)
       ~tail_calls:false
-      (fun _ -> true)
+      (fun f ->
+        not
+          (Var.Set.mem f in_cps
+          || Var.Hashtbl.mem unchecked_callees f
+             && Call_graph_analysis.direct_calls_only call_info f))
   in
   (* The bodies of the raising functions which can be called through
      closures *)
@@ -202,7 +244,8 @@ let f p info =
        List.iter block.body ~f:(fun i ->
            match i with
            | Let (x, Apply { f; _ })
-             when Var.Hashtbl.mem raising f
+             when (not (cps_site x))
+                  && Var.Hashtbl.mem raising f
                   && (not (Var.Hashtbl.mem bodies f))
                   && Poly.equal (Var.Hashtbl.find_opt call_context x) (Some `Throw) ->
                Var.Hashtbl.replace
@@ -300,6 +343,8 @@ let f p info =
         | None, None -> rewrite_body rem (i :: closures) setters acc)
     | (Event _ as i) :: (Let (_, Closure _) :: _ as rem) ->
         rewrite_body rem (i :: closures) setters acc
+    | (Let (x, Apply _) as i) :: rem when cps_site x ->
+        rewrite_body rem [] [] (i :: flush acc)
     | Let (x, Apply { f; args; exact }) :: rem ->
         rewrite_body rem [] [] (List.rev_append (rewrite_call x f args exact) (flush acc))
     | i :: rem -> rewrite_body rem [] [] (i :: flush acc)

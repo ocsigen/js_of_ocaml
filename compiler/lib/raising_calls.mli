@@ -36,8 +36,7 @@ val empty : t
 
 val enabled : unit -> bool
 (** Whether functions called under a handler signal exceptions by
-    returning a sentinel value: JavaScript, with effects disabled and
-    optimized calls. (Raising an exception in the body of a handler
+    returning a sentinel value: JavaScript, with optimized calls. (Raising an exception in the body of a handler
     jumps to the handler whenever [exn-sentinel] is enabled, see
     [Generate].) *)
 
@@ -46,7 +45,12 @@ val cold_exceptions : ?info:Global_flow.info -> Code.program -> Code.Var.t -> bo
     ([Match_failure], [Assert_failure], [Undefined_recursive_module]).
     Raising it does not make a function raising: it is thrown. *)
 
-val f : Code.program -> Global_flow.info -> Code.program * t
+val f :
+     in_cps:Effects.in_cps
+  -> trampolined_calls:Effects.trampolined_calls
+  -> Code.program
+  -> Global_flow.info
+  -> Code.program * t
 (** A raising function which can be called through closures is split
     into a body, under a fresh name, and a wrapper with the original
     name, which calls the body and throws the exception. Direct calls

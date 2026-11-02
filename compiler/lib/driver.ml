@@ -786,9 +786,30 @@ let optimize ~shapes ~profile ~keep_flow_data p =
   let t = Timer.make () in
   let p, trampolined_calls, in_cps, global_flow_info, shapes = opt p in
   let p, raising =
-    match global_flow_info with
-    | Some (_, info) when exn_sentinel -> Raising_calls.f p info
-    | Some _ | None -> p, Raising_calls.empty
+    if exn_sentinel
+    then
+      let info =
+        match global_flow_info with
+        | Some (_, info) -> info
+        | None ->
+            (* With effects, the flow information is computed again on
+               the transformed program (as for Wasm, see
+               [optimize_for_wasm]), in fast mode at -O1, as without
+               effects *)
+            let cps_calls =
+              match Config.effects () with
+              | `Double_translation -> in_cps
+              | `Disabled | `Cps | `Jspi | `Native -> Code.Var.Set.empty
+            in
+            let fast =
+              match profile with
+              | Profile.O1 -> true
+              | O2 | O3 -> false
+            in
+            snd (Global_flow.f ~cps_calls ~fast p)
+      in
+      Raising_calls.f ~in_cps ~trampolined_calls p info
+    else p, Raising_calls.empty
   in
   let program, variable_uses = deadcode' p in
   let () = if times () then Format.eprintf " optimizations : %a@." Timer.print t in
