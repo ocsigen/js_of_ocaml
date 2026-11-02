@@ -2,7 +2,7 @@
 GRAPHSNOPR = time.pdf time-optim-jsoo.pdf time-optim-wasm.pdf nativejs.pdf
 
 # graphs with precompiled programs:
-GRAPHSPR = size.pdf size-optim-jsoo.pdf size-deadcode-jsoo.pdf size-optim-wasm.pdf compiletime.pdf
+GRAPHSPR = size.pdf size-optim-jsoo.pdf size-deadcode-jsoo.pdf size-optim-wasm.pdf compiletime.pdf compiletime-examples.pdf
 
 # graphs showing the impact of supporting effects
 GRAPHSEFF = time-effects-jsoo.pdf size-effects-jsoo.pdf size-bzip2-effects-jsoo.pdf \
@@ -48,6 +48,8 @@ test: _perf fastrun $(GRAPHS) _noperf
 exes= $(wildcard programs/*)
 
 exesnames = $(exes:programs/%=%)
+
+microbenchnames = $(basename $(notdir $(wildcard sources/ml/*.ml)))
 
 missingsizesml = $(exesnames:%=results/sizes/ml/%)
 missingsizes=$(missingsizesml)
@@ -319,6 +321,7 @@ compiletime.svg: __run __precomp __missingcompiletimes
 	 -omit binary_trees \
 	 -omit fannkuch_redux \
 	 -omit loop \
+	 $(exesnames:%=-omit %) \
 	 -max 1.6 -svg 7 500 150 -edgecaption -ylabel "Compile time" -script \
 	| perl -pe 'BEGIN{undef $$/;} s/^set multiplot\n/set multiplot\nset tmargin 3\n/m; s/^(plot [^\n]*)/$$1, keyentry with boxes lw 0 lc rgb "#204a87" title "ocamlc"/m; s/e\nplot/e\nunset key\nplot/' \
 	| gnuplot > $@
@@ -327,6 +330,14 @@ compiletime.svg: __run __precomp __missingcompiletimes
 # invocation above gives both plots the same top margin so that they are
 # aligned, adds an entry for ocamlc to the key of the first plot, and removes
 # the key of the second plot.
+
+# The example programs are compiled from existing bytecode files: there is
+# no ocamlc or ocamlopt time for them
+compiletime-examples.svg: __run __precomp
+	$(REPORT) -config report-compiletime-examples.config \
+	 $(microbenchnames:%=-omit %) \
+	 -max 1.2 -svg 7 250 150 -edgecaption -ylabel "Compile time" \
+	 > $@
 
 nativejs.svg: __run
 	$(REPORT) -config report-nativejs.config \
@@ -342,6 +353,9 @@ nativejs.svg: __run
 
 
 nativejs.png: nativejs.svg
+	inkscape -D -o "$@" -w 500 $<
+
+compiletime-examples.png: compiletime-examples.svg
 	inkscape -D -o "$@" -w 500 $<
 
 %.png: %.svg
