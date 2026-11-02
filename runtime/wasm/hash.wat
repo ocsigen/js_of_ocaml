@@ -23,8 +23,13 @@
       (func $jsstring_test (param externref) (result i32)))
    (import "jsstring" "jsstring_hash"
       (func $jsstring_hash (param i32) (param externref) (result i32)))
-   (import "string" "string_to_bytes"
-      (func $string_to_bytes (param (ref $string)) (result (ref $bytes))))
+(@if $use_js_string
+(@then
+   (import "wasm:js-string" "length"
+      (func $js_length (param externref) (result i32)))
+   (import "wasm:js-string" "charCodeAt"
+      (func $js_char_code_at (param externref i32) (result i32)))
+))
 
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
@@ -128,10 +133,67 @@
          (then (local.set $i (i32.const 0))))
       (return_call $caml_hash_mix_int (local.get $h) (local.get $i)))
 
+(@if $use_js_string
+(@then
+   ;; Same as $caml_hash_mix_bytes, reading the characters of the
+   ;; JavaScript string directly rather than from a copy
    (func $caml_hash_mix_string (export "caml_hash_mix_string")
       (param $h i32) (param $s (ref $string)) (result i32)
-      (return_call $caml_hash_mix_bytes
-         (local.get $h) (call $string_to_bytes (local.get $s))))
+      (local $js externref) (local $i i32) (local $len i32) (local $w i32)
+      (local.set $js (struct.get $string 0 (local.get $s)))
+      (local.set $len (call $js_length (local.get $js)))
+      (loop $loop
+         (if (i32.le_u (i32.add (local.get $i) (i32.const 4)) (local.get $len))
+            (then
+               (local.set $h
+                  (call $caml_hash_mix_int
+                     (local.get $h)
+                     (i32.or
+                        (i32.or
+                           (call $js_char_code_at (local.get $js) (local.get $i))
+                           (i32.shl
+                              (call $js_char_code_at (local.get $js)
+                                 (i32.add (local.get $i) (i32.const 1)))
+                              (i32.const 8)))
+                        (i32.or
+                           (i32.shl
+                              (call $js_char_code_at (local.get $js)
+                                 (i32.add (local.get $i) (i32.const 2)))
+                              (i32.const 16))
+                           (i32.shl
+                              (call $js_char_code_at (local.get $js)
+                                 (i32.add (local.get $i) (i32.const 3)))
+                              (i32.const 24))))))
+               (local.set $i (i32.add (local.get $i) (i32.const 4)))
+               (br $loop))))
+      (block $zero_bytes
+         (block $one_byte
+            (block $two_bytes
+               (block $three_bytes
+                  (br_table $zero_bytes $one_byte $two_bytes $three_bytes
+                     (i32.and (local.get $len) (i32.const 3))))
+               (local.set $w
+                  (i32.shl
+                     (call $js_char_code_at (local.get $js)
+                        (i32.add (local.get $i) (i32.const 2)))
+                     (i32.const 16))))
+            (local.set $w
+               (i32.or (local.get $w)
+                  (i32.shl
+                     (call $js_char_code_at (local.get $js)
+                        (i32.add (local.get $i) (i32.const 1)))
+                     (i32.const 8)))))
+         (local.set $w
+            (i32.or (local.get $w)
+               (call $js_char_code_at (local.get $js) (local.get $i))))
+         (local.set $h (call $caml_hash_mix_int (local.get $h) (local.get $w))))
+      (i32.xor (local.get $h) (local.get $len)))
+)
+(@else
+   (func $caml_hash_mix_string (export "caml_hash_mix_string")
+      (param $h i32) (param $s (ref $string)) (result i32)
+      (return_call $caml_hash_mix_bytes (local.get $h) (local.get $s)))
+))
 
    (func $caml_hash_mix_bytes
       (param $h i32) (param $s (ref $bytes)) (result i32)
