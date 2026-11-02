@@ -74,7 +74,7 @@ type mutable_fields =
   | All_fields
 
 type state =
-  { vars : Var.ISet.t (* Set of all veriables considered *)
+  { vars : Var.ISet.t (* Set of all variables considered *)
   ; deps : Var.t list Var.Tbl.t (* Dependency between variables *)
   ; defs : def array (* Definition of each variable *)
   ; variable_may_escape : escape_status array
@@ -203,7 +203,7 @@ let expr_deps blocks st x e =
             , _ )
         | Array_get _ )
       , l ) ->
-      (* The analysis knowns about these primitives, and will compute
+      (* The analysis knows about these primitives, and will compute
          an approximation of the value they return based on an
          approximation of their arguments *)
       (if st.fast
@@ -357,7 +357,7 @@ let program_deps st { start; blocks; _ } =
 
 (* For each variable, we keep track of which values, function or
    block, it may contain. Other kinds of values are not relevant and
-   just ignored. We loose a lot of information when going to [Top]
+   just ignored. We lose a lot of information when going to [Top]
    since we have to assume that all functions might escape. So, having
    possibly unknown values does not move us to [Top]; we use a flag
    for that instead. *)
@@ -654,11 +654,11 @@ let propagate st ~update approx x =
   let res = propagate st ~update approx x in
   match res with
   | Values { known; _ } when Var.Set.compare_cardinal_with known 200 >= 0 ->
-      (* When the set of possible values get to large, we give up and
+      (* When the set of possible values gets too large, we give up and
          just forget about it. This is crucial to make the analysis
-         terminates in a reasonable amount of time. This happens when
+         terminate in a reasonable amount of time. This happens when
          our analysis is very imprecise (for instance, with
-         [List.map]), so we may not loose too much by doing that. *)
+         [List.map]), so we may not lose too much by doing that. *)
       if debug () then Format.eprintf "TOP %a@." Var.print x;
       Domain.approx_escape ~update ~st ~approx Escape res;
       Top
