@@ -79,8 +79,15 @@ val f : ?cps_calls:Code.Var.Set.t -> fast:bool -> Code.program -> state * info
 val update_def : info -> Code.Var.t -> Code.expr -> unit
 ```
 ```ocaml
+val get_approx : info -> Code.Var.t -> approx
+```
+The approximation of a variable; `Top` for variables introduced after the analysis was run
+
+```ocaml
 val exact_call : info -> Code.Var.t -> int -> bool
 ```
+Whether all functions possibly bound to `f` take exactly `n` arguments (`false` if they are not all known)
+
 ```ocaml
 val called_version : info -> call:Code.Var.t -> Code.Var.t -> Code.Var.t * bool
 ```
@@ -98,3 +105,4 @@ The function called at call site `call` through `f`, if it is statically known, 
 ```ocaml
 val function_arity : info -> Code.Var.t -> int option
 ```
+The arity of the functions possibly bound to `f`, if they are all known and have the same arity
