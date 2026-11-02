@@ -65,3 +65,36 @@ let f (b : bool) =
         lines);
   [%expect
     {| //# shape: Test:[F(1)*->F(2)*->F(2)*->F(2)*->F(2)*->F(2)*->F(2)*->F(2)*->F(2)*->F(2)*->F(2)*->F(2)*->F(2)*->F(2)*->F(2)*->F(2)*->F(2)*->F(1)*] |}]
+
+let print_shapes ocaml_prog =
+  with_temp_dir ~f:(fun () ->
+      let js_file =
+        ocaml_prog
+        |> Filetype.ocaml_text_of_string
+        |> Filetype.write_ocaml ~name:"test.ml"
+        |> compile_ocaml_to_cmo
+        |> compile_cmo_to_javascript ~pretty:false ~sourcemap:false
+      in
+      let content = js_file |> Filetype.read_js |> Filetype.string_of_js_text in
+      List.iter
+        (fun line ->
+          match String.trim line with
+          | s when String.length s > 10 && String.sub s 0 10 = "//# shape:" ->
+              print_endline s
+          | _ -> ())
+        (String.split_on_char '\n' content))
+
+(* The result of the recursive call must not be approximated by the
+   shape of [f] while this shape is being computed. *)
+let%expect_test "shape of a recursive function" =
+  print_shapes
+    {|
+let rec f n =
+  if n = 0
+  then fun x -> x + 1
+  else (
+    let g = f (n - 1) in
+    print_int n;
+    g)
+|};
+  [%expect {| //# shape: Test:[F(1)->F(1)*] |}]
