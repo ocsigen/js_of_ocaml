@@ -357,18 +357,6 @@ let _ =
     sizes
     (Spec.sub_spec Spec.js_of_ocaml "gzipped");
   compr_file_size
-    param
-    code
-    Spec.js_of_ocaml_effects_cps
-    sizes
-    (Spec.sub_spec Spec.js_of_ocaml_effects_cps "gzipped");
-  compr_file_size
-    param
-    code
-    Spec.js_of_ocaml_effects_double_translation
-    sizes
-    (Spec.sub_spec Spec.js_of_ocaml_effects_double_translation "gzipped");
-  compr_file_size
     ~wasm:true
     param
     code

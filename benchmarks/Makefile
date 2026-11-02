@@ -304,23 +304,6 @@ size-effects-wasm.svg: __run_effects
 	 -min 0.9 -max 1.2 -svg 7 650 150 -edgecaption -ylabel Size \
 	 > $@
 
-size-gzipped-effects-jsoo.svg: __run_effects
-	$(REPORT) -config report-size-gzipped-effects-jsoo.config \
-	 -omit binary_trees \
-	 -omit fannkuch_redux \
-	 -omit fannkuch_redux_2 \
-	 -omit boyer_no_exc \
-	 -omit kb_no_exc \
-	 -omit loop \
-	 -append boulderdash \
-	 -append cubes \
-	 -append minesweeper \
-	 -append planet \
-	 -append js_of_ocaml \
-	 -append ocamlc \
-	 -max 1.2 -min 0.8 -svg 7 650 150 -edgecaption -ylabel Size \
-	 > $@
-
 size-bzip2-effects-jsoo.svg: __run_effects
 	$(REPORT) -config report-size-bzip2-effects-jsoo.config \
 	 -omit binary_trees \
