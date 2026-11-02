@@ -21,6 +21,8 @@
 * Compiler/Wasm: raising functions which can also be called through a closure
   return null too when called directly, using a wrapper otherwise (#2098)
 * Compiler/Wasm: require Binaryen 120 (#2580)
+* Compiler/Wasm: inline more functions: slightly larger ones, functions
+  receiving a local reference, checking a condition or selecting a value (#2477)
 
 ## Bug fixes
 * Compiler: fix a miscompilation of `Int_trie` by OxCaml's flambda2 at -O2
