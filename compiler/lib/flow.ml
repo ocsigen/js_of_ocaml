@@ -277,6 +277,19 @@ let expr_escape st _x e =
       in
       loop l ka
 
+(* [x] is written to. Since the analysis is flow-insensitive, the
+   known origins of [x] can include immutable blocks that the write
+   never actually reaches (for instance, a variable of GADT type joining
+   a reference and an immutable constructor): immutable blocks are
+   never written to, so we skip them, as [block_escape] does. *)
+let mutated st x =
+  Var.Set.iter
+    (fun y ->
+      match st.defs.(Var.idx y) with
+      | Expr (Block (_, _, _, Immutable, _)) -> ()
+      | _ -> Var.ISet.add st.possibly_mutable y)
+    (Var.Tbl.get st.known_origins x)
+
 let program_escape defs known_origins { blocks; _ } =
   let may_escape = Var.ISet.empty () in
   let possibly_mutable = Var.ISet.empty () in
@@ -288,14 +301,9 @@ let program_escape defs known_origins { blocks; _ } =
           | Let (x, e) -> expr_escape st x e
           | Event _ | Assign _ -> ()
           | Set_field (x, _, _, y) | Array_set (x, _, y) ->
-              Var.Set.iter
-                (fun y -> Var.ISet.add possibly_mutable y)
-                (Var.Tbl.get known_origins x);
+              mutated st x;
               block_escape st y
-          | Offset_ref (x, _) ->
-              Var.Set.iter
-                (fun y -> Var.ISet.add possibly_mutable y)
-                (Var.Tbl.get known_origins x));
+          | Offset_ref (x, _) -> mutated st x);
       match block.branch with
       | Return x | Raise (x, _) -> block_escape st x
       | Stop | Branch _ | Cond _ | Switch _ | Pushtrap _ | Poptrap _ -> ())
