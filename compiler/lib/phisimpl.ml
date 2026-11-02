@@ -53,12 +53,12 @@ let cont_deps blocks vars deps defs (pc, args) =
   let block = Addr.Map.find pc blocks in
   arg_deps vars deps defs block.params args
 
-let expr_deps blocks vars deps defs x e =
+(* Only block parameters and assigned variables can be replaced, so
+   they are the only variables we need to consider *)
+let expr_deps blocks vars deps defs e =
   match e with
-  | Constant _ | Apply _ | Prim _ | Special _ -> ()
+  | Constant _ | Apply _ | Prim _ | Special _ | Block _ | Field _ -> ()
   | Closure (_, cont, _) -> cont_deps blocks vars deps defs cont
-  | Block (_, a, _, _, _) -> Array.iter a ~f:(fun y -> add_dep deps x y)
-  | Field (y, _, _) -> add_dep deps x y
 
 let program_deps { blocks; _ } =
   let nv = Var.count () in
@@ -69,9 +69,7 @@ let program_deps { blocks; _ } =
     (fun _pc block ->
       List.iter block.body ~f:(fun i ->
           match i with
-          | Let (x, e) ->
-              add_var vars x;
-              expr_deps blocks vars deps defs x e
+          | Let (_, e) -> expr_deps blocks vars deps defs e
           | Assign (x, y) ->
               add_dep deps x y;
               add_def vars defs x y
