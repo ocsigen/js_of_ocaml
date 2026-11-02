@@ -153,27 +153,30 @@ let program_deps { blocks; _ } =
 
 let var_set_lift f s = Var.Set.fold (fun y s -> Var.Set.union (f y) s) s Var.Set.empty
 
-let propagate1 deps defs st x =
+(* Whether the known origins of [x] is just [x] itself. Only the
+   other variables need to be considered by the solver. *)
+let is_origin defs x =
   match defs.(Var.idx x) with
-  | Param -> Var.Set.singleton x
-  | Phi s -> var_set_lift (fun y -> Var.Tbl.get st y) s
-  | Expr e -> (
-      match e with
-      | Constant _ | Apply _ | Prim _ | Special _ | Closure _ | Block _ ->
-          Var.Set.singleton x
-      | Field (y, n, _) ->
-          if Shape.State.mem x
-          then Var.Set.singleton x
-          else
-            var_set_lift
-              (fun z ->
-                match defs.(Var.idx z) with
-                | Expr (Block (_, a, _, _, _)) when n < Array.length a ->
-                    let t = a.(n) in
-                    add_dep deps x t;
-                    Var.Tbl.get st t
-                | Phi _ | Param | Expr _ -> Var.Set.empty)
-              (Var.Tbl.get st y))
+  | Param -> true
+  | Phi _ -> false
+  | Expr (Field _) -> Shape.State.mem x
+  | Expr (Constant _ | Apply _ | Prim _ | Special _ | Closure _ | Block _) -> true
+
+let propagate1 deps defs st x =
+  let get y = if is_origin defs y then Var.Set.singleton y else Var.Tbl.get st y in
+  match defs.(Var.idx x) with
+  | Phi s -> var_set_lift get s
+  | Expr (Field (y, n, _)) ->
+      var_set_lift
+        (fun z ->
+          match defs.(Var.idx z) with
+          | Expr (Block (_, a, _, _, _)) when n < Array.length a ->
+              let t = a.(n) in
+              add_dep deps x t;
+              get t
+          | Phi _ | Param | Expr _ -> Var.Set.empty)
+        (get y)
+  | Param | Expr _ -> assert false
 
 module G = Dgraph.Make_Imperative (Var) (Var.ISet) (Var.Tbl)
 
@@ -188,10 +191,14 @@ end
 module Solver1 = G.Solver (Domain1)
 
 let solver1 vars deps defs =
-  let g =
-    { G.domain = vars; G.iter_children = (fun f x -> Var.Set.iter f deps.(Var.idx x)) }
-  in
-  Solver1.f () g (propagate1 deps defs)
+  let domain = Var.ISet.empty () in
+  Var.ISet.iter (fun x -> if not (is_origin defs x) then Var.ISet.add domain x) vars;
+  let g = { G.domain; G.iter_children = (fun f x -> Var.Set.iter f deps.(Var.idx x)) } in
+  let st = Solver1.f () g (propagate1 deps defs) in
+  Var.ISet.iter
+    (fun x -> if is_origin defs x then Var.Tbl.set st x (Var.Set.singleton x))
+    vars;
+  st
 
 (****)
 
