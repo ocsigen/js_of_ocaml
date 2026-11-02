@@ -786,9 +786,15 @@ let optimize ~shapes ~profile ~keep_flow_data p =
            tail-call groups rewritten into trampolines still signal
            exceptions via the sentinel. *)
         let p, raising =
-          match global_flow_info with
-          | Some (_, info) when exn_sentinel -> Raising_calls.f p info
-          | Some _ | None -> p, Raising_calls.empty
+          if exn_sentinel
+          then
+            let info =
+              match global_flow_info with
+              | Some (_, info) -> info
+              | None -> assert false
+            in
+            Raising_calls.f ~in_cps ~trampolined_calls p info
+          else p, Raising_calls.empty
         in
         let raising_funcs = ref raising.raising_funcs in
         let p =
@@ -802,10 +808,37 @@ let optimize ~shapes ~profile ~keep_flow_data p =
             p
         in
         p, { raising with raising_funcs = !raising_funcs }
-    | `JavaScript, `Double_translation ->
-        Generate_closure.f ~trampolined_calls p, Raising_calls.empty
-    | `JavaScript, `Cps | `Wasm, (`Disabled | `Jspi | `Cps | `Double_translation | `Native)
-      -> p, Raising_calls.empty
+    | `JavaScript, (`Cps | `Double_translation) ->
+        let p =
+          match Config.effects () with
+          | `Double_translation -> Generate_closure.f ~trampolined_calls p
+          | `Cps -> p
+          | `Disabled | `Jspi | `Native -> assert false
+        in
+        let p, raising =
+          if exn_sentinel
+          then
+            (* With effects, the flow information is computed again on
+               the transformed program (as for Wasm, see
+               [optimize_for_wasm]), in fast mode at -O1, as without
+               effects *)
+            let cps_calls =
+              match Config.effects () with
+              | `Double_translation -> in_cps
+              | `Disabled | `Cps | `Jspi | `Native -> Code.Var.Set.empty
+            in
+            let fast =
+              match profile with
+              | Profile.O1 -> true
+              | O2 | O3 -> false
+            in
+            let info = snd (Global_flow.f ~cps_calls ~fast p) in
+            Raising_calls.f ~in_cps ~trampolined_calls p info
+          else p, Raising_calls.empty
+        in
+        p, raising
+    | `Wasm, (`Disabled | `Jspi | `Cps | `Double_translation | `Native) ->
+        p, Raising_calls.empty
     | `JavaScript, (`Jspi | `Native) -> assert false
   in
   let program, variable_uses = deadcode' p in
