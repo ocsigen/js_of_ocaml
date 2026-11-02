@@ -54,6 +54,8 @@ end = struct
     | Dead
 
   let rec equal l1 l2 =
+    phys_equal l1 l2
+    ||
     match l1, l2 with
     | Top, Top | Dead, Dead -> true
     | Live f1, Live f2 -> IntMap.equal equal f1 f2
@@ -92,9 +94,22 @@ end = struct
   let rec join l1 l2 =
     match l1, l2 with
     | _, Top | Top, _ -> Top
-    | Live f1, Live f2 -> Live (IntMap.union (fun _ l1 l2 -> Some (join l1 l2)) f1 f2)
-    | Dead, Live f | Live f, Dead -> Live f
-    | Dead, Dead -> Dead
+    | Live f1, Live f2 ->
+        (* Return [l1] itself when [l2] adds nothing: this avoids
+           allocations and makes the solver's equality test cheap *)
+        let f =
+          IntMap.fold
+            (fun i l f ->
+              match IntMap.find_opt i f with
+              | None -> IntMap.add i l f
+              | Some l' ->
+                  let l'' = join l' l in
+                  if phys_equal l'' l' then f else IntMap.add i l'' f)
+            f2
+            f1
+        in
+        if phys_equal f f1 then l1 else Live f
+    | Dead, l | l, Dead -> l
 end
 
 let iter_with_scope prog f =
