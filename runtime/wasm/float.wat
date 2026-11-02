@@ -16,6 +16,8 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
+   (@string_imports "str")
+   (@string_type $string)
 (@if $wasi
 (@then
    (import "io" "IO_BUFFER_SIZE" (global $IO_BUFFER_SIZE i32))
@@ -54,9 +56,18 @@
       (func $jsstring_of_bytes (param (ref $bytes)) (result externref)))
    (import "jsstring" "bytes_of_jsstring"
       (func $bytes_of_jsstring (param externref) (result (ref $bytes))))
+   (import "string" "string_to_bytes"
+      (func $string_to_bytes (param (ref $string)) (result (ref $bytes))))
+   (import "string" "string_of_bytes"
+      (func $string_of_bytes (param (ref $bytes)) (result (ref $string))))
 
    (type $float (struct (field $f f64)))
    (type $bytes (array (mut i8)))
+(@if $use_js_string
+(@then
+   (type $string (struct (field externref))))
+(@else
+   (type $string (array (mut i8)))))
    (type $block (array (mut (ref eq))))
 
    (type $chars (array i8))
@@ -212,7 +223,7 @@
                (then
                   (array.set $bytes (local.get $s) (i32.const 0)
                      (local.get $style))))))
-      (local.get $s))
+      (call $string_of_bytes (local.get $s)))
 
    (@string $format_error "format_float: bad format")
 
@@ -333,7 +344,8 @@
       (local $num externref)
       (local.set $f (struct.get $float 0 (ref.cast (ref $float) (local.get $arg))))
       (local.set $b (i64.reinterpret_f64 (local.get $f)))
-      (call $parse_format (ref.cast (ref $bytes) (local.get $vfmt)))
+      (call $parse_format
+         (call $string_to_bytes (ref.cast (ref $string) (local.get $vfmt))))
       (local.set $uppercase)
       (local.set $conversion)
       (local.set $precision)
@@ -401,7 +413,7 @@
                         (i32.sub (local.get $c) (i32.const 32)))))
                (local.set $i (i32.add (local.get $i) (i32.const 1)))
                (br_if $uppercase (i32.lt_u (local.get $i) (local.get $len))))))
-      (local.get $s))
+      (call $string_of_bytes (local.get $s)))
 ))
 
    (func $caml_float_of_hex
@@ -567,7 +579,8 @@
       (local $negative i32) (local $c i32)
       (local $f f64)
       (local $buffer i32) (local $buf i32) (local $start i32)
-      (local.set $s (ref.cast (ref $bytes) (local.get $v)))
+      (local.set $s
+         (call $string_to_bytes (ref.cast (ref $string) (local.get $v))))
       (local.set $len (array.len (local.get $s)))
       (loop $count
          (if (i32.lt_u (local.get $i) (local.get $len))

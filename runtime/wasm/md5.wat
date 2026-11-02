@@ -21,8 +21,19 @@
          (param (ref eq)) (param (ref $bytes)) (param i32) (param i32)
          (result i32)))
    (import "fail" "caml_raise_end_of_file" (func $caml_raise_end_of_file))
+   (import "string" "string_slice"
+      (func $string_slice
+         (param (ref $string)) (param i32) (param i32)
+         (result (ref $bytes) i32)))
+   (import "string" "string_of_bytes"
+      (func $string_of_bytes (param (ref $bytes)) (result (ref $string))))
 
    (type $bytes (array (mut i8)))
+(@if $use_js_string
+(@then
+   (type $string (struct (field externref))))
+(@else
+   (type $string (array (mut i8)))))
    (type $int_array (array (mut i32)))
 
    (type $context
@@ -32,7 +43,19 @@
          (field $buffer (ref $int_array)) ;; buffer
          (field $intermediate (ref $bytes))))  ;; intermediate buffer
 
-   (func (export "caml_md5_string") (export "caml_md5_bytes")
+   (func (export "caml_md5_string")
+      (param $vs (ref eq)) (param $vofs (ref eq)) (param $vlen (ref eq))
+      (result (ref eq))
+      (local $ofs i32)
+      (call $string_slice (ref.cast (ref $string) (local.get $vs))
+         (i31.get_u (ref.cast (ref i31) (local.get $vofs)))
+         (i31.get_u (ref.cast (ref i31) (local.get $vlen))))
+      (local.set $ofs)
+      (ref.i31 (local.get $ofs))
+      (local.get $vlen)
+      (return_call $caml_md5_bytes))
+
+   (func $caml_md5_bytes (export "caml_md5_bytes")
       (param $vs (ref eq)) (param $vofs (ref eq)) (param $vlen (ref eq)) (result (ref eq))
       (local $ctx (ref $context))
       (local.set $ctx (call $MD5Init))
@@ -484,7 +507,7 @@
                (local.get $input) (local.get $input_pos)
                (local.get $input_len)))))
 
-   (func $MD5Final (param $ctx (ref $context)) (result (ref $bytes))
+   (func $MD5Final (param $ctx (ref $context)) (result (ref $string))
       (local $in_buf i32) (local $i i32) (local $len i64)
       (local $w (ref $int_array))
       (local $buffer (ref $bytes)) (local $res (ref $bytes))
@@ -547,5 +570,5 @@
                (i32.shl (local.get $i) (i32.const 3))))
          (local.set $i (i32.add (local.get $i) (i32.const 1)))
          (br_if $loop (i32.lt_u (local.get $i) (i32.const 16))))
-      (local.get $res))
+      (call $string_of_bytes (local.get $res)))
 )

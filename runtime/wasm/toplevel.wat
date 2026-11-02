@@ -16,6 +16,13 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
+   (@string_imports "str")
+   (@string_type $string)
+(@if $use_js_string
+(@then
+   (type $string (struct (field externref))))
+(@else
+   (type $string (array (mut i8)))))
 (@if (not $wasi)
 (@then
    (import "stdlib" "caml_global_data"
@@ -46,6 +53,11 @@
       (func $caml_ba_to_typed_array (param (ref eq)) (result (ref eq))))
    (import "bigarray" "caml_string_of_uint8_array"
       (func $caml_string_of_uint8_array (param (ref eq)) (result (ref eq))))
+(@if (< $ocaml_version (5 2 0))
+(@then
+   (import "string" "caml_string_of_bytes"
+      (func $caml_string_of_bytes (param (ref eq)) (result (ref eq))))
+))
 
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
@@ -175,7 +187,7 @@
          (ref.i31 (i32.const 0))
          (call $caml_callback_2
             (global.get $toplevel_compile)
-            (local.get $buf)
+            (call $caml_string_of_bytes (local.get $buf))
             (local.get $debug))))
 ))
 
@@ -191,7 +203,7 @@
       (param $l (ref eq)) (result (ref eq))
       (local $acc (ref eq))
       (local $cell (ref $block))
-      (local.set $acc (array.new $bytes (i32.const 0) (i32.const 0)))
+      (local.set $acc (@string ""))
       (block $done
          (loop $loop
             (br_if $done (ref.test (ref i31) (local.get $l)))

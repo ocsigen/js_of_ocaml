@@ -16,6 +16,8 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
+   (@string_imports "str")
+   (@string_type $string)
    (import "fail" "caml_invalid_argument"
       (func $caml_invalid_argument (param (ref eq))))
 (@if $wasi
@@ -34,7 +36,11 @@
 ))
 
    (type $block (array (mut (ref eq))))
-   (type $bytes (array (mut i8)))
+(@if $use_js_string
+(@then
+   (type $string (struct (field externref))))
+(@else
+   (type $string (array (mut i8)))))
 
    (func (export "caml_get_exception_raw_backtrace")
       (param (ref eq)) (result (ref eq))

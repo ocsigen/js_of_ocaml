@@ -16,7 +16,17 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
+   (@string_imports "str")
+   (@string_type $string)
    (type $bytes (array (mut i8)))
+   ;; An OCaml string: with [use_js_string], a JavaScript string whose
+   ;; characters are the bytes of the string (structurally the same type as
+   ;; $js); otherwise, a byte array
+(@if $use_js_string
+(@then
+   (type $string (struct (field externref))))
+(@else
+   (type $string (array (mut i8)))))
 
 (@if (not $wasi)
 (@then
@@ -99,12 +109,23 @@
       (func $caml_is_closure (param (ref eq)) (result i32)))
    (import "obj" "caml_is_last_arg"
       (func $caml_is_last_arg (param (ref eq)) (result i32)))
+(@if $use_js_string
+(@then
+   (import "jsstring" "jsstring_of_string"
+      (func $caml_jsstring_of_string (param (ref eq)) (result (ref eq))))
+   (import "jsstring" "string_of_jsstring"
+      (func $caml_string_of_jsstring (param (ref eq)) (result (ref eq))))
+   (import "jsstring" "jsstring_of_substring"
+      (func $jsstring_of_substring (param (ref eq) i32 i32) (result (ref eq))))
+   (import "jsstring" "jsbytes_of_bytes"
+      (func $jsbytes_of_bytes (param (ref $bytes)) (result externref))))
+(@else
    (import "jsstring" "jsstring_of_bytes"
       (func $jsstring_of_bytes (param (ref $bytes)) (result externref)))
    (import "jsstring" "bytes_of_jsstring"
       (func $bytes_of_jsstring (param externref) (result (ref $bytes))))
    (import "jsstring" "jsstring_of_subbytes"
-      (func $jsstring_of_subbytes (param (ref $bytes) i32 i32) (result externref)))
+      (func $jsstring_of_subbytes (param (ref $bytes) i32 i32) (result externref)))))
    (import "int32" "caml_copy_int32"
       (func $caml_copy_int32 (param i32) (result (ref eq))))
    (import "int32" "Int32_val"
@@ -233,9 +254,14 @@
       ;; Decode the method name as UTF-8, like the JS runtime
       ;; (caml_js_meth_call uses caml_jsstring_of_string); a non-ASCII method
       ;; name otherwise resolved differently than on the JS backend.
+(@if $use_js_string
+(@then
+      ;; [$f] is an OCaml string, hence a JavaScript string here
+      (local.set $f (call $caml_jsstring_of_string (local.get $f))))
+(@else
       (if (ref.test (ref $bytes) (local.get $f))
          (then
-            (local.set $f (call $caml_jsstring_of_bytes (local.get $f)))))
+            (local.set $f (call $caml_jsstring_of_string (local.get $f)))))))
       (return_call $value_of_js
          (call $meth_call (call $js_of_value (local.get $o))
             (call $js_of_value (local.get $f))
@@ -314,7 +340,7 @@
                      (array.get $block (local.get $a) (local.get $i))))
                (call $set (local.get $js)
                   (call $js_of_value
-                     (call $caml_jsstring_of_bytes
+                     (call $caml_jsstring_of_string
                         (array.get $block (local.get $p) (i32.const 1))))
                   (call $js_of_value
                         (array.get $block (local.get $p) (i32.const 2))))
@@ -509,6 +535,35 @@
                                  (local.get $acc)))))))))
       (return_call $js_of_value (local.get $acc)))
 
+(@if $use_js_string
+(@then
+   (export "caml_js_from_string" (func $caml_jsstring_of_string))
+   (export "caml_jsstring_of_string" (func $caml_jsstring_of_string))
+   (export "caml_string_of_jsstring" (func $caml_string_of_jsstring))
+
+   (func $caml_jsstring_of_substring (export "caml_jsstring_of_substring")
+      (param $s (ref eq)) (param $i (ref eq)) (param $l (ref eq))
+      (result (ref eq))
+      (return_call $jsstring_of_substring
+         (local.get $s)
+         (i31.get_u (ref.cast (ref i31) (local.get $i)))
+         (i31.get_u (ref.cast (ref i31) (local.get $l)))))
+
+   ;; An OCaml string is already a JavaScript string whose characters are
+   ;; its bytes
+   (func $caml_jsbytes_of_string (export "caml_jsbytes_of_string")
+      (param $s (ref eq)) (result (ref eq))
+      (local.get $s))
+
+   (func $caml_jsbytes_of_bytes (param $s (ref eq)) (result (ref eq))
+      (struct.new $js
+         (call $jsbytes_of_bytes (ref.cast (ref $bytes) (local.get $s)))))
+
+   (func $caml_string_of_jsbytes (export "caml_string_of_jsbytes")
+      (param $s (ref eq)) (result (ref eq))
+      (local.get $s))
+)
+(@else
    ;; Cache of the conversions of short strings into JavaScript strings.
    ;; Strings used as property names, such as attribute names, are often
    ;; converted repeatedly. Converting them once avoids the cost of the
@@ -536,8 +591,8 @@
    (global $string_cache_seen (ref $string_cache_hashes)
       (array.new_default $string_cache_hashes (i32.const 8192)))
 
-   (export "caml_js_from_string" (func $caml_jsstring_of_bytes))
-   (func $caml_jsstring_of_bytes (export "caml_jsstring_of_string")
+   (export "caml_js_from_string" (func $caml_jsstring_of_string))
+   (func $caml_jsstring_of_string (export "caml_jsstring_of_string")
       (param $vs (ref eq)) (result (ref eq))
       (local $s (ref $bytes)) (local $k (ref $bytes))
       (local $len i32) (local $i i32) (local $h i32) (local $full i32)
@@ -600,7 +655,7 @@
          (local.get $h) (local.get $v))
       (local.get $v))
 
-   (func (export "caml_jsstring_of_substring")
+   (func $caml_jsstring_of_substring (export "caml_jsstring_of_substring")
       (param $s (ref eq)) (param $i (ref eq)) (param $l (ref eq))
       (result (ref eq))
       (return
@@ -662,13 +717,12 @@
          (struct.new $js
             (call $jsstring_of_bytes (local.get $s')))))
 
-   (export "caml_js_to_string" (func $caml_string_of_jsstring))
    (func $caml_string_of_jsstring (export "caml_string_of_jsstring")
       (param $s (ref eq)) (result (ref eq))
       (return_call $bytes_of_jsstring
          (struct.get $js 0 (ref.cast (ref $js) (local.get $s)))))
 
-   (func (export "caml_string_of_jsbytes")
+   (func $caml_string_of_jsbytes (export "caml_string_of_jsbytes")
       (param $s (ref eq)) (result (ref eq))
       (local $l i32) (local $i i32) (local $n i32) (local $c i32)
       (local $s' (ref $bytes)) (local $s'' (ref $bytes))
@@ -715,6 +769,9 @@
                (local.set $n (i32.add (local.get $n) (i32.const 1)))
                (br $fill))))
       (local.get $s''))
+))
+
+   (export "caml_js_to_string" (func $caml_string_of_jsstring))
 
    (func (export "caml_list_to_js_array")
       (param $v (ref eq)) (result (ref eq))
@@ -833,7 +890,11 @@
 
    (func (export "caml_jsoo_flags_use_js_string")
       (param (ref eq)) (result (ref eq))
-      (ref.i31 (i32.const 0)))
+(@if $use_js_string
+(@then
+      (ref.i31 (i32.const 1)))
+(@else
+      (ref.i31 (i32.const 0)))))
 
    (func (export "caml_jsoo_flags_effects")
       (param (ref eq)) (result (ref eq))

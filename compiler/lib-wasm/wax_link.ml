@@ -59,8 +59,16 @@ let with_preprocessed_files ~variables ~inputs action =
      legitimately unused in the configurations that compile them out.
      [try_table]: when targeting WASI, the legacy exception-handling
      instructions are rewritten into [try_table], which is what the
-     generated code uses. *)
+     generated code uses.
+     [require_string_type]: when strings are JavaScript strings, a module
+     using string literals must designate its string type (with
+     [(@string_type $string)]); its untyped literals would otherwise build
+     byte arrays. *)
   let try_table = Config.Flag.wasi () in
+  let require_string_type =
+    List.exists variables ~f:(fun (k, v) ->
+        String.equal k "use_js_string" && value_equal v (Bool true))
+  in
   let assemble ~filename contents =
     if Filename.check_suffix filename ".wax"
     then
@@ -70,6 +78,7 @@ let with_preprocessed_files ~variables ~inputs action =
         ~validate:true
         ~warn_unused:false
         ~try_table
+        ~require_string_type
         ~filename
         contents
     else
@@ -79,6 +88,7 @@ let with_preprocessed_files ~variables ~inputs action =
         ~validate:true
         ~warn_unused:false
         ~try_table
+        ~require_string_type
         ~filename
         contents
   in

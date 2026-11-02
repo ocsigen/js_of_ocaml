@@ -16,11 +16,17 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
+   (@string_imports "str")
+   (@string_type $string)
    (import "fail" "caml_bound_error" (func $caml_bound_error))
    (import "fail" "caml_raise_out_of_memory" (func $caml_raise_out_of_memory))
    (import "fail" "caml_invalid_argument"
       (func $caml_invalid_argument (param (ref eq))))
    (import "fail" "caml_failwith" (func $caml_failwith (param (ref eq))))
+   (import "string" "caml_string_of_bytes"
+      (func $caml_string_of_bytes (param (ref eq)) (result (ref eq))))
+   (import "string" "caml_bytes_of_string"
+      (func $caml_bytes_of_string (param (ref eq)) (result (ref eq))))
    (import "jslib" "value_of_js"
       (func $value_of_js (param externref) (result (ref eq))))
    (import "jslib" "js_of_value"
@@ -642,6 +648,11 @@
 
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
+(@if $use_js_string
+(@then
+   (type $string (struct (field externref))))
+(@else
+   (type $string (array (mut i8)))))
    (type $float (struct (field $f f64)))
    (type $float_array (array (mut f64)))
 
@@ -656,7 +667,7 @@
    (type $dup (func (param (ref eq)) (result (ref eq))))
    (type $custom_operations
       (struct
-         (field $id (ref $bytes))
+         (field $id (ref $string))
          (field $compare (ref null $compare))
          (field $compare_ext (ref null $compare))
          (field $hash (ref null $hash))
@@ -3180,10 +3191,14 @@
 
 (@if (not $wasi)
 (@then
-   (export "caml_bytes_of_uint8_array" (func $caml_string_of_uint8_array))
-   (func $caml_string_of_uint8_array (export "caml_string_of_uint8_array")
+   (func (export "caml_string_of_uint8_array")
       (param $v (ref eq)) (result (ref eq))
       ;; used to convert a typed array to a string
+      (return_call $caml_string_of_bytes
+         (call $caml_bytes_of_uint8_array (local.get $v))))
+
+   (func $caml_bytes_of_uint8_array (export "caml_bytes_of_uint8_array")
+      (param $v (ref eq)) (result (ref eq))
       (local $a (ref extern)) (local $len i32)
       (local $s (ref $bytes))
       (local.set $a
@@ -3196,8 +3211,13 @@
          (local.get $len))
       (local.get $s))
 
-   (export "caml_uint8_array_of_bytes" (func $caml_uint8_array_of_string))
-   (func $caml_uint8_array_of_string (export "caml_uint8_array_of_string")
+   (func (export "caml_uint8_array_of_string")
+      (param $vs (ref eq)) (result (ref eq))
+      ;; Convert a string to a typed array
+      (return_call $caml_uint8_array_of_bytes
+         (call $caml_bytes_of_string (local.get $vs))))
+
+   (func $caml_uint8_array_of_bytes (export "caml_uint8_array_of_bytes")
       (param $vs (ref eq)) (result (ref eq))
       ;; Convert bytes to a typed array
       (local $ta (ref extern)) (local $len i32)

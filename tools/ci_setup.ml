@@ -14,6 +14,10 @@ module type CONFIG = sig
 
   val forked_packages : string list
 
+  val js_string_packages : string list
+
+  val js_string_branch : string
+
   val dune_workspace_extra_env : string
 
   val keep_package : OpamFile.OPAM.t -> bool
@@ -63,6 +67,11 @@ let omitted_js = StringSet.of_list Config.omitted_js
 let do_pin = StringSet.of_list Config.do_pin
 
 let forked_packages = StringSet.of_list Config.forked_packages
+
+(* The packages whose Wasm runtime files are adapted to OCaml strings
+   represented as JavaScript strings, on branch [Config.js_string_branch]
+   of their ocaml-wasm fork *)
+let js_string_packages = StringSet.of_list Config.js_string_packages
 
 let fixed_packages =
   StringSet.of_list [ "bonsai_web"; "bonsai_web_components"; "virtual_dom" ]
@@ -164,6 +173,8 @@ let is_forked p = StringSet.mem p forked_packages
 
 let is_fixed p = StringSet.mem p fixed_packages
 
+let is_js_string p = StringSet.mem p js_string_packages
+
 let exec_async cmd =
   let p = Unix.open_process_out cmd in
   fun () -> ignore (Unix.close_process_out p)
@@ -180,7 +191,7 @@ let pin nm =
        "opam pin add -n %s https://github.com/ocaml-wasm/%s.git#%s"
        nm
        nm
-       Config.pin_branch)
+       (if is_js_string nm then Config.js_string_branch else Config.pin_branch))
 
 let pin_packages () = sync_exec pin (StringSet.elements do_pin)
 
@@ -239,15 +250,18 @@ let () =
   sync_exec (fun () -> exec_async "opam install uri --deps-only") [ () ];
   sync_exec
     (fun nm ->
+      let from_fork = is_fixed nm || is_forked nm || is_js_string nm in
       let branch =
-        if is_fixed nm
+        if is_js_string nm
+        then Some Config.js_string_branch
+        else if is_fixed nm
         then Some Config.fixed_branch
         else if is_forked nm
         then Some Config.forked_branch
         else Config.default_branch
       in
       let commit =
-        if is_fixed nm || is_forked nm
+        if from_fork
         then None
         else
           let commit =
@@ -265,7 +279,7 @@ let () =
         nm
         (Printf.sprintf
            "https://github.com/%s/%s"
-           (if is_fixed nm || is_forked nm then "ocaml-wasm" else "janestreet")
+           (if from_fork then "ocaml-wasm" else "janestreet")
            nm))
     (StringSet.elements (StringSet.diff js omitted_js))
 

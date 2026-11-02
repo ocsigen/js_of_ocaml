@@ -39,6 +39,12 @@ let specialize_apply opt_count shape set_shape update_def =
   let rec loop x f args shape loc (acc, free_pc, extra) =
     match shape.Shape.desc with
     | Top | Block _ -> Let (x, Apply { f; args; exact = false }) :: acc, free_pc, extra
+    | Function { arity; prim = Some prim; _ } when arity = List.length args ->
+        (* A primitive of another compilation unit: call it directly *)
+        incr opt_count;
+        let expr = Prim (Extern (prim, None), List.map args ~f:(fun a -> Pv a)) in
+        update_def x expr;
+        Let (x, expr) :: acc, free_pc, extra
     | Function { arity; res; _ } ->
         let nargs = List.length args in
         if arity = nargs

@@ -16,16 +16,22 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
+   (@string_imports "str")
+   (@string_type $string)
    (import "fail" "caml_invalid_argument" (func $caml_invalid_argument (param (ref eq))))
 
    (type $block (array (mut (ref eq))))
-   (type $string (array (mut i8)))
+(@if $use_js_string
+(@then
+   (type $string (struct (field externref))))
+(@else
+   (type $string (array (mut i8)))))
    (type $float (struct (field f64)))
    (type $float_array (array (mut f64)))
 
-   (data $invalid_get_idx
+   (@string $invalid_get_idx
       "caml_get_idx_bytecode: attempted to read from an invalid index")
-   (data $invalid_set_idx
+   (@string $invalid_set_idx
       "caml_set_idx_bytecode: attempted to write to an invalid index")
 
    ;; caml_get_idx_bytecode : base -> idx -> result
@@ -52,8 +58,7 @@
               (i32.const 0))
          (then
             (call $caml_invalid_argument
-               (array.new_data $string $invalid_get_idx
-                  (i32.const 0) (i32.const 62)))))
+               (global.get $invalid_get_idx))))
       ;; Float array case: base is $float_array, depth must be 1
       (drop (block $not_float_array (result (ref eq))
          (local.set $fa
@@ -110,8 +115,7 @@
               (i32.const 0))
          (then
             (call $caml_invalid_argument
-               (array.new_data $string $invalid_set_idx
-                  (i32.const 0) (i32.const 61)))))
+               (global.get $invalid_set_idx))))
       ;; Float array case: base is $float_array, depth must be 1
       (drop (block $not_float_array (result (ref eq))
          (local.set $fa

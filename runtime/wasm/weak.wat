@@ -16,6 +16,8 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
+   (@string_imports "str")
+   (@string_type $string)
    (import "obj" "abstract_tag" (global $abstract_tag i32))
    (import "obj" "caml_obj_dup"
       (func $caml_obj_dup (param (ref eq)) (result (ref eq))))
@@ -53,6 +55,11 @@
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
    (type $float_array (array (mut f64)))
+(@if $use_js_string
+(@then
+   (type $string (struct (field externref))))
+(@else
+   (type $string (array (mut i8)))))
    (type $js (struct (field $js externref)))
 
    ;; A weak array is a an abstract value composed of possibly some

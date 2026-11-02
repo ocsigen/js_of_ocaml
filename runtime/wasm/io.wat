@@ -16,6 +16,8 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
+   (@string_imports "str")
+   (@string_type $string)
    (import "fail" "caml_raise_end_of_file" (func $caml_raise_end_of_file))
    (import "fail" "caml_raise_sys_error"
       (func $caml_raise_sys_error (param (ref eq))))
@@ -127,6 +129,14 @@
       (func $Int64_val (param (ref eq)) (result i64)))
    (import "bigarray" "caml_ba_get_data"
       (func $caml_ba_get_data (param (ref eq)) (result (ref extern))))
+   (import "string" "string_to_bytes"
+      (func $string_to_bytes (param (ref $string)) (result (ref $bytes))))
+   (import "string" "string_of_bytes"
+      (func $string_of_bytes (param (ref $bytes)) (result (ref $string))))
+   (import "string" "string_slice"
+      (func $string_slice
+         (param (ref $string)) (param i32) (param i32)
+         (result (ref $bytes) i32)))
 
 (@if $wasi
 (@then
@@ -314,6 +324,11 @@
 
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
+(@if $use_js_string
+(@then
+   (type $string (struct (field externref))))
+(@else
+   (type $string (array (mut i8)))))
 
    (type $compare
       (func (param (ref eq)) (param (ref eq)) (param i32) (result i32)))
@@ -326,7 +341,7 @@
    (type $dup (func (param (ref eq)) (result (ref eq))))
    (type $custom_operations
       (struct
-         (field $id (ref $bytes))
+         (field $id (ref $string))
          (field $compare (ref null $compare))
          (field $compare_ext (ref null $compare))
          (field $hash (ref null $hash))
@@ -817,10 +832,11 @@
             (return (call $caml_do_read
                (local.get $ch) (local.get $pos) (local.get $len)))))
       (local.set $str
-         (ref.cast (ref $bytes)
-            (call $caml_js_fun_call
-               (ref.as_non_null (local.get $f))
-               (array.new_fixed $block 1 (ref.i31 (i32.const 0))))))
+         (call $string_to_bytes
+            (ref.cast (ref $string)
+               (call $caml_js_fun_call
+                  (ref.as_non_null (local.get $f))
+                  (array.new_fixed $block 1 (ref.i31 (i32.const 0)))))))
       (local.set $str_len (array.len (local.get $str)))
       (if (i32.eqz (local.get $str_len))
          (then
@@ -1437,7 +1453,8 @@
                         (struct.get $channel $output (local.get $ch)))
                      (array.new_fixed $block 2
                         (ref.i31 (i32.const 0))
-                        (call $caml_jsbytes_of_string (local.get $tmp)))))
+                        (call $caml_jsbytes_of_string
+                           (call $string_of_bytes (local.get $tmp))))))
                   (struct.set $channel $curr (local.get $ch) (i32.const 0))
                   (local.set $curr (i32.const 0))))))
       (i32.eqz (local.get $curr)))
@@ -1513,8 +1530,19 @@
                (local.set $len (i32.sub (local.get $len) (local.get $written)))
                (br $loop)))))
 
-   (export "caml_ml_output_bytes" (func $caml_ml_output))
-   (func $caml_ml_output (export "caml_ml_output")
+   (func (export "caml_ml_output")
+      (param $ch (ref eq)) (param $s (ref eq)) (param $vpos (ref eq))
+      (param $vlen (ref eq)) (result (ref eq))
+      (local $b (ref $bytes)) (local $pos i32)
+      (call $string_slice (ref.cast (ref $string) (local.get $s))
+         (i31.get_u (ref.cast (ref i31) (local.get $vpos)))
+         (i31.get_u (ref.cast (ref i31) (local.get $vlen))))
+      (local.set $pos)
+      (local.set $b)
+      (return_call $caml_ml_output_bytes (local.get $ch)
+         (local.get $b) (ref.i31 (local.get $pos)) (local.get $vlen)))
+
+   (func $caml_ml_output_bytes (export "caml_ml_output_bytes")
       (param $ch (ref eq)) (param $s (ref eq)) (param $vpos (ref eq))
       (param $vlen (ref eq)) (result (ref eq))
       (local $pos i32) (local $len i32) (local $written i32)

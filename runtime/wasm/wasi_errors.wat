@@ -1,4 +1,13 @@
 (module
+   (@string_imports "str")
+   (@string_type $string)
+   ;; An OCaml string, with [use_js_string]: a JavaScript string whose
+   ;; characters are the bytes of the string.
+(@if $use_js_string
+(@then
+   (type $string (struct (field externref))))
+(@else
+   (type $string (array (mut i8)))))
 (@if $wasi
 (@then
    (type $block (array (mut (ref eq))))

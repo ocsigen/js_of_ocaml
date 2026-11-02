@@ -85,6 +85,10 @@ let specialize_js_once_after p =
   if debug () then Format.eprintf "Specialize js once...@.";
   Specialize_js.f_once_after p
 
+let specialize_string_reads p =
+  if debug () then Format.eprintf "Specialize string reads...@.";
+  Specialize_string_reads.f p
+
 let clone_higher_order (profile : Profile.t) p =
   (* This is only useful when the global flow analysis keeps track of
      function parameters, which it does not in fast mode (at -O1) *)
@@ -132,6 +136,12 @@ let collects_shapes ~shapes (p : Code.program) =
                   | Byte s | Utf (Utf8 s) -> s
                 in
                 shapes := StringMap.add name block !shapes
+            | Code.Let
+                ( _
+                , Prim (Extern ("caml_register_global", _), [ Pv block; Pc (String name) ])
+                ) ->
+                (* Wasm *)
+                shapes := StringMap.add name block !shapes
             | _ -> ()))
       p.blocks;
     let map =
@@ -141,8 +151,41 @@ let collects_shapes ~shapes (p : Code.program) =
         let _, info = Flow.f p in
         let pure = Pure_fun.f p in
         let return_values = Code.return_values p in
+        let closure_prim =
+          match Config.target () with
+          | `JavaScript -> fun _ -> None
+          | `Wasm ->
+              (* Closures [fun x1 ... xn -> prim x1 ... xn]: other compilation
+                 units can call the primitive directly *)
+              let prims = Code.Var.Hashtbl.create 16 in
+              Code.Addr.Map.iter
+                (fun _ block ->
+                  List.iter block.Code.body ~f:(fun i ->
+                      match i with
+                      | Code.Let (f, Closure (params, (pc, _), _)) -> (
+                          let block = Code.Addr.Map.find pc p.blocks in
+                          let body =
+                            List.filter block.body ~f:(fun i ->
+                                match i with
+                                | Code.Event _ -> false
+                                | _ -> true)
+                          in
+                          match body, block.branch with
+                          | [ Let (y, Prim (Extern (prim, _), args)) ], Return y'
+                            when Code.Var.equal y y'
+                                 && List.compare_lengths params args = 0
+                                 && List.for_all2 params args ~f:(fun x a ->
+                                     match a with
+                                     | Code.Pv a -> Code.Var.equal x a
+                                     | Pc _ -> false) ->
+                              Code.Var.Hashtbl.replace prims f prim
+                          | _ -> ())
+                      | _ -> ()))
+                p.blocks;
+              Code.Var.Hashtbl.find_opt prims
+        in
         let shape, _set_shape =
-          Flow.the_shape_of ~return_values ~pure ~blocks:true info
+          Flow.the_shape_of ~closure_prim ~return_values ~pure ~blocks:true info
         in
         StringMap.filter_map
           (fun _ x ->
@@ -733,13 +776,15 @@ let optimize ~shapes ~profile ~keep_flow_data p =
     Code.Var.fresh_n "dummy"
   in
   let opt =
-    Specialize.switches
+    Specialize_string_reads.stdlib_string
+    +> Specialize.switches
     +> specialize_js_once_before
     +> (match (profile : Profile.t) with
       | O1 -> o1
       | O2 -> o2
       | O3 -> o3)
     +> specialize_js_once_after
+    +> specialize_string_reads
     +> clone_higher_order profile
     +> effects_and_exact_calls ~keep_flow_data ~deadcode_sentinel ~shapes profile
     +> map_fst5

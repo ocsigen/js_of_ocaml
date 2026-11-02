@@ -16,6 +16,8 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
+   (@string_imports "str")
+   (@string_type $string)
    (import "io" "caml_stderr" (global $caml_stderr (mut (ref eq))))
    (import "io" "caml_ml_output"
       (func $caml_ml_output
@@ -29,19 +31,34 @@
    (import "float" "caml_format_float"
       (func $caml_format_float
          (param (ref eq)) (param (ref eq)) (result (ref eq))))
+   (import "string" "string_length"
+      (func $string_length (param (ref $string)) (result i32)))
+   (import "string" "string_get"
+      (func $string_get (param (ref $string)) (param i32) (result i32)))
+   (import "string" "string_blit"
+      (func $string_blit
+         (param (ref $string)) (param i32) (param (ref $bytes)) (param i32)
+         (param i32)))
+   (import "string" "string_of_bytes"
+      (func $string_of_bytes (param (ref $bytes)) (result (ref $string))))
 
    (type $float (struct (field $f f64)))
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
+(@if $use_js_string
+(@then
+   (type $string (struct (field externref))))
+(@else
+   (type $string (array (mut i8)))))
 
    (func $get (param $a (ref eq)) (param $i i32) (result i32)
-      (local $s (ref $bytes))
-      (local.set $s (ref.cast (ref $bytes) (local.get $a)))
+      (local $s (ref $string))
+      (local.set $s (ref.cast (ref $string) (local.get $a)))
       (local.set $i (i32.add (local.get $i) (local.get $i)))
       (i32.extend16_s
-         (i32.or (array.get_u $bytes (local.get $s) (local.get $i))
+         (i32.or (call $string_get (local.get $s) (local.get $i))
             (i32.shl
-               (array.get_u $bytes (local.get $s)
+               (call $string_get (local.get $s)
                   (i32.add (local.get $i) (i32.const 1)))
                (i32.const 8)))))
 
@@ -104,11 +121,11 @@
    (global $tbl_names_const i32 (i32.const 15))
    (global $tbl_names_block i32 (i32.const 16))
 
-   (func $strlen (param $s (ref $bytes)) (param $p i32) (result i32)
+   (func $strlen (param $s (ref $string)) (param $p i32) (result i32)
       (local $i i32)
       (local.set $i (local.get $p))
       (loop $loop
-         (if (i32.ne (array.get_u $bytes (local.get $s) (local.get $i))
+         (if (i32.ne (call $string_get (local.get $s) (local.get $i))
                (i32.const 0))
             (then
                (local.set $i (i32.add (local.get $i) (i32.const 1)))
@@ -119,11 +136,11 @@
 
    (func $token_name
       (param $vnames (ref eq)) (param $number i32) (result (ref eq))
-      (local $names (ref $bytes)) (local $i i32) (local $len i32)
+      (local $names (ref $string)) (local $i i32) (local $len i32)
       (local $name (ref $bytes))
-      (local.set $names (ref.cast (ref $bytes) (local.get $vnames)))
+      (local.set $names (ref.cast (ref $string) (local.get $vnames)))
       (loop $loop
-         (if (i32.eqz (array.get_u $bytes (local.get $names) (local.get $i)))
+         (if (i32.eqz (call $string_get (local.get $names) (local.get $i)))
             (then (return (global.get $unknown_token))))
          (if (i32.ne (local.get $number) (i32.const 0))
             (then
@@ -135,18 +152,18 @@
                (br $loop))))
       (local.set $len (call $strlen (local.get $names) (local.get $i)))
       (local.set $name (array.new $bytes (i32.const 0) (local.get $len)))
-      (array.copy $bytes $bytes
-         (local.get $name) (i32.const 0)
-         (local.get $names) (local.get $i) (local.get $len))
-      (local.get $name))
+      (call $string_blit
+         (local.get $names) (local.get $i)
+         (local.get $name) (i32.const 0) (local.get $len))
+      (call $string_of_bytes (local.get $name)))
 
    (func $output (param $vs (ref eq))
-      (local $s (ref $bytes))
-      (local.set $s (ref.cast (ref $bytes) (local.get $vs)))
+      (local $s (ref $string))
+      (local.set $s (ref.cast (ref $string) (local.get $vs)))
       (drop
          (call $caml_ml_output (global.get $caml_stderr)
             (local.get $s) (ref.i31 (i32.const 0))
-            (ref.i31 (array.len (local.get $s))))))
+            (ref.i31 (call $string_length (local.get $s))))))
 
    (func $output_nl
       (drop
@@ -195,7 +212,7 @@
                (then
                   (call $output_int
                      (i31.get_s (ref.cast (ref i31) (local.get $v)))))
-            (else (if (ref.test (ref $bytes) (local.get $v))
+            (else (if (ref.test (ref $string) (local.get $v))
                (then (call $output (local.get $v)))
             (else (if (ref.test (ref $float) (local.get $v))
                (then
@@ -222,42 +239,42 @@
       (local $errflag i32)
       (local $tables (ref $block)) (local $env (ref $block)) (local $cmd i32)
       (local $arg (ref $block))
-      (local $tbl_defred (ref $bytes))
-      (local $tbl_sindex (ref $bytes))
-      (local $tbl_check (ref $bytes))
-      (local $tbl_rindex (ref $bytes))
-      (local $tbl_table (ref $bytes))
-      (local $tbl_len (ref $bytes))
-      (local $tbl_lhs (ref $bytes))
-      (local $tbl_gindex (ref $bytes))
-      (local $tbl_dgoto (ref $bytes))
+      (local $tbl_defred (ref $string))
+      (local $tbl_sindex (ref $string))
+      (local $tbl_check (ref $string))
+      (local $tbl_rindex (ref $string))
+      (local $tbl_table (ref $string))
+      (local $tbl_len (ref $string))
+      (local $tbl_lhs (ref $string))
+      (local $tbl_gindex (ref $string))
+      (local $tbl_dgoto (ref $string))
       (local.set $tables (ref.cast (ref $block) (local.get $vtables)))
       (local.set $tbl_defred
-         (ref.cast (ref $bytes)
+         (ref.cast (ref $string)
             (array.get $block (local.get $tables) (global.get $tbl_defred_field))))
       (local.set $tbl_sindex
-         (ref.cast (ref $bytes)
+         (ref.cast (ref $string)
             (array.get $block (local.get $tables) (global.get $tbl_sindex_field))))
       (local.set $tbl_check
-         (ref.cast (ref $bytes)
+         (ref.cast (ref $string)
             (array.get $block (local.get $tables) (global.get $tbl_check_field))))
       (local.set $tbl_rindex
-         (ref.cast (ref $bytes)
+         (ref.cast (ref $string)
             (array.get $block (local.get $tables) (global.get $tbl_rindex_field))))
       (local.set $tbl_table
-         (ref.cast (ref $bytes)
+         (ref.cast (ref $string)
             (array.get $block (local.get $tables) (global.get $tbl_table_field))))
       (local.set $tbl_len
-         (ref.cast (ref $bytes)
+         (ref.cast (ref $string)
             (array.get $block (local.get $tables) (global.get $tbl_len_field))))
       (local.set $tbl_lhs
-         (ref.cast (ref $bytes)
+         (ref.cast (ref $string)
             (array.get $block (local.get $tables) (global.get $tbl_lhs_field))))
       (local.set $tbl_gindex
-         (ref.cast (ref $bytes)
+         (ref.cast (ref $string)
             (array.get $block (local.get $tables) (global.get $tbl_gindex_field))))
       (local.set $tbl_dgoto
-         (ref.cast (ref $bytes)
+         (ref.cast (ref $string)
             (array.get $block (local.get $tables) (global.get $tbl_dgoto_field))))
       (local.set $env (ref.cast (ref $block) (local.get $venv)))
       (local.set $cmd (i31.get_s (ref.cast (ref i31) (local.get $vcmd))))

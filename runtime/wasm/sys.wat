@@ -16,6 +16,8 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
+   (@string_imports "str")
+   (@string_type $string)
    (import "fail" "caml_raise_sys_error"
       (func $caml_raise_sys_error (param (ref eq))))
    (import "fail" "caml_raise_not_found" (func $caml_raise_not_found))
@@ -90,6 +92,11 @@
 
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
+(@if $use_js_string
+(@then
+   (type $string (struct (field externref))))
+(@else
+   (type $string (array (mut i8)))))
    (type $float (struct (field $f f64)))
 
    (tag $ocaml_exit (export "ocaml_exit"))

@@ -16,13 +16,29 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
+   (@string_imports "str")
+   (@string_type $string)
    (import "fail" "caml_is_special_exception"
       (func $caml_is_special_exception (param (ref eq)) (result i32)))
    (import "ints" "caml_format_int"
       (func $caml_format_int
          (param (ref eq)) (param (ref eq)) (result (ref eq))))
+   (import "string" "string_to_bytes"
+      (func $string_to_bytes (param (ref $string)) (result (ref $bytes))))
+   (import "string" "string_of_bytes"
+      (func $string_of_bytes (param (ref $bytes)) (result (ref $string))))
+(@if $use_js_string
+(@then
+   (import "jsstring" "jsstring_test"
+      (func $jsstring_test (param externref) (result i32)))
+))
 
    (type $block (array (mut (ref eq))))
+(@if $use_js_string
+(@then
+   (type $string (struct (field externref))))
+(@else
+   (type $string (array (mut i8)))))
    (type $bytes (array (mut i8)))
 
    (type $buffer
@@ -65,7 +81,8 @@
    (func $add_string (param $buf (ref $buffer)) (param $v (ref eq))
       (local $pos i32) (local $len i32)
       (local $s (ref $bytes))
-      (local.set $s (ref.cast (ref $bytes) (local.get $v)))
+      (local.set $s
+         (call $string_to_bytes (ref.cast (ref $string) (local.get $v))))
       (local.set $len (array.len (local.get $s)))
       (call $ensure_capacity (local.get $buf) (local.get $len))
       (local.set $pos (struct.get $buffer 0 (local.get $buf)))
@@ -75,6 +92,19 @@
          (local.get $len))
       (struct.set $buffer 0 (local.get $buf)
          (i32.add (local.get $pos) (local.get $len))))
+
+   ;; Whether [$v] is an OCaml string
+   (func $is_string (param $v (ref eq)) (result i32)
+(@if $use_js_string
+(@then
+      (drop (block $not_string (result (ref eq))
+         (return_call $jsstring_test
+            (struct.get $string 0
+               (br_on_cast_fail $not_string (ref eq) (ref $string)
+                  (local.get $v))))))
+      (i32.const 0))
+(@else
+      (ref.test (ref $string) (local.get $v)))))
 
    (func (export "caml_format_exception") (param $vexn (ref eq)) (result (ref eq))
       (local $exn (ref $block))
@@ -134,7 +164,7 @@
                               (call $caml_format_int
                                   (@string "%d")
                                   (ref.cast (ref i31) (local.get $v)))))
-                    (else (if (ref.test (ref $bytes) (local.get $v))
+                    (else (if (call $is_string (local.get $v))
                        (then
                           (call $add_char (local.get $buf) (@char "\""))
                           (call $add_string (local.get $buf) (local.get $v))
@@ -155,7 +185,7 @@
                (local.get $s) (i32.const 0)
                (struct.get $buffer 1 (local.get $buf)) (i32.const 0)
                (struct.get $buffer 0 (local.get $buf)))
-            (local.get $s))
+            (call $string_of_bytes (local.get $s)))
          (else
             (array.get $block (local.get $exn) (i32.const 1)))))
 )

@@ -22,6 +22,8 @@
 ;; JS implementation's use of doubles.
 
 (module
+   (@string_imports "str")
+   (@string_type $string)
    (import "marshal" "caml_serialize_int_4"
       (func $caml_serialize_int_4 (param (ref eq)) (param i32)))
    (import "marshal" "caml_deserialize_int_4"
@@ -33,7 +35,11 @@
    (import "int32" "Nativeint_val"
       (func $Nativeint_val (param (ref eq)) (result i32)))
 
-   (type $bytes (array (mut i8)))
+(@if $use_js_string
+(@then
+   (type $string (struct (field externref))))
+(@else
+   (type $string (array (mut i8)))))
    (type $compare
       (func (param (ref eq)) (param (ref eq)) (param i32) (result i32)))
    (type $hash
@@ -45,7 +51,7 @@
    (type $dup (func (param (ref eq)) (result (ref eq))))
    (type $custom_operations
       (struct
-         (field $id (ref $bytes))
+         (field $id (ref $string))
          (field $compare (ref null $compare))
          (field $compare_ext (ref null $compare))
          (field $hash (ref null $hash))

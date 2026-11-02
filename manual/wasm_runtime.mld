@@ -17,7 +17,7 @@ With dune, use [(wasm_of_ocaml (javascript_files ...))] to specify these files.
 The type [(ref eq)] is used for all OCaml values.
 Integers, chars, booleans, and constant constructors are mapped to [(ref i31)].
 
-The following types are used for blocks, strings (and bytes), floats,
+The following types are used for blocks, bytes, floats,
 float arrays, and JavaScript values. The first field of a block is its
 tag, of type [(ref i31)].
 
@@ -26,8 +26,47 @@ tag, of type [(ref i31)].
 (type $bytes (array (mut i8)))
 (type $float (struct (field f64)))
 (type $float_array (array (mut f64)))
-(type $js (struct (field anyref)))
+(type $js (struct (field externref)))
 v}
+
+{2 Strings}
+
+The representation of strings depends on the [use-js-string] flag
+(the [$use_js_string] preprocessor variable). When it is set (the default,
+except when targeting WASI), a string is a JavaScript string whose characters
+are the bytes of the OCaml string (code units 0 to 255), wrapped in a struct.
+Otherwise, strings are represented like bytes, by a byte array. Define the
+[$string] type accordingly; in the second case, it is the same type as
+[$bytes]:
+
+{v
+(@if $use_js_string
+(@then
+   (type $string (struct (field externref))))
+(@else
+   (type $string (array (mut i8)))))
+v}
+
+The runtime exports accessors working in both cases, so that a primitive
+can be written once:
+
+{v
+(import "env" "string_length"
+   (func $string_length (param (ref $string)) (result i32)))
+(import "env" "string_get" ;; the byte at a given position
+   (func $string_get (param (ref $string)) (param i32) (result i32)))
+(import "env" "string_blit" ;; copy to a byte array
+   (func $string_blit
+      (param (ref $string)) (param i32) (param (ref $bytes)) (param i32)
+      (param i32)))
+(import "env" "string_to_bytes" ;; read-only contents
+   (func $string_to_bytes (param (ref $string)) (result (ref $bytes))))
+(import "env" "string_of_bytes" ;; the byte array must not be modified
+   (func $string_of_bytes (param (ref $bytes)) (result (ref $string))))
+v}
+
+[string_to_bytes] and [string_of_bytes] return their argument unchanged
+when strings are byte arrays.
 
 {2 Int32, Int64, and Nativeint}
 
@@ -68,7 +107,7 @@ The preprocessor allows optional compilation based on the OCaml version:
 v}
 
 Variables are referenced with a [$] prefix (for instance
-[$ocaml_version], [$wasi], [$oxcaml]).
+[$ocaml_version], [$wasi], [$oxcaml], [$use_js_string]).
 
 Available operators:
 - Comparisons: [=], [>], [>=], [<], [<=], [<>]
@@ -76,10 +115,35 @@ Available operators:
 
 {2 Syntactic sugar}
 
-- {b Strings}: [(@string "ab")] expands to [(array.new_fixed $bytes 2 (i32.const 97) (i32.const 98))]
-- {b String globals}: [(@string $s "ab")] is short for [(global $s (ref eq) (@string "ab"))]
+- {b Strings}: [(@string "ab")] builds an OCaml string (see below)
+- {b String globals}: [(@string $s "ab")] is short for [(global $s (ref $string) (@string "ab"))]
 - {b Characters}: [(@char "a")] expands to [(i32.const 97)]
 - {b Function naming}: [(func (export "foo") ...)] expands to [(func $foo (export "foo") ...)] for better debugging
+
+{2 String literals}
+
+By default, a string literal builds a byte array. A module that uses
+string literals must start with the following header (with [$string]
+defined as above), so that its literals build OCaml strings in both
+representations:
+
+{v
+(module
+   (@string_imports "str")
+   (@string_type $string)
+   ...
+)
+v}
+
+When strings are JavaScript strings, a literal is then an imported
+JavaScript string constant (from the [str] import module) wrapped in a
+[$string] struct. Without this header, its literals would be byte arrays
+even when strings are JavaScript strings: [wasm_of_ocaml] rejects such a
+module in that case.
+
+A literal can also be given an explicit type, whatever the representation
+of strings: [(@string $bytes "ab")] is always a byte array, and
+[(@string $js "ab")] is always a JavaScript string (a [$js] value).
 
 {1:implementing-primitives Implementing primitives}
 

@@ -17,7 +17,10 @@ let omitted_others = [ "odoc" ]
 
 let omitted_js = [ "basement"; "sexplib0"; "ppxlib_jane"; "spawn"; "sexp_type" ]
 
-let do_pin = [ "bigstringaf" ]
+let do_pin =
+  [ "basement" (* Installed through opam: pinned to use the JavaScript string version *)
+  ; "bigstringaf"
+  ]
 
 let forked_packages =
   [ "base"
@@ -26,6 +29,27 @@ let forked_packages =
   ; "bonsai_web_components"
   ; "bonsai_web_test"
   ; "virtual_dom"
+  ]
+
+(* Packages whose Wasm runtime files need adapting to OCaml strings
+   represented as JavaScript strings; they are taken from this branch of
+   their ocaml-wasm fork (based on the version used otherwise) *)
+let js_string_branch = "js-strings-oxcaml-31"
+
+let js_string_packages =
+  [ "async_js"
+  ; "await"
+  ; "base"
+  ; "base_bigstring"
+  ; "basement"
+  ; "bigstringaf"
+  ; "bin_prot"
+  ; "core"
+  ; "core_unix"
+  ; "ppx_hash"
+  ; "string_dict"
+  ; "time_now"
+  ; "zarith_stubs_js"
   ]
 
 (* Extra line spliced in the (env (_ ...)) block of the generated

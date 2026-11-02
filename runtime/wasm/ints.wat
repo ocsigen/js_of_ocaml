@@ -16,11 +16,22 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
+   (@string_imports "str")
+   (@string_type $string)
    (import "fail" "caml_failwith" (func $caml_failwith (param (ref eq))))
    (import "fail" "caml_invalid_argument"
       (func $caml_invalid_argument (param (ref eq))))
+   (import "string" "string_to_bytes"
+      (func $string_to_bytes (param (ref $string)) (result (ref $bytes))))
+   (import "string" "string_of_bytes"
+      (func $string_of_bytes (param (ref $bytes)) (result (ref $string))))
 
    (type $bytes (array (mut i8)))
+(@if $use_js_string
+(@then
+   (type $string (struct (field externref))))
+(@else
+   (type $string (array (mut i8)))))
 
    (func (export "caml_format_int")
       (param $v (ref eq)) (param $n (ref eq)) (result (ref eq))
@@ -96,7 +107,8 @@
       (local $i i32) (local $len i32) (local $d i32) (local $c i32)
       (local $signedness i32) (local $sign i32) (local $base i32)
       (local $res i32) (local $threshold i32)
-      (local.set $s (ref.cast (ref $bytes) (local.get $v)))
+      (local.set $s
+         (call $string_to_bytes (ref.cast (ref $string) (local.get $v))))
       (local.set $len (array.len (local.get $s)))
       (if (i32.eqz (local.get $len))
         (then (call $caml_failwith (local.get $errmsg))))
@@ -226,7 +238,7 @@
          (br_if $write (local.get $d)))
       (if (local.get $negative)
          (then (array.set $bytes (local.get $s) (i32.const 0) (@char "-"))))
-      (local.get $s))
+      (call $string_of_bytes (local.get $s)))
 
    (@string $format_error "format_int: bad format")
 
@@ -305,7 +317,8 @@
       (local $i i32)
       (local $n i32)
       (local $chars (ref $chars))
-      (local.set $s (ref.cast (ref $bytes) (local.get $vs)))
+      (local.set $s
+         (call $string_to_bytes (ref.cast (ref $string) (local.get $vs))))
       (if (i32.eq (array.len (local.get $s)) (i32.const 2))
          (then
             (if (i32.eq (array.get_u $bytes (local.get $s) (i32.const 1))
@@ -388,5 +401,5 @@
                         (array.set $bytes (local.get $s) (i32.const 1)
                            (select (@char "X") (@char "x")
                               (local.get $uppercase)))))))))
-      (local.get $s))
+      (call $string_of_bytes (local.get $s)))
 )

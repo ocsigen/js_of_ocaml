@@ -26,6 +26,8 @@ type desc =
       { arity : int
       ; pure : bool
       ; res : t
+      ; prim : string option
+            (** The function is this primitive (with all its arguments) *)
       }
 
 and t =
@@ -48,7 +50,7 @@ let top = proxy ()
 
 let block fields = make (Block fields)
 
-let funct ~arity ~pure ~res = make (Function { arity; pure; res })
+let funct ~arity ~pure ~res = make (Function { arity; pure; res; prim = None })
 
 module Set = Set.Make (struct
   type nonrec t = t
@@ -90,9 +92,11 @@ let to_string (shape : t) =
             end;
             match desc with
             | Top -> assert false
-            | Function { arity; pure; res } -> (
+            | Function { arity; pure; res; prim } -> (
                 Buffer.add_string buf (Printf.sprintf "F(%d)" arity);
                 if pure then Buffer.add_char buf '*';
+                Option.iter prim ~f:(fun name ->
+                    Buffer.add_string buf (Printf.sprintf "<%s>" name));
                 match res.desc with
                 | Top -> ()
                 | _ ->
@@ -179,13 +183,25 @@ let of_string (s : string) =
     let arity = parse_int 0 in
     let () = parse_char ')' in
     let pure = parse_char_opt '*' in
+    let prim =
+      if parse_char_opt '<'
+      then (
+        let start = !pos in
+        while not (Char.equal (current ()) '>') do
+          next ()
+        done;
+        let name = String.sub s ~pos:start ~len:(!pos - start) in
+        next ();
+        Some name)
+      else None
+    in
     match current () with
     | '-' ->
         next ();
         parse_char '>';
         let res = parse_shape () in
-        funct ~arity ~pure ~res
-    | _ -> funct ~arity ~pure ~res:top
+        make (Function { arity; pure; res; prim })
+    | _ -> make (Function { arity; pure; res = top; prim })
   in
   parse_shape ()
 

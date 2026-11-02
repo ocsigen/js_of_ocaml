@@ -16,6 +16,15 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
+   (@string_imports "str")
+   (@string_type $string)
+   ;; An OCaml string, with [use_js_string]: a JavaScript string whose
+   ;; characters are the bytes of the string.
+(@if $use_js_string
+(@then
+   (type $string (struct (field externref))))
+(@else
+   (type $string (array (mut i8)))))
 (@if (= $effects "native")
 (@then
    (import "fail" "caml_raise_constant"

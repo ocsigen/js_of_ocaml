@@ -16,6 +16,8 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
+   (@string_imports "str")
+   (@string_type $string)
 (@if $wasi
 (@then
    (type $path_op (func (param i32 i32 i32) (result i32)))
@@ -195,8 +197,17 @@
       (func $caml_copy_int64  (param i64) (result (ref eq))))
    (import "int64" "Int64_val"
       (func $Int64_val (param (ref eq)) (result i64)))
+   (import "string" "string_to_bytes"
+      (func $string_to_bytes (param (ref $string)) (result (ref $bytes))))
+   (import "string" "string_of_bytes"
+      (func $string_of_bytes (param (ref $bytes)) (result (ref $string))))
 
    (type $bytes (array (mut i8)))
+(@if $use_js_string
+(@then
+   (type $string (struct (field externref))))
+(@else
+   (type $string (array (mut i8)))))
    (type $block (array (mut (ref eq))))
    (type $float (struct (field $f f64)))
    (type $float_array (array (mut f64)))
@@ -1443,14 +1454,16 @@
       (param $vpath (ref eq)) (result (ref eq))
       (local $dir (ref eq)) (local $p (ref $bytes)) (local $p' (ref $bytes))
       (local $len i32)
-      (local.set $p (ref.cast (ref $bytes) (local.get $vpath)))
+      (local.set $p
+         (call $string_to_bytes (ref.cast (ref $string) (local.get $vpath))))
       (local.set $len (i32.sub (array.len (local.get $p)) (i32.const 3)))
       (local.set $p' (array.new $bytes (i32.const 0) (local.get $len)))
       (array.copy $bytes $bytes
          (local.get $p') (i32.const 0)
          (local.get $p) (i32.const 0)
          (local.get $len))
-      (local.set $dir (call $unix_opendir (local.get $p')))
+      (local.set $dir
+         (call $unix_opendir (call $string_of_bytes (local.get $p'))))
       (array.new_fixed $block 3 (ref.i31 (i32.const 0))
          (call $win_find_next (local.get $dir))
          (local.get $dir)))

@@ -30,7 +30,48 @@
    --binaryen-opt=-O3
    --set=effects=jspi
    --disable=wasi
-   --allowed-imports=bindings,Math,js,wasm:js-string,wasm:text-encoder,wasm:text-decoder
+   --enable=use_js_string
+   --allowed-imports=bindings,Math,js,str,wasm:js-string,wasm:text-encoder,wasm:text-decoder
+   %{target}
+   c:c-impl.wasm
+   %{read-lines:args})))
+
+(rule
+ (target runtime-jspi.wasm)
+ (deps
+  binaryen-version-check
+  args
+  c-impl.wasm
+  (glob_files *.wat))
+ (action
+  (run
+   ../../compiler/bin-wasm_of_ocaml/wasmoo_link_wasm.exe
+   --binaryen=-g
+   --binaryen-opt=-O3
+   --set=effects=jspi
+   --disable=wasi
+   --disable=use_js_string
+   --allowed-imports=bindings,Math,js,str,wasm:js-string,wasm:text-encoder,wasm:text-decoder
+   %{target}
+   c:c-impl.wasm
+   %{read-lines:args})))
+
+(rule
+ (target runtime-cps-use_js_string.wasm)
+ (deps
+  binaryen-version-check
+  args
+  c-impl.wasm
+  (glob_files *.wat))
+ (action
+  (run
+   ../../compiler/bin-wasm_of_ocaml/wasmoo_link_wasm.exe
+   --binaryen=-g
+   --binaryen-opt=-O3
+   --set=effects=cps
+   --disable=wasi
+   --enable=use_js_string
+   --allowed-imports=bindings,Math,js,str,wasm:js-string,wasm:text-encoder,wasm:text-decoder
    %{target}
    c:c-impl.wasm
    %{read-lines:args})))
@@ -49,7 +90,28 @@
    --binaryen-opt=-O3
    --set=effects=cps
    --disable=wasi
-   --allowed-imports=bindings,Math,js,wasm:js-string,wasm:text-encoder,wasm:text-decoder
+   --disable=use_js_string
+   --allowed-imports=bindings,Math,js,str,wasm:js-string,wasm:text-encoder,wasm:text-decoder
+   %{target}
+   c:c-impl.wasm
+   %{read-lines:args})))
+
+(rule
+ (target runtime-double-translation-use_js_string.wasm)
+ (deps
+  binaryen-version-check
+  args
+  c-impl.wasm
+  (glob_files *.wat))
+ (action
+  (run
+   ../../compiler/bin-wasm_of_ocaml/wasmoo_link_wasm.exe
+   --binaryen=-g
+   --binaryen-opt=-O3
+   --set=effects=double-translation
+   --disable=wasi
+   --enable=use_js_string
+   --allowed-imports=bindings,Math,js,str,wasm:js-string,wasm:text-encoder,wasm:text-decoder
    %{target}
    c:c-impl.wasm
    %{read-lines:args})))
@@ -68,7 +130,8 @@
    --binaryen-opt=-O3
    --set=effects=double-translation
    --disable=wasi
-   --allowed-imports=bindings,Math,js,wasm:js-string,wasm:text-encoder,wasm:text-decoder
+   --disable=use_js_string
+   --allowed-imports=bindings,Math,js,str,wasm:js-string,wasm:text-encoder,wasm:text-decoder
    %{target}
    c:c-impl.wasm
    %{read-lines:args})))
@@ -86,6 +149,7 @@
    --binaryen-opt=-O3
    --set=effects=disabled
    --enable=wasi
+   --disable=use_js_string
    --allowed-imports=wasi_snapshot_preview1,OCaml
    %{target}
    libc:libc.wasm
@@ -104,6 +168,7 @@
    --binaryen-opt=-O3
    --set=effects=cps
    --enable=wasi
+   --disable=use_js_string
    %{target}
    libc:libc.wasm
    %{read-lines:args})))
@@ -121,6 +186,7 @@
    --binaryen-opt=-O3
    --set=effects=double-translation
    --enable=wasi
+   --disable=use_js_string
    %{target}
    libc:libc.wasm
    %{read-lines:args})))

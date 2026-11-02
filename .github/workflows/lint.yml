@@ -68,6 +68,6 @@ jobs:
           ocaml-compiler: "5.5"
       - name: Install wax
         run: |
-          opam install --yes wax
+          opam pin add --yes git+https://github.com/ocsigen/wax.git#js-string-literals
       - name: Convert Wasm runtime files to wax
         run: opam exec -- ./tools/wat2wax.sh

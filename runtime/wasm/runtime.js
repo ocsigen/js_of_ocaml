@@ -904,6 +904,10 @@
     fromCharCodeArray: () => "",
     length: (s) => s.length,
     intoCharCodeArray: () => 0,
+    // Used with use_js_string
+    charCodeAt: (s, i) => s.charCodeAt(i),
+    concat: (s1, s2) => s1.concat(s2),
+    equals: (s1, s2) => +(s1 === s2),
   };
   // Counters of the representation conversions executed by code compiled
   // with [--debug count-conversions] (per kind, imported from module
