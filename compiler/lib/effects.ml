@@ -463,13 +463,7 @@ let rewrite_instr ~st (instr : instr) : instr =
   | Let (x, Apply { f; args; exact }) when not (Var.Set.mem x st.cps_needed) ->
       if double_translate ()
       then
-        let exact =
-          (* If this function is unknown to the global flow analysis, then it was
-           introduced by the lambda lifting and we don't have exactness info any more. *)
-          exact
-          || Var.idx f < Var.Tbl.length st.flow_info.info_approximation
-             && Global_flow.exact_call st.flow_info f (List.length args)
-        in
+        let exact = exact || Global_flow.exact_call st.flow_info f (List.length args) in
         Let (x, Apply { f; args; exact })
       else (
         (* At the moment, we turn into CPS any function not called with
@@ -483,12 +477,6 @@ let rewrite_instr ~st (instr : instr) : instr =
       assert false
   | _ -> instr
 
-let call_exact flow_info (f : Var.t) nargs : bool =
-  (* If [f] is unknown to the global flow analysis, then it was introduced by
-     the lambda lifting and we don't have exactness about it. *)
-  Var.idx f < Var.Tbl.length flow_info.Global_flow.info_approximation
-  && Global_flow.exact_call flow_info f nargs
-
 let cps_instr ~st (instr : instr) : instr list =
   match instr with
   | Let (x, Prim (Extern ("caml_assume_no_perform", _), [ Pv f ]))
@@ -497,7 +485,10 @@ let cps_instr ~st (instr : instr) : instr list =
          Otherwise, the runtime primitive is used. *)
       let unit = Var.fresh_n "unit" in
       [ Let (unit, Constant (Int Targetint.zero))
-      ; Let (x, Apply { exact = call_exact st.flow_info f 1; f; args = [ unit ] })
+      ; Let
+          ( x
+          , Apply { exact = Global_flow.exact_call st.flow_info f 1; f; args = [ unit ] }
+          )
       ]
   | _ -> [ rewrite_instr ~st instr ]
 
@@ -577,7 +568,9 @@ let cps_block ~st ~k ~orig_pc block =
     | Apply { f; args; exact } when Var.Set.mem x st.cps_needed ->
         Some
           (fun ~k ->
-            let exact = exact || call_exact st.flow_info f (List.length args) in
+            let exact =
+              exact || Global_flow.exact_call st.flow_info f (List.length args)
+            in
             tail_call ~st ~exact ~in_cps:true ~check:true ~f (args @ [ k ]))
     | Prim (Extern ("%resume", _), [ Pv stack; Pv f; Pv arg; tail ]) ->
         Some
@@ -591,7 +584,7 @@ let cps_block ~st ~k ~orig_pc block =
                     , Prim (Extern ("caml_resume_stack", None), [ Pv stack; tail; Pv k ])
                     )
                 ]
-              ~exact:(call_exact st.flow_info f 1)
+              ~exact:(Global_flow.exact_call st.flow_info f 1)
               ~in_cps:true
               ~check:true
               ~f
@@ -613,7 +606,7 @@ let cps_block ~st ~k ~orig_pc block =
                         (Extern ("caml_resume_stack", None), [ Pv stack; Pv stack; Pv k ])
                     )
                 ]
-              ~exact:(call_exact st.flow_info f 1)
+              ~exact:(Global_flow.exact_call st.flow_info f 1)
               ~in_cps:true
               ~check:true
               ~f
@@ -637,7 +630,7 @@ let cps_block ~st ~k ~orig_pc block =
                         (Extern ("caml_resume_stack", None), [ Pv stack; Pv stack; Pv k ])
                     )
                 ]
-              ~exact:(call_exact st.flow_info f 1)
+              ~exact:(Global_flow.exact_call st.flow_info f 1)
               ~in_cps:true
               ~check:true
               ~f
@@ -746,7 +739,7 @@ let rewrite_direct_block ~st ~cps_needed ~closure_info ~pc block =
           (* We just need to call [f] in direct style. *)
           let unit = Var.fresh_n "unit" in
           let unit_val = Int Targetint.zero in
-          let exact = call_exact st.flow_info f 1 in
+          let exact = Global_flow.exact_call st.flow_info f 1 in
           [ Let (unit, Constant unit_val); Let (x, Apply { exact; f; args = [ unit ] }) ]
       | (Let _ | Assign _ | Set_field _ | Offset_ref _ | Array_set _ | Event _) as instr
         -> [ instr ]

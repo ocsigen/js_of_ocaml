@@ -23,18 +23,12 @@ let debug = Debug.find "call-graph"
 
 let times = Debug.find "times"
 
-let get_approx info x =
-  (* Specialization can add some variables *)
-  if Var.idx x < Var.Tbl.length info.Global_flow.info_approximation
-  then Var.Tbl.get info.Global_flow.info_approximation x
-  else Top
-
 let block_deps ~info ~non_escaping ~ambiguous ~blocks pc =
   let block = Addr.Map.find pc blocks in
   List.iter block.body ~f:(fun i ->
       match i with
       | Let (_, Apply { f; exact; _ }) -> (
-          match get_approx info f with
+          match Global_flow.get_approx info f with
           | Top -> ()
           | Values { known; others } ->
               if (not exact) || others || Var.Set.compare_cardinal_with known 1 > 0
@@ -52,7 +46,7 @@ let block_deps ~info ~non_escaping ~ambiguous ~blocks pc =
                 Format.eprintf "CALL others:%b known:%d@." others (Var.Set.cardinal known)
           )
       | Let (x, Closure _) -> (
-          match get_approx info x with
+          match Global_flow.get_approx info x with
           | Top -> ()
           | Values { known; others } ->
               if
@@ -79,7 +73,7 @@ let direct_calls_only info f =
    [Global_flow.get_unique_closure], blocks are ignored, since they
    cannot be called. *)
 let known_callee info call_info ~wrappable exact f =
-  match get_approx info f with
+  match Global_flow.get_approx info f with
   | Top -> None
   | Values { known; others } ->
       if exact && not others
