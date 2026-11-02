@@ -141,8 +141,10 @@ Binaryen's [wasm-opt] to optimize the generated code.
 The performance impact of supporting effect handlers:
 
 {b Size}:
-- Code is about 5% larger with [--effects=cps], and about 15% larger with [--effects=double-translation], which duplicates the functions that may perform effects (up to 80% larger for ocamlc). Small programs where no function may perform effects are unchanged with [--effects=double-translation]
-- The impact on compressed code is much lower since we add many function definitions, which are verbose in JavaScript but compress well
+- With [--effects=cps], code is about 2% larger for small programs, 4% to 7% larger for the examples, and 24% larger for ocamlc
+- With [--effects=double-translation], which duplicates the functions that may perform effects, code is about 3% larger for small programs, 20% to 30% larger for the examples, and 77% larger for ocamlc
+- For small programs, most of the increase comes from the runtime, which is larger when effects are enabled
+- The impact on compressed code is lower for larger programs since we add many function definitions, which are verbose in JavaScript but compress well (60% instead of 77% for ocamlc with [--effects=double-translation])
 - Code using [Lwt], [Async], or [Incremental] can see a larger increase
 
 {b Speed}:
