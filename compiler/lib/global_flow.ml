@@ -208,10 +208,16 @@ let expr_deps blocks st x e =
          approximation of their arguments *)
       (if st.fast
        then
-         match l with
-         | Pv x :: _ -> do_escape st Escape x
-         | Pc _ :: _ -> ()
-         | [] -> assert false);
+         match e with
+         | Prim
+             ( ( Array_get _
+               | Extern (("caml_array_unsafe_get" | "caml_floatarray_unsafe_get"), _) )
+             , Pv x :: _ ) ->
+             (* In fast mode, the contents of arrays are not tracked. The
+                bound checking primitives return their array argument, so
+                there is no need to make it escape. *)
+             do_escape st Escape x
+         | _ -> ());
       List.iter
         ~f:(fun a ->
           match a with
