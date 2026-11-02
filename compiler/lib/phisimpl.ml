@@ -113,18 +113,20 @@ let propagate1 deps defs reprs st x =
   then prev
   else
     let idx = Var.idx x in
+    (* [x] itself (a loop) does not count. If it is its only source, [x]
+       is in unreachable code: replacing it by itself would make [repr]
+       loop. *)
     let s =
-      Var.Set.fold (fun x s -> Var.Set.add (repr reprs x) s) defs.(idx) Var.Set.empty
+      Var.Set.fold
+        (fun y s ->
+          let y = repr reprs y in
+          if Var.equal y x then s else Var.Set.add y s)
+        defs.(idx)
+        Var.Set.empty
     in
     defs.(idx) <- s;
-    match Var.Set.to_list_bounded 2 s with
+    match Var.Set.to_list_bounded 1 s with
     | Some [ a ] -> replace deps reprs x a
-    | Some [ a; b ] ->
-        if Var.compare x a = 0
-        then replace deps reprs x b
-        else if Var.compare x b = 0
-        then replace deps reprs x a
-        else false
     | _ -> false
 
 module G = Dgraph.Make_Imperative (Var) (Var.ISet) (Var.Tbl)
