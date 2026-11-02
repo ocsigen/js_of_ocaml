@@ -227,6 +227,10 @@ module Worklist
   (** [create domain iter_children] queues all the nodes of [domain],
       in reverse postorder of the graph defined by [iter_children]. *)
 
+  val create_filtered : NSet.t -> (N.t -> bool) -> t
+  (** [create_filtered domain p] queues the nodes of [domain] satisfying [p],
+      in increasing order. *)
+
   val length : t -> int
 
   val is_empty : t -> bool
@@ -244,7 +248,8 @@ end = struct
     ; set : NSet.t (* Nodes of the domain which are not in the queue *)
     }
 
-  let create domain iter_children =
+  (* An array large enough to hold all the nodes of [domain] *)
+  let make_data domain =
     (* [ISet] has no [cardinal] *)
     let count = ref 0 in
     let first = ref None in
@@ -253,23 +258,39 @@ end = struct
         if !count = 0 then first := Some x;
         incr count)
       domain;
-    let to_visit = NSet.copy domain in
     match !first with
-    | None -> { data = [||]; head = 0; length = 0; set = to_visit }
-    | Some x ->
-        let data = Array.make !count x in
-        let pos = ref !count in
-        let rec traverse x =
-          if NSet.mem to_visit x
-          then (
-            NSet.remove to_visit x;
-            iter_children traverse x;
-            decr pos;
-            data.(!pos) <- x)
-        in
-        NSet.iter traverse domain;
-        assert (!pos = 0);
-        { data; head = 0; length = !count; set = to_visit }
+    | None -> [||]
+    | Some x -> Array.make !count x
+
+  let create domain iter_children =
+    let data = make_data domain in
+    let to_visit = NSet.copy domain in
+    let pos = ref (Array.length data) in
+    let rec traverse x =
+      if NSet.mem to_visit x
+      then (
+        NSet.remove to_visit x;
+        iter_children traverse x;
+        decr pos;
+        data.(!pos) <- x)
+    in
+    NSet.iter traverse domain;
+    assert (!pos = 0);
+    { data; head = 0; length = Array.length data; set = to_visit }
+
+  let create_filtered domain p =
+    let data = make_data domain in
+    let set = NSet.copy domain in
+    let length = ref 0 in
+    NSet.iter
+      (fun x ->
+        if p x
+        then (
+          data.(!length) <- x;
+          incr length;
+          NSet.remove set x))
+      domain;
+    { data; head = 0; length = !length; set }
 
   let length w = w.length
 
@@ -454,9 +475,11 @@ struct
           dep;
       iterate g f ~state w)
 
-  let traverse_all g = W.create g.domain (fun f x -> g.iter_children (fun y _ -> f y) x)
-
   let f ~state g f =
-    let w = traverse_all g in
+    (* Only nodes with a non-bottom value can propagate anything:
+       other nodes get queued when their value changes. *)
+    let w =
+      W.create_filtered g.domain (fun x -> not (D.equal (NTbl.get state x) D.bot))
+    in
     iterate g f ~state w
 end
