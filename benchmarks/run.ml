@@ -395,6 +395,13 @@ let _ =
     Spec.wasm_of_ocaml
     sizes
     (Spec.sub_spec Spec.wasm_of_ocaml "bzip2");
+  bzip2_file_size
+    ~wasm:true
+    param
+    code
+    Spec.wasm_of_ocaml_effects_cps
+    sizes
+    (Spec.sub_spec Spec.wasm_of_ocaml_effects_cps "bzip2");
   runtime_size
     param
     code

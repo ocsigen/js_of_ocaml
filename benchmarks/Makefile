@@ -6,7 +6,7 @@ GRAPHSPR = size.pdf size-bzip2.pdf size-optim-jsoo.pdf size-deadcode-jsoo.pdf si
 
 # graphs showing the impact of supporting effects
 GRAPHSEFF = time-effects-jsoo.pdf size-effects-jsoo.pdf size-bzip2-effects-jsoo.pdf \
-	time-effects-wasm.pdf size-effects-wasm.pdf
+	time-effects-wasm.pdf size-effects-wasm.pdf size-bzip2-effects-wasm.pdf
 
 # For full benchs:
 all: _perf graphsnopr graphspr graphseff _noperf
@@ -336,6 +336,23 @@ size-bzip2-effects-jsoo.svg: __run_effects
 	 -append js_of_ocaml \
 	 -append ocamlc \
 	 -max 1.6 -min 0.9 -svg 7 650 150 -edgecaption -ylabel "Size (bzip2)" \
+	 > $@
+
+size-bzip2-effects-wasm.svg: __run_effects
+	$(REPORT) -config report-size-bzip2-effects-wasm.config \
+	 -omit binary_trees \
+	 -omit fannkuch_redux \
+	 -omit fannkuch_redux_2 \
+	 -omit boyer_no_exc \
+	 -omit kb_no_exc \
+	 -omit loop \
+	 -append boulderdash \
+	 -append cubes \
+	 -append minesweeper \
+	 -append planet \
+	 -append js_of_ocaml \
+	 -append ocamlc \
+	 -max 1.2 -min 0.9 -svg 7 650 150 -edgecaption -ylabel "Size (bzip2)" \
 	 > $@
 
 compiletime.svg: __run __precomp __missingcompiletimes
