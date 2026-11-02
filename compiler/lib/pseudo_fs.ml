@@ -128,10 +128,12 @@ let collect_cmis ~cmis ~paths =
   then
     Warning.warn
       `Missing_cmi
-      "Some OCaml interface files were not found.\n\
-       Use [-I dir_of_cmis] option to bring them into scope\n\
+      "Some OCaml interface files were not found.@\n\
+       Use [-I dir_of_cmis] option to bring them into scope@\n\
        %a"
-      (Format.pp_print_list Format.pp_print_string)
+      (Format.pp_print_list
+         ~pp_sep:(fun _ () -> ())
+         (fun f nm -> Format.fprintf f "  %s@\n" nm))
       missing_cmis;
   cmi_files
 
