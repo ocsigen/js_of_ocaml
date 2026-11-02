@@ -25,6 +25,27 @@ let forked_packages =
   ; "typerep" (* https://github.com/janestreet/typerep/pull/7 *)
   ]
 
+(* Packages whose Wasm runtime files need adapting to OCaml strings
+   represented as JavaScript strings; they are taken from this branch of
+   their ocaml-wasm fork (based on the version used otherwise) *)
+let js_string_branch = "js-strings-latest"
+
+let js_string_packages =
+  [ "async_js"
+  ; "base"
+  ; "base_bigstring"
+  ; "basement"
+  ; "bigstringaf"
+  ; "bin_prot"
+  ; "core"
+  ; "core_kernel"
+  ; "core_unix"
+  ; "ppx_hash"
+  ; "string_dict"
+  ; "time_now"
+  ; "zarith_stubs_js"
+  ]
+
 (* Extra line spliced in the (env (_ ...)) block of the generated
    dune-workspace *)
 let dune_workspace_extra_env = ""
