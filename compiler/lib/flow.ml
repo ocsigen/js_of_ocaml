@@ -767,6 +767,7 @@ let the_shape_of ~return_values ~pure ~blocks info =
 let build_subst (info : Info.t) vars =
   let nv = Var.count () in
   let subst = Array.init nv ~f:(fun i -> Var.of_idx i) in
+  let changed = ref false in
   Var.ISet.iter
     (fun x ->
       let x_idx = Var.idx x in
@@ -780,9 +781,12 @@ let build_subst (info : Info.t) vars =
          match direct_approx info x with
          | None -> ()
          | Some y -> subst.(x_idx) <- y);
-      if Var.equal subst.(x_idx) x then () else Var.propagate_name x subst.(x_idx))
+      if not (Var.equal subst.(x_idx) x)
+      then (
+        changed := true;
+        Var.propagate_name x subst.(x_idx)))
     vars;
-  subst
+  subst, !changed
 
 (****)
 
@@ -825,7 +829,7 @@ let f p =
     ; info_possibly_mutable = possibly_mutable
     }
   in
-  let s = build_subst info vars in
+  let s, changed = build_subst info vars in
   let need_stats = stats () || debug_stats () in
   let count_uniq = ref 0 in
   let count_seen = BitSet.create' (if need_stats then Var.count () else 0) in
@@ -841,7 +845,7 @@ let f p =
         BitSet.set count_seen idx1);
       v2)
   in
-  let p = Subst.Excluding_Binders.program subst p in
+  let p = if changed then Subst.Excluding_Binders.program subst p else p in
   if times () then Format.eprintf "    flow analysis 5: %a@." Timer.print t5;
   if times () then Format.eprintf "  flow analysis: %a@." Timer.print t;
   if stats () then Format.eprintf "Stats - flow updates: %d@." !count_uniq;
