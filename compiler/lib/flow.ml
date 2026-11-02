@@ -116,7 +116,10 @@ let expr_deps blocks vars deps defs x e =
   | Closure (l, cont, _) ->
       List.iter l ~f:(fun x -> add_param_def vars defs x);
       cont_deps blocks vars deps defs cont
-  | Block (_, a, _, _, _) -> Array.iter a ~f:(fun y -> add_dep deps x y)
+  | Block _ ->
+      (* The known origin of a block is itself, and it is never unknown:
+         it does not depend on its fields *)
+      ()
   | Field (y, _, _) -> add_dep deps x y
 
 let program_deps { blocks; _ } =
@@ -151,8 +154,6 @@ let program_deps { blocks; _ } =
     blocks;
   vars, deps, defs
 
-let var_set_lift f s = Var.Set.fold (fun y s -> Var.Set.union (f y) s) s Var.Set.empty
-
 (* Whether the known origins of [x] is just [x] itself. Only the
    other variables need to be considered by the solver. *)
 let is_origin defs x =
@@ -163,19 +164,27 @@ let is_origin defs x =
   | Expr (Constant _ | Apply _ | Prim _ | Special _ | Closure _ | Block _) -> true
 
 let propagate1 deps defs st x =
-  let get y = if is_origin defs y then Var.Set.singleton y else Var.Tbl.get st y in
+  (* Add the known origins of [y] to [s] *)
+  let add y s =
+    if is_origin defs y then Var.Set.add y s else Var.Set.union (Var.Tbl.get st y) s
+  in
   match defs.(Var.idx x) with
-  | Phi s -> var_set_lift get s
+  | Phi s -> Var.Set.fold add s Var.Set.empty
   | Expr (Field (y, n, _)) ->
-      var_set_lift
-        (fun z ->
-          match defs.(Var.idx z) with
-          | Expr (Block (_, a, _, _, _)) when n < Array.length a ->
-              let t = a.(n) in
+      let field z s =
+        match defs.(Var.idx z) with
+        | Expr (Block (_, a, _, _, _)) when n < Array.length a ->
+            let t = a.(n) in
+            if is_origin defs t
+            then Var.Set.add t s
+            else (
               add_dep deps x t;
-              get t
-          | Phi _ | Param | Expr _ -> Var.Set.empty)
-        (get y)
+              Var.Set.union (Var.Tbl.get st t) s)
+        | Phi _ | Param | Expr _ -> s
+      in
+      if is_origin defs y
+      then field y Var.Set.empty
+      else Var.Set.fold field (Var.Tbl.get st y) Var.Set.empty
   | Param | Expr _ -> assert false
 
 module G = Dgraph.Make_Imperative (Var) (Var.ISet) (Var.Tbl)
