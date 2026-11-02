@@ -59,7 +59,7 @@ type mutable_fields =
 module VarPairTbl : Hashtbl.S with type key = Var.t * Var.t
 
 type state =
-  { vars : Var.ISet.t (* Set of all veriables considered *)
+  { vars : Var.ISet.t (* Set of all variables considered *)
   ; deps : Var.t list Var.Tbl.t (* Dependency between variables *)
   ; defs : def array (* Definition of each variable *)
   ; variable_may_escape : escape_status array
@@ -85,6 +85,8 @@ type state =
         (* Double translation: CPS version of functions with two versions,
            which share their closure (see [Effects.rewrite_direct_block]) *)
   ; cps_closures : (Var.t * Var.t) Var.Hashtbl.t
+        (* Double translation: the two versions of the function bound to a
+           variable by [caml_cps_closure] *)
   ; cps_calls : Var.Set.t (* Variables bound to the result of a CPS call *)
   ; fast : bool
   }
@@ -101,6 +103,8 @@ val get_approx : info -> Var.t -> approx
     analysis was run *)
 
 val exact_call : info -> Var.t -> int -> bool
+(** Whether all functions possibly bound to [f] take exactly [n] arguments
+    ([false] if they are not all known) *)
 
 val called_version : info -> call:Var.t -> Var.t -> Var.t * bool
 (** [called_version info ~call g] is the version of function [g] which is
@@ -118,3 +122,5 @@ val get_unique_closure : info -> call:Var.t -> Var.t -> (Var.t * Var.t list * bo
     continuation (see [called_version]). *)
 
 val function_arity : info -> Var.t -> int option
+(** The arity of the functions possibly bound to [f], if they are all known and
+    have the same arity *)
