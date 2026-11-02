@@ -786,21 +786,27 @@ let build_subst (info : Info.t) vars =
   let changed = ref false in
   Var.ISet.iter
     (fun x ->
-      let x_idx = Var.idx x in
-      let u = Var.Tbl.get info.info_maybe_unknown x in
-      (if not u
-       then
-         let s = Var.Tbl.get info.info_known_origins x in
-         if Var.Set.compare_cardinal_with s 1 = 0 then subst.(x_idx) <- Var.Set.choose s);
-      (if Var.equal subst.(x_idx) x
-       then
-         match direct_approx info x with
-         | None -> ()
-         | Some y -> subst.(x_idx) <- y);
-      if not (Var.equal subst.(x_idx) x)
-      then (
-        changed := true;
-        Var.propagate_name x subst.(x_idx)))
+      match info.info_defs.(Var.idx x) with
+      | Param | Expr (Constant _ | Apply _ | Prim _ | Special _ | Closure _ | Block _) ->
+          (* The known origin of [x] is itself *)
+          ()
+      | Phi _ | Expr (Field _) ->
+          let x_idx = Var.idx x in
+          let u = Var.Tbl.get info.info_maybe_unknown x in
+          (if not u
+           then
+             let s = Var.Tbl.get info.info_known_origins x in
+             if Var.Set.compare_cardinal_with s 1 = 0
+             then subst.(x_idx) <- Var.Set.choose s);
+          (if Var.equal subst.(x_idx) x
+           then
+             match direct_approx info x with
+             | None -> ()
+             | Some y -> subst.(x_idx) <- y);
+          if not (Var.equal subst.(x_idx) x)
+          then (
+            changed := true;
+            Var.propagate_name x subst.(x_idx)))
     vars;
   subst, !changed
 
