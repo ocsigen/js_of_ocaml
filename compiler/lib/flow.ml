@@ -546,6 +546,63 @@ let the_shape_of ~return_values ~pure ~blocks info =
   let cache = Var.Hashtbl.create 17 in
   let set_cache = ref VarSetShapeSetMap.empty in
   let eval_var_cache = Var.Hashtbl.create 17 in
+  let maybe_unknown x =
+    (* [Specialize] introduces fresh variables (it calls [update_def]
+       with expressions that mention them) *)
+    Var.idx x >= Var.Tbl.length info.Info.info_maybe_unknown
+    || Var.Tbl.get info.Info.info_maybe_unknown x
+  in
+  let known_origins x = Var.Tbl.get info.Info.info_known_origins x in
+  (* If [x] is an exact call to known closures, the variables these
+     closures may return *)
+  let exact_call_returns x =
+    match info.Info.info_defs.(Var.idx x) with
+    | Expr (Apply { f; args; _ }) when not (Shape.State.mem x || maybe_unknown f) ->
+        let fs = known_origins f in
+        let n = List.length args in
+        if Var.Set.is_empty fs
+        then None
+        else
+          Var.Set.fold
+            (fun g acc ->
+              match acc with
+              | None -> None
+              | Some s -> (
+                  match info.Info.info_defs.(Var.idx g) with
+                  | Expr (Closure (l, _, _)) when List.compare_length_with l ~len:n = 0
+                    -> (
+                      match Var.Map.find_opt g return_values with
+                      | None -> acc
+                      | Some rets ->
+                          if Var.Set.exists maybe_unknown rets
+                          then None
+                          else Some (Var.Set.union rets s))
+                  | _ -> None))
+            fs
+            (Some Var.Set.empty)
+    | _ -> None
+  in
+  (* The known origins of [vars], looking through exact calls to known
+     closures *)
+  let expand_origins vars =
+    let visited = Var.Hashtbl.create 17 in
+    let rec expand x acc =
+      if Var.Hashtbl.mem visited x
+      then acc
+      else (
+        Var.Hashtbl.replace visited x ();
+        match exact_call_returns x with
+        | Some rets ->
+            Var.Set.fold (fun r acc -> Var.Set.fold expand (known_origins r) acc) rets acc
+        | None -> Var.Set.add x acc)
+    in
+    Var.Set.fold
+      (fun x acc -> Var.Set.fold expand (known_origins x) acc)
+      vars
+      Var.Set.empty
+  in
+  (* Variables [f] such that the shape of [f] is being computed *)
+  let in_progress = Var.Hashtbl.create 17 in
   let rec compute_set vars shapes =
     if Var.Set.compare_cardinal_with vars 1 = 0 && Shape.Set.is_empty shapes
     then (
@@ -564,29 +621,21 @@ let the_shape_of ~return_values ~pure ~blocks info =
     | None ->
         let shape_proxy = Shape.proxy () in
         set_cache := VarSetShapeSetMap.add key shape_proxy !set_cache;
-        let unknown =
-          Var.Set.exists (fun x -> Var.Tbl.get info.Info.info_maybe_unknown x) vars
+        let unknown = Var.Set.exists maybe_unknown vars in
+        let single =
+          if Var.Set.compare_cardinal_with vars 1 = 0 && Shape.Set.is_empty shapes
+          then Some (Var.Set.choose vars)
+          else None
         in
+        Option.iter single ~f:(fun x -> Var.Hashtbl.replace in_progress x ());
         (if not unknown
          then
            let p_vars =
-             let expanded =
-               Var.Set.fold
-                 (fun x expanded ->
-                   Var.Set.union expanded (Var.Tbl.get info.Info.info_known_origins x))
-                 vars
-                 Var.Set.empty
-             in
-             if Var.Set.is_empty expanded
-             then None
-             else
-               let first = Var.Set.choose expanded in
-               let rest = Var.Set.remove first expanded in
-               Some
-                 (Var.Set.fold
-                    (fun x acc -> merge_prop acc (eval_var x))
-                    rest
-                    (eval_var first))
+             eval_origins
+               (Var.Set.fold
+                  (fun x expanded -> Var.Set.union expanded (known_origins x))
+                  vars
+                  Var.Set.empty)
            in
            let p_shapes =
              if Shape.Set.is_empty shapes
@@ -607,7 +656,15 @@ let the_shape_of ~return_values ~pure ~blocks info =
              | Some p1, Some p2 -> merge_prop p1 p2
            in
            shape_proxy.desc <- prop_to_desc p_combined);
+        Option.iter single ~f:(fun x -> Var.Hashtbl.remove in_progress x);
         shape_proxy
+  and eval_origins origins =
+    if Var.Set.is_empty origins
+    then None
+    else
+      let first = Var.Set.choose origins in
+      let rest = Var.Set.remove first origins in
+      Some (Var.Set.fold (fun x acc -> merge_prop acc (eval_var x)) rest (eval_var first))
   and prop_to_desc p : Shape.desc =
     match p with
     | PTop -> Shape.Top
@@ -656,25 +713,34 @@ let the_shape_of ~return_values ~pure ~blocks info =
               PFunction
                 { arity; pure; res_vars = Var.Set.empty; res_shapes = Shape.Set.empty }
             with Not_found -> PTop)
-        | Expr (Apply { f; args; _ }) ->
-            let f_shape = compute_set (Var.Set.singleton f) Shape.Set.empty in
-            let rec loop n' shape =
-              match shape.Shape.desc with
-              | Function { arity = n; pure; res } ->
-                  if n = n'
-                  then shape_to_prop res
-                  else if n' < n
-                  then
-                    PFunction
-                      { arity = n - n'
-                      ; pure
-                      ; res_vars = Var.Set.empty
-                      ; res_shapes = Shape.Set.singleton res
-                      }
-                  else loop (n' - n) res
-              | Block _ | Top -> PTop
-            in
-            loop (List.length args) f_shape
+        | Expr (Apply { f; args; _ }) -> (
+            match
+              if Var.Hashtbl.mem in_progress f then exact_call_returns x else None
+            with
+            | Some rets ->
+                (* The shape of [f] is being computed, so it would read
+                   as [Top]: use the values the function may return
+                   instead *)
+                Option.value ~default:PTop (eval_origins (expand_origins rets))
+            | None ->
+                let f_shape = compute_set (Var.Set.singleton f) Shape.Set.empty in
+                let rec loop n' shape =
+                  match shape.Shape.desc with
+                  | Function { arity = n; pure; res } ->
+                      if n = n'
+                      then shape_to_prop res
+                      else if n' < n
+                      then
+                        PFunction
+                          { arity = n - n'
+                          ; pure
+                          ; res_vars = Var.Set.empty
+                          ; res_shapes = Shape.Set.singleton res
+                          }
+                      else loop (n' - n) res
+                  | Block _ | Top -> PTop
+                in
+                loop (List.length args) f_shape)
         | _ -> PTop)
   in
   let get x =
