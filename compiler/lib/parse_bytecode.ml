@@ -28,6 +28,10 @@ let debug_sourcemap = Debug.find "sourcemap"
 
 let times = Debug.find "times"
 
+(* The Wasm code generator names the counter of a conversion site after the
+   enclosing function and its location *)
+let count_conversion_sites = Debug.find ~even_if_quiet:true "count-conversion-sites"
+
 type bytecode = string
 
 let predefined_exceptions =
@@ -126,6 +130,7 @@ end = struct
     ; units : ml_unit UnitTable.t
     ; names : bool
     ; enabled : bool
+    ; closure_locations : bool
     ; include_cmis : bool
     }
 
@@ -147,6 +152,7 @@ end = struct
     ; units = UnitTable.create 17
     ; names
     ; enabled
+    ; closure_locations = enabled || count_conversion_sites ()
     ; include_cmis
     }
 
@@ -160,7 +166,7 @@ end = struct
       ~paths
       ~crcs
       ~orig
-      { events_by_pc; units; names; enabled; include_cmis = _ }
+      { events_by_pc; units; names; enabled; closure_locations = _; include_cmis = _ }
       ev =
     let pos_fname =
       match ev.ev_loc.Location.loc_start.Lexing.pos_fname with
@@ -307,15 +313,15 @@ end = struct
      Both events are interesting. They are returned by this function
      in the expected order: first after the function call, then before
      the continuation. *)
+  let find_events events_by_pc pc =
+    List.filter_map (Int.Hashtbl.find_all events_by_pc pc) ~f:(fun { event; source } ->
+        if dummy_location event.ev_loc then None else Some (source, event))
+
   let find_locs { events_by_pc; enabled; _ } pc =
     (* When the events are only read for the variable names, their
        locations are not needed: leaving them out of the code avoids
        constraining the optimizations. *)
-    if not enabled
-    then []
-    else
-      List.filter_map (Int.Hashtbl.find_all events_by_pc pc) ~f:(fun { event; source } ->
-          if dummy_location event.ev_loc then None else Some (source, event))
+    if not enabled then [] else find_events events_by_pc pc
 
   let event_location ~position ~source ~event =
     let pos =
@@ -325,10 +331,15 @@ end = struct
     in
     Parse_info.t_of_position ~src:source pos
 
-  let find_loc t ~position pc =
-    match find_locs t pc with
-    | [] -> None
-    | (source, event) :: _ -> Some (event_location ~position ~source ~event)
+  (* The location of a closure is not part of the code, and does not
+     constrain the optimizations *)
+  let find_loc { events_by_pc; closure_locations; _ } ~position pc =
+    if not closure_locations
+    then None
+    else
+      match find_events events_by_pc pc with
+      | [] -> None
+      | (source, event) :: _ -> Some (event_location ~position ~source ~event)
 
   type summary =
     { is_empty : bool
