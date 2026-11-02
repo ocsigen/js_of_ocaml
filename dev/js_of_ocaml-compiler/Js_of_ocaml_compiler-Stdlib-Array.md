@@ -176,3 +176,6 @@ val fold_right_i : 'a array -> f:(int -> 'a -> 'b -> 'b) -> init:'b -> 'b
 ```ocaml
 val equal : ('a -> 'b -> bool) -> 'a array -> 'b array -> bool
 ```
+```ocaml
+val reverse_sub_in_place : 'a array -> pos:int -> len:int -> unit
+```
