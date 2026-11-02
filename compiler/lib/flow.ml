@@ -362,7 +362,9 @@ let get_approx
     match Var.Set.to_list_bounded 1 s with
     | Some [] -> top
     | Some [ x ] -> f x
-    | _ -> Var.Set.fold (fun x u -> join (f x) u) s (f (Var.Set.choose s))
+    | _ ->
+        let x = Var.Set.choose s in
+        Var.Set.fold (fun y u -> join (f y) u) (Var.Set.remove x s) (f x)
 
 let the_def_of info x =
   match x with
@@ -372,7 +374,7 @@ let the_def_of info x =
         (fun x ->
           match info.info_defs.(Var.idx x) with
           | Expr (Constant (Float _ | Int _ | NativeString _) as e) -> Some e
-          | Expr (Constant (Int32 _ | NativeInt _) as e) -> Some e
+          | Expr (Constant (Int32 _ | Int64 _ | NativeInt _) as e) -> Some e
           | Expr (Constant _ as e) when Config.Flag.safe_string () -> Some e
           | Expr e -> if Var.ISet.mem info.info_possibly_mutable x then None else Some e
           | _ -> None)
