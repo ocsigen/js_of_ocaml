@@ -151,11 +151,14 @@ The performance impact of supporting effect handlers:
 {2 Wasm_of_ocaml}
 
 {{image:files/performances/size-effects-wasm.png}Relative size}
+{{image:files/performances/size-bzip2-effects-wasm.png}Relative size (compressed with bzip2)}
 {{image:files/performances/time-effects-wasm.png}Relative execution times}
 
 These charts are relative to the default Wasm_of_ocaml configuration.
 By default, Wasm_of_ocaml implements effect handlers with JavaScript Promise
 Integration ([--effects=jspi]), which does not require transforming the code.
 With [--effects=cps], the code is slightly larger for small programs, about
-10% larger for the examples, and up to 70% larger for ocamlc. Execution time
-is mostly unchanged.
+10% larger for the examples, and up to 70% larger for ocamlc. Unlike with
+Js_of_ocaml, compression does not reduce this increase: compressed with
+bzip2, ocamlc is twice as large with [--effects=cps]. Execution time is
+mostly unchanged, except on hamming (40% slower).
