@@ -675,6 +675,27 @@ let propagate st ~update approx x =
 module G = Dgraph.Make_Imperative (Var) (Var.ISet) (Var.Tbl)
 module Solver = G.Solver (Domain)
 
+let print_escape_status f s =
+  Format.pp_print_string
+    f
+    (match s with
+    | Escape -> "Y"
+    | Escape_constant -> "y"
+    | No -> "n")
+
+let print_mutable_fields f s =
+  match s with
+  | No_field -> Format.fprintf f "no"
+  | Some_fields s ->
+      Format.fprintf
+        f
+        "{%a}"
+        (Format.pp_print_list
+           ~pp_sep:(fun f () -> Format.fprintf f ", ")
+           Format.pp_print_int)
+        (IntSet.elements s)
+  | All_fields -> Format.fprintf f "yes"
+
 let print_approx st f a =
   match a with
   | Top -> Format.fprintf f "top"
@@ -789,45 +810,23 @@ let f ?(cps_calls = Var.Set.empty) ~fast p =
         let s = Var.Tbl.get approximation x in
         if not (Domain.equal s Domain.bot)
         then
-          Format.eprintf
-            "%a: %a@."
-            Var.print
-            x
-            (fun f a ->
-              match a with
-              | Top -> Format.fprintf f "top"
-              | Values _ ->
-                  let print_mutable_fields f s =
-                    match s with
-                    | No_field -> Format.fprintf f "no"
-                    | Some_fields s ->
-                        Format.fprintf
-                          f
-                          "{%a}"
-                          (Format.pp_print_list
-                             ~pp_sep:(fun f () -> Format.fprintf f ", ")
-                             (fun f i -> Format.fprintf f "%d" i))
-                          (IntSet.elements s)
-                    | All_fields -> Format.fprintf f "yes"
-                  in
-                  Format.fprintf
-                    f
-                    "%a mut:%a vmut:%a vesc:%s esc:%s"
-                    (print_approx st)
-                    a
-                    print_mutable_fields
-                    st.mutable_fields.(Var.idx x)
-                    print_mutable_fields
-                    st.variable_mutable_fields.(Var.idx x)
-                    (match st.variable_may_escape.(Var.idx x) with
-                    | Escape -> "Y"
-                    | Escape_constant -> "y"
-                    | No -> "n")
-                    (match st.may_escape.(Var.idx x) with
-                    | Escape -> "Y"
-                    | Escape_constant -> "y"
-                    | No -> "n"))
-            s)
+          match s with
+          | Top -> Format.eprintf "%a: top@." Var.print x
+          | Values _ ->
+              Format.eprintf
+                "%a: %a mut:%a vmut:%a vesc:%a esc:%a@."
+                Var.print
+                x
+                (print_approx st)
+                s
+                print_mutable_fields
+                st.mutable_fields.(Var.idx x)
+                print_mutable_fields
+                st.variable_mutable_fields.(Var.idx x)
+                print_escape_status
+                st.variable_may_escape.(Var.idx x)
+                print_escape_status
+                st.may_escape.(Var.idx x))
       vars;
   let info_variable_may_escape = variable_may_escape in
   let info_may_escape = Var.ISet.empty () in
