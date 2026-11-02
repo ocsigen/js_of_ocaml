@@ -161,8 +161,12 @@ let f p =
   let t' = Timer.make () in
   let subst = solver1 vars deps defs in
   if times () then Format.eprintf "    phi-simpl. 2: %a@." Timer.print t';
+  let changed = ref false in
   Array.iteri subst ~f:(fun idx y ->
-      if Var.idx y = idx then () else Code.Var.propagate_name (Var.of_idx idx) y);
+      if Var.idx y <> idx
+      then (
+        changed := true;
+        Code.Var.propagate_name (Var.of_idx idx) y));
   let need_stats = stats () || debug_stats () in
   let count_uniq = ref 0 in
   let count_seen = BitSet.create' (if need_stats then Var.count () else 0) in
@@ -178,7 +182,7 @@ let f p =
         BitSet.set count_seen idx1);
       v2)
   in
-  let p = Subst.Excluding_Binders.program subst p in
+  let p = if !changed then Subst.Excluding_Binders.program subst p else p in
   if times () then Format.eprintf "  phi-simpl.: %a@." Timer.print t;
   if stats () then Format.eprintf "Stats - phi updates: %d@." !count_uniq;
   if debug_stats () then Code.check_updates ~name:"phi" previous_p p ~updates:!count_uniq;
