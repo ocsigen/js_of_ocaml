@@ -61,6 +61,7 @@ JavaScript on bdd, fib and raytrace, as fast on fft, and slower on splay.
 {2 Js_of_ocaml}
 
 {{image:files/performances/size-optim-jsoo.png}Relative size}
+{{image:files/performances/size-deadcode-jsoo.png}Relative size without dead code elimination}
 {{image:files/performances/time-optim-jsoo.png}Relative execution times}
 
 These charts are relative to Js_of_ocaml with [--opt=2], the level used in
@@ -68,10 +69,10 @@ the other charts. They show the other optimization levels and the effect of
 disabling some optimizations. The [-unsafe] variant is compiled from bytecode
 built with [ocamlc -unsafe].
 - [--opt=1], [--opt=2] and [--opt=3] perform the same on these benchmarks.
-- Dead code elimination matters most for size: without it, the generated code
-  is 2 to 17 times larger.
+- Dead code elimination matters most for size (second chart): without it,
+  the generated code is up to 17 times larger.
 - Without the optimization of calls, the code is about 20% larger and often
-  slower (up to 1.7 times slower on bdd).
+  slower (up to 1.7 times slower on bdd), but faster on fib, takc and taku.
 - Disabling inlining or compact output makes the code about 5% to 15% larger.
 - Representing OCaml strings as JavaScript strings ([--disable=use-js-string]
   turns this off) has no measurable impact on speed on these benchmarks, and
