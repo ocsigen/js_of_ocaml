@@ -332,21 +332,29 @@ let propagate2 defs known_origins possibly_mutable st x =
                     | Phi _ | Param | Expr _ -> true)
                   (Var.Tbl.get known_origins y)))
 
-module Domain2 = struct
-  type t = bool
-
-  let equal = Bool.equal
-
-  let bot = false
-end
-
-module Solver2 = G.Solver (Domain2)
-
+(* The domain is boolean, so we do not need the generic solver: we
+   evaluate each variable once, then only revisit the dependencies of
+   the variables that become unknown. *)
 let solver2 vars deps defs known_origins possibly_mutable =
-  let g =
-    { G.domain = vars; G.iter_children = (fun f x -> Var.Set.iter f deps.(Var.idx x)) }
+  let st = Var.Tbl.make () false in
+  let stack = ref [] in
+  let check x =
+    if (not (Var.Tbl.get st x)) && propagate2 defs known_origins possibly_mutable st x
+    then (
+      Var.Tbl.set st x true;
+      stack := x :: !stack)
   in
-  Solver2.f () g (propagate2 defs known_origins possibly_mutable)
+  Var.ISet.iter check vars;
+  let rec loop () =
+    match !stack with
+    | [] -> ()
+    | x :: rem ->
+        stack := rem;
+        Var.Set.iter check deps.(Var.idx x);
+        loop ()
+  in
+  loop ();
+  st
 
 let get_approx
     { Info.info_defs = _; info_known_origins; info_maybe_unknown; _ }
