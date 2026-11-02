@@ -34,6 +34,14 @@ val known_callee :
 
 val raising_functions :
      ?cold:(Code.Var.t -> bool)
+  -> ?on_call:
+       (   Code.Var.t option
+        -> Code.Addr.t
+        -> Code.Var.t
+        -> f:Code.Var.t
+        -> Code.Var.t
+        -> in_handler:bool
+        -> unit)
   -> Code.program
   -> Global_flow.info
   -> t
@@ -48,6 +56,9 @@ val raising_functions :
     satisfying [wrappable] are considered for this. When [tail_calls]
     is true, tail calls are actual tail calls (Wasm), which restricts
     the functions that can be raising. Exceptions [cold] holds of do
-    not make a function raising. *)
+    not make a function raising. [on_call h pc x ~f g ~in_handler] is
+    called on each call [Let (x, Apply { f; _ })] of block [pc] of
+    function [h] (or of the toplevel code) whose callee [g] is known,
+    and tells whether it occurs in the body of a handler. *)
 
 val f : Code.program -> Global_flow.info -> t

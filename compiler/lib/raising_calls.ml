@@ -175,9 +175,13 @@ let f ~in_cps ~trampolined_calls p info =
                         known)
             | _ -> ()))
       p.blocks;
+  let known_calls = ref [] in
   let raising =
     Call_graph_analysis.raising_functions
       ~cold
+      ~on_call:(fun h pc x ~f g ~in_handler ->
+        if not (cps_site x)
+        then known_calls := (h, pc, x, f, g, in_handler) :: !known_calls)
       p
       info
       call_info
@@ -203,76 +207,49 @@ let f ~in_cps ~trampolined_calls p info =
       if not (Call_graph_analysis.direct_calls_only call_info f)
       then Var.Hashtbl.replace bodies f (Var.fork f))
     raising;
-  (* Where each call is performed *)
-  let call_context = Var.Hashtbl.create 128 in
-  fold_closures
-    p
-    (fun name_opt _ (pc, _) _ () ->
-      let raising_function =
-        match name_opt with
-        | Some f -> Var.Hashtbl.mem raising f
-        | None -> false
-      in
-      Code.iter_trap_scopes p.blocks pc ~f:(fun pc traps ->
-          let block = Addr.Map.find pc p.blocks in
-          List.iter block.body ~f:(fun i ->
-              match i with
-              | Let (x, Apply _) ->
-                  Var.Hashtbl.replace
-                    call_context
-                    x
-                    (match traps with
-                    | _ :: _ -> `Handler
-                    | [] -> (
-                        if not raising_function
-                        then `Throw
-                        else
-                          match block.branch, last_instr block.body with
-                          | Return y, Some (Let (x', _))
-                            when Var.equal x y && Var.equal x x' -> `Tail
-                          | _ -> `Return))
-              | _ -> ())))
-    ();
+  (* The calls to raising functions, with the function called and
+     where the call is performed, and the blocks containing them *)
+  let calls = Var.Hashtbl.create 128 in
+  let call_blocks = Addr.Hashtbl.create 128 in
   (* Raising functions only called directly get a wrapper as well
      when it is called directly at enough call sites outside handlers,
      in non-raising functions: this is shorter than testing the result
      at each call site. *)
+  let throw_counts = Var.Hashtbl.create 16 in
+  List.iter !known_calls ~f:(fun (h, pc, x, f, g, in_handler) ->
+      if Var.Hashtbl.mem raising g
+      then (
+        let context =
+          if in_handler
+          then `Handler
+          else
+            match h with
+            | Some h when Var.Hashtbl.mem raising h -> (
+                let block = Addr.Map.find pc p.blocks in
+                match block.branch, last_instr block.body with
+                | Return y, Some (Let (x', _)) when Var.equal x y && Var.equal x x' ->
+                    `Tail
+                | _ -> `Return)
+            | Some _ | None -> `Throw
+        in
+        Var.Hashtbl.replace calls x (g, context);
+        Addr.Hashtbl.replace call_blocks pc ();
+        if Poly.equal context `Throw && Var.equal f g && not (Var.Hashtbl.mem bodies g)
+        then
+          Var.Hashtbl.replace
+            throw_counts
+            g
+            (1 + Option.value ~default:0 (Var.Hashtbl.find_opt throw_counts g))));
   let throw_wrappers = Var.Hashtbl.create 16 in
-  (let counts = Var.Hashtbl.create 16 in
-   Addr.Map.iter
-     (fun _ block ->
-       List.iter block.body ~f:(fun i ->
-           match i with
-           | Let (x, Apply { f; _ })
-             when (not (cps_site x))
-                  && Var.Hashtbl.mem raising f
-                  && (not (Var.Hashtbl.mem bodies f))
-                  && Poly.equal (Var.Hashtbl.find_opt call_context x) (Some `Throw) ->
-               Var.Hashtbl.replace
-                 counts
-                 f
-                 (1 + Option.value ~default:0 (Var.Hashtbl.find_opt counts f))
-           | _ -> ()))
-     p.blocks;
-   Var.Hashtbl.iter
-     (fun f n -> if n >= 3 then Var.Hashtbl.replace throw_wrappers f (Var.fork f))
-     counts);
+  Var.Hashtbl.iter
+    (fun f n -> if n >= 3 then Var.Hashtbl.replace throw_wrappers f (Var.fork f))
+    throw_counts;
   let raising_calls = ref Var.Set.empty in
   let free_pc = ref p.free_pc in
   let new_blocks = ref [] in
   let rewrite_call x f args exact =
-    match
-      Call_graph_analysis.known_callee
-        info
-        call_info
-        ~wrappable:(fun g -> Var.Hashtbl.mem bodies g)
-        exact
-        f
-    with
-    | Some g when Var.Hashtbl.mem raising g -> (
-        let context =
-          Option.value ~default:`Handler (Var.Hashtbl.find_opt call_context x)
-        in
+    match Var.Hashtbl.find_opt calls x with
+    | Some (g, context) -> (
         match context, Var.Hashtbl.find_opt bodies g with
         | `Throw, Some _ ->
             (* The wrapper throws the exception *)
@@ -296,7 +273,7 @@ let f ~in_cps ~trampolined_calls p info =
               [ Let (f', Prim (Extern ("%caml_raising_body", None), [ Pv f ]))
               ; Let (x, Apply { f = f'; args; exact })
               ])
-    | Some _ | None -> [ Let (x, Apply { f; args; exact }) ]
+    | None -> [ Let (x, Apply { f; args; exact }) ]
   in
   let wrapper params cloc callee =
     let params' = List.map ~f:Var.fork params in
@@ -343,8 +320,6 @@ let f ~in_cps ~trampolined_calls p info =
         | None, None -> rewrite_body rem (i :: closures) setters acc)
     | (Event _ as i) :: (Let (_, Closure _) :: _ as rem) ->
         rewrite_body rem (i :: closures) setters acc
-    | (Let (x, Apply _) as i) :: rem when cps_site x ->
-        rewrite_body rem [] [] (i :: flush acc)
     | Let (x, Apply { f; args; exact }) :: rem ->
         rewrite_body rem [] [] (List.rev_append (rewrite_call x f args exact) (flush acc))
     | i :: rem -> rewrite_body rem [] [] (i :: flush acc)
@@ -354,12 +329,16 @@ let f ~in_cps ~trampolined_calls p info =
     if Var.Hashtbl.length raising = 0
     then p.blocks
     else
+      (* Only the blocks containing calls to raising functions or
+         wrapped functions are changed *)
+      let wrapped g = Var.Hashtbl.mem bodies g || Var.Hashtbl.mem throw_wrappers g in
       Addr.Map.fold
         (fun pc block blocks ->
           if
-            List.exists block.body ~f:(fun i ->
+            Addr.Hashtbl.mem call_blocks pc
+            || List.exists block.body ~f:(fun i ->
                 match i with
-                | Let (_, (Apply _ | Closure _)) -> true
+                | Let (g, Closure _) -> wrapped g
                 | _ -> false)
           then
             Addr.Map.add pc { block with body = rewrite_body block.body [] [] [] } blocks

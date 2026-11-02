@@ -23,8 +23,7 @@ let debug = Debug.find "call-graph"
 
 let times = Debug.find "times"
 
-let block_deps ~info ~non_escaping ~ambiguous ~blocks pc =
-  let block = Addr.Map.find pc blocks in
+let block_deps ~info ~non_escaping ~ambiguous block =
   List.iter block.body ~f:(fun i ->
       match i with
       | Let (_, Apply { f; exact; _ }) -> (
@@ -106,7 +105,14 @@ let propagate nodes edges eligible =
   (* [nodes] is extended during the propagation: iterate over a copy *)
   List.iter ~f:propagate (Var.Hashtbl.fold (fun n () l -> n :: l) nodes [])
 
-let call_graph p info call_info ~wrappable ~tail_calls eligible =
+let call_graph
+    ?(on_call = fun _ _ _ ~f:_ _ ~in_handler:_ -> ())
+    p
+    info
+    call_info
+    ~wrappable
+    ~tail_calls
+    eligible =
   let under_handler = Var.Hashtbl.create 16 in
   let callees = Var.Hashtbl.create 16 in
   let callers = Var.Hashtbl.create 16 in
@@ -116,10 +122,11 @@ let call_graph p info call_info ~wrappable ~tail_calls eligible =
     let block = Addr.Map.find pc p.blocks in
     List.iter block.body ~f:(fun i ->
         match i with
-        | Let (_, Apply { f; exact; _ }) -> (
+        | Let (x, Apply { f; exact; _ }) -> (
             match known_callee info call_info ~wrappable exact f with
             | None -> ()
             | Some g -> (
+                on_call name_opt pc x ~f g ~in_handler:(not (List.is_empty traps));
                 match traps with
                 | _ :: _ -> Var.Hashtbl.replace under_handler g ()
                 | [] ->
@@ -178,7 +185,7 @@ let call_graph p info call_info ~wrappable ~tail_calls eligible =
 
    Without tail calls ([tail_calls] is false), none of this matters:
    a call to a raising function is never a tail call to begin with. *)
-let raising_functions ?cold p info call_info ~wrappable ~tail_calls eligible =
+let raising_functions ?cold ?on_call p info call_info ~wrappable ~tail_calls eligible =
   (* Only closures can be called directly *)
   let wrappable f =
     wrappable f
@@ -190,7 +197,7 @@ let raising_functions ?cold p info call_info ~wrappable ~tail_calls eligible =
     | Expr _ | Phi _ -> false
   in
   let under_handler, callers, callees, has_tail_calls =
-    call_graph p info call_info ~wrappable ~tail_calls eligible
+    call_graph ?on_call p info call_info ~wrappable ~tail_calls eligible
   in
   propagate under_handler callees (fun f ->
       eligible f && not (Var.Hashtbl.mem has_tail_calls f));
@@ -220,16 +227,7 @@ let f p info =
   let t = Timer.make () in
   let non_escaping = Var.Hashtbl.create 128 in
   let ambiguous = Var.Hashtbl.create 128 in
-  fold_closures
-    p
-    (fun _ _ (pc, _) _ () ->
-      traverse
-        { fold = Code.fold_children }
-        (fun pc () -> block_deps ~info ~non_escaping ~ambiguous ~blocks:p.blocks pc)
-        pc
-        p.blocks
-        ())
-    ();
+  Addr.Map.iter (fun _ block -> block_deps ~info ~non_escaping ~ambiguous block) p.blocks;
   if debug ()
   then Format.eprintf "SUMMARY non-escaping:%d" (Var.Hashtbl.length non_escaping);
   Var.Hashtbl.iter (fun x () -> Var.Hashtbl.remove non_escaping x) ambiguous;
