@@ -25,8 +25,8 @@ blocks with the specific fields that are live. It also uses
 values. It first computes an initial liveness of each variable by
 traversing the program IR.  Then it propagates this information to
 the dependencies of each variable using a flow analysis
-solver. Lastly it replaces dead variables with a sentinel zero
-variable (the JS value `undefined`).
+solver. Lastly it replaces dead variables with a sentinel
+variable (bound to the integer 0).
 
 Although this module does not perform any dead-code elimination
 itself, it is designed to be used to identify and substitute dead

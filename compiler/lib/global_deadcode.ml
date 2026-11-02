@@ -31,9 +31,10 @@ type def =
 module Domain : sig
   (** Liveness of a variable [x], forming a lattice structure. *)
   type t = private
-    | Top  (** [x] is live and not a block. *)
+    | Top  (** [x] is live and may be used in any way. *)
     | Live of t IntMap.t
-        (** [x] is a live block with a (non-empty) set of live fields. *)
+        (** [x] is a live block, of which only the given fields are used
+            (possibly none, see [live_block]). *)
     | Dead  (** [x] is dead. *)
 
   val equal : t -> t -> bool
@@ -148,16 +149,19 @@ let variable_may_escape x (global_info : Global_flow.info) =
 
 (** Type of variable usage. *)
 type usage_kind =
-  | Compute  (** variable y is used to compute x *)
+  | Compute  (** variable [y] is used to compute [x] *)
   | Propagate of
       { scope : Var.t list
       ; src : Var.t
-      }  (** values of y propagate to x when the scope is live *)
-  | Scope  (** variable x is defined in function y *)
+      }
+      (** values of [y] propagate to [src] when all the functions in [scope] are live *)
+  | Scope  (** variable [y] has some initial liveness in the body of function [x] *)
 
-(** Compute the adjacency list for the dependency graph of given program. An edge between
-    variables [x] and [y] is marked [Compute] if [x] is used in the definition of [y]. It is marked
-    as [Propagate] if [x] is applied as a closure or block argument the parameter [y].
+(** Compute the adjacency list for the dependency graph of given program. An
+    edge from [x] to [y] means that the liveness of [y] depends on the
+    liveness of [x]; it is labelled with a [usage_kind]. [Compute] edges are
+    stored in the first table, the other edges in the second one. A
+    [Propagate] edge is also added from each of the variables of its scope.
 
     We use information from global flow to try to add edges between function calls and their return values
     at known call sites. *)
@@ -294,7 +298,7 @@ let expr_vars e =
 
     A variable [x] is marked as [Top] if
     + It is used in an impure expression (as defined by [Pure_fun.pure_expr]);
-    + It is used in a conditonal/switch;
+    + It is used in a conditional/switch;
     + It is raised by an exception;
     + It is used in another stateful instruction (like setting a block or array field);
     + Or, it is returned or applied to a function and the global flow analysis marked it as escaping.
@@ -381,7 +385,7 @@ let variables deps =
   vars
 
 (** Propagate liveness of the usages of a variable [x] to [x]. The liveness of [x] is
-    defined by joining its current liveness and the contribution of each vairable [y]
+    defined by joining its current liveness and the contribution of each variable [y]
     that uses [x]. *)
 let propagate defs scoped_live_vars ~state ~dep:y ~target:x ~action:usage_kind =
   (* Variable [y] uses [x] either in its definition ([Compute]) or as a closure/block parameter
@@ -454,7 +458,7 @@ let solver vars (compute, uses) defs live_vars scoped_live_vars =
   Solver.f ~state:live_vars g (propagate defs scoped_live_vars)
 
 (** Replace each instance of a dead variable with a sentinel value.
-  Blocks that end in dead variables are compacted to the first live entry.
+  Blocks that end in dead variables are compacted to the last live entry.
   Dead variables are replaced when
     + They appear in a dead field of a block; or
     + They are returned; or
@@ -514,9 +518,9 @@ let zero prog pure_funs sentinel live_table =
                and effects passes.  If the (tail)call is dead, it will
                be eliminated later by the deadcode pass, don't make it live again by
                returning its result. *)
-            match List.last body with
+            match Code.last_instr body with
             | Some (Let (x', (Apply _ as e))) ->
-                Code.Var.equal x x' && (is_live x' || not (Pure_fun.pure_expr pure_funs e))
+                Code.Var.equal x x' && not (Pure_fun.pure_expr pure_funs e)
             | Some _ | None -> false
           in
           if live_tc then Return x else Return (zero_var x)
@@ -581,7 +585,7 @@ module Print = struct
       live_table
 end
 
-(** Add a sentinel variable declaration to the IR. The fresh variable is assigned to `undefined`. *)
+(** Add a sentinel variable declaration to the IR. The fresh variable is bound to the integer 0. *)
 let add_sentinel p sentinel =
   let instr = Let (sentinel, Constant (Int Targetint.zero)) in
   Code.prepend p [ instr ]
