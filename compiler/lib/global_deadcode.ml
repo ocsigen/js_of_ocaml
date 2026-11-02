@@ -147,7 +147,11 @@ type usage_kind =
     We use information from global flow to try to add edges between function calls and their return values
     at known call sites. *)
 let usages prog (global_info : Global_flow.info) scoped_live_vars :
-    (usage_kind * Var.Set.t) list Var.Tbl.t =
+    Var.t list Var.Tbl.t * (usage_kind * Var.Set.t) list Var.Tbl.t =
+  (* [Compute] edges are by far the most common, so we store them
+     separately, more compactly *)
+  let compute = Var.Tbl.make () [] in
+  let add_compute x y = Var.Tbl.set compute x (y :: Var.Tbl.get compute x) in
   let uses = Var.Tbl.make () [] in
   let add_uses kind x vars =
     let p = kind, vars in
@@ -194,12 +198,12 @@ let usages prog (global_info : Global_flow.info) scoped_live_vars :
                         args)
                 | _ -> ())
               known);
-        add_use Compute x f;
+        add_compute x f;
         List.iter
-          ~f:(fun a -> if variable_may_escape a global_info then add_use Compute x a)
+          ~f:(fun a -> if variable_may_escape a global_info then add_compute x a)
           args
-    | Block (_, vars, _, _, _) -> Array.iter ~f:(add_use Compute x) vars
-    | Field (z, _, _) -> add_use Compute x z
+    | Block (_, vars, _, _, _) -> Array.iter ~f:(add_compute x) vars
+    | Field (z, _, _) -> add_compute x z
     | Constant _ -> ()
     | Special _ -> ()
     | Closure (_, cont, _) -> add_cont_deps cont
@@ -207,7 +211,7 @@ let usages prog (global_info : Global_flow.info) scoped_live_vars :
         List.iter
           ~f:(fun arg ->
             match arg with
-            | Pv v -> add_use Compute x v
+            | Pv v -> add_compute x v
             | Pc _ -> ())
           args
   in
@@ -246,7 +250,7 @@ let usages prog (global_info : Global_flow.info) scoped_live_vars :
       | None -> ()
       | Some h -> Var.Hashtbl.iter (fun x _ -> add_use Scope scope x) h)
     scoped_live_vars;
-  uses
+  compute, uses
 
 (** Return the set of variables used in a given expression *)
 let expr_vars e =
@@ -421,11 +425,12 @@ module Solver =
     end)
     (Domain)
 
-let solver vars uses defs live_vars scoped_live_vars =
+let solver vars (compute, uses) defs live_vars scoped_live_vars =
   let g =
     { Solver.domain = vars
     ; iter_children =
         (fun f x ->
+          List.iter ~f:(fun y -> f y Compute) (Var.Tbl.get compute x);
           List.iter
             ~f:(fun (usage_kind, vars) -> Var.Set.iter (fun y -> f y usage_kind) vars)
             (Var.Tbl.get uses x))
@@ -524,11 +529,14 @@ module Print = struct
     | Top -> "top"
     | Dead -> "dead"
 
-  let print_uses uses =
+  let print_uses (compute, uses) =
     Format.eprintf "Usages:\n";
     Var.Tbl.iter
       (fun v ds ->
         Format.eprintf "%a: { " Var.print v;
+        List.iter
+          ~f:(fun d -> Format.eprintf "(%a, C) " Var.print d)
+          (Var.Tbl.get compute v);
         List.iter
           ~f:(fun (k, s) ->
             Var.Set.iter
@@ -580,7 +588,7 @@ let f pure_funs p ~deadcode_sentinel global_info =
   (* Compute usages *)
   let uses = usages p global_info scoped_live_vars in
   (* Propagate liveness to dependencies *)
-  let vars = variables uses in
+  let vars = variables (snd uses) in
   solver vars uses defs live_table scoped_live_vars;
   (* Print debug info *)
   if debug ()
