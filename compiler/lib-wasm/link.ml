@@ -511,11 +511,13 @@ let report_missing_primitives missing =
   then
     Warning.warn
       `Missing_primitive
-      "There are some missing Wasm primitives\n\
-       Dummy implementations (raising an exception) will be provided.\n\
-       Missing primitives:\n\
+      "There are some missing Wasm primitives@\n\
+       Dummy implementations (raising an exception) will be provided.@\n\
+       Missing primitives:@\n\
        %a"
-      (Format.pp_print_list Format.pp_print_string)
+      (Format.pp_print_list
+         ~pp_sep:(fun _ () -> ())
+         (fun f nm -> Format.fprintf f "  %s@\n" nm))
       missing
 
 let build_runtime_arguments
