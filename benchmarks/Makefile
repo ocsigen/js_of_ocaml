@@ -2,7 +2,7 @@
 GRAPHSNOPR = time.pdf time-optim-jsoo.pdf time-optim-wasm.pdf nativejs.pdf
 
 # graphs with precompiled programs:
-GRAPHSPR = size.pdf size-optim-jsoo.pdf size-optim-wasm.pdf compiletime.pdf
+GRAPHSPR = size.pdf size-optim-jsoo.pdf size-deadcode-jsoo.pdf size-optim-wasm.pdf compiletime.pdf
 
 # graphs showing the impact of supporting effects
 GRAPHSEFF = time-effects-jsoo.pdf size-effects-jsoo.pdf size-bzip2-effects-jsoo.pdf \
@@ -155,7 +155,7 @@ time-optim-jsoo.svg: __run
 	 -omit fannkuch_redux \
 	 -omit fannkuch_redux_2 \
 	 -omit loop \
-	 -max 2.5 -svg 7 400 150 -edgecaption -ylabel "Execution time" \
+	 -min 0.4 -max 1.5 -svg 7 400 150 -edgecaption -ylabel "Execution time" \
 	 > $@
 
 size-optim-jsoo.svg: __run __missingsizes
@@ -172,7 +172,24 @@ size-optim-jsoo.svg: __run __missingsizes
 	 -append planet \
 	 -append js_of_ocaml \
 	 -append ocamlc \
-	 -max 2.5 -svg 7 650 150 -edgecaption -ylabel Size \
+	 -min 0.8 -max 1.5 -svg 7 650 150 -edgecaption -ylabel Size \
+	 > $@
+
+size-deadcode-jsoo.svg: __run __missingsizes
+	$(REPORT) -config report-size-deadcode-jsoo.config \
+	 -omit binary_trees \
+	 -omit fannkuch_redux \
+	 -omit fannkuch_redux_2 \
+	 -omit boyer_no_exc \
+	 -omit kb_no_exc \
+	 -omit loop \
+	 -append boulderdash \
+	 -append cubes \
+	 -append minesweeper \
+	 -append planet \
+	 -append js_of_ocaml \
+	 -append ocamlc \
+	 -max 18 -svg 7 650 150 -edgecaption -ylabel Size \
 	 > $@
 
 time-optim-wasm.svg: __run
@@ -181,7 +198,7 @@ time-optim-wasm.svg: __run
 	 -omit fannkuch_redux \
 	 -omit fannkuch_redux_2 \
 	 -omit loop \
-	 -min 0.5 -max 1.5 -svg 7 400 150 -edgecaption -ylabel "Execution time" \
+	 -min 0.4 -max 1.5 -svg 7 400 150 -edgecaption -ylabel "Execution time" \
 	 > $@
 
 size-optim-wasm.svg: __run __missingsizes
