@@ -47,19 +47,34 @@ half of the output for the smallest programs, and a WebAssembly module.
 
 {1:compile-time Compilation time}
 
+{2 Microbenchmarks}
+
 {{image:files/performances/compiletime.png}Relative compilation times}
 
-Js_of_ocaml and Wasm_of_ocaml compile the bytecode produced by [ocamlc]: their
-bars include the time taken by [ocamlc] (the darker part), and the chart is
-relative to [ocamlc] followed by Js_of_ocaml. The example programs
-(boulderdash, …, ocamlc) are compiled from existing bytecode files, so no
-[ocamlc] time is included for them. Compiling with [ocamlc] and then
-Js_of_ocaml is about 10% faster than compiling with [ocamlopt] on these
-programs.
+This chart compares the compilers at their default optimization level
+([--opt=1]). Js_of_ocaml and Wasm_of_ocaml compile the bytecode produced by
+[ocamlc]: their bars include the time taken by [ocamlc] (the darker part),
+and the chart is relative to [ocamlc] followed by Js_of_ocaml. Compiling
+with [ocamlc] and then Js_of_ocaml or Wasm_of_ocaml is about 5% to 10%
+faster than compiling with [ocamlopt] on these programs.
 
-At the default optimization level ([--opt=1]), Wasm_of_ocaml does not run
-Binaryen, and compiles as fast as Js_of_ocaml (up to 30% faster on the
-largest programs).
+At this level, Wasm_of_ocaml does not run Binaryen, and compiles about as
+fast as Js_of_ocaml.
+
+{2 Example programs}
+
+{{image:files/performances/compiletime-examples.png}Relative compilation times of the example programs}
+
+These programs are compiled from existing bytecode files, so this chart only
+compares Js_of_ocaml and Wasm_of_ocaml, relative to Js_of_ocaml with
+[--opt=2].
+
+At [--opt=1], Wasm_of_ocaml is about 15% slower than Js_of_ocaml at the same
+level on the largest programs (js_of_ocaml and ocamlc). At [--opt=2] and [--opt=3], it
+optimizes the generated code with Binaryen's [wasm-opt], which makes
+compilation much longer: about three times longer than with Js_of_ocaml.
+Js_of_ocaml itself compiles the largest programs about 40% faster at
+[--opt=1] than at [--opt=2].
 
 {1:vs-handwritten Comparison with handwritten JavaScript}
 
