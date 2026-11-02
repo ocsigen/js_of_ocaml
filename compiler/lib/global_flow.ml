@@ -843,8 +843,15 @@ let f ?(cps_calls = Var.Set.empty) ~fast p =
     ; info_cps_calls = cps_calls
     } )
 
+let get_approx info x =
+  (* Later passes (lambda lifting, specialization) can introduce new
+     variables, which are unknown to the analysis *)
+  if Var.idx x < Var.Tbl.length info.info_approximation
+  then Var.Tbl.get info.info_approximation x
+  else Top
+
 let exact_call info f n =
-  match Var.Tbl.get info.info_approximation f with
+  match get_approx info f with
   | Top | Values { others = true; _ } -> false
   | Values { known; others = false } ->
       Var.Set.for_all
@@ -863,43 +870,39 @@ let called_version info ~call g =
     g
 
 let get_unique_closure info ~call f =
-  (* The specialize pass can create knew functions *)
-  if Var.idx f >= Var.Tbl.length info.info_approximation
-  then None
-  else
-    match Var.Tbl.get info.info_approximation f with
-    | Top | Values { others = true; _ } -> None
-    | Values { known; others = false } -> (
-        match
-          Var.Set.fold
-            (fun g acc ->
-              match info.info_defs.(Var.idx g) with
-              | Expr (Closure (params, _, _)) -> (
-                  match acc with
-                  | None -> Some (Some (g, params))
-                  | Some (Some _) -> Some None
-                  | Some None -> acc)
-              | Expr (Block _) -> acc
-              | Expr _ | Phi _ -> assert false)
-            known
-            None
-        with
-        | None | Some None -> None
-        | Some (Some (g, params)) -> (
-            let g', cont = called_version info ~call g in
-            if Var.equal g g'
-            then Some (g, params, cont)
-            else
-              match info.info_defs.(Var.idx g') with
-              | Expr (Closure (params, _, _)) -> Some (g', params, cont)
-              | _ -> assert false))
+  match get_approx info f with
+  | Top | Values { others = true; _ } -> None
+  | Values { known; others = false } -> (
+      match
+        Var.Set.fold
+          (fun g acc ->
+            match info.info_defs.(Var.idx g) with
+            | Expr (Closure (params, _, _)) -> (
+                match acc with
+                | None -> Some (Some (g, params))
+                | Some (Some _) -> Some None
+                | Some None -> acc)
+            | Expr (Block _) -> acc
+            | Expr _ | Phi _ -> assert false)
+          known
+          None
+      with
+      | None | Some None -> None
+      | Some (Some (g, params)) -> (
+          let g', cont = called_version info ~call g in
+          if Var.equal g g'
+          then Some (g, params, cont)
+          else
+            match info.info_defs.(Var.idx g') with
+            | Expr (Closure (params, _, _)) -> Some (g', params, cont)
+            | _ -> assert false))
 
 let update_def info x expr =
   let idx = Code.Var.idx x in
   info.info_defs.(idx) <- Expr expr
 
 let function_arity info f =
-  match Var.Tbl.get info.info_approximation f with
+  match get_approx info f with
   | Top | Values { others = true; _ } -> None
   | Values { known; others = false } -> (
       match

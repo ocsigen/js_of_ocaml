@@ -96,6 +96,10 @@ val f : ?cps_calls:Var.Set.t -> fast:bool -> Code.program -> state * info
 
 val update_def : info -> Code.Var.t -> Code.expr -> unit
 
+val get_approx : info -> Var.t -> approx
+(** The approximation of a variable; [Top] for variables introduced after the
+    analysis was run *)
+
 val exact_call : info -> Var.t -> int -> bool
 
 val called_version : info -> call:Var.t -> Var.t -> Var.t * bool
