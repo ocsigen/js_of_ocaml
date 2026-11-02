@@ -39,8 +39,12 @@ test runtest runtests: tests
 # manual/*.mld and the API into _build/default/_doc/_html/; @doc-manual builds the
 # examples into _build/default/manual/files/. The themed ocsigen.org site is then
 # produced by `wodoc build` (see doc/README.md), which the CI runs and deploys.
+# Dune does not copy the images of the manual next to the odoc pages, so we do it
+# here to make _build/default/_doc/_html/js_of_ocaml/ viewable as is.
 doc:
 	dune build @doc @doc-manual
+	mkdir -p _build/default/_doc/_html/js_of_ocaml/files
+	cp -r manual/files/performances _build/default/_doc/_html/js_of_ocaml/files/
 
 promote:
 	dune promote
