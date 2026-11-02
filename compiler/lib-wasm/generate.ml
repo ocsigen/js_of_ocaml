@@ -3412,10 +3412,12 @@ let f
       fun_info
       ~wrappable:(fun _ ->
         (* With CPS, functions are called through closures with a
-           different calling convention *)
+           different calling convention. With double translation, the
+           wrapper is the direct-style code of the closure, which can
+           also have a CPS version. *)
         match Config.effects () with
-        | `Disabled | `Jspi | `Native -> true
-        | `Cps | `Double_translation -> false)
+        | `Disabled | `Jspi | `Native | `Double_translation -> true
+        | `Cps -> false)
       (fun f ->
         match Typing.return_type types f with
         | Int (Normalized | Unnormalized) | Number (_, Unboxed) -> false
