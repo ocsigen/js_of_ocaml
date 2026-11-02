@@ -403,8 +403,7 @@ module Domain = struct
           List.iter
             ~f:(fun y ->
               (match st.defs.(Var.idx y) with
-              | Phi { known; _ } ->
-                  st.defs.(Var.idx y) <- Phi { known; others = true; unit = false }
+              | Phi p -> st.defs.(Var.idx y) <- Phi { p with others = true }
               | Expr _ -> assert false);
               update ~children:false y)
             params;
