@@ -56,6 +56,8 @@
 * Runtime: ensure empty float arrays use tag 0 rather than 254 for
   Float.Array.concat and recursive dummy allocations, and in JavaScript also
   for Float.Array.append, sub, create and make (#2594)
+* Compiler: fix the naming of labels in default parameters, of `var`s in
+  class static blocks, and of nested source and generated labels (#2598)
 
 # 6.5.0 (2026-10-22) - Lille
 
