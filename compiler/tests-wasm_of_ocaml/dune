@@ -11,6 +11,16 @@
  (modes js wasm))
 
 (tests
+ (names sys_const)
+ (modes js wasm)
+ (js_of_ocaml
+  (flags :standard --disable staticeval)
+  (link_flags :standard --disable staticeval))
+ (wasm_of_ocaml
+  (flags :standard --disable staticeval)
+  (link_flags :standard --disable staticeval)))
+
+(tests
  (names marshal_regressions int_and)
  (modes wasm))
 
