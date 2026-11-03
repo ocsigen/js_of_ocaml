@@ -17,9 +17,12 @@
  *)
 
 (* A reference interpreter for the intermediate code, following the
-   semantics of the JavaScript backend: integers are 32-bit, [int32]
-   and [nativeint] values are integers, strings are immutable values
-   compared by content, and integers and floats are both numbers.
+   semantics of the target. With JavaScript, integers are 32-bit,
+   [int32] and [nativeint] values are integers, strings are immutable
+   values compared by content, and integers and floats are both numbers.
+   With Wasm, integers are 31-bit, [int32], [nativeint] and floats are
+   boxed values, and the physical equality of floats or strings with the
+   same contents is not specified (the program is skipped).
 
    Closures capture their environment by value when they are
    created, except that a group of consecutive closures (as defined
@@ -75,6 +78,7 @@ module V = struct
     | Bytes of bytes
     | Block of block
     | Int64 of int64
+    | Int32 of int32  (** With Wasm, [int32] and [nativeint] values are boxed *)
     | Closure of closure
     | Partial of partial
     | Prim_closure of string
@@ -129,7 +133,11 @@ module V = struct
     ; remaining : int
     }
 
-  and channel = { fd : int }
+  and channel =
+    { fd : int
+    ; mutable buffered : bool
+    ; pending : Buffer.t  (** Output not flushed yet *)
+    }
 
   (* A fiber, as allocated by [caml_alloc_stack]. A continuation is a
      block of tag 245 containing the innermost and the outermost fibers
@@ -256,6 +264,11 @@ let max_depth = 100_000
 
 (****)
 
+(* The target, set when the program is run. With Wasm, integers have 31
+   bits, [int32] and [nativeint] values are boxed, and floats are distinct
+   from integers. *)
+let wasm = ref false
+
 let unit = V.Int Targetint.zero
 
 let bool b = V.Int (if b then Targetint.one else Targetint.zero)
@@ -278,8 +291,16 @@ let to_int32 v = Targetint.to_int32 (as_int v)
 let as_float (v : V.t) =
   match v with
   | Float f -> f
-  | Int n -> Targetint.to_float n
   | _ -> error "float expected"
+
+(* [int32] and [nativeint] values *)
+let as_i32 (v : V.t) =
+  match v with
+  | Int32 n -> n
+  | Int n when not !wasm -> Targetint.to_int32 n
+  | _ -> error "int32 expected"
+
+let i32 n = if !wasm then V.Int32 n else int32 n
 
 let as_block (v : V.t) =
   match v with
@@ -336,7 +357,7 @@ let rec constant (c : constant) : V.t =
   | Float_array (a, _) ->
       block ~tag:254 (Array.map a ~f:(fun f -> V.Float (Int64.float_of_bits f)))
   | Int n -> Int n
-  | Int32 n | NativeInt n -> Int (Targetint.of_int32_truncate n)
+  | Int32 n | NativeInt n -> i32 n
   | Int64 n -> Int64 n
   | Tuple (tag, a, _, _) -> block ~tag (Array.map a ~f:constant)
   | Null_ -> Null
@@ -355,7 +376,7 @@ let phys_equal_value (a : V.t) (b : V.t) =
   | Partial x, Partial y -> phys_equal x y
   | Prim_closure x, Prim_closure y -> String.equal x y
   | Host _, Host _ -> phys_equal a b
-  | Int64 _, Int64 _ -> phys_equal a b
+  | Int64 _, Int64 _ | Int32 _, Int32 _ -> phys_equal a b
   | Channel x, Channel y -> phys_equal x y
   | Js_array x, Js_array y -> phys_equal x y
   | Trampoline _, Trampoline _ -> phys_equal a b
@@ -372,6 +393,7 @@ let phys_equal_value (a : V.t) (b : V.t) =
       | Prim_closure _
       | Host _
       | Int64 _
+      | Int32 _
       | Channel _
       | Js_array _
       | Trampoline _
@@ -412,9 +434,10 @@ let ml_tag st (v : V.t) =
   match v with
   | Block b -> b.tag
   | String _ | Native_string _ | Bytes _ -> 252
-  | Int64 _ | Channel _ -> 255
+  | Int64 _ | Int32 _ | Channel _ -> 255
   | Js_array _ | Trampoline _ | Stack _ -> 1000
   | Closure _ | Partial _ | Prim_closure _ | Host _ -> 247
+  | Float _ when !wasm -> 253
   | Int _ | Float _ -> 1000
   | Null -> 1010
 
@@ -444,6 +467,12 @@ let compare_values st ~total (a : V.t) (b : V.t) =
           if c <> 0 then sign c else next stack
       | Int64 x, Int64 y ->
           let c = Int64.compare x y in
+          if c <> 0 then sign c else next stack
+      | Int32 x, Int32 y ->
+          let c = Int32.compare x y in
+          if c <> 0 then sign c else next stack
+      | Channel x, Channel y ->
+          let c = compare x.fd y.fd in
           if c <> 0 then sign c else next stack
       | (Closure _ | Partial _ | Prim_closure _ | Host _), _
       | _, (Closure _ | Partial _ | Prim_closure _ | Host _) ->
@@ -492,37 +521,123 @@ let bound_error st = ml_invalid_arg st "index out of bounds"
 
 (* Hashing: any deterministic function will do *)
 
+(* [caml_hash] (runtime/js/hash.js and runtime/wasm/hash.wat): MurmurHash3
+   mixing of the values found in a breadth-first traversal *)
+let hash_mix_int h d =
+  let open Int32 in
+  let d = mul d 0xcc9e2d51l in
+  let d = logor (shift_left d 15) (shift_right_logical d 17) in
+  let d = mul d 0x1b873593l in
+  let h = logxor h d in
+  let h = logor (shift_left h 13) (shift_right_logical h 19) in
+  add (add h (shift_left h 2)) 0xe6546b64l
+
+let hash_mix_final h =
+  let open Int32 in
+  let h = logxor h (shift_right_logical h 16) in
+  let h = mul h 0x85ebca6bl in
+  let h = logxor h (shift_right_logical h 13) in
+  let h = mul h 0xc2b2ae35l in
+  logxor h (shift_right_logical h 16)
+
+let hash_mix_float h f =
+  let bits = Int64.bits_of_float f in
+  let l = Int64.to_int32 bits
+  and hi = Int64.to_int32 (Int64.shift_right_logical bits 32) in
+  let hi, l =
+    if
+      Int32.equal (Int32.logand hi 0x7ff00000l) 0x7ff00000l
+      && not (Int32.equal (Int32.logor l (Int32.logand hi 0xfffffl)) 0l)
+    then 0x7ff00000l, 1l (* Normalize NaNs *)
+    else if Int32.equal hi Int32.min_int && Int32.equal l 0l
+    then 0l, 0l (* Normalize -0 into +0 *)
+    else hi, l
+  in
+  hash_mix_int (hash_mix_int h l) hi
+
+let hash_mix_string h s =
+  let len = String.length s in
+  let b i = Int32.of_int (Char.code s.[i]) in
+  let h = ref h in
+  let i = ref 0 in
+  while !i + 4 <= len do
+    h :=
+      hash_mix_int
+        !h
+        Int32.(
+          logor
+            (b !i)
+            (logor
+               (shift_left (b (!i + 1)) 8)
+               (logor (shift_left (b (!i + 2)) 16) (shift_left (b (!i + 3)) 24))));
+    i := !i + 4
+  done;
+  (match len land 3 with
+  | 0 -> ()
+  | r ->
+      let w = ref 0l in
+      for j = r - 1 downto 0 do
+        w := Int32.logor !w (Int32.shift_left (b (!i + j)) (8 * j))
+      done;
+      h := hash_mix_int !h !w);
+  Int32.logxor !h (Int32.of_int len)
+
 let hash_value ~count ~limit ~seed (v : V.t) =
-  let h = ref seed in
-  let mix d = h := ((!h * 65599) + d) land 0x3FFFFFFF in
-  let mix_string s = String.iter s ~f:(fun c -> mix (Char.code c)) in
-  let queue = Queue.create () in
-  Queue.push v queue;
-  let num = ref count and size = ref limit in
-  while (not (Queue.is_empty queue)) && !num > 0 do
-    (match Queue.pop queue with
-    | Int n ->
-        decr num;
-        mix (Targetint.to_int_exn n)
+  let sz = if limit < 0 || limit > 256 then 256 else limit in
+  let queue = Array.make (max sz 1) V.Null in
+  queue.(0) <- v;
+  let rd = ref 0 and wr = ref 1 and num = ref count and h = ref (Int32.of_int seed) in
+  let mix_int d =
+    h := hash_mix_int !h d;
+    decr num
+  in
+  while !rd < !wr && !num > 0 do
+    let v = queue.(!rd) in
+    incr rd;
+    match v with
+    | Int n -> mix_int Int32.(add (add (Targetint.to_int32 n) (Targetint.to_int32 n)) 1l)
+    | Float f
+      when (not !wasm)
+           && Float.is_integer f
+           && Float.( >= ) f (-2147483648.)
+           && Float.( <= ) f 2147483647. ->
+        (* In JavaScript, integers and floats are the same values *)
+        let n = Int32.of_float f in
+        mix_int Int32.(add (add n n) 1l)
     | Float f ->
-        decr num;
-        mix (Hashtbl.hash f)
+        h := hash_mix_float !h f;
+        decr num
     | String s | Native_string s ->
-        decr num;
-        mix_string s
+        h := hash_mix_string !h s;
+        decr num
     | Bytes b ->
-        decr num;
-        mix_string (Bytes.to_string b)
+        h := hash_mix_string !h (Bytes.to_string b);
+        decr num
     | Int64 n ->
-        decr num;
-        mix (Hashtbl.hash n)
-    | Block b ->
-        mix b.tag;
-        Array.iter b.fields ~f:(fun x ->
-            if !size > 0
+        mix_int
+          Int32.(
+            logxor (Int64.to_int32 n) (Int64.to_int32 (Int64.shift_right_logical n 32)))
+    | Int32 n -> mix_int n
+    | Block { tag = 248; fields; _ } when Array.length fields > 1 ->
+        mix_int (Targetint.to_int32 (as_int fields.(1)))
+    | Block { tag = 250; fields = [| f |]; _ } ->
+        decr rd;
+        queue.(!rd) <- f
+    | Block { tag = 251 | 245; _ } -> ()
+    | Block { tag = 254; fields; _ } -> (
+        try
+          Array.iter fields ~f:(fun f ->
+              h := hash_mix_float !h (as_float f);
+              decr num;
+              if !num <= 0 then raise Exit)
+        with Exit -> ())
+    | Block { tag; fields; _ } ->
+        h := hash_mix_int !h (Int32.of_int ((Array.length fields lsl 10) lor tag));
+        Array.iter fields ~f:(fun x ->
+            if !wr < sz
             then (
-              decr size;
-              Queue.push x queue))
+              queue.(!wr) <- x;
+              incr wr))
     | Closure _
     | Partial _
     | Prim_closure _
@@ -531,14 +646,43 @@ let hash_value ~count ~limit ~seed (v : V.t) =
     | Js_array _
     | Trampoline _
     | Stack _
-    | Null -> ());
-    ()
+    | Null -> ()
   done;
-  !h
+  Int32.to_int (Int32.logand (hash_mix_final !h) 0x3fffffffl)
 
 (* Formatting *)
 
-let num_bits_mask () = (1 lsl Targetint.num_bits ()) - 1
+(* [caml_int_of_string] for integers of [bits] bits: decimal numbers must
+   be in the signed range, other numbers in the unsigned range *)
+let parse_int ~bits s =
+  match Int64.of_string s with
+  | exception Failure _ -> None
+  | n ->
+      let unsigned =
+        let i =
+          if String.length s > 0 && (Char.equal s.[0] '-' || Char.equal s.[0] '+')
+          then 1
+          else 0
+        in
+        String.length s > i + 1
+        && Char.equal s.[i] '0'
+        &&
+        match s.[i + 1] with
+        | 'x' | 'X' | 'o' | 'O' | 'b' | 'B' | 'u' | 'U' -> true
+        | _ -> false
+      in
+      let max = Int64.shift_left 1L (bits - 1) in
+      if unsigned
+      then
+        if Int64.compare (Int64.abs n) (Int64.shift_left max 1) >= 0
+        then None
+        else
+          Some
+            (Int64.to_int32
+               (Int64.shift_right (Int64.shift_left n (64 - bits)) (64 - bits)))
+      else if Int64.compare n (Int64.neg max) < 0 || Int64.compare n max >= 0
+      then None
+      else Some (Int64.to_int32 n)
 
 (* Remove the length modifier of an integer conversion *)
 let strip_length fmt =
@@ -550,12 +694,12 @@ let strip_length fmt =
     | _ -> fmt
   else fmt
 
-let format_int st fmt n =
+let format_int st ~bits fmt n =
   let fmt = strip_length fmt in
   let conv = fmt.[String.length fmt - 1] in
   let n =
     match conv with
-    | 'x' | 'X' | 'o' | 'u' -> n land num_bits_mask ()
+    | 'x' | 'X' | 'o' | 'u' -> n land ((1 lsl bits) - 1)
     | _ -> n
   in
   match Printf.sprintf (Scanf.format_from_string fmt "%d") n with
@@ -643,7 +787,9 @@ let int_bin names f =
 
 let int_un names f = alias names (fun name -> reg1 name (fun _ x -> V.Int (f (as_int x))))
 
-let shift_amount y = to_int y land (Targetint.num_bits () - 1)
+(* The shift amount is taken modulo 32, as by JavaScript's [<<] and
+   Wasm's [i32.shl] *)
+let shift_amount y = to_int y land 31
 
 let checked_div st f x y =
   if Targetint.is_zero (as_int y)
@@ -651,14 +797,12 @@ let checked_div st f x y =
   else V.Int (f (as_int x) (as_int y))
 
 let () =
-  int_bin [ "%int_add"; "caml_int32_add"; "caml_nativeint_add" ] Targetint.add;
-  int_bin [ "%int_sub"; "caml_int32_sub"; "caml_nativeint_sub" ] Targetint.sub;
-  int_bin
-    [ "%int_mul"; "%direct_int_mul"; "caml_mul"; "caml_int32_mul"; "caml_nativeint_mul" ]
-    Targetint.mul;
-  alias [ "%int_div"; "caml_div"; "caml_int32_div"; "caml_nativeint_div" ] (fun name ->
+  int_bin [ "%int_add" ] Targetint.add;
+  int_bin [ "%int_sub" ] Targetint.sub;
+  int_bin [ "%int_mul"; "%direct_int_mul"; "caml_mul" ] Targetint.mul;
+  alias [ "%int_div"; "caml_div" ] (fun name ->
       reg2 name (fun st x y -> checked_div st Targetint.div x y));
-  alias [ "%int_mod"; "caml_mod"; "caml_int32_mod"; "caml_nativeint_mod" ] (fun name ->
+  alias [ "%int_mod"; "caml_mod" ] (fun name ->
       reg2 name (fun st x y -> checked_div st Targetint.rem x y));
   (* These are only produced for divisors known to be non-zero *)
   reg2 "%direct_int_div" (fun _ x y ->
@@ -667,34 +811,16 @@ let () =
   reg2 "%direct_int_mod" (fun _ x y ->
       if Targetint.is_zero (as_int y) then error "%%direct_int_mod by zero";
       V.Int (Targetint.rem (as_int x) (as_int y)));
-  int_bin [ "%int_and"; "caml_int32_and"; "caml_nativeint_and" ] Targetint.logand;
-  int_bin [ "%int_or"; "caml_int32_or"; "caml_nativeint_or" ] Targetint.logor;
-  int_bin [ "%int_xor"; "caml_int32_xor"; "caml_nativeint_xor" ] Targetint.logxor;
-  alias [ "%int_lsl"; "caml_int32_shift_left"; "caml_nativeint_shift_left" ] (fun name ->
-      reg2 name (fun _ x y -> V.Int (Targetint.shift_left (as_int x) (shift_amount y))));
-  alias
-    [ "%int_lsr"
-    ; "caml_int32_shift_right_unsigned"
-    ; "caml_nativeint_shift_right_unsigned"
-    ]
-    (fun name ->
-      reg2 name (fun _ x y ->
-          V.Int (Targetint.shift_right_logical (as_int x) (shift_amount y))));
-  alias
-    [ "%int_asr"; "caml_int32_shift_right"; "caml_nativeint_shift_right" ]
-    (fun name ->
-      reg2 name (fun _ x y -> V.Int (Targetint.shift_right (as_int x) (shift_amount y))));
-  int_un [ "%int_neg"; "caml_int32_neg"; "caml_nativeint_neg" ] Targetint.neg;
+  int_bin [ "%int_and" ] Targetint.logand;
+  int_bin [ "%int_or" ] Targetint.logor;
+  int_bin [ "%int_xor" ] Targetint.logxor;
+  reg2 "%int_lsl" (fun _ x y -> V.Int (Targetint.shift_left (as_int x) (shift_amount y)));
+  reg2 "%int_lsr" (fun _ x y ->
+      V.Int (Targetint.shift_right_logical (as_int x) (shift_amount y)));
+  reg2 "%int_asr" (fun _ x y -> V.Int (Targetint.shift_right (as_int x) (shift_amount y)));
+  int_un [ "%int_neg" ] Targetint.neg;
   alias
     [ "%identity"
-    ; "caml_int32_of_int"
-    ; "caml_int32_to_int"
-    ; "caml_nativeint_of_int"
-    ; "caml_nativeint_to_int"
-    ; "caml_nativeint_to_int32"
-    ; "caml_nativeint_of_int32"
-    ; "caml_checked_nativeint_to_int"
-    ; "caml_checked_int32_to_int"
     ; "caml_array_of_iarray"
     ; "caml_iarray_of_array"
     ; "caml_array_of_uniform_array"
@@ -702,37 +828,82 @@ let () =
     ; "caml_process_pending_actions_with_root"
     ]
     (fun name -> reg1 name (fun _ x -> x));
-  alias
-    [ "caml_int_compare"; "caml_int32_compare"; "caml_nativeint_compare" ]
-    (fun name ->
-      reg2 name (fun _ x y -> int (Targetint.compare (as_int x) (as_int y) |> sign)));
-  alias [ "caml_int32_unsigned_compare"; "caml_nativeint_unsigned_compare" ] (fun name ->
-      reg2 name (fun _ x y ->
-          let x = as_int x and y = as_int y in
-          int
-            (if Targetint.unsigned_lt x y
-             then -1
-             else if Targetint.unsigned_lt y x
-             then 1
-             else 0)));
+  reg2 "caml_int_compare" (fun _ x y ->
+      int (Targetint.compare (as_int x) (as_int y) |> sign));
   reg1 "%caml_format_int_special" (fun _ x -> String (Targetint.to_string (as_int x)));
-  alias [ "caml_format_int"; "caml_int32_format"; "caml_nativeint_format" ] (fun name ->
-      reg2 name (fun st f x -> format_int st (as_string f) (to_int x)));
-  alias
-    [ "caml_int_of_string"; "caml_int32_of_string"; "caml_nativeint_of_string" ]
-    (fun name ->
-      reg1 name (fun st s ->
-          match Int32.of_string (as_string s) with
-          | n -> int32 n
-          | exception Failure _ -> ml_failure st "int_of_string"));
+  reg2 "caml_format_int" (fun st f x ->
+      format_int st ~bits:(Targetint.num_bits ()) (as_string f) (to_int x));
+  reg1 "caml_int_of_string" (fun st s ->
+      match parse_int ~bits:(Targetint.num_bits ()) (as_string s) with
+      | Some n -> int32 n
+      | None -> ml_failure st "int_of_string");
   reg1 "caml_bswap16" (fun _ x ->
       let n = to_int x in
-      int (((n land 0xff) lsl 8) lor ((n lsr 8) land 0xff)));
-  alias [ "caml_int32_bswap"; "caml_nativeint_bswap" ] (fun name ->
+      int (((n land 0xff) lsl 8) lor ((n lsr 8) land 0xff)))
+
+(* [int32] and [nativeint] (32-bit) *)
+
+let i32_bin names f =
+  alias names (fun name -> reg2 name (fun _ x y -> i32 (f (as_i32 x) (as_i32 y))))
+
+let () =
+  let both name = [ "caml_int32_" ^ name; "caml_nativeint_" ^ name ] in
+  i32_bin (both "add") Int32.add;
+  i32_bin (both "sub") Int32.sub;
+  i32_bin (both "mul") Int32.mul;
+  i32_bin (both "and") Int32.logand;
+  i32_bin (both "or") Int32.logor;
+  i32_bin (both "xor") Int32.logxor;
+  let checked_div f =
+    alias (both f) (fun name ->
+        reg2 name (fun st x y ->
+            if Int32.equal (as_i32 y) 0l
+            then raise_constant st "Division_by_zero"
+            else
+              i32
+                (match f with
+                | "div" -> Int32.div (as_i32 x) (as_i32 y)
+                | _ -> Int32.rem (as_i32 x) (as_i32 y))))
+  in
+  checked_div "div";
+  checked_div "mod";
+  let shift f g =
+    alias (both f) (fun name ->
+        reg2 name (fun _ x y -> i32 (g (as_i32 x) (to_int y land 31))))
+  in
+  shift "shift_left" Int32.shift_left;
+  shift "shift_right" Int32.shift_right;
+  shift "shift_right_unsigned" Int32.shift_right_logical;
+  alias (both "neg") (fun name -> reg1 name (fun _ x -> i32 (Int32.neg (as_i32 x))));
+  alias (both "of_int") (fun name ->
+      reg1 name (fun _ x -> i32 (Targetint.to_int32 (as_int x))));
+  alias
+    (both "to_int" @ [ "caml_checked_int32_to_int"; "caml_checked_nativeint_to_int" ])
+    (fun name -> reg1 name (fun _ x -> int32 (as_i32 x)));
+  alias [ "caml_nativeint_of_int32"; "caml_nativeint_to_int32" ] (fun name ->
+      reg1 name (fun _ x -> i32 (as_i32 x)));
+  alias (both "compare") (fun name ->
+      reg2 name (fun _ x y -> int (Int32.compare (as_i32 x) (as_i32 y) |> sign)));
+  alias (both "unsigned_compare") (fun name ->
+      reg2 name (fun _ x y ->
+          int
+            (Int32.compare
+               (Int32.add (as_i32 x) Int32.min_int)
+               (Int32.add (as_i32 y) Int32.min_int)
+            |> sign)));
+  alias (both "format") (fun name ->
+      reg2 name (fun st f x ->
+          format_int st ~bits:32 (as_string f) (Int32.to_int (as_i32 x))));
+  alias (both "of_string") (fun name ->
+      reg1 name (fun st s ->
+          match parse_int ~bits:32 (as_string s) with
+          | Some n -> i32 n
+          | None -> ml_failure st "int_of_string"));
+  alias (both "bswap") (fun name ->
       reg1 name (fun _ x ->
-          let n = to_int32 x in
+          let n = as_i32 x in
           let b i = Int32.(logand (shift_right_logical n (8 * i)) 0xffl) in
-          int32
+          i32
             Int32.(
               logor
                 (shift_left (b 0) 24)
@@ -753,6 +924,19 @@ let to_int32_wrap f =
   if Float.is_finite f
   then Int64.to_int32 (Int64.of_float (Float.rem (Float.trunc f) 4294967296.))
   else 0l
+
+(* Conversions of out-of-range values are unspecified: with Wasm, we
+   saturate, as [i32.trunc_sat_f64_s] *)
+let float_to_int32 f =
+  if not !wasm
+  then to_int32_wrap f
+  else if Float.is_nan f
+  then 0l
+  else if Float.( >= ) f 2147483647.
+  then Int32.max_int
+  else if Float.( <= ) f (-2147483648.)
+  then Int32.min_int
+  else Int32.of_float f
 
 let () =
   float_bin [ "caml_add_float" ] Float.add;
@@ -801,9 +985,9 @@ let () =
   float_un [ "caml_round_float" ] Float.round;
   float_un [ "caml_erf_float" ] Float.erf;
   float_un [ "caml_erfc_float" ] Float.erfc;
-  float_un
-    [ "caml_float_of_int"; "caml_int32_to_float"; "caml_nativeint_to_float" ]
-    Fun.id;
+  reg1 "caml_float_of_int" (fun _ x -> Float (Targetint.to_float (as_int x)));
+  alias [ "caml_int32_to_float"; "caml_nativeint_to_float" ] (fun name ->
+      reg1 name (fun _ x -> Float (Int32.to_float (as_i32 x))));
   reg3 "caml_fma_float" (fun _ x y z ->
       Float (Float.fma (as_float x) (as_float y) (as_float z)));
   float_cmp "caml_eq_float" Float.( = );
@@ -815,9 +999,9 @@ let () =
   reg1 "caml_signbit_float" (fun _ x -> bool (Float.sign_bit (as_float x)));
   reg2 "caml_float_compare" (fun _ x y ->
       int (compare_floats ~total:true (as_float x) (as_float y)));
-  alias
-    [ "caml_int_of_float"; "caml_int32_of_float"; "caml_nativeint_of_float" ]
-    (fun name -> reg1 name (fun _ x -> int32 (to_int32_wrap (as_float x))));
+  reg1 "caml_int_of_float" (fun _ x -> int32 (float_to_int32 (as_float x)));
+  alias [ "caml_int32_of_float"; "caml_nativeint_of_float" ] (fun name ->
+      reg1 name (fun _ x -> i32 (float_to_int32 (as_float x))));
   reg1 "caml_classify_float" (fun _ x ->
       int
         (match Float.classify_float (as_float x) with
@@ -846,8 +1030,8 @@ let () =
       match float_of_string (as_string s) with
       | f -> Float f
       | exception Failure _ -> ml_failure st "float_of_string");
-  reg1 "caml_int32_bits_of_float" (fun _ x -> int32 (Int32.bits_of_float (as_float x)));
-  reg1 "caml_int32_float_of_bits" (fun _ x -> Float (Int32.float_of_bits (to_int32 x)));
+  reg1 "caml_int32_bits_of_float" (fun _ x -> i32 (Int32.bits_of_float (as_float x)));
+  reg1 "caml_int32_float_of_bits" (fun _ x -> Float (Int32.float_of_bits (as_i32 x)));
   reg1 "caml_int64_bits_of_float" (fun _ x -> Int64 (Int64.bits_of_float (as_float x)));
   reg1 "caml_int64_float_of_bits" (fun _ x -> Float (Int64.float_of_bits (as_int64 x)))
 
@@ -877,12 +1061,12 @@ let () =
   reg2 "caml_int64_shift_right_unsigned" (fun _ x n ->
       Int64 (Int64.shift_right_logical (as_int64 x) (to_int n land 63)));
   reg1 "caml_int64_neg" (fun _ x -> Int64 (Int64.neg (as_int64 x)));
-  alias
-    [ "caml_int64_of_int"; "caml_int64_of_int32"; "caml_int64_of_nativeint" ]
-    (fun name -> reg1 name (fun _ x -> Int64 (Int64.of_int32 (to_int32 x))));
-  alias
-    [ "caml_int64_to_int"; "caml_int64_to_int32"; "caml_int64_to_nativeint" ]
-    (fun name -> reg1 name (fun _ x -> int32 (Int64.to_int32 (as_int64 x))));
+  alias [ "caml_int64_of_int32"; "caml_int64_of_nativeint" ] (fun name ->
+      reg1 name (fun _ x -> Int64 (Int64.of_int32 (as_i32 x))));
+  reg1 "caml_int64_of_int" (fun _ x -> Int64 (Int64.of_int32 (to_int32 x)));
+  alias [ "caml_int64_to_int32"; "caml_int64_to_nativeint" ] (fun name ->
+      reg1 name (fun _ x -> i32 (Int64.to_int32 (as_int64 x))));
+  reg1 "caml_int64_to_int" (fun _ x -> int32 (Int64.to_int32 (as_int64 x)));
   reg1 "caml_int64_of_float" (fun _ x ->
       let f = as_float x in
       Int64 (if Float.is_nan f then 0L else Int64.of_float f));
@@ -1035,13 +1219,13 @@ let () =
           int (Int64.to_int (get_bytes st "index out of bounds" s i 2))));
   alias [ "caml_string_get32"; "caml_bytes_get32" ] (fun name ->
       reg2 name (fun st s i ->
-          int32 (Int64.to_int32 (get_bytes st "index out of bounds" s i 4))));
+          i32 (Int64.to_int32 (get_bytes st "index out of bounds" s i 4))));
   alias [ "caml_string_get64"; "caml_bytes_get64" ] (fun name ->
       reg2 name (fun st s i -> Int64 (get_bytes st "index out of bounds" s i 8)));
   reg3 "caml_bytes_set16" (fun st b i v ->
       set_bytes st "index out of bounds" b i 2 (Int64.of_int (to_int v)));
   reg3 "caml_bytes_set32" (fun st b i v ->
-      set_bytes st "index out of bounds" b i 4 (Int64.of_int32 (to_int32 v)));
+      set_bytes st "index out of bounds" b i 4 (Int64.of_int32 (as_i32 v)));
   reg3 "caml_bytes_set64" (fun st b i v ->
       set_bytes st "index out of bounds" b i 8 (as_int64 v))
 
@@ -1058,11 +1242,15 @@ let array_set st a i v =
   b.fields.(i) <- v;
   unit
 
+(* Values are boxed, so large arrays would use too much memory *)
+let check_array_size len = if len > 10_000_000 then unsupported "array of %d elements" len
+
 let () =
   alias [ "caml_make_vect"; "caml_array_make" ] (fun name ->
       reg2 name (fun st len v ->
           let len = to_int len in
           if len < 0 then ml_invalid_arg st "Array.make";
+          check_array_size len;
           block (Array.make len v)));
   alias
     [ "caml_make_float_vect"; "caml_array_create_float"; "caml_floatarray_create" ]
@@ -1070,6 +1258,7 @@ let () =
       reg1 name (fun st len ->
           let len = to_int len in
           if len < 0 then ml_invalid_arg st "Array.create_float";
+          check_array_size len;
           block ~tag:254 (Array.make len (V.Float 0.))));
   alias
     [ "caml_array_get"
@@ -1138,6 +1327,18 @@ let () =
 
 (* Objects, lazy values, recursive values *)
 
+let update_dummy x (y : V.t) =
+  let b = as_block x in
+  match y with
+  | Block b' -> (
+      match b'.fun_ with
+      | Some _ -> b.fun_ <- b'.fun_
+      | None ->
+          b.tag <- b'.tag;
+          b.fields <- Array.copy b'.fields)
+  | Closure _ | Partial _ | Prim_closure _ | Host _ -> b.fun_ <- Some y
+  | _ -> error "caml_update_dummy"
+
 let update_tag v o n =
   let b = as_block v in
   if b.tag = o
@@ -1180,17 +1381,16 @@ let () =
     [ "caml_alloc_dummy"; "caml_alloc_dummy_float"; "caml_alloc_dummy_function" ]
     (fun name -> reg1 name (fun _ _ -> block [||]));
   reg2 "caml_alloc_dummy_mixed" (fun _ _ _ -> block [||]);
+  reg2 "caml_update_dummy_lazy" (fun st x y ->
+      (match ml_tag st y with
+      | 246 | 244 | 250 -> update_dummy x y
+      | _ ->
+          let b = as_block x in
+          b.tag <- 250;
+          b.fields <- [| y |]);
+      unit);
   reg2 "caml_update_dummy" (fun _ x y ->
-      let b = as_block x in
-      (match y with
-      | Block b' -> (
-          match b'.fun_ with
-          | Some _ -> b.fun_ <- b'.fun_
-          | None ->
-              b.tag <- b'.tag;
-              b.fields <- Array.copy b'.fields)
-      | Closure _ | Partial _ | Prim_closure _ | Host _ -> b.fun_ <- Some y
-      | _ -> error "caml_update_dummy");
+      update_dummy x y;
       unit);
   reg1 "caml_fresh_oo_id" (fun st _ ->
       let id = st.oo_id in
@@ -1280,14 +1480,31 @@ let ephe_blit st e1 o1 e2 o2 len =
   unit
 
 let () =
-  reg1 "caml_ephe_create" (fun _ n -> block (Array.make (to_int n + 1) V.Null));
-  alias [ "caml_ephe_get_key"; "caml_ephe_get_key_copy" ] (fun name ->
-      reg2 name (fun _ e i -> ephe_get e (to_int i + 1)));
-  reg2 "caml_ephe_check_key" (fun _ e i ->
-      bool
-        (match field e (to_int i + 1) with
-        | Null -> false
-        | _ -> true));
+  alias [ "caml_ephe_create"; "caml_weak_create" ] (fun name ->
+      reg1 name (fun _ n -> block (Array.make (to_int n + 1) V.Null)));
+  alias
+    [ "caml_ephe_get_key"
+    ; "caml_ephe_get_key_copy"
+    ; "caml_weak_get"
+    ; "caml_weak_get_copy"
+    ]
+    (fun name -> reg2 name (fun _ e i -> ephe_get e (to_int i + 1)));
+  alias [ "caml_ephe_check_key"; "caml_weak_check" ] (fun name ->
+      reg2 name (fun _ e i ->
+          bool
+            (match field e (to_int i + 1) with
+            | Null -> false
+            | _ -> true)));
+  reg3 "caml_weak_set" (fun _ e i v ->
+      set_field
+        e
+        (to_int i + 1)
+        (match v with
+        | Int _ -> V.Null
+        | _ -> field v 0);
+      unit);
+  reg5 "caml_weak_blit" (fun st e1 o1 e2 o2 len ->
+      ephe_blit st e1 (to_int o1 + 1) e2 (to_int o2 + 1) (to_int len));
   reg3 "caml_ephe_set_key" (fun _ e i v ->
       set_field e (to_int i + 1) v;
       unit);
@@ -1318,6 +1535,8 @@ let () =
       reg2 name (fun st v n ->
           String.Hashtbl.replace st.globals (as_string n) v;
           unit));
+  (* With Wasm, only used by the toplevel *)
+  reg2 "caml_register_global_by_index" (fun _ _ _ -> unit);
   reg2 "caml_register_named_value" (fun st n v ->
       String.Hashtbl.replace st.named_values (as_string n) v;
       unit);
@@ -1346,15 +1565,21 @@ let () =
   reg0 "caml_backtrace_status" (fun _ -> int 0);
   reg0 "caml_ml_runtime_warnings_enabled" (fun _ -> int 0);
   reg0 "caml_get_exception_raw_backtrace" (fun _ -> block [||]);
-  reg1 "caml_convert_raw_backtrace" (fun _ _ -> unit);
+  (* An empty array, as in the runtime *)
+  reg1 "caml_convert_raw_backtrace" (fun _ _ -> block [||]);
+  reg0 "caml_ml_debug_info_status" (fun _ -> int 0);
+  reg1 "caml_raw_backtrace_length" (fun _ _ -> int 0);
   reg0 "caml_sys_const_big_endian" (fun _ -> int 0);
   reg0 "caml_sys_const_word_size" (fun _ -> int 32);
   reg0 "caml_sys_const_int_size" (fun _ -> int (Targetint.num_bits ()));
-  reg0 "caml_sys_const_max_wosize" (fun _ -> int (0x7fffffff / 4));
+  reg0 "caml_sys_const_max_wosize" (fun _ ->
+      int (if !wasm then 0xfffffff else 0x7fffffff / 4));
   reg0 "caml_sys_const_ostype_unix" (fun _ -> int 1);
   reg0 "caml_sys_const_ostype_win32" (fun _ -> int 0);
   reg0 "caml_sys_const_ostype_cygwin" (fun _ -> int 0);
-  reg0 "caml_sys_const_backend_type" (fun _ -> block [| String "js_of_ocaml" |]);
+  reg0 "caml_sys_const_backend_type" (fun _ ->
+      (* As in [Eval] *)
+      block [| String (if !wasm then "wasm_of_ocaml" else "js_of_ocaml") |]);
   reg0 "caml_sys_const_naked_pointers_checked" (fun _ -> int 0);
   reg0 "caml_sys_get_config" (fun _ -> block [| String "Unix"; int 32; int 0 |]);
   let argv = V.String "a.out" in
@@ -1425,6 +1650,13 @@ let () =
 
 let () =
   reg0 "caml_sys_temp_dir_name" (fun _ -> String "/tmp");
+  reg0 "caml_zstd_initialize" (fun _ -> int 1);
+  reg2 "caml_floatarray_make" (fun st len v ->
+      let len = to_int len in
+      if len < 0 then ml_invalid_arg st "Float.Array.make";
+      check_array_size len;
+      ignore (as_float v);
+      block ~tag:254 (Array.make len v));
   reg0 "caml_gc_minor_words" (fun _ -> Float 0.);
   reg3 "caml_md5_string" (fun st s pos len ->
       let s = as_string s and pos = to_int pos and len = to_int len in
@@ -1454,6 +1686,7 @@ let not_a_function (v : V.t) =
     | String _ | Native_string _ | Bytes _ -> "string"
     | Block b -> Printf.sprintf "block of tag %d" b.tag
     | Int64 _ -> "int64"
+    | Int32 _ -> "int32"
     | Channel _ -> "channel"
     | Js_array _ -> "JavaScript array"
     | Trampoline _ -> "trampoline"
@@ -1903,18 +2136,34 @@ end
 
 (* Channels: only standard output and standard error are supported *)
 
+(* Output is buffered as by the runtime: it is lost if the program does
+   not flush it (for instance, when exiting with [Unix._exit]) *)
+let flush st (ch : V.t) =
+  match ch with
+  | Channel c ->
+      (match c.fd with
+      | 1 -> Buffer.add_buffer st.stdout c.pending
+      | 2 -> Buffer.add_buffer st.stderr c.pending
+      | _ -> if Buffer.length c.pending > 0 then unsupported "output to a file");
+      Buffer.clear c.pending
+  | _ -> error "channel expected"
+
 let output st ch s =
   match ch with
-  | V.Channel { fd = 1 } -> Buffer.add_string st.stdout s
-  | Channel { fd = 2 } -> Buffer.add_string st.stderr s
+  | V.Channel ({ fd = 1 | 2; _ } as c) ->
+      Buffer.add_string c.pending s;
+      if (not c.buffered) || Buffer.length c.pending >= 65536 then flush st ch
   | _ -> unsupported "output to a file"
 
 let () =
   reg1 "caml_ml_open_descriptor_out" (fun st fd ->
-      let ch = V.Channel { fd = to_int fd } in
+      let ch =
+        V.Channel { fd = to_int fd; buffered = true; pending = Buffer.create 256 }
+      in
       st.out_channels <- ch :: st.out_channels;
       ch);
-  reg1 "caml_ml_open_descriptor_in" (fun _ fd -> V.Channel { fd = to_int fd });
+  reg1 "caml_ml_open_descriptor_in" (fun _ fd ->
+      V.Channel { fd = to_int fd; buffered = true; pending = Buffer.create 16 });
   reg0 "caml_ml_out_channels_list" (fun st -> list_of_values st.out_channels);
   alias [ "caml_ml_output"; "caml_ml_output_bytes" ] (fun name ->
       reg4 name (fun st ch s pos len ->
@@ -1933,15 +2182,26 @@ let () =
         (String.init 4 ~f:(fun i -> Char.unsafe_chr ((n lsr (8 * (3 - i))) land 0xff)));
       unit);
   alias [ "caml_ml_flush"; "caml_ml_close_channel" ] (fun name ->
-      reg1 name (fun _ _ -> unit));
+      reg1 name (fun st ch ->
+          flush st ch;
+          unit));
   reg2 "caml_ml_set_channel_name" (fun _ _ _ -> unit);
-  reg2 "caml_ml_set_buffered" (fun _ _ _ -> unit);
-  reg1 "caml_ml_is_buffered" (fun _ _ -> int 1);
+  reg2 "caml_ml_set_buffered" (fun st ch b ->
+      (match ch with
+      | Channel c ->
+          c.buffered <- not (Targetint.is_zero (as_int b));
+          if not c.buffered then flush st ch
+      | _ -> error "channel expected");
+      unit);
+  reg1 "caml_ml_is_buffered" (fun _ ch ->
+      match ch with
+      | Channel c -> bool c.buffered
+      | _ -> error "channel expected");
   reg2 "caml_ml_set_binary_mode" (fun _ _ _ -> unit);
   reg1 "caml_ml_is_binary_mode" (fun _ _ -> int 0);
   reg1 "caml_channel_descriptor" (fun _ ch ->
       match ch with
-      | Channel { fd } -> int fd
+      | Channel { fd; _ } -> int fd
       | _ -> error "channel expected");
   (* Standard input is empty *)
   reg4 "caml_ml_input" (fun _ _ _ _ _ -> int 0);
@@ -2200,7 +2460,10 @@ let compile st (p : program) =
               | Let (x, Prim (Extern ("caml_cps_closure", _), [ Pv d; Pv c ])) :: rem
                 when List.exists closures ~f:(fun (c : C.closure) -> c.dst = local d) ->
                   collect rem closures ((local x, local d, resolve c) :: pairs)
-              | Event _ :: (Let (_, Closure _) :: _ as rem) -> collect rem closures pairs
+              | Event _ :: (Let (_, Closure _) :: _ as rem) when not !wasm ->
+                  (* [Generate.collect_closures] skips events, but not
+                     [Closure_conversion.iter_closures] *)
+                  collect rem closures pairs
               | _ -> l, closures, pairs
             in
             let rem, closures, pairs = collect l [] [] in
@@ -2300,6 +2563,7 @@ let condition (v : V.t) =
   | Block _
   | Bytes _
   | Int64 _
+  | Int32 _
   | Closure _
   | Partial _
   | Prim_closure _
@@ -2311,6 +2575,24 @@ let condition (v : V.t) =
   | Float _ | String _ | Native_string _ | Null ->
       error "condition on a float, a string or null"
 
+(* With Wasm, floats and strings are boxed: their physical equality
+   depends on sharing, which is not specified when they have the same
+   content *)
+let physical_equality (x : V.t) (y : V.t) =
+  if !wasm
+  then
+    match x, y with
+    | Float a, Float b ->
+        if Int64.equal (Int64.bits_of_float a) (Int64.bits_of_float b)
+        then unsupported "physical equality of floats"
+        else false
+    | String a, String b ->
+        if String.equal a b then unsupported "physical equality of strings" else false
+    | Int a, Int b -> Targetint.equal a b
+    | (Int _ | Float _), (Int _ | Float _) -> false
+    | _ -> phys_equal_value x y
+  else phys_equal_value x y
+
 let prim p (args : V.t list) =
   match p, args with
   | Vectlength _, [ x ] -> int (Array.length (as_block x).fields)
@@ -2320,13 +2602,14 @@ let prim p (args : V.t list) =
   | Not, [ _ ] -> error "negation of a value which is not a boolean"
   | IsInt _, [ x ] -> (
       match x with
-      | Int _ | Float _ -> int 1
+      | Int _ -> int 1
+      | Float _ when not !wasm -> int 1
       | _ -> int 0)
   | (Eq { int_only } | Neq { int_only }), [ x; y ] ->
       (match x, y with
       | Int _, Int _ -> ()
       | _ -> if int_only then error "integer comparison of non-integer values");
-      let b = phys_equal_value x y in
+      let b = physical_equality x y in
       bool
         (match p with
         | Eq _ -> b
@@ -2636,6 +2919,7 @@ let rec print_value ~depth f (v : V.t) =
   | Native_string s -> Format.fprintf f "js%S" s
   | Bytes b -> Format.fprintf f "bytes%S" (Bytes.to_string b)
   | Int64 n -> Format.fprintf f "%LdL" n
+  | Int32 n -> Format.fprintf f "%ldl" n
   | Closure _ | Partial _ | Prim_closure _ | Host _ -> Format.pp_print_string f "<fun>"
   | Channel _ -> Format.pp_print_string f "<channel>"
   | Js_array _ -> Format.pp_print_string f "<js array>"
@@ -2676,6 +2960,10 @@ let is_effects e =
     , (`Cps | `Double_translation | `Disabled | `Jspi | `Native) ) -> false
 
 let run ?fuel (p : program) =
+  (wasm :=
+     match Config.target () with
+     | `Wasm -> true
+     | `JavaScript -> false);
   let fuel =
     match fuel with
     | Some n -> n
@@ -2702,6 +2990,8 @@ let run ?fuel (p : program) =
   in
   let result =
     match
+      if !wasm && Option.is_some !trampolined_calls
+      then unsupported "CPS with Wasm (the runtime is not modelled)";
       let code, fn = compile st p in
       st.code <- code;
       let fr =
@@ -2710,10 +3000,27 @@ let run ?fuel (p : program) =
         ; fn
         }
       in
-      match run_cont st fr ~in_try:false fn.entry with
-      | Returned _ -> ()
-      | Tail_call (f, args, exact) -> ignore (apply st f args ~exact)
-      | Popped _ -> error "Poptrap outside of an exception handler"
+      try
+        match run_cont st fr ~in_try:false fn.entry with
+        | Returned _ -> ()
+        | Tail_call (f, args, exact) -> ignore (apply st f args ~exact)
+        | Popped _ -> error "Poptrap outside of an exception handler"
+      with Ml_exn v as exn ->
+        (* [caml_fatal_uncaught_exception] *)
+        let callback f args =
+          if st.cps
+          then ignore (cps_trampoline st f (Js_array (Array.of_list args)))
+          else ignore (apply st f args ~exact:false)
+        in
+        (match
+           String.Hashtbl.find_opt st.named_values "Printexc.handle_uncaught_exception"
+         with
+        | Some handler -> callback handler [ v; bool false ]
+        | None -> (
+            match String.Hashtbl.find_opt st.named_values "Pervasives.do_at_exit" with
+            | Some at_exit -> callback at_exit [ unit ]
+            | None -> ()));
+        raise exn
     with
     | () -> Finished
     | exception Ml_exn v -> Uncaught v
@@ -2760,16 +3067,13 @@ let start p =
   trampolined_calls := None;
   in_cps_calls := Var.Set.empty;
   if debug ()
-  then
-    match Config.target () with
-    | `Wasm -> Format.eprintf "interp: the Wasm target is not supported@."
-    | `JavaScript -> (
-        let o = run p in
-        Format.eprintf "interp: input: %a@." print_outcome o;
-        if debug_output () then print_string o.stdout;
-        match o.result with
-        | Skipped _ -> ()
-        | Finished | Exited _ | Uncaught _ | Failed _ -> reference := Some o)
+  then (
+    let o = run p in
+    Format.eprintf "interp: input: %a@." print_outcome o;
+    if debug_output () then print_string o.stdout;
+    match o.result with
+    | Skipped _ -> ()
+    | Finished | Exited _ | Uncaught _ | Failed _ -> reference := Some o)
 
 let first_difference s s' =
   let n = min (String.length s) (String.length s') in
