@@ -23,6 +23,8 @@
 * Compiler/Wasm: require Binaryen 120 (#2580)
 
 ## Bug fixes
+* Runtime/Wasm: add the system constants needed with `--disable staticeval`
+  (`caml_sys_const_big_endian`, `caml_sys_const_backend_type`, ...) (#2601)
 * Compiler: fix a miscompilation of `Int_trie` by OxCaml's flambda2 at -O2
   and -O3 (#2560)
 * Compiler: fix a stack overflow in the dataflow solvers on deep graphs,

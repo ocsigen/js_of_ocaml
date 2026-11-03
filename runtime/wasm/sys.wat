@@ -446,7 +446,22 @@
       (local.get $a))
 ))
 
-   (func (export "caml_sys_const_bigendian")
+   ;; These constants are usually computed statically (see [Eval]), but
+   ;; are needed when compiling with --disable staticeval
+
+   (func (export "caml_sys_const_big_endian")
+      (param (ref eq)) (result (ref eq))
+      (ref.i31 (i32.const 0)))
+
+   (@string $wasm_of_ocaml "wasm_of_ocaml")
+
+   (func (export "caml_sys_const_backend_type")
+      (param (ref eq)) (result (ref eq))
+      ;; Other "wasm_of_ocaml"
+      (array.new_fixed $block 2 (ref.i31 (i32.const 0))
+         (global.get $wasm_of_ocaml)))
+
+   (func (export "caml_sys_const_naked_pointers_checked")
       (param (ref eq)) (result (ref eq))
       (ref.i31 (i32.const 0)))
 
