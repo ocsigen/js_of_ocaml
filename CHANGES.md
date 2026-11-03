@@ -27,6 +27,8 @@
   (`caml_sys_const_big_endian`, `caml_sys_const_backend_type`, ...) (#2601)
 * Compiler/Wasm: fix the typing of array accesses to constant blocks (such as
   the method names of classes): objects could fail with an illegal cast (#2596)
+* Compiler: trampoline tail calls between mutually recursive functions with
+  `--disable optcall`, to avoid stack overflows (#2597)
 * Compiler: fix a miscompilation of `Int_trie` by OxCaml's flambda2 at -O2
   and -O3 (#2560)
 * Compiler: fix a stack overflow in the dataflow solvers on deep graphs,
