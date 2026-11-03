@@ -1,41 +1,50 @@
 # Compiling and Linking C Code with Wasm_of_ocaml
 
-This document outlines the current manual process for compiling C code and linking it with **wasm_of_ocaml**, and presents a design proposal for streamlining this workflow by modifying the compiler.
+This document describes the building blocks that `wasm_of_ocaml` already has for linking C code, the manual process that can be assembled from them, and a design proposal for supporting existing OCaml C bindings with little or no source change.
 
 ---
 
-## Part 1: Current Implementation Strategy
+## Part 1: Starting Point
 
-Interfacing OCaml and C in a WebAssembly GC environment is different from a traditional native target due to partitioned memory spaces (the WebAssembly GC heap vs flat linear memory) and different value representation formats.
+Interfacing OCaml and C in a WebAssembly GC environment differs from a native target: memory is partitioned (the Wasm GC heap vs. flat linear memory) and values are represented differently.
 
 ### 1. Architectural Overview
 
-1. **Memory Spaces**: WebAssembly GC values live on the Wasm engine's garbage-collected heap. Standard C pointer operations can only target WebAssembly **linear memory**.
-2. **Type representation**: `wasm_of_ocaml` uses WebAssembly GC reference types (`eqref`, `$block`, `$bytes`) internally. C code compiled with Clang represents opaque host values as `externref` (`__externref_t`).
-3. **The Adapter Layer**: We bridge the gap using an alternative `caml/mlvalues.h` header on the C side and hand-written WebAssembly Text (WAT) stubs to convert types and copy buffers.
+1. **Memory Spaces**: WebAssembly GC values live on the engine's garbage-collected heap. C pointer operations can only target WebAssembly **linear memory**.
+2. **Type representation**: `wasm_of_ocaml` uses WebAssembly GC reference types (`(ref eq)`, `$block`, `$bytes`) internally. C code compiled with Clang represents opaque host values as `externref` (`__externref_t`).
+3. **The Adapter Layer**: The gap is bridged by an alternative `caml/mlvalues.h` header on the C side and by Wasm helpers that convert types and copy buffers.
 
-The strict partitioning is the source of most constraints in this document, but it is also a safety property in its own right: unlike native OCaml, where a buffer overflow in a C stub corrupts the OCaml heap, a memory bug in the C code here is confined to the C module's linear memory. For programs embedding crufty or untrusted C libraries, this architecture is *safer* than the native one, not merely compatible with it.
+The partitioning is the source of most constraints in this document, but it is also a safety property: a memory bug in C code cannot corrupt the OCaml heap, since every access to a GC value goes through a typed helper that traps on misuse. It is confined to linear memory. How far it is confined depends on a design choice discussed in Part 2.4: if user C code shares the runtime's linear memory (one `malloc`, one libc), a buffer overflow in user code can still corrupt the C state of the runtime (its zstd and blake2 buffers) or of other C libraries.
+
+### 2. What Already Exists
+
+Several pieces of the pipeline are already in the repository:
+
+- **The runtime links C code.** `runtime/wasm/c/` holds C sources (the zstd decoder, blake2, and a small libc layer for WASI) compiled with the WASI SDK into `c-impl.wasm` (freestanding, non-WASI runtime) and `libc.wasm` (WASI runtime, linked against wasi-libc). The `.wat` runtime modules import from them (e.g. `blake2.wat` imports the memory and the `blake2_*` functions). All C code of a runtime shares a single linear memory.
+- **Our own Wasm linker.** The runtime and the compiled code are linked with `Wasm_link`, not `wasm-merge`. `wasmoo_link_wasm`, which the runtime build uses with `NAME:FILE` inputs (`c:c-impl.wasm`), is an internal tool: it is not installed.
+- **Extra runtime files on the command line.** `wasm_of_ocaml` already accepts `.wat`, `.wast` and `.wasm` files next to the bytecode (`compile.ml`, `with_runtime_files` / `link_runtime`). They are linked into the runtime under the module name `env`. Dune passes them through the `(wasm_of_ocaml (wasm_files ...))` field.
+- **Missing-primitive handling.** At link time, primitives used by the program but provided by no runtime module are computed (`Link.compute_missing_primitives`) and given stubs that raise (`generate_missing_primitives`).
+- **Precompiled runtimes with a fallback.** The runtime is precompiled for the common flag combinations (`Runtime_files.precompiled_runtimes`); for any other combination it is built from its sources at link time (`build_runtime`).
+
+Nothing below is shipped yet: there is no installed `caml/mlvalues.h`, no C-API helper module, and no way to give a user C module a module name of its own.
 
 ```mermaid
 graph TD
-    OCamlCode[OCaml Code] -->|wasm_of_ocaml| OCamlWasm[OCaml GC Wasm Module]
-    CCode[C Code + Alternative Headers] -->|clang| CWasm[C Linear Memory Wasm Module]
-    StubsWat[stubs.wat] -->|stubs| WatWasm[WAT Stubs Module]
-    
-    OCamlWasm --> WasmMerge[wasm-merge]
-    CWasm --> WasmMerge
-    WatWasm --> WasmMerge
-    
-    WasmMerge --> CombinedWasm[Combined Wasm]
-    CombinedWasm --> WasmOpt[wasm-opt -O3]
-    WasmOpt --> FinalWasm[Optimized Wasm Binary]
+    OCamlCode[OCaml Code] -->|ocamlc| Bytecode[Bytecode]
+    Bytecode -->|wasm_of_ocaml| OCamlWasm[Compiled OCaml Wasm]
+    CCode[C Code + Alternative Headers] -->|clang / wasm-ld| CWasm[C Module, linear memory]
+    Runtime[Wasm runtime incl. C-API helpers] --> Link
+    OCamlWasm --> Link[Wasm_link + generated wrappers]
+    CWasm --> Link
+    Link --> WasmOpt[wasm-opt]
+    WasmOpt --> FinalWasm[Wasm Binary]
 ```
 
 ---
 
-### 2. The Alternative C Headers (`caml/mlvalues.h`)
+### 3. The Alternative C Headers (`caml/mlvalues.h`)
 
-Since C code cannot read the GC heap directly, we redefine standard OCaml C binding macros to invoke imported helper functions.
+Since C code cannot read the GC heap directly, the standard OCaml C binding macros are redefined to call imported helper functions.
 
 ```c
 #ifndef CAML_MLVALUES_H
@@ -48,14 +57,15 @@ Since C code cannot read the GC heap directly, we redefine standard OCaml C bind
 typedef __externref_t value;
 
 /* Same auxiliary types as the native headers (32-bit on wasm32), so that
- * bindings using intnat / mlsize_t compile unchanged. */
+ * bindings using intnat / mlsize_t compile unchanged. Note that OCaml ints
+ * are 31-bit under wasm_of_ocaml today (see Part 6.8). */
 typedef int32_t intnat;
 typedef uint32_t uintnat;
 typedef uintnat mlsize_t;
 typedef unsigned int tag_t;
 
-/* Helper functions are imported from the "stubs" Wasm module (rather than
- * clang's default "env"), matching the module name used at the merge step. */
+/* "stubs" is the name of the C-API interface. The linker resolves these
+ * imports to the helpers provided by the runtime (Part 2.3). */
 #define CAML_HELPER __attribute__((import_module("stubs")))
 
 /* Primitive conversions */
@@ -77,9 +87,24 @@ CAML_HELPER double caml_double_val(value v);
 #define Val_bool(x) caml_val_int((x) ? 1 : 0)
 #define Bool_val(x) caml_int_val(x)
 
+/* Tests and comparisons.
+ * Clang rejects ==, ! and every other operator on __externref_t, so the
+ * native bit tests and comparisons such as `v == Val_none` must go through
+ * helpers (see Part 6.2). */
+CAML_HELPER int caml_is_block(value v);
+CAML_HELPER int caml_phys_eq(value v, value w); /* ref.eq */
+
+#define Is_block(v) caml_is_block(v)
+#define Is_long(v) (!caml_is_block(v))
+#define Val_none Val_int(0)
+#define Is_none(v) Is_long(v)
+#define Is_some(v) Is_block(v)
+#define Some_val(v) Field(v, 0)
+
 /* Block fields and Tags
  * Under wasm_of_ocaml, blocks are Wasm GC arrays where index 0 stores the tag
- * (as an i31ref) and the fields start at index 1.
+ * (as an i31ref) and the fields start at index 1. Tag_val also handles
+ * values that are not $block arrays (strings, floats, custom blocks, ...).
  */
 CAML_HELPER value caml_field(value v, mlsize_t i);
 CAML_HELPER void caml_store_field(value v, mlsize_t i, value w);
@@ -92,7 +117,7 @@ CAML_HELPER mlsize_t caml_wosize_val(value v);
 #define Wosize_val(v) caml_wosize_val(v)
 
 /* Flat float arrays are a distinct Wasm GC type; Field/Store_field are
- * invalid on them (see Part 6).
+ * invalid on them (see Part 6.4).
  */
 CAML_HELPER double caml_double_field(value v, mlsize_t i);
 CAML_HELPER void caml_store_double_field(value v, mlsize_t i, double d);
@@ -101,9 +126,9 @@ CAML_HELPER void caml_store_double_field(value v, mlsize_t i, double d);
 #define Store_double_field(v, i, d) caml_store_double_field(v, i, d)
 
 /* Strings & Bytes
- * GC array characters must be copied to linear memory on demand. Buffers
- * obtained via Bytes_val are copied back into the GC array when the C
- * function returns (see Part 6).
+ * GC array contents are copied to linear memory on demand, at most once per
+ * value and per C call; modified buffers are copied back when the C
+ * function returns (see Part 3.1).
  */
 CAML_HELPER mlsize_t caml_string_length(value v);
 CAML_HELPER const char* caml_string_val(value v);
@@ -112,7 +137,7 @@ CAML_HELPER char* caml_bytes_val(value v);
 #define String_val(v) caml_string_val(v)
 #define Bytes_val(v) caml_bytes_val(v)
 
-/* This header is an excerpt. The shipped header additionally covers
+/* This header is an excerpt. The full header additionally covers
  * allocation (caml_alloc, caml_alloc_tuple, caml_copy_string,
  * caml_copy_double, ...), caml_stat_alloc / caml_stat_free (mapped to
  * linear-memory malloc / free), exceptions, callbacks, etc.
@@ -123,20 +148,20 @@ CAML_HELPER char* caml_bytes_val(value v);
 
 ---
 
-### 3. Wasm GC Stubs (`stubs.wat`)
+### 4. Wasm GC Helpers
 
-The WAT stub imports C functions, translates signatures between `(ref eq)` and `externref` types via conversion instructions, and implements GC operations.
+The helpers translate between `(ref eq)` and `externref` and implement GC operations. Written by hand, a stub module looks as follows; Part 2.3 moves these helpers into the runtime and Part 2.2 generates the per-primitive wrappers.
 
 ```wat
 (module
    ;; Import linear memory and allocators exported by the compiled C module
    (import "c_module" "c_memory" (memory 1))
    (import "c_module" "malloc" (func $malloc (param i32) (result i32)))
-   
+
    ;; Import C functions that we want to wrap
    (import "c_module" "my_c_binding" (func $my_c_binding (param externref) (result externref)))
 
-   ;; Wasm GC type definitions matching wasm_of_ocaml
+   ;; Wasm GC type definitions matching wasm_of_ocaml (runtime/wasm/obj.wat)
    (type $float (struct (field $f f64)))
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
@@ -169,12 +194,13 @@ The WAT stub imports C functions, translates signatures between `(ref eq)` and `
       (array.set $block
          (ref.cast (ref $block) (any.convert_extern (local.get $v)))
          (i32.add (local.get $i) (i32.const 1))
-         (any.convert_extern (local.get $w))))
+         (ref.cast (ref eq) (any.convert_extern (local.get $w)))))
 
    ;; String Copying: Copy GC bytes into C linear memory, returns pointer
-   ;; WARNING: This manual implementation allocates via malloc but has no automatic way 
-   ;; of freeing it, causing permanent leaks unless explicitly freed by the C side.
-   ;; The streamlined compiler design solves this using a scoped bump allocator.
+   ;; WARNING: This hand-written version allocates with malloc and never frees
+   ;; the copy. The proposed design uses a scoped bump allocator (Part 3.1).
+   ;; There is no bulk instruction between GC arrays and linear memory, hence
+   ;; the byte loop (see Part 8.3).
    (func (export "caml_string_val") (param $v externref) (result i32)
       (local $len i32) (local $addr i32) (local $i i32) (local $bytes_ref (ref $bytes))
       (local.set $bytes_ref (ref.cast (ref $bytes) (any.convert_extern (local.get $v))))
@@ -192,7 +218,9 @@ The WAT stub imports C functions, translates signatures between `(ref eq)` and `
       (i32.store8 (i32.add (local.get $addr) (local.get $len)) (i32.const 0))
       (local.get $addr))
 
-   ;; OCaml Primitive Bridge wrapper: maps signatures
+   ;; OCaml primitive wrapper: maps signatures. The generated wrappers of
+   ;; Part 2.2 also restore the C stack and bump pointers, copy buffers back,
+   ;; and handle exceptions.
    (func (export "caml_my_c_binding") (param $v (ref eq)) (result (ref eq))
       (ref.cast (ref eq)
          (any.convert_extern
@@ -203,323 +231,366 @@ The WAT stub imports C functions, translates signatures between `(ref eq)` and `
 
 ---
 
-### 4. Compilation and Linking Commands
+### 5. Compiling the C Code
 
-1. **Compile C Code**:
-   ```bash
-   /opt/wasi-sdk/bin/clang -O3 -flto \
-     -mbulk-memory -mreference-types \
-     -mexec-model=reactor \
-     -Wl,--allow-undefined \
-     -Wl,--export-memory=c_memory \
-     -Wl,--export=malloc \
-     my_bindings.c -o c_module.wasm
-   ```
-   - The WASI SDK links **wasi-libc** by default, so `malloc`, `string.h`, etc. are available; `-mexec-model=reactor` builds a library-style module (with an `_initialize` entry point instead of `_start`). The module's WASI imports (`wasi_snapshot_preview1.*`) must be satisfied at instantiation — by a WASI shim, or by trivial stubs when the bindings perform no I/O.
-   - `-Wl,--allow-undefined` is required because the C code imports the `caml_*` helper functions. The alternative header declares them with `__attribute__((import_module("stubs")))`, so clang emits imports from the `stubs` module (matching the module name used at the merge step) rather than the default `env`.
-2. **Compile OCaml Code**:
-   ```bash
-   ocamlfind ocamlc -package ... -linkpkg main.ml -o main.byte
-   wasm_of_ocaml main.byte -o main.js
-   ```
-   `wasm_of_ocaml` consumes OCaml *bytecode* and produces `main.js` (the JavaScript launcher) together with a `main.assets/` directory containing the Wasm module (`code-<hash>.wasm`). That module is the input to the merge step below.
-3. **Merge and Link Wasm Modules** (`wasmoo_link_wasm` drives Binaryen's `wasm-merge` and `wasm-opt`, as shown in the diagram above; the output file is the first positional argument):
-   ```bash
-   wasmoo_link_wasm \
-     app.wasm \
-     c_module:c_module.wasm \
-     stubs:stubs.wat \
-     ocaml_module:main.assets/code-<hash>.wasm
-   ```
-   The merged and optimized module then replaces the original one in `main.assets/` (keeping its file name) so that `main.js` loads it.
+```bash
+/opt/wasi-sdk/bin/clang -O3 -flto \
+  -mbulk-memory -mreference-types \
+  -mexec-model=reactor \
+  -Wl,--allow-undefined \
+  -Wl,--export-memory=c_memory \
+  -Wl,--export=malloc -Wl,--export=free \
+  -Wl,--export=my_c_binding \
+  -Wl,--export=__stack_pointer \
+  -Wl,--export-table \
+  my_bindings.c -o c_module.wasm
+```
+
+- The WASI SDK links **wasi-libc** by default, so `malloc`, `string.h`, etc. are available. `-mexec-model=reactor` builds a library-style module, with an `_initialize` entry point instead of `_start`. The module's WASI imports (`wasi_snapshot_preview1.*`) must be satisfied: in the WASI runtime by the host, otherwise by a shim or by trivial stubs when the bindings perform no I/O.
+- **Every function called from outside must be exported explicitly.** In reactor mode, and with `-flto`, a function that is neither exported nor reachable from an export is removed: without `--export=my_c_binding` (or `__attribute__((export_name(...)))`), the module above exports only `c_memory`, `_initialize` and `malloc`.
+- `__stack_pointer` and the function table (`__indirect_function_table`) are exported for the wrappers (Part 3.3) and for custom block operations (Part 4).
+- `-Wl,--allow-undefined` is required because the C code imports the `caml_*` helpers; the header declares them with `import_module("stubs")`.
+- **`_initialize` must be called before any other export**: it runs libc initialization and C constructors. Neither `wasm-merge` nor our linker does that on its own; the generated start function (`Link.generate_start_function`) has to call it.
+
+Today there is no supported way to link the result: the command-line runtime files all get the module name `env`, so the stubs' imports from `c_module` cannot be resolved, and `wasmoo_link_wasm` is internal. Part 2.1 closes this gap.
 
 ---
 
-## Part 2: Proposed Compiler Streamlining
+## Part 2: Proposed Compiler Support
 
-Writing manual WAT stubs for every external function is tedious. We propose modifications to `wasm_of_ocaml` to automate this workflow.
+Writing WAT stubs for every external function is tedious and error-prone. The proposal below automates the workflow, building on the pieces of Part 1.2.
 
-### 1. Automatic Wrapper Generation (Auto-Stubs)
+### 1. Accept C Modules as Runtime Files
 
-Instead of manual stub files, we can modify the compiler to generate marshaling wrappers directly during compiling. To maximize compatibility with existing C bindings written for the regular OCaml compiler, the auto-generated wrappers will retain the use of OCaml's `value` type (represented as `externref` in WebAssembly) rather than unboxing arguments to standard C types.
+The first step is small: let the command line (and dune's `wasm_files`) give a linked C module a module name, as `wasmoo_link_wasm` already does with `NAME:FILE`, or recognize C modules (they import from `stubs`) and name them automatically. The linker resolves their `stubs` imports to the runtime's helpers and calls their `_initialize` from the start function. This alone makes the manual flow of Part 1 work with hand-written stubs.
 
-For every OCaml declaration:
+### 2. Automatic Wrapper Generation
+
+Instead of hand-written stubs, the compiler generates a wrapper for each primitive implemented in C. To stay compatible with existing C bindings, the wrappers keep OCaml's `value` type (`externref`) rather than unboxing arguments to C types.
+
+For a declaration:
 ```ocaml
 external my_c_function : int -> string -> float -> unit = "my_c_function"
 ```
-The compiler can automatically output the correct wrapper function:
-- Converts all OCaml GC values (e.g., `i31ref`, `$float` structs, GC arrays) into opaque Wasm `externref` values.
-- Invokes the corresponding C function, which accepts and returns `externref` (typedef'd as `value` in the alternative C headers).
-- Restores the Wasm GC type from the returned `externref` before yielding execution back to OCaml.
+the generated wrapper:
+- converts its `(ref eq)` arguments to `externref` (a free conversion);
+- saves the C module's `__stack_pointer` and the bump-allocator pointer;
+- calls the C function inside a `try_table` with a `catch_all` handler;
+- on return, copies modified `Bytes`/`String` buffers back to the GC heap (Part 3.1), restores both pointers and converts the result back to `(ref eq)`;
+- on an exception, restores both pointers and rethrows (Part 3.3).
 
-This approach ensures that existing C code utilizing standard macros (`Int_val`, `Double_val`, `String_val`) requires minimal to no modifications to be compiled for WebAssembly.
+The wrappers are generated at link time, in place of the raising stubs that the linker currently generates for missing primitives (Part 5): compiled OCaml code imports the primitive as it does today and does not need to know that it is implemented in C.
 
-### 2. Built-in C-API Bridge Runtime
+Existing C code using the standard macros (`Int_val`, `Double_val`, `String_val`) then needs few or no changes; Part 6 lists the cases that do need changes.
 
-Instead of requiring developers to include helper implementations (`caml_field`, `caml_alloc`) in their stubs, `wasm_of_ocaml` should integrate them directly into the runtime (`runtime/wasm/obj.wat` and `gc.wat`).
-- A single static `caml/mlvalues.h` file can then be shipped with `wasm_of_ocaml` and reused across all projects without modifications.
-- Standard C bindings can be compiled directly against these runtime helper exports.
+### 3. C-API Helpers in the Runtime
 
-### 3. Toolchain Integration
+The helpers (`caml_field`, `caml_alloc`, `caml_string_val`, ...) are provided by the runtime (`runtime/wasm/`) rather than by each project, so that a single `caml/mlvalues.h` can be shipped with `wasm_of_ocaml` and reused unchanged.
 
-Extend the `wasm_of_ocaml` CLI to invoke clang and link the compiled linear memory output directly:
+This includes callbacks and exceptions. The existing runtime functions cannot be imported by C code as they are: they take `(ref eq)` rather than `externref`, and the C API passes strings as linear-memory pointers (`caml_failwith(const char *)` must copy its argument into a GC string). Each needs a thin adapter; Part 3.3 covers the cases that need more than a type conversion.
+
+### 4. Linking C Libraries in a Single Step
+
+The runtime already shares one linear memory between all its C code. Linking independently linked C modules side by side gives duplicate symbols: several copies of libc, several `malloc`s, and heaps that cannot exchange pointers. This applies between user libraries, and also between user code and the runtime's own C code.
+
+The toolchain should therefore collect *all* C objects and archives, the runtime's included, and perform a **single `wasm-ld` link** with one libc and one allocator. This changes how the runtime's C code is shipped: today it is linked into `c-impl.wasm` / `libc.wasm` and promoted into the source tree; it would instead be shipped as object files (or an archive) and linked at program link time when user C code is present. Keeping one module per library remains an option for isolation (the multi-memory proposal makes it principled), at the cost of the shared heap.
+
+The command-line form is:
 ```bash
 wasm_of_ocaml main.byte --link-c-file=my_bindings.c -o main.js
 ```
-Under the hood, the compiler CLI will find `clang` (from the WASI-SDK), run the compilation with the proper flags (LTO, Reference Types), and bundle everything via `wasm-merge` automatically. The flag must be accepted both by the whole-program `compile` subcommand and by the separate-compilation `link` subcommand (used by dune's dev profile), since primitive resolution happens at link time in the latter mode (see Part 5).
-
-### 4. Linking Multiple C Libraries in a Single Step
-
-When a program uses several C-backed libraries, merging independently compiled C Wasm modules with `wasm-merge` yields duplicate symbols: two copies of libc, two `malloc`s, two heaps that cannot exchange pointers. The toolchain integration should therefore collect *all* C sources and archives and perform a **single clang / `wasm-ld` link**, restoring ordinary C linking semantics — one allocator, cross-library calls, a deduplicated libc. Keeping one module per library remains a deliberate option for isolation (the multi-memory proposal makes it principled), but it must be a choice, not an accident of the pipeline.
+`wasm_of_ocaml` finds `clang` (from the WASI SDK), compiles with the flags of Part 1.5, and performs the single link. The flag must be accepted both by the whole-program `compile` subcommand and by the separate-compilation `link` subcommand (used by dune's dev profile), since primitive resolution happens at link time in the latter mode.
 
 ### 5. Build System Integration (dune / findlib)
 
-A `--link-c-file` flag assumes the user lists C files by hand at link time, but the information already exists in build metadata: dune's `(foreign_stubs ...)` stanzas, and the `dllibs` and primitives recorded in `.cma` files. If dune (or a findlib convention) carried the C sources — or the compiled C Wasm module — alongside each library, linking a Wasm executable would pick up C stubs **transitively**, exactly like native linking does. Without this, "existing bindings compile out of the box" is only true for whoever writes the link command by hand; with it, `dune build` on an unmodified project just works. This is arguably the largest remaining gap between the design and real-world adoption.
+A `--link-c-file` flag assumes the user lists C files by hand, but the information already exists: dune's `(foreign_stubs ...)` stanzas, and the `dllibs` and primitives recorded in `.cma` files. Dune already passes per-library `.wat`/`.wasm` runtime files through `(wasm_of_ocaml (wasm_files ...))`; extending this to C objects (or compiling `foreign_stubs` with the WASI SDK in a Wasm context) would make linking a Wasm executable pick up C stubs transitively, as native linking does. Without it, existing bindings only work for whoever writes the link command by hand; this is likely the largest remaining gap for adoption.
 
 ### 6. Portable Prebuilt Binding Artifacts
 
-A compiled C Wasm module is architecture-independent — unlike a native `.o`. A package like `zarith` can therefore build its C module (GMP included) once in CI and ship the blob in its opam package; downstream users need no WASI SDK and no clang. Native OCaml could never do this. It changes the distribution story from "every user needs a cross toolchain" to "only binding authors do".
+Compiled Wasm C code is architecture-independent, unlike a native `.o`. A package like `zarith` can build its C code (GMP included) once in CI and ship it in its opam package; downstream users then need no WASI SDK and no clang. For the single link of Part 2.4, what is shipped must be linkable: wasm32 object files or archives, not a linked module. LTO bitcode is tied to an LLVM version, so prebuilt artifacts should be regular object files.
 
 ---
 
 ## Part 3: ABI Compatibility and Runtime Integration
 
-To maintain seamless compatibility with standard C bindings, the design relies heavily on WebAssembly's native features and the existing `wasm_of_ocaml` Wasm runtime.
+### 1. Strings and Bytes
 
-### 1. Memory Management for Strings and Bytes
-Because C code written for the OCaml C-ABI expects strings to be managed by the GC (and potentially moved), it does not attempt to `free()` them. To support this in Wasm linear memory:
-- Auto-generated wrappers will utilize a **scoped bump-allocator** (or shadow stack) in Wasm linear memory to copy GC string data.
-- The wrapper allocates linear memory, passes the pointer to the C function, and immediately resets the bump-allocator's stack pointer after the C function returns.
-- This safely provides C with a temporary linear memory pointer without causing memory leaks.
+C code written for the OCaml C API does not `free()` the pointers returned by `String_val` / `Bytes_val`. The wrappers therefore copy GC string data into a **scoped bump allocator** in linear memory, which is reset when the C function returns.
+
+- **One copy per value and per call.** Each `String_val(v)` call would otherwise copy the whole string: loops such as `for (...) String_val(s)[i]`, or the `Byte(v, i)` macro, would become quadratic and could overflow the bump region. The helper keeps a per-frame table from GC values (compared with `ref.eq` on the GC side) to their copies and returns the existing copy.
+- **Copy-back.** At the end of the call, the wrapper compares each copy with the GC array and writes back the bytes that differ. This covers `Bytes_val`, and also the common idiom of writing through `String_val` on a freshly allocated string (`r = caml_alloc_string(n); memcpy((char *)String_val(r), buf, n);`), which is undefined behaviour natively but widespread in older bindings. The comparison costs about as much as the copy.
+- **Large buffers.** Copying is proportional to the buffer, not to the accessed range: `memcpy(Bytes_val(b) + ofs, src, len)` into a large buffer (a `read`-style binding) copies the whole buffer in and compares it out on every call. A `caml_bytes_sub(v, ofs, len)` accessor, which copies only a range, is the opt-in fix for such hot paths.
+- **Callbacks.** If C code calls back into OCaml while holding a copy, OCaml sees the bytes as they were before the C function started writing, and OCaml writes to the same bytes are overwritten by the copy-back when the C function returns. Bindings that share a buffer between C and a callback must flush explicitly (`caml_bytes_flush(v)`) before calling back and fetch the buffer again afterwards.
+- **Capacity.** The bump region has a fixed size; larger copies fall back to `malloc`, tracked in the same per-frame table and freed when the frame is reset.
 
 ### 2. GC Roots and `CAMLparam` / `CAMLlocal`
-WebAssembly GC automatically traces `externref` variables that are held on the Wasm execution stack or within Wasm locals. Therefore, GC root tracking for function local variables is handled natively.
-However, to manage the scope of temporary allocations (like the bump allocator stack pointer), we implement a **hybrid scoping strategy**:
-- **Macro Redefinitions:** The `caml/mlvalues.h` header will redefine `CAMLparam` to record the current bump allocator stack pointer, and `CAMLreturn` / `CAMLreturn0` to restore it. This enables fine-grained, frame-local cleanup of transient strings and bytes.
-- **Wrapper Safety Net:** Redefining the macros does not protect against functions that omit `CAMLparam`/`CAMLreturn` entirely (e.g., short utility functions). To guarantee leak-free execution, the compiler-generated external Wasm-to-C wrapper will also save the bump pointer before calling the C function and restore it as a safety-net reset after the function returns.
 
-### 3. Callbacks and Exceptions
-Operations like invoking closures (`caml_callback`) and raising exceptions (`caml_failwith`) do not require new Wasm GC stubs. These functions are already implemented natively within the `wasm_of_ocaml` runtime (`runtime/wasm/`). 
-The C module simply imports these existing functions from the Wasm runtime environment. When C code calls `caml_callback(closure_val, arg_val)`, it passes the `externref` arguments to the runtime, which handles the Wasm GC unboxing and execution automatically.
+The Wasm engine traces `externref` values held in Wasm locals and on the Wasm stack, so local roots need no registration. The macros are kept for scoping:
+- **Macro redefinitions:** `CAMLparam` records the bump pointer and `CAMLreturn` / `CAMLreturn0` restore it (after copying back the frame's buffers), for frame-local cleanup.
+- **Wrapper safety net:** functions that omit `CAMLparam`/`CAMLreturn` are covered by the wrapper of Part 2.2, which resets the bump pointer when the C function returns or raises.
+- `CAMLlocalN(x, n)` declares an array of values, which cannot exist (Part 6.2); it is not supported.
 
-**Exception Safety Caveat:**
-Because `wasm_of_ocaml` raises exceptions via native WebAssembly Exceptions, throwing an exception propagates through the Wasm stack. If a Wasm exception propagates through a C function, standard C compiled with Clang does not catch it. Any cleanup blocks, `free()` calls, or resource releases in the C function will be bypassed, leading to resource leaks.
-* *Best Practice:* Inside C bindings that allocate linear memory resources or modify global state, developers should call OCaml callbacks using `caml_callback_exn` instead of `caml_callback`. This allows the C code to catch the exception value, release local resources, and then explicitly re-raise the exception.
+### 3. Exceptions and Callbacks
+
+`wasm_of_ocaml` primitives raise OCaml exceptions with the Wasm `throw` instruction (tag `ocaml_exception`), whether the exception is raised by OCaml code called back from C or by C code calling `caml_failwith` and the like. Clang-compiled C code without Wasm exception handling does not catch it: the exception unwinds through C frames.
+
+- **The C stack pointer is not restored.** C code keeps a shadow stack in linear memory, addressed by the mutable global `__stack_pointer`. Unwinding skips the epilogues that pop C frames, so each exception raised through C code leaks the frames it crossed. With wasm-ld's default layout (stack first), repeated leaks end in an out-of-bounds trap; with `--no-stack-first` (as used by the runtime's own `c-impl.wasm`) the stack grows into static data and corrupts it silently. The wrapper of Part 2.2 therefore saves `__stack_pointer` before the call and restores it in its `catch_all` handler before rethrowing; the C module must export it (Part 1.5). The same handler resets the bump allocator.
+- **Cleanup in C code is skipped.** `free()` calls and other resource releases in the frames crossed by an exception do not run. C code that holds resources around a callback should use `caml_callback_exn`, release them, and then re-raise. This does not help when the C code itself raises (`caml_failwith`): such code must release resources before raising, as it must natively.
+- **Encoding `caml_callback_exn` results.** Natively, an exception result is a tagged pointer, tested with `Is_exception_result` and decoded with `Extract_exception`. There is no tag bit on an `externref`. The adapter catches the exception, stores it in a runtime slot and returns a distinguished sentinel object; `Is_exception_result(v)` tests for the sentinel with `ref.eq` and `Extract_exception(v)` reads (and clears) the slot.
+
+### 4. Effects and C Frames
+
+In native OCaml 5, an effect cannot be performed across C frames: an effect performed in a callback from C and not handled within that callback raises `Effect.Unhandled`. The same restriction is needed here, for every effects backend:
+- with JSPI or native stack switching, suspending a continuation that contains C frames would leave those frames sharing the single C shadow stack and bump allocator with whatever code runs next, corrupting both;
+- with CPS, C frames cannot be captured at all; the runtime's `caml_callback_N` already runs the closure to completion through `caml_cps_trampoline`.
+
+The `caml_callback` adapters therefore run the closure under a barrier handler that turns any effect reaching it into `Effect.Unhandled`, as native OCaml does.
 
 ---
 
 ## Part 4: Custom Blocks and Finalization
 
-Custom blocks in OCaml are often used to wrap C pointers and attach finalization functions that `free` underlying resources when the block is garbage collected. Supporting this in WebAssembly GC introduces specific challenges, primarily because native Wasm GC **does not currently support finalizers**.
+Custom blocks are often used to wrap C pointers and attach finalization functions that free underlying resources. Wasm GC has **no finalizers**, so finalization goes through the JavaScript `FinalizationRegistry` (or, under WASI, is unavailable). Note that `Gc.finalise` is currently a no-op in the Wasm runtime (`gc.wat`, `caml_final_register`); the mechanism below would also implement it.
 
-### 1. Representation and Faking the Finalizer Token
-Since the custom C struct must live in Wasm linear memory, `caml_alloc_custom` generates a Wasm GC object (acting as the block) that stores an `i32` linear memory pointer and a pointer to the `custom_operations` struct. `Data_custom_val(v)` simply unboxes this Wasm GC object to return the `i32` payload.
+### 1. Representation
 
-To implement finalization, the runtime relies on the host JavaScript `FinalizationRegistry` as a fallback:
-1. **Registration:** During allocation, the JS host registers the Wasm GC object with the `FinalizationRegistry`. Because the JS registry does not provide access to the collected object in its callback (the object is already dead), the host passes the raw `i32` linear memory pointer and `custom_operations` pointer as the registry's "held value" token.
-2. **Reconstruction:** When the JS callback fires, it receives these `i32` pointers. Because standard C finalization functions expect an `externref` (`value v`), the JS runtime **allocates a dummy Wasm GC object** containing these exact same pointers.
-3. **Execution:** This dummy object is cast to an `externref` and passed to the C `finalize` function. The C code successfully reads the linear memory pointer via `Data_custom_val(v)`, frees the memory, and returns. The dummy object is then quickly garbage collected. This completely hides the underlying JavaScript limitations from the C code.
+`caml_alloc_custom(ops, size, used, max)` allocates `size` bytes of payload with `malloc` in linear memory and returns a Wasm GC object holding the payload address and the address of the C `custom_operations` struct. `Data_custom_val(v)` returns the payload address.
 
-### 2. The Memory Pressure Disconnect & GC Double-Hop (Warning)
-While `FinalizationRegistry` works as a best-effort mechanism, developers must be warned about **severe memory pressure risks** due to the **GC double-hop delay**:
-1. When a Wasm GC object wrapping a linear memory allocation becomes garbage, the Wasm engine's GC must run first to collect it.
-2. The Wasm GC then schedules a cleanup task in the JS host's `FinalizationRegistry`.
-3. The JavaScript event loop must cycle and run the registered finalization callback.
-4. Only then does the JS callback execute the Wasm linear memory `$free` call.
+- **Every custom block needs freeing, not just those with a finalizer.** Natively, the GC frees the block's payload along with the block. Here the payload is a `malloc`ed region, so every custom block allocated from C must be registered for finalization, whether or not its `ops` have a `finalize` function.
+- **Operations are C function pointers**, i.e. indices into the C module's function table. The runtime calls `finalize`, `compare`, `hash`, `serialize` and `deserialize` with `call_indirect` through the exported `__indirect_function_table`. The runtime's own custom blocks use a `$custom_operations` struct of funcrefs; C custom blocks get a single bridge instance of it whose functions dispatch through the table, so that polymorphic comparison, `Hashtbl.hash` and `Marshal` work on them.
 
-Because the Wasm/JS engine's GC is unaware of the potentially massive Wasm linear memory allocations represented by tiny Wasm GC handles, it may not trigger sweeps frequently enough. A Wasm module can easily exhaust its linear memory (triggering an OOM crash) before the double-hop finalizer cycle runs.
-* *Requirement:* When targeting WebAssembly with C bindings, developers should explicitly call resource-release functions (e.g. `caml_ba_free` or custom free stubs) rather than relying on finalizers to clean up heavy allocations.
+### 2. Finalization Through `FinalizationRegistry`
 
-Note that native OCaml already exposes exactly the missing information: the `used` / `max` arguments of `caml_alloc_custom(ops, size, used, max)` exist to tell the GC how much external memory a custom block retains. Under WebAssembly they are currently discarded for lack of an engine API to feed them into — they are precisely what the `gc.adjust_external_memory` extension proposed in Part 8 would consume, so the C-API surface is already in place.
+1. **Registration:** at allocation, the runtime registers the Wasm GC object with a `FinalizationRegistry`, with the payload address and the `custom_operations` address as the held value (the callback cannot see the collected object).
+2. **Reconstruction:** when the callback fires, it calls a Wasm export of the runtime with these two addresses. JavaScript cannot allocate Wasm GC objects itself; the export allocates a stand-in custom block holding the same addresses.
+3. **Execution:** the export calls the C `finalize` function (if any) on the stand-in, then frees the payload. The stand-in is garbage afterwards. The C code reads the payload with `Data_custom_val(v)` as usual.
+
+### 3. Memory Pressure
+
+Finalization is delayed:
+1. the engine's GC must first find the Wasm GC object dead;
+2. it then schedules the `FinalizationRegistry` callback;
+3. the JavaScript event loop must yield before the callback runs and frees the payload.
+
+The engine's GC heuristics see only the small Wasm GC object, not the linear memory it retains, and may not collect often enough: a program can exhaust its linear memory before finalizers run. Code allocating large resources through custom blocks should release them explicitly (e.g. a `close`/`free` function in the binding) rather than rely on finalizers. Long-running loops that never yield to the event loop never run finalizers at all.
+
+Native OCaml already exposes the missing information: the `used` / `max` arguments of `caml_alloc_custom` tell the GC how much external memory a block retains. They are currently discarded under WebAssembly for lack of an engine API; they are what the `gc.adjust_external_memory` extension of Part 8 would consume.
 
 ---
 
 ## Part 5: Primitive Resolution (OCaml Externals vs C Functions)
 
-OCaml's `external` keyword is traditionally used both to bind to internal runtime primitives and to bind to user-defined C functions. Since `wasm_of_ocaml` relies heavily on internal Wasm runtime implementations (e.g., in `runtime/wasm/`), the compiler requires a deterministic mechanism to decide whether to link an `external` directly to the runtime or to generate a Wasm-to-C marshaling stub.
+OCaml's `external` binds both runtime primitives and user C functions. The linker must decide, for each primitive, which implementation to use and whether a C wrapper is needed.
 
-To maintain maximum compatibility without requiring code modifications (like adding `[@@wasm.c_stub]` annotations to every external), `wasm_of_ocaml` utilizes **Export Scanning**:
+### 1. Resolution at Link Time
 
-1. **Pre-compilation of C Code:** When developers pass C files via the `--link-c-file` CLI flag, `wasm_of_ocaml` leverages `clang` to compile the C code into a linear memory Wasm module *before* finalizing the OCaml compilation.
-2. **Export Inspection:** The compiler inspects the exported symbols of the resulting C Wasm module. 
-3. **Resolution Strategy:**
-   - If an OCaml `external` declaration matches a symbol exported by the C Wasm module, the compiler identifies it as a user C function and **auto-generates the marshaling stub** (as described in Part 2).
-   - If the symbol is not exported by the C module, the compiler assumes it is an internal `wasm_of_ocaml` runtime primitive and links it directly.
+Resolution uses **export scanning** at link time. The C code is linked first (Part 2.4); the exports of the resulting module are the candidate C implementations. Its imports (the `caml_*` helpers it consumes) are ignored by the scan. Primitives are then resolved as today, with C as an additional source: a primitive provided by no runtime module but exported by the C module gets a generated wrapper (Part 2.2) instead of a raising stub. Since this is the linker's existing missing-primitive step, it works the same in whole-program mode (`compile`) and in separate compilation (`link`): OCaml code generation is not affected.
 
-Only the *exports* of the C module participate in resolution; its imports (the `caml_*` helpers and runtime functions it consumes) are ignored by the scan.
+### 2. Sources and Collisions
 
-**Collision Policy:** A symbol exported by the C module may collide with a primitive that the `wasm_of_ocaml` runtime also provides — typically when linking the original C sources of a library for which the runtime ships a curated Wasm override. Resolution must not be silent: the compiler emits a warning, the runtime implementation wins by default, and a CLI flag lets the user prefer the C implementation instead.
+There are four sources of primitive implementations:
+1. the Wasm runtime;
+2. user `.wat` / `.wasm` runtime files (command line or dune `wasm_files`);
+3. JavaScript primitives (`//Provides:` in JavaScript runtime files);
+4. C code.
 
-**Separate Compilation:** In whole-program mode, export scanning happens during `compile`. Under dune's dev profile, primitive resolution happens in the separate-compilation `link` subcommand instead, so `--link-c-file` (and the scanning logic) must be available there as well.
+A primitive provided by several sources must not be resolved silently. The typical case is a library that ships both its original C sources and a hand-written Wasm implementation of some primitives. The proposed order is the one above, with a warning on each collision involving C code, and a command-line flag to prefer the C implementation of given primitives.
 
-This approach guarantees high precision (no silent fallbacks or manual annotations required) and ensures that existing OCaml-C bindings compile out of the box with zero source code changes.
+### 3. Externals with More than Five Arguments
+
+For an external with more than five arguments, OCaml requires two C functions: a bytecode one, `foo_byte(value *argv, int argn)`, and a native one taking the arguments directly. `wasm_of_ocaml` works from bytecode, where only the bytecode name is recorded, but `foo_byte` cannot be called: arrays of values cannot exist in linear memory (Part 6.2). The wrapper must call the native function instead. Its name is not in the bytecode, but it is recorded with the external declaration (`Primitive.description.prim_native_name`, in the `.cmi` when the external is exported, and in the `.cmt` otherwise). Options, from most to least robust:
+1. read native names from `.cmi`/`.cmt` files at compile time and record the bytecode-name → native-name mapping in the compiled unit;
+2. let bindings give the mapping explicitly (an attribute on the external, or a table passed to the linker);
+3. as a fallback, try common naming conventions (`foo_byte` / `foo_bytecode` → `foo` / `foo_native`) against the C module's exports, with a warning.
+
+The `[@unboxed]` and `[@untagged]` attributes only change the native function's signature; the bytecode function always takes boxed values. For externals with at most five arguments, the wrapper calls the bytecode name and these attributes have no effect. For those with more, the native function's signature (from the declaration) tells the wrapper which arguments to unbox.
 
 ---
 
 ## Part 6: Known Limitations and Open Challenges
 
-While the architecture outlined above aims for maximum compatibility, there are a few strict departures from the native OCaml C-ABI caused by WebAssembly constraints.
+Some departures from the native OCaml C API are unavoidable under WebAssembly.
 
-### 1. The `Bytes` Mutation Problem
-In standard OCaml, C code is allowed to mutate `Bytes` objects in place via `Bytes_val(v)`. Because our Wasm GC auto-stubs copy the string/bytes buffer into a temporary linear memory bump allocator, mutations made by the C code land on that temporary copy.
-- **Resolution — automatic copy-back for `Bytes_val`:** The two accessor macros follow OCaml's own documented semantics. `String_val(v)` (immutable strings) copies the data *into* linear memory only. `Bytes_val(v)` — the only sanctioned mutation path — copies in *and* automatically copies the buffer back into the Wasm GC array when the C function returns: the wrapper tracks each `(value, pointer)` pair handed out during the frame and flushes them just before resetting the bump pointer. Existing correct C code therefore keeps working with zero changes, and the copy-back cost lands only on code that declared its intent to mutate by using `Bytes_val`.
-- **Opt-out for performance:** For hot paths that use `Bytes_val` for read-only access, a `caml_bytes_readonly(v)` accessor skips the copy-back. Making correctness the default and performance the opt-*out* is deliberate: the inverse design (an opt-in "mark dirty" macro) would turn the default behaviour into silent data loss for previously-correct code — the worst possible failure mode — and would contradict the zero-source-changes goal of Part 5.
-  * *Real-world Case:* The `mpfr__sprintf` function in the `mlgmpidl` library (`mpfr.idl`) takes a `[string]char *STR` parameter and formats a float in place. If the generated stub obtains the buffer via `Bytes_val`, it works unchanged under automatic copy-back; if it writes through `String_val` — undefined behaviour on native OCaml too since safe-strings — the mutation is visibly lost and the stub must be switched to `Bytes_val`.
+### 1. Writes Through String Pointers
 
-### 2. WebAssembly Reference Types (`value`) in Linear Memory
-Because OCaml's `value` type is compiled to WebAssembly's `externref` (`__externref_t`), it is subject to a fundamental physical constraint of WebAssembly: **reference types cannot be stored in linear memory**.
-* **Struct fields & Arrays:** Standard C bindings that define structures containing OCaml values (e.g. `struct MyStruct { value v; }`) or declare C arrays of values (e.g. `value my_array[10];`) will fail to compile.
-* **Function Arguments (`value *`):** Because arrays of values cannot exist in linear memory (including the C stack), **you cannot pass arrays of values to functions via `value *`**. This permanently breaks core OCaml APIs like `caml_callbackN(value closure, int arg_count, value *args)`.
-* **Address of Globals:** Code using `caml_register_global_root(&my_global_var)` is invalid if `my_global_var` is a Wasm global. Wasm globals reside outside linear memory and their addresses cannot be taken.
-* **Workaround:** For bindings that absolutely require storing OCaml values in static structures, passing arrays to callbacks, or registering global roots, developers must use a handle/registry mapping system:
+Part 3.1 makes writes through both `Bytes_val` and `String_val` visible to OCaml when the C function returns. What remains different from native code:
+- writes are visible to OCaml only at the end of the call, or at an explicit `caml_bytes_flush`;
+- a `caml_bytes_readonly(v)` accessor skips the copy-back comparison for read-only hot paths; using it on a buffer that is then written loses the writes.
+  * *Real-world case:* `mpfr__sprintf` in `mlgmpidl` (`mpfr.idl`) takes a `[string] char *STR` parameter and formats a float into it in place. It works unchanged with copy-back.
+
+### 2. `__externref_t` Restrictions
+
+OCaml's `value` is `externref` (`__externref_t`). Reference types cannot be stored in linear memory, and Clang restricts their use further. Clang 21 rejects:
+- comparisons and other operators: `v == Val_unit`, `v == Val_none`, `!v` (use `caml_phys_eq`, `Is_long`, `Is_block`, `Is_none`, Part 1.3);
+- struct fields of type `value` ("field has sizeless type") and arrays of values, including local ones;
+- taking the address of a value (`&v`) and pointers to values (`value *`);
+- `sizeof(value)`;
+- passing a value to a variadic function.
+
+Global variables of type `value` are accepted by the front end but make the backend crash ("Cannot select" on the store); they must be considered unsupported.
+
+Consequences:
+* **Structures and arrays** containing values (`struct s { value v; }`, `value args[10]`) do not compile.
+* **`value *` APIs** do not compile: `caml_callbackN(value closure, int narg, value *args)`, `const value *caml_named_value(const char *)`, `caml_register_global_root(value *)`, `CAMLlocalN`, and the bytecode functions of externals with more than five arguments (Part 5.3).
+* **Static caches** such as `static const value *exn = NULL; if (!exn) exn = caml_named_value("foo");` need rewriting. `caml_named_value` can be offered as a shim returning the value or a handle.
+* **Workaround:** bindings that must store values outside locals use a handle API:
   ```c
   typedef int32_t caml_root; // Safe to store in linear memory
-  caml_root caml_acquire_root(value v); // Allocates a handle in a Wasm table
-  value caml_resolve_root(caml_root r); // Resolves handle back to externref
-  void caml_release_root(caml_root r); // Releases handle
+  caml_root caml_acquire_root(value v); // Allocates a slot in a Wasm table
+  value caml_resolve_root(caml_root r); // Resolves the handle to the value
+  void caml_release_root(caml_root r); // Frees the slot
   ```
 
 ### 3. `Field` and `Byte` as L-Values
-According to the OCaml C-ABI, expressions like `Field(v, n)` and `Byte(v, n)` are valid C l-values (e.g., `Field(v, 0) = x;`). 
-- **The Issue:** Because Wasm GC fields cannot be accessed via direct C pointer arithmetic, these macros must expand to imported function calls (e.g., `caml_field(v, n)`). In C, function calls are r-values, so assigning to them causes a C compilation error (`expression is not assignable`).
-- **Migration Requirement:** Developers porting C code to WebAssembly must mechanically replace l-value assignments with the provided `Store_field(v, n, x)` and `caml_store_byte(v, n, x)` macros.
+
+In the OCaml C API, `Field(v, n)` and `Byte(v, n)` are l-values (`Field(v, 0) = x;`). Here they expand to helper calls, which are r-values: assignment fails to compile with `expression is not assignable`. Code must use `Store_field(v, n, x)` and `caml_store_byte(v, n, x)`. (Natively, assigning `Field` on a block outside the minor heap is already wrong without `caml_modify`; the change mostly affects initialization of fresh blocks.)
 
 ### 4. Flat Float Arrays
-OCaml stores `float array` unboxed: under `wasm_of_ocaml` it is a distinct Wasm GC type (`$float_array`, an `(array (mut f64))`), not a `$block`. Consequently `Field` / `Store_field` are invalid on float arrays; C code must use `Double_field(v, i)` and `Store_double_field(v, i, d)`, which map to dedicated helpers operating on the `$float_array` type. This is the same trap as in native OCaml (where flat float arrays also require `Double_field`), but the failure mode differs: misuse traps with a Wasm cast error at runtime instead of silently reinterpreting memory.
 
-### 5. Persistent Pointers to Strings
-Because strings and bytes are passed to C using a scoped bump allocator, any pointer returned by `String_val(v)` becomes a **dangling pointer** as soon as the C function returns. C code cannot store these interior pointers in global variables or inside custom blocks to be read later.
+`float array` is a distinct Wasm GC type (`$float_array`, an `(array (mut f64))`), not a `$block`. `Field` / `Store_field` are invalid on it; C code must use `Double_field(v, i)` / `Store_double_field(v, i, d)`. This is the same rule as in native OCaml, but misuse traps with a cast failure instead of reinterpreting memory.
+
+### 5. Pointers to String Copies
+
+A pointer returned by `String_val(v)` or `Bytes_val(v)` is invalid once the C function returns, since the bump region is reset. This is not new: natively, the GC may move the string once the C function returns or allocates, so storing such pointers is already incorrect. What is new is that the pointer stays valid during the call but goes **stale**: after a callback into OCaml, the copy no longer reflects OCaml's changes to the string (Part 3.1).
 
 ### 6. Multicore and Threading
-OCaml 5 introduces Multicore support, but the current WebAssembly GC specification does not support sharing GC objects across threads (Shared Wasm GC is still an active proposal). This linking strategy strictly assumes a single-threaded WebAssembly execution environment.
+
+Wasm GC objects cannot be shared between threads (shared Wasm GC is still a proposal). The design assumes single-threaded execution, as does `wasm_of_ocaml` today.
 
 ### 7. Bigarrays and Linear Memory
-Traditionally, JS-based runtimes implement Bigarrays as independent JavaScript `TypedArray`s. However, C code compiled to WebAssembly can only dereference pointers within its own specific Wasm linear memory.
-- **The Design Shift:** To support passing Bigarrays to C without incurring massive copying overhead, `wasm_of_ocaml` must implement `Bigarray.create` by allocating space directly within the imported Wasm linear memory (using `$malloc`). `Caml_ba_data_val(v)` then simply yields this `i32` linear memory pointer.
-  * *Real-world Case:* The `mpz__import` and `mpz__export` functions in `mlgmpidl`'s `mpz.idl` use the `[bigarray]` attribute to transfer digit arrays directly. Under Wasm GC, these stubs rely on `Caml_ba_data_val` to obtain direct linear memory pointers to the arrays.
-- **Scope of the Change:** This representation switch only applies when C linking is enabled (i.e. when `--link-c-file` is used). Builds without C code keep the current `ArrayBuffer`-backed implementation with its zero-copy JavaScript interop. Note that within Wasm the new representation is likely a performance *gain* for the OCaml side: linear-memory Bigarrays are accessed with plain `i32.load` / `f64.load` instructions instead of calls to `DataView` methods.
-- **Limitation 1 (Memory Pressure):** Like custom blocks, these massive linear memory allocations are tied to small Wasm GC objects. Relying on the JavaScript GC to collect the Wasm GC object and trigger the finalizer to `$free` the array is dangerous and can easily lead to linear memory exhaustion.
-- **Limitation 2 (JavaScript Interop):** Existing projects often pass Bigarrays to JavaScript APIs (like WebGL). Moving Bigarrays into the Wasm linear memory means JS code must now access them by creating `TypedArray` views over the exported Wasm `memory.buffer`. If the Wasm memory dynamically grows, these JS `ArrayBuffer` views become detached and must be carefully recreated by the interop layer.
-- **Limitation 3 (JS-to-OCaml Transfer):** Bigarrays created from existing JavaScript typed arrays (the `Typed_array` interop in the `js_of_ocaml` library) can no longer wrap the JS buffer in place; the data must be copied into linear memory.
 
-### 8. Porting and Debugging Tooling
+The runtime has two Bigarray representations today: JavaScript typed arrays accessed through imported `DataView` functions (JavaScript runtime), and Wasm GC arrays (WASI runtime, `bigarray.wat`). C code can only dereference addresses in its own linear memory, so neither can be passed to C without copying.
 
-Two tools would substantially lower the porting cost created by the limitations above:
-- **A migration lint:** a small libclang-based checker that scans C stub sources for the patterns this Part forbids — `value` fields in structs or arrays, `value *` parameters, `Field(...) = x` l-values, `String_val` pointers stored beyond the call, `caml_register_global_root` — and produces a porting report. It converts "compile and decode errors one at a time" into "here are the seven things to fix in this library", and, run over opam, it would give empirical data on how much of the ecosystem fits the compatibility ABI as-is.
-- **A debug mode:** the design introduces new ways to go wrong silently — leaks through the finalizer double-hop (Part 4), dangling bump-allocator pointers (Section 5 above), mutations lost through a mistaken `caml_bytes_readonly` (Section 1). A debug variant of `--link-c-file` could track linear memory allocations owned by custom blocks and report leaks at exit, poison the bump region after each frame reset so that use-after-return traps instead of reading stale data, and enable the WASI SDK's ASan / UBSan for the C side. Porting effort goes where debugging is cheap.
+- **Linear-memory Bigarrays:** when C code is linked, `Bigarray.create` allocates the data with `malloc` in the shared linear memory, and `Caml_ba_data_val(v)` returns its address.
+  * *Real-world case:* `mpz__import` / `mpz__export` in `mlgmpidl`'s `mpz.idl` use `[bigarray]` to transfer digit arrays and rely on `Caml_ba_data_val` returning a usable address.
+- **A third runtime variant.** This representation only applies when C code is linked, so builds without C keep the current ones. It is a new runtime configuration: it must either be added to the precompiled runtimes (doubling their number) or rely on the fallback that builds the runtime from its sources at link time, which works but slows down linking.
+- **Performance of OCaml-side accesses** may improve (plain loads and stores instead of imported `DataView` calls) or not (engines can inline some well-known imports); this should be measured before being used as an argument.
+- **Limitation 1 (memory pressure):** as for custom blocks (Part 4.3), large allocations held by small Wasm GC objects may not be freed in time.
+- **Limitation 2 (address space):** wasm32 linear memory is limited to 4 GiB in total, for all Bigarrays and all C data, and it never shrinks: freed memory returns to `malloc`, not to the system.
+- **Limitation 3 (JavaScript interop):** JavaScript code accessing Bigarrays (e.g. passing them to WebGL) must use typed-array views over the exported memory buffer. Growing the memory detaches those views, which must then be recreated by the interop layer; this also applies to any view the runtime itself keeps over the memory.
+- **Limitation 4 (JS-to-OCaml transfer):** Bigarrays created from existing JavaScript typed arrays (`Typed_array` in the `js_of_ocaml` library) can no longer wrap the buffer in place; the data must be copied.
+
+### 8. Integer Width
+
+`intnat` is 32 bits on wasm32, while OCaml ints are 31 bits under `wasm_of_ocaml` (and 63 bits on native 64-bit platforms). `Val_long` of a value outside the 31-bit range wraps silently; bindings that rely on 63-bit ints (file offsets, sizes, hash values) break. If OCaml ints become 63 bits in `wasm_of_ocaml`, `intnat` should become 64 bits too; but C code commonly assumes that `intnat` and pointers have the same size, which would then no longer hold on wasm32. This choice should be settled before the header is shipped.
+
+### 9. Porting and Debugging Tooling
+
+Two tools would lower the porting cost:
+- **A migration lint:** a libclang-based checker that scans C stub sources for the patterns above (comparisons of values, `value` fields or arrays, `value *` parameters, globals of type `value`, `Field(...) = x` l-values, `CAMLlocalN`, externals with more than five arguments without a known native name) and produces a porting report. Run over opam, it would also measure how much of the ecosystem fits the ABI as is.
+- **A debug mode:** leaks through delayed finalization (Part 4.3), stale or dangling string pointers (Section 5 above) and writes lost through a mistaken `caml_bytes_readonly` (Section 1) all fail silently. A debug variant of `--link-c-file` could report custom block payloads still allocated at exit, poison the bump region after each reset so that use-after-return traps, and enable the WASI SDK's ASan / UBSan for the C side.
 
 ---
 
 ## Part 7: Architectural Models for `value` Representation
 
-To support C bindings, the design of the Wasm-C interface must choose between two distinct strategies for representing OCaml's `value` type on the C compiler side. This choice impacts performance, root-tracking overhead, and compatibility with standard OCaml C APIs (such as `caml_named_value` and global root registration).
+The C-side representation of `value` determines performance, root tracking, and compatibility with `value *`-based APIs.
 
 ### Model A: Reference Representation (Proposed)
 ```c
 typedef __externref_t value;
 ```
-In this model, the opaque `value` is directly compiled to a WebAssembly GC reference (`externref`).
+`value` is a WebAssembly reference (`externref`).
 
 * **Pros:**
-  * **Zero lookup overhead:** Passing values between OCaml and C is a direct register/stack operation.
-  * **Automatic Local Root Tracking:** Since C local variables of type `value` are compiled directly to WebAssembly locals, they are automatically tracked by the engine's Wasm GC. The macros `CAMLparam` / `CAMLlocal` / `CAMLreturn` perform no root registration at all (they are retained only for the bump-allocator scoping described in Part 3).
-* **Cons:**
-  * **No Linear Memory Storage:** Reference types cannot reside in linear memory. C structures containing fields of type `value` or static arrays of type `value` will fail to compile.
-  * **Invalid Pointer Types (`value *`):** You cannot take the address of a local variable of type `value` (`&v`), nor can you have pointers like `value *`.
-  * **Incompatible APIs:** Functions like `caml_callbackN(value closure, int arg_count, value *args)`, `const value * caml_named_value(const char *)`, and `caml_register_global_root(value *)` cannot compile as-is because they require `value *` pointers (which are illegal under Wasm GC). `caml_named_value` can be salvaged with a shim returning the value (or a handle) directly; `caml_callbackN` and `caml_register_global_root` require the handle API from Part 6.
+  * **No lookup overhead:** values cross the boundary as Wasm values.
+  * **Automatic local root tracking:** C locals of type `value` are Wasm locals, traced by the engine. `CAMLparam` / `CAMLlocal` / `CAMLreturn` register no roots (they are kept for bump-allocator scoping, Part 3.2).
+* **Cons:** the restrictions of Part 6.2: no values in linear memory, no `value *`, no comparisons without helpers. `caml_named_value` can be shimmed; `caml_callbackN` and `caml_register_global_root` need the handle API.
 
 ### Model B: Handle Representation (Alternative)
 ```c
 typedef int32_t value;
 ```
-In this model, the opaque `value` is an index (handle) into a WebAssembly `Table` that holds the actual GC references.
+`value` is an index into a WebAssembly table holding the GC references.
 
 * **Pros:**
-  * **Full Pointer Compatibility:** Since `value` is a standard `int32_t`, you can safely define pointers to values (`value *`), store values in linear memory structures, and define static/global arrays of values.
-  * **Compatible APIs:** Legacy functions like `caml_named_value` and `caml_register_global_root` compile and execute as-is without code changes, since they can dereference `value *` pointers in linear memory.
+  * **Pointer compatibility:** `value *`, values in structures, static arrays of values, and `==` comparisons of immediate values work.
+  * **Compatible APIs:** `caml_named_value`, `caml_callbackN` and `caml_register_global_root` work as is.
 * **Cons:**
-  * **Lookup Overhead:** Every access to an OCaml value (e.g. retrieving fields, converting scalars, passing parameters) requires resolving the index in the Wasm Table, adding performance overhead.
-  * **Mandatory Root Tracking:** The `CAMLparam` / `CAMLlocal` / `CAMLreturn` macros **cannot be no-ops**. They must actively register and unregister table indices with a root tracker to prevent Wasm Table slots from leaking or being garbage collected, incurring significant C-side overhead.
+  * **Lookup overhead:** every access resolves an index in the table.
+  * **Mandatory root tracking:** `CAMLparam` / `CAMLlocal` / `CAMLreturn` must allocate and release table slots, or the table leaks; values not covered by these macros are unsafe. Comparisons of handles do not implement physical equality for blocks, since the same block can have several handles.
 
 ### Decision
-This design adopts **Model A**, combined with the opt-in handle API (`caml_acquire_root` / `caml_resolve_root` / `caml_release_root`) described in Part 6 as an escape hatch for the minority of bindings that must store values in linear memory. This hybrid keeps the common path at zero overhead — no table lookups, no root registration — while still giving legacy `value *`-based code a mechanical porting recipe.
+This design adopts **Model A**, with the handle API of Part 6.2 as an opt-in for the bindings that must store values in linear memory. The common path has no table lookups and no root registration; `value *`-based code gets a mechanical porting recipe.
 
 ---
 
 ## Part 8: Desired WebAssembly Extensions
 
-The strict sandbox and memory boundaries of WebAssembly GC currently force trade-offs between compatibility and performance (such as the linear memory bump-allocator and the JS event-loop double-hop for finalizers). 
-
-To natively support the semantics required by languages with heavy C-interop like OCaml, we identify the following two realistically implementable WebAssembly extensions that would dramatically simplify the architecture:
+The current constraints force trade-offs (copying strings, delayed finalization). The following extensions would remove some of them. They are proposals for discussion, not features known to be planned.
 
 ### 1. External Memory Pressure Hints (`gc.adjust_external_memory`)
-* **The Problem:** The Wasm/JS garbage collector heuristic only sees the byte size of the small Wasm GC handle. It is completely blind to the megabytes of Wasm linear memory that a Custom Block or Bigarray might conceptually "retain". This leads to out-of-memory (OOM) crashes because the GC does not feel enough pressure to run a sweep.
-* **The Extension:** Introduce a lightweight WebAssembly GC instruction, e.g., `gc.adjust_external_memory (param i32)`. This allows a Wasm module to explicitly inform the host engine's GC heuristic about the hidden weight of a GC object. 
-* **Realism & Implementation Details:** Highly realistic. Major JavaScript engines already implement this exact mechanism internally for C++ bindings (e.g., V8's `v8::Isolate::AdjustAmountOfExternalAllocatedMemory`). Implementing this as a global module-level counter (where the program calls `+N` on allocation and `-N` on deallocation) is trivial for engines to support because it avoids modifying Wasm GC object layouts.
+* **The problem:** the engine's GC heuristics see only the size of Wasm GC objects, not the linear memory that a custom block or Bigarray retains, so it may not collect often enough (Part 4.3).
+* **The extension:** an instruction such as `gc.adjust_external_memory (param i32)` adding to or subtracting from a module-level counter of retained external memory, which the engine feeds into its GC heuristics.
+* **Feasibility:** engines already have this mechanism internally for their own embedders (e.g. V8's `v8::Isolate::AdjustAmountOfExternalAllocatedMemory`), and a global counter does not change object layouts.
 
-### 2. Predictable / Post-Sweep Wasm Finalizers
-* **The Problem:** Relying on JavaScript's `FinalizationRegistry` forces finalization to wait for the JavaScript event loop to yield, which is dangerously late for linear memory management.
-* **The Extension:** Introduce a **post-sweep finalization queue**. To prevent security and deadlock risks, the Wasm specification can forbid executing arbitrary Wasm callbacks *during* the GC pause. Instead, the Wasm engine can queue finalizers during GC and execute them synchronously at **explicit safe points**:
-  * **When the Wasm call stack is empty** (at the boundary of the entry-level call).
-  * **At explicit polling checkpoints** (e.g. via a new `gc.poll_finalizers` instruction).
-  * **At JSPI stack suspension/yield points** (when the execution stack is suspended, returning control to the JS event loop).
-* **Realism & Reentrancy Mitigation:** Realistic. By executing finalizers at these well-defined boundary states, the engine completely eliminates the risk of **reentrancy** (where a finalizer runs in the middle of an active Wasm function and breaks state invariants), while guaranteeing that finalization still runs promptly even in long-lived or suspended Web Worker contexts.
+### 2. Prompt Wasm Finalizers
+* **The problem:** `FinalizationRegistry` callbacks only run once the JavaScript event loop gets control, which can be too late for linear memory management, or never in a long computation.
+* **The extension:** a post-sweep finalization queue. Finalizers do not run during GC; the engine queues them and runs them at well-defined points:
+  * when the Wasm call stack is empty (at the end of the outermost call);
+  * at explicit polling points (e.g. a `gc.poll_finalizers` instruction);
+  * when a JSPI stack suspends.
+* **Reentrancy:** running finalizers only at these points avoids running them in the middle of a Wasm function whose invariants they could break.
+
+### 3. Bulk Copies Between GC Arrays and Linear Memory
+* **The problem:** copying a string between a GC array and linear memory (Part 3.1) is a byte loop in Wasm; there is no equivalent of `memory.copy` or `array.copy` between the two.
+* **The extension:** instructions copying a range of an `i8` array to linear memory and back. This has been discussed as a GC post-MVP feature and would make string copies close to `memcpy` speed.
 
 ---
 
 ## Part 9: Extending the Design to the JavaScript Target (`js_of_ocaml`)
 
-Most of this design is target-independent. The C-facing surface is just an ABI: an opaque `value`, a set of `caml_*` helpers imported from the `stubs` module, and copy-in/copy-out for strings and bytes. Nothing in that contract requires the helpers to be implemented in Wasm GC — they can equally be implemented in JavaScript, making the same C bindings work with `js_of_ocaml`.
+Most of the design is target-independent. The C-facing surface is an ABI: an opaque `value`, the `caml_*` helpers imported from `stubs`, and copy-in/copy-out for strings and bytes. Nothing in it requires the helpers to be implemented in Wasm GC; they can be implemented in JavaScript, so the same C bindings would work with `js_of_ocaml`.
 
 ### 1. A Target-Independent C ABI
 
-The key decision is to freeze the C-side ABI — the alternative `caml/mlvalues.h` and the `stubs` import interface — as **target-independent**, with two implementations of the `stubs` module:
-- the WAT implementation of Part 1, merged in by `wasm_of_ocaml`;
+The C-side ABI (the alternative `caml/mlvalues.h` and the `stubs` import interface) should be **target-independent**, with two implementations of `stubs`:
+- the Wasm implementation in the `wasm_of_ocaml` runtime (Part 2.3);
 - a JavaScript implementation, supplied at instantiation time by `js_of_ocaml`.
 
-The **same compiled `c_module.wasm`** then works for both targets. Libraries like `zarith` or `mlgmpidl` get a single porting story, instead of the hand-written JavaScript runtime reimplementations they require today.
+The same compiled C code then serves both targets. Libraries like `zarith` or `mlgmpidl` get a single porting story, instead of the hand-written JavaScript reimplementations they require today.
 
 ### 2. Why the JavaScript Side Is Simpler
 
-- **`externref` is a JS value.** In a Wasm module instantiated from JavaScript, `__externref_t` holds arbitrary JS values with zero conversion cost at the boundary. The `extern.convert_any` / `any.convert_extern` machinery of the WAT stubs disappears entirely.
-- **Trivial helpers.** `js_of_ocaml` blocks are JS arrays with the tag at index 0 — the same layout convention as the Wasm GC representation. So `caml_field(v, i)` is `v[i + 1]`, `caml_tag_val(v)` is `v[0]`, and `caml_val_double` is the identity. The bump allocator and the `Bytes_val` copy-back (Part 6) are a few lines of JS operating on the C module's exported memory.
-- **Existing runtime machinery transfers.** `caml_callback`, `caml_failwith`, custom blocks (`FinalizationRegistry` is directly at hand), and export scanning for primitive resolution (Part 5) all carry over. JS exceptions propagate through Wasm C frames with the same "cleanup is skipped" caveat as Part 3.
-- **Representation edges are absorbed by the helpers.** JS strings vs `MlBytes`, `MlInt64` for int64, etc. are handled inside the helper implementations, invisible to the C side.
+- **`externref` is a JS value.** In a Wasm module instantiated from JavaScript, `__externref_t` holds arbitrary JS values, with no conversion at the boundary.
+- **Simple helpers.** `js_of_ocaml` blocks are JS arrays with the tag at index 0, the same layout as the Wasm GC representation: `caml_field(v, i)` is `v[i + 1]`, `caml_tag_val(v)` is `v[0]`, and `caml_val_double` is the identity. The bump allocator and the copy-back of Part 3.1 operate on the C module's exported memory.
+- **Existing machinery transfers.** Callbacks, exceptions, custom blocks (`FinalizationRegistry` is directly available) and link-time resolution (Part 5) carry over. JS exceptions unwind through Wasm C frames as Wasm exceptions do, so the wrappers must restore `__stack_pointer` and the bump pointer in the same way (Part 3.3); the effect barrier of Part 3.4 applies too.
+- **Representation differences are absorbed by the helpers.** JS strings vs. `MlBytes`, `MlInt64` for int64, etc. are handled inside the helpers. Ints are 32 bits in `js_of_ocaml`, which matches `intnat` on wasm32.
 
 ### 3. Costs Specific to the JavaScript Target
 
-1. **Startup becomes asynchronous.** `js_of_ocaml` output today runs synchronously at load; instantiating the C module requires `WebAssembly.instantiate` (synchronous compilation is size-restricted on browser main threads). Using `--link-c-file` on the JS target therefore implies a `wasm_of_ocaml`-style asynchronous launcher plus an assets story for the `.wasm` file. This is opt-in, but it changes the output shape (bundlers, CSP `wasm-unsafe-eval`).
-2. **Boundary-crossing overhead.** On the Wasm GC target, the stubs are merged and inlined by `wasm-opt`; on the JS target, every `Field` / `Int_val` is a Wasm-to-JS call. These calls are cheap in modern engines but not free — a chatty binding will feel it.
-3. **Bigarrays are actually less disruptive.** The design shift of Part 6 applies, but `js_of_ocaml` Bigarrays are already `TypedArray`s, so backing them with views over the C module's `memory.buffer` mostly preserves existing JS interop (modulo the detach-on-grow caveat).
+1. **Startup becomes asynchronous.** `js_of_ocaml` output runs synchronously at load; instantiating the C module requires `WebAssembly.instantiate` in browsers (synchronous compilation is size-limited on the main thread). Linking C code on the JS target therefore implies a `wasm_of_ocaml`-style asynchronous launcher and an assets story for the `.wasm` file. This is opt-in, but it changes the output shape (bundlers, CSP `wasm-unsafe-eval`).
+2. **Boundary-crossing overhead.** On the Wasm target, helpers can be inlined into the C code by `wasm-opt`; on the JS target, every `Field` / `Int_val` is a Wasm-to-JS call. Such calls are cheap in current engines but not free.
+3. **Bigarrays are less disruptive.** The change of Part 6.7 applies, but `js_of_ocaml` Bigarrays are already typed arrays, so backing them with views over the C module's memory mostly preserves JS interop (except for the detach-on-grow issue).
 
 ### 4. Design Consequence
 
-Even if the `js_of_ocaml` backend comes later, the ABI should be designed for it *now*: keep the header and the `stubs` import interface free of anything specific to Wasm GC. The design as specified in Parts 1–7 already satisfies this constraint.
+Even if the `js_of_ocaml` backend comes later, the ABI should be designed for it now: the header and the `stubs` interface must contain nothing specific to Wasm GC. The design of Parts 1–7 satisfies this.
 
 ---
 
 ## Part 10: Retargeting Stub Generators (camlidl, ctypes)
 
-The compatibility ABI of Parts 1–8 exists for bindings that *cannot* be regenerated: hand-written C stubs. But a large share of the ecosystem's bindings are generated — camlidl for `mlgmpidl` (and Apron behind it), ctypes for much of the rest. For those, retargeting the generator is a complementary second tier, and strictly better than faithfully emulating the C API, because the generator has information the compatibility layer must guess at.
+The compatibility ABI of Parts 1–8 is for bindings that cannot be regenerated: hand-written C stubs. Many bindings are generated, by camlidl (`mlgmpidl`, and Apron behind it) or ctypes. Retargeting the generators is a complementary second tier, and better than emulating the C API, because the generator has information the compatibility layer must guess.
 
 ### 1. What Generators Know That the ABI Layer Doesn't
 
-- **Directionality.** camlidl's IDL has `in` / `out` attributes; ctypes' `typ` GADT states exactly how each argument crosses the boundary. This dissolves the `Bytes` mutation problem (Part 6) at the root: no heuristic copy-back, no read-only opt-out — the generated stub copies in, out, or both, exactly as declared. The `mpfr__sprintf` case (`[string] char *STR`) is precisely one where the IDL already says what the compatibility layer cannot know.
-- **Full signatures.** The generator can emit a wrapper that converts Wasm GC values straight to C ABI scalars (`i32`, `f64`, linear memory pointers) and calls the *target library function* directly — skipping the intermediate C stub and its `externref` round-trips entirely. None of Part 6's restrictions apply: the generated stub never stores a `value` in linear memory, has no l-value macros, and holds no dangling interior pointers.
+- **Directionality.** camlidl's IDL has `in` / `out` attributes; ctypes' `typ` GADT states how each argument crosses the boundary. The generated stub copies in, out, or both, as declared, with no comparison-based copy-back (Part 3.1). The `mpfr__sprintf` case (`[string] char *STR`) is one where the IDL says what the compatibility layer has to detect at run time.
+- **Full signatures.** The generator can emit a wrapper that converts Wasm GC values to C scalars (`i32`, `f64`, linear-memory addresses) and calls the *target library function* directly, skipping the intermediate C stub and its `externref` round-trips. The restrictions of Part 6 do not apply: the generated stub never stores a value in linear memory, uses no l-value macros and keeps no interior pointers. The `__stack_pointer` restoration of Part 3.3 is still needed when the library can call back into OCaml.
 
-One caveat on the performance claim: after `wasm-merge` + `wasm-opt -O3`, the imported helpers are inlined into the clang-compiled stubs anyway, so the win from direct generation is mostly *avoiding copies and allocations*, not avoiding calls.
+After linking and `wasm-opt`, the helpers can be inlined into the C stubs, so the gain from direct generation is mostly in avoided copies and allocations, not in avoided calls.
 
 ### 2. ctypes: the Natural Fit for Direct Wasm Generation
 
-`cstubs` stub generation is a fold over a first-class signature description — no C parsing involved — so emitting WAT (or feeding the compiler's own wrapper generator, Part 2) instead of C is architecturally clean. ctypes' memory model also transfers well: `Ctypes.ptr` becomes an `i32` into the C module's linear memory, `allocate` / `allocate_n` become `malloc`, and structs and arrays already live in "foreign" memory conceptually. Two further observations:
+`cstubs` stub generation is a fold over a first-class signature description, with no C parsing, so emitting WAT (or feeding the compiler's wrapper generator, Part 2.2) instead of C is architecturally clean. ctypes' memory model also transfers: `Ctypes.ptr` becomes an `i32` address in linear memory, `allocate` / `allocate_n` become `malloc`, and structs and arrays already live in "foreign" memory.
 
-- **`Foreign` without libffi:** the C module's exports are dynamically callable from JavaScript, so a JS-side trampoline can interpret the `typ` descriptor at runtime. Slow, but it provides a working dynamic-binding path — and it works unchanged on the JavaScript target of Part 9.
-- **`funptr`:** OCaml closures used as C function pointers need per-signature trampolines placed in the funcref table. The signatures are static in `cstubs` mode, so the trampolines are generable.
+- **`Foreign` without libffi:** the C module's exports can be called dynamically from JavaScript, so a JS-side trampoline can interpret the `typ` descriptor at run time. This is slow, but it gives a dynamic binding path that also works on the JavaScript target of Part 9.
+- **`funptr`:** OCaml closures used as C function pointers need per-signature trampolines in the function table. Signatures are static in `cstubs` mode, so the trampolines can be generated.
 
 ### 3. The Catch: the C Calling Convention
 
-Stub generators emit C in the first place because clang owns the ABI. For scalar and pointer arguments — the overwhelming majority — the wasm32 C ABI is trivial and a WAT stub can call the library function directly. But struct-by-value, unions, and varargs (again, `mpfr_sprintf`) have ABI rules one does not want to reimplement. The realistic design is therefore **hybrid**: the generator emits WAT for plain signatures and falls back to a thin generated C shim (compiled through the Part 2 clang integration) where the ABI demands it. Integration is cheap either way — `wasmoo_link_wasm` already accepts named WAT modules as inputs, so the generator's output is just one more `NAME:FILE` argument.
+Stub generators emit C because clang owns the ABI. For scalar and pointer arguments, the large majority, the wasm32 C ABI is simple and a WAT stub can call the library function directly. Struct-by-value, unions and varargs (again `mpfr_sprintf`) follow ABI rules one does not want to reimplement. The realistic design is **hybrid**: the generator emits WAT for plain signatures and a thin generated C shim, compiled through the clang integration of Part 2.4, where the ABI requires it. The generated WAT is just another runtime file (Part 2.1).
 
 ### 4. Practicalities
 
-camlidl is a small, essentially dormant codebase, so a Wasm backend means maintaining a fork — but it directly unlocks `mlgmpidl` and Apron. ctypes is actively maintained and the bigger ecosystem win, so upstreaming a backend is plausible. camlidl is the tactical move; ctypes is the strategic one.
+camlidl is a small, mostly dormant codebase, so a Wasm backend means maintaining a fork, but it unlocks `mlgmpidl` and Apron directly. ctypes is actively maintained and has the bigger ecosystem, so upstreaming a backend is plausible. camlidl is the short-term option; ctypes the long-term one.
