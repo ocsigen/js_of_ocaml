@@ -77,6 +77,8 @@
   code (GADTs) (#2618)
 * Compiler: fix float constants being truncated to integers when the
   compiler itself runs in JavaScript (#2616)
+* Compiler: fix the naming of labels in default parameters, of `var`s in
+  class static blocks, and of nested source and generated labels (#2598)
 
 # 6.5.0 (2026-10-22) - Lille
 
