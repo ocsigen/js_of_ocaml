@@ -47,6 +47,8 @@
   of closures as functors (memory blow-up at --opt 2 with OCaml 5.6) (#2599)
 * Compiler: fix the compact printing of number literals with a trailing dot
   followed by a keyword (`5. in o` was printed as `5.in o`) (#2603)
+* Compiler: fix the naming of labels in default parameters, of `var`s in
+  class static blocks, and of nested source and generated labels (#2598)
 
 # 6.5.0 (2026-10-22) - Lille
 
