@@ -454,7 +454,14 @@ let f pure_funs ({ blocks; _ } as p : Code.program) =
     (fun _ block ->
       List.iter block.body ~f:(fun i ->
           match i with
-          | Let (x, e) -> add_def defs x (Expr e)
+          | Let (x, e) -> (
+              add_def defs x (Expr e);
+              match e with
+              | Closure (_, cont, _) ->
+                  (* The arguments of the initial continuation are used
+                     when the corresponding parameters are *)
+                  add_cont_dep blocks defs cont
+              | _ -> ())
           | Assign (x, y) -> add_def defs x (Var y)
           | Event _ | Set_field (_, _, _, _) | Array_set (_, _, _) | Offset_ref (_, _) ->
               ());
