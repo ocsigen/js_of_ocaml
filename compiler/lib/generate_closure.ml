@@ -64,7 +64,7 @@ let rec collect_apply pc blocks visited tc =
       match block.branch with
       | Return x -> (
           match List.last block.body with
-          | Some (Let (y, Apply { f; exact = true; _ })) when Code.Var.equal x y ->
+          | Some (Let (y, Apply { f; _ })) when Code.Var.equal x y ->
               Some (add_multi f pc tc)
           | None | Some _ -> None)
       | _ -> None
@@ -256,7 +256,7 @@ module Trampoline = struct
                 let block = Addr.Map.find pc blocks in
                 let x, args, rem_rev =
                   match List.rev block.body with
-                  | Let (x, Apply { f; args; exact = true }) :: rem_rev ->
+                  | Let (x, Apply { f; args; _ }) :: rem_rev ->
                       assert (Var.equal f ci.f_name);
                       x, args, rem_rev
                   | _ -> assert false
@@ -416,7 +416,7 @@ module Trampoline_dt = struct
                 let block = Addr.Map.find pc blocks in
                 let x, args, rem_rev =
                   match List.rev block.body with
-                  | Let (x, Apply { f; args; exact = true }) :: rem_rev ->
+                  | Let (x, Apply { f; args; _ }) :: rem_rev ->
                       assert (Var.equal f ci.f_name);
                       x, args, rem_rev
                   | _ -> assert false
@@ -500,10 +500,38 @@ let dispatch_component free_pc blocks closures_map component =
   | `Double_translation -> dispatch_component_dt free_pc blocks closures_map component
   | `Cps | `Jspi | `Native -> assert false
 
+(* Tail calls are collected whatever their [exact] flag, which is not set
+   with --disable optcall: a call to a function of the group with as many
+   arguments as the function has parameters is exact. *)
+let keep_exact_tail_calls blocks closures =
+  let arity =
+    List.fold_left closures ~init:Var.Map.empty ~f:(fun m ci ->
+        Var.Map.add ci.f_name (List.length ci.args) m)
+  in
+  let nargs pc =
+    match List.last (Addr.Map.find pc blocks).body with
+    | Some (Let (_, Apply { args; _ })) -> List.length args
+    | _ -> assert false
+  in
+  List.map closures ~f:(fun ci ->
+      { ci with
+        tc =
+          Var.Map.fold
+            (fun f pcs tc ->
+              match Var.Map.find_opt f arity with
+              | None -> tc
+              | Some n ->
+                  let pcs = Addr.Set.filter (fun pc -> nargs pc = n) pcs in
+                  if Addr.Set.is_empty pcs then tc else Var.Map.add f pcs tc)
+            ci.tc
+            Var.Map.empty
+      })
+
 let rec rewrite_closures free_pc blocks body : int * _ * _ list =
   match body with
   | Let (_, Closure _) :: _ ->
       let closures, rem = collect_closures blocks body 0 in
+      let closures = keep_exact_tail_calls blocks closures in
       let closures_map =
         List.fold_left closures ~init:Var.Map.empty ~f:(fun closures_map x ->
             Var.Map.add x.f_name x closures_map)

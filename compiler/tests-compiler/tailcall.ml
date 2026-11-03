@@ -188,3 +188,16 @@ let%expect_test "tc_depth=0" =
   in
   Util.compile_and_run ~flags:[ "--set"; "tc_depth=0" ] prog;
   [%expect {| true true false |}]
+
+let%expect_test "--disable optcall" =
+  (* Tail calls between mutually recursive functions are trampolined even
+     when they are not marked as exact *)
+  let prog =
+    {|
+    let rec even n = if n = 0 then true else odd (n - 1)
+    and odd n = if n = 0 then false else even (n - 1)
+    let () = Printf.printf "%b %b %b\n" (even 10) (odd 7) (even 100_001)
+    |}
+  in
+  Util.compile_and_run ~flags:[ "--disable"; "optcall" ] prog;
+  [%expect {| true true false |}]
