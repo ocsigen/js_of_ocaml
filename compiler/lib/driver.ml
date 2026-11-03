@@ -36,6 +36,10 @@ let should_export = function
   | `Iife -> false
   | `Named _ | `Anonymous -> true
 
+let check name p =
+  Interpreter.check ~name p;
+  p
+
 let tailcall p =
   if debug () then Format.eprintf "Tail-call optimization...@.";
   Tailcall.f p
@@ -52,13 +56,14 @@ let deadcode p =
 
 let inline profile p =
   if Config.Flag.deadcode ()
-  then
+  then (
     let p, live_vars = deadcode' p in
+    Interpreter.check ~name:"deadcode" p;
     if Config.Flag.inline ()
     then (
       if debug () then Format.eprintf "Inlining...@.";
-      Inline.f ~profile p live_vars)
-    else p
+      Inline.f ~profile p live_vars |> check "inline")
+    else p)
   else p
 
 let specialize_1 (p, info) =
@@ -95,11 +100,12 @@ let clone_higher_order (profile : Profile.t) p =
   | `Wasm, _ | `JavaScript, _ -> p
 
 let specialize (p, info) =
-  let p = specialize_1 (p, info) in
-  let p = specialize_js (p, info) in
+  let p = specialize_1 (p, info) |> check "specialize" in
+  let p = specialize_js (p, info) |> check "specialize_js" in
   p, info
 
-let eval (p, info) = if Config.Flag.staticeval () then Eval.f info p, info else p, info
+let eval (p, info) =
+  if Config.Flag.staticeval () then Eval.f info p |> check "eval", info else p, info
 
 let flow p =
   if debug () then Format.eprintf "Data flow...@.";
@@ -196,24 +202,32 @@ let effects_and_exact_calls
   let pure_fun = Pure_fun.f p in
   let p, live_vars =
     if Config.Flag.globaldeadcode () && Config.Flag.deadcode ()
-    then
+    then (
       let p = Global_deadcode.f pure_fun p ~deadcode_sentinel info in
-      Deadcode.f pure_fun p
-    else Deadcode.f pure_fun p
+      (* The program is only checked after [Deadcode] has removed the
+         accesses to the fields dropped by [Global_deadcode] *)
+      let ((p, _) as res) = Deadcode.f pure_fun p in
+      Interpreter.check ~name:"global_deadcode+deadcode" p;
+      res)
+    else
+      let ((p, _) as res) = Deadcode.f pure_fun p in
+      Interpreter.check ~name:"deadcode" p;
+      res
   in
   match Config.effects () with
   | `Cps | `Double_translation ->
       if debug () then Format.eprintf "Effects...@.";
       let shapes = collects_shapes ~shapes p in
       let p, trampolined_calls, in_cps = Effects.f ~flow_info:info ~live_vars p in
+      Interpreter.check ~name:"effects" p;
       let p =
         match Config.target () with
         | `Wasm -> p
-        | `JavaScript -> Lambda_lifting.f p
+        | `JavaScript -> Lambda_lifting.f p |> check "lambda_lifting"
       in
       p, trampolined_calls, in_cps, None, shapes
   | `Disabled | `Jspi | `Native ->
-      let p = specialize_exact_calls info p in
+      let p = specialize_exact_calls info p |> check "exact_calls" in
       let shapes = collects_shapes ~shapes p in
       ( p
       , (Code.Var.Set.empty : Effects.trampolined_calls)
@@ -244,11 +258,15 @@ let rec loop max name round i (p : 'a) : 'a =
 let round profile : 'a -> 'a =
   print
   +> tailcall
+  +> check "tailcall"
   +> Ref_unboxing.f
+  +> check "ref_unboxing"
   +> (flow +> specialize +> eval +> fst)
   +> inline profile
   +> phi
+  +> check "phi"
   +> deadcode
+  +> check "merge_blocks"
 
 (* o1 *)
 
@@ -734,13 +752,17 @@ let optimize ~shapes ~profile ~keep_flow_data p =
   in
   let opt =
     Specialize.switches
+    +> check "switches"
     +> specialize_js_once_before
+    +> check "specialize_js_once_before"
     +> (match (profile : Profile.t) with
       | O1 -> o1
       | O2 -> o2
       | O3 -> o3)
     +> specialize_js_once_after
+    +> check "specialize_js_once_after"
     +> clone_higher_order profile
+    +> check "clone_higher_order"
     +> effects_and_exact_calls ~keep_flow_data ~deadcode_sentinel ~shapes profile
     +> map_fst5
          (match Config.target (), Config.effects () with
@@ -748,8 +770,13 @@ let optimize ~shapes ~profile ~keep_flow_data p =
          | `JavaScript, `Cps
          | `Wasm, (`Disabled | `Jspi | `Cps | `Double_translation | `Native) -> Fun.id
          | `JavaScript, (`Jspi | `Native) -> assert false)
+    +> map_fst5 (check "generate_closure")
     +> map_fst5 deadcode'
+    +> map_fst5 (fun ((p, _) as res) ->
+        Interpreter.check ~name:"deadcode" p;
+        res)
   in
+  Interpreter.start p;
   if times () then Format.eprintf "Start Optimizing...@.";
   let t = Timer.make () in
   let (program, variable_uses), trampolined_calls, in_cps, global_flow_info, shapes =

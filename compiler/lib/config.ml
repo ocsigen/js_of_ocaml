@@ -237,6 +237,14 @@ module Param = struct
          is outlined into a separate function"
       (int 10000)
 
+  let interp_fuel =
+    p
+      ~name:"interp_fuel"
+      ~desc:
+        "set the maximum number of blocks executed by the IR interpreter (see --debug \
+         interp)"
+      (int 100_000_000)
+
   type tc =
     | TcNone
     | TcTrampoline

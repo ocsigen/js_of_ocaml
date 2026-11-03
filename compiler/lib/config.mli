@@ -124,6 +124,8 @@ module Param : sig
 
   val toplevel_split_size : unit -> int
 
+  val interp_fuel : unit -> int
+
   type tc =
     | TcNone
     | TcTrampoline

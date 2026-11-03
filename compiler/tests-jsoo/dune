@@ -313,6 +313,13 @@
 (cram
  (deps %{bin:js_of_ocaml}))
 
+(cram
+ (applies_to interpreter)
+ ; The interpreter has only been checked against the initialization code
+ ; of recent standard libraries
+ (enabled_if
+  (>= %{ocaml_version} 5.2)))
+
 (test
  (name array_limits)
  (modules array_limits)
