@@ -465,12 +465,41 @@ let dispatch_component_disabled free_pc blocks closures_map = function
   | SCC.No_loop id -> free_pc, blocks, [ emit_unchanged closures_map id ]
   | SCC.Has_loop all -> Trampoline.has_loop free_pc blocks closures_map all
 
+(* Whether a recursive group is made of CPS continuations: the edges of
+   the group are tail calls, and in CPS code, the tail calls on backward
+   edges of the control flow graph check the stack depth (they are in
+   [trampolined_calls], see [Effects.cps_branch]). As every cycle has a
+   backward edge, at least one tail call of the group is such a call.
+   Direct-style code performs no such call. *)
+let is_continuation_group ~trampolined_calls blocks closures_map all =
+  List.exists all ~f:(fun id ->
+      Var.Map.exists
+        (fun f pcs ->
+          List.mem ~eq:Var.equal f all
+          && Addr.Set.exists
+               (fun pc ->
+                 match List.last (Addr.Map.find pc blocks).body with
+                 | Some (Let (x, Apply _)) -> Var.Set.mem x trampolined_calls
+                 | _ -> false)
+               pcs)
+        (Var.Map.find id closures_map).tc)
+
 (* --effects=double-translation: cps_needed closures arrive paired via
-   caml_cps_closure. A paired recursive group gets the CPS-style trampoline;
-   an unpaired recursive group is rare (partial_cps_analysis promotes whole
-   mutually recursive groups to cps_needed) and is left unchanged, since the
-   counter trampoline's bounce doesn't compose with the CPS call-gen. *)
-let dispatch_component_dt free_pc blocks closures_map = function
+   caml_cps_closure. Since a function calling a function in CPS is also
+   in CPS, a recursive group is either fully paired or fully unpaired.
+
+   A paired recursive group gets the CPS-style trampoline. An unpaired
+   recursive group is either made of direct-style functions, and gets the
+   counter-based trampoline used without effects, or of CPS
+   continuations, which are left unchanged: the counter trampoline would
+   run their bounces in direct style (see [is_continuation_group] for
+   how they are told apart).
+
+   The two trampolines bound the stack differently: the CPS-style one
+   uses the stack depth budget of CPS calls ([caml_stack_check_depth],
+   reset by [caml_direct_trampoline]), while the counter-based one passes
+   the number of consecutive tail calls as an extra parameter. *)
+let dispatch_component_dt ~trampolined_calls free_pc blocks closures_map = function
   | SCC.No_loop id -> (
       let ci = Var.Map.find id closures_map in
       match ci.cps_pair with
@@ -488,16 +517,19 @@ let dispatch_component_dt free_pc blocks closures_map = function
   | SCC.Has_loop all ->
       let paired id = Option.is_some (Var.Map.find id closures_map).cps_pair in
       let all_paired = List.for_all all ~f:paired in
-      (* An SCC is either fully paired or fully unpaired. *)
+      (* An SCC is either fully paired or fully unpaired (see above). *)
       assert (all_paired || not (List.exists all ~f:paired));
       if all_paired
       then Trampoline_dt.has_loop free_pc blocks closures_map all
-      else free_pc, blocks, List.map all ~f:(emit_unchanged closures_map)
+      else if is_continuation_group ~trampolined_calls blocks closures_map all
+      then free_pc, blocks, List.map all ~f:(emit_unchanged closures_map)
+      else Trampoline.has_loop free_pc blocks closures_map all
 
-let dispatch_component free_pc blocks closures_map component =
+let dispatch_component ~trampolined_calls free_pc blocks closures_map component =
   match Config.effects () with
   | `Disabled -> dispatch_component_disabled free_pc blocks closures_map component
-  | `Double_translation -> dispatch_component_dt free_pc blocks closures_map component
+  | `Double_translation ->
+      dispatch_component_dt ~trampolined_calls free_pc blocks closures_map component
   | `Cps | `Jspi | `Native -> assert false
 
 (* Tail calls are collected whatever their [exact] flag, which is not set
@@ -527,7 +559,7 @@ let keep_exact_tail_calls blocks closures =
             Var.Map.empty
       })
 
-let rec rewrite_closures free_pc blocks body : int * _ * _ list =
+let rec rewrite_closures ~trampolined_calls free_pc blocks body : int * _ * _ list =
   match body with
   | Let (_, Closure _) :: _ ->
       let closures, rem = collect_closures blocks body 0 in
@@ -543,7 +575,7 @@ let rec rewrite_closures free_pc blocks body : int * _ * _ list =
           ~init:(free_pc, blocks, [])
           ~f:(fun (free_pc, blocks, acc) component ->
             let free_pc, blocks, closures =
-              dispatch_component free_pc blocks closures_map component
+              dispatch_component ~trampolined_calls free_pc blocks closures_map component
             in
             let intrs = closures :: acc in
             free_pc, blocks, intrs)
@@ -554,21 +586,23 @@ let rec rewrite_closures free_pc blocks body : int * _ * _ list =
         |> List.sort ~cmp:(fun a b -> compare (pos a) (pos b))
         |> List.concat_map ~f:(fun w -> w.code)
       in
-      let free_pc, blocks, rem = rewrite_closures free_pc blocks rem in
+      let free_pc, blocks, rem = rewrite_closures ~trampolined_calls free_pc blocks rem in
       free_pc, blocks, closures @ rem
   | i :: rem ->
-      let free_pc, blocks, rem = rewrite_closures free_pc blocks rem in
+      let free_pc, blocks, rem = rewrite_closures ~trampolined_calls free_pc blocks rem in
       free_pc, blocks, i :: rem
   | [] -> free_pc, blocks, []
 
-let f p : Code.program =
+let f ~trampolined_calls p : Code.program =
   Code.invariant p;
   let blocks, free_pc =
     Addr.Map.fold
       (fun pc _ (blocks, free_pc) ->
         (* make sure we have the latest version *)
         let block = Addr.Map.find pc blocks in
-        let free_pc, blocks, body = rewrite_closures free_pc blocks block.body in
+        let free_pc, blocks, body =
+          rewrite_closures ~trampolined_calls free_pc blocks block.body
+        in
         Addr.Map.add pc { block with body } blocks, free_pc)
       p.blocks
       (p.blocks, p.free_pc)
@@ -577,7 +611,7 @@ let f p : Code.program =
   Code.invariant p;
   p
 
-let f p =
+let f ~trampolined_calls p =
   assert (
     match Config.effects () with
     | `Disabled | `Jspi | `Native | `Double_translation -> true
@@ -587,7 +621,7 @@ let f p =
   | TcNone -> p
   | TcTrampoline ->
       let t = Timer.make () in
-      let p' = f p in
+      let p' = f ~trampolined_calls p in
       if Debug.find "times" ()
       then Format.eprintf "  generate closures: %a@." Timer.print t;
       p'
