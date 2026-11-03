@@ -46,7 +46,7 @@ let%expect_test _ =
     {|
     Function parameter properly assigned: 5/5
     short variable count: 10/10
-    short variable occurrences: 19/19
+    short variable occurrences: 23/23
     (function(a){
        "use strict";
        var e = a.jsoo_runtime;

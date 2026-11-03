@@ -32825,31 +32825,31 @@
      /*<<dynarray.ml:765:37>>*/ return blit_assume_room
             (src, src_pos, src_length, dst, dst_pos, dst_length, len) /*<<dynarray.ml:769:7>>*/ ;
    }
-   function append_array_if_room(_E_, src){
+   function append_array_if_room(_D_, src){
     var
-     length_a =  /*<<dynarray.ml:774:2>>*/ _E_[1],
-     arr = _E_[2],
+     length_a =  /*<<dynarray.ml:774:2>>*/ _D_[1],
+     arr = _D_[2],
      length_b =  /*<<dynarray.ml:775:2>>*/ src.length - 1;
      /*<<dynarray.ml:776:2>>*/ if(arr.length - 1 < (length_a + length_b | 0))
       /*<<dynarray.ml:776:49>>*/ return 0;
-     /*<<dynarray.ml:777:7>>*/ _E_[1] = length_a + length_b | 0;
-     /*<<dynarray.ml:298:14>>*/ _E_ = Stdlib_Obj[17];
-    if(caml_obj_tag(src) !== _E_)
+     /*<<dynarray.ml:777:7>>*/ _D_[1] = length_a + length_b | 0;
+     /*<<dynarray.ml:298:14>>*/ _D_ = Stdlib_Obj[17];
+    if(caml_obj_tag(src) !== _D_)
       /*<<dynarray.ml:299:8>>*/ Stdlib_Array[9].call
       (null, src, 0, arr, length_a, length_b);
     else{
-      /*<<dynarray.ml:300:11>>*/ _E_ = length_b - 1 | 0;
-     if(_E_ >= 0){
+      /*<<dynarray.ml:300:11>>*/ _D_ = length_b - 1 | 0;
+     if(_D_ >= 0){
       var i = 0;
       for(;;){
        var
-        _D_ =  /*<<dynarray.ml:302:10>>*/ i | 0,
-        v =  /*<<dynarray.ml:302:38>>*/ caml_check_bound(src, _D_)[_D_ + 1],
-        _D_ =  /*<<dynarray.ml:302:55>>*/ length_a + i | 0;
-        /*<<dynarray.ml:302:10>>*/ caml_check_bound(arr, _D_)[_D_ + 1] = v;
-        /*<<dynarray.ml:302:55>>*/ _D_ = i + 1 | 0;
-       if(_E_ === i) break;
-       i = _D_;
+        _E_ =  /*<<dynarray.ml:302:10>>*/ i | 0,
+        v =  /*<<dynarray.ml:302:38>>*/ caml_check_bound(src, _E_)[_E_ + 1],
+        _E_ =  /*<<dynarray.ml:302:55>>*/ length_a + i | 0;
+        /*<<dynarray.ml:302:10>>*/ caml_check_bound(arr, _E_)[_E_ + 1] = v;
+        /*<<dynarray.ml:302:55>>*/ _E_ = i + 1 | 0;
+       if(_D_ === i) break;
+       i = _E_;
       }
      }
     }
