@@ -20,4 +20,7 @@
 
 open Code
 
-val f : program -> program
+val f : cps_calls:Var.Set.t -> program -> program
+(** Implement tail calls between mutually recursive functions with
+    trampolines. [cps_calls] are the calls in CPS, and the calls which
+    return a trampoline when the stack is too deep (see {!Effects.f}). *)

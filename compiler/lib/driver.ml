@@ -733,6 +733,17 @@ let link_and_pack ?(standalone = true) ?(wrap_with_fun = `Iife) ?(link = `No) p 
   |> pack ~wrap_with_fun ~standalone
   |> check_js
 
+let generate_closures (p, trampolined_calls, in_cps, global_flow_info, shapes) =
+  let p =
+    match Config.target (), Config.effects () with
+    | `JavaScript, (`Disabled | `Double_translation) ->
+        Generate_closure.f ~cps_calls:(Code.Var.Set.union trampolined_calls in_cps) p
+    | `JavaScript, `Cps | `Wasm, (`Disabled | `Jspi | `Cps | `Double_translation | `Native)
+      -> p
+    | `JavaScript, (`Jspi | `Native) -> assert false
+  in
+  p, trampolined_calls, in_cps, global_flow_info, shapes
+
 let optimize ~shapes ~profile ~keep_flow_data p =
   let deadcode_sentinel =
     (* If deadcode is disabled, this field is just fresh variable *)
@@ -748,12 +759,7 @@ let optimize ~shapes ~profile ~keep_flow_data p =
     +> specialize_js_once_after
     +> clone_higher_order profile
     +> effects_and_exact_calls ~keep_flow_data ~deadcode_sentinel ~shapes profile
-    +> map_fst5
-         (match Config.target (), Config.effects () with
-         | `JavaScript, (`Disabled | `Double_translation) -> Generate_closure.f
-         | `JavaScript, `Cps
-         | `Wasm, (`Disabled | `Jspi | `Cps | `Double_translation | `Native) -> Fun.id
-         | `JavaScript, (`Jspi | `Native) -> assert false)
+    +> generate_closures
     +> map_fst5 deadcode'
   in
   if times () then Format.eprintf "Start Optimizing...@.";

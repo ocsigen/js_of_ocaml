@@ -41,6 +41,8 @@
 * Runtime: `Printf` float formatting matches C: `%e`, `%f` and `%g` round
   ties to even, and `%g` of values >= 1e21 uses fixed notation while the
   exponent is below the precision (#2527)
+* Compiler: with `--effects=double-translation`, trampoline the tail calls of
+  mutually recursive functions without CPS version, to avoid stack overflows (#2593)
 
 # 6.5.0 (2026-10-22) - Lille
 

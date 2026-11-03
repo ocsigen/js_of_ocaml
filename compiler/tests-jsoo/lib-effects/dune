@@ -29,6 +29,7 @@
    assume_no_perform_nested_perform
    perform_in_callback
    deep_state
+   mutual_recursion_whole_program
    test_finalise))
  (preprocess
   (pps ppx_devtools-expect)))
@@ -62,6 +63,15 @@
  (wasm_of_ocaml
   (compilation_mode whole_program))
  (modes js wasm))
+
+(tests
+ (names mutual_recursion_whole_program)
+ (build_if
+  (>= %{ocaml_version} 5))
+ (modules mutual_recursion_whole_program)
+ (js_of_ocaml
+  (compilation_mode whole_program))
+ (modes js))
 
 ; Forces a major GC through node's v8/vm modules to observe
 ; Gc.finalise_last under the CPS calling convention.
