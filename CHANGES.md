@@ -45,6 +45,9 @@
   primitives defined in user runtime files (#2604)
 * Compiler: do not inline functions with open recursion through a record
   of closures as functors (memory blow-up at --opt 2 with OCaml 5.6) (#2599)
+* Compiler: with `--enable callgen`, evaluate the function and its arguments
+  only once; this also fixes a crash and exponential compilation times with
+  effects (#2592)
 
 # 6.5.0 (2026-10-22) - Lille
 
