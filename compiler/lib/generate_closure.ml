@@ -166,16 +166,21 @@ module Trampoline = struct
         ; branch = Return return
         }
 
-  let bounce_call_block ~x ~f ~args =
+  let bounce_call_block ~counter ~x ~f ~args =
     let return = Code.Var.fork x in
     let new_args = Code.Var.fresh () in
+    let args = List.map args ~f:(fun x -> Pv x) in
     { params = []
     ; body =
         [ Let
             ( new_args
             , Prim
                 ( Extern ("%js_array", None)
-                , Pc (Int Targetint.zero) :: List.map args ~f:(fun x -> Pv x) ) )
+                , match counter with
+                  | None -> args
+                  | Some _ ->
+                      (* The trampoline resets the counter *)
+                      Pc (Int Targetint.zero) :: args ) )
         ; Let
             (return, Prim (Extern ("caml_trampoline_return", None), [ Pv f; Pv new_args ]))
         ]
@@ -266,7 +271,10 @@ module Trampoline = struct
                     blocks
                 in
                 let blocks =
-                  Addr.Map.add bounce_call_pc (bounce_call_block ~x ~f:new_f ~args) blocks
+                  Addr.Map.add
+                    bounce_call_pc
+                    (bounce_call_block ~counter ~x ~f:new_f ~args)
+                    blocks
                 in
                 let block =
                   match counter with

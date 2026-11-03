@@ -29,6 +29,7 @@
   when the compiler itself runs in Wasm (#2568)
 * Compiler/Wasm: export the shapes of separately compiled units, so that
   other units can call their functions directly (#2587)
+* Compiler: fix mutually recursive tail calls with `--set tc_depth=0` (#2591)
 
 # 6.5.0 (2026-10-22) - Lille
 
