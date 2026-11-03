@@ -106,8 +106,9 @@ a: for (;;) { inner: for (;;) { if (x()) break a; break inner; } }
            for(;;){b: for(;;){if(x()) break a; break b;}}
            |}]
 
-(* [x] is named first. Name [a] clashes with the free variable [a] in [f] and
-   [g], but remains available in [h]. *)
+(* Name [a] clashes with the free variable [a] in [f] and [g], but remains
+   available in [h]. [x] occurs in several functions and is not named as a
+   parameter (its position is taken by [a]), so it skips the first names. *)
 let%expect_test "short names clashing with a free variable" =
   process
     ~shortvar:true
@@ -120,12 +121,12 @@ function f(x) {
 |};
   [%expect
     {|
-           function f(b){
-            function c(){return a + b;}
-            function d(){var a = b(b, b, b); return a;}
-            return [c, d];
-           }
-           |}]
+    function f(g){
+     function b(){return a + g;}
+     function c(){var a = g(g, g, g); return a;}
+     return [b, c];
+    }
+    |}]
 
 (* Labels are not visible across function and class static block boundaries:
    the inner [break]s (invalid JavaScript) keep their source label. *)

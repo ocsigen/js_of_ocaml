@@ -66,19 +66,24 @@ let () = StringSet.iter (fun s -> String.Hashtbl.add reserved s ()) Reserved.key
 
 let is_reserved s = String.Hashtbl.mem reserved s
 
+(* Names are allocated in index order (skipping reserved words), even
+   when indices are not requested in order: the indices below
+   [Int.Hashtbl.length t.known] are the ones already allocated. *)
 let to_string t i =
   match Int.Hashtbl.find t.known i with
   | name -> name
   | exception Not_found ->
-      let rec loop t i j =
+      let rec next j =
         let s = Alphabet.to_string t.alphabet j in
         if is_reserved s
-        then loop t i (j + 1)
+        then next (j + 1)
         else (
-          Int.Hashtbl.add t.known i s;
           t.last <- j;
           s)
       in
-      loop t i (t.last + 1)
+      for k = Int.Hashtbl.length t.known to i do
+        Int.Hashtbl.add t.known k (next (t.last + 1))
+      done;
+      Int.Hashtbl.find t.known i
 
 let create alphabet = { known = Int.Hashtbl.create 1001; alphabet; last = -1 }

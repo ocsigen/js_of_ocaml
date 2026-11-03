@@ -176,8 +176,8 @@ try { var xxxxx = 3; var bbb = 2; throw 1; } catch (xx) { const bbb = a(0) } }
           2: a = function (yyyy) {
           3: try { var xxxxx = 3; var bbb = 2; throw 1; } catch (xx) { const bbb = a(0) } }
         $ cat "test.min.js"
-          1: a=function(d){try{var
-          2: c=3,b=2;throw 1}catch(f){const
+          1: a=function(b){try{var
+          2: c=3,d=2;throw 1}catch(f){const
           3: b=a(0)}};
         |}])
 
@@ -417,8 +417,9 @@ test()
         $ cat "test.min.js"
           1: function
           2: test(){var
-          3: c={a:1,b:2};function
-          4: a(a,b=c.b){return a+b}console.log(a(1))}test(); |}];
+          3: g={a:1,b:2};function
+          4: a(a,b=g.b){return a+b}console.log(a(1))}test();
+        |}];
       print_endline (run_javascript js_min_file);
       [%expect {| 3 |}])
 
@@ -459,7 +460,8 @@ function g(x) {
           1: function
           2: g(a){var
           3: d,c,b;for({toto:b=c}in
-          4: a)console.log(b)} |}];
+          4: a)console.log(b)}
+        |}];
       minify
         {|
 function h(x) {

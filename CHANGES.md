@@ -25,6 +25,8 @@
 * Compiler: split switches with more than 256 cases (instead of 60), or whose
   case values span more than 1000, which the JavaScriptCore interpreter
   compiles to a sequence of tests (#2612)
+* Compiler: name variables in a more regular order, which compresses better
+  (#2598)
 
 ## Bug fixes
 * Compiler/Wasm: box variables typed as integers before using them as a
