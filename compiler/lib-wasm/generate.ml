@@ -152,6 +152,14 @@ let js_conversions p closures =
       conversion_defs);
   folded, results, result_targets
 
+(* A function called through closures with a calling convention
+   different from the generic one: its code [body] is called by a
+   wrapper with the generic calling convention *)
+type wrapped_function =
+  { body : Var.t
+  ; boxed_params : bool  (** Whether the parameters are all boxed *)
+  }
+
 module Generate (Target : Target_sig.S) = struct
   open Target
 
@@ -170,11 +178,11 @@ module Generate (Target : Target_sig.S) = struct
              JavaScript call defining [r] *)
     ; js_result_targets : unit Var.Hashtbl.t
     ; raising_funcs : unit Var.Hashtbl.t
-    ; wrapped_funcs : Var.t Var.Hashtbl.t
-          (* Raising functions which can also be called through a
-             closure, mapped to the name of the function implementing
-             their body; the original name is used for a wrapper
-             converting null back into an exception *)
+    ; wrapped_funcs : wrapped_function Var.Hashtbl.t
+          (* Functions which can also be called through a closure,
+             with a calling convention different from the generic one
+             (raising functions, unboxed parameters or return value);
+             the original name is used for the wrapper *)
     ; blocks : block Addr.Map.t
     ; closures : Closure_conversion.closure Var.Map.t
     ; global_context : Code_generation.context
@@ -2077,25 +2085,42 @@ module Generate (Target : Target_sig.S) = struct
     | Some g -> Var.Hashtbl.mem ctx.raising_funcs g
     | None -> false
 
-  let known_call ctx context f args closure =
+  (* A call to function [f]. With [direct], the arguments have the
+     types of the parameters of [f], and the result the return type
+     of [f], so the function is called directly rather than through its
+     wrapper. Otherwise, the arguments are boxed, and so is the result
+     when the function is wrapped. *)
+  let known_call ctx context ~direct f args closure =
     let args = args @ [ closure ] in
-    if Var.Hashtbl.mem ctx.raising_funcs f
+    let wrapper = Var.Hashtbl.find_opt ctx.wrapped_funcs f in
+    let wrapped = Option.map ~f:(fun w -> w.body) wrapper in
+    let raising = Var.Hashtbl.mem ctx.raising_funcs f in
+    if
+      match wrapper with
+      | Some { boxed_params; _ } ->
+          (* When the parameters are boxed, the wrapper of a raising
+             function (which returns a boxed value) only turns null
+             into an exception: the function can be called directly,
+             with the local handler *)
+          (not direct) && not (raising && boxed_params)
+      | None -> false
+    then return (W.Call (f, args))
+    else if raising
     then
-      let wrapped = Var.Hashtbl.find_opt ctx.wrapped_funcs f in
       match label_index_opt context exception_handler_pc with
       | Some label ->
           return (W.Br_on_null (label, W.Call (Option.value ~default:f wrapped, args)))
       | None -> (
           (* No handler for this call ([may_call_raising_function] did
              not expect one): use the wrapper. This only happens for
-             wrapped functions, as the code pointer of a constant
-             closure can be known without the flow analysis knowing the
-             callee. A function only called directly is always known at
+             wrapped functions called through a constant closure (see
+             above). A function only called directly is always known at
              its call sites, so they get a handler. *)
+          assert (not direct);
           match wrapped with
           | Some _ -> return (W.Call (f, args))
           | None -> assert false)
-    else return (W.Call (f, args))
+    else return (W.Call (Option.value ~default:f wrapped, args))
 
   let rec translate_expr ctx context x e =
     match e with
@@ -2148,7 +2173,7 @@ module Generate (Target : Target_sig.S) = struct
             in
             (* The environment argument is removed by
                [remove_env_arguments] if [g] does not take one *)
-            let* e = known_call ctx context g args cl in
+            let* e = known_call ctx context ~direct:true g args cl in
             return (g, e)
           in
           match unique with
@@ -2185,7 +2210,10 @@ module Generate (Target : Target_sig.S) = struct
                 in
                 let* args = expression_list (fun x -> load_and_box ctx x) args in
                 match funct with
-                | W.RefFunc g -> known_call ctx context g args closure
+                | W.RefFunc g ->
+                    (* The code pointer of a constant closure can be known
+                       without the flow analysis knowing the callee *)
+                    known_call ctx context ~direct:false g args closure
                 | _ -> return (W.Call_ref (ty, funct, args @ [ closure ])))
         else
           let* apply = need_apply_fun ~cps ~arity:(List.length args) in
@@ -2665,10 +2693,15 @@ module Generate (Target : Target_sig.S) = struct
       ~context
 
   (* A function with the generic calling convention, which calls the
-     function [body_name] and converts a null return value into an
-     exception *)
-  let wrapper_function ~context ~name ~body_name ~param_count =
-    let param_names = List.init ~len:param_count ~f:(fun _ -> Var.fresh ()) in
+     function [body_name], whose parameters have the types given by
+     [params] (followed by the environment), with whether they are
+     used, and whose return value has type [return_type]. The wrapper
+     converts its arguments, and the return value. With [raising], the
+     function returns null instead of raising an exception, which the
+     wrapper throws. *)
+  let wrapper_function ~context ~name ~body_name ~params ~return_type ~raising =
+    let params = params @ [ Typing.Top, true ] in
+    let param_names = List.map ~f:(fun _ -> Var.fresh ()) params in
     let locals, body =
       function_body
         ~context
@@ -2685,22 +2718,40 @@ module Generate (Target : Target_sig.S) = struct
                ~init:(return ())
                param_names
            in
-           let* () =
-             block
-               { params = []; result = [] }
-               (let* args = expression_list load param_names in
-                instr (Return (Some (Br_on_null (0, Call (body_name, args))))))
+           let* args =
+             expression_list
+               (fun (x, (typ, used)) ->
+                 if used || not (Typing.is_unboxed typ)
+                 then convert ~from:Top ~into:typ (load x)
+                 else
+                   (* The argument can be the dead code sentinel, an
+                      integer, when the parameter is not used: pass a
+                      dummy value rather than converting it *)
+                   convert ~from:(Int Normalized) ~into:typ (return (W.Const (I32 0l))))
+               (List.combine param_names params)
            in
-           let* exn = take_exception in
-           let* tag = register_import ~name:exception_name (Tag Type.value) in
-           instr (Throw (tag, exn)))
+           if raising
+           then
+             let* () =
+               block
+                 { params = []; result = [] }
+                 (instr (Return (Some (Br_on_null (0, Call (body_name, args))))))
+             in
+             let* exn = take_exception in
+             let* tag = register_import ~name:exception_name (Tag Type.value) in
+             instr (Throw (tag, exn))
+           else
+             let* res =
+               convert ~from:return_type ~into:Top (return (W.Call (body_name, args)))
+             in
+             instr (Return (Some res)))
     in
     (* The function is post-processed in [f] below. *)
     W.Function
       { name
       ; exported_name = None
       ; typ = None
-      ; signature = Type.func_type (param_count - 1)
+      ; signature = Type.func_type (List.length params - 1)
       ; param_names
       ; locals
       ; body
@@ -2979,14 +3030,16 @@ module Generate (Target : Target_sig.S) = struct
     in
     let wrapped =
       match name_opt with
-      | Some f -> Var.Hashtbl.find_opt ctx.wrapped_funcs f
+      | Some f ->
+          Option.map ~f:(fun w -> w.body) (Var.Hashtbl.find_opt ctx.wrapped_funcs f)
       | None -> None
     in
     let signature =
       match name_opt with
       | None -> Type.primitive_type param_count
       | Some f ->
-          if Typing.can_unbox_parameters ctx.fun_info f
+          if
+            Call_graph_analysis.direct_calls_only ctx.fun_info f || Option.is_some wrapped
           then
             { W.params =
                 (List.map
@@ -3002,15 +3055,22 @@ module Generate (Target : Target_sig.S) = struct
                     (unboxed_type return_type)
                 ]
             }
-          else if Option.is_some wrapped
-          then { (Type.func_type (param_count - 1)) with result = [ Type.value_or_exn ] }
           else Type.func_type (param_count - 1)
     in
     (* The function is post-processed in [f] below. *)
     let acc =
       match name_opt, wrapped with
       | Some f, Some body_name ->
-          wrapper_function ~context:ctx.global_context ~name:f ~body_name ~param_count
+          wrapper_function
+            ~context:ctx.global_context
+            ~name:f
+            ~body_name
+            ~params:
+              (List.map
+                 ~f:(fun x -> Typing.var_type ctx.types x, ctx.live.(Var.idx x) > 0)
+                 params)
+            ~return_type
+            ~raising:return_exn
           :: acc
       | _ -> acc
     in
@@ -3406,29 +3466,37 @@ let f
     Typing.f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinel p
   in
   let raising_funcs =
-    Call_graph_analysis.raising_functions
-      p
-      global_flow_info
-      fun_info
-      ~wrappable:(fun _ ->
-        (* With CPS, functions are called through closures with a
-           different calling convention. With double translation, the
-           wrapper is the direct-style code of the closure, which can
-           also have a CPS version. *)
-        match Config.effects () with
-        | `Disabled | `Jspi | `Native | `Double_translation -> true
-        | `Cps -> false)
-      (fun f ->
+    Call_graph_analysis.raising_functions p global_flow_info fun_info (fun f ->
         match Typing.return_type types f with
         | Int (Normalized | Unnormalized) | Number (_, Unboxed) -> false
         | Int Ref | Number (_, Boxed) | Top | Bot | Tuple _ | Bigarray _ | Null -> true)
   in
+  (* Functions called through closures whose calling convention
+     differs from the generic one get a wrapper *)
   let wrapped_funcs = Var.Hashtbl.create 16 in
-  Var.Hashtbl.iter
-    (fun f () ->
-      if not (Call_graph_analysis.direct_calls_only fun_info f)
-      then Var.Hashtbl.replace wrapped_funcs f (Var.fork f))
-    raising_funcs;
+  Code.fold_closures
+    p
+    (fun name_opt params _ _ () ->
+      match name_opt with
+      | Some f
+        when (not (Call_graph_analysis.direct_calls_only fun_info f))
+             && (Var.Hashtbl.mem raising_funcs f
+                || Call_graph_analysis.wrappable fun_info f
+                   && (Typing.is_unboxed (Typing.return_type types f)
+                      || List.exists
+                           ~f:(fun x -> Typing.is_unboxed (Typing.var_type types x))
+                           params)) ->
+          Var.Hashtbl.replace
+            wrapped_funcs
+            f
+            { body = Var.fork f
+            ; boxed_params =
+                List.for_all
+                  ~f:(fun x -> not (Typing.is_unboxed (Typing.var_type types x)))
+                  params
+            }
+      | Some _ | None -> ())
+    ();
   let t = Timer.make () in
   let p = Structure.norm p in
   let p = fix_switch_branches p in
