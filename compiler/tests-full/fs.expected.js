@@ -13,14 +13,14 @@
    }
   }
   (Object));
-(function(d){
+(function(g){
    "use strict";
    function a(a, b, c){
-    if(d.jsoo_create_file)
-     d.jsoo_create_file(a, b, c);
+    if(g.jsoo_create_file)
+     g.jsoo_create_file(a, b, c);
     else{
-     if(! d.jsoo_fs_tmp) d.jsoo_fs_tmp = [];
-     d.jsoo_fs_tmp.push({name: a, content: b, base64: c});
+     if(! g.jsoo_fs_tmp) g.jsoo_fs_tmp = [];
+     g.jsoo_fs_tmp.push({name: a, content: b, base64: c});
     }
     return 0;
    }

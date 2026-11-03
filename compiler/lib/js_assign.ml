@@ -34,7 +34,9 @@ module type Strategy = sig
 
   val record_block : t -> Js_traverse.t -> Js_traverse.block -> unit
 
-  val allocate_variables : t -> count:int array -> string array
+  (* [count] is the number of occurrences of each variable, [first] the
+     rank of its first occurrence in the program *)
+  val allocate_variables : t -> count:int array -> first:int array -> string array
 end
 
 module Min : Strategy = struct
@@ -46,22 +48,42 @@ We are trying to achieve the following goals:
 (3) function parameters should be: function(a,b,...){...}
 (4) for longer variable names, variables which are close to one
     another should share a same prefix
+(5) similar pieces of code should use the same names
 
 Point (1) minimizes the size of uncompressed files, while point (2) to
-(4) improve compression.
+(5) improve compression.
 
 We use the following strategy. We maintain the constraint that
 variables occurring in a function should keep different names.
 We first assign names a, b, ... (in order) to function parameters,
 starting from inner functions, skipping variables which have a
 conflict with a previously named variable (goal 3). Then, we order
-the remaining variables by their number of occurrences, then by
-their index (goal 4), and greedily assign names to them. For that,
+the remaining variables and greedily assign names to them. For that,
 we use for each variable the smallest possible name still available
 (goal 1/2).
 
+The number of occurrences of a variable (its weight) matters for two
+reasons: a variable with many occurrences should get a short name
+(goal 1), and one-char names should be used in order of decreasing
+weight, so that occurrences concentrate on the first few names (goal
+2). Among variables that get a longer name of a given size, the weight
+is irrelevant. So, variables are named in two passes:
+- a first pass, in order of decreasing weight, determines the size of
+  the name of each variable;
+- the final pass names the variables that got a one-char name in the
+  same order, then the other variables by name size, then by order of
+  first occurrence in the program (goals 4 and 5).
+
+Besides, a variable that occurs in several functions (typically, a
+toplevel variable used by many functions) does not get one of the
+first few names, unless it is named as a parameter. Otherwise, the names of the
+local variables of a function would depend on which of these variables
+the function uses. This way, local variables are usually named right
+after the parameters (goal 5).
+
 This algorithm seems effective. Here are some statistics gathered
-while compiling the OCaml toplevel:
+while compiling the OCaml toplevel (in 2013, when variables were just
+sorted by weight, then by index):
 (1) We get 132025 occurrences of one-char variables out of 169728
     occurrences while the optimal number (determined using a mixed
     integer linear programming solver) is 132105 occurrences (80 more
@@ -78,6 +100,22 @@ while compiling the OCaml toplevel:
     variables using their index as a secondary key rather than just
     based on their weights (the size of the uncompressed file remains
     unchanged)
+
+Compared to sorting by weight then by index, the current order
+(measured on ocamlc in 2026) leaves the size of the uncompressed file
+unchanged and saves 0.5% with gzip, 0.9% with brotli and 0.7% with
+zstd. Other orders were measured:
+- sorting all variables by order of first occurrence costs 1.4% on the
+  uncompressed file and 0.3% with gzip;
+- sorting the variables that get a one-char name by order of first
+  occurrence as well, rather than by weight, compresses worse (the
+  bias toward the first names matters);
+- sorting by classes of weights (powers of 2, 4 or 16), then by order
+  of first occurrence, is slightly worse: fine classes are less
+  regular, coarse ones give long names to variables with many
+  occurrences;
+- naming parameters like other variables costs 0.2% with gzip (2%
+  without the rule on variables occurring in several functions).
 *)
 
   type alloc =
@@ -85,6 +123,10 @@ while compiling the OCaml toplevel:
     ; used : BitSet.t
     ; existing_names : StringSet.t
     }
+
+  let reset_alloc_table a =
+    a.first_free <- 0;
+    BitSet.clear a.used
 
   let make_alloc_table existing_names =
     { first_free = 0; used = BitSet.create (); existing_names }
@@ -99,12 +141,12 @@ while compiling the OCaml toplevel:
     List.for_all l ~f:(fun a ->
         (not (BitSet.mem a.used i)) && not (StringSet.mem name a.existing_names))
 
-  let first_available l =
+  let first_available ~start l =
     let rec find_rec n l =
       let n' = List.fold_left l ~init:n ~f:(fun n a -> next_available a n) in
       if n = n' then n else find_rec n' l
     in
-    find_rec 0 l
+    find_rec start l
 
   let mark_allocated l i = List.iter l ~f:(fun a -> allocate a i)
 
@@ -112,23 +154,30 @@ while compiling the OCaml toplevel:
     { constr : alloc list array (* Constraints on variables *)
     ; mutable parameters : Var.t list array (* Function parameters *)
     ; printer : Var_printer.t
+    ; mutable tables : alloc list
+    ; functions : int array
+          (* Number of functions (or other scopes anchoring [var]s) in
+             which each variable occurs *)
     }
 
   let create nv =
     { constr = Array.make nv []
     ; parameters = [| [] |]
     ; printer = Var_printer.create Var_printer.Alphabet.javascript
+    ; tables = []
+    ; functions = Array.make nv 0
     }
 
-  let allocate_variables t ~count =
+  (* A variable occurring in several functions does not get one of
+     the first [shared_variable_offset] names, unless it is named as
+     a parameter. Values between 5 and 9 give similar results. *)
+  let shared_variable_offset = 6
+
+  (* Name the variables greedily, in the given order (parameters first) *)
+  let assign t ~count ~stats:print_stats order =
     let weight v = count.(v) in
     let constr = t.constr in
     let len = Array.length constr in
-    let idx = Array.make len 0 in
-    for i = 0 to len - 1 do
-      idx.(i) <- i
-    done;
-    Array.stable_sort idx ~cmp:(fun i j -> compare (weight j) (weight i));
     let names = Array.make len "" in
     let n0 = ref 0 in
     let n1 = ref 0 in
@@ -159,42 +208,77 @@ while compiling the OCaml toplevel:
             stats idx i)
           else incr bad)
     done;
-    if debug_shortvar ()
+    if print_stats
     then
       Format.eprintf
         "Function parameter properly assigned: %d/%d@."
         (!total - !bad)
         !total;
-    for i = 0 to len - 1 do
-      let idx = idx.(i) in
-      let l = constr.(idx) in
-      (if (not (List.is_empty l)) && String.length names.(idx) = 0
-       then
-         let rec loop () =
-           let n = first_available l in
-           let name = Var_printer.to_string t.printer n in
-           if List.for_all l ~f:(fun a -> not (StringSet.mem name a.existing_names))
-           then (
-             names.(idx) <- name;
-             mark_allocated l n;
-             stats idx n)
-           else (
-             (* Only the tables where [name] is already taken must skip
+    Array.iter order ~f:(fun idx ->
+        let l = constr.(idx) in
+        if String.length names.(idx) = 0
+        then
+          let start = if t.functions.(idx) > 1 then shared_variable_offset else 0 in
+          let rec loop () =
+            let n = first_available ~start l in
+            let name = Var_printer.to_string t.printer n in
+            if List.for_all l ~f:(fun a -> not (StringSet.mem name a.existing_names))
+            then (
+              names.(idx) <- name;
+              mark_allocated l n;
+              stats idx n)
+            else (
+              (* Only the tables where [name] is already taken must skip
                 [n]: it remains available in the other ones. *)
-             List.iter l ~f:(fun a ->
-                 if StringSet.mem name a.existing_names then allocate a n);
-             loop ())
-         in
-         loop ());
-      if List.is_empty l then assert (weight idx = 0)
-    done;
-    if debug_shortvar ()
+              List.iter l ~f:(fun a ->
+                  if StringSet.mem name a.existing_names then allocate a n);
+              loop ())
+          in
+          loop ());
+    if print_stats
     then (
       Format.eprintf "short variable count: %d/%d@." !n1 !n0;
       Format.eprintf "short variable occurrences: %d/%d@." !n2 !n3);
     names
 
-  let add_constraints global u ~offset (params : ident list) =
+  let allocate_variables t ~count ~first =
+    let len = Array.length t.constr in
+    (* Only the variables that occur in the program get a name. This is
+       a small subset of all variables: sorting all of them would be
+       costly. *)
+    let order =
+      let l = ref [] in
+      for v = len - 1 downto 0 do
+        if List.is_empty t.constr.(v) then assert (count.(v) = 0) else l := v :: !l
+      done;
+      Array.of_list !l
+    in
+    (* First pass, by decreasing weight: find the size of the name of
+       each variable *)
+    Array.stable_sort order ~cmp:(fun i j ->
+        match compare count.(j) count.(i) with
+        | 0 -> compare first.(i) first.(j)
+        | c -> c);
+    let names = assign t ~count ~stats:false order in
+    List.iter t.tables ~f:reset_alloc_table;
+    (* Final pass: the variables that got a one-char name, in the same
+       order; then the other variables, by name size, then by order of
+       first occurrence. All variables with a longer name are moved
+       (not just the ones we would like to name regularly), so that
+       none gets named before a variable with more occurrences. *)
+    let rank = Array.make len 0 in
+    Array.iteri order ~f:(fun r v -> rank.(v) <- r);
+    let size = Array.map names ~f:(fun name -> max 1 (String.length name)) in
+    Array.stable_sort order ~cmp:(fun i j ->
+        match compare size.(i) size.(j) with
+        | 0 ->
+            if size.(i) = 1
+            then compare rank.(i) rank.(j)
+            else compare first.(i) first.(j)
+        | c -> c);
+    assign t ~count ~stats:(debug_shortvar ()) order
+
+  let add_constraints global u ~is_function ~offset (params : ident list) =
     let constr = global.constr in
     let existing_names =
       Javascript.IdentSet.fold
@@ -206,12 +290,14 @@ while compiling the OCaml toplevel:
         StringSet.empty
     in
     let c = make_alloc_table existing_names in
+    global.tables <- c :: global.tables;
     Javascript.IdentSet.iter
       (function
         | S _ -> ()
         | V v ->
             let i = Var.idx v in
-            constr.(i) <- c :: constr.(i))
+            constr.(i) <- c :: constr.(i);
+            if is_function then global.functions.(i) <- global.functions.(i) + 1)
       u;
     let params = Array.of_list params in
     let len = Array.length params in
@@ -239,14 +325,16 @@ while compiling the OCaml toplevel:
         scope.Js_traverse.use
     in
     match block with
-    | Let_scope | Var_scope -> add_constraints state all ~offset:0 []
-    | Params p -> add_constraints state all ~offset:0 (bound_idents_of_params p)
+    | Let_scope -> add_constraints state all ~is_function:false ~offset:0 []
+    | Var_scope -> add_constraints state all ~is_function:true ~offset:0 []
+    | Params p ->
+        add_constraints state all ~is_function:true ~offset:0 (bound_idents_of_params p)
     | Catch (p, _) ->
         let ids = bound_idents_of_binding p in
         let all =
           List.fold_left ids ~init:all ~f:(fun all i -> Javascript.IdentSet.add i all)
         in
-        add_constraints state all ~offset:5 ids
+        add_constraints state all ~is_function:false ~offset:5 ids
 end
 
 module Preserve : Strategy = struct
@@ -295,7 +383,7 @@ module Preserve : Strategy = struct
 
   let uniq_var = Debug.find "var"
 
-  let allocate_variables t ~count =
+  let allocate_variables t ~count ~first:_ =
     let names = Array.make t.size "" in
     let uniq_var = uniq_var () in
     let unnamed = ref 0 in
@@ -393,8 +481,10 @@ class traverse record_block =
       super#record_block b
   end
 
-(* Count variable occurrences, and collect the names of source labels *)
-class count_occurrences ~idents ~source_labels =
+(* Count variable occurrences, record the order of their first
+   occurrence, and collect the names of source labels *)
+class count_occurrences ~idents ~first ~source_labels =
+  let rank = ref 0 in
   object
     inherit Js_traverse.iter as super
 
@@ -410,6 +500,10 @@ class count_occurrences ~idents ~source_labels =
       | S _ -> ()
       | V v ->
           let idx = Code.Var.idx v in
+          if idents.(idx) = 0
+          then (
+            first.(idx) <- !rank;
+            incr rank);
           idents.(idx) <- idents.(idx) + 1
   end
 
@@ -487,8 +581,9 @@ let program' (module Strategy : Strategy) p =
   let mapper = new traverse (Strategy.record_block state) in
   mapper#program p;
   let count = Array.make nv 0 in
+  let first = Array.make nv max_int in
   let source_labels = ref StringSet.empty in
-  (new count_occurrences ~idents:count ~source_labels)#program p;
+  (new count_occurrences ~idents:count ~first ~source_labels)#program p;
   (* The program top level anchors its own [var]s and has no enclosing scope
      to record them, so it is a [Var_scope] (never skipped). *)
   mapper#record_block Var_scope;
@@ -502,7 +597,7 @@ let program' (module Strategy : Strategy) p =
       Var.Set.empty
   in
   let unallocated_names = ref Var.Set.empty in
-  let names = Strategy.allocate_variables state ~count in
+  let names = Strategy.allocate_variables state ~count ~first in
   (* ignore the chosen name for escaping/free [V _] variables *)
   Var.Set.iter (fun x -> names.(Var.idx x) <- "") freevar;
   let ident =

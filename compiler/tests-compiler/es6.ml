@@ -31,7 +31,7 @@ let f x =
     (a=>{
        "use strict";
        var b = a.jsoo_runtime;
-       b.caml_register_global([0, b=>a=>(b + a | 0) + 7 | 0], "Test");
+       b.caml_register_global([0, g=>a=>(g + a | 0) + 7 | 0], "Test");
        return;})
      (globalThis);
     //end
