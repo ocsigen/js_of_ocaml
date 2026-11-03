@@ -120,9 +120,9 @@ console.log(outer());
         $ cat "test.min.js"
           1: function
           2: outer(){var
-          3: a="GOOD";function
-          4: b(){var
-          5: b="BAD";try{throw{}}catch({p:f=a}){return f}}return b()}console.log(outer());
+          3: g="GOOD";function
+          4: a(){var
+          5: a="BAD";try{throw{}}catch({p:f=g}){return f}}return a()}console.log(outer());
         GOOD
 
         GOOD
