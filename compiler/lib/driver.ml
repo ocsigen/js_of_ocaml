@@ -219,6 +219,7 @@ let effects_and_exact_calls
       if debug () then Format.eprintf "Effects...@.";
       let shapes = collects_shapes ~shapes p in
       let p, trampolined_calls, in_cps = Effects.f ~flow_info:info ~live_vars p in
+      Interpreter.set_cps ~trampolined_calls ~in_cps;
       Interpreter.check ~name:"effects" p;
       let p =
         match Config.target () with

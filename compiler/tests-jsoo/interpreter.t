@@ -128,3 +128,123 @@ exception handlers are represented by [Assign] instructions.
   1
   2
   3
+
+Effect handlers: before the Effects pass, they are implemented with the
+effect handlers of the compiler (OCaml 5); after it, the CPS code calls
+a transcription of the JavaScript runtime.
+
+  $ cat > effects.ml <<EOF
+  > open Effect
+  > open Effect.Deep
+  > type _ Effect.t += Get : int Effect.t | Put : int -> unit Effect.t | Other : unit Effect.t
+  > 
+  > let state f (init : int) =
+  >   let r = ref init in
+  >   match_with f ()
+  >     { retc = (fun x -> (x, !r));
+  >       exnc = raise;
+  >       effc = (fun (type a) (e : a Effect.t) : ((a, _) continuation -> _) option -> match e with
+  >         | Get -> Some (fun k -> continue k !r)
+  >         | Put n -> Some (fun k -> r := n; continue k ())
+  >         | _ -> None) }
+  > 
+  > let () =
+  >   let v, s = state (fun () ->
+  >       for i = 1 to 10 do perform (Put (perform Get + i)) done; perform Get * 2) 0 in
+  >   Printf.printf "%d %d\n" v s
+  > 
+  > (* nested handlers: inner does not handle Get, it is reperformed *)
+  > let () =
+  >   let res, _ = state (fun () ->
+  >       try_with (fun () -> perform (Put 5); perform Get + 1) ()
+  >         { effc = (fun (type a) (e : a Effect.t) -> match e with
+  >             | Other -> Some (fun (k : (a, _) continuation) -> continue k ())
+  >             | _ -> None) }) 0 in
+  >   Printf.printf "nested %d\n" res
+  > 
+  > (* discontinue *)
+  > exception Stop
+  > let () =
+  >   let r = try_with (fun () -> try perform Other; 0 with Stop -> 42) ()
+  >       { effc = (fun (type a) (e : a Effect.t) -> match e with
+  >           | Other -> Some (fun (k : (a, _) continuation) -> discontinue k Stop)
+  >           | _ -> None) } in
+  >   Printf.printf "discontinue %d\n" r
+  > 
+  > (* unhandled *)
+  > let () =
+  >   try perform Other with Effect.Unhandled _ -> print_endline "unhandled"
+  > 
+  > let () =
+  >   let r = try_with (fun () -> try perform Get with Effect.Unhandled _ -> -1) ()
+  >       { effc = (fun (type a) (e : a Effect.t) -> match e with
+  >           | Other -> Some (fun (k : (a, _) continuation) -> continue k ())
+  >           | _ -> None) } in
+  >   Printf.printf "unhandled in handler %d\n" r
+  > 
+  > (* resumed twice *)
+  > let () =
+  >   let saved : (unit, unit) continuation option ref = ref None in
+  >   (try_with (fun () -> perform Other; print_endline "resumed") ()
+  >     { effc = (fun (type a) (e : a Effect.t) -> match e with
+  >         | Other -> Some (fun (k : (a, _) continuation) -> saved := Some (k : (unit, unit) continuation); continue k ())
+  >         | _ -> None) });
+  >   match !saved with
+  >   | Some k -> (try continue k () with Continuation_already_resumed -> print_endline "already")
+  >   | None -> ()
+  > 
+  > (* shallow: generator *)
+  > let () =
+  >   let open Effect.Shallow in
+  >   let gen () = for i = 1 to 3 do perform (Put i) done in
+  >   let rec loop : type a. (a, unit) continuation -> a -> unit = fun k v ->
+  >     continue_with k v
+  >       { retc = (fun () -> print_endline "done");
+  >         exnc = raise;
+  >         effc = (fun (type b) (e : b Effect.t) -> match e with
+  >           | Put n -> Some (fun (k : (b, unit) continuation) -> Printf.printf "got %d\n" n; loop k ())
+  >           | _ -> None) } in
+  >   loop (fiber gen) ()
+  > EOF
+
+  $ ocamlc effects.ml -o effects.bc
+
+  $ js_of_ocaml --effects=cps --debug interp --debug interp-output effects.bc -o effects.js > interp.out 2> interp.log
+
+  $ grep -v ': ok (' interp.log | sed 's/ (.*//'
+  interp: input: finished
+
+  $ grep -E ': (effects|lambda_lifting):' interp.log | sed 's/ (.*//'
+  interp: effects: ok
+  interp: lambda_lifting: ok
+
+  $ node effects.js > node.out
+
+  $ diff interp.out node.out
+
+  $ js_of_ocaml --effects=double-translation --debug interp --debug interp-output effects.bc -o effects.js > interp.out 2> interp.log
+
+  $ grep -v ': ok (' interp.log | sed 's/ (.*//'
+  interp: input: finished
+
+  $ grep -E ': (effects|lambda_lifting|generate_closure):' interp.log | sed 's/ (.*//'
+  interp: effects: ok
+  interp: lambda_lifting: ok
+  interp: generate_closure: ok
+
+  $ node effects.js > node.out
+
+  $ diff interp.out node.out
+
+  $ cat interp.out
+  110 55
+  nested 6
+  discontinue 42
+  unhandled
+  unhandled in handler -1
+  resumed
+  already
+  got 1
+  got 2
+  got 3
+  done

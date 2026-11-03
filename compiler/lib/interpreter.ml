@@ -29,6 +29,17 @@
    exception handler continuation (see [Code.check_assigned_variables]),
    which are evaluated when the exception is caught.
 
+   Effect handlers have two semantics. Before the [Effects] pass, the
+   effect primitives ([%perform], [%resume], ...) are implemented with
+   the effect handlers of the host, so this requires the compiler to be
+   built with OCaml 5. Once the program has been transformed into CPS,
+   calls that do not have the right number of arguments follow the CPS
+   conventions of [caml_call_gen], calls in [trampolined_calls] bounce
+   when the stack is too deep, and the runtime functions used by the
+   CPS code (runtime/js/effect.js) are transcribed here; with double
+   translation, functions can have a CPS version, and calls in [in_cps]
+   use it.
+
    Behaviours that the passes are not supposed to introduce are reported
    as errors: unbound variables, exact calls with the wrong number of
    arguments, out-of-bounds field accesses, conditionals on values that
@@ -40,6 +51,8 @@ open Code
 let debug = Debug.find "interp"
 
 let debug_output = Debug.find "interp-output"
+
+let debug_program = Debug.find "interp-program"
 
 exception Error of string
 
@@ -65,9 +78,13 @@ module V = struct
     | Closure of closure
     | Partial of partial
     | Prim_closure of string
+    | Host of host  (** A function of the runtime *)
     | Channel of channel
     | Js_array of t array  (** A JavaScript array, built by [%js_array] *)
-    | Trampoline of t * t  (** Function and arguments, see [caml_trampoline_return] *)
+    | Trampoline of t * t * bool
+        (** Function, arguments, and whether the function is called in
+            direct style (see [caml_trampoline_return]) *)
+    | Stack of fiber  (** Effect handlers *)
     | Null
 
   and block =
@@ -79,6 +96,14 @@ module V = struct
   and closure =
     { fn : func
     ; env : t array  (** Values of the free variables of the function *)
+    ; mutable cps : t option
+          (** With double translation, the CPS version of the function *)
+    }
+
+  and host =
+    { arity : int
+    ; hfn : t list -> t
+    ; mutable host_cps : t option
     }
 
   (* Functions and blocks are compiled before execution: variables are
@@ -105,6 +130,24 @@ module V = struct
     }
 
   and channel = { fd : int }
+
+  (* A fiber, as allocated by [caml_alloc_stack]. A continuation is a
+     block of tag 245 containing the innermost and the outermost fibers
+     of a chain of fibers, linked by [parent]. *)
+  and fiber =
+    { mutable handlers : t array  (** Value, exception and effect handlers *)
+    ; mutable resume : ((unit -> t) -> t) option
+          (** Resume the suspended computation of the fiber, running the
+              function at the point where the computation was suspended;
+              [None] if the fiber has not been started *)
+    ; mutable parent : fiber option  (** Next fiber in a continuation *)
+    ; mutable depth : int  (** Call depth of the suspended computation *)
+    ; mutable parent_depth : int  (** Call depth where the fiber was resumed *)
+    ; mutable k : t  (** In CPS: low-level continuation *)
+    ; mutable traps : t list  (** In CPS: exception handlers *)
+    }
+  [@@warning "-69"]
+  (* Direct-style effect handlers are not supported with OCaml 4 *)
 end
 
 exception Ml_exn of V.t
@@ -120,6 +163,10 @@ module C = struct
         { f : int
         ; args : int array
         ; exact : bool
+        ; trampolined : bool
+              (** In CPS, the call returns a trampoline when the stack is
+                  too deep *)
+        ; in_cps : bool  (** With double translation, a call in CPS *)
         }
     | Block of int * int array
     | Field of int * int
@@ -137,10 +184,10 @@ module C = struct
 
   type instr =
     | Let of int * expr
-    | Closures of closure array * (int * int) array
+    | Closures of closure array * (int * int * int) array
         (** Mutually recursive closures, and variables bound by
-            [caml_cps_closure] to one of these closures (destination and
-            source) *)
+            [caml_cps_closure] to one of these closures (destination, direct
+            and CPS versions) *)
     | Assign of int * int
     | Set_field of int * int * int
     | Offset_ref of int * int
@@ -178,7 +225,32 @@ type state =
   ; mutable out_channels : V.t list
   ; mutable dls : V.t
   ; mutable pc : Addr.t  (** Block being executed, for error messages *)
+  ; cps : bool  (** Whether the program has been transformed into CPS *)
+  ; dt : bool  (** Same, with double translation *)
+  ; mutable stack_depth : int  (** [caml_stack_depth] *)
+  ; mutable current : V.fiber  (** [caml_current_stack] *)
   }
+
+(* Set once the [Effects] pass has transformed the program into CPS *)
+let trampolined_calls = ref None
+
+let in_cps_calls = ref Var.Set.empty
+
+let toplevel_fiber () : V.fiber =
+  { handlers = [||]
+  ; resume = None
+  ; parent = None
+  ; depth = 0
+  ; parent_depth = 0
+  ; k = Int Targetint.zero
+  ; traps = []
+  }
+
+let host arity hfn = V.Host { arity; hfn; host_cps = None }
+
+let check_depth st =
+  st.stack_depth <- st.stack_depth - 1;
+  st.stack_depth > 0
 
 let max_depth = 100_000
 
@@ -282,10 +354,12 @@ let phys_equal_value (a : V.t) (b : V.t) =
   | Closure x, Closure y -> phys_equal x y
   | Partial x, Partial y -> phys_equal x y
   | Prim_closure x, Prim_closure y -> String.equal x y
+  | Host _, Host _ -> phys_equal a b
   | Int64 _, Int64 _ -> phys_equal a b
   | Channel x, Channel y -> phys_equal x y
   | Js_array x, Js_array y -> phys_equal x y
   | Trampoline _, Trampoline _ -> phys_equal a b
+  | Stack x, Stack y -> phys_equal x y
   | Null, Null -> true
   | ( ( Int _
       | Float _
@@ -296,10 +370,12 @@ let phys_equal_value (a : V.t) (b : V.t) =
       | Closure _
       | Partial _
       | Prim_closure _
+      | Host _
       | Int64 _
       | Channel _
       | Js_array _
       | Trampoline _
+      | Stack _
       | Null )
     , _ ) -> false
 
@@ -337,8 +413,8 @@ let ml_tag st (v : V.t) =
   | Block b -> b.tag
   | String _ | Native_string _ | Bytes _ -> 252
   | Int64 _ | Channel _ -> 255
-  | Js_array _ | Trampoline _ -> 1000
-  | Closure _ | Partial _ | Prim_closure _ -> 247
+  | Js_array _ | Trampoline _ | Stack _ -> 1000
+  | Closure _ | Partial _ | Prim_closure _ | Host _ -> 247
   | Int _ | Float _ -> 1000
   | Null -> 1010
 
@@ -369,14 +445,16 @@ let compare_values st ~total (a : V.t) (b : V.t) =
       | Int64 x, Int64 y ->
           let c = Int64.compare x y in
           if c <> 0 then sign c else next stack
-      | (Closure _ | Partial _ | Prim_closure _), _
-      | _, (Closure _ | Partial _ | Prim_closure _) ->
+      | (Closure _ | Partial _ | Prim_closure _ | Host _), _
+      | _, (Closure _ | Partial _ | Prim_closure _ | Host _) ->
           raise_with_string st "Invalid_argument" "compare: functional value"
       | Block x, Block y ->
           if x.tag <> y.tag
           then sign (compare x.tag y.tag)
           else if x.tag = 251
           then raise_with_string st "Invalid_argument" "equal: abstract value"
+          else if x.tag = 245
+          then raise_with_string st "Invalid_argument" "compare: continuation value"
           else if x.tag = 248
           then
             let c = compare_one [] x.fields.(1) y.fields.(1) in
@@ -448,9 +526,11 @@ let hash_value ~count ~limit ~seed (v : V.t) =
     | Closure _
     | Partial _
     | Prim_closure _
+    | Host _
     | Channel _
     | Js_array _
     | Trampoline _
+    | Stack _
     | Null -> ());
     ()
   done;
@@ -1109,7 +1189,7 @@ let () =
           | None ->
               b.tag <- b'.tag;
               b.fields <- Array.copy b'.fields)
-      | Closure _ | Partial _ | Prim_closure _ -> b.fun_ <- Some y
+      | Closure _ | Partial _ | Prim_closure _ | Host _ -> b.fun_ <- Some y
       | _ -> error "caml_update_dummy");
       unit);
   reg1 "caml_fresh_oo_id" (fun st _ ->
@@ -1353,21 +1433,74 @@ let () =
   reg1 "caml_unix_inet_addr_of_string" (fun _ s -> String (as_string s));
   reg0 "caml_alloc_dummy_lazy" (fun _ -> block [||])
 
+(* Functions *)
+
+let rec split n l =
+  if n = 0
+  then [], l
+  else
+    match l with
+    | x :: r ->
+        let l1, l2 = split (n - 1) r in
+        x :: l1, l2
+    | [] -> assert false
+
+let not_a_function (v : V.t) =
+  error
+    "call to a value which is not a function (%s)"
+    (match v with
+    | Int n -> "integer " ^ Targetint.to_string n
+    | Float _ -> "float"
+    | String _ | Native_string _ | Bytes _ -> "string"
+    | Block b -> Printf.sprintf "block of tag %d" b.tag
+    | Int64 _ -> "int64"
+    | Channel _ -> "channel"
+    | Js_array _ -> "JavaScript array"
+    | Trampoline _ -> "trampoline"
+    | Stack _ -> "stack"
+    | Null -> "null"
+    | Closure _ | Partial _ | Prim_closure _ | Host _ -> "function")
+
+let rec cps_of (v : V.t) =
+  match v with
+  | Closure { cps; _ } | Host { host_cps = cps; _ } -> cps
+  | Block { fun_ = Some f; _ } -> cps_of f
+  | _ -> None
+
+let rec set_cps (v : V.t) c =
+  match v with
+  | Closure f -> f.cps <- Some c
+  | Host h -> h.host_cps <- Some c
+  | Block { fun_ = Some f; _ } -> set_cps f c
+  | _ -> error "caml_cps_closure: not a function"
+
+let rec arity_of (v : V.t) =
+  match v with
+  | Closure c -> Array.length c.fn.params
+  | Partial p -> p.remaining
+  | Prim_closure name -> fst (find_prim name)
+  | Host { arity; _ } -> arity
+  | Block { fun_ = Some f; _ } -> arity_of f
+  | _ -> not_a_function v
+
 (* Trampolines (see [Generate_closure]) *)
 
 let apply_ref =
   ref (fun _ (_ : V.t) (_ : V.t list) ~exact:(_ : bool) : V.t -> assert false)
 
+let call_gen_cps_ref = ref (fun _ (_ : V.t) (_ : V.t list) : V.t -> assert false)
+
 let () =
   register "%js_array" 0 (fun _ l -> Js_array (Array.of_list l));
   register "caml_trampoline_return" 2 (fun _ l ->
       match l with
-      | [ f; args ] | [ f; args; _ ] -> Trampoline (f, args)
+      | [ f; args ] -> Trampoline (f, args, false)
+      | [ f; args; direct ] -> Trampoline (f, args, phys_equal_value direct (int 1))
       | _ -> bad_arity "caml_trampoline_return");
   reg1 "caml_trampoline" (fun st r ->
       let rec loop (r : V.t) =
         match r with
-        | Trampoline (f, Js_array args) ->
+        | Trampoline (f, Js_array args, _) ->
             (* [f.apply(null, args)] in JavaScript *)
             loop (!apply_ref st f (Array.to_list args) ~exact:true)
         | Trampoline _ -> error "caml_trampoline"
@@ -1377,7 +1510,396 @@ let () =
 
 (* Double translation: the CPS version is attached to the direct-style
    closure, which is only called directly here *)
-let () = reg2 "caml_cps_closure" (fun _ direct _ -> direct)
+let () =
+  reg2 "caml_cps_closure" (fun _ direct cps ->
+      set_cps direct cps;
+      direct)
+
+(* Effect handlers. A continuation is a block of tag 245 containing the
+   innermost and the outermost fibers of a chain of fibers, linked by
+   their [parent] field. *)
+
+let as_fiber (v : V.t) =
+  match v with
+  | Stack f -> f
+  | _ -> error "fiber expected"
+
+(* Since OCaml 5.6, effect handlers no longer take the last fiber of the
+   continuation *)
+let handler_takes_last_fiber = Ocaml_version.compare Ocaml_version.current [ 5; 6 ] < 0
+
+let continuation_already_resumed st =
+  match String.Hashtbl.find_opt st.named_values "Effect.Continuation_already_resumed" with
+  | Some exn -> raise (Ml_exn exn)
+  | None -> error "continuation already resumed"
+
+let unhandled_effect st eff =
+  match String.Hashtbl.find_opt st.named_values "Effect.Unhandled" with
+  | Some exn -> block [| exn; eff |]
+  | None ->
+      let id = st.oo_id in
+      st.oo_id <- id + 1;
+      block ~tag:248 [| String "Effect.Unhandled"; int id |]
+
+let take_continuation cont =
+  let stack = field cont 0 in
+  set_field cont 0 unit;
+  stack
+
+let () =
+  reg1 "caml_continuation_use_noexc" (fun _ cont -> take_continuation cont);
+  reg4 "caml_continuation_use_and_update_handler_noexc" (fun _ cont hv hx hf ->
+      let stack = take_continuation cont in
+      (match stack with
+      | Stack _ -> (as_fiber (field cont 1)).handlers <- [| hv; hx; hf |]
+      | _ -> ());
+      stack);
+  reg2 "caml_get_continuation_callstack" (fun _ _ _ -> block [||]);
+  reg2 "caml_maybe_attach_backtrace" (fun _ exn _ -> exn)
+
+(* Once the program is in CPS, effects are implemented by the runtime
+   (runtime/js/effect.js and the trampolines of runtime/js/jslib.js),
+   which is transcribed here *)
+
+let call_gen st f args = !apply_ref st f args ~exact:false
+
+(* [caml_call_gen_cps] *)
+let call_gen_cps st f args =
+  if st.dt then !call_gen_cps_ref st f args else call_gen st f args
+
+let array_of_js (v : V.t) =
+  match v with
+  | Js_array a -> a
+  | _ -> error "JavaScript array expected"
+
+let trampoline_return ?(direct = false) f args =
+  V.Trampoline (f, Js_array (Array.of_list args), direct)
+
+let pop_fiber st =
+  match st.current.parent with
+  | Some c ->
+      st.current.parent <- None;
+      st.current <- c;
+      c.k
+  | None -> error "no parent fiber"
+
+let cps_alloc_stack st hv hx hf : V.t =
+  let call f x =
+    let args = [ x; pop_fiber st ] in
+    if check_depth st then call_gen_cps st f args else trampoline_return f args
+  in
+  Stack
+    { (toplevel_fiber ()) with
+      handlers = [| hv; hx; hf |]
+    ; k =
+        host 1 (function
+          | [ x ] -> call st.current.handlers.(0) x
+          | _ -> bad_arity "caml_alloc_stack_hval")
+    ; traps =
+        [ host 1 (function
+            | [ e ] -> call st.current.handlers.(1) e
+            | _ -> bad_arity "caml_alloc_stack_hexn")
+        ]
+    }
+
+let resume_stack st (stack : V.t) (last : V.t) k =
+  match stack with
+  | Stack s ->
+      let last =
+        match last with
+        | Int n when Targetint.is_zero n ->
+            let rec find (f : V.fiber) =
+              match f.parent with
+              | None -> f
+              | Some f -> find f
+            in
+            find s
+        | _ -> as_fiber last
+      in
+      st.current.k <- k;
+      last.parent <- Some st.current;
+      st.current <- s;
+      s.k
+  | _ -> continuation_already_resumed st
+
+let call_effect_handler st handler eff cont last k1 =
+  let args =
+    if handler_takes_last_fiber then [ eff; cont; last; k1 ] else [ eff; cont; k1 ]
+  in
+  if check_depth st
+  then
+    (* [caml_get_cps_fun]: with double translation, the effect handler is
+       called in CPS if it has a CPS version. Otherwise, it is called
+       directly, the continuation being an extra argument which is ignored
+       by JavaScript *)
+    match cps_of handler with
+    | Some h when st.dt -> !apply_ref st h args ~exact:true
+    | None when st.dt ->
+        let args, _ = split (List.length args - 1) args in
+        !apply_ref st handler args ~exact:true
+    | Some _ | None -> !apply_ref st handler args ~exact:true
+  else trampoline_return handler args
+
+let cps_trampoline st f args =
+  let saved_stack_depth = st.stack_depth in
+  let saved_current = st.current in
+  let depth = st.depth in
+  st.current <- toplevel_fiber ();
+  let rec loop f args =
+    st.stack_depth <- 40;
+    match call_gen st f args with
+    | V.Trampoline (f, Js_array args, _) -> loop f (Array.to_list args)
+    | Trampoline _ -> error "ill-formed trampoline"
+    | res -> res
+    | exception Ml_exn e -> (
+        (* Exception raised by the runtime, or by a function in direct style *)
+        st.depth <- depth;
+        match st.current.traps with
+        | [] -> raise (Ml_exn e)
+        | h :: t ->
+            st.current.traps <- t;
+            loop h [ e ])
+  in
+  let restore () =
+    st.stack_depth <- saved_stack_depth;
+    st.current <- saved_current
+  in
+  match
+    loop
+      f
+      (Array.to_list (array_of_js args)
+      @ [ host 1 (function
+            | [ x ] -> x
+            | _ -> bad_arity "caml_cps_trampoline")
+        ])
+  with
+  | v ->
+      restore ();
+      v
+  | exception e ->
+      restore ();
+      raise e
+
+let () =
+  reg3 "caml_alloc_stack" (fun st hv hx hf ->
+      if st.cps || st.dt
+      then cps_alloc_stack st hv hx hf
+      else unsupported "effect handlers");
+  reg3 "caml_resume_stack" (fun st stack last k -> resume_stack st stack last k);
+  reg0 "caml_pop_trap" (fun st ->
+      match st.current.traps with
+      | [] ->
+          host 1 (function
+            | [ x ] -> raise (Ml_exn x)
+            | _ -> bad_arity "caml_pop_trap")
+      | h :: t ->
+          st.current.traps <- t;
+          h);
+  reg1 "caml_push_trap" (fun st h ->
+      st.current.traps <- h :: st.current.traps;
+      unit);
+  reg1 "caml_raise_unhandled" (fun st eff -> raise (Ml_exn (unhandled_effect st eff)));
+  reg2 "caml_perform_effect" (fun st eff k0 ->
+      if Option.is_none st.current.parent then raise (Ml_exn (unhandled_effect st eff));
+      let handler = st.current.handlers.(2) in
+      let last = st.current in
+      last.k <- k0;
+      let cont = block ~tag:245 [| Stack last; Stack last |] in
+      let k1 = pop_fiber st in
+      call_effect_handler st handler eff cont (Stack last) k1);
+  reg4 "caml_reperform_effect" (fun st eff cont last k0 ->
+      (* Before OCaml 5.6, the last fiber is passed explicitly *)
+      let last = if handler_takes_last_fiber then last else field cont 1 in
+      if Option.is_none st.current.parent
+      then (
+        let exn = unhandled_effect st eff in
+        let stack = take_continuation cont in
+        ignore (resume_stack st stack last k0);
+        raise (Ml_exn exn));
+      let handler = st.current.handlers.(2) in
+      let last_fiber = st.current in
+      last_fiber.k <- k0;
+      (as_fiber last).parent <- Some last_fiber;
+      set_field cont 1 (Stack last_fiber);
+      let k1 = pop_fiber st in
+      call_effect_handler st handler eff cont (Stack last_fiber) k1);
+  reg2 "caml_cps_trampoline" (fun st f args -> cps_trampoline st f args);
+  reg0 "caml_stack_check_depth" (fun st -> bool (check_depth st));
+  reg4 "caml_resume" (fun st f arg stack last ->
+      let saved_stack_depth = st.stack_depth in
+      let saved_current = st.current in
+      let depth = st.depth in
+      let restore () =
+        st.stack_depth <- saved_stack_depth;
+        st.current <- saved_current
+      in
+      let rec loop f args direct =
+        st.stack_depth <- 40;
+        match
+          if direct then !apply_ref st f args ~exact:true else call_gen_cps st f args
+        with
+        | V.Trampoline (f, Js_array args, direct) -> loop f (Array.to_list args) direct
+        | Trampoline _ -> error "ill-formed trampoline"
+        | res -> res
+        | exception Ml_exn e -> (
+            st.depth <- depth;
+            match st.current.traps with
+            | [] -> raise (Ml_exn e)
+            | h :: t ->
+                st.current.traps <- t;
+                loop h [ e ] true)
+      in
+      match
+        st.current <- toplevel_fiber ();
+        let k =
+          resume_stack
+            st
+            stack
+            last
+            (host 1 (function
+              | [ x ] -> x
+              | _ -> bad_arity "caml_resume"))
+        in
+        loop f [ arg; k ] false
+      with
+      | v ->
+          restore ();
+          v
+      | exception e ->
+          restore ();
+          raise e);
+  reg2 "caml_direct_trampoline" (fun st f args ->
+      let saved_stack_depth = st.stack_depth in
+      let rec loop f args =
+        st.stack_depth <- 40;
+        match !apply_ref st f args ~exact:true with
+        | V.Trampoline (f, Js_array args, _) -> loop f (Array.to_list args)
+        | Trampoline _ -> error "ill-formed trampoline"
+        | res -> res
+      in
+      match loop f (Array.to_list (array_of_js args)) with
+      | v ->
+          st.stack_depth <- saved_stack_depth;
+          v
+      | exception e ->
+          st.stack_depth <- saved_stack_depth;
+          raise e);
+  reg1 "caml_assume_no_perform" (fun st f ->
+      if st.cps
+      then cps_trampoline st f (Js_array [| unit |])
+      else !apply_ref st f [ unit ] ~exact:false)
+
+(* Effect handlers, implemented with the effect handlers of the host
+   (they are thus not supported when the compiler is built with OCaml 4).
+   A fiber runs under a host handler, which catches the effects performed
+   by the fiber and calls the effect handler of the fiber, and calls the
+   value or exception handler when the fiber terminates. *)
+
+module _ = struct
+  type _ Effect.t +=
+    | Perform : V.t -> (unit -> V.t) Effect.t
+    | Reperform : V.t * V.t -> (unit -> V.t) Effect.t  (** Effect and continuation *)
+
+  let apply st f args = !apply_ref st f args ~exact:false
+
+  let call_effect_handler st (fiber : V.fiber) eff cont =
+    apply
+      st
+      fiber.handlers.(2)
+      (if handler_takes_last_fiber then [ eff; cont; Stack fiber ] else [ eff; cont ])
+
+  (* The call depth is counted from the start of each fiber, as each
+     fiber has its own stack in the host *)
+  let suspend st (fiber : V.fiber) k =
+    fiber.resume <- Some (fun body -> Effect.Deep.continue k body);
+    fiber.parent <- None;
+    fiber.depth <- st.depth;
+    st.depth <- fiber.parent_depth
+
+  let start st (fiber : V.fiber) body =
+    fiber.parent_depth <- st.depth;
+    st.depth <- 0;
+    Effect.Deep.match_with
+      body
+      ()
+      { retc =
+          (fun v ->
+            st.depth <- fiber.parent_depth;
+            apply st fiber.handlers.(0) [ v ])
+      ; exnc =
+          (fun e ->
+            match e with
+            | Ml_exn v ->
+                st.depth <- fiber.parent_depth;
+                apply st fiber.handlers.(1) [ v ]
+            | _ -> raise e)
+      ; effc =
+          (fun (type a) (e : a Effect.t) ->
+            match e with
+            | Perform eff ->
+                Some
+                  (fun (k : (a, _) Effect.Deep.continuation) ->
+                    suspend st fiber k;
+                    let cont = block ~tag:245 [| Stack fiber; Stack fiber |] in
+                    call_effect_handler st fiber eff cont)
+            | Reperform (eff, cont) ->
+                Some
+                  (fun (k : (a, _) Effect.Deep.continuation) ->
+                    suspend st fiber k;
+                    (* The fiber becomes the last fiber of the continuation *)
+                    (as_fiber (field cont 1)).parent <- Some fiber;
+                    set_field cont 1 (Stack fiber);
+                    call_effect_handler st fiber eff cont)
+            | _ -> None)
+      }
+
+  let resume_fiber st (fiber : V.fiber) body =
+    match fiber.resume with
+    | None -> start st fiber body
+    | Some resume ->
+        fiber.resume <- None;
+        fiber.parent_depth <- st.depth;
+        st.depth <- fiber.depth;
+        resume body
+
+  (* The outermost fiber is resumed first, and resumes the next fiber
+     where it was suspended, down to the innermost fiber, which runs
+     [body] *)
+  let rec resume_chain st (fiber : V.fiber) body =
+    match fiber.parent with
+    | None -> resume_fiber st fiber body
+    | Some parent ->
+        fiber.parent <- None;
+        resume_chain st parent (fun () -> resume_fiber st fiber body)
+
+  let resume st (stack : V.t) body =
+    match stack with
+    | Stack fiber -> resume_chain st fiber body
+    | _ -> continuation_already_resumed st
+
+  let alloc_stack hv hx hf : V.t =
+    Stack { (toplevel_fiber ()) with handlers = [| hv; hx; hf |] }
+
+  let () =
+    reg3 "caml_alloc_stack" (fun st hv hx hf ->
+        if st.cps || st.dt then cps_alloc_stack st hv hx hf else alloc_stack hv hx hf);
+    reg4 "%resume" (fun st stack f arg _ ->
+        resume st stack (fun () -> apply st f [ arg ]));
+    reg5 "%with_stack" (fun st hv hx hf f arg ->
+        resume st (alloc_stack hv hx hf) (fun () -> apply st f [ arg ]));
+    reg1 "%perform" (fun st eff ->
+        match Effect.perform (Perform eff) with
+        | body -> body ()
+        | exception Effect.Unhandled _ -> raise (Ml_exn (unhandled_effect st eff)));
+    reg3 "%reperform" (fun st eff cont _ ->
+        match Effect.perform (Reperform (eff, cont)) with
+        | body -> body ()
+        | exception Effect.Unhandled _ ->
+            (* Raise the exception where the effect was performed *)
+            let exn = unhandled_effect st eff in
+            resume st (take_continuation cont) (fun () -> raise (Ml_exn exn)))
+end
+[@@if ocaml_version >= (5, 0, 0)]
 
 (* Channels: only standard output and standard error are supported *)
 
@@ -1492,6 +2014,11 @@ type func_info =
   }
 
 let compile st (p : program) =
+  let trampolined x =
+    match !trampolined_calls with
+    | Some s -> Var.Set.mem x s
+    | None -> false
+  in
   let nvars = Var.count () in
   let owner = Array.make nvars (-1) in
   let slot = Array.make nvars (-1) in
@@ -1615,11 +2142,16 @@ let compile st (p : program) =
   let code = Array.make p.free_pc None in
   Array.iteri funcs ~f:(fun id f ->
       let resolve = resolve id and local = local id and jump = jump id in
-      let expr (e : expr) : C.expr =
+      let expr x (e : expr) : C.expr =
         match e with
         | Apply { f; args; exact } ->
             Apply
-              { f = resolve f; args = Array.of_list (List.map args ~f:resolve); exact }
+              { f = resolve f
+              ; args = Array.of_list (List.map args ~f:resolve)
+              ; exact
+              ; trampolined = trampolined x
+              ; in_cps = Var.Set.mem x !in_cps_calls
+              }
         | Block (tag, a, _, _, _) -> Block (tag, Array.map a ~f:resolve)
         | Field (x, i, _) -> Field (resolve x, i)
         | Closure _ -> assert false
@@ -1665,9 +2197,9 @@ let compile st (p : program) =
                      }
                     :: closures)
                     pairs
-              | Let (x, Prim (Extern ("caml_cps_closure", _), [ Pv d; Pv _ ])) :: rem
+              | Let (x, Prim (Extern ("caml_cps_closure", _), [ Pv d; Pv c ])) :: rem
                 when List.exists closures ~f:(fun (c : C.closure) -> c.dst = local d) ->
-                  collect rem closures ((local x, local d) :: pairs)
+                  collect rem closures ((local x, local d, resolve c) :: pairs)
               | Event _ :: (Let (_, Closure _) :: _ as rem) -> collect rem closures pairs
               | _ -> l, closures, pairs
             in
@@ -1681,7 +2213,7 @@ let compile st (p : program) =
             body
               rem
               (match i with
-              | Let (x, e) -> C.Let (local x, expr e) :: acc
+              | Let (x, e) -> C.Let (local x, expr x e) :: acc
               | Assign (x, y) -> Assign (local x, resolve y) :: acc
               | Set_field (x, i, _, y) -> Set_field (resolve x, i, resolve y) :: acc
               | Offset_ref (x, n) -> Offset_ref (resolve x, n) :: acc
@@ -1692,7 +2224,10 @@ let compile st (p : program) =
           let b = Addr.Map.find pc p.blocks in
           let instrs, tail_call =
             match List.rev b.body, b.branch with
-            | Let (x, Apply { f; args; exact }) :: rem, Return y when Var.equal x y ->
+            | Let (x, Apply { f; args; exact }) :: rem, Return y
+              when Var.equal x y
+                   && (not (trampolined x))
+                   && not (Var.Set.mem x !in_cps_calls) ->
                 ( List.rev rem
                 , Some
                     (local x, resolve f, Array.of_list (List.map args ~f:resolve), exact)
@@ -1751,15 +2286,10 @@ let tick st =
   st.fuel <- st.fuel - 1;
   if st.fuel < 0 then raise Out_of_fuel
 
-let rec split n l =
-  if n = 0
-  then [], l
-  else
-    match l with
-    | x :: r ->
-        let l1, l2 = split (n - 1) r in
-        x :: l1, l2
-    | [] -> assert false
+let is_function (v : V.t) =
+  match v with
+  | Closure _ | Partial _ | Prim_closure _ | Host _ | Block { fun_ = Some _; _ } -> true
+  | _ -> false
 
 (* ocamlc tests values that are either integers or blocks directly
    (for instance, lists). The truth value of floats and strings depend
@@ -1773,9 +2303,11 @@ let condition (v : V.t) =
   | Closure _
   | Partial _
   | Prim_closure _
+  | Host _
   | Channel _
   | Js_array _
-  | Trampoline _ -> true
+  | Trampoline _
+  | Stack _ -> true
   | Float _ | String _ | Native_string _ | Null ->
       error "condition on a float, a string or null"
 
@@ -1893,10 +2425,13 @@ and exec_instr st fr (i : C.instr) =
       let closures =
         Array.map a ~f:(fun (c : C.closure) ->
             let env = Array.make (Array.length c.captures) unset in
-            fr.locals.(c.dst) <- V.Closure { fn = c.fn; env };
+            fr.locals.(c.dst) <- V.Closure { fn = c.fn; env; cps = None };
             env)
       in
-      Array.iter pairs ~f:(fun (x, d) -> fr.locals.(x) <- fr.locals.(d));
+      Array.iter pairs ~f:(fun (x, d, c) ->
+          let f = fr.locals.(d) in
+          set_cps f (get fr c);
+          fr.locals.(x) <- f);
       Array.iteri a ~f:(fun i (c : C.closure) ->
           let env = closures.(i) in
           Array.iteri c.captures ~f:(fun j x -> env.(j) <- get fr x))
@@ -1909,7 +2444,14 @@ and exec_instr st fr (i : C.instr) =
 
 and eval_expr st fr (e : C.expr) : V.t =
   match e with
-  | Apply { f; args; exact } -> apply st (get fr f) (get_list fr args) ~exact
+  | Apply { f; args; exact; trampolined; in_cps } ->
+      let f = get fr f in
+      let args = get_list fr args in
+      if trampolined && not (check_depth st)
+      then trampoline_return ~direct:(not in_cps) f args
+      else if in_cps && st.dt
+      then apply_dt_cps st f args ~exact
+      else apply st f args ~exact
   | Block (tag, a) -> block ~tag (Array.map a ~f:(fun x -> get fr x))
   | Field (x, i) -> field (get fr x) i
   | Value v -> v
@@ -1924,8 +2466,9 @@ and apply st (f : V.t) args ~exact =
   | Closure c -> apply_generic st f args ~exact ~arity:(Array.length c.fn.params)
   | Partial p -> apply_generic st f args ~exact ~arity:p.remaining
   | Prim_closure name -> apply_generic st f args ~exact ~arity:(fst (find_prim name))
+  | Host { arity; _ } -> apply_generic st f args ~exact ~arity
   | Block { fun_ = Some f; _ } -> apply st f args ~exact
-  | _ -> error "call to a value which is not a function"
+  | _ -> not_a_function f
 
 (* Partial application, and application to too many arguments *)
 and apply_generic st f args ~exact ~arity =
@@ -1934,17 +2477,108 @@ and apply_generic st f args ~exact ~arity =
   then error "exact call with %d arguments to a function of arity %d" n arity;
   if n = arity
   then apply_exact st f args
+  else if st.cps
+  then apply_cps st f args ~arity
+  else if st.dt
+  then call_gen_direct st f args
   else if n < arity
   then V.Partial { pf = f; pargs = args; remaining = arity - n }
   else
     let args, rem = split arity args in
     apply st (apply_exact st f args) rem ~exact:false
 
+(* [caml_call_gen] once the program is in CPS: the last argument is the
+   continuation *)
+and apply_cps st f args ~arity =
+  let n = List.length args in
+  let k = List.nth args (n - 1) in
+  if n > arity
+  then
+    let first, rest = split (arity - 1) args in
+    let k' =
+      host 1 (function
+        | [ g ] ->
+            if is_function g
+            then apply st g rest ~exact:false
+            else apply st k [ g ] ~exact:true
+        | _ -> bad_arity "continuation")
+    in
+    apply_exact st f (first @ [ k' ])
+  else
+    let pargs, _ = split (n - 1) args in
+    apply st k [ Partial { pf = f; pargs; remaining = arity - n + 1 } ] ~exact:true
+
+(* Double translation: a call in CPS (see [Generate.apply_fun_raw]) *)
+and apply_dt_cps st f args ~exact =
+  let n = List.length args in
+  match cps_of f with
+  | Some c ->
+      if exact || arity_of c = n
+      then apply st c args ~exact:true
+      else call_gen_cps st f args
+  | None ->
+      if exact || arity_of f = n - 1
+      then
+        let direct_args, k = split (n - 1) args in
+        apply st (List.hd k) [ apply st f direct_args ~exact:true ] ~exact:true
+      else call_gen_cps st f args
+
+(* Double translation: [caml_call_gen_direct] and [caml_call_gen_cps] *)
+and call_gen_direct st f args =
+  let n = arity_of f in
+  let m = List.length args in
+  if m = n
+  then apply st f args ~exact:true
+  else if m > n
+  then
+    let first, rest = split n args in
+    let g = apply st f first ~exact:true in
+    if is_function g then call_gen_direct st g rest else g
+  else
+    let d = n - m in
+    let g = host d (fun extra -> call_gen_direct st f (args @ extra)) in
+    set_cps g (host (d + 1) (fun extra -> call_gen_cps st f (args @ extra)));
+    g
+
+and call_gen_cps st f args =
+  let m = List.length args in
+  match cps_of f with
+  | None ->
+      let n = arity_of f in
+      if m - 1 > n
+      then
+        let first, rest = split n args in
+        call_gen_cps st (apply st f first ~exact:true) rest
+      else
+        let direct_args, k = split (m - 1) args in
+        apply st (List.hd k) [ call_gen_direct st f direct_args ] ~exact:true
+  | Some c ->
+      let n = arity_of c in
+      if m = n
+      then apply st c args ~exact:true
+      else if m > n
+      then
+        let first, rest = split (n - 1) args in
+        let k' =
+          host 1 (function
+            | [ g ] -> call_gen_cps st g rest
+            | _ -> bad_arity "continuation")
+        in
+        apply st c (first @ [ k' ]) ~exact:true
+      else
+        let pargs, k = split (m - 1) args in
+        let d = n - m in
+        let g = host d (fun extra -> call_gen_direct st f (pargs @ extra)) in
+        set_cps g (host (d + 1) (fun extra -> call_gen_cps st f (pargs @ extra)));
+        apply st (List.hd k) [ g ] ~exact:true
+
 and apply_exact st (f : V.t) args =
   match f with
   | Closure c -> call st c args
   | Partial p -> apply st p.pf (p.pargs @ args) ~exact:true
   | Prim_closure name -> (snd (find_prim name)) st args
+  | Host { hfn; _ } -> hfn args
+  | Block { fun_ = Some f; _ } -> apply_exact st f args
   | _ -> assert false
 
 and call st c args =
@@ -1974,7 +2608,9 @@ and call st c args =
   st.pc <- pc;
   v
 
-let () = apply_ref := apply
+let () =
+  apply_ref := apply;
+  call_gen_cps_ref := call_gen_cps
 
 (****)
 
@@ -2000,10 +2636,11 @@ let rec print_value ~depth f (v : V.t) =
   | Native_string s -> Format.fprintf f "js%S" s
   | Bytes b -> Format.fprintf f "bytes%S" (Bytes.to_string b)
   | Int64 n -> Format.fprintf f "%LdL" n
-  | Closure _ | Partial _ | Prim_closure _ -> Format.pp_print_string f "<fun>"
+  | Closure _ | Partial _ | Prim_closure _ | Host _ -> Format.pp_print_string f "<fun>"
   | Channel _ -> Format.pp_print_string f "<channel>"
   | Js_array _ -> Format.pp_print_string f "<js array>"
   | Trampoline _ -> Format.pp_print_string f "<trampoline>"
+  | Stack _ -> Format.pp_print_string f "<stack>"
   | Null -> Format.pp_print_string f "null"
   | Block { tag = 248; fields; _ } when Array.length fields > 0 ->
       (* Exception constructors are printed without their identifier,
@@ -2032,6 +2669,12 @@ let print_result f r =
 
 let result_to_string r = Format.asprintf "%a" print_result r
 
+let is_effects e =
+  match e, Config.effects () with
+  | `Cps, `Cps | `Double_translation, `Double_translation -> true
+  | ( (`Cps | `Double_translation)
+    , (`Cps | `Double_translation | `Disabled | `Jspi | `Native) ) -> false
+
 let run ?fuel (p : program) =
   let fuel =
     match fuel with
@@ -2051,6 +2694,10 @@ let run ?fuel (p : program) =
     ; out_channels = []
     ; dls = block [||]
     ; pc = p.start
+    ; cps = Option.is_some !trampolined_calls && is_effects `Cps
+    ; dt = Option.is_some !trampolined_calls && is_effects `Double_translation
+    ; stack_depth = 0
+    ; current = toplevel_fiber ()
     }
   in
   let result =
@@ -2110,6 +2757,8 @@ let reference = ref None
 
 let start p =
   reference := None;
+  trampolined_calls := None;
+  in_cps_calls := Var.Set.empty;
   if debug ()
   then
     match Config.target () with
@@ -2152,6 +2801,8 @@ let check ~name p =
                   (excerpt s)
                   (excerpt s')
             in
+            if debug_program ()
+            then Code.Print.program Format.err_formatter (fun _ _ -> "") p;
             Format.eprintf "interp: %s: the behavior of the program changed@." name;
             (match o.result with
             | Failed (_, pc) -> (
@@ -2167,3 +2818,7 @@ let check ~name p =
             output "standard error" r.stderr o.stderr;
             failwith (Printf.sprintf "IR interpreter: pass %s changed the behavior" name))
   | Some _ | None -> ()
+
+let set_cps ~trampolined_calls:s ~in_cps =
+  trampolined_calls := Some s;
+  in_cps_calls := in_cps

@@ -31,3 +31,8 @@ val check : name:string -> Code.program -> unit
     been applied. This does nothing if [--debug interp] is not set, or
     if the program recorded by {!start} could not be run to completion
     (unsupported primitive, too many steps, ...). *)
+
+val set_cps : trampolined_calls:Code.Var.Set.t -> in_cps:Code.Var.Set.t -> unit
+(** Called once the [Effects] pass has transformed the program into
+    CPS, with the calls which return a trampoline when the stack is too
+    deep, and (with double translation) the calls in CPS. *)
