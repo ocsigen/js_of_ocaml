@@ -49,14 +49,14 @@ let%expect_test _ =
     short variable occurrences: 23/23
     (function(a){
        "use strict";
-       var e = a.jsoo_runtime;
+       var c = a.jsoo_runtime;
        function b(a, b){
-        function c(a){return e.caml_div(a, 0);}
-        var g = a < b ? 1 : 2;
-        try{var d = c(a);}catch(f){d = c(g);}
-        return d;
+        function d(a){return c.caml_div(a, 0);}
+        var e = a < b ? 1 : 2;
+        try{var g = d(a);}catch(f){g = d(e);}
+        return g;
        }
-       e.caml_register_global([0, b], "Test");
+       c.caml_register_global([0, b], "Test");
        0;
        return;
       }

@@ -176,8 +176,8 @@ try { var xxxxx = 3; var bbb = 2; throw 1; } catch (xx) { const bbb = a(0) } }
           2: a = function (yyyy) {
           3: try { var xxxxx = 3; var bbb = 2; throw 1; } catch (xx) { const bbb = a(0) } }
         $ cat "test.min.js"
-          1: a=function(d){try{var
-          2: c=3,b=2;throw 1}catch(f){const
+          1: a=function(b){try{var
+          2: c=3,d=2;throw 1}catch(f){const
           3: b=a(0)}};
         |}])
 
@@ -458,8 +458,9 @@ function g(x) {
         $ cat "test.min.js"
           1: function
           2: g(a){var
-          3: d,c,b;for({toto:b=c}in
-          4: a)console.log(b)} |}];
+          3: b,c,d;for({toto:d=c}in
+          4: a)console.log(d)}
+        |}];
       minify
         {|
 function h(x) {

@@ -165,10 +165,10 @@ let%expect_test
       7:   ());
     $ cat "test.min.js"
       1: (function(){
-      2:    let b = [1, 2, 3];
-      3:    var a = 0;
-      4:    for(let b of b) a += b;
-      5:    console.log(a);
+      2:    let a = [1, 2, 3];
+      3:    var b = 0;
+      4:    for(let a of a) b += a;
+      5:    console.log(b);
       6:   }
       7:   ());
     |}]
@@ -199,10 +199,10 @@ let%expect_test
       7:   ());
     $ cat "test.min.js"
       1: (function(){
-      2:    let b = {a: 1, b: 2};
-      3:    var a = "";
-      4:    for(let b in b) a += b;
-      5:    console.log(a);
+      2:    let a = {a: 1, b: 2};
+      3:    var b = "";
+      4:    for(let a in a) b += a;
+      5:    console.log(b);
       6:   }
       7:   ());
     |}]

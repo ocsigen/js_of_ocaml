@@ -21,6 +21,8 @@
 * Compiler/Wasm: raising functions which can also be called through a closure
   return null too when called directly, using a wrapper otherwise (#2098)
 * Compiler/Wasm: require Binaryen 120 (#2580)
+* Compiler: name variables in a more regular order, which compresses better
+  (#2598)
 
 ## Bug fixes
 * Runtime/Wasm: add the system constants needed with `--disable staticeval`
