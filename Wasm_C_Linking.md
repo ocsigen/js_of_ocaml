@@ -619,7 +619,11 @@ Smaller unknowns: the interaction of the effect barrier with each effects backen
 Throwaway experiments, one per major unknown, each with a decision as output:
 
 - **S1, ecosystem survey (unknown 1).** A first version of the migration lint (Part 6.9), possibly a `clang-query` script, run over the C stubs of the opam repository. Output: for each blocker pattern, how many packages and stub files it affects, and which popular packages compile as is or with mechanical changes. This decides the priority between the compatibility ABI and stub-generator retargeting.
-- **S2, end-to-end prototype (unknowns 2 and 4).** One hand-written binding with a custom block (e.g. a small part of zarith over mini-gmp), hand-written stubs as in Part 1.4, linked with a hacked `wasm_of_ocaml`. Measure the cost per custom block allocation with and without `FinalizationRegistry`, peak linear memory under an allocation-heavy loop, and the cost of `Int_val` / `Field` / `String_val` after `wasm-opt`, on V8, SpiderMonkey and JSC. Check whether the conversions disappear after inlining.
+- **S2, end-to-end prototype (unknowns 2 and 4).** Two existing bindings, with stubs written by hand or by a crude generator, linked with a hacked `wasm_of_ocaml`:
+    - camlzip (zlib): `Bytes` buffers filled in place at an offset (copy-back and the large-buffer cost of Part 3.1), externals with more than five arguments (`camlzip_deflate_bytecode` / `camlzip_deflate`), a named exception, one custom block per stream;
+    - a subset of sqlite3-ocaml (open, exec, prepare/step/column, `create_function`): a real C library, handles with finalizers, callbacks from C, an OCaml closure stored on the C side (handle API), exceptions raised through C frames, `[@unboxed]` / `[@untagged]` externals with separate bytecode functions.
+
+  Measure the cost of `Int_val` / `Field` / `String_val` after `wasm-opt`, on V8, SpiderMonkey and JSC, and check whether the conversions disappear after inlining. Bound the custom block worst case (zarith-like code allocating many small blocks) with a microbenchmark: cost per allocation with and without `FinalizationRegistry`, and peak linear memory under an allocation-heavy loop.
 - **S3, linking with the runtime (unknown 3).** Link a wasi-libc C module with `Wasm_link`: memory, table and mutable-global (`__stack_pointer`) imports/exports, `_initialize` from the start function, WASI imports in the JavaScript runtime. Then prototype one memory shared with the runtime's own C code, to find out what the runtime build must become.
 
 ### 3. Phase 1: Linking a C Module by Hand
@@ -660,7 +664,7 @@ Goal: one `malloc` and one libc for the runtime and all user C code (Part 2.4), 
 
 - Custom blocks from C (Part 4): payload allocation, `FinalizationRegistry` registration, the bridge `$custom_operations` instance dispatching through the C function table; implement `Gc.finalise` with the same mechanism.
 - Linear-memory Bigarrays (Part 6.7) as a new runtime configuration, after measuring the OCaml-side performance.
-- Validation: zarith over GMP, with an allocation-heavy benchmark (the S2 measurements, now on the real implementation).
+- Validation: the complete sqlite3-ocaml binding, and the S2 custom block microbenchmark on the real implementation. zarith over GMP comes after, as the allocation-heavy case, if S2's numbers make it viable.
 
 ### 8. Later Phases
 
