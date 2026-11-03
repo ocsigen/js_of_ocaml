@@ -594,3 +594,79 @@ Stub generators emit C because clang owns the ABI. For scalar and pointer argume
 ### 4. Practicalities
 
 camlidl is a small, mostly dormant codebase, so a Wasm backend means maintaining a fork, but it unlocks `mlgmpidl` and Apron directly. ctypes is actively maintained and has the bigger ecosystem, so upstreaming a backend is plausible. camlidl is the short-term option; ctypes the long-term one.
+
+---
+
+## Part 11: Implementation Plan
+
+The plan starts with spikes that answer the largest unknowns (Section 1), then delivers a usable vertical slice as early as possible: a hand-written binding linked by hand (Phase 1), then existing bindings working without hand-written stubs (Phases 2–3). Each phase ends with a real library working, not just unit tests.
+
+### 1. Largest Unknowns
+
+Ranked by how much they could change the design or its value:
+
+1. **Ecosystem fit.** There is no data on how much existing C stub code compiles under Model A with mechanical changes. Comparisons of values (`v == Val_none`), `value *` APIs, globals of type `value`, writes through `String_val`, externals with more than five arguments, and bit tricks on tagged integers (e.g. zarith's fast paths) are all plausible blockers. If most real bindings need substantial rewrites, the compatibility ABI loses most of its advantage over retargeting stub generators (Part 10), and the priorities change.
+2. **Custom block cost.** Every custom block allocated from C costs a `malloc` and a `FinalizationRegistry` registration (Part 4). For libraries that allocate many small custom blocks (every zarith big integer is one), this may dominate run time, and delayed finalization may exhaust linear memory. Whether this is acceptable for zarith-like workloads is unknown, and it is not fixable within the current Wasm and JS APIs.
+3. **One linear memory for all C code.** A single `malloc` requires relinking the runtime's C code with user code (Part 2.4). The precompiled runtimes currently bake in `c-impl.wasm`, built freestanding without libc, while user code needs wasi-libc. How to restructure the runtime build (ship C objects; link the runtime's C at program link time; keep the precompiled path fast for programs without C) is a design question with no obvious answer.
+4. **Boundary performance.** Whether Binaryen inlines the helpers into clang-compiled code and removes the `extern.convert_any` / `any.convert_extern` pairs, what each `Int_val` / `Field` call costs when it does not, and how expensive the byte-loop string copies are. Engines have had bugs and slow paths around extern conversions before (JSC rejected `any.convert_extern` on a null `noextern` reference; V8 before 15.5 had slow `anyref` import results), so all target engines need testing, not just V8.
+5. **Build system integration.** Dune would need to compile `foreign_stubs` with the WASI SDK in Wasm mode, install the resulting objects, and pass them transitively to the link. This is upstream dune work, outside this repository, and how the WASI SDK is installed for opam users is open. Without it, adoption is limited to hand-written link commands (Part 2.5).
+6. **Native names of externals with more than five arguments.** Reading `prim_native_name` from `.cmi` / `.cmt` files works only if they are installed and found at compile time; externals not exported in the interface appear only in the `.cmt`, which is not always installed (Part 5.3).
+
+Smaller unknowns: the interaction of the effect barrier with each effects backend (Part 3.4), the WASI imports of wasi-libc in the JavaScript (non-WASI) runtime (a minimal shim: `fd_write`, clocks, `random_get`), and testing in CI, which has no WASI SDK.
+
+### 2. Phase 0: Spikes
+
+Throwaway experiments, one per major unknown, each with a decision as output:
+
+- **S1, ecosystem survey (unknown 1).** A first version of the migration lint (Part 6.9), possibly a `clang-query` script, run over the C stubs of the opam repository. Output: for each blocker pattern, how many packages and stub files it affects, and which popular packages compile as is or with mechanical changes. This decides the priority between the compatibility ABI and stub-generator retargeting.
+- **S2, end-to-end prototype (unknowns 2 and 4).** One hand-written binding with a custom block (e.g. a small part of zarith over mini-gmp), hand-written stubs as in Part 1.4, linked with a hacked `wasm_of_ocaml`. Measure the cost per custom block allocation with and without `FinalizationRegistry`, peak linear memory under an allocation-heavy loop, and the cost of `Int_val` / `Field` / `String_val` after `wasm-opt`, on V8, SpiderMonkey and JSC. Check whether the conversions disappear after inlining.
+- **S3, linking with the runtime (unknown 3).** Link a wasi-libc C module with `Wasm_link`: memory, table and mutable-global (`__stack_pointer`) imports/exports, `_initialize` from the start function, WASI imports in the JavaScript runtime. Then prototype one memory shared with the runtime's own C code, to find out what the runtime build must become.
+
+### 3. Phase 1: Linking a C Module by Hand
+
+Goal: the manual workflow of Part 1 works, with hand-written stubs.
+
+- Allow named runtime files (`NAME:FILE`, or automatic naming of modules importing from `stubs`) on the `wasm_of_ocaml` command line, in both `compile` and `link` (`compile.ml`, `with_runtime_files`; `link.ml`, `link_to_module`).
+- Call the C module's `_initialize` from the generated start function (`Link.generate_start_function`).
+- Allow the C module's imports (`stubs`, `wasi_snapshot_preview1`) and provide a minimal WASI shim in `runtime.js` for the JavaScript runtime.
+- Tests: cram tests with a small C module checked in as a prebuilt `.wasm`, regenerated with a docker rule promoted into the source tree like `c-impl.wasm`, since CI has no WASI SDK.
+
+Exit criterion: the hand-written binding of S2 works through the regular command line, in both whole-program and separate compilation.
+
+### 4. Phase 2: C-API Helpers
+
+Goal: C code compiled against the shipped header links without hand-written helpers.
+
+- A new runtime module (e.g. `runtime/wasm/capi.wat`) implementing the `stubs` interface: conversions, tests (`caml_is_block`, `caml_phys_eq`), fields and tags, allocation, the bump allocator with per-call memoization and comparison-based copy-back, exception adapters (`caml_failwith` and friends, `caml_callback_exn` result encoding), callbacks with the effect barrier, `caml_named_value` shim, handle API.
+- It imports memory, `malloc`, `free` and `__stack_pointer` from the C module, so it is linked only when C code is present, through the existing path for extra runtime files (`link_runtime`), and the precompiled runtimes are unchanged.
+- Install the `caml/*.h` headers with `wasm_of_ocaml-compiler`.
+- Tests: one test per helper group, with exceptions raised through C frames (checking that `__stack_pointer` is restored) and effects performed in callbacks (checking `Effect.Unhandled`).
+
+### 5. Phase 3: Generated Wrappers and Primitive Resolution
+
+Goal: existing bindings work without any hand-written Wasm.
+
+- Scan the C module's exports (`Wasm_binary.read_interface`) and generate wrappers (Part 2.2) instead of raising stubs for the missing primitives it provides (`Generate.add_missing_primitives`). In whole-program mode, missing primitives are currently left as `env` imports for the JavaScript runtime (`link_and_optimize`), so both paths need the change.
+- Implement the resolution order, collision warnings and the override flag of Part 5.2.
+- Externals with more than five arguments: start with the explicit mapping and the naming-convention fallback; reading `.cmi` / `.cmt` files comes later, depending on S1's numbers.
+- `--link-c-file`: find `clang` (e.g. via `WASI_SDK_PATH`), compile with the flags of Part 1.5, link.
+- Validation: two or three real bindings chosen from S1's results among those that compile as is, plus `mlgmpidl` for the `Bytes` copy-back.
+
+### 6. Phase 4: One Linear Memory
+
+Goal: one `malloc` and one libc for the runtime and all user C code (Part 2.4), using S3's design. This touches the runtime build (`runtime/wasm/dune`, `build_runtime`) and possibly the shipping of precompiled runtimes, so it should be reviewed as a separate change. Until then, user C code has its own memory, which is enough for single-library programs.
+
+### 7. Phase 5: Custom Blocks, Finalization and Bigarrays
+
+- Custom blocks from C (Part 4): payload allocation, `FinalizationRegistry` registration, the bridge `$custom_operations` instance dispatching through the C function table; implement `Gc.finalise` with the same mechanism.
+- Linear-memory Bigarrays (Part 6.7) as a new runtime configuration, after measuring the OCaml-side performance.
+- Validation: zarith over GMP, with an allocation-heavy benchmark (the S2 measurements, now on the real implementation).
+
+### 8. Later Phases
+
+In rough order of value, depending on S1:
+- dune integration (Part 2.5), in coordination with the dune maintainers;
+- prebuilt binding artifacts in opam packages (Part 2.6);
+- the migration lint and the debug mode (Part 6.9), building on S1;
+- the JavaScript target (Part 9);
+- stub-generator backends (Part 10), possibly earlier if S1 shows that generated bindings are the larger share.
