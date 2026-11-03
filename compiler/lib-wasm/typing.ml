@@ -366,6 +366,10 @@ type st =
   ; wrapper_parameter_types : typ Var.Hashtbl.t
         (** Types of the arguments passed by wrappers *)
   ; fun_info : Call_graph_analysis.t
+  ; boxed_returns : unit Var.Hashtbl.t
+        (** Functions whose return values are boxed (integers are
+            tagged): raising functions, which return null to signal an
+            exception *)
   }
 
 let rec constant_type (c : constant) =
@@ -383,7 +387,7 @@ let rec constant_type (c : constant) =
 let arg_type ~approx arg =
   match arg with
   | Pc c -> constant_type c
-  | Pv x -> Var.Tbl.get approx x
+  | Pv x -> approx x
 
 let bigarray_element_type (kind : Optimization_hint.Bigarray.kind) =
   match kind with
@@ -461,7 +465,7 @@ let propagate st approx x : Domain.t =
   | Phi { known; others; unit } -> (
       let res =
         match Var.Hashtbl.find_opt st.wrapper_parameter_types x with
-        | Some Top | None -> Domain.join_set ~others (fun y -> Var.Tbl.get approx y) known
+        | Some Top | None -> Domain.join_set ~others (fun y -> approx y) known
         | Some t ->
             (* Parameter of a wrapped function with a type hint [t]:
                the type checker guarantees that the values not known
@@ -480,7 +484,7 @@ let propagate st approx x : Domain.t =
                analysis from converging. *)
             Var.Set.fold
               (fun y acc ->
-                match Var.Tbl.get approx y with
+                match approx y with
                 | Top -> acc
                 | ty -> Domain.join ty acc)
               known
@@ -507,27 +511,26 @@ let propagate st approx x : Domain.t =
                  match st.global_flow_state.mutable_fields.(Var.idx x) with
                  | All_fields -> Top
                  | Some_fields s when IntSet.mem i s -> Top
-                 | Some_fields _ | No_field ->
-                     Domain.limit (Domain.box (Var.Tbl.get approx y)))
+                 | Some_fields _ | No_field -> Domain.limit (Domain.box (approx y)))
                lst)
       | Field (_, _, Float) -> Number (Float, Unboxed)
       | Field (_, _, Immediate) | Prim (Array_get Immediate, _) -> Int Ref
       | Field (y, n, Non_float) -> (
-          match Var.Tbl.get approx y with
+          match approx y with
           | Tuple t -> if n < Array.length t then t.(n) else Bot
           | Top -> Top
           | _ -> Bot)
       | Prim
           ( Extern
               (("caml_check_bound" | "caml_check_bound_float" | "caml_check_bound_gen"), _)
-          , [ Pv y; _ ] ) -> Var.Tbl.get approx y
+          , [ Pv y; _ ] ) -> approx y
       | Prim ((Array_get _ | Extern ("caml_array_unsafe_get", _)), [ Pv y; _ ]) -> (
           (* A constant block can be read as an array: the compiler
              passes the method names of a class to CamlinternalOO as
              constant blocks. The global flow analysis does not track
              constants (their approximation is empty), but their type is
              part of the type of [y]. *)
-          match Var.Tbl.get approx y with
+          match approx y with
           | Tuple t ->
               Domain.box
                 (Array.fold_left ~f:(fun acc t -> Domain.join t acc) ~init:Domain.bot t)
@@ -594,14 +597,15 @@ let propagate st approx x : Domain.t =
                                            ~kind:(Targetint.to_int_exn kind)
                                            ~layout:(Targetint.to_int_exn layout))
                                   | _ -> raise Not_found
-                                with Not_found -> Var.Tbl.get approx y)
-                            | _ -> Var.Tbl.get approx y)
+                                with Not_found -> approx y)
+                            | _ -> approx y)
                           (Var.Map.find g st.global_flow_state.return_values)
                       in
                       if
                         can_unbox_return_value st.global_flow_info st.fun_info g
                         && (Call_graph_analysis.direct_calls_only st.fun_info g
                            || Option.equal Var.equal direct_callee (Some g))
+                        && not (Var.Hashtbl.mem st.boxed_returns g)
                       then res
                       else Domain.box res
                   | Expr (Closure (_, _, _)) ->
@@ -615,20 +619,64 @@ let propagate st approx x : Domain.t =
 module G = Dgraph.Make_Imperative (Var) (Var.ISet) (Var.Tbl)
 module Solver = G.Solver (Domain)
 
-let solver st =
+let dependency_graph st =
   let associated_list h x = Var.Hashtbl.find_opt h x |> Option.value ~default:[] in
-  let g =
-    { G.domain = st.global_flow_state.vars
+  { G.domain = st.global_flow_state.vars
+  ; G.iter_children =
+      (fun f x ->
+        List.iter ~f (Var.Tbl.get st.global_flow_state.deps x);
+        List.iter
+          ~f:(fun g ->
+            List.iter ~f (associated_list st.global_flow_state.function_call_sites g))
+          (associated_list st.global_flow_state.functions_from_returned_value x))
+  }
+
+let solver st g = Solver.f () g (fun v x -> propagate st (Var.Tbl.get v) x)
+
+(* Solve the equations again, after a change of the equations of the
+   variables [changed]: only the variables depending on them are
+   computed again, the other ones keeping their value in the solution
+   [previous]. This gives the same result as solving all equations
+   again, since the values of the other variables do not depend on the
+   changed equations. *)
+let resolve st g ~previous changed =
+  let affected = Var.ISet.empty () in
+  (* Explicit stack: the dependency chains can be very long *)
+  let stack = ref [] in
+  let push x =
+    if Var.ISet.mem g.G.domain x && not (Var.ISet.mem affected x)
+    then (
+      Var.ISet.add affected x;
+      stack := x :: !stack)
+  in
+  List.iter ~f:push changed;
+  while
+    match !stack with
+    | [] -> false
+    | x :: r ->
+        stack := r;
+        g.G.iter_children push x;
+        true
+  do
+    ()
+  done;
+  let sub =
+    { G.domain = affected
     ; G.iter_children =
-        (fun f x ->
-          List.iter ~f (Var.Tbl.get st.global_flow_state.deps x);
-          List.iter
-            ~f:(fun g ->
-              List.iter ~f (associated_list st.global_flow_state.function_call_sites g))
-            (associated_list st.global_flow_state.functions_from_returned_value x))
+        (fun f x -> g.G.iter_children (fun y -> if Var.ISet.mem affected y then f y) x)
     }
   in
-  Solver.f () g (propagate st)
+  let v =
+    Solver.f () sub (fun v x ->
+        propagate
+          st
+          (fun y -> Var.Tbl.get (if Var.ISet.mem affected y then v else previous) y)
+          x)
+  in
+  let types = Var.Tbl.make () Bot in
+  Var.Tbl.iter (fun x t -> Var.Tbl.set types x t) previous;
+  Var.ISet.iter (fun x -> Var.Tbl.set types x (Var.Tbl.get v x)) affected;
+  types
 
 let type_specialized_primitive types global_flow_state name args =
   match name with
@@ -639,7 +687,7 @@ let type_specialized_primitive types global_flow_state name args =
   | "caml_equal"
   | "caml_notequal"
   | "caml_compare" -> (
-      match List.map ~f:(arg_type ~approx:types) args with
+      match List.map ~f:(arg_type ~approx:(Var.Tbl.get types)) args with
       | [ Int _; Int _ ]
       | [ Number (Int32, _); Number (Int32, _) ]
       | [ Number (Int64, _); Number (Int64, _) ]
@@ -775,7 +823,42 @@ type t =
   ; return_types : typ Var.Hashtbl.t
   }
 
-let f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinel p =
+(* Complete the analysis from the solution [solution] of the
+   equations, which is not modified *)
+let analyze st ~deadcode_sentinel p solution =
+  let { global_flow_info; fun_info; _ } = st in
+  let types = Var.Tbl.make () Bot in
+  Var.Tbl.iter (fun x t -> Var.Tbl.set types x t) solution;
+  Var.Tbl.set types deadcode_sentinel (Int Normalized);
+  box_numbers p st types;
+  let return_types = Var.Hashtbl.create 128 in
+  Code.fold_closures
+    p
+    (fun name_opt _ _ _ () ->
+      Option.iter
+        ~f:(fun f ->
+          if can_unbox_return_value global_flow_info fun_info f
+          then
+            let s = Var.Map.find f global_flow_info.info_return_vals in
+            let t = Var.Set.fold (fun x t -> Domain.join (Var.Tbl.get types x) t) s Bot in
+            Var.Hashtbl.replace
+              return_types
+              f
+              (if Var.Hashtbl.mem st.boxed_returns f then Domain.box t else t))
+        name_opt)
+    ();
+  { types; return_types }
+
+let return_type info f =
+  Var.Hashtbl.find_opt info.return_types f |> Option.value ~default:Top
+
+let f
+    ~global_flow_state
+    ~global_flow_info
+    ~fun_info
+    ~deadcode_sentinel
+    ~raising_functions
+    p =
   let t = Timer.make () in
   update_deps global_flow_state p;
   let boxed_function_parameters =
@@ -791,11 +874,61 @@ let f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinel p =
     ; parameter_type_hints
     ; wrapper_parameter_types
     ; fun_info
+    ; boxed_returns = Var.Hashtbl.create 1
     }
   in
-  let types = solver st in
-  Var.Tbl.set types deadcode_sentinel (Int Normalized);
-  box_numbers p st types;
+  let g = dependency_graph st in
+  let solution = solver st g in
+  let info = analyze st ~deadcode_sentinel p solution in
+  let raising = raising_functions info in
+  (* Raising functions return null to signal an exception, so their
+     return values must be references. Integers are cheap to tag: if
+     some raising functions return untagged integers, the analysis is
+     run again with the return values of the raising functions boxed
+     (see [boxed_returns]). Their callers get boxed results as well,
+     so that tail calls between raising functions are preserved. This
+     can change the representation of other variables, but the
+     raising functions remain the same: whether a function can raise
+     does not depend on types, and the only type condition, that the
+     return value is not an unboxed number, still holds since the
+     return values of all raising functions are boxed. *)
+  let info =
+    if
+      Var.Hashtbl.fold
+        (fun f () b ->
+          b
+          ||
+          match return_type info f with
+          | Int (Normalized | Unnormalized) -> true
+          | _ -> false)
+        raising
+        false
+    then (
+      let st = { st with boxed_returns = raising } in
+      (* The changed equations are those of the calls to these
+         functions (as defined in the flow analysis, which can differ
+         from the program after exact call specialization) *)
+      let changed = ref [] in
+      Var.ISet.iter
+        (fun x ->
+          match global_flow_state.defs.(Var.idx x) with
+          | Expr (Apply { f; _ }) -> (
+              match Var.Tbl.get global_flow_info.info_approximation f with
+              | Values { known; _ }
+                when Var.Set.exists
+                       (fun g ->
+                         Var.Hashtbl.mem raising g
+                         || Var.Hashtbl.mem
+                              raising
+                              (fst
+                                 (Global_flow.called_version global_flow_info ~call:x g)))
+                       known -> changed := x :: !changed
+              | Values _ | Top -> ())
+          | Expr _ | Phi _ -> ())
+        global_flow_state.vars;
+      analyze st ~deadcode_sentinel p (resolve st g ~previous:solution !changed))
+    else info
+  in
   if times () then Format.eprintf "  type analysis: %a@." Timer.print t;
   if debug ()
   then (
@@ -804,7 +937,7 @@ let f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinel p =
         match global_flow_state.defs.(Var.idx x) with
         | Expr _ -> ()
         | Phi _ ->
-            let t = Var.Tbl.get types x in
+            let t = Var.Tbl.get info.types x in
             if not (Domain.equal t Top)
             then Format.eprintf "%a: %a@." Var.print x Domain.print t)
       global_flow_state.vars;
@@ -816,32 +949,14 @@ let f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinel p =
             Format.asprintf
               "{%a}%a"
               Domain.print
-              (Var.Tbl.get types x)
-              (print_opt types global_flow_state)
+              (Var.Tbl.get info.types x)
+              (print_opt info.types global_flow_state)
               e
         | _ -> "")
       p);
-  let return_types = Var.Hashtbl.create 128 in
-  Code.fold_closures
-    p
-    (fun name_opt _ _ _ () ->
-      Option.iter
-        ~f:(fun f ->
-          if can_unbox_return_value global_flow_info fun_info f
-          then
-            let s = Var.Map.find f global_flow_info.info_return_vals in
-            Var.Hashtbl.replace
-              return_types
-              f
-              (Var.Set.fold (fun x t -> Domain.join (Var.Tbl.get types x) t) s Bot))
-        name_opt)
-    ();
-  { types; return_types }
+  info, raising
 
 let var_type info x = Var.Tbl.get info.types x
-
-let return_type info f =
-  Var.Hashtbl.find_opt info.return_types f |> Option.value ~default:Top
 
 let is_unboxed t =
   match t with

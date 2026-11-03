@@ -65,5 +65,9 @@ val f :
   -> global_flow_info:Global_flow.info
   -> fun_info:Call_graph_analysis.t
   -> deadcode_sentinel:Code.Var.t
+  -> raising_functions:(t -> unit Code.Var.Hashtbl.t)
   -> Code.program
-  -> t
+  -> t * unit Code.Var.Hashtbl.t
+(** Also returns the raising functions, computed by
+    [raising_functions] from the types. Their integer return values
+    are tagged, so that they can return null. *)
