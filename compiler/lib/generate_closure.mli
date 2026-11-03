@@ -20,4 +20,7 @@
 
 open Code
 
-val f : program -> program
+val f : trampolined_calls:Var.Set.t -> program -> program
+(** Implement tail calls between mutually recursive functions with
+    trampolines. [trampolined_calls] are the calls which return a
+    trampoline when the stack is too deep (see {!Effects.f}). *)
