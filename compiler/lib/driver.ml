@@ -450,6 +450,15 @@ let link' ~export_runtime ~standalone ~link (js : Javascript.statement_list) :
               List.map all ~f:(fun name ->
                   let name = Utf8_string.of_string_exn name in
                   Property (PNI name, EVar (ident name)))
+              (* Separately compiled units are compiled without the runtime
+                 files given to [build-runtime], so they refer to the
+                 primitives defined in these files by the name used in the
+                 OCaml code, which can be an alias. The builtin aliases
+                 are resolved at compile time. *)
+              @ List.map (Linker.user_aliases linkinfos) ~f:(fun (alias, name) ->
+                  Property
+                    ( PNI (Utf8_string.of_string_exn alias)
+                    , EVar (ident (Utf8_string.of_string_exn name)) ))
             in
             (if standalone
              then

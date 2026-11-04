@@ -67,6 +67,10 @@ val link : ?check_missing:bool -> Javascript.program -> state -> output
 
 val all : state -> string list
 
+val user_aliases : state -> (string * string) list
+(** The aliases [(alias, name)] of the linked primitives that are defined
+    in runtime files other than the builtin ones. *)
+
 val missing : state -> string list
 
 val origin : name:string -> string option

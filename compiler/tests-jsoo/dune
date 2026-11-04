@@ -62,6 +62,7 @@
    test_ugeint
    ugeint_bytecode_probe
    test_runtime_value
+   runtime_alias
    ephemeron_data
    hash_jsstring
    test_filepath_exists
@@ -136,6 +137,22 @@
   (javascript_files custom.js custom.wat))
  (inline_tests
   (modes js wasm))
+ (preprocess
+  (pps ppx_devtools-expect)))
+
+; runtime_alias calls a primitive through an alias defined in a runtime
+; file, which separate compilation (dev profile) does not see when compiling
+; the module.
+
+(library
+ (name jsoo_test_runtime_alias)
+ (enabled_if
+  (<> %{env:JSOO_TEST_ENGINE=node} wasi))
+ (modules runtime_alias)
+ (js_of_ocaml
+  (javascript_files runtime_alias.js))
+ (inline_tests
+  (modes js))
  (preprocess
   (pps ppx_devtools-expect)))
 

@@ -41,6 +41,8 @@
 * Runtime: `Printf` float formatting matches C: `%e`, `%f` and `%g` round
   ties to even, and `%g` of values >= 1e21 uses fixed notation while the
   exponent is below the precision (#2527)
+* Compiler: with separate compilation, export the `//Alias` names of the
+  primitives defined in user runtime files (#2604)
 
 # 6.5.0 (2026-10-22) - Lille
 

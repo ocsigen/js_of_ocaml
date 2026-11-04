@@ -791,6 +791,19 @@ let all state =
     state.ids
     []
 
+let user_aliases state =
+  IntSet.fold
+    (fun id acc ->
+      match Int.Hashtbl.find_opt provided_rev id with
+      | None -> acc
+      | Some (name, _) -> (
+          match String.Hashtbl.find_opt provided name with
+          | Some p when p.id = id && Option.is_none (Builtins.find p.filename) ->
+              StringSet.fold (fun alias acc -> (alias, name) :: acc) p.aliases acc
+          | Some _ | None -> acc))
+    state.ids
+    []
+
 let missing state = StringSet.elements state.missing
 
 let origin ~name =
