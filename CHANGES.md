@@ -43,6 +43,8 @@
   exponent is below the precision (#2527)
 * Compiler: with separate compilation, export the `//Alias` names of the
   primitives defined in user runtime files (#2604)
+* Compiler: do not inline functions with open recursion through a record
+  of closures as functors (memory blow-up at --opt 2 with OCaml 5.6) (#2599)
 
 # 6.5.0 (2026-10-22) - Lille
 

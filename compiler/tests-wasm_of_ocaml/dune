@@ -167,6 +167,12 @@
   (<> %{profile} quickjs)))
 
 (cram
+ (applies_to open_recursion)
+ ; The bytecode only carries the type checker's hints from OCaml 5.6
+ (enabled_if
+  (>= %{ocaml_version} 5.6)))
+
+(cram
  (applies_to split_toplevel_pieces)
  (deps split_toplevel.ml split_toplevel_switch.ml))
 

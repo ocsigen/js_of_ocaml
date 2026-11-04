@@ -192,6 +192,7 @@ type info =
   ; closure_count : int cache
   ; init_code : int cache
   ; returns_a_block : bool cache
+  ; open_recursion : bool cache
   ; interesting_params : (Var.t * int) list cache
   }
 
@@ -382,6 +383,50 @@ let interesting_parameters ~context info =
           blocks
           [])
 
+(* Does the function call a field of one of its parameters, passing
+   this parameter as an argument ([sub.expr sub e])? This is a form of
+   recursion (open recursion through a record of closures, as in
+   [Ast_mapper]) that the call graph does not show: inlining such a
+   function where the parameter is known can expose a call to the
+   function itself. *)
+let open_recursion ~context info =
+  cache ~info info.open_recursion
+  @@ fun pc ->
+  let blocks = context.p.blocks in
+  let fields =
+    Code.traverse
+      { fold = fold_children }
+      (fun pc acc ->
+        List.fold_left
+          ~f:(fun acc i ->
+            match i with
+            | Let (x, Field (y, _, _)) when List.mem ~eq:Var.equal y info.params ->
+                Var.Map.add x y acc
+            | _ -> acc)
+          ~init:acc
+          (Addr.Map.find pc blocks).body)
+      pc
+      blocks
+      Var.Map.empty
+  in
+  (not (Var.Map.is_empty fields))
+  && Code.traverse
+       { fold = fold_children }
+       (fun pc acc ->
+         acc
+         || List.exists
+              ~f:(fun i ->
+                match i with
+                | Let (_, Apply { f; args; _ }) -> (
+                    match Var.Map.find_opt f fields with
+                    | Some y -> List.mem ~eq:Var.equal y args
+                    | None -> false)
+                | _ -> false)
+              (Addr.Map.find pc blocks).body)
+       pc
+       blocks
+       false
+
 (*
    We are very aggressive at optimizing functor-like code, even if
    this might duplicate quite a lot of code, since this is likely to
@@ -395,6 +440,7 @@ let functor_like ~context info =
     | `JavaScript, (O1 | O2) -> false
     | `JavaScript, O3 -> body_size ~context info <= 15)
   && (not info.recursive)
+  && (not (open_recursion ~context info))
   &&
   match info.closure_hint with
   | Some { is_a_functor = true; _ } -> true
@@ -781,6 +827,7 @@ let inline ~profile ~inline_count p ~live_vars =
                ; closure_count = ref None
                ; init_code = ref None
                ; returns_a_block = ref None
+               ; open_recursion = ref None
                ; interesting_params = ref None
                }
                context.env
