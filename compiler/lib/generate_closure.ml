@@ -481,8 +481,12 @@ let has_cps_calls ~cps_calls blocks ci =
     false
 
 (* --effects=double-translation: cps_needed closures arrive paired via
-   caml_cps_closure. Since a function calling a function in CPS is also
-   in CPS, a recursive group is either fully paired or fully unpaired.
+   caml_cps_closure. Mutually recursive functions only get a CPS version
+   if one of them needs it (for instance, because it performs an effect):
+   a CPS call point can fall back to the direct-style version of a callee
+   without CPS version (see [Partial_cps_analysis]). Since a function
+   calling a function in CPS is also in CPS, a recursive group is either
+   fully paired or fully unpaired.
 
    A paired recursive group gets the CPS-style trampoline. An unpaired
    recursive group is either made of direct-style functions, and gets the
