@@ -82,8 +82,8 @@
   compiler itself runs in JavaScript (#2616)
 * Compiler: fix the naming of labels in default parameters, of `var`s in
   class static blocks, and of nested source and generated labels (#2598)
-* Compiler: with `--effects=double-translation`, trampoline the tail calls of
-  mutually recursive functions without CPS version, to avoid stack overflows (#2593)
+* Compiler: with `--effects=double-translation`, trampoline mutually recursive
+  functions without CPS version, and no longer give them one for tail calls (#2593)
 
 # 6.5.0 (2026-10-22) - Lille
 
