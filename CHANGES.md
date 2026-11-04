@@ -6,7 +6,7 @@
 * Compiler/Wasm: split the huge toplevel function of large programs into
   smaller functions, which are faster to optimize (#2423)
 * Compiler/Wasm: support `--effects=double-translation` (#2443)
-* Runtime: fast path for immediates in polymorphic comparisons (#????)
+* Runtime: fast path for immediates in polymorphic comparisons (#2567)
 * Compiler/Wasm: preprocess, validate and assemble the runtime files with Wax
   (new `wax-lib` dependency); remove `wasm_of_ocaml preprocess` (#2373)
 * Compiler/Wasm: faster calls to JavaScript: JavaScript values are
@@ -25,6 +25,8 @@
 ## Bug fixes
 * Runtime/Wasm: add the system constants needed with `--disable staticeval`
   (`caml_sys_const_big_endian`, `caml_sys_const_backend_type`, ...) (#2601)
+* Compiler/Wasm: fix the typing of array accesses to constant blocks (such as
+  the method names of classes): objects could fail with an illegal cast (#2596)
 * Compiler: fix a miscompilation of `Int_trie` by OxCaml's flambda2 at -O2
   and -O3 (#2560)
 * Compiler: fix a stack overflow in the dataflow solvers on deep graphs,

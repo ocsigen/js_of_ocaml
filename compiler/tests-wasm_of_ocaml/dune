@@ -21,6 +21,12 @@
   (link_flags :standard --disable staticeval)))
 
 (tests
+ (names constant_array)
+ (modes js wasm)
+ (wasm_of_ocaml
+  (flags :standard --opt 2)))
+
+(tests
  (names marshal_regressions int_and)
  (modes wasm))
 
