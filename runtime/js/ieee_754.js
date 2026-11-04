@@ -48,13 +48,30 @@ function caml_int32_bits_of_float(x) {
 //notation 0x<mantissa in hex>p<exponent> from ISO C99.
 //https://github.com/dankogai/js-hexfloat/blob/master/hexfloat.js
 //Provides: caml_hexstring_of_float const
-//Requires: caml_string_of_jsstring, caml_str_repeat
+//Requires: caml_string_of_jsstring, caml_str_repeat, jsoo_dataview
 function caml_hexstring_of_float(x, prec, style) {
-  if (!Number.isFinite(x)) {
-    if (Number.isNaN(x)) return caml_string_of_jsstring("nan");
-    return caml_string_of_jsstring(x > 0 ? "infinity" : "-infinity");
+  // As in the C runtime, the sign (or the style character) is also
+  // printed for infinities and NaNs
+  jsoo_dataview.setFloat64(0, x, true);
+  var sign = jsoo_dataview.getUint8(7) >> 7;
+  var sign_str = "";
+  if (sign) sign_str = "-";
+  else {
+    switch (style) {
+      case 43 /* '+' */:
+        sign_str = "+";
+        break;
+      case 32 /* ' ' */:
+        sign_str = " ";
+        break;
+      default:
+        break;
+    }
   }
-  var sign = x === 0 && 1 / x === Number.NEGATIVE_INFINITY ? 1 : x >= 0 ? 0 : 1;
+  if (!Number.isFinite(x))
+    return caml_string_of_jsstring(
+      sign_str + (Number.isNaN(x) ? "nan" : "infinity"),
+    );
   if (sign) x = -x;
   var exp = 0;
   if (x === 0) {
@@ -70,28 +87,21 @@ function caml_hexstring_of_float(x, prec, style) {
     }
   }
   var exp_sign = exp < 0 ? "" : "+";
-  var sign_str = "";
-  if (sign) sign_str = "-";
-  else {
-    switch (style) {
-      case 43 /* '+' */:
-        sign_str = "+";
-        break;
-      case 32 /* ' ' */:
-        sign_str = " ";
-        break;
-      default:
-        break;
-    }
-  }
   if (prec >= 0 && prec < 13) {
-    /* If a precision is given, and is small, round mantissa accordingly */
+    /* If a precision is given, and is small, round mantissa accordingly,
+       ties to even (the scaling by a power of two is exact) */
     var cst = Math.pow(2, prec * 4);
-    x = Math.round(x * cst) / cst;
+    var y = x * cst;
+    var r = Math.round(y);
+    if (r - y === 0.5 && r % 2 !== 0) r -= 1;
+    x = r / cst;
   }
   var x_str = x.toString(16);
-  if (prec >= 0) {
-    var idx = x_str.indexOf(".");
+  var idx = x_str.indexOf(".");
+  if (prec === 0) {
+    /* No decimal point */
+    if (idx >= 0) x_str = x_str.slice(0, idx);
+  } else if (prec > 0) {
     if (idx < 0) {
       x_str += "." + caml_str_repeat(prec, "0");
     } else {

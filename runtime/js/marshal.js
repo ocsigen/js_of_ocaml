@@ -820,9 +820,12 @@ var caml_output_val = (function () {
             ((v.length - 1) << 10) | tag,
           );
         }
-        writer.size_32 += v.length;
-        writer.size_64 += v.length;
-        if (v.length > 1) stack.push(v, 1);
+        // Atoms (empty blocks) are not counted, as in the C runtime
+        if (v.length > 1) {
+          writer.size_32 += v.length;
+          writer.size_64 += v.length;
+          stack.push(v, 1);
+        }
       } else if (caml_is_ml_bytes(v)) {
         if (!caml_is_ml_bytes(caml_string_of_jsbytes(""))) {
           caml_failwith(

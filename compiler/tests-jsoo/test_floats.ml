@@ -377,3 +377,22 @@ let%expect_test "hex float exponent overflow" =
     infinity
     0x0p+0
     |}]
+
+let%expect_test "hexadecimal printing" =
+  (* No point with precision 0, mantissa rounded to nearest with ties to
+     even, and sign or style character for infinities and NaNs, as in C *)
+  let b = Int64.float_of_bits in
+  Printf.printf "%.0h %+.0H % .0h %.0h %.0h\n" 1e15 355521.0 (-0.) 1.5 2.5;
+  Printf.printf
+    "%.1h %.1h %.1h %.2h\n"
+    (b 0x3ff2800000000000L)
+    (b 0x3ff1800000000000L)
+    (b 0x3fff800000000000L)
+    (b 0x3ff0080000000000L);
+  Printf.printf "%+H % h %+h %h %+h\n" infinity nan neg_infinity infinity 0.;
+  [%expect
+    {|
+    0x2p+49 +0X1P+18 -0x0p+0 0x2p+0 0x1p+1
+    0x1.2p+0 0x1.2p+0 0x2.0p+0 0x1.00p+0
+    +INFINITY  nan -infinity infinity +0x0p+0
+    |}]

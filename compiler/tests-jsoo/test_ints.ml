@@ -144,3 +144,19 @@ let%expect_test "compare immediate vs custom" =
     cmp 2 1L = -1
     eq 1 1L = 0
     |}]
+
+let%expect_test "failure messages of of_string" =
+  let show f = try ignore (f ()) with Failure s -> print_endline s in
+  show (fun () -> int_of_string "x");
+  show (fun () -> Int32.of_string "4294967296");
+  show (fun () -> Int32.of_string "x");
+  show (fun () -> Nativeint.of_string "0x1_0000_0000_0000_0000");
+  show (fun () -> Int64.of_string "0x1_0000_0000_0000_0000");
+  [%expect
+    {|
+    int_of_string
+    Int32.of_string
+    Int32.of_string
+    Nativeint.of_string
+    Int64.of_string
+    |}]

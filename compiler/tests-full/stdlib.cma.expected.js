@@ -10275,7 +10275,7 @@
    }
    function of_string_opt(s){
      /*<<int32.ml:77:2>>*/ try{
-      /*<<int32.ml:77:11>>*/ return [0, runtime.caml_int_of_string(s)];
+      /*<<int32.ml:77:11>>*/ return [0, runtime.caml_int32_of_string(s)];
     }
     catch(exn$0){
      var exn =  /*<<?>>*/ caml_wrap_exception(exn$0);
@@ -10532,7 +10532,8 @@
    }
    function of_string_opt(s){
      /*<<nativeint.ml:66:2>>*/ try{
-      /*<<nativeint.ml:66:11>>*/ return [0, runtime.caml_int_of_string(s)];
+      /*<<nativeint.ml:66:11>>*/ return [0,
+             runtime.caml_nativeint_of_string(s)];
     }
     catch(exn$0){
      var exn =  /*<<?>>*/ caml_wrap_exception(exn$0);
@@ -28914,7 +28915,6 @@
     runtime = globalThis.jsoo_runtime,
     caml_bytes_get = runtime.caml_bytes_get,
     caml_get_global = runtime.caml_get_global,
-    caml_int_of_string = runtime.caml_int_of_string,
     caml_maybe_attach_backtrace = runtime.caml_maybe_attach_backtrace,
     caml_ml_string_length = runtime.caml_ml_string_length,
     caml_string_get = runtime.caml_string_get,
@@ -30652,7 +30652,7 @@
                   prec$1,
                   scan$6,
                   function(ib){
-                    /*<<scanf.ml:557:50>>*/ return  /*<<scanf.ml:557:30>>*/ caml_int_of_string
+                    /*<<scanf.ml:557:50>>*/ return  /*<<scanf.ml:557:30>>*/ runtime.caml_nativeint_of_string
                            ( /*<<scanf.ml:557:50>>*/ token_int_literal(conv$1, ib)) /*<<scanf.ml:557:77>>*/ ;
                   }) /*<<scanf.ml:1418:7>>*/ ;
         }
@@ -30678,7 +30678,7 @@
                  prec$0,
                  scan$5,
                  function(ib){
-                   /*<<scanf.ml:558:42>>*/ return  /*<<scanf.ml:558:26>>*/ caml_int_of_string
+                   /*<<scanf.ml:558:42>>*/ return  /*<<scanf.ml:558:26>>*/ runtime.caml_int32_of_string
                           ( /*<<scanf.ml:558:42>>*/ token_int_literal(conv$0, ib)) /*<<scanf.ml:558:69>>*/ ;
                  }) /*<<scanf.ml:1418:7>>*/ ;
        }
@@ -30703,7 +30703,7 @@
                 prec,
                 scan$4,
                 function(ib){
-                  /*<<scanf.ml:537:38>>*/ return  /*<<scanf.ml:537:24>>*/ caml_int_of_string
+                  /*<<scanf.ml:537:38>>*/ return  /*<<scanf.ml:537:24>>*/ runtime.caml_int_of_string
                          ( /*<<scanf.ml:537:38>>*/ token_int_literal(conv, ib)) /*<<scanf.ml:537:65>>*/ ;
                 }) /*<<scanf.ml:1418:7>>*/ ;
       }
