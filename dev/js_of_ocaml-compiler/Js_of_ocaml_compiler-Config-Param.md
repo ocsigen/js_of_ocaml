@@ -40,6 +40,9 @@ type tc =
 val tailcall_optim : unit -> tc
 ```
 ```ocaml
+val clone_higher_order_budget : unit -> int
+```
+```ocaml
 val lambda_lifting_threshold : unit -> int
 ```
 ```ocaml
