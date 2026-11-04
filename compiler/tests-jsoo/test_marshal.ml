@@ -359,3 +359,21 @@ let%expect_test "forced lazy values" =
     true
     1.5 1.5
     |}]
+
+let%expect_test "empty arrays" =
+  (* Atoms are not counted in the header *)
+  let hex s =
+    String.concat
+      " "
+      (List.init (String.length s) (fun i -> Printf.sprintf "%02x" (Char.code s.[i])))
+  in
+  print_endline (hex (Marshal.to_string ([||] : int array) [ No_sharing ]));
+  print_endline (hex (Marshal.to_string ([| [||]; [| 1 |] |] : int array array) []));
+  let v = [| [||]; [| 1 |]; [||] |], "a" in
+  print_endline (string_of_bool (Marshal.from_string (Marshal.to_string v []) 0 = v));
+  [%expect
+    {|
+    84 95 a6 be 00 00 00 01 00 00 00 00 00 00 00 00 00 00 00 00 80
+    84 95 a6 be 00 00 00 04 00 00 00 02 00 00 00 05 00 00 00 05 a0 80 90 41
+    true
+    |}]

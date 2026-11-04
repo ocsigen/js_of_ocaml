@@ -29,6 +29,8 @@
   the method names of classes): objects could fail with an illegal cast (#2596)
 * Compiler: trampoline tail calls between mutually recursive functions with
   `--disable optcall`, to avoid stack overflows (#2597)
+* Runtime: fix `Int32.of_string` and `Nativeint.of_string` failure messages, `%h`
+  with precision 0, flags and NaNs, and the `Marshal` header of empty arrays (#2602)
 * Compiler: fix a miscompilation of `Int_trie` by OxCaml's flambda2 at -O2
   and -O3 (#2560)
 * Compiler: fix a stack overflow in the dataflow solvers on deep graphs,
