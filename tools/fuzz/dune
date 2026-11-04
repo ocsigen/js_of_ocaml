@@ -1,0 +1,9 @@
+; Differential fuzzers for js_of_ocaml and wasm_of_ocaml (see README.md).
+; The generated programs use effect handlers and recent standard library
+; functions, hence the version constraint.
+
+(executable
+ (name jsoo_fuzz)
+ (enabled_if
+  (>= %{ocaml_version} 5.1))
+ (libraries unix))

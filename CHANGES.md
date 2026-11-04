@@ -21,6 +21,8 @@
 * Compiler/Wasm: raising functions which can also be called through a closure
   return null too when called directly, using a wrapper otherwise (#2098)
 * Compiler/Wasm: require Binaryen 120 (#2580)
+* Tools: differential fuzzers for js_of_ocaml and wasm_of_ocaml
+  (`tools/fuzz`) (#????)
 
 ## Bug fixes
 * Compiler: fix a miscompilation of `Int_trie` by OxCaml's flambda2 at -O2
