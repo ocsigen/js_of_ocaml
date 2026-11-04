@@ -91,6 +91,4 @@ As a consequence, marshalling, polymorphic comparison, and hashing functions can
 - Marshalling floats might generate different output (do not unmarshal with the standard OCaml runtime)
 - The polymorphic hash function will not give the same results on data structures containing floats
 - These functions may be more prone to stack overflow
-**Note**: Float rounding is slightly different between native and JavaScript. Both round to nearest but resolve ties differently: JavaScript resolves ties away from zero while libc resolves ties to even.
-
 See [runtime representation](./runtime-representation.md) for details.

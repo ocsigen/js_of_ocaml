@@ -43,7 +43,6 @@ OCaml floats are JavaScript numbers directly.
 - Better performance for float-heavy code
 - Polymorphic hash and comparison may give different results than native
 - Marshalled floats cannot be unmarshalled by the native OCaml runtime
-**Rounding difference**: JavaScript rounds ties away from zero, while native OCaml (libc) rounds ties to even.
 
 ## Booleans
 
