@@ -395,7 +395,7 @@ function caml_int64_of_float(x) {
   );
 }
 
-//Provides: caml_int64_format const
+//Provides: caml_int64_format
 //Requires: caml_parse_format, caml_finish_formatting
 //Requires: caml_int64_is_negative, caml_int64_neg
 //Requires: caml_int64_of_int32, caml_int64_to_int32

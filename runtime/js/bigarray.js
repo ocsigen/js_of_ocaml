@@ -1134,7 +1134,7 @@ function caml_ba_to_typed_array(ba) {
   return ba.data;
 }
 
-//Provides: caml_ba_kind_of_typed_array mutable
+//Provides: caml_ba_kind_of_typed_array
 //Requires: caml_invalid_argument
 function caml_ba_kind_of_typed_array(ta) {
   var kind;
@@ -1151,7 +1151,7 @@ function caml_ba_kind_of_typed_array(ta) {
   return kind;
 }
 
-//Provides: caml_ba_from_typed_array mutable
+//Provides: caml_ba_from_typed_array
 //Requires: caml_ba_kind_of_typed_array
 //Requires: caml_ba_create_unsafe
 function caml_ba_from_typed_array(ta) {

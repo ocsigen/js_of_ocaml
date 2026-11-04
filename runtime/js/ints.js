@@ -15,7 +15,7 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-//Provides: caml_format_int const (const, const)
+//Provides: caml_format_int (const, const)
 //Requires: caml_parse_format, caml_finish_formatting, caml_str_repeat
 //Requires: caml_string_of_jsbytes, caml_jsbytes_of_string
 //Alias: caml_int32_format
