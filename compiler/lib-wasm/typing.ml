@@ -444,30 +444,17 @@ let propagate st approx x : Domain.t =
               (("caml_check_bound" | "caml_check_bound_float" | "caml_check_bound_gen"), _)
           , [ Pv y; _ ] ) -> Var.Tbl.get approx y
       | Prim ((Array_get _ | Extern ("caml_array_unsafe_get", _)), [ Pv y; _ ]) -> (
-          match Var.Tbl.get st.global_flow_info.info_approximation y with
-          | Values { known; others } ->
-              Domain.join_set
-                ~others
-                (fun z ->
-                  match st.global_flow_state.defs.(Var.idx z) with
-                  | Expr (Block (_, lst, _, _, _)) ->
-                      let m =
-                        match st.global_flow_state.mutable_fields.(Var.idx z) with
-                        | No_field -> false
-                        | Some_fields _ | All_fields -> true
-                      in
-                      if m
-                      then Top
-                      else
-                        Domain.box
-                          (Array.fold_left
-                             ~f:(fun acc t -> Domain.join (Var.Tbl.get approx t) acc)
-                             ~init:Domain.bot
-                             lst)
-                  | Expr (Closure _) -> Bot
-                  | Phi _ | Expr _ -> assert false)
-                known
-          | Top -> Top)
+          (* A constant block can be read as an array: the compiler
+             passes the method names of a class to CamlinternalOO as
+             constant blocks. The global flow analysis does not track
+             constants (their approximation is empty), but their type is
+             part of the type of [y]. *)
+          match Var.Tbl.get approx y with
+          | Tuple t ->
+              Domain.box
+                (Array.fold_left ~f:(fun acc t -> Domain.join t acc) ~init:Domain.bot t)
+          | Bot -> Domain.bot
+          | _ -> Top)
       | Prim (Array_get _, _) -> Top
       | Prim ((Vectlength _ | Not | IsInt _ | Eq _ | Neq _ | Lt | Le | Ult), _) ->
           Int Normalized
