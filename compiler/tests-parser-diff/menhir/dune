@@ -1,0 +1,23 @@
+; Previous, Menhir-based JavaScript parser, kept only to check the
+; recursive-descent parser in Js_of_ocaml_compiler.Parse_js against it.
+
+(library
+ (name parse_js_menhir)
+ (libraries js_of_ocaml-compiler menhirLib sedlex)
+ (flags
+  (:standard -w -7-37)))
+
+(menhir
+ (modules js_parser)
+ (flags
+  --table
+  --external-tokens
+  Js_of_ocaml_compiler.Js_token
+  --unused-token
+  TAnnot
+  --unused-token
+  TComment
+  --unused-token
+  TCommentLineDirective
+  --unused-token
+  T_ERROR))
