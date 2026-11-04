@@ -30,10 +30,12 @@ let double_translate () =
 
 (* We turn mutually recursive functions into CPS so that calls between
    them are tail calls. This is not needed when targeting Wasm, which
-   has proper tail calls. *)
+   has proper tail calls, nor with double translation, where
+   [Generate_closure] trampolines the tail calls between the direct-style
+   versions of these functions, which CPS call points can fall back to. *)
 let cps_for_tail_calls () =
   match Config.target () with
-  | `JavaScript -> true
+  | `JavaScript -> not (double_translate ())
   | `Wasm -> false
 
 open Code
@@ -186,7 +188,7 @@ let cps_needed ~info ~in_mutual_recursion ~rev_deps ~below st x =
     | Some below -> Var.Tbl.get below x)
   &&
   (* Mutually recursive functions are turned into CPS for tail
-     optimization (JavaScript only, see [cps_for_tail_calls]) *)
+     optimization (see [cps_for_tail_calls]) *)
   (Var.Set.mem x in_mutual_recursion
   ||
   let idx = Var.idx x in
