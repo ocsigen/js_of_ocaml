@@ -596,6 +596,22 @@ var f = 0.;
           1: var
           2: a=.3,b=-.3,c=.5e-10,d=1.0,e=0,f=0.;
         |}];
+      (* A separator follows a trailing dot: [5.in o] would be a syntax error. *)
+      minify {|
+var g = 5. in o, h = 1. instanceof C, k = 2..toString(), l = -3. in o;
+|};
+      [%expect
+        {|
+        $ cat "test.min.js"
+          1: var
+          2: g=5.
+          3: in
+          4: o,h=1.
+          5: instanceof
+          6: C,k=(2.).toString(),l=-3.
+          7: in
+          8: o;
+        |}];
       (* Pretty mode preserves the leading zero. *)
       minify ~pretty:true {|
 var a = 0.3;

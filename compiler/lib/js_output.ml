@@ -2228,6 +2228,10 @@ let part_of_ident =
 let need_space a b =
   (* do not concat 2 different identifier *)
   (part_of_ident a && part_of_ident b)
+  (* a number literal with a trailing dot followed by a keyword:
+     [5.in o] is a syntax error (an identifier cannot start right after
+     a numeric literal) *)
+  || (Char.equal a '.' && part_of_ident b)
   (* do not generate end_of_line_comment.
      handle the case of "num / /* comment */ b " *)
   ||
