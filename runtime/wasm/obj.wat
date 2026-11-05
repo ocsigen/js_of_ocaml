@@ -173,10 +173,13 @@
 
    (func (export "caml_alloc_dummy_float")
       (param $size (ref eq)) (result (ref eq))
-      (call $caml_check_float_array_length
-         (i31.get_u (ref.cast (ref i31) (local.get $size))))
-      (array.new $float_array (f64.const 0)
-         (i31.get_u (ref.cast (ref i31) (local.get $size)))))
+      (local $sz i32)
+      (local.set $sz (i31.get_u (ref.cast (ref i31) (local.get $size))))
+      (call $caml_check_float_array_length (local.get $sz))
+      (if (i32.eqz (local.get $sz))
+         (then
+            (return (array.new_fixed $block 1 (ref.i31 (i32.const 0))))))
+      (array.new $float_array (f64.const 0) (local.get $sz)))
 
    (func (export "caml_alloc_dummy_mixed")
       (param $size (ref eq)) (param (ref eq)) (result (ref eq))

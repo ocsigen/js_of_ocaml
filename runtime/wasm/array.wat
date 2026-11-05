@@ -382,6 +382,7 @@
                      (global.get $max_float_array_length))))
             (local.set $l (array.get $block (local.get $b) (i32.const 2)))
             (br $compute_length))))
+      (if (i32.eqz (local.get $len)) (then (return (global.get $empty_array))))
       (local.set $fa
          (array.new $float_array (f64.const 0) (local.get $len)))
       (local.set $l (local.get $vl))
