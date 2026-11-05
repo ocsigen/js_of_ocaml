@@ -1251,9 +1251,38 @@ let parallel_renaming ctx loc back_edge params args continuation queue =
 
 (****)
 
+(* Bind an expression to a variable, unless it is cheap enough to be
+   duplicated. String literals are not: whether they are shared is
+   decided by their number of occurrences in the IR (see [Share]), so
+   a duplicated literal would be emitted several times. *)
+let bind_expression loc e instrs =
+  match e with
+  | J.EVar _ | J.ENum _ | J.EBool _ -> e, instrs
+  | _ ->
+      let x = Var.fresh () in
+      J.EVar (J.V x), (J.variable_declaration [ J.V x, (e, loc) ], loc) :: instrs
+
+(* Returns the call expression, and the statements binding the
+   function and arguments that it uses several times. *)
 let apply_fun_raw =
   let cps_field = Utf8_string.of_string_exn "cps" in
   fun ctx f params exact trampolined cps loc ->
+    let instrs = ref [] in
+    (* [k] uses [f] and [params] several times. They can be arbitrary
+       expressions (inlined calls or closures, containing the
+       continuation in CPS), so we bind them to variables, in
+       evaluation order. Once bound, they are left unchanged by
+       further calls. *)
+    let share f params k =
+      let f, l = bind_expression loc f !instrs in
+      let params, l =
+        List.fold_left params ~init:([], l) ~f:(fun (params, l) e ->
+            let e, l = bind_expression loc e l in
+            e :: params, l)
+      in
+      instrs := l;
+      k f (List.rev params)
+    in
     let apply_directly f params =
       (* Make sure we are performing a regular call, not a (slower)
          method call *)
@@ -1275,7 +1304,7 @@ let apply_fun_raw =
                 , J.dot real_closure (Utf8_string.of_string_exn "length") ) )
         , int n )
     in
-    let call_gen ~cps params =
+    let call_gen ~cps f params =
       J.call
         (* Note: when double translation is enabled, [caml_call_gen*] functions takes a two-version function *)
         (runtime_fun
@@ -1289,7 +1318,7 @@ let apply_fun_raw =
     in
     let apply ~cps f params =
       (* Adapt if [f] is a (direct-style, CPS) closure pair *)
-      let real_closure =
+      let real_closure f =
         match Config.effects () with
         | `Double_translation when cps ->
             (* Effects enabled, CPS version, not single-version *)
@@ -1300,52 +1329,58 @@ let apply_fun_raw =
       (* We skip the arity check when we know that we have the right
          number of parameters, since this test is expensive. *)
       if exact
-      then apply_directly real_closure params
+      then apply_directly (real_closure f) params
       else
-        J.ECond
-          ( has_arity real_closure (List.length params)
-          , apply_directly real_closure params
-          , call_gen ~cps params )
+        share f params (fun f params ->
+            J.ECond
+              ( has_arity (real_closure f) (List.length params)
+              , apply_directly (real_closure f) params
+              , call_gen ~cps f params ))
     in
-    let apply =
+    let apply f params =
       match Config.effects () with
       | `Double_translation when cps ->
-          let n = List.length params in
-          let k = List.nth params (n - 1) in
-          let direct_params = fst (List.take (n - 1) params) in
-          (* A function without CPS version cannot perform an effect,
-             so it can be called in direct style. But if it is
-             applied to too many arguments, the closure it returns
-             may have a CPS version, and must then be applied in CPS:
-             [caml_call_gen_cps] takes care of this. *)
-          let direct =
-            if exact
-            then J.call k [ apply_directly f direct_params ] J.N
-            else
-              J.ECond
-                ( has_arity f (n - 1)
-                , J.call k [ apply_directly f direct_params ] J.N
-                , call_gen ~cps:true params )
-          in
-          J.ECond (J.EDot (f, J.ANormal, cps_field), apply ~cps:true f params, direct)
+          share f params (fun f params ->
+              let n = List.length params in
+              let k = List.nth params (n - 1) in
+              let direct_params = fst (List.take (n - 1) params) in
+              (* A function without CPS version cannot perform an effect,
+                 so it can be called in direct style. But if it is
+                 applied to too many arguments, the closure it returns
+                 may have a CPS version, and must then be applied in CPS:
+                 [caml_call_gen_cps] takes care of this. *)
+              let direct =
+                if exact
+                then J.call k [ apply_directly f direct_params ] J.N
+                else
+                  J.ECond
+                    ( has_arity f (n - 1)
+                    , J.call k [ apply_directly f direct_params ] J.N
+                    , call_gen ~cps:true f params )
+              in
+              J.ECond (J.EDot (f, J.ANormal, cps_field), apply ~cps:true f params, direct))
       | `Double_translation | `Cps | `Disabled -> apply ~cps f params
       | `Jspi | `Native -> assert false
     in
-    if trampolined
-    then (
-      assert (cps_transform ());
-      (* When supporting effect, we systematically perform tailcall
-         optimization. To implement it, we check the stack depth and
-         bounce to a trampoline if needed, to avoid a stack overflow.
-         The trampoline then performs the call in an shorter stack. *)
-      J.ECond
-        ( J.call (runtime_fun ctx "caml_stack_check_depth") [] loc
-        , apply
-        , J.call
-            (runtime_fun ctx "caml_trampoline_return")
-            [ f; J.array params; (if cps then zero else one) ]
-            loc ))
-    else apply
+    let e =
+      if trampolined
+      then (
+        assert (cps_transform ());
+        (* When supporting effect, we systematically perform tailcall
+           optimization. To implement it, we check the stack depth and
+           bounce to a trampoline if needed, to avoid a stack overflow.
+           The trampoline then performs the call in an shorter stack. *)
+        share f params (fun f params ->
+            J.ECond
+              ( J.call (runtime_fun ctx "caml_stack_check_depth") [] loc
+              , apply f params
+              , J.call
+                  (runtime_fun ctx "caml_trampoline_return")
+                  [ f; J.array params; (if cps then zero else one) ]
+                  loc )))
+      else apply f params
+    in
+    e, List.rev !instrs
 
 let generate_apply_fun ctx { arity; exact; trampolined; in_cps } =
   let f' = Var.fresh_n "f" in
@@ -1358,15 +1393,9 @@ let generate_apply_fun ctx { arity; exact; trampolined; in_cps } =
   in
   let f' = J.EVar f in
   let params' = List.map params ~f:(fun x -> J.EVar x) in
-  J.EFun
-    ( None
-    , J.fun_
-        (f :: params)
-        [ ( J.Return_statement
-              (Some (apply_fun_raw ctx f' params' exact trampolined in_cps J.N), J.N)
-          , J.N )
-        ]
-        J.N )
+  let e, instrs = apply_fun_raw ctx f' params' exact trampolined in_cps J.N in
+  assert (List.is_empty instrs);
+  J.EFun (None, J.fun_ (f :: params) [ J.Return_statement (Some e, J.N), J.N ] J.N)
 
 let apply_fun ctx f params exact trampolined in_cps loc =
   (* We always go through an intermediate function when doing CPS
@@ -1384,7 +1413,7 @@ let apply_fun ctx f params exact trampolined in_cps loc =
         { arity = List.length params; exact; trampolined; in_cps }
         ctx.Ctx.share
     in
-    J.call y (f :: params) loc
+    J.call y (f :: params) loc, []
 
 (****)
 
@@ -1673,7 +1702,7 @@ let rec translate_expr ctx loc x e level : (_ * J.statement_list) Expr_builder.t
       let in_cps = Var.Set.mem x ctx.Ctx.in_cps in
       let* args = list_map (access ~ctx) args in
       let* f = access ~ctx f in
-      return (apply_fun ctx f args exact trampolined in_cps loc, [])
+      return (apply_fun ctx f args exact trampolined in_cps loc)
   | Block (tag, a, array_or_not, _mut, desc) ->
       let* contents =
         list_map
