@@ -17,6 +17,8 @@
   (and
    %{env:WASM_OF_OCAML=false}
    (<> %{env:JSOO_TEST_ENGINE=node} wasi)))
+ (deps
+  (glob_files ../expect_wasm.bc.wasm.assets/*))
  (action
   (run node %{dep:../expect_wasm.bc.wasm.js} %{dep:test_wasm.ml})))
 
