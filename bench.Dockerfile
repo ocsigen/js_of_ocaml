@@ -68,7 +68,7 @@ RUN sed -i 's/(select (local\.get/(select (result (ref eq)) (local.get/' \
       "$(opam var lib)/ocaml_intrinsics_kernel/runtime.wat"
 
 # Digestif (pure OCaml hash functions)
-RUN opam install digestif
+RUN opam install digestif.1.4.1
 
 # Copy sources
 COPY --chown=opam:opam . ./
