@@ -34,31 +34,34 @@ module type Strategy = sig
 
   val record_block : t -> Js_traverse.t -> Js_traverse.block -> unit
 
-  val allocate_variables : t -> count:int array -> string array
+  (* [count] is the number of occurrences of each variable, [first] the
+     rank of its first occurrence in the program *)
+  val allocate_variables : t -> count:int array -> first:int array -> string array
 end
 
 module Min : Strategy = struct
   (*
 We are trying to achieve the following goals:
 (1) variable names should be as short as possible
-(2) one should reuse as much as possible a small subsets of variable
+(2) one should reuse as much as possible a small subset of variable
     names
 (3) function parameters should be: function(a,b,...){...}
-(4) for longer variable names, variable which are closed from one
+(4) for longer variable names, variables which are close to one
     another should share a same prefix
+(5) similar pieces of code should use the same names
 
 Point (1) minimizes the size of uncompressed files, while point (2) to
-(4) improve compression.
+(5) improve compression.
 
 We use the following strategy. We maintain the constraint that
 variables occurring in a function should keep different names.
 We first assign names a, b, ... (in order) to function parameters,
 starting from inner functions, skipping variables which have a
-conflict with a previously names variable (goal 3). Then, we order
-the remaining variables by their number of occurrences, then by
-their index (goal 4), and greedily assigned name to them. For that,
-we use for each variable the smallest possible name still available
-(goal 1/2).
+conflict with a previously named variable (goal 3). Then, we order
+the remaining variables by classes of number of occurrences (powers
+of 4), then by order of first occurrence in the program (goals 4 and
+5), and greedily assign names to them. For that, we use for each
+variable the smallest possible name still available (goal 1/2).
 
 This algorithm seems effective. Here are some statistics gathered
 while compiling the OCaml toplevel:
@@ -75,9 +78,19 @@ while compiling the OCaml toplevel:
     it is not clear we can do any better: there are a lot of nested
     functions.
 (4) We save 8181 bytes on the compressed file (1.8%) by sorting
-    variables using their index as a secondary key rather that just
+    variables using their index as a secondary key rather than just
     based on their weights (the size of the uncompressed file remains
     unchanged)
+
+(1) to (4) predate the use of classes of weights. In most functions,
+all variables get a one-char name whatever the order: the order only
+matters when variables compete for short names, and a precise order by
+weight makes similar functions name their variables differently.
+Compared to sorting by weight then by index, using classes of weights
+and the order of first occurrence (measured on ocamlc in 2026) costs
+0.06% on the uncompressed file but saves 0.35% with gzip, 0.56% with
+brotli and 0.42% with zstd. Coarser classes save more on compressed
+files but cost more on uncompressed ones.
 *)
 
   type alloc =
@@ -120,15 +133,35 @@ while compiling the OCaml toplevel:
     ; printer = Var_printer.create Var_printer.Alphabet.javascript
     }
 
-  let allocate_variables t ~count =
+  (* Weight class: floor (log_4 w).
+
+     Variables are sorted by weight class, then by order of first
+     occurrence. This balances two effects:
+     - sorting by weight gives the shortest names to the most used
+       variables, and concentrates occurrences on the first few names
+       (a, b, c, ...), which is cheaper to encode after compression;
+     - sorting by first occurrence makes similar pieces of code use the
+       same names, which compression also exploits (repeated strings).
+     Coarser classes favor the latter: they save more on compressed
+     files but cost more on uncompressed ones; powers of 4 are a good
+     compromise (see the measurements above). The skew matters even
+     where all variables get a one-char name: using the order of first
+     occurrence there, and the weight only for variables in scopes with
+     more than 54 variables, compressed worse. *)
+  let weight_class w =
+    let rec loop w n = if w < 4 then n else loop (w lsr 2) (n + 1) in
+    loop w 0
+
+  let allocate_variables t ~count ~first =
     let weight v = count.(v) in
     let constr = t.constr in
     let len = Array.length constr in
-    let idx = Array.make len 0 in
-    for i = 0 to len - 1 do
-      idx.(i) <- i
-    done;
-    Array.stable_sort idx ~cmp:(fun i j -> compare (weight j) (weight i));
+    let cls = Array.map count ~f:weight_class in
+    let order = Array.init len ~f:(fun i -> i) in
+    Array.stable_sort order ~cmp:(fun i j ->
+        match compare cls.(j) cls.(i) with
+        | 0 -> compare first.(i) first.(j)
+        | c -> c);
     let names = Array.make len "" in
     let n0 = ref 0 in
     let n1 = ref 0 in
@@ -166,7 +199,7 @@ while compiling the OCaml toplevel:
         (!total - !bad)
         !total;
     for i = 0 to len - 1 do
-      let idx = idx.(i) in
+      let idx = order.(i) in
       let l = constr.(idx) in
       (if (not (List.is_empty l)) && String.length names.(idx) = 0
        then
@@ -179,7 +212,10 @@ while compiling the OCaml toplevel:
              mark_allocated l n;
              stats idx n)
            else (
-             mark_allocated l n;
+             (* Only the tables where [name] is already taken must skip
+                [n]: it remains available in the other ones. *)
+             List.iter l ~f:(fun a ->
+                 if StringSet.mem name a.existing_names then allocate a n);
              loop ())
          in
          loop ());
@@ -235,18 +271,15 @@ while compiling the OCaml toplevel:
         (Javascript.IdentSet.union scope.Js_traverse.def_var scope.Js_traverse.def_local)
         scope.Js_traverse.use
     in
-    let all =
-      match block with
-      | Let_scope | Var_scope -> all
-      | Params _ -> all
-      | Catch (p, _) ->
-          let ids = bound_idents_of_binding p in
-          List.fold_left ids ~init:all ~f:(fun all i -> Javascript.IdentSet.add i all)
-    in
     match block with
     | Let_scope | Var_scope -> add_constraints state all ~offset:0 []
-    | Catch (v, _) -> add_constraints state all ~offset:5 (bound_idents_of_binding v)
     | Params p -> add_constraints state all ~offset:0 (bound_idents_of_params p)
+    | Catch (p, _) ->
+        let ids = bound_idents_of_binding p in
+        let all =
+          List.fold_left ids ~init:all ~f:(fun all i -> Javascript.IdentSet.add i all)
+        in
+        add_constraints state all ~offset:5 ids
 end
 
 module Preserve : Strategy = struct
@@ -271,8 +304,9 @@ module Preserve : Strategy = struct
       | Catch (p, _) ->
           bound_idents_of_binding p
           @ Javascript.IdentSet.elements scope.Js_traverse.def_local
-      | Let_scope | Var_scope -> Javascript.IdentSet.elements scope.Js_traverse.def_local
-      | Params _ ->
+      | Let_scope -> Javascript.IdentSet.elements scope.Js_traverse.def_local
+      | Params _ | Var_scope ->
+          (* These scopes anchor their [var]s *)
           Javascript.IdentSet.elements
             (IdentSet.union scope.Js_traverse.def_var scope.Js_traverse.def_local)
     in
@@ -294,11 +328,11 @@ module Preserve : Strategy = struct
 
   let uniq_var = Debug.find "var"
 
-  let allocate_variables t ~count =
+  let allocate_variables t ~count ~first:_ =
     let names = Array.make t.size "" in
     let uniq_var = uniq_var () in
-    let unamed = ref 0 in
-    let create_unamed =
+    let unnamed = ref 0 in
+    let create_unnamed =
       if uniq_var
       then
         fun i ->
@@ -350,7 +384,7 @@ module Preserve : Strategy = struct
             (reserved, [])
         in
         (* We then allocate variables without names *)
-        if not uniq_var then unamed := 0;
+        if not uniq_var then unnamed := 0;
         let _reserved =
           let weight v = count.(Var.idx v) in
           List.stable_sort others ~cmp:(fun i j ->
@@ -360,12 +394,12 @@ module Preserve : Strategy = struct
           |> List.fold_left ~init:reserved ~f:(fun reserved var ->
               let name =
                 while
-                  let name = create_unamed !unamed in
+                  let name = create_unnamed !unnamed in
                   StringSet.mem name reserved || StringSet.mem name Reserved.keyword
                 do
-                  incr unamed
+                  incr unnamed
                 done;
-                create_unamed !unamed
+                create_unnamed !unnamed
               in
               names.(Var.idx var) <- name;
               StringSet.add name reserved)
@@ -392,58 +426,109 @@ class traverse record_block =
       super#record_block b
   end
 
-class traverse_idents_and_labels ~idents ~labels =
+(* Count variable occurrences, record the order of their first
+   occurrence, and collect the names of source labels *)
+class count_occurrences ~idents ~first ~source_labels =
+  let rank = ref 0 in
   object
     inherit Js_traverse.iter as super
 
-    val ldepth = 0
+    method! statement s =
+      (match s with
+      | Labelled_statement (S (Utf8 l), _) ->
+          source_labels := StringSet.add l !source_labels
+      | _ -> ());
+      super#statement s
 
-    method fun_decl (_k, _params, body, _loc) =
-      let m = {<ldepth = 0>} in
-      m#function_body body
-
-    method statement =
-      function
-      | Labelled_statement (L l, (s, _)) ->
-          let m = {<ldepth = ldepth + 1>} in
-          Var.Hashtbl.add labels l ldepth;
-          m#statement s
-      | s -> super#statement s
-
-    method ident i =
+    method! ident i =
       match i with
       | S _ -> ()
       | V v ->
           let idx = Code.Var.idx v in
+          if idents.(idx) = 0
+          then (
+            first.(idx) <- !rank;
+            incr rank);
           idents.(idx) <- idents.(idx) + 1
   end
 
-class name ident label =
+(* A generated label [L _] gets the first name used neither by an
+   enclosing label of the same function nor by any source label [S _]
+   (which may be nested inside it). Without source labels, this is the
+   name of its nesting depth. *)
+class name ident ~source_labels =
+  let printer = Var_printer.create Var_printer.Alphabet.javascript in
   object (m)
     inherit Js_traverse.map as super
 
+    (* Enclosing labels of the current function, innermost first, with
+       their new name *)
+    val mutable labels : (Label.t * Label.t) list = []
+
     method ident x = ident x
 
-    method statement =
-      function
+    (* Labels are not visible across function and class static block
+       boundaries *)
+    method private reset_labels : 'a. ('a -> 'a) -> 'a -> 'a =
+      fun f x ->
+        let enclosing = labels in
+        labels <- [];
+        let x = f x in
+        labels <- enclosing;
+        x
+
+    method! fun_decl f = m#reset_labels super#fun_decl f
+
+    method! class_element e =
+      match e with
+      | CEStaticBLock _ -> m#reset_labels super#class_element e
+      | _ -> super#class_element e
+
+    method private label l =
+      match l with
+      | Label.S _ -> l
+      | L _ -> (
+          match List.find_opt labels ~f:(fun (l', _) -> Label.equal l l') with
+          | Some (_, l') -> l'
+          | None -> assert false)
+
+    method! statement s =
+      match s with
       | Labelled_statement (l, (s, loc)) ->
-          Labelled_statement (label l, (m#statement s, loc))
-      | Break_statement (Some l) -> Break_statement (Some (label l))
-      | Continue_statement (Some l) -> Continue_statement (Some (label l))
+          let l' =
+            match l with
+            | S _ -> l
+            | L _ ->
+                let rec find i =
+                  let name = Var_printer.to_string printer i in
+                  let l' = Label.of_string (Utf8_string.of_string_exn name) in
+                  if
+                    StringSet.mem name source_labels
+                    || List.exists labels ~f:(fun (_, l'') -> Label.equal l' l'')
+                  then find (i + 1)
+                  else l'
+                in
+                find 0
+          in
+          let enclosing = labels in
+          labels <- (l, l') :: labels;
+          let s = m#statement s in
+          labels <- enclosing;
+          Labelled_statement (l', (s, loc))
+      | Break_statement (Some l) -> Break_statement (Some (m#label l))
+      | Continue_statement (Some l) -> Continue_statement (Some (m#label l))
       | s -> super#statement s
   end
 
 let program' (module Strategy : Strategy) p =
   let nv = Var.count () in
   let state = Strategy.create nv in
-  let labels = Var.Hashtbl.create 20 in
   let mapper = new traverse (Strategy.record_block state) in
   mapper#program p;
   let count = Array.make nv 0 in
-  let () =
-    let o = new traverse_idents_and_labels ~idents:count ~labels in
-    o#program p
-  in
+  let first = Array.make nv max_int in
+  let source_labels = ref StringSet.empty in
+  (new count_occurrences ~idents:count ~first ~source_labels)#program p;
   (* The program top level anchors its own [var]s and has no enclosing scope
      to record them, so it is a [Var_scope] (never skipped). *)
   mapper#record_block Var_scope;
@@ -456,9 +541,8 @@ let program' (module Strategy : Strategy) p =
       mapper#get_free
       Var.Set.empty
   in
-  let has_free_var = not (Var.Set.is_empty freevar) in
   let unallocated_names = ref Var.Set.empty in
-  let names = Strategy.allocate_variables state ~count in
+  let names = Strategy.allocate_variables state ~count ~first in
   (* ignore the chosen name for escaping/free [V _] variables *)
   Var.Set.iter (fun x -> names.(Var.idx x) <- "") freevar;
   let ident =
@@ -480,38 +564,31 @@ let program' (module Strategy : Strategy) p =
               x
           | _ -> ident ~var:v (Utf8_string.of_string_exn name))
   in
-  let label_printer = Var_printer.create Var_printer.Alphabet.javascript in
-  let max_label_depth = Var.Hashtbl.fold (fun _ d acc -> max d acc) labels 0 in
-  let lname_per_depth =
-    Array.init (max_label_depth + 1) ~f:(fun i -> Var_printer.to_string label_printer i)
-  in
-  let label = function
-    | Label.S _ as l -> l
-    | L v ->
-        let i = Var.Hashtbl.find labels v in
-        S (Utf8_string.of_string_exn lname_per_depth.(i))
-  in
-  let p = (new name ident label)#program p in
-  (if has_free_var || not (Var.Set.is_empty !unallocated_names)
-   then
-     let () =
-       if not (debug_shortvar () || debug ())
-       then
-         Format.eprintf
-           "Some variables escaped (#%d). Use [--debug js_assign] for more info.@."
-           (Var.Set.cardinal freevar)
-       else
-         let (_ : Source_map.info) =
-           Js_output.program
-             ~accept_unnamed_var:true
-             (Pretty_print.to_out_channel stderr)
-             p
-         in
-         Format.eprintf "Some variables escaped:";
-         Var.Set.iter (fun v -> Format.eprintf " <%a>" Var.print v) freevar;
-         Format.eprintf "@."
-     in
-     assert false);
+  let p = (new name ident ~source_labels:!source_labels)#program p in
+  let unnamed = Var.Set.diff !unallocated_names freevar in
+  if not (Var.Set.is_empty freevar && Var.Set.is_empty unnamed)
+  then (
+    (if not (debug_shortvar () || debug ())
+     then
+       Format.eprintf
+         "Some variables escaped (#%d) or were not named (#%d). Use [--debug js_assign] \
+          for more info.@."
+         (Var.Set.cardinal freevar)
+         (Var.Set.cardinal unnamed)
+     else
+       let (_ : Source_map.info) =
+         Js_output.program ~accept_unnamed_var:true (Pretty_print.to_out_channel stderr) p
+       in
+       let print_vars msg s =
+         if not (Var.Set.is_empty s)
+         then (
+           Format.eprintf "%s:" msg;
+           Var.Set.iter (fun v -> Format.eprintf " <%a>" Var.print v) s;
+           Format.eprintf "@.")
+       in
+       print_vars "Some variables escaped" freevar;
+       print_vars "Some variables were not named" unnamed);
+    assert false);
   p
 
 let program p =

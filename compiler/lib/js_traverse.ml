@@ -1754,11 +1754,19 @@ class rename_variable ~esm =
 
     method update_state scope params iter_body =
       let declared_names = declared scope params iter_body in
+      (* Labels are not visible across function and class static block
+         boundaries *)
+      let labels =
+        match scope with
+        | Fun_block _ -> StringMap.empty
+        | _ -> labels
+      in
       {<subst = StringSet.fold
                   (fun name subst -> StringMap.add name (Code.Var.fresh_n name) subst)
                   declared_names
                   subst
-       ; decl = declared_names>}
+       ; decl = declared_names
+       ; labels>}
 
     method ident x =
       match x with
