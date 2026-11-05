@@ -122,6 +122,7 @@ module Measure = struct
     ; trend : string option
     ; path : string
     ; color : string option
+    ; title : string option (* Legend of the graphs *)
     }
 end
 
@@ -133,6 +134,7 @@ let times =
     ; trend = Some "lower-is-better"
     ; path = Filename.concat "results/times" hostname
     ; color = None
+    ; title = None
     }
 
 let sizes =
@@ -143,6 +145,7 @@ let sizes =
     ; trend = Some "lower-is-better"
     ; path = "results/sizes"
     ; color = None
+    ; title = None
     }
 
 let compiletimes =
@@ -153,6 +156,7 @@ let compiletimes =
     ; trend = Some "lower-is-better"
     ; path = Filename.concat "results/compiletimes" hostname
     ; color = None
+    ; title = None
     }
 
 module Spec : sig
@@ -182,6 +186,8 @@ module Spec : sig
 
   val js_of_ocaml : t
 
+  val js_of_ocaml_o1 : t
+
   val js_of_ocaml_o3 : t
 
   val js_of_ocaml_js_string : t
@@ -205,6 +211,16 @@ module Spec : sig
   val js_of_ocaml_effects_cps : t
 
   val js_of_ocaml_effects_double_translation : t
+
+  val wasm_of_ocaml_o1 : t
+
+  val wasm_of_ocaml_o2 : t
+
+  val wasm_of_ocaml_o3 : t
+
+  val wasm_of_ocaml_unsafe : t
+
+  val wasm_of_ocaml_effects_cps : t
 end = struct
   type t =
     { dir : string
@@ -251,6 +267,8 @@ end = struct
 
   let js_of_ocaml = create "js_of_ocaml" ".js"
 
+  let js_of_ocaml_o1 = create "o1" ".js"
+
   let js_of_ocaml_o3 = create "o3" ".js"
 
   let js_of_ocaml_js_string = create "jsstring" ".js"
@@ -274,6 +292,18 @@ end = struct
   let js_of_ocaml_effects_cps = create "effects-cps" ".js"
 
   let js_of_ocaml_effects_double_translation = create "effects-double-translation" ".js"
+
+  let wasm_of_ocaml_o1 = create "wasm-o1" ".js"
+
+  (* Same as [wasm_of_ocaml], measured with the other Wasm optimization
+     levels as their reference *)
+  let wasm_of_ocaml_o2 = create "wasm-o2" ".js"
+
+  let wasm_of_ocaml_o3 = create "wasm-o3" ".js"
+
+  let wasm_of_ocaml_unsafe = create "unsafe/wasm_of_ocaml" ".js"
+
+  let wasm_of_ocaml_effects_cps = create "wasm-effects-cps" ".js"
 end
 
 let rec mkdir d =
@@ -382,7 +412,9 @@ let read_report_config ?(column_ref = -1) file =
       | None -> None
       | Some d -> Some (String.concat ~sep:", " [ d; title ])
     in
-    let measure = Measure.{ measure with name; description; color = Some color } in
+    let measure =
+      Measure.{ measure with name; description; color = Some color; title = Some title }
+    in
     info := Some (dir1, dir2, measure, refe) :: !info
   in
   (try
