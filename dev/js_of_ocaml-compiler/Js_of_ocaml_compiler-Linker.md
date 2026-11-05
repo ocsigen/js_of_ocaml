@@ -61,6 +61,11 @@ val link : ?check_missing:bool -> Javascript.program -> state -> output
 val all : state -> string list
 ```
 ```ocaml
+val user_aliases : state -> (string * string) list
+```
+The aliases `(alias, name)` of the linked primitives that are defined in runtime files other than the builtin ones.
+
+```ocaml
 val missing : state -> string list
 ```
 ```ocaml
