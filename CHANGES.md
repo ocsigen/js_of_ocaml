@@ -45,6 +45,9 @@
   primitives defined in user runtime files (#2604)
 * Compiler: do not inline functions with open recursion through a record
   of closures as functors (memory blow-up at --opt 2 with OCaml 5.6) (#2599)
+* Runtime: ensure empty float arrays use tag 0 rather than 254 for
+  Float.Array.concat and recursive dummy allocations, and in JavaScript also
+  for Float.Array.append, sub, create and make (#2594)
 
 # 6.5.0 (2026-10-22) - Lille
 

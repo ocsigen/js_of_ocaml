@@ -63,6 +63,7 @@ function caml_array_sub(a, i, len) {
 //Requires: caml_array_sub
 //Version: >= 5.3
 function caml_floatarray_sub(a, i, len) {
+  if (len === 0) return [0];
   var r = caml_array_sub(a, i, len);
   r[0] = 254;
   return r;
@@ -97,7 +98,7 @@ function caml_array_append(a1, a2) {
 //Version: >= 5.3
 function caml_floatarray_append(a1, a2) {
   var r = caml_array_append(a1, a2);
-  r[0] = 254;
+  if (r.length > 1) r[0] = 254;
   return r;
 }
 
@@ -134,7 +135,7 @@ function caml_array_concat(l) {
 //Version: >= 5.4
 function caml_floatarray_concat(l) {
   var r = caml_array_concat(l);
-  r[0] = 254;
+  if (r.length > 1) r[0] = 254;
   return r;
 }
 
@@ -261,7 +262,7 @@ function caml_make_float_vect(len) {
     caml_invalid_argument("Float.Array.create");
   var len = (len + 1) | 0;
   var b = new Array(len);
-  b[0] = 254;
+  b[0] = len > 1 ? 254 : 0;
   for (var i = 1; i < len; i++) b[i] = 0;
   return b;
 }
@@ -274,7 +275,7 @@ function caml_array_create_float(len) {
     caml_invalid_argument("Float.Array.create");
   var len = (len + 1) | 0;
   var b = new Array(len);
-  b[0] = 254;
+  b[0] = len > 1 ? 254 : 0;
   for (var i = 1; i < len; i++) b[i] = 0;
   return b;
 }
@@ -288,7 +289,7 @@ function caml_array_create_float(len) {
     caml_invalid_argument("Float.Array.create");
   var len = (len + 1) | 0;
   var b = new Array(len);
-  b[0] = 254;
+  b[0] = len > 1 ? 254 : 0;
   for (var i = 1; i < len; i++) b[i] = 0;
   return b;
 }
@@ -301,7 +302,7 @@ function caml_floatarray_create(len) {
     caml_invalid_argument("Float.Array.create");
   var len = (len + 1) | 0;
   var b = new Array(len);
-  b[0] = 254;
+  b[0] = len > 1 ? 254 : 0;
   for (var i = 1; i < len; i++) b[i] = 0;
   return b;
 }
@@ -314,7 +315,7 @@ function caml_floatarray_make(len, init) {
     caml_invalid_argument("Array.make");
   var len = (len + 1) | 0;
   var b = new Array(len);
-  b[0] = 254;
+  b[0] = len > 1 ? 254 : 0;
   for (var i = 1; i < len; i++) b[i] = init;
   return b;
 }
