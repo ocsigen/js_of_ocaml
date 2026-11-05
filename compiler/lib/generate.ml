@@ -326,6 +326,9 @@ module Share = struct
         ; "caml_wrap_exception"
         ; "caml_list_of_js_array"
         ; "caml_maybe_attach_backtrace"
+        ; "caml_exn_sentinel"
+        ; "caml_raise_sentinel"
+        ; "caml_take_exn"
         ; "jsoo_effect_not_supported"
         ; "caml_int64_create_lo_mi_hi"
         ; "caml_stack_check_depth"
@@ -428,6 +431,16 @@ module Share = struct
           J.EVar v
 end
 
+(* How exceptions are signaled in the code being generated *)
+type exn_ctx =
+  | Throw  (** Outside handlers in a function which is not raising *)
+  | Return_sentinel  (** Outside handlers in a raising function *)
+  | Handler of
+      { label : J.Label.t  (** Label of the [try] statement *)
+      ; exn : Var.t option  (** Variable bound to the exception, if live *)
+      ; used : bool ref
+      }  (** In the body of a [try], break to the handler *)
+
 module Ctx = struct
   type t =
     { blocks : block Addr.Map.t
@@ -442,6 +455,8 @@ module Ctx = struct
     ; freevars : Code.Var.Set.t Code.Addr.Map.t
     ; in_cps : Effects.in_cps
     ; bool_context : Bool_context.t
+    ; raising : Raising_calls.t
+    ; exn_ctx : exn_ctx ref
     }
 
   let initial
@@ -453,6 +468,7 @@ module Ctx = struct
       ~freevars
       ~in_cps
       ~bool_context
+      ~raising
       blocks
       live
       trampolined_calls
@@ -469,6 +485,8 @@ module Ctx = struct
     ; freevars
     ; in_cps
     ; bool_context
+    ; raising
+    ; exn_ctx = ref Throw
     }
 end
 
@@ -1014,6 +1032,13 @@ type state =
   ; visited_blocks : Addr.Set.t ref
   ; ctx : Ctx.t
   ; cloc : Parse_info.t option
+  ; exn_base : exn_ctx  (** Outside handlers *)
+  ; trap_scopes : Addr.t Addr.Hashtbl.t
+        (** For blocks in the body of a handler, the entry block of
+            the body of the innermost such handler *)
+  ; handlers : exn_ctx Addr.Hashtbl.t
+        (** The [Handler] context of a handler, by the entry block of
+            its body *)
   }
 
 module DTree = struct
@@ -1133,11 +1158,39 @@ module DTree = struct
     loop 0 a
 end
 
-let build_graph ctx pc cloc =
+let build_graph ctx ~exn_base pc cloc =
   let visited_blocks = ref Addr.Set.empty in
   let structure = Structure.build_graph ctx.Ctx.blocks pc in
   let dom = Structure.dominator_tree structure in
-  { visited_blocks; structure; dom; ctx; cloc }
+  (* Raising an exception in the body of a handler jumps to the
+     handler. This is also valid with effects: the handlers which
+     remain are compiled to [try] statements. Which handler a block
+     belongs to is determined as in [Raising_calls], so that both
+     agree. A block in the scope of a handler is always compiled
+     within the corresponding [try] statement. *)
+  let trap_scopes = Addr.Hashtbl.create 16 in
+  if Config.Flag.exn_sentinel ()
+  then
+    Code.iter_trap_scopes ctx.Ctx.blocks pc ~f:(fun pc traps ->
+        match traps with
+        | body_pc :: _ -> Addr.Hashtbl.replace trap_scopes pc body_pc
+        | [] -> ());
+  { visited_blocks
+  ; structure
+  ; dom
+  ; ctx
+  ; cloc
+  ; exn_base
+  ; trap_scopes
+  ; handlers = Addr.Hashtbl.create 4
+  }
+
+(* Set how exceptions are signaled in block [pc] *)
+let set_exn_ctx st pc =
+  st.ctx.Ctx.exn_ctx :=
+    match Addr.Hashtbl.find_opt st.trap_scopes pc with
+    | Some body_pc -> Addr.Hashtbl.find st.handlers body_pc
+    | None -> st.exn_base
 
 (****)
 
@@ -1612,6 +1665,11 @@ let _ =
   (* [caml_js_get] can have side effect, we declare it as mutator.
      see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/get *)
   register_bin_prim "caml_js_get" `Mutator (fun cx cy _ -> J.EAccess (cx, ANormal, cy));
+  (* The body of a wrapped raising function (see [Raising_calls]) *)
+  register_un_prim "%caml_raising_body" `Mutable (fun cx _ ->
+      J.dot cx (Utf8_string.of_string_exn "r"));
+  register_bin_prim "%caml_set_raising_body" `Mutator (fun cx cy _ ->
+      J.EBin (J.Eq, J.dot cx (Utf8_string.of_string_exn "r"), cy));
   register_bin_prim "caml_js_delete" `Mutator (fun cx cy _ ->
       J.EUn (J.Delete, J.EAccess (cx, ANormal, cy)));
   register_un_prim "caml_js_typeof" `Mutator (fun cx _ -> J.EUn (J.Typeof, cx))
@@ -1623,22 +1681,78 @@ let _ =
    becomes
    {[ throw (caml_exn_with_js_backtrace(e,false)) ]}
 *)
-let throw_statement ctx cx k loc =
+let attach_backtrace ctx cx k loc =
   match (k : [ `Normal | `Reraise | `Notrace ]) with
-  | `Notrace -> [ J.Throw_statement cx, loc ]
+  | `Notrace -> cx
   | (`Normal | `Reraise) as m ->
       let force =
         match m with
         | `Normal -> true
         | `Reraise -> false
       in
-      [ ( J.Throw_statement
-            (J.call
-               (Share.get_prim (runtime_fun ctx) "caml_maybe_attach_backtrace" ctx.share)
-               [ cx; (if force then int 1 else int 0) ]
-               loc)
+      J.call
+        (Share.get_prim (runtime_fun ctx) "caml_maybe_attach_backtrace" ctx.share)
+        [ cx; (if force then int 1 else int 0) ]
+        loc
+
+let throw_statement ctx cx k loc =
+  [ J.Throw_statement (attach_backtrace ctx cx k loc), loc ]
+
+let take_exn ctx =
+  J.call (Share.get_prim (runtime_fun ctx) "caml_take_exn" ctx.Ctx.share) [] J.N
+
+(* Jump to the enclosing handler, with exception [cx]. When the
+   exception is not used, [cx] is only evaluated if it is not [pure]. *)
+let break_to_handler ~label ~exn ~used ~pure cx loc =
+  used := true;
+  (match exn with
+    | Some x -> [ J.variable_declaration [ J.V x, (cx, loc) ], loc ]
+    | None -> if pure then [] else [ J.Expression_statement cx, loc ])
+  @ [ J.Break_statement (Some label), J.N ]
+
+(* Raise exception [cx] *)
+let raise_statement ctx x cx k loc =
+  match !(ctx.Ctx.exn_ctx) with
+  | Throw -> throw_statement ctx cx k loc
+  | Return_sentinel when Var.Set.mem x ctx.Ctx.raising.cold_raises ->
+      throw_statement ctx cx k loc
+  | Return_sentinel ->
+      [ ( J.Return_statement
+            ( Some
+                (J.call
+                   (Share.get_prim (runtime_fun ctx) "caml_raise_sentinel" ctx.Ctx.share)
+                   [ attach_backtrace ctx cx k loc ]
+                   loc)
+            , loc )
         , loc )
       ]
+  | Handler { label; exn; used } ->
+      (* Without a backtrace, [cx] is a variable or an expression
+         without side effect (see [Expr_builder.access]) *)
+      let pure =
+        match k with
+        | `Notrace -> true
+        | `Normal | `Reraise -> false
+      in
+      break_to_handler ~label ~exn ~used ~pure (attach_backtrace ctx cx k loc) loc
+
+(* Test whether the call to a raising function whose result is bound
+   to [x] raised an exception *)
+let check_sentinel ctx x loc =
+  let cond =
+    J.EBin
+      ( J.EqEqEq
+      , J.EVar (J.V x)
+      , Share.get_prim (runtime_fun ctx) "caml_exn_sentinel" ctx.Ctx.share )
+  in
+  let exit =
+    match !(ctx.Ctx.exn_ctx) with
+    | Throw -> [ J.Throw_statement (take_exn ctx), loc ]
+    | Return_sentinel -> [ J.Return_statement (Some (J.EVar (J.V x)), loc), loc ]
+    | Handler { label; exn; used } ->
+        break_to_handler ~label ~exn ~used ~pure:false (take_exn ctx) loc
+  in
+  J.If_statement (cond, Js_simpl.block exit, None), loc
 
 let remove_unused_tail_args ctx exact trampolined args =
   if exact && not trampolined
@@ -1703,7 +1817,14 @@ let rec translate_expr ctx loc x e level : (_ * J.statement_list) Expr_builder.t
   | Closure (args, ((pc, _) as cont), (_, cloc)) ->
       let loc = source_location cloc in
       let fv = Addr.Map.find pc ctx.freevars in
-      let clo = compile_closure ctx cont cloc in
+      let clo =
+        compile_closure
+          ctx
+          ~exn_base:
+            (if Var.Set.mem x ctx.raising.raising_funcs then Return_sentinel else Throw)
+          cont
+          cloc
+      in
       let clo =
         J.EFun
           ( None
@@ -2001,6 +2122,17 @@ and translate_instr ctx expr_queue loc instr =
          let* () = info mutator_p in
          let* loc = statement_loc loc in
          return [ J.Expression_statement (J.EBin (J.Eq, J.EVar (J.V x), cy)), loc ])
+  | Let (x, (Apply _ as e)) when Var.Set.mem x ctx.Ctx.raising.raising_calls ->
+      flush_queue
+        expr_queue
+        loc
+        (let* ce, instrs = translate_expr ctx loc x e 0 in
+         let* loc = statement_loc loc in
+         return
+           (instrs
+           @ [ J.variable_declaration [ J.V x, (ce, loc) ], loc
+             ; check_sentinel ctx x loc
+             ]))
   | Let (x, e) -> (
       let e' = translate_expr ctx loc x e 0 in
       match ctx.Ctx.live.(Var.idx x), e with
@@ -2306,6 +2438,7 @@ and compile_block_no_loop st loc queue (pc : Addr.t) ~fall_through scope_stack =
   if debug () then Format.eprintf "Compiling block %d@;" pc;
   st.visited_blocks := Addr.Set.add pc !(st.visited_blocks);
   let block = Addr.Map.find pc st.ctx.blocks in
+  set_exn_ctx st pc;
   let loc, seq, queue = translate_instrs st.ctx loc queue block.body in
   let nbbranch =
     match block.branch with
@@ -2328,7 +2461,9 @@ and compile_block_no_loop st loc queue (pc : Addr.t) ~fall_through scope_stack =
   in
   let rec loop ~scope_stack ~fall_through l =
     match l with
-    | [] -> compile_conditional st queue ~fall_through loc block.branch scope_stack
+    | [] ->
+        set_exn_ctx st pc;
+        compile_conditional st queue ~fall_through loc block.branch scope_stack
     | x :: xs ->
         let l = J.Label.fresh () in
         let used = ref false in
@@ -2578,7 +2713,7 @@ and compile_conditional st queue ~fall_through loc last scope_stack : _ * _ =
         let instrs =
           let* cx = access ~ctx x in
           let* loc = statement_loc loc in
-          return (throw_statement st.ctx cx k loc)
+          return (raise_statement st.ctx x cx k loc)
         in
         true, flush_all queue loc instrs
     | Stop ->
@@ -2588,48 +2723,107 @@ and compile_conditional st queue ~fall_through loc last scope_stack : _ * _ =
         true, Q.flush_all queue loc [ J.Return_statement (e_opt, loc), loc ]
     | Branch cont -> compile_branch st loc queue cont scope_stack ~fall_through
     | Pushtrap (c1, x, e1) ->
+        let label = J.Label.fresh () in
+        let used = ref false in
+        let exn = if st.ctx.Ctx.live.(Var.idx x) = 0 then None else Some x in
+        Addr.Hashtbl.replace st.handlers (fst c1) (Handler { label; exn; used });
         let never_body, body =
           compile_branch st J.N Q.empty c1 scope_stack ~fall_through
         in
         if debug () then Format.eprintf "@,}@]@,@[<hv 2>catch {@;";
-        let exn_var, never_handler, handler =
-          match st.ctx.Ctx.live.(Var.idx x) with
-          | 0 ->
-              let never_handler, handler =
-                compile_branch st J.U Q.empty e1 scope_stack ~fall_through
-              in
-              x, never_handler, handler
-          | n ->
-              let handler_var = Code.Var.fork x in
-              let wrapped_exn =
-                J.call
-                  (Share.get_prim
-                     (runtime_fun st.ctx)
-                     "caml_wrap_exception"
-                     st.ctx.Ctx.share)
-                  [ J.EVar (J.V handler_var) ]
-                  J.N
-              in
-              let instrs, queue =
-                if List.mem ~eq:Var.equal x (snd e1)
-                then (
-                  assert (n = 1);
-                  Q.enqueue Q.empty const_p x wrapped_exn J.U None [])
-                else
-                  [ J.variable_declaration [ J.V x, (wrapped_exn, J.U) ], J.N ], Q.empty
-              in
-              let never_handler, handler =
-                compile_branch st J.U queue e1 scope_stack ~fall_through
-              in
-              handler_var, never_handler, instrs @ handler
-        in
-        ( never_body && never_handler
-        , Q.flush_all
-            queue
-            loc
-            [ ( J.Try_statement (body, Some (Some (J.param' (J.V exn_var)), handler), None)
-              , loc )
-            ] )
+        if !used
+        then
+          (* The handler is reached both from the [catch] clause and by
+             breaking out of the [try] statement:
+             {[
+               a: {
+                 label: try { body; break a } catch (e) { var x = wrap(e) }
+                 handler
+               }
+             ]}
+             The outer block is only needed when the body can complete
+             normally. *)
+          let handler_var = Code.Var.fork x in
+          let catch_body =
+            match exn with
+            | None -> []
+            | Some x ->
+                [ ( J.variable_declaration
+                      [ ( J.V x
+                        , ( J.call
+                              (Share.get_prim
+                                 (runtime_fun st.ctx)
+                                 "caml_wrap_exception"
+                                 st.ctx.Ctx.share)
+                              [ J.EVar (J.V handler_var) ]
+                              J.N
+                          , J.U ) )
+                      ]
+                  , J.N )
+                ]
+          in
+          let never_handler, handler =
+            compile_branch st J.U Q.empty e1 scope_stack ~fall_through
+          in
+          let outer = J.Label.fresh () in
+          let body =
+            if never_body then body else body @ [ J.Break_statement (Some outer), J.N ]
+          in
+          let code =
+            ( J.Labelled_statement
+                ( label
+                , ( J.Try_statement
+                      (body, Some (Some (J.param' (J.V handler_var)), catch_body), None)
+                  , loc ) )
+            , loc )
+            :: handler
+          in
+          let code =
+            if never_body
+            then code
+            else [ J.Labelled_statement (outer, (J.Block code, J.N)), J.N ]
+          in
+          never_body && never_handler, Q.flush_all queue loc code
+        else
+          let exn_var, never_handler, handler =
+            match st.ctx.Ctx.live.(Var.idx x) with
+            | 0 ->
+                let never_handler, handler =
+                  compile_branch st J.U Q.empty e1 scope_stack ~fall_through
+                in
+                x, never_handler, handler
+            | n ->
+                let handler_var = Code.Var.fork x in
+                let wrapped_exn =
+                  J.call
+                    (Share.get_prim
+                       (runtime_fun st.ctx)
+                       "caml_wrap_exception"
+                       st.ctx.Ctx.share)
+                    [ J.EVar (J.V handler_var) ]
+                    J.N
+                in
+                let instrs, queue =
+                  if List.mem ~eq:Var.equal x (snd e1)
+                  then (
+                    assert (n = 1);
+                    Q.enqueue Q.empty const_p x wrapped_exn J.U None [])
+                  else
+                    [ J.variable_declaration [ J.V x, (wrapped_exn, J.U) ], J.N ], Q.empty
+                in
+                let never_handler, handler =
+                  compile_branch st J.U queue e1 scope_stack ~fall_through
+                in
+                handler_var, never_handler, instrs @ handler
+          in
+          ( never_body && never_handler
+          , Q.flush_all
+              queue
+              loc
+              [ ( J.Try_statement
+                    (body, Some (Some (J.param' (J.V exn_var)), handler), None)
+                , loc )
+              ] )
     | Poptrap cont ->
         (* The code generated for the branch is part of the [try] body,
            so pending expressions can be evaluated there. *)
@@ -2751,8 +2945,9 @@ and compile_branch st loc queue ((pc, _) as cont) scope_stack ~fall_through : bo
                 ] )
         | None -> compile_block st loc queue pc scope_stack ~fall_through)
 
-and compile_closure ctx (pc, args) (cloc : Parse_info.t option) =
-  let st = build_graph ctx pc cloc in
+and compile_closure ctx ~exn_base (pc, args) (cloc : Parse_info.t option) =
+  let exn_ctx = !(ctx.Ctx.exn_ctx) in
+  let st = build_graph ctx ~exn_base pc cloc in
   let current_blocks = Structure.get_nodes st.structure in
   if debug () then Format.eprintf "@[<hv 2>closure {@;";
   let scope_stack = [] in
@@ -2771,6 +2966,7 @@ and compile_closure ctx (pc, args) (cloc : Parse_info.t option) =
     Format.eprintf "Some blocks not compiled %s!@." (string_of_set missing);
     assert false);
   if debug () then Format.eprintf "}@]@;";
+  ctx.Ctx.exn_ctx := exn_ctx;
   res
 
 and collect_closures loc l =
@@ -2839,7 +3035,7 @@ let generate_shared_value ctx =
 
 let compile_program ctx pc =
   if debug () then Format.eprintf "@[<v 2>";
-  let res = compile_closure ctx (pc, []) None in
+  let res = compile_closure ctx ~exn_base:Throw (pc, []) None in
   let res = generate_shared_value ctx @ res in
   if debug () then Format.eprintf "@]@.";
   res
@@ -2850,6 +3046,7 @@ let f
     ~live_vars
     ~trampolined_calls
     ~in_cps
+    ~raising
     ~should_export
     ~warn_on_unhandled_effect
     ~deadcode_sentinel =
@@ -2872,6 +3069,7 @@ let f
       ~freevars
       ~in_cps
       ~bool_context
+      ~raising
       p.blocks
       live_vars
       trampolined_calls

@@ -33,16 +33,32 @@ val known_callee :
     called directly, or it is [wrappable]. *)
 
 val raising_functions :
-     Code.program
+     ?cold:(Code.Var.t -> bool)
+  -> ?on_call:
+       (   Code.Var.t option
+        -> Code.Addr.t
+        -> Code.Var.t
+        -> f:Code.Var.t
+        -> Code.Var.t
+        -> in_handler:bool
+        -> unit)
+  -> Code.program
   -> Global_flow.info
   -> t
   -> wrappable:(Code.Var.t -> bool)
+  -> tail_calls:bool
   -> (Code.Var.t -> bool)
   -> unit Code.Var.Hashtbl.t
 (** Functions which signal exceptions by returning null. The
     functions that are not only called directly ([direct_calls_only]
     is false) must be wrapped: the function called through closures
     converts the null value back into an exception. Only functions
-    satisfying [wrappable] are considered for this. *)
+    satisfying [wrappable] are considered for this. When [tail_calls]
+    is true, tail calls are actual tail calls (Wasm), which restricts
+    the functions that can be raising. Exceptions [cold] holds of do
+    not make a function raising. [on_call h pc x ~f g ~in_handler] is
+    called on each call [Let (x, Apply { f; _ })] of block [pc] of
+    function [h] (or of the toplevel code) whose callee [g] is known,
+    and tells whether it occurs in the body of a handler. *)
 
 val f : Code.program -> Global_flow.info -> t

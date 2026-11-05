@@ -30,6 +30,7 @@ type optimized_result =
   ; in_cps : Effects.in_cps
   ; deadcode_sentinel : Code.Var.t
   ; shapes : Shape.t StringMap.t
+  ; raising : Raising_calls.t
   }
 
 let should_export = function
@@ -92,6 +93,10 @@ let clone_higher_order (profile : Profile.t) p =
   | `Wasm, (O2 | O3) when Config.Flag.clone_higher_order () ->
       if debug () then Format.eprintf "Clone higher-order functions...@.";
       Clone_higher_order.f p
+  | `JavaScript, (O2 | O3)
+    when Config.Flag.clone_higher_order () && Raising_calls.enabled () ->
+      if debug () then Format.eprintf "Clone higher-order functions...@.";
+      Clone_higher_order.f ~cold:(Raising_calls.cold_exceptions p) p
   | `Wasm, _ | `JavaScript, _ -> p
 
 let specialize (p, info) =
@@ -273,7 +278,14 @@ let generate
     ~exported_runtime
     ~wrap_with_fun
     ~warn_on_unhandled_effect
-    { program; variable_uses; trampolined_calls; deadcode_sentinel; in_cps; shapes = _ } =
+    { program
+    ; variable_uses
+    ; trampolined_calls
+    ; deadcode_sentinel
+    ; in_cps
+    ; shapes = _
+    ; raising
+    } =
   if times () then Format.eprintf "Start Generation...@.";
   let should_export = should_export wrap_with_fun in
   Generate.f
@@ -282,6 +294,7 @@ let generate
     ~live_vars:variable_uses
     ~trampolined_calls
     ~in_cps
+    ~raising
     ~should_export
     ~warn_on_unhandled_effect
     ~deadcode_sentinel
@@ -743,6 +756,7 @@ let link_and_pack ?(standalone = true) ?(wrap_with_fun = `Iife) ?(link = `No) p 
   |> check_js
 
 let optimize ~shapes ~profile ~keep_flow_data p =
+  let exn_sentinel = Raising_calls.enabled () in
   let deadcode_sentinel =
     (* If deadcode is disabled, this field is just fresh variable *)
     Code.Var.fresh_n "dummy"
@@ -756,23 +770,58 @@ let optimize ~shapes ~profile ~keep_flow_data p =
       | O3 -> o3)
     +> specialize_js_once_after
     +> clone_higher_order profile
-    +> effects_and_exact_calls ~keep_flow_data ~deadcode_sentinel ~shapes profile
+    +> effects_and_exact_calls
+         ~keep_flow_data:(keep_flow_data || exn_sentinel)
+         ~deadcode_sentinel
+         ~shapes
+         profile
     +> map_fst5
          (match Config.target (), Config.effects () with
          | `JavaScript, (`Disabled | `Double_translation) -> Generate_closure.f
          | `JavaScript, `Cps
          | `Wasm, (`Disabled | `Jspi | `Cps | `Double_translation | `Native) -> Fun.id
          | `JavaScript, (`Jspi | `Native) -> assert false)
-    +> map_fst5 deadcode'
   in
   if times () then Format.eprintf "Start Optimizing...@.";
   let t = Timer.make () in
-  let (program, variable_uses), trampolined_calls, in_cps, global_flow_info, shapes =
-    opt p
+  let p, trampolined_calls, in_cps, global_flow_info, shapes = opt p in
+  let p, raising =
+    if exn_sentinel
+    then
+      let info =
+        match global_flow_info with
+        | Some (_, info) -> info
+        | None ->
+            (* With effects, the flow information is computed again on
+               the transformed program (as for Wasm, see
+               [optimize_for_wasm]), in fast mode at -O1, as without
+               effects *)
+            let cps_calls =
+              match Config.effects () with
+              | `Double_translation -> in_cps
+              | `Disabled | `Cps | `Jspi | `Native -> Code.Var.Set.empty
+            in
+            let fast =
+              match profile with
+              | Profile.O1 -> true
+              | O2 | O3 -> false
+            in
+            snd (Global_flow.f ~cps_calls ~fast p)
+      in
+      Raising_calls.f ~in_cps ~trampolined_calls p info
+    else p, Raising_calls.empty
   in
+  let program, variable_uses = deadcode' p in
   let () = if times () then Format.eprintf " optimizations : %a@." Timer.print t in
-  ( { program; variable_uses; trampolined_calls; in_cps; deadcode_sentinel; shapes }
-  , global_flow_info )
+  ( { program
+    ; variable_uses
+    ; trampolined_calls
+    ; in_cps
+    ; deadcode_sentinel
+    ; shapes
+    ; raising
+    }
+  , if keep_flow_data then global_flow_info else None )
 
 let optimize_for_wasm ~shapes ~profile p =
   let optimized_code, global_flow_data =

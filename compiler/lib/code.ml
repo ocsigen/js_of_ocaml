@@ -933,18 +933,44 @@ let rec preorder_traverse' { fold } f pc visited blocks acc =
 let preorder_traverse fold f pc blocks acc =
   snd (preorder_traverse' fold f pc Addr.Set.empty blocks acc)
 
-let raises_outside_handlers blocks pc =
+let raises_outside_handlers ?(cold = fun _ -> false) blocks pc =
   traverse
     { fold = fold_children_skip_try_body }
     (fun pc b ->
       b
       ||
       match (Addr.Map.find pc blocks).branch with
-      | Raise _ -> true
+      | Raise (x, _) -> not (cold x)
       | _ -> false)
     pc
     blocks
     false
+
+let iter_trap_scopes blocks pc ~f =
+  let rec traverse pc visited traps =
+    if Addr.Set.mem pc visited
+    then visited
+    else
+      let visited = Addr.Set.add pc visited in
+      f pc traps;
+      let block = Addr.Map.find pc blocks in
+      fold_children
+        blocks
+        pc
+        (fun pc' visited ->
+          let traps =
+            match block.branch with
+            | Pushtrap ((body_pc, _), _, _) when pc' = body_pc -> body_pc :: traps
+            | Poptrap _ -> (
+                match traps with
+                | _ :: rem -> rem
+                | [] -> assert false)
+            | _ -> traps
+          in
+          traverse pc' visited traps)
+        visited
+  in
+  ignore (traverse pc Addr.Set.empty [])
 
 let fold_closures_innermost_first { start; blocks; _ } f accu =
   let rec visit blocks pc f accu =
