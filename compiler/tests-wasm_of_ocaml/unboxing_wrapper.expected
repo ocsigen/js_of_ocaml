@@ -1,0 +1,8 @@
+direct: 146.218
+return: 2.414
+parameters: 10.000
+polymorphic: a 0.500
+check: 2.000 raised
+through a ref: raised
+partial application: 7.000 13.500
+tail calls: 3.000

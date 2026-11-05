@@ -20,6 +20,9 @@
   so that calls to these functions become direct calls (#2098)
 * Compiler/Wasm: raising functions which can also be called through a closure
   return null too when called directly, using a wrapper otherwise (#2098)
+* Compiler/Wasm: functions which can also be called through a closure get
+  unboxed parameters (with OCaml 5.6 type hints) and return values when
+  called directly, using a wrapper otherwise (#????)
 * Compiler/Wasm: require Binaryen 120 (#2580)
 
 ## Bug fixes
