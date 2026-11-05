@@ -97,6 +97,8 @@
   of `compare` with 0 (#2529)
 * Compiler: faster reading of debug events, used with `--pretty` and
   `--debug-info` (#2541, #2548)
+* Compiler: unbox tuples passed to blocks and to known functions, when this
+  eliminates a tuple allocation (#1953)
 
 ### Effects
 * Compiler: with `--effects={cps,double-translation}`, specialize calls to
