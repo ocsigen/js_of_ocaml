@@ -23,6 +23,8 @@
 * Compiler/Wasm: functions which can also be called through a closure get
   unboxed parameters (with OCaml 5.6 type hints) and return values when
   called directly, using a wrapper otherwise (#????)
+* Compiler/Wasm: raising functions returning integers also signal exceptions
+  by returning null, their results being tagged (#????)
 * Compiler/Wasm: require Binaryen 120 (#2580)
 
 ## Bug fixes
