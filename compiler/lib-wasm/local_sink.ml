@@ -157,8 +157,8 @@ let rw_of_expr e =
 
 (* What code moved past an expression may observe, from the least to the
    most constrained:
-   - [Pure]: the expression only reads locals — no heap or global reads,
-     no calls, no side effects;
+   - [Pure]: the expression only reads locals and constant globals — no
+     heap or other global reads, no calls, no side effects;
    - [Effect_free]: no side effect, and it always falls through (we
      assume traps never happen), but it may read the heap or globals,
      so an effectful [e] cannot be moved past it;
@@ -201,6 +201,7 @@ type walk_result =
      we replace it by [e] rather than by [local.tee x e]. *)
 type ctx =
   { x : Var.t option
+  ; constant_global : Var.t -> bool
   ; e_to_sink : W.expression
   ; substitute : bool
   ; reads : Var.Set.t
@@ -244,7 +245,7 @@ let may_cross ctx p =
 let rec walk_expr ctx (e : W.expression) =
   match e with
   | W.Const _ | RefFunc _ | RefNull _ -> Clean Pure
-  | GlobalGet _ -> Clean Effect_free
+  | GlobalGet g -> Clean (if ctx.constant_global g then Pure else Effect_free)
   | Pop _ -> Clean Effectful
   | LocalGet y -> (
       match ctx.x with
@@ -360,9 +361,10 @@ and wrap_list_intermediate ctx args =
 
 (* Purity of an expression, as seen by code that does not write any
    local. Compound expressions (blocks, branches, ...) are [Effectful]. *)
-let purity e =
+let purity ~constant_global e =
   let ctx =
     { x = None
+    ; constant_global
     ; e_to_sink = e
     ; substitute = false
     ; reads = Var.Set.empty
@@ -492,7 +494,9 @@ let try_sink_in_list ctx instrs =
    count the accesses to each local; [removed] collects the locals we
    no longer access at all. *)
 type env =
-  { in_try : bool
+  { constant_global : Var.t -> bool
+  ; local_types : W.value_type Var.Hashtbl.t
+  ; in_try : bool
   ; reads : int Var.Hashtbl.t
   ; writes : int Var.Hashtbl.t
   ; removed : unit Var.Hashtbl.t
@@ -509,40 +513,26 @@ let may_remove x = (not (Config.Flag.pretty ())) || Var.generated_name x
 let rec transform_instrs env instrs =
   match instrs with
   | [] -> []
-  | W.LocalSet (x, e) :: rest -> (
-      let e = transform_expr env e in
-      let rest = transform_instrs env rest in
-      let reads, writes = rw_of_expr e in
-      let e_effect_free =
-        match purity e with
-        | Pure | Effect_free -> true
-        | Effectful -> false
-      in
-      let substitute = count env.reads x = 1 && may_remove x in
-      let ctx =
-        { x = Some x
-        ; e_to_sink = e
-        ; substitute
-        ; reads
-        ; writes
-        ; e_effect_free
-        ; e_may_exit = (not e_effect_free) && (env.in_try || may_branch e)
-        ; budget = max_walk_distance
-        }
-      in
-      incr total_candidates;
-      match try_sink_in_list ctx rest with
-      | Some new_rest ->
-          incr total_sunk;
-          if substitute
-          then (
-            Var.Hashtbl.replace env.reads x 0;
-            let w = count env.writes x - 1 in
-            Var.Hashtbl.replace env.writes x w;
-            if w = 0 then Var.Hashtbl.replace env.removed x ());
-          total_sink_distance := !total_sink_distance + (max_walk_distance - ctx.budget);
-          new_rest
-      | None -> W.LocalSet (x, e) :: rest)
+  | W.LocalSet (x, e) :: rest -> sink_set env x (transform_expr env e) rest
+  | (W.If _ as instr) :: rest -> (
+      match transform_instr env instr with
+      | W.If
+          ( { params = []; result = [] }
+          , cond
+          , [ W.LocalSet (y, e1) ]
+          , [ W.LocalSet (y', e2) ] )
+        when Var.equal y y' && Var.Hashtbl.mem env.local_types y ->
+          (* Both branches of the conditional set [y]: turn it into a
+             single [local.set], which may then be sunk. This also spares
+             initializing [y] beforehand when its type is not
+             defaultable. *)
+          Var.Hashtbl.replace env.writes y (count env.writes y - 1);
+          sink_set
+            env
+            y
+            (W.IfExpr (Var.Hashtbl.find env.local_types y, cond, e1, e2))
+            rest
+      | instr -> instr :: transform_instrs env rest)
   | (W.Event _ as ev) :: rest -> (
       (* Sinking a [local.set] that previously separated two events
          leaves them adjacent. Drop the earlier one so the closer
@@ -556,6 +546,42 @@ let rec transform_instrs env instrs =
       let instr = transform_instr env instr in
       let rest = transform_instrs env rest in
       instr :: rest
+
+and sink_set env x e rest =
+  (* [e] has already been transformed *)
+  let rest = transform_instrs env rest in
+  let reads, writes = rw_of_expr e in
+  let e_effect_free =
+    match purity ~constant_global:env.constant_global e with
+    | Pure | Effect_free -> true
+    | Effectful -> false
+  in
+  let substitute = count env.reads x = 1 && may_remove x in
+  let ctx =
+    { x = Some x
+    ; constant_global = env.constant_global
+    ; e_to_sink = e
+    ; substitute
+    ; reads
+    ; writes
+    ; e_effect_free
+    ; e_may_exit = (not e_effect_free) && (env.in_try || may_branch e)
+    ; budget = max_walk_distance
+    }
+  in
+  incr total_candidates;
+  match try_sink_in_list ctx rest with
+  | Some new_rest ->
+      incr total_sunk;
+      if substitute
+      then (
+        Var.Hashtbl.replace env.reads x 0;
+        let w = count env.writes x - 1 in
+        Var.Hashtbl.replace env.writes x w;
+        if w = 0 then Var.Hashtbl.replace env.removed x ());
+      total_sink_distance := !total_sink_distance + (max_walk_distance - ctx.budget);
+      new_rest
+  | None -> W.LocalSet (x, e) :: rest
 
 and transform_instr env instr =
   Wasm_traverse.map_instruction
@@ -573,14 +599,24 @@ and transform_expr env (e : W.expression) =
         ~instructions:(transform_instrs env)
         e
 
-let f ~locals instrs =
+let f ~constant_global ~params ~locals instrs =
   let t = Timer.make () in
   incr total_calls;
   let reads = Var.Hashtbl.create 64 in
   let writes = Var.Hashtbl.create 64 in
   let incr tbl x = Var.Hashtbl.replace tbl x (count tbl x + 1) in
   Wasm_traverse.iter_locals ~read:(incr reads) ~write:(incr writes) instrs;
-  let env = { in_try = false; reads; writes; removed = Var.Hashtbl.create 16 } in
+  let local_types = Var.Hashtbl.create 64 in
+  List.iter ~f:(fun (x, typ) -> Var.Hashtbl.replace local_types x typ) (params @ locals);
+  let env =
+    { constant_global
+    ; local_types
+    ; in_try = false
+    ; reads
+    ; writes
+    ; removed = Var.Hashtbl.create 16
+    }
+  in
   let instrs =
     match instrs with
     | (W.Event _ as ev) :: rest ->
