@@ -204,6 +204,10 @@ function caml_bytes_get16(s, i) {
 //Provides: caml_bytes_get16u
 //Requires: caml_bytes_unsafe_get
 function caml_bytes_get16u(s, i) {
+  if (s.t === 4 /* ARRAY */) {
+    var a = s.c;
+    return a[i] | (a[i + 1] << 8);
+  }
   var b1 = caml_bytes_unsafe_get(s, i),
     b2 = caml_bytes_unsafe_get(s, i + 1);
   return (b2 << 8) | b1;
@@ -239,6 +243,10 @@ function caml_bytes_get32(s, i) {
 //Provides: caml_bytes_get32u
 //Requires: caml_bytes_unsafe_get
 function caml_bytes_get32u(s, i) {
+  if (s.t === 4 /* ARRAY */) {
+    var a = s.c;
+    return a[i] | (a[i + 1] << 8) | (a[i + 2] << 16) | (a[i + 3] << 24);
+  }
   var b1 = caml_bytes_unsafe_get(s, i),
     b2 = caml_bytes_unsafe_get(s, i + 1),
     b3 = caml_bytes_unsafe_get(s, i + 2),
@@ -276,8 +284,16 @@ function caml_bytes_get64(s, i) {
 
 //Provides: caml_bytes_get64u
 //Requires: caml_bytes_unsafe_get
-//Requires: caml_int64_of_bytes
+//Requires: caml_int64_of_bytes, MlInt64
 function caml_bytes_get64u(s, i) {
+  if (s.t === 4 /* ARRAY */) {
+    var b = s.c;
+    return new MlInt64(
+      b[i] | (b[i + 1] << 8) | (b[i + 2] << 16),
+      b[i + 3] | (b[i + 4] << 8) | (b[i + 5] << 16),
+      b[i + 6] | (b[i + 7] << 8),
+    );
+  }
   var a = new Array(8);
   for (var j = 0; j < 8; j++) {
     a[7 - j] = caml_bytes_unsafe_get(s, i + j);
@@ -326,13 +342,18 @@ function caml_bytes_set16(s, i, i16) {
   return caml_bytes_set16u(s, i, i16);
 }
 
+// Multi-byte writes switch to the array representation right away: the
+// string representation only pays off for buffers filled sequentially
+// and never read back, while appending to it is slow for buffers that
+// are also read, such as the scratch buffers of hash functions.
+
 //Provides: caml_bytes_set16u
-//Requires: caml_bytes_unsafe_set
+//Requires: caml_convert_bytes_to_array
 function caml_bytes_set16u(s, i, i16) {
-  var b2 = 0xff & (i16 >> 8),
-    b1 = 0xff & i16;
-  caml_bytes_unsafe_set(s, i + 0, b1);
-  caml_bytes_unsafe_set(s, i + 1, b2);
+  if (s.t !== 4 /* ARRAY */) caml_convert_bytes_to_array(s);
+  var a = s.c;
+  a[i] = i16;
+  a[i + 1] = i16 >> 8;
   return 0;
 }
 
@@ -345,16 +366,14 @@ function caml_bytes_set32(s, i, i32) {
 }
 
 //Provides: caml_bytes_set32u
-//Requires: caml_bytes_unsafe_set
+//Requires: caml_convert_bytes_to_array
 function caml_bytes_set32u(s, i, i32) {
-  var b4 = 0xff & (i32 >> 24),
-    b3 = 0xff & (i32 >> 16),
-    b2 = 0xff & (i32 >> 8),
-    b1 = 0xff & i32;
-  caml_bytes_unsafe_set(s, i + 0, b1);
-  caml_bytes_unsafe_set(s, i + 1, b2);
-  caml_bytes_unsafe_set(s, i + 2, b3);
-  caml_bytes_unsafe_set(s, i + 3, b4);
+  if (s.t !== 4 /* ARRAY */) caml_convert_bytes_to_array(s);
+  var a = s.c;
+  a[i] = i32;
+  a[i + 1] = i32 >> 8;
+  a[i + 2] = i32 >> 16;
+  a[i + 3] = i32 >> 24;
   return 0;
 }
 
@@ -367,13 +386,21 @@ function caml_bytes_set64(s, i, i64) {
 }
 
 //Provides: caml_bytes_set64u
-//Requires: caml_bytes_unsafe_set
-//Requires: caml_int64_to_bytes
+//Requires: caml_convert_bytes_to_array
 function caml_bytes_set64u(s, i, i64) {
-  var a = caml_int64_to_bytes(i64);
-  for (var j = 0; j < 8; j++) {
-    caml_bytes_unsafe_set(s, i + 7 - j, a[j]);
-  }
+  if (s.t !== 4 /* ARRAY */) caml_convert_bytes_to_array(s);
+  var a = s.c,
+    lo = i64.lo,
+    mi = i64.mi,
+    hi = i64.hi;
+  a[i] = lo;
+  a[i + 1] = lo >> 8;
+  a[i + 2] = lo >> 16;
+  a[i + 3] = mi;
+  a[i + 4] = mi >> 8;
+  a[i + 5] = mi >> 16;
+  a[i + 6] = hi;
+  a[i + 7] = hi >> 8;
   return 0;
 }
 
