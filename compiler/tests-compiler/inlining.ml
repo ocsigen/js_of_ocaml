@@ -100,3 +100,42 @@ let%expect_test "function inlined both as an argument and directly" =
   print_endline
     (Str.global_replace (Str.regexp "[^ ]*js_of_ocaml\\.exe") "%{JSOO}" [%expect.output]);
   [%expect {| 012 |}]
+
+(* A function applied to itself: once its parameter is substituted by
+   the function, its body calls it again. Inlining this call must not
+   loop forever. *)
+let%expect_test "self application" =
+  let program =
+    compile_and_parse
+      {|
+    let delta (x : Obj.t) = (Obj.magic x : Obj.t -> Obj.t) x
+    let f () = delta (Obj.repr delta)
+  |}
+  in
+  print_fun_decl program (Some "f");
+  [%expect
+    {|
+           function f(param){return delta(delta);}
+           //end
+           |}]
+
+(* [r] is a parameter of the block that installs the exception handler,
+   and is also assigned in the body of the [try]: when [f] is inlined
+   with a known argument, the value of [r] in the handler is not the
+   one received from the entry of the block. The program is compiled
+   without [-g], so that [r] is not kept as a reference. *)
+let%expect_test "parameter assigned in the body of a try" =
+  compile_and_run
+    ~debug:false
+    ~flags:[ "--debug"; "invariant" ]
+    {|
+    let f x =
+      let r = ref x in
+      (try
+         r := 2;
+         if Sys.opaque_identity true then raise Exit
+       with Exit -> ());
+      !r
+    let () = print_int (f 1)
+  |};
+  [%expect {| 2 |}]
