@@ -1,0 +1,42 @@
+; Compile the compiler to JavaScript, then use it to compile a small
+; program. Some values do not have the same representation as when the
+; compiler runs natively (for instance, floats are unboxed numbers).
+
+(executable
+ (name main)
+ (modules main)
+ (modes byte))
+
+(rule
+ (target compiler.js)
+ (action
+  (run
+   %{bin:js_of_ocaml}
+   -w
+   no-missing-primitive
+   %{dep:../bin-js_of_ocaml/js_of_ocaml.bc}
+   -o
+   %{target})))
+
+(rule
+ (target main.js)
+ (enabled_if
+  (<> %{profile} quickjs))
+ (action
+  (run %{bin:node} %{dep:compiler.js} %{dep:main.bc} -o %{target})))
+
+(rule
+ (target main.out)
+ (enabled_if
+  (<> %{profile} quickjs))
+ (action
+  (with-outputs-to
+   %{target}
+   (run %{bin:node} %{dep:main.js}))))
+
+(rule
+ (alias runtest-js)
+ (enabled_if
+  (<> %{profile} quickjs))
+ (action
+  (diff main.expected main.out)))
