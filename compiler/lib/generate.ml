@@ -1691,7 +1691,8 @@ let rec translate_expr ctx loc x e level : (_ * J.statement_list) Expr_builder.t
               match cx with
               | J.EVar (J.V v) ->
                   if Var.equal v ctx.deadcode_sentinel
-                  then J.ElementHole
+                  then (* Not a hole: V8 would make the array holey *)
+                    J.Element (int 0)
                   else J.Element cx
               | _ -> J.Element cx
             in

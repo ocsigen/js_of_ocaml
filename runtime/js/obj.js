@@ -25,8 +25,8 @@ function caml_update_dummy(x, y) {
     x.fun = y;
     return 0;
   }
-  var i = y.length;
-  while (i--) x[i] = y[i];
+  var l = y.length;
+  for (var i = 0; i < l; i++) x[i] = y[i];
   return 0;
 }
 
@@ -106,22 +106,21 @@ function caml_obj_set_tag(x, tag) {
 }
 //Provides: caml_obj_block const (const,const)
 //Requires: caml_check_array_length, caml_check_float_array_length
+//Requires: caml_array_alloc_packed, caml_floatarray_alloc_packed
 function caml_obj_block(tag, size) {
   // TODO: fail for value that are not represented as an array
-  if (tag === 254) caml_check_float_array_length(size);
-  else caml_check_array_length(size);
-  var o = new Array(size + 1);
-  o[0] = tag;
-  for (var i = 1; i <= size; i++) o[i] = 0;
-  return o;
+  if (tag === 254) {
+    caml_check_float_array_length(size);
+    return caml_floatarray_alloc_packed(tag, size, 0);
+  }
+  caml_check_array_length(size);
+  return caml_array_alloc_packed(tag, size, 0);
 }
 
 //Provides: caml_obj_with_tag
 function caml_obj_with_tag(tag, x) {
-  var l = x.length;
-  var a = new Array(l);
+  var a = x.slice();
   a[0] = tag;
-  for (var i = 1; i < l; i++) a[i] = x[i];
   return a;
 }
 

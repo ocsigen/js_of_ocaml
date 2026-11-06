@@ -23,19 +23,19 @@ let%expect_test "Eliminates unused functions from functor" =
    match app with
    | Javascript.ECall (EVar (S { name = Utf8 name; _ }), _, _, _) -> (
        let _, _, body, _ = find_function program name in
+       (* Dead fields are compiled to 0. Omit them (but keep the tag) since the
+          size of the Set.S signature depends on the OCaml version. *)
        match List.rev body with
-       | (Return_statement (Some (EArr return), loc), loc') :: rest ->
-           let return =
-             ( Javascript.Return_statement
-                 ( Some
-                     (EArr
-                        (List.filter return ~f:(function
-                          | Javascript.ElementHole -> false
-                          | _ -> true)))
-                 , loc )
-             , loc' )
+       | (Return_statement (Some (EArr (tag :: fields)), loc), loc') :: rest ->
+           let fields =
+             List.filter fields ~f:(function
+               | Javascript.Element (ENum n) -> not (Javascript.Num.is_zero n)
+               | _ -> true)
            in
-           print_program (List.rev (return :: rest))
+           print_program
+             (List.rev
+                ((Javascript.Return_statement (Some (EArr (tag :: fields)), loc), loc')
+                :: rest))
        | _ -> ())
    | _ -> ());
   [%expect
@@ -86,7 +86,7 @@ let%expect_test "Eliminates unused functions from functor" =
       _c_ = 0 <= c ? r : l;
      }
     }
-    return [0, 0, add, singleton, find];
+    return [0, add, singleton, find];
     //end
     |}]
 
@@ -111,7 +111,7 @@ let%expect_test "Omit unused fields" =
     {|
     function f(b, x){
      l[1] = [0, function(y){return x + y | 0;}, l[1]];
-     var t = b ? [0, 1, , x] : [0, 3, , 4], v = t[3], u = t[1];
+     var t = b ? [0, 1, 0, x] : [0, 3, 0, 4], v = t[3], u = t[1];
      return [0, u, v];
     }
     //end

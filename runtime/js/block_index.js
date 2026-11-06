@@ -76,8 +76,7 @@ function caml_unsafe_set_idx_bytecode(base, idx, v) {
 function caml_deepen_idx_bytecode(idx_prefix, idx_suffix) {
   var prefix_depth = idx_prefix.length - 1;
   var suffix_depth = idx_suffix.length - 1;
-  var block = new Array(1 + prefix_depth + suffix_depth);
-  block[0] = 0;
+  var block = new Array(1 + prefix_depth + suffix_depth).fill(0);
   for (var i = 0; i < prefix_depth; i++) {
     block[1 + i] = idx_prefix[1 + i];
   }
