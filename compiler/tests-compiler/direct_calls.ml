@@ -103,7 +103,7 @@ let%expect_test "direct calls without --effects=cps" =
       var for$ = 0, r = [0, 0];
       for(;;){r[1]++; var _b_ = for$ + 1 | 0; if(2 === for$) break; for$ = _b_;}
       function f(x){return x + 1 | 0;}
-      return [0, , f];
+      return [0, 0, f];
      }
      var M1 = F([0]), M2 = F([0]), _b_ = M2[2].call(null, 2);
      return [0, M1[2].call(null, 1), _b_];
@@ -114,7 +114,7 @@ let%expect_test "direct calls without --effects=cps" =
       var for$ = 0, r = [0, 0];
       for(;;){r[1]++; var _b_ = for$ + 1 | 0; if(2 === for$) break; for$ = _b_;}
       function f(x){return caml_call2(Stdlib_Printf[2], _a_, x);}
-      return [0, , f];
+      return [0, 0, f];
      }
      var M1 = F([0]), M2 = F([0]);
      M1[2].call(null, 1);
@@ -221,7 +221,7 @@ let%expect_test "direct calls with --effects=cps" =
       var for$ = 0, r = [0, 0];
       for(;;){r[1]++; var _b_ = for$ + 1 | 0; if(2 === for$) break; for$ = _b_;}
       function f(x){return x + 1 | 0;}
-      return [0, , f];
+      return [0, 0, f];
      }
      var M1 = F(), M2 = F(), _b_ = M2[2].call(null, 2);
      return cont([0, M1[2].call(null, 1), _b_]);
@@ -234,7 +234,7 @@ let%expect_test "direct calls with --effects=cps" =
       function f(x, cont){
        return caml_trampoline_cps_call3(Stdlib_Printf[2], _a_, x, cont);
       }
-      return [0, , f];
+      return [0, 0, f];
      }
      var M1 = F(), M2 = F();
      return caml_exact_trampoline_cps_call
