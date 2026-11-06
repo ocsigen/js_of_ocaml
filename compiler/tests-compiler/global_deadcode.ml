@@ -19,24 +19,10 @@ let%expect_test "Eliminates unused functions from functor" =
   in
   let app = find_variable program "String_set" in
   (let open Js_of_ocaml_compiler in
-   let open Stdlib in
    match app with
-   | Javascript.ECall (EVar (S { name = Utf8 name; _ }), _, _, _) -> (
+   | Javascript.ECall (EVar (S { name = Utf8 name; _ }), _, _, _) ->
        let _, _, body, _ = find_function program name in
-       match List.rev body with
-       | (Return_statement (Some (EArr return), loc), loc') :: rest ->
-           let return =
-             ( Javascript.Return_statement
-                 ( Some
-                     (EArr
-                        (List.filter return ~f:(function
-                          | Javascript.ElementHole -> false
-                          | _ -> true)))
-                 , loc )
-             , loc' )
-           in
-           print_program (List.rev (return :: rest))
-       | _ -> ())
+       print_program body
    | _ -> ());
   [%expect
     {|
@@ -86,7 +72,7 @@ let%expect_test "Eliminates unused functions from functor" =
       _c_ = 0 <= c ? r : l;
      }
     }
-    return [0, 0, add, singleton, find];
+    return [0, 0, add, singleton, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, find];
     //end
     |}]
 
@@ -111,7 +97,7 @@ let%expect_test "Omit unused fields" =
     {|
     function f(b, x){
      l[1] = [0, function(y){return x + y | 0;}, l[1]];
-     var t = b ? [0, 1, , x] : [0, 3, , 4], v = t[3], u = t[1];
+     var t = b ? [0, 1, 0, x] : [0, 3, 0, 4], v = t[3], u = t[1];
      return [0, u, v];
     }
     //end
