@@ -106,15 +106,14 @@ var re_match = (function () {
 
     var accept = function () {
       groups[0].end = pos;
-      var result = new Array(1 + groups.length * 2);
-      result[0] = 0; // tag
+      var result = new Array(1 + groups.length * 2).fill(0); // tag 0
       for (var i = 0; i < groups.length; i++) {
         var g = groups[i];
         if (g.start < 0 || g.end < 0 || g.start > g.end) {
           g.start = g.end = -1;
         }
         result[2 * i + 1] = g.start;
-        result[2 * i + 1 + 1] = g.end;
+        result[2 * i + 2] = g.end;
       }
       return result;
     };

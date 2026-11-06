@@ -48,14 +48,40 @@ function caml_check_concat_length(len, isfloat) {
     caml_invalid_argument("Array.concat");
 }
 
+//Provides: caml_array_alloc_packed
+// Allocate a block with the given tag and len fields, all set to init.
+// Unlike new Array(n), this produces a packed (non-holey) array: V8 tracks
+// the elements kind of array literals, and holey arrays reaching the same
+// store sites as packed ones end up making block literals holey as well,
+// which causes polymorphism and deoptimizations.
+function caml_array_alloc_packed(tag, len, init) {
+  // Filling the whole array makes it packed. Unlike pushing elements one
+  // at a time, this does not allocate a larger backing store.
+  var b = new Array(len + 1).fill(init);
+  b[0] = tag;
+  return b;
+}
+
+//Provides: caml_floatarray_alloc_packed
+// Same as caml_array_alloc_packed, for float arrays: the array is created
+// with double elements from the start, to avoid an elements kind transition
+// (and a copy) when the first float is stored.
+function caml_floatarray_alloc_packed(tag, len, init) {
+  // Filling the whole array makes it packed; -0 is not a small integer,
+  // so the array gets double elements
+  var b = new Array(len + 1).fill(-0);
+  b[0] = tag;
+  for (var i = 1; i <= len; i++) b[i] = init;
+  return b;
+}
+
 //Provides: caml_array_sub mutable
 //Alias: caml_array_sub_local
 function caml_array_sub(a, i, len) {
-  var a2 = new Array(len + 1);
+  // Slicing preserves the elements kind of the array; the element at
+  // index i is overwritten by the tag
+  var a2 = a.slice(i, i + len + 1);
   a2[0] = 0;
-  for (var i2 = 1, i1 = i + 1; i2 <= len; i2++, i1++) {
-    a2[i2] = a[i1];
-  }
   return a2;
 }
 
@@ -84,12 +110,10 @@ function caml_array_append(a1, a2) {
     l2 = a2.length;
   var l = l1 + l2 - 1;
   caml_check_concat_length(l - 1, TAG(a1) === 254 || TAG(a2) === 254);
-  var a = new Array(l);
+  // Concatenating preserves the elements kind and allocates the result
+  // with its final size
+  var a = a1.concat(a2.slice(1));
   a[0] = 0;
-  var i = 1,
-    j = 1;
-  for (; i < l1; i++) a[i] = a1[i];
-  for (; i < l; i++, j++) a[i] = a2[j];
   return a;
 }
 
@@ -121,10 +145,13 @@ function caml_array_concat(l) {
     if (TAG(b) === 254) isfloat = true;
   }
   caml_check_concat_length(len, isfloat);
-  var a = [0];
+  // Allocate the result with its final size; -0 gives it double elements
+  var a = new Array(len + 1).fill(isfloat ? -0 : 0);
+  a[0] = 0;
+  var j = 1;
   while (l !== 0) {
     var b = l[1];
-    for (var i = 1; i < b.length; i++) a.push(b[i]);
+    for (var i = 1; i < b.length; i++) a[j++] = b[i];
     l = l[2];
   }
   return a;
@@ -146,10 +173,11 @@ function caml_uniform_array_concat(l) {
   var len = 0;
   for (var l0 = l; l0 !== 0; l0 = l0[2]) len += l0[1].length - 1;
   caml_check_concat_length(len, false);
-  var a = [0];
+  var a = new Array(len + 1).fill(0);
+  var j = 1;
   while (l !== 0) {
     var b = l[1];
-    for (var i = 1; i < b.length; i++) a.push(b[i]);
+    for (var i = 1; i < b.length; i++) a[j++] = b[i];
     l = l[2];
   }
   return a;
@@ -239,14 +267,19 @@ function caml_check_bound(array, index) {
 }
 
 //Provides: caml_array_make const (const, mutable)
-//Requires: caml_invalid_argument, caml_max_array_length
+//Requires: caml_invalid_argument, caml_max_array_length, caml_array_alloc_packed
 function caml_array_make(len, init) {
   if (len >>> 0 > caml_max_array_length) caml_invalid_argument("Array.make");
-  var len = (len + 1) | 0;
-  var b = new Array(len);
-  b[0] = 0;
-  for (var i = 1; i < len; i++) b[i] = init;
-  return b;
+  return caml_array_alloc_packed(0, len, init);
+}
+
+//Provides: caml_array_make_float const (const, const)
+//Requires: caml_invalid_argument, caml_max_array_length
+//Requires: caml_floatarray_alloc_packed
+// Array.make with an initial value known to be a float (see Specialize_js)
+function caml_array_make_float(len, init) {
+  if (len >>> 0 > caml_max_array_length) caml_invalid_argument("Array.make");
+  return caml_floatarray_alloc_packed(0, len, init);
 }
 
 //Provides: caml_make_vect const (const, mutable)
@@ -256,68 +289,48 @@ function caml_make_vect(len, init) {
 }
 
 //Provides: caml_make_float_vect const (const)
-//Requires: caml_invalid_argument, caml_max_float_array_length
+//Requires: caml_invalid_argument, caml_max_float_array_length, caml_floatarray_alloc_packed
 function caml_make_float_vect(len) {
   if (len >>> 0 > caml_max_float_array_length)
     caml_invalid_argument("Float.Array.create");
-  var len = (len + 1) | 0;
-  var b = new Array(len);
-  b[0] = len > 1 ? 254 : 0;
-  for (var i = 1; i < len; i++) b[i] = 0;
-  return b;
+  return caml_floatarray_alloc_packed(len > 0 ? 254 : 0, len, 0);
 }
 
 //Provides: caml_array_create_float const (const)
-//Requires: caml_invalid_argument, caml_max_float_array_length
+//Requires: caml_invalid_argument, caml_max_float_array_length, caml_floatarray_alloc_packed
 //Version: >= 5.3
 function caml_array_create_float(len) {
   if (len >>> 0 > caml_max_float_array_length)
     caml_invalid_argument("Float.Array.create");
-  var len = (len + 1) | 0;
-  var b = new Array(len);
-  b[0] = len > 1 ? 254 : 0;
-  for (var i = 1; i < len; i++) b[i] = 0;
-  return b;
+  return caml_floatarray_alloc_packed(len > 0 ? 254 : 0, len, 0);
 }
 
 //Provides: caml_array_create_float const (const)
-//Requires: caml_invalid_argument, caml_max_float_array_length
+//Requires: caml_invalid_argument, caml_max_float_array_length, caml_floatarray_alloc_packed
 //Version: >= 5.2, < 5.3
 //If: oxcaml
 function caml_array_create_float(len) {
   if (len >>> 0 > caml_max_float_array_length)
     caml_invalid_argument("Float.Array.create");
-  var len = (len + 1) | 0;
-  var b = new Array(len);
-  b[0] = len > 1 ? 254 : 0;
-  for (var i = 1; i < len; i++) b[i] = 0;
-  return b;
+  return caml_floatarray_alloc_packed(len > 0 ? 254 : 0, len, 0);
 }
 
 //Provides: caml_floatarray_create const (const)
-//Requires: caml_invalid_argument, caml_max_float_array_length
+//Requires: caml_invalid_argument, caml_max_float_array_length, caml_floatarray_alloc_packed
 //Alias: caml_floatarray_create_local
 function caml_floatarray_create(len) {
   if (len >>> 0 > caml_max_float_array_length)
     caml_invalid_argument("Float.Array.create");
-  var len = (len + 1) | 0;
-  var b = new Array(len);
-  b[0] = len > 1 ? 254 : 0;
-  for (var i = 1; i < len; i++) b[i] = 0;
-  return b;
+  return caml_floatarray_alloc_packed(len > 0 ? 254 : 0, len, 0);
 }
 
 //Provides: caml_floatarray_make const (const)
-//Requires: caml_invalid_argument, caml_max_float_array_length
+//Requires: caml_invalid_argument, caml_max_float_array_length, caml_floatarray_alloc_packed
 //Version: >= 5.3
 function caml_floatarray_make(len, init) {
   if (len >>> 0 > caml_max_float_array_length)
     caml_invalid_argument("Array.make");
-  var len = (len + 1) | 0;
-  var b = new Array(len);
-  b[0] = len > 1 ? 254 : 0;
-  for (var i = 1; i < len; i++) b[i] = init;
-  return b;
+  return caml_floatarray_alloc_packed(len > 0 ? 254 : 0, len, init);
 }
 
 //Provides: caml_floatarray_make_unboxed const (const)

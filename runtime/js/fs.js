@@ -334,8 +334,7 @@ function caml_sys_filepath_exists(name) {
 function caml_sys_read_directory(name) {
   var root = resolve_fs_device(name);
   var a = root.device.readdir(root.rest);
-  var l = new Array(a.length + 1);
-  l[0] = 0;
+  var l = new Array(a.length + 1).fill(0);
   for (var i = 0; i < a.length; i++) l[i + 1] = caml_string_of_jsstring(a[i]);
   return l;
 }

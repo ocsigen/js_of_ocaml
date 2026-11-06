@@ -70,6 +70,7 @@ Unused
 -------
 
 From +array.js:
+caml_array_make_float
 caml_check_bound
 
 From +bigarray.js:
