@@ -286,7 +286,7 @@ var caml_custom_ops = {
 //Requires: caml_float_of_bytes, caml_custom_ops, caml_max_float_array_length
 //Requires: UInt8ArrayReader
 //Requires: caml_decompress_input
-//Requires: caml_set_oo_id
+//Requires: caml_set_oo_id, caml_floatarray_alloc_packed
 function caml_input_value_from_reader(reader) {
   function readvlq(overflow) {
     var c = reader.read8u();
@@ -338,6 +338,26 @@ function caml_input_value_from_reader(reader) {
   if (header_len !== reader.i - old_pos) {
     caml_failwith("caml_input_value_from_reader: invalid header");
   }
+  // Allocate blocks with their final size: growing them field by field
+  // would allocate larger backing stores
+  function alloc_block(tag, size) {
+    switch (size) {
+      case 1:
+        return [tag, 0];
+      case 2:
+        return [tag, 0, 0];
+      case 3:
+        return [tag, 0, 0, 0];
+      case 4:
+        return [tag, 0, 0, 0, 0];
+      case 5:
+        return [tag, 0, 0, 0, 0, 0];
+      default:
+        var v = new Array(size + 1).fill(0);
+        v[0] = tag;
+        return v;
+    }
+  }
   var stack = [];
   var objects = [];
   var intern_obj_table = num_objects > 0 ? [] : null;
@@ -355,11 +375,11 @@ function caml_input_value_from_reader(reader) {
       if (code >= 0x80 /*cst.PREFIX_SMALL_BLOCK*/) {
         var tag = code & 0xf;
         var size = (code >> 4) & 0x7;
-        var v = [HEADER(tag, reserved)];
-        if (size === 0) return v;
+        if (size === 0) return [HEADER(tag, reserved)];
+        var v = alloc_block(HEADER(tag, reserved), size);
         if (intern_obj_table) intern_obj_table[obj_counter++] = v;
         if (tag === 248) objects.push(v);
-        stack.push(v, size);
+        stack.push(v, 1, size);
         return v;
       } else return code & 0x3f;
     } else {
@@ -396,11 +416,11 @@ function caml_input_value_from_reader(reader) {
             var tag = header & 0xff;
             // unsigned: bit 31 of the header is set for sizes >= 2^21
             var size = header >>> 10;
-            var v = [HEADER(tag, reserved)];
-            if (size === 0) return v;
+            if (size === 0) return [HEADER(tag, reserved)];
+            var v = alloc_block(HEADER(tag, reserved), size);
             if (intern_obj_table) intern_obj_table[obj_counter++] = v;
             if (tag === 248) objects.push(v);
-            stack.push(v, size);
+            stack.push(v, 1, size);
             return v;
           case 0x13: //cst.CODE_BLOCK64:
             caml_failwith("input_value: data block too large");
@@ -429,8 +449,7 @@ function caml_input_value_from_reader(reader) {
             return v;
           case 0x0e: //cst.CODE_DOUBLE_ARRAY8_LITTLE:
             var len = reader.read8u();
-            var v = new Array(len + 1);
-            v[0] = HEADER(254, reserved);
+            var v = caml_floatarray_alloc_packed(HEADER(254, reserved), len, 0);
             var t = new Array(8);
             if (intern_obj_table) intern_obj_table[obj_counter++] = v;
             for (var i = 1; i <= len; i++) {
@@ -440,8 +459,7 @@ function caml_input_value_from_reader(reader) {
             return v;
           case 0x0d: //cst.CODE_DOUBLE_ARRAY8_BIG:
             var len = reader.read8u();
-            var v = new Array(len + 1);
-            v[0] = HEADER(254, reserved);
+            var v = caml_floatarray_alloc_packed(HEADER(254, reserved), len, 0);
             var t = new Array(8);
             if (intern_obj_table) intern_obj_table[obj_counter++] = v;
             for (var i = 1; i <= len; i++) {
@@ -455,8 +473,7 @@ function caml_input_value_from_reader(reader) {
               caml_failwith(
                 "input_value: object too large to be read back on a 32-bit platform",
               );
-            var v = new Array(len + 1);
-            v[0] = HEADER(254, reserved);
+            var v = caml_floatarray_alloc_packed(HEADER(254, reserved), len, 0);
             if (intern_obj_table) intern_obj_table[obj_counter++] = v;
             var t = new Array(8);
             for (var i = 1; i <= len; i++) {
@@ -470,8 +487,7 @@ function caml_input_value_from_reader(reader) {
               caml_failwith(
                 "input_value: object too large to be read back on a 32-bit platform",
               );
-            var v = new Array(len + 1);
-            v[0] = HEADER(254, reserved);
+            var v = caml_floatarray_alloc_packed(HEADER(254, reserved), len, 0);
             if (intern_obj_table) intern_obj_table[obj_counter++] = v;
             var t = new Array(8);
             for (var i = 1; i <= len; i++) {
@@ -541,9 +557,9 @@ function caml_input_value_from_reader(reader) {
   var res = intern_rec(reader);
   while (stack.length > 0) {
     var size = stack.pop();
+    var d = stack.pop();
     var v = stack.pop();
-    var d = v.length;
-    if (d < size) stack.push(v, size);
+    if (d < size) stack.push(v, d + 1, size);
     v[d] = intern_rec(reader);
   }
   while (objects.length > 0) {

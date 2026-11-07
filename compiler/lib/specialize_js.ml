@@ -47,6 +47,17 @@ let specialize_instr opt_count ~target info i =
           incr opt_count;
           Let (x, Constant (String (Targetint.to_string i)))
       | None -> i)
+  | ( Let (x, Prim (Extern (("caml_make_vect" | "caml_array_make"), _), [ y; z ]))
+    , `JavaScript ) -> (
+      (* Allocate float arrays with double elements from the start: with V8,
+         storing a float into an array of small integers requires converting
+         (and copying) the whole array. *)
+      let eq e1 e2 = Option.value ~default:false (Constant.ocaml_equal e1 e2) in
+      match the_const_of ~eq info z with
+      | Some (Float _) ->
+          incr opt_count;
+          Let (x, Prim (Extern ("caml_array_make_float", None), [ y; z ]))
+      | _ -> i)
   (* inline the String constant argument so that generate.ml can attempt to parse it *)
   | ( Let
         ( x

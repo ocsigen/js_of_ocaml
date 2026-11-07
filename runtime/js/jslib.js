@@ -278,9 +278,8 @@ function caml_js_from_array(a) {
 function caml_js_to_array(a) {
   var len = a.length;
   caml_check_array_length(len);
-  var b = new Array(len + 1);
-  b[0] = 0;
-  for (var i = 0; i < len; i++) b[i + 1] = a[i];
+  var b = [0];
+  for (var i = 0; i < len; i++) b.push(a[i]);
   return b;
 }
 
