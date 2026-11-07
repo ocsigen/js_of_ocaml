@@ -140,10 +140,20 @@ let measure_one param code (meas : Measure.t) spec nm cmd =
 (* Each job is a (code, meas, spec, cmd) tuple. We measure benchmark by
    benchmark, so that the variants of a benchmark are measured close in time
    and the ratios are not skewed by slow changes of the machine speed. *)
+(* The example programs need a browser (DOM): under node they fail while
+   still exiting with status 0, so we would measure how long they take to
+   crash. *)
+let browser_only = [ "boulderdash"; "cubes"; "minesweeper"; "planet" ]
+
 let measure ~param jobs =
   let jobs =
     List.map jobs ~f:(fun (code, meas, spec, cmd) ->
-        code, meas, spec, cmd, Spec.find_names ~root:code spec)
+        ( code
+        , meas
+        , spec
+        , cmd
+        , List.filter (Spec.find_names ~root:code spec) ~f:(fun nm ->
+              not (List.mem nm ~set:browser_only)) ))
   in
   let names =
     List.sort_uniq ~cmp:compare (List.concat_map jobs ~f:(fun (_, _, _, _, l) -> l))
