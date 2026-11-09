@@ -1087,10 +1087,18 @@ module DTree = struct
             ref 1
             (* default case *)
           in
+          let min_case = ref max_int and max_case = ref min_int in
           for i = 0 to array_len - 2 do
-            nbcases := !nbcases + List.length (snd array_norm.(i))
+            let l = snd array_norm.(i) in
+            nbcases := !nbcases + List.length l;
+            List.iter l ~f:(fun i ->
+                min_case := min !min_case i;
+                max_case := max !max_case i)
           done;
-          if !nbcases <= m
+          (* JavaScriptCore only uses a jump table when the case values
+             span at most 1000 (CaseBlockNode::tryTableSwitch); above that,
+             its interpreter scans the list of cases. *)
+          if !nbcases <= m && !max_case - !min_case <= 1000
           then Switch (Array.map array_norm ~f:(fun (x, l) -> l, x))
           else
             let h = (up + low) / 2 in

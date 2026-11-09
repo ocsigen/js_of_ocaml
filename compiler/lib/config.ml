@@ -185,10 +185,12 @@ module Param = struct
 
   let all () = List.map !params ~f:(fun (n, (_, d, valid)) -> n, d, valid)
 
-  (* V8 "optimize" switches with less than 128 case.
-     60 seams to perform well. *)
+  (* Large switches are split into a binary tree of smaller switches.
+     Current engines compile dense switches to jump tables, so splitting
+     does not help, except on QuickJS, which tests the cases one after the
+     other (see compiler/perf-notes/switch/README.md). *)
   let switch_max_case =
-    p ~name:"switch_size" ~desc:"set the maximum number of case in a switch" (int 60)
+    p ~name:"switch_size" ~desc:"set the maximum number of case in a switch" (int 256)
 
   let inlining_limit =
     p ~name:"inlining-limit" ~desc:"set the size limit for inlining" (int 150)
