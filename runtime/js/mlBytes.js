@@ -680,9 +680,11 @@ function caml_string_of_array(a) {
 }
 
 //Provides: caml_string_of_uint8_array
-//Requires: caml_sub_uint8_array_to_jsbytes
+//Requires: caml_sub_uint8_array_to_jsbytes, caml_invalid_argument
 //If: js-string
 function caml_string_of_uint8_array(a) {
+  if (!(a instanceof Uint8Array))
+    caml_invalid_argument("Typed_array.String.of_uint8Array");
   return caml_sub_uint8_array_to_jsbytes(a, 0, a.length);
 }
 
@@ -703,8 +705,11 @@ function caml_bytes_of_array(a) {
 }
 
 //Provides: caml_bytes_of_uint8_array
-//Requires: MlBytes
+//Requires: MlBytes, caml_invalid_argument
 function caml_bytes_of_uint8_array(a) {
+  // The array representation must be a Uint8Array
+  if (!(a instanceof Uint8Array))
+    caml_invalid_argument("Typed_array.Bytes.of_uint8Array");
   return new MlBytes(4, a, a.length);
 }
 
