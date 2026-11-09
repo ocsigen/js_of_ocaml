@@ -172,7 +172,8 @@ let rec num st d env =
         sprintf "(() => { label: { if (%s) break label; return 1 } return 2 })()" (n ())
     | 58 ->
         sprintf
-          "(() => { let i = 0; while (true) { if (i++ > %s %% 5) break } return i })()"
+          "(() => { let i = 0; while (true) { if (!(i++ <= %s %% 5)) break } return i \
+           })()"
           (paren (n ()))
     | 59 ->
         sprintf

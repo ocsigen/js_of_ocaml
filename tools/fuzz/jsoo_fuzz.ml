@@ -53,6 +53,9 @@ let () =
       let flags = ref "" in
       let pattern = ref "" in
       let ocamlc_flags = ref "" in
+      let words s = List.filter (( <> ) "") (String.split_on_char ' ' s) in
+      let js_flags = ref [] and wasm_flags = ref [] in
+      let js_options = ref [] and wasm_options = ref [] in
       let absolute f =
         if Filename.is_relative f && Filename.basename f <> f
         then Filename.concat (Sys.getcwd ()) f
@@ -66,6 +69,21 @@ let () =
           , Arg.String (fun s -> wasmoo := Some (absolute s))
           , "PATH wasm_of_ocaml compiler" )
         ; "--no-wasm", Arg.Unit (fun () -> wasmoo := None), " Only test js_of_ocaml"
+        ; ( "--no-js"
+          , Arg.Clear Harness.test_js
+          , " Only test wasm_of_ocaml (whole, separate, prims and corpus campaigns)" )
+        ; ( "--js-flags"
+          , Arg.String (fun s -> js_flags := words s)
+          , "FLAGS Flags added to every js_of_ocaml compilation" )
+        ; ( "--wasm-flags"
+          , Arg.String (fun s -> wasm_flags := words s)
+          , "FLAGS Flags added to every wasm_of_ocaml compilation" )
+        ; ( "--js-options"
+          , Arg.String (fun s -> js_options := words s)
+          , "NAMES Additional js_of_ocaml options disabled at random" )
+        ; ( "--wasm-options"
+          , Arg.String (fun s -> wasm_options := words s)
+          , "NAMES Additional wasm_of_ocaml options disabled at random" )
         ; ( "-o"
           , Arg.String (fun s -> out := absolute s)
           , "DIR Output directory (default _fuzz)" )
@@ -80,7 +98,14 @@ let () =
       Arg.current := 1;
       Arg.parse spec (fun s -> anon := absolute s :: !anon) usage;
       let anon = List.rev !anon in
-      let words s = List.filter (( <> ) "") (String.split_on_char ' ' s) in
+      (Harness.extra_flags :=
+         function
+         | Js -> !js_flags
+         | Wasm -> !wasm_flags);
+      (Harness.extra_options :=
+         function
+         | Js -> !js_options
+         | Wasm -> !wasm_options);
       if campaign = "reduce"
       then (
         match anon with

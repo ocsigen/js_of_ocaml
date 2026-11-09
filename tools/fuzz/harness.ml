@@ -167,7 +167,17 @@ let compiler config target =
   | Wasm, Some c -> c
   | Wasm, None -> assert false
 
-let targets config = if Option.is_some config.wasmoo then [ Js; Wasm ] else [ Js ]
+(* Set from the command line: [--no-js], extra flags given to every
+   compilation, and extra options disabled at random *)
+let test_js = ref true
+
+let extra_flags = ref (fun (_ : target) -> ([] : string list))
+
+let extra_options = ref (fun (_ : target) -> ([] : string list))
+
+let targets config =
+  (if !test_js then [ Js ] else [])
+  @ if Option.is_some config.wasmoo then [ Wasm ] else []
 
 let js_disable =
   [ "inline"
@@ -210,6 +220,7 @@ let random_flags ?(exclude = []) ?(p = 0.15) st target =
     | Js -> js_disable, js_enable, js_params
     | Wasm -> wasm_disable, wasm_enable, wasm_params
   in
+  let disable = disable @ !extra_options target in
   let flags = ref [ "--opt"; string_of_int (Rng.range st 1 3) ] in
   let add l = flags := !flags @ l in
   if Rng.chance st 0.6
@@ -227,7 +238,7 @@ let random_flags ?(exclude = []) ?(p = 0.15) st target =
         if Rng.chance st 0.3
         then add [ "--set"; Printf.sprintf "%s=%s" o (Rng.pick st v) ])
       params);
-  !flags
+  !flags @ !extra_flags target
 
 let effect_modes = function
   | Js -> [ "disabled"; "cps"; "double-translation" ]
@@ -313,11 +324,21 @@ let separate_cache config target effects =
 
 (* Problems found for a seed are saved in OUT/SEED/: the sources needed to
    reproduce them and report.txt *)
+(* The seeds reported on by this process. A seed can fail in several
+   configurations: the first report replaces the one of an earlier run,
+   the following ones are appended to it. *)
+let reported = Hashtbl.create 17
+
 let save_report config ~seed ~files ~report =
   let dir = Filename.concat config.out (string_of_int seed) in
   mkdir_p dir;
   List.iter (fun (name, contents) -> write_file (Filename.concat dir name) contents) files;
-  write_file (Filename.concat dir "report.txt") report
+  let file = Filename.concat dir "report.txt" in
+  if Hashtbl.mem reported seed
+  then write_file file (read_file file ^ "\n========\n\n" ^ report)
+  else (
+    Hashtbl.replace reported seed ();
+    write_file file report)
 
 let print_problem ~seed msg = Printf.printf "problem: seed %d: %s\n%!" seed msg
 

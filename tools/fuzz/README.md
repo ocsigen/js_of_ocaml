@@ -35,7 +35,14 @@ interpreter's output is compared with the oracle's.
 ## Options
 
 - `--js-of-ocaml PATH`, `--wasm-of-ocaml PATH`: the compilers to test
-  (default: the ones in `PATH`); `--no-wasm` only tests `js_of_ocaml`.
+  (default: the ones in `PATH`); `--no-wasm` only tests `js_of_ocaml`,
+  `--no-js` only tests `wasm_of_ocaml` (whole, separate, prims and
+  corpus campaigns).
+- `--js-flags FLAGS`, `--wasm-flags FLAGS`: flags added to every
+  compilation, for instance `--wasm-flags "--debug lcm-check"`.
+- `--js-options NAMES`, `--wasm-options NAMES`: options (as in
+  `--disable`) added to the ones disabled at random, to test options
+  that are not known to the fuzzer, for instance on a branch.
 - `--seed N`, `-n N`: the seeds (default 1 to 100). A seed determines
   the program and the configurations, so a problem can be reproduced by
   running the campaign with the same seed.
