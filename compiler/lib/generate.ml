@@ -1310,12 +1310,12 @@ let apply_fun_raw =
       J.EVar c, decls @ [ J.variable_declaration [ c, (J.dot f cps_field, loc) ], loc ]
     in
     let apply_directly f params =
-      (* Make sure we are performing a regular call, not a (slower)
-         method call *)
-      match f with
-      | J.EAccess _ | J.EDot _ ->
-          J.call (J.dot f (Utf8_string.of_string_exn "call")) (s_var "null" :: params) loc
-      | _ -> J.call f params loc
+      (* When [f] is a block field [M[i]], this is a method call. That
+         is fine: [f] is then a known OCaml function, which ignores
+         [this] (an unknown function is first bound to a variable, see
+         [bind]). And unlike [M[i].call(null, x)], it lets V8 inline the
+         callee (see compiler/perf-notes/call). *)
+      J.call f params loc
     in
     let has_arity closure n =
       let l = Utf8_string.of_string_exn "l" in

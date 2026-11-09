@@ -34,7 +34,7 @@
     runtime = globalThis.jsoo_runtime,
     Stdlib = runtime.caml_get_global("Stdlib");
    function f(param){
-     /*<<compiler/tests-full/m2.ml:1:11>>*/ return Stdlib[46].call(null, "") /*<<compiler/tests-full/m2.ml:1:27>>*/ ;
+     /*<<compiler/tests-full/m2.ml:1:11>>*/ return Stdlib[46]("") /*<<compiler/tests-full/m2.ml:1:27>>*/ ;
    }
     /*<<?>>*/ runtime.caml_register_global([0, f], "Shapes__M2");
    return;
@@ -54,13 +54,11 @@
     Stdlib_Random = caml_get_global("Stdlib__Random"),
     Shapes_M1 = caml_get_global("Shapes__M1");
    function f(param){
-     /*<<compiler/tests-full/m3.ml:1:14>>*/ return 1
-            < Stdlib_Random[5].call(null, 2)
+     /*<<compiler/tests-full/m3.ml:1:14>>*/ return 1 < Stdlib_Random[5](2)
             ? Shapes_M1[1]
             : function
              (a, param){
-               /*<<compiler/tests-full/m3.ml:1:59>>*/ return Shapes_M2[1].call
-                      (null, 0) /*<<compiler/tests-full/m3.ml:1:66>>*/ ;
+               /*<<compiler/tests-full/m3.ml:1:59>>*/ return Shapes_M2[1](0) /*<<compiler/tests-full/m3.ml:1:66>>*/ ;
              };
    }
    var x =  /*<<compiler/tests-full/m3.ml:3:8>>*/ f(0)(0, 0);
