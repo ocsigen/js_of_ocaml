@@ -1263,12 +1263,17 @@ let apply_fun_raw =
   let cps_field = Utf8_string.of_string_exn "cps" in
   fun ctx f params exact trampolined cps loc ->
     let apply_directly f params =
-      (* Make sure we are performing a regular call, not a (slower)
-         method call *)
       match f with
-      | J.EAccess _ | J.EDot _ ->
-          J.call (J.dot f (Utf8_string.of_string_exn "call")) (s_var "null" :: params) loc
-      | _ -> J.call f params loc
+      | (J.EAccess _ | J.EDot _) when not exact ->
+          (* [f] may be any JavaScript function, such as a browser
+             builtin that rejects an unexpected [this]: call it with
+             [this] undefined, as [caml_callN] does *)
+          J.call (J.ESeq (int 0, f)) params loc
+      | _ ->
+          (* A known OCaml function, which ignores [this]. A method call
+             [M[i](x)] lets V8 inline the callee, unlike
+             [M[i].call(null, x)] (see compiler/perf-notes/call) *)
+          J.call f params loc
     in
     let has_arity real_closure n =
       let l = Utf8_string.of_string_exn "l" in

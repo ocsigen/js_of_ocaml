@@ -47,7 +47,7 @@ let%expect_test "mutual tail recursion with --effects=double-translation" =
         caml_trampoline_return = runtime.caml_trampoline_return;
        function caml_exact_trampoline_cps_call(f, a0, a1, a2){
         return runtime.caml_stack_check_depth()
-                ? f.cps ? f.cps.call(null, a0, a1, a2) : a2(f(a0, a1))
+                ? f.cps ? f.cps(a0, a1, a2) : a2(f(a0, a1))
                 : runtime.caml_trampoline_return(f, [a0, a1, a2], 0);
        }
        function ping$1(n, acc){

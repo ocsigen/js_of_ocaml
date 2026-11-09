@@ -108,7 +108,7 @@ let%expect_test "direct calls with --effects=double-translation" =
                       ? f.cps.l
                       : f.cps.l = f.cps.length)
                     === 2
-                    ? f.cps.call(null, a0, a1)
+                    ? (0, f.cps)(a0, a1)
                     : runtime.caml_call_gen_cps(f, [a0, a1])
                   : (f.l
                       >= 0
@@ -121,7 +121,7 @@ let%expect_test "direct calls with --effects=double-translation" =
        }
        function caml_exact_trampoline_cps_call(f, a0, a1){
         return runtime.caml_stack_check_depth()
-                ? f.cps ? f.cps.call(null, a0, a1) : a1(f(a0))
+                ? f.cps ? f.cps(a0, a1) : a1(f(a0))
                 : runtime.caml_trampoline_return(f, [a0, a1], 0);
        }
        function caml_trampoline_cps_call3(f, a0, a1, a2){
@@ -132,7 +132,7 @@ let%expect_test "direct calls with --effects=double-translation" =
                       ? f.cps.l
                       : f.cps.l = f.cps.length)
                     === 3
-                    ? f.cps.call(null, a0, a1, a2)
+                    ? (0, f.cps)(a0, a1, a2)
                     : runtime.caml_call_gen_cps(f, [a0, a1, a2])
                   : (f.l
                       >= 0
@@ -145,7 +145,7 @@ let%expect_test "direct calls with --effects=double-translation" =
        }
        function caml_exact_trampoline_cps_call$0(f, a0, a1, a2){
         return runtime.caml_stack_check_depth()
-                ? f.cps ? f.cps.call(null, a0, a1, a2) : a2(f(a0, a1))
+                ? f.cps ? f.cps(a0, a1, a2) : a2(f(a0, a1))
                 : runtime.caml_trampoline_return(f, [a0, a1, a2], 0);
        }
        var
@@ -231,8 +231,8 @@ let%expect_test "direct calls with --effects=double-translation" =
          function f(x){return x + 1 | 0;}
          return [0, 0, f];
         }
-        var M1 = F(), M2 = F(), _e_ = M2[2].call(null, 2);
-        return [0, M1[2].call(null, 1), _e_];
+        var M1 = F(), M2 = F(), _e_ = M2[2](2);
+        return [0, M1[2](1), _e_];
        }
        function f(){
         function f$0(x){return caml_call2(Stdlib_Printf[2], _a_, x);}
@@ -256,8 +256,8 @@ let%expect_test "direct calls with --effects=double-translation" =
        }
        function test4$0(x){
         var F$0 = F(), M1 = F$0(), M2 = F$0();
-        M1[2].call(null, 1);
-        return M2[2].call(null, 2);
+        M1[2](1);
+        return M2[2](2);
        }
        function test4$1(x, cont){
         var F$0 = F(), M1 = F$0(), M2 = F$0();

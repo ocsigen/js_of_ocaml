@@ -105,8 +105,8 @@ let%expect_test "direct calls without --effects=cps" =
       function f(x){return x + 1 | 0;}
       return [0, 0, f];
      }
-     var M1 = F([0]), M2 = F([0]), _b_ = M2[2].call(null, 2);
-     return [0, M1[2].call(null, 1), _b_];
+     var M1 = F([0]), M2 = F([0]), _b_ = M2[2](2);
+     return [0, M1[2](1), _b_];
     }
     //end
     function test4(x){
@@ -117,8 +117,8 @@ let%expect_test "direct calls without --effects=cps" =
       return [0, 0, f];
      }
      var M1 = F([0]), M2 = F([0]);
-     M1[2].call(null, 1);
-     return M2[2].call(null, 2);
+     M1[2](1);
+     return M2[2](2);
     }
     //end
     |}]
@@ -223,8 +223,8 @@ let%expect_test "direct calls with --effects=cps" =
       function f(x){return x + 1 | 0;}
       return [0, 0, f];
      }
-     var M1 = F(), M2 = F(), _b_ = M2[2].call(null, 2);
-     return cont([0, M1[2].call(null, 1), _b_]);
+     var M1 = F(), M2 = F(), _b_ = M2[2](2);
+     return cont([0, M1[2](1), _b_]);
     }
     //end
     function test4(x, cont){
@@ -246,3 +246,26 @@ let%expect_test "direct calls with --effects=cps" =
     }
     //end
     |}]
+
+(* With [--enable callgen], calls to unknown functions check the arity
+   inline. The callee may then be any JavaScript function, so it is called
+   without receiver, as [caml_callN] does. *)
+let%expect_test "unknown calls through a block field with --enable callgen" =
+  let code =
+    compile_and_parse
+      ~flags:[ "--enable"; "callgen" ]
+      {|
+         module type S = sig val f : int -> int end
+         let test (module X : S) = X.f 1
+|}
+  in
+  print_fun_decl code (Some "test");
+  [%expect
+    {|
+           function test(X){
+            return (X[1].l >= 0 ? X[1].l : X[1].l = X[1].length) === 1
+                    ? (0, X[1])(1)
+                    : runtime.caml_call_gen(X[1], [1]);
+           }
+           //end
+           |}]
