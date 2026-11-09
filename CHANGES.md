@@ -50,6 +50,9 @@
 * Runtime/Wasm: format integers in base 8 and 16 with shifts rather than
   divisions (#2640)
 * Runtime/JS: much faster Random (#2630)
+* Compiler: call known functions stored in blocks (module fields, records
+  of closures) as `M[i](x)` rather than `M[i].call(null, x)`, which
+  prevented V8 from inlining them (#2613)
 
 ## Bug fixes
 * Runtime: accurate `Float.erf` and `Float.erfc` (ported from fdlibm), instead
