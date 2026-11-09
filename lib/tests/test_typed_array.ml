@@ -176,6 +176,33 @@ let%expect_test "uint8" =
   then print_endline "bytes from arrayBuffer not equal to bytes from of_uint8Array";
   [%expect {||}]
 
+let%expect_test "bytes and strings of a typed array other than Uint8Array" =
+  (* Rejected in JavaScript, where the array would become the bytes'
+     contents; Wasm copies the underlying bytes. *)
+  let js =
+    match Sys.backend_type with
+    | Other "js_of_ocaml" -> true
+    | _ -> false
+  in
+  let ta : uint8Array Js.t =
+    Js.Unsafe.coerce (new%js int8Array_fromArray (Js.array [| 1; -1 |]))
+  in
+  (match Typed_array.Bytes.of_uint8Array ta with
+  | exception Invalid_argument _ -> if not js then print_endline "unexpected failure"
+  | b ->
+      if js
+      then print_endline "not rejected"
+      else if Stdlib.Bytes.get_uint16_le b 0 <> 0xff01
+      then print_endline "wrong contents");
+  (match Typed_array.String.of_uint8Array ta with
+  | exception Invalid_argument _ -> if not js then print_endline "unexpected failure"
+  | s ->
+      if js
+      then print_endline "not rejected (string)"
+      else if Stdlib.String.get_uint16_le s 0 <> 0xff01
+      then print_endline "wrong contents (string)");
+  [%expect {||}]
+
 let%expect_test "int16" =
   test Setup.Int16 [| -32768; -1; 0; 1; 32767 |];
   [%expect {||}]
