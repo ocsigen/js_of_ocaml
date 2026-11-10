@@ -1,0 +1,8 @@
+; A runtime file written for the former preprocessor, as Jane Street's
+; are: conditions on [$portable-int] and [(@if ...)] around operands
+
+(tests
+ (names main)
+ (modes wasm)
+ (wasm_of_ocaml
+  (wasm_files runtime.wat)))

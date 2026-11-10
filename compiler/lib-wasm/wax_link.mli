@@ -37,7 +37,8 @@ type input =
   }
 
 val with_preprocessed_files :
-     variables:(string * value) list
+     ?specialize_conditionals:bool
+  -> variables:(string * value) list
   -> inputs:input list
   -> (Binaryen.link_input list -> 'a)
   -> 'a
@@ -48,4 +49,10 @@ val with_preprocessed_files :
     WebAssembly binary temporary file. Binary inputs are passed
     through unchanged. The resulting files are handed to [action] as
     {!Binaryen.link_input}s, suitable for our linker ({!Runtime.link}),
-    which only accepts binary inputs. *)
+    which only accepts binary inputs.
+
+    With [specialize_conditionals] (default [false]), the [(@if ...)]
+    annotations of WAT inputs are first specialized textually by
+    {!Wat_conditionals.specialize}, so that runtime files written for the
+    former wasm_of_ocaml preprocessor, such as third-party ones, are
+    accepted. *)
