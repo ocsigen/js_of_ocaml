@@ -43,6 +43,11 @@ let value_to_define (v : value) : Wax.Define.value =
   | Version (a, b, c) -> Wax.Define.Version (a, b, c)
 
 let with_preprocessed_files ~variables ~inputs action =
+  (* The OxCaml fork of wasm_of_ocaml sets [portable-int] when integers are
+     64-bit ("portable" integers), and runtime files written against the
+     fork, such as Jane Street's, test it. A Wax identifier cannot contain a
+     hyphen, so the variable is named [portable_int] here. Integers are always
+     31-bit with this compiler. *)
   let defines =
     Wax.Define.of_list
       (( "ocaml_version"
@@ -52,6 +57,7 @@ let with_preprocessed_files ~variables ~inputs action =
          | _ -> assert false )
       :: ("oxcaml", Wax.Define.Bool Config.oxcaml)
       :: ("introspect", Wax.Define.Bool Config.introspect)
+      :: ("portable_int", Wax.Define.Bool false)
       :: List.map variables ~f:(fun (k, v) -> k, value_to_define v))
   in
   (* [warn_unused] off: the same sources are assembled under several sets of
