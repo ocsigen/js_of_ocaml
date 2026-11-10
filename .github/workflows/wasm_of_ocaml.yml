@@ -17,6 +17,7 @@ jobs:
   build:
     env:
       WASM_OF_OCAML: true
+      OXCAML_OPAM_REPO_REF: b66db7ae4ad21debd1b078635cc92e88d73610f8
 
     strategy:
       # On pull requests, free the runners as soon as a job fails
@@ -51,8 +52,8 @@ jobs:
             ocaml-name: "5.6+trunk"
             ocaml-compiler: "ocaml-variants.5.6.0+trunk"
             wasi: false
-          # OxCaml 5.4 (the bytecode of the OxCaml 5.2 releases is no longer
-          # supported)
+          # OxCaml 5.4.0-ox9 (the bytecode of the OxCaml 5.2 releases is no
+          # longer supported)
           - os: ubuntu-latest
             os-name: Ubuntu
             ocaml-name: "OxCaml"
@@ -105,9 +106,12 @@ jobs:
         if: ${{ ! endsWith(matrix.ocaml-compiler, '+ox') }}
 
       - name: Set-up OxCaml ${{ matrix.ocaml-compiler }}
-        uses: ./wasm_of_ocaml/.github/actions/setup-oxcaml
+        uses: ocaml/setup-ocaml@v3
         with:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
+          opam-repositories: |
+            default: https://github.com/ocaml/opam-repository.git
+            ox: https://github.com/oxcaml/opam-repository.git#${{ env.OXCAML_OPAM_REPO_REF }}
         if: ${{ endsWith(matrix.ocaml-compiler, '+ox') }}
 
       - name: Pin ppxlib
