@@ -1270,9 +1270,11 @@ let apply_fun_raw =
              [this] undefined, as [caml_callN] does *)
           J.call (J.ESeq (int 0, f)) params loc
       | _ ->
-          (* A known OCaml function, which ignores [this]. A method call
-             [M[i](x)] lets V8 inline the callee, unlike
-             [M[i].call(null, x)] (see compiler/perf-notes/call) *)
+          (* A known OCaml function, which ignores [this]. Functions
+             loaded from a block are usually bound to a variable first
+             (see [translate_expr]); a method call [M[i](x)] would also
+             let V8 inline the callee, unlike [M[i].call(null, x)]
+             (see compiler/perf-notes/call) *)
           J.call f params loc
     in
     let has_arity real_closure n =
@@ -1679,14 +1681,25 @@ let keep_name x = not (Code.Var.generated_name x)
 let rec translate_expr ctx loc x e level : (_ * J.statement_list) Expr_builder.t =
   let open Expr_builder in
   match e with
-  | Apply { f; args; exact } ->
+  | Apply { f; args; exact } -> (
       let trampolined = Var.Set.mem x ctx.Ctx.trampolined_calls in
       let args = remove_unused_tail_args ctx exact trampolined args in
       let* () = info ~need_loc:true mutator_p in
       let in_cps = Var.Set.mem x ctx.Ctx.in_cps in
       let* args = list_map (access ~ctx) args in
-      let* f = access ~ctx f in
-      return (apply_fun ctx f args exact trampolined in_cps loc, [])
+      let* cf = access ~ctx f in
+      match cf with
+      | (J.EAccess _ | J.EDot _)
+        when Config.Flag.inline_callgen () || (exact && not trampolined) ->
+          (* A function loaded from a block (a module field, a record of
+             closures) and called directly: bind it to a variable and
+             call it as [f(x)] rather than as a method [M[i](x)] (see
+             compiler/perf-notes/call) *)
+          let* loc' = statement_loc loc in
+          return
+            ( apply_fun ctx (J.EVar (J.V f)) args exact trampolined in_cps loc
+            , [ J.variable_declaration [ J.V f, (cf, loc') ], loc' ] )
+      | _ -> return (apply_fun ctx cf args exact trampolined in_cps loc, []))
   | Block (tag, a, array_or_not, _mut, desc) ->
       let* contents =
         list_map

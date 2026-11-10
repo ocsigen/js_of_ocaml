@@ -26,9 +26,10 @@ times over), it was close to 8% faster on his machine. It mostly matters for sep
 whole-program compilation, module fields are usually bound to variables
 and called directly (see the counts below).
 
-Since #2613, such calls are emitted as `Stdlib[28](a, b)`. With `--enable
-callgen`, calls to unknown functions also check the arity inline, and
-their direct branch is emitted as `(0, M[i])(a, b)`, see Semantics below.
+Since #2613, the function is bound to a variable and called directly,
+`var f = Stdlib[28]; f(a, b)`. The same applies with `--enable callgen`,
+where calls to unknown functions check the arity inline. See "Binding the
+function first" and Semantics below.
 
 ## V8 mechanism
 
@@ -138,12 +139,39 @@ not one of 1 to 2%. They do not say what the 2024 measurement saw: it
 compared code produced by the compiler of that time, from OCaml 4.14
 bytecode.
 
+### Binding the function first
+
+#2613 also binds a function loaded from a block to a variable before
+calling it, `var f = M[1]; f(…)`, when the call is direct (exact, or with
+`--enable callgen`). Calls through `caml_callN` are left alone, since the
+function is only an argument there. Measured on the V8 used by
+bench.ci.dev (node 24.0.0-v8-canary2025030537242e55ac), with interleaved
+runs; ratio is the median of the per-round ratios:
+
+| benchmark | rounds | baseline | plain `M[1](…)` | bound `f(…)` |
+|---|---:|---|---|---|
+| ocamlc, whole-program, `--opt 2` | 15 | `.call(null` 11.79 s | −0.7% (faster in 13/15) | −1.1% (10/15) ¹ |
+| ocamlc, separate | 11 | plain 13.93 s | — | 0.0% (5/11) ¹ |
+| bin_prot, separate | 11 | plain 6.17 s | — | +1.6% (2/11) |
+
+¹ Measured with a variant that also bound the functions passed to
+`caml_callN`. That variant was 3.9% and 1.7% faster than plain on
+bin_prot in two runs of 11 rounds; restricting it to direct calls, as
+committed, removed the difference.
+
+Binding costs a variable per call site. Separately compiled (stdlib,
+compiler-libs, unix, Base, Bin_prot, digestif and their dependencies),
+the code is 922.8 KB gzipped, against 902.7 KB with plain calls (+2.2%)
+and 908.0 KB with `.call(null` (+1.6%). Whole-program ocamlc grows by
+0.3% gzipped. No measured benchmark got faster from the binding itself.
+
 ### Semantics
 
 The receiver is only observable by a function that reads `this`.
 Exact calls only target known OCaml functions, which do not, unless
 they use `Js.Unsafe.js_expr "this"`; such a function used to see `null`
-and now sees the block.
+and now sees `undefined`, since the function is called through a
+variable.
 
 Calls to unknown functions go through `caml_callN` by default. When the
 arity matches, it calls a local variable (`f(a0)`), so `this` is
@@ -151,8 +179,9 @@ arity matches, it calls a local variable (`f(a0)`), so `this` is
 they check the arity inline instead, and the callee may be any JavaScript
 function typed as an OCaml function, for instance a browser builtin
 obtained with `Js.Unsafe.js_expr`. Browser builtins can reject a receiver
-of the wrong type, so this branch uses `(0, M[i])(…)`, which passes `this`
-undefined, as `caml_callN` does. A test (a JavaScript function returning a description of
+of the wrong type, so these calls must pass `this` undefined, as
+`caml_callN` does: the function is bound to a variable, or, if it was not,
+called as `(0, M[i])(…)`. A test (a JavaScript function returning a description of
 `this`, stored in a functor result) prints `undefined` with and without
 `--enable callgen`.
 
@@ -165,5 +194,6 @@ inlining (`--no-turbo-inlining`, or the lower tiers), it is still 32% to
 is 4.6% faster, and nothing got slower beyond noise. The 8% gain once
 measured for `.call(null, …)` on whole-program ocamlc does not reproduce
 with the current compiler (within ±2% on node 20, 22 and 25). Changed in #2613:
-exact calls are plain calls, and calls with an inline arity check use
-`(0, f)(…)`.
+direct calls bind the function to a variable and call it, `f(…)`. The
+binding itself was not measured to be faster than `M[i](…)`, and costs
+about 2% of gzipped size in separate compilation.
