@@ -173,7 +173,7 @@ function caml_sys_unsafe_getenv(name) {
   return caml_sys_getenv(name);
 }
 
-//Provides: caml_argv
+//Provides: caml_argv mutable
 //Requires: caml_string_of_jsstring
 var caml_argv = (function () {
   var process = globalThis.process;
