@@ -33,7 +33,7 @@
 // that pointers should generally be safe to create and manipulate, and the
 // only points of unsafety should be reads and writes.
 
-//Provides: caml_unsafe_get_idx_bytecode mutable (mutable, const)
+//Provides: caml_unsafe_get_idx_bytecode (mutable, const)
 //Requires: caml_invalid_argument
 //Version: >= 5.2
 //If: oxcaml
