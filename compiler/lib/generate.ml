@@ -1261,7 +1261,13 @@ let parallel_renaming ctx loc back_edge params args continuation queue =
 
 let apply_fun_raw =
   let cps_field = Utf8_string.of_string_exn "cps" in
-  fun ctx f params exact trampolined cps loc ->
+  fun ?cps_closure ctx f params exact trampolined cps loc ->
+    (* [cps_closure], when given, holds [f.cps] *)
+    let cps_closure =
+      match cps_closure with
+      | Some c -> c
+      | None -> J.EDot (f, J.ANormal, cps_field)
+    in
     let apply_directly f params =
       match f with
       | (J.EAccess _ | J.EDot _) when not exact ->
@@ -1308,7 +1314,7 @@ let apply_fun_raw =
         match Config.effects () with
         | `Double_translation when cps ->
             (* Effects enabled, CPS version, not single-version *)
-            J.EDot (f, J.ANormal, cps_field)
+            cps_closure
         | `Cps | `Double_translation | `Disabled -> f
         | `Jspi | `Native -> assert false
       in
@@ -1342,7 +1348,7 @@ let apply_fun_raw =
                 , J.call k [ apply_directly f direct_params ] J.N
                 , call_gen ~cps:true params )
           in
-          J.ECond (J.EDot (f, J.ANormal, cps_field), apply ~cps:true f params, direct)
+          J.ECond (cps_closure, apply ~cps:true f params, direct)
       | `Double_translation | `Cps | `Disabled -> apply ~cps f params
       | `Jspi | `Native -> assert false
     in
@@ -1373,14 +1379,37 @@ let generate_apply_fun ctx { arity; exact; trampolined; in_cps } =
   in
   let f' = J.EVar f in
   let params' = List.map params ~f:(fun x -> J.EVar x) in
+  let bind_cps, cps_closure =
+    match Config.effects () with
+    | `Double_translation when in_cps ->
+        (* Read [f.cps] once *)
+        let c = J.V (Var.fresh_n "c") in
+        ( [ ( J.variable_declaration
+                [ c, (J.EDot (f', J.ANormal, Utf8_string.of_string_exn "cps"), J.N) ]
+            , J.N )
+          ]
+        , Some (J.EVar c) )
+    | _ -> [], None
+  in
   J.EFun
     ( None
     , J.fun_
         (f :: params)
-        [ ( J.Return_statement
-              (Some (apply_fun_raw ctx f' params' exact trampolined in_cps J.N), J.N)
-          , J.N )
-        ]
+        (bind_cps
+        @ [ ( J.Return_statement
+                ( Some
+                    (apply_fun_raw
+                       ?cps_closure
+                       ctx
+                       f'
+                       params'
+                       exact
+                       trampolined
+                       in_cps
+                       J.N)
+                , J.N )
+            , J.N )
+          ])
         J.N )
 
 let apply_fun ctx f params exact trampolined in_cps loc =

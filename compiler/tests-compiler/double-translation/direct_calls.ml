@@ -101,14 +101,15 @@ let%expect_test "direct calls with --effects=double-translation" =
                 : runtime.caml_call_gen(f, [a0, a1]);
        }
        function caml_trampoline_cps_call2(f, a0, a1){
+        var c = f.cps;
         return runtime.caml_stack_check_depth()
-                ? f.cps
-                  ? (f.cps.l
+                ? c
+                  ? (c.l
                       >= 0
-                      ? f.cps.l
-                      : f.cps.l = f.cps.length)
+                      ? c.l
+                      : c.l = c.length)
                     === 2
-                    ? (0, f.cps)(a0, a1)
+                    ? c(a0, a1)
                     : runtime.caml_call_gen_cps(f, [a0, a1])
                   : (f.l
                       >= 0
@@ -120,19 +121,21 @@ let%expect_test "direct calls with --effects=double-translation" =
                 : runtime.caml_trampoline_return(f, [a0, a1], 0);
        }
        function caml_exact_trampoline_cps_call(f, a0, a1){
+        var c = f.cps;
         return runtime.caml_stack_check_depth()
-                ? f.cps ? f.cps(a0, a1) : a1(f(a0))
+                ? c ? c(a0, a1) : a1(f(a0))
                 : runtime.caml_trampoline_return(f, [a0, a1], 0);
        }
        function caml_trampoline_cps_call3(f, a0, a1, a2){
+        var c = f.cps;
         return runtime.caml_stack_check_depth()
-                ? f.cps
-                  ? (f.cps.l
+                ? c
+                  ? (c.l
                       >= 0
-                      ? f.cps.l
-                      : f.cps.l = f.cps.length)
+                      ? c.l
+                      : c.l = c.length)
                     === 3
-                    ? (0, f.cps)(a0, a1, a2)
+                    ? c(a0, a1, a2)
                     : runtime.caml_call_gen_cps(f, [a0, a1, a2])
                   : (f.l
                       >= 0
@@ -144,8 +147,9 @@ let%expect_test "direct calls with --effects=double-translation" =
                 : runtime.caml_trampoline_return(f, [a0, a1, a2], 0);
        }
        function caml_exact_trampoline_cps_call$0(f, a0, a1, a2){
+        var c = f.cps;
         return runtime.caml_stack_check_depth()
-                ? f.cps ? f.cps(a0, a1, a2) : a2(f(a0, a1))
+                ? c ? c(a0, a1, a2) : a2(f(a0, a1))
                 : runtime.caml_trampoline_return(f, [a0, a1, a2], 0);
        }
        var
