@@ -75,12 +75,12 @@ function caml_dynlink_add_primitive(dll_addr) {
 }
 
 //Provides: caml_dynlink_get_current_libs
-//Requires: get_current_libs
+//Requires: get_current_libs, caml_array_alloc_packed
 function caml_dynlink_get_current_libs() {
   var current_libs = get_current_libs();
   var len = current_libs.length;
-  var a = new Array(len);
-  for (var i = 0; i < len; i++) a[i] = i;
+  var a = caml_array_alloc_packed(0, len - 1, 0);
+  for (var i = 1; i < len; i++) a[i] = i;
   return a;
 }
 
