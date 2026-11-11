@@ -79,9 +79,13 @@ function caml_floatarray_alloc_packed(tag, len, init) {
 //Alias: caml_array_sub_local
 function caml_array_sub(a, i, len) {
   // Slicing preserves the elements kind of the array; the element at
-  // index i is overwritten by the tag
+  // index i is overwritten by the tag. The tag is written with [fill]
+  // rather than [a2[0] = 0]: this function sees arrays of every elements
+  // kind, and once a keyed store site has seen generic arrays, V8
+  // converts the double arrays it stores into to generic ones, boxing
+  // every float. [fill] does not go through the store IC.
   var a2 = a.slice(i, i + len + 1);
-  a2[0] = 0;
+  a2.fill(0, 0, 1);
   return a2;
 }
 
@@ -91,7 +95,7 @@ function caml_array_sub(a, i, len) {
 function caml_floatarray_sub(a, i, len) {
   if (len === 0) return [0];
   var r = caml_array_sub(a, i, len);
-  r[0] = 254;
+  r.fill(254, 0, 1);
   return r;
 }
 
