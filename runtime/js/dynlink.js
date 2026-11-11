@@ -19,7 +19,7 @@
 //Provides: get_current_libs
 var current_libs;
 function get_current_libs() {
-  if (!current_libs) current_libs = [0, globalThis, globalThis.jsoo_runtime];
+  if (!current_libs) current_libs = [globalThis, globalThis.jsoo_runtime];
   return current_libs;
 }
 
@@ -79,8 +79,8 @@ function caml_dynlink_add_primitive(dll_addr) {
 function caml_dynlink_get_current_libs() {
   var current_libs = get_current_libs();
   var len = current_libs.length;
-  var a = caml_array_alloc_packed(0, len - 1, 0);
-  for (var i = 1; i < len; i++) a[i] = i;
+  var a = caml_array_alloc_packed(0, len, 0);
+  for (var i = 0; i < len; i++) a[i + 1] = i;
   return a;
 }
 
