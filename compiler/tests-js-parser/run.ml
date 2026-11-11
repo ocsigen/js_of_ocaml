@@ -339,7 +339,7 @@ let () =
                 in
                 Parse_js.parse' `Script lex, `Script
             with
-            | exception Parse_js.Parsing_error loc ->
+            | exception Parse_js.Parsing_error (loc, _) ->
                 if
                   Poly.equal mode `Negative
                   || String.starts_with
@@ -383,7 +383,7 @@ let () =
                               if ok then Sys.remove new_name);
                             add pass
                         | false, _ -> fail := (Diff (p1, p2), filename) :: !fail)
-                    | exception Parse_js.Parsing_error loc ->
+                    | exception Parse_js.Parsing_error (loc, _) ->
                         fail := (Print_parse (loc, s), filename) :: !fail)
                 | l ->
                     if Poly.equal mode `Negative

@@ -196,3 +196,9 @@ val all_keywords : t list
 exception Syntax_error of Lexing.position
 (** Raised by a semantic action of the parser, which {!Parse_js} reports as a
     parsing error at the given position *)
+
+val is_contextual_keyword : t -> bool
+(** Keywords that are always allowed as identifiers ([async], [of], [get], ...) *)
+
+val is_reserved_word : t -> bool
+(** The tokens produced by {!is_reserved} *)
