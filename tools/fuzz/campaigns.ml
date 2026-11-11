@@ -38,12 +38,9 @@ let native target effects = target = Wasm && effects = "native"
 
 (****)
 
-(* Whole-program compilation of generated OCaml programs, compared with
+(* Whole-program compilation of a generated OCaml program, compared with
    ocamlrun (and with the IR interpreter, when available) *)
-let whole config seed =
-  let st = Rng.make seed in
-  let p = Gen_ocaml.parts ~seed ~size:(Rng.pick st [ 3; 4; 5 ]) in
-  let src = Gen_ocaml.program p in
+let compare_with_ocamlrun config seed st ~src ~uses_effects =
   let ocamlc_flags = ocamlc_flags st in
   with_temp_dir (fun dir ->
       write_file (Filename.concat dir "t.ml") src;
@@ -61,7 +58,7 @@ let whole config seed =
         else
           List.map
             (fun target ->
-              let effects = random_effects st ~handlers:p.uses_effects target in
+              let effects = random_effects st ~handlers:uses_effects target in
               let flags = ("--effects=" ^ effects) :: random_flags st target in
               let c =
                 run
@@ -116,6 +113,21 @@ let whole config seed =
                     (sprintf "%s: %s %s" problem name (String.concat " " flags));
                   name ^ " " ^ problem)
             (targets config))
+
+let whole config seed =
+  let st = Rng.make seed in
+  let p = Gen_ocaml.parts ~seed ~size:(Rng.pick st [ 3; 4; 5 ]) in
+  compare_with_ocamlrun
+    config
+    seed
+    st
+    ~src:(Gen_ocaml.program p)
+    ~uses_effects:p.uses_effects
+
+(* Numeric kernels, for the placement of conversions in wasm_of_ocaml *)
+let numeric config seed =
+  let st = Rng.make seed in
+  compare_with_ocamlrun config seed st ~src:(Gen_numeric.program seed) ~uses_effects:false
 
 (****)
 

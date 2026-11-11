@@ -8,6 +8,7 @@ let usage =
 
 Campaigns:
   whole      generated OCaml programs, compared with ocamlrun
+  numeric    generated numeric kernels, compared with ocamlrun
   separate   generated programs split into modules, compiled whole and separately
   prims      runtime primitives on random inputs, compared with ocamlrun
   interop    programs using the js_of_ocaml library, across configurations
@@ -15,7 +16,7 @@ Campaigns:
   corpus     existing bytecode programs with random flags, compared with
              the default flags
 
-gen prints a generated program (KIND: whole, prims, interop) or writes the
+gen prints a generated program (KIND: whole, numeric, prims, interop) or writes the
 files of a runtime program in DIR (KIND: runtime).
 
 Options:|}
@@ -27,6 +28,7 @@ let () =
       let seed = int_of_string seed in
       match kind, rest with
       | "whole", [] -> print_string (Gen_ocaml.program (Gen_ocaml.parts ~seed ~size:4))
+      | "numeric", [] -> print_string (Gen_numeric.program seed)
       | "prims", [] -> print_string (Gen_prims.program seed)
       | "interop", [] -> print_string (Gen_interop.program seed)
       | "runtime", [ dir ] ->
@@ -149,6 +151,7 @@ let () =
         let job =
           match campaign, anon with
           | "whole", [] -> Campaigns.whole config
+          | "numeric", [] -> Campaigns.numeric config
           | "separate", [] -> Campaigns.separate config
           | "prims", [] -> Campaigns.prims config
           | "interop", [] -> Campaigns.interop config

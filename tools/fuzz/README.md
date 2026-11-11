@@ -14,6 +14,7 @@ _build/default/tools/fuzz/jsoo_fuzz.exe CAMPAIGN [OPTIONS]
 | Campaign   | Programs | Oracle |
 |------------|----------|--------|
 | `whole`    | generated OCaml programs (closures, exceptions, effects, objects, functors, recursive modules, lazy values, int32/int64, floats...) | ocamlrun |
+| `numeric`  | numeric kernels: loops, references, exception handlers, closures, arrays, bigarrays and records over floats, int32, int64, nativeint and integers, for the placement of the box/unbox and tag/untag conversions in `wasm_of_ocaml` | ocamlrun |
 | `separate` | the same programs, split into modules | ocamlrun; each program is compiled whole and separately (`compile` of each unit, then `link`) |
 | `prims`    | runtime primitives on random inputs: formatting and parsing of numbers, int32/int64, floats, compare, hash, Marshal, strings, bytes, Random, Digest, bigarrays | ocamlrun, line by line |
 | `interop`  | programs using the js_of_ocaml library and its ppx: calls in both directions, callbacks, objects, arrays, strings, `Opt`/`Optdef`, exceptions; JavaScript expressions given to `Js.Unsafe.js_expr` | the JavaScript output with optimizations disabled; each `js_expr` is also compared with `eval` of its source (lines reporting `DIFF`) |
@@ -21,8 +22,9 @@ _build/default/tools/fuzz/jsoo_fuzz.exe CAMPAIGN [OPTIONS]
 | `corpus`   | existing bytecode programs, given on the command line | the output with the default flags |
 
 The generated programs avoid target-dependent behavior: integers stay
-within 15 or 16 bits, recursion is bounded, floats are printed in
-hexadecimal. In the `prims` campaign, the tests whose result
+within 15 or 16 bits (30 bits in the `numeric` campaign, where
+overflowing arithmetic is masked), recursion is bounded, floats are
+printed in hexadecimal. In the `prims` campaign, the tests whose result
 legitimately differs in JavaScript (hash and Marshal of int32 values and
 floats, which are JavaScript numbers there) are marked `(* jsdiff *)` and
 ignored for that target.
