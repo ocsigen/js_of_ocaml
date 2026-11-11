@@ -286,7 +286,8 @@ var caml_custom_ops = {
 //Requires: caml_float_of_bytes, caml_custom_ops, caml_max_float_array_length
 //Requires: UInt8ArrayReader
 //Requires: caml_decompress_input
-//Requires: caml_set_oo_id, caml_floatarray_alloc_packed
+//Requires: caml_set_oo_id, caml_array_alloc_packed
+//Requires: caml_floatarray_alloc_packed
 function caml_input_value_from_reader(reader) {
   function readvlq(overflow) {
     var c = reader.read8u();
@@ -353,9 +354,7 @@ function caml_input_value_from_reader(reader) {
       case 5:
         return [tag, 0, 0, 0, 0, 0];
       default:
-        var v = new Array(size + 1).fill(0);
-        v[0] = tag;
-        return v;
+        return caml_array_alloc_packed(tag, size, 0);
     }
   }
   var stack = [];
