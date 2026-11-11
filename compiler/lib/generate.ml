@@ -1303,6 +1303,12 @@ let apply_fun_raw =
       let f, decls = bind f decls in
       f, params, decls
     in
+    (* Bind [f.cps], the CPS version of a closure pair, which is used
+       several times *)
+    let bind_cps_version f decls =
+      let c = J.V (Var.fresh_n "c") in
+      J.EVar c, decls @ [ J.variable_declaration [ c, (J.dot f cps_field, loc) ], loc ]
+    in
     let apply_directly f params =
       (* Make sure we are performing a regular call, not a (slower)
          method call *)
@@ -1380,7 +1386,7 @@ let apply_fun_raw =
     | true, true ->
         (* f.cps ? f.cps(a1, ..., am, k) : k(f(a1, ..., am)) *)
         let f, params, decls = bind f params in
-        let f_cps = J.dot f cps_field in
+        let f_cps, decls = bind_cps_version f decls in
         ( trampoline
             f
             params
@@ -1396,7 +1402,7 @@ let apply_fun_raw =
               ? k(f(a1, ..., am))
               : caml_call_gen_cps(f, [a1, ..., am, k])) *)
         let f, params, decls = bind f params in
-        let f_cps = J.dot f cps_field in
+        let f_cps, decls = bind_cps_version f decls in
         ( trampoline
             f
             params
@@ -1424,9 +1430,10 @@ let generate_apply_fun ctx { arity; exact; trampolined; in_cps } =
   let f' = J.EVar f in
   let params' = List.map params ~f:(fun x -> J.EVar x) in
   let e, decls = apply_fun_raw ctx f' params' exact trampolined in_cps J.N in
-  (* The function and the arguments are already variables *)
-  assert (List.is_empty decls);
-  J.EFun (None, J.fun_ (f :: params) [ J.Return_statement (Some e, J.N), J.N ] J.N)
+  (* The function and the arguments are already variables: this only
+     binds the CPS version of the function, with double translation *)
+  J.EFun
+    (None, J.fun_ (f :: params) (decls @ [ J.Return_statement (Some e, J.N), J.N ]) J.N)
 
 let apply_fun ctx f params exact trampolined in_cps loc =
   (* We always go through an intermediate function when doing CPS
