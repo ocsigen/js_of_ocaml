@@ -27,6 +27,8 @@
   compiles to a sequence of tests (#2612)
 
 ## Bug fixes
+* Compiler/Wasm: box variables typed as integers before using them as a
+  reference cell, an array or a function (dead GADT branches) (#2615)
 * Runtime/Wasm: add the system constants needed with `--disable staticeval`
   (`caml_sys_const_big_endian`, `caml_sys_const_backend_type`, ...) (#2601)
 * Compiler/Wasm: fix the typing of array accesses to constant blocks (such as

@@ -2101,7 +2101,7 @@ module Generate (Target : Target_sig.S) = struct
     match e with
     | Apply { f; args; exact; _ } ->
         let cps = Var.Set.mem x ctx.in_cps in
-        let* closure = load f in
+        let* closure = load_and_box ctx f in
         if exact || List.length args = if cps then 2 else 1
         then
           let unique =
@@ -2456,12 +2456,14 @@ module Generate (Target : Target_sig.S) = struct
           (convert ~from:(Typing.var_type ctx.types y) ~into:float_u (load y))
     | Offset_ref (x, n) ->
         Memory.set_field
-          (load x)
+          (load_and_box ctx x)
           0
-          (Conv.tag Arith.(Conv.untag (Memory.field (load x) 0) + const (Int32.of_int n)))
+          (Conv.tag
+             Arith.(
+               Conv.untag (Memory.field (load_and_box ctx x) 0) + const (Int32.of_int n)))
     | Array_set (x, y, z) ->
         Memory.array_set
-          (load x)
+          (load_and_box ctx x)
           (convert ~from:(Typing.var_type ctx.types y) ~into:int_n (load y))
           (load_and_box ctx z)
     | Event loc -> event loc
