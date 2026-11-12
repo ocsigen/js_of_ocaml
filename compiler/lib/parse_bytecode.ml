@@ -575,6 +575,22 @@ end = struct
 
   let block_desc _ = Block_desc.none [@@if not introspect]
 
+  (* When the compiler itself runs in JavaScript, floats are unboxed
+     numbers, which [Obj.is_block] takes for integers. A number is an
+     integer if it converts back and forth to an int without change (-0.
+     does not). Float constants with an integral value in the int range,
+     such as [1.], are thus still parsed as [Int]. This is harmless when
+     generating JavaScript, where both are the same number. *)
+  let is_unboxed_float x =
+    match Sys.backend_type with
+    | Other "js_of_ocaml" ->
+        let f : float = Obj.magic x in
+        not
+          (Int64.equal
+             (Int64.bits_of_float f)
+             (Int64.bits_of_float (float_of_int (int_of_float f))))
+    | Native | Bytecode | Other _ -> false
+
   let rec parse ?(with_desc = true) x =
     let parse x = parse ~with_desc x in
     if is_null x
@@ -618,6 +634,8 @@ end = struct
           , Unknown
           , if with_desc then block_desc x else Block_desc.none )
       else assert false
+    else if is_unboxed_float x
+    then Float (Int64.bits_of_float (Obj.magic x : float))
     else
       let i : int = Obj.magic x in
       Int (Targetint.of_int_warning_on_overflow i)
