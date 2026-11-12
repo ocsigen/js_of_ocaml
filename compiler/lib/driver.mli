@@ -40,6 +40,7 @@ val f :
   -> ?wrap_with_fun:[ `Iife | `Anonymous | `Named of string ]
   -> ?profile:Profile.t
   -> ?shapes:bool
+  -> ?start_in_microtask:bool
   -> link:[ `All | `All_from of string list | `Needed | `No ]
   -> source_map:bool
   -> formatter:Pretty_print.t
@@ -66,6 +67,7 @@ val link_and_pack :
      ?standalone:bool
   -> ?wrap_with_fun:[ `Iife | `Anonymous | `Named of string ]
   -> ?link:[ `All | `All_from of string list | `Needed | `No ]
+  -> ?start_in_microtask:bool
   -> Javascript.statement_list
   -> Javascript.statement_list
 

@@ -99,6 +99,8 @@ module Flag : sig
 
   val split_toplevel : unit -> bool
 
+  val microtask_start : unit -> bool
+
   val enable : string -> unit
 
   val disable : string -> unit

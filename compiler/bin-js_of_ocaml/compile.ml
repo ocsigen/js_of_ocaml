@@ -266,6 +266,7 @@ let run
       ~shapes
       ~(source_map : Source_map.Encoding_spec.t option)
       ~link
+      ?(start_in_microtask = false)
       output_file =
     if check_sourcemap then check_debug one;
     let init_pseudo_fs = fs_external && standalone in
@@ -282,6 +283,7 @@ let run
           let code = Code.prepend one.code instr in
           Driver.f
             ~standalone
+            ~start_in_microtask
             ~shapes
             ?profile
             ~link
@@ -306,6 +308,7 @@ let run
           let res =
             Driver.f
               ~standalone
+              ~start_in_microtask
               ~shapes
               ?profile
               ~link
@@ -433,6 +436,9 @@ let run
              for primitives as well as marking this primitive as potentially
              used. But the -linkall option is probably good enough. *)
           let linkall = linkall || toplevel || dynlink in
+          (* With [`All], the runtime is exported for code loaded
+             afterwards, which expects it to be initialized. *)
+          let start_in_microtask = not linkall in
           let code =
             Parse_bytecode.from_exe
               ~includes:include_dirs
@@ -459,6 +465,7 @@ let run
                 ~shapes
                 ~source_map
                 ~link:(if linkall then `All else `Needed)
+                ~start_in_microtask
                 output_file
               |> sourcemap_of_info ~base:source_map_base)
       | `Cmo cmo ->

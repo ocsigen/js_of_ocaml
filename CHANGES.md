@@ -25,6 +25,10 @@
 * Compiler: split switches with more than 256 cases (instead of 60), or whose
   case values span more than 1000, which the JavaScriptCore interpreter
   compiles to a sequence of tests (#2612)
+* Compiler: on Node, start whole programs in a microtask, where V8 throws
+  exceptions up to ten times faster; disable with `--disable microtask-start`.
+  Programs that export values, or are linked with `--linkall`, still start
+  synchronously (#XXXX)
 
 ## Bug fixes
 * Runtime/Wasm: add the system constants needed with `--disable staticeval`

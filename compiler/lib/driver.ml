@@ -571,7 +571,50 @@ let output formatter ~source_map () js =
   if times () then Format.eprintf "  write: %a@." Timer.print t;
   sm
 
-let pack ~wrap_with_fun ~standalone { Linker.runtime_code = js; always_required_codes } =
+(* On Node, V8 computes a message location (a stack walk) for every
+   exception thrown while no non-verbose [v8::TryCatch] is active,
+   even if it is caught right away in JavaScript. This is the case
+   when running a script at toplevel, but not inside a microtask, where
+   throwing is about ten times cheaper. Since OCaml exceptions are
+   JavaScript exceptions, we start the program in a microtask. *)
+let start_in_microtask js =
+  let module J = Javascript in
+  let s =
+    {|
+(function (start) {
+  typeof process === "object" && process && process.versions && process.versions.node
+    ? queueMicrotask(start)
+    : start();
+})(function () {});
+|}
+  in
+  let lex = Parse_js.Lexer.of_string s in
+  match Parse_js.parse `Script lex with
+  | [ ( J.Expression_statement
+          (J.ECall (f, ak, [ J.Arg (J.EFun (None, (kind, params, [], loc))) ], cloc))
+      , sloc )
+    ] ->
+      [ ( J.Expression_statement
+            (J.ECall (f, ak, [ J.Arg (J.EFun (None, (kind, params, js, loc))) ], cloc))
+        , sloc )
+      ]
+  | _ -> assert false
+
+(* Code loaded with [require] may expect its exports to be set
+   synchronously. *)
+let uses_module_exports js =
+  let free = ref StringSet.empty in
+  let o = new Js_traverse.fast_freevar (fun s -> free := StringSet.add s !free) in
+  o#program js;
+  StringSet.mem Global_constant.exports !free
+  || StringSet.mem "module" !free
+  || StringSet.mem "exports" !free
+
+let pack
+    ~wrap_with_fun
+    ~standalone
+    ~start_in_microtask:defer
+    { Linker.runtime_code = js; always_required_codes } =
   let module J = Javascript in
   let t = Timer.make () in
   if times () then Format.eprintf "Start Optimizing js...@.";
@@ -686,6 +729,11 @@ if (typeof module === 'object' && module.exports) {
     | `Anonymous, _ -> js
     | `Iife, false -> js
     | `Iife, true ->
+        let js =
+          if defer && Config.Flag.microtask_start () && not (uses_module_exports js)
+          then start_in_microtask js
+          else js
+        in
         let e =
           let s =
             {|
@@ -731,7 +779,12 @@ let configure formatter =
   let pretty = Config.Flag.pretty () in
   Pretty_print.set_compact formatter (not pretty)
 
-let link_and_pack ?(standalone = true) ?(wrap_with_fun = `Iife) ?(link = `No) p =
+let link_and_pack
+    ?(standalone = true)
+    ?(wrap_with_fun = `Iife)
+    ?(link = `No)
+    ?(start_in_microtask = false)
+    p =
   let export_runtime =
     match link with
     | `All | `All_from _ -> true
@@ -739,7 +792,7 @@ let link_and_pack ?(standalone = true) ?(wrap_with_fun = `Iife) ?(link = `No) p 
   in
   p
   |> link' ~export_runtime ~standalone ~link
-  |> pack ~wrap_with_fun ~standalone
+  |> pack ~wrap_with_fun ~standalone ~start_in_microtask
   |> check_js
 
 let optimize ~shapes ~profile ~keep_flow_data p =
@@ -791,12 +844,21 @@ let optimize_for_wasm ~shapes ~profile p =
         in
         Global_flow.f ~cps_calls ~fast:false optimized_code.program )
 
-let full ~standalone ~wrap_with_fun ~shapes ~profile ~link ~source_map ~formatter p =
+let full
+    ~standalone
+    ~start_in_microtask
+    ~wrap_with_fun
+    ~shapes
+    ~profile
+    ~link
+    ~source_map
+    ~formatter
+    p =
   let optimized_code, _ = optimize ~shapes ~profile ~keep_flow_data:false p in
   let exported_runtime = not standalone in
   let emit formatter =
     generate ~exported_runtime ~wrap_with_fun ~warn_on_unhandled_effect:standalone
-    +> link_and_pack ~standalone ~wrap_with_fun ~link
+    +> link_and_pack ~standalone ~wrap_with_fun ~link ~start_in_microtask
     +> simplify_js
     +> name_variables
     +> output formatter ~source_map ()
@@ -814,7 +876,16 @@ let full ~standalone ~wrap_with_fun ~shapes ~profile ~link ~source_map ~formatte
 
 let full_no_source_map ~formatter ~shapes ~standalone ~wrap_with_fun ~profile ~link p =
   let (_ : Source_map.info * _) =
-    full ~shapes ~standalone ~wrap_with_fun ~profile ~link ~source_map:false ~formatter p
+    full
+      ~shapes
+      ~standalone
+      ~start_in_microtask:false
+      ~wrap_with_fun
+      ~profile
+      ~link
+      ~source_map:false
+      ~formatter
+      p
   in
   ()
 
@@ -823,11 +894,21 @@ let f
     ?(wrap_with_fun = `Iife)
     ?(profile = Profile.O1)
     ?(shapes = false)
+    ?(start_in_microtask = false)
     ~link
     ~source_map
     ~formatter
     p =
-  full ~standalone ~wrap_with_fun ~shapes ~profile ~link ~source_map ~formatter p
+  full
+    ~standalone
+    ~start_in_microtask
+    ~wrap_with_fun
+    ~shapes
+    ~profile
+    ~link
+    ~source_map
+    ~formatter
+    p
 
 let f'
     ?(standalone = true)
