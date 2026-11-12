@@ -36,6 +36,7 @@ let print_macro_transformed ~flags source =
 
 let print_macro_transformed ?(flags = false) source =
   Jsoo.Targetint.set_num_bits 32;
+  Jsoo.Targetnativeint.set_num_bits 32;
   try print_macro_transformed ~flags source
   with Failure s -> Format.printf "failure: %s%!" s
 

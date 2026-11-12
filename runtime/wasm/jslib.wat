@@ -16,6 +16,11 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
+   (@if $portable_int
+   (@then
+      (import "portableint" "bool_val"
+         (func $bool_val (param (ref eq)) (result i32)))
+   ))
    (type $bytes (array (mut i8)))
 
 (@if (not $wasi)
@@ -88,6 +93,15 @@
       (func $caml_check_float_array_length (param i32)))
    (import "fail" "caml_failwith_tag"
       (func $caml_failwith_tag (result (ref eq))))
+   (@if $portable_int
+   (@then
+      (import "portableint" "int_val_32_exn"
+         (func $int_val_32_exn (param (ref eq)) (param (ref eq)) (result i32)))
+      (import "portableint" "val_portable_int"
+         (func $val_portable_int (param i64) (result (ref eq))))
+      (import "bindings" "number_as_int"
+         (func $number_as_int (param externref) (result f64)))
+   ))
    (import "fail" "javascript_exception"
       (tag $javascript_exception (param externref)))
    (import "stdlib" "caml_named_value"
@@ -109,16 +123,69 @@
       (func $caml_copy_int32 (param i32) (result (ref eq))))
    (import "int32" "Int32_val"
       (func $Int32_val (param (ref eq)) (result i32)))
-   (import "int32" "caml_copy_nativeint"
-      (func $caml_copy_nativeint (param i32) (result (ref eq))))
-   (import "int32" "Nativeint_val"
-      (func $Nativeint_val (param (ref eq)) (result i32)))
+   (@if $portable_int
+   (@then (@type $nativeint i64))
+   (@else (@type $nativeint i32)))
+   (import "nativeint" "caml_copy_nativeint"
+      (func $caml_copy_nativeint (param (@type $nativeint)) (result (ref eq))))
+   (import "nativeint" "Nativeint_val"
+      (func $Nativeint_val (param (ref eq)) (result (@type $nativeint))))
 
    (type $block (array (mut (ref eq))))
    (type $float (struct (field $f f64)))
    (type $float_array (array (mut f64)))
    (type $js (struct (field $js externref)))
 
+(@if $portable_int
+(@then
+   (type $ocaml_large_int (struct (field i64)))
+
+   ;; Conversions between JavaScript values and OCaml values: a JavaScript
+   ;; value which is not an OCaml value is wrapped in a $js struct.
+   ;; JavaScript numbers are converted to OCaml integers when they are
+   ;; integral and in range (the engine does it for numbers that fit in 31
+   ;; bits), and conversely
+   (func $value_of_js (export "value_of_js")
+      (param $v externref) (result (ref eq))
+      (local $f f64)
+      (block $is_eq (result (ref eq))
+         (drop
+            (br_on_cast $is_eq anyref (ref eq)
+               (any.convert_extern (local.get $v))))
+         (local.set $f (call $number_as_int (local.get $v)))
+         (if (f64.eq (local.get $f) (local.get $f))
+            (then
+               (return
+                  (call $val_portable_int
+                     (i64.trunc_sat_f64_s (local.get $f))))))
+         (return
+            (struct.new $js (local.get $v)))))
+
+   (func $js_of_value (export "js_of_value")
+      (param $v (ref eq)) (result externref)
+      (drop (block $not_large_int (result (ref eq))
+         (return
+            (call $from_float
+               (f64.convert_i64_s
+                  (struct.get $ocaml_large_int 0
+                     (br_on_cast_fail $not_large_int
+                        (ref eq) (ref $ocaml_large_int) (local.get $v))))))))
+      (extern.convert_any
+         (block $not_js (result (ref eq))
+            (return
+               (struct.get $js 0
+                  (br_on_cast_fail $not_js (ref eq) (ref $js) (local.get $v)))))))
+
+   ;; Deprecated: use $value_of_js and $js_of_value, which take and return an
+   ;; externref. These anyref versions are kept for the code that imports
+   ;; them, including stubs of other libraries.
+   (func $wrap (export "wrap") (param $v anyref) (result (ref eq))
+      (return_call $value_of_js (extern.convert_any (local.get $v))))
+
+   (func $unwrap (export "unwrap") (param $v (ref eq)) (result anyref)
+      (any.convert_extern (call $js_of_value (local.get $v))))
+)
+(@else
    ;; Conversions between JavaScript values and OCaml values: a JavaScript
    ;; value which is not an OCaml value is wrapped in a $js struct.
    (func $value_of_js (export "value_of_js")
@@ -154,6 +221,7 @@
             (any.convert_extern
                (struct.get $js 0
                   (br_on_cast_fail $not_js (ref eq) (ref $js) (local.get $v)))))))
+))
 
    (func (export "caml_js_equals")
       (param $v1 (ref eq)) (param $v2 (ref eq)) (result (ref eq))
@@ -191,9 +259,15 @@
    (global $js_false (ref eq) (struct.new $js (global.get $false)))
 
    (func (export "caml_js_from_bool") (param $v (ref eq)) (result (ref eq))
-      (select (result (ref eq))
-         (global.get $js_true) (global.get $js_false)
-         (i31.get_s (ref.cast (ref i31) (local.get $v)))))
+      (@if $portable_int
+      (@then
+         (select (result (ref eq))
+            (global.get $js_true) (global.get $js_false)
+            (call $bool_val (local.get $v))))
+      (@else
+         (select (result (ref eq))
+            (global.get $js_true) (global.get $js_false)
+            (i31.get_s (ref.cast (ref i31) (local.get $v)))))))
 
    (func (export "caml_js_to_int32") (param $v (ref eq)) (result (ref eq))
       (return_call $caml_copy_int32
@@ -203,11 +277,24 @@
       (return_call $value_of_js (call $from_int32 (call $Int32_val (local.get $v)))))
 
    (func (export "caml_js_to_nativeint") (param $v (ref eq)) (result (ref eq))
+      (@if $portable_int
+      (@then
+         (return_call $caml_copy_nativeint
+            (i64.trunc_sat_f64_s (call $to_float (call $js_of_value (local.get $v))))))
+      (@else
       (return_call $caml_copy_nativeint
          (call $to_int32 (call $js_of_value (local.get $v)))))
+      ))
 
    (func (export "caml_js_from_nativeint") (param $v (ref eq)) (result (ref eq))
+      (@if $portable_int
+      (@then
+         (return_call $value_of_js
+            (call $from_float
+               (f64.convert_i64_s (call $Nativeint_val (local.get $v))))))
+      (@else
       (return_call $value_of_js (call $from_int32 (call $Nativeint_val (local.get $v)))))
+      ))
 
   (func (export "caml_js_pure_expr")
      (param $f (ref eq)) (result (ref eq))
@@ -437,8 +524,11 @@
    (func (export "caml_js_wrap_callback_strict")
       (param $n (ref eq)) (param $f (ref eq)) (result (ref eq))
       (return_call $value_of_js
+         ;; Callback arity, a small constant; always an [i31].
+         ;; lint-ignore-start manual-portability-handling-unsafe
          (call $wrap_callback_strict
             (i31.get_u (ref.cast (ref i31) (local.get $n))) (local.get $f))))
+         ;; lint-ignore-end manual-portability-handling-unsafe
 
    (func (export "caml_js_wrap_callback_unsafe")
       (param $f (ref eq)) (result (ref eq))
@@ -455,8 +545,11 @@
    (func (export "caml_js_wrap_meth_callback_strict")
       (param $n (ref eq)) (param $f (ref eq)) (result (ref eq))
       (return_call $value_of_js
+         ;; Callback arity, a small constant; always an [i31].
+         ;; lint-ignore-start manual-portability-handling-unsafe
          (call $wrap_meth_callback_strict
             (i31.get_u (ref.cast (ref i31) (local.get $n))) (local.get $f))))
+         ;; lint-ignore-end manual-portability-handling-unsafe
 
    (func (export "caml_js_wrap_meth_callback_unsafe")
       (param $f (ref eq)) (result (ref eq))
@@ -603,12 +696,23 @@
    (func (export "caml_jsstring_of_substring")
       (param $s (ref eq)) (param $i (ref eq)) (param $l (ref eq))
       (result (ref eq))
-      (return
-         (struct.new $js
-            (call $jsstring_of_subbytes
-               (ref.cast (ref $bytes) (local.get $s))
-               (i31.get_u (ref.cast (ref i31) (local.get $i)))
-               (i31.get_u (ref.cast (ref i31) (local.get $l)))))))
+      (@if $portable_int
+      (@then
+         (return
+            (struct.new $js
+               (call $jsstring_of_subbytes
+                  (ref.cast (ref $bytes) (local.get $s))
+                  (call $int_val_32_exn (local.get $i)
+                        (global.get $jsstring_of_substring))
+                  (call $int_val_32_exn (local.get $l)
+                        (global.get $jsstring_of_substring))))))
+      (@else
+         (return
+            (struct.new $js
+               (call $jsstring_of_subbytes
+                  (ref.cast (ref $bytes) (local.get $s))
+                  (i31.get_u (ref.cast (ref i31) (local.get $i)))
+                  (i31.get_u (ref.cast (ref i31) (local.get $l)))))))))
 
    (func $caml_jsbytes_of_bytes (export "caml_jsbytes_of_string")
       (param $vs (ref eq)) (result (ref eq))
@@ -770,6 +874,8 @@
                      (local.get $l)))
                (br $loop))))
       (local.get $l))
+
+   (@string $jsstring_of_substring "caml_jsstring_of_substring")
 
    (@string $jsError "jsError")
 

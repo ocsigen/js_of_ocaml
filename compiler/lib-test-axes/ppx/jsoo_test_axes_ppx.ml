@@ -16,6 +16,12 @@
 
 let () =
   Ppx_devtools_expect.register_axes (function
-    | ("target_engine" | "host_engine" | "node" | "quickjs" | "bun" | "wasi" | "effects")
-      as x -> Some ("Jsoo_test_axes." ^ x)
+    | ( "target_engine"
+      | "host_engine"
+      | "node"
+      | "quickjs"
+      | "bun"
+      | "wasi"
+      | "effects"
+      | "int_size_64" ) as x -> Some ("Jsoo_test_axes." ^ x)
     | _ -> None)

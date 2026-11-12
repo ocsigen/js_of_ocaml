@@ -23,6 +23,23 @@
       (func $jsstring_test (param externref) (result i32)))
    (import "jsstring" "jsstring_hash"
       (func $jsstring_hash (param i32) (param externref) (result i32)))
+   (@if $portable_int
+   (@then
+      (import "portableint" "int_val_32_sat"
+         (func $int_val_32_sat (param (ref eq)) (result i32)))
+   ))
+   (@if $portable_int
+   (@then
+      (import "portableint" "portable_int_val_32"
+         (func $portable_int_val_32 (param (ref eq)) (result i32)))
+   ))
+   (@if $portable_int
+   (@then
+      (import "portableint" "is_ocaml_portable_int"
+         (func $is_ocaml_portable_int (param (ref eq)) (result i32)))
+      (import "portableint" "portable_int_val"
+         (func $portable_int_val (param (ref eq)) (result i64)))
+   ))
 
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
@@ -211,11 +228,24 @@
       (local $len i32)
       (local $tg i32)
       (local $str externref)
+      (local $l i64)
+      (@if $portable_int
+      (@then (local.set $sz (call $int_val_32_sat (local.get $limit))))
+      (@else
       (local.set $sz (i31.get_u (ref.cast (ref i31) (local.get $limit))))
+      ))
       (if (i32.gt_u (local.get $sz) (global.get $HASH_QUEUE_SIZE))
          (then (local.set $sz (global.get $HASH_QUEUE_SIZE))))
+      (@if $portable_int
+      (@then (local.set $num (call $int_val_32_sat (local.get $count))))
+      (@else
       (local.set $num (i31.get_s (ref.cast (ref i31) (local.get $count))))
+      ))
+      (@if $portable_int
+      (@then (local.set $h (call $portable_int_val_32 (local.get $seed))))
+      (@else
       (local.set $h (i31.get_s (ref.cast (ref i31) (local.get $seed))))
+      ))
       (local.set $v (local.get $obj))
       (local.set $rd (i32.const 1))
       (local.set $wr (i32.const 1))
@@ -239,6 +269,30 @@
                            (i32.const 1))))
                   (local.set $num (i32.sub (local.get $num) (i32.const 1)))
                   (br $next)))
+               (@if $portable_int
+               (@then
+                  (if (call $is_ocaml_portable_int (local.get $v))
+                     (then
+                        (local.set $l
+                           (i64.add
+                              (i64.shl
+                                 (call $portable_int_val (local.get $v))
+                                 (i64.const 1))
+                              (i64.const 1)))
+                        (local.set $h
+                           (call $caml_hash_mix_int (local.get $h)
+                              (i32.wrap_i64
+                                 (i64.xor
+                                    (i64.xor
+                                       (i64.shr_s (local.get $l)
+                                          (i64.const 32))
+                                       (i64.shr_s (local.get $l)
+                                          (i64.const 63)))
+                                    (local.get $l)))))
+                        (local.set $num
+                           (i32.sub (local.get $num) (i32.const 1)))
+                        (br $next)))
+               ))
                (drop (block $not_string (result (ref eq))
                   (local.set $sv
                      (br_on_cast_fail $not_string (ref eq) (ref $bytes)
@@ -288,10 +342,13 @@
                      (then
                         (local.set $h
                            (call $caml_hash_mix_int (local.get $h)
+                              ;; An object id, allocated by [CamlinternalOO]; always an [i31].
+                              ;; lint-ignore-start manual-portability-handling-unsafe
                               (i31.get_s
                                  (ref.cast (ref i31)
                                     (array.get $block
                                        (local.get $bv) (i32.const 2))))))
+                              ;; lint-ignore-end manual-portability-handling-unsafe
                         (local.set $num
                            (i32.sub (local.get $num) (i32.const 1)))
                         (br $next)))
@@ -440,11 +497,21 @@
 
    (func (export "caml_string_hash")
       (param $vh (ref eq)) (param $vs (ref eq)) (result (ref eq))
-      (ref.i31
-         (i32.and
-            (call $caml_hash_mix_final
-               (call $caml_hash_mix_string
-                  (i31.get_s (ref.cast (ref i31) (local.get $vh)))
-                  (ref.cast (ref $bytes) (local.get $vs))))
-            (i32.const 0x3FFFFFFF))))
+      (@if $portable_int
+      (@then
+         (ref.i31
+            (i32.and
+               (call $caml_hash_mix_final
+                  (call $caml_hash_mix_string
+                     (call $portable_int_val_32 (local.get $vh))
+                     (ref.cast (ref $bytes) (local.get $vs))))
+               (i32.const 0x3FFFFFFF))))
+      (@else
+         (ref.i31
+            (i32.and
+               (call $caml_hash_mix_final
+                  (call $caml_hash_mix_string
+                     (i31.get_s (ref.cast (ref i31) (local.get $vh)))
+                     (ref.cast (ref $bytes) (local.get $vs))))
+               (i32.const 0x3FFFFFFF))))))
 )

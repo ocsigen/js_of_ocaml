@@ -379,7 +379,7 @@ type constant =
   | Int of Targetint.t
   | Int32 of Int32.t
   | Int64 of Int64.t
-  | NativeInt of Int32.t (* Native ints are 32bit on all known backends *)
+  | NativeInt of Targetnativeint.t
   | Tuple of int * constant array * array_or_not * Block_desc.t
   | Null_
 
@@ -394,7 +394,8 @@ module Constant = struct
     | Float_array (a, da), Float_array (b, db) ->
         Block_desc.equal da db && Array.equal Int64.equal a b
     | Int a, Int b -> Targetint.equal a b
-    | Int32 a, Int32 b | NativeInt a, NativeInt b -> Int32.equal a b
+    | Int32 a, Int32 b -> Int32.equal a b
+    | NativeInt a, NativeInt b -> Targetnativeint.equal a b
     | Tuple (ta, a, ka, da), Tuple (tb, b, kb, db) ->
         ta = tb
         && Block_desc.equal da db
@@ -435,7 +436,7 @@ module Constant = struct
     | Int a, Int b -> Some (Targetint.equal a b)
     | Int32 a, Int32 b -> Some (Int32.equal a b)
     | Int64 a, Int64 b -> Some (Int64.equal a b)
-    | NativeInt a, NativeInt b -> Some (Int32.equal a b)
+    | NativeInt a, NativeInt b -> Some (Targetnativeint.equal a b)
     | Float_array (a, _), Float_array (b, _) ->
         Some
           (Array.equal
@@ -611,7 +612,7 @@ module Print = struct
     | Int i -> Format.fprintf f "%s" (Targetint.to_string i)
     | Int32 i -> Format.fprintf f "%ldl" i
     | Int64 i -> Format.fprintf f "%LdL" i
-    | NativeInt i -> Format.fprintf f "%ldn" i
+    | NativeInt i -> Format.fprintf f "%sn" (Targetnativeint.to_string i)
     | Tuple (tag, a, _, desc) -> (
         Format.fprintf f "<%d>" tag;
         if not (Block_desc.is_none desc) then Format.fprintf f "#%a" Block_desc.print desc;

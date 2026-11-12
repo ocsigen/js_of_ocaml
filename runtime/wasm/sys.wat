@@ -16,6 +16,11 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
+   (@if $portable_int
+   (@then
+      (import "portableint" "bool_val"
+         (func $bool_val (param (ref eq)) (result i32)))
+   ))
    (import "fail" "caml_raise_sys_error"
       (func $caml_raise_sys_error (param (ref eq))))
    (import "fail" "caml_raise_not_found" (func $caml_raise_not_found))
@@ -87,6 +92,11 @@
    (import "string" "caml_string_equal"
       (func $caml_string_equal
          (param (ref eq)) (param (ref eq)) (result (ref eq))))
+   (@if $portable_int
+   (@then
+      (import "portableint" "portable_int_val_32"
+         (func $portable_int_val_32 (param (ref eq)) (result i32)))
+   ))
 
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
@@ -96,7 +106,11 @@
 
    (func (export "caml_sys_exit") (export "unix_exit") (export "caml_unix_exit")
       (param $code (ref eq)) (result (ref eq))
+      (@if $portable_int
+      (@then (call $exit (call $portable_int_val_32 (local.get $code))))
+      (@else
       (call $exit (i31.get_s (ref.cast (ref i31) (local.get $code))))
+      ))
       ;; Fallback: try to exit through an exception
       (throw $ocaml_exit))
 
@@ -126,11 +140,14 @@
          (loop $loop
             (br_if $done (ref.is_null (local.get $e)))
             (local.set $entry (ref.as_non_null (local.get $e)))
+            ;; [caml_string_equal] returns 0 or 1 as an [i31].
+            ;; lint-ignore-start manual-portability-handling-unsafe
             (if (i31.get_u
                    (ref.cast (ref i31)
                       (call $caml_string_equal
                          (struct.get $env_entry $name (local.get $entry))
                          (local.get $name))))
+            ;; lint-ignore-end manual-portability-handling-unsafe
                (then
                   (return (struct.get $env_entry $value (local.get $entry)))))
             (local.set $e (struct.get $env_entry $next (local.get $entry)))
@@ -467,11 +484,21 @@
 
    (func (export "caml_sys_const_word_size")
       (param (ref eq)) (result (ref eq))
+      (@if $portable_int
+      (@then
+         (ref.i31 (i32.const 64)))
+      (@else
       (ref.i31 (i32.const 32)))
+      ))
 
    (func (export "caml_sys_const_int_size")
       (param (ref eq)) (result (ref eq))
+      (@if $portable_int
+      (@then
+         (ref.i31 (i32.const 63)))
+      (@else
       (ref.i31 (i32.const 31)))
+      ))
 
    (func (export "caml_sys_const_max_wosize")
       (param (ref eq)) (result (ref eq))
@@ -566,8 +593,14 @@
 
    (func (export "caml_ml_enable_runtime_warnings")
       (param $v (ref eq)) (result (ref eq))
+      (@if $portable_int
+      (@then
+         (global.set $caml_runtime_warnings
+            (call $bool_val (local.get $v))))
+      (@else
       (global.set $caml_runtime_warnings
          (i31.get_u (ref.cast (ref i31) (local.get $v))))
+      ))
       (ref.i31 (i32.const 0)))
 
    (func (export "caml_ml_runtime_warnings_enabled")

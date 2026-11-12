@@ -46,6 +46,7 @@
    (import "Math" "exp" (func $exp (param f64) (result f64)))
 ))
    (import "fail" "caml_failwith" (func $caml_failwith (param (ref eq))))
+   (import "fail" "caml_raise_out_of_memory" (func $caml_raise_out_of_memory))
    (import "fail" "caml_invalid_argument"
       (func $caml_invalid_argument (param (ref eq))))
    (import "ints" "lowercase_hex_table"
@@ -54,6 +55,11 @@
       (func $jsstring_of_bytes (param (ref $bytes)) (result externref)))
    (import "jsstring" "bytes_of_jsstring"
       (func $bytes_of_jsstring (param externref) (result (ref $bytes))))
+   (@if $portable_int
+   (@then
+      (import "portableint" "int_val_32_sat"
+         (func $int_val_32_sat (param (ref eq)) (result i32)))
+   ))
 
    (type $float (struct (field $f f64)))
    (type $bytes (array (mut i8)))
@@ -80,8 +86,19 @@
       (local $i i32) (local $j i32) (local $d i32) (local $txt (ref $chars))
       (local $len i32) (local $s (ref $bytes))
       (local $unit i64) (local $half i64) (local $mask i64) (local $frac i64)
+      (@if $portable_int
+      (@then
+         (local.set $prec (call $int_val_32_sat (local.get $vprec)))
+         ;; As native, a string that large cannot be allocated
+         (if (i32.gt_s (local.get $prec) (i32.const 0xfffffff))
+            (then (call $caml_raise_out_of_memory))))
+      (@else
       (local.set $prec (i31.get_s (ref.cast (ref i31) (local.get $vprec))))
+      ))
+      ;; A style character; always an [i31].
+      ;; lint-ignore-start manual-portability-handling-unsafe
       (local.set $style (i31.get_s (ref.cast (ref i31) (local.get $vstyle))))
+      ;; lint-ignore-end manual-portability-handling-unsafe
       (local.set $b
          (i64.reinterpret_f64
             (struct.get $float 0 (ref.cast (ref $float) (local.get $v)))))

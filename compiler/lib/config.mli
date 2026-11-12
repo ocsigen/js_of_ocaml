@@ -102,6 +102,8 @@ module Flag : sig
   val enable : string -> unit
 
   val disable : string -> unit
+
+  val portable_int : unit -> bool
 end
 
 (** This module contains parameters that may be modified through command-line flags. *)
@@ -147,6 +149,8 @@ end
 val target : unit -> [ `JavaScript | `Wasm ]
 
 val set_target : [ `JavaScript | `Wasm ] -> unit
+(** Also sets the size of integers, which depends on the [portable-int] flag:
+    call it once the flags are set. *)
 
 type effects_backend =
   [ `Disabled

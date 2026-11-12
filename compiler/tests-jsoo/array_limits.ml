@@ -17,7 +17,9 @@ external weak_create : int -> 'a Weak.t = "caml_weak_create"
 
 let () =
   test "limits" (fun () ->
-      string_of_bool (Sys.max_floatarray_length = Sys.max_array_length / 2));
+      (* Float arrays have half as many elements when words are 32 bits *)
+      string_of_bool
+        (Sys.max_floatarray_length = Sys.max_array_length / (64 / Sys.word_size)));
   test "Array.append" (fun () ->
       string_of_int (Array.length (Array.append (Array.make (o 3) 0) [| 1; 2 |])));
   test "Array.concat" (fun () ->

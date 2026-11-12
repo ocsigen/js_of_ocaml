@@ -107,6 +107,19 @@ module Type = struct
                 [ { mut = false; typ = Value I32 }; { mut = false; typ = Value I32 } ]
           })
 
+  (* With [--enable portable-int], OCaml integers are 63 bits. Those that
+     fit in 31 bits are always represented as an [i31], the others are
+     boxed in a [$ocaml_large_int] struct. The code generator and the
+     runtime rely on this canonical representation (e.g. to test whether an
+     integer is zero, or for physical equality). *)
+  let large_int_type =
+    register_type "ocaml_large_int" (fun () ->
+        return
+          { supertype = None
+          ; final = true
+          ; typ = W.Struct [ { mut = false; typ = Value I64 } ]
+          })
+
   let serialize_type =
     register_type "serialize" (fun () ->
         return
@@ -581,6 +594,57 @@ module Value = struct
     in
     return (W.Call (f, [ x; y ]))
 
+  let rec effect_free e =
+    match e with
+    | W.Const _ | LocalGet _ | GlobalGet _ | RefFunc _ | RefNull _ -> true
+    | UnOp (_, e')
+    | I32WrapI64 e'
+    | I64ExtendI32 (_, e')
+    | F32DemoteF64 e'
+    | F64PromoteF32 e'
+    | RefI31 e'
+    | I31Get (_, e')
+    | ArrayLen e'
+    | StructGet (_, _, _, e')
+    | RefCast (_, e')
+    | RefTest (_, e')
+    | ExternConvertAny e'
+    | AnyConvertExtern e' -> effect_free e'
+    | BinOp (_, e1, e2)
+    | ArrayNew (_, e1, e2)
+    | ArrayNewData (_, _, e1, e2)
+    | ArrayGet (_, _, e1, e2)
+    | RefEq (e1, e2) -> effect_free e1 && effect_free e2
+    | LocalTee _
+    | BlockExpr _
+    | Call _
+    | Seq _
+    | Pop _
+    | Call_ref _
+    | Br_on_cast _
+    | Br_on_cast_fail _
+    | Br_on_null _
+    | Try _ -> false
+    | IfExpr (_, e1, e2, e3) -> effect_free e1 && effect_free e2 && effect_free e3
+    | ArrayNewFixed (_, l) | StructNew (_, l) -> List.for_all ~f:effect_free l
+
+  let if_expr ty cond ift iff =
+    let* cond = cond in
+    let* ift = ift in
+    let* iff = iff in
+    match cond with
+    | W.Const (I32 n) -> return (if Int32.equal n 0l then iff else ift)
+    | _ ->
+        if Poly.equal ift iff && effect_free cond
+        then return ift
+        else return (W.IfExpr (ty, cond, ift, iff))
+
+  let map f x =
+    let* x = x in
+    return (f x)
+
+  let ( >>| ) x f = map f x
+
   let js_eqeqeq ~negate x y =
     let xv = Code.Var.fresh () in
     let yv = Code.Var.fresh () in
@@ -667,6 +731,166 @@ module Value = struct
   let int_lsr i i' = Arith.((i land const 0x7fffffffl) lsr i')
 
   let int_asr = Arith.( asr )
+end
+
+module Value64 = struct
+  open Value
+
+  let val_int i =
+    let* e = i in
+    match e with
+    | W.Const (I64 n) ->
+        if
+          Int64.compare n (Lazy.force Typing.Integer.min_i31s) >= 0
+          && Int64.compare n (Lazy.force Typing.Integer.max_i31s) <= 0
+        then return (W.RefI31 (Const (I32 (Int64.to_int32 n))))
+        else
+          let* ty = Type.large_int_type in
+          return (W.StructNew (ty, [ Const (I64 n) ]))
+    | _ ->
+        let v = Code.Var.fresh () in
+        seq
+          (store ~typ:I64 v (return e))
+          (if_expr
+             Type.value
+             (* Single range check:
+                [v in [-2^30, 2^30 - 1]  <=>  (v + 2^30) <=u 2^31 - 1]
+
+                The comparison is unsigned: if [v < -2^30], then [v + 2^30]
+                is negative, hence a large unsigned number. The bound is
+                [2^31 - 1] rather than the equivalent [<u 2^31], since on x64
+                [2^31] does not fit in an immediate operand. *)
+             (Arith64.ule_i32
+                (Arith64.( + )
+                   (load v)
+                   (Arith64.const (Int64.neg (Lazy.force Typing.Integer.min_i31s))))
+                (Arith64.const 0x7fffffffL))
+             (load v >>| fun e -> W.RefI31 (I32WrapI64 e))
+             (* The allocation of a large integer is rare, and its machine
+                code is large: it is performed by a runtime function *)
+             (let* e = load v in
+              let* f =
+                register_import
+                  ~name:"box_large_int"
+                  ~import_module:"env"
+                  (Fun { params = [ I64 ]; result = [ Type.value ] })
+              in
+              return (W.Call (f, [ e ]))))
+
+  let int_val i =
+    let* e = i in
+    match e with
+    | W.RefI31 (Const (I32 n)) ->
+        return (W.Const (I64 (Int64.of_int32 Int32.(shift_right (shift_left n 1) 1))))
+    | W.RefI31 _ -> return (W.I64ExtendI32 (S, I31Get (S, e)))
+    | _ ->
+        let* ty = Type.large_int_type in
+        let v = Code.Var.fresh () in
+        seq
+          (store v (return e))
+          (if_expr
+             I64
+             (load v >>| fun e -> W.RefTest ({ nullable = false; typ = I31 }, e))
+             (load v
+             >>| fun e ->
+             W.I64ExtendI32 (S, I31Get (S, RefCast ({ nullable = false; typ = I31 }, e)))
+             )
+             (load v
+             >>| fun e ->
+             W.StructGet (None, ty, 0, RefCast ({ nullable = false; typ = Type ty }, e))))
+
+  (* Zero fits in 31 bits, so it is always represented as an [i31] *)
+  let check_is_not_zero = Value.check_is_not_zero
+
+  let check_is_int i =
+    let* i = i in
+    let* ty = Type.large_int_type in
+    return
+      (W.BinOp
+         ( I32 Or
+         , RefTest ({ nullable = false; typ = I31 }, i)
+         , RefTest ({ nullable = false; typ = Type ty }, i) ))
+
+  let not i = Arith64.eqz_i32 i
+
+  let lt = Arith64.( < )
+
+  let le = Arith64.( <= )
+
+  let ref_test_both ~ty a b =
+    (* We mimic an "and" on the two conditions, but in a way that is nicer to the
+       binaryen optimizer. *)
+    if_expr I32 (ref_test (ref ty) (load a)) (ref_test (ref ty) (load b)) (Arith.const 0l)
+
+  let phys_eq_unboxing_i64_refs xv yv =
+    let* ty = Type.large_int_type in
+    let large e =
+      let* e = e in
+      return (W.StructGet (None, ty, 0, RefCast ({ nullable = false; typ = Type ty }, e)))
+    in
+    if_expr
+      I32
+      (ref_eq (load xv) (load yv))
+      (Arith.const 1l)
+      (if_expr
+         I32
+         (ref_test_both ~ty xv yv)
+         (Arith64.eq_i32 (large (load xv)) (large (load yv)))
+         (Arith.const 0l))
+
+  let js_eqeqeq ~negate x y =
+    let xv = Code.Var.fresh () in
+    let yv = Code.Var.fresh () in
+    let* js = Type.js_type in
+    let n =
+      if_expr
+        I32
+        (ref_test_both ~ty:js xv yv)
+        (caml_js_strict_equals (load xv) (load yv))
+        (phys_eq_unboxing_i64_refs xv yv)
+    in
+    seq
+      (let* () = store xv x in
+       let* () = store yv y in
+       return ())
+      (if negate then Arith.eqz n else n)
+
+  let phys_eq x y =
+    let xv = Code.Var.fresh () in
+    let yv = Code.Var.fresh () in
+    seq
+      (let* () = store xv x in
+       let* () = store yv y in
+       return ())
+      (phys_eq_unboxing_i64_refs xv yv)
+
+  let phys_neq x y = Arith.eqz (phys_eq x y)
+
+  let ult = Arith64.ult
+
+  let int_add = Arith64.( + )
+
+  let int_sub = Arith64.( - )
+
+  let int_mul = Arith64.( * )
+
+  let int_div = Arith64.( / )
+
+  let int_mod = Arith64.( mod )
+
+  let int_neg i = Arith64.(const 0L - i)
+
+  let int_or = Arith64.( lor )
+
+  let int_and = Arith64.( land )
+
+  let int_xor = Arith64.( lxor )
+
+  let int_lsl = Arith64.( lsl )
+
+  let int_lsr i i' = Arith64.((i land const 0x7fff_ffff_ffff_ffffL) lsr i')
+
+  let int_asr = Arith64.( asr )
 end
 
 module Memory = struct
@@ -1011,11 +1235,14 @@ module Memory = struct
     let* ty = Type.int32_type in
     wasm_struct_get ty (wasm_cast ty e) 1
 
-  let make_int64 e =
+  let make_int64 ~kind e =
     let* custom_operations = Type.custom_operations_type in
     let* int64_ops =
       register_import
-        ~name:"int64_ops"
+        ~name:
+          (match kind with
+          | `Int64 -> "int64_ops"
+          | `Nativeint -> "nativeint_ops")
         (Global
            { mut = false; typ = Ref { nullable = false; typ = Type custom_operations } })
     in
@@ -1023,17 +1250,25 @@ module Memory = struct
     let* e = e in
     return (W.StructNew (ty, [ GlobalGet int64_ops; e ]))
 
-  let box_int64 e = make_int64 e
+  let box_int64 e = make_int64 ~kind:`Int64 e
 
   let unbox_int64 e =
     let* ty = Type.int64_type in
     wasm_struct_get ty (wasm_cast ty e) 1
 
-  let box_nativeint e = make_int32 ~kind:`Nativeint e
+  let box_nativeint e =
+    if Config.Flag.portable_int ()
+    then make_int64 ~kind:`Nativeint e
+    else make_int32 ~kind:`Nativeint e
 
   let unbox_nativeint e =
-    let* ty = Type.int32_type in
-    wasm_struct_get ty (wasm_cast ty e) 1
+    if Config.Flag.portable_int ()
+    then
+      let* ty = Type.int64_type in
+      wasm_struct_get ty (wasm_cast ty e) 1
+    else
+      let* ty = Type.int32_type in
+      wasm_struct_get ty (wasm_cast ty e) 1
 end
 
 module Constant = struct
@@ -1062,7 +1297,10 @@ module Constant = struct
 
   let rec translate_rec c =
     match c with
-    | Code.Int i -> return (Const, W.RefI31 (Const (I32 (Targetint.to_int32 i))))
+    | Code.Int i when Config.Flag.portable_int () && not (Targetint.is_within_i31s i) ->
+        let* ty = Type.large_int_type in
+        return (Const, W.StructNew (ty, [ Const (I64 (Targetint.to_int64 i)) ]))
+    | Int i -> return (Const, W.RefI31 (Const (I32 (Targetint.to_int32 i))))
     | Tuple (tag, a, _, _) ->
         let* ty = Type.block_type in
         let* l =
@@ -1186,14 +1424,27 @@ module Constant = struct
           , W.ArrayNewFixed
               (ty, List.map ~f:(fun f -> W.Const (F64 (Int64.float_of_bits f))) l) )
     | Int64 i ->
-        let* e = Memory.make_int64 (return (W.Const (I64 i))) in
+        let* e = Memory.make_int64 ~kind:`Int64 (return (W.Const (I64 i))) in
         return (Const, e)
     | Int32 i ->
         let* e = Memory.make_int32 ~kind:`Int32 (return (W.Const (I32 i))) in
         return (Const, e)
     | NativeInt i ->
-        let* e = Memory.make_int32 ~kind:`Nativeint (return (W.Const (I32 i))) in
-        return (Const, e)
+        if Config.Flag.portable_int ()
+        then
+          let* e =
+            Memory.make_int64
+              ~kind:`Nativeint
+              (return (W.Const (I64 (Targetnativeint.to_int64 i))))
+          in
+          return (Const, e)
+        else
+          let* e =
+            Memory.make_int32
+              ~kind:`Nativeint
+              (return (W.Const (I32 (Targetnativeint.to_int32 i))))
+          in
+          return (Const, e)
     | Null_ ->
         let* var =
           register_import ~name:"null" (Global { mut = false; typ = Type.value })
@@ -1202,12 +1453,20 @@ module Constant = struct
 
   let translate ~unboxed c =
     match c with
-    | Code.Int i -> return (W.Const (I32 (Targetint.to_int32 i)))
+    | Code.Int i -> (
+        match Typing.Integer.kind_of_targetint i with
+        | Small_normalized | Small_unnormalized | Ref ->
+            return (W.Const (I32 (Targetint.to_int32 i)))
+        | Large_normalized | Large_unnormalized ->
+            return (W.Const (I64 (Targetint.to_int64 i))))
     | Float f when unboxed -> return (W.Const (F64 (Int64.float_of_bits f)))
     | ((Float32 f) [@if oxcaml]) when unboxed ->
         return (W.Const (F32 (Int64.float_of_bits f)))
     | Int64 i when unboxed -> return (W.Const (I64 i))
-    | (Int32 i | NativeInt i) when unboxed -> return (W.Const (I32 i))
+    | Int32 i when unboxed -> return (W.Const (I32 i))
+    | NativeInt i when unboxed && Config.Flag.portable_int () ->
+        return (W.Const (I64 (Targetnativeint.to_int64 i)))
+    | NativeInt i when unboxed -> return (W.Const (I32 (Targetnativeint.to_int32 i)))
     | _ -> (
         let* const, c = translate_rec c in
         match const with
@@ -1621,8 +1880,10 @@ module Bigarray = struct
       | Int16_signed -> "dv_get_i16", I32, 1, Fun.id
       | Int16_unsigned -> "dv_get_ui16", I32, 1, Fun.id
       | Int32 -> "dv_get_i32", I32, 2, Fun.id
+      | Nativeint when Config.Flag.portable_int () -> "dv_get_i64", I64, 3, Fun.id
       | Nativeint -> "dv_get_i32", I32, 2, Fun.id
       | Int64 -> "dv_get_i64", I64, 3, Fun.id
+      | Int when Config.Flag.portable_int () -> "dv_get_i64", I64, 3, Fun.id
       | Int -> "dv_get_i32", I32, 2, Fun.id
       | Float16 ->
           ( "dv_get_i16"
@@ -1699,8 +1960,10 @@ module Bigarray = struct
       | Int8_signed | Int8_unsigned -> "dv_set_i8", I32, 0, Fun.id
       | Int16_signed | Int16_unsigned -> "dv_set_i16", I32, 1, Fun.id
       | Int32 -> "dv_set_i32", I32, 2, Fun.id
+      | Nativeint when Config.Flag.portable_int () -> "dv_set_i64", I64, 3, Fun.id
       | Nativeint -> "dv_set_i32", I32, 2, Fun.id
       | Int64 -> "dv_set_i64", I64, 3, Fun.id
+      | Int when Config.Flag.portable_int () -> "dv_set_i64", I64, 3, Fun.id
       | Int -> "dv_set_i32", I32, 2, Fun.id
       | Float16 ->
           ( "dv_set_i16"
