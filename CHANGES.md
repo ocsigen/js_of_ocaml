@@ -75,6 +75,8 @@
 * Compiler: fix a failure (`Targetint.of_string_exn`) when an integer
   addition, subtraction or shift is applied to a float constant in dead
   code (GADTs) (#2618)
+* Compiler: fix float constants being truncated to integers when the
+  compiler itself runs in JavaScript (#2616)
 
 # 6.5.0 (2026-10-22) - Lille
 
