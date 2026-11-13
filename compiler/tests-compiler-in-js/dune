@@ -1,0 +1,66 @@
+; Compile the compiler to JavaScript, then use it to compile a small
+; program. Some values do not have the same representation as when the
+; compiler runs natively (for instance, floats are unboxed numbers).
+
+(executable
+ (name main)
+ (modules main)
+ (modes byte))
+
+(rule
+ (target compiler.js)
+ (action
+  (run
+   %{bin:js_of_ocaml}
+   -w
+   no-missing-primitive
+   %{dep:../bin-js_of_ocaml/js_of_ocaml.bc}
+   -o
+   %{target})))
+
+; A relocatable findlib (ocamlfind >= 1.9.9 with OCaml >= 5.5) finds its
+; configuration file from the location of the standard library, which is
+; meaningless in JavaScript. Pass the path explicitly.
+
+(executable
+ (name findlib_conf)
+ (modules findlib_conf)
+ (libraries
+  (select
+   findlib_conf.ml
+   from
+   (findlib -> findlib_conf.findlib.ml)
+   (-> findlib_conf.empty.ml))))
+
+(rule
+ (target findlib_conf.txt)
+ (action
+  (with-stdout-to
+   %{target}
+   (run ./findlib_conf.exe))))
+
+(rule
+ (target main.js)
+ (enabled_if
+  (<> %{profile} quickjs))
+ (action
+  (setenv
+   OCAMLFIND_CONF
+   %{read:findlib_conf.txt}
+   (run %{bin:node} %{dep:compiler.js} %{dep:main.bc} -o %{target}))))
+
+(rule
+ (target main.out)
+ (enabled_if
+  (<> %{profile} quickjs))
+ (action
+  (with-outputs-to
+   %{target}
+   (run %{bin:node} %{dep:main.js}))))
+
+(rule
+ (alias runtest-js)
+ (enabled_if
+  (<> %{profile} quickjs))
+ (action
+  (diff main.expected main.out)))
