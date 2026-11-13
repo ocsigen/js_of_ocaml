@@ -526,7 +526,10 @@ let unsigned x =
   in
   let pos_int32 =
     match x with
-    | J.ENum num -> ( try Targetint.(J.Num.to_targetint num >= zero) with _ -> false)
+    | J.ENum num -> (
+        match J.Num.to_targetint_opt num with
+        | Some n -> Targetint.(n >= zero)
+        | None -> false)
     | _ -> false
   in
   if pos_int32 then x else unsigned' x
@@ -539,7 +542,12 @@ let plus_int x y =
   match x, y with
   | J.ENum y, x when J.Num.is_zero y -> x
   | x, J.ENum y when J.Num.is_zero y -> x
-  | J.ENum x, J.ENum y -> J.ENum (J.Num.add x y)
+  | J.ENum x', J.ENum y' -> (
+      match J.Num.add x' y' with
+      | Some n -> J.ENum n
+      | None ->
+          (* Not integer literals: a float constant in dead code *)
+          J.EBin (J.Plus, x, y))
   | x, y -> J.EBin (J.Plus, x, y)
 
 let maybe_bool ctx x e =
@@ -1513,16 +1521,20 @@ let _ =
     `Pure
     (fun cx cy _ ->
       match cx, cy with
-      | J.EBin (J.Minus, cz, J.ENum n), J.ENum m ->
-          to_int (J.EBin (J.Plus, cz, J.ENum (J.Num.add m (J.Num.neg n))))
+      | J.EBin (J.Minus, cz, J.ENum n), J.ENum m -> (
+          match J.Num.add m (J.Num.neg n) with
+          | Some k -> to_int (J.EBin (J.Plus, cz, J.ENum k))
+          | None -> to_int (plus_int cx cy))
       | _ -> to_int (plus_int cx cy));
   register_bin_prims
     [ "%int_sub"; "caml_int32_sub"; "caml_nativeint_sub" ]
     `Pure
     (fun cx cy _ ->
       match cx, cy with
-      | J.EBin (J.Minus, cz, J.ENum n), J.ENum m ->
-          to_int (J.EBin (J.Minus, cz, J.ENum (J.Num.add n m)))
+      | J.EBin (J.Minus, cz, J.ENum n), J.ENum m -> (
+          match J.Num.add n m with
+          | Some k -> to_int (J.EBin (J.Minus, cz, J.ENum k))
+          | None -> to_int (J.EBin (J.Minus, cx, cy)))
       | _ -> to_int (J.EBin (J.Minus, cx, cy)));
   register_bin_prim "%direct_int_mul" `Pure (fun cx cy _ ->
       to_int (J.EBin (J.Mul, cx, cy)));
@@ -1556,8 +1568,11 @@ let _ =
       let e = J.EBin (J.Lsr, cx, cy) in
       match cy with
       | J.ENum n
-        when let n = Targetint.to_int32 (J.Num.to_targetint n) in
-             Int32.(n >= 1l && n <= 31l) ->
+        when match J.Num.to_targetint_opt n with
+             | Some n ->
+                 let n = Targetint.to_int32 n in
+                 Int32.(n >= 1l && n <= 31l)
+             | None -> false ->
           (* The result is in [0, 2^31) *)
           e
       | _ -> to_int e);

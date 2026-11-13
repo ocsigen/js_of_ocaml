@@ -39,6 +39,10 @@ module Num : sig
 
   val to_targetint : t -> Targetint.t
 
+  val to_targetint_opt : t -> Targetint.t option
+  (** [None] when the number is not an integer literal. The operand of an
+      integer operation can be a float constant in dead code (with GADTs). *)
+
   val hash : t -> int
 
   (** Predicates *)
@@ -53,7 +57,8 @@ module Num : sig
 
   (** Arithmetic *)
 
-  val add : t -> t -> t
+  val add : t -> t -> t option
+  (** Integer addition. [None] when an operand is not an integer literal. *)
 
   val neg : t -> t
 end
