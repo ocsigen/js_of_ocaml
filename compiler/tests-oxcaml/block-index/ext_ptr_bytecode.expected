@@ -1,0 +1,4 @@
+get_ext_ptr: Failure: External ptr primitives are unimplemented on bytecode
+set_ext_ptr: Failure: External ptr primitives are unimplemented on bytecode
+get_ptr (Null base): Failure: External ptrs are unimplemented on bytecode
+set_ptr (Null base): Failure: External ptrs are unimplemented on bytecode

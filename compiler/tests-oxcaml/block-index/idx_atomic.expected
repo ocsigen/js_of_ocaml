@@ -1,0 +1,89 @@
+== Basic idx_atomic ==
+(.x) = 1
+(.y) = two
+(.x) <- 3
+(.y) <- four
+(.x) = 3
+(.y) = four
+== idx_atomic read-modify-write ==
+exchange (.x) 2 = 1
+exchange (.y) two = one
+(.x) = 2
+(.y) = two
+compare_and_set (.x) 2 3 = true
+compare_and_set (.x) 2 4 = false
+(.x) = 3
+compare_and_set (.y) y three = true
+(.y) = three
+compare_exchange (.x) 3 5 = 3
+compare_exchange (.x) 3 6 = 5
+(.x) = 5
+fetch_and_add (.x) 10 = 5
+(.x) = 15
+add (.x) 4
+(.x) = 19
+sub (.x) 5
+(.x) = 14
+logand (.x) 6
+(.x) = 6
+logor (.x) 9
+(.x) = 15
+logxor (.x) 3
+(.x) = 12
+incr (.x)
+(.x) = 13
+decr (.x)
+(.x) = 12
+== idx_atomic read-modify-write (mixed record) ==
+exchange (.y) 2 = 1
+compare_and_set (.y) 2 3 = true
+fetch_and_add (.y) 10 = 3
+(.x) = 42
+(.y) = 13
+(.z) = 67
+== idx_atomic read-modify-write (stack-allocated record) ==
+exchange (.x) 2 = 1
+compare_and_set (.x) 2 3 = true
+compare_exchange (.x) 3 4 = 3
+fetch_and_add (.x) 10 = 4
+(.x) = 14
+== idx_atomic with unboxed singleton ==
+(.x) = #{y = 1}
+(.x.#y) = 1
+(.x) <- #{y = 2}
+(.x) = #{y = 2}
+(.x.#y) = 2
+(.x.#y) <- 3
+(.x) = #{y = 3}
+(.x.#y) = 3
+== deepening idx_atomic with unboxed singleton ==
+(.x) = #{y = 1}
+(.idx_atomic((.x)).#y) = 1
+(.x) <- #{y = 2}
+(.x) = #{y = 2}
+(.idx_atomic((.x)).#y) = 2
+(.idx_atomic((.x)).#y) <- 3
+(.x) = #{y = 3}
+(.idx_atomic((.x)).#y) = 3
+== Basic idx_atomic (mixed record) ==
+(.x) = 42
+(.y) = two
+(.z) = 67
+(.y) <- three
+(.x) = 42
+(.y) = three
+(.z) = 67
+== Basic idx_atomic (float record) ==
+(.x) = 2.000000
+(.y) = 4.000000
+(.y) <- 6.0
+(.x) = 2.000000
+(.y) = 6.000000
+== Basic idx_atomic (void record) ==
+(.y) = hello
+(.y) <- world
+(.y) = world
+== Basic idx_atomic (stack-allocated record) ==
+(.x) = hello
+(.x) <- "world"
+(.x) = world

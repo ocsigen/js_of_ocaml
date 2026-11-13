@@ -17,6 +17,7 @@
 
 (module
    (import "fail" "caml_invalid_argument" (func $caml_invalid_argument (param (ref eq))))
+   (import "fail" "caml_failwith" (func $caml_failwith (param (ref eq))))
    (import "obj" "null" (global $null_value (ref eq)))
    (import "bigarray" "caml_ba_uint8_geti8"
       (func $caml_ba_uint8_geti8 (param (ref eq)) (param i32) (result i32)))
@@ -29,6 +30,51 @@
       (func $caml_bytes_set8
          (param (ref eq)) (param i32) (param i32) (result (ref eq))))
 
+   (import "domain" "caml_atomic_load_field"
+      (func $caml_atomic_load_field
+         (param (ref eq)) (param (ref eq))
+         (result (ref eq))))
+   (import "domain" "caml_atomic_set_field"
+      (func $caml_atomic_set_field
+         (param (ref eq)) (param (ref eq)) (param (ref eq))
+         (result (ref eq))))
+   (import "domain" "caml_atomic_exchange_field"
+      (func $caml_atomic_exchange_field
+         (param (ref eq)) (param (ref eq)) (param (ref eq))
+         (result (ref eq))))
+   (import "domain" "caml_atomic_compare_exchange_field"
+      (func $caml_atomic_compare_exchange_field
+         (param (ref eq)) (param (ref eq)) (param (ref eq)) (param (ref eq))
+         (result (ref eq))))
+   (import "domain" "caml_atomic_cas_field"
+      (func $caml_atomic_cas_field
+         (param (ref eq)) (param (ref eq)) (param (ref eq)) (param (ref eq))
+         (result (ref eq))))
+   (import "domain" "caml_atomic_fetch_add_field"
+      (func $caml_atomic_fetch_add_field
+         (param (ref eq)) (param (ref eq)) (param (ref eq))
+         (result (ref eq))))
+   (import "domain" "caml_atomic_add_field"
+      (func $caml_atomic_add_field
+         (param (ref eq)) (param (ref eq)) (param (ref eq))
+         (result (ref eq))))
+   (import "domain" "caml_atomic_sub_field"
+      (func $caml_atomic_sub_field
+         (param (ref eq)) (param (ref eq)) (param (ref eq))
+         (result (ref eq))))
+   (import "domain" "caml_atomic_land_field"
+      (func $caml_atomic_land_field
+         (param (ref eq)) (param (ref eq)) (param (ref eq))
+         (result (ref eq))))
+   (import "domain" "caml_atomic_lor_field"
+      (func $caml_atomic_lor_field
+         (param (ref eq)) (param (ref eq)) (param (ref eq))
+         (result (ref eq))))
+   (import "domain" "caml_atomic_lxor_field"
+      (func $caml_atomic_lxor_field
+         (param (ref eq)) (param (ref eq)) (param (ref eq))
+         (result (ref eq))))
+
    (type $block (array (mut (ref eq))))
    (type $string (array (mut i8)))
    (type $float (struct (field f64)))
@@ -38,6 +84,12 @@
       "caml_get_idx_bytecode: attempted to read from an invalid index")
    (data $invalid_set_idx
       "caml_set_idx_bytecode: attempted to write to an invalid index")
+   (data $unimplemented_ext_ptr
+      "External ptrs are unimplemented on bytecode")
+   (data $unimplemented_ext_ptr_primitives
+      "External ptr primitives are unimplemented on bytecode")
+   (data $invalid_atomic_idx
+      "caml_check_atomic_idx: attempted to access an invalid index")
 
    ;; Indices with a non-zero tag are special --- the tag tells us how to
    ;; perform the indexing:
@@ -247,43 +299,172 @@
          (local.get $v))
       (ref.i31 (i32.const 0)))
 
+   ;; We do not support nested atomic indices, so a valid index to an atomic
+   ;; field is a tag-0 block with exactly one position.
+
+   ;; check_atomic_idx : base -> idx -> unit
+   ;; Raises [Failure] if [base] is [Null]: [idx] is then a raw address (an
+   ;; external ptr), which cannot be dereferenced here.
+   ;; Raises [Invalid_argument] if [idx] is not a tag-0 block with exactly one
+   ;; position.
+   (func $check_atomic_idx (param $base (ref eq)) (param $idx (ref eq))
+      (local $idx_block (ref $block))
+      (call $check_ptr_base (local.get $base))
+      (local.set $idx_block (ref.cast (ref $block) (local.get $idx)))
+      (if (i32.or
+             (i32.ne
+                ;; Tag of a runtime-built block index; always an [i31].
+                (i31.get_s
+                   (ref.cast (ref i31)
+                      (array.get $block (local.get $idx_block) (i32.const 0))))
+                (i32.const 0))
+             (i32.ne (array.len (local.get $idx_block)) (i32.const 2)))
+         (then
+            (call $caml_invalid_argument
+               (array.new_data $string $invalid_atomic_idx
+                  (i32.const 0) (i32.const 59))))))
+
+   ;; atomic_idx_position : idx -> position
+   ;; The single field position held by a checked atomic index.
+   (func $atomic_idx_position (param $idx (ref eq)) (result (ref eq))
+      (array.get $block (ref.cast (ref $block) (local.get $idx)) (i32.const 1)))
+
+   (func (export "caml_atomic_load_idx_bytecode")
+      (param $base (ref eq)) (param $idx (ref eq))
+      (result (ref eq))
+      (call $check_atomic_idx (local.get $base) (local.get $idx))
+      (return_call $caml_atomic_load_field
+         (local.get $base) (call $atomic_idx_position (local.get $idx))))
+
+   (func (export "caml_atomic_set_idx_bytecode")
+      (param $base (ref eq)) (param $idx (ref eq)) (param $v (ref eq))
+      (result (ref eq))
+      (call $check_atomic_idx (local.get $base) (local.get $idx))
+      (return_call $caml_atomic_set_field
+         (local.get $base) (call $atomic_idx_position (local.get $idx)) (local.get $v)))
+
+   (func (export "caml_atomic_exchange_idx_bytecode")
+      (param $base (ref eq)) (param $idx (ref eq)) (param $v (ref eq))
+      (result (ref eq))
+      (call $check_atomic_idx (local.get $base) (local.get $idx))
+      (return_call $caml_atomic_exchange_field
+         (local.get $base) (call $atomic_idx_position (local.get $idx)) (local.get $v)))
+
+   (func (export "caml_atomic_compare_exchange_idx_bytecode")
+      (param $base (ref eq)) (param $idx (ref eq)) (param $o (ref eq)) (param $n (ref eq))
+      (result (ref eq))
+      (call $check_atomic_idx (local.get $base) (local.get $idx))
+      (return_call $caml_atomic_compare_exchange_field
+         (local.get $base) (call $atomic_idx_position (local.get $idx)) (local.get $o) (local.get $n)))
+
+   (func (export "caml_atomic_cas_idx_bytecode")
+      (param $base (ref eq)) (param $idx (ref eq)) (param $o (ref eq)) (param $n (ref eq))
+      (result (ref eq))
+      (call $check_atomic_idx (local.get $base) (local.get $idx))
+      (return_call $caml_atomic_cas_field
+         (local.get $base) (call $atomic_idx_position (local.get $idx)) (local.get $o) (local.get $n)))
+
+   (func (export "caml_atomic_fetch_add_idx_bytecode")
+      (param $base (ref eq)) (param $idx (ref eq)) (param $i (ref eq))
+      (result (ref eq))
+      (call $check_atomic_idx (local.get $base) (local.get $idx))
+      (return_call $caml_atomic_fetch_add_field
+         (local.get $base) (call $atomic_idx_position (local.get $idx)) (local.get $i)))
+
+   (func (export "caml_atomic_add_idx_bytecode")
+      (param $base (ref eq)) (param $idx (ref eq)) (param $i (ref eq))
+      (result (ref eq))
+      (call $check_atomic_idx (local.get $base) (local.get $idx))
+      (return_call $caml_atomic_add_field
+         (local.get $base) (call $atomic_idx_position (local.get $idx)) (local.get $i)))
+
+   (func (export "caml_atomic_sub_idx_bytecode")
+      (param $base (ref eq)) (param $idx (ref eq)) (param $i (ref eq))
+      (result (ref eq))
+      (call $check_atomic_idx (local.get $base) (local.get $idx))
+      (return_call $caml_atomic_sub_field
+         (local.get $base) (call $atomic_idx_position (local.get $idx)) (local.get $i)))
+
+   (func (export "caml_atomic_land_idx_bytecode")
+      (param $base (ref eq)) (param $idx (ref eq)) (param $i (ref eq))
+      (result (ref eq))
+      (call $check_atomic_idx (local.get $base) (local.get $idx))
+      (return_call $caml_atomic_land_field
+         (local.get $base) (call $atomic_idx_position (local.get $idx)) (local.get $i)))
+
+   (func (export "caml_atomic_lor_idx_bytecode")
+      (param $base (ref eq)) (param $idx (ref eq)) (param $i (ref eq))
+      (result (ref eq))
+      (call $check_atomic_idx (local.get $base) (local.get $idx))
+      (return_call $caml_atomic_lor_field
+         (local.get $base) (call $atomic_idx_position (local.get $idx)) (local.get $i)))
+
+   (func (export "caml_atomic_lxor_idx_bytecode")
+      (param $base (ref eq)) (param $idx (ref eq)) (param $i (ref eq))
+      (result (ref eq))
+      (call $check_atomic_idx (local.get $base) (local.get $idx))
+      (return_call $caml_atomic_lxor_field
+         (local.get $base) (call $atomic_idx_position (local.get $idx)) (local.get $i)))
+
    ;; In bytecode, a pointer is an unboxed pair of a base value and a block
    ;; index. Unboxed products are represented as blocks in bytecode, so a
    ;; pointer arrives as a single tag-0 block [0; base; idx], and
    ;; reading/writing through it is exactly reading/writing at the block
-   ;; index. External pointers carry no base: they are represented as the
-   ;; block index alone, and behave like pointers whose base is [Null].
+   ;; index.
+   ;;
+   ;; External pointers (and pointers with a [Null] base) are unsupported in
+   ;; bytecode and fail with an 'unimplemented' message. The messages are
+   ;; those of the OxCaml bytecode runtime.
+
+   ;; check_ptr_base : base -> unit
+   ;; Raises [Failure] if [base] is [Null].
+   (func $check_ptr_base (param $base (ref eq))
+      (if (ref.eq (local.get $base) (global.get $null_value))
+         (then
+            (call $caml_failwith
+               (array.new_data $string $unimplemented_ext_ptr
+                  (i32.const 0) (i32.const 43))))))
 
    ;; caml_get_ptr_bytecode : ptr -> result
    (func (export "caml_get_ptr_bytecode")
       (param $ptr (ref eq)) (result (ref eq))
       (local $b (ref $block))
+      (local $base (ref eq))
       (local.set $b (ref.cast (ref $block) (local.get $ptr)))
+      (local.set $base (array.get $block (local.get $b) (i32.const 1)))
+      (call $check_ptr_base (local.get $base))
       (return_call $caml_get_idx_bytecode
-         (array.get $block (local.get $b) (i32.const 1))
+         (local.get $base)
          (array.get $block (local.get $b) (i32.const 2))))
 
    ;; caml_set_ptr_bytecode : ptr -> value -> unit
    (func (export "caml_set_ptr_bytecode")
       (param $ptr (ref eq)) (param $v (ref eq)) (result (ref eq))
       (local $b (ref $block))
+      (local $base (ref eq))
       (local.set $b (ref.cast (ref $block) (local.get $ptr)))
+      (local.set $base (array.get $block (local.get $b) (i32.const 1)))
+      (call $check_ptr_base (local.get $base))
       (return_call $caml_set_idx_bytecode
-         (array.get $block (local.get $b) (i32.const 1))
+         (local.get $base)
          (array.get $block (local.get $b) (i32.const 2))
          (local.get $v)))
 
    ;; caml_get_ext_ptr_bytecode : idx -> result
    (func (export "caml_get_ext_ptr_bytecode")
       (param $idx (ref eq)) (result (ref eq))
-      (return_call $caml_get_idx_bytecode
-         (global.get $null_value) (local.get $idx)))
+      (call $caml_failwith
+         (array.new_data $string $unimplemented_ext_ptr_primitives
+            (i32.const 0) (i32.const 53)))
+      (ref.i31 (i32.const 0)))
 
    ;; caml_set_ext_ptr_bytecode : idx -> value -> unit
    (func (export "caml_set_ext_ptr_bytecode")
       (param $idx (ref eq)) (param $v (ref eq)) (result (ref eq))
-      (return_call $caml_set_idx_bytecode
-         (global.get $null_value) (local.get $idx) (local.get $v)))
+      (call $caml_failwith
+         (array.new_data $string $unimplemented_ext_ptr_primitives
+            (i32.const 0) (i32.const 53)))
+      (ref.i31 (i32.const 0)))
 
    ;; caml_deepen_idx_bytecode : idx_prefix -> idx_suffix -> idx
    ;; Concatenates two block indices into a new one.
