@@ -25,6 +25,8 @@
 * Compiler: split switches with more than 256 cases (instead of 60), or whose
   case values span more than 1000, which the JavaScriptCore interpreter
   compiles to a sequence of tests (#2612)
+* Compiler: name variables in a more regular order, which compresses better
+  (#2598)
 
 ## Bug fixes
 * Compiler/Wasm: box variables typed as integers before using them as a
@@ -56,6 +58,8 @@
 * Runtime: ensure empty float arrays use tag 0 rather than 254 for
   Float.Array.concat and recursive dummy allocations, and in JavaScript also
   for Float.Array.append, sub, create and make (#2594)
+* Compiler: fix the naming of labels in default parameters, of `var`s in
+  class static blocks, and of nested source and generated labels (#2598)
 
 # 6.5.0 (2026-10-22) - Lille
 

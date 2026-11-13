@@ -46,17 +46,17 @@ let%expect_test _ =
     {|
     Function parameter properly assigned: 5/5
     short variable count: 10/10
-    short variable occurrences: 19/19
+    short variable occurrences: 23/23
     (function(a){
        "use strict";
-       var e = a.jsoo_runtime;
+       var g = a.jsoo_runtime;
        function b(a, b){
-        function c(a){return e.caml_div(a, 0);}
-        var g = a < b ? 1 : 2;
-        try{var d = c(a);}catch(f){d = c(g);}
+        function c(a){return g.caml_div(a, 0);}
+        var e = a < b ? 1 : 2;
+        try{var d = c(a);}catch(f){d = c(e);}
         return d;
        }
-       e.caml_register_global([0, b], "Test");
+       g.caml_register_global([0, b], "Test");
        0;
        return;
       }

@@ -65,8 +65,8 @@ let%expect_test "let rec" =
        }
        var
         Stdlib_Hashtbl = runtime.caml_get_global("Stdlib__Hashtbl"),
-        a = function _b_(_c_){return _b_.fun(_c_);},
-        b = function _a_(_b_){return _a_.fun(_b_);},
+        a = function _c_(_b_){return _c_.fun(_b_);},
+        b = function _b_(_a_){return _b_.fun(_a_);},
         d = runtime.caml_make_vect(5, 0);
        caml_update_dummy(a, function(x){return caml_call1(b, x);});
        var tbl = caml_call2(Stdlib_Hashtbl[1], 0, 17), c = [];
