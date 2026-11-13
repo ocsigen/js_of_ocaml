@@ -3232,6 +3232,10 @@
       (struct.set $bigarray $ba_data (ref.cast (ref $bigarray) (local.get $vba))
          (local.get $ba_data)))
 
+   (func (export "caml_ba_set_view") (param $vba (ref eq)) (param $ba_view (ref extern))
+      (struct.set $bigarray $ba_view (ref.cast (ref $bigarray) (local.get $vba))
+         (local.get $ba_view)))
+
    (func (export "caml_ba_get_dim") (param $vba (ref eq)) (result (ref $int_array))
       (struct.get $bigarray $ba_dim (ref.cast (ref $bigarray) (local.get $vba))))
 

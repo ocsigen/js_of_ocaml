@@ -22,7 +22,7 @@ jobs:
       WASM_OF_OCAML: ${{ matrix.backend == 'wasm' }}
       # Enable the build of tools/ci_setup.exe (needs opam-format)
       BUILD_CI_SETUP: true
-      OXCAML_OPAM_REPO_REF: d89747aa6e7b9f44d6cc844dca5b5e7c8a90716f
+      OXCAML_OPAM_REPO_REF: b66db7ae4ad21debd1b078635cc92e88d73610f8
 
     strategy:
       # On pull requests, free the runners as soon as a job fails
@@ -34,13 +34,13 @@ jobs:
             ocaml-compiler: "5.3"
           - backend: js
             ocaml-name: "OxCaml"
-            ocaml-compiler: "ocaml-variants.5.2.0+ox"
+            ocaml-compiler: "ocaml-variants.5.4.0+ox"
           - backend: wasm
             ocaml-name: ""
             ocaml-compiler: "5.3"
           - backend: wasm
             ocaml-name: "OxCaml"
-            ocaml-compiler: "ocaml-variants.5.2.0+ox"
+            ocaml-compiler: "ocaml-variants.5.4.0+ox"
 
     runs-on: ubuntu-latest
 
@@ -105,7 +105,7 @@ jobs:
         run: |
           opam pin add opam-core -n 2.5.1+ox
           opam pin add gen_js_api -n 1.1.2+ox
-          opam pin add zarith -n 1.14+ox
+          opam pin add zarith -n 1.14+ox1
           js_of_ocaml/tools/ci_pin_sedlex_oxcaml.sh
 
       # Add some packages to the opam invariant;
@@ -114,7 +114,7 @@ jobs:
         if: ${{ endsWith(matrix.ocaml-compiler, '+ox') }}
         run: |
           opam install gen_js_api zarith opam-format
-          opam switch set-invariant --formula '["ocaml-variants" {= "5.2.0+ox"} "zarith" "gen_js_api" "opam-format"]'
+          opam switch set-invariant --formula '["ocaml-variants" {= "5.4.0+ox"} "zarith" "gen_js_api" "opam-format"]'
 
       - name: Checkout Jane Street packages
         run: |
@@ -134,9 +134,11 @@ jobs:
         working-directory: ./janestreet
         run: npm install deasync
 
+      # Since v0.18~preview.133.03 (OxCaml), the tests of base and core are
+      # separate packages
       - name: Run Base tests
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
-        working-directory: ./janestreet/lib/base
+        working-directory: ./janestreet/lib/${{ endsWith(matrix.ocaml-compiler, '+ox') && 'base_test' || 'base' }}
         run: opam exec -- dune runtest
 
       - name: Run Base bigstring tests
@@ -146,6 +148,12 @@ jobs:
 
       - name: Run Core tests
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        working-directory: ./janestreet/lib/${{ endsWith(matrix.ocaml-compiler, '+ox') && 'core_test' || 'core' }}
+        run: opam exec -- dune runtest
+
+      # With OxCaml, core's own inline tests are left in core
+      - name: Run Core library tests (OxCaml)
+        if: ${{ !cancelled() && steps.install.outcome == 'success' && endsWith(matrix.ocaml-compiler, '+ox') }}
         working-directory: ./janestreet/lib/core
         run: opam exec -- dune runtest
 

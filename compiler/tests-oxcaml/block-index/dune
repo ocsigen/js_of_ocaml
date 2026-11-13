@@ -11,3 +11,26 @@
  (modes js wasm)
  (preprocess
   (pps ppx_devtools-optcomp)))
+
+(tests
+ (names pointer)
+ (build_if %{oxcaml_supported})
+ (libraries stdlib_stable stdlib_upstream_compatible)
+ (modes js wasm))
+
+(tests
+ (names stringlike)
+ (build_if %{oxcaml_supported})
+ (modes js wasm))
+
+; From oxcaml/oxcaml#7047 (testsuite/tests/records-and-block-indices/idx_atomic.ml
+; and testsuite/tests/typing-layouts-block-indices/ext_ptr_bytecode.ml); the
+; expected outputs are those of the 5.4.0-ox9 bytecode runtime.
+
+(tests
+ (names idx_atomic ext_ptr_bytecode)
+ (build_if %{oxcaml_supported})
+ (libraries stdlib_stable stdlib_upstream_compatible)
+ (flags
+  (:standard -w -33-60))
+ (modes js wasm))

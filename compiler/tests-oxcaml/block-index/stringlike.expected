@@ -1,0 +1,17 @@
+reads sign-extend
+0 1 127 -128 -127 -2 -1
+0 1 127 -128 -127 -2 -1
+0 1 127 -128 -127 -2 -1
+0 1 127 -128 -127 -2 -1
+writes keep the low byte
+0 1 127 128 129 254 255
+0 1 127 -128 -127 -2 -1
+0 1 127 128 129 254 255
+0 1 127 -128 -127 -2 -1
+out-of-bounds reads raise
+Invalid_argument("index out of bounds")
+Invalid_argument("index out of bounds")
+Invalid_argument("index out of bounds")
+Invalid_argument("index out of bounds")
+Invalid_argument("index out of bounds")
+Invalid_argument("index out of bounds")

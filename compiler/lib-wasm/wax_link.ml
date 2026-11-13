@@ -42,17 +42,39 @@ let value_to_define (v : value) : Wax.Define.value =
   | String s -> Wax.Define.String s
   | Version (a, b, c) -> Wax.Define.Version (a, b, c)
 
-let with_preprocessed_files ~variables ~inputs action =
+let with_preprocessed_files ?(specialize_conditionals = false) ~variables ~inputs action =
+  (* The OxCaml fork of wasm_of_ocaml sets [portable-int] when integers are
+     64-bit ("portable" integers), and runtime files written against the
+     fork, such as Jane Street's, test it. A Wax identifier cannot contain a
+     hyphen, so the variable is named [portable_int] here (the textual
+     specialization below also matches it as [portable-int]). Integers are
+     always 31-bit with this compiler. *)
+  let bindings =
+    ( "ocaml_version"
+    , match Ocaml_version.current with
+      | major :: minor :: patchlevel :: _ -> Version (major, minor, patchlevel)
+      | _ -> assert false )
+    :: ("oxcaml", Bool Config.oxcaml)
+    :: ("introspect", Bool Config.introspect)
+    :: ("portable_int", Bool false)
+    :: variables
+  in
   let defines =
-    Wax.Define.of_list
-      (( "ocaml_version"
-       , match Ocaml_version.current with
-         | major :: minor :: patchlevel :: _ ->
-             Wax.Define.Version (major, minor, patchlevel)
-         | _ -> assert false )
-      :: ("oxcaml", Wax.Define.Bool Config.oxcaml)
-      :: ("introspect", Wax.Define.Bool Config.introspect)
-      :: List.map variables ~f:(fun (k, v) -> k, value_to_define v))
+    Wax.Define.of_list (List.map bindings ~f:(fun (k, v) -> k, value_to_define v))
+  in
+  let specialize contents =
+    if specialize_conditionals
+    then
+      Wat_conditionals.specialize
+        ~variables:
+          (List.map bindings ~f:(fun (k, (v : value)) ->
+               ( k
+               , match v with
+                 | Bool b -> Wat_conditionals.Bool b
+                 | String s -> String s
+                 | Version (a, b, c) -> Version (a, b, c) )))
+        contents
+    else contents
   in
   (* [warn_unused] off: the same sources are assembled under several sets of
      [defines], and a declaration whose only uses are conditional is
@@ -80,7 +102,7 @@ let with_preprocessed_files ~variables ~inputs action =
         ~warn_unused:false
         ~try_table
         ~filename
-        contents
+        (specialize contents)
   in
   List.fold_left
     ~f:(fun cont { module_name; file; source } inputs ->

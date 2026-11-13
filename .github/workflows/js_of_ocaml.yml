@@ -16,7 +16,7 @@ concurrency:
 jobs:
   build:
     env:
-      OXCAML_OPAM_REPO_REF: d89747aa6e7b9f44d6cc844dca5b5e7c8a90716f
+      OXCAML_OPAM_REPO_REF: b66db7ae4ad21debd1b078635cc92e88d73610f8
 
     strategy:
       # On pull requests, free the runners as soon as a job fails
@@ -55,10 +55,12 @@ jobs:
             os-name: Ubuntu
             ocaml-name: ""
             ocaml-compiler: "5.1"
+          # OxCaml 5.4.0-ox9 (the bytecode of the OxCaml 5.2 releases is no
+          # longer supported)
           - os: ubuntu-latest
             os-name: Ubuntu
             ocaml-name: "OxCaml"
-            ocaml-compiler: "ocaml-variants.5.2.0+ox"
+            ocaml-compiler: "ocaml-variants.5.4.0+ox"
 
     runs-on: ${{ matrix.os }}
 
@@ -130,12 +132,12 @@ jobs:
         if: ${{ endsWith(matrix.ocaml-compiler, '+ox') }}
         run: tools/ci_pin_sedlex_oxcaml.sh
 
-      - run: opam install . --deps-only --with-test
-        # Install the test dependencies
-
       - name: Pin js_of_ocaml
         # OxCaml wants a precise version of Js_of_ocaml
         run: opam pin . -n --with-version 6.0.1+ox
+
+      - run: opam install . --deps-only --with-test
+        # Install the test dependencies
 
       - run: opam install .
         # Install the packages (without running the tests)

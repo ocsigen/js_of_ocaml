@@ -1,3 +1,7 @@
+(* Which of these alerts are raised depends on the OxCaml version; do not
+   complain about the ones that are not (warning 221). *)
+[@@@ocaml.warning "-221"]
+
 [@@@ocaml.alert "-unsafe_parallelism-unsafe_multidomain-do_not_spawn_domains"]
 
 let%expect_test _ =

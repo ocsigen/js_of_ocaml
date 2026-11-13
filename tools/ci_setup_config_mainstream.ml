@@ -25,6 +25,8 @@ let forked_packages =
   ; "typerep" (* https://github.com/janestreet/typerep/pull/7 *)
   ]
 
+let fixed_packages = [ "bonsai_web"; "bonsai_web_components"; "virtual_dom" ]
+
 (* Extra line spliced in the (env (_ ...)) block of the generated
    dune-workspace *)
 let dune_workspace_extra_env = ""
@@ -402,3 +404,12 @@ diff --git a/not_connected_warning_box/test/bonsai_web_ui_not_connected_warning_
 |bwc}
     )
   ]
+
+let removes =
+  [ "core/core/test/test_sys.ml"
+  ; "core/core/test/test_sys.mli"
+  ; "core/core/test/test_timezone.ml"
+  ; "core/core/test/test_timezone.mli"
+  ]
+
+let opam_sources = []

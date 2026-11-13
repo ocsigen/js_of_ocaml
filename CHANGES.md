@@ -25,6 +25,10 @@
 * Compiler: split switches with more than 256 cases (instead of 60), or whose
   case values span more than 1000, which the JavaScriptCore interpreter
   compiles to a sequence of tests (#2612)
+* Compiler: support OxCaml 5.4 (tested with 5.4.0-ox9); the OxCaml 5.2
+  releases are no longer supported (#2439)
+* Compiler/Wasm: accept library runtime files written for the former
+  preprocessor, such as Jane Street's, with `@if` around operands (#2439)
 
 ## Bug fixes
 * Compiler/Wasm: box variables typed as integers before using them as a

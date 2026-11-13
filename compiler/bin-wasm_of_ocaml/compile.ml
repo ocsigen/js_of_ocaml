@@ -96,7 +96,13 @@ let with_runtime_files ~runtime_wasm_files f =
       ~f:(fun file -> { Wax_link.module_name = "env"; file; source = File })
       runtime_wasm_files
   in
-  Wax_link.with_preprocessed_files ~variables:(preprocessor_variables ()) ~inputs f
+  (* These files come from libraries, and may be written for the former
+     preprocessor *)
+  Wax_link.with_preprocessed_files
+    ~specialize_conditionals:true
+    ~variables:(preprocessor_variables ())
+    ~inputs
+    f
 
 let build_runtime () =
   let variables = preprocessor_variables () in

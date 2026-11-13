@@ -29,4 +29,7 @@
   tutorial)
  (build_if
   (>= %{ocaml_version} 5.3))
+ ; Effect.perform carries the unsafe_effects alert in OxCaml
+ (flags
+  (:standard -alert -unsafe_effects))
  (modes js wasm))

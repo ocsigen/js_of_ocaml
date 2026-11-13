@@ -30,7 +30,12 @@ open! Util
    [try_with]: it may run below the handler and is double-translated.
 
    The functions are local: the toplevel values of a compilation unit are
-   exported, hence escape, and may then be called from anywhere. *)
+   exported, hence escape, and may then be called from anywhere. The
+   unyielding-call information is disabled so that the output does not
+   depend on the OCaml compiler: with OxCaml, the call to [in_fiber] would
+   be marked unyielding, since the mode system does not track the legacy
+   [Effect.perform]. See [tests-compiler/unyielding] for the combination of
+   the two analyses. *)
 let%expect_test "functions never below an effect handler are not double-translated" =
   let code =
     {|
@@ -64,7 +69,12 @@ let%expect_test "functions never below an effect handler are not double-translat
       try_with (fun () -> in_fiber (); in_fiber ()) () handler
     |}
   in
-  let program = compile_and_parse ~effects:`Double_translation code in
+  let program =
+    compile_and_parse
+      ~effects:`Double_translation
+      ~flags:[ "--disable"; "oxcaml-use-unyielding-debuginfo-for-effect-cps" ]
+      code
+  in
   print_fun_decl program (Some "call_unknown");
   print_double_fun_decl program "call_unknown";
   print_double_fun_decl program "in_fiber";

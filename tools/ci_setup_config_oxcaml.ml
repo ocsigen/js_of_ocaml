@@ -2,7 +2,9 @@
    OxCaml; ci_setup_config_mainstream.ml is the mainstream counterpart.
    Values differing between the two variants live here. *)
 let roots =
-  [ "bonsai_web_components"
+  [ "base_test" (* The tests of base and core are separate packages *)
+  ; "core_test"
+  ; "bonsai_web_components"
   ; "string_dict"
   ; "ppx_html"
   ; "bonsai_bench"
@@ -20,13 +22,17 @@ let omitted_js = [ "basement"; "sexplib0"; "ppxlib_jane"; "spawn"; "sexp_type" ]
 let do_pin = [ "bigstringaf" ]
 
 let forked_packages =
-  [ "base"
+  [ "base_test"
   ; "core"
+  ; "core_test"
   ; "bonsai_test"
   ; "bonsai_web_components"
   ; "bonsai_web_test"
   ; "virtual_dom"
   ]
+
+(* The released packages work with the current Dom bindings *)
+let fixed_packages = []
 
 (* Extra line spliced in the (env (_ ...)) block of the generated
    dune-workspace *)
@@ -40,48 +46,30 @@ let keep_package opam =
       let url = OpamUrl.to_string url in
       String.starts_with ~prefix:"https://github.com/janestreet/" url
 
-let pin_branch = "wasm-oxcaml"
+let pin_branch = "wasm-oxcaml-ox9"
 
-let fixed_branch = "wasm-oxcaml-31-fixed"
+let fixed_branch = "wasm-oxcaml-ox9-fixed"
 
-let forked_branch = "wasm-oxcaml-31"
+let forked_branch = "wasm-oxcaml-ox9"
 
 let default_branch = Some "oxcaml"
 
 let patches ~target_is_wasm:_ =
-  [ ( "sexp_grammar"
-    , {|
-diff --git a/sexp_grammar_validation.opam b/sexp_grammar_validation.opam
-new file mode 100644
-index 0000000..e69de29
-diff --git a/validation/src/dune b/validation/src/dune
-index 91933ec..849e4d7 100644
---- a/validation/src/dune
-+++ b/validation/src/dune
-@@ -1,5 +1,6 @@
- (library
-  (name sexp_grammar_validation)
-+ (public_name sexp_grammar_validation)
-  (libraries bignum.bigint core
-    expect_test_helpers_core.expect_test_helpers_base sexp_grammar)
-  (preprocess
-|}
-    )
-  ; ( "bignum"
+  [ ( "bignum"
     , {bignum|
 diff --git a/test/src/dune b/test/src/dune
-index f93ae3f..3f00557 100644
+index 063a745..e4c2a8e 100644
 --- a/test/src/dune
 +++ b/test/src/dune
 @@ -2,5 +2,6 @@
   (name bignum_test)
   (libraries bigint bignum core expect_test_helpers_core expectable
-    sexp_grammar_validation zarith)
+    sexp_grammar.validation zarith)
 + (inline_tests (flags -drop-tag no-js -drop-tag no-wasm -drop-tag 64-bits-only) (modes js wasm))
   (preprocess
-   (pps ppx_jane)))
+   (pps ppx_jane -compare-require-explicit-locality)))
 diff --git a/test/src/test_bignum.ml b/test/src/test_bignum.ml
-index c6d09fb..61b1e5b 100644
+index fb374d0..e4b0dfa 100644
 --- a/test/src/test_bignum.ml
 +++ b/test/src/test_bignum.ml
 @@ -3,6 +3,11 @@ open! Expect_test_helpers_core
@@ -96,17 +84,21 @@ index c6d09fb..61b1e5b 100644
  let%expect_test "Bignum.abs" =
    let test t =
      let t' = require_no_allocation (fun () -> abs t) in
-@@ -164,8 +169,8 @@
- let%expect_test ("Float.to_string_hum big exponents (js-only)" [@tags "js-only"]) =
-   let x = -3.3810849992682576E+37 in
-   print_s
-     [%sexp (Float.to_string_hum ~delimiter:'_' ~decimals:7 ~strip_zero:false x : string)];
--  [%expect {| -33_810_849_992_682_576_000_000_000_000_000_000_000.0000000 |}]
-+  [%expect {| -33_810_849_992_682_574_344_623_022_087_906_263_040.0000000 |}]
- ;;
-
- let%expect_test "to_string_hum" =
-@@ -226,5 +231,5 @@
+@@ -190,10 +195,7 @@ module%test Js_vs_native_vs_wasm = struct
+   let%expect_test ("web assembly" [@tags "wasm-only"]) =
+     test ();
+     [%expect
+-      {|
+-      ((float_to_string_hum  3_194_450_417.0351563)
+-       (bignum_to_string_hum 3_194_450_417.0351562))
+-      |}]
++      {| 3_194_450_417.0351562 |}]
+   ;;
+ end
+ 
+@@ -253,9 +255,9 @@ let%expect_test ("to_string_hum, tie resolved differently, native" [@tags "no-js
+ 
+ let%expect_test ("to_string_hum, tie resolved differently, js" [@tags "js-only"]) =
    print_endline (Float.to_string_hum (-1.25) ~decimals:1);
 -  [%expect {| -1.3 |}];
 +  [%expect {| -1.2 |}];
@@ -114,34 +106,34 @@ index c6d09fb..61b1e5b 100644
 -  [%expect {| 1.3 |}]
 +  [%expect {| 1.2 |}]
  ;;
+ 
+ module%test [@name "Bignum.gen"] _ = struct
 |bignum}
     )
   ; ( "bin_prot"
     , {bp|
 diff --git a/test/dune b/test/dune
-index 5a53c69..571e52e 100644
+index 345dd8e..3949012 100644
 --- a/test/dune
 +++ b/test/dune
-@@ -1,15 +1,8 @@
- (library
-  (name bin_prot_test)
-  (libraries base base_bigstring bin_prot
--   expect_test_helpers_core.expect_test_helpers_base expect_test_patterns
-+   expect_test_helpers_core.expect_test_helpers_base ; expect_test_patterns
-    float_array base.md5 re sexplib splittable_random stdio)
+@@ -3,13 +3,6 @@
+  (libraries base base_bigstring bin_prot expect_test_helpers_base
+-   expect_test_patterns float_array unboxed.float_u unboxed.int64_u base.md5
++   float_array unboxed.float_u unboxed.int64_u base.md5
+    re splittable_random stdio)
 + (inline_tests (flags -drop-tag no-js -drop-tag 64-bits-only -drop-tag 32-bits-only -drop-tag no-wasm) (modes js wasm))
   (preprocess
-   (pps ppx_jane)))
+   (pps ppx_jane -compare-require-explicit-locality)))
 -
 -(rule
 - (deps core/blob_stability_tests.ml integers_repr_tests_64bit.ml
 -   integers_repr_tests_js.ml integers_repr_tests_wasm.ml)
 - (action
 -  (bash
--    "diff <(\necho '869e6b3143f14201f406eac9c05c4cdb  core/blob_stability_tests.ml'\necho 'a9ed028fa16f307982c196f647d05afa  integers_repr_tests_64bit.ml'\necho 'a17ffcd3bf1e15dbca0ee54ec5b95c58  integers_repr_tests_js.ml'\necho 'e747bd85320575c771fc62a0d3085d29  integers_repr_tests_wasm.ml'\n  ) <(md5sum %{deps})"))
+-    "diff <(\necho '869e6b3143f14201f406eac9c05c4cdb  core/blob_stability_tests.ml'\necho 'a9ed028fa16f307982c196f647d05afa  integers_repr_tests_64bit.ml'\necho 'a17ffcd3bf1e15dbca0ee54ec5b95c58  integers_repr_tests_js.ml'\necho '9d0d4b68c8bdbffd3d6c4bd106171f6f  integers_repr_tests_wasm.ml'\n  ) <(md5sum %{deps} | sed 's#  \\./#  #')"))
 - (alias runtest))
 diff --git a/test/non_integers_repr.ml b/test/non_integers_repr.ml
-index e59e237..30740fc 100644
+index daf8e48..0643c79 100644
 --- a/test/non_integers_repr.ml
 +++ b/test/non_integers_repr.ml
 @@ -831,11 +831,13 @@ let%expect_test "Non-integer bin_prot size tests" =
@@ -158,10 +150,10 @@ index e59e237..30740fc 100644
    gen_tests Tests.vec;
    [%expect
      {|
-    |bp}
+|bp}
     )
   ; ( "base_bigstring"
-    , {|
+    , {bas|
 diff --git a/test/dune b/test/dune
 index 8d23f86..21e83ba 100644
 --- a/test/dune
@@ -173,10 +165,10 @@ index 8d23f86..21e83ba 100644
 + (inline_tests (flags -drop-tag no-js -drop-tag 64-bits-only -drop-tag no-wasm) (modes js wasm))
   (preprocess
    (pps ppx_jane)))
-|}
+|bas}
     )
   ; ( "string_dict"
-    , {|
+    , {str|
 diff --git a/test/dune b/test/dune
 index b145cb3..e5fc412 100644
 --- a/test/dune
@@ -188,42 +180,15 @@ index b145cb3..e5fc412 100644
 + (inline_tests (flags -drop-tag no-js -drop-tag 64-bits-only -drop-tag no-wasm) (modes js wasm))
   (preprocess
    (pps ppx_jane)))
-|}
+|str}
     )
   ; ( "zarith_stubs_js"
     , {zs|
 diff --git a/runtime.wat b/runtime.wat
-index 1234567..89abcde 100644
+index 8c895f4..915d8be 100644
 --- a/runtime.wat
 +++ b/runtime.wat
-@@ -302,20 +302,18 @@
-       (call $caml_serialize_int_4 (local.get $s) (local.get $nb))
-       (call $serialize (ref.func $caml_serialize_int_1) (local.get $s)
-          (local.get $z))
--      (tuple.make 2
--          (i32.add (i32.const 4) (local.get $nb))
--          (i32.and (i32.const -8) (i32.add (i32.const 15) (local.get $nb)))))
-+      (i32.add (i32.const 4) (local.get $nb))
-+      (i32.and (i32.const -8) (i32.add (i32.const 15) (local.get $nb))))
-
-    (func $ml_z_custom_deserialize
-       (param $s (ref eq)) (result (ref eq)) (result i32)
-       (local $neg i32) (local $nb i32)
-       (local.set $neg (call $caml_deserialize_uint_1 (local.get $s)))
-       (local.set $nb (call $caml_deserialize_int_4 (local.get $s)))
--      (tuple.make 2
--         (call $wrap_bigint
--            (call $deserialize (ref.func $caml_deserialize_uint_1) (local.get $s)
--               (local.get $neg) (local.get $nb)))
--         (i32.add (i32.const 4) (local.get $nb))))
-+      (call $wrap_bigint
-+         (call $deserialize (ref.func $caml_deserialize_uint_1) (local.get $s)
-+            (local.get $neg) (local.get $nb)))
-+      (i32.add (i32.const 4) (local.get $nb)))
-
-    (func (export "ml_z_cdiv")
-       (param $z1 (ref eq)) (param $z2 (ref eq)) (result (ref eq))
-@@ -446,8 +444,8 @@
+@@ -610,8 +610,8 @@
        (local.set $x (call $Int32_val (local.get $d)))
        (local.set $res (ref.i31 (local.get $x)))
        (if (i32.eq (local.get $x) (i31.get_s (local.get $res)))
@@ -231,21 +196,32 @@ index 1234567..89abcde 100644
 -         (else (return_call $wrap_bigint (call $of_int32 (local.get $x))))))
 +         (then (return (local.get $res))))
 +      (return_call $wrap_bigint (call $of_int32 (local.get $x))))
-
-    (func (export "ml_z_of_nativeint")
-       (param $d (ref eq)) (result (ref eq))
-@@ -455,8 +453,8 @@
-       (local.set $x (call $Nativeint_val (local.get $d)))
-       (local.set $res (ref.i31 (local.get $x)))
-       (if (i32.eq (local.get $x) (i31.get_s (local.get $res)))
--         (then (return (local.get $res)))
--         (else (return_call $wrap_bigint (call $of_int32 (local.get $x))))))
-+         (then (return (local.get $res))))
-+      (return_call $wrap_bigint (call $of_int32 (local.get $x))))
-
+ 
+    (@if $portable-int
+    (@then
+@@ -622,8 +622,8 @@
+          (local.set $res (ref.i31 (i32.wrap_i64 (local.get $x))))
+          (if (i64.eq (local.get $x)
+                 (i64.extend_i32_s (i31.get_s (local.get $res))))
+-            (then (return (local.get $res)))
+-            (else (return_call $wrap_bigint (call $of_int64 (local.get $x))))))
++            (then (return (local.get $res))))
++         (return_call $wrap_bigint (call $of_int64 (local.get $x))))
+    )
+    (@else
+       (func (export "ml_z_of_nativeint")
+@@ -632,8 +632,8 @@
+          (local.set $x (call $Nativeint_val (local.get $d)))
+          (local.set $res (ref.i31 (local.get $x)))
+          (if (i32.eq (local.get $x) (i31.get_s (local.get $res)))
+-            (then (return (local.get $res)))
+-            (else (return_call $wrap_bigint (call $of_int32 (local.get $x))))))
++            (then (return (local.get $res))))
++         (return_call $wrap_bigint (call $of_int32 (local.get $x))))
+    ))
+ 
     (func (export "ml_z_of_int64")
-       (param $z (ref eq)) (result (ref eq))
-@@ -662,7 +660,8 @@
+@@ -982,7 +982,8 @@
              (ref.i31
                 (i32.sub (i32.gt_s (local.get $x) (i32.const 0))
                    (i32.lt_s (local.get $x) (i32.const 0)))))))
@@ -253,10 +229,10 @@ index 1234567..89abcde 100644
 +      (select (result (ref i31))
 +         (ref.i31 (i32.const 1)) (ref.i31 (i32.const -1))
           (call $positive (call $unwrap_bigint (local.get $z)))))
-
+ 
     (func (export "ml_z_gcd")
 diff --git a/test/bitwise.ml b/test/bitwise.ml
-index 5fd0ddc..4833923 100644
+index b6c3bf2..044a9ec 100644
 --- a/test/bitwise.ml
 +++ b/test/bitwise.ml
 @@ -86,7 +86,7 @@ module Ml_z_popcount = struct
@@ -278,7 +254,7 @@ index 5fd0ddc..4833923 100644
  end
  
 diff --git a/test/dune b/test/dune
-index 7996514..d0b463a 100644
+index 83d6109..5764deb 100644
 --- a/test/dune
 +++ b/test/dune
 @@ -1,7 +1,9 @@
@@ -290,9 +266,9 @@ index 7996514..d0b463a 100644
 + (inline_tests (flags -drop-tag no-js -drop-tag 64-bits-only -drop-tag no-wasm) (modes js wasm))
 + (modules (:standard \ zarith))
   (preprocess
-   (pps ppx_jane)))
+   (pps ppx_jane -compare-require-explicit-locality)))
  
-@@ -35,10 +37,16 @@
+@@ -41,10 +43,16 @@
   (deps implemented_externals.txt tested_externals.txt)
   (action
    (bash "diff %{deps}"))
@@ -300,7 +276,7 @@ index 7996514..d0b463a 100644
 + (alias runtest-))
  
  (rule
-  (deps implemented_externals.txt zarith_externals.txt)
+  (deps implemented_public_externals.txt zarith_externals.txt)
   (action
    (bash "diff %{deps}"))
 - (alias runtest))
@@ -347,7 +323,7 @@ index 1234567..89abcde 100644
 |oik}
     )
   ; ( "ppx_css"
-    , {|
+    , {ppx|
 diff --git a/standalone/css_inliner.ml b/standalone/css_inliner.ml
 --- a/standalone/css_inliner.ml
 +++ b/standalone/css_inliner.ml
@@ -369,23 +345,11 @@ diff --git a/standalone/css_inliner.ml b/standalone/css_inliner.ml
  ;;
 
  let command =
-|}
-    )
-  ; ( "bonsai_web_components"
-    , (* %.0f now rounds ties to even, as in C: 4.5 prints as 4 *)
-      {bwc|
-diff --git a/not_connected_warning_box/test/bonsai_web_ui_not_connected_warning_box_test.ml b/not_connected_warning_box/test/bonsai_web_ui_not_connected_warning_box_test.ml
---- a/not_connected_warning_box/test/bonsai_web_ui_not_connected_warning_box_test.ml
-+++ b/not_connected_warning_box/test/bonsai_web_ui_not_connected_warning_box_test.ml
-@@ -45,7 +45,7 @@
-     <div>
-       <div> Warning! </div>
-       <div>
--        You've been disconnected from the server for 5s. There is no need to refresh the page, since the web client will reconnect automatically when the server becomes available again.
-+        You've been disconnected from the server for 4s. There is no need to refresh the page, since the web client will reconnect automatically when the server becomes available again.
-       </div>
-     </div>
-     |}];
-|bwc}
+|ppx}
     )
   ]
+
+let removes = [ "core_test/test_sys.ml"; "core_test/test_sys.mli" ]
+
+(* The OxCaml angstrom depends on base *)
+let opam_sources = [ "angstrom" ]

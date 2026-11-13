@@ -14,6 +14,8 @@ module type CONFIG = sig
 
   val forked_packages : string list
 
+  val fixed_packages : string list
+
   val dune_workspace_extra_env : string
 
   val keep_package : OpamFile.OPAM.t -> bool
@@ -27,6 +29,10 @@ module type CONFIG = sig
   val default_branch : string option
 
   val patches : target_is_wasm:bool -> (string * string) list
+
+  val removes : string list
+
+  val opam_sources : string list
 end
 
 module Config =
@@ -64,8 +70,7 @@ let do_pin = StringSet.of_list Config.do_pin
 
 let forked_packages = StringSet.of_list Config.forked_packages
 
-let fixed_packages =
-  StringSet.of_list [ "bonsai_web"; "bonsai_web_components"; "virtual_dom" ]
+let fixed_packages = StringSet.of_list Config.fixed_packages
 
 let dune_workspace =
   {|(lang dune 3.17)
@@ -100,12 +105,7 @@ let node_wrapper =
 
 let patches = Config.patches ~target_is_wasm
 
-let removes =
-  [ "core/core/test/test_sys.ml"
-  ; "core/core/test/test_sys.mli"
-  ; "core/core/test/test_timezone.ml"
-  ; "core/core/test/test_timezone.mli"
-  ]
+let removes = Config.removes
 (****)
 
 let read_opam_file filename =
@@ -237,6 +237,12 @@ let () =
   install_others others;
   sync_exec (fun () -> clone "ocaml-uri" "https://github.com/mirage/ocaml-uri") [ () ];
   sync_exec (fun () -> exec_async "opam install uri --deps-only") [ () ];
+  (* Installed packages depending on libraries of the workspace would
+     conflict with them: build them in the workspace as well *)
+  sync_exec
+    (fun nm ->
+      exec_async (Printf.sprintf "opam source %s --dir %s/lib/%s" nm jane_root nm))
+    Config.opam_sources;
   sync_exec
     (fun nm ->
       let branch =

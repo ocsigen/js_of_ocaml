@@ -16,6 +16,9 @@
  (name jsoo_testsuite_effect)
  (enabled_if
   (>= %{ocaml_version} 5))
+ ; Effect.perform carries the unsafe_effects alert in OxCaml
+ (flags
+  (:standard -alert -unsafe_effects))
  (inline_tests
   (deps
    (sandbox preserve_file_kind))

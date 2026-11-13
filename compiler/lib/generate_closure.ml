@@ -150,7 +150,7 @@ module Trampoline = struct
     match counter with
     | None ->
         { params = []
-        ; body = [ Let (return, Apply { f; args; exact = true }) ]
+        ; body = [ Let (return, Apply { f; args; exact = true; yielding = Unknown }) ]
         ; branch = Return return
         }
     | Some counter ->
@@ -161,7 +161,11 @@ module Trampoline = struct
                 ( counter_plus_1
                 , Prim (Extern ("%int_add", None), [ Pv counter; Pc (Int Targetint.one) ])
                 )
-            ; Let (return, Apply { f; args = counter_plus_1 :: args; exact = true })
+            ; Let
+                ( return
+                , Apply
+                    { f; args = counter_plus_1 :: args; exact = true; yielding = Unknown }
+                )
             ]
         ; branch = Return return
         }
@@ -195,14 +199,16 @@ module Trampoline = struct
         (match counter with
         | None ->
             [ Event loc
-            ; Let (result1, Apply { f; args; exact = true })
+            ; Let (result1, Apply { f; args; exact = true; yielding = Unknown })
             ; Event Parse_info.zero
             ; Let (result2, Prim (Extern ("caml_trampoline", None), [ Pv result1 ]))
             ]
         | Some counter ->
             [ Event loc
             ; Let (counter, Constant (Int Targetint.zero))
-            ; Let (result1, Apply { f; args = counter :: args; exact = true })
+            ; Let
+                ( result1
+                , Apply { f; args = counter :: args; exact = true; yielding = Unknown } )
             ; Event Parse_info.zero
             ; Let (result2, Prim (Extern ("caml_trampoline", None), [ Pv result1 ]))
             ])
@@ -329,7 +335,7 @@ module Trampoline_dt = struct
   let direct_call_block ~x ~f ~args =
     let return = Code.Var.fork x in
     { params = []
-    ; body = [ Let (return, Apply { f; args; exact = true }) ]
+    ; body = [ Let (return, Apply { f; args; exact = true; yielding = Unknown }) ]
     ; branch = Return return
     }
 
