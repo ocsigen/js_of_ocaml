@@ -56,6 +56,9 @@
 * Runtime: ensure empty float arrays use tag 0 rather than 254 for
   Float.Array.concat and recursive dummy allocations, and in JavaScript also
   for Float.Array.append, sub, create and make (#2594)
+* Compiler: fix a failure (`Targetint.of_string_exn`) when an integer
+  addition, subtraction or shift is applied to a float constant in dead
+  code (GADTs) (#2618)
 
 # 6.5.0 (2026-10-22) - Lille
 

@@ -94,7 +94,7 @@ module Block = struct
       ( J.Eq
       , hd
       , match bits with
-        | J.ENum n when Targetint.is_zero (J.Num.to_targetint n) -> tag
+        | J.ENum n when J.Num.is_zero n -> tag
         | _ -> J.EBin (J.Bor, tag, shifted_reserved bits) )
 
   let field e idx = J.EAccess (e, ANormal, int (idx + 1))
@@ -108,13 +108,18 @@ module Array = struct
     J.EBin (J.Minus, underlying, one)
 
   let field e i =
-    match i with
-    | J.ENum n ->
-        let idx = J.Num.to_targetint n in
+    match
+      match i with
+      | J.ENum n -> J.Num.to_targetint_opt n
+      | _ -> None
+    with
+    | Some idx ->
         let adjusted = J.ENum (J.Num.of_targetint (Targetint.succ idx)) in
         J.EAccess (e, ANormal, adjusted)
-    | J.EUn (J.Neg, _) -> failwith "Negative field indexes are not allowed"
-    | _ ->
-        let adjusted = J.EBin (J.Plus, i, one) in
-        J.EAccess (e, ANormal, adjusted)
+    | None -> (
+        match i with
+        | J.EUn (J.Neg, _) -> failwith "Negative field indexes are not allowed"
+        | _ ->
+            let adjusted = J.EBin (J.Plus, i, one) in
+            J.EAccess (e, ANormal, adjusted))
 end
