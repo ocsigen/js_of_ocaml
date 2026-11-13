@@ -25,6 +25,8 @@
 * Compiler: split switches with more than 256 cases (instead of 60), or whose
   case values span more than 1000, which the JavaScriptCore interpreter
   compiles to a sequence of tests (#2612)
+* Compiler/Wasm: place number conversions (boxing, tagging) with a Lazy Code
+  Motion pass (`--disable lcm`), and pass parameters untagged or unboxed (#2479)
 
 ## Bug fixes
 * Compiler/Wasm: box variables typed as integers before using them as a

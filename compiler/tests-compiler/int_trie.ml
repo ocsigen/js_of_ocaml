@@ -36,6 +36,27 @@ let check msg t m =
     T.fold (fun k v acc -> (k, v) :: acc) t []
     <> M.fold (fun k v acc -> (k, v) :: acc) m []
   then fail "%s: fold order" msg;
+  List.iter
+    (fun d ->
+      (* Visits the bindings in increasing order, and stops at the first
+         one satisfying the predicate *)
+      let p k v = (k + v) mod d = 0 in
+      let visited = ref [] in
+      let r =
+        T.exists
+          (fun k v ->
+            visited := (k, v) :: !visited;
+            p k v)
+          t
+      in
+      let rec expected l =
+        match l with
+        | [] -> []
+        | ((k, v) as b) :: rem -> if p k v then [ b ] else b :: expected rem
+      in
+      if r <> M.exists p m || List.rev !visited <> expected bm
+      then fail "%s: exists %d" msg d)
+    [ 1; 7; max_int ];
   if List.of_seq (T.to_seq t) <> List.of_seq (M.to_seq m) then fail "%s: to_seq" msg;
   if List.of_seq (T.to_rev_seq t) <> List.of_seq (M.to_rev_seq m)
   then fail "%s: to_rev_seq" msg;

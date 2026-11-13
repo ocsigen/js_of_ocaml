@@ -1,0 +1,33 @@
+(* Wasm_of_ocaml compiler
+ * http://www.ocsigen.org/js_of_ocaml/
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, with linking exception;
+ * either version 2.1 of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ *)
+
+open Code
+
+val f :
+     program
+  -> Typing.t
+  -> in_cps:Effects.in_cps
+  -> global_flow_info:Global_flow.info
+  -> program * Typing.t * Effects.in_cps * Global_flow.info
+(** Make the number conversions explicit and place them. The pass binds
+    some calls to fresh variables: the set of CPS calls and the global flow
+    information are updated accordingly. *)
+
+val guarded_untag : Var.t -> bool
+(** Whether the untaggings of this variable must not fail, as they may be
+    executed speculatively *)

@@ -45,6 +45,16 @@ type typ =
 
 val constant_type : Code.constant -> typ
 
+val join : typ -> typ -> typ
+
+val conversion : from:typ -> into:typ -> Code.wasm_conversion option
+(** The wasm conversion needed to coerce a value of type [from] into
+    representation [into], or [None] if no conversion is needed.
+    Single source of truth for the box/unbox/tag/untag lattice. *)
+
+val conversion_type : Code.wasm_conversion -> typ
+(** The type of the result of a conversion *)
+
 val can_unbox_parameters : Call_graph_analysis.t -> Code.Var.t -> bool
 
 val bigarray_element_type : Optimization_hint.Bigarray.kind -> typ
@@ -53,11 +63,35 @@ type t
 
 val var_type : t -> Code.Var.t -> typ
 
+val prim_result_type : t -> string -> Code.prim_arg list -> typ
+(** The type of the result of a primitive, given the types of its
+    arguments. It is [Top] for the primitives whose result type depends on
+    the context of the call. *)
+
+val set_var_type : t -> Code.Var.t -> typ -> unit
+
 val return_type : t -> Code.Var.t -> typ
 
 val reset : unit -> unit
 
-val register_prim : string -> unbox:bool -> typ -> unit
+(** The arguments of a primitive *)
+type prim_args =
+  | Values  (** It takes values *)
+  | Typed of typ list  (** It takes arguments of these types *)
+  | Any_representation
+      (** It takes its arguments in any representation, examining their
+          types *)
+
+val register_prim :
+  string -> ?args:prim_args -> ?kind:Primitive.kind -> unbox:bool -> typ -> unit
+(** The arguments are [Values] by default. The primitives which may raise an
+    exception have kind [`Mutator] (the default). *)
+
+val may_raise : Code.instr -> bool
+(** Whether the execution of an instruction may not proceed to the next one:
+    it is a call, or a primitive which may raise an exception *)
+
+val prim_sig : string -> prim_args * typ
 
 val f :
      global_flow_state:Global_flow.state

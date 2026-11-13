@@ -66,6 +66,8 @@ val iter : (key -> 'a -> unit) -> 'a t -> unit
 
 val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
 
+val exists : (key -> 'a -> bool) -> 'a t -> bool
+
 val map : ('a -> 'b) -> 'a t -> 'b t
 
 val mapi : (key -> 'a -> 'b) -> 'a t -> 'b t
