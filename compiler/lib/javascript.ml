@@ -34,6 +34,10 @@ module Num : sig
 
   val to_targetint : t -> Targetint.t
 
+  val to_targetint_opt : t -> Targetint.t option
+  (** [None] when the number is not an integer literal. The operand of an
+      integer operation can be a float constant in dead code (with GADTs). *)
+
   val hash : t -> int
 
   (** Predicates *)
@@ -48,7 +52,8 @@ module Num : sig
 
   (** Arithmetic *)
 
-  val add : t -> t -> t
+  val add : t -> t -> t option
+  (** Integer addition. [None] when an operand is not an integer literal. *)
 
   val neg : t -> t
 end = struct
@@ -66,6 +71,11 @@ end = struct
     then (* legacy octal notation *)
       Targetint.of_string_exn ("0o" ^ s)
     else Targetint.of_string_exn s
+
+  let to_targetint_opt s =
+    match to_targetint s with
+    | n -> Some n
+    | exception Failure _ -> None
 
   let of_targetint = Targetint.to_string
 
@@ -199,7 +209,10 @@ end = struct
     | None -> "-" ^ s
     | Some s -> s
 
-  let add a b = of_targetint (Targetint.add (to_targetint a) (to_targetint b))
+  let add a b =
+    match to_targetint_opt a, to_targetint_opt b with
+    | Some a, Some b -> Some (of_targetint (Targetint.add a b))
+    | _ -> None
 end
 
 module Label = struct
