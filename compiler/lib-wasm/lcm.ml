@@ -34,17 +34,19 @@
       After this phase, every conversion is a visible instruction that can be analysed.
 
    2. **LCM dataflow and rewrite** ([process_function]): Applies the classical
-      Knoop-Ruthing-Steffen Lazy Code Motion algorithm. LCM finds the optimal placement:
+      Knoop-Ruthing-Steffen Lazy Code Motion algorithm, in the edge-based
+      formulation of Drechsler and Stadel. LCM finds the optimal placement:
       as early as necessary (to eliminate redundancy) but as late as possible (to avoid
-      lengthening lifetimes or executing speculatively). The five dataflow analyses are:
+      lengthening lifetimes or executing speculatively). The dataflow analyses are:
         - Anticipatability: can the conversion be moved to this point?
         - Availability: has the conversion already been computed on all paths?
-        - Earliest = anticipated but not yet available
-        - Delayability: can we push earliest placements further down?
-        - Latest = last point where a delayed insertion is still correct
-        - Isolated: is the conversion used only once after insertion?
-      The rewrite pass inserts conversions at [latest \ isolated] points and substitutes
-      redundant occurrences with the hoisted result.
+        - Earliest (on an edge) = anticipated at the target, not available
+          from the source, and not placeable any earlier
+        - Later: can we push earliest placements further down?
+        - Availability again, once the conversions are inserted
+      The rewrite pass inserts conversions on the edges where they cannot be
+      delayed any further (at the end of the source block) and substitutes
+      redundant occurrences with the result of an earlier one.
 
    3. **Peephole cleanup** ([optimize_peephole_conversions]): Eliminates inverse conversion
       pairs (e.g. box(unbox(x)) → x) that may arise from the LCM rewrite. Also propagates
@@ -67,7 +69,9 @@
    LCM places conversions as late as possible, so no conversion is partially dead
    afterwards: there is no need for a partial dead code elimination phase.
 
-   Reference: J. Knoop, O. Ruthing, B. Steffen, "Lazy Code Motion", PLDI 1992. *)
+   References: J. Knoop, O. Ruthing, B. Steffen, "Lazy Code Motion", PLDI 1992;
+   K.-H. Drechsler, M. P. Stadel, "A variation of Knoop, Rüthing, and Steffen's
+   Lazy Code Motion", SIGPLAN Notices 28(5), 1993. *)
 
 open! Stdlib
 open Code
@@ -88,8 +92,7 @@ type lcm_stats =
   ; mutable conversions_tracked : int
   ; mutable ant_iterations : int
   ; mutable avail_iterations : int
-  ; mutable delay_iterations : int
-  ; mutable isol_iterations : int
+  ; mutable later_iterations : int
   ; mutable conversions_inserted : int
   ; mutable conversions_eliminated : int
   ; mutable peephole_eliminated : int
@@ -114,8 +117,7 @@ let make_stats () =
   ; conversions_tracked = 0
   ; ant_iterations = 0
   ; avail_iterations = 0
-  ; delay_iterations = 0
-  ; isol_iterations = 0
+  ; later_iterations = 0
   ; conversions_inserted = 0
   ; conversions_eliminated = 0
   ; peephole_eliminated = 0
@@ -203,8 +205,8 @@ module Bits : sig
   val inter_diff_into : t -> t -> t -> unit
   (** [inter_diff_into a b c] sets [a] to [a ∩ (b \ c)] *)
 
-  val inter_union_into : t -> t -> t -> unit
-  (** [inter_union_into a b c] sets [a] to [a ∩ (b ∪ c)] *)
+  val inter_union_inter_into : t -> t -> t -> t -> unit
+  (** [inter_union_inter_into a b c d] sets [a] to [a ∩ (b ∪ (c ∩ d))] *)
 
   val equal : t -> t -> bool
 
@@ -254,9 +256,9 @@ end = struct
       Array.unsafe_set a i (Array.unsafe_get a i land b.(i) land lnot c.(i))
     done
 
-  let inter_union_into a b c =
+  let inter_union_inter_into a b c d =
     for i = 0 to Array.length a - 1 do
-      Array.unsafe_set a i (Array.unsafe_get a i land (b.(i) lor c.(i)))
+      Array.unsafe_set a i (Array.unsafe_get a i land (b.(i) lor (c.(i) land d.(i))))
     done
 
   let union a b =
@@ -1985,7 +1987,7 @@ let eliminate_param_conversions
 (* Phase 2: LCM dataflow analysis and rewrite for a single function.
 
    Given the explicit conversion instructions produced by lowering, compute the
-   optimal placement using five dataflow analyses, then rewrite the IR.
+   optimal placement using dataflow analyses, then rewrite the IR.
 
    The analysis must be per-function to avoid cross-function variable references
    in the inserted conversion instructions. *)
@@ -2148,12 +2150,7 @@ let process_function
        Equation: AVIN(b)  = ∩ { AVOUT(p) | p ∈ predecessors(b) }
                  AVOUT(b) = COMP(b) ∪ (AVIN(b) \ KILL(b))
 
-       The entry block is initialised to empty (nothing is available on entry).
-
-       EARLIEST(b) = ANTIN(b) \ AVIN(b)
-       A conversion is earliest at b if it is anticipated there but not yet
-       available — this is the first point where inserting it is both useful
-       and correct. *)
+       The entry block is initialised to empty (nothing is available on entry). *)
     let avout = Array.make n_blocks all_convs in
     avout.(0) <- no_convs;
     changed := true;
@@ -2176,112 +2173,141 @@ let process_function
         if update avout ri then changed := true
       done
     done;
-    let avin =
-      Array.init n_blocks ~f:(fun ri ->
-          let pc = rpo_order.(ri) in
-          let ps = pred_index.(ri) in
-          if pc = entry || Array.length ps = 0
-          then no_convs
-          else
-            let s = Bits.copy all_convs in
-            Array.iter ~f:(fun pi -> Bits.inter_into s avout.(pi)) ps;
-            s)
+    (* Step 3: Placement (forward dataflow, all-paths), on the edges of the
+       control flow graph (Drechsler and Stadel's formulation).
+
+       A conversion is earliest on the edge from i to j if it is anticipated
+       at the entry of j, not available at the exit of i, and cannot be
+       placed any earlier: it is killed in i or is not anticipated at the
+       exit of i.
+
+         EARLIEST(i,j) = ANTIN(j) \ PARAMCONV(j) \ AVOUT(i)
+                         ∩ (KILL_ANT(i) ∪ ¬ANTOUT(i))
+
+       An insertion is then delayed as long as it does not meet a use:
+
+         LATER(i,j) = EARLIEST(i,j) ∪ (LATERIN(i) \ ANTLOC(i))
+         LATERIN(j) = NEW(j) ∪ ∩ { LATER(i,j) | i ∈ preds(j) }
+
+       where NEW(j) are the conversions anticipated at j which cannot be
+       placed before j: those of the parameters of j (PARAMCONV(j)), and
+       all of them when j is the entry of the function.
+
+       A conversion delayed down to the entry of a block which uses it is
+       left where it is. Otherwise, it is inserted on the edges where it
+       cannot be delayed any further:
+
+         INSERT(i,j) = LATER(i,j) \ LATERIN(j)
+
+       When j has a single predecessor, LATERIN(j) contains LATER(i,j), so
+       there is nothing to insert. Otherwise, as critical edges have been
+       split, j is the only successor of i, and the conversion is inserted
+       at the end of i. In particular, a conversion anticipated at a loop
+       header and not available when the loop is entered is inserted before
+       the loop rather than in the header. *)
+    let antin_edge =
+      Array.init n_blocks ~f:(fun ri -> Bits.diff antin.(ri) param_convs_of.(ri))
     in
-    let earliest = Array.init n_blocks ~f:(fun ri -> Bits.diff antin.(ri) avin.(ri)) in
-    (* Step 3: Delayability (forward dataflow, all-paths).
-
-       DELAYIN(b) = set of conversions whose earliest placement can be delayed
-       from their earliest point down to the entry of b without missing any use.
-
-       Equation: DELAYIN(b) = EARLIEST(b) ∪ (∩ { DELAYOUT(p) | p ∈ preds(b) })
-                 DELAYOUT(b) = DELAYIN(b) \ ANTLOC(b)
-
-       A conversion can be delayed past a block as long as the block does not
-       use it (an upward-exposed computation). This pushes insertions as late
-       as possible. *)
-    let delayin = Array.copy earliest in
-    let delayout = Array.make n_blocks all_convs in
+    (* The conversions which are earliest on the edges leaving a block, if
+       anticipated at their target: ¬AVOUT(i) ∩ (KILL_ANT(i) ∪ ¬ANTOUT(i)) *)
+    let earliest_from =
+      Array.init n_blocks ~f:(fun ri ->
+          let succs = succ_index.(ri) in
+          let antout =
+            if Array.length succs = 0
+            then Bits.copy no_convs
+            else
+              let s = Bits.copy all_convs in
+              Array.iter ~f:(fun si -> Bits.inter_into s antin_edge.(si)) succs;
+              s
+          in
+          Bits.diff_into antout props_of.(ri).kill_ant;
+          Bits.diff (Bits.diff all_convs antout) avout.(ri))
+    in
+    let is_root ri = rpo_order.(ri) = entry || Array.length pred_index.(ri) = 0 in
+    let new_convs =
+      Array.init n_blocks ~f:(fun ri ->
+          if is_root ri then antin.(ri) else Bits.inter antin.(ri) param_convs_of.(ri))
+    in
+    let laterin = Array.make n_blocks all_convs in
+    (* LATERIN(i) \ ANTLOC(i) *)
+    let laterout = Array.make n_blocks all_convs in
     changed := true;
     while !changed do
       changed := false;
       (* Forward: sweep in RPO *)
       for ri = 0 to n_blocks - 1 do
-        st.delay_iterations <- st.delay_iterations + 1;
-        let pc = rpo_order.(ri) in
-        let b_props = props_of.(ri) in
-        let ps = pred_index.(ri) in
-        if pc = entry || Array.length ps = 0
-        then Bits.blit ~src:earliest.(ri) ~dst:scratch
+        st.later_iterations <- st.later_iterations + 1;
+        if is_root ri
+        then Bits.blit ~src:new_convs.(ri) ~dst:scratch
         else (
           Bits.blit ~src:all_convs ~dst:scratch;
-          Array.iter ~f:(fun pi -> Bits.inter_into scratch delayout.(pi)) ps;
-          Bits.union_into scratch earliest.(ri));
-        ignore (update delayin ri : bool);
-        Bits.diff_into scratch b_props.antloc;
-        if update delayout ri then changed := true
+          Array.iter
+            ~f:(fun pi ->
+              Bits.inter_union_inter_into
+                scratch
+                laterout.(pi)
+                antin_edge.(ri)
+                earliest_from.(pi))
+            pred_index.(ri);
+          Bits.union_into scratch new_convs.(ri));
+        ignore (update laterin ri : bool);
+        Bits.diff_into scratch props_of.(ri).antloc;
+        if update laterout ri then changed := true
       done
     done;
-    (* Step 4: Latest (derived, no iteration needed).
+    (* The conversions to insert at the end of each block *)
+    let insert_at_end = Array.make n_blocks no_convs in
+    for ri = 0 to n_blocks - 1 do
+      if not (is_root ri)
+      then
+        Array.iter
+          ~f:(fun pi ->
+            Bits.blit ~src:antin_edge.(ri) ~dst:scratch;
+            Bits.inter_into scratch earliest_from.(pi);
+            Bits.union_into scratch laterout.(pi);
+            Bits.diff_into scratch laterin.(ri);
+            if
+              (not (Bits.equal scratch no_convs))
+              && Array.for_all ~f:(fun si -> si = ri) succ_index.(pi)
+            then insert_at_end.(pi) <- Bits.union insert_at_end.(pi) scratch)
+          pred_index.(ri)
+    done;
+    (* Step 4: Availability, once the conversions are inserted.
 
-       LATEST(b) = DELAYIN(b) ∩ (ANTLOC(b) ∪ ¬(∩ { DELAYIN(s) | s ∈ succs(b) }))
+       AVOUT'(b) = COMP(b) ∪ INSERT(b) ∪ (AVIN'(b) \ KILL(b))
 
-       A conversion is latest at b if it is delayable to b and either:
-       - b uses the conversion (upward-exposed), or
-       - some successor cannot accept further delay (the conversion is not
-         delayable into all successors).
-
-       This is the optimal insertion point: as late as possible while still
-       covering all uses. *)
-    let latest =
-      Array.init n_blocks ~f:(fun ri ->
-          let succs = succ_index.(ri) in
-          let delayin_pc = delayin.(ri) in
-          let b_props = props_of.(ri) in
-          let delayin_succs_intersect =
-            if Array.length succs = 0
-            then no_convs
-            else
-              let s = Bits.copy all_convs in
-              Array.iter ~f:(fun si -> Bits.inter_into s delayin.(si)) succs;
-              s
-          in
-          Bits.inter
-            delayin_pc
-            (Bits.union b_props.antloc (Bits.diff all_convs delayin_succs_intersect)))
-    in
-    (* Step 5: Isolation (backward dataflow, all-paths).
-
-       ISOLATEDIN(b) = LATEST(b) ∪ (ISOLATEDOUT(b) \ ANTLOC(b))
-       ISOLATEDOUT(b) = ∩ { ISOLATEDIN(s) ∪ PARAMCONV(s) | s ∈ successors(b) }
-
-       A conversion is isolated at the exit of b if its value there is not
-       used afterwards: on every path, it is either inserted again or its
-       operand is rebound (PARAMCONV(s): the conversions of the parameters of
-       s) before any use. Exit blocks have everything isolated, and the
-       analysis computes the greatest fixpoint.
-
-       The final insertion set is LATEST(b) \ ISOLATEDOUT(b). A conversion
-       that is latest and isolated at b is only used by its occurrence in b,
-       which is kept as is: inserting it would just create a new temporary. *)
-    let isolatedout = Array.make n_blocks all_convs in
-    let isolatedin = Array.make n_blocks all_convs in
+       A use of a conversion which is available is replaced by the variable
+       holding its result. *)
+    let avout = Array.make n_blocks all_convs in
+    avout.(0) <- no_convs;
     changed := true;
     while !changed do
       changed := false;
-      (* Backward: sweep in post-order = reverse RPO *)
-      for ri = n_blocks - 1 downto 0 do
-        st.isol_iterations <- st.isol_iterations + 1;
+      (* Forward: sweep in RPO *)
+      for ri = 0 to n_blocks - 1 do
+        st.avail_iterations <- st.avail_iterations + 1;
         let b_props = props_of.(ri) in
-        Bits.blit ~src:all_convs ~dst:scratch;
-        Array.iter
-          ~f:(fun si -> Bits.inter_union_into scratch isolatedin.(si) param_convs_of.(si))
-          succ_index.(ri);
-        ignore (update isolatedout ri : bool);
-        Bits.diff_into scratch b_props.antloc;
-        Bits.union_into scratch latest.(ri);
-        if update isolatedin ri then changed := true
+        if is_root ri
+        then Bits.blit ~src:no_convs ~dst:scratch
+        else (
+          Bits.blit ~src:all_convs ~dst:scratch;
+          Array.iter ~f:(fun pi -> Bits.inter_into scratch avout.(pi)) pred_index.(ri));
+        Bits.diff_into scratch b_props.kill;
+        Bits.union_into scratch b_props.comp;
+        Bits.union_into scratch insert_at_end.(ri);
+        if update avout ri then changed := true
       done
     done;
+    let avin =
+      Array.init n_blocks ~f:(fun ri ->
+          if is_root ri
+          then no_convs
+          else
+            let s = Bits.copy all_convs in
+            Array.iter ~f:(fun pi -> Bits.inter_into s avout.(pi)) pred_index.(ri);
+            s)
+    in
     (* Convert array results back to maps for the rewrite phase. *)
     let to_map arr =
       let m = ref Addr.Map.empty in
@@ -2291,8 +2317,7 @@ let process_function
       !m
     in
     let avin = to_map avin in
-    let latest = to_map latest in
-    let isolatedout = ref (to_map isolatedout) in
+    let insert_at_end = to_map insert_at_end in
     let t1 = tick () in
     st.time_dataflow <- st.time_dataflow +. (t1 -. t0);
 
@@ -2304,15 +2329,15 @@ let process_function
           Only conversions that are available (in AVIN) and agree across all
           processed predecessors are inherited.
 
-       2. Insert new conversions at the top of the block for everything in
-          LATEST(b) \ ISOLATED(b). Each insertion creates a fresh variable and
-          adds it to the conv_to_var mapping.
-
-       3. Walk the block body: for each conversion instruction, check if the
+       2. Walk the block body: for each conversion instruction, check if the
           conv_to_var mapping already has a result for it. If so, record a
           substitution (the original variable maps to the pre-computed one) and
           remove the instruction. Otherwise, keep it and register its result
           in conv_to_var for later uses.
+
+       3. Insert the conversions placed at the end of the block. Each
+          insertion creates a fresh variable and adds it to the conv_to_var
+          mapping.
 
        4. Rewrite the branch: if a branch target expects a converted value and
           the conversion is available in conv_to_var, use the pre-computed result
@@ -2372,13 +2397,41 @@ let process_function
                   !phi_info;
               merge_phis := (conv, phi_var) :: !merge_phis)
             differing;
-        let to_insert =
-          let b = Bits.diff (Addr.Map.find pc latest) (Addr.Map.find pc !isolatedout) in
-          let s = ref [] in
-          Bits.iter ~f:(fun i -> s := conv_of_rank.(i) :: !s) b;
-          List.rev !s
-        in
-        let inserted_rev = ref [] in
+        (* A conversion inserted at the end of a predecessor which has not
+           been processed yet (on a back edge) is merged by a phi as well,
+           when the other predecessors provide it: the predecessors
+           processed so far hold it, and the remaining ones insert it. *)
+        (if (not all_preds_processed) && not (List.is_empty processed_preds)
+         then
+           let remaining =
+             List.filter ~f:(fun p -> not (Addr.Map.mem p !conv_out_map)) preds_pc
+           in
+           let inserted p = Addr.Map.find p insert_at_end in
+           match remaining with
+           | [] -> ()
+           | p :: rem ->
+               let candidates = Bits.inter (inserted p) (Addr.Map.find pc avin) in
+               List.iter ~f:(fun p -> Bits.inter_into candidates (inserted p)) rem;
+               Bits.iter
+                 ~f:(fun i ->
+                   let ((kind, _) as conv) = conv_of_rank.(i) in
+                   if List.for_all ~f:(fun t -> Tracker.mem ranks conv t) processed_preds
+                   then (
+                     let phi_var = Var.fresh () in
+                     let typ =
+                       ConvMap.find_opt conv !conv_types
+                       |> Option.value ~default:(type_of_kind kind)
+                     in
+                     Typing.set_var_type types phi_var typ;
+                     phi_info :=
+                       Addr.Map.update
+                         pc
+                         (function
+                           | None -> Some [ conv, phi_var ]
+                           | Some l -> Some ((conv, phi_var) :: l))
+                         !phi_info;
+                     merge_phis := (conv, phi_var) :: !merge_phis))
+                 candidates);
         let conv_to_var =
           ref
             (List.fold_left
@@ -2386,89 +2439,6 @@ let process_function
                ~init:conv_in
                (List.rev !merge_phis))
         in
-        (* Partial redundancy elimination: for each conversion in to_insert,
-           check if some predecessors already have it. If so, insert only at
-           the missing predecessors and create a phi to merge the results.
-           This avoids redundant computation on paths that already have it.
-           Only at fully-processed non-loop merge points (same guard as the
-           all-preds phi insertion above). *)
-        let to_insert_remaining = ref ConvSet.empty in
-        List.iter
-          ~f:(fun ((kind, arg) as conv) ->
-            if all_preds_processed && List.length preds_pc > 1
-            then
-              let preds_with =
-                List.filter
-                  ~f:(fun p ->
-                    match Addr.Map.find_opt p !conv_out_map with
-                    | Some m -> Tracker.mem ranks conv m
-                    | None -> false)
-                  preds_pc
-              in
-              let preds_without =
-                List.filter
-                  ~f:(fun p ->
-                    match Addr.Map.find_opt p !conv_out_map with
-                    | Some m -> not (Tracker.mem ranks conv m)
-                    | None -> true)
-                  preds_pc
-              in
-              if (not (List.is_empty preds_with)) && not (List.is_empty preds_without)
-              then (
-                (* Partial redundancy: insert at missing preds, create phi *)
-                let phi_var = Var.fresh () in
-                let typ =
-                  ConvMap.find_opt conv !conv_types
-                  |> Option.value ~default:(type_of_kind kind)
-                in
-                Typing.set_var_type types phi_var typ;
-                List.iter
-                  ~f:(fun pred_pc ->
-                    let tmp = Var.fresh () in
-                    Typing.set_var_type types tmp typ;
-                    let instr = Let (tmp, Prim (prim_of_kind kind, [ Pv arg ])) in
-                    let pred_block = Addr.Map.find pred_pc !result in
-                    result :=
-                      Addr.Map.add
-                        pred_pc
-                        { pred_block with body = pred_block.body @ [ instr ] }
-                        !result;
-                    st.conversions_inserted <- st.conversions_inserted + 1;
-                    let pred_conv_out =
-                      Addr.Map.find_opt pred_pc !conv_out_map
-                      |> Option.value ~default:(Tracker.empty ranks)
-                    in
-                    conv_out_map :=
-                      Addr.Map.add
-                        pred_pc
-                        (Tracker.add ranks conv tmp pred_conv_out)
-                        !conv_out_map)
-                  preds_without;
-                phi_info :=
-                  Addr.Map.update
-                    pc
-                    (function
-                      | None -> Some [ conv, phi_var ]
-                      | Some l -> Some ((conv, phi_var) :: l))
-                    !phi_info;
-                conv_to_var := Tracker.add ranks conv phi_var !conv_to_var)
-              else to_insert_remaining := ConvSet.add conv !to_insert_remaining
-            else to_insert_remaining := ConvSet.add conv !to_insert_remaining)
-          to_insert;
-        (* Insert remaining conversions (fully new, no partial redundancy) at block top *)
-        ConvSet.iter
-          (fun ((kind, arg) as conv) ->
-            let tmp = Var.fresh () in
-            let typ =
-              ConvMap.find_opt conv !conv_types
-              |> Option.value ~default:(type_of_kind kind)
-            in
-            Typing.set_var_type types tmp typ;
-            conv_to_var := Tracker.add ranks conv tmp !conv_to_var;
-            st.conversions_inserted <- st.conversions_inserted + 1;
-            inserted_rev :=
-              Let (tmp, Prim (prim_of_kind kind, [ Pv arg ])) :: !inserted_rev)
-          !to_insert_remaining;
         let subst = ref Var.Map.empty in
         let subst_var x = apply_subst !subst x in
         let body_rev = ref [] in
@@ -2543,6 +2513,22 @@ let process_function
             | Set_field _ | Offset_ref _ | Array_set _ | Event _ ->
                 body_rev := i :: !body_rev)
           block.body;
+        (* The conversions placed at the end of the block *)
+        Bits.iter
+          ~f:(fun i ->
+            let ((kind, arg) as conv) = conv_of_rank.(i) in
+            if not (Tracker.mem ranks conv !conv_to_var)
+            then (
+              let tmp = Var.fresh () in
+              let typ =
+                ConvMap.find_opt conv !conv_types
+                |> Option.value ~default:(type_of_kind kind)
+              in
+              Typing.set_var_type types tmp typ;
+              conv_to_var := Tracker.add ranks conv tmp !conv_to_var;
+              st.conversions_inserted <- st.conversions_inserted + 1;
+              body_rev := Let (tmp, Prim (prim_of_kind kind, [ Pv arg ])) :: !body_rev))
+          (Addr.Map.find pc insert_at_end);
         let branch = Subst.Excluding_Binders.last subst_var block.branch in
         let rewrite_cont (pc', args) =
           let target_block = Addr.Map.find pc' fun_blocks in
@@ -2610,9 +2596,7 @@ let process_function
           | Switch (v, conts) -> map_conts rewrite_cont (Switch (int_arg v, conts))
         in
         let branch = rewrite_branch branch in
-        let new_block =
-          { block with body = List.rev !inserted_rev @ List.rev !body_rev; branch }
-        in
+        let new_block = { block with body = List.rev !body_rev; branch } in
         conv_out_map := Addr.Map.add pc !conv_to_var !conv_out_map;
         result := Addr.Map.add pc new_block !result)
       rpo;
@@ -3641,17 +3625,16 @@ let f
   then
     Format.eprintf
       "Stats - lcm: %d functions (%d with conversions), %d lowered, %d tracked, ant:%d \
-       avail:%d delay:%d isol:%d iters, %d inserted, %d eliminated, %d peephole, %d \
-       params widened, boxes hoisted: %d from loops %d from closures, %d unboxes hoisted \
-       from loops, %d dead conversions and %d dead params removed, %d misplaced@."
+       avail:%d later:%d iters, %d inserted, %d eliminated, %d peephole, %d params \
+       widened, boxes hoisted: %d from loops %d from closures, %d unboxes hoisted from \
+       loops, %d dead conversions and %d dead params removed, %d misplaced@."
       st.functions_processed
       st.functions_with_conversions
       st.conversions_lowered
       st.conversions_tracked
       st.ant_iterations
       st.avail_iterations
-      st.delay_iterations
-      st.isol_iterations
+      st.later_iterations
       st.conversions_inserted
       st.conversions_eliminated
       st.peephole_eliminated
