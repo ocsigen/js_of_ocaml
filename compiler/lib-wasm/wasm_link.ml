@@ -129,13 +129,6 @@ let valtype_eq t1 t2 =
   | Ref t1, Ref t2 -> reftype_eq t1 t2
   | _ -> false
 
-let rec output_uint ch i =
-  if i < 128
-  then output_byte ch i
-  else (
-    output_byte ch (128 + (i land 127));
-    output_uint ch (i lsr 7))
-
 module Write = struct
   type st =
     { mutable type_index_count : int
@@ -998,20 +991,8 @@ module Scan = struct
       maps
       buf
       code =
-    let rec output_uint buf i =
-      if i < 128
-      then Buffer.add_char buf (Char.chr i)
-      else (
-        Buffer.add_char buf (Char.chr (128 + (i land 127)));
-        output_uint buf (i lsr 7))
-    in
-    let rec output_sint buf i =
-      if i >= -64 && i < 64
-      then Buffer.add_char buf (Char.chr (i land 127))
-      else (
-        Buffer.add_char buf (Char.chr (128 + (i land 127)));
-        output_sint buf (i asr 7))
-    in
+    let output_uint = Write.uint in
+    let output_sint = Write.sint in
     let start = ref 0 in
     (* Set while going through an entry that is dropped: indices are not
        rewritten, since the entry may refer to dropped entries. *)
@@ -1057,6 +1038,8 @@ module Scan = struct
       start := pos'
     in
     let flush pos = flush' pos pos in
+    (* When the size of an index changes, the change is reported at the
+       position following the index *)
     let rewrite kind visit map pos =
       let pos', idx =
         let i = get pos in
@@ -1102,7 +1085,7 @@ module Scan = struct
           let p' = Buffer.length buf in
           let dp = p' - p in
           let dpos = pos' - pos in
-          if dp <> dpos then report pos (dp - dpos));
+          if dp <> dpos then report pos' (dp - dpos));
         pos'
     in
     let no_visit _ = () in
@@ -1183,7 +1166,7 @@ module Scan = struct
           let p' = Buffer.length buf in
           let dp = p' - p in
           let dpos = pos' - pos in
-          if dp <> dpos then report pos (dp - dpos));
+          if dp <> dpos then report pos' (dp - dpos));
         pos' |> int)
       else pos' |> memidx |> int
     in
@@ -1580,23 +1563,6 @@ module Scan = struct
       pos |> valtype |> mut
     in
     let global pos = pos |> globaltype |> expr in
-    (* Go through [count] entries, dropping the ones not satisfying [keep] *)
-    let filtered_entries entry ~keep ~count pos =
-      let rec loop j pos =
-        if j = count
-        then pos
-        else if keep j
-        then loop (j + 1) (entry j pos)
-        else (
-          flush pos;
-          skipping := true;
-          let pos' = entry j pos in
-          skipping := analysis;
-          start := pos';
-          loop (j + 1) pos')
-      in
-      loop 0 pos
-    in
     let global_entry pos =
       start := pos;
       let pos' = global pos in
@@ -1730,9 +1696,23 @@ module Scan = struct
       in
       pos |> loop 0 |> flush
     in
+    (* A data segment which is not kept is dropped *)
     let data_section ~keep ~count pos =
       start := pos;
-      pos |> filtered_entries (fun _ pos -> data pos) ~keep ~count |> flush
+      let rec loop j pos =
+        if j = count
+        then pos
+        else if keep j
+        then loop (j + 1) (data pos)
+        else (
+          flush pos;
+          skipping := true;
+          let pos' = data pos in
+          skipping := analysis;
+          start := pos';
+          loop (j + 1) pos')
+      in
+      pos |> loop 0 |> flush
     in
     let local_nameassoc pos = pos |> localidx |> name in
     let local_namemap pos =
@@ -1970,8 +1950,10 @@ let add_section out_ch ~id ?count buf =
   | _ ->
       let buf' = Buffer.create 5 in
       Option.iter ~f:(fun c -> Write.uint buf' c) count;
-      output_byte out_ch id;
-      output_uint out_ch (Buffer.length buf' + Buffer.length buf);
+      let header = Buffer.create 6 in
+      Write.byte header id;
+      Write.uint header (Buffer.length buf' + Buffer.length buf);
+      Buffer.output_buffer out_ch header;
       Buffer.output_buffer out_ch buf';
       Buffer.output_buffer out_ch buf;
       Buffer.clear buf
@@ -2012,8 +1994,10 @@ let check_exports_against_imports
         statuses)
     intfs
 
-let read_desc_from_file ~intfs ~files ~positions ~read i j =
-  let offset = Array.length (get_exportable_info intfs.(i).Read.imports Table) in
+(* The type of the [j]-th entity of kind [kind] of module [i], read at the
+   position recorded in [positions]; [None] for an import. *)
+let read_desc_from_file ~intfs ~files ~positions ~kind ~read i j =
+  let offset = Array.length (get_exportable_info intfs.(i).Read.imports kind) in
   if j < offset
   then None
   else
@@ -2483,9 +2467,10 @@ let order_globals ~(files : t array) ~resolved_imports ~live ~global_counts ~glo
   let definition i j =
     if j < global_import_count i
     then
+      (* [Resolved] always refers to a definition *)
       match (get_exportable_info resolved_imports.(i) Global).(j) with
-      | Resolved (i', j') when j' >= global_import_count i' -> Some (i', j')
-      | Resolved _ | Unresolved _ -> None
+      | Resolved (i', j') -> Some (i', j')
+      | Unresolved _ -> None
     else Some (i, j)
   in
   let global_ids = Array.map ~f:(fun l -> Array.make (Array.length l.global) (-1)) live in
@@ -3453,8 +3438,12 @@ let f
     ~files
     ~kind:Table
     ~to_desc:
-      (read_desc_from_file ~intfs ~files ~positions ~read:(fun contents : importdesc ->
-           Table (Read.tabletype contents contents.ch)));
+      (read_desc_from_file
+         ~intfs
+         ~files
+         ~positions
+         ~kind:Table
+         ~read:(fun contents : importdesc -> Table (Read.tabletype contents contents.ch)));
   Array.iter ~f:Scan.clear_position_data positions;
 
   (* 5: memory *)
@@ -3512,14 +3501,14 @@ let f
     ~resolved_imports
     ~files
     ~kind:Global
-    ~to_desc:(fun i j : importdesc option ->
-      let offset = Array.length (get_exportable_info intfs.(i).imports Global) in
-      if j < offset
-      then None
-      else
-        let { contents; _ } = files.(i) in
-        Read.seek_in contents.ch positions.(i).pos.(j - offset);
-        Some (Global (Read.globaltype contents contents.ch)));
+    ~to_desc:
+      (read_desc_from_file
+         ~intfs
+         ~files
+         ~positions
+         ~kind:Global
+         ~read:(fun contents : importdesc ->
+           Global (Read.globaltype contents contents.ch)));
   Array.iter ~f:Scan.clear_position_data positions;
 
   (* 7: export *)
@@ -3926,14 +3915,3 @@ let f
   ; imports =
       Array.to_list (Array.map ~f:(fun { module_; name; _ } -> module_, name) imports)
   }
-
-(*
-LATER
-- testsuite : import/export matching, source maps, multiple start functions, ...
-- check features?
-
-MAYBE
-- topologic sort of globals?
-  => easy: just look at the import/export dependencies between modules
-- reorder types/globals/functions to generate a smaller binary
-*)
