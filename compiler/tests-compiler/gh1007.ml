@@ -365,7 +365,7 @@ let ()  = M.run ()
   Util.print_fun_decl program (Some "run");
   [%expect
     {|
-    function run(_a_){
+    function run(param){
      var i = 0;
      for(;;){
       var
@@ -393,9 +393,8 @@ let ()  = M.run ()
          };
       let odd$0 = odd, even$0 = even;
       if(even(i)) caml_call1(Stdlib[42], cst);
-      _a_ = i + 1 | 0;
       if(4 === i) return 0;
-      i = _a_;
+      i = i + 1 | 0;
      }
     }
     //end
@@ -463,7 +462,7 @@ let ()  = M.run ()
   Util.print_fun_decl program (Some "run");
   [%expect
     {|
-    function run(_c_){
+    function run(param){
      var i = 0;
      for(;;){
       let i$0 = i;
@@ -500,9 +499,8 @@ let ()  = M.run ()
          };
       let odd$0 = odd, even$0 = even;
       if(even(i)) caml_call1(Stdlib[42], cst);
-      _c_ = i + 1 | 0;
       if(4 === i) break;
-      i = _c_;
+      i = i + 1 | 0;
      }
      return caml_call2
              (list_iter,
@@ -633,9 +631,8 @@ let ()  = M.run ()
        var f = _e_[2];
        _e_ = f(0);
       }
-      _e_ = i + 1 | 0;
       if(4 === i) break;
-      i = _e_;
+      i = i + 1 | 0;
      }
      return caml_call2
              (list_iter,
