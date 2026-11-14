@@ -154,9 +154,11 @@ let definitions prog =
         ~f:(fun i ->
           match i with
           | Let (x, e) -> set_def x (Expr e)
-          | Assign (x, _) -> set_def x Param
-          | Event _ | Set_field (_, _, _, _) | Offset_ref (_, _) | Array_set (_, _, _) ->
-              ())
+          | Assign (_, _)
+          | Event _
+          | Set_field (_, _, _, _)
+          | Offset_ref (_, _)
+          | Array_set (_, _, _) -> ())
         block.body)
     prog.blocks;
   defs
@@ -260,29 +262,6 @@ let usages prog (global_info : Global_flow.info) : edge list Var.Tbl.t =
         block);
   uses
 
-(** Return the set of variables used in a given expression *)
-let expr_vars e =
-  let vars = Var.Set.empty in
-  match e with
-  | Apply { f; args; _ } ->
-      let vars = Var.Set.add f vars in
-      List.fold_left ~f:(fun acc x -> Var.Set.add x acc) ~init:vars args
-  | Block (_, params, _, _, _) ->
-      Array.fold_left ~f:(fun acc x -> Var.Set.add x acc) ~init:vars params
-  | Field (z, _, _) -> Var.Set.add z vars
-  | Prim (_, args) ->
-      List.fold_left
-        ~f:(fun acc v ->
-          match v with
-          | Pv v -> Var.Set.add v acc
-          | Pc _ -> acc)
-        ~init:vars
-        args
-  (* We can ignore closures. We want the set of previously defined variables used
-     in the expression, so not parameters. The continuation may use some variables
-     but we will add these when we visit the body *)
-  | Constant _ | Closure (_, _, _) | Special _ -> vars
-
 (** Compute the initial liveness of each variable in the program.
 
     A variable [x] is marked as [Top] if
@@ -292,7 +271,14 @@ let expr_vars e =
     + It is used in another stateful instruction (like setting a block or array field);
     + Or, it is returned or applied to a function and the global flow analysis marked it as escaping.
 
-    A variable [x[i]] is marked as [Live {i}] if it is used in an instruction where field [i] is referenced or set. *)
+    A variable [x] is marked as [Live {i}] if its field [i] is modified
+    ([Set_field], [Offset_ref]). Reading a field does not make a block
+    live by itself: this depends on whether the value read is live
+    (see [solver]).
+
+    The liveness of a variable used in the body of a function only
+    holds when this function is live. It is thus recorded in a second
+    table, indexed by functions. *)
 let liveness prog pure_funs (global_info : Global_flow.info) =
   let live_vars = Var.Tbl.make () Domain.bot in
   let scoped_live_vars = Var.Tbl.make () None in
@@ -326,7 +312,8 @@ let liveness prog pure_funs (global_info : Global_flow.info) =
     match i with
     (* If e is impure, set all variables in e as Top. The only exception is for function applications,
        where we may be able to do better. Global flow gives us information about which arguments in
-       a function application escape, so set only these as top. *)
+       a function application escape, so set only these as top. Only function applications and
+       primitives can be impure. *)
     | Let (_, e) -> (
         if not (Pure_fun.pure_expr pure_funs e)
         then
@@ -336,14 +323,17 @@ let liveness prog pure_funs (global_info : Global_flow.info) =
               List.iter
                 ~f:(fun x -> if variable_may_escape x global_info then add_top scope x)
                 args
+          | Prim (_, args) ->
+              List.iter
+                ~f:(fun arg ->
+                  match arg with
+                  | Pv x -> add_top scope x
+                  | Pc _ -> ())
+                args
           | Block (_, _, _, _, _)
           | Field (_, _, _)
           | Closure (_, _, _)
-          | Constant _
-          | Prim (_, _)
-          | Special _ ->
-              let vars = expr_vars e in
-              Var.Set.iter (fun x -> add_top scope x) vars)
+          | Constant _ | Special _ -> assert false)
     | Set_field (x, i, _, y) ->
         add_live_field scope x i;
         add_top scope y
@@ -480,12 +470,12 @@ let solver ~state ~defs ~uses ~scoped_live_vars (global_info : Global_flow.info)
     visit (Queue.pop queue)
   done
 
-(** Replace each instance of a dead variable with a sentinel value.
-  Blocks that end in dead variables are compacted to the last live entry.
-  Dead variables are replaced when
-    + They appear in a dead field of a block; or
-    + They are returned; or
-    + They are applied to a function.
+(** Replace variables with a sentinel value where their value is not needed:
+    + in the dead fields of a live block (whether the variable itself is
+      dead or not); blocks that end with dead fields are then truncated
+      after their last live field;
+    + when a dead variable is returned; or
+    + when a dead variable is passed as argument to a function.
  *)
 let zero prog pure_funs sentinel live_table =
   let compact_vars vars =
@@ -614,11 +604,7 @@ let f pure_funs p ~deadcode_sentinel global_info =
   Code.invariant p;
   let t = Timer.make () in
   (* Add sentinel variable *)
-  let p =
-    match global_info.Global_flow.info_defs.(Var.idx deadcode_sentinel) with
-    | Expr _ -> p
-    | _ -> add_sentinel p deadcode_sentinel
-  in
+  let p = add_sentinel p deadcode_sentinel in
   (* Compute definitions *)
   let defs = definitions p in
   (* Compute initial liveness *)
