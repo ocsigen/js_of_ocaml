@@ -339,6 +339,28 @@ let print_sections ids code =
         print_newline ())
   done
 
+let%expect_test "duplicate functions are merged" =
+  (* Two identical functions [f] and [g], both exported *)
+  let code =
+    module_
+      [ 1, "\x01\x60\x00\x01\x7f"
+      ; 3, "\x02\x00\x00"
+      ; 7, "\x02\x01f\x00\x00\x01g\x00\x01"
+      ; 10, "\x02\x04\x00\x41\x07\x0b\x04\x00\x41\x07\x0b"
+      ; 0, "\x04name\x01\x07\x02\x00\x01f\x01\x01g"
+      ]
+  in
+  Option.iter
+    ~f:(print_sections [ 3; 7; 10; 0 ])
+    (link_modules ~names:true [ "a", "a.wasm", code ]);
+  [%expect
+    {|
+            3: 01 00
+            7: 02 01 66 00 00 01 67 00 00
+           10: 01 04 00 41 07 0b
+            0: "\004name\001\019\001\000\016f (+1 identical)\004\001\000\n\001\000"
+           |}]
+
 let%expect_test "custom descriptors" =
   (* A function type, so that the type indices of the next module change *)
   let other =
