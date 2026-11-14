@@ -1377,10 +1377,28 @@ module Closure = struct
               (load f)
           else res
 
+  (* The environment parameter [f] of a function only called directly
+     can be given the precise type [typ] of its closure, the callers
+     casting the argument (see [Generate]). *)
+  let add_env_param ~context ~precise_env f typ =
+    if precise_env
+    then (
+      let ref_typ = { W.nullable = false; typ = Type typ } in
+      Code.Var.Hashtbl.replace context.env_param_types f ref_typ;
+      add_var ~typ:(W.Ref ref_typ) f)
+    else add_var f
+
   (* [pair] indicates that [f] is the direct-style version of a function with
      a CPS version, so its closure holds the code pointers of both versions,
      unless [no_code_pointer] (see [translate]). *)
-  let bind_environment ~context ~closures ~cps ?(pair = false) ~no_code_pointer f =
+  let bind_environment
+      ~context
+      ~closures
+      ~cps
+      ?(pair = false)
+      ~no_code_pointer
+      ~precise_env
+      f =
     let info = Code.Var.Map.find f closures in
     let free_variables = get_free_variables ~context info in
     if List.is_empty free_variables
@@ -1407,7 +1425,7 @@ module Closure = struct
               ~env_type_id
               ~env_type:[]
           in
-          let* _ = add_var f in
+          let* _ = add_env_param ~context ~precise_env f typ in
           let env = Code.Var.fresh_n "env" in
           let* () =
             store
@@ -1434,7 +1452,7 @@ module Closure = struct
               ~env_type_id
               ~env_type:[]
           in
-          let* _ = add_var f in
+          let* _ = add_env_param ~context ~precise_env f typ in
           let env = Code.Var.fresh_n "env" in
           let* env_typ = Type.rec_env_type ~function_count ~env_type_id ~env_type:[] in
           let* () =
@@ -2248,7 +2266,7 @@ let handle_exceptions ~result_typ ~fall_through ~context body x exn_handler =
      let* () = no_event in
      exn_handler ~result_typ ~fall_through ~context)
 
-let post_process_function_body ~profile ~param_names ~param_types ~locals body =
+let post_process_function_body ~context ~profile ~param_names ~param_types ~locals body =
   match Binaryen.optimizes profile with
   | false ->
       (* When [wasm-opt] does not run (at [--opt 1], both for .cmo/.cma
@@ -2260,7 +2278,15 @@ let post_process_function_body ~profile ~param_names ~param_types ~locals body =
       let pass flag f (locals, body) = if flag () then f ~locals body else locals, body in
       let locals, body =
         (locals, body)
-        |> pass Config.Flag.wasm_local_sink Local_sink.f
+        |> pass
+             Config.Flag.wasm_local_sink
+             (Local_sink.f
+                ~constant_global:(is_constant_global context)
+                ~params:(List.combine param_names param_types))
+        |> (fun (locals, body) ->
+        ( locals
+        , Cast_elim.f ~context ~params:(List.combine param_names param_types) ~locals body
+        ))
         |> pass Config.Flag.wasm_cast_reuse Cast_reuse.f
         |> pass
              Config.Flag.wasm_var_coalescing
