@@ -23,7 +23,7 @@
 
 (alias
  (name default)
- (enabled_if %{env:WASM_OF_OCAML=false})
+ (enabled_if %{arch_sixtyfour})
  (deps
   test_beforeunload.bc.wasm.js
   test_beforeunload.html

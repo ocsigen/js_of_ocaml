@@ -84,10 +84,10 @@
 (tests
  (names gh2093)
  (modes wasm)
+ (build_if
+  (>= %{ocaml_version} 5))
  (enabled_if
-  (and
-   (>= %{ocaml_version} 5)
-   (<> %{profile} wasi)))
+  (<> %{profile} wasi))
  (wasm_of_ocaml
   (compilation_mode whole_program)
   (flags :standard)))
@@ -197,3 +197,12 @@
 (cram
  (applies_to globalize_js_float)
  (deps globalize_js_float.ml))
+
+; An extra runtime file in separate compilation (see extra_runtime.ml)
+
+(tests
+ (names extra_runtime)
+ (modes wasm)
+ (wasm_of_ocaml
+  (compilation_mode separate)
+  (wasm_files extra_runtime.wat)))

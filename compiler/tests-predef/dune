@@ -42,7 +42,7 @@
 
 (rule
  (target main-wasm.out)
- (enabled_if %{env:WASM_OF_OCAML=false})
+ (enabled_if %{arch_sixtyfour})
  (action
   (with-stdout-to
    %{target}
@@ -50,6 +50,6 @@
 
 (rule
  (alias runtest-wasm)
- (enabled_if %{env:WASM_OF_OCAML=false})
+ (enabled_if %{arch_sixtyfour})
  (action
   (diff main.expected main-wasm.out)))

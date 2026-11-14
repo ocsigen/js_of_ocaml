@@ -16,7 +16,6 @@ concurrency:
 jobs:
   build:
     env:
-      WASM_OF_OCAML: true
       OXCAML_OPAM_REPO_REF: d89747aa6e7b9f44d6cc844dca5b5e7c8a90716f
 
     strategy:

@@ -82,7 +82,9 @@
 
 (tests
  (names non_ascii_filenames)
- (deps "accentué")
+ (deps
+  "accentué"
+  (sandbox preserve_file_kind))
  (modes js)
  (js_of_ocaml
   (compilation_mode whole_program)
@@ -91,7 +93,9 @@
 
 (tests
  (names non_ascii_filenames_wasm)
- (deps "accentué")
+ (deps
+  "accentué"
+  (sandbox preserve_file_kind))
  (modes wasm)
  (enabled_if
   (<> %{env:JSOO_TEST_ENGINE=node} wasi))

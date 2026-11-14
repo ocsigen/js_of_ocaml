@@ -40,7 +40,7 @@ opam switch create wasm-tests 5.3.0
 eval $(opam env --switch=wasm-tests)
 opam pin add -y -n --with-version 6.5.0 .
 opam install . --deps-only --with-test
-WASM_OF_OCAML=true dune build @runtest-wasm
+dune build @runtest-wasm
 ```
 
 ## Compatibility with Js_of_ocaml

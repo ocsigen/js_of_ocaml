@@ -11,5 +11,5 @@
 
 (alias
  (name default)
- (enabled_if %{env:WASM_OF_OCAML=false})
+ (enabled_if %{arch_sixtyfour})
  (deps cubes.bc.wasm.js))
