@@ -25,6 +25,9 @@
 * Compiler: split switches with more than 256 cases (instead of 60), or whose
   case values span more than 1000, which the JavaScriptCore interpreter
   compiles to a sequence of tests (#2612)
+* Compiler: call known functions stored in blocks (module fields, records
+  of closures) through a variable, `var f = M[i]; f(x)`, rather than as
+  `M[i].call(null, x)`, which prevented V8 from inlining them (#2613)
 
 ## Bug fixes
 * Compiler/Wasm: box variables typed as integers before using them as a

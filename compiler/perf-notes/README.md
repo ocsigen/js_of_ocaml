@@ -46,4 +46,5 @@ Unless stated otherwise, the numbers in these notes were measured on an
 | Choice | Where | Verdict |
 |---|---|---|
 | [Packed arrays: no holes in blocks](holey-arrays/README.md) | `generate.ml`, dead fields; `runtime/js/array.js`, `caml_array_alloc_packed` | **validated** on V8 (changed in #2609) |
+| [Calls through block fields: `.call(null, …)`](call/README.md) | `generate.ml`, `apply_fun_raw` | **counterproductive** (changed in #2613) |
 | [Switch size limit](switch/README.md) | `config.ml`, `switch_size`; `generate.ml`, `build_switch` | **not validated** (obsolete; changed in #2612) |

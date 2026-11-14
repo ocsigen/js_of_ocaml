@@ -1261,14 +1261,27 @@ let parallel_renaming ctx loc back_edge params args continuation queue =
 
 let apply_fun_raw =
   let cps_field = Utf8_string.of_string_exn "cps" in
-  fun ctx f params exact trampolined cps loc ->
+  fun ?cps_closure ctx f params exact trampolined cps loc ->
+    (* [cps_closure], when given, holds [f.cps] *)
+    let cps_closure =
+      match cps_closure with
+      | Some c -> c
+      | None -> J.EDot (f, J.ANormal, cps_field)
+    in
     let apply_directly f params =
-      (* Make sure we are performing a regular call, not a (slower)
-         method call *)
       match f with
-      | J.EAccess _ | J.EDot _ ->
-          J.call (J.dot f (Utf8_string.of_string_exn "call")) (s_var "null" :: params) loc
-      | _ -> J.call f params loc
+      | (J.EAccess _ | J.EDot _) when not exact ->
+          (* [f] may be any JavaScript function, such as a browser
+             builtin that rejects an unexpected [this]: call it with
+             [this] undefined, as [caml_callN] does *)
+          J.call (J.ESeq (int 0, f)) params loc
+      | _ ->
+          (* A known OCaml function, which ignores [this]. Functions
+             loaded from a block are usually bound to a variable first
+             (see [translate_expr]); a method call [M[i](x)] would also
+             let V8 inline the callee, unlike [M[i].call(null, x)]
+             (see compiler/perf-notes/call) *)
+          J.call f params loc
     in
     let has_arity real_closure n =
       let l = Utf8_string.of_string_exn "l" in
@@ -1301,7 +1314,7 @@ let apply_fun_raw =
         match Config.effects () with
         | `Double_translation when cps ->
             (* Effects enabled, CPS version, not single-version *)
-            J.EDot (f, J.ANormal, cps_field)
+            cps_closure
         | `Cps | `Double_translation | `Disabled -> f
         | `Jspi | `Native -> assert false
       in
@@ -1335,7 +1348,7 @@ let apply_fun_raw =
                 , J.call k [ apply_directly f direct_params ] J.N
                 , call_gen ~cps:true params )
           in
-          J.ECond (J.EDot (f, J.ANormal, cps_field), apply ~cps:true f params, direct)
+          J.ECond (cps_closure, apply ~cps:true f params, direct)
       | `Double_translation | `Cps | `Disabled -> apply ~cps f params
       | `Jspi | `Native -> assert false
     in
@@ -1366,14 +1379,37 @@ let generate_apply_fun ctx { arity; exact; trampolined; in_cps } =
   in
   let f' = J.EVar f in
   let params' = List.map params ~f:(fun x -> J.EVar x) in
+  let bind_cps, cps_closure =
+    match Config.effects () with
+    | `Double_translation when in_cps ->
+        (* Read [f.cps] once *)
+        let c = J.V (Var.fresh_n "c") in
+        ( [ ( J.variable_declaration
+                [ c, (J.EDot (f', J.ANormal, Utf8_string.of_string_exn "cps"), J.N) ]
+            , J.N )
+          ]
+        , Some (J.EVar c) )
+    | _ -> [], None
+  in
   J.EFun
     ( None
     , J.fun_
         (f :: params)
-        [ ( J.Return_statement
-              (Some (apply_fun_raw ctx f' params' exact trampolined in_cps J.N), J.N)
-          , J.N )
-        ]
+        (bind_cps
+        @ [ ( J.Return_statement
+                ( Some
+                    (apply_fun_raw
+                       ?cps_closure
+                       ctx
+                       f'
+                       params'
+                       exact
+                       trampolined
+                       in_cps
+                       J.N)
+                , J.N )
+            , J.N )
+          ])
         J.N )
 
 let apply_fun ctx f params exact trampolined in_cps loc =
@@ -1674,14 +1710,25 @@ let keep_name x = not (Code.Var.generated_name x)
 let rec translate_expr ctx loc x e level : (_ * J.statement_list) Expr_builder.t =
   let open Expr_builder in
   match e with
-  | Apply { f; args; exact } ->
+  | Apply { f; args; exact } -> (
       let trampolined = Var.Set.mem x ctx.Ctx.trampolined_calls in
       let args = remove_unused_tail_args ctx exact trampolined args in
       let* () = info ~need_loc:true mutator_p in
       let in_cps = Var.Set.mem x ctx.Ctx.in_cps in
       let* args = list_map (access ~ctx) args in
-      let* f = access ~ctx f in
-      return (apply_fun ctx f args exact trampolined in_cps loc, [])
+      let* cf = access ~ctx f in
+      match cf with
+      | (J.EAccess _ | J.EDot _)
+        when Config.Flag.inline_callgen () || (exact && not trampolined) ->
+          (* A function loaded from a block (a module field, a record of
+             closures) and called directly: bind it to a variable and
+             call it as [f(x)] rather than as a method [M[i](x)] (see
+             compiler/perf-notes/call) *)
+          let* loc' = statement_loc loc in
+          return
+            ( apply_fun ctx (J.EVar (J.V f)) args exact trampolined in_cps loc
+            , [ J.variable_declaration [ J.V f, (cf, loc') ], loc' ] )
+      | _ -> return (apply_fun ctx cf args exact trampolined in_cps loc, []))
   | Block (tag, a, array_or_not, _mut, desc) ->
       let* contents =
         list_map

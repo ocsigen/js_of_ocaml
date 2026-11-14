@@ -101,12 +101,12 @@ let%expect_test "direct calls without --effects=cps" =
     function test3(x){
      function F(symbol){
       var for$ = 0, r = [0, 0];
-      for(;;){r[1]++; var _b_ = for$ + 1 | 0; if(2 === for$) break; for$ = _b_;}
+      for(;;){r[1]++; var _c_ = for$ + 1 | 0; if(2 === for$) break; for$ = _c_;}
       function f(x){return x + 1 | 0;}
       return [0, 0, f];
      }
-     var M1 = F([0]), M2 = F([0]), _b_ = M2[2].call(null, 2);
-     return [0, M1[2].call(null, 1), _b_];
+     var M1 = F([0]), M2 = F([0]), _b_ = M2[2], _b_ = _b_(2), _c_ = M1[2];
+     return [0, _c_(1), _b_];
     }
     //end
     function test4(x){
@@ -116,9 +116,10 @@ let%expect_test "direct calls without --effects=cps" =
       function f(x){return caml_call2(Stdlib_Printf[2], _a_, x);}
       return [0, 0, f];
      }
-     var M1 = F([0]), M2 = F([0]);
-     M1[2].call(null, 1);
-     return M2[2].call(null, 2);
+     var M1 = F([0]), M2 = F([0]), _b_ = M1[2];
+     _b_(1);
+     _b_ = M2[2];
+     return _b_(2);
     }
     //end
     |}]
@@ -199,32 +200,32 @@ let%expect_test "direct calls with --effects=cps" =
          return raise(e$0);
         });
       return caml_exact_trampoline_cps_call
-              (g, x, function(_b_){caml_pop_trap(); return cont();});
+              (g, x, function(_c_){caml_pop_trap(); return cont();});
      }
      return caml_exact_trampoline_cps_call$0
              (f,
               function(x, cont){return cont();},
               7,
-              function(_b_){
+              function(_c_){
                return caml_exact_trampoline_cps_call$0
                        (f,
                         function(x, cont){
                          return caml_trampoline_cps_call3(Stdlib[28], x, cst_a, cont);
                         },
                         cst_a,
-                        function(_b_){return cont(0);});
+                        function(_c_){return cont(0);});
               });
     }
     //end
     function test3(x, cont){
      function F(symbol){
       var for$ = 0, r = [0, 0];
-      for(;;){r[1]++; var _b_ = for$ + 1 | 0; if(2 === for$) break; for$ = _b_;}
+      for(;;){r[1]++; var _c_ = for$ + 1 | 0; if(2 === for$) break; for$ = _c_;}
       function f(x){return x + 1 | 0;}
       return [0, 0, f];
      }
-     var M1 = F(), M2 = F(), _b_ = M2[2].call(null, 2);
-     return cont([0, M1[2].call(null, 1), _b_]);
+     var M1 = F(), M2 = F(), _b_ = M2[2], _b_ = _b_(2), _c_ = M1[2];
+     return cont([0, _c_(1), _b_]);
     }
     //end
     function test4(x, cont){
@@ -243,6 +244,30 @@ let%expect_test "direct calls with --effects=cps" =
               function(_a_){
                return caml_exact_trampoline_cps_call(M2[2], 2, cont);
               });
+    }
+    //end
+    |}]
+
+(* With [--enable callgen], calls to unknown functions check the arity
+   inline. The callee may then be any JavaScript function, so it is called
+   without receiver, as [caml_callN] does. *)
+let%expect_test "unknown calls through a block field with --enable callgen" =
+  let code =
+    compile_and_parse
+      ~flags:[ "--enable"; "callgen" ]
+      {|
+         module type S = sig val f : int -> int end
+         let test (module X : S) = X.f 1
+|}
+  in
+  print_fun_decl code (Some "test");
+  [%expect
+    {|
+    function test(X){
+     var _a_ = X[1];
+     return (_a_.l >= 0 ? _a_.l : _a_.l = _a_.length) === 1
+             ? _a_(1)
+             : runtime.caml_call_gen(_a_, [1]);
     }
     //end
     |}]
