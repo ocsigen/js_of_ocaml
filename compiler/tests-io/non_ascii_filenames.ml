@@ -19,7 +19,9 @@ let () =
   test check_file "/static";
   Printf.printf "current working directory\n";
   let test_chdir d =
-    Sys.mkdir d 0o777;
+    (* The directory is left over in the build directory when the test is
+       run again, with another profile for instance *)
+    (try Sys.mkdir d 0o777 with Sys_error _ when Sys.file_exists d -> ());
     Sys.chdir d;
     if Filename.basename (Sys.getcwd ()) <> "répertoire" then raise Exit
   in
