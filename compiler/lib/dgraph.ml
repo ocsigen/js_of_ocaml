@@ -227,10 +227,6 @@ module Worklist
   (** [create domain iter_children] queues all the nodes of [domain],
       in reverse postorder of the graph defined by [iter_children]. *)
 
-  val create_filtered : NSet.t -> (N.t -> bool) -> t
-  (** [create_filtered domain p] queues the nodes of [domain] satisfying [p],
-      in increasing order. *)
-
   val length : t -> int
 
   val is_empty : t -> bool
@@ -348,20 +344,6 @@ end = struct
       NSet.iter traverse domain;
       assert (!pos = 0);
       { data; head = 0; length = count; set = to_visit }
-
-  let create_filtered domain p =
-    let data = make_data domain in
-    let set = NSet.copy domain in
-    let length = ref 0 in
-    NSet.iter
-      (fun x ->
-        if p x
-        then (
-          data.(!length) <- x;
-          incr length;
-          NSet.remove set x))
-      domain;
-    { data; head = 0; length = !length; set }
 
   let length w = w.length
 
@@ -487,70 +469,4 @@ let t3 = Timer.get t3 in
 
     let f size g f = f' size g (fun ~update:_ v x -> f v x)
   end
-end
-
-module type ACTION = sig
-  type t
-end
-
-module type DOMAIN = sig
-  type t
-
-  val equal : t -> t -> bool
-
-  val bot : t
-
-  val top : t
-
-  val join : t -> t -> t
-end
-
-module Solver
-    (N : sig
-      type t
-    end)
-    (NSet : ISet with type elt = N.t)
-    (NTbl : Tbl with type key = N.t)
-    (A : ACTION)
-    (D : DOMAIN) =
-struct
-  type t =
-    { domain : NSet.t
-    ; iter_children : (N.t -> A.t -> unit) -> N.t -> unit
-    }
-
-  module W = Worklist (N) (NSet)
-
-  let is_empty = W.is_empty
-
-  let pop = W.pop
-
-  let push = W.push
-
-  let rec iterate g f ~state w =
-    if not (is_empty w)
-    then (
-      let dep = pop w in
-      if not (D.equal (NTbl.get state dep) D.bot)
-      then
-        g.iter_children
-          (fun target action ->
-            let a = NTbl.get state target in
-            if not (D.equal a D.top)
-            then
-              let b = D.join a (f ~state ~dep ~target ~action) in
-              if not (D.equal a b)
-              then (
-                NTbl.set state target b;
-                push target w))
-          dep;
-      iterate g f ~state w)
-
-  let f ~state g f =
-    (* Only nodes with a non-bottom value can propagate anything:
-       other nodes get queued when their value changes. *)
-    let w =
-      W.create_filtered g.domain (fun x -> not (D.equal (NTbl.get state x) D.bot))
-    in
-    iterate g f ~state w
 end
