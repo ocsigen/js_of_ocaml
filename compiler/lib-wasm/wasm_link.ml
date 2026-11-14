@@ -397,10 +397,23 @@ module Read = struct
     then failwith (file ^ " is not a Wasm binary file (bad magic)")
 
   type ch =
-    { buf : string
+    { file : string
+    ; buf : string
     ; mutable pos : int
     ; limit : int
     }
+
+  (* The input is not a valid Wasm binary *)
+  let error ch fmt =
+    Printf.ksprintf
+      (fun msg ->
+        failwith
+          (Printf.sprintf
+             "%s: malformed Wasm binary (%s at offset %d)"
+             ch.file
+             msg
+             ch.pos))
+      fmt
 
   let pos_in ch = ch.pos
 
@@ -408,24 +421,28 @@ module Read = struct
 
   let input_byte ch =
     let pos = ch.pos in
+    if pos >= ch.limit then error ch "unexpected end";
     ch.pos <- pos + 1;
     Char.code ch.buf.[pos]
 
-  let peek_byte ch = Char.code ch.buf.[ch.pos]
+  let peek_byte ch =
+    if ch.pos >= ch.limit then error ch "unexpected end";
+    Char.code ch.buf.[ch.pos]
 
   let really_input_string ch len =
     let pos = ch.pos in
+    if len > ch.limit - pos then error ch "unexpected end";
     ch.pos <- pos + len;
     String.sub ch.buf ~pos ~len
 
   let rec uint ?(n = 5) ch =
     let i = input_byte ch in
-    if n = 1 then assert (i < 16);
+    if n = 1 && i >= 16 then error ch "integer too large";
     if i < 128 then i else i - 128 + (uint ~n:(n - 1) ch lsl 7)
 
   let rec sint ?(n = 5) ch =
     let i = input_byte ch in
-    if n = 1 then assert (i < 8 || (i > 120 && i < 128));
+    if n = 1 && not (i < 8 || (i > 120 && i < 128)) then error ch "integer too large";
     if i < 64 then i else if i < 128 then i - 128 else i - 128 + (sint ~n:(n - 1) ch lsl 7)
 
   let repeat n f ch = Array.init n ~f:(fun _ -> f ch)
@@ -458,6 +475,7 @@ module Read = struct
     else
       let id = input_byte ch in
       let size = uint ch in
+      if size > ch.limit - pos_in ch then error ch "section extending past the end";
       Some { id; pos = pos_in ch; size }
 
   let skip_section ch { pos; size; _ } = seek_in ch (pos + size)
@@ -487,7 +505,7 @@ module Read = struct
 
   let open_in f buf =
     check_header f buf;
-    let ch = { buf; pos = 8; limit = String.length buf } in
+    let ch = { file = f; buf; pos = 8; limit = String.length buf } in
     { ch; type_mapping = [||]; type_index_count = 0; index = index ch }
 
   let find_section contents n =
@@ -506,7 +524,7 @@ module Read = struct
       | Some { pos; size; _ } -> pos, pos + size
       | None -> 0, 0
     in
-    let ch = { buf = contents.ch.buf; pos; limit } in
+    let ch = { contents.ch with pos; limit } in
     if limit > 0 then ignore (name ch);
     { contents with index = index ch }
 
@@ -595,6 +613,14 @@ module Read = struct
         :: types.rev_subtyping_info;
       index
 
+  (* Type indices are mapped to the indices of the linked module. While
+     reading a recursive group, the references to the types of this group
+     are relative to its start (and negative). *)
+  let map_typeidx st i =
+    if i >= st.type_index_count
+    then lnot (i - st.type_index_count)
+    else st.type_mapping.(i)
+
   let heaptype st ch =
     let i = sint ch in
     match i + 128 with
@@ -613,13 +639,8 @@ module Read = struct
     | 0x69 -> Exn
     | 0x68 -> Cont
     | _ ->
-        if i < 0 then failwith (Printf.sprintf "Unknown heaptype %x@." i);
-        let i =
-          if i >= st.type_index_count
-          then lnot (i - st.type_index_count)
-          else st.type_mapping.(i)
-        in
-        Type i
+        if i < 0 then error ch "unknown heap type 0x%02x" (i + 128);
+        Type (map_typeidx st i)
 
   let nullable typ = { nullable = true; typ }
 
@@ -645,7 +666,7 @@ module Read = struct
     | 0x68 -> nullable Cont
     | 0x63 -> nullable (heaptype st ch)
     | 0x64 -> { nullable = false; typ = heaptype st ch }
-    | _ -> failwith (Printf.sprintf "Unknown reftype %x@." i)
+    | _ -> error ch "unknown reference type 0x%02x" i
 
   let reftype st ch = reftype' st (input_byte ch) ch
 
@@ -689,32 +710,20 @@ module Read = struct
 
   let comptype st i ch =
     match i with
-    | 0x5D ->
-        let i = sint ch in
-        let i =
-          if i >= st.type_index_count
-          then lnot (i - st.type_index_count)
-          else st.type_mapping.(i)
-        in
-        Cont i
+    | 0x5D -> Cont (map_typeidx st (sint ch))
     | 0x5E -> Array (fieldtype st ch)
     | 0x5F -> Struct (vec (fieldtype st) ch)
     | 0x60 ->
         let params = vec (valtype st) ch in
         let results = vec (valtype st) ch in
         Func { params; results }
-    | c -> failwith (Printf.sprintf "Unknown comptype %d" c)
+    | c -> error ch "unknown composite type 0x%02x" c
 
   let supertype st ch =
     match input_byte ch with
     | 0 -> None
-    | 1 ->
-        let t = uint ch in
-        Some
-          (if t >= st.type_index_count
-           then lnot (t - st.type_index_count)
-           else st.type_mapping.(t))
-    | _ -> assert false
+    | 1 -> Some (map_typeidx st (uint ch))
+    | _ -> error ch "several supertypes"
 
   let subtype st i ch =
     match i with
@@ -756,7 +765,7 @@ module Read = struct
 
   let limits ch =
     let kind = input_byte ch in
-    assert (kind < 8);
+    if kind >= 8 then error ch "unsupported limits flags 0x%02x" kind;
     let shared = kind land 2 <> 0 in
     let index_type = if kind land 4 = 0 then `I32 else `I64 in
     let min = uint ch in
@@ -770,30 +779,32 @@ module Read = struct
     let limits = limits ch in
     { limits; typ }
 
-  let typeidx st ch = st.type_mapping.(uint ch)
+  let typeidx st ch =
+    let i = uint ch in
+    if i >= st.type_index_count then error ch "unknown type %d" i;
+    st.type_mapping.(i)
 
   let globaltype st ch =
     let typ = valtype st ch in
     let mut = input_byte ch in
-    assert (mut < 2);
+    if mut >= 2 then error ch "bad mutability 0x%02x" mut;
     { mut = mut <> 0; typ }
 
   let import tbl st ch =
     let module_ = name ch in
     let name = name ch in
-    let d = uint ch in
-    if d > 4 then failwith (Printf.sprintf "Unknown import %x@." d);
+    let d = input_byte ch in
     let importdesc : importdesc =
       match d with
-      | 0 -> Func st.type_mapping.(uint ch)
+      | 0 -> Func (typeidx st ch)
       | 1 -> Table (tabletype st ch)
       | 2 -> Mem (memtype ch)
       | 3 -> Global (globaltype st ch)
       | 4 ->
-          let b = uint ch in
-          assert (b = 0);
-          Tag st.type_mapping.(uint ch)
-      | _ -> assert false
+          let b = input_byte ch in
+          if b <> 0 then error ch "bad tag attribute 0x%02x" b;
+          Tag (typeidx st ch)
+      | _ -> error ch "unknown import kind 0x%02x" d
     in
     let entry = { module_; name; desc = importdesc } in
     let kind = exportable_kind d in
@@ -801,8 +812,8 @@ module Read = struct
 
   let export tbl ch =
     let name = name ch in
-    let d = uint ch in
-    if d > 4 then failwith (Printf.sprintf "Unknown export %x@." d);
+    let d = input_byte ch in
+    if d > 4 then error ch "unknown export kind 0x%02x" d;
     let idx = uint ch in
     let entry = name, idx in
     let kind = exportable_kind d in
@@ -841,7 +852,7 @@ module Read = struct
 
   let tag contents ch =
     let b = input_byte ch in
-    assert (b = 0);
+    if b <> 0 then error ch "bad tag attribute 0x%02x" b;
     typeidx contents ch
 
   let tags contents =
@@ -888,6 +899,12 @@ module Scan = struct
     ; data = [||]
     ; tag = [||]
     }
+
+  (* The input is not a valid Wasm binary *)
+  let malformed ~file fmt =
+    Printf.ksprintf
+      (fun msg -> failwith (Printf.sprintf "%s: malformed Wasm binary (%s)" file msg))
+      fmt
 
   (* A live entry refers to an entry which was found dead: the liveness
      analysis missed a reference *)
@@ -993,6 +1010,7 @@ module Scan = struct
       code =
     let output_uint = Write.uint in
     let output_sint = Write.sint in
+    let bad fmt = malformed ~file fmt in
     let start = ref 0 in
     (* Set while going through an entry that is dropped: indices are not
        rewritten, since the entry may refer to dropped entries. *)
@@ -1136,7 +1154,7 @@ module Scan = struct
       | 0x74 (* noexn *)
       | 0x68 (* cont *)
       | 0x75 (* nocont *) -> pos + 1
-      | c -> failwith (Printf.sprintf "Bad heap type 0x%02X@." c)
+      | c -> bad "bad heap type 0x%02X" c
     in
     let reftype pos =
       match get pos with
@@ -1393,7 +1411,7 @@ module Scan = struct
           | 14 (* table.copy *) -> pos + 2 |> tableidx |> tableidx |> instructions
           | 15 (* table.grow *) | 16 (* table.size *) | 17 (* table.fill *) ->
               pos + 2 |> tableidx |> instructions
-          | c -> failwith (Printf.sprintf "Bad instruction 0xFC 0x%02X" c))
+          | c -> bad "bad instruction 0xFC 0x%02X" c)
       | 0xFD -> pos + 1 |> vector_instruction
       | 0xFE -> pos + 1 |> atomic_instruction
       | _ -> pos
@@ -1435,7 +1453,7 @@ module Scan = struct
       | 37 (* br_on_cast_desc_eq *)
       | 38 (* br_on_cast_desc_eq_fail *) ->
           pos + 2 |> labelidx |> heaptype |> heaptype |> instructions
-      | c -> failwith (Printf.sprintf "Bad instruction 0xFB 0x%02X" c)
+      | c -> bad "bad instruction 0xFB 0x%02X" c
     and vector_instruction pos =
       if debug then Format.eprintf "  %d@." (get pos);
       (* [uint32] consumes the sub-opcode: [pos] is now at the immediates *)
@@ -1478,11 +1496,8 @@ module Scan = struct
         | 211
         | 212
         | 226
-        | 238 ) as c -> failwith (Printf.sprintf "Bad instruction 0xFD 0x%02X" c)
-      | c ->
-          if c <= 275
-          then pos |> instructions
-          else failwith (Printf.sprintf "Bad instruction 0xFD 0x%02X" c)
+        | 238 ) as c -> bad "bad instruction 0xFD 0x%02X" c
+      | c -> if c <= 275 then pos |> instructions else bad "bad instruction 0xFD 0x%02X" c
     and atomic_instruction pos =
       if debug then Format.eprintf "  %d@." (get pos);
       match get pos with
@@ -1499,10 +1514,9 @@ module Scan = struct
       | 72 | 73 | 74 | 75 | 76 | 77 | 78 (* xx.atomic.rmw.cmpxchg *) ->
           pos + 1 |> memarg |> instructions
       | 3 (* memory.fence *) ->
-          let c = get (pos + 1) in
-          assert (c = 0);
+          if get (pos + 1) <> 0 then bad "bad instruction atomic.fence";
           pos + 2 |> instructions
-      | c -> failwith (Printf.sprintf "Bad instruction 0xFE 0x%02X" c)
+      | c -> bad "bad instruction 0xFE 0x%02X" c
     and opt_else pos =
       if debug then Format.eprintf "0x%02X (@%d) else@." (get pos) pos;
       match get pos with
@@ -1519,17 +1533,17 @@ module Scan = struct
       match get pos with
       | 0 (* catch *) | 1 (* catch_ref *) -> pos + 1 |> tagidx |> labelidx
       | 2 (* catch_all *) | 3 (* catch_all_ref *) -> pos + 1 |> labelidx
-      | c -> failwith (Printf.sprintf "bad catch 0x%02x@." c)
+      | c -> bad "bad catch clause 0x%02X" c
     and on_clause pos =
       match get pos with
       | 0 (* on *) -> pos + 1 |> tagidx |> labelidx
       | 1 (* on .. switch *) -> pos + 1 |> tagidx
-      | c -> failwith (Printf.sprintf "bad on clause 0x%02x@." c)
+      | c -> bad "bad on clause 0x%02X" c
     and block_end pos =
       if debug then Format.eprintf "0x%02X (@%d) block end@." (get pos) pos;
       match get pos with
       | 0x0B -> pos + 1
-      | c -> failwith (Printf.sprintf "Bad instruction 0x%02X" c)
+      | c -> bad "bad instruction 0x%02X at offset %d" c pos
     in
     let locals pos = pos |> int |> valtype in
     let expr pos = pos |> instructions |> block_end in
@@ -1540,7 +1554,7 @@ module Scan = struct
     let mut pos = pos + 1 in
     let limits pos =
       let c = get pos in
-      assert (c < 8);
+      if c >= 8 then bad "unsupported limits flags 0x%02X" c;
       if c land 1 = 0 then pos + 1 |> int else pos + 1 |> int |> int
     in
     let tabletype pos =
@@ -1550,7 +1564,7 @@ module Scan = struct
     let table pos =
       match get pos with
       | 0x40 ->
-          assert (get (pos + 1) = 0);
+          if get (pos + 1) <> 0 then bad "bad table";
           pos + 2 |> tabletype |> expr
       | _ -> pos |> tabletype
     in
@@ -1570,7 +1584,7 @@ module Scan = struct
       pos'
     in
     let elemkind pos =
-      assert (get pos = 0);
+      if get pos <> 0 then bad "bad element kind 0x%02X" (get pos);
       pos + 1
     in
     (* An active segment with an implicit table or memory (element kinds
@@ -1604,7 +1618,7 @@ module Scan = struct
       | 5 -> pos + 1 |> reftype |> vector expr
       | 6 -> pos + 1 |> tableidx |> expr |> reftype |> vector expr
       | 7 -> pos + 1 |> reftype |> vector expr
-      | c -> failwith (Printf.sprintf "Bad element 0x%02X" c)
+      | c -> bad "bad element segment 0x%02X" c
     in
     let bytes pos =
       let pos, len = uint32 pos in
@@ -1615,7 +1629,7 @@ module Scan = struct
       | 0 -> pos |> active_segment ~map:mem_map ~flag:'\x02' bytes
       | 1 -> pos + 1 |> bytes
       | 2 -> pos + 1 |> memidx |> expr |> bytes
-      | c -> failwith (Printf.sprintf "Bad data segment 0x%02X" c)
+      | c -> bad "bad data segment 0x%02X" c
     in
     (* The functions of a passive or declarative segment which remain
        declared when the segment is not kept (see [filtered_elem]): all
@@ -1654,7 +1668,7 @@ module Scan = struct
         match flag with
         | 1 | 3 -> pos + 1 |> elemkind
         | 5 | 7 -> pos + 1 |> reftype
-        | c -> failwith (Printf.sprintf "Bad element 0x%02X" c)
+        | c -> bad "bad element segment 0x%02X" c
       in
       let pos', n = uint32 pos' in
       let res = collect n pos' [] in
@@ -1719,17 +1733,22 @@ module Scan = struct
       start := pos;
       pos |> vector local_nameassoc |> flush
     in
-    { table_section
-    ; elem_section
-    ; data_section
-    ; func
-    ; local_namemap
-    ; table
-    ; global
-    ; global_entry
-    ; elem
-    ; segment_functions = (fun pos -> snd (segment_functions pos))
-    ; data
+    (* Reading past the end of the input or using an index which is out
+       of range raises [Invalid_argument] *)
+    let guard f pos =
+      try f pos with Invalid_argument _ -> bad "truncated input or index out of range"
+    in
+    { table_section = (fun ~count pos -> guard (table_section ~count) pos)
+    ; elem_section = (fun ~keep ~count pos -> guard (elem_section ~keep ~count) pos)
+    ; data_section = (fun ~keep ~count pos -> guard (data_section ~keep ~count) pos)
+    ; func = guard func
+    ; local_namemap = guard local_namemap
+    ; table = guard table
+    ; global = guard global
+    ; global_entry = guard global_entry
+    ; elem = guard elem
+    ; segment_functions = guard (fun pos -> snd (segment_functions pos))
+    ; data = guard data
     }
 
   let table_section ?visit ~file positions maps buf s =
@@ -1762,12 +1781,13 @@ module Scan = struct
        s)
       .func
 
-  let local_namemap buf s =
-    (scanner (fun _ _ -> ()) (fun _ -> ()) default_maps buf s).local_namemap
+  let local_namemap ~file buf s =
+    (scanner ~file (fun _ _ -> ()) (fun _ -> ()) default_maps buf s).local_namemap
 
-  let analysis ~visit s =
+  let analysis ~file ~visit s =
     scanner
       ~analysis:true
+      ~file
       ~visit
       (fun _ _ -> ())
       (fun _ -> ())
@@ -2218,7 +2238,9 @@ let write_indirectnamemap ~name_sections ~name_section_buffer ~buf ~section_id ~
       if Read.find_section name_section section_id
       then
         let n = Read.uint name_section.ch in
-        let scan_map = Scan.local_namemap buf name_section.ch.buf in
+        let scan_map =
+          Scan.local_namemap ~file:name_section.ch.file buf name_section.ch.buf
+        in
         for _ = 1 to n do
           let idx = mapping.(Read.uint name_section.ch) in
           (* The entry of a removed function is still copied, to find
@@ -2604,10 +2626,11 @@ let compute_liveness
     in
     let global_positions =
       Array.mapi
-        ~f:(fun i { contents; _ } ->
+        ~f:(fun i { contents; file; _ } ->
           let current = ref 0 in
           let scanner =
             Scan.analysis
+              ~file
               ~visit:(fun kind idx ->
                 match kind with
                 | `Global ->
@@ -2647,9 +2670,10 @@ let compute_liveness
       | _ :: _ ->
           let declared = ref [] in
           Array.iteri
-            ~f:(fun i { contents; _ } ->
+            ~f:(fun i { contents; file; _ } ->
               let scanner =
                 Scan.analysis
+                  ~file
                   ~visit:(fun kind idx ->
                     match kind with
                     | `Func | `Ref_func -> declared := (i, idx) :: !declared
@@ -2804,9 +2828,10 @@ let compute_liveness
     (* Other roots *)
     let scanners =
       Array.mapi
-        ~f:(fun i { contents; _ } ->
+        ~f:(fun i { contents; file; _ } ->
           let type_mapping = contents.type_mapping in
           Scan.analysis
+            ~file
             ~visit:(fun kind idx ->
               match kind with
               | `Func ->
@@ -2834,11 +2859,11 @@ let compute_liveness
     in
     let positions id entry =
       Array.map
-        ~f:(fun { contents; _ } ->
+        ~f:(fun { contents; file; _ } ->
           section_entries
             contents
             id
-            (entry (Scan.analysis ~visit:(fun _ _ -> ()) contents.ch.buf)))
+            (entry (Scan.analysis ~file ~visit:(fun _ _ -> ()) contents.ch.buf)))
         files
     in
     let global_positions = positions 6 (fun scanner -> scanner.Scan.global) in
@@ -2935,8 +2960,8 @@ let compute_liveness
          their live functions, except for those occurring inside
          expressions other than [ref.func], which are dropped *)
       Array.iteri
-        ~f:(fun i { contents; _ } ->
-          let scanner = Scan.analysis ~visit:(fun _ _ -> ()) contents.ch.buf in
+        ~f:(fun i { contents; file; _ } ->
+          let scanner = Scan.analysis ~file ~visit:(fun _ _ -> ()) contents.ch.buf in
           Array.iteri
             ~f:(fun j pos ->
               if not segments.(i).(j)
@@ -3123,6 +3148,19 @@ let duplicate_functions ~files ~functions ~live =
          done);
       replacements)
     files
+
+(* On failure, no partial output file is left behind *)
+let with_output_file file f =
+  let ch = open_out_bin file in
+  match f ch with
+  | res ->
+      close_out ch;
+      res
+  | exception e ->
+      let bt = Printexc.get_raw_backtrace () in
+      close_out_noerr ch;
+      (try Sys.remove file with Sys_error _ -> ());
+      Printexc.raise_with_backtrace e bt
 
 type output =
   { source_map : Source_map.t
@@ -3322,7 +3360,8 @@ let f
         statuses)
     resolved_imports;
 
-  let out_ch = open_out_bin output_file in
+  with_output_file output_file
+  @@ fun out_ch ->
   output_string out_ch Read.header;
   let buf = Buffer.create 100000 in
 
@@ -3873,7 +3912,9 @@ let f
         if Read.find_section name_section 10
         then
           let n = Read.uint name_section.ch in
-          let scan_map = Scan.local_namemap buf name_section.ch.buf in
+          let scan_map =
+            Scan.local_namemap ~file:name_section.ch.file buf name_section.ch.buf
+          in
           for _ = 1 to n do
             let idx = type_map.(Read.uint name_section.ch) in
             scan_map name_section.ch.pos;
@@ -3908,8 +3949,6 @@ let f
       ~mappings:tag_mappings;
 
     add_section out_ch ~id:0 name_section_buffer);
-
-  close_out out_ch;
 
   { source_map
   ; imports =

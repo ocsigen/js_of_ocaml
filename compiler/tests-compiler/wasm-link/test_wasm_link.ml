@@ -275,5 +275,83 @@ let%expect_test "a dependency graph referring to an unknown node is rejected" =
           ~output_file
          : Wasm_link.output)
    with Failure msg -> print_endline msg);
-  Sys.remove output_file;
   [%expect {| In the dependency graph, node root reaches an unknown node kep. |}]
+
+(* Tests on modules written in binary. A module is given as a list of
+   sections (id, contents). *)
+
+let module_ sections =
+  let b = Buffer.create 100 in
+  Buffer.add_string b "\x00asm\x01\x00\x00\x00";
+  List.iter ~f:(fun (id, contents) -> section b id contents) sections;
+  Buffer.contents b
+
+let keep_dependencies : Wasm_link.dependency list =
+  [ { name = "root"; export = None; import = None; reaches = [ "keep" ]; root = true }
+  ; { name = "keep"; export = Some "keep"; import = None; reaches = []; root = false }
+  ]
+
+(* Link modules given as triples (module name, file name, contents). On
+   failure, print the error message and whether an output file remains. *)
+let link_modules ?dependencies ?(names = false) inputs =
+  let output_file = Filename.temp_file "linked" ".wasm" in
+  Sys.remove output_file;
+  match
+    Wasm_link.f
+      ?dependencies
+      ~names
+      (List.map
+         ~f:(fun (module_name, file, code) ->
+           { Wasm_link.module_name; file; code = Some code; opt_source_map = None })
+         inputs)
+      ~output_file
+  with
+  | (_ : Wasm_link.output) ->
+      let code = Fs.read_file output_file in
+      Sys.remove output_file;
+      Some code
+  | exception Failure msg ->
+      print_endline msg;
+      if Sys.file_exists output_file then print_endline "The output file remains.";
+      None
+
+(* Print the given sections of a module, in hexadecimal; the custom
+   sections are printed as strings *)
+let print_sections ids code =
+  let pos = ref 8 in
+  let rec uint () =
+    let c = Char.code code.[!pos] in
+    incr pos;
+    if c < 128 then c else c - 128 + (uint () lsl 7)
+  in
+  while !pos < String.length code do
+    let id = uint () in
+    let size = uint () in
+    let contents = String.sub code ~pos:!pos ~len:size in
+    pos := !pos + size;
+    if List.mem ~eq:Int.equal id ids
+    then
+      if id = 0
+      then Printf.printf "%2d: %S\n" id contents
+      else (
+        Printf.printf "%2d:" id;
+        String.iter ~f:(fun c -> Printf.printf " %02x" (Char.code c)) contents;
+        print_newline ())
+  done
+
+let%expect_test "malformed modules are reported" =
+  let code, _, _ = build_module () in
+  let test code = ignore (link_modules [ "a", "a.wasm", code ]) in
+  (* Truncated file *)
+  test (String.sub code ~pos:0 ~len:(String.length code - 3));
+  [%expect
+    {| a.wasm: malformed Wasm binary (section extending past the end at offset 35) |}];
+  (* Unknown instruction *)
+  test (module_ [ 1, "\x01\x60\x00\x00"; 3, "\x01\x00"; 10, "\x01\x03\x00\x27\x0b" ]);
+  [%expect {| a.wasm: malformed Wasm binary (bad instruction 0x27 at offset 23) |}];
+  (* Call to a function which does not exist *)
+  test (module_ [ 1, "\x01\x60\x00\x00"; 3, "\x01\x00"; 10, "\x01\x04\x00\x10\x05\x0b" ]);
+  [%expect {| a.wasm: malformed Wasm binary (truncated input or index out of range) |}];
+  (* Bad import kind *)
+  test (module_ [ 1, "\x01\x60\x00\x00"; 2, "\x01\x01m\x01f\x07\x00" ]);
+  [%expect {| a.wasm: malformed Wasm binary (unknown import kind 0x07 at offset 22) |}]
