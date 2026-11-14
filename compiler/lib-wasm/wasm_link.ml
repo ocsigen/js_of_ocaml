@@ -2265,7 +2265,21 @@ let rec resolve
     ~kind
     i
     ({ module_; name; _ } as import) =
-  let i', index = Poly.Hashtbl.find exports (module_, name) in
+  let i', index =
+    match Poly.Hashtbl.find_all exports (module_, name) with
+    | [] -> raise Not_found
+    | [ export ] -> export
+    | (i2, _) :: (i1, _) :: _ ->
+        failwith
+          (Printf.sprintf
+             "In module %s, the import %s / %s is ambiguous: it is exported by both %s \
+              and %s"
+             files.(i).file
+             module_
+             name
+             files.(i1).file
+             files.(i2).file)
+  in
   let imports = get_exportable_info intfs.(i').Read.imports kind in
   if index < Array.length imports
   then (

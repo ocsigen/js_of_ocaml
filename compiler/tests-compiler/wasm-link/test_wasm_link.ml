@@ -339,6 +339,26 @@ let print_sections ids code =
         print_newline ())
   done
 
+let%expect_test "an import resolving to several exports is rejected" =
+  let export =
+    module_
+      [ 1, "\x01\x60\x00\x00"
+      ; 3, "\x01\x00"
+      ; 7, "\x01\x01f\x00\x00"
+      ; 10, "\x01\x02\x00\x0b"
+      ]
+  in
+  let import = module_ [ 1, "\x01\x60\x00\x00"; 2, "\x01\x01m\x01f\x00\x00" ] in
+  ignore
+    (link_modules
+       [ "m", "m1.wasm", export; "m", "m2.wasm", export; "a", "a.wasm", import ]);
+  [%expect
+    {| In module a.wasm, the import m / f is ambiguous: it is exported by both m1.wasm and m2.wasm |}];
+  (* This is fine when the export is not used to resolve an import *)
+  ignore
+    (link_modules ~dependencies:[] [ "m", "m1.wasm", export; "m", "m2.wasm", export ]);
+  [%expect {||}]
+
 let%expect_test "malformed modules are reported" =
   let code, _, _ = build_module () in
   let test code = ignore (link_modules [ "a", "a.wasm", code ]) in
