@@ -84,9 +84,10 @@ type subtype =
 
 type rectype = subtype array
 
+(* Limits are unsigned 64-bit integers *)
 type limits =
-  { min : int
-  ; max : int option
+  { min : Int64.t
+  ; max : Int64.t option
   ; shared : bool
   ; index_type : [ `I32 | `I64 ]
   }
@@ -159,6 +160,13 @@ module Write = struct
     else (
       byte ch (128 + (i land 127));
       uint ch (i lsr 7))
+
+  let rec uint64 ch i =
+    if Int64.unsigned_compare i 128L < 0
+    then byte ch (Int64.to_int i)
+    else (
+      byte ch (128 + (Int64.to_int i land 127));
+      uint64 ch (Int64.shift_right_logical i 7))
 
   let vec f ch l =
     uint ch (Array.length l);
@@ -277,8 +285,8 @@ module Write = struct
       | `I32 -> 0
     in
     byte ch kind;
-    uint ch min;
-    Option.iter ~f:(uint ch) max
+    uint64 ch min;
+    Option.iter ~f:(uint64 ch) max
 
   let globaltype st ch mut typ =
     valtype st ch typ;
@@ -456,6 +464,13 @@ module Read = struct
     let i = input_byte ch in
     if n = 1 && i >= 16 then error ch "integer too large";
     if i < 128 then i else i - 128 + (uint ~n:(n - 1) ch lsl 7)
+
+  let rec uint64 ?(n = 10) ch =
+    let i = input_byte ch in
+    if n = 1 && i >= 2 then error ch "integer too large";
+    if i < 128
+    then Int64.of_int i
+    else Int64.add (Int64.of_int (i - 128)) (Int64.shift_left (uint64 ~n:(n - 1) ch) 7)
 
   let rec sint ?(n = 5) ch =
     let i = input_byte ch in
@@ -806,8 +821,8 @@ module Read = struct
     if kind >= 8 then error ch "unsupported limits flags 0x%02x" kind;
     let shared = kind land 2 <> 0 in
     let index_type = if kind land 4 = 0 then `I32 else `I64 in
-    let min = uint ch in
-    let max = if kind land 1 = 0 then None else Some (uint ch) in
+    let min = uint64 ch in
+    let max = if kind land 1 = 0 then None else Some (uint64 ch) in
     { min; max; shared; index_type }
 
   let memtype = limits
@@ -1857,12 +1872,12 @@ type import_status =
 let check_limits export import =
   Bool.equal export.shared import.shared
   && Poly.equal export.index_type import.index_type
-  && export.min >= import.min
+  && Int64.unsigned_compare export.min import.min >= 0
   &&
   match export.max, import.max with
   | _, None -> true
   | None, Some _ -> false
-  | Some e, Some i -> e <= i
+  | Some e, Some i -> Int64.unsigned_compare e i <= 0
 
 let rec subtype subtyping_info (i : int) i' =
   i = i'

@@ -375,6 +375,12 @@ let%expect_test "custom descriptors" =
     linked;
   [%expect {| true |}]
 
+let%expect_test "limits are 64-bit integers" =
+  (* (memory i64 0x200000000 0x1000000000000) *)
+  let code = module_ [ 5, "\x01\x05\x80\x80\x80\x80\x20\x80\x80\x80\x80\x80\x80\x40" ] in
+  Option.iter ~f:(print_sections [ 5 ]) (link_modules [ "a", "a.wasm", code ]);
+  [%expect {| 5: 01 05 80 80 80 80 20 80 80 80 80 80 80 40 |}]
+
 let%expect_test "an import resolving to several exports is rejected" =
   let export =
     module_
