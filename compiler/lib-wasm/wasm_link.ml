@@ -2191,12 +2191,14 @@ let write_namemap
     Write.uint buf len;
     Buffer.add_substring buf s pos len
   in
-  let write_entry_with_suffix i idx' idx s pos len =
-    match suffix i idx' with
-    | None -> write_entry idx s pos len
+  (* [idx] is the index of the entry in module [i], and [idx'] its index
+     in the output *)
+  let write_entry_with_suffix i idx idx' s pos len =
+    match suffix i idx with
+    | None -> write_entry idx' s pos len
     | Some suffix ->
         incr count;
-        Write.nameassoc buf idx (String.sub s ~pos ~len ^ suffix)
+        Write.nameassoc buf idx' (String.sub s ~pos ~len ^ suffix)
   in
   (* Entries must be sorted by index. Only globals are reordered: the
      other entries are already in the right order. *)
@@ -2221,14 +2223,14 @@ let write_namemap
           if idx >= import_count && mapping.(idx) >= 0
           then
             if reordered
-            then entries := (mapping.(idx), ch.buf, ch.pos, len) :: !entries
+            then entries := (mapping.(idx), (i, idx, ch.buf, ch.pos, len)) :: !entries
             else write_entry_with_suffix i idx mapping.(idx) ch.buf ch.pos len;
           ch.pos <- ch.pos + len
         done)
     name_sections;
   List.iter
-    ~f:(fun (idx, s, pos, len) -> write_entry idx s pos len)
-    (List.sort ~cmp:(fun (i, _, _, _) (i', _, _, _) -> compare i i') !entries);
+    ~f:(fun (idx', (i, idx, s, pos, len)) -> write_entry_with_suffix i idx idx' s pos len)
+    (List.sort ~cmp:(fun (i, _) (i', _) -> compare i i') !entries);
   add_subsection name_section_buffer ~id:section_id ~count:!count buf
 
 let write_indirectnamemap ~name_sections ~name_section_buffer ~buf ~section_id ~mappings =
