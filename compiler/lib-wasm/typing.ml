@@ -24,20 +24,38 @@ let debug = Debug.find "typing"
 
 let times = Debug.find "times"
 
-let can_unbox_parameters fun_info f =
-  (* We can unbox the parameters of a function when all its call sites
-     are known, and only this function is called there. It would be
-     more robust to deal with more cases by using an intermediate
-     function that unbox the parameters. When several functions can be
-     call from the same call site, one could enforce somehow that they
-     have the same signature. *)
-  Call_graph_analysis.direct_calls_only fun_info f
+(* Whether the function can be wrapped to unbox its parameters or
+   return value. This is only useful if the function is called
+   directly somewhere. Closures introduced after the flow analysis (by
+   exact call specialization, which updates [info_defs]) are not
+   analysed. *)
+let unboxing_wrappable global_flow_info fun_info f =
+  Call_graph_analysis.wrappable fun_info f
+  && Call_graph_analysis.has_direct_calls fun_info f
+  && Var.Map.mem f global_flow_info.Global_flow.info_return_vals
 
-let can_unbox_return_value fun_info f =
+let can_unbox_parameters global_flow_info fun_info f =
+  (* We can unbox the parameters of a function when all its call sites
+     are known, and only this function is called there. Otherwise, the
+     function is split into a function called directly, whose
+     parameters can be unboxed, and a wrapper called through closures
+     which unboxes its arguments. When several functions can be called
+     from the same call site, one could enforce somehow that they have
+     the same signature. *)
+  Call_graph_analysis.direct_calls_only fun_info f
+  || unboxing_wrappable global_flow_info fun_info f
+
+let can_unbox_return_value global_flow_info fun_info f =
   (* Unboxing return values can unoptimize a tail call. Since we are
      never unboxing then reboxing a value, this can only happen once
-     in a sequence of tail calls, so this is not an issue. *)
+     in a sequence of tail calls, so this is not an issue. But a
+     wrapper boxing the return value turns its call to the function
+     into a non-tail call, which must not be part of a cycle of tail
+     calls. Such a cycle would contain a call through a closure,
+     which is an unknown tail call. *)
   Call_graph_analysis.direct_calls_only fun_info f
+  || unboxing_wrappable global_flow_info fun_info f
+     && not (Call_graph_analysis.has_unknown_tail_calls fun_info f)
 
 module Integer = struct
   type kind =
@@ -268,51 +286,85 @@ let update_deps st { blocks; _ } =
           | _ -> ()))
     blocks
 
-let mark_boxed_function_parameters ~fun_info { blocks; _ } =
+let mark_boxed_function_parameters ~global_flow_info ~fun_info { blocks; _ } =
   let boxed_function_parameters = Var.ISet.empty () in
   let set x = Var.ISet.add boxed_function_parameters x in
   Addr.Map.iter
     (fun _ block ->
       List.iter block.body ~f:(fun i ->
           match i with
-          | Let (x, Closure (params, _, _)) when not (can_unbox_parameters fun_info x) ->
+          | Let (x, Closure (params, _, _))
+            when not (can_unbox_parameters global_flow_info fun_info x) ->
               List.iter ~f:set params
           | _ -> ()))
     blocks;
   boxed_function_parameters
 
-let repr_to_type (r : Optimization_hint.repr) : typ =
+let repr_to_type ~unboxed (r : Optimization_hint.repr) : typ =
+  let b = if unboxed then Unboxed else Boxed in
   match r with
   | Value -> Top
-  | Float -> Number (Float, Boxed)
-  | Int32 -> Number (Int32, Boxed)
-  | Nativeint -> Number (Nativeint, Boxed)
-  | Int64 -> Number (Int64, Boxed)
+  | Float -> Number (Float, b)
+  | Int32 -> Number (Int32, b)
+  | Nativeint -> Number (Nativeint, b)
+  | Int64 -> Number (Int64, b)
   | Int -> Int Ref
 
-let collect_parameter_type_hints { blocks; _ } =
-  let h = Var.Hashtbl.create 16 in
+(* Types of function parameters, given by the type checker. The
+   parameters of a wrapped function (see [can_unbox_parameters]) are
+   put in the second table, with [Top] when there is no hint: the
+   wrapper can pass them unboxed. *)
+let collect_parameter_type_hints ~global_flow_info ~fun_info { blocks; _ } =
+  let hints = Var.Hashtbl.create 16 in
+  let wrapper_types = Var.Hashtbl.create 16 in
   Addr.Map.iter
     (fun _ block ->
       List.iter block.body ~f:(fun i ->
           match i with
-          | Let (_, Closure (params, _, (Some { params = param_reprs; _ }, _))) ->
-              List.iter2
-                ~f:(fun p r ->
-                  match repr_to_type r with
-                  | Top -> ()
-                  | t -> Var.Hashtbl.replace h p t)
-                params
-                param_reprs
+          | Let (f, Closure (params, _, (hint, _))) ->
+              let wrapped =
+                (not (Call_graph_analysis.direct_calls_only fun_info f))
+                && can_unbox_parameters global_flow_info fun_info f
+              in
+              let param_reprs =
+                match hint with
+                | Some { params = param_reprs; _ }
+                  when List.compare_lengths params param_reprs = 0 -> Some param_reprs
+                | _ -> None
+              in
+              if wrapped
+              then
+                match param_reprs with
+                | Some param_reprs ->
+                    List.iter2
+                      ~f:(fun p r ->
+                        Var.Hashtbl.replace wrapper_types p (repr_to_type ~unboxed:true r))
+                      params
+                      param_reprs
+                | None ->
+                    List.iter ~f:(fun p -> Var.Hashtbl.replace wrapper_types p Top) params
+              else
+                Option.iter
+                  ~f:(fun param_reprs ->
+                    List.iter2
+                      ~f:(fun p r ->
+                        match repr_to_type ~unboxed:false r with
+                        | Top -> ()
+                        | t -> Var.Hashtbl.replace hints p t)
+                      params
+                      param_reprs)
+                  param_reprs
           | _ -> ()))
     blocks;
-  h
+  hints, wrapper_types
 
 type st =
   { global_flow_state : Global_flow.state
   ; global_flow_info : Global_flow.info
   ; boxed_function_parameters : Var.ISet.t
   ; parameter_type_hints : typ Var.Hashtbl.t
+  ; wrapper_parameter_types : typ Var.Hashtbl.t
+        (** Types of the arguments passed by wrappers *)
   ; fun_info : Call_graph_analysis.t
   }
 
@@ -407,7 +459,33 @@ let register_prim nm ~unbox typ = String.Hashtbl.replace primitive_types nm (unb
 let propagate st approx x : Domain.t =
   match st.global_flow_state.defs.(Var.idx x) with
   | Phi { known; others; unit } -> (
-      let res = Domain.join_set ~others (fun y -> Var.Tbl.get approx y) known in
+      let res =
+        match Var.Hashtbl.find_opt st.wrapper_parameter_types x with
+        | Some Top | None -> Domain.join_set ~others (fun y -> Var.Tbl.get approx y) known
+        | Some t ->
+            (* Parameter of a wrapped function with a type hint [t]:
+               the type checker guarantees that the values not known
+               by the flow analysis, which are passed by the wrapper,
+               and the known values of type [Top] have type [t]; the
+               wrapper and the direct calls convert them. A known value
+               of a conflicting type is not covered by the hint: this
+               is the case of the dead code sentinel (an integer),
+               passed when no possible callee uses the parameter. The
+               parameter is then not unboxed.
+
+               Ignoring the known values of type [Top] makes this
+               equation non-monotone. But a type conflicting with the
+               hint (which could then go to [Top]) only comes from the
+               sentinel, a constant, so this does not prevent the
+               analysis from converging. *)
+            Var.Set.fold
+              (fun y acc ->
+                match Var.Tbl.get approx y with
+                | Top -> acc
+                | ty -> Domain.join ty acc)
+              known
+              t
+      in
       let res = if unit then Domain.join (Int Unnormalized) res else res in
       let res =
         if Var.ISet.mem st.boxed_function_parameters x then Domain.box res else res
@@ -460,7 +538,17 @@ let propagate st approx x : Domain.t =
           Int Normalized
       | Prim (Extern (prim, hint), args) -> prim_type ~st ~approx prim hint args
       | Special _ -> Top
-      | Apply { f; args; _ } -> (
+      | Apply { f; args; exact } -> (
+          (* The function called directly, whose result is not
+             converted by a wrapper *)
+          let direct_callee =
+            if exact
+            then
+              match Global_flow.get_unique_closure st.global_flow_info ~call:x f with
+              | Some (g, _, false) -> Some g
+              | Some (_, _, true) | None -> None
+            else None
+          in
           match Var.Tbl.get st.global_flow_info.info_approximation f with
           | Values { known; others } ->
               Domain.join_set
@@ -510,7 +598,12 @@ let propagate st approx x : Domain.t =
                             | _ -> Var.Tbl.get approx y)
                           (Var.Map.find g st.global_flow_state.return_values)
                       in
-                      if can_unbox_return_value st.fun_info g then res else Domain.box res
+                      if
+                        can_unbox_return_value st.global_flow_info st.fun_info g
+                        && (Call_graph_analysis.direct_calls_only st.fun_info g
+                           || Option.equal Var.equal direct_callee (Some g))
+                      then res
+                      else Domain.box res
                   | Expr (Closure (_, _, _)) ->
                       (* The function is partially applied or over applied *)
                       Top
@@ -593,7 +686,7 @@ let box_numbers p st types =
               match Global_flow.get_unique_closure st.global_flow_info ~call:y f with
               | None | Some (_, _, true) -> ()
               | Some (g, _, false) ->
-                  if can_unbox_return_value st.fun_info g
+                  if can_unbox_return_value st.global_flow_info st.fun_info g
                   then
                     let s = Var.Map.find g st.global_flow_info.info_return_vals in
                     Var.Set.iter box s)
@@ -619,7 +712,8 @@ let box_numbers p st types =
                           Global_flow.get_unique_closure st.global_flow_info ~call:x f
                         with
                         | None -> true
-                        | Some (g, _, _) -> not (can_unbox_parameters st.fun_info g)
+                        | Some (g, _, _) ->
+                            not (can_unbox_parameters st.global_flow_info st.fun_info g)
                       then List.iter ~f:box args
                   | Block (tag, lst, _, _, _) -> if tag <> 254 then Array.iter ~f:box lst
                   | Prim (Extern (s, _), args) ->
@@ -659,7 +753,9 @@ let box_numbers p st types =
           match b.branch with
           | Return y ->
               Option.iter
-                ~f:(fun g -> if not (can_unbox_return_value st.fun_info g) then box y)
+                ~f:(fun g ->
+                  if not (can_unbox_return_value st.global_flow_info st.fun_info g)
+                  then box y)
                 name_opt
           | Raise _ | Stop | Branch _ | Cond _ | Switch _ | Pushtrap _ | Poptrap _ -> ())
         pc
@@ -682,13 +778,18 @@ type t =
 let f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinel p =
   let t = Timer.make () in
   update_deps global_flow_state p;
-  let boxed_function_parameters = mark_boxed_function_parameters ~fun_info p in
-  let parameter_type_hints = collect_parameter_type_hints p in
+  let boxed_function_parameters =
+    mark_boxed_function_parameters ~global_flow_info ~fun_info p
+  in
+  let parameter_type_hints, wrapper_parameter_types =
+    collect_parameter_type_hints ~global_flow_info ~fun_info p
+  in
   let st =
     { global_flow_state
     ; global_flow_info
     ; boxed_function_parameters
     ; parameter_type_hints
+    ; wrapper_parameter_types
     ; fun_info
     }
   in
@@ -726,7 +827,7 @@ let f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinel p =
     (fun name_opt _ _ _ () ->
       Option.iter
         ~f:(fun f ->
-          if can_unbox_return_value fun_info f
+          if can_unbox_return_value global_flow_info fun_info f
           then
             let s = Var.Map.find f global_flow_info.info_return_vals in
             Var.Hashtbl.replace
@@ -741,3 +842,8 @@ let var_type info x = Var.Tbl.get info.types x
 
 let return_type info f =
   Var.Hashtbl.find_opt info.return_types f |> Option.value ~default:Top
+
+let is_unboxed t =
+  match t with
+  | Int (Normalized | Unnormalized) | Number (_, Unboxed) -> true
+  | Int Ref | Number (_, Boxed) | Top | Bot | Tuple _ | Bigarray _ | Null -> false

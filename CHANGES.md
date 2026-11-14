@@ -21,6 +21,9 @@
   so that calls to these functions become direct calls (#2098)
 * Compiler/Wasm: raising functions which can also be called through a closure
   return null too when called directly, using a wrapper otherwise (#2098)
+* Compiler/Wasm: functions which can also be called through a closure get
+  unboxed parameters (with OCaml 5.6 type hints) and return values when
+  called directly, using a wrapper otherwise (#????)
 * Compiler/Wasm: require Binaryen 120 (#2580)
 * Compiler: split switches with more than 256 cases (instead of 60), or whose
   case values span more than 1000, which the JavaScriptCore interpreter

@@ -27,7 +27,11 @@
   (flags :standard --opt 2)))
 
 (tests
- (names marshal_regressions int_and)
+ (names
+  marshal_regressions
+  int_and
+  unboxing_wrapper
+  unboxing_wrapper_dead_param)
  (modes wasm))
 
 (tests
