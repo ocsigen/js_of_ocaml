@@ -1032,12 +1032,19 @@ module Scan = struct
     | `Data
     | `Type
     | `Ref_func (* Function referenced by [ref.func] *)
+    | `Elem_drop
+    | `Data_drop
+      (* Segment referenced by [elem.drop] / [data.drop]: it needs to
+         exist, but its contents is not used *)
     ]
 
   type scanner =
     { table_section : count:int -> int -> unit
     ; elem_section : keep:(int -> bool) -> count:int -> int -> unit
-    ; data_section : keep:(int -> bool) -> count:int -> int -> unit
+    ; data_section :
+        keep:(int -> bool) -> placeholder:(int -> bool) -> count:int -> int -> unit
+          (** A segment which is not kept is removed, or replaced by an
+              empty passive segment when [placeholder] holds *)
     ; func : int -> unit
     ; local_namemap : int -> unit
     ; table : int -> int
@@ -1167,6 +1174,8 @@ module Scan = struct
     let visit_elem idx = visit `Elem idx in
     let visit_tag idx = visit `Tag idx in
     let visit_data idx = visit `Data idx in
+    let visit_elem_drop idx = visit `Elem_drop idx in
+    let visit_data_drop idx = visit `Data_drop idx in
     let visit_type idx = visit `Type idx in
     let typ_map idx = maps.typ.(idx) in
     let typeidx pos = rewrite "type" visit_type typ_map pos in
@@ -1461,11 +1470,15 @@ module Scan = struct
           | 20 (* sub128 *)
           | 21 | 22 (* mul_wide *) -> pos + 2 |> instructions
           | 8 (* memory.init *) -> pos + 2 |> dataidx |> memidx |> instructions
-          | 9 (* data.drop *) -> pos + 2 |> dataidx |> instructions
+          | 9 (* data.drop *) ->
+              pos + 2 |> rewrite "data segment" visit_data_drop data_map |> instructions
           | 10 (* memory.copy *) -> pos + 2 |> memidx |> memidx |> instructions
           | 11 (* memory.fill *) -> pos + 2 |> memidx |> instructions
           | 12 (* table.init *) -> pos + 2 |> elemidx |> tableidx |> instructions
-          | 13 (* elem.drop *) -> pos + 2 |> elemidx |> instructions
+          | 13 (* elem.drop *) ->
+              pos + 2
+              |> rewrite "element segment" visit_elem_drop elem_map
+              |> instructions
           | 14 (* table.copy *) -> pos + 2 |> tableidx |> tableidx |> instructions
           | 15 (* table.grow *) | 16 (* table.size *) | 17 (* table.fill *) ->
               pos + 2 |> tableidx |> instructions
@@ -1768,8 +1781,10 @@ module Scan = struct
       in
       pos |> loop 0 |> flush
     in
-    (* A data segment which is not kept is dropped *)
-    let data_section ~keep ~count pos =
+    (* A data segment which is not kept is dropped. When it is still
+       referenced by a [data.drop] instruction, an empty passive segment
+       takes its place. *)
+    let data_section ~keep ~placeholder ~count pos =
       start := pos;
       let rec loop j pos =
         if j = count
@@ -1781,6 +1796,7 @@ module Scan = struct
           skipping := true;
           let pos' = data pos in
           skipping := analysis;
+          if placeholder j then Buffer.add_string buf "\x01\x00";
           start := pos';
           loop (j + 1) pos')
       in
@@ -1798,7 +1814,9 @@ module Scan = struct
     in
     { table_section = (fun ~count pos -> guard (table_section ~count) pos)
     ; elem_section = (fun ~keep ~count pos -> guard (elem_section ~keep ~count) pos)
-    ; data_section = (fun ~keep ~count pos -> guard (data_section ~keep ~count) pos)
+    ; data_section =
+        (fun ~keep ~placeholder ~count pos ->
+          guard (data_section ~keep ~placeholder ~count) pos)
     ; func = guard func
     ; local_namemap = guard local_namemap
     ; table = guard table
@@ -2521,6 +2539,9 @@ type liveness =
         (** Per input module, for each local index (imports included) *)
   ; segments : bool array array
   ; data : bool array array
+  ; data_placeholders : bool array array
+        (** Data segments which are not live but are still referenced by a
+            [data.drop] instruction: they are replaced by empty segments *)
   ; unresolved : bool array exportable_info
   ; keep_export : string -> bool
   ; ordering : ordering
@@ -2700,6 +2721,9 @@ let compute_liveness
       ~f:(fun { contents; _ } -> Array.make (Read.data_count contents) (not dce))
       files
   in
+  let data_placeholders =
+    Array.map ~f:(fun l -> Array.make (Array.length l) false) data
+  in
   let type_live = Array.make types.Read.last_index (not dce) in
   if not dce
   then
@@ -2719,7 +2743,14 @@ let compute_liveness
                 match kind with
                 | `Global ->
                     global_deps.(i).(!current) <- idx :: global_deps.(i).(!current)
-                | `Func | `Ref_func | `Tag | `Elem | `Data | `Type -> ())
+                | `Func
+                | `Ref_func
+                | `Tag
+                | `Elem
+                | `Data
+                | `Type
+                | `Elem_drop
+                | `Data_drop -> ())
               contents.ch.buf
           in
           let offset = import_count i Global in
@@ -2761,7 +2792,8 @@ let compute_liveness
                   ~visit:(fun kind idx ->
                     match kind with
                     | `Func | `Ref_func -> declared := (i, idx) :: !declared
-                    | `Global | `Tag | `Elem | `Data | `Type -> ())
+                    | `Global | `Tag | `Elem | `Data | `Type | `Elem_drop | `Data_drop ->
+                        ())
                   contents.ch.buf
               in
               ignore (section_entries contents 4 scanner.table);
@@ -2778,6 +2810,7 @@ let compute_liveness
     { live
     ; segments
     ; data
+    ; data_placeholders
     ; unresolved
     ; keep_export = filter_export
     ; ordering =
@@ -2937,6 +2970,11 @@ let compute_liveness
               | `Tag -> mark i Tag idx
               | `Elem -> mark_segment i idx
               | `Data -> mark_data i idx
+              | `Elem_drop ->
+                  (* A segment which is not live is still there, with only
+                     the functions it declares *)
+                  ()
+              | `Data_drop -> data_placeholders.(i).(idx) <- true
               | `Type -> mark_type type_mapping.(idx))
             contents.ch.buf)
         files
@@ -3065,6 +3103,7 @@ let compute_liveness
     { live
     ; segments
     ; data
+    ; data_placeholders
     ; unresolved
     ; keep_export = (fun name -> String.Hashtbl.mem kept_exports name)
     ; ordering =
@@ -3549,7 +3588,8 @@ let f
           ~visit:(fun kind idx ->
             match kind with
             | `Global -> check_table_global i idx
-            | `Func | `Ref_func | `Tag | `Elem | `Data | `Type -> ())
+            | `Func | `Ref_func | `Tag | `Elem | `Data | `Type | `Elem_drop | `Data_drop
+              -> ())
           ~file:files.(i).file
           positions.(i)
           { maps with func = func_mappings.(i); global = global_mappings.(i) })
@@ -3742,7 +3782,15 @@ let f
   let elem_mappings = build_simple_mappings ~counts:elem_counts in
 
   (* 12: data count *)
-  let data_mappings, data_counts = compact liveness.data in
+  (* The segments which are only referenced by [data.drop] are replaced by
+     empty segments *)
+  let data_mappings, data_counts =
+    compact
+      (Array.map2
+         ~f:(fun live placeholders -> Array.map2 ~f:( || ) live placeholders)
+         liveness.data
+         liveness.data_placeholders)
+  in
   let data_count = Array.fold_left ~f:( + ) ~init:0 data_counts in
   if data_count > 0
   then (
@@ -3863,7 +3911,8 @@ let f
            { maps with mem = mem_mappings.(i); global = global_mappings.(i) }
            buf
            s
-           ~keep:(fun j -> liveness.data.(i).(j)))
+           ~keep:(fun j -> liveness.data.(i).(j))
+           ~placeholder:(fun j -> liveness.data_placeholders.(i).(j)))
        ~written:(fun i _ -> data_counts.(i))
        ());
 

@@ -381,6 +381,30 @@ let%expect_test "limits are 64-bit integers" =
   Option.iter ~f:(print_sections [ 5 ]) (link_modules [ "a", "a.wasm", code ]);
   [%expect {| 5: 01 05 80 80 80 80 20 80 80 80 80 80 80 40 |}]
 
+let%expect_test "a data segment which is only dropped is emptied" =
+  (* Three passive data segments: the first one is not used, the second
+     one is only used by [data.drop], the third one by [memory.init]. *)
+  let code =
+    module_
+      [ 1, "\x01\x60\x00\x00"
+      ; 3, "\x01\x00"
+      ; 5, "\x01\x00\x01"
+      ; 7, "\x01\x04keep\x00\x00"
+      ; 12, "\x03"
+      ; 10, "\x01\x0f\x00\xfc\x09\x01\x41\x00\x41\x00\x41\x00\xfc\x08\x02\x00\x0b"
+      ; 11, "\x03\x01\x01x\x01\x03abc\x01\x01d"
+      ]
+  in
+  Option.iter
+    ~f:(print_sections [ 12; 10; 11 ])
+    (link_modules ~dependencies:keep_dependencies [ "a", "a.wasm", code ]);
+  [%expect
+    {|
+           12: 02
+           10: 01 0f 00 fc 09 00 41 00 41 00 41 00 fc 08 01 00 0b
+           11: 02 01 00 01 01 64
+           |}]
+
 let%expect_test "an import resolving to several exports is rejected" =
   let export =
     module_
