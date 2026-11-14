@@ -39,3 +39,48 @@ let%expect_test "objects are counted" =
     "%b\n"
     (Hashtbl.hash_param 1 100 [ o1; o2 ] = Hashtbl.hash_param 1 100 [ o1; o3 ]);
   [%expect {| true |}]
+
+(* String hashes are pinned (and checked against native OCaml): every length
+   modulo 4, bytes above 0x7f, and strings nested in other values. *)
+let%expect_test "string hashes" =
+  List.iter
+    (fun s -> Printf.printf "%S -> %d\n" s (Hashtbl.hash s))
+    [ ""
+    ; "a"
+    ; "ab"
+    ; "abc"
+    ; "abcd"
+    ; "abcde"
+    ; "abcdef"
+    ; "abcdefg"
+    ; "abcdefgh"
+    ; "abcdefghi"
+    ; "\128"
+    ; "\255\254"
+    ; "h\195\169llo"
+    ; "\000\001\002\003\252\253\254\255\127"
+    ];
+  Printf.printf "all bytes -> %d\n" (Hashtbl.hash (String.init 256 Char.chr));
+  Printf.printf "%d\n" (Hashtbl.hash [ "abc"; "\255"; "" ]);
+  Printf.printf "%d\n" (Hashtbl.hash ("key", 1, Some "value"));
+  Printf.printf "%d\n" (Hashtbl.hash_param 2 10 [ "a"; "b"; "c"; "d" ]);
+  [%expect {|
+           "" -> 0
+           "a" -> 721651713
+           "ab" -> 856662637
+           "abc" -> 767105082
+           "abcd" -> 65890154
+           "abcde" -> 335633756
+           "abcdef" -> 926323203
+           "abcdefg" -> 577950338
+           "abcdefgh" -> 165530820
+           "abcdefghi" -> 640011927
+           "\128" -> 873615215
+           "\255\254" -> 927824754
+           "h\195\169llo" -> 179461141
+           "\000\001\002\003\252\253\254\255\127" -> 925112789
+           all bytes -> 604638806
+           177509747
+           699725957
+           78740037
+           |}]

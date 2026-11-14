@@ -43,6 +43,15 @@ let%expect_test "JS string hashing matches the JS runtime (ASCII and UTF-8)" =
     ; "日本語"
     ; "🎉"
     ; "café — résumé"
+    ; (* a code point above U+00FF in the four-unit body, or in a tail of
+         one, two or three code units *)
+      "日本語x"
+    ; "日abcd"
+    ; "abcdΣ"
+    ; "abcdeΣ"
+    ; "abcdefΣ"
+    ; "abcdé"
+    ; "ÿÿÿÿ"
     ];
   [%expect
     {|
@@ -61,4 +70,11 @@ let%expect_test "JS string hashing matches the JS runtime (ASCII and UTF-8)" =
     "\230\151\165\230\156\172\232\170\158" -> 802525496
     "\240\159\142\137" -> 313031078
     "caf\195\169 \226\128\148 r\195\169sum\195\169" -> 782065221
+    "\230\151\165\230\156\172\232\170\158x" -> 112492415
+    "\230\151\165abcd" -> 146783257
+    "abcd\206\163" -> 812413552
+    "abcde\206\163" -> 726912413
+    "abcdef\206\163" -> 1069672716
+    "abcd\195\169" -> 55540581
+    "\195\191\195\191\195\191\195\191" -> 908671824
     |}]

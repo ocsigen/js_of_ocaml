@@ -8,6 +8,8 @@
 * Compiler/Wasm: support `--effects=double-translation` (#2443)
 * Runtime: fast path for immediates in polymorphic comparisons (#2567)
 * Runtime: faster 16-, 32- and 64-bit reads and writes on bytes (#2608)
+* Runtime: faster hashing of strings: a single pass, without first scanning
+  the string with a regular expression (#2610)
 * Compiler/Wasm: preprocess, validate and assemble the runtime files with Wax
   (new `wax-lib` dependency); remove `wasm_of_ocaml preprocess` (#2373)
 * Compiler/Wasm: faster calls to JavaScript: JavaScript values are
