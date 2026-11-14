@@ -31,7 +31,8 @@
   marshal_regressions
   int_and
   unboxing_wrapper
-  unboxing_wrapper_dead_param)
+  unboxing_wrapper_dead_param
+  exn_tagged_return)
  (modes wasm))
 
 (tests

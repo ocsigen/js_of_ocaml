@@ -3464,14 +3464,19 @@ let f
     ~global_flow_data =
   let global_flow_state, global_flow_info = global_flow_data in
   let fun_info = Call_graph_analysis.f p global_flow_info in
-  let types =
-    Typing.f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinel p
-  in
-  let raising_funcs =
-    Call_graph_analysis.raising_functions p global_flow_info fun_info (fun f ->
-        match Typing.return_type types f with
-        | Int (Normalized | Unnormalized) | Number (_, Unboxed) -> false
-        | Int Ref | Number (_, Boxed) | Top | Bot | Tuple _ | Bigarray _ | Null -> true)
+  let types, raising_funcs =
+    Typing.f
+      ~global_flow_state
+      ~global_flow_info
+      ~fun_info
+      ~deadcode_sentinel
+      ~raising_functions:(fun types ->
+        Call_graph_analysis.raising_functions p global_flow_info fun_info (fun f ->
+            (* Integer return values get tagged (see [Typing.f]) *)
+            match Typing.return_type types f with
+            | Number (_, Unboxed) -> false
+            | Int _ | Number (_, Boxed) | Top | Bot | Tuple _ | Bigarray _ | Null -> true))
+      p
   in
   (* Functions called through closures whose calling convention
      differs from the generic one get a wrapper *)
