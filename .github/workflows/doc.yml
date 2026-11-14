@@ -58,8 +58,8 @@ jobs:
           # wodoc builds the API with odoc_driver on the INSTALLED packages (the
           # engine ocaml.org uses, so cross-project refs like {!Lwt} resolve), so
           # install the packages the docs cover from the dev tree (auto-pinned by
-          # setup-ocaml). NOT wasm_of_ocaml-compiler — it needs binaryen, and its
-          # refs are remapped to ocaml.org by odoc_driver --remap.
+          # setup-ocaml). NOT wasm_of_ocaml-compiler: its refs are remapped to
+          # ocaml.org by odoc_driver --remap.
           opam install js_of_ocaml js_of_ocaml-lwt js_of_ocaml-tyxml js_of_ocaml-toplevel
           # The example/manual dependencies for the interactive demos (built by
           # `dune build @doc-manual`). odoc itself is a with-doc dep, installed above.

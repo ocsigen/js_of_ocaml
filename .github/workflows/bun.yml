@@ -39,16 +39,6 @@ jobs:
         with:
           ocaml-compiler: "5.5"
 
-      # Aandreba/setup-binaryen looks for arm64-linux instead of aarch64-linux
-      - name: Set-up Binaryen
-        run: |
-          tag=$(curl -fsSLI -o /dev/null -w '%{url_effective}' \
-            https://github.com/WebAssembly/binaryen/releases/latest)
-          tag=${tag##*/}
-          curl -fsSL "https://github.com/WebAssembly/binaryen/releases/download/$tag/binaryen-$tag-aarch64-linux.tar.gz" \
-            | tar xz -C "$RUNNER_TEMP"
-          echo "$RUNNER_TEMP/binaryen-$tag/bin" >> "$GITHUB_PATH"
-
       - run: opam install . --deps-only --with-test
 
       - run: opam install .

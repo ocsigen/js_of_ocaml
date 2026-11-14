@@ -121,11 +121,6 @@ jobs:
       - run: opam install conf-pkg-config conf-mingw-w64-g++-i686 conf-mingw-w64-g++-x86_64
         if: runner.os == 'Windows'
 
-      - name: Set-up Binaryen
-        uses: Aandreba/setup-binaryen@v1.0.0
-        with:
-          token: ${{ github.token }}
-
       - name: Pin sedlex 3.8.1 (OxCaml)
         if: ${{ endsWith(matrix.ocaml-compiler, '+ox') }}
         run: tools/ci_pin_sedlex_oxcaml.sh
