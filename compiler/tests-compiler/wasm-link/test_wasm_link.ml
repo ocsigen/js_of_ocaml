@@ -339,6 +339,42 @@ let print_sections ids code =
         print_newline ())
   done
 
+let%expect_test "custom descriptors" =
+  (* A function type, so that the type indices of the next module change *)
+  let other =
+    module_ [ 1, "\x01\x60\x00\x01\x7e"; 3, "\x01\x00"; 10, "\x01\x04\x00\x42\x00\x0b" ]
+  in
+  (* (rec (type $a (descriptor $b) (struct)) (type $b (describes $a) (struct)))
+     (type $f (func (param (ref null (exact $a)))))
+     (import "m" "f" (func (exact (type $f))))
+     (func (type $f)
+       (drop (ref.get_desc $a (local.get 0))) (drop (ref.null (exact $a)))) *)
+  let code =
+    module_
+      [ 1, "\x02\x4e\x02\x4d\x01\x5f\x00\x4c\x00\x5f\x00\x60\x01\x63\x62\x00\x00"
+      ; 2, "\x01\x01m\x01f\x20\x02"
+      ; 3, "\x01\x02"
+      ; 10, "\x01\x0c\x00\x20\x00\xfb\x22\x00\x1a\xd0\x62\x00\x1a\x0b"
+      ]
+  in
+  let linked = link_modules [ "a", "a.wasm", other; "b", "b.wasm", code ] in
+  Option.iter ~f:(print_sections [ 1; 2; 3; 10 ]) linked;
+  [%expect
+    {|
+            1: 03 60 00 01 7e 4e 02 4d 02 5f 00 4c 01 5f 00 60 01 63 62 01 00
+            2: 01 01 6d 01 66 20 03
+            3: 02 00 03
+           10: 02 04 00 42 00 0b 0c 00 20 00 fb 22 01 1a d0 62 01 1a 0b
+           |}];
+  (* The linker can read back its output *)
+  Option.iter
+    ~f:(fun linked ->
+      Option.iter
+        ~f:(fun linked' -> Printf.printf "%b\n" (String.equal linked linked'))
+        (link_modules [ "a", "linked.wasm", linked ]))
+    linked;
+  [%expect {| true |}]
+
 let%expect_test "an import resolving to several exports is rejected" =
   let export =
     module_

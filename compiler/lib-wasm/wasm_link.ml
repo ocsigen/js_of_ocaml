@@ -34,6 +34,7 @@ type heaptype =
   | Array
   | None_
   | Type of int
+  | Exact of int  (** Exact reference to a defined type (custom descriptors) *)
 
 type reftype =
   { nullable : bool
@@ -75,6 +76,9 @@ type comptype =
 type subtype =
   { final : bool
   ; supertype : int option
+  ; describes : int option
+  ; descriptor : int option
+        (** [describes] and [descriptor] clauses (custom descriptors) *)
   ; typ : comptype
   }
 
@@ -93,7 +97,10 @@ type tabletype =
   }
 
 type importdesc =
-  | Func of int
+  | Func of
+      { exact : bool  (** Exact function import (custom descriptors) *)
+      ; typ : int
+      }
   | Table of tabletype
   | Mem of limits
   | Global of valtype mut
@@ -116,7 +123,7 @@ let heaptype_eq t1 t2 =
   Stdlib.phys_equal t1 t2
   ||
   match t1, t2 with
-  | Type i1, Type i2 -> i1 = i2
+  | Type i1, Type i2 | Exact i1, Exact i2 -> i1 = i2
   | _ -> false
 
 let reftype_eq { nullable = n1; typ = t1 } { nullable = n2; typ = t2 } =
@@ -181,11 +188,15 @@ module Write = struct
     | Exn -> byte ch 0x69
     | Cont -> byte ch 0x68
     | Type idx -> sint ch (typeidx st idx)
+    | Exact idx ->
+        (* Unlike a plain type index, this index is unsigned *)
+        byte ch 0x62;
+        uint ch (typeidx st idx)
 
   let reftype st ch { nullable; typ } =
     (match nullable, typ with
     | false, _ -> byte ch 0x64
-    | true, Type _ -> byte ch 0x63
+    | true, (Type _ | Exact _) -> byte ch 0x63
     | _ -> ());
     heaptype st ch typ
 
@@ -214,7 +225,7 @@ module Write = struct
     vec (valtype st) ch params;
     vec (valtype st) ch results
 
-  let subtype st ch { final; supertype; typ } =
+  let subtype st ch { final; supertype; describes; descriptor; typ } =
     (match supertype, final with
     | None, true -> ()
     | None, false ->
@@ -224,6 +235,12 @@ module Write = struct
         byte ch (if final then 0X4F else 0x50);
         byte ch 1;
         uint ch (typeidx st supertype));
+    Option.iter describes ~f:(fun idx ->
+        byte ch 0x4C;
+        uint ch (typeidx st idx));
+    Option.iter descriptor ~f:(fun idx ->
+        byte ch 0x4D;
+        uint ch (typeidx st idx));
     match typ with
     | Cont idx ->
         byte ch 0x5D;
@@ -277,8 +294,8 @@ module Write = struct
         name ch module_;
         name ch nm;
         match desc with
-        | Func typ ->
-            byte ch 0x00;
+        | Func { exact; typ } ->
+            byte ch (if exact then 0x20 else 0x00);
             uint ch st.type_map.(typ)
         | Table typ ->
             byte ch 0x01;
@@ -563,14 +580,19 @@ module Read = struct
       | Cont i1, Cont i2 -> i1 = i2
       | _ -> false
 
+    let typeidx_opt_eq (i1 : int option) i2 =
+      match i1, i2 with
+      | Some _, None | None, Some _ -> false
+      | None, None -> true
+      | Some i1, Some i2 -> i1 = i2
+
     let subtype_eq
-        { final = f1; supertype = s1; typ = t1 }
-        { final = f2; supertype = s2; typ = t2 } =
+        { final = f1; supertype = s1; describes = d1; descriptor = d1'; typ = t1 }
+        { final = f2; supertype = s2; describes = d2; descriptor = d2'; typ = t2 } =
       Bool.(f1 = f2)
-      && (match s1, s2 with
-        | Some _, None | None, Some _ -> false
-        | None, None -> true
-        | Some i1, Some i2 -> i1 = i2)
+      && typeidx_opt_eq s1 s2
+      && typeidx_opt_eq d1 d2
+      && typeidx_opt_eq d1' d2'
       && comptype_eq t1 t2
 
     let equal t1 t2 =
@@ -638,6 +660,7 @@ module Read = struct
     | 0x6A -> Array
     | 0x69 -> Exn
     | 0x68 -> Cont
+    | 0x62 -> Exact (map_typeidx st (uint ch))
     | _ ->
         if i < 0 then error ch "unknown heap type 0x%02x" (i + 128);
         Type (map_typeidx st i)
@@ -725,15 +748,30 @@ module Read = struct
     | 1 -> Some (map_typeidx st (uint ch))
     | _ -> error ch "several supertypes"
 
+  (* The [describes] (0x4C) and [descriptor] (0x4D) clauses come before
+     the composite type, in this order; [i] is the byte following the
+     supertypes. *)
+  let described_comptype st ~final ~supertype i ch =
+    let clause tag i =
+      if i = tag
+      then
+        let idx = map_typeidx st (uint ch) in
+        Some idx, input_byte ch
+      else None, i
+    in
+    let describes, i = clause 0x4C i in
+    let descriptor, i = clause 0x4D i in
+    { final; supertype; describes; descriptor; typ = comptype st i ch }
+
   let subtype st i ch =
     match i with
     | 0x50 ->
         let supertype = supertype st ch in
-        { final = false; supertype; typ = comptype st (input_byte ch) ch }
+        described_comptype st ~final:false ~supertype (input_byte ch) ch
     | 0x4F ->
         let supertype = supertype st ch in
-        { final = true; supertype; typ = comptype st (input_byte ch) ch }
-    | _ -> { final = true; supertype = None; typ = comptype st i ch }
+        described_comptype st ~final:true ~supertype (input_byte ch) ch
+    | _ -> described_comptype st ~final:true ~supertype:None i ch
 
   let rectype st ch =
     match input_byte ch with
@@ -796,7 +834,8 @@ module Read = struct
     let d = input_byte ch in
     let importdesc : importdesc =
       match d with
-      | 0 -> Func (typeidx st ch)
+      | 0 -> Func { exact = false; typ = typeidx st ch }
+      | 0x20 -> Func { exact = true; typ = typeidx st ch }
       | 1 -> Table (tabletype st ch)
       | 2 -> Mem (memtype ch)
       | 3 -> Global (globaltype st ch)
@@ -807,7 +846,7 @@ module Read = struct
       | _ -> error ch "unknown import kind 0x%02x" d
     in
     let entry = { module_; name; desc = importdesc } in
-    let kind = exportable_kind d in
+    let kind = exportable_kind (if d = 0x20 then 0 else d) in
     set_exportable_info tbl kind (entry :: get_exportable_info tbl kind)
 
   let export tbl ch =
@@ -1136,7 +1175,11 @@ module Scan = struct
     let laneidx pos = pos + 1 in
     let heaptype pos =
       let c = get pos in
-      if c >= 64 && c < 128 then (* absheaptype *) pos + 1 else signed_typeidx pos
+      if c = 0x62
+      then (* exact *) pos + 1 |> typeidx
+      else if c >= 64 && c < 128
+      then (* absheaptype *) pos + 1
+      else signed_typeidx pos
     in
     let absheaptype pos =
       match get pos with
@@ -1828,8 +1871,14 @@ let rec subtype subtyping_info (i : int) i' =
   | None -> false
   | Some s -> subtype subtyping_info s i'
 
-let heap_subtype (subtyping_info : subtype array) (ty : heaptype) (ty' : heaptype) =
+(* An exact reference type [exact i] only contains the values of type
+   [i], and not the values of its strict subtypes. *)
+let rec heap_subtype (subtyping_info : subtype array) (ty : heaptype) (ty' : heaptype) =
   match ty, ty' with
+  | Exact i, Exact i' -> i = i'
+  | Exact i, _ -> heap_subtype subtyping_info (Type i) ty'
+  | Type _, Exact _ -> false
+  | _, Exact i' -> heap_subtype subtyping_info ty (Type i')
   | (Func | Nofunc), Func
   | Nofunc, Nofunc
   | (Extern | Noextern), Extern
@@ -1890,7 +1939,9 @@ let val_subtype subtyping_info ty ty' =
 let check_export_import_types ~subtyping_info ~files i (desc : importdesc) i' import =
   let ok =
     match desc, import.desc with
-    | Func t, Func t' -> subtype subtyping_info t t'
+    | Func { exact; typ = t }, Func { exact = exact'; typ = t' } ->
+        (* An exact import expects a function of precisely this type *)
+        if exact' then exact && t = t' else subtype subtyping_info t t'
     | Table { limits; typ }, Table { limits = limits'; typ = typ' } ->
         check_limits limits limits' && reftype_eq typ typ'
     | Mem limits, Mem limits' -> check_limits limits limits'
@@ -2367,16 +2418,18 @@ let code_entries (contents : Read.t) =
 
 let iter_valtype_types f (t : valtype) =
   match t with
-  | Ref { typ = Type i; _ } -> f i
+  | Ref { typ = Type i | Exact i; _ } -> f i
   | _ -> ()
 
-let iter_subtype_types f ({ supertype; typ; _ } : subtype) =
+let iter_subtype_types f ({ supertype; describes; descriptor; typ; _ } : subtype) =
   let field ({ typ; _ } : fieldtype) =
     match typ with
     | Val t -> iter_valtype_types f t
     | Packed _ -> ()
   in
   Option.iter ~f supertype;
+  Option.iter ~f describes;
+  Option.iter ~f descriptor;
   match (typ : comptype) with
   | Func { params; results } ->
       Array.iter ~f:(iter_valtype_types f) params;
@@ -2387,7 +2440,7 @@ let iter_subtype_types f ({ supertype; typ; _ } : subtype) =
 
 let iter_importdesc_types f (desc : importdesc) =
   match desc with
-  | Func t | Tag t -> f t
+  | Func { typ = t; _ } | Tag t -> f t
   | Table { typ; _ } -> iter_valtype_types f (Ref typ)
   | Global { typ; _ } -> iter_valtype_types f typ
   | Mem _ -> ()
@@ -3219,7 +3272,11 @@ let f
     if start_count > 1
     then
       let typ : comptype = Func { params = [||]; results = [||] } in
-      Some (Read.add_rectype types [| { final = true; supertype = None; typ } |])
+      Some
+        (Read.add_rectype
+           types
+           [| { final = true; supertype = None; describes = None; descriptor = None; typ }
+           |])
     else None
   in
   let groups = type_groups types in
@@ -3434,7 +3491,7 @@ let f
     ~kind:Func
     ~to_desc:
       (defined_entity ~intfs ~kind:Func ~get:(fun i k : importdesc ->
-           Func functions.(i).(k)));
+           Func { exact = true; typ = functions.(i).(k) }));
 
   let global_mappings =
     global_mappings ~files ~resolved_imports ~unresolved_imports liveness.ordering
