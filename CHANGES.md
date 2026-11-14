@@ -137,6 +137,8 @@
   the Chrome profiler (#2417)
 * Compiler/Wasm: the linker supports the wide arithmetic and custom
   descriptor instructions (#2515)
+* Compiler/Wasm: the linker supports custom descriptor types and 64-bit
+  limits, and reports malformed modules and ambiguous imports (#NNNN)
 * Compiler/Wasm: store more long-lived toplevel variables in globals; fix a
   crash when one of them is assigned in a `try` body (#2516)
 * Runtime/Wasm: faster `caml_hash`, `compare`, lexer engines, `Str`
