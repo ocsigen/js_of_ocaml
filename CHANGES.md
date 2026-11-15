@@ -27,6 +27,8 @@
   compiles to a sequence of tests (#2612)
 
 ## Bug fixes
+* Compiler: `build-fs` links the base64 decoder needed by the large binary
+  files it embeds
 * Compiler/Wasm: box variables typed as integers before using them as a
   reference cell, an array or a function (dead GADT branches) (#2615)
 * Runtime/Wasm: add the system constants needed with `--disable staticeval`
