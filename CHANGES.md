@@ -39,6 +39,8 @@
   negative and `n` is not a constant and is zero (#2622)
 * Compiler: fix `build-fs` output embedding large binary files, which called
   a base64 decoder it did not include (#2620)
+* Compiler: fix `--enable callgen`, which could crash the compiler or evaluate
+  a function computed by a call several times (#2619)
 * Compiler/Wasm: box variables typed as integers before using them as a
   reference cell, an array or a function (dead GADT branches) (#2615)
 * Compiler/Wasm: fix invalid code when a number is tested, raised, checked as
