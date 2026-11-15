@@ -49,7 +49,20 @@ let%expect_test "function literal passed to an unknown function" =
   | Some program -> print_fun_decl program (Some "test")
   | None -> print_error [%expect.output]);
   [%expect
-    {| Error: File "compiler/lib/js_assign.ml", line 324, characters 14-20: Assertion failed |}]
+    {|
+    function test(iter){
+     var r = [0, 0];
+     function _a_(a){
+      var v = a + r[1] | 0, _a_ = 0 < v ? 1 : 0, _a_ = _a_ && (r[1] = v, 0);
+      return _a_;
+     }
+     (iter.l >= 0 ? iter.l : iter.l = iter.length) === 1
+      ? iter(_a_)
+      : runtime.caml_call_gen(iter, [_a_]);
+     return r[1];
+    }
+    //end
+    |}]
 
 let%expect_test "function computed by a call" =
   (match
@@ -64,14 +77,14 @@ let%expect_test "function computed by a call" =
   | None -> print_error [%expect.output]);
   [%expect
     {|
-           function test(g, x){
-            return (make(g, x).l >= 0 ? make(g, x).l : make(g, x).l = make(g, x).length)
-                    === 1
-                    ? make(g, x)(1)
-                    : runtime.caml_call_gen(make(g, x), [1]);
-           }
-           //end
-           |}]
+    function test(g, x){
+     var _a_ = make(g, x);
+     return (_a_.l >= 0 ? _a_.l : _a_.l = _a_.length) === 1
+             ? _a_(1)
+             : runtime.caml_call_gen(_a_, [1]);
+    }
+    //end
+    |}]
 
 let continuations =
   {|
@@ -93,14 +106,77 @@ let%expect_test "continuations / CPS" =
   | Some program -> print_fun_decl program (Some "test")
   | None -> print_error [%expect.output]);
   [%expect
-    {| Error: File "compiler/lib/js_assign.ml", line 324, characters 14-20: Assertion failed |}]
+    {|
+    function test(x, cont){
+     var _a_ = cb[1];
+     function _b_(_b_){
+      _b_ = check[1];
+      function _c_(_c_){
+       var y = _c_ ? x + 1 | 0 : x, _c_ = check[1];
+       function _d_(_d_){
+        if(! _d_){
+         _d_ = fail[1];
+         return runtime.caml_stack_check_depth()
+                 ? (_d_.l
+                     >= 0
+                     ? _d_.l
+                     : _d_.l = _d_.length)
+                   === 2
+                   ? _d_(y, cont)
+                   : runtime.caml_call_gen(_d_, [y, cont])
+                 : runtime.caml_trampoline_return(_d_, [y, cont], 0);
+        }
+        var z = y * 2 | 0;
+        if(2 < z) return cont(y);
+        _d_ = fail[1];
+        return runtime.caml_stack_check_depth()
+                ? (_d_.l
+                    >= 0
+                    ? _d_.l
+                    : _d_.l = _d_.length)
+                  === 2
+                  ? _d_(z, cont)
+                  : runtime.caml_call_gen(_d_, [z, cont])
+                : runtime.caml_trampoline_return(_d_, [z, cont], 0);
+       }
+       return runtime.caml_stack_check_depth()
+               ? (_c_.l
+                   >= 0
+                   ? _c_.l
+                   : _c_.l = _c_.length)
+                 === 2
+                 ? _c_(y, _d_)
+                 : runtime.caml_call_gen(_c_, [y, _d_])
+               : runtime.caml_trampoline_return(_c_, [y, _d_], 0);
+      }
+      return runtime.caml_stack_check_depth()
+              ? (_b_.l
+                  >= 0
+                  ? _b_.l
+                  : _b_.l = _b_.length)
+                === 2
+                ? _b_(x, _c_)
+                : runtime.caml_call_gen(_b_, [x, _c_])
+              : runtime.caml_trampoline_return(_b_, [x, _c_], 0);
+     }
+     return runtime.caml_stack_check_depth()
+             ? (_a_.l
+                 >= 0
+                 ? _a_.l
+                 : _a_.l = _a_.length)
+               === 2
+               ? _a_(0, _b_)
+               : runtime.caml_call_gen(_a_, [0, _b_])
+             : runtime.caml_trampoline_return(_a_, [0, _b_], 0);
+    }
+    //end
+    |}]
 
 let%expect_test "continuations / double translation" =
   (match compile ~effects:`Double_translation continuations with
   | Some _ -> print_endline "ok"
   | None -> print_error [%expect.output]);
-  [%expect
-    {| Error: File "compiler/lib/js_assign.ml", line 324, characters 14-20: Assertion failed |}]
+  [%expect {| ok |}]
 
 (* Tests from #2592 *)
 
@@ -121,31 +197,28 @@ let%expect_test "function evaluated once" =
     |}
   in
   if not (run prog) then print_error [%expect.output];
-  [%expect
-    {|
-           called
-           called
-           called
-           called
-           3
-           |}];
+  [%expect {|
+    called
+    3
+    |}];
   (match compile prog with
   | Some program -> print_fun_decl program (Some "test")
   | None -> print_error [%expect.output]);
   [%expect
     {|
-           function test(param){
-            var
-             k =
-               (h[1].l >= 0 ? h[1].l : h[1].l = h[1].length) === 1
-                ? h[1].call(null, 0)
-                : runtime.caml_call_gen(h[1], [0]);
-            return (k.l >= 0 ? k.l : k.l = k.length) === 2
-                    ? k(1, 2)
-                    : runtime.caml_call_gen(k, [1, 2]);
-           }
-           //end
-           |}]
+    function test(_b_){
+     _b_ = h[1];
+     var
+      k =
+        (_b_.l >= 0 ? _b_.l : _b_.l = _b_.length) === 1
+         ? _b_(0)
+         : runtime.caml_call_gen(_b_, [0]);
+     return (k.l >= 0 ? k.l : k.l = k.length) === 2
+             ? k(1, 2)
+             : runtime.caml_call_gen(k, [1, 2]);
+    }
+    //end
+    |}]
 
 (* With CPS, each argument list contains the continuation, which can
    contain the next call: duplicating the arguments made the generated
@@ -190,11 +263,9 @@ let%expect_test "continuations not duplicated (CPS)" =
       print_program program;
       Printf.printf "%d\n" (count_trampoline_returns [%expect.output])
   | None -> print_error [%expect.output]);
-  [%expect
-    {| Error: File "compiler/lib/js_assign.ml", line 324, characters 14-20: Assertion failed |}];
+  [%expect {| 7 |}];
   if not (run ~effects:`Cps continuation_prog) then print_error [%expect.output];
-  [%expect
-    {| Error: File "compiler/lib/js_assign.ml", line 514, characters 5-11: Assertion failed |}]
+  [%expect {| 6 |}]
 
 let%expect_test "continuations not duplicated (double translation)" =
   (match compile ~effects:`Double_translation continuation_prog with
@@ -202,9 +273,7 @@ let%expect_test "continuations not duplicated (double translation)" =
       print_program program;
       Printf.printf "%d\n" (count_trampoline_returns [%expect.output])
   | None -> print_error [%expect.output]);
-  [%expect
-    {| Error: File "compiler/lib/js_assign.ml", line 324, characters 14-20: Assertion failed |}];
+  [%expect {| 7 |}];
   if not (run ~effects:`Double_translation continuation_prog)
   then print_error [%expect.output];
-  [%expect
-    {| Error: File "compiler/lib/js_assign.ml", line 514, characters 5-11: Assertion failed |}]
+  [%expect {| 6 |}]
