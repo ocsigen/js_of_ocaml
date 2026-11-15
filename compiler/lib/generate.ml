@@ -121,11 +121,22 @@ module String_constant = struct
      a call to the decoding primitive. Short strings stay literals. *)
   let base64_overhead = 24
 
-  let use_base64 s = escaped_size s > base64_size s + base64_overhead
+  let smaller_in_base64 s = escaped_size s > base64_size s + base64_overhead
+
+  let base64_prim target =
+    match target with
+    | Ocaml_string -> "caml_string_of_base64"
+    | Js_string -> "caml_jsbytes_of_base64"
+
+  (* Base64 is only used when a loaded runtime fragment provides the
+     decoding primitive. Code generated without the full runtime (the
+     toplevel, or a tool linking a few fragments of its own) falls back to
+     escaped literals rather than calling a missing primitive. *)
+  let use_base64 target s = smaller_in_base64 s && Primitive.exists (base64_prim target)
 
   let of_string s =
     let encoding =
-      if use_base64 s
+      if use_base64 Ocaml_string s
       then Base64
       else if String.is_ascii s
       then Utf_literal
@@ -137,13 +148,8 @@ module String_constant = struct
     match s with
     | Utf (Utf8 s) -> { target = Js_string; encoding = Utf_literal; contents = s }
     | Byte s ->
-        let encoding = if use_base64 s then Base64 else Byte_literal in
+        let encoding = if use_base64 Js_string s then Base64 else Byte_literal in
         { target = Js_string; encoding; contents = s }
-
-  let base64_prim target =
-    match target with
-    | Ocaml_string -> "caml_string_of_base64"
-    | Js_string -> "caml_jsbytes_of_base64"
 
   (* The runtime primitive, if any, turning the JavaScript literal into
      the target. It is applied at each occurrence of a literal, and once
@@ -2915,3 +2921,5 @@ let init () =
   List.iter [ "caml_js_equals"; "caml_js_strict_equals" ] ~f:(fun name ->
       Primitive.register name `Mutable None None);
   Primitive.register "caml_js_instanceof" `Mutator None None
+
+let smaller_in_base64 = String_constant.smaller_in_base64
