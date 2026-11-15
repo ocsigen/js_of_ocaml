@@ -86,19 +86,30 @@ let find_cmi paths base =
 
 let instr_of_name_content prim ~name ~content =
   let open Code in
-  let prim =
+  let prim_name =
     match prim with
     | `create_file -> "jsoo_create_file"
     | `create_file_extern -> "jsoo_create_file_extern"
   in
   assert (String.is_valid_utf_8 name);
-  Let
-    ( Var.fresh ()
-    , Prim
-        ( Extern (prim, None)
-        , [ Pc (NativeString (Code.Native_string.of_string name))
-          ; Pc (NativeString (Code.Native_string.of_bytestring content))
-          ] ) )
+  (* Large binary contents are passed as a base64 literal, with the
+     encoding flag set, and decoded by the runtime's [jsoo_create_file].
+     The base64 text is ASCII, so the code generator emits it as is: the
+     output of [build-fs] does not need a decoder of its own. *)
+  let content, base64 =
+    if (not (String.is_valid_utf_8 content)) && Generate.smaller_in_base64 content
+    then
+      ( Code.Native_string.of_string (Base64.encode_string ~pad:false content)
+      , Targetint.one )
+    else Code.Native_string.of_bytestring content, Targetint.zero
+  in
+  let args =
+    [ Pc (NativeString (Code.Native_string.of_string name))
+    ; Pc (NativeString content)
+    ; Pc (Int base64)
+    ]
+  in
+  Let (Var.fresh (), Prim (Extern (prim_name, None), args))
 
 let embed_file ~name ~filename =
   instr_of_name_content `create_file_extern ~name ~content:(Fs.read_file filename)

@@ -396,12 +396,20 @@ function caml_ba_map_file_bytecode(argv, _argn) {
   return caml_ba_map_file(argv[0], argv[1], argv[2], argv[3], argv[4], argv[5]);
 }
 
+// Files embedded outside of the runtime, by [build-fs] or [--ofs]. The
+// content is a string of bytes, or its base64 encoding when [base64] is
+// set; it is decoded by [jsoo_create_file], once the runtime is loaded.
 //Provides: jsoo_create_file_extern
-function jsoo_create_file_extern(name, content) {
-  if (globalThis.jsoo_create_file) globalThis.jsoo_create_file(name, content);
+function jsoo_create_file_extern(name, content, base64) {
+  if (globalThis.jsoo_create_file)
+    globalThis.jsoo_create_file(name, content, base64);
   else {
     if (!globalThis.jsoo_fs_tmp) globalThis.jsoo_fs_tmp = [];
-    globalThis.jsoo_fs_tmp.push({ name: name, content: content });
+    globalThis.jsoo_fs_tmp.push({
+      name: name,
+      content: content,
+      base64: base64,
+    });
   }
   return 0;
 }
@@ -412,7 +420,7 @@ function caml_fs_init() {
   var tmp = globalThis.jsoo_fs_tmp;
   if (tmp) {
     for (var i = 0; i < tmp.length; i++) {
-      jsoo_create_file(tmp[i].name, tmp[i].content);
+      jsoo_create_file(tmp[i].name, tmp[i].content, tmp[i].base64);
     }
   }
   globalThis.jsoo_create_file = jsoo_create_file;
@@ -431,9 +439,12 @@ function caml_create_file(name, content) {
 
 //Provides: jsoo_create_file
 //Requires: caml_create_file, caml_string_of_jsbytes, caml_string_of_jsstring
-function jsoo_create_file(name, content) {
+//Requires: caml_string_of_base64
+function jsoo_create_file(name, content, base64) {
   var name = caml_string_of_jsstring(name);
-  var content = caml_string_of_jsbytes(content);
+  var content = base64
+    ? caml_string_of_base64(content)
+    : caml_string_of_jsbytes(content);
   return caml_create_file(name, content);
 }
 

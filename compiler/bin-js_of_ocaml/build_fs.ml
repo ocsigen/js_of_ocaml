@@ -50,12 +50,12 @@ let f { files; output_file; include_dirs } =
   let code =
     {|
 //Provides: jsoo_create_file_extern
-function jsoo_create_file_extern(name,content){
+function jsoo_create_file_extern(name,content,base64){
   if(globalThis.jsoo_create_file)
-    globalThis.jsoo_create_file(name,content);
+    globalThis.jsoo_create_file(name,content,base64);
   else {
     if(!globalThis.jsoo_fs_tmp) globalThis.jsoo_fs_tmp = [];
-    globalThis.jsoo_fs_tmp.push({name:name,content:content});
+    globalThis.jsoo_fs_tmp.push({name:name,content:content,base64:base64});
   }
   return 0;
 }
@@ -65,13 +65,6 @@ function jsoo_create_file_extern(name,content){
   Config.set_effects_backend `Disabled;
   let fragments = Linker.Fragment.parse_string code in
   Linker.load_fragments ~target_env:Isomorphic ~filename:"<dummy>" fragments;
-  (* Large binary contents are emitted as base64 literals, decoded by a
-     primitive of this file. *)
-  let mlbytes = Option.get (Builtins.find "+mlBytes.js") in
-  Linker.load_fragments
-    ~target_env:Isomorphic
-    ~filename:(Builtins.File.name mlbytes)
-    (Linker.Fragment.parse_builtin mlbytes);
   Linker.check_deps ();
   let include_dirs =
     List.filter_map (include_dirs @ [ "+stdlib/" ]) ~f:(fun d -> Findlib.find [] d)

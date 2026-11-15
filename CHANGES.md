@@ -25,10 +25,15 @@
 * Compiler: split switches with more than 256 cases (instead of 60), or whose
   case values span more than 1000, which the JavaScriptCore interpreter
   compiles to a sequence of tests (#2612)
+* Compiler/Runtime: files embedded by `build-fs`, `jsoo_mkcmis`, `--file` and
+  `--ofs` pass large binary contents in base64, decoded by the runtime;
+  `jsoo_create_file` (and a user-defined `globalThis.jsoo_create_file`) takes
+  a third argument, set when the content is base64. Such files need a runtime
+  at least as recent (#2620)
 
 ## Bug fixes
-* Compiler: `build-fs` links the base64 decoder needed by the large binary
-  files it embeds
+* Compiler: fix `build-fs` output embedding large binary files, which called
+  a base64 decoder it did not include (#2620)
 * Compiler/Wasm: box variables typed as integers before using them as a
   reference cell, an array or a function (dead GADT branches) (#2615)
 * Runtime/Wasm: add the system constants needed with `--disable staticeval`

@@ -144,8 +144,27 @@
  (action
   (diff fs.expected.js fs.output.js)))
 
+; Loaded after the program, when the runtime is already initialised.
+
+(rule
+ (targets fs_late.output.js)
+ (deps file3)
+ (action
+  (run %{bin:js_of_ocaml} build-fs -o %{targets} file3:/static/late/file3)))
+
+(executable
+ (name fs_read)
+ (modules fs_read)
+ (modes byte)
+ (libraries js_of_ocaml))
+
+(rule
+ (targets fs_read.js)
+ (action
+  (run %{bin:js_of_ocaml} --extern-fs %{dep:fs_read.bc} -o %{targets})))
+
 (rule
  (alias runtest)
- (deps fs.output.js)
+ (deps fs.output.js fs_late.output.js fs_read.js)
  (action
   (run node %{dep:fs_check.js})))
