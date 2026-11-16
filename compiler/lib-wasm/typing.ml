@@ -442,7 +442,12 @@ let propagate st approx x : Domain.t =
       | Prim
           ( Extern
               (("caml_check_bound" | "caml_check_bound_float" | "caml_check_bound_gen"), _)
-          , [ Pv y; _ ] ) -> Var.Tbl.get approx y
+          , [ Pv y; _ ] ) -> (
+          (* The primitive returns the array, which is a value. It is an
+             integer or a number only on a dead path. *)
+          match Var.Tbl.get approx y with
+          | Int _ | Number _ -> Top
+          | (Top | Tuple _ | Bigarray _ | Null | Bot) as t -> t)
       | Prim ((Array_get _ | Extern ("caml_array_unsafe_get", _)), [ Pv y; _ ]) -> (
           (* A constant block can be read as an array: the compiler
              passes the method names of a class to CamlinternalOO as

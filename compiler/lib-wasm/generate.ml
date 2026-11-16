@@ -448,22 +448,26 @@ module Generate (Target : Target_sig.S) = struct
     let shift e = counted "shift" Arith.(e lsl const 1l)
   end
 
+  let dummy_number (n : Typing.boxed_number) =
+    return
+      (match n with
+      | Int32 | Nativeint -> W.Const (I32 0l)
+      | Int64 -> Const (I64 0L)
+      | Float -> Const (F64 0.)
+      | Float32 -> Const (F32 0.))
+
   let convert ~(from : Typing.typ) ~(into : Typing.typ) e =
     match from, into with
     | Int Unnormalized, Int Normalized -> Conv.normalize e
     | Int (Normalized | Unnormalized), Int (Normalized | Unnormalized) -> e
-    (* Dummy value *)
-    | Int (Unnormalized | Normalized), Number ((Int32 | Nativeint), Unboxed) ->
-        return (W.Const (I32 0l))
-    | Int (Unnormalized | Normalized), Number (Int64, Unboxed) ->
-        return (W.Const (I64 0L))
-    | Int (Unnormalized | Normalized), Number (Float, Unboxed) ->
-        return (W.Const (F64 0.))
-    | Int (Unnormalized | Normalized), Number (Float32, Unboxed) ->
-        return (W.Const (F32 0.))
+    (* A number of another kind is expected, on a dead path: use a dummy
+       value *)
+    | Int (Unnormalized | Normalized), Number (n, Unboxed) -> dummy_number n
+    | Number (_, Unboxed), Int (Normalized | Unnormalized) -> return (W.Const (I32 0l))
     | _, Int (Normalized | Unnormalized) -> Conv.untag e
     | Int (Unnormalized | Normalized), _ -> Conv.tag e
-    | Number (_, Unboxed), Number (_, Unboxed) -> e
+    | Number (n, Unboxed), Number (n', Unboxed) ->
+        if Poly.equal n n' then e else dummy_number n'
     | _, Number (Int32, Unboxed) -> Conv.unbox_int32 e
     | _, Number (Int64, Unboxed) -> Conv.unbox_int64 e
     | _, Number (Nativeint, Unboxed) -> Conv.unbox_nativeint e
@@ -2818,7 +2822,9 @@ module Generate (Target : Target_sig.S) = struct
                 (match Typing.var_type ctx.types x with
                 | Int Normalized -> load x
                 | Int Unnormalized -> Conv.shift (load x)
-                | _ -> Value.check_is_not_zero (load x))
+                | _ ->
+                    (* The tested value is a number only on a dead path *)
+                    Value.check_is_not_zero (load_and_box ctx x))
                 (translate_branch result_typ fall_through pc cont1 context')
                 (translate_branch result_typ fall_through pc cont2 context')
           | Stop -> (
@@ -2836,7 +2842,9 @@ module Generate (Target : Target_sig.S) = struct
               let* e = convert ~from:(Typing.var_type ctx.types x) ~into:int_n (load x) in
               instr (Br_table (e, List.map ~f:dest l, dest a.(len - 1)))
           | Raise (x, _) -> (
-              let* e = load x in
+              (* The exception is a value. It is an integer or an unboxed
+                 number only on a dead path. *)
+              let* e = load_and_box ctx x in
               match fall_through with
               | `Catch -> instr (Push e)
               | `Block _ | `Return | `Skip -> (

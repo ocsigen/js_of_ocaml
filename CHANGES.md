@@ -36,6 +36,8 @@
   a base64 decoder it did not include (#2620)
 * Compiler/Wasm: box variables typed as integers before using them as a
   reference cell, an array or a function (dead GADT branches) (#2615)
+* Compiler/Wasm: fix invalid code when a number is tested, raised, checked as
+  an array or used as another kind of number (dead GADT branches) (#2621)
 * Runtime/Wasm: add the system constants needed with `--disable staticeval`
   (`caml_sys_const_big_endian`, `caml_sys_const_backend_type`, ...) (#2601)
 * Compiler/Wasm: fix the typing of array accesses to constant blocks (such as

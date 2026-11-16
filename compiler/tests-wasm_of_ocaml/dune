@@ -7,7 +7,7 @@
   (flags :standard --disable optcall --no-inline)))
 
 (tests
- (names fun_eq open_append exn_wrapper)
+ (names fun_eq open_append exn_wrapper dead_path_values)
  (modes js wasm))
 
 (tests
