@@ -1,19 +1,20 @@
 // Checks that files embedded by build-fs are read back unchanged by a
-// program, whether build-fs's output is loaded before the program (files
-// are queued until the runtime is initialised) or after it (files are
-// created directly).
-const assert = require("node:assert");
-
-const file3 = String.fromCharCode(
-  ...Array.from({ length: 128 }, (_, i) => 0x80 + i),
-);
-
-require("./fs.output.js");
-require("./fs_read.js");
-const read = globalThis.jsooTestReadFile;
-assert.strictEqual(read("/static/file1"), "This is file 1");
-assert.strictEqual(read("/static/dir/file2"), "This is file 2");
-assert.strictEqual(read("/static/file3"), file3);
-
-require("./fs_late.output.js");
-assert.strictEqual(read("/static/late/file3"), file3);
+// program. This script is concatenated (see dune) after fs.output.js,
+// loaded before the program (files are queued until the runtime is
+// initialised), fs_read.js, the program, and fs_late.output.js, loaded
+// after it (files are created directly). No require: it also runs with
+// QuickJS.
+(() => {
+  const read = globalThis.jsooTestReadFile;
+  const check = (name, expected) => {
+    const actual = read(name);
+    if (actual !== expected)
+      throw new Error(`${name}: got ${JSON.stringify(actual)}`);
+  };
+  let file3 = "";
+  for (let i = 0; i < 128; i++) file3 += String.fromCharCode(0x80 + i);
+  check("/static/file1", "This is file 1");
+  check("/static/dir/file2", "This is file 2");
+  check("/static/file3", file3);
+  check("/static/late/file3", file3);
+})();

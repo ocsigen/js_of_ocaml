@@ -163,8 +163,23 @@
  (action
   (run %{bin:js_of_ocaml} --extern-fs %{dep:fs_read.bc} -o %{targets})))
 
+; A single script, so that it runs on any engine
+
+(rule
+ (target fs_check.output.js)
+ (action
+  (with-stdout-to
+   %{target}
+   (progn
+    (cat %{dep:fs.output.js})
+    (echo ";\n")
+    (cat %{dep:fs_read.js})
+    (echo ";\n")
+    (cat %{dep:fs_late.output.js})
+    (echo ";\n")
+    (cat %{dep:fs_check.js})))))
+
 (rule
  (alias runtest)
- (deps fs.output.js fs_late.output.js fs_read.js)
  (action
-  (run node %{dep:fs_check.js})))
+  (run node %{dep:fs_check.output.js})))
