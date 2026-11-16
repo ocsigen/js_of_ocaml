@@ -32,6 +32,8 @@
   at least as recent (#2620)
 
 ## Bug fixes
+* Compiler/Wasm: fix comparisons with the result of `x lsr n` when `x` is
+  negative and `n` is not a constant and is zero (#2622)
 * Compiler: fix `build-fs` output embedding large binary files, which called
   a base64 decoder it did not include (#2620)
 * Compiler/Wasm: box variables typed as integers before using them as a

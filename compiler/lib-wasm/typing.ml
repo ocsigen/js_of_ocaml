@@ -374,6 +374,15 @@ let prim_type ~st ~approx prim hint args =
       | [ (Bot | Int (Ref | Normalized)); (Bot | Int (Ref | Normalized)) ] ->
           Int Normalized
       | _ -> Int Unnormalized)
+  | "%int_lsr" -> (
+      (* The result is nonnegative, hence normalized, except when the
+         shift amount is 0 (modulo 32): a negative integer is then returned
+         with its sign bit cleared *)
+      match args with
+      | [ _; Pc (Int k) ]
+        when Targetint.compare k Targetint.zero > 0
+             && Targetint.compare k (Targetint.of_int_exn 32) < 0 -> Int Normalized
+      | _ -> Int Unnormalized)
   | "caml_ba_create" -> (
       match args with
       | [ Pc (Int kind); Pc (Int layout); _ ] ->
