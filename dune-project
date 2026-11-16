@@ -11,7 +11,7 @@
 (source (github ocsigen/js_of_ocaml))
 (homepage "https://ocsigen.org/js_of_ocaml/latest/js_of_ocaml/overview.html")
 (documentation "https://ocsigen.org/js_of_ocaml/latest/js_of_ocaml/overview.html")
-(license "GPL-2.0-or-later" "LGPL-2.1-or-later WITH OCaml-LGPL-linking-exception")
+(license "LGPL-2.1-or-later WITH OCaml-LGPL-linking-exception")
 
 (package
  (name js_of_ocaml-compiler)

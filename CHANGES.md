@@ -30,6 +30,9 @@
   `jsoo_create_file` (and a user-defined `globalThis.jsoo_create_file`) takes
   a third argument, set when the content is base64. Such files need a runtime
   at least as recent (#2620)
+* Misc: the opam packages are licensed under the LGPL-2.1-or-later with OCaml
+  linking exception only (the GPL-2.0-or-later was listed by mistake); add
+  missing license headers
 
 ## Bug fixes
 * Compiler/Wasm: fix comparisons with the result of `x lsr n` when `x` is
