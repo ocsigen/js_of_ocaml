@@ -69,6 +69,11 @@
   command line from `globalThis.scriptArgs` if it is defined, so that e.g. a
   page can pass arguments to a program (#2644)
 
+### Misc
+* Misc: the opam packages are licensed under the LGPL-2.1-or-later with OCaml
+  linking exception only (the GPL-2.0-or-later was listed by mistake); add
+  missing license headers
+
 ## Bug fixes
 
 ### Compiler
