@@ -7255,6 +7255,11 @@ val to_string : ?minify:bool -> t -> string
 val to_targetint : t -> Targetint.t
 ```
 ```ocaml
+val to_targetint_opt : t -> Targetint.t option
+```
+`None` when the number is not an integer literal. The operand of an integer operation can be a float constant in dead code (with GADTs).
+
+```ocaml
 val hash : t -> int
 ```
 Predicates
@@ -7274,8 +7279,10 @@ val equal : t -> t -> bool
 Arithmetic
 
 ```ocaml
-val add : t -> t -> t
+val add : t -> t -> t option
 ```
+Integer addition. `None` when an operand is not an integer literal.
+
 ```ocaml
 val neg : t -> t
 ```
