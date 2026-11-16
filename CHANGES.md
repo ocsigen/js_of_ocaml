@@ -66,6 +66,11 @@
 * Runtime/JS: much faster int64 division, formatting and parsing (#2640)
 * Runtime/JS: much faster Random (#2630)
 
+### Misc
+* Misc: the opam packages are licensed under the LGPL-2.1-or-later with OCaml
+  linking exception only (the GPL-2.0-or-later was listed by mistake); add
+  missing license headers
+
 ## Bug fixes
 
 ### Compiler
