@@ -27,7 +27,7 @@
   (flags :standard --opt 2)))
 
 (tests
- (names marshal_regressions int_and)
+ (names marshal_regressions int_and int_lsr)
  (modes wasm))
 
 (tests
