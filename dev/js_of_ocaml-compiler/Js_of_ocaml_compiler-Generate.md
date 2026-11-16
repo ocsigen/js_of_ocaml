@@ -13,5 +13,10 @@ val f :
   Javascript.program
 ```
 ```ocaml
+val smaller_in_base64 : string -> bool
+```
+Whether a binary string constant is smaller as a base64 literal than with escaped bytes.
+
+```ocaml
 val init : unit -> unit
 ```
