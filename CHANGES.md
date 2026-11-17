@@ -49,6 +49,7 @@
 * Runtime/JS: much faster int64 division, formatting and parsing (#2640)
 * Runtime/Wasm: format integers in base 8 and 16 with shifts rather than
   divisions (#2640)
+* Runtime/JS: much faster Random (#2630)
 
 ## Bug fixes
 * Runtime: accurate `Float.erf` and `Float.erfc` (ported from fdlibm), instead
