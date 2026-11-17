@@ -21,8 +21,8 @@
  (depends
   (ocaml (and (>= 4.13) (< 5.7)))
   (num :with-test)
-  ppx_devtools-optcomp
-  (ppx_devtools-expect :with-test)
+  (ppx_devtools-optcomp (>= 0.1))
+  (ppx_devtools-expect (and (>= 0.1) :with-test))
   (ppxlib (>= 0.33))
   (ocaml-compiler-libs (>= v0.12.4))
   (re :with-test)
@@ -50,7 +50,7 @@
   (js_of_ocaml (= :version))
   (js_of_ocaml-ppx (= :version))
   (lwt (and (>= 2.4.4) (<> 5.9.2)))
-  (ppx_devtools-optcomp :with-test)
+  (ppx_devtools-optcomp (and (>= 0.1) :with-test))
   (num :with-test)
   (re (and (>= 1.9.0) :with-test)))
  (depopts
@@ -64,8 +64,8 @@
  (depends
   (ocaml (>= 4.13))
   (js_of_ocaml (= :version))
-  ppx_devtools-optcomp
-  (ppx_devtools-expect :with-test)
+  (ppx_devtools-optcomp (>= 0.1))
+  (ppx_devtools-expect (and (>= 0.1) :with-test))
   (ppxlib (>= 0.33))
   (num :with-test)
   (re (and (>= 1.9.0) :with-test))
@@ -79,7 +79,7 @@
  (depends
   (ocaml (>= 4.13))
   (js_of_ocaml (= :version))
-  ppx_devtools-optcomp
+  (ppx_devtools-optcomp (>= 0.1))
   (ppxlib (>= 0.33))
   (num :with-test)
   (re (and (>= 1.9.0) :with-test))
@@ -100,7 +100,7 @@
 ;;(cohttp-lwt-unix (and (>= 6.0.0) :with-test))
   (graphics :with-test)
   (num :with-test)
-  ppx_devtools-optcomp
+  (ppx_devtools-optcomp (>= 0.1))
   (ppxlib (>= 0.33))
   (re (and (>= 1.9.0) :with-test)))
  (depopts
@@ -118,7 +118,7 @@
   (react (>= 1.2.2))
   (reactiveData (>= 0.2))
   (tyxml (>= 4.6))
-  (ppx_devtools-optcomp :with-test)
+  (ppx_devtools-optcomp (and (>= 0.1) :with-test))
   (num :with-test)
   (re (and (>= 1.9.0) :with-test))
 ))
@@ -132,8 +132,8 @@
   (ocaml (>= 4.13))
   (js_of_ocaml-compiler (= :version))
   (num :with-test)
-  ppx_devtools-optcomp
-  (ppx_devtools-expect :with-test)
+  (ppx_devtools-optcomp (>= 0.1))
+  (ppx_devtools-expect (and (>= 0.1) :with-test))
   (ppxlib (>= 0.33))
   (re (and (>= 1.9.0) :with-test))
 ))
@@ -147,8 +147,8 @@
   (ocaml (>= 4.14))
   (js_of_ocaml (= :version))
   (num :with-test)
-  ppx_devtools-optcomp
-  (ppx_devtools-expect :with-test)
+  (ppx_devtools-optcomp (>= 0.1))
+  (ppx_devtools-expect (and (>= 0.1) :with-test))
   (ppxlib (>= 0.33))
   (re :with-test)
   (cmdliner (>= 2.0))

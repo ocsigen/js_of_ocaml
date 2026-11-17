@@ -20,7 +20,7 @@ depends: [
   "ocamlfind" {>= "1.5.1"}
   "graphics" {with-test}
   "num" {with-test}
-  "ppx_devtools-optcomp"
+  "ppx_devtools-optcomp" {>= "0.1"}
   "ppxlib" {>= "0.33"}
   "re" {>= "1.9.0" & with-test}
   "odoc" {with-doc}
@@ -41,8 +41,3 @@ build: [
   ]
 ]
 
-
-# ppx_devtools is not released yet (ocsigen/js_of_ocaml#2551).
-pin-depends: [
-  ["ppx_devtools-optcomp.dev" "git+https://github.com/ocsigen/ppx_devtools.git#f62719d5087fa8d7f2bd0616c1fa91fd660eb27e"]
-]
