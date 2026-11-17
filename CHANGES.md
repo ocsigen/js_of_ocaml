@@ -44,6 +44,8 @@
 ## Bug fixes
 * Runtime: accurate `Float.erf` and `Float.erfc` (ported from fdlibm), instead
   of an approximation good to 1e-7 only (#2635)
+* Runtime/Wasm: with WASI, parse negative decimal floats that round to the
+  smallest subnormal or to zero correctly (#2632)
 * Runtime/Wasm: reject hexadecimal floats with two exponent signs (#2632)
 * Runtime/Wasm: fix `Float.fma` when the result is subnormal (#2632)
 * Runtime: round the float32 results of `fma`, of conversions from int64 and of
