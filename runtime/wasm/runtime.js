@@ -603,11 +603,12 @@
               s = s.slice(0, i - 1) + "0" + s.slice(i - 1);
             break;
           } else {
-            var p = prec;
-            if (exp < 0) {
-              p -= exp + 1;
-              s = toFixed(x, p);
-            } else while (((s = toFixed(x, p)), s.length > prec + 1)) p--;
+            // Same rounding position as toExponential: reuse its digits
+            var p = prec - 1 - exp;
+            var d = prec > 1 ? s.charAt(0) + s.slice(2, j) : s.charAt(0);
+            if (exp < 0) s = "0." + "0".repeat(-exp - 1) + d;
+            else if (p > 0) s = d.slice(0, exp + 1) + "." + d.slice(exp + 1);
+            else s = d;
             if (p) {
               // remove trailing zeroes
               var i = s.length - 1;
