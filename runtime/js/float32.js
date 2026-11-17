@@ -102,13 +102,89 @@ function caml_float32_of_int64_bytecode(x) {
 //If: oxcaml
 const caml_float32_to_int64_bytecode = caml_int64_of_float;
 
-//Provides: caml_float32_of_string (const)
-//Requires: caml_parse_float
+//Provides: caml_float32_exact_compare
 //Version: >= 5.2
 //If: oxcaml
-function caml_float32_of_string(x) {
-  return Math.fround(caml_parse_float(x, "float32_of_string"));
+// The sign of |v| - a, where v is the exact value of the float literal s (a
+// finite literal accepted by caml_parse_float) and a is a positive double
+function caml_float32_exact_compare(s, a) {
+  s = s.replace(/_/g, "").trim();
+  var c = s.charAt(0);
+  if (c === "-" || c === "+") s = s.slice(1);
+  // v = num * base^exp
+  var num, base, exp;
+  var m = /^0[xX]([0-9a-fA-F]*)\.?([0-9a-fA-F]*)(?:[pP]([-+]?[0-9]+))?$/.exec(
+    s,
+  );
+  if (m) {
+    num = BigInt("0x0" + m[1] + m[2]);
+    base = 2n;
+    exp = (+m[3] || 0) - 4 * m[2].length;
+  } else {
+    m = /^([0-9]*)\.?([0-9]*)(?:[eE]([-+]?[0-9]+))?$/.exec(s);
+    num = BigInt("0" + m[1] + m[2]);
+    base = 10n;
+    exp = (+m[3] || 0) - m[2].length;
+  }
+  // a = mant * 2^e
+  var dv = new DataView(new ArrayBuffer(8));
+  dv.setFloat64(0, a);
+  var hi = dv.getUint32(0),
+    lo = dv.getUint32(4);
+  var eb = (hi >>> 20) & 0x7ff;
+  var mant = (BigInt(hi & 0xfffff) << 32n) | BigInt(lo),
+    e = -1074;
+  if (eb !== 0) {
+    mant |= 1n << 52n;
+    e = eb - 1075;
+  }
+  var l = num,
+    r = mant;
+  if (exp >= 0) l *= base ** BigInt(exp);
+  else r *= base ** BigInt(-exp);
+  if (e >= 0) r <<= BigInt(e);
+  else l <<= BigInt(-e);
+  return l > r ? 1 : l < r ? -1 : 0;
 }
+
+//Provides: caml_float32_of_string (const)
+//Requires: caml_parse_float, caml_float32_exact_compare, caml_jsbytes_of_string
+//Version: >= 5.2
+//If: oxcaml
+var caml_float32_of_string = (function () {
+  var f32 = new Float32Array(1),
+    u32 = new Uint32Array(f32.buffer);
+  function neighbor(f, d) {
+    f32[0] = f;
+    u32[0] += d;
+    return f32[0];
+  }
+  return function (x) {
+    var d = caml_parse_float(x, "float32_of_string");
+    var f = Math.fround(d);
+    if (f === d || Number.isNaN(d)) return f;
+    // Rounding the literal to the double d may have moved it to the
+    // midpoint between two float32 values; rounding d to a float32 then
+    // picks the even one, which is wrong if the literal is on the other
+    // side of the midpoint. In that case, compare the literal with d.
+    var a = Math.abs(d),
+      lo,
+      hi;
+    if (Math.abs(f) > a) {
+      hi = Math.abs(f);
+      lo = neighbor(hi, -1);
+    } else {
+      lo = Math.abs(f);
+      hi = neighbor(lo, 1);
+    }
+    var mid =
+      hi === Number.POSITIVE_INFINITY ? 2 ** 128 - 2 ** 103 : (lo + hi) / 2;
+    if (a !== mid) return f;
+    var c = caml_float32_exact_compare(caml_jsbytes_of_string(x), a);
+    if (c === 0) return f;
+    return (c > 0 ? hi : lo) * Math.sign(d);
+  };
+})();
 
 //Provides: caml_format_float32 const
 //Requires: caml_format_float

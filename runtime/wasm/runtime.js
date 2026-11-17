@@ -457,6 +457,46 @@
       function (...args) {
         return f(args);
       },
+    // The sign of |v| - a, where v is the exact value of the float literal s
+    // (a finite literal accepted by caml_parse_float) and a is a positive
+    // double
+    float32_exact_compare: (s, a) => {
+      s = s.replace(/_/g, "").trim();
+      const c = s.charAt(0);
+      if (c === "-" || c === "+") s = s.slice(1);
+      // v = num * base^exp
+      let num, base, exp;
+      let m =
+        /^0[xX]([0-9a-fA-F]*)\.?([0-9a-fA-F]*)(?:[pP]([-+]?[0-9]+))?$/.exec(s);
+      if (m) {
+        num = BigInt(`0x0${m[1]}${m[2]}`);
+        base = 2n;
+        exp = (+m[3] || 0) - 4 * m[2].length;
+      } else {
+        m = /^([0-9]*)\.?([0-9]*)(?:[eE]([-+]?[0-9]+))?$/.exec(s);
+        num = BigInt(`0${m[1]}${m[2]}`);
+        base = 10n;
+        exp = (+m[3] || 0) - m[2].length;
+      }
+      // a = mant * 2^e
+      const dv = new DataView(new ArrayBuffer(8));
+      dv.setFloat64(0, a);
+      const hi = dv.getUint32(0);
+      const eb = (hi >>> 20) & 0x7ff;
+      let mant = (BigInt(hi & 0xfffff) << 32n) | BigInt(dv.getUint32(4));
+      let e = -1074;
+      if (eb !== 0) {
+        mant |= 1n << 52n;
+        e = eb - 1075;
+      }
+      let l = num;
+      let r = mant;
+      if (exp >= 0) l *= base ** BigInt(exp);
+      else r *= base ** BigInt(-exp);
+      if (e >= 0) r <<= BigInt(e);
+      else l <<= BigInt(-e);
+      return l > r ? 1 : l < r ? -1 : 0;
+    },
     format_float: (prec, conversion, pad, x) => {
       // Exact decimal expansion through BigInt, for precisions beyond
       // toFixed/toExponential's limit of 100 and for %f of values >= 1e21

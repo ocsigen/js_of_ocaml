@@ -7,6 +7,22 @@
       (func $caml_parse_float (param (ref eq) (ref eq)) (result (ref eq))))
    (import "float" "caml_format_float"
       (func $caml_format_float (param (ref eq)) (param (ref eq)) (result (ref eq))))
+(@if $wasi
+(@then
+   (import "libc" "strtof" (func $strtof (param i32) (param i32) (result f32)))
+   (import "io" "IO_BUFFER_SIZE" (global $IO_BUFFER_SIZE i32))
+   (import "wasi_memory" "get_buffer" (func $get_buffer (result i32)))
+   (import "wasi_memory" "write_string_to_memory"
+      (func $write_string_to_memory (param i32 i32 (ref eq)) (result i32)))
+   (import "wasi_memory" "release_memory"
+      (func $release_memory (param i32 i32)))
+)
+(@else
+   (import "bindings" "float32_exact_compare"
+      (func $float32_exact_compare (param externref) (param f64) (result i32)))
+   (import "jsstring" "jsstring_of_bytes"
+      (func $jsstring_of_bytes (param (ref $bytes)) (result externref)))
+))
    (import "float" "caml_erf_float"
       (func $caml_erf_float (param f64) (result f64)))
    (import "float" "caml_erfc_float"
@@ -158,10 +174,109 @@
 
    (@string $float32_of_string "float32_of_string")
 
+(@if $wasi
+(@then
+   ;; strtof on the absolute value of the literal (without its leading
+   ;; whitespace, its sign and its underscores): wasi-libc's strtof returns
+   ;; +0 for some negative values that round to the smallest subnormal or
+   ;; to zero
+   (func $strtof_bytes (param $s (ref $bytes)) (result f32)
+      (local $t (ref $bytes)) (local $len i32) (local $i i32) (local $j i32)
+      (local $c i32) (local $buffer i32) (local $buf i32) (local $f f32)
+      (local.set $len (array.len (local.get $s)))
+      (local.set $t (array.new $bytes (i32.const 0) (local.get $len)))
+      (loop $copy
+         (if (i32.lt_u (local.get $i) (local.get $len))
+            (then
+               (local.set $c (array.get_u $bytes (local.get $s) (local.get $i)))
+               (if (i32.and (i32.ne (local.get $c) (@char "_"))
+                      (i32.or (i32.ne (local.get $j) (i32.const 0))
+                         (i32.eqz
+                            (i32.or
+                               (i32.or (i32.eq (local.get $c) (@char "-"))
+                                  (i32.eq (local.get $c) (@char "+")))
+                               (i32.or (i32.eq (local.get $c) (@char " "))
+                                  (i32.lt_u (i32.sub (local.get $c) (i32.const 9))
+                                     (i32.const 5)))))))
+                  (then
+                     (array.set $bytes (local.get $t) (local.get $j)
+                        (local.get $c))
+                     (local.set $j (i32.add (local.get $j) (i32.const 1)))))
+               (local.set $i (i32.add (local.get $i) (i32.const 1)))
+               (br $copy))))
+      (local.set $s (array.new $bytes (i32.const 0) (local.get $j)))
+      (array.copy $bytes $bytes (local.get $s) (i32.const 0)
+         (local.get $t) (i32.const 0) (local.get $j))
+      (local.set $buffer (call $get_buffer))
+      (local.set $buf
+         (call $write_string_to_memory
+            (i32.add (local.get $buffer) (i32.const 4))
+            (global.get $IO_BUFFER_SIZE)
+            (local.get $s)))
+      (local.set $f (call $strtof (local.get $buf) (local.get $buffer)))
+      (call $release_memory (i32.add (local.get $buffer) (i32.const 4))
+         (local.get $buf))
+      (local.get $f))
+))
+
    (func (export "caml_float32_of_string") (param $s (ref eq)) (result (ref eq))
-      (call $caml_float32_of_float
-         (call $caml_parse_float (global.get $float32_of_string)
-            (local.get $s))))
+      (local $d f64) (local $a f64) (local $mid f64)
+      (local $f f32) (local $lo f32) (local $hi f32) (local $c i32)
+      (local.set $d
+         (call $unbox_float
+            (call $caml_parse_float (global.get $float32_of_string)
+               (local.get $s))))
+      (local.set $f (f32.demote_f64 (local.get $d)))
+      (if (i32.or (f64.eq (f64.promote_f32 (local.get $f)) (local.get $d))
+             (f64.ne (local.get $d) (local.get $d)))
+         (then (return (call $box_float32 (local.get $f)))))
+      ;; Rounding the literal to the double d may have moved it to the
+      ;; midpoint between two float32 values; rounding d to a float32 then
+      ;; picks the even one, which is wrong if the literal is on the other
+      ;; side of the midpoint. In that case, look at the literal again.
+      (local.set $a (f64.abs (local.get $d)))
+      (if (f64.gt (f64.promote_f32 (f32.abs (local.get $f))) (local.get $a))
+         (then
+            (local.set $hi (f32.abs (local.get $f)))
+            (local.set $lo
+               (f32.reinterpret_i32
+                  (i32.sub (i32.reinterpret_f32 (local.get $hi)) (i32.const 1)))))
+         (else
+            (local.set $lo (f32.abs (local.get $f)))
+            (local.set $hi
+               (f32.reinterpret_i32
+                  (i32.add (i32.reinterpret_f32 (local.get $lo)) (i32.const 1))))))
+      (local.set $mid
+         (if (result f64) (f32.eq (local.get $hi) (f32.const inf))
+            (then (f64.const 0x1.ffffffp127)) ;; 2^128 - 2^103
+            (else
+               (f64.mul
+                  (f64.add (f64.promote_f32 (local.get $lo))
+                     (f64.promote_f32 (local.get $hi)))
+                  (f64.const 0.5)))))
+      (if (f64.ne (local.get $a) (local.get $mid))
+         (then (return (call $box_float32 (local.get $f)))))
+(@if $wasi
+(@then
+      (call $box_float32
+         (f32.copysign
+            (call $strtof_bytes (ref.cast (ref $bytes) (local.get $s)))
+            (local.get $f)))
+)
+(@else
+      ;; sign of |literal| - a
+      (local.set $c
+         (call $float32_exact_compare
+            (call $jsstring_of_bytes (ref.cast (ref $bytes) (local.get $s)))
+            (local.get $a)))
+      (if (i32.eqz (local.get $c))
+         (then (return (call $box_float32 (local.get $f)))))
+      (call $box_float32
+         (f32.copysign
+            (select (local.get $hi) (local.get $lo)
+               (i32.gt_s (local.get $c) (i32.const 0)))
+            (local.get $f)))
+)))
 
    (func (export "caml_format_float32")
       (param $s (ref eq)) (param $f (ref eq)) (result (ref eq))
