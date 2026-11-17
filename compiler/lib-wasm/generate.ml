@@ -161,6 +161,9 @@ module Generate (Target : Target_sig.S) = struct
     ; global_flow_info : Global_flow.info
     ; fun_info : Call_graph_analysis.t
     ; types : Typing.t
+    ; guarded_untag : Var.t -> bool
+          (* Whether the untaggings of a variable must not fail, as they
+             may be executed speculatively *)
     ; js_float_args : Var.t Var.Hashtbl.t
           (* [x] is bound to [y] when the conversion [x = caml_js_from_float(y)] is
              folded into the JavaScript calls using [x] *)
@@ -449,6 +452,8 @@ module Generate (Target : Target_sig.S) = struct
 
     (* Shifting an unnormalized integer to compare it *)
     let shift e = counted "shift" Arith.(e lsl const 1l)
+
+    let untag_no_trap e = counted "untag" (Value.int_val_no_trap e)
   end
 
   let dummy_number (n : Typing.boxed_number) =
@@ -2654,6 +2659,7 @@ module Generate (Target : Target_sig.S) = struct
             loop [] arg_typ l |> box_number_if_needed ctx x
         | Wasm_conversion c -> (
             match c, l with
+            | Untag_int, [ Pv v ] when ctx.guarded_untag v -> Conv.untag_no_trap (load v)
             | _, [ Pv v ] -> conversion c (load v)
             | _ -> assert false)
         | _ -> (
@@ -3453,6 +3459,7 @@ module Generate (Target : Target_sig.S) = struct
       ~global_flow_info
       ~fun_info
       ~types
+      ~guarded_untag
       ~raising_funcs
       ~wrapped_funcs =
     global_context.unit_name <- unit_name;
@@ -3478,6 +3485,7 @@ module Generate (Target : Target_sig.S) = struct
       ; global_flow_info
       ; fun_info
       ; types
+      ; guarded_untag
       ; js_float_args
       ; js_results
       ; js_result_targets
@@ -3706,10 +3714,10 @@ let f
   let types =
     Typing.f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinel p
   in
-  let p, types, in_cps, global_flow_info =
+  let p, types, in_cps, global_flow_info, guarded_untag =
     if Config.Flag.lcm ()
     then Lcm.f p types ~live_vars ~in_cps ~global_flow_info
-    else p, types, in_cps, global_flow_info
+    else p, types, in_cps, global_flow_info, fun _ -> false
   in
   let raising_funcs =
     Call_graph_analysis.raising_functions
@@ -3748,6 +3756,7 @@ let f
       ~global_flow_info
       ~fun_info
       ~types
+      ~guarded_untag
       ~raising_funcs
       ~wrapped_funcs
       p

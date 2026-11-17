@@ -24,7 +24,9 @@ val f :
   -> live_vars:int array
   -> in_cps:Effects.in_cps
   -> global_flow_info:Global_flow.info
-  -> program * Typing.t * Effects.in_cps * Global_flow.info
+  -> program * Typing.t * Effects.in_cps * Global_flow.info * (Var.t -> bool)
 (** Make the number conversions explicit and place them. The pass binds
     some calls to fresh variables: the set of CPS calls and the global flow
-    information are updated accordingly. *)
+    information are updated accordingly. The last component of the result
+    tells whether the untaggings of a variable must not fail, as they may
+    be executed speculatively. *)

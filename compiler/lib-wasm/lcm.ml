@@ -76,6 +76,10 @@
    representation is not converted: a variable is bound to the constant in that
    representation, right after the constant.
 
+   The other conversions of loop invariants are moved out of loops before the dataflow
+   analysis as well, when they cannot fail ([hoist_unboxes_out_of_loops]): the analysis
+   alone does not move a conversion before a loop which may not perform it.
+
    The phases are ordered so that each feeds into the next: LCM creates optimal placements
    but may introduce inverse pairs; peephole cleans those up; widening then eliminates the
    conversions of values flowing through block parameters.
@@ -112,6 +116,7 @@ type lcm_stats =
   ; mutable peephole_eliminated : int
   ; mutable params_widened : int
   ; mutable boxes_hoisted_from_loops : int
+  ; mutable unboxes_hoisted_from_loops : int
   ; mutable boxes_hoisted_from_closures : int
   ; mutable boxes_merged : int
   ; mutable dead_conversions_removed : int
@@ -139,6 +144,7 @@ let make_stats () =
   ; peephole_eliminated = 0
   ; params_widened = 0
   ; boxes_hoisted_from_loops = 0
+  ; unboxes_hoisted_from_loops = 0
   ; boxes_hoisted_from_closures = 0
   ; boxes_merged = 0
   ; dead_conversions_removed = 0
@@ -372,6 +378,16 @@ let is_untag kind =
   | Box_f32
   | Tag_int
   | Normalize_int -> false
+
+(* Whether a conversion of [y] cannot fail. [guarded] contains the variables
+   whose untaggings are hoisted out of a loop although their type is not
+   known to be an integer. These untaggings are performed speculatively, so
+   they must not fail: [Generate] returns a dummy value rather than failing
+   when the value is not an integer (the original untagging then only
+   happens on paths where it is an integer). *)
+let is_safe_conversion ~guarded types (kind, y) =
+  is_safe_input kind (Typing.var_type types y)
+  || (is_untag kind && Var.Hashtbl.mem guarded y)
 
 (* Whether the result of a conversion should not be kept live across a
    call. Untagging a 31-bit integer is a single shift, and normalizing it
@@ -943,7 +959,7 @@ let get_all_conversions blocks types ~assigned =
      other ones.
    - [kill_ant]: the conversions which cannot be anticipated through this
      block: the ones in [kill], and the conversions which may fail
-     ([is_safe_input]) if the block contains an instruction which may
+     ([is_safe_conversion]) if the block contains an instruction which may
      raise ([Typing.may_raise]). Such a conversion is only known to
      succeed when it is reached: it must not be performed before an
      instruction which may prevent reaching it (e.g. with GADTs).
@@ -1524,6 +1540,7 @@ let eliminate_param_conversions
     types
     preds
     ~assigned
+    ~guarded
     ~global_flow_info
     ~(st : lcm_stats) =
   let result = ref blocks in
@@ -1639,7 +1656,33 @@ let eliminate_param_conversions
      (includes the initial (bpc, origin) passed to the top-level call). *)
     (* Pre-sort and deduplicate predecessor lists once *)
     let sorted_preds = Addr.Map.map (fun ps -> List.sort_uniq ~cmp:compare ps) preds in
-    let rec can_supply bpc origin kind visited =
+    (* The conversion can be performed in a predecessor of the block [target]
+       containing it when this predecessor is the entry of the function (it
+       has no predecessor): it is then performed once per call, when the
+       block is entered for the first time, rather than at each iteration
+       when the block is a loop header. This is not speculative when the
+       block performs the conversion whenever it is entered ([reached]: no
+       instruction which may raise precedes it) and the entry has no other
+       successor, or when the conversion of the argument [q] cannot fail. *)
+    let materialize_at ~target ~reached bpc origin pred_pc q kind =
+      bpc = target
+      && (match origin with
+        | Param _ ->
+            (* The value is an argument of the branch of the predecessor,
+                available there *)
+            true
+        | Var _ -> false)
+      && List.is_empty (Addr.Map.find_opt pred_pc sorted_preds |> Option.value ~default:[])
+      && (is_safe_conversion ~guarded types (kind, q)
+         || reached
+            &&
+            (* Otherwise, the conversion would also be performed on the
+               paths to the other successors, where it may fail *)
+            match (Addr.Map.find pred_pc !result).branch with
+            | Branch _ -> true
+            | _ -> false)
+    in
+    let rec can_supply ~target ~reached bpc origin kind visited =
       let pred_pcs = Addr.Map.find_opt bpc sorted_preds |> Option.value ~default:[] in
       if List.is_empty pred_pcs
       then None
@@ -1666,6 +1709,8 @@ let eliminate_param_conversions
                     | Some _ -> check_conts rest_conts acc
                     | None when Option.is_some (constant_supply q kind) ->
                         check_conts rest_conts acc
+                    | None when materialize_at ~target ~reached bpc origin pred_pc q kind
+                      -> check_conts rest_conts acc
                     | None ->
                         (* q not directly available; trace how it enters pred *)
                         let pred_origin =
@@ -1682,7 +1727,9 @@ let eliminate_param_conversions
                           check_conts rest_conts acc'
                         else (
                           visited := AddrOriginSet.add key !visited;
-                          match can_supply pred_pc pred_origin kind visited with
+                          match
+                            can_supply ~target ~reached pred_pc pred_origin kind visited
+                          with
                           | None -> None
                           | Some more ->
                               check_conts rest_conts (AddrOriginSet.union acc' more)))
@@ -1698,6 +1745,8 @@ let eliminate_param_conversions
      for a single batched pass at the end. *)
     let eliminated = ref VarSet.empty in
     let all_substs = ref Var.Map.empty in
+    (* Block parameters with an untagged shadow parameter *)
+    let untagged_twins = ref Var.Map.empty in
     List.iter
       ~f:(fun (pc, v, kind, _param_var) ->
         if VarSet.mem v !eliminated
@@ -1728,6 +1777,24 @@ let eliminate_param_conversions
                 | None -> Var param_var
               in
               let initial_key = pc, initial_origin in
+              (* A conversion performed in the entry of the function
+                 replaces the untagging of [param_var], which must not fail
+                 if it may have been executed speculatively *)
+              let guarded_conv = is_untag kind && Var.Hashtbl.mem guarded param_var in
+              let guard q = if guarded_conv then Var.Hashtbl.replace guarded q () in
+              (* Whether the conversion is performed whenever the block is
+                 entered, or cannot fail once performed in the entry *)
+              let reached =
+                guarded_conv
+                ||
+                let rec loop l =
+                  match l with
+                  | [] -> false
+                  | Let (x, _) :: _ when Var.equal x v -> true
+                  | i :: rem -> (not (Typing.may_raise i)) && loop rem
+                in
+                loop block.body
+              in
               match initial_origin with
               | Var _ ->
                   (* Not a candidate (see above) *)
@@ -1735,6 +1802,8 @@ let eliminate_param_conversions
               | Param _ -> (
                   match
                     can_supply
+                      ~target:pc
+                      ~reached
                       pc
                       initial_origin
                       kind
@@ -1777,6 +1846,16 @@ let eliminate_param_conversions
                    conversion from the target block *)
                       let target_sv = find_shadow_var pc initial_origin in
                       all_substs := Var.Map.add v target_sv !all_substs;
+                      (* The untagged shadow can replace the parameter
+                         wherever the parameter is known to be an integer,
+                         not only after the untagging (see
+                         [compare_untagged]) *)
+                      (match kind, initial_origin with
+                      | Untag_int, Param _
+                        when is_safe_input Untag_int (Typing.var_type types param_var) ->
+                          untagged_twins :=
+                            Var.Map.add param_var target_sv !untagged_twins
+                      | _ -> ());
                       let b = Addr.Map.find pc !result in
                       let new_body =
                         List.filter
@@ -1846,6 +1925,25 @@ let eliminate_param_conversions
                                         materialised :=
                                           Let (u, Constant c) :: !materialised;
                                         u
+                                    | None
+                                      when materialize_at
+                                             ~target:pc
+                                             ~reached
+                                             bpc
+                                             origin
+                                             pred_pc
+                                             q
+                                             kind ->
+                                        guard q;
+                                        let u = Var.fresh () in
+                                        Typing.set_var_type
+                                          types
+                                          u
+                                          (Typing.conversion_type kind);
+                                        materialised :=
+                                          Let (u, Prim (prim_of_kind kind, [ Pv q ]))
+                                          :: !materialised;
+                                        u
                                     | None ->
                                         let pred_block = Addr.Map.find pred_pc !result in
                                         let pred_origin =
@@ -1870,6 +1968,48 @@ let eliminate_param_conversions
                         shadow_vars))
           | _ -> ())
       candidates;
+    (* An integer compared for equality with a constant or an untagged
+       integer can be compared untagged: use the untagged shadow of a block
+       parameter, which is in scope wherever the parameter is. The tagged
+       parameter may then become useless. The parameter must be known to be
+       an integer: the untagging of another value may have been
+       speculative, returning 0 ([guarded]), or may not be reached. *)
+    let untagged_int a =
+      match a with
+      | Pc (Int _) -> true
+      | Pc _ -> false
+      | Pv y -> (
+          Var.Map.mem y !untagged_twins
+          ||
+          match Typing.var_type types y with
+          | Typing.Int (Normalized | Unnormalized) -> true
+          | _ -> false)
+    in
+    let twin a =
+      match a with
+      | Pv y -> (
+          match Var.Map.find_opt y !untagged_twins with
+          | Some sv -> Pv sv
+          | None -> a)
+      | Pc _ -> a
+    in
+    let compare_untagged i =
+      match i with
+      | Let (x, Prim (((Eq _ | Neq _) as op), [ a; b ]))
+        when untagged_int a
+             && untagged_int b
+             && (Var.Map.mem
+                   (match a with
+                   | Pv y -> y
+                   | Pc _ -> x)
+                   !untagged_twins
+                || Var.Map.mem
+                     (match b with
+                     | Pv y -> y
+                     | Pc _ -> x)
+                     !untagged_twins) -> Let (x, Prim (op, [ twin a; twin b ]))
+      | _ -> i
+    in
     (* Apply all substitutions in a single pass *)
     if Var.Map.is_empty !all_substs
     then !result
@@ -1881,7 +2021,11 @@ let eliminate_param_conversions
       in
       Addr.Map.map
         (fun b ->
-          let new_body = List.map ~f:(Subst.Excluding_Binders.instr subst_var) b.body in
+          let new_body =
+            List.map
+              ~f:(fun i -> compare_untagged (Subst.Excluding_Binders.instr subst_var i))
+              b.body
+          in
           let new_branch = Subst.Excluding_Binders.last subst_var b.branch in
           { b with body = new_body; branch = new_branch })
         !result
@@ -1893,8 +2037,14 @@ let eliminate_param_conversions
 
    The analysis must be per-function to avoid cross-function variable references
    in the inserted conversion instructions. *)
-let process_function types entry fun_blocks ~assigned ~global_flow_info ~(st : lcm_stats)
-    =
+let process_function
+    types
+    entry
+    fun_blocks
+    ~assigned
+    ~guarded
+    ~global_flow_info
+    ~(st : lcm_stats) =
   let all_convs, conv_types = get_all_conversions fun_blocks types ~assigned in
   st.functions_processed <- st.functions_processed + 1;
   if ConvSet.is_empty all_convs
@@ -1903,7 +2053,7 @@ let process_function types entry fun_blocks ~assigned ~global_flow_info ~(st : l
     st.functions_with_conversions <- st.functions_with_conversions + 1;
     st.conversions_tracked <- st.conversions_tracked + ConvSet.cardinal all_convs;
     let t0 = tick () in
-    let is_safe (kind, var) = is_safe_input kind (Typing.var_type types var) in
+    let is_safe conv = is_safe_conversion ~guarded types conv in
     (* The rank of each conversion, for its bit vector representation *)
     let ranks = Ranks.create all_convs in
     let n_convs = Ranks.tracked ranks in
@@ -2436,18 +2586,17 @@ let process_function types entry fun_blocks ~assigned ~global_flow_info ~(st : l
               body_rev := Let (tmp, Prim (prim_of_kind kind, [ Pv arg ])) :: !body_rev))
           (Addr.Map.find pc insert_at_end);
         let branch = Subst.Excluding_Binders.last subst_var block.branch in
-        (* The untagged integer tested by a branch *)
+        (* The untagged integer tested by a branch. The tested variable must
+           be known to be an integer: the untagging of another value may
+           have been speculative, returning 0 for a block ([guarded]). *)
         let int_arg v =
-          match
-            Typing.conversion
-              ~from:(Typing.var_type types v)
-              ~into:(Typing.Int Typing.Integer.Normalized)
-          with
-          | Some kind -> (
+          let from = Typing.var_type types v in
+          match Typing.conversion ~from ~into:(Typing.Int Typing.Integer.Normalized) with
+          | Some kind when is_safe_input kind from -> (
               match Tracker.find_opt ranks (kind, v) !conv_to_var with
               | Some tmp -> tmp
               | None -> v)
-          | None -> v
+          | Some _ | None -> v
         in
         (* Lowering has already replaced the arguments of the branch by
            their converted copies: only the tested variable remains *)
@@ -2511,7 +2660,14 @@ let process_function types entry fun_blocks ~assigned ~global_flow_info ~(st : l
     let t3 = tick () in
     st.time_peephole <- st.time_peephole +. (t3 -. t2);
     let result =
-      eliminate_param_conversions result types preds ~assigned ~global_flow_info ~st
+      eliminate_param_conversions
+        result
+        types
+        preds
+        ~assigned
+        ~guarded
+        ~global_flow_info
+        ~st
     in
     st.time_widening <- st.time_widening +. (tick () -. t3);
     result)
@@ -2601,11 +2757,12 @@ module Loops = struct
   (* The outermost loop containing block [pc] but not the definition [def]
      of a value ([None]: the value is defined before the function body,
      e.g. a parameter) *)
-  let outermost (loops : t) pc ~def =
+  let outermost ?(ok = fun _ _ -> true) (loops : t) pc ~def =
     Addr.Map.fold
       (fun header (body, size) acc ->
         if
           Addr.Set.mem pc body
+          && ok header body
           &&
           match def with
           | None -> true
@@ -2762,6 +2919,143 @@ let hoist_boxes_out_of_loops ~types ~free_pc ~params ~(st : lcm_stats) blocks en
               blocks := Addr.Map.add pc { b with body } !blocks;
               append_instrs blocks ph [ i ])
         (List.rev !moves);
+      !blocks
+
+(* Speculative hoisting of unboxing conversions out of loops.
+
+   An unboxing (unbox or untag) of a loop-invariant value is performed in
+   the loop preheader, once per entry into the loop; LCM then eliminates the
+   occurrences inside the loop, which have become redundant. This is done
+   only when the conversion cannot fail, that is when the type of the
+   operand is known ([is_safe_conversion]), or for an untagging, which can be
+   made not to fail ([guarded]): the conversion may be executed on paths
+   where it was not before, such as when the loop is exited before reaching
+   it. It is also cheap, so executing it speculatively is fine.
+   An untagging is not hoisted out of a loop containing calls, since its
+   result should not be kept live across calls ([not_live_across_calls]). *)
+let hoist_unboxes_out_of_loops
+    ~types
+    ~free_pc
+    ~assigned
+    ~guarded
+    ~(st : lcm_stats)
+    blocks
+    entry =
+  let loops =
+    if
+      exists_instr
+        (fun i ->
+          match i with
+          | Let (_, Prim (p, [ Pv _ ])) -> (
+              match kind_of_prim p with
+              | Some kind -> not (is_boxing kind)
+              | None -> false)
+          | Let _ | Assign _ | Set_field _ | Offset_ref _ | Array_set _ | Event _ -> false)
+        blocks
+    then Loops.compute blocks entry
+    else Addr.Map.empty
+  in
+  if Addr.Map.is_empty loops
+  then blocks
+  else
+    let defs = Var.Hashtbl.create 16 in
+    Addr.Map.iter
+      (fun pc b ->
+        List.iter ~f:(fun x -> Var.Hashtbl.replace defs x pc) b.params;
+        List.iter
+          ~f:(fun i ->
+            match i with
+            | Let (x, _) -> Var.Hashtbl.replace defs x pc
+            | Assign _ | Set_field _ | Offset_ref _ | Array_set _ | Event _ -> ())
+          b.body;
+        match b.branch with
+        | Pushtrap (_, x, (handler, _)) ->
+            (* The exception is bound when entering the handler *)
+            Var.Hashtbl.replace defs x handler
+        | Return _ | Raise _ | Stop | Branch _ | Cond _ | Switch _ | Poptrap _ -> ())
+      blocks;
+    (* Whether a loop contains a call, computed once per loop *)
+    let has_call_tbl = Addr.Hashtbl.create 8 in
+    let has_call header body =
+      match Addr.Hashtbl.find_opt has_call_tbl header with
+      | Some r -> r
+      | None ->
+          let r =
+            Addr.Set.exists
+              (fun pc ->
+                List.exists
+                  ~f:(fun i ->
+                    match i with
+                    | Let (_, Apply _) -> true
+                    | Let _
+                    | Assign _
+                    | Set_field _
+                    | Offset_ref _
+                    | Array_set _
+                    | Event _ -> false)
+                  (Addr.Map.find pc blocks).body)
+              body
+          in
+          Addr.Hashtbl.add has_call_tbl header r;
+          r
+    in
+    (* For each loop header, the conversions to perform in the preheader *)
+    let hoisted = ref Addr.Map.empty in
+    Addr.Map.iter
+      (fun pc b ->
+        List.iter
+          ~f:(fun i ->
+            match i with
+            | Let (_, Prim (p, [ Pv y ])) when not (VarSet.mem y assigned) -> (
+                match kind_of_prim p with
+                | Some kind
+                  when (not (is_boxing kind))
+                       && (is_safe_conversion ~guarded types (kind, y) || is_untag kind)
+                  -> (
+                    (* [None]: defined before the function body (parameter or
+                       free variable) *)
+                    let def = Var.Hashtbl.find_opt defs y in
+                    let ok header body =
+                      (not (not_live_across_calls (kind, y)))
+                      || not (has_call header body)
+                    in
+                    match Loops.outermost ~ok loops pc ~def with
+                    | Some (header, l) ->
+                        let convs, _ =
+                          Addr.Map.find_opt header !hoisted
+                          |> Option.value ~default:(ConvSet.empty, l)
+                        in
+                        hoisted :=
+                          Addr.Map.add header (ConvSet.add (kind, y) convs, l) !hoisted
+                    | None -> ())
+                | Some _ | None -> ())
+            | Let _ | Assign _ | Set_field _ | Offset_ref _ | Array_set _ | Event _ -> ())
+          b.body)
+      blocks;
+    if Addr.Map.is_empty !hoisted
+    then blocks
+    else
+      let blocks = ref blocks in
+      let preds = CFG.predecessors !blocks in
+      let preds pc = Addr.Map.find_opt pc preds |> Option.value ~default:[] in
+      Addr.Map.iter
+        (fun header (convs, l) ->
+          match loop_preheader ~types ~free_pc ~preds blocks (header, l) with
+          | None -> ()
+          | Some ph ->
+              append_instrs
+                blocks
+                ph
+                (List.map
+                   ~f:(fun ((kind, y) : Conv.t) ->
+                     st.unboxes_hoisted_from_loops <- st.unboxes_hoisted_from_loops + 1;
+                     if not (is_safe_conversion ~guarded types (kind, y))
+                     then Var.Hashtbl.replace guarded y ();
+                     let x = Var.fresh () in
+                     Typing.set_var_type types x (Typing.conversion_type kind);
+                     Let (x, Prim (prim_of_kind kind, [ Pv y ])))
+                   (ConvSet.elements convs)))
+        !hoisted;
       !blocks
 
 (* The functions of a program, and where variables are defined *)
@@ -3467,6 +3761,7 @@ let f
      in the data flow analysis. *)
   let assigned = assigned_vars p.blocks in
   st.time_setup <- st.time_setup +. (tick () -. ts);
+  let guarded = Var.Hashtbl.create 16 in
   let blocks = ref p.blocks in
   let free_pc = ref p.free_pc in
   let start = ref p.start in
@@ -3597,9 +3892,22 @@ let f
       let fun_blocks =
         hoist_boxes_out_of_loops ~types ~free_pc ~params ~st fun_blocks entry
       in
+      let fun_blocks =
+        if Config.Flag.lcm_hoist ()
+        then
+          hoist_unboxes_out_of_loops
+            ~types
+            ~free_pc
+            ~assigned
+            ~guarded
+            ~st
+            fun_blocks
+            entry
+        else fun_blocks
+      in
       st.time_setup <- st.time_setup +. (tick () -. ts2);
       let result =
-        process_function types entry fun_blocks ~assigned ~global_flow_info ~st
+        process_function types entry fun_blocks ~assigned ~guarded ~global_flow_info ~st
       in
       let ts3 = tick () in
       Addr.Map.iter (fun pc block -> blocks := Addr.Map.add pc block !blocks) result;
@@ -3676,8 +3984,9 @@ let f
     Format.eprintf
       "Stats - lcm: %d functions (%d with conversions), %d lowered, %d tracked, ant:%d \
        avail:%d later:%d iters, %d inserted, %d eliminated, %d peephole, %d params \
-       widened, boxes hoisted: %d from loops %d from closures, %d boxes merged, %d dead \
-       conversions and %d dead params removed, %d misplaced@."
+       widened, boxes hoisted: %d from loops %d from closures, %d boxes merged, %d \
+       unboxes hoisted from loops, %d dead conversions and %d dead params removed, %d \
+       misplaced@."
       st.functions_processed
       st.functions_with_conversions
       st.conversions_lowered
@@ -3692,6 +4001,7 @@ let f
       st.boxes_hoisted_from_loops
       st.boxes_hoisted_from_closures
       st.boxes_merged
+      st.unboxes_hoisted_from_loops
       st.dead_conversions_removed
       st.dead_params_removed
       misplaced_boxes;
@@ -3699,4 +4009,8 @@ let f
   then (
     prerr_endline "AFTER";
     Print.program Format.err_formatter (fun _ _ -> "") p);
-  p, types, !in_cps, { global_flow_info with info_cps_calls = !cps_calls }
+  ( p
+  , types
+  , !in_cps
+  , { global_flow_info with info_cps_calls = !cps_calls }
+  , fun x -> Var.Hashtbl.mem guarded x )

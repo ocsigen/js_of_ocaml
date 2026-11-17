@@ -500,7 +500,8 @@ let register_prim nm ?(args = Values) ?(kind = `Mutator) ~unbox typ =
    one: the instruction may raise an exception, or it is a call, which may
    also not return. A conversion placed after such an instruction must not
    be performed before it, unless it cannot fail. A conversion does not
-   count: when it is reached, the value has the right representation. *)
+   count: when it is reached, the value has the right representation
+   (except for a speculative untagging, which does not fail). *)
 let may_raise i =
   match i with
   | Let (_, Apply _) -> true

@@ -85,6 +85,8 @@ module Flag = struct
 
   let lcm = o ~name:"lcm" ~default:true
 
+  let lcm_hoist = o ~name:"lcm-hoist" ~default:true
+
   let clone_higher_order = o ~name:"clone-higher-order" ~default:true
 
   let effects = o ~name:"effects" ~default:false
