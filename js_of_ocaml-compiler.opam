@@ -15,8 +15,8 @@ depends: [
   "dune" {>= "3.20"}
   "ocaml" {>= "4.13" & < "5.7"}
   "num" {with-test}
-  "ppx_devtools-optcomp"
-  "ppx_devtools-expect" {with-test}
+  "ppx_devtools-optcomp" {>= "0.1"}
+  "ppx_devtools-expect" {>= "0.1" & with-test}
   "ppxlib" {>= "0.33"}
   "ocaml-compiler-libs" {>= "v0.12.4"}
   "re" {with-test}
@@ -57,10 +57,4 @@ build: [
               "_build/install/default/bin/jsoo_minify" {os-family != "windows"}
               "_build/install/default/bin/jsoo_minify.exe:jsoo_minify" {os-family = "windows"}
               "_build/cmdliner-install"]
-]
-
-# ppx_devtools is not released yet (ocsigen/js_of_ocaml#2551).
-pin-depends: [
-  ["ppx_devtools-optcomp.dev" "git+https://github.com/ocsigen/ppx_devtools.git#f62719d5087fa8d7f2bd0616c1fa91fd660eb27e"]
-  ["ppx_devtools-expect.dev" "git+https://github.com/ocsigen/ppx_devtools.git#f62719d5087fa8d7f2bd0616c1fa91fd660eb27e"]
 ]

@@ -11,10 +11,6 @@ as two opam packages:
 | `ppx_devtools-expect` | the `let%expect_test` / `[%expect]` rewriter + a runner |
 | `ppx_devtools-optcomp` | compile-time gating with `[@@@if]` / `[@@if]` |
 
-Until ppx_devtools is released, the opam files pin both packages to a commit
-of its repository (`pin-depends`), so `opam install . --deps-only` installs
-them.
-
 Tests are predominantly inline expect tests (not cram), so most of what you
 write looks like `let%expect_test … [%expect {| … |}]`.
 
