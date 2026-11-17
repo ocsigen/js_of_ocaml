@@ -531,7 +531,6 @@
                            (i32.add (local.get $x_bits) (i32.const 4)))))
                   (br $parse))))
          (br_if $error (i32.eqz (local.get $n_bits)))
-         (local.set $f (f64.convert_i64_s (local.get $m)))
          (local.set $adj (local.get $x_bits))
          (if (i32.ge_s (local.get $dec_point) (i32.const 0))
             (then
@@ -548,6 +547,37 @@
             (then (local.set $exp (i32.const 0x80000000)))
             (else
               (local.set $exp (i32.add (local.get $exp) (local.get $adj)))))))
+         ;; If the result is subnormal, m would be rounded by the conversion
+         ;; below and then again by ldexp. To avoid this, round m to odd at
+         ;; two bits below the subnormal precision (the exponent of these two
+         ;; extra bits is DBL_MIN_EXP - DBL_MANT_DIG - 2 = -1076). If the
+         ;; result is subnormal, the conversion is then exact or a tie, and
+         ;; ties round to even, which ldexp then scales exactly. Otherwise,
+         ;; the conversion rounds once (round to odd keeps the information
+         ;; needed) and ldexp is exact.
+         (if (i32.lt_s (local.get $exp) (i32.const -1076))
+            (then
+               (local.set $adj (i32.sub (i32.const -1076) (local.get $exp)))
+               (local.set $m
+                  (if (result i64) (i32.lt_u (local.get $adj) (i32.const 60))
+                     (then
+                        (i64.or
+                           (i64.shr_u (local.get $m)
+                              (i64.extend_i32_u (local.get $adj)))
+                           (i64.extend_i32_u
+                              (i64.ne
+                                 (i64.and (local.get $m)
+                                    (i64.sub
+                                       (i64.shl (i64.const 1)
+                                          (i64.extend_i32_u (local.get $adj)))
+                                       (i64.const 1)))
+                                 (i64.const 0)))))
+                     (else
+                        (i64.extend_i32_u
+                           (i64.ne (local.get $m) (i64.const 0))))))
+               (local.set $exp (i32.const -1076))))
+         ;; Convert the mantissa to FP (m has 60 bits at most)
+         (local.set $f (f64.convert_i64_s (local.get $m)))
          (if (local.get $exp)
             (then (local.set $f (call $ldexp (local.get $f) (local.get $exp)))))
          (return (local.get $f)))
