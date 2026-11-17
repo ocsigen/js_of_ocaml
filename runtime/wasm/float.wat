@@ -851,11 +851,54 @@
       (array.new_fixed $block 3 (ref.i31 (i32.const 0))
          (struct.new $float (local.get $f)) (struct.new $float (local.get $i))))
 
+   ;; a * b mod m, for a, b < m < 2^53. The quotient is estimated with
+   ;; floating-point arithmetic; it is off by at most a few units, so the
+   ;; remainder computed with wrapping 64-bit arithmetic is exact (its
+   ;; absolute value is below 2^56) and only needs a small adjustment.
+   (func $mulmod (param $a i64) (param $b i64) (param $m i64) (result i64)
+      (local $r i64)
+      (local.set $r
+         (i64.sub (i64.mul (local.get $a) (local.get $b))
+            (i64.mul (local.get $m)
+               (i64.trunc_f64_u
+                  (f64.div
+                     (f64.mul (f64.convert_i64_u (local.get $a))
+                        (f64.convert_i64_u (local.get $b)))
+                     (f64.convert_i64_u (local.get $m)))))))
+      (loop $neg
+         (if (i64.lt_s (local.get $r) (i64.const 0))
+            (then
+               (local.set $r (i64.add (local.get $r) (local.get $m)))
+               (br $neg))))
+      (loop $big
+         (if (i64.ge_s (local.get $r) (local.get $m))
+            (then
+               (local.set $r (i64.sub (local.get $r) (local.get $m)))
+               (br $big))))
+      (local.get $r))
+
+   ;; 2^d mod m, for d > 0 and 1 < m < 2^53 (binary exponentiation)
+   (func $pow2mod (param $d i32) (param $m i64) (result i64)
+      (local $r i64) (local $i i32)
+      (local.set $r (i64.const 1))
+      (local.set $i (i32.sub (i32.const 31) (i32.clz (local.get $d))))
+      (loop $bit
+         (local.set $r (call $mulmod (local.get $r) (local.get $r) (local.get $m)))
+         (if (i32.and (i32.shr_u (local.get $d) (local.get $i)) (i32.const 1))
+            (then
+               (local.set $r (i64.shl (local.get $r) (i64.const 1)))
+               (if (i64.ge_u (local.get $r) (local.get $m))
+                  (then
+                     (local.set $r (i64.sub (local.get $r) (local.get $m)))))))
+         (local.set $i (i32.sub (local.get $i) (i32.const 1)))
+         (br_if $bit (i32.ge_s (local.get $i) (i32.const 0))))
+      (local.get $r))
+
    ;; The remainder of x / y, rounded toward zero (as C's fmod): with
    ;; x = mx * 2^ex and y = my * 2^ey (mx and my integers, ex >= ey when
    ;; |x| > |y|), it is (mx * 2^(ex - ey) mod my) * 2^ey, with the sign
    ;; of x. This is computed exactly with integer arithmetic, up to 63
-   ;; bits at a time.
+   ;; bits at a time, or with modular exponentiation.
    (func (export "caml_fmod_f64") (param $x f64) (param $y f64) (result f64)
       (local $ax i64) (local $ay i64) (local $mx i64) (local $my i64)
       (local $ex i32) (local $ey i32) (local $d i32) (local $s i32)
@@ -907,6 +950,17 @@
       (local.set $mx (i64.rem_u (local.get $mx) (local.get $my)))
       ;; as mx < my, mx * 2^s does not overflow for s <= clz(my)
       (local.set $s (i32.wrap_i64 (i64.clz (local.get $my))))
+      ;; When many steps would be needed (more than 20: large x / y and y
+      ;; with many significant bits), use mx * (2^d mod my) mod my instead
+      (if (i32.and (i64.ne (local.get $mx) (i64.const 0))
+             (i32.gt_s (local.get $d)
+                (i32.mul (local.get $s) (i32.const 20))))
+         (then
+            (local.set $mx
+               (call $mulmod (local.get $mx)
+                  (call $pow2mod (local.get $d) (local.get $my))
+                  (local.get $my)))
+            (local.set $d (i32.const 0))))
       (loop $reduce
          (if (i32.and (i32.gt_s (local.get $d) (i32.const 0))
                 (i64.ne (local.get $mx) (i64.const 0)))
