@@ -67,3 +67,51 @@ let%expect_test "exact ties" =
     0.562
     0.6567382812
     |}]
+
+(* mod_float is computed exactly with integer arithmetic in the Wasm runtime *)
+let%expect_test "mod_float" =
+  let l =
+    [ 0.
+    ; -0.
+    ; 7.3
+    ; -7.3
+    ; 3.
+    ; 1e300
+    ; -1e300
+    ; 5e-324
+    ; 1e-310
+    ; 2.2250738585072014e-308
+    ; 1.7976931348623157e308
+    ; infinity
+    ; nan
+    ; 9007199254740993.
+    ; 2. *. Float.pi
+    ]
+  in
+  List.iter
+    (fun x ->
+      List.iter
+        (fun y ->
+          let r = mod_float x y in
+          if Float.is_nan r then print_string " nan" else Printf.printf " %h" r)
+        l;
+      print_newline ())
+    l;
+  [%expect
+    {|
+           nan nan 0x0p+0 0x0p+0 0x0p+0 0x0p+0 0x0p+0 0x0p+0 0x0p+0 0x0p+0 0x0p+0 0x0p+0 nan 0x0p+0 0x0p+0
+           nan nan -0x0p+0 -0x0p+0 -0x0p+0 -0x0p+0 -0x0p+0 -0x0p+0 -0x0p+0 -0x0p+0 -0x0p+0 -0x0p+0 nan -0x0p+0 -0x0p+0
+           nan nan 0x0p+0 0x0p+0 0x1.4ccccccccccccp+0 0x1.d333333333333p+2 0x1.d333333333333p+2 0x0p+0 0x0.00bf69b0c154dp-1022 0x0p+0 0x1.d333333333333p+2 0x1.d333333333333p+2 nan 0x1.d333333333333p+2 0x1.044df7bbc186cp+0
+           nan nan -0x0p+0 -0x0p+0 -0x1.4ccccccccccccp+0 -0x1.d333333333333p+2 -0x1.d333333333333p+2 -0x0p+0 -0x0.00bf69b0c154dp-1022 -0x0p+0 -0x1.d333333333333p+2 -0x1.d333333333333p+2 nan -0x1.d333333333333p+2 -0x1.044df7bbc186cp+0
+           nan nan 0x1.8p+1 0x1.8p+1 0x0p+0 0x1.8p+1 0x1.8p+1 0x0p+0 0x0.000f6224cee95p-1022 0x0p+0 0x1.8p+1 0x1.8p+1 nan 0x1.8p+1 0x1.8p+1
+           nan nan 0x1.75be2ae1f97ep-1 0x1.75be2ae1f97ep-1 0x0p+0 0x0p+0 0x0p+0 0x0p+0 0x0.00d8205f9c56ep-1022 0x0p+0 0x1.7e43c8800759cp+996 0x1.7e43c8800759cp+996 nan 0x0p+0 0x1.63d315c34e8cp+2
+           nan nan -0x1.75be2ae1f97ep-1 -0x1.75be2ae1f97ep-1 -0x0p+0 -0x0p+0 -0x0p+0 -0x0p+0 -0x0.00d8205f9c56ep-1022 -0x0p+0 -0x1.7e43c8800759cp+996 -0x1.7e43c8800759cp+996 nan -0x0p+0 -0x1.63d315c34e8cp+2
+           nan nan 0x0.0000000000001p-1022 0x0.0000000000001p-1022 0x0.0000000000001p-1022 0x0.0000000000001p-1022 0x0.0000000000001p-1022 0x0p+0 0x0.0000000000001p-1022 0x0.0000000000001p-1022 0x0.0000000000001p-1022 0x0.0000000000001p-1022 nan 0x0.0000000000001p-1022 0x0.0000000000001p-1022
+           nan nan 0x0.012688b70e62bp-1022 0x0.012688b70e62bp-1022 0x0.012688b70e62bp-1022 0x0.012688b70e62bp-1022 0x0.012688b70e62bp-1022 0x0p+0 0x0p+0 0x0.012688b70e62bp-1022 0x0.012688b70e62bp-1022 0x0.012688b70e62bp-1022 nan 0x0.012688b70e62bp-1022 0x0.012688b70e62bp-1022
+           nan nan 0x1p-1022 0x1p-1022 0x1p-1022 0x1p-1022 0x1p-1022 0x0p+0 0x0.00957141866b6p-1022 0x0p+0 0x1p-1022 0x1p-1022 nan 0x1p-1022 0x1p-1022
+           nan nan 0x1.4e11ff752adep-2 0x1.4e11ff752adep-2 0x1p+1 0x1.73bd07c60fbc8p+995 0x1.73bd07c60fbc8p+995 0x0p+0 0x0.0080c4d9507a1p-1022 0x0p+0 0x0p+0 0x1.fffffffffffffp+1023 nan 0x0p+0 0x1.294b5eb559b4p-1
+           nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan
+           nan nan nan nan nan nan nan nan nan nan nan nan nan nan nan
+           nan nan 0x1.70381c0e07038p-1 0x1.70381c0e07038p-1 0x1p+1 0x1p+53 0x1p+53 0x0p+0 0x0.00727c6a5f974p-1022 0x0p+0 0x1p+53 0x1p+53 nan 0x0p+0 0x1.206d17eb5adp+2
+           nan nan 0x1.921fb54442d18p+2 0x1.921fb54442d18p+2 0x1.21fb54442d18p-2 0x1.921fb54442d18p+2 0x1.921fb54442d18p+2 0x0p+0 0x0.0073021457644p-1022 0x0p+0 0x1.921fb54442d18p+2 0x1.921fb54442d18p+2 nan 0x1.921fb54442d18p+2 0x0p+0
+           |}]

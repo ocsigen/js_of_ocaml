@@ -1574,7 +1574,14 @@ module Math = struct
 
   let power f g = binary "pow" f g
 
-  let fmod f g = binary "fmod" f g
+  let fmod f g =
+    (* Implemented in the runtime, which is faster than calling JavaScript *)
+    let* f' =
+      register_import ~import_module:"env" ~name:"caml_fmod_f64" (Fun (float_func_type 2))
+    in
+    let* f = f in
+    let* g = g in
+    return (W.Call (f', [ f; g ]))
 
   let exp2 x = power (return (W.Const (F64 2.))) x
 end

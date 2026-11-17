@@ -32,6 +32,7 @@
   at least as recent (#2620)
 * Compiler: name variables in a more regular order, which compresses better
   (#2598)
+* Runtime/Wasm: compute `mod_float` in Wasm rather than calling JavaScript (#2629)
 
 ## Bug fixes
 * Toplevel: `js_of_ocaml-toplevel` depends on `js_of_ocaml-ppx`, so that

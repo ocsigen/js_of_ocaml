@@ -45,6 +45,8 @@
     atan2: Math.atan2,
     hypot: Math.hypot,
     pow: Math.pow,
+    // No longer used by the compiler or the runtime (see caml_fmod_f64),
+    // but still imported by some libraries (Base)
     fmod: (x, y) => x % y,
   };
 

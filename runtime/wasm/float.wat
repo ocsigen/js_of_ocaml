@@ -851,6 +851,90 @@
       (array.new_fixed $block 3 (ref.i31 (i32.const 0))
          (struct.new $float (local.get $f)) (struct.new $float (local.get $i))))
 
+   ;; The remainder of x / y, rounded toward zero (as C's fmod): with
+   ;; x = mx * 2^ex and y = my * 2^ey (mx and my integers, ex >= ey when
+   ;; |x| > |y|), it is (mx * 2^(ex - ey) mod my) * 2^ey, with the sign
+   ;; of x. This is computed exactly with integer arithmetic, up to 63
+   ;; bits at a time.
+   (func (export "caml_fmod_f64") (param $x f64) (param $y f64) (result f64)
+      (local $ax i64) (local $ay i64) (local $mx i64) (local $my i64)
+      (local $ex i32) (local $ey i32) (local $d i32) (local $s i32)
+      (local.set $ax
+         (i64.and (i64.reinterpret_f64 (local.get $x))
+            (i64.const 0x7fffffffffffffff)))
+      (local.set $ay
+         (i64.and (i64.reinterpret_f64 (local.get $y))
+            (i64.const 0x7fffffffffffffff)))
+      ;; x infinite or nan, y zero or nan
+      (if (i32.or
+             (i64.ge_u (local.get $ax) (i64.const 0x7ff0000000000000))
+             (i32.or (i64.eqz (local.get $ay))
+                (i64.gt_u (local.get $ay) (i64.const 0x7ff0000000000000))))
+         (then (return (f64.const nan))))
+      (if (i64.le_u (local.get $ax) (local.get $ay))
+         (then
+            (return
+               (select (f64.mul (f64.const 0) (local.get $x)) (local.get $x)
+                  (i64.eq (local.get $ax) (local.get $ay))))))
+      (local.set $ex (i32.wrap_i64 (i64.shr_u (local.get $ax) (i64.const 52))))
+      (local.set $mx (i64.and (local.get $ax) (i64.const 0xfffffffffffff)))
+      (if (local.get $ex)
+         (then
+            (local.set $mx
+               (i64.or (local.get $mx) (i64.const 0x10000000000000)))
+            (local.set $ex (i32.sub (local.get $ex) (i32.const 1075))))
+         (else
+            (local.set $ex (i32.const -1074))))
+      (local.set $ey (i32.wrap_i64 (i64.shr_u (local.get $ay) (i64.const 52))))
+      (local.set $my (i64.and (local.get $ay) (i64.const 0xfffffffffffff)))
+      (if (local.get $ey)
+         (then
+            (local.set $my
+               (i64.or (local.get $my) (i64.const 0x10000000000000)))
+            (local.set $ey (i32.sub (local.get $ey) (i32.const 1075))))
+         (else
+            (local.set $ey (i32.const -1074))))
+      (local.set $d (i32.sub (local.get $ex) (local.get $ey)))
+      ;; Remove the trailing zeros of my (as long as ey <= ex), so that
+      ;; more bits are processed at each step
+      (local.set $s (i32.wrap_i64 (i64.ctz (local.get $my))))
+      (if (i32.gt_s (local.get $s) (local.get $d))
+         (then (local.set $s (local.get $d))))
+      (local.set $my
+         (i64.shr_u (local.get $my) (i64.extend_i32_u (local.get $s))))
+      (local.set $ey (i32.add (local.get $ey) (local.get $s)))
+      (local.set $d (i32.sub (local.get $d) (local.get $s)))
+      (local.set $mx (i64.rem_u (local.get $mx) (local.get $my)))
+      ;; as mx < my, mx * 2^s does not overflow for s <= clz(my)
+      (local.set $s (i32.wrap_i64 (i64.clz (local.get $my))))
+      (loop $reduce
+         (if (i32.and (i32.gt_s (local.get $d) (i32.const 0))
+                (i64.ne (local.get $mx) (i64.const 0)))
+            (then
+               (if (i32.lt_s (local.get $d) (local.get $s))
+                  (then (local.set $s (local.get $d))))
+               (local.set $mx
+                  (i64.rem_u
+                     (i64.shl (local.get $mx) (i64.extend_i32_u (local.get $s)))
+                     (local.get $my)))
+               (local.set $d (i32.sub (local.get $d) (local.get $s)))
+               (br $reduce))))
+      ;; mx * 2^ey is exact: mx < 2^53 and ey >= -1074
+      (f64.copysign
+         (f64.mul (f64.convert_i64_u (local.get $mx))
+            (f64.reinterpret_i64
+               (if (result i64) (i32.ge_s (local.get $ey) (i32.const -1022))
+                  (then
+                     (i64.shl
+                        (i64.extend_i32_u
+                           (i32.add (local.get $ey) (i32.const 1023)))
+                        (i64.const 52)))
+                  (else
+                     (i64.shl (i64.const 1)
+                        (i64.extend_i32_u
+                           (i32.add (local.get $ey) (i32.const 1074))))))))
+         (local.get $x)))
+
    (func $ldexp (export "caml_ldexp_float")
       (param $x f64) (param $n i32) (result f64)
       (if (i32.gt_s (local.get $n) (i32.const 1023))
