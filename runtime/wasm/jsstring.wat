@@ -60,6 +60,9 @@
    (import "c" "memory" (memory 1))
    (export "caml_buffer" (memory 0))
 
+   (import "string" "caml_check_string_length"
+      (func $caml_check_string_length (param i32)))
+
    (type $bytes (array (mut i8)))
    (type $wstring (array (mut i16)))
 
@@ -264,6 +267,7 @@
       (local.set $len (call $write_string (local.get $s)))
       (if (ref.is_null (global.get $stack))
          (then
+            (call $caml_check_string_length (local.get $len))
             (local.set $s'
                (array.new $bytes (i32.const 0) (local.get $len)))
             (call $read_from_buffer
@@ -278,6 +282,8 @@
             (local.set $item
                (br_on_null $done (struct.get $stack $next (local.get $item))))
             (br $loop)))
+      (call $caml_check_string_length
+         (i32.add (local.get $len) (local.get $ofs)))
       (local.set $s'
          (array.new $bytes (i32.const 0)
             (i32.add (local.get $len) (local.get $ofs))))
