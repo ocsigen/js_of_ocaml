@@ -51,12 +51,49 @@ const caml_float32_of_bits_bytecode = caml_int32_float_of_bits;
 //If: oxcaml
 const caml_float32_to_bits_bytecode = caml_int32_bits_of_float;
 
+//Provides: caml_float32_round_odd const
+//Version: >= 5.2
+//If: oxcaml
+// Rounding a value to a double, then to a float32, can give a different
+// result than rounding it directly to a float32: the first rounding can land
+// exactly halfway between two float32 values. This does not happen if the
+// first rounding is to odd (the double with an odd significand among the two
+// surrounding the value, when it is not representable). Given the double
+// [s] nearest to a value and the sign of their difference [err] (value - s),
+// this returns the value rounded to odd.
+var caml_float32_round_odd = (function () {
+  var dv = new DataView(new ArrayBuffer(8));
+  return function (s, err) {
+    if (err === 0 || s === 0 || !Number.isFinite(s)) return s;
+    dv.setFloat64(0, s);
+    var lo = dv.getUint32(4);
+    if (lo & 1) return s;
+    // move one ulp toward the value: up in magnitude iff err and s have the
+    // same sign (lo is even, so there is no carry when going up)
+    if (err > 0 === s > 0) dv.setUint32(4, lo + 1);
+    else if (lo !== 0) dv.setUint32(4, lo - 1);
+    else {
+      dv.setUint32(4, 0xffffffff);
+      dv.setUint32(0, dv.getUint32(0) - 1);
+    }
+    return dv.getFloat64(0);
+  };
+})();
+
 //Provides: caml_float32_of_int64_bytecode const
-//Requires: caml_int64_to_float
+//Requires: caml_int64_to_float, caml_int64_hi32, caml_int64_lo32
+//Requires: caml_float32_round_odd
 //Version: >= 5.2
 //If: oxcaml
 function caml_float32_of_int64_bytecode(x) {
-  return Math.fround(caml_int64_to_float(x));
+  var d = caml_int64_to_float(x);
+  // d is exact below 2^53; at 2^53, rounding d to a float32 gives the same
+  // result as rounding x (at most 2^53 + 1)
+  if (Math.abs(d) <= 9007199254740992) return Math.fround(d);
+  var e =
+    ((BigInt(caml_int64_hi32(x)) << 32n) | BigInt(caml_int64_lo32(x) >>> 0)) -
+    BigInt(d);
+  return Math.fround(caml_float32_round_odd(d, e > 0n ? 1 : e < 0n ? -1 : 0));
 }
 
 //Provides: caml_float32_to_int64_bytecode const
@@ -413,11 +450,17 @@ function caml_erfc_float32_bytecode(x) {
 }
 
 //Provides: caml_fma_float32_bytecode const
-//Requires: caml_fma_float
+//Requires: caml_float32_round_odd
 //Version: >= 5.2
 //If: oxcaml
 function caml_fma_float32_bytecode(x, y, z) {
-  return Math.fround(caml_fma_float(x, y, z));
+  // The product of two float32 values is exact as a double; [s + e] is the
+  // exact value of [x * y + z] (TwoSum)
+  var p = x * y;
+  var s = p + z;
+  var b = s - p;
+  var e = p - (s - b) + (z - b);
+  return Math.fround(caml_float32_round_odd(s, e));
 }
 
 //Provides: caml_simd_float32_min_bytecode const
