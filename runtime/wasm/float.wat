@@ -762,6 +762,32 @@
                                        ))))))))))))))))))
 (@if $wasi
 (@then
+         ;; wasi-libc's strtod returns +0 for some negative values that round
+         ;; to the smallest subnormal or to zero: for a negative decimal
+         ;; literal, parse its absolute value instead
+         (local.set $j (i32.const 0))
+         (if (i32.and
+                (i32.eq (array.get_u $bytes (local.get $s) (local.get $start))
+                   (@char "-"))
+                (i32.lt_u (i32.add (local.get $start) (i32.const 1))
+                   (local.get $len)))
+            (then
+               (local.set $c
+                  (array.get_u $bytes (local.get $s)
+                     (i32.add (local.get $start) (i32.const 1))))
+               (if (i32.or
+                      (i32.lt_u (i32.sub (local.get $c) (@char "0"))
+                         (i32.const 10))
+                      (i32.eq (local.get $c) (@char ".")))
+                  (then
+                     (local.set $j (i32.add (local.get $start) (i32.const 1)))
+                     (local.set $len (i32.sub (local.get $len) (local.get $j)))
+                     (local.set $s'
+                        (array.new $bytes (i32.const 0) (local.get $len)))
+                     (array.copy $bytes $bytes
+                        (local.get $s') (i32.const 0)
+                        (local.get $s) (local.get $j) (local.get $len))
+                     (local.set $s (local.get $s'))))))
          (local.set $buffer (call $get_buffer))
          (local.set $buf
             (call $write_string_to_memory
@@ -774,6 +800,7 @@
          (br_if $error
             (i32.ne (i32.load (local.get $buffer))
               (i32.add (local.get $buf) (local.get $len))))
+         (if (local.get $j) (then (local.set $f (f64.neg (local.get $f)))))
 )
 (@else
          ;; The JS number coercion below accepts things OCaml does not,
