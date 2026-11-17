@@ -16,6 +16,7 @@ depends: [
   "ocaml" {>= "4.13"}
   "js_of_ocaml-compiler" {= version}
   "js_of_ocaml" {= version}
+  "js_of_ocaml-ppx" {= version}
   "ocamlfind" {>= "1.5.1"}
   "graphics" {with-test}
   "num" {with-test}

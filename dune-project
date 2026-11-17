@@ -94,6 +94,8 @@
   (ocaml (>= 4.13))
   (js_of_ocaml-compiler (= :version))
   (js_of_ocaml (= :version))
+  ;; Needed to build the optional worker_lwt_client library
+  (js_of_ocaml-ppx (= :version))
   (ocamlfind (>= 1.5.1))
 ;;(cohttp-lwt-unix (and (>= 6.0.0) :with-test))
   (graphics :with-test)
