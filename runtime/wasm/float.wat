@@ -1041,6 +1041,122 @@
       (call $caml_failwith (local.get $err_msg))
       (f64.const 0))
 
+   (type $f64s (array f64))
+
+   (global $exact_pow10 (ref $f64s)
+      (array.new_fixed $f64s 23
+         (f64.const 1e0) (f64.const 1e1) (f64.const 1e2) (f64.const 1e3)
+         (f64.const 1e4) (f64.const 1e5) (f64.const 1e6) (f64.const 1e7)
+         (f64.const 1e8) (f64.const 1e9) (f64.const 1e10) (f64.const 1e11)
+         (f64.const 1e12) (f64.const 1e13) (f64.const 1e14) (f64.const 1e15)
+         (f64.const 1e16) (f64.const 1e17) (f64.const 1e18) (f64.const 1e19)
+         (f64.const 1e20) (f64.const 1e21) (f64.const 1e22)))
+
+   ;; Parse s[i..len) as "digits[.digits][(e|E)[+-]digits]" (with at least
+   ;; one mantissa digit), when this can be done exactly with a single
+   ;; floating-point operation (Clinger's fast path): the significant
+   ;; digits w fit in 53 bits and the value is w * 10^e with |e| <= 22
+   ;; (10^e is then exact, and so is the correctly rounded product or
+   ;; quotient). The second result tells whether it succeeded.
+   (func $parse_decimal_fast
+      (param $s (ref $bytes)) (param $i i32) (param $len i32)
+      (result f64 i32)
+      (local $c i32) (local $w i64) (local $nd i32) (local $digits i32)
+      (local $e i32) (local $x i32) (local $neg i32) (local $frac i32) (local $p i64)
+      (block $fail
+         (loop $mantissa
+            (if (i32.lt_u (local.get $i) (local.get $len))
+               (then
+                  (local.set $c
+                     (i32.sub (array.get_u $bytes (local.get $s) (local.get $i))
+                        (@char "0")))
+                  (if (i32.lt_u (local.get $c) (i32.const 10))
+                     (then
+                        (local.set $digits
+                           (i32.add (local.get $digits) (i32.const 1)))
+                        (local.set $e (i32.sub (local.get $e) (local.get $frac)))
+                        ;; leading zeros are not significant
+                        (if (i32.or (local.get $c)
+                               (i64.ne (local.get $w) (i64.const 0)))
+                           (then
+                              (local.set $nd
+                                 (i32.add (local.get $nd) (i32.const 1)))
+                              (br_if $fail
+                                 (i32.gt_u (local.get $nd) (i32.const 19)))
+                              (local.set $w
+                                 (i64.add
+                                    (i64.mul (local.get $w) (i64.const 10))
+                                    (i64.extend_i32_u (local.get $c))))))
+                        (local.set $i (i32.add (local.get $i) (i32.const 1)))
+                        (br $mantissa)))
+                  (if (i32.and (i32.eqz (local.get $frac))
+                         (i32.eq (local.get $c) (i32.sub (@char ".") (@char "0"))))
+                     (then
+                        (local.set $frac (i32.const 1))
+                        (local.set $i (i32.add (local.get $i) (i32.const 1)))
+                        (br $mantissa))))))
+         (br_if $fail (i32.eqz (local.get $digits)))
+         (if (i32.lt_u (local.get $i) (local.get $len))
+            (then
+               (br_if $fail
+                  (i32.ne
+                     (i32.or (array.get_u $bytes (local.get $s) (local.get $i))
+                        (i32.const 0x20))
+                     (@char "e")))
+               (local.set $i (i32.add (local.get $i) (i32.const 1)))
+               (br_if $fail (i32.ge_u (local.get $i) (local.get $len)))
+               (local.set $c (array.get_u $bytes (local.get $s) (local.get $i)))
+               (if (i32.or (i32.eq (local.get $c) (@char "-"))
+                      (i32.eq (local.get $c) (@char "+")))
+                  (then
+                     (local.set $neg (i32.eq (local.get $c) (@char "-")))
+                     (local.set $i (i32.add (local.get $i) (i32.const 1)))))
+               (br_if $fail (i32.ge_u (local.get $i) (local.get $len)))
+               (loop $exponent
+                  (local.set $c
+                     (i32.sub (array.get_u $bytes (local.get $s) (local.get $i))
+                        (@char "0")))
+                  (br_if $fail (i32.ge_u (local.get $c) (i32.const 10)))
+                  ;; large exponents are handled by the slow path
+                  (br_if $fail (i32.gt_u (local.get $x) (i32.const 100000)))
+                  (local.set $x
+                     (i32.add (i32.mul (local.get $x) (i32.const 10))
+                        (local.get $c)))
+                  (local.set $i (i32.add (local.get $i) (i32.const 1)))
+                  (br_if $exponent (i32.lt_u (local.get $i) (local.get $len))))
+               (local.set $e
+                  (i32.add (local.get $e)
+                     (select (i32.sub (i32.const 0) (local.get $x))
+                        (local.get $x) (local.get $neg))))))
+         (if (i64.eqz (local.get $w))
+            (then (return (f64.const 0) (i32.const 1))))
+         (br_if $fail (i64.gt_u (local.get $w) (i64.const 0x20000000000000)))
+         (if (i32.lt_s (local.get $e) (i32.const 0))
+            (then
+               (br_if $fail (i32.lt_s (local.get $e) (i32.const -22)))
+               (return
+                  (f64.div (f64.convert_i64_u (local.get $w))
+                     (array.get $f64s (global.get $exact_pow10)
+                        (i32.sub (i32.const 0) (local.get $e))))
+                  (i32.const 1))))
+         (if (i32.gt_s (local.get $e) (i32.const 22))
+            (then
+               ;; w * 10^(e - 22) may still be an exact integer
+               (br_if $fail (i32.gt_s (local.get $e) (i32.const 37)))
+               (local.set $p
+                  (array.get $int64s (global.get $pow10)
+                     (i32.sub (local.get $e) (i32.const 22))))
+               (br_if $fail
+                  (i64.gt_u (local.get $w)
+                     (i64.div_u (i64.const 0x20000000000000) (local.get $p))))
+               (local.set $w (i64.mul (local.get $w) (local.get $p)))
+               (local.set $e (i32.const 22))))
+         (return
+            (f64.mul (f64.convert_i64_u (local.get $w))
+               (array.get $f64s (global.get $exact_pow10) (local.get $e)))
+            (i32.const 1)))
+      (f64.const 0) (i32.const 0))
+
    (func $on_whitespace (param $s (ref $bytes)) (param $i i32) (result i32)
       (local $c i32)
       (local.set $c (array.get_u $bytes (local.get $s) (local.get $i)))
@@ -1052,7 +1168,7 @@
       (local $s (ref $bytes)) (local $len i32) (local $i i32) (local $j i32)
       (local $s' (ref $bytes))
       (local $negative i32) (local $c i32)
-      (local $f f64)
+      (local $f f64) (local $ok i32)
       (local $buffer i32) (local $buf i32) (local $start i32)
       (local.set $s (ref.cast (ref $bytes) (local.get $v)))
       (local.set $len (array.len (local.get $s)))
@@ -1109,6 +1225,15 @@
          (if (i32.eq (local.get $c) (@char "+"))
             (then
                (local.set $i (i32.add (local.get $i) (i32.const 1)))))
+         (call $parse_decimal_fast (local.get $s) (local.get $i) (local.get $len))
+         (local.set $ok)
+         (local.set $f)
+         (if (local.get $ok)
+            (then
+               (return
+                  (struct.new $float
+                     (select (f64.neg (local.get $f)) (local.get $f)
+                        (local.get $negative))))))
          (if (i32.lt_u (i32.add (local.get $i) (i32.const 2)) (local.get $len))
             (then
                (if (i32.eq (array.get_u $bytes (local.get $s) (local.get $i))
