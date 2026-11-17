@@ -343,6 +343,10 @@ let eval_prim ~target x =
       | "caml_int64_shift_right_unsigned", _ -> int64_shiftop l Int64.shift_right_logical
       | "caml_int64_compare", [ Int64 i; Int64 j ] ->
           Some (Int (Targetint.of_int_exn (Int64.compare i j)))
+      | "caml_int64_equal", [ Int64 i; Int64 j ] -> bool (Int64.equal i j)
+      | "caml_int64_notequal", [ Int64 i; Int64 j ] -> bool (not (Int64.equal i j))
+      | "caml_int64_lessthan", [ Int64 i; Int64 j ] -> bool (Int64.compare i j < 0)
+      | "caml_int64_lessequal", [ Int64 i; Int64 j ] -> bool (Int64.compare i j <= 0)
       | "caml_int64_to_int", [ Int64 i ] ->
           Some (Int (Targetint.of_int32_truncate (Int64.to_int32 i)))
       | "caml_int64_of_int", [ Int i ] -> int64 (Int64.of_int32 (Targetint.to_int32 i))

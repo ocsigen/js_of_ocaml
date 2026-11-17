@@ -2326,7 +2326,18 @@ and compile infos pc state (instrs : instr list) =
                       match boxed with
                       | Nativeint -> prim_of_ext prim
                       | Int32 -> prim_of_ext prim
-                      | Int64 -> Extern (prim, None), y, z)
+                      | Int64 -> (
+                          match prim with
+                          | "caml_equal" -> Extern ("caml_int64_equal", None), y, z
+                          | "caml_notequal" -> Extern ("caml_int64_notequal", None), y, z
+                          | "caml_lessthan" -> Extern ("caml_int64_lessthan", None), y, z
+                          | "caml_lessequal" ->
+                              Extern ("caml_int64_lessequal", None), y, z
+                          | "caml_greaterthan" ->
+                              Extern ("caml_int64_lessthan", None), z, y
+                          | "caml_greaterequal" ->
+                              Extern ("caml_int64_lessequal", None), z, y
+                          | _ -> assert false))
                   | _ -> Extern (prim, None), y, z)
               | _ -> Hints.extern infos.hints pc prim, y, z)
         in
