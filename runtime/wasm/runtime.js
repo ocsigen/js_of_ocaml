@@ -328,6 +328,57 @@
     }
   }
 
+  // Exact decimal expansion through BigInt, for precisions beyond
+  // toFixed/toExponential's limit of 100 and for %f of values >= 1e21
+  function exact_scaled(x, k) {
+    // round_half_even(x * 10^k) as a BigInt, x finite and >= 0
+    const dv = new DataView(new ArrayBuffer(8));
+    dv.setFloat64(0, x);
+    const hi = dv.getUint32(0);
+    const lo = dv.getUint32(4);
+    const eb = (hi >>> 20) & 0x7ff;
+    // x is m * 2^e
+    let m = (BigInt(hi & 0xfffff) << 32n) | BigInt(lo);
+    let e = -1074;
+    if (eb !== 0) {
+      m |= 1n << 52n;
+      e = eb - 1075;
+    }
+    let num = m;
+    let den = 1n;
+    if (k >= 0) num *= 10n ** BigInt(k);
+    else den = 10n ** BigInt(-k);
+    if (e >= 0) num <<= BigInt(e);
+    else den <<= BigInt(-e);
+    let q = num / den;
+    const r2 = (num % den) * 2n;
+    if (r2 > den || (r2 === den && q & 1n)) q += 1n;
+    return q;
+  }
+  function exact_fixed(x, prec) {
+    // toFixed, exactly
+    let q = exact_scaled(x, prec).toString();
+    if (prec === 0) return q;
+    if (q.length <= prec) q = "0".repeat(prec + 1 - q.length) + q;
+    return `${q.slice(0, q.length - prec)}.${q.slice(q.length - prec)}`;
+  }
+  function exact_exponential(x, prec) {
+    // toExponential, exactly
+    if (x === 0) return `${prec > 0 ? `0.${"0".repeat(prec)}` : "0"}e+0`;
+    let e10 = Math.floor(Math.log10(x));
+    for (;;) {
+      // we want round(x * 10^(prec - e10)) to have exactly prec + 1
+      // digits; the estimate of e10 is off by at most one (and
+      // rounding can add a digit), so adjust and retry
+      const s = exact_scaled(x, prec - e10).toString();
+      if (s.length === prec + 1) {
+        const m = prec > 0 ? `${s.charAt(0)}.${s.slice(1)}` : s;
+        return `${m}e${e10 < 0 ? "-" : "+"}${Math.abs(e10)}`;
+      }
+      e10 += s.length - (prec + 1);
+    }
+  }
+
   const bindings = {
     jstag:
       WebAssembly.JSTag ||
@@ -497,129 +548,14 @@
       else l <<= BigInt(-e);
       return l > r ? 1 : l < r ? -1 : 0;
     },
-    format_float: (prec, conversion, pad, x) => {
-      // Exact decimal expansion through BigInt, for precisions beyond
-      // toFixed/toExponential's limit of 100 and for %f of values >= 1e21
-      function decompose(x) {
-        // x (finite, >= 0) is m * 2^e
-        var dv = new DataView(new ArrayBuffer(8));
-        dv.setFloat64(0, x);
-        var hi = dv.getUint32(0),
-          lo = dv.getUint32(4);
-        var eb = (hi >>> 20) & 0x7ff;
-        var m = (BigInt(hi & 0xfffff) << 32n) | BigInt(lo);
-        if (eb === 0) return [m, -1074];
-        return [m | (1n << 52n), eb - 1075];
-      }
-      function exact_scaled(x, k) {
-        // round_half_even(x * 10^k) as a BigInt
-        var d = decompose(x);
-        var num = d[0],
-          den = 1n;
-        if (k >= 0) num *= 10n ** BigInt(k);
-        else den = 10n ** BigInt(-k);
-        if (d[1] >= 0) num <<= BigInt(d[1]);
-        else den <<= BigInt(-d[1]);
-        var q = num / den,
-          r2 = (num % den) * 2n;
-        if (r2 > den || (r2 === den && q & 1n)) q += 1n;
-        return q;
-      }
-      function exact_fixed(x, prec) {
-        // toFixed, exactly
-        var q = exact_scaled(x, prec).toString();
-        if (prec === 0) return q;
-        if (q.length <= prec) q = "0".repeat(prec + 1 - q.length) + q;
-        return q.slice(0, q.length - prec) + "." + q.slice(q.length - prec);
-      }
-      function exact_exponential(x, prec) {
-        // toExponential, exactly
-        if (x === 0) return (prec > 0 ? "0." + "0".repeat(prec) : "0") + "e+0";
-        var e10 = Math.floor(Math.log10(x));
-        for (;;) {
-          // we want round(x * 10^(prec - e10)) to have exactly prec + 1
-          // digits; the estimate of e10 is off by at most one (and
-          // rounding can add a digit), so adjust and retry
-          var s = exact_scaled(x, prec - e10).toString();
-          if (s.length === prec + 1) {
-            var m = prec > 0 ? s.charAt(0) + "." + s.slice(1) : s;
-            return m + "e" + (e10 < 0 ? "-" : "+") + Math.abs(e10);
-          }
-          e10 += s.length - (prec + 1);
-        }
-      }
-      // Rounding x at 10^-k is a tie iff 2 * x * 10^k is an odd integer,
-      // that is, iff y = x * 2^(k+1) is an odd integer (5^k is odd) and,
-      // when k < 0, a multiple of 5^-k. Scaling by a power of two is
-      // exact, so this test is exact.
-      function is_tie(x, k) {
-        var y = x * 2 ** (k + 1);
-        return y % 2 === 1 && (k >= 0 || y % 5 ** -k === 0);
-      }
-      // toFixed/toExponential round ties away from zero; C rounds them to
-      // even. s is x rounded at 10^-k, the digit at 10^-k being s[i]: on a
-      // tie, that digit is one too many iff it is odd.
-      function round_half_even(s, i, x, k) {
-        var c = s.charCodeAt(i);
-        return c % 2 === 1 && is_tie(x, k)
-          ? s.slice(0, i) + String.fromCharCode(c - 1) + s.slice(i + 1)
-          : s;
-      }
-      function toExponential(x, prec) {
-        if (prec > 100) return exact_exponential(x, prec);
-        var s = x.toExponential(prec);
-        var i = s.indexOf("e");
-        return round_half_even(s, i - 1, x, prec - +s.slice(i + 1));
-      }
-      function toFixed(x, dp) {
-        if (dp > 100 || x >= 1e21) return exact_fixed(x, dp);
-        var s = x.toFixed(dp);
-        return round_half_even(s, s.length - 1, x, dp);
-      }
-      switch (conversion) {
-        case 0:
-          var s = toExponential(x, prec);
-          // exponent should be at least two digits
-          var i = s.length;
-          if (s.charAt(i - 3) === "e")
-            s = s.slice(0, i - 1) + "0" + s.slice(i - 1);
-          break;
-        case 1:
-          s = toFixed(x, prec);
-          break;
-        case 2:
-          prec = prec ? prec : 1;
-          s = toExponential(x, prec - 1);
-          var j = s.indexOf("e");
-          var exp = +s.slice(j + 1);
-          if (exp < -4 || exp >= prec) {
-            // remove trailing zeroes
-            var i = j - 1;
-            while (s.charAt(i) === "0") i--;
-            if (s.charAt(i) === ".") i--;
-            s = s.slice(0, i + 1) + s.slice(j);
-            i = s.length;
-            if (s.charAt(i - 3) === "e")
-              s = s.slice(0, i - 1) + "0" + s.slice(i - 1);
-            break;
-          } else {
-            // Same rounding position as toExponential: reuse its digits
-            var p = prec - 1 - exp;
-            var d = prec > 1 ? s.charAt(0) + s.slice(2, j) : s.charAt(0);
-            if (exp < 0) s = "0." + "0".repeat(-exp - 1) + d;
-            else if (p > 0) s = d.slice(0, exp + 1) + "." + d.slice(exp + 1);
-            else s = d;
-            if (p) {
-              // remove trailing zeroes
-              var i = s.length - 1;
-              while (s.charAt(i) === "0") i--;
-              if (s.charAt(i) === ".") i--;
-              s = s.slice(0, i + 1);
-            }
-          }
-          break;
-      }
-      return pad ? " " + s : s;
+    // Digits of x (finite, >= 0) as x.toFixed(prec) or x.toExponential(prec)
+    // would give them. These functions round ties away from zero; the
+    // caller rounds them to even (the exact BigInt versions, used beyond
+    // their limits, already round ties to even).
+    format_float: (x, prec, fixed) => {
+      if (fixed)
+        return prec > 100 || x >= 1e21 ? exact_fixed(x, prec) : x.toFixed(prec);
+      return prec > 100 ? exact_exponential(x, prec) : x.toExponential(prec);
     },
     gettimeofday: () => Date.now() / 1000,
     times: () => {

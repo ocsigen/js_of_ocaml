@@ -39,8 +39,7 @@
 )
 (@else
    (import "bindings" "format_float"
-      (func $format_float
-         (param i32) (param i32) (param i32) (param f64) (result externref)))
+      (func $format_float (param f64 i32 i32) (result externref)))
    (import "bindings" "identity"
       (func $parse_float (param externref) (result f64)))
    (import "Math" "exp" (func $exp (param f64) (result f64)))
@@ -216,6 +215,8 @@
 
    (@string $format_error "format_float: bad format")
 
+   ;; Parse a format "%[+ ][.prec](e|E|f|F|g|G)". The conversion is 0 for
+   ;; %e, 1 for %f and 2 for %g, and -1 if the format is not of this form.
    (func $parse_format
       (param $s (ref $bytes)) (result i32 i32 i32 i32)
       (local $i i32) (local $len i32) (local $c i32)
@@ -269,26 +270,398 @@
             (local.set $conversion
                (i32.sub (i32.and (local.get $c) (i32.const 0xdf)) (@char "E")))
             (br_if $return (i32.le_u (local.get $conversion) (i32.const 2))))
-         (call $caml_invalid_argument (global.get $format_error)))
+         (local.set $conversion (i32.const -1)))
       (local.get $sign_style)
       (local.get $precision)
       (local.get $conversion)
       (local.get $uppercase))
 
+   (type $int64s (array i64))
+
+   (global $pow10 (ref $int64s)
+      (array.new_fixed $int64s 20
+         (i64.const 1) (i64.const 10) (i64.const 100) (i64.const 1000)
+         (i64.const 10000) (i64.const 100000) (i64.const 1000000)
+         (i64.const 10000000) (i64.const 100000000) (i64.const 1000000000)
+         (i64.const 10000000000) (i64.const 100000000000)
+         (i64.const 1000000000000) (i64.const 10000000000000)
+         (i64.const 100000000000000) (i64.const 1000000000000000)
+         (i64.const 10000000000000000) (i64.const 100000000000000000)
+         (i64.const 1000000000000000000)
+         (i64.const 10000000000000000000)))
+
+   (global $pow5 (ref $int64s)
+      (array.new_fixed $int64s 28
+         (i64.const 1) (i64.const 5) (i64.const 25) (i64.const 125)
+         (i64.const 625) (i64.const 3125) (i64.const 15625)
+         (i64.const 78125) (i64.const 390625) (i64.const 1953125)
+         (i64.const 9765625) (i64.const 48828125) (i64.const 244140625)
+         (i64.const 1220703125) (i64.const 6103515625)
+         (i64.const 30517578125) (i64.const 152587890625)
+         (i64.const 762939453125) (i64.const 3814697265625)
+         (i64.const 19073486328125) (i64.const 95367431640625)
+         (i64.const 476837158203125) (i64.const 2384185791015625)
+         (i64.const 11920928955078125) (i64.const 59604644775390625)
+         (i64.const 298023223876953125) (i64.const 1490116119384765625)
+         (i64.const 7450580596923828125)))
+
+   ;; Write x (finite, > 0) as m * 2^e, with m odd
+   (func $decompose (param $x f64) (result i64 i32)
+      (local $b i64) (local $m i64) (local $e i32) (local $tz i64)
+      (local.set $b (i64.reinterpret_f64 (local.get $x)))
+      (local.set $e
+         (i32.wrap_i64 (i64.shr_u (local.get $b) (i64.const 52))))
+      (local.set $m (i64.and (local.get $b) (i64.const 0xFFFFFFFFFFFFF)))
+      (if (local.get $e)
+         (then
+            (local.set $m
+               (i64.or (local.get $m) (i64.const 0x10000000000000)))
+            (local.set $e (i32.sub (local.get $e) (i32.const 1075))))
+         (else
+            (local.set $e (i32.const -1074))))
+      (local.set $tz (i64.ctz (local.get $m)))
+      (i64.shr_u (local.get $m) (local.get $tz))
+      (i32.add (local.get $e) (i32.wrap_i64 (local.get $tz))))
+
+   ;; Exact decimal expansion of x (finite, >= 0) as n * 10^-k, if n
+   ;; fits in an unsigned 64-bit integer. The last result tells whether
+   ;; it does.
+   (func $exact_decimal (param $x f64) (result i64 i32 i32)
+      (local $m i64) (local $e i32) (local $p i64)
+      (if (f64.eq (local.get $x) (f64.const 0))
+         (then (return (i64.const 0) (i32.const 0) (i32.const 1))))
+      (call $decompose (local.get $x))
+      (local.set $e)
+      (local.set $m)
+      (if (i32.ge_s (local.get $e) (i32.const 0))
+         (then
+            ;; n = m * 2^e
+            (if (i32.le_u (local.get $e)
+                   (i32.wrap_i64 (i64.clz (local.get $m))))
+               (then
+                  (return
+                     (i64.shl (local.get $m) (i64.extend_i32_u (local.get $e)))
+                     (i32.const 0) (i32.const 1)))))
+         (else
+            ;; x = m * 5^-e * 10^e
+            (local.set $e (i32.sub (i32.const 0) (local.get $e)))
+            (if (i32.le_u (local.get $e) (i32.const 27))
+               (then
+                  (local.set $p
+                     (array.get $int64s (global.get $pow5) (local.get $e)))
+                  (if (i64.le_u (local.get $m)
+                         (i64.div_u (i64.const -1) (local.get $p)))
+                     (then
+                        (return (i64.mul (local.get $m) (local.get $p))
+                           (local.get $e) (i32.const 1))))))))
+      (i64.const 0) (i32.const 0) (i32.const 0))
+
+   ;; Number of decimal digits of n (unsigned, n > 0). With b the number
+   ;; of bits of n, t = floor(b * 1233 / 4096), an approximation of
+   ;; b * log10(2), is either the number of digits or one less.
+   (func $num_digits (param $n i64) (result i32)
+      (local $t i32)
+      (local.set $t
+         (i32.shr_u
+            (i32.mul
+               (i32.sub (i32.const 64)
+                  (i32.wrap_i64 (i64.clz (local.get $n))))
+               (i32.const 1233))
+            (i32.const 12)))
+      (i32.add (local.get $t)
+         (i64.ge_u (local.get $n)
+            (array.get $int64s (global.get $pow10) (local.get $t)))))
+
+   ;; Round n (unsigned) to a multiple of 10^r (r > 0), ties to even, and
+   ;; divide by 10^r
+   (func $round_digits (param $n i64) (param $r i32) (result i64)
+      (local $p i64) (local $q i64) (local $rem i64) (local $half i64)
+      ;; n < 10^20 / 2
+      (if (i32.ge_u (local.get $r) (i32.const 20))
+         (then (return (i64.const 0))))
+      (local.set $p (array.get $int64s (global.get $pow10) (local.get $r)))
+      (local.set $q (i64.div_u (local.get $n) (local.get $p)))
+      (local.set $rem
+         (i64.sub (local.get $n) (i64.mul (local.get $q) (local.get $p))))
+      (local.set $half (i64.shr_u (local.get $p) (i64.const 1)))
+      (if (i32.or (i64.gt_u (local.get $rem) (local.get $half))
+             ;; tie and q odd (i64.eq is 0 or 1, so the bitwise and
+             ;; keeps only the low bit of q)
+             (i32.and (i64.eq (local.get $rem) (local.get $half))
+                (i32.wrap_i64 (local.get $q))))
+         (then (local.set $q (i64.add (local.get $q) (i64.const 1)))))
+      (local.get $q))
+
+   (global $zero_digits (ref $bytes)
+      (array.new_fixed $bytes 1 (@char "0")))
+
+   ;; The significant digits of n * 10^-k, rounded as the conversion
+   ;; requires, without trailing zeros, and the decimal exponent e of
+   ;; the first digit (d0.d1d2... * 10^e). Zero is "0" with e = 0.
+   (func $exact_digits
+      (param $n i64) (param $k i32) (param $conversion i32) (param $prec i32)
+      (result (ref $bytes) i32 i32)
+      (local $nd i32) (local $r i32) (local $z i32) (local $i i32)
+      (local $j i32) (local $q i64) (local $t i32)
+      (local $d (ref $bytes))
+      (if (i64.eqz (local.get $n))
+         (then
+            (return (global.get $zero_digits) (i32.const 1) (i32.const 0))))
+      (local.set $nd (call $num_digits (local.get $n)))
+      ;; number of digits to drop
+      (local.set $r
+         (if (result i32) (i32.eq (local.get $conversion) (i32.const 1))
+            (then (i32.sub (local.get $k) (local.get $prec)))
+            (else
+               (i32.sub (local.get $nd)
+                  (if (result i32) (local.get $conversion)
+                     (then
+                        (select (local.get $prec) (i32.const 1)
+                           (local.get $prec)))
+                     (else
+                        (i32.add (local.get $prec) (i32.const 1))))))))
+      (if (i32.gt_s (local.get $r) (i32.const 0))
+         (then
+            (local.set $n (call $round_digits (local.get $n) (local.get $r)))
+            (if (i64.eqz (local.get $n))
+               (then
+                  (return
+                     (global.get $zero_digits) (i32.const 1) (i32.const 0)))))
+         (else
+            (local.set $r (i32.const 0))))
+      (loop $strip
+         (if (i64.eqz (i64.rem_u (local.get $n) (i64.const 10)))
+            (then
+               (local.set $n (i64.div_u (local.get $n) (i64.const 10)))
+               (local.set $z (i32.add (local.get $z) (i32.const 1)))
+               (br $strip))))
+      (local.set $nd (call $num_digits (local.get $n)))
+      (local.set $d (array.new $bytes (i32.const 0) (local.get $nd)))
+      (local.set $i (local.get $nd))
+      ;; two digits per iteration, to halve the chain of divisions
+      (loop $write
+         (if (i32.ge_u (local.get $i) (i32.const 2))
+            (then
+               (local.set $q (i64.div_u (local.get $n) (i64.const 100)))
+               ;; j < 100, so j / 10 = (j * 103) >> 10
+               (local.set $j
+                  (i32.wrap_i64
+                     (i64.sub (local.get $n)
+                        (i64.mul (local.get $q) (i64.const 100)))))
+               (local.set $t
+                  (i32.shr_u (i32.mul (local.get $j) (i32.const 103))
+                     (i32.const 10)))
+               (local.set $n (local.get $q))
+               (local.set $i (i32.sub (local.get $i) (i32.const 2)))
+               (array.set $bytes (local.get $d) (local.get $i)
+                  (i32.add (@char "0") (local.get $t)))
+               (array.set $bytes (local.get $d)
+                  (i32.add (local.get $i) (i32.const 1))
+                  (i32.add (@char "0")
+                     (i32.sub (local.get $j)
+                        (i32.mul (local.get $t) (i32.const 10)))))
+               (br $write))))
+      (if (local.get $i)
+         (then
+            (array.set $bytes (local.get $d) (i32.const 0)
+               (i32.add (@char "0") (i32.wrap_i64 (local.get $n))))))
+      (local.get $d)
+      (local.get $nd)
+      ;; the value is now (n * 10^z) * 10^(r - k)
+      (i32.sub (i32.add (local.get $nd) (i32.add (local.get $z) (local.get $r)))
+         (i32.add (local.get $k) (i32.const 1))))
+
+   ;; Lay out the digits d0.d1d2... * 10^e (with d0 <> 0, or d = "0" and
+   ;; e = 0), padded with zeros, as %e, %f or %g would with precision
+   ;; prec. For %e and %g, the digits must already be rounded to the
+   ;; right number of significant digits; for %f, at 10^-prec.
+   (func $layout
+      (param $d (ref $bytes)) (param $nd i32) (param $e i32)
+      (param $sign i32) (param $conversion i32) (param $prec i32)
+      (param $uppercase i32)
+      (result (ref $bytes))
+      (local $s (ref null $bytes))
+      (local $i i32) (local $j i32) (local $len i32)
+      (local $a i32) (local $n i32)
+      (if (i32.eq (local.get $conversion) (i32.const 2))
+         (then
+            ;; %g: no trailing zeros
+            (loop $strip
+               (if (i32.gt_u (local.get $nd) (i32.const 1))
+                  (then
+                     (if (i32.eq
+                            (array.get_u $bytes (local.get $d)
+                               (i32.sub (local.get $nd) (i32.const 1)))
+                            (@char "0"))
+                        (then
+                           (local.set $nd
+                              (i32.sub (local.get $nd) (i32.const 1)))
+                           (br $strip))))))
+            (if (i32.or (i32.lt_s (local.get $e) (i32.const -4))
+                   (i32.ge_s (local.get $e)
+                      (select (local.get $prec) (i32.const 1)
+                         (local.get $prec))))
+               (then
+                  (local.set $conversion (i32.const 0))
+                  (local.set $prec (i32.sub (local.get $nd) (i32.const 1))))
+               (else
+                  (local.set $conversion (i32.const 1))
+                  (local.set $prec
+                     (i32.sub (local.get $nd)
+                        (i32.add (local.get $e) (i32.const 1))))
+                  (if (i32.lt_s (local.get $prec) (i32.const 0))
+                     (then (local.set $prec (i32.const 0))))))))
+      (local.set $len
+         (i32.add (i32.ne (local.get $sign) (i32.const 0))
+            (select (i32.add (local.get $prec) (i32.const 1)) (i32.const 0)
+               (local.get $prec))))
+      (if (local.get $conversion)
+         (then
+            ;; %f: digits from 10^max(e,0) down to 10^-prec
+            (local.set $j
+               (select (local.get $e) (i32.const 0)
+                  (i32.gt_s (local.get $e) (i32.const 0))))
+            (local.set $len
+               (i32.add (local.get $len) (i32.add (local.get $j) (i32.const 1))))
+            (local.set $s (array.new $bytes (@char "0") (local.get $len)))
+            (if (local.get $sign)
+               (then
+                  (array.set $bytes (local.get $s) (i32.const 0)
+                     (local.get $sign))
+                  (local.set $i (i32.const 1))))
+            ;; position of 10^0 in s
+            (local.set $a (i32.add (local.get $i) (local.get $j)))
+            (if (local.get $prec)
+               (then
+                  (array.set $bytes (local.get $s)
+                     (i32.add (local.get $a) (i32.const 1)) (@char "."))))
+            ;; digit d[n] stands for 10^(e - n)
+            (loop $write
+               (if (i32.lt_u (local.get $n) (local.get $nd))
+                  (then
+                     (local.set $j (i32.sub (local.get $e) (local.get $n)))
+                     (if (i32.ge_s (local.get $j) (i32.sub (i32.const 0) (local.get $prec)))
+                        (then
+                           (array.set $bytes (local.get $s)
+                              (i32.add (i32.sub (local.get $a) (local.get $j))
+                                 (i32.lt_s (local.get $j) (i32.const 0)))
+                              (array.get_u $bytes (local.get $d) (local.get $n)))
+                           (local.set $n (i32.add (local.get $n) (i32.const 1)))
+                           (br $write)))))))
+         (else
+            ;; %e
+            (local.set $n
+               (select (i32.sub (i32.const 0) (local.get $e)) (local.get $e)
+                  (i32.lt_s (local.get $e) (i32.const 0))))
+            (local.set $len
+               (i32.add (local.get $len)
+                  (select (i32.const 6) (i32.const 5)
+                     (i32.ge_u (local.get $n) (i32.const 100)))))
+            (local.set $s (array.new $bytes (@char "0") (local.get $len)))
+            (if (local.get $sign)
+               (then
+                  (array.set $bytes (local.get $s) (i32.const 0)
+                     (local.get $sign))
+                  (local.set $i (i32.const 1))))
+            (array.set $bytes (local.get $s) (local.get $i)
+               (array.get_u $bytes (local.get $d) (i32.const 0)))
+            (if (local.get $prec)
+               (then
+                  (array.set $bytes (local.get $s)
+                     (i32.add (local.get $i) (i32.const 1)) (@char "."))
+                  (local.set $j (i32.const 1))
+                  (loop $write
+                     (if (i32.lt_u (local.get $j)
+                            (select (local.get $nd)
+                               (i32.add (local.get $prec) (i32.const 1))
+                               (i32.le_u (local.get $nd) (local.get $prec))))
+                        (then
+                           (array.set $bytes (local.get $s)
+                              (i32.add (local.get $i)
+                                 (i32.add (local.get $j) (i32.const 1)))
+                              (array.get_u $bytes (local.get $d) (local.get $j)))
+                           (local.set $j (i32.add (local.get $j) (i32.const 1)))
+                           (br $write))))))
+            ;; exponent, at least two digits
+            (local.set $i (i32.sub (local.get $len) (i32.const 1)))
+            (loop $exp
+               (array.set $bytes (local.get $s) (local.get $i)
+                  (i32.add (@char "0") (i32.rem_u (local.get $n) (i32.const 10))))
+               (local.set $n (i32.div_u (local.get $n) (i32.const 10)))
+               (local.set $i (i32.sub (local.get $i) (i32.const 1)))
+               (br_if $exp (local.get $n)))
+            (local.set $i
+               (i32.sub (local.get $len)
+                  (select (i32.const 5) (i32.const 4)
+                     (i32.ge_s (i32.sub (local.get $len) (local.get $i))
+                        (i32.const 4)))))
+            (array.set $bytes (local.get $s) (local.get $i)
+               (select (@char "E") (@char "e") (local.get $uppercase)))
+            (array.set $bytes (local.get $s) (i32.add (local.get $i) (i32.const 1))
+               (select (@char "-") (@char "+")
+                  (i32.lt_s (local.get $e) (i32.const 0))))))
+      (ref.as_non_null (local.get $s)))
+
+   ;; The sign character of f: '-', or '+' / ' ' for formats "%+" / "% ",
+   ;; or 0 for none
+   (func $sign_char (param $f f64) (param $style i32) (result i32)
+      (if (i64.lt_s (i64.reinterpret_f64 (local.get $f)) (i64.const 0))
+         (then (return (@char "-"))))
+      (select (@char "+")
+         (select (@char " ") (i32.const 0)
+            (i32.eq (local.get $style) (i32.const 2)))
+         (i32.eq (local.get $style) (i32.const 1))))
+
    (global $inf_chars (ref $chars)
       (array.new_fixed $chars 3 (@char "i") (@char "n") (@char "f")))
+
+   ;; Format x (finite, >= 0) using integer arithmetic, if its exact
+   ;; decimal expansion is short enough
+   (func $format_exact
+      (param $x f64) (param $sign i32) (param $conversion i32)
+      (param $prec i32) (param $uppercase i32)
+      (result (ref null $bytes))
+      (local $n i64) (local $k i32) (local $ok i32)
+      (call $exact_decimal (local.get $x))
+      (local.set $ok)
+      (local.set $k)
+      (local.set $n)
+      (if (i32.eqz (local.get $ok)) (then (return (ref.null $bytes))))
+      (call $exact_digits
+         (local.get $n) (local.get $k) (local.get $conversion) (local.get $prec))
+      (local.get $sign) (local.get $conversion) (local.get $prec)
+      (local.get $uppercase)
+      (call $layout))
 
 (@if $wasi
 (@then
    (func (export "caml_format_float")
       (param $vfmt (ref eq)) (param $arg (ref eq)) (result (ref eq))
-      (local $fmt (ref $bytes)) (local $res (ref $bytes))
+      (local $fmt (ref $bytes)) (local $res (ref null $bytes))
       (local $d f64)
       (local $buffer i32) (local $out_buffer i32)
       (local $fmt_len i32) (local $avail i32) (local $len i32)
+      (local $sign_style i32) (local $precision i32)
+      (local $conversion i32) (local $uppercase i32)
       (local.set $fmt (ref.cast (ref $bytes) (local.get $vfmt)))
       (local.set $d
          (struct.get $float 0 (ref.cast (ref $float) (local.get $arg))))
+      (call $parse_format (local.get $fmt))
+      (local.set $uppercase)
+      (local.set $conversion)
+      (local.set $precision)
+      (local.set $sign_style)
+      (if (i32.and (i32.ge_s (local.get $conversion) (i32.const 0))
+             (f64.eq (f64.sub (local.get $d) (local.get $d)) (f64.const 0)))
+         (then
+            (local.set $res
+               (call $format_exact (f64.abs (local.get $d))
+                  (call $sign_char (local.get $d) (local.get $sign_style))
+                  (local.get $conversion) (local.get $precision)
+                  (local.get $uppercase)))
+            (if (ref.is_null (local.get $res))
+               (then)
+               (else (return (ref.as_non_null (local.get $res)))))))
       (local.set $buffer (call $get_buffer))
       (local.set $fmt_len (array.len (local.get $fmt)))
       (call $blit_string_to_memory (local.get $buffer) (local.get $fmt))
@@ -317,90 +690,180 @@
       (if (i32.ge_u (local.get $len) (local.get $avail))
          (then
             (call $free (local.get $out_buffer))))
-      (local.get $res)
+      (ref.as_non_null (local.get $res))
   )
 )
 (@else
+   ;; Is x (finite, > 0) halfway between two multiples of 10^-k, that is,
+   ;; is 2 * x * 10^k an odd integer?
+   (func $is_tie (param $x f64) (param $k i32) (result i32)
+      (local $m i64) (local $e i32)
+      (call $decompose (local.get $x))
+      (local.set $e)
+      (local.set $m)
+      ;; 2 * x * 10^k = m * 5^k * 2^(e + 1 + k), with m odd
+      (if (i32.add (local.get $e) (i32.add (local.get $k) (i32.const 1)))
+         (then (return (i32.const 0))))
+      (if (i32.ge_s (local.get $k) (i32.const 0))
+         (then (return (i32.const 1))))
+      ;; m must be a multiple of 5^-k; m < 2^53 < 5^23
+      (local.set $k (i32.sub (i32.const 0) (local.get $k)))
+      (if (i32.gt_u (local.get $k) (i32.const 22))
+         (then (return (i32.const 0))))
+      (i64.eqz
+         (i64.rem_u (local.get $m)
+            (array.get $int64s (global.get $pow5) (local.get $k)))))
+
+   ;; toFixed and toExponential round ties away from zero, while C
+   ;; rounds them to even. The digit s[i] stands for 10^-k: on a tie, it
+   ;; is one too many iff it is odd.
+   (func $round_half_even
+      (param $s (ref $bytes)) (param $i i32) (param $x f64) (param $k i32)
+      (local $c i32)
+      (local.set $c (array.get_u $bytes (local.get $s) (local.get $i)))
+      (if (i32.and (local.get $c) (i32.const 1)) ;; odd digit
+         (then
+            (if (call $is_tie (local.get $x) (local.get $k))
+               (then
+                  (array.set $bytes (local.get $s) (local.get $i)
+                     (i32.sub (local.get $c) (i32.const 1))))))))
+
+   ;; Format x (finite, > 0) using JavaScript's toExponential or toFixed
+   (func $format_js
+      (param $x f64) (param $sign i32) (param $conversion i32)
+      (param $prec i32) (param $uppercase i32)
+      (result (ref $bytes))
+      (local $s (ref $bytes)) (local $r (ref $bytes))
+      (local $len i32) (local $i i32) (local $j i32) (local $e i32)
+      (local $neg i32)
+      (if (i32.eq (local.get $conversion) (i32.const 1))
+         (then
+            ;; "ddd.ddd"
+            (local.set $s
+               (call $bytes_of_jsstring
+                  (call $format_float
+                     (local.get $x) (local.get $prec) (i32.const 1))))
+            (local.set $len (array.len (local.get $s)))
+            (call $round_half_even (local.get $s)
+               (i32.sub (local.get $len) (i32.const 1))
+               (local.get $x) (local.get $prec))
+            (if (i32.eqz (local.get $sign)) (then (return (local.get $s))))
+            (local.set $r
+               (array.new $bytes (local.get $sign)
+                  (i32.add (local.get $len) (i32.const 1))))
+            (array.copy $bytes $bytes
+               (local.get $r) (i32.const 1) (local.get $s) (i32.const 0)
+               (local.get $len))
+            (return (local.get $r))))
+      ;; "d.ddde+x" or "de+x", with prec + 1 digits
+      (if (i32.eq (local.get $conversion) (i32.const 2))
+         (then
+            (local.set $prec
+               (i32.sub
+                  (select (local.get $prec) (i32.const 1) (local.get $prec))
+                  (i32.const 1)))))
+      (local.set $s
+         (call $bytes_of_jsstring
+            (call $format_float (local.get $x) (local.get $prec) (i32.const 0))))
+      (local.set $len (array.len (local.get $s)))
+      (local.set $j (i32.const 1))
+      (loop $find_exp
+         (if (i32.ne (array.get_u $bytes (local.get $s) (local.get $j))
+                (@char "e"))
+            (then
+               (local.set $j (i32.add (local.get $j) (i32.const 1)))
+               (br $find_exp))))
+      (local.set $neg
+         (i32.eq
+            (array.get_u $bytes (local.get $s)
+               (i32.add (local.get $j) (i32.const 1)))
+            (@char "-")))
+      (local.set $i (i32.add (local.get $j) (i32.const 2)))
+      (loop $exp
+         (if (i32.lt_u (local.get $i) (local.get $len))
+            (then
+               (local.set $e
+                  (i32.add (i32.mul (local.get $e) (i32.const 10))
+                     (i32.sub (array.get_u $bytes (local.get $s) (local.get $i))
+                        (@char "0"))))
+               (local.set $i (i32.add (local.get $i) (i32.const 1)))
+               (br $exp))))
+      (if (local.get $neg)
+         (then (local.set $e (i32.sub (i32.const 0) (local.get $e)))))
+      ;; remove the decimal point, leaving the digits in s[0..prec]
+      (if (local.get $prec)
+         (then
+            (array.copy $bytes $bytes
+               (local.get $s) (i32.const 1) (local.get $s) (i32.const 2)
+               (local.get $prec))))
+      (call $round_half_even (local.get $s) (local.get $prec)
+         (local.get $x) (i32.sub (local.get $prec) (local.get $e)))
+      (call $layout (local.get $s) (i32.add (local.get $prec) (i32.const 1))
+         (local.get $e) (local.get $sign) (local.get $conversion)
+         (select (local.get $prec) (i32.add (local.get $prec) (i32.const 1))
+            (i32.eqz (local.get $conversion)))
+         (local.get $uppercase)))
+
    (func (export "caml_format_float")
       (param $vfmt (ref eq)) (param $arg (ref eq)) (result (ref eq))
-      (local $f f64) (local $b i64)
+      (local $f f64)
       (local $sign_style i32) (local $precision i32)
       (local $conversion i32) (local $uppercase i32)
-      (local $negative i32)
-      (local $exp i32) (local $m i64)
+      (local $sign i32)
       (local $i i32) (local $len i32) (local $c i32)
       (local $s (ref $bytes)) (local $txt (ref $chars))
-      (local $num externref)
+      (local $res (ref null $bytes))
       (local.set $f (struct.get $float 0 (ref.cast (ref $float) (local.get $arg))))
-      (local.set $b (i64.reinterpret_f64 (local.get $f)))
       (call $parse_format (ref.cast (ref $bytes) (local.get $vfmt)))
       (local.set $uppercase)
       (local.set $conversion)
       (local.set $precision)
       (local.set $sign_style)
-      (local.set $negative
-         (i32.wrap_i64 (i64.shr_u (local.get $b) (i64.const 63))))
-      (local.set $i
-         (i32.or (local.get $negative)
-                 (i32.ne (local.get $sign_style) (i32.const 0))))
-      (local.set $s
-         (block $sign (result (ref $bytes))
-            (local.set $exp
-                (i32.and (i32.wrap_i64 (i64.shr_u (local.get $b) (i64.const 52)))
-                         (i32.const 0x7FF)))
-            (if (i32.eq (local.get $exp) (i32.const 0x7FF))
-               (then
-                  (local.set $m (i64.shl (local.get $b) (i64.const 12)))
-                  (local.set $txt
-                     (if (result (ref $chars)) (i64.eqz (local.get $m))
-                        (then
-                           (global.get $inf_chars))
-                        (else
-                           (local.set $negative (i32.const 0))
-                           (local.set $i
-                              (i32.ne (local.get $sign_style) (i32.const 0)))
-                           (global.get $nan_chars))))
-                  (local.set $len (array.len (local.get $txt)))
-                  (local.set $s
-                     (array.new $bytes (i32.const 0)
-                        (i32.add (local.get $i) (local.get $len))))
-                  (array.copy $bytes $chars
-                     (local.get $s) (local.get $i) (local.get $txt) (i32.const 0)
-                     (local.get $len))
-                  (br $sign (local.get $s))))
-            (local.set $num
-               (call $format_float
-                  (local.get $precision) (local.get $conversion)
-                  (local.get $i)
-                  (f64.abs (local.get $f))))
-            (local.set $s (call $bytes_of_jsstring (local.get $num)))
-            (br $sign (local.get $s))))
-      (if (local.get $negative)
+      (if (i32.lt_s (local.get $conversion) (i32.const 0))
+         (then (call $caml_invalid_argument (global.get $format_error))))
+      (local.set $sign (call $sign_char (local.get $f) (local.get $sign_style)))
+      (if (f64.eq (f64.sub (local.get $f) (local.get $f)) (f64.const 0))
          (then
-            (array.set $bytes (local.get $s) (i32.const 0) (@char "-")))
-         (else
-            (if (local.get $sign_style)
+            (local.set $res
+               (call $format_exact (f64.abs (local.get $f)) (local.get $sign)
+                  (local.get $conversion) (local.get $precision)
+                  (local.get $uppercase)))
+            (if (ref.is_null (local.get $res))
                (then
-                  (if (i32.eq (local.get $sign_style) (i32.const 1))
-                     (then
-                        (array.set $bytes (local.get $s) (i32.const 0)
-                           (@char "+")))
-                     (else
-                        (array.set $bytes (local.get $s) (i32.const 0)
-                           (@char " "))))))))
+                  (return
+                     (call $format_js (f64.abs (local.get $f)) (local.get $sign)
+                        (local.get $conversion) (local.get $precision)
+                        (local.get $uppercase))))
+               (else
+                  (return (ref.as_non_null (local.get $res)))))))
+      ;; infinity or nan
+      (local.set $txt
+         (if (result (ref $chars)) (f64.eq (local.get $f) (local.get $f))
+            (then
+               (global.get $inf_chars))
+            (else
+               ;; no minus sign for nan
+               (local.set $sign
+                  (call $sign_char (f64.abs (local.get $f))
+                     (local.get $sign_style)))
+               (global.get $nan_chars))))
+      (local.set $i (i32.ne (local.get $sign) (i32.const 0)))
+      (local.set $len (array.len (local.get $txt)))
+      (local.set $s
+         (array.new $bytes (local.get $sign)
+            (i32.add (local.get $i) (local.get $len))))
+      (array.copy $bytes $chars
+         (local.get $s) (local.get $i) (local.get $txt) (i32.const 0)
+         (local.get $len))
       (if (local.get $uppercase)
          (then
-            (local.set $i (i32.const 0))
-            (local.set $len (array.len (local.get $s)))
             (loop $uppercase
                (local.set $c (array.get_u $bytes (local.get $s) (local.get $i)))
-               (if (i32.lt_u (i32.sub (local.get $c) (@char "a"))
-                             (i32.const 26))
-                  (then
-                     (array.set $bytes (local.get $s) (local.get $i)
-                        (i32.sub (local.get $c) (i32.const 32)))))
+               (array.set $bytes (local.get $s) (local.get $i)
+                  (i32.sub (local.get $c) (i32.const 32)))
                (local.set $i (i32.add (local.get $i) (i32.const 1)))
-               (br_if $uppercase (i32.lt_u (local.get $i) (local.get $len))))))
+               (br_if $uppercase
+                  (i32.lt_u (local.get $i) (array.len (local.get $s)))))))
       (local.get $s))
 ))
 
