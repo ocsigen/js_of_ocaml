@@ -237,7 +237,11 @@ module Domain = struct
           (Array.to_list t)
 end
 
-let update_deps st { blocks; _ } =
+(* The arithmetic operations which may overflow: their result is
+   normalized when the range analysis proves that they do not *)
+let may_overflow_prim = Int_range.may_overflow_prim
+
+let update_deps ~int_range st { blocks; _ } =
   let add_dep st x y = Var.Tbl.set st.deps y (x :: Var.Tbl.get st.deps y) in
   Addr.Map.iter
     (fun _ block ->
@@ -245,19 +249,18 @@ let update_deps st { blocks; _ } =
           match i with
           | Let (x, Block (_, lst, _, _, _)) ->
               Array.iter ~f:(fun y -> add_dep st x y) lst
-          | Let
-              ( x
-              , Prim
-                  ( Extern
-                      ( ( "%int_and"
-                        | "%int_or"
-                        | "%int_xor"
-                        | "caml_ba_get_1"
-                        | "caml_ba_get_2"
-                        | "caml_ba_get_3"
-                        | "caml_ba_get_generic" )
-                      , _ )
-                  , lst ) ) ->
+          | Let (x, Prim (Extern (name, _), lst))
+            when (int_range && may_overflow_prim name)
+                 ||
+                 match name with
+                 | "%int_and"
+                 | "%int_or"
+                 | "%int_xor"
+                 | "caml_ba_get_1"
+                 | "caml_ba_get_2"
+                 | "caml_ba_get_3"
+                 | "caml_ba_get_generic" -> true
+                 | _ -> false ->
               (* The return type of these primitives depend on the input type *)
               List.iter
                 ~f:(fun p ->
@@ -314,6 +317,7 @@ type st =
   ; boxed_function_parameters : Var.ISet.t
   ; parameter_type_hints : typ Var.Hashtbl.t
   ; fun_info : Call_graph_analysis.t
+  ; int_ranges : Int_range.t option
   }
 
 let rec constant_type (c : constant) =
@@ -472,66 +476,87 @@ let propagate st approx x : Domain.t =
       | Prim (Array_get _, _) -> Top
       | Prim ((Vectlength _ | Not | IsInt _ | Eq _ | Neq _ | Lt | Le | Ult), _) ->
           Int Normalized
+      | Prim (Extern (prim, hint), args) when may_overflow_prim prim -> (
+          (* The range analysis finds the operations which cannot overflow:
+             their result is normalized when their operands are, that is,
+             unless an operand is itself an unnormalized result. The
+             operands of a division are normalized anyway. *)
+          let t = prim_type ~st ~approx prim hint args in
+          match t, st.int_ranges with
+          | Int Unnormalized, Some r
+            when Int_range.cannot_overflow r x
+                 && ((match prim with
+                       | "%int_div" | "%direct_int_div" -> true
+                       | _ -> false)
+                    || List.for_all
+                         ~f:(fun a ->
+                           match arg_type ~approx a with
+                           | Int Unnormalized -> false
+                           | _ -> true)
+                         args) -> Int Normalized
+          | _ -> t)
+      | Prim (Extern (("%int_lsr" as prim), hint), args) -> (
+          (* The range analysis only finds a range for the result when the
+             shift amount cannot be 0 or the shifted integer is
+             nonnegative: the result is then normalized, whatever the
+             operands *)
+          match prim_type ~st ~approx prim hint args, st.int_ranges with
+          | Int Unnormalized, Some r when Int_range.cannot_overflow r x -> Int Normalized
+          | t, _ -> t)
       | Prim (Extern (prim, hint), args) -> prim_type ~st ~approx prim hint args
       | Special _ -> Top
       | Apply { f; args; _ } -> (
-          match Var.Tbl.get st.global_flow_info.info_approximation f with
-          | Values { known; others } ->
-              Domain.join_set
-                ~others
-                (fun g ->
-                  let g, cont =
-                    Global_flow.called_version st.global_flow_info ~call:x g
-                  in
-                  match st.global_flow_state.defs.(Var.idx g) with
-                  | Expr (Closure _) when cont ->
-                      (* Double translation: the result is passed to a
-                         continuation *)
-                      Top
-                  | Expr (Closure (params, _, _))
-                    when List.length args = List.length params ->
-                      let res =
-                        Domain.join_set
-                          (fun y ->
-                            match st.global_flow_state.defs.(Var.idx y) with
-                            | Expr
-                                (Prim
-                                   ( Extern ("caml_ba_create", _)
-                                   , [ Pv kind; Pv layout; _ ] )) -> (
-                                let m =
-                                  List.fold_left2
-                                    ~f:(fun m p a -> Var.Map.add p a m)
-                                    ~init:Var.Map.empty
-                                    params
-                                    args
-                                in
-                                try
-                                  match
-                                    ( st.global_flow_state.defs.(Var.idx
-                                                                   (Var.Map.find kind m))
-                                    , st.global_flow_state.defs.(Var.idx
-                                                                   (Var.Map.find layout m))
-                                    )
-                                  with
-                                  | ( Expr (Constant (Int kind))
-                                    , Expr (Constant (Int layout)) ) ->
-                                      Bigarray
-                                        (Bigarray.make
-                                           ~kind:(Targetint.to_int_exn kind)
-                                           ~layout:(Targetint.to_int_exn layout))
-                                  | _ -> raise Not_found
-                                with Not_found -> Var.Tbl.get approx y)
-                            | _ -> Var.Tbl.get approx y)
-                          (Var.Map.find g st.global_flow_state.return_values)
-                      in
-                      if can_unbox_return_value st.fun_info g then res else Domain.box res
-                  | Expr (Closure (_, _, _)) ->
-                      (* The function is partially applied or over applied *)
-                      Top
-                  | Expr (Block _) -> Bot
-                  | Phi _ | Expr _ -> assert false)
-                known
-          | Top -> Top))
+          match
+            Global_flow.call_results
+              st.global_flow_state
+              st.global_flow_info
+              ~call:x
+              f
+              ~nargs:(List.length args)
+          with
+          | None -> Top
+          | Some l ->
+              List.fold_left
+                ~f:(fun acc (g, params, returned) ->
+                  Domain.join
+                    acc
+                    (let res =
+                       Domain.join_set
+                         (fun y ->
+                           match st.global_flow_state.defs.(Var.idx y) with
+                           | Expr
+                               (Prim
+                                  (Extern ("caml_ba_create", _), [ Pv kind; Pv layout; _ ]))
+                             -> (
+                               let m =
+                                 List.fold_left2
+                                   ~f:(fun m p a -> Var.Map.add p a m)
+                                   ~init:Var.Map.empty
+                                   params
+                                   args
+                               in
+                               try
+                                 match
+                                   ( st.global_flow_state.defs.(Var.idx
+                                                                  (Var.Map.find kind m))
+                                   , st.global_flow_state.defs.(Var.idx
+                                                                  (Var.Map.find layout m))
+                                   )
+                                 with
+                                 | ( Expr (Constant (Int kind))
+                                   , Expr (Constant (Int layout)) ) ->
+                                     Bigarray
+                                       (Bigarray.make
+                                          ~kind:(Targetint.to_int_exn kind)
+                                          ~layout:(Targetint.to_int_exn layout))
+                                 | _ -> raise Not_found
+                               with Not_found -> Var.Tbl.get approx y)
+                           | _ -> Var.Tbl.get approx y)
+                         returned
+                     in
+                     if can_unbox_return_value st.fun_info g then res else Domain.box res))
+                ~init:Bot
+                l))
 
 module G = Dgraph.Make_Imperative (Var) (Var.ISet) (Var.Tbl)
 module Solver = G.Solver (Domain)
@@ -693,9 +718,9 @@ type t =
   ; return_types : typ Var.Hashtbl.t
   }
 
-let f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinel p =
+let f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinel ~int_ranges p =
   let t = Timer.make () in
-  update_deps global_flow_state p;
+  update_deps ~int_range:(Option.is_some int_ranges) global_flow_state p;
   let boxed_function_parameters = mark_boxed_function_parameters ~fun_info p in
   let parameter_type_hints = collect_parameter_type_hints p in
   let st =
@@ -704,6 +729,7 @@ let f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinel p =
     ; boxed_function_parameters
     ; parameter_type_hints
     ; fun_info
+    ; int_ranges
     }
   in
   let types = solver st in

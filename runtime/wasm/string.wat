@@ -17,10 +17,21 @@
 
 (module
    (import "fail" "caml_bound_error" (func $caml_bound_error))
+   (import "fail" "caml_raise_out_of_memory" (func $caml_raise_out_of_memory))
    (import "fail" "caml_invalid_argument"
       (func $caml_invalid_argument (param $arg (ref eq))))
 
    (type $bytes (array (mut i8)))
+
+   ;; The length of a string is an OCaml integer, hence less than 2^30;
+   ;; the compiler relies on it (see the integer range analysis). This
+   ;; has to be checked when allocating a string whose length is not
+   ;; given by an OCaml integer or bounded by the length of another
+   ;; string.
+   (func $caml_check_string_length (export "caml_check_string_length")
+      (param $len i32)
+      (if (i32.gt_u (local.get $len) (i32.const 0x3fffffff))
+         (then (call $caml_raise_out_of_memory))))
 
    (export "caml_bytes_equal" (func $caml_string_equal))
    (func $caml_string_equal (export "caml_string_equal")
@@ -468,6 +479,8 @@
       (local.set $s2 (ref.cast (ref $bytes) (local.get $vs2)))
       (local.set $l1 (array.len (local.get $s1)))
       (local.set $l2 (array.len (local.get $s2)))
+      (call $caml_check_string_length
+         (i32.add (local.get $l1) (local.get $l2)))
       (local.set $s
          (array.new $bytes (i32.const 0)
             (i32.add (local.get $l1) (local.get $l2))))
