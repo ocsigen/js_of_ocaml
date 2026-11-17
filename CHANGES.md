@@ -36,6 +36,8 @@
 * Runtime/Wasm: compute `mod_float` in Wasm rather than calling JavaScript (#2629)
 * Compiler/Wasm: Binaryen is now optional; without `wasm-opt`, the generated
   code is not optimized and a `missing-wasm-opt` warning is emitted (#2571)
+* Compiler/JS: with OCaml 5.6 bytecode hints, access bigarrays of known kind
+  and layout directly (#2628)
 
 ## Bug fixes
 * Runtime: accurate `Float.erf` and `Float.erfc` (ported from fdlibm), instead

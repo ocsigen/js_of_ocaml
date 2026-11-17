@@ -421,6 +421,39 @@ module Hints = struct
     match Int.Hashtbl.find_opt t.hints pc with
     | Some (Hint_closures l) -> Some l
     | _ -> None
+
+  (* The primitive called by a C_CALL instruction. With JavaScript, when the
+     kind and layout of a bigarray are known and its elements are stored as is
+     in its typed array, it is accessed by a primitive specialized to the
+     layout. *)
+  let extern t pc prim : Code.prim =
+    let hint = find_ccall_opt t pc in
+    match Config.target (), hint with
+    | `JavaScript, Some (Hint_bigarray { unsafe; kind; layout }) -> (
+        match kind, String.drop_prefix ~prefix:"caml_ba_" prim with
+        | (Float16 | Int64 | Complex32 | Complex64), _ -> Extern (prim, hint)
+        | ( ( Float32
+            | Float32_t
+            | Float64
+            | Int8_signed
+            | Int8_unsigned
+            | Int16_signed
+            | Int16_unsigned
+            | Int32
+            | Int
+            | Nativeint )
+          , Some (("get_1" | "get_2" | "get_3" | "set_1" | "set_2" | "set_3") as op) ) ->
+            Extern
+              ( Printf.sprintf
+                  "caml_ba_%s_%s%s"
+                  (match layout with
+                  | C -> "c"
+                  | Fortran -> "fortran")
+                  (if unsafe then "unsafe_" else "")
+                  op
+              , None )
+        | _ -> Extern (prim, hint))
+    | _ -> Extern (prim, hint)
 end
 
 (* Block analysis *)
@@ -2295,7 +2328,7 @@ and compile infos pc state (instrs : instr list) =
                       | Int32 -> prim_of_ext prim
                       | Int64 -> Extern (prim, None), y, z)
                   | _ -> Extern (prim, None), y, z)
-              | _ -> Extern (prim, Hints.find_ccall_opt infos.hints pc), y, z)
+              | _ -> Hints.extern infos.hints pc prim, y, z)
         in
         compile
           infos
@@ -2340,11 +2373,7 @@ and compile infos pc state (instrs : instr list) =
           infos
           (pc + 2)
           (State.pop 2 state)
-          (Let
-             ( x
-             , Prim
-                 (Extern (prim, Hints.find_ccall_opt infos.hints pc), [ Pv y; Pv z; Pv t ])
-             )
+          (Let (x, Prim (Hints.extern infos.hints pc prim, [ Pv y; Pv z; Pv t ]))
           :: instrs)
     | C_CALL4 ->
         let nargs = 4 in
@@ -2366,10 +2395,7 @@ and compile infos pc state (instrs : instr list) =
           (pc + 2)
           state
           (Let
-             ( x
-             , Prim
-                 ( Extern (prim, Hints.find_ccall_opt infos.hints pc)
-                 , List.map args ~f:(fun x -> Pv x) ) )
+             (x, Prim (Hints.extern infos.hints pc prim, List.map args ~f:(fun x -> Pv x)))
           :: instrs)
     | C_CALL5 ->
         let nargs = 5 in
@@ -2391,10 +2417,7 @@ and compile infos pc state (instrs : instr list) =
           (pc + 2)
           state
           (Let
-             ( x
-             , Prim
-                 ( Extern (prim, Hints.find_ccall_opt infos.hints pc)
-                 , List.map args ~f:(fun x -> Pv x) ) )
+             (x, Prim (Hints.extern infos.hints pc prim, List.map args ~f:(fun x -> Pv x)))
           :: instrs)
     | C_CALLN ->
         let nargs = getu code (pc + 1) in
@@ -2416,10 +2439,7 @@ and compile infos pc state (instrs : instr list) =
           (pc + 3)
           state
           (Let
-             ( x
-             , Prim
-                 ( Extern (prim, Hints.find_ccall_opt infos.hints pc)
-                 , List.map args ~f:(fun x -> Pv x) ) )
+             (x, Prim (Hints.extern infos.hints pc prim, List.map args ~f:(fun x -> Pv x)))
           :: instrs)
     | (CONST0 | CONST1 | CONST2 | CONST3) as cc ->
         let x, state = State.fresh_var state in
