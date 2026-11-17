@@ -32,6 +32,9 @@
   at least as recent (#2620)
 
 ## Bug fixes
+* Toplevel: `js_of_ocaml-toplevel` depends on `js_of_ocaml-ppx`, so that
+  `js_of_ocaml-toplevel.worker_lwt_client` is no longer silently skipped when
+  the ppx is not installed first (#2627)
 * Compiler/Wasm: fix comparisons with the result of `x lsr n` when `x` is
   negative and `n` is not a constant and is zero (#2622)
 * Compiler: fix `build-fs` output embedding large binary files, which called
