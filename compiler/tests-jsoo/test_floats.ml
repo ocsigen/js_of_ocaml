@@ -236,6 +236,12 @@ let%expect_test "of_string" =
   let x = "0x1.1 p-1" in
   print' (fun () -> float_of_string x);
   [%expect {| Failure("float_of_string") |}];
+  let x = "0x1p-+5" in
+  print' (fun () -> float_of_string x);
+  [%expect {| Failure("float_of_string") |}];
+  let x = "0x1p+-5" in
+  print' (fun () -> float_of_string x);
+  [%expect {| Failure("float_of_string") |}];
   let x = " -0x1.1" in
   print' (fun () -> float_of_string x);
   [%expect {| -1.062500 |}];
