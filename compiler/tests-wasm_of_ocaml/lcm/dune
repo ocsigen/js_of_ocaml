@@ -1,0 +1,51 @@
+(tests
+ (names lcm_test)
+ (modes js wasm)
+ (js_of_ocaml
+  (flags :standard --disable optcall --no-inline))
+ (wasm_of_ocaml
+  (flags :standard --no-inline)))
+
+(tests
+ (names raise_before_use)
+ (modes js wasm)
+ ; Without inlining, so that the functions are kept
+ (wasm_of_ocaml
+  (compilation_mode whole_program)
+  (flags :standard --opt 2 --no-inline)))
+
+(tests
+ (names assign)
+ (modes js wasm)
+ ; Without -g, ocamlc turns local references into mutable variables,
+ ; which exercises Assign instructions
+ (ocamlc_flags ())
+ (js_of_ocaml
+  (flags
+   (:standard -w no-missing-debug-event))
+  (link_flags
+   (:standard -w no-missing-debug-event)))
+ (wasm_of_ocaml
+  (flags
+   (:standard --opt 2 -w no-missing-debug-event))
+  (link_flags
+   (:standard -w no-missing-debug-event))))
+
+(tests
+ (names normalize loop_hoist)
+ (modes js wasm)
+ (wasm_of_ocaml
+  (flags :standard --opt 2)))
+
+(tests
+ (names constant_twin dead_path)
+ (modes js wasm)
+ (wasm_of_ocaml
+  (flags :standard --opt 2)))
+
+(tests
+ (names box_once)
+ (modes js wasm)
+ ; Without inlining, so that the closures are kept
+ (wasm_of_ocaml
+  (flags :standard --opt 2 --no-inline)))

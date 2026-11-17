@@ -30,6 +30,8 @@
   `jsoo_create_file` (and a user-defined `globalThis.jsoo_create_file`) takes
   a third argument, set when the content is base64. Such files need a runtime
   at least as recent (#2620)
+* Compiler/Wasm: place number conversions (boxing, tagging) with a Lazy Code
+  Motion pass (`--disable lcm`) (#2479)
 
 ## Bug fixes
 * Toplevel: `js_of_ocaml-toplevel` depends on `js_of_ocaml-ppx`, so that
