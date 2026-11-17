@@ -433,18 +433,12 @@
                         (local.set $c
                            (array.get_u $bytes (local.get $s) (local.get $i)))
                         (local.set $i (i32.add (local.get $i) (i32.const 1)))
-                        (if (i32.eq (local.get $c) (@char "-"))
+                        ;; an optional sign (only one)
+                        (if (i32.or (i32.eq (local.get $c) (@char "-"))
+                               (i32.eq (local.get $c) (@char "+")))
                            (then
-                              (local.set $negative (i32.const 1))
-                              (br_if $error
-                                 (i32.eq (local.get $i) (local.get $len)))
-                              (local.set $c
-                                 (array.get_u $bytes
-                                    (local.get $s) (local.get $i)))
-                              (local.set $i
-                                 (i32.add (local.get $i) (i32.const 1)))))
-                        (if (i32.eq (local.get $c) (@char "+"))
-                           (then
+                              (local.set $negative
+                                 (i32.eq (local.get $c) (@char "-")))
                               (br_if $error
                                  (i32.eq (local.get $i) (local.get $len)))
                               (local.set $c
