@@ -30,6 +30,9 @@
   `jsoo_create_file` (and a user-defined `globalThis.jsoo_create_file`) takes
   a third argument, set when the content is base64. Such files need a runtime
   at least as recent (#2620)
+* Compiler: call known functions stored in blocks (module fields, records
+  of closures) as `M[i](x)` rather than `M[i].call(null, x)`, which
+  prevented V8 from inlining them (#2613)
 
 ## Bug fixes
 * Toplevel: `js_of_ocaml-toplevel` depends on `js_of_ocaml-ppx`, so that

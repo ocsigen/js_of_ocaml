@@ -235,8 +235,8 @@ let%expect_test "direct calls with --effects=double-translation" =
          function f(x){return x + 1 | 0;}
          return [0, 0, f];
         }
-        var M1 = F(), M2 = F(), _e_ = M2[2].call(null, 2);
-        return [0, M1[2].call(null, 1), _e_];
+        var M1 = F(), M2 = F(), _e_ = M2[2](2);
+        return [0, M1[2](1), _e_];
        }
        function f(){
         function f$0(x){return caml_call2(Stdlib_Printf[2], _a_, x);}
@@ -260,8 +260,8 @@ let%expect_test "direct calls with --effects=double-translation" =
        }
        function test4$0(x){
         var F$0 = F(), M1 = F$0(), M2 = F$0();
-        M1[2].call(null, 1);
-        return M2[2].call(null, 2);
+        M1[2](1);
+        return M2[2](2);
        }
        function test4$1(x, cont){
         var F$0 = F(), M1 = F$0(), M2 = F$0();
