@@ -32,6 +32,8 @@
   at least as recent (#2620)
 * Compiler/Wasm: place number conversions (boxing, tagging) with a Lazy Code
   Motion pass (`--disable lcm`), hoisting them out of loops (#2479, #2623)
+* Compiler/Wasm: pass untagged or unboxed the parameters which a function
+  always converts, when all its call sites are known (#2624)
 
 ## Bug fixes
 * Toplevel: `js_of_ocaml-toplevel` depends on `js_of_ocaml-ppx`, so that

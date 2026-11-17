@@ -38,6 +38,11 @@ let[@inline never] step b x =
   if b then last := z;
   Nativeint.mul z z
 
+(* A parameter which is also stored must stay boxed *)
+let[@inline never] keep x =
+  last := x;
+  Nativeint.add x 1n
+
 let[@inline never] pick b x y =
   let z = if b then Nativeint.add x 1n else Nativeint.sub y 1n in
   if Nativeint.compare z 0n > 0 then Some z else None
@@ -56,5 +61,7 @@ let () =
   done;
   assert (!last = 501n);
   assert (!t = 334835500n);
+  assert (keep a.(7) = 8n);
+  assert (!last = 7n);
   assert (pick (Sys.opaque_identity true) 4n 0n = Some 5n);
   assert (pick (Sys.opaque_identity false) 4n 0n = None)
