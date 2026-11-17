@@ -131,6 +131,11 @@ double libc_strtod (const char * buf, char ** end) {
   return strtod(buf, end);
 }
 
+__attribute__((export_name("strtof")))
+float libc_strtof (const char * buf, char ** end) {
+  return strtof(buf, end);
+}
+
 __attribute__((export_name("format_float")))
 int format_float (char * buf, size_t len, const char * fmt, double f) {
   return snprintf(buf, len, fmt, f);
