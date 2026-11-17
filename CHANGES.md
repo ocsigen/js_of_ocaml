@@ -37,6 +37,8 @@
   code is not optimized and a `missing-wasm-opt` warning is emitted (#2571)
 * Compiler/JS: with OCaml 5.6 bytecode hints, access bigarrays of known kind
   and layout directly (#2628)
+* Compiler/JS: with OCaml 5.6 bytecode hints, compare int64 values with
+  dedicated primitives rather than the polymorphic comparison (#2628)
 
 ## Bug fixes
 * Runtime: accurate `Float.erf` and `Float.erfc` (ported from fdlibm), instead

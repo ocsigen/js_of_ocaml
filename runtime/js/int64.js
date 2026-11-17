@@ -48,6 +48,10 @@ class MlInt64 {
     return 0;
   }
 
+  equal(x) {
+    return this.lo === x.lo && this.mi === x.mi && this.hi === x.hi;
+  }
+
   compare(x) {
     var hi = this.hi << 16;
     var xhi = x.hi << 16;
@@ -261,6 +265,32 @@ class MlInt64 {
 //Provides: caml_int64_ult const
 function caml_int64_ult(x, y) {
   return x.ucompare(y) < 0;
+}
+
+//Provides: caml_int64_equal const
+//Version: >= 5.6
+// The comparison operators on int64 values (used with OCaml 5.6 bytecode
+// hints, which tell that the arguments of caml_equal, ... are int64)
+function caml_int64_equal(x, y) {
+  return +x.equal(y);
+}
+
+//Provides: caml_int64_notequal const
+//Version: >= 5.6
+function caml_int64_notequal(x, y) {
+  return +!x.equal(y);
+}
+
+//Provides: caml_int64_lessthan const
+//Version: >= 5.6
+function caml_int64_lessthan(x, y) {
+  return +(x.compare(y) < 0);
+}
+
+//Provides: caml_int64_lessequal const
+//Version: >= 5.6
+function caml_int64_lessequal(x, y) {
+  return +(x.compare(y) <= 0);
 }
 
 //Provides: caml_int64_compare const
