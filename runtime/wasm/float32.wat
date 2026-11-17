@@ -7,9 +7,6 @@
       (func $caml_parse_float (param (ref eq) (ref eq)) (result (ref eq))))
    (import "float" "caml_format_float"
       (func $caml_format_float (param (ref eq)) (param (ref eq)) (result (ref eq))))
-   (import "float" "caml_fma_float"
-      (func $caml_fma_float
-         (param (ref eq) (ref eq) (ref eq)) (result (ref eq))))
    (import "float" "caml_erf_float"
       (func $caml_erf_float (param f64) (result f64)))
    (import "float" "caml_erfc_float"
@@ -259,14 +256,50 @@
    (func (export "caml_erfc_float32_bytecode") (param $x f32) (result f32)
       (f32.demote_f64 (call $caml_erfc_float (f64.promote_f32 (local.get $x)))))
 
+   ;; Rounding a value to a double, then to a float32, can give a different
+   ;; result than rounding it directly to a float32: the first rounding can
+   ;; land exactly halfway between two float32 values. This does not happen
+   ;; if the first rounding is to odd (the double with an odd significand
+   ;; among the two surrounding the value, when it is not representable).
+   ;; Given the double [s] nearest to a value and their difference [err]
+   ;; (value - s), this returns the value rounded to odd.
+   (func $round_odd (param $s f64) (param $err f64) (result f64)
+      (local $b i64)
+      (if (i32.or (f64.eq (local.get $err) (f64.const 0))
+             (i32.or (f64.eq (local.get $s) (f64.const 0))
+                (f64.ne (f64.sub (local.get $s) (local.get $s))
+                   (f64.const 0)))) ;; not finite
+         (then (return (local.get $s))))
+      (local.set $b (i64.reinterpret_f64 (local.get $s)))
+      (if (i32.wrap_i64 (i64.and (local.get $b) (i64.const 1)))
+         (then (return (local.get $s))))
+      ;; move one ulp toward the value: up in magnitude iff err and s have
+      ;; the same sign
+      (f64.reinterpret_i64
+         (select (i64.add (local.get $b) (i64.const 1))
+            (i64.sub (local.get $b) (i64.const 1))
+            (i32.eq (f64.gt (local.get $err) (f64.const 0))
+               (f64.gt (local.get $s) (f64.const 0))))))
+
    (func (export "caml_fma_float32_bytecode")
-      (param $x (ref eq)) (param $y (ref eq)) (param $z (ref eq))
+      (param $vx (ref eq)) (param $vy (ref eq)) (param $vz (ref eq))
       (result (ref eq))
-      (call $caml_float32_of_float
-         (call $caml_fma_float
-            (call $caml_float_of_float32 (local.get $x))
-            (call $caml_float_of_float32 (local.get $y))
-            (call $caml_float_of_float32 (local.get $z)))))
+      (local $p f64) (local $z f64) (local $s f64) (local $b f64)
+      ;; The product of two float32 values is exact as a double; s + err is
+      ;; the exact value of x * y + z (TwoSum)
+      (local.set $p
+         (f64.mul (f64.promote_f32 (call $unbox_float32 (local.get $vx)))
+            (f64.promote_f32 (call $unbox_float32 (local.get $vy)))))
+      (local.set $z (f64.promote_f32 (call $unbox_float32 (local.get $vz))))
+      (local.set $s (f64.add (local.get $p) (local.get $z)))
+      (local.set $b (f64.sub (local.get $s) (local.get $p)))
+      (call $box_float32
+         (f32.demote_f64
+            (call $round_odd (local.get $s)
+               (f64.add
+                  (f64.sub (local.get $p)
+                     (f64.sub (local.get $s) (local.get $b)))
+                  (f64.sub (local.get $z) (local.get $b)))))))
 
    (func (export "caml_ba_uint8_getf32")
       (param $a (ref eq)) (param $i i32) (result f32)
