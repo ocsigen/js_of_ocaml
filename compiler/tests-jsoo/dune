@@ -12,7 +12,7 @@
 
 (library
  (name jsoo_testsuite_oxcaml)
- (modules test_ugeint test_marshal_float32)
+ (modules test_ugeint test_marshal_float32 test_float32_rounding)
  (libraries unix compiler-libs.common js_of_ocaml-compiler)
  (enabled_if %{oxcaml_supported})
  (inline_tests
@@ -58,6 +58,7 @@
    compare_custom
    test_list_of_js_array
    test_marshal_float32
+   test_float32_rounding
    test_md5_large
    test_ugeint
    ugeint_bytecode_probe
