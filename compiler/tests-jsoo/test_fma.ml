@@ -763,3 +763,26 @@ let%expect_test _ =
     ~-.0xf.ffffffffffff8p+1020
     [ ~-.0xf.ffffffffffff8p+1020 ];
   [%expect {| OK! |}]
+
+(* Subnormal results must be rounded only once. Not on native Windows: the
+   OCaml runtime emulates fma there and rounds these results twice. *)
+let%expect_test ("subnormal fma results" [@when not (native && win32)]) =
+  let b = Int64.float_of_bits in
+  fma_test
+    (b 0xbdc38f8bce82c6e8L)
+    (b 0x84135c75b1c70000L)
+    (b 0x81e7ab7f4c83043cL)
+    [ b 0x800bd5bfa38991f3L ];
+  [%expect {| OK! |}];
+  fma_test
+    (b 0x0256087d8733c26fL)
+    (b 0xc0bc2f13e3614af9L)
+    (b 0x032367d800459e3fL)
+    [ b 0x800237a6f909b33fL ];
+  [%expect {| OK! |}];
+  fma_test
+    (b 0x028d1dd49265c400L)
+    (b 0x3f219fed9a50244cL)
+    (b 0x81c0095d57947617L)
+    [ b 0x8002012ba5f5263fL ];
+  [%expect {| OK! |}]

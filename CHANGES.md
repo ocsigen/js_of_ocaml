@@ -44,6 +44,7 @@
 ## Bug fixes
 * Runtime: accurate `Float.erf` and `Float.erfc` (ported from fdlibm), instead
   of an approximation good to 1e-7 only (#2635)
+* Runtime/Wasm: fix `Float.fma` when the result is subnormal (#2632)
 * Runtime: round the float32 results of `fma`, of conversions from int64 and of
   `Float32.of_string` only once (#2632)
 * Runtime/Wasm: parse hexadecimal floats with a subnormal value with a single
