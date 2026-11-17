@@ -620,53 +620,88 @@ function caml_fma_float(x, y, z) {
   return jsoo_dataview.getFloat64(0, true);
 }
 
-//Provides: caml_format_float const
-//Requires: caml_str_repeat, caml_parse_format, caml_finish_formatting
-function caml_format_float(fmt, x) {
-  // Exact decimal expansion through BigInt, for precisions beyond
-  // toFixed/toExponential's limit of 100 and for %f of values >= 1e21
-  function decompose(x) {
-    // x (finite, >= 0) is m * 2^e
-    var dv = new DataView(new ArrayBuffer(8));
-    dv.setFloat64(0, x);
-    var hi = dv.getUint32(0),
-      lo = dv.getUint32(4);
-    var eb = (hi >>> 20) & 0x7ff;
-    var m = (BigInt(hi & 0xfffff) << 32n) | BigInt(lo);
-    if (eb === 0) return [m, -1074];
-    return [m | (1n << 52n), eb - 1075];
+//Provides: caml_float_exact_scaled
+function caml_float_exact_scaled(x, k) {
+  // round_half_even(x * 10^k) as a BigInt, for x finite and >= 0
+  var dv = new DataView(new ArrayBuffer(8));
+  dv.setFloat64(0, x);
+  var hi = dv.getUint32(0),
+    lo = dv.getUint32(4);
+  var eb = (hi >>> 20) & 0x7ff;
+  // x is m * 2^e
+  var m = (BigInt(hi & 0xfffff) << 32n) | BigInt(lo),
+    e = -1074;
+  if (eb !== 0) {
+    m |= 1n << 52n;
+    e = eb - 1075;
   }
-  function exact_scaled(x, k) {
-    // round_half_even(x * 10^k) as a BigInt
-    var d = decompose(x);
-    var num = d[0],
-      den = 1n;
-    if (k >= 0) num *= 10n ** BigInt(k);
-    else den = 10n ** BigInt(-k);
-    if (d[1] >= 0) num <<= BigInt(d[1]);
-    else den <<= BigInt(-d[1]);
-    var q = num / den,
-      r2 = (num % den) * 2n;
-    if (r2 > den || (r2 === den && q & 1n)) q += 1n;
-    return q;
+  var num = m,
+    den = 1n;
+  if (k >= 0) num *= 10n ** BigInt(k);
+  else den = 10n ** BigInt(-k);
+  if (e >= 0) num <<= BigInt(e);
+  else den <<= BigInt(-e);
+  var q = num / den,
+    r2 = (num % den) * 2n;
+  if (r2 > den || (r2 === den && q & 1n)) q += 1n;
+  return q;
+}
+
+//Provides: caml_float_exponent
+// The exponent of the output of toExponential, whose "e" is at index i
+function caml_float_exponent(s, i) {
+  var e = 0;
+  for (var j = i + 2; j < s.length; j++) e = e * 10 + s.charCodeAt(j) - 48;
+  return s.charCodeAt(i + 1) === 45 ? -e : e;
+}
+
+//Provides: caml_float_round_half_even
+// toFixed/toExponential/toPrecision round ties away from zero, while C
+// rounds them to even. The digit s[i] of the decimal expansion of x
+// (finite, > 0) stands for 10^-k: on a tie, it is one too many iff it is
+// odd.
+function caml_float_round_half_even(s, i, x, k) {
+  var c = s.charCodeAt(i);
+  // Rounding x at 10^-k is a tie iff 2 * x * 10^k is an odd integer,
+  // that is, iff y = x * 2^(k+1) is an odd integer (5^k is odd) and,
+  // when k < 0, a multiple of 5^-k. Scaling by a power of two is exact,
+  // so this test is exact. It can only succeed when k >= 22 or when
+  // x * 2^22 is an integer.
+  if (c % 2 === 1 && (k >= 22 || Number.isInteger(x * 4194304))) {
+    var y = x * 2 ** (k + 1);
+    if (y % 2 === 1 && (k >= 0 || y % 5 ** -k === 0))
+      s = s.slice(0, i) + String.fromCharCode(c - 1) + s.slice(i + 1);
   }
-  function exact_fixed(x, prec) {
-    // toFixed, exactly
-    var q = exact_scaled(x, prec).toString();
-    if (prec === 0) return q;
-    if (q.length <= prec) q = caml_str_repeat(prec + 1 - q.length, "0") + q;
-    return q.slice(0, q.length - prec) + "." + q.slice(q.length - prec);
+  return s;
+}
+
+//Provides: caml_float_digits
+//Requires: caml_float_exact_scaled, caml_float_exponent
+//Requires: caml_float_round_half_even
+// The digits of x (finite, >= 0) as x.toFixed(prec) (when fixed is true)
+// or x.toExponential(prec) give them, but with ties rounded to even, as in
+// C. Beyond the precision limit of these functions (100), and for toFixed
+// of values >= 1e21, the decimal expansion is computed exactly with BigInt.
+function caml_float_digits(x, prec, fixed) {
+  var s;
+  if (fixed) {
+    if (prec > 100 || x >= 1e21) {
+      s = caml_float_exact_scaled(x, prec).toString();
+      if (prec === 0) return s;
+      if (s.length <= prec) s = "0".repeat(prec + 1 - s.length) + s;
+      return s.slice(0, s.length - prec) + "." + s.slice(s.length - prec);
+    }
+    s = x.toFixed(prec);
+    return caml_float_round_half_even(s, s.length - 1, x, prec);
   }
-  function exact_exponential(x, prec) {
-    // toExponential, exactly
-    if (x === 0)
-      return (prec > 0 ? "0." + caml_str_repeat(prec, "0") : "0") + "e+0";
+  if (prec > 100) {
+    if (x === 0) return (prec > 0 ? "0." + "0".repeat(prec) : "0") + "e+0";
     var e10 = Math.floor(Math.log10(x));
     for (;;) {
       // we want round(x * 10^(prec - e10)) to have exactly prec + 1
       // digits; the estimate of e10 is off by at most one (and
       // rounding can add a digit), so adjust and retry
-      var s = exact_scaled(x, prec - e10).toString();
+      s = caml_float_exact_scaled(x, prec - e10).toString();
       if (s.length === prec + 1) {
         var m = prec > 0 ? s.charAt(0) + "." + s.slice(1) : s;
         return m + "e" + (e10 < 0 ? "-" : "+") + Math.abs(e10);
@@ -674,37 +709,198 @@ function caml_format_float(fmt, x) {
       e10 += s.length - (prec + 1);
     }
   }
-  // Rounding x at 10^-k is a tie iff 2 * x * 10^k is an odd integer,
-  // that is, iff y = x * 2^(k+1) is an odd integer (5^k is odd) and,
-  // when k < 0, a multiple of 5^-k. Scaling by a power of two is
-  // exact, so this test is exact.
-  function is_tie(x, k) {
-    var y = x * 2 ** (k + 1);
-    return y % 2 === 1 && (k >= 0 || y % 5 ** -k === 0);
+  s = x.toExponential(prec);
+  var i = s.indexOf("e");
+  return caml_float_round_half_even(
+    s,
+    i - 1,
+    x,
+    prec - caml_float_exponent(s, i),
+  );
+}
+
+//Provides: caml_float_pow10 const
+// The powers of ten that are exact floats
+var caml_float_pow10 = [
+  1, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9, 1e10, 1e11, 1e12, 1e13, 1e14,
+  1e15, 1e16, 1e17, 1e18, 1e19, 1e20, 1e21, 1e22,
+];
+
+//Provides: caml_float_layout
+// Lay out the digits ds of d0.d1d2... * 10^e (ds = "0" and e = 0 for zero)
+// as %e, %f or %g would with precision prec. The digits must be rounded
+// at the right position; the trailing zeros may be omitted.
+function caml_float_layout(ds, e, conv, prec) {
+  var nd = ds.length,
+    s;
+  if (conv === "g") {
+    // no trailing zeros
+    while (nd > 1 && ds.charCodeAt(nd - 1) === 48) nd--;
+    if (nd < ds.length) ds = ds.slice(0, nd);
+    if (e < -4 || e >= (prec || 1)) {
+      conv = "e";
+      prec = nd - 1;
+    } else {
+      conv = "f";
+      prec = nd - 1 - e;
+      if (prec < 0) prec = 0;
+    }
   }
-  // toFixed/toExponential round ties away from zero; C rounds them to
-  // even. s is x rounded at 10^-k, the digit at 10^-k being s[i]: on a
-  // tie, that digit is one too many iff it is odd.
-  function round_half_even(s, i, x, k) {
-    var c = s.charCodeAt(i);
-    return c % 2 === 1 && is_tie(x, k)
-      ? s.slice(0, i) + String.fromCharCode(c - 1) + s.slice(i + 1)
-      : s;
+  if (conv === "e") {
+    s = ds.charAt(0);
+    if (prec > 0) {
+      s += "." + ds.slice(1, prec + 1);
+      if (nd <= prec) s += "0".repeat(prec + 1 - nd);
+    }
+    var a = e < 0 ? -e : e;
+    // at least two digits for the exponent
+    return s + (e < 0 ? "e-" : "e+") + (a < 10 ? "0" : "") + a;
   }
-  function toExponential(x, prec) {
-    if (prec > 100) return exact_exponential(x, prec);
-    var s = x.toExponential(prec);
-    var i = s.indexOf("e");
-    return round_half_even(s, i - 1, x, prec - +s.slice(i + 1));
+  // %f
+  if (e >= 0) {
+    s = nd > e ? ds.slice(0, e + 1) : ds + "0".repeat(e + 1 - nd);
+    ds = nd > e + 1 ? ds.slice(e + 1, e + 1 + prec) : "";
+  } else {
+    s = "0";
+    ds = ("0".repeat(-e - 1) + ds).slice(0, prec);
   }
-  function toFixed(x, dp) {
-    if (dp > 100 || x >= 1e21) return exact_fixed(x, dp);
-    var s = x.toFixed(dp);
-    return round_half_even(s, s.length - 1, x, dp);
+  if (prec > 0) s += "." + ds + "0".repeat(prec - ds.length);
+  return s;
+}
+
+//Provides: caml_format_float_abs
+//Requires: caml_float_digits, caml_float_layout, caml_float_pow10
+//Requires: caml_float_exponent, caml_float_round_half_even
+// Format x (finite, >= 0) with conversion conv ("e", "f" or "g") and
+// precision prec
+function caml_format_float_abs(x, conv, prec) {
+  var s;
+  // Exact decimal expansion n * 10^-k, if n < 2^53: integers, and
+  // fractions with few significant bits (where toExponential is slow)
+  var n = -1,
+    k = 0;
+  if (Number.isInteger(x)) {
+    if (x < 9007199254740992) n = x;
+  } else if (Number.isInteger(x * 4194304)) {
+    // x * 2^k is an integer for some k <= 22, and 5^22 < 2^53
+    var p5 = 1;
+    n = x;
+    while (!Number.isInteger(n)) {
+      n *= 2;
+      p5 *= 5;
+      k++;
+    }
+    // exact iff the result is below 2^53
+    n *= p5;
+    if (n >= 9007199254740992) n = -1;
   }
-  var s,
-    f = caml_parse_format(fmt);
-  var prec = f.prec < 0 ? 6 : f.prec;
+  if (n >= 0) {
+    s = "" + n;
+    // decimal exponent of the first digit
+    var e = s.length - 1 - k;
+    // number of digits to drop
+    var r =
+      conv === "f"
+        ? k - prec
+        : s.length - (conv === "e" ? prec + 1 : prec || 1);
+    if (r > 0) {
+      // round n at 10^r, ties to even: these operations are exact
+      // (r <= 22: for %f, r <= k <= 22; for %e and %g, n < 2^53 has at
+      // most 16 digits)
+      var p = caml_float_pow10[r],
+        rem = n % p;
+      n = (n - rem) / p;
+      if (2 * rem > p || (2 * rem === p && n % 2 === 1)) n++;
+      s = "" + n;
+      e = s.length - 1 + r - k;
+    }
+    if (n === 0) e = 0;
+    s = caml_float_layout(s, e, conv, prec);
+  } else if (conv === "f") {
+    s = caml_float_digits(x, prec, true);
+  } else if (conv === "e") {
+    s = caml_float_digits(x, prec, false);
+    // at least two digits for the exponent
+    var j = s.length - 3;
+    if (s.charCodeAt(j) === 101) s = s.slice(0, j + 2) + "0" + s.slice(j + 2);
+  } else {
+    var p = prec || 1;
+    if (p <= 100) {
+      // toPrecision uses the fixed notation, as %g, when the exponent e
+      // is below the precision, but down to -6 rather than -4
+      s = x.toPrecision(p);
+      var e = 0,
+        dot = s.indexOf(".");
+      if (s.charCodeAt(0) === 48) {
+        // 0.000ddd (with x > 0)
+        var i = 2;
+        while (s.charCodeAt(i) === 48) i++;
+        e = 1 - i;
+      } else e = (dot < 0 ? s.length : dot) - 1;
+      if (e < -4 || s.indexOf("e") >= 0) s = undefined;
+      else {
+        s = caml_float_round_half_even(s, s.length - 1, x, p - 1 - e);
+        if (dot >= 0) {
+          // remove trailing zeros
+          var i = s.length - 1;
+          while (s.charCodeAt(i) === 48) i--;
+          if (i === dot) i--;
+          s = s.slice(0, i + 1);
+        }
+      }
+    }
+    if (s === undefined) {
+      s = caml_float_digits(x, p - 1, false);
+      var j = s.indexOf("e");
+      s = caml_float_layout(
+        p > 1 ? s.charAt(0) + s.slice(2, j) : s.charAt(0),
+        caml_float_exponent(s, j),
+        conv,
+        prec,
+      );
+    }
+  }
+  return s;
+}
+
+//Provides: caml_format_float const
+//Requires: caml_parse_format, caml_finish_formatting, caml_format_float_abs
+//Requires: caml_jsbytes_of_string, caml_string_of_jsbytes
+function caml_format_float(fmt, x) {
+  var t = caml_jsbytes_of_string(fmt),
+    s;
+  // Fast path for the formats used by the standard library:
+  // %[+ ][.prec](e|f|g|E|F|G)
+  var i = 1,
+    c = t.charCodeAt(1),
+    style = 0,
+    prec = 6;
+  if (c === 43 || c === 32) {
+    style = c;
+    c = t.charCodeAt(++i);
+  }
+  if (c === 46) {
+    prec = 0;
+    while (((c = t.charCodeAt(++i)), c >= 48 && c <= 57))
+      prec = prec * 10 + c - 48;
+  }
+  var conv = c | 32;
+  if (
+    i === t.length - 1 &&
+    t.charCodeAt(0) === 37 &&
+    (conv === 101 || conv === 102 || conv === 103)
+  ) {
+    var neg = x < 0 || (x === 0 && 1 / x === Number.NEGATIVE_INFINITY);
+    if (neg) x = -x;
+    if (Number.isNaN(x)) s = "nan";
+    else if (!Number.isFinite(x)) s = "inf";
+    else s = caml_format_float_abs(x, String.fromCharCode(conv), prec);
+    if (c < 97) s = s.toUpperCase();
+    if (neg) s = "-" + s;
+    else if (style) s = String.fromCharCode(style) + s;
+    return caml_string_of_jsbytes(s);
+  }
+  var f = caml_parse_format(fmt);
   if (x < 0 || (x === 0 && 1 / x === Number.NEGATIVE_INFINITY)) {
     f.sign = -1;
     x = -x;
@@ -715,50 +911,7 @@ function caml_format_float(fmt, x) {
   } else if (!Number.isFinite(x)) {
     s = "inf";
     f.filler = " ";
-  } else
-    switch (f.conv) {
-      case "e":
-        var s = toExponential(x, prec);
-        // exponent should be at least two digits
-        var i = s.length;
-        if (s.charAt(i - 3) === "e")
-          s = s.slice(0, i - 1) + "0" + s.slice(i - 1);
-        break;
-      case "f":
-        s = toFixed(x, prec);
-        break;
-      case "g":
-        prec = prec ? prec : 1;
-        s = toExponential(x, prec - 1);
-        var j = s.indexOf("e");
-        var exp = +s.slice(j + 1);
-        if (exp < -4 || exp >= prec) {
-          // remove trailing zeroes
-          var i = j - 1;
-          while (s.charAt(i) === "0") i--;
-          if (s.charAt(i) === ".") i--;
-          s = s.slice(0, i + 1) + s.slice(j);
-          i = s.length;
-          if (s.charAt(i - 3) === "e")
-            s = s.slice(0, i - 1) + "0" + s.slice(i - 1);
-          break;
-        } else {
-          // Same rounding position as toExponential: reuse its digits
-          var p = prec - 1 - exp;
-          var d = prec > 1 ? s.charAt(0) + s.slice(2, j) : s.charAt(0);
-          if (exp < 0) s = "0." + "0".repeat(-exp - 1) + d;
-          else if (p > 0) s = d.slice(0, exp + 1) + "." + d.slice(exp + 1);
-          else s = d;
-          if (p) {
-            // remove trailing zeroes
-            var i = s.length - 1;
-            while (s.charAt(i) === "0") i--;
-            if (s.charAt(i) === ".") i--;
-            s = s.slice(0, i + 1);
-          }
-        }
-        break;
-    }
+  } else s = caml_format_float_abs(x, f.conv, f.prec < 0 ? 6 : f.prec);
   return caml_finish_formatting(f, s);
 }
 
