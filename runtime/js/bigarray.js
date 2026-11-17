@@ -363,6 +363,11 @@ class Ml_Bigarray {
 
 //Provides: Ml_Bigarray_c_1_1
 //Requires: Ml_Bigarray, caml_array_bound_error, caml_invalid_argument
+// One-dimensional C-layout bigarrays whose elements are stored as is in the
+// typed array (all kinds but int64, complex and float16): an index is
+// directly an offset in the typed array. caml_ba_create_unsafe creates all
+// such bigarrays with this class, so that the specialized primitives
+// caml_ba_c_*_1 below only see objects of this class.
 class Ml_Bigarray_c_1_1 extends Ml_Bigarray {
   offset(arg) {
     if (typeof arg !== "number") {
@@ -575,6 +580,228 @@ function caml_ba_uint8_get64(ba, i0) {
 //Alias: caml_ba_float32_get_1
 function caml_ba_get_1(ba, i0) {
   return ba.get(ba.offset(i0));
+}
+
+//Provides: caml_ba_c_check_1
+//Version: >= 5.6
+//Requires: caml_array_bound_error
+// Bigarray accesses specialized to a layout, for kinds whose elements are
+// stored as is in the typed array (used with OCaml 5.6 bytecode hints).
+// The safe accesses check the bounds with zero-based indices, then
+// perform the unsafe access.
+// One-dimensional C-layout bigarrays are Ml_Bigarray_c_1_1 objects, while
+// the others (Fortran layout or several dimensions) are Ml_Bigarray
+// objects. The JavaScript engine collects type feedback per function: a
+// function that sees objects of both classes would have polymorphic
+// property accesses, which are slower. So the caml_ba_c_*_1 primitives
+// share no code with the other ones: caml_ba_c_check_1 is a copy of
+// caml_ba_check_1 for Ml_Bigarray_c_1_1 objects, and the one-dimensional
+// Fortran-layout primitives do not call the C-layout ones.
+function caml_ba_c_check_1(ba, i0) {
+  if (i0 >>> 0 >= ba.dims[0]) caml_array_bound_error();
+}
+
+//Provides: caml_ba_check_1
+//Version: >= 5.6
+//Requires: caml_array_bound_error
+// For Fortran-layout bigarrays (Ml_Bigarray objects)
+function caml_ba_check_1(ba, i0) {
+  if (i0 >>> 0 >= ba.dims[0]) caml_array_bound_error();
+}
+
+//Provides: caml_ba_check_2
+//Version: >= 5.6
+//Requires: caml_array_bound_error
+function caml_ba_check_2(ba, i0, i1) {
+  var d = ba.dims;
+  if (i0 >>> 0 >= d[0] || i1 >>> 0 >= d[1]) caml_array_bound_error();
+}
+
+//Provides: caml_ba_check_3
+//Version: >= 5.6
+//Requires: caml_array_bound_error
+function caml_ba_check_3(ba, i0, i1, i2) {
+  var d = ba.dims;
+  if (i0 >>> 0 >= d[0] || i1 >>> 0 >= d[1] || i2 >>> 0 >= d[2])
+    caml_array_bound_error();
+}
+
+//Provides: caml_ba_c_unsafe_get_1 mutable
+//Version: >= 5.6
+function caml_ba_c_unsafe_get_1(ba, i0) {
+  return ba.data[i0];
+}
+
+//Provides: caml_ba_c_unsafe_set_1
+//Version: >= 5.6
+function caml_ba_c_unsafe_set_1(ba, i0, v) {
+  ba.data[i0] = v;
+  return 0;
+}
+
+//Provides: caml_ba_c_get_1
+//Version: >= 5.6
+//Requires: caml_ba_c_check_1, caml_ba_c_unsafe_get_1
+function caml_ba_c_get_1(ba, i0) {
+  caml_ba_c_check_1(ba, i0);
+  return caml_ba_c_unsafe_get_1(ba, i0);
+}
+
+//Provides: caml_ba_c_set_1
+//Version: >= 5.6
+//Requires: caml_ba_c_check_1, caml_ba_c_unsafe_set_1
+function caml_ba_c_set_1(ba, i0, v) {
+  caml_ba_c_check_1(ba, i0);
+  return caml_ba_c_unsafe_set_1(ba, i0, v);
+}
+
+//Provides: caml_ba_fortran_unsafe_get_1 mutable
+//Version: >= 5.6
+function caml_ba_fortran_unsafe_get_1(ba, i0) {
+  return ba.data[i0 - 1];
+}
+
+//Provides: caml_ba_fortran_unsafe_set_1
+//Version: >= 5.6
+function caml_ba_fortran_unsafe_set_1(ba, i0, v) {
+  ba.data[i0 - 1] = v;
+  return 0;
+}
+
+//Provides: caml_ba_fortran_get_1
+//Version: >= 5.6
+//Requires: caml_ba_check_1, caml_ba_fortran_unsafe_get_1
+function caml_ba_fortran_get_1(ba, i0) {
+  caml_ba_check_1(ba, i0 - 1);
+  return caml_ba_fortran_unsafe_get_1(ba, i0);
+}
+
+//Provides: caml_ba_fortran_set_1
+//Version: >= 5.6
+//Requires: caml_ba_check_1, caml_ba_fortran_unsafe_set_1
+function caml_ba_fortran_set_1(ba, i0, v) {
+  caml_ba_check_1(ba, i0 - 1);
+  return caml_ba_fortran_unsafe_set_1(ba, i0, v);
+}
+
+//Provides: caml_ba_c_unsafe_get_2 mutable
+//Version: >= 5.6
+function caml_ba_c_unsafe_get_2(ba, i0, i1) {
+  return ba.data[i0 * ba.dims[1] + i1];
+}
+
+//Provides: caml_ba_c_unsafe_set_2
+//Version: >= 5.6
+function caml_ba_c_unsafe_set_2(ba, i0, i1, v) {
+  ba.data[i0 * ba.dims[1] + i1] = v;
+  return 0;
+}
+
+//Provides: caml_ba_c_get_2
+//Version: >= 5.6
+//Requires: caml_ba_check_2, caml_ba_c_unsafe_get_2
+function caml_ba_c_get_2(ba, i0, i1) {
+  caml_ba_check_2(ba, i0, i1);
+  return caml_ba_c_unsafe_get_2(ba, i0, i1);
+}
+
+//Provides: caml_ba_c_set_2
+//Version: >= 5.6
+//Requires: caml_ba_check_2, caml_ba_c_unsafe_set_2
+function caml_ba_c_set_2(ba, i0, i1, v) {
+  caml_ba_check_2(ba, i0, i1);
+  return caml_ba_c_unsafe_set_2(ba, i0, i1, v);
+}
+
+//Provides: caml_ba_fortran_unsafe_get_2 mutable
+//Version: >= 5.6
+function caml_ba_fortran_unsafe_get_2(ba, i0, i1) {
+  return ba.data[(i1 - 1) * ba.dims[0] + (i0 - 1)];
+}
+
+//Provides: caml_ba_fortran_unsafe_set_2
+//Version: >= 5.6
+function caml_ba_fortran_unsafe_set_2(ba, i0, i1, v) {
+  ba.data[(i1 - 1) * ba.dims[0] + (i0 - 1)] = v;
+  return 0;
+}
+
+//Provides: caml_ba_fortran_get_2
+//Version: >= 5.6
+//Requires: caml_ba_check_2, caml_ba_fortran_unsafe_get_2
+function caml_ba_fortran_get_2(ba, i0, i1) {
+  caml_ba_check_2(ba, i0 - 1, i1 - 1);
+  return caml_ba_fortran_unsafe_get_2(ba, i0, i1);
+}
+
+//Provides: caml_ba_fortran_set_2
+//Version: >= 5.6
+//Requires: caml_ba_check_2, caml_ba_fortran_unsafe_set_2
+function caml_ba_fortran_set_2(ba, i0, i1, v) {
+  caml_ba_check_2(ba, i0 - 1, i1 - 1);
+  return caml_ba_fortran_unsafe_set_2(ba, i0, i1, v);
+}
+
+//Provides: caml_ba_c_unsafe_get_3 mutable
+//Version: >= 5.6
+function caml_ba_c_unsafe_get_3(ba, i0, i1, i2) {
+  var d = ba.dims;
+  return ba.data[(i0 * d[1] + i1) * d[2] + i2];
+}
+
+//Provides: caml_ba_c_unsafe_set_3
+//Version: >= 5.6
+function caml_ba_c_unsafe_set_3(ba, i0, i1, i2, v) {
+  var d = ba.dims;
+  ba.data[(i0 * d[1] + i1) * d[2] + i2] = v;
+  return 0;
+}
+
+//Provides: caml_ba_c_get_3
+//Version: >= 5.6
+//Requires: caml_ba_check_3, caml_ba_c_unsafe_get_3
+function caml_ba_c_get_3(ba, i0, i1, i2) {
+  caml_ba_check_3(ba, i0, i1, i2);
+  return caml_ba_c_unsafe_get_3(ba, i0, i1, i2);
+}
+
+//Provides: caml_ba_c_set_3
+//Version: >= 5.6
+//Requires: caml_ba_check_3, caml_ba_c_unsafe_set_3
+function caml_ba_c_set_3(ba, i0, i1, i2, v) {
+  caml_ba_check_3(ba, i0, i1, i2);
+  return caml_ba_c_unsafe_set_3(ba, i0, i1, i2, v);
+}
+
+//Provides: caml_ba_fortran_unsafe_get_3 mutable
+//Version: >= 5.6
+function caml_ba_fortran_unsafe_get_3(ba, i0, i1, i2) {
+  var d = ba.dims;
+  return ba.data[((i2 - 1) * d[1] + (i1 - 1)) * d[0] + (i0 - 1)];
+}
+
+//Provides: caml_ba_fortran_unsafe_set_3
+//Version: >= 5.6
+function caml_ba_fortran_unsafe_set_3(ba, i0, i1, i2, v) {
+  var d = ba.dims;
+  ba.data[((i2 - 1) * d[1] + (i1 - 1)) * d[0] + (i0 - 1)] = v;
+  return 0;
+}
+
+//Provides: caml_ba_fortran_get_3
+//Version: >= 5.6
+//Requires: caml_ba_check_3, caml_ba_fortran_unsafe_get_3
+function caml_ba_fortran_get_3(ba, i0, i1, i2) {
+  caml_ba_check_3(ba, i0 - 1, i1 - 1, i2 - 1);
+  return caml_ba_fortran_unsafe_get_3(ba, i0, i1, i2);
+}
+
+//Provides: caml_ba_fortran_set_3
+//Version: >= 5.6
+//Requires: caml_ba_check_3, caml_ba_fortran_unsafe_set_3
+function caml_ba_fortran_set_3(ba, i0, i1, i2, v) {
+  caml_ba_check_3(ba, i0 - 1, i1 - 1, i2 - 1);
+  return caml_ba_fortran_unsafe_set_3(ba, i0, i1, i2, v);
 }
 
 //Provides: caml_ba_get_2
