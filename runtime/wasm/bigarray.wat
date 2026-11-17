@@ -17,6 +17,8 @@
 
 (module
    (import "fail" "caml_bound_error" (func $caml_bound_error))
+   (import "string" "caml_check_string_length"
+      (func $caml_check_string_length (param i32)))
    (import "fail" "caml_raise_out_of_memory" (func $caml_raise_out_of_memory))
    (import "fail" "caml_invalid_argument"
       (func $caml_invalid_argument (param (ref eq))))
@@ -3189,6 +3191,7 @@
       (local.set $a
          (ref.as_non_null (call $js_of_value (local.get $v))))
       (local.set $len (call $ta_length (local.get $a)))
+      (call $caml_check_string_length (local.get $len))
       (local.set $s (array.new $bytes (i32.const 0) (local.get $len)))
       (call $caml_blit_dataview_to_bytes
          (call $dv_make (local.get $a)) (i32.const 0)

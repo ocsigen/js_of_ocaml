@@ -20,6 +20,9 @@
       (func $caml_invalid_argument (param (ref eq))))
    (import "fail" "caml_failwith" (func $caml_failwith (param (ref eq))))
 
+   (import "string" "caml_check_string_length"
+      (func $caml_check_string_length (param i32)))
+
    (type $bytes (array (mut i8)))
    (type $block (array (mut (ref eq))))
 
@@ -714,7 +717,9 @@
                (local.set $len
                    (i32.add (local.get $len)
                       (i32.sub (local.get $end) (local.get $start))))
+               (call $caml_check_string_length (local.get $len))
                (br $loop))))
+      (call $caml_check_string_length (local.get $len))
       (local.set $res (array.new $bytes (i32.const 0) (local.get $len)))
       (local.set $i (i32.const 0))
       (loop $loop
