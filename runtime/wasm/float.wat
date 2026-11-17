@@ -1365,6 +1365,173 @@
          (then (f64.const 2))
          (else (f64.const 0))))
 
+   ;; When x has at most 26 significant bits (so that it is not the result
+   ;; of a rounding) and y is nonzero, move x slightly in the direction of y
+   (func $fma_adjust (param $x f64) (param $y f64) (result f64)
+      (local $t f64)
+      (if (result f64)
+         (i32.and
+            (i32.and (f64.ne (local.get $x) (f64.const 0))
+               (f64.ne (local.get $y) (f64.const 0)))
+            (f64.eq
+               (f64.sub
+                  (local.tee $t (f64.mul (f64.const 0x8000001) (local.get $x)))
+                  (f64.sub (local.get $t) (local.get $x)))
+               (local.get $x)))
+         (then
+            (f64.mul (local.get $x)
+               (f64.add (f64.const 1)
+                  (select (f64.const 0x1p-52) (f64.const -0x1p-52)
+                     (i32.eq (f64.lt (local.get $x) (f64.const 0))
+                        (f64.lt (local.get $y) (f64.const 0)))))))
+         (else
+            (local.get $x))))
+
+   ;; x * y + z, rounded once, also when the result is subnormal. The
+   ;; operands are scaled so that x * y does
+   ;; not overflow or underflow; the exact product is computed with
+   ;; Dekker's algorithm, summed with z with error-free transformations
+   ;; (TwoSum), and the sum is rounded once (with a final correction for
+   ;; subnormal results). Same algorithm as in the JavaScript runtime.
+   (func $fma (param $x f64) (param $y f64) (param $z f64) (result f64)
+      (local $scale f64) (local $zs f64) (local $xy f64)
+      (local $t f64) (local $xhi f64) (local $xlo f64) (local $yhi f64)
+      (local $ylo f64)
+      (local $p f64) (local $e f64) (local $s f64) (local $se f64)
+      (local $u f64) (local $ue f64) (local $i f64) (local $ie f64)
+      (local $v f64) (local $f f64) (local $fs f64)
+      (if (i32.or
+             (i32.or (f64.eq (local.get $x) (f64.const 0))
+                (f64.eq (local.get $y) (f64.const 0)))
+             (i32.or
+                (f64.ne (f64.sub (local.get $x) (local.get $x)) (f64.const 0))
+                (f64.ne (f64.sub (local.get $y) (local.get $y)) (f64.const 0))))
+         (then
+            (return
+               (f64.add (f64.mul (local.get $x) (local.get $y)) (local.get $z)))))
+      (if (f64.eq (local.get $z) (f64.const 0))
+         (then (return (f64.mul (local.get $x) (local.get $y)))))
+      (if (f64.ne (f64.sub (local.get $z) (local.get $z)) (f64.const 0))
+         (then (return (local.get $z))))
+      ;; scale x and y to [2^-416, 2^416]
+      (local.set $scale (f64.const 1))
+      (loop $x_big
+         (if (f64.gt (f64.abs (local.get $x)) (f64.const 0x1p416))
+            (then
+               (local.set $scale (f64.mul (local.get $scale) (f64.const 0x1p416)))
+               (local.set $x (f64.mul (local.get $x) (f64.const 0x1p-416)))
+               (br $x_big))))
+      (loop $y_big
+         (if (f64.gt (f64.abs (local.get $y)) (f64.const 0x1p416))
+            (then
+               (local.set $scale (f64.mul (local.get $scale) (f64.const 0x1p416)))
+               (local.set $y (f64.mul (local.get $y) (f64.const 0x1p-416)))
+               (br $y_big))))
+      (if (f64.eq (local.get $scale) (f64.const inf))
+         (then
+            (return
+               (f64.mul (f64.mul (local.get $x) (local.get $y))
+                  (local.get $scale)))))
+      (loop $x_small
+         (if (f64.lt (f64.abs (local.get $x)) (f64.const 0x1p-416))
+            (then
+               (local.set $scale
+                  (f64.mul (local.get $scale) (f64.const 0x1p-416)))
+               (local.set $x (f64.mul (local.get $x) (f64.const 0x1p416)))
+               (br $x_small))))
+      (loop $y_small
+         (if (f64.lt (f64.abs (local.get $y)) (f64.const 0x1p-416))
+            (then
+               (local.set $scale
+                  (f64.mul (local.get $scale) (f64.const 0x1p-416)))
+               (local.set $y (f64.mul (local.get $y) (f64.const 0x1p416)))
+               (br $y_small))))
+      (if (f64.eq (local.get $scale) (f64.const 0))
+         (then (return (local.get $z))))
+      (local.set $zs
+         (if (result f64) (f64.eq (local.get $scale) (f64.const 1))
+            (then (local.get $z))
+            (else (f64.div (local.get $z) (local.get $scale)))))
+      (local.set $xy (f64.abs (f64.mul (local.get $x) (local.get $y))))
+      ;; z much larger than x * y (|zs| > |xy| * 4 / EPSILON)
+      (if (f64.gt (f64.abs (local.get $zs))
+             (f64.mul (local.get $xy) (f64.const 0x1p54)))
+         (then (return (local.get $z))))
+      ;; z much smaller than x * y: only its sign matters
+      ;; (|zs| < |xy| * EPSILON / 4 * EPSILON / 4)
+      (if (f64.lt (f64.abs (local.get $zs))
+             (f64.mul (local.get $xy) (f64.const 0x1p-108)))
+         (then
+            (local.set $zs
+               (f64.copysign (f64.const 0x1p-1022) (local.get $z)))))
+      ;; p + e = x * y (Dekker)
+      (local.set $xhi
+         (f64.sub
+            (local.tee $t (f64.mul (f64.const 0x8000001) (local.get $x)))
+            (f64.sub (local.get $t) (local.get $x))))
+      (local.set $xlo (f64.sub (local.get $x) (local.get $xhi)))
+      (local.set $yhi
+         (f64.sub
+            (local.tee $t (f64.mul (f64.const 0x8000001) (local.get $y)))
+            (f64.sub (local.get $t) (local.get $y))))
+      (local.set $ylo (f64.sub (local.get $y) (local.get $yhi)))
+      (local.set $p (f64.mul (local.get $x) (local.get $y)))
+      (local.set $e
+         (f64.add
+            (f64.add
+               (f64.add
+                  (f64.sub (f64.mul (local.get $xhi) (local.get $yhi))
+                     (local.get $p))
+                  (f64.mul (local.get $xhi) (local.get $ylo)))
+               (f64.mul (local.get $xlo) (local.get $yhi)))
+            (f64.mul (local.get $xlo) (local.get $ylo))))
+      ;; s + se = p + zs
+      (local.set $s (f64.add (local.get $p) (local.get $zs)))
+      (local.set $v (f64.sub (local.get $s) (local.get $p)))
+      (local.set $se
+         (f64.add
+            (f64.sub (local.get $p) (f64.sub (local.get $s) (local.get $v)))
+            (f64.sub (local.get $zs) (local.get $v))))
+      ;; u + ue = e + se
+      (local.set $u (f64.add (local.get $e) (local.get $se)))
+      (local.set $v (f64.sub (local.get $u) (local.get $e)))
+      (local.set $ue
+         (f64.add
+            (f64.sub (local.get $e) (f64.sub (local.get $u) (local.get $v)))
+            (f64.sub (local.get $se) (local.get $v))))
+      ;; i + ie = s + u
+      (local.set $i (f64.add (local.get $s) (local.get $u)))
+      (local.set $v (f64.sub (local.get $i) (local.get $s)))
+      (local.set $ie
+         (f64.add
+            (f64.sub (local.get $s) (f64.sub (local.get $i) (local.get $v)))
+            (f64.sub (local.get $u) (local.get $v))))
+      (local.set $f
+         (f64.add (local.get $i)
+            (call $fma_adjust (local.get $ie) (local.get $ue))))
+      (if (f64.eq (local.get $f) (f64.const 0))
+         (then (return (local.get $f))))
+      (local.set $fs (f64.mul (local.get $f) (local.get $scale)))
+      (if (f64.gt (f64.abs (local.get $fs)) (f64.const 0x1p-1022))
+         (then (return (local.get $fs))))
+      ;; subnormal result: correct the rounding of the scaling, in the
+      ;; direction of the rest of the exact sum, i + ie + ue - f (ie alone
+      ;; can have the wrong sign when ue moved f past a tie)
+      (local.set $v
+         (f64.add (f64.sub (local.get $i) (local.get $f)) (local.get $ie)))
+      (f64.add (local.get $fs)
+         (f64.mul
+            (call $fma_adjust
+               (f64.sub (local.get $f)
+                  (f64.div (local.get $fs) (local.get $scale)))
+               (select (local.get $v) (local.get $ue)
+                  (f64.ne (local.get $v) (f64.const 0))))
+            (local.get $scale))))
+
+   ;; x * y + z, rounded once, with the algorithm of Boldo and Melquiond
+   ;; (exact product, TwoSum, rounding to odd), after scaling the operands
+   ;; into a safe range. Scaling the result back would round a second time
+   ;; when it is subnormal: the slower $fma is used when it can be.
    (func (export "caml_fma_float")
       (param $vx (ref eq)) (param $vy (ref eq)) (param $vz (ref eq))
       (result (ref eq))
@@ -1384,6 +1551,7 @@
       (local $v13 f64)
       (local $v14 f64)
       (local $v15 f64)
+      (local $exact i32)
       (local.set $x
          (struct.get $float 0 (ref.cast (ref $float) (local.get $vx))))
       (local.set $y
@@ -1405,6 +1573,18 @@
                   (i64.const 52))
                (i64.const 2047)))))
       (local.set $v8 (i64.reinterpret_f64 (local.get $z)))
+      ;; A nonzero x * y + z below 2^-1022 in magnitude implies
+      ;; |x * y| < 2^-916 and |z| < 2^-916 (the exact sum is a multiple
+      ;; of ulp(x) * ulp(y) and of ulp(z)). Use the slower algorithm
+      ;; directly in that case rather than after the fast path: with
+      ;; subnormal values, each multiplication costs a microcode assist.
+      (if (i32.and (i64.le_u (local.get $v7) (i64.const 1129))
+             (i64.le_u (i64.and (local.get $v8) (i64.const 0x7ff0000000000000))
+                (i64.const 0x06b0000000000000)))
+         (then
+            (return
+               (struct.new $float
+                  (call $fma (local.get $x) (local.get $y) (local.get $z))))))
       (block $label_1
          (block $label_2
             (br_if $label_2 (i64.gt_u (local.get $v4) (i64.const 1993)))
@@ -1591,7 +1771,11 @@
                (f64.ne
                   (local.tee $y (f64.add (local.get $z) (local.get $v15)))
                   (f64.const 0)))
-            (br_if $label_21 (f64.eq (local.get $x) (f64.const 0))))
+            ;; exact zero
+            (if (f64.eq (local.get $x) (f64.const 0))
+               (then
+                  (local.set $exact (i32.const 1))
+                  (br $label_21))))
          (block $cont
             (br_if $cont
                (f64.eq
@@ -1661,6 +1845,18 @@
                (f64.mul (local.get $y) (f64.const 0x1p-108))
                (local.get $y)
                (local.get $v10))))
+      ;; If the result is subnormal (it can be one ulp off, so this includes
+      ;; 2^-1022 and zero), use the slower algorithm
+      (if (i32.and (i32.eqz (local.get $exact))
+             (f64.le (f64.abs (local.get $y)) (f64.const 0x1p-1022)))
+         (then
+            (return
+               (struct.new $float
+                  (call $fma
+                     (struct.get $float 0 (ref.cast (ref $float) (local.get $vx)))
+                     (struct.get $float 0 (ref.cast (ref $float) (local.get $vy)))
+                     (struct.get $float 0
+                        (ref.cast (ref $float) (local.get $vz))))))))
       (struct.new $float (local.get $y)))
 
    (func (export "caml_float_compare")
