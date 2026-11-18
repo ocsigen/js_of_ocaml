@@ -16,6 +16,7 @@ type t =
   | `Unused_js_variable
   | (* wasm *)
     `Missing_wasm_opt
+  | `Unoptimized_runtime
   ]
 
 val all : t list

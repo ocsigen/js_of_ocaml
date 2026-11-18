@@ -27,8 +27,9 @@ disabled with [-w no-missing-wasm-opt]). Install it with
 
 If Binaryen is installed after Wasm_of_ocaml, it is used right away. The
 precompiled runtime was then built without it, so an optimized runtime is
-built each time a program is linked, which takes a fraction of a second;
-reinstalling Wasm_of_ocaml avoids this.
+built each time a program is linked, which takes a fraction of a second,
+and an [unoptimized-runtime] warning is emitted (it can be disabled with
+[-w no-unoptimized-runtime]); reinstalling Wasm_of_ocaml avoids this.
 
 {1:usage Usage}
 

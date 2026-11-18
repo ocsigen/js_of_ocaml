@@ -105,7 +105,12 @@ let build_runtime () =
        available when building wasm_of_ocaml. If it has been installed
        since, we build an optimized runtime instead. *)
     if (not Runtime_files.runtimes_optimized) && Binaryen.available ()
-    then None
+    then (
+      Warning.warn
+        `Unoptimized_runtime
+        "wasm_of_ocaml was built without Binaryen: an optimized runtime is built each \
+         time a program is linked. Reinstall wasm_of_ocaml-compiler to avoid this.@.";
+      None)
     else
       List.find_opt Runtime_files.precompiled_runtimes ~f:(fun (flags, _) ->
           assert (List.length flags = List.length variables);
