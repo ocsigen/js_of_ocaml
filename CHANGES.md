@@ -40,6 +40,7 @@
   and layout directly (#2628)
 * Compiler/JS: with OCaml 5.6 bytecode hints, compare int64 values with
   dedicated primitives rather than the polymorphic comparison (#2628)
+* Compiler/Wasm: pass the arguments and result of `Float.fma` unboxed (#2632)
 
 ## Bug fixes
 * Runtime: accurate `Float.erf` and `Float.erfc` (ported from fdlibm), instead

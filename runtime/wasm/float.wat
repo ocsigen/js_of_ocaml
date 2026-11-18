@@ -1554,8 +1554,7 @@
    ;; into a safe range. Scaling the result back would round a second time
    ;; when it is subnormal: the slower $fma is used when it can be.
    (func (export "caml_fma_float")
-      (param $vx (ref eq)) (param $vy (ref eq)) (param $vz (ref eq))
-      (result (ref eq))
+      (param $x0 f64) (param $y0 f64) (param $z0 f64) (result f64)
       (local $x f64)
       (local $y f64)
       (local $z f64)
@@ -1573,12 +1572,9 @@
       (local $v14 f64)
       (local $v15 f64)
       (local $exact i32)
-      (local.set $x
-         (struct.get $float 0 (ref.cast (ref $float) (local.get $vx))))
-      (local.set $y
-         (struct.get $float 0 (ref.cast (ref $float) (local.get $vy))))
-      (local.set $z
-         (struct.get $float 0 (ref.cast (ref $float) (local.get $vz))))
+      (local.set $x (local.get $x0))
+      (local.set $y (local.get $y0))
+      (local.set $z (local.get $z0))
       (local.set $v7
          (i64.add
             (local.tee $v4
@@ -1603,9 +1599,7 @@
              (i64.le_u (i64.and (local.get $v8) (i64.const 0x7ff0000000000000))
                 (i64.const 0x06b0000000000000)))
          (then
-            (return
-               (struct.new $float
-                  (call $fma (local.get $x) (local.get $y) (local.get $z))))))
+            (return_call $fma (local.get $x0) (local.get $y0) (local.get $z0))))
       (block $label_1
          (block $label_2
             (br_if $label_2 (i64.gt_u (local.get $v4) (i64.const 1993)))
@@ -1627,16 +1621,14 @@
             (br_if $cont (i64.eq (local.get $v6) (i64.const 2047)))
             (br_if $cont (i64.ne (local.get $v8) (i64.const 2047)))
             (return
-               (struct.new $float
-                  (f64.add (f64.add (local.get $x) (local.get $z))
-                     (local.get $y)))))
+               (f64.add (f64.add (local.get $x) (local.get $z))
+                  (local.get $y))))
          (block $cont
             (br_if $cont (f64.eq (local.get $y) (f64.const 0)))
             (br_if $cont (f64.eq (local.get $x) (f64.const 0)))
             (br_if $cont (f64.ne (local.get $z) (f64.const 0)))
             (return
-               (struct.new $float
-                  (f64.mul (local.get $x) (local.get $y)))))
+               (f64.mul (local.get $x) (local.get $y))))
          (block $cont
             (block $then
                (br_if $then (i64.eq (local.get $v6) (i64.const 2047)))
@@ -1645,13 +1637,12 @@
                (br_if $then (f64.eq (local.get $x) (f64.const 0)))
                (br_if $cont (i64.ne (local.get $v8) (i64.const 2047))))
             (return
-               (struct.new $float
-                  (f64.add (f64.mul (local.get $x) (local.get $y))
-                     (local.get $z)))))
+               (f64.add (f64.mul (local.get $x) (local.get $y))
+                  (local.get $z))))
          (block $cont
             (br_if $cont (i64.lt_u (local.get $v7) (i64.const 3071)))
             (return
-               (struct.new $float (f64.mul (local.get $x) (local.get $y)))))
+               (f64.mul (local.get $x) (local.get $y))))
          (block $cont
             (br_if $cont (i64.gt_u (local.get $v7) (i64.const 967)))
             (local.set $y
@@ -1663,13 +1654,12 @@
             (block $cont2
                (br_if $cont2 (i64.lt_u (local.get $v8) (i64.const 3)))
                (return
-                  (struct.new $float(f64.add (local.get $y) (local.get $z)))))
+                  (f64.add (local.get $y) (local.get $z))))
             (return
-               (struct.new $float
-                  (f64.mul
-                     (f64.add (f64.mul (local.get $z) (f64.const 0x1p54))
-                        (local.get $y))
-                     (f64.const 0x1p-54)))))
+               (f64.mul
+                  (f64.add (f64.mul (local.get $z) (f64.const 0x1p54))
+                     (local.get $y))
+                  (f64.const 0x1p-54))))
          (block $label_10
             (block $label_11
                (block $label_12
@@ -1757,9 +1747,8 @@
                   (f64.eq (local.get $y) (f64.const 0))
                   (f64.eq (local.get $x) (f64.const 0)))))
          (return
-            (struct.new $float
-               (f64.add
-                  (f64.mul (local.get $x) (local.get $y)) (local.get $z)))))
+            (f64.add
+               (f64.mul (local.get $x) (local.get $y)) (local.get $z))))
       (local.set $x
          (f64.sub
             (f64.mul
@@ -1859,8 +1848,7 @@
          (block $cont
             (br_if $cont (i32.eqz (local.get $v9)))
             (return
-               (struct.new $float
-                  (f64.mul (local.get $y) (f64.const 0x1p53)))))
+               (f64.mul (local.get $y) (f64.const 0x1p53))))
          (local.set $y
             (select
                (f64.mul (local.get $y) (f64.const 0x1p-108))
@@ -1872,13 +1860,8 @@
              (f64.le (f64.abs (local.get $y)) (f64.const 0x1p-1022)))
          (then
             (return
-               (struct.new $float
-                  (call $fma
-                     (struct.get $float 0 (ref.cast (ref $float) (local.get $vx)))
-                     (struct.get $float 0 (ref.cast (ref $float) (local.get $vy)))
-                     (struct.get $float 0
-                        (ref.cast (ref $float) (local.get $vz))))))))
-      (struct.new $float (local.get $y)))
+               (call $fma (local.get $x0) (local.get $y0) (local.get $z0)))))
+      (local.get $y))
 
    (func (export "caml_float_compare")
       (param $x f64) (param $y f64) (result i32)
