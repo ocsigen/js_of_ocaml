@@ -59,6 +59,8 @@
   `Float32.of_string` only once (#2632)
 * Runtime/Wasm: parse hexadecimal floats with a subnormal value with a single
   rounding (#2632)
+* Runtime/Wasm: the integer formatting primitives accept several flags, and
+  ignore `+` and ` ` for unsigned conversions, as in C (#2631)
 * Toplevel: `js_of_ocaml-toplevel` depends on `js_of_ocaml-ppx`, so that
   `js_of_ocaml-toplevel.worker_lwt_client` is no longer silently skipped when
   the ppx is not installed first (#2627)

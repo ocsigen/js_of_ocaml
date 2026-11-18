@@ -243,19 +243,20 @@
          (then
             (local.set $negative (i32.const 1))
             (local.set $d (i64.sub (i64.const 0) (local.get $d)))))
-      ;; the "#" flag is ignored in base 10
+      ;; as in C, the "#" flag is ignored in base 10, and the "+" and " "
+      ;; flags for unsigned conversions
       (if (i64.eq (local.get $base) (i64.const 10))
          (then
             (return_call $format_decimal (local.get $d)
-               (local.get $negative) (local.get $sign_style))))
+               (local.get $negative)
+               (select (local.get $sign_style) (i32.const 0)
+                  (local.get $signed)))))
+      ;; base 8 or 16, unsigned
       (local.set $n (local.get $d))
       (loop $count
          (local.set $i (i32.add (local.get $i) (i32.const 1)))
          (local.set $n (i64.div_u (local.get $n) (local.get $base)))
          (br_if $count (i64.ne (local.get $n) (i64.const 0))))
-      (if (i32.or (local.get $negative)
-                  (local.get $sign_style))
-         (then (local.set $i (i32.add (local.get $i) (i32.const 1)))))
       (if (local.get $alternate)
          (then
             (if (i64.ne (local.get $d) (i64.const 0))
@@ -280,34 +281,15 @@
                (i32.wrap_i64 (i64.rem_u (local.get $d) (local.get $base)))))
          (local.set $d (i64.div_u (local.get $d) (local.get $base)))
          (br_if $write (i64.ne (local.get $d) (i64.const 0))))
-      (if (local.get $negative)
+      ;; the "#" prefix, if room was made for it above
+      (if (local.get $i)
          (then
-            (array.set $bytes (local.get $s) (i32.const 0) (@char "-")))
-         (else
-            (if (local.get $sign_style)
+            (array.set $bytes (local.get $s) (i32.const 0) (@char "0"))
+            (if (i64.eq (local.get $base) (i64.const 16))
                (then
-                  (if (i32.eq (local.get $sign_style) (i32.const 1))
-                     (then
-                        (array.set $bytes (local.get $s) (i32.const 0)
-                           (@char "+")))
-                     (else
-                        (array.set $bytes (local.get $s) (i32.const 0)
-                           (@char " "))))))))
-      ;; The "#" flag only prefixes octal/hex; for base 10 it is ignored (as
-      ;; in C). Guarding on base here also stops the "0" from overwriting the
-      ;; sign, since the digit-count phase above only reserves prefix room for
-      ;; base 8/16.
-      (if (i32.and (local.get $alternate)
-                   (i64.ne (local.get $base) (i64.const 10)))
-         (then
-            (if (local.get $i)
-               (then
-                  (array.set $bytes (local.get $s) (i32.const 0) (@char "0"))
-                  (if (i64.eq (local.get $base) (i64.const 16))
-                     (then
-                        (array.set $bytes (local.get $s) (i32.const 1)
-                           (select (@char "X") (@char "x")
-                              (local.get $uppercase)))))))))
+                  (array.set $bytes (local.get $s) (i32.const 1)
+                     (select (@char "X") (@char "x")
+                        (local.get $uppercase)))))))
       (local.get $s))
 
    (@string $unsupported "caml_reinterpret_unboxed_int64_as_tagged_int63 is not supported in wasm.")

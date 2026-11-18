@@ -52,6 +52,42 @@ let%expect_test "format_int64 alternate flag and sign" =
     010
     |}]
 
+(* As in C, the "+" and " " flags are ignored by unsigned conversions,
+   and flags can be combined. *)
+let%expect_test "format_int sign flags and combined flags" =
+  let p fmt n = print_endline (format_int fmt n) in
+  p "%+u" 5;
+  p "% u" 5;
+  p "%+x" 255;
+  p "% o" 8;
+  p "%+#x" 255;
+  p "%#+X" 255;
+  p "% #o" 8;
+  p "%#+d" 5;
+  [%expect {|
+    5
+    5
+    ff
+    10
+    0xff
+    0XFF
+    010
+    +5
+    |}]
+
+let%expect_test "format_int64 sign flags and combined flags" =
+  let p fmt n = print_endline (format_int64 fmt n) in
+  p "%+u" 5L;
+  p "% x" 255L;
+  p "%+#x" 255L;
+  p "%#+d" (-5L);
+  [%expect {|
+    5
+    ff
+    0xff
+    -5
+    |}]
+
 (* "%+f" / "% f" with no precision: the conversion letter must still be
    recognised (it used to be mistaken for the sign flag and raise). *)
 let%expect_test "format_float sign flag without precision" =
