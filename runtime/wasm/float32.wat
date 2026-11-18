@@ -397,24 +397,22 @@
                (f64.gt (local.get $s) (f64.const 0))))))
 
    (func (export "caml_fma_float32_bytecode")
-      (param $vx (ref eq)) (param $vy (ref eq)) (param $vz (ref eq))
-      (result (ref eq))
+      (param $x f32) (param $y f32) (param $z32 f32) (result f32)
       (local $p f64) (local $z f64) (local $s f64) (local $b f64)
       ;; The product of two float32 values is exact as a double; s + err is
       ;; the exact value of x * y + z (TwoSum)
       (local.set $p
-         (f64.mul (f64.promote_f32 (call $unbox_float32 (local.get $vx)))
-            (f64.promote_f32 (call $unbox_float32 (local.get $vy)))))
-      (local.set $z (f64.promote_f32 (call $unbox_float32 (local.get $vz))))
+         (f64.mul (f64.promote_f32 (local.get $x))
+            (f64.promote_f32 (local.get $y))))
+      (local.set $z (f64.promote_f32 (local.get $z32)))
       (local.set $s (f64.add (local.get $p) (local.get $z)))
       (local.set $b (f64.sub (local.get $s) (local.get $p)))
-      (call $box_float32
-         (f32.demote_f64
-            (call $round_odd (local.get $s)
-               (f64.add
-                  (f64.sub (local.get $p)
-                     (f64.sub (local.get $s) (local.get $b)))
-                  (f64.sub (local.get $z) (local.get $b)))))))
+      (f32.demote_f64
+         (call $round_odd (local.get $s)
+            (f64.add
+               (f64.sub (local.get $p)
+                  (f64.sub (local.get $s) (local.get $b)))
+               (f64.sub (local.get $z) (local.get $b))))))
 
    (func (export "caml_ba_uint8_getf32")
       (param $a (ref eq)) (param $i i32) (result f32)

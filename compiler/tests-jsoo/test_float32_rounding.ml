@@ -38,6 +38,8 @@ external to_bits : float32 -> int32
 
 external of_string : string -> float32 = "caml_float32_of_string"
 
+external modf : float32 -> float32 * float32 = "caml_modf_float32"
+
 let%expect_test "of_string" =
   List.iter
     (fun s -> Printf.printf "%S %08lx\n" s (to_bits (of_string s)))
@@ -104,6 +106,19 @@ let%expect_test "fma" =
     3f801000
     3f801000
     3f800000
+    |}]
+
+let%expect_test "modf" =
+  (* Not a rounding test: guards against the argument being lost when the
+     primitives around it are unboxed *)
+  List.iter
+    (fun x ->
+      let f, i = modf (of_bits x) in
+      Printf.printf "%08lx %08lx\n" (to_bits f) (to_bits i))
+    [ 0x40700000l (* 3.75 *); 0xc0200000l (* -2.5 *) ];
+  [%expect {|
+    3f400000 40400000
+    bf000000 c0000000
     |}]
 
 let%expect_test "of_int64" =
