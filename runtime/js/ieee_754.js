@@ -317,31 +317,158 @@ function caml_cbrt_float(x) {
   return Math.cbrt(x);
 }
 
-//Provides: caml_erf_float const
-function caml_erf_float(x) {
-  var a1 = 0.254829592;
-  var a2 = -0.284496736;
-  var a3 = 1.421413741;
-  var a4 = -1.453152027;
-  var a5 = 1.061405429;
-  var p = 0.3275911;
+// erf and erfc are ported from FreeBSD's msun (s_erf.c), through musl:
+//
+// Copyright (C) 1993 by Sun Microsystems, Inc. All rights reserved.
+//
+// Developed at SunPro, a Sun Microsystems, Inc. business.
+// Permission to use, copy, modify, and distribute this
+// software is freely granted, provided that this notice
+// is preserved.
+//
+// The Wasm runtime (float.wat) performs the same operations in the same
+// order.
 
-  var sign = 1;
-  if (x < 0) {
-    sign = -1;
+//Provides: caml_erf_ratio const
+// (erf(x) - x) / x, for |x| < 0.84375, as a function of z = x * x
+function caml_erf_ratio(z) {
+  var pp0 = 0.12837916709551256,
+    pp1 = -0.3250421072470015,
+    pp2 = -0.02848174957559851,
+    pp3 = -0.005770270296489442,
+    pp4 = -0.000023763016656650163,
+    qq1 = 0.39791722395915535,
+    qq2 = 0.0650222499887673,
+    qq3 = 0.005081306281875766,
+    qq4 = 0.00013249473800432164,
+    qq5 = -0.000003960228278775368;
+  var r = pp0 + z * (pp1 + z * (pp2 + z * (pp3 + z * pp4)));
+  var s = 1 + z * (qq1 + z * (qq2 + z * (qq3 + z * (qq4 + z * qq5))));
+  return r / s;
+}
+
+//Provides: caml_erfc_abs const
+//Requires: jsoo_dataview
+// erfc(x), for 0.84375 <= x < 28
+function caml_erfc_abs(x) {
+  var s, r, q;
+  if (x < 1.25) {
+    // erf(1 + s) - erx
+    var erx = 0.8450629115104675,
+      pa0 = -0.0023621185607526594,
+      pa1 = 0.41485611868374833,
+      pa2 = -0.3722078760357013,
+      pa3 = 0.31834661990116175,
+      pa4 = -0.11089469428239668,
+      pa5 = 0.035478304325618236,
+      pa6 = -0.002166375594868791,
+      qa1 = 0.10642088040084423,
+      qa2 = 0.540397917702171,
+      qa3 = 0.07182865441419627,
+      qa4 = 0.12617121980876164,
+      qa5 = 0.01363708391202905,
+      qa6 = 0.011984499846799107;
+    s = x - 1;
+    r =
+      pa0 + s * (pa1 + s * (pa2 + s * (pa3 + s * (pa4 + s * (pa5 + s * pa6)))));
+    q = 1 + s * (qa1 + s * (qa2 + s * (qa3 + s * (qa4 + s * (qa5 + s * qa6)))));
+    return 1 - erx - r / q;
   }
-  x = Math.abs(x);
-  var t = 1.0 / (1.0 + p * x);
-  var y =
-    1.0 - ((((a5 * t + a4) * t + a3) * t + a2) * t + a1) * t * Math.exp(-x * x);
+  // erfc(x) = exp(-x * x - 0.5625 + r / q) / x
+  s = 1 / (x * x);
+  if (x < 2.8571414947509766) {
+    // x < 1 / 0.35
+    var ra0 = -0.009864944034847148,
+      ra1 = -0.6938585727071818,
+      ra2 = -10.558626225323291,
+      ra3 = -62.375332450326006,
+      ra4 = -162.39666946257347,
+      ra5 = -184.60509290671104,
+      ra6 = -81.2874355063066,
+      ra7 = -9.814329344169145,
+      sa1 = 19.651271667439257,
+      sa2 = 137.65775414351904,
+      sa3 = 434.56587747522923,
+      sa4 = 645.3872717332679,
+      sa5 = 429.00814002756783,
+      sa6 = 108.63500554177944,
+      sa7 = 6.570249770319282,
+      sa8 = -0.0604244152148581;
+    r =
+      ra0 +
+      s *
+        (ra1 +
+          s * (ra2 + s * (ra3 + s * (ra4 + s * (ra5 + s * (ra6 + s * ra7))))));
+    q =
+      1 +
+      s *
+        (sa1 +
+          s *
+            (sa2 +
+              s *
+                (sa3 +
+                  s * (sa4 + s * (sa5 + s * (sa6 + s * (sa7 + s * sa8)))))));
+  } else {
+    var rb0 = -0.0098649429247001,
+      rb1 = -0.799283237680523,
+      rb2 = -17.757954917754752,
+      rb3 = -160.63638485582192,
+      rb4 = -637.5664433683896,
+      rb5 = -1025.0951316110772,
+      rb6 = -483.5191916086514,
+      sb1 = 30.33806074348246,
+      sb2 = 325.7925129965739,
+      sb3 = 1536.729586084437,
+      sb4 = 3199.8582195085955,
+      sb5 = 2553.0504064331644,
+      sb6 = 474.52854120695537,
+      sb7 = -22.44095244658582;
+    r =
+      rb0 + s * (rb1 + s * (rb2 + s * (rb3 + s * (rb4 + s * (rb5 + s * rb6)))));
+    q =
+      1 +
+      s *
+        (sb1 +
+          s * (sb2 + s * (sb3 + s * (sb4 + s * (sb5 + s * (sb6 + s * sb7))))));
+  }
+  // z is x with the low 32 bits of its significand cleared, so that
+  // z * z is exact and -x * x = -z * z + (z - x) * (z + x)
+  jsoo_dataview.setFloat64(0, x, true);
+  jsoo_dataview.setUint32(0, 0, true);
+  var z = jsoo_dataview.getFloat64(0, true);
+  return (Math.exp(-z * z - 0.5625) * Math.exp((z - x) * (z + x) + r / q)) / x;
+}
 
-  return sign * y;
+//Provides: caml_erf_float const
+//Requires: caml_erf_ratio, caml_erfc_abs
+function caml_erf_float(x) {
+  var a = Math.abs(x);
+  if (a < 0.84375) {
+    if (a < 3.725290298461914e-9)
+      // |x| < 2^-28 (the scaling avoids underflows)
+      return 0.125 * (8 * x + 1.0270333367641007 * x);
+    return x + x * caml_erf_ratio(x * x);
+  }
+  var y;
+  if (a < 6) y = 1 - caml_erfc_abs(a);
+  else if (a >= 6) y = 1;
+  else return x; // NaN
+  return x < 0 ? -y : y;
 }
 
 //Provides: caml_erfc_float const
-//Requires: caml_erf_float
+//Requires: caml_erf_ratio, caml_erfc_abs
 function caml_erfc_float(x) {
-  return 1 - caml_erf_float(x);
+  var a = Math.abs(x);
+  if (a < 0.84375) {
+    if (a < 1.3877787807814457e-17) return 1 - x; // |x| < 2^-56
+    var y = caml_erf_ratio(x * x);
+    if (x < 0.25) return 1 - (x + x * y);
+    return 0.5 - (x - 0.5 + x * y);
+  }
+  if (a < 28) return x < 0 ? 2 - caml_erfc_abs(a) : caml_erfc_abs(a);
+  if (a >= 28) return x < 0 ? 2 : 0;
+  return x; // NaN
 }
 
 //Provides: caml_fma_float const

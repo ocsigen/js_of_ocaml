@@ -104,6 +104,67 @@ let%expect_test "erfc" =
   p 10.0;
   [%expect {| 0.000000 |}]
 
+let%expect_test "erf and erfc accuracy" =
+  (* Reference values computed with 40 significant digits, then rounded.
+     The JavaScript and Wasm runtimes stay within 2.4 ulps of the exact
+     values; a crude approximation used to be off by up to 1e-7 in
+     absolute terms, so that erf 0 <> 0 and erfc 10 = 0. *)
+  let ulp x =
+    let x = Float.abs x in
+    Float.succ x -. x
+  in
+  let check name f x expected =
+    let r = f x in
+    if not (Float.abs (r -. expected) <= 4. *. ulp expected)
+    then Printf.printf "%s %h = %h, expected %h\n" name x r expected
+  in
+  List.iter
+    (fun (x, erf, erfc) ->
+      check "erf" Float.erf x erf;
+      check "erfc" Float.erfc x erfc)
+    [ 1e-300, 1.1283791670955126e-300, 1.0
+    ; 1e-10, 1.1283791670955126e-10, 0.999999999887162
+    ; 0.1, 0.1124629160182849, 0.887537083981715
+    ; 0.5, 0.5204998778130465, 0.4795001221869535
+    ; 0.8, 0.7421009647076605, 0.2578990352923395
+    ; 0.9, 0.7969082124228322, 0.20309178757716786
+    ; 1.0, 0.8427007929497149, 0.15729920705028513
+    ; 1.2, 0.9103139782296353, 0.08968602177036464
+    ; 1.5, 0.9661051464753108, 0.033894853524689274
+    ; 2.0, 0.9953222650189527, 0.004677734981047266
+    ; 2.5, 0.999593047982555, 0.0004069520174449589
+    ; 3.0, 0.9999779095030014, 2.209049699858544e-05
+    ; 4.0, 0.9999999845827421, 1.541725790028002e-08
+    ; 5.0, 0.9999999999984626, 1.537459794428035e-12
+    ; 5.9, 0.9999999999999999, 7.190409783550478e-17
+    ; 6.5, 1.0, 3.8421483271206475e-20
+    ; 10.0, 1.0, 2.088487583762545e-45
+    ; 15.0, 1.0, 7.212994172451207e-100
+    ; 20.0, 1.0, 5.395865611607901e-176
+    ; 26.0, 1.0, 5.663192408856143e-296
+    ; 26.5, 1.0, 2.2109076642637343e-307
+    ; 27.2, 1.0, 1e-323
+    ; 27.5, 1.0, 0.0
+    ; -1e-10, -1.1283791670955126e-10, 1.000000000112838
+    ; -0.5, -0.5204998778130465, 1.5204998778130465
+    ; -1.0, -0.8427007929497149, 1.8427007929497148
+    ; -3.0, -0.9999779095030014, 1.9999779095030015
+    ; -10.0, -1.0, 2.0
+    ];
+  [%expect {||}];
+  List.iter
+    (fun x -> Printf.printf "%h: erf %h, erfc %h\n" x (Float.erf x) (Float.erfc x))
+    [ 0.; -0.; infinity; neg_infinity; nan; 0x1p-1074 ];
+  [%expect
+    {|
+    0x0p+0: erf 0x0p+0, erfc 0x1p+0
+    -0x0p+0: erf -0x0p+0, erfc 0x1p+0
+    infinity: erf 0x1p+0, erfc 0x0p+0
+    -infinity: erf -0x1p+0, erfc 0x1p+1
+    nan: erf nan, erfc nan
+    0x0.0000000000001p-1022: erf 0x0.0000000000001p-1022, erfc 0x1p+0
+    |}]
+
 let%expect_test "cbrt" =
   let p x = print (Float.cbrt x) in
   p Float.nan;
