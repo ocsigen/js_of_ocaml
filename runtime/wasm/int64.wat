@@ -21,7 +21,9 @@
          (param (ref $bytes)) (result i32 i32 i32 i32)))
    (import "ints" "parse_digit" (func $parse_digit (param i32) (result i32)))
    (import "ints" "format_decimal"
-      (func $format_decimal (param i64 i32 i32) (result (ref eq))))
+      (func $format_decimal (param i64 i32) (result (ref $bytes))))
+   (import "ints" "decimal_sign"
+      (func $decimal_sign (param i32 i32) (result i32)))
    (import "ints" "parse_int_format"
       (func $parse_int_format
          (param (ref $bytes)) (result i32 i32 i32 i32 i32)))
@@ -209,8 +211,8 @@
       (local.set $negative (i64.lt_s (local.get $d) (i64.const 0)))
       (if (local.get $negative)
          (then (local.set $d (i64.sub (i64.const 0) (local.get $d)))))
-      (return_call $format_decimal
-         (local.get $d) (local.get $negative) (i32.const 0)))
+      (return_call $format_decimal (local.get $d)
+         (select (@char "-") (i32.const 0) (local.get $negative))))
 
    (type $chars (array i8))
 
@@ -248,9 +250,9 @@
       (if (i64.eq (local.get $base) (i64.const 10))
          (then
             (return_call $format_decimal (local.get $d)
-               (local.get $negative)
-               (select (local.get $sign_style) (i32.const 0)
-                  (local.get $signed)))))
+               (call $decimal_sign (local.get $negative)
+                  (select (local.get $sign_style) (i32.const 0)
+                     (local.get $signed))))))
       ;; base 8 or 16, unsigned
       (local.set $n (local.get $d))
       (loop $count
