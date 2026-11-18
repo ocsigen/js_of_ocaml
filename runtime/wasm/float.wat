@@ -49,6 +49,10 @@
       (func $caml_invalid_argument (param (ref eq))))
    (import "ints" "lowercase_hex_table"
       (global $lowercase_hex_table (ref $chars)))
+   (import "ints" "pow10" (global $pow10 (ref $int64s)))
+   (import "ints" "num_digits" (func $num_digits (param i64) (result i32)))
+   (import "ints" "write_decimal"
+      (func $write_decimal (param (ref $bytes)) (param i32) (param i64)))
    (import "jsstring" "jsstring_of_bytes"
       (func $jsstring_of_bytes (param (ref $bytes)) (result externref)))
    (import "jsstring" "bytes_of_jsstring"
@@ -278,18 +282,6 @@
 
    (type $int64s (array i64))
 
-   (global $pow10 (ref $int64s)
-      (array.new_fixed $int64s 20
-         (i64.const 1) (i64.const 10) (i64.const 100) (i64.const 1000)
-         (i64.const 10000) (i64.const 100000) (i64.const 1000000)
-         (i64.const 10000000) (i64.const 100000000) (i64.const 1000000000)
-         (i64.const 10000000000) (i64.const 100000000000)
-         (i64.const 1000000000000) (i64.const 10000000000000)
-         (i64.const 100000000000000) (i64.const 1000000000000000)
-         (i64.const 10000000000000000) (i64.const 100000000000000000)
-         (i64.const 1000000000000000000)
-         (i64.const 10000000000000000000)))
-
    (global $pow5 (ref $int64s)
       (array.new_fixed $int64s 28
          (i64.const 1) (i64.const 5) (i64.const 25) (i64.const 125)
@@ -356,22 +348,6 @@
                            (local.get $e) (i32.const 1))))))))
       (i64.const 0) (i32.const 0) (i32.const 0))
 
-   ;; Number of decimal digits of n (unsigned, n > 0). With b the number
-   ;; of bits of n, t = floor(b * 1233 / 4096), an approximation of
-   ;; b * log10(2), is either the number of digits or one less.
-   (func $num_digits (param $n i64) (result i32)
-      (local $t i32)
-      (local.set $t
-         (i32.shr_u
-            (i32.mul
-               (i32.sub (i32.const 64)
-                  (i32.wrap_i64 (i64.clz (local.get $n))))
-               (i32.const 1233))
-            (i32.const 12)))
-      (i32.add (local.get $t)
-         (i64.ge_u (local.get $n)
-            (array.get $int64s (global.get $pow10) (local.get $t)))))
-
    ;; Round n (unsigned) to a multiple of 10^r (r > 0), ties to even, and
    ;; divide by 10^r
    (func $round_digits (param $n i64) (param $r i32) (result i64)
@@ -395,15 +371,18 @@
    (global $zero_digits (ref $bytes)
       (array.new_fixed $bytes 1 (@char "0")))
 
+   ;; Holds the digits computed by $exact_digits (at most 20, as
+   ;; n < 2^64), until $layout copies them
+   (global $digit_buffer (ref $bytes)
+      (array.new $bytes (i32.const 0) (i32.const 20)))
+
    ;; The significant digits of n * 10^-k, rounded as the conversion
    ;; requires, without trailing zeros, and the decimal exponent e of
    ;; the first digit (d0.d1d2... * 10^e). Zero is "0" with e = 0.
    (func $exact_digits
       (param $n i64) (param $k i32) (param $conversion i32) (param $prec i32)
       (result (ref $bytes) i32 i32)
-      (local $nd i32) (local $r i32) (local $z i32) (local $i i32)
-      (local $j i32) (local $q i64) (local $t i32)
-      (local $d (ref $bytes))
+      (local $nd i32) (local $r i32) (local $z i32)
       (if (i64.eqz (local.get $n))
          (then
             (return (global.get $zero_digits) (i32.const 1) (i32.const 0))))
@@ -436,36 +415,9 @@
                (local.set $z (i32.add (local.get $z) (i32.const 1)))
                (br $strip))))
       (local.set $nd (call $num_digits (local.get $n)))
-      (local.set $d (array.new $bytes (i32.const 0) (local.get $nd)))
-      (local.set $i (local.get $nd))
-      ;; two digits per iteration, to halve the chain of divisions
-      (loop $write
-         (if (i32.ge_u (local.get $i) (i32.const 2))
-            (then
-               (local.set $q (i64.div_u (local.get $n) (i64.const 100)))
-               ;; j < 100, so j / 10 = (j * 103) >> 10
-               (local.set $j
-                  (i32.wrap_i64
-                     (i64.sub (local.get $n)
-                        (i64.mul (local.get $q) (i64.const 100)))))
-               (local.set $t
-                  (i32.shr_u (i32.mul (local.get $j) (i32.const 103))
-                     (i32.const 10)))
-               (local.set $n (local.get $q))
-               (local.set $i (i32.sub (local.get $i) (i32.const 2)))
-               (array.set $bytes (local.get $d) (local.get $i)
-                  (i32.add (@char "0") (local.get $t)))
-               (array.set $bytes (local.get $d)
-                  (i32.add (local.get $i) (i32.const 1))
-                  (i32.add (@char "0")
-                     (i32.sub (local.get $j)
-                        (i32.mul (local.get $t) (i32.const 10)))))
-               (br $write))))
-      (if (local.get $i)
-         (then
-            (array.set $bytes (local.get $d) (i32.const 0)
-               (i32.add (@char "0") (i32.wrap_i64 (local.get $n))))))
-      (local.get $d)
+      (call $write_decimal
+         (global.get $digit_buffer) (local.get $nd) (local.get $n))
+      (global.get $digit_buffer)
       (local.get $nd)
       ;; the value is now (n * 10^z) * 10^(r - k)
       (i32.sub (i32.add (local.get $nd) (i32.add (local.get $z) (local.get $r)))

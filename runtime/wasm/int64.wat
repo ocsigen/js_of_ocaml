@@ -20,6 +20,8 @@
       (func $parse_sign_and_base
          (param (ref $bytes)) (result i32 i32 i32 i32)))
    (import "ints" "parse_digit" (func $parse_digit (param i32) (result i32)))
+   (import "ints" "format_decimal"
+      (func $format_decimal (param i64 i32 i32) (result (ref eq))))
    (import "ints" "parse_int_format"
       (func $parse_int_format
          (param (ref $bytes)) (result i32 i32 i32 i32 i32)))
@@ -203,29 +205,12 @@
                                   (global.get $INT64_ERRMSG))))
 
    (func $format_int64_default (param $d i64) (result (ref eq))
-      (local $s (ref $bytes))
-      (local $negative i32) (local $i i32) (local $n i64)
-      (if (i64.lt_s (local.get $d) (i64.const 0))
-         (then
-            (local.set $negative (i32.const 1))
-            (local.set $i (i32.const 1))
-            (local.set $d (i64.sub (i64.const 0) (local.get $d)))))
-      (local.set $n (local.get $d))
-      (loop $count
-         (local.set $i (i32.add (local.get $i) (i32.const 1)))
-         (local.set $n (i64.div_u (local.get $n) (i64.const 10)))
-         (br_if $count (i64.ne (local.get $n) (i64.const 0))))
-      (local.set $s (array.new $bytes (i32.const 0) (local.get $i)))
-      (loop $write
-         (local.set $i (i32.sub (local.get $i) (i32.const 1)))
-         (array.set $bytes (local.get $s) (local.get $i)
-            (i32.add (@char "0")
-               (i32.wrap_i64 (i64.rem_u (local.get $d) (i64.const 10)))))
-         (local.set $d (i64.div_u (local.get $d) (i64.const 10)))
-         (br_if $write (i64.ne (local.get $d) (i64.const 0))))
+      (local $negative i32)
+      (local.set $negative (i64.lt_s (local.get $d) (i64.const 0)))
       (if (local.get $negative)
-         (then (array.set $bytes (local.get $s) (i32.const 0) (@char "-"))))
-      (local.get $s))
+         (then (local.set $d (i64.sub (i64.const 0) (local.get $d)))))
+      (return_call $format_decimal
+         (local.get $d) (local.get $negative) (i32.const 0)))
 
    (type $chars (array i8))
 
@@ -258,6 +243,11 @@
          (then
             (local.set $negative (i32.const 1))
             (local.set $d (i64.sub (i64.const 0) (local.get $d)))))
+      ;; the "#" flag is ignored in base 10
+      (if (i64.eq (local.get $base) (i64.const 10))
+         (then
+            (return_call $format_decimal (local.get $d)
+               (local.get $negative) (local.get $sign_style))))
       (local.set $n (local.get $d))
       (loop $count
          (local.set $i (i32.add (local.get $i) (i32.const 1)))

@@ -203,30 +203,108 @@
          (@char "8") (@char "9") (@char "A") (@char "B")
          (@char "C") (@char "D") (@char "E") (@char "F")))
 
-   (func $format_int_default (param $d i32) (result (ref eq))
-      (local $s (ref $bytes))
-      (local $negative i32) (local $i i32) (local $n i32)
-      (if (i32.lt_s (local.get $d) (i32.const 0))
+   (type $int64s (array i64))
+
+   (global $pow10 (export "pow10") (ref $int64s)
+      (array.new_fixed $int64s 20
+         (i64.const 1) (i64.const 10) (i64.const 100) (i64.const 1000)
+         (i64.const 10000) (i64.const 100000) (i64.const 1000000)
+         (i64.const 10000000) (i64.const 100000000) (i64.const 1000000000)
+         (i64.const 10000000000) (i64.const 100000000000)
+         (i64.const 1000000000000) (i64.const 10000000000000)
+         (i64.const 100000000000000) (i64.const 1000000000000000)
+         (i64.const 10000000000000000) (i64.const 100000000000000000)
+         (i64.const 1000000000000000000)
+         (i64.const 10000000000000000000)))
+
+   ;; Number of decimal digits of n (unsigned; 1 for 0). With b the number
+   ;; of bits of m = n | 1, t = floor(b * 1233 / 4096), an approximation
+   ;; of b * log10(2), is either the number of digits of m or one less.
+   ;; m has as many digits as n, as n + 1 is a power of 10 only for n odd.
+   (func $num_digits (export "num_digits") (param $n i64) (result i32)
+      (local $t i32)
+      (local.set $n (i64.or (local.get $n) (i64.const 1)))
+      (local.set $t
+         (i32.shr_u
+            (i32.mul
+               (i32.sub (i32.const 64)
+                  (i32.wrap_i64 (i64.clz (local.get $n))))
+               (i32.const 1233))
+            (i32.const 12)))
+      (i32.add (local.get $t)
+         (i64.ge_u (local.get $n)
+            (array.get $int64s (global.get $pow10) (local.get $t)))))
+
+   ;; Write the two digits of j < 100 at positions i and i + 1 of s
+   ;; (V8 inlines it; Binaryen does not, as it has two call sites)
+   (func $write_two_digits (param $s (ref $bytes)) (param $i i32) (param $j i32)
+      (local $t i32)
+      ;; j / 10 = (j * 103) >> 10 for j < 100
+      (local.set $t
+         (i32.shr_u (i32.mul (local.get $j) (i32.const 103)) (i32.const 10)))
+      (array.set $bytes (local.get $s) (local.get $i)
+         (i32.add (@char "0") (local.get $t)))
+      (array.set $bytes (local.get $s) (i32.add (local.get $i) (i32.const 1))
+         (i32.add (@char "0")
+            (i32.sub (local.get $j) (i32.mul (local.get $t) (i32.const 10))))))
+
+   ;; Write the num_digits(n) decimal digits of n (unsigned) in s, ending
+   ;; just before position i. Two digits per iteration, to halve the
+   ;; chain of divisions.
+   (func $write_decimal (export "write_decimal")
+      (param $s (ref $bytes)) (param $i i32) (param $n i64)
+      (local $q i64)
+      (loop $loop
+         (if (i64.ge_u (local.get $n) (i64.const 100))
+            (then
+               (local.set $q (i64.div_u (local.get $n) (i64.const 100)))
+               (local.set $i (i32.sub (local.get $i) (i32.const 2)))
+               (call $write_two_digits (local.get $s) (local.get $i)
+                  (i32.wrap_i64
+                     (i64.sub (local.get $n)
+                        (i64.mul (local.get $q) (i64.const 100)))))
+               (local.set $n (local.get $q))
+               (br $loop))))
+      (if (i64.ge_u (local.get $n) (i64.const 10))
          (then
-            (local.set $negative (i32.const 1))
-            (local.set $i (i32.const 1))
-            (local.set $d (i32.sub (i32.const 0) (local.get $d)))))
-      (local.set $n (local.get $d))
-      (loop $count
-         (local.set $i (i32.add (local.get $i) (i32.const 1)))
-         (local.set $n (i32.div_u (local.get $n) (i32.const 10)))
-         (br_if $count (local.get $n)))
-      (local.set $s (array.new $bytes (i32.const 0) (local.get $i)))
-      (loop $write
-         (local.set $i (i32.sub (local.get $i) (i32.const 1)))
-         (array.set $bytes (local.get $s) (local.get $i)
-            (i32.add (@char "0")
-               (i32.rem_u (local.get $d) (i32.const 10))))
-         (local.set $d (i32.div_u (local.get $d) (i32.const 10)))
-         (br_if $write (local.get $d)))
-      (if (local.get $negative)
-         (then (array.set $bytes (local.get $s) (i32.const 0) (@char "-"))))
+            (call $write_two_digits (local.get $s)
+               (i32.sub (local.get $i) (i32.const 2))
+               (i32.wrap_i64 (local.get $n))))
+         (else
+            (array.set $bytes (local.get $s)
+               (i32.sub (local.get $i) (i32.const 1))
+               (i32.add (@char "0") (i32.wrap_i64 (local.get $n)))))))
+
+   ;; Format n (unsigned) in decimal, preceded by "-" if negative, or else
+   ;; by "+" or " " for sign styles 1 and 2
+   (func $format_decimal (export "format_decimal")
+      (param $n i64) (param $negative i32) (param $sign_style i32)
+      (result (ref eq))
+      (local $s (ref $bytes)) (local $sign i32) (local $len i32)
+      (local.set $sign
+         (if (result i32) (local.get $negative)
+            (then (@char "-"))
+            (else
+               (if (result i32) (local.get $sign_style)
+                  (then
+                     (select (@char "+") (@char " ")
+                        (i32.eq (local.get $sign_style) (i32.const 1))))
+                  (else (i32.const 0))))))
+      (local.set $len
+         (i32.add (call $num_digits (local.get $n))
+            (i32.ne (local.get $sign) (i32.const 0))))
+      ;; filled with the sign; the digits overwrite all but the first byte
+      (local.set $s (array.new $bytes (local.get $sign) (local.get $len)))
+      (call $write_decimal (local.get $s) (local.get $len) (local.get $n))
       (local.get $s))
+
+   (func $format_int_default (param $d i32) (result (ref eq))
+      (local $negative i32)
+      (local.set $negative (i32.lt_s (local.get $d) (i32.const 0)))
+      (if (local.get $negative)
+         (then (local.set $d (i32.sub (i32.const 0) (local.get $d)))))
+      (return_call $format_decimal
+         (i64.extend_i32_u (local.get $d)) (local.get $negative) (i32.const 0)))
 
    (@string $format_error "format_int: bad format")
 
@@ -328,6 +406,11 @@
                      (then
                         (local.set $d
                            (i32.and (local.get $d) (i32.const 0x7fffffff)))))))))
+      ;; the "#" flag is ignored in base 10
+      (if (i32.eq (local.get $base) (i32.const 10))
+         (then
+            (return_call $format_decimal (i64.extend_i32_u (local.get $d))
+               (local.get $negative) (local.get $sign_style))))
       (local.set $n (local.get $d))
       (loop $count
          (local.set $i (i32.add (local.get $i) (i32.const 1)))
