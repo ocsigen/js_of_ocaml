@@ -49,6 +49,7 @@
   smallest subnormal or to zero correctly (#2632)
 * Runtime/Wasm: reject hexadecimal floats with two exponent signs (#2632)
 * Runtime/Wasm: fix `Float.fma` when the result is subnormal (#2632)
+* Runtime: fix the rounding of `Float.fma` on some subnormal ties (#2632)
 * Runtime: round the float32 results of `fma`, of conversions from int64 and of
   `Float32.of_string` only once (#2632)
 * Runtime/Wasm: parse hexadecimal floats with a subnormal value with a single

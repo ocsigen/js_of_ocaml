@@ -786,3 +786,26 @@ let%expect_test ("subnormal fma results" [@when not (native && win32)]) =
     (b 0x81c0095d57947617L)
     [ b 0x8002012ba5f5263fL ];
   [%expect {| OK! |}]
+
+(* Subnormal results at a tie, where the low part of the sum alone gives the
+   wrong direction for the final correction *)
+let%expect_test ("subnormal fma results at a tie" [@when not (native && win32)]) =
+  let b = Int64.float_of_bits in
+  fma_test
+    (b 0x1e4fffffffffffffL)
+    (b 0x1e50000000000001L)
+    (b 0x000fffffffffffffL)
+    [ b 0x000fffffffffffffL ];
+  [%expect {| OK! |}];
+  fma_test
+    (b 0x2488000000000000L)
+    (b 0x1815555555555556L)
+    (b 0x000aa99ed5d6e44cL)
+    [ b 0x000aa99ed5d6e44cL ];
+  [%expect {| OK! |}];
+  fma_test
+    (b 0x31acab2800000000L)
+    (b 0x8b4b58d5d4e7fde6L)
+    (b 0x8008000000000000L)
+    [ b 0x800800000000000cL ];
+  [%expect {| OK! |}]
