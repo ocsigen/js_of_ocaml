@@ -45,6 +45,7 @@
 * Runtime: faster float formatting; the Wasm runtime formats floats with a
   short exact decimal expansion (integers, ...) without calling JavaScript (#2631)
 * Runtime/Wasm: parse short decimal floats without calling JavaScript (#2631)
+* Runtime/Wasm: faster decimal formatting of integers (#2631)
 
 ## Bug fixes
 * Runtime: accurate `Float.erf` and `Float.erfc` (ported from fdlibm), instead
