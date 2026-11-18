@@ -482,6 +482,7 @@ function caml_erfc_float(x) {
 }
 
 //Provides: caml_fma_float const
+//Requires: jsoo_dataview
 function caml_fma_float(x, y, z) {
   var SPLIT = Math.pow(2, 27) + 1;
   var MIN_VALUE = Math.pow(2, -1022);
@@ -557,7 +558,24 @@ function caml_fma_float(x, y, z) {
 
   var xs = x;
   var ys = y;
-  var zs = z / scale;
+  // z / scale, without arithmetic on a subnormal z, which is slow
+  var zs;
+  if (scale === 1) {
+    zs = z;
+  } else if (Math.abs(z) >= MIN_VALUE) {
+    zs = z / scale;
+  } else if (scale > 1) {
+    // negligible: only its sign matters
+    zs = (z < 0 ? -1 : +1) * MIN_VALUE;
+  } else {
+    // z = m * 2^-1074, and 2^-1074 / scale = (2^-1022 / scale) * 2^-52 is
+    // normal
+    jsoo_dataview.setFloat64(0, z, true);
+    var m =
+      (jsoo_dataview.getUint32(4, true) & 0xfffff) * 4294967296 +
+      jsoo_dataview.getUint32(0, true);
+    zs = (z < 0 ? -m : m) * ((MIN_VALUE / scale) * EPSILON);
+  }
 
   if (Math.abs(zs) > (Math.abs(xs * ys) * 4) / EPSILON) {
     return z;
@@ -576,16 +594,30 @@ function caml_fma_float(x, y, z) {
     return f;
   }
 
-  var fs = f * scale;
-  if (Math.abs(fs) > MIN_VALUE) {
-    return fs;
+  if (scale >= 1) {
+    return f * scale;
+  }
+  // 2^-1022 in the scaled domain
+  var G = MIN_VALUE / scale;
+  if (Math.abs(f) >= G) {
+    return f * scale;
   }
 
-  // It is possible that there was extra rounding for a denormalized value.
-  // Correct it in the direction of the rest of the exact sum,
-  // i.s + i.e + u.e - f (i.e alone can have the wrong sign when u.e moved
-  // f past a tie).
-  return fs + adjust(f - fs / scale, i.s - f + i.e || u.e) * scale;
+  // Subnormal result, computed without arithmetic on subnormals, which is
+  // slow. Round f to the grid of the result (G * 2^-52) by adding K = ±G.
+  // Rounding f rather than the exact sum may create a tie or resolve one
+  // the wrong way: correct it in the direction of the rest of the exact
+  // sum, i.s + i.e + u.e - f (i.e alone can have the wrong sign when u.e
+  // moved f past a tie). The result is t * scale, with t a multiple of the
+  // grid: build it from the integer t / (G * 2^-52).
+  var K = f < 0 ? -G : G;
+  var rc = f + K;
+  var t = rc + adjust(f - (rc - K), i.s - f + i.e || u.e) - K;
+  var r = Math.abs(t / (G * EPSILON));
+  var hi = Math.floor(r / 4294967296);
+  jsoo_dataview.setUint32(4, (f < 0 ? 0x80000000 : 0) | hi, true);
+  jsoo_dataview.setUint32(0, r - hi * 4294967296, true);
+  return jsoo_dataview.getFloat64(0, true);
 }
 
 //Provides: caml_format_float const
