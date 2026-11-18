@@ -690,36 +690,50 @@
             (field $ba_kind i8) ;; kind
             (field $ba_layout i8)))) ;; layout
 
+   ;; Round the double to float16 once, with integer operations
    (func $double_to_float16 (export "caml_float16_of_double")
       (param $f f64) (result i32)
-      (local $x i32) (local $sign i32) (local $o i32)
-      (local.set $x (i32.reinterpret_f32 (f32.demote_f64 (local.get $f))))
-      (local.set $sign (i32.and (local.get $x) (i32.const 0x80000000)))
-      (local.set $x (i32.xor (local.get $x) (local.get $sign)))
-      (if (i32.ge_u (local.get $x) (i32.const 0x47800000))
+      (local $x i64) (local $o i32)
+      (local.set $x
+         (i64.and (i64.reinterpret_f64 (local.get $f))
+            (i64.const 0x7fffffffffffffff)))
+      (if (i64.ge_u (local.get $x) (i64.const 0x40f0000000000000)) ;; 2^16
          (then
             (local.set $o
                (select
                   (i32.const 0x7E00) ;; NaN
                   (i32.const 0x7C00) ;; infinity
-                  (i32.gt_u (local.get $x) (i32.const 0x7f800000)))))
+                  (i64.gt_u (local.get $x) (i64.const 0x7ff0000000000000)))))
          (else
-            (if (i32.lt_u (local.get $x) (i32.const 0x38800000))
+            (if (i64.lt_u (local.get $x) (i64.const 0x3f10000000000000)) ;; 2^-14
                (then
+                  ;; subnormal: the ulp of 2^28 is 2^-24, the smallest
+                  ;; float16 subnormal, so the addition rounds once
                   (local.set $o
-                     (i32.sub
-                        (i32.reinterpret_f32
-                            (f32.add (f32.reinterpret_i32 (local.get $x))
-                               (f32.const 0.5)))
-                        (i32.const 0x3f000000))))
+                     (i32.wrap_i64
+                        (i64.sub
+                           (i64.reinterpret_f64
+                              (f64.add (f64.reinterpret_i64 (local.get $x))
+                                 (f64.const 0x1p28)))
+                           (i64.const 0x41b0000000000000)))))
                (else
+                  ;; normal: rebias the exponent (1023 -> 15) and round to
+                  ;; nearest even over the 42 dropped bits; a carry into the
+                  ;; exponent gives the next binade, or infinity
                   (local.set $o
-                     (i32.shr_u
-                        (i32.add (i32.add (local.get $x) (i32.const 0xC8000FFF))
-                           (i32.and (i32.shr_u (local.get $x) (i32.const 13))
-                              (i32.const 1)))
-                        (i32.const 13)))))))
-      (i32.or (local.get $o) (i32.shr_u (local.get $sign) (i32.const 16))))
+                     (i32.wrap_i64
+                        (i64.shr_u
+                           (i64.add
+                              (i64.add (local.get $x)
+                                 (i64.const 0xc10001ffffffffff))
+                              (i64.and (i64.shr_u (local.get $x) (i64.const 42))
+                                 (i64.const 1)))
+                           (i64.const 42))))))))
+      (i32.or (local.get $o)
+         (i32.and
+            (i32.wrap_i64
+               (i64.shr_u (i64.reinterpret_f64 (local.get $f)) (i64.const 48)))
+            (i32.const 0x8000))))
 
    (func $double_of_float16 (export "caml_double_of_float16")
       (param $d i32) (result f64)

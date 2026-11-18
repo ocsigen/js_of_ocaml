@@ -35,6 +35,7 @@
 * Runtime/Wasm: compute `mod_float` in Wasm rather than calling JavaScript (#2629)
 
 ## Bug fixes
+* Runtime: round doubles to float16 only once (#2634)
 * Toplevel: `js_of_ocaml-toplevel` depends on `js_of_ocaml-ppx`, so that
   `js_of_ocaml-toplevel.worker_lwt_client` is no longer silently skipped when
   the ppx is not installed first (#2627)
