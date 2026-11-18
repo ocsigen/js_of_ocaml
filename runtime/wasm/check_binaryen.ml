@@ -16,20 +16,23 @@ let () =
   Sys.remove tmp;
   match line with
   | Some line -> (
+      (* An unusable wasm-opt is treated as missing, as the compiler does *)
       match Scanf.sscanf line "wasm-opt version %d" Fun.id with
       | version when version >= min_version -> print_endline "optimized"
       | version ->
           Printf.eprintf
-            "Error: wasm-opt version %d is too old. Binaryen >= %d is required.\n"
+            "Warning: wasm-opt version %d is too old (Binaryen >= %d is needed): the \
+             runtime is not optimized.\n"
             version
             min_version;
-          exit 1
-      | exception Scanf.Scan_failure _ ->
+          print_endline "unoptimized"
+      | exception (Scanf.Scan_failure _ | Failure _ | End_of_file) ->
           Printf.eprintf
-            "Error: could not parse wasm-opt version from %S. Binaryen >= %d is required.\n"
+            "Warning: could not parse wasm-opt version from %S (Binaryen >= %d is \
+             needed): the runtime is not optimized.\n"
             line
             min_version;
-          exit 1)
+          print_endline "unoptimized")
   | None ->
       (* Binaryen is optional: without it, the runtime is not optimized. We
          do not warn, since this is run at each build; the compiler warns
