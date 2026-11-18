@@ -1062,45 +1062,278 @@
          (struct.new $float (local.get $r_0))
          (ref.i31 (local.get $r_1))))
 
-   (func $erf (export "caml_erf_float") (param $x f64) (result f64)
-      (local $a1 f64) (local $a2 f64) (local $a3 f64)
-      (local $a4 f64) (local $a5 f64) (local $p f64)
-      (local $t f64) (local $y f64)
-      (local.set $a1 (f64.const 0.254829592))
-      (local.set $a2 (f64.const -0.284496736))
-      (local.set $a3 (f64.const 1.421413741))
-      (local.set $a4 (f64.const -1.453152027))
-      (local.set $a5 (f64.const 1.061405429))
-      (local.set $p (f64.const 0.3275911))
-      (local.set $t
-         (f64.div (f64.const 1)
-            (f64.add (f64.const 1)
-               (f64.mul (local.get $p) (f64.abs (local.get $x))))))
-      (local.set $y
-          (f64.sub (f64.const 1)
-             (f64.mul
-                (f64.add
-                   (f64.mul
-                      (f64.add
-                         (f64.mul
-                            (f64.add
-                               (f64.mul
-                                  (f64.add
-                                     (f64.mul (local.get $a5) (local.get $t))
-                                        (local.get $a4))
-                                  (local.get $t))
-                               (local.get $a3))
-                            (local.get $t))
-                         (local.get $a2))
-                      (local.get $t))
-                   (local.get $a1))
-                (f64.mul (local.get $t)
-                   (call $exp
-                      (f64.neg (f64.mul (local.get $x) (local.get $x))))))))
+   ;; erf and erfc are ported from FreeBSD's msun (s_erf.c), through musl:
+   ;;
+   ;; Copyright (C) 1993 by Sun Microsystems, Inc. All rights reserved.
+   ;;
+   ;; Developed at SunPro, a Sun Microsystems, Inc. business.
+   ;; Permission to use, copy, modify, and distribute this
+   ;; software is freely granted, provided that this notice
+   ;; is preserved.
+   ;;
+   ;; The JavaScript runtime (ieee_754.js) performs the same operations in
+   ;; the same order.
+
+   ;; (erf(x) - x) / x, for |x| < 0.84375, as a function of z = x * x
+   (func $erf_ratio (param $z f64) (result f64)
+      (local $r f64) (local $s f64)
+      ;; r = pp0 + z * (pp1 + z * (pp2 + z * (pp3 + z * pp4)))
+      (local.set $r (f64.const -2.37630166566501626084e-5))
+      (local.set $r
+         (f64.add (f64.const -5.77027029648944159157e-3)
+            (f64.mul (local.get $z) (local.get $r))))
+      (local.set $r
+         (f64.add (f64.const -2.84817495755985104766e-2)
+            (f64.mul (local.get $z) (local.get $r))))
+      (local.set $r
+         (f64.add (f64.const -3.2504210724700149937e-1)
+            (f64.mul (local.get $z) (local.get $r))))
+      (local.set $r
+         (f64.add (f64.const 1.28379167095512558561e-1)
+            (f64.mul (local.get $z) (local.get $r))))
+      ;; s = 1 + z * (qq1 + z * (qq2 + z * (qq3 + z * (qq4 + z * qq5))))
+      (local.set $s (f64.const -3.9602282787753681232e-6))
+      (local.set $s
+         (f64.add (f64.const 1.32494738004321644526e-4)
+            (f64.mul (local.get $z) (local.get $s))))
+      (local.set $s
+         (f64.add (f64.const 5.08130628187576562776e-3)
+            (f64.mul (local.get $z) (local.get $s))))
+      (local.set $s
+         (f64.add (f64.const 6.50222499887672944485e-2)
+            (f64.mul (local.get $z) (local.get $s))))
+      (local.set $s
+         (f64.add (f64.const 3.97917223959155352819e-1)
+            (f64.mul (local.get $z) (local.get $s))))
+      (local.set $s
+         (f64.add (f64.const 1) (f64.mul (local.get $z) (local.get $s))))
+      (f64.div (local.get $r) (local.get $s)))
+
+   ;; erfc(x), for 0.84375 <= x < 28
+   (func $erfc_abs (param $x f64) (result f64)
+      (local $s f64) (local $r f64) (local $q f64) (local $z f64)
+      (if (f64.lt (local.get $x) (f64.const 1.25))
+         (then
+            ;; erf(1 + s) - erx
+            (local.set $s (f64.sub (local.get $x) (f64.const 1)))
+            ;; r = pa0 + s * (pa1 + ... + s * pa6)
+            (local.set $r (f64.const -2.166375594868790843e-3))
+            (local.set $r
+               (f64.add (f64.const 3.54783043256182359371e-2)
+                  (f64.mul (local.get $s) (local.get $r))))
+            (local.set $r
+               (f64.add (f64.const -1.10894694282396677476e-1)
+                  (f64.mul (local.get $s) (local.get $r))))
+            (local.set $r
+               (f64.add (f64.const 3.18346619901161753674e-1)
+                  (f64.mul (local.get $s) (local.get $r))))
+            (local.set $r
+               (f64.add (f64.const -3.72207876035701323847e-1)
+                  (f64.mul (local.get $s) (local.get $r))))
+            (local.set $r
+               (f64.add (f64.const 4.14856118683748331666e-1)
+                  (f64.mul (local.get $s) (local.get $r))))
+            (local.set $r
+               (f64.add (f64.const -2.36211856075265944077e-3)
+                  (f64.mul (local.get $s) (local.get $r))))
+            ;; q = 1 + s * (qa1 + ... + s * qa6)
+            (local.set $q (f64.const 1.1984499846799107417e-2))
+            (local.set $q
+               (f64.add (f64.const 1.36370839120290507362e-2)
+                  (f64.mul (local.get $s) (local.get $q))))
+            (local.set $q
+               (f64.add (f64.const 1.26171219808761642112e-1)
+                  (f64.mul (local.get $s) (local.get $q))))
+            (local.set $q
+               (f64.add (f64.const 7.18286544141962662868e-2)
+                  (f64.mul (local.get $s) (local.get $q))))
+            (local.set $q
+               (f64.add (f64.const 5.40397917702171048937e-1)
+                  (f64.mul (local.get $s) (local.get $q))))
+            (local.set $q
+               (f64.add (f64.const 1.06420880400844228286e-1)
+                  (f64.mul (local.get $s) (local.get $q))))
+            (local.set $q
+               (f64.add (f64.const 1) (f64.mul (local.get $s) (local.get $q))))
+            ;; 1 - erx - r / q
+            (return
+               (f64.sub
+                  (f64.sub (f64.const 1) (f64.const 8.45062911510467529297e-1))
+                  (f64.div (local.get $r) (local.get $q))))))
+      ;; erfc(x) = exp(-x * x - 0.5625 + r / q) / x
+      (local.set $s
+         (f64.div (f64.const 1) (f64.mul (local.get $x) (local.get $x))))
+      (if (f64.lt (local.get $x) (f64.const 2.8571414947509766))
+         (then
+            ;; x < 1 / 0.35
+            ;; r = ra0 + s * (ra1 + ... + s * ra7)
+            (local.set $r (f64.const -9.81432934416914548592))
+            (local.set $r
+               (f64.add (f64.const -8.12874355063065934246e1)
+                  (f64.mul (local.get $s) (local.get $r))))
+            (local.set $r
+               (f64.add (f64.const -1.84605092906711035994e2)
+                  (f64.mul (local.get $s) (local.get $r))))
+            (local.set $r
+               (f64.add (f64.const -1.62396669462573470355e2)
+                  (f64.mul (local.get $s) (local.get $r))))
+            (local.set $r
+               (f64.add (f64.const -6.23753324503260060396e1)
+                  (f64.mul (local.get $s) (local.get $r))))
+            (local.set $r
+               (f64.add (f64.const -1.05586262253232909814e1)
+                  (f64.mul (local.get $s) (local.get $r))))
+            (local.set $r
+               (f64.add (f64.const -6.93858572707181764372e-1)
+                  (f64.mul (local.get $s) (local.get $r))))
+            (local.set $r
+               (f64.add (f64.const -9.86494403484714822705e-3)
+                  (f64.mul (local.get $s) (local.get $r))))
+            ;; q = 1 + s * (sa1 + ... + s * sa8)
+            (local.set $q (f64.const -6.04244152148580987438e-2))
+            (local.set $q
+               (f64.add (f64.const 6.57024977031928170135)
+                  (f64.mul (local.get $s) (local.get $q))))
+            (local.set $q
+               (f64.add (f64.const 1.08635005541779435134e2)
+                  (f64.mul (local.get $s) (local.get $q))))
+            (local.set $q
+               (f64.add (f64.const 4.29008140027567833386e2)
+                  (f64.mul (local.get $s) (local.get $q))))
+            (local.set $q
+               (f64.add (f64.const 6.45387271733267880336e2)
+                  (f64.mul (local.get $s) (local.get $q))))
+            (local.set $q
+               (f64.add (f64.const 4.34565877475229228821e2)
+                  (f64.mul (local.get $s) (local.get $q))))
+            (local.set $q
+               (f64.add (f64.const 1.376577541435190426e2)
+                  (f64.mul (local.get $s) (local.get $q))))
+            (local.set $q
+               (f64.add (f64.const 1.96512716674392571292e1)
+                  (f64.mul (local.get $s) (local.get $q))))
+            (local.set $q
+               (f64.add (f64.const 1) (f64.mul (local.get $s) (local.get $q)))))
+         (else
+            ;; r = rb0 + s * (rb1 + ... + s * rb6)
+            (local.set $r (f64.const -4.83519191608651397019e2))
+            (local.set $r
+               (f64.add (f64.const -1.02509513161107724954e3)
+                  (f64.mul (local.get $s) (local.get $r))))
+            (local.set $r
+               (f64.add (f64.const -6.37566443368389627722e2)
+                  (f64.mul (local.get $s) (local.get $r))))
+            (local.set $r
+               (f64.add (f64.const -1.60636384855821916062e2)
+                  (f64.mul (local.get $s) (local.get $r))))
+            (local.set $r
+               (f64.add (f64.const -1.77579549177547519889e1)
+                  (f64.mul (local.get $s) (local.get $r))))
+            (local.set $r
+               (f64.add (f64.const -7.99283237680523006574e-1)
+                  (f64.mul (local.get $s) (local.get $r))))
+            (local.set $r
+               (f64.add (f64.const -9.86494292470009928597e-3)
+                  (f64.mul (local.get $s) (local.get $r))))
+            ;; q = 1 + s * (sb1 + ... + s * sb7)
+            (local.set $q (f64.const -2.24409524465858183362e1))
+            (local.set $q
+               (f64.add (f64.const 4.74528541206955367215e2)
+                  (f64.mul (local.get $s) (local.get $q))))
+            (local.set $q
+               (f64.add (f64.const 2.55305040643316442583e3)
+                  (f64.mul (local.get $s) (local.get $q))))
+            (local.set $q
+               (f64.add (f64.const 3.19985821950859553908e3)
+                  (f64.mul (local.get $s) (local.get $q))))
+            (local.set $q
+               (f64.add (f64.const 1.53672958608443695994e3)
+                  (f64.mul (local.get $s) (local.get $q))))
+            (local.set $q
+               (f64.add (f64.const 3.25792512996573918826e2)
+                  (f64.mul (local.get $s) (local.get $q))))
+            (local.set $q
+               (f64.add (f64.const 3.03380607434824582924e1)
+                  (f64.mul (local.get $s) (local.get $q))))
+            (local.set $q
+               (f64.add (f64.const 1) (f64.mul (local.get $s) (local.get $q))))))
+      ;; z is x with the low 32 bits of its significand cleared, so that
+      ;; z * z is exact and -x * x = -z * z + (z - x) * (z + x)
+      (local.set $z
+         (f64.reinterpret_i64
+            (i64.and (i64.reinterpret_f64 (local.get $x))
+               (i64.const 0xffffffff00000000))))
+      (f64.div
+         (f64.mul
+            (call $exp
+               (f64.sub (f64.mul (f64.neg (local.get $z)) (local.get $z))
+                  (f64.const 0.5625)))
+            (call $exp
+               (f64.add
+                  (f64.mul (f64.sub (local.get $z) (local.get $x))
+                     (f64.add (local.get $z) (local.get $x)))
+                  (f64.div (local.get $r) (local.get $q)))))
+         (local.get $x)))
+
+   (func (export "caml_erf_float") (param $x f64) (result f64)
+      (local $a f64) (local $y f64)
+      (local.set $a (f64.abs (local.get $x)))
+      (if (f64.lt (local.get $a) (f64.const 0.84375))
+         (then
+            (if (f64.lt (local.get $a) (f64.const 0x1p-28))
+               (then
+                  ;; the scaling avoids underflows
+                  (return
+                     (f64.mul (f64.const 0.125)
+                        (f64.add (f64.mul (f64.const 8) (local.get $x))
+                           (f64.mul (f64.const 1.02703333676410069053)
+                              (local.get $x)))))))
+            (return
+               (f64.add (local.get $x)
+                  (f64.mul (local.get $x)
+                     (call $erf_ratio
+                        (f64.mul (local.get $x) (local.get $x))))))))
+      (if (f64.lt (local.get $a) (f64.const 6))
+         (then
+            (local.set $y
+               (f64.sub (f64.const 1) (call $erfc_abs (local.get $a)))))
+         (else
+            (if (f64.ne (local.get $x) (local.get $x))
+               (then (return (local.get $x))))
+            (local.set $y (f64.const 1))))
       (f64.copysign (local.get $y) (local.get $x)))
 
    (func (export "caml_erfc_float") (param $x f64) (result f64)
-      (f64.sub (f64.const 1) (call $erf (local.get $x))))
+      (local $a f64) (local $y f64)
+      (local.set $a (f64.abs (local.get $x)))
+      (if (f64.lt (local.get $a) (f64.const 0.84375))
+         (then
+            (if (f64.lt (local.get $a) (f64.const 0x1p-56))
+               (then (return (f64.sub (f64.const 1) (local.get $x)))))
+            (local.set $y
+               (call $erf_ratio (f64.mul (local.get $x) (local.get $x))))
+            (if (f64.lt (local.get $x) (f64.const 0.25))
+               (then
+                  (return
+                     (f64.sub (f64.const 1)
+                        (f64.add (local.get $x)
+                           (f64.mul (local.get $x) (local.get $y)))))))
+            (return
+               (f64.sub (f64.const 0.5)
+                  (f64.add (f64.sub (local.get $x) (f64.const 0.5))
+                     (f64.mul (local.get $x) (local.get $y)))))))
+      (if (f64.lt (local.get $a) (f64.const 28))
+         (then
+            (local.set $y (call $erfc_abs (local.get $a)))
+            (return
+               (if (result f64) (f64.lt (local.get $x) (f64.const 0))
+                  (then (f64.sub (f64.const 2) (local.get $y)))
+                  (else (local.get $y))))))
+      (if (f64.ne (local.get $x) (local.get $x))
+         (then (return (local.get $x))))
+      (if (result f64) (f64.lt (local.get $x) (f64.const 0))
+         (then (f64.const 2))
+         (else (f64.const 0))))
 
    (func (export "caml_fma_float")
       (param $vx (ref eq)) (param $vy (ref eq)) (param $vz (ref eq))

@@ -35,6 +35,8 @@
 * Runtime/Wasm: compute `mod_float` in Wasm rather than calling JavaScript (#2629)
 
 ## Bug fixes
+* Runtime: accurate `Float.erf` and `Float.erfc` (ported from fdlibm), instead
+  of an approximation good to 1e-7 only (#2635)
 * Toplevel: `js_of_ocaml-toplevel` depends on `js_of_ocaml-ppx`, so that
   `js_of_ocaml-toplevel.worker_lwt_client` is no longer silently skipped when
   the ppx is not installed first (#2627)
