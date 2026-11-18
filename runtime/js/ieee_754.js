@@ -582,7 +582,10 @@ function caml_fma_float(x, y, z) {
   }
 
   // It is possible that there was extra rounding for a denormalized value.
-  return fs + adjust(f - fs / scale, i.e) * scale;
+  // Correct it in the direction of the rest of the exact sum,
+  // i.s + i.e + u.e - f (i.e alone can have the wrong sign when u.e moved
+  // f past a tie).
+  return fs + adjust(f - fs / scale, i.s - f + i.e || u.e) * scale;
 }
 
 //Provides: caml_format_float const
