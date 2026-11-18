@@ -164,7 +164,7 @@ To compile to WebAssembly instead of JavaScript:
 ```
 opam install wasm_of_ocaml-compiler
 ```
-**Additional requirement**: Binaryen 120 or later must be installed on your system. See [Binaryen installation](https://github.com/WebAssembly/binaryen).
+**Recommended**: Binaryen 120 or later should be installed on your system to optimize the generated code. Without it, the generated code is larger and slower. See [Binaryen installation](https://github.com/WebAssembly/binaryen).
 
 See [wasm\_of\_ocaml](./wasm_overview.md) for usage.
 
@@ -2634,7 +2634,9 @@ The easiest way to install wasm\_of\_ocaml is to use opam:
 ```
 opam install wasm_of_ocaml-compiler js_of_ocaml js_of_ocaml-ppx js_of_ocaml-lwt
 ```
-Binaryen version 120 or later is required. The opam command above will install it automatically if needed.
+Binaryen version 120 or later is recommended: Wasm\_of\_ocaml uses its `wasm-opt` tool to optimize the generated code. It is optional, but without it the generated code is larger and slower, and a `missing-wasm-opt` warning is emitted when linking a program (it can be disabled with `-w no-missing-wasm-opt`). Install it with `opam install conf-binaryen`.
+
+If Binaryen is installed after Wasm\_of\_ocaml, it is used right away. The precompiled runtime was then built without it, so an optimized runtime is built each time a program is linked, which takes a fraction of a second, and an `unoptimized-runtime` warning is emitted (it can be disabled with `-w no-unoptimized-runtime`); reinstalling Wasm\_of\_ocaml avoids this.
 
 ## Usage
 
@@ -3372,7 +3374,7 @@ make tests-wasm
 # Run a specific test directory
 dune build @compiler/tests-jsoo/runtest
 dune build @compiler/tests-ocaml/runtest-js
-WASM_OF_OCAML=true dune build @compiler/tests-ocaml/runtest-wasm
+dune build @compiler/tests-ocaml/runtest-wasm
 
 # Run javascript parser tests
 cd compiler/tests-js-parser
@@ -15955,6 +15957,8 @@ type t = [
   | `Overriding_primitive_purity
   | `Deprecated_primitive
   | `Unused_js_variable
+  | `Missing_wasm_opt
+  | `Unoptimized_runtime
  ]
 ```
 ```ocaml
@@ -57652,9 +57656,19 @@ type link_input = {
 }
 ```
 ```ocaml
+val available : unit -> bool
+```
+Whether a recent enough Binaryen's `wasm-opt` is available. `optimize` must only be called when it is.
+
+```ocaml
 val optimizes : Js_of_ocaml_compiler.Profile.t -> bool
 ```
-Whether wasm-opt optimizes the generated code at this optimization level. When it does not, our own passes tighten the code instead; those which only redo what wasm-opt does are skipped when it does.
+Whether wasm-opt optimizes the generated code at this optimization level (and is available). When it does not, our own passes tighten the code instead; those which only redo what wasm-opt does are skipped when it does.
+
+```ocaml
+val warn_if_unavailable : Js_of_ocaml_compiler.Profile.t -> unit
+```
+Warn that the generated code is not optimized when `wasm-opt` would be used at this optimization level but is not available. Warns at most once.
 
 ```ocaml
 val optimize : 
@@ -59448,9 +59462,14 @@ val link_input :
 Linker input for a module in binary format. Its source map, if any, is loaded with `load_source_map`; it is ignored when this function is not provided.
 
 ```ocaml
-val link : inputs:Wasm_link.input list -> output_file:string -> unit
+val link : 
+  ?remove_dead_code:bool ->
+  inputs:Wasm_link.input list ->
+  output_file:string ->
+  unit ->
+  unit
 ```
-Link the input modules (in binary format), keeping all their code
+Link the input modules (in binary format), keeping all their code unless `remove_dead_code` is set: then, all exports are kept but the code and imports they do not use are removed.
 
 ```ocaml
 val build : 
@@ -60502,6 +60521,7 @@ type output = {
 ```ocaml
 val f : 
   ?filter_export:(string -> bool) ->
+  ?remove_dead_code:bool ->
   ?dependencies:dependency list ->
   ?names:bool ->
   ?eliminate_duplicates:bool ->
@@ -60509,7 +60529,7 @@ val f :
   output_file:string ->
   output
 ```
-Link the input modules. When `dependencies` is provided, dead code is removed: only the exports reachable from the root nodes of the dependency graph are kept, and only the entries reachable from them or from the start functions are kept. The name section is omitted if `names` is false. Unless `eliminate_duplicates` is false, the duplicate functions of each module are removed (wasm-opt does this as well when it runs).
+Link the input modules. When `dependencies` is provided, dead code is removed: only the exports reachable from the root nodes of the dependency graph are kept, and only the entries reachable from them or from the start functions are kept. When `remove_dead_code` is true and no `dependencies` are given, all exports are kept and the entries not reachable from them are removed. The name section is omitted if `names` is false. Unless `eliminate_duplicates` is false, the duplicate functions of each module are removed (wasm-opt does this as well when it runs).
 
 
 ---

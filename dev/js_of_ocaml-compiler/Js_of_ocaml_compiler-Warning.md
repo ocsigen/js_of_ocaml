@@ -15,6 +15,8 @@ type t = [
   | `Overriding_primitive_purity
   | `Deprecated_primitive
   | `Unused_js_variable
+  | `Missing_wasm_opt
+  | `Unoptimized_runtime
  ]
 ```
 ```ocaml
