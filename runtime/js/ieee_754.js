@@ -132,7 +132,7 @@ function caml_int64_float_of_bits(x) {
 }
 
 //Provides: caml_nextafter_float const
-//Requires: caml_int64_float_of_bits, caml_int64_bits_of_float, caml_int64_add, caml_int64_sub,caml_int64_of_int32
+//Requires: jsoo_dataview
 function caml_nextafter_float(x, y) {
   if (Number.isNaN(x) || Number.isNaN(y)) return Number.NaN;
   if (x === y) return y;
@@ -140,11 +140,21 @@ function caml_nextafter_float(x, y) {
     if (y < 0) return -Math.pow(2, -1074);
     else return Math.pow(2, -1074);
   }
-  var bits = caml_int64_bits_of_float(x);
-  var one = caml_int64_of_int32(1);
-  if (x < y === x > 0) bits = caml_int64_add(bits, one);
-  else bits = caml_int64_sub(bits, one);
-  return caml_int64_float_of_bits(bits);
+  // Add one to or subtract one from the bit pattern, as two 32-bit halves
+  jsoo_dataview.setFloat64(0, x, true);
+  var lo = jsoo_dataview.getUint32(0, true);
+  var hi = jsoo_dataview.getUint32(4, true);
+  if (x < y === x > 0) {
+    // away from zero
+    lo = (lo + 1) >>> 0;
+    if (lo === 0) hi++;
+  } else {
+    if (lo === 0) hi--;
+    lo = (lo - 1) >>> 0;
+  }
+  jsoo_dataview.setUint32(0, lo, true);
+  jsoo_dataview.setUint32(4, hi, true);
+  return jsoo_dataview.getFloat64(0, true);
 }
 
 //Provides: caml_trunc_float const
