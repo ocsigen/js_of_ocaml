@@ -33,24 +33,27 @@ let link ?remove_dead_code ~inputs ~output_file () =
   ()
 
 let build ~allowed_imports ~opt_options ~variables ~inputs ~output_file =
-  Fs.with_intermediate_file (Filename.temp_file "runtime-merged" ".wasm")
-  @@ fun merge_file ->
   (Wax_link.with_preprocessed_files ~variables ~inputs
   @@ fun inputs ->
-  (* Without Binaryen, the unused imports are removed by the linker *)
-  link
-    ~remove_dead_code:(not (Binaryen.available ()))
-    ~inputs:(List.map ~f:link_input inputs)
-    ~output_file:merge_file
-    ());
-  Binaryen.optimize
-    ~profile:Profile.O1
-    ~options:opt_options
-    ~opt_input_sourcemap:None
-    ~input_file:merge_file
-    ~opt_output_sourcemap:None
-    ~output_file
-    ();
+  let link ?remove_dead_code output_file =
+    link ?remove_dead_code ~inputs:(List.map ~f:link_input inputs) ~output_file ()
+  in
+  if Binaryen.available ()
+  then (
+    Fs.with_intermediate_file (Filename.temp_file "runtime-merged" ".wasm")
+    @@ fun merge_file ->
+    link merge_file;
+    Binaryen.optimize
+      ~profile:Profile.O1
+      ~options:opt_options
+      ~opt_input_sourcemap:None
+      ~input_file:merge_file
+      ~opt_output_sourcemap:None
+      ~output_file
+      ())
+  else
+    (* Without Binaryen, the unused imports are removed by the linker *)
+    link ~remove_dead_code:true output_file);
   let imports = Link.Wasm_binary.read_imports ~file:output_file in
   Option.iter allowed_imports ~f:(fun allowed_imports ->
       let missing_imports =

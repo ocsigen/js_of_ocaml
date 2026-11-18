@@ -287,24 +287,31 @@ let link_runtime ~profile runtime_wasm_files output_file =
   else
     Fs.with_intermediate_file (Filename.temp_file "extra_runtime" ".wasm")
     @@ fun extra_runtime ->
-    Fs.with_intermediate_file (Filename.temp_file "merged_runtime" ".wasm")
-    @@ fun temp_file ->
     (with_runtime_files ~runtime_wasm_files
     @@ fun runtime_inputs ->
-    (* Without Binaryen, the imports which are not used are removed by
-       the linker: they may not be provided by the runtime *)
-    Runtime.link
-      ~remove_dead_code:(not (Binaryen.available ()))
-      ~inputs:(List.map ~f:Runtime.link_input runtime_inputs)
-      ~output_file:temp_file
-      ());
-    Binaryen.optimize
-      ~profile
-      ~opt_input_sourcemap:None
-      ~opt_output_sourcemap:None
-      ~input_file:temp_file
-      ~output_file:extra_runtime
-      ();
+    let link ?remove_dead_code output_file =
+      Runtime.link
+        ?remove_dead_code
+        ~inputs:(List.map ~f:Runtime.link_input runtime_inputs)
+        ~output_file
+        ()
+    in
+    if Binaryen.available ()
+    then (
+      Fs.with_intermediate_file (Filename.temp_file "merged_runtime" ".wasm")
+      @@ fun temp_file ->
+      link temp_file;
+      Binaryen.optimize
+        ~profile
+        ~opt_input_sourcemap:None
+        ~opt_output_sourcemap:None
+        ~input_file:temp_file
+        ~output_file:extra_runtime
+        ())
+    else
+      (* Without Binaryen, the imports which are not used are removed by
+         the linker: they may not be provided by the runtime *)
+      link ~remove_dead_code:true extra_runtime);
     Runtime.link
       ~inputs:
         [ runtime_input (build_runtime ())
