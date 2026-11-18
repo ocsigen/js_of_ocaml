@@ -395,6 +395,32 @@ let%expect_test "ldexp into subnormals" =
     infinity
     |}]
 
+(* %h of extreme values (the JS runtime used to normalize them with a
+   loop of up to 1023 multiplications or divisions by 2) *)
+let%expect_test "%h of extreme values" =
+  let p x = Printf.printf "%h %.3h %.0h %+.1h\n" x x x x in
+  p max_float;
+  p (-.max_float);
+  p 1e300;
+  p min_float;
+  p (Float.pred min_float);
+  p 5e-324;
+  p (-5e-324);
+  p 1e-300;
+  p (-0.);
+  [%expect
+    {|
+    0x1.fffffffffffffp+1023 0x2.000p+1023 0x2p+1023 +0x2.0p+1023
+    -0x1.fffffffffffffp+1023 -0x2.000p+1023 -0x2p+1023 -0x2.0p+1023
+    0x1.7e43c8800759cp+996 0x1.7e4p+996 0x1p+996 +0x1.8p+996
+    0x1p-1022 0x1.000p-1022 0x1p-1022 +0x1.0p-1022
+    0x0.fffffffffffffp-1022 0x1.000p-1022 0x1p-1022 +0x1.0p-1022
+    0x0.0000000000001p-1022 0x0.000p-1022 0x0p-1022 +0x0.0p-1022
+    -0x0.0000000000001p-1022 -0x0.000p-1022 -0x0p-1022 -0x0.0p-1022
+    0x1.56e1fc2f8f359p-997 0x1.56ep-997 0x1p-997 +0x1.5p-997
+    -0x0p+0 -0x0.000p+0 -0x0p+0 -0x0.0p+0
+    |}]
+
 (* Hex float literals must be parsed exactly: scaling the mantissa
    with a single multiplication underflows for exponents below -1074
    and double-rounds mantissas wider than 53 bits. *)

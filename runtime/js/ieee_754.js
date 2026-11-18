@@ -72,19 +72,18 @@ function caml_hexstring_of_float(x, prec, style) {
     return caml_string_of_jsstring(
       sign_str + (Number.isNaN(x) ? "nan" : "infinity"),
     );
-  if (sign) x = -x;
   var exp = 0;
-  if (x === 0) {
-  } else if (x < 1) {
-    while (x < 1 && exp > -1022) {
-      x *= 2;
-      exp--;
-    }
-  } else {
-    while (x >= 2) {
-      x /= 2;
-      exp++;
-    }
+  if (x !== 0) {
+    // Read the exponent, then set it to 0 (and the sign to +) to get the
+    // mantissa 1.f, or 0.f for subnormals; both are exact
+    var hi = jsoo_dataview.getUint16(6, true);
+    var biased = (hi >> 4) & 0x7ff;
+    jsoo_dataview.setUint16(6, (hi & 0xf) | 0x3ff0, true);
+    x = jsoo_dataview.getFloat64(0, true);
+    if (biased === 0) {
+      exp = -1022;
+      x -= 1;
+    } else exp = biased - 1023;
   }
   var exp_sign = exp < 0 ? "" : "+";
   if (prec >= 0 && prec < 13) {
