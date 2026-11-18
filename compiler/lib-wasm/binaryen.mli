@@ -23,8 +23,8 @@ type link_input =
   }
 
 val available : unit -> bool
-(** Whether a recent enough Binaryen's [wasm-opt] is available. When it is
-    not, [optimize] copies its input unchanged. *)
+(** Whether a recent enough Binaryen's [wasm-opt] is available. [optimize]
+    must only be called when it is. *)
 
 val optimizes : Profile.t -> bool
 (** Whether wasm-opt optimizes the generated code at this optimization

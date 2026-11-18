@@ -146,30 +146,19 @@ let optimize
     ~opt_output_sourcemap
     ~output_file
     () =
-  if not (available ())
-  then (
-    (* Binaryen is optional: without it, the module is left unoptimized *)
-    Fs.write_file ~name:output_file ~contents:(Fs.read_file input_file);
-    match opt_input_sourcemap, opt_output_sourcemap with
-    | Some input, Some output -> Fs.write_file ~name:output ~contents:(Fs.read_file input)
-    | None, Some output ->
-        Source_map.to_file
-          (Standard (Source_map.Standard.empty ~inline_source_content:false))
-          output
-    | _, None -> ())
-  else
-    command
-      (* [Wasm_output] and [Wat_output] emit [try_table] directly when
-         targeting WASI, and so does Wax when assembling the runtime files;
-         [--emit-exnref] converts any remaining legacy [try]/[catch] (from
-         runtime modules provided in binary form) so the whole output is
-         uniformly in the new form. *)
-      (("wasm-opt" :: (if Config.Flag.wasi () then [ "--emit-exnref" ] else []))
-      @ common_options ()
-      @ (match options with
-        | Some o -> o
-        | None -> optimization_options profile)
-      @ (if reorder_functions then [ "--reorder-functions" ] else [])
-      @ [ Filename.quote input_file; "-o"; Filename.quote output_file ]
-      @ opt_flag "--input-source-map" opt_input_sourcemap
-      @ opt_flag "--output-source-map" opt_output_sourcemap)
+  assert (available ());
+  command
+    (* [Wasm_output] and [Wat_output] emit [try_table] directly when
+       targeting WASI, and so does Wax when assembling the runtime files;
+       [--emit-exnref] converts any remaining legacy [try]/[catch] (from
+       runtime modules provided in binary form) so the whole output is
+       uniformly in the new form. *)
+    (("wasm-opt" :: (if Config.Flag.wasi () then [ "--emit-exnref" ] else []))
+    @ common_options ()
+    @ (match options with
+      | Some o -> o
+      | None -> optimization_options profile)
+    @ (if reorder_functions then [ "--reorder-functions" ] else [])
+    @ [ Filename.quote input_file; "-o"; Filename.quote output_file ]
+    @ opt_flag "--input-source-map" opt_input_sourcemap
+    @ opt_flag "--output-source-map" opt_output_sourcemap)
