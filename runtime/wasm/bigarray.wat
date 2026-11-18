@@ -735,29 +735,40 @@
                (i64.shr_u (i64.reinterpret_f64 (local.get $f)) (i64.const 48)))
             (i32.const 0x8000))))
 
+   ;; Without arithmetic on subnormal values, which is slow
    (func $double_of_float16 (export "caml_double_of_float16")
       (param $d i32) (result f64)
-      (local $f f32)
-      (local.set $f
-         (f32.mul
-            (f32.reinterpret_i32
-               ;; exponent and mantissa
-               (i32.shl (i32.and (local.get $d) (i32.const 0x7FFF))
-                  (i32.const 13)))
-            (f32.const 0x1p+112)))
-      (if (f32.ge (local.get $f) (f32.const 65536))
+      (local $e i32) (local $x i64)
+      (local.set $e (i32.and (local.get $d) (i32.const 0x7c00)))
+      ;; exponent and mantissa, exponent rebiased from 15 to 1023
+      (local.set $x
+         (i64.add
+            (i64.shl (i64.extend_i32_u (i32.and (local.get $d) (i32.const 0x7fff)))
+               (i64.const 42))
+            (i64.const 0x3f00000000000000)))
+      (if (i32.eqz (local.get $e))
          (then
-            ;; NaN / infinity
-            (local.set $f
-               (f32.reinterpret_i32
-                  (i32.or (i32.reinterpret_f32 (local.get $f))
-                     (i32.const 0x7f800000))))))
-      (f64.promote_f32
-         (f32.reinterpret_i32
-            (i32.or (i32.reinterpret_f32 (local.get $f))
-               ;; sign bit
-               (i32.shl (i32.and (local.get $d) (i32.const 0x8000))
-                  (i32.const 16))))))
+            ;; subnormal: 2^-14 * (1 + m / 1024) - 2^-14 = m * 2^-24, exactly
+            (local.set $x
+               (i64.reinterpret_f64
+                  (f64.sub
+                     (f64.reinterpret_i64
+                        (i64.add (local.get $x) (i64.const 0x0010000000000000)))
+                     (f64.const 0x1p-14))))))
+      (if (i32.eq (local.get $e) (i32.const 0x7c00))
+         (then
+            ;; infinity / NaN: exponent 31 + 1008 + 1008 = 2047; NaNs are
+            ;; made quiet, as a conversion through float32 does
+            (local.set $x
+               (i64.or
+                  (i64.add (local.get $x) (i64.const 0x3f00000000000000))
+                  (select (i64.const 0x0008000000000000) (i64.const 0)
+                     (i32.and (local.get $d) (i32.const 0x3ff)))))))
+      (f64.reinterpret_i64
+         (i64.or (local.get $x)
+            ;; sign bit
+            (i64.shl (i64.extend_i32_u (i32.and (local.get $d) (i32.const 0x8000)))
+               (i64.const 48)))))
 
    (func $caml_ba_num_elts (export "caml_ba_num_elts")
       (param $b (ref eq)) (result i32)

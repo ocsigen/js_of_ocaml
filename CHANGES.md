@@ -33,6 +33,7 @@
 * Compiler: name variables in a more regular order, which compresses better
   (#2598)
 * Runtime/Wasm: compute `mod_float` in Wasm rather than calling JavaScript (#2629)
+* Runtime: faster conversion of float16 values to doubles (#2634)
 
 ## Bug fixes
 * Runtime: round doubles to float16 only once (#2634)

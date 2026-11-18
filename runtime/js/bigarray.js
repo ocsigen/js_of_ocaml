@@ -44,6 +44,15 @@ function caml_ba_get_size(dims) {
 
 //Provides: caml_double_of_float16 pure
 var caml_double_of_float16 = (function () {
+  if (globalThis.Float16Array) {
+    var f16 = new globalThis.Float16Array(1);
+    var u16 = new Uint16Array(f16.buffer);
+    return function (bytes) {
+      u16[0] = bytes;
+      return f16[0];
+    };
+  }
+
   var pow = Math.pow;
 
   var EXP_MASK16 = 31; // 2 ** 5 - 1
