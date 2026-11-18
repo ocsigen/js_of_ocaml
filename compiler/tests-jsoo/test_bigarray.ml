@@ -416,21 +416,19 @@ let%expect_test "hash with tail elements" =
     30682b2c int16_unsigned 5
     |}]
 
-let%expect_test "float16 rounds through float32 (double-rounding)" =
-  (* Native rounds a double to float16 by first casting it to float32 (the
-     [(float) x] cast in caml_float16_of_double), so these tie values round
-     differently than they would straight onto the float16 grid -- e.g.
-     65519.99999958789 overflows to infinity instead of giving 65504. The js
-     and wasm runtimes must agree with native. *)
+(* Not run natively: the native runtime of OCaml (and of OxCaml before
+   oxcaml/oxcaml#8148) rounds to float32 and then to float16, so that
+   65519.99999958789 gives infinity there. *)
+let%expect_test ("float16 rounds once (no double-rounding)" [@when not native]) =
   let f16 x = (from_list float16 [ x ]).{0} in
   List.iter
     ~f:(fun x -> Printf.printf "%h\n" (f16 x))
     [ 65519.99999958789; 65504.5; 171.68749381875; -4469.999817090353 ];
   [%expect {|
-    infinity
     0x1.ffcp+15
-    0x1.578p+7
-    -0x1.178p+12
+    0x1.ffcp+15
+    0x1.574p+7
+    -0x1.174p+12
     |}]
 [@@if ocaml_version >= (5, 2, 0)]
 
