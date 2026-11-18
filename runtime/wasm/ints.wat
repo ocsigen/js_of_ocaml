@@ -321,21 +321,25 @@
             (br_if $bad_format
                (i32.ne (array.get_u $bytes (local.get $s) (i32.const 0))
                        (@char "%")))
-            (local.set $c (array.get_u $bytes (local.get $s) (i32.const 1)))
-            (if (i32.eq (local.get $c) (@char "+"))
-               (then
-                  (local.set $sign_style (i32.const 1))
-                  (local.set $i (i32.add (local.get $i) (i32.const 1)))))
-            (if (i32.eq (local.get $c) (@char " "))
-               (then
-                  (local.set $sign_style (i32.const 2))
-                  (local.set $i (i32.add (local.get $i) (i32.const 1)))))
-            (if (i32.eq (local.get $c) (@char "#"))
-               (then
-                  (local.set $alternate (i32.const 1))
-                  (local.set $i (i32.add (local.get $i) (i32.const 1)))))
-            (br_if $bad_format (i32.eq (local.get $i) (local.get $len)))
-            (local.set $c (array.get_u $bytes (local.get $s) (local.get $i)))
+            ;; flags, in any order ("+" takes precedence over " ")
+            (loop $flags
+               (br_if $bad_format (i32.eq (local.get $i) (local.get $len)))
+               (local.set $c (array.get_u $bytes (local.get $s) (local.get $i)))
+               (local.set $i (i32.add (local.get $i) (i32.const 1)))
+               (if (i32.eq (local.get $c) (@char "+"))
+                  (then
+                     (local.set $sign_style (i32.const 1))
+                     (br $flags)))
+               (if (i32.eq (local.get $c) (@char " "))
+                  (then
+                     (if (i32.eqz (local.get $sign_style))
+                        (then (local.set $sign_style (i32.const 2))))
+                     (br $flags)))
+               (if (i32.eq (local.get $c) (@char "#"))
+                  (then
+                     (local.set $alternate (i32.const 1))
+                     (br $flags))))
+            (local.set $i (i32.sub (local.get $i) (i32.const 1)))
             (if (i32.or (i32.or (i32.eq (local.get $c) (@char "L"))
                                 (i32.eq (local.get $c) (@char "l")))
                         (i32.eq (local.get $c) (@char "n")))
@@ -406,19 +410,20 @@
                      (then
                         (local.set $d
                            (i32.and (local.get $d) (i32.const 0x7fffffff)))))))))
-      ;; the "#" flag is ignored in base 10
+      ;; as in C, the "#" flag is ignored in base 10, and the "+" and " "
+      ;; flags for unsigned conversions
       (if (i32.eq (local.get $base) (i32.const 10))
          (then
             (return_call $format_decimal (i64.extend_i32_u (local.get $d))
-               (local.get $negative) (local.get $sign_style))))
+               (local.get $negative)
+               (select (local.get $sign_style) (i32.const 0)
+                  (local.get $signed)))))
+      ;; base 8 or 16, unsigned
       (local.set $n (local.get $d))
       (loop $count
          (local.set $i (i32.add (local.get $i) (i32.const 1)))
          (local.set $n (i32.div_u (local.get $n) (local.get $base)))
          (br_if $count (local.get $n)))
-      (if (i32.or (local.get $negative)
-                  (local.get $sign_style))
-         (then (local.set $i (i32.add (local.get $i) (i32.const 1)))))
       (if (local.get $alternate)
          (then
             (if (local.get $d)
@@ -443,33 +448,14 @@
                (i32.rem_u (local.get $d) (local.get $base))))
          (local.set $d (i32.div_u (local.get $d) (local.get $base)))
          (br_if $write (local.get $d)))
-      (if (local.get $negative)
+      ;; the "#" prefix, if room was made for it above
+      (if (local.get $i)
          (then
-            (array.set $bytes (local.get $s) (i32.const 0) (@char "-")))
-         (else
-            (if (local.get $sign_style)
+            (array.set $bytes (local.get $s) (i32.const 0) (@char "0"))
+            (if (i32.eq (local.get $base) (i32.const 16))
                (then
-                  (if (i32.eq (local.get $sign_style) (i32.const 1))
-                     (then
-                        (array.set $bytes (local.get $s) (i32.const 0)
-                           (@char "+")))
-                     (else
-                        (array.set $bytes (local.get $s) (i32.const 0)
-                           (@char " "))))))))
-      ;; The "#" flag only prefixes octal/hex; for base 10 it is ignored (as
-      ;; in C). Guarding on base here also stops the "0" from overwriting the
-      ;; sign, since the digit-count phase above only reserves prefix room for
-      ;; base 8/16.
-      (if (i32.and (local.get $alternate)
-                   (i32.ne (local.get $base) (i32.const 10)))
-         (then
-            (if (local.get $i)
-               (then
-                  (array.set $bytes (local.get $s) (i32.const 0) (@char "0"))
-                  (if (i32.eq (local.get $base) (i32.const 16))
-                     (then
-                        (array.set $bytes (local.get $s) (i32.const 1)
-                           (select (@char "X") (@char "x")
-                              (local.get $uppercase)))))))))
+                  (array.set $bytes (local.get $s) (i32.const 1)
+                     (select (@char "X") (@char "x")
+                        (local.get $uppercase)))))))
       (local.get $s))
 )
