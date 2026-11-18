@@ -275,21 +275,24 @@
                (i32.sub (local.get $i) (i32.const 1))
                (i32.add (@char "0") (i32.wrap_i64 (local.get $n)))))))
 
-   ;; Format n (unsigned) in decimal, preceded by "-" if negative, or else
-   ;; by "+" or " " for sign styles 1 and 2
+   ;; The sign character of a number: "-" if negative, or else "+" or " "
+   ;; for sign styles 1 and 2, or 0 for none
+   (func $decimal_sign (export "decimal_sign")
+      (param $negative i32) (param $sign_style i32) (result i32)
+      (if (result i32) (local.get $negative)
+         (then (@char "-"))
+         (else
+            (if (result i32) (local.get $sign_style)
+               (then
+                  (select (@char "+") (@char " ")
+                     (i32.eq (local.get $sign_style) (i32.const 1))))
+               (else (i32.const 0))))))
+
+   ;; Format n (unsigned) in decimal, preceded by the character sign
+   ;; unless it is 0
    (func $format_decimal (export "format_decimal")
-      (param $n i64) (param $negative i32) (param $sign_style i32)
-      (result (ref eq))
-      (local $s (ref $bytes)) (local $sign i32) (local $len i32)
-      (local.set $sign
-         (if (result i32) (local.get $negative)
-            (then (@char "-"))
-            (else
-               (if (result i32) (local.get $sign_style)
-                  (then
-                     (select (@char "+") (@char " ")
-                        (i32.eq (local.get $sign_style) (i32.const 1))))
-                  (else (i32.const 0))))))
+      (param $n i64) (param $sign i32) (result (ref $bytes))
+      (local $s (ref $bytes)) (local $len i32)
       (local.set $len
          (i32.add (call $num_digits (local.get $n))
             (i32.ne (local.get $sign) (i32.const 0))))
@@ -303,8 +306,8 @@
       (local.set $negative (i32.lt_s (local.get $d) (i32.const 0)))
       (if (local.get $negative)
          (then (local.set $d (i32.sub (i32.const 0) (local.get $d)))))
-      (return_call $format_decimal
-         (i64.extend_i32_u (local.get $d)) (local.get $negative) (i32.const 0)))
+      (return_call $format_decimal (i64.extend_i32_u (local.get $d))
+         (select (@char "-") (i32.const 0) (local.get $negative))))
 
    (@string $format_error "format_int: bad format")
 
@@ -415,9 +418,9 @@
       (if (i32.eq (local.get $base) (i32.const 10))
          (then
             (return_call $format_decimal (i64.extend_i32_u (local.get $d))
-               (local.get $negative)
-               (select (local.get $sign_style) (i32.const 0)
-                  (local.get $signed)))))
+               (call $decimal_sign (local.get $negative)
+                  (select (local.get $sign_style) (i32.const 0)
+                     (local.get $signed))))))
       ;; base 8 or 16, unsigned
       (local.set $n (local.get $d))
       (loop $count

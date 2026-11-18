@@ -53,6 +53,8 @@
    (import "ints" "num_digits" (func $num_digits (param i64) (result i32)))
    (import "ints" "write_decimal"
       (func $write_decimal (param (ref $bytes)) (param i32) (param i64)))
+   (import "ints" "format_decimal"
+      (func $format_decimal (param i64 i32) (result (ref $bytes))))
    (import "jsstring" "jsstring_of_bytes"
       (func $jsstring_of_bytes (param (ref $bytes)) (result externref)))
    (import "jsstring" "bytes_of_jsstring"
@@ -319,7 +321,7 @@
    ;; fits in an unsigned 64-bit integer. The last result tells whether
    ;; it does.
    (func $exact_decimal (param $x f64) (result i64 i32 i32)
-      (local $m i64) (local $e i32) (local $p i64)
+      (local $m i64) (local $e i32) (local $p i64) (local $b i32)
       (if (f64.eq (local.get $x) (f64.const 0))
          (then (return (i64.const 0) (i32.const 0) (i32.const 1))))
       (call $decompose (local.get $x))
@@ -341,8 +343,23 @@
                (then
                   (local.set $p
                      (array.get $int64s (global.get $pow5) (local.get $e)))
-                  (if (i64.le_u (local.get $m)
-                         (i64.div_u (i64.const -1) (local.get $p)))
+                  ;; m * p < 2^64? With b the sum of the numbers of
+                  ;; leading zeros, 2^(126 - b) <= m * p < 2^(128 - b), so
+                  ;; only b = 63 needs a division
+                  (local.set $b
+                     (i32.wrap_i64
+                        (i64.add (i64.clz (local.get $m))
+                           (i64.clz (local.get $p)))))
+                  (if (if (result i32) (i32.ge_u (local.get $b) (i32.const 64))
+                         (then (i32.const 1))
+                         (else
+                            (if (result i32)
+                                (i32.eq (local.get $b) (i32.const 63))
+                               (then
+                                  (i64.le_u (local.get $m)
+                                     (i64.div_u (i64.const -1)
+                                        (local.get $p))))
+                               (else (i32.const 0)))))
                      (then
                         (return (i64.mul (local.get $m) (local.get $p))
                            (local.get $e) (i32.const 1))))))))
@@ -377,22 +394,22 @@
       (array.new $bytes (i32.const 0) (i32.const 20)))
 
    ;; The significant digits of n * 10^-k, rounded as the conversion
-   ;; requires, without trailing zeros, and the decimal exponent e of
-   ;; the first digit (d0.d1d2... * 10^e). Zero is "0" with e = 0.
+   ;; requires, possibly with trailing zeros ($layout handles them), and
+   ;; the decimal exponent e of the first digit (d0.d1d2... * 10^e). Zero
+   ;; is "0" with e = 0.
    (func $exact_digits
       (param $n i64) (param $k i32) (param $conversion i32) (param $prec i32)
       (result (ref $bytes) i32 i32)
-      (local $nd i32) (local $r i32) (local $z i32)
+      (local $nd i32) (local $r i32)
       (if (i64.eqz (local.get $n))
          (then
             (return (global.get $zero_digits) (i32.const 1) (i32.const 0))))
-      (local.set $nd (call $num_digits (local.get $n)))
       ;; number of digits to drop
       (local.set $r
          (if (result i32) (i32.eq (local.get $conversion) (i32.const 1))
             (then (i32.sub (local.get $k) (local.get $prec)))
             (else
-               (i32.sub (local.get $nd)
+               (i32.sub (local.tee $nd (call $num_digits (local.get $n)))
                   (if (result i32) (local.get $conversion)
                      (then
                         (select (local.get $prec) (i32.const 1)
@@ -405,22 +422,18 @@
             (if (i64.eqz (local.get $n))
                (then
                   (return
-                     (global.get $zero_digits) (i32.const 1) (i32.const 0)))))
+                     (global.get $zero_digits) (i32.const 1) (i32.const 0))))
+            (local.set $nd (call $num_digits (local.get $n))))
          (else
-            (local.set $r (i32.const 0))))
-      (loop $strip
-         (if (i64.eqz (i64.rem_u (local.get $n) (i64.const 10)))
-            (then
-               (local.set $n (i64.div_u (local.get $n) (i64.const 10)))
-               (local.set $z (i32.add (local.get $z) (i32.const 1)))
-               (br $strip))))
-      (local.set $nd (call $num_digits (local.get $n)))
+            (local.set $r (i32.const 0))
+            (if (i32.eq (local.get $conversion) (i32.const 1))
+               (then (local.set $nd (call $num_digits (local.get $n)))))))
       (call $write_decimal
          (global.get $digit_buffer) (local.get $nd) (local.get $n))
       (global.get $digit_buffer)
       (local.get $nd)
-      ;; the value is now (n * 10^z) * 10^(r - k)
-      (i32.sub (i32.add (local.get $nd) (i32.add (local.get $z) (local.get $r)))
+      ;; the value is now n * 10^(r - k)
+      (i32.sub (i32.add (local.get $nd) (local.get $r))
          (i32.add (local.get $k) (i32.const 1))))
 
    ;; Lay out the digits d0.d1d2... * 10^e (with d0 <> 0, or d = "0" and
@@ -573,12 +586,34 @@
       (param $x f64) (param $sign i32) (param $conversion i32)
       (param $prec i32) (param $uppercase i32)
       (result (ref null $bytes))
-      (local $n i64) (local $k i32) (local $ok i32)
+      (local $n i64) (local $k i32) (local $ok i32) (local $p i32)
       (call $exact_decimal (local.get $x))
       (local.set $ok)
       (local.set $k)
       (local.set $n)
       (if (i32.eqz (local.get $ok)) (then (return (ref.null $bytes))))
+      ;; an integer which %g prints in full (at most P digits, with
+      ;; P = max(prec, 1)), or %.0f: its digits only
+      (if (i32.eqz (local.get $k))
+         (then
+            (if (if (result i32) (i32.eq (local.get $conversion) (i32.const 2))
+                   (then
+                      (local.set $p
+                         (select (local.get $prec) (i32.const 1)
+                            (local.get $prec)))
+                      (if (result i32)
+                          (i32.ge_u (local.get $p) (i32.const 20))
+                         (then (i32.const 1))
+                         (else
+                            (i64.lt_u (local.get $n)
+                               (array.get $int64s (global.get $pow10)
+                                  (local.get $p))))))
+                   (else
+                      (i32.and (i32.eq (local.get $conversion) (i32.const 1))
+                         (i32.eqz (local.get $prec)))))
+               (then
+                  (return_call $format_decimal
+                     (local.get $n) (local.get $sign))))))
       (call $exact_digits
          (local.get $n) (local.get $k) (local.get $conversion) (local.get $prec))
       (local.get $sign) (local.get $conversion) (local.get $prec)
