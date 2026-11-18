@@ -1420,7 +1420,8 @@
       (local $ylo f64)
       (local $p f64) (local $e f64) (local $s f64) (local $se f64)
       (local $u f64) (local $ue f64) (local $i f64) (local $ie f64)
-      (local $v f64) (local $f f64) (local $fs f64)
+      (local $v f64) (local $f f64) (local $g f64) (local $k f64)
+      (local $rc f64)
       (if (i32.or
              (i32.or (f64.eq (local.get $x) (f64.const 0))
                 (f64.eq (local.get $y) (f64.const 0)))
@@ -1469,10 +1470,32 @@
                (br $y_small))))
       (if (f64.eq (local.get $scale) (f64.const 0))
          (then (return (local.get $z))))
+      ;; z / scale, without arithmetic on a subnormal z, which is slow
       (local.set $zs
          (if (result f64) (f64.eq (local.get $scale) (f64.const 1))
             (then (local.get $z))
-            (else (f64.div (local.get $z) (local.get $scale)))))
+            (else
+               (if (result f64)
+                  (f64.ge (f64.abs (local.get $z)) (f64.const 0x1p-1022))
+                  (then (f64.div (local.get $z) (local.get $scale)))
+                  (else
+                     (if (result f64) (f64.gt (local.get $scale) (f64.const 1))
+                        (then
+                           ;; negligible: only its sign matters
+                           (f64.copysign (f64.const 0x1p-1022) (local.get $z)))
+                        (else
+                           ;; z = m * 2^-1074, and 2^-1074 / scale =
+                           ;; (2^-1022 / scale) * 2^-52 is normal
+                           (f64.mul
+                              (f64.copysign
+                                 (f64.convert_i64_u
+                                    (i64.and (i64.reinterpret_f64 (local.get $z))
+                                       (i64.const 0x000fffffffffffff)))
+                                 (local.get $z))
+                              (f64.mul
+                                 (f64.div (f64.const 0x1p-1022)
+                                    (local.get $scale))
+                                 (f64.const 0x1p-52))))))))))
       (local.set $xy (f64.abs (f64.mul (local.get $x) (local.get $y))))
       ;; z much larger than x * y (|zs| > |xy| * 4 / EPSILON)
       (if (f64.gt (f64.abs (local.get $zs))
@@ -1532,22 +1555,40 @@
             (call $fma_adjust (local.get $ie) (local.get $ue))))
       (if (f64.eq (local.get $f) (f64.const 0))
          (then (return (local.get $f))))
-      (local.set $fs (f64.mul (local.get $f) (local.get $scale)))
-      (if (f64.gt (f64.abs (local.get $fs)) (f64.const 0x1p-1022))
-         (then (return (local.get $fs))))
-      ;; subnormal result: correct the rounding of the scaling, in the
-      ;; direction of the rest of the exact sum, i + ie + ue - f (ie alone
-      ;; can have the wrong sign when ue moved f past a tie)
+      (if (f64.ge (local.get $scale) (f64.const 1))
+         (then (return (f64.mul (local.get $f) (local.get $scale)))))
+      ;; 2^-1022 in the scaled domain
+      (local.set $g (f64.div (f64.const 0x1p-1022) (local.get $scale)))
+      (if (f64.ge (f64.abs (local.get $f)) (local.get $g))
+         (then (return (f64.mul (local.get $f) (local.get $scale)))))
+      ;; Subnormal result, computed without arithmetic on subnormals, which
+      ;; is slow. Round f to the grid of the result (g * 2^-52) by adding
+      ;; k = +/-g. Rounding f rather than the exact sum may create a tie or
+      ;; resolve one the wrong way: correct it in the direction of the rest
+      ;; of the exact sum, i + ie + ue - f (ie alone can have the wrong sign
+      ;; when ue moved f past a tie). The result is t * scale, with t a
+      ;; multiple of the grid: build it from the integer t / (g * 2^-52).
+      (local.set $k (f64.copysign (local.get $g) (local.get $f)))
+      (local.set $rc (f64.add (local.get $f) (local.get $k)))
       (local.set $v
          (f64.add (f64.sub (local.get $i) (local.get $f)) (local.get $ie)))
-      (f64.add (local.get $fs)
-         (f64.mul
-            (call $fma_adjust
-               (f64.sub (local.get $f)
-                  (f64.div (local.get $fs) (local.get $scale)))
-               (select (local.get $v) (local.get $ue)
-                  (f64.ne (local.get $v) (f64.const 0))))
-            (local.get $scale))))
+      (local.set $t
+         (f64.sub
+            (f64.add (local.get $rc)
+               (call $fma_adjust
+                  (f64.sub (local.get $f)
+                     (f64.sub (local.get $rc) (local.get $k)))
+                  (select (local.get $v) (local.get $ue)
+                     (f64.ne (local.get $v) (f64.const 0)))))
+            (local.get $k)))
+      (f64.reinterpret_i64
+         (i64.or
+            (i64.trunc_f64_u
+               (f64.abs
+                  (f64.div (local.get $t)
+                     (f64.mul (local.get $g) (f64.const 0x1p-52)))))
+            (i64.and (i64.reinterpret_f64 (local.get $f))
+               (i64.const 0x8000000000000000)))))
 
    ;; x * y + z, rounded once, with the algorithm of Boldo and Melquiond
    ;; (exact product, TwoSum, rounding to odd), after scaling the operands
