@@ -90,7 +90,9 @@ jobs:
         if: matrix.wasi
         uses: bytecodealliance/actions/wasmtime/setup@v1
         with:
-          version: "dev"
+          # Not "dev": wasmtime 3ce220987 (regalloc2 0.15.3) runs out of memory
+          # when compiling our global initializers
+          version: "v50.0.3"
 
       - name: Set-up Wizard engine
         if: matrix.wasi
