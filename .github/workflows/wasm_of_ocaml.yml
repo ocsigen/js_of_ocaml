@@ -37,6 +37,8 @@ jobs:
           - ""
         wasi:
           - false
+        no-binaryen:
+          - false
         include:
           # Display names for the OSes
           - os: ubuntu-latest
@@ -61,6 +63,13 @@ jobs:
             ocaml-name: ""
             ocaml-compiler: "5.5"
             wasi: true
+          # Binaryen is optional: check that the tests pass without it
+          - os: ubuntu-latest
+            os-name: Ubuntu
+            ocaml-name: ""
+            ocaml-compiler: "5.5"
+            wasi: false
+            no-binaryen: true
 
     runs-on: ${{ matrix.os }}
 
@@ -69,7 +78,7 @@ jobs:
     continue-on-error: ${{ matrix.ocaml-name == '5.6+trunk' }}
 
     name:
-       ${{ matrix.wasi && 'WASI / ' || '' }}${{ matrix.ocaml-name != '' && matrix.ocaml-name || matrix.ocaml-compiler }} / ${{ matrix.os-name }}
+       ${{ matrix.wasi && 'WASI / ' || '' }}${{ matrix.no-binaryen && 'No Binaryen / ' || '' }}${{ matrix.ocaml-name != '' && matrix.ocaml-name || matrix.ocaml-compiler }} / ${{ matrix.os-name }}
 
     steps:
       - name: Update apt cache
@@ -118,9 +127,20 @@ jobs:
         run: opam pin add -n ppxlib https://github.com/hhugo/ppxlib.git#support-5.6
 
       - name: Set-up Binaryen
+        if: ${{ ! matrix.no-binaryen }}
         uses: Aandreba/setup-binaryen@v1.0.0
         with:
           token: ${{ github.token }}
+
+      # The job would silently test nothing new if the runner image
+      # started shipping Binaryen
+      - name: Check that Binaryen is not installed
+        if: ${{ matrix.no-binaryen }}
+        run: |
+          if command -v wasm-opt; then
+            echo "::error::wasm-opt is unexpectedly available"
+            exit 1
+          fi
 
       # Work-around a race between reinstalling mingw-w64-shims
       # (because of conf-pkg-config optional dep) and installing other
