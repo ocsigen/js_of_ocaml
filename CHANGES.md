@@ -50,6 +50,10 @@
 * Runtime/Wasm: format integers in base 8 and 16 with shifts rather than
   divisions (#2640)
 * Runtime/JS: much faster Random (#2630)
+* Runtime/Wasm: use the file system given as `globalThis.jsoo_fs`, if
+  defined, in place of `node:fs`: an object implementing the synchronous API
+  of `node:fs` (the functions used by the runtime), e.g. to fetch files
+  lazily in a Web Worker or in a node worker thread
 
 ## Bug fixes
 * Runtime: accurate `Float.erf` and `Float.erfc` (ported from fdlibm), instead

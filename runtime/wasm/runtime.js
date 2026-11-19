@@ -68,7 +68,13 @@
     Uint8ClampedArray,
   ];
 
-  const fs = isNode && require("node:fs");
+  // A file system can be provided as globalThis.jsoo_fs: an object
+  // implementing the synchronous API of node:fs (the functions used below,
+  // as well as fs.constants). It is used in place of node:fs, also under
+  // node (e.g. in a worker thread serving files from a cache), and it
+  // receives the writes to the standard output and error (fds 1 and 2).
+  // The handling of paths (on_windows) and getcwd still follow the platform.
+  const fs = globalThis.jsoo_fs ?? (isNode ? require("node:fs") : undefined);
 
   const on_windows = isNode && globalThis.process.platform === "win32";
 
