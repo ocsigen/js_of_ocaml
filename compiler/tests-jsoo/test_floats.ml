@@ -509,10 +509,6 @@ let%expect_test "next_after" =
   [%expect {| 0x0.0000000000001p-1022 |}];
   p (-0.) (-1.);
   [%expect {| -0x0.0000000000001p-1022 |}];
-  p 0. (-0.);
-  [%expect {| -0x0p+0 |}];
-  p (-0.) 0.;
-  [%expect {| 0x0p+0 |}];
   p 0x0.0000000000001p-1022 0.;
   [%expect {| 0x0p+0 |}];
   p (-0x0.0000000000001p-1022) 0.;
@@ -534,3 +530,12 @@ let%expect_test "next_after" =
   [%expect {| nan |}];
   p 1. nan;
   [%expect {| nan |}]
+
+let%expect_test ("next_after between signed zeros" [@when not (native && win32)]) =
+  (* [next_after x y] is [y] when [x = y]. The C library used by OCaml on
+     Windows returns the smallest subnormal towards [y] instead. *)
+  let p x y = Printf.printf "%h\n" (Float.next_after x y) in
+  p 0. (-0.);
+  [%expect {| -0x0p+0 |}];
+  p (-0.) 0.;
+  [%expect {| 0x0p+0 |}]
