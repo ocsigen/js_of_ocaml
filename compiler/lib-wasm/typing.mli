@@ -45,8 +45,6 @@ type typ =
 
 val constant_type : Code.constant -> typ
 
-val can_unbox_parameters : Call_graph_analysis.t -> Code.Var.t -> bool
-
 val bigarray_element_type : Optimization_hint.Bigarray.kind -> typ
 
 type t
@@ -54,6 +52,9 @@ type t
 val var_type : t -> Code.Var.t -> typ
 
 val return_type : t -> Code.Var.t -> typ
+
+val is_unboxed : typ -> bool
+(** Whether values of this type are not represented by references *)
 
 val reset : unit -> unit
 
@@ -64,5 +65,9 @@ val f :
   -> global_flow_info:Global_flow.info
   -> fun_info:Call_graph_analysis.t
   -> deadcode_sentinel:Code.Var.t
+  -> raising_functions:(t -> unit Code.Var.Hashtbl.t)
   -> Code.program
-  -> t
+  -> t * unit Code.Var.Hashtbl.t
+(** Also returns the raising functions, computed by
+    [raising_functions] from the types. Their integer return values
+    are tagged, so that they can return null. *)
