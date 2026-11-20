@@ -402,6 +402,8 @@ caml_hash_mix_int64
 
 From +int64.js:
 caml_checked_int64_to_int
+caml_int64_is_negative
+caml_int64_is_zero
 
 From +ints.js:
 caml_div

@@ -33,6 +33,7 @@ class MlInt64 {
   static UNSIGNED_MAX = new MlInt64(0xffffff, 0xffffff, 0xffff);
   static SIGNED_MAX = new MlInt64(0xffffff, 0xffffff, 0x7fff);
   static SIGNED_MIN = new MlInt64(0x000000, 0x000000, 0x8000);
+  static ONE = new MlInt64(1, 0, 0);
 
   slice() {
     return new MlInt64(this.lo, this.mi, this.hi);
@@ -175,35 +176,43 @@ class MlInt64 {
     return new MlInt64((this.hi << 16) >> (s - 32), sign, sign);
   }
 
-  lsl1() {
-    this.hi = (this.hi << 1) | (this.mi >> 23);
-    this.mi = ((this.mi << 1) | (this.lo >> 23)) & 0xffffff;
-    this.lo = (this.lo << 1) & 0xffffff;
+  // The unsigned value, rounded to a float
+  toUnsignedFloat() {
+    return this.hi * 0x1000000000000 + this.mi * 0x1000000 + this.lo;
   }
 
-  lsr1() {
-    this.lo = ((this.lo >>> 1) | (this.mi << 23)) & 0xffffff;
-    this.mi = ((this.mi >>> 1) | (this.hi << 23)) & 0xffffff;
-    this.hi = this.hi >>> 1;
-  }
-
+  // Unsigned division by a nonzero divisor
   udivmod(x) {
-    var offset = 0;
-    var modulus = this.slice();
-    var divisor = x.slice();
-    var quotient = new MlInt64(0, 0, 0);
-    while (modulus.ucompare(divisor) > 0) {
-      offset++;
-      divisor.lsl1();
-    }
-    while (offset >= 0) {
-      offset--;
-      quotient.lsl1();
-      if (modulus.ucompare(divisor) >= 0) {
-        quotient.lo++;
-        modulus = modulus.sub(divisor);
+    var quotient, modulus;
+    if (x.hi === 0 && x.mi < 0x20) {
+      // Divisor d below 2^29: divide one limb at a time. Each partial
+      // dividend r * 2^24 + limb, with r < d, is below 2^53, so the float
+      // operations are exact (Math.floor(a / d) is the integer quotient
+      // for integers a < 2^53), and each quotient limb is below 2^24.
+      var d = x.mi * 0x1000000 + x.lo;
+      var qh = Math.floor(this.hi / d);
+      var r = (this.hi - qh * d) * 0x1000000 + this.mi;
+      var qm = Math.floor(r / d);
+      r = (r - qm * d) * 0x1000000 + this.lo;
+      var ql = Math.floor(r / d);
+      r -= ql * d;
+      quotient = new MlInt64(ql, qm, qh);
+      modulus = new MlInt64(r, r / 0x1000000, 0);
+    } else {
+      // The quotient is below 2^35, so the floor of the float quotient
+      // (three roundings, with an absolute error below 2^-16) is off by at
+      // most one in either direction. Subtract one from it, so that it is
+      // never too large and the remainder cannot be negative, then
+      // subtract the divisor from the remainder at most twice,
+      // incrementing the quotient each time.
+      var q = Math.floor(this.toUnsignedFloat() / x.toUnsignedFloat());
+      if (q > 0) q--;
+      quotient = new MlInt64(q, q / 0x1000000, 0);
+      modulus = this.sub(quotient.mul(x));
+      while (modulus.ucompare(x) >= 0) {
+        modulus = modulus.sub(x);
+        quotient = quotient.add(MlInt64.ONE);
       }
-      divisor.lsr1();
     }
     return { quotient: quotient, modulus: modulus };
   }
@@ -425,25 +434,47 @@ function caml_int64_of_float(x) {
   );
 }
 
+//Provides: caml_int64_unsigned_digits const
+//Requires: MlInt64, caml_str_repeat
+// The digits of [x], seen as unsigned, in base [base]
+function caml_int64_unsigned_digits(x, base) {
+  // Number.prototype.toString is exact on integers below 2^53
+  if (x.hi < 0x20) return x.toUnsignedFloat().toString(base);
+  // Otherwise, x = q * base^n + r, with base^n below 2^29, so that q is
+  // below 2^53
+  var n = 1;
+  var k = base;
+  while (k * base < 0x20000000) {
+    k *= base;
+    n++;
+  }
+  var p = x.udivmod(new MlInt64(k, k / 0x1000000, 0));
+  var r = p.modulus.toUnsignedFloat().toString(base);
+  return (
+    p.quotient.toUnsignedFloat().toString(base) +
+    caml_str_repeat(n - r.length, "0") +
+    r
+  );
+}
+
 //Provides: caml_int64_format const
 //Requires: caml_parse_format, caml_finish_formatting
-//Requires: caml_int64_is_negative, caml_int64_neg
-//Requires: caml_int64_of_int32, caml_int64_to_int32
-//Requires: caml_int64_is_zero, caml_str_repeat
+//Requires: caml_int64_unsigned_digits, caml_str_repeat
+//Requires: caml_jsbytes_of_string, caml_string_of_jsbytes
 function caml_int64_format(fmt, x) {
+  if (caml_jsbytes_of_string(fmt) === "%d")
+    // Int64.to_string
+    return caml_string_of_jsbytes(
+      x.isNeg()
+        ? "-" + caml_int64_unsigned_digits(x.neg(), 10)
+        : caml_int64_unsigned_digits(x, 10),
+    );
   var f = caml_parse_format(fmt);
-  if (f.signedconv && caml_int64_is_negative(x)) {
+  if (f.signedconv && x.isNeg()) {
     f.sign = -1;
-    x = caml_int64_neg(x);
+    x = x.neg();
   }
-  var buffer = "";
-  var wbase = caml_int64_of_int32(f.base);
-  var cvtbl = "0123456789abcdef";
-  do {
-    var p = x.udivmod(wbase);
-    x = p.quotient;
-    buffer = cvtbl.charAt(caml_int64_to_int32(p.modulus)) + buffer;
-  } while (!caml_int64_is_zero(x));
+  var buffer = caml_int64_unsigned_digits(x, f.base);
   if (f.prec >= 0) {
     f.filler = " ";
     var n = f.prec - buffer.length;
@@ -463,24 +494,40 @@ function caml_int64_of_string(s) {
     sign = r[1],
     base = r[2],
     signedness = r[3];
-  var base64 = caml_int64_of_int32(base);
-  var threshold = MlInt64.UNSIGNED_MAX.udivmod(base64).quotient;
   var c = caml_string_unsafe_get(s, i);
   var d = caml_parse_digit(c);
   if (d < 0 || d >= base) caml_failwith("Int64.of_string");
-  var res = caml_int64_of_int32(d);
+  // Accumulate the digits in a float as long as the value stays below
+  // 2^53, so that the computation is exact
+  var limit = Math.floor(0x20000000000000 / base) - 1;
+  var acc = d;
   for (;;) {
     i++;
     c = caml_string_unsafe_get(s, i);
     if (c === 95) continue;
     d = caml_parse_digit(c);
-    if (d < 0 || d >= base) break;
-    /* Detect overflow in multiplication base * res */
-    if (caml_int64_ult(threshold, res)) caml_failwith("Int64.of_string");
-    d = caml_int64_of_int32(d);
-    res = caml_int64_add(caml_int64_mul(base64, res), d);
-    /* Detect overflow in addition (base * res) + d */
-    if (caml_int64_ult(res, d)) caml_failwith("Int64.of_string");
+    if (d < 0 || d >= base || acc > limit) break;
+    acc = acc * base + d;
+  }
+  var res = new MlInt64(acc, acc / 0x1000000, acc / 0x1000000000000);
+  if (d >= 0 && d < base) {
+    // Remaining digits, starting with [d]
+    var base64 = caml_int64_of_int32(base);
+    var threshold = MlInt64.UNSIGNED_MAX.udivmod(base64).quotient;
+    for (;;) {
+      /* Detect overflow in multiplication base * res */
+      if (caml_int64_ult(threshold, res)) caml_failwith("Int64.of_string");
+      d = caml_int64_of_int32(d);
+      res = caml_int64_add(caml_int64_mul(base64, res), d);
+      /* Detect overflow in addition (base * res) + d */
+      if (caml_int64_ult(res, d)) caml_failwith("Int64.of_string");
+      do {
+        i++;
+        c = caml_string_unsafe_get(s, i);
+      } while (c === 95);
+      d = caml_parse_digit(c);
+      if (d < 0 || d >= base) break;
+    }
   }
   if (i !== caml_ml_string_length(s)) caml_failwith("Int64.of_string");
   if (

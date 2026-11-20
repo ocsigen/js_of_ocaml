@@ -99,6 +99,10 @@ caml_gr_yc
 From +hash.js:
 caml_hash_mix_int64
 
+From +int64.js:
+caml_int64_is_negative
+caml_int64_is_zero
+
 From +ints.js:
 caml_div
 caml_mod
