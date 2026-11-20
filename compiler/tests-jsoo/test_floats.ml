@@ -396,3 +396,80 @@ let%expect_test "hexadecimal printing" =
     0x1.2p+0 0x1.2p+0 0x2.0p+0 0x1.00p+0
     +INFINITY  nan -infinity infinity +0x0p+0
     |}]
+
+let%expect_test "next_after" =
+  let p x y = Printf.printf "%h\n" (Float.next_after x y) in
+  (* No carry between the two 32-bit halves of the bit pattern *)
+  p 1. 2.;
+  [%expect {| 0x1.0000000000001p+0 |}];
+  p 1. 0.;
+  [%expect {| 0x1.fffffffffffffp-1 |}];
+  p (-1.) (-2.);
+  [%expect {| -0x1.0000000000001p+0 |}];
+  p (-1.) 0.;
+  [%expect {| -0x1.fffffffffffffp-1 |}];
+  (* Carry into the high half *)
+  p 0x1.00000ffffffffp0 2.;
+  [%expect {| 0x1.00001p+0 |}];
+  p (-0x1.00000ffffffffp0) (-2.);
+  [%expect {| -0x1.00001p+0 |}];
+  p 0x1.fffffffffffffp0 infinity;
+  [%expect {| 0x1p+1 |}];
+  p (-0x1.fffffffffffffp0) neg_infinity;
+  [%expect {| -0x1p+1 |}];
+  (* Borrow from the high half *)
+  p 0x1.00001p0 0.;
+  [%expect {| 0x1.00000ffffffffp+0 |}];
+  p (-0x1.00001p0) 0.;
+  [%expect {| -0x1.00000ffffffffp+0 |}];
+  p 2. 0.;
+  [%expect {| 0x1.fffffffffffffp+0 |}];
+  p (-2.) 0.;
+  [%expect {| -0x1.fffffffffffffp+0 |}];
+  (* Infinities *)
+  p Float.max_float infinity;
+  [%expect {| infinity |}];
+  p (-.Float.max_float) neg_infinity;
+  [%expect {| -infinity |}];
+  p infinity 0.;
+  [%expect {| 0x1.fffffffffffffp+1023 |}];
+  p neg_infinity 0.;
+  [%expect {| -0x1.fffffffffffffp+1023 |}];
+  p infinity infinity;
+  [%expect {| infinity |}];
+  p infinity neg_infinity;
+  [%expect {| 0x1.fffffffffffffp+1023 |}];
+  (* Zeros and subnormals *)
+  p 0. 1.;
+  [%expect {| 0x0.0000000000001p-1022 |}];
+  p 0. (-1.);
+  [%expect {| -0x0.0000000000001p-1022 |}];
+  p (-0.) 1.;
+  [%expect {| 0x0.0000000000001p-1022 |}];
+  p (-0.) (-1.);
+  [%expect {| -0x0.0000000000001p-1022 |}];
+  p 0. (-0.);
+  [%expect {| -0x0p+0 |}];
+  p (-0.) 0.;
+  [%expect {| 0x0p+0 |}];
+  p 0x0.0000000000001p-1022 0.;
+  [%expect {| 0x0p+0 |}];
+  p (-0x0.0000000000001p-1022) 0.;
+  [%expect {| -0x0p+0 |}];
+  p 0x0.0000000000001p-1022 1.;
+  [%expect {| 0x0.0000000000002p-1022 |}];
+  p Float.min_float 0.;
+  [%expect {| 0x0.fffffffffffffp-1022 |}];
+  p 0x0.fffffffffffffp-1022 1.;
+  [%expect {| 0x1p-1022 |}];
+  p (-.Float.min_float) 0.;
+  [%expect {| -0x0.fffffffffffffp-1022 |}];
+  p 0x0.00000ffffffffp-1022 1.;
+  [%expect {| 0x0.00001p-1022 |}];
+  p 0x0.0000100000000p-1022 0.;
+  [%expect {| 0x0.00000ffffffffp-1022 |}];
+  (* NaN *)
+  p nan 1.;
+  [%expect {| nan |}];
+  p 1. nan;
+  [%expect {| nan |}]
