@@ -226,6 +226,7 @@
       (local $negative i32)
       (local $i i32)
       (local $n i64)
+      (local $shift i64)
       (local $chars (ref $chars))
       (local.set $s (ref.cast (ref $bytes) (local.get $vs)))
       (local.set $d (struct.get $int64 1 (ref.cast (ref $int64) (local.get $vd))))
@@ -253,11 +254,15 @@
                (call $decimal_sign (local.get $negative)
                   (select (local.get $sign_style) (i32.const 0)
                      (local.get $signed))))))
-      ;; base 8 or 16, unsigned
+      ;; base 8 or 16, unsigned: shift rather than divide by a variable,
+      ;; which would be a hardware division
+      (local.set $shift
+         (select (i64.const 3) (i64.const 4)
+            (i64.eq (local.get $base) (i64.const 8))))
       (local.set $n (local.get $d))
       (loop $count
          (local.set $i (i32.add (local.get $i) (i32.const 1)))
-         (local.set $n (i64.div_u (local.get $n) (local.get $base)))
+         (local.set $n (i64.shr_u (local.get $n) (local.get $shift)))
          (br_if $count (i64.ne (local.get $n) (i64.const 0))))
       (if (local.get $alternate)
          (then
@@ -280,8 +285,10 @@
          (local.set $i (i32.sub (local.get $i) (i32.const 1)))
          (array.set $bytes (local.get $s) (local.get $i)
             (array.get_u $chars (local.get $chars)
-               (i32.wrap_i64 (i64.rem_u (local.get $d) (local.get $base)))))
-         (local.set $d (i64.div_u (local.get $d) (local.get $base)))
+               (i32.wrap_i64
+                  (i64.and (local.get $d)
+                     (i64.sub (local.get $base) (i64.const 1))))))
+         (local.set $d (i64.shr_u (local.get $d) (local.get $shift)))
          (br_if $write (i64.ne (local.get $d) (i64.const 0))))
       ;; the "#" prefix, if room was made for it above
       (if (local.get $i)
