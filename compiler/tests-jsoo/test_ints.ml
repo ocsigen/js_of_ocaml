@@ -160,3 +160,167 @@ let%expect_test "failure messages of of_string" =
     Nativeint.of_string
     Int64.of_string
     |}]
+
+(* The JavaScript runtime formats int64 values below 2^53 directly, and
+   larger ones as two chunks (the low one padded with zeros) *)
+let%expect_test "int64 formatting around 2^53 and padded chunks" =
+  List.iter
+    (fun x ->
+      Printf.printf "%Ld %Lu %Lx %LX %Lo %#Lx\n" x x x x x x;
+      print_endline (Int64.to_string x))
+    [ 0x1f_ffff_ffff_ffffL
+    ; 0x20_0000_0000_0000L
+    ; 0x20_0000_0000_0001L
+    ; -0x20_0000_0000_0000L
+    ; 0x8ac7_2304_89e8_0001L (* 10000000000000000001 *)
+    ; 1234567890000000007L
+    ; Int64.max_int
+    ; Int64.min_int
+    ; -1L
+    ];
+  [%expect
+    {|
+           9007199254740991 9007199254740991 1fffffffffffff 1FFFFFFFFFFFFF 377777777777777777 0x1fffffffffffff
+           9007199254740991
+           9007199254740992 9007199254740992 20000000000000 20000000000000 400000000000000000 0x20000000000000
+           9007199254740992
+           9007199254740993 9007199254740993 20000000000001 20000000000001 400000000000000001 0x20000000000001
+           9007199254740993
+           -9007199254740992 18437736874454810624 ffe0000000000000 FFE0000000000000 1777400000000000000000 0xffe0000000000000
+           -9007199254740992
+           -8446744073709551615 10000000000000000001 8ac7230489e80001 8AC7230489E80001 1053071060221172000001 0x8ac7230489e80001
+           -8446744073709551615
+           1234567890000000007 1234567890000000007 112210f4768db407 112210F4768DB407 104420417216643332007 0x112210f4768db407
+           1234567890000000007
+           9223372036854775807 9223372036854775807 7fffffffffffffff 7FFFFFFFFFFFFFFF 777777777777777777777 0x7fffffffffffffff
+           9223372036854775807
+           -9223372036854775808 9223372036854775808 8000000000000000 8000000000000000 1000000000000000000000 0x8000000000000000
+           -9223372036854775808
+           -1 18446744073709551615 ffffffffffffffff FFFFFFFFFFFFFFFF 1777777777777777777777 0xffffffffffffffff
+           -1
+           |}]
+
+(* The JavaScript runtime divides by divisors below 2^29 one limb at a
+   time, and by larger ones from a float estimate of the quotient *)
+let%expect_test "int64 division" =
+  let divisors =
+    [ 1L
+    ; 7L
+    ; 10L
+    ; 0x1fff_ffffL
+    ; 0x2000_0000L
+    ; 0x2000_0001L
+    ; 1_000_000_007L
+    ; 0x7fff_ffff_ffffL
+    ; 0x1_0000_0000_0001L
+    ; Int64.max_int
+    ; Int64.min_int
+    ; -1L
+    ; -10L
+    ; -0x2000_0001L
+    ]
+  in
+  let dividends =
+    [ 0L
+    ; 1L
+    ; -1L
+    ; 0x2000_0000L
+    ; 0x1f_ffff_ffff_ffffL
+    ; 0x7fff_ffff_ffff_fffeL
+    ; Int64.max_int
+    ; Int64.min_int
+    ; Int64.succ Int64.min_int
+    ; -0x1234_5678_9abcL
+    ]
+  in
+  let h = ref 0 in
+  List.iter
+    (fun x ->
+      List.iter
+        (fun d ->
+          let q = Int64.div x d
+          and r = Int64.rem x d
+          and uq = Int64.unsigned_div x d
+          and ur = Int64.unsigned_rem x d in
+          assert (Int64.add (Int64.mul q d) r = x);
+          assert (Int64.add (Int64.mul uq d) ur = x);
+          h := Hashtbl.hash (!h, q, r, uq, ur))
+        divisors)
+    dividends;
+  Printf.printf "%d\n" !h;
+  Printf.printf
+    "%Ld %Ld\n"
+    (Int64.div Int64.min_int (-1L))
+    (Int64.rem Int64.min_int (-1L));
+  Printf.printf
+    "%Lu %Lu\n"
+    (Int64.unsigned_div (-1L) 0x2000_0000L)
+    (Int64.unsigned_rem (-1L) 0x2000_0001L);
+  Printf.printf
+    "%Ld %Ld\n"
+    (Int64.div 0x7fff_ffff_ffff_fffeL 0x7fff_ffffL)
+    (Int64.rem 0x7fff_ffff_ffff_fffeL 0x7fff_ffffL);
+  [%expect
+    {|
+           323016542
+           -9223372036854775808 0
+           34359738367 63
+           4294967298 0
+           |}]
+
+(* The JavaScript runtime accumulates the first digits in a float, then
+   continues with int64 arithmetic *)
+let%expect_test "int64 parsing across 2^53" =
+  let show s =
+    match Int64.of_string s with
+    | x -> Printf.printf "%s: %Ld\n" s x
+    | exception Failure m -> Printf.printf "%s: %s\n" s m
+  in
+  List.iter
+    show
+    [ "900719925474099"
+    ; "9007199254740991"
+    ; "9007199254740992"
+    ; "9007199254740993"
+    ; "90071992547409931"
+    ; "9_007_199_254_740_993"
+    ; "900719925474099_3_"
+    ; "9223372036854775807"
+    ; "9223372036854775808"
+    ; "-9223372036854775808"
+    ; "-9223372036854775809"
+    ; "0u18446744073709551615"
+    ; "0u18446744073709551616"
+    ; "0x1fffffffffffff"
+    ; "0x20000000000001"
+    ; "0xffffffffffffffff"
+    ; "0o1777777777777777777777"
+    ; "0o2000000000000000000000"
+    ; "0b1111111111111111111111111111111111111111111111111111111111111111"
+    ; "00000000000000000000000000000000012"
+    ; "12345678901234567x"
+    ];
+  [%expect
+    {|
+           900719925474099: 900719925474099
+           9007199254740991: 9007199254740991
+           9007199254740992: 9007199254740992
+           9007199254740993: 9007199254740993
+           90071992547409931: 90071992547409931
+           9_007_199_254_740_993: 9007199254740993
+           900719925474099_3_: 9007199254740993
+           9223372036854775807: 9223372036854775807
+           9223372036854775808: Int64.of_string
+           -9223372036854775808: -9223372036854775808
+           -9223372036854775809: Int64.of_string
+           0u18446744073709551615: -1
+           0u18446744073709551616: Int64.of_string
+           0x1fffffffffffff: 9007199254740991
+           0x20000000000001: 9007199254740993
+           0xffffffffffffffff: -1
+           0o1777777777777777777777: -1
+           0o2000000000000000000000: Int64.of_string
+           0b1111111111111111111111111111111111111111111111111111111111111111: -1
+           00000000000000000000000000000000012: 12
+           12345678901234567x: Int64.of_string
+           |}]
