@@ -426,8 +426,7 @@ module Hints = struct
      kind and layout of a bigarray are known and its elements are stored as is
      in its typed array, it is accessed by a primitive specialized to the
      layout. *)
-  let extern t pc prim : Code.prim =
-    let hint = find_ccall_opt t pc in
+  let extern (hint : Optimization_hint.ccall option) prim : Code.prim =
     match Config.target (), hint with
     | `JavaScript, Some (Hint_bigarray { unsafe; kind; layout }) -> (
         match kind, String.drop_prefix ~prefix:"caml_ba_" prim with
@@ -2237,6 +2236,7 @@ and compile infos pc state (instrs : instr list) =
     | CHECK_SIGNALS -> compile infos (pc + 1) state instrs
     | C_CALL1 ->
         let prim = primitive_name state (getu code (pc + 1)) in
+        let hint = Hints.find_ccall_opt infos.hints pc in
         let noop =
           match prim, Config.target () with
           | "%identity", _ -> true
@@ -2264,10 +2264,10 @@ and compile infos pc state (instrs : instr list) =
             infos
             (pc + 2)
             state
-            (Let (x, Prim (Extern (prim, Hints.find_ccall_opt infos.hints pc), [ Pv y ]))
-            :: instrs)
+            (Let (x, Prim (Hints.extern hint prim, [ Pv y ])) :: instrs)
     | C_CALL2 ->
         let prim = primitive_name state (getu code (pc + 1)) in
+        let hint = Hints.find_ccall_opt infos.hints pc in
         let y = State.accu state in
         let z = State.peek 0 state in
         let x, state = State.fresh_var state in
@@ -2285,7 +2285,7 @@ and compile infos pc state (instrs : instr list) =
           | "caml_bytes_get32"
           | "caml_bytes_get64"
           | "caml_bytes_getf32" -> (
-              match Hints.find_ccall_opt infos.hints pc with
+              match hint with
               | Some Hint_unsafe -> prim ^ "u"
               | _ -> prim)
           | _ -> prim
@@ -2303,7 +2303,7 @@ and compile infos pc state (instrs : instr list) =
             z;
         let prim, y, z =
           match Config.target () with
-          | `Wasm -> Extern (prim, Hints.find_ccall_opt infos.hints pc), y, z
+          | `Wasm -> Extern (prim, hint), y, z
           | `JavaScript -> (
               match prim with
               | "caml_equal"
@@ -2321,7 +2321,7 @@ and compile infos pc state (instrs : instr list) =
                     | "caml_greaterthan" -> Lt, z, y
                     | _ -> assert false
                   in
-                  match Hints.find_ccall_opt infos.hints pc with
+                  match hint with
                   | Some (Hint_int boxed) -> (
                       match boxed with
                       | Nativeint -> prim_of_ext prim
@@ -2339,7 +2339,7 @@ and compile infos pc state (instrs : instr list) =
                               Extern ("caml_int64_lessequal", None), z, y
                           | _ -> assert false))
                   | _ -> Extern (prim, None), y, z)
-              | _ -> Hints.extern infos.hints pc prim, y, z)
+              | _ -> Hints.extern hint prim, y, z)
         in
         compile
           infos
@@ -2348,6 +2348,7 @@ and compile infos pc state (instrs : instr list) =
           (Let (x, Prim (prim, [ Pv y; Pv z ])) :: instrs)
     | C_CALL3 ->
         let prim = primitive_name state (getu code (pc + 1)) in
+        let hint = Hints.find_ccall_opt infos.hints pc in
         let y = State.accu state in
         let z = State.peek 0 state in
         let t = State.peek 1 state in
@@ -2362,7 +2363,7 @@ and compile infos pc state (instrs : instr list) =
           | "caml_bytes_set32"
           | "caml_bytes_set64"
           | "caml_bytes_setf32" -> (
-              match Hints.find_ccall_opt infos.hints pc with
+              match hint with
               | Some Hint_unsafe -> prim ^ "u"
               | _ -> prim)
           | _ -> prim
@@ -2384,11 +2385,11 @@ and compile infos pc state (instrs : instr list) =
           infos
           (pc + 2)
           (State.pop 2 state)
-          (Let (x, Prim (Hints.extern infos.hints pc prim, [ Pv y; Pv z; Pv t ]))
-          :: instrs)
+          (Let (x, Prim (Hints.extern hint prim, [ Pv y; Pv z; Pv t ])) :: instrs)
     | C_CALL4 ->
         let nargs = 4 in
         let prim = primitive_name state (getu code (pc + 1)) in
+        let hint = Hints.find_ccall_opt infos.hints pc in
         let state = State.push state in
         let x, state = State.fresh_var state in
         let args, state = State.grab nargs state in
@@ -2405,12 +2406,12 @@ and compile infos pc state (instrs : instr list) =
           infos
           (pc + 2)
           state
-          (Let
-             (x, Prim (Hints.extern infos.hints pc prim, List.map args ~f:(fun x -> Pv x)))
+          (Let (x, Prim (Hints.extern hint prim, List.map args ~f:(fun x -> Pv x)))
           :: instrs)
     | C_CALL5 ->
         let nargs = 5 in
         let prim = primitive_name state (getu code (pc + 1)) in
+        let hint = Hints.find_ccall_opt infos.hints pc in
         let state = State.push state in
         let x, state = State.fresh_var state in
         let args, state = State.grab nargs state in
@@ -2427,12 +2428,12 @@ and compile infos pc state (instrs : instr list) =
           infos
           (pc + 2)
           state
-          (Let
-             (x, Prim (Hints.extern infos.hints pc prim, List.map args ~f:(fun x -> Pv x)))
+          (Let (x, Prim (Hints.extern hint prim, List.map args ~f:(fun x -> Pv x)))
           :: instrs)
     | C_CALLN ->
         let nargs = getu code (pc + 1) in
         let prim = primitive_name state (getu code (pc + 2)) in
+        let hint = Hints.find_ccall_opt infos.hints pc in
         let state = State.push state in
         let x, state = State.fresh_var state in
         let args, state = State.grab nargs state in
@@ -2449,8 +2450,7 @@ and compile infos pc state (instrs : instr list) =
           infos
           (pc + 3)
           state
-          (Let
-             (x, Prim (Hints.extern infos.hints pc prim, List.map args ~f:(fun x -> Pv x)))
+          (Let (x, Prim (Hints.extern hint prim, List.map args ~f:(fun x -> Pv x)))
           :: instrs)
     | (CONST0 | CONST1 | CONST2 | CONST3) as cc ->
         let x, state = State.fresh_var state in
