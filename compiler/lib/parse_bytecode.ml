@@ -421,6 +421,113 @@ module Hints = struct
     match Int.Hashtbl.find_opt t.hints pc with
     | Some (Hint_closures l) -> Some l
     | _ -> None
+
+  (* The primitive called by a C_CALL instruction, and its arguments.
+     Depending on the hint, the call is specialized:
+     - unsafe accesses to strings, bytes and bigstrings skip the bound check;
+     - with JavaScript, comparisons of int32 and nativeint values, which are
+       numbers, use the integer comparison primitives, and comparisons of
+       int64 values use dedicated runtime functions;
+     - with JavaScript, when the kind and layout of a bigarray are known and
+       its elements are stored as is in its typed array, it is accessed by a
+       primitive specialized to the layout. *)
+  let extern (hint : Optimization_hint.ccall option) prim (args : Code.prim_arg list) :
+      Code.prim * Code.prim_arg list =
+    match Config.target (), prim, hint, args with
+    | ( _
+      , ( "caml_ba_uint8_get16"
+        | "caml_ba_uint8_get32"
+        | "caml_ba_uint8_get64"
+        | "caml_ba_uint8_getf32"
+        | "caml_string_get16"
+        | "caml_string_get32"
+        | "caml_string_get64"
+        | "caml_string_getf32"
+        | "caml_bytes_get16"
+        | "caml_bytes_get32"
+        | "caml_bytes_get64"
+        | "caml_bytes_getf32"
+        | "caml_ba_uint8_set16"
+        | "caml_ba_uint8_set32"
+        | "caml_ba_uint8_set64"
+        | "caml_ba_uint8_setf32"
+        | "caml_bytes_set16"
+        | "caml_bytes_set32"
+        | "caml_bytes_set64"
+        | "caml_bytes_setf32" )
+      , Some Hint_unsafe
+      , _ ) -> Extern (prim ^ "u", hint), args
+    | `JavaScript, "caml_equal", Some (Hint_int (Int32 | Nativeint)), _ ->
+        Eq { int_only = false }, args
+    | `JavaScript, "caml_notequal", Some (Hint_int (Int32 | Nativeint)), _ ->
+        Neq { int_only = false }, args
+    | `JavaScript, "caml_lessthan", Some (Hint_int (Int32 | Nativeint)), _ -> Lt, args
+    | `JavaScript, "caml_lessequal", Some (Hint_int (Int32 | Nativeint)), _ -> Le, args
+    | `JavaScript, "caml_greaterthan", Some (Hint_int (Int32 | Nativeint)), [ y; z ] ->
+        Lt, [ z; y ]
+    | `JavaScript, "caml_greaterequal", Some (Hint_int (Int32 | Nativeint)), [ y; z ] ->
+        Le, [ z; y ]
+    | `JavaScript, "caml_equal", Some (Hint_int Int64), _ ->
+        Extern ("caml_int64_equal", None), args
+    | `JavaScript, "caml_notequal", Some (Hint_int Int64), _ ->
+        Extern ("caml_int64_notequal", None), args
+    | `JavaScript, "caml_lessthan", Some (Hint_int Int64), _ ->
+        Extern ("caml_int64_lessthan", None), args
+    | `JavaScript, "caml_lessequal", Some (Hint_int Int64), _ ->
+        Extern ("caml_int64_lessequal", None), args
+    | `JavaScript, "caml_greaterthan", Some (Hint_int Int64), [ y; z ] ->
+        Extern ("caml_int64_lessthan", None), [ z; y ]
+    | `JavaScript, "caml_greaterequal", Some (Hint_int Int64), [ y; z ] ->
+        Extern ("caml_int64_lessequal", None), [ z; y ]
+    | ( `JavaScript
+      , ( "caml_equal"
+        | "caml_notequal"
+        | "caml_lessthan"
+        | "caml_lessequal"
+        | "caml_greaterthan"
+        | "caml_greaterequal" )
+      , _
+      , _ ) -> Extern (prim, None), args
+    | ( `JavaScript
+      , ( "caml_ba_get_1"
+        | "caml_ba_get_2"
+        | "caml_ba_get_3"
+        | "caml_ba_set_1"
+        | "caml_ba_set_2"
+        | "caml_ba_set_3" )
+      , Some
+          (Hint_bigarray
+             { unsafe
+             ; kind =
+                 ( Float32
+                 | Float32_t
+                 | Float64
+                 | Int8_signed
+                 | Int8_unsigned
+                 | Int16_signed
+                 | Int16_unsigned
+                 | Int32
+                 | Int
+                 | Nativeint )
+             ; layout
+             })
+      , _ ) ->
+        let op =
+          match String.drop_prefix ~prefix:"caml_ba_" prim with
+          | Some op -> op
+          | None -> assert false
+        in
+        ( Extern
+            ( Printf.sprintf
+                "caml_ba_%s_%s%s"
+                (match layout with
+                | C -> "c"
+                | Fortran -> "fortran")
+                (if unsafe then "unsafe_" else "")
+                op
+            , None )
+        , args )
+    | _ -> Extern (prim, hint), args
 end
 
 (* Block analysis *)
@@ -2204,6 +2311,7 @@ and compile infos pc state (instrs : instr list) =
     | CHECK_SIGNALS -> compile infos (pc + 1) state instrs
     | C_CALL1 ->
         let prim = primitive_name state (getu code (pc + 1)) in
+        let hint = Hints.find_ccall_opt infos.hints pc in
         let noop =
           match prim, Config.target () with
           | "%identity", _ -> true
@@ -2231,32 +2339,14 @@ and compile infos pc state (instrs : instr list) =
             infos
             (pc + 2)
             state
-            (Let (x, Prim (Extern (prim, Hints.find_ccall_opt infos.hints pc), [ Pv y ]))
-            :: instrs)
+            (let prim, args = Hints.extern hint prim [ Pv y ] in
+             Let (x, Prim (prim, args)) :: instrs)
     | C_CALL2 ->
         let prim = primitive_name state (getu code (pc + 1)) in
+        let hint = Hints.find_ccall_opt infos.hints pc in
         let y = State.accu state in
         let z = State.peek 0 state in
         let x, state = State.fresh_var state in
-        let prim =
-          match prim with
-          | "caml_ba_uint8_get16"
-          | "caml_ba_uint8_get32"
-          | "caml_ba_uint8_get64"
-          | "caml_ba_uint8_getf32"
-          | "caml_string_get16"
-          | "caml_string_get32"
-          | "caml_string_get64"
-          | "caml_string_getf32"
-          | "caml_bytes_get16"
-          | "caml_bytes_get32"
-          | "caml_bytes_get64"
-          | "caml_bytes_getf32" -> (
-              match Hints.find_ccall_opt infos.hints pc with
-              | Some Hint_unsafe -> prim ^ "u"
-              | _ -> prim)
-          | _ -> prim
-        in
         if debug_parser ()
         then
           Format.printf
@@ -2268,61 +2358,15 @@ and compile infos pc state (instrs : instr list) =
             y
             Var.print
             z;
-        let prim, y, z =
-          match Config.target () with
-          | `Wasm -> Extern (prim, Hints.find_ccall_opt infos.hints pc), y, z
-          | `JavaScript -> (
-              match prim with
-              | "caml_equal"
-              | "caml_notequal"
-              | "caml_lessthan"
-              | "caml_greaterthan"
-              | "caml_lessequal"
-              | "caml_greaterequal" -> (
-                  let prim_of_ext = function
-                    | "caml_equal" -> Eq { int_only = false }, y, z
-                    | "caml_notequal" -> Neq { int_only = false }, y, z
-                    | "caml_lessthan" -> Lt, y, z
-                    | "caml_lessequal" -> Le, y, z
-                    | "caml_greaterequal" -> Le, z, y
-                    | "caml_greaterthan" -> Lt, z, y
-                    | _ -> assert false
-                  in
-                  match Hints.find_ccall_opt infos.hints pc with
-                  | Some (Hint_int boxed) -> (
-                      match boxed with
-                      | Nativeint -> prim_of_ext prim
-                      | Int32 -> prim_of_ext prim
-                      | Int64 -> Extern (prim, None), y, z)
-                  | _ -> Extern (prim, None), y, z)
-              | _ -> Extern (prim, Hints.find_ccall_opt infos.hints pc), y, z)
-        in
-        compile
-          infos
-          (pc + 2)
-          (State.pop 1 state)
-          (Let (x, Prim (prim, [ Pv y; Pv z ])) :: instrs)
+        let prim, args = Hints.extern hint prim [ Pv y; Pv z ] in
+        compile infos (pc + 2) (State.pop 1 state) (Let (x, Prim (prim, args)) :: instrs)
     | C_CALL3 ->
         let prim = primitive_name state (getu code (pc + 1)) in
+        let hint = Hints.find_ccall_opt infos.hints pc in
         let y = State.accu state in
         let z = State.peek 0 state in
         let t = State.peek 1 state in
         let x, state = State.fresh_var state in
-        let prim =
-          match prim with
-          | "caml_ba_uint8_set16"
-          | "caml_ba_uint8_set32"
-          | "caml_ba_uint8_set64"
-          | "caml_ba_uint8_setf32"
-          | "caml_bytes_set16"
-          | "caml_bytes_set32"
-          | "caml_bytes_set64"
-          | "caml_bytes_setf32" -> (
-              match Hints.find_ccall_opt infos.hints pc with
-              | Some Hint_unsafe -> prim ^ "u"
-              | _ -> prim)
-          | _ -> prim
-        in
         if debug_parser ()
         then
           Format.printf
@@ -2336,19 +2380,12 @@ and compile infos pc state (instrs : instr list) =
             z
             Var.print
             t;
-        compile
-          infos
-          (pc + 2)
-          (State.pop 2 state)
-          (Let
-             ( x
-             , Prim
-                 (Extern (prim, Hints.find_ccall_opt infos.hints pc), [ Pv y; Pv z; Pv t ])
-             )
-          :: instrs)
+        let prim, args = Hints.extern hint prim [ Pv y; Pv z; Pv t ] in
+        compile infos (pc + 2) (State.pop 2 state) (Let (x, Prim (prim, args)) :: instrs)
     | C_CALL4 ->
         let nargs = 4 in
         let prim = primitive_name state (getu code (pc + 1)) in
+        let hint = Hints.find_ccall_opt infos.hints pc in
         let state = State.push state in
         let x, state = State.fresh_var state in
         let args, state = State.grab nargs state in
@@ -2365,15 +2402,12 @@ and compile infos pc state (instrs : instr list) =
           infos
           (pc + 2)
           state
-          (Let
-             ( x
-             , Prim
-                 ( Extern (prim, Hints.find_ccall_opt infos.hints pc)
-                 , List.map args ~f:(fun x -> Pv x) ) )
-          :: instrs)
+          (let prim, args = Hints.extern hint prim (List.map args ~f:(fun x -> Pv x)) in
+           Let (x, Prim (prim, args)) :: instrs)
     | C_CALL5 ->
         let nargs = 5 in
         let prim = primitive_name state (getu code (pc + 1)) in
+        let hint = Hints.find_ccall_opt infos.hints pc in
         let state = State.push state in
         let x, state = State.fresh_var state in
         let args, state = State.grab nargs state in
@@ -2390,15 +2424,12 @@ and compile infos pc state (instrs : instr list) =
           infos
           (pc + 2)
           state
-          (Let
-             ( x
-             , Prim
-                 ( Extern (prim, Hints.find_ccall_opt infos.hints pc)
-                 , List.map args ~f:(fun x -> Pv x) ) )
-          :: instrs)
+          (let prim, args = Hints.extern hint prim (List.map args ~f:(fun x -> Pv x)) in
+           Let (x, Prim (prim, args)) :: instrs)
     | C_CALLN ->
         let nargs = getu code (pc + 1) in
         let prim = primitive_name state (getu code (pc + 2)) in
+        let hint = Hints.find_ccall_opt infos.hints pc in
         let state = State.push state in
         let x, state = State.fresh_var state in
         let args, state = State.grab nargs state in
@@ -2415,12 +2446,8 @@ and compile infos pc state (instrs : instr list) =
           infos
           (pc + 3)
           state
-          (Let
-             ( x
-             , Prim
-                 ( Extern (prim, Hints.find_ccall_opt infos.hints pc)
-                 , List.map args ~f:(fun x -> Pv x) ) )
-          :: instrs)
+          (let prim, args = Hints.extern hint prim (List.map args ~f:(fun x -> Pv x)) in
+           Let (x, Prim (prim, args)) :: instrs)
     | (CONST0 | CONST1 | CONST2 | CONST3) as cc ->
         let x, state = State.fresh_var state in
         let n =

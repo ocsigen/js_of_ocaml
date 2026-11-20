@@ -8,6 +8,7 @@
 * Compiler/Wasm: support `--effects=double-translation` (#2443)
 * Runtime: fast path for immediates in polymorphic comparisons (#2567)
 * Runtime: faster 16-, 32- and 64-bit reads and writes on bytes (#2608)
+* Runtime/JS: faster `Float.next_after`, `Float.succ` and `Float.pred` (#2638)
 * Compiler/Wasm: preprocess, validate and assemble the runtime files with Wax
   (new `wax-lib` dependency); remove `wasm_of_ocaml preprocess` (#2373)
 * Compiler/Wasm: faster calls to JavaScript: JavaScript values are
@@ -35,10 +36,25 @@
 * Runtime/Wasm: compute `mod_float` in Wasm rather than calling JavaScript (#2629)
 * Compiler/Wasm: Binaryen is now optional; without `wasm-opt`, the generated
   code is not optimized and a `missing-wasm-opt` warning is emitted (#2571)
+* Compiler/JS: with OCaml 5.6 bytecode hints, access bigarrays of known kind
+  and layout directly (#2628)
+* Compiler/JS: with OCaml 5.6 bytecode hints, compare int64 values with
+  dedicated primitives rather than the polymorphic comparison (#2628)
+* Compiler/Wasm: pass the arguments and result of `Float.fma` unboxed (#2632)
+* Runtime: faster `Float.fma` when the result is subnormal (#2632)
 
 ## Bug fixes
 * Runtime: accurate `Float.erf` and `Float.erfc` (ported from fdlibm), instead
   of an approximation good to 1e-7 only (#2635)
+* Runtime/Wasm: with WASI, parse negative decimal floats that round to the
+  smallest subnormal or to zero correctly (#2632)
+* Runtime/Wasm: reject hexadecimal floats with two exponent signs (#2632)
+* Runtime/Wasm: fix `Float.fma` when the result is subnormal (#2632)
+* Runtime: fix the rounding of `Float.fma` on some subnormal ties (#2632)
+* Runtime: round the float32 results of `fma`, of conversions from int64 and of
+  `Float32.of_string` only once (#2632)
+* Runtime/Wasm: parse hexadecimal floats with a subnormal value with a single
+  rounding (#2632)
 * Toplevel: `js_of_ocaml-toplevel` depends on `js_of_ocaml-ppx`, so that
   `js_of_ocaml-toplevel.worker_lwt_client` is no longer silently skipped when
   the ppx is not installed first (#2627)

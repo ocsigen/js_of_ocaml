@@ -236,6 +236,22 @@ let%expect_test "of_string" =
   let x = "0x1.1 p-1" in
   print' (fun () -> float_of_string x);
   [%expect {| Failure("float_of_string") |}];
+  (* Negative values rounding to the smallest subnormal or to zero
+     (wasi-libc's strtod returned +0 for them) *)
+  let x = "-2.47032822920623272089e-324" in
+  print_string (Printf.sprintf "%h" (float_of_string x));
+  [%expect {| -0x0.0000000000001p-1022 |}];
+  let x =
+    "-2.4703282292062327208828439643411068618252990130716238221279284125033775363510437593264991818081799618989828234772285886546332835517796989819938739800539093906315035659515570226392290858392449105184435931802849936536152500319370457678249219365623669863658480757001585769269903706311928279558551332927834338409351978015531246597263579574622766465272827220056374006485499977096599470454020828166226237857393450736339007967761930577506740176324673600968951340535537458516661134223766678604162159680461914467291840300530057530849048765391711386591646239524912623653881879636239373280423891018672348497668235089863388587925628302755995657524455507255189313690836254779186948667994968324049705821028513185451396213837722826145437693412532098591327667236328125e-324"
+  in
+  print_string (Printf.sprintf "%h" (float_of_string x));
+  [%expect {| -0x0p+0 |}];
+  let x = "0x1p-+5" in
+  print' (fun () -> float_of_string x);
+  [%expect {| Failure("float_of_string") |}];
+  let x = "0x1p+-5" in
+  print' (fun () -> float_of_string x);
+  [%expect {| Failure("float_of_string") |}];
   let x = " -0x1.1" in
   print' (fun () -> float_of_string x);
   [%expect {| -1.062500 |}];
@@ -457,3 +473,85 @@ let%expect_test "hexadecimal printing" =
     0x1.2p+0 0x1.2p+0 0x2.0p+0 0x1.00p+0
     +INFINITY  nan -infinity infinity +0x0p+0
     |}]
+
+let%expect_test "next_after" =
+  let p x y = Printf.printf "%h\n" (Float.next_after x y) in
+  (* No carry between the two 32-bit halves of the bit pattern *)
+  p 1. 2.;
+  [%expect {| 0x1.0000000000001p+0 |}];
+  p 1. 0.;
+  [%expect {| 0x1.fffffffffffffp-1 |}];
+  p (-1.) (-2.);
+  [%expect {| -0x1.0000000000001p+0 |}];
+  p (-1.) 0.;
+  [%expect {| -0x1.fffffffffffffp-1 |}];
+  (* Carry into the high half *)
+  p 0x1.00000ffffffffp0 2.;
+  [%expect {| 0x1.00001p+0 |}];
+  p (-0x1.00000ffffffffp0) (-2.);
+  [%expect {| -0x1.00001p+0 |}];
+  p 0x1.fffffffffffffp0 infinity;
+  [%expect {| 0x1p+1 |}];
+  p (-0x1.fffffffffffffp0) neg_infinity;
+  [%expect {| -0x1p+1 |}];
+  (* Borrow from the high half *)
+  p 0x1.00001p0 0.;
+  [%expect {| 0x1.00000ffffffffp+0 |}];
+  p (-0x1.00001p0) 0.;
+  [%expect {| -0x1.00000ffffffffp+0 |}];
+  p 2. 0.;
+  [%expect {| 0x1.fffffffffffffp+0 |}];
+  p (-2.) 0.;
+  [%expect {| -0x1.fffffffffffffp+0 |}];
+  (* Infinities *)
+  p Float.max_float infinity;
+  [%expect {| infinity |}];
+  p (-.Float.max_float) neg_infinity;
+  [%expect {| -infinity |}];
+  p infinity 0.;
+  [%expect {| 0x1.fffffffffffffp+1023 |}];
+  p neg_infinity 0.;
+  [%expect {| -0x1.fffffffffffffp+1023 |}];
+  p infinity infinity;
+  [%expect {| infinity |}];
+  p infinity neg_infinity;
+  [%expect {| 0x1.fffffffffffffp+1023 |}];
+  (* Zeros and subnormals *)
+  p 0. 1.;
+  [%expect {| 0x0.0000000000001p-1022 |}];
+  p 0. (-1.);
+  [%expect {| -0x0.0000000000001p-1022 |}];
+  p (-0.) 1.;
+  [%expect {| 0x0.0000000000001p-1022 |}];
+  p (-0.) (-1.);
+  [%expect {| -0x0.0000000000001p-1022 |}];
+  p 0x0.0000000000001p-1022 0.;
+  [%expect {| 0x0p+0 |}];
+  p (-0x0.0000000000001p-1022) 0.;
+  [%expect {| -0x0p+0 |}];
+  p 0x0.0000000000001p-1022 1.;
+  [%expect {| 0x0.0000000000002p-1022 |}];
+  p Float.min_float 0.;
+  [%expect {| 0x0.fffffffffffffp-1022 |}];
+  p 0x0.fffffffffffffp-1022 1.;
+  [%expect {| 0x1p-1022 |}];
+  p (-.Float.min_float) 0.;
+  [%expect {| -0x0.fffffffffffffp-1022 |}];
+  p 0x0.00000ffffffffp-1022 1.;
+  [%expect {| 0x0.00001p-1022 |}];
+  p 0x0.0000100000000p-1022 0.;
+  [%expect {| 0x0.00000ffffffffp-1022 |}];
+  (* NaN *)
+  p nan 1.;
+  [%expect {| nan |}];
+  p 1. nan;
+  [%expect {| nan |}]
+
+let%expect_test ("next_after between signed zeros" [@when not (native && win32)]) =
+  (* [next_after x y] is [y] when [x = y]. The C library used by OCaml on
+     Windows returns the smallest subnormal towards [y] instead. *)
+  let p x y = Printf.printf "%h\n" (Float.next_after x y) in
+  p 0. (-0.);
+  [%expect {| -0x0p+0 |}];
+  p (-0.) 0.;
+  [%expect {| 0x0p+0 |}]
