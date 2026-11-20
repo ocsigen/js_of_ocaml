@@ -106,6 +106,10 @@
   functions without CPS version, and no longer give them one for tail calls (#2593)
 
 # 6.5.0 (2026-10-22) - Lille
+* Compiler: statically evaluate calls to known pure functions whose arguments
+  are all constants (#2153)
+
+# 6.5.0~beta1 - Lille
 
 ## Features/Changes
 
