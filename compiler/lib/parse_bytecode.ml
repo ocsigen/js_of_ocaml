@@ -2271,25 +2271,6 @@ and compile infos pc state (instrs : instr list) =
         let y = State.accu state in
         let z = State.peek 0 state in
         let x, state = State.fresh_var state in
-        let prim =
-          match prim with
-          | "caml_ba_uint8_get16"
-          | "caml_ba_uint8_get32"
-          | "caml_ba_uint8_get64"
-          | "caml_ba_uint8_getf32"
-          | "caml_string_get16"
-          | "caml_string_get32"
-          | "caml_string_get64"
-          | "caml_string_getf32"
-          | "caml_bytes_get16"
-          | "caml_bytes_get32"
-          | "caml_bytes_get64"
-          | "caml_bytes_getf32" -> (
-              match hint with
-              | Some Hint_unsafe -> prim ^ "u"
-              | _ -> prim)
-          | _ -> prim
-        in
         if debug_parser ()
         then
           Format.printf
@@ -2302,44 +2283,53 @@ and compile infos pc state (instrs : instr list) =
             Var.print
             z;
         let prim, y, z =
-          match Config.target () with
-          | `Wasm -> Extern (prim, hint), y, z
-          | `JavaScript -> (
-              match prim with
-              | "caml_equal"
+          match Config.target (), prim, hint with
+          | ( _
+            , ( "caml_ba_uint8_get16"
+              | "caml_ba_uint8_get32"
+              | "caml_ba_uint8_get64"
+              | "caml_ba_uint8_getf32"
+              | "caml_string_get16"
+              | "caml_string_get32"
+              | "caml_string_get64"
+              | "caml_string_getf32"
+              | "caml_bytes_get16"
+              | "caml_bytes_get32"
+              | "caml_bytes_get64"
+              | "caml_bytes_getf32" )
+            , Some Hint_unsafe ) -> Extern (prim ^ "u", hint), y, z
+          (* With JavaScript, int32 and nativeint values are numbers *)
+          | `JavaScript, "caml_equal", Some (Hint_int (Int32 | Nativeint)) ->
+              Eq { int_only = false }, y, z
+          | `JavaScript, "caml_notequal", Some (Hint_int (Int32 | Nativeint)) ->
+              Neq { int_only = false }, y, z
+          | `JavaScript, "caml_lessthan", Some (Hint_int (Int32 | Nativeint)) -> Lt, y, z
+          | `JavaScript, "caml_lessequal", Some (Hint_int (Int32 | Nativeint)) -> Le, y, z
+          | `JavaScript, "caml_greaterthan", Some (Hint_int (Int32 | Nativeint)) ->
+              Lt, z, y
+          | `JavaScript, "caml_greaterequal", Some (Hint_int (Int32 | Nativeint)) ->
+              Le, z, y
+          | `JavaScript, "caml_equal", Some (Hint_int Int64) ->
+              Extern ("caml_int64_equal", None), y, z
+          | `JavaScript, "caml_notequal", Some (Hint_int Int64) ->
+              Extern ("caml_int64_notequal", None), y, z
+          | `JavaScript, "caml_lessthan", Some (Hint_int Int64) ->
+              Extern ("caml_int64_lessthan", None), y, z
+          | `JavaScript, "caml_lessequal", Some (Hint_int Int64) ->
+              Extern ("caml_int64_lessequal", None), y, z
+          | `JavaScript, "caml_greaterthan", Some (Hint_int Int64) ->
+              Extern ("caml_int64_lessthan", None), z, y
+          | `JavaScript, "caml_greaterequal", Some (Hint_int Int64) ->
+              Extern ("caml_int64_lessequal", None), z, y
+          | ( `JavaScript
+            , ( "caml_equal"
               | "caml_notequal"
               | "caml_lessthan"
-              | "caml_greaterthan"
               | "caml_lessequal"
-              | "caml_greaterequal" -> (
-                  let prim_of_ext = function
-                    | "caml_equal" -> Eq { int_only = false }, y, z
-                    | "caml_notequal" -> Neq { int_only = false }, y, z
-                    | "caml_lessthan" -> Lt, y, z
-                    | "caml_lessequal" -> Le, y, z
-                    | "caml_greaterequal" -> Le, z, y
-                    | "caml_greaterthan" -> Lt, z, y
-                    | _ -> assert false
-                  in
-                  match hint with
-                  | Some (Hint_int boxed) -> (
-                      match boxed with
-                      | Nativeint -> prim_of_ext prim
-                      | Int32 -> prim_of_ext prim
-                      | Int64 -> (
-                          match prim with
-                          | "caml_equal" -> Extern ("caml_int64_equal", None), y, z
-                          | "caml_notequal" -> Extern ("caml_int64_notequal", None), y, z
-                          | "caml_lessthan" -> Extern ("caml_int64_lessthan", None), y, z
-                          | "caml_lessequal" ->
-                              Extern ("caml_int64_lessequal", None), y, z
-                          | "caml_greaterthan" ->
-                              Extern ("caml_int64_lessthan", None), z, y
-                          | "caml_greaterequal" ->
-                              Extern ("caml_int64_lessequal", None), z, y
-                          | _ -> assert false))
-                  | _ -> Extern (prim, None), y, z)
-              | _ -> Hints.extern hint prim, y, z)
+              | "caml_greaterthan"
+              | "caml_greaterequal" )
+            , _ ) -> Extern (prim, None), y, z
+          | _ -> Hints.extern hint prim, y, z
         in
         compile
           infos
@@ -2354,18 +2344,16 @@ and compile infos pc state (instrs : instr list) =
         let t = State.peek 1 state in
         let x, state = State.fresh_var state in
         let prim =
-          match prim with
-          | "caml_ba_uint8_set16"
-          | "caml_ba_uint8_set32"
-          | "caml_ba_uint8_set64"
-          | "caml_ba_uint8_setf32"
-          | "caml_bytes_set16"
-          | "caml_bytes_set32"
-          | "caml_bytes_set64"
-          | "caml_bytes_setf32" -> (
-              match hint with
-              | Some Hint_unsafe -> prim ^ "u"
-              | _ -> prim)
+          match prim, hint with
+          | ( ( "caml_ba_uint8_set16"
+              | "caml_ba_uint8_set32"
+              | "caml_ba_uint8_set64"
+              | "caml_ba_uint8_setf32"
+              | "caml_bytes_set16"
+              | "caml_bytes_set32"
+              | "caml_bytes_set64"
+              | "caml_bytes_setf32" )
+            , Some Hint_unsafe ) -> prim ^ "u"
           | _ -> prim
         in
         if debug_parser ()
