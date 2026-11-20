@@ -324,3 +324,18 @@ let%expect_test "int64 parsing across 2^53" =
            00000000000000000000000000000000012: 12
            12345678901234567x: Int64.of_string
            |}]
+
+(* The Wasm runtime shifts rather than divides in base 8 and 16 *)
+let%expect_test "int32 formatting in base 8 and 16" =
+  List.iter
+    (fun x -> Printf.printf "%lx %lX %lo %#lx %#lo %lu %+ld %li\n" x x x x x x x x)
+    [ 0l; 1l; -1l; Int32.max_int; Int32.min_int; 0x12345678l ];
+  [%expect
+    {|
+           0 0 0 0 0 0 +0 0
+           1 1 1 0x1 01 1 +1 1
+           ffffffff FFFFFFFF 37777777777 0xffffffff 037777777777 4294967295 -1 -1
+           7fffffff 7FFFFFFF 17777777777 0x7fffffff 017777777777 2147483647 +2147483647 2147483647
+           80000000 80000000 20000000000 0x80000000 020000000000 2147483648 -2147483648 -2147483648
+           12345678 12345678 2215053170 0x12345678 02215053170 305419896 +305419896 305419896
+           |}]
