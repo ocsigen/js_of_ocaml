@@ -147,26 +147,57 @@ function caml_hash_mix_string(h, v) {
   return caml_hash_mix_jsbytes(h, caml_jsbytes_of_string(v));
 }
 
-//Provides: caml_jsstring_is_bytes
-function caml_jsstring_is_bytes(s) {
-  // Whether every code unit fits in a byte, i.e. no code point above U+00FF.
-  for (var i = 0; i < s.length; i++) if (s.charCodeAt(i) > 0xff) return false;
-  return true;
-}
-
 //Provides: caml_hash_mix_jsstring
-//Requires: caml_hash_mix_jsbytes, caml_hash_mix_int, caml_jsstring_is_bytes
+//Requires: caml_hash_mix_int
 function caml_hash_mix_jsstring(h, s) {
   // A string whose code units all fit in a byte (every ASCII string, all of
-  // Latin-1, and any raw byte string) is mixed four per word, leaving its hash
-  // unchanged and, for an OCaml string's bytes, matching the OCaml string hash.
-  if (caml_jsstring_is_bytes(s)) return caml_hash_mix_jsbytes(h, s);
-  // Genuine Unicode text: mix two 16-bit code units per word, so no information
-  // is lost. Packing the code units four per word at byte offsets (as for a
-  // byte string) would overlap their high bits.
+  // Latin-1, and any raw byte string, in particular the OCaml strings when
+  // they are represented by JavaScript strings) is mixed four code units per
+  // word, like [caml_hash_mix_jsbytes], so that an OCaml string hashes as with
+  // native OCaml. This is done in a single pass, which also records whether
+  // some code unit does not fit in a byte.
   var len = s.length,
+    h0 = h,
+    any = 0,
     i,
-    w;
+    w,
+    c0,
+    c1,
+    c2,
+    c3;
+  for (i = 0; i + 4 <= len; i += 4) {
+    c0 = s.charCodeAt(i);
+    c1 = s.charCodeAt(i + 1);
+    c2 = s.charCodeAt(i + 2);
+    c3 = s.charCodeAt(i + 3);
+    any |= c0 | c1 | c2 | c3;
+    h = caml_hash_mix_int(h, c0 | (c1 << 8) | (c2 << 16) | (c3 << 24));
+  }
+  w = 0;
+  switch (len & 3) {
+    // biome-ignore lint/suspicious/noFallthroughSwitchClause: falls through
+    case 3:
+      c2 = s.charCodeAt(i + 2);
+      any |= c2;
+      w = c2 << 16;
+    // falls through
+    // biome-ignore lint/suspicious/noFallthroughSwitchClause: falls through
+    case 2:
+      c1 = s.charCodeAt(i + 1);
+      any |= c1;
+      w |= c1 << 8;
+    // falls through
+    case 1:
+      c0 = s.charCodeAt(i);
+      any |= c0;
+      w |= c0;
+      h = caml_hash_mix_int(h, w);
+  }
+  if (any <= 0xff) return h ^ len;
+  // Genuine Unicode text: start again, mixing two 16-bit code units per word,
+  // so no information is lost. Packing the code units four per word at byte
+  // offsets (as for a byte string) would overlap their high bits.
+  h = h0;
   for (i = 0; i + 2 <= len; i += 2) {
     w = s.charCodeAt(i) | (s.charCodeAt(i + 1) << 16);
     h = caml_hash_mix_int(h, w);
@@ -176,9 +207,9 @@ function caml_hash_mix_jsstring(h, s) {
 }
 
 //Provides: caml_hash mutable
-//Requires: caml_is_ml_string, caml_is_ml_bytes
+//Requires: caml_is_ml_bytes
 //Requires: caml_hash_mix_int, caml_hash_mix_final
-//Requires: caml_hash_mix_float, caml_hash_mix_string, caml_hash_mix_bytes, caml_custom_ops
+//Requires: caml_hash_mix_float, caml_hash_mix_bytes, caml_custom_ops
 //Requires: caml_hash_mix_jsstring
 //Requires: caml_is_continuation_tag
 function caml_hash(count, limit, seed, obj) {
@@ -240,10 +271,9 @@ function caml_hash(count, limit, seed, obj) {
     } else if (caml_is_ml_bytes(v)) {
       h = caml_hash_mix_bytes(h, v);
       num--;
-    } else if (caml_is_ml_string(v)) {
-      h = caml_hash_mix_string(h, v);
-      num--;
     } else if (typeof v === "string") {
+      // An OCaml string (when represented by a JavaScript string, it fits in
+      // bytes and is hashed as such) or a JavaScript string.
       h = caml_hash_mix_jsstring(h, v);
       num--;
     } else if (v === (v | 0)) {
