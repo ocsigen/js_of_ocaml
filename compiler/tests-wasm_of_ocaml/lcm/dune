@@ -38,9 +38,17 @@
   (flags :standard --opt 2)))
 
 (tests
- (names constant_twin dead_path)
+ (names constant_twin)
  (modes js wasm)
  (wasm_of_ocaml
+  (flags :standard --opt 2)))
+
+(tests
+ (names dead_path)
+ (modes js wasm)
+ ; Whole-program mode so Bigarray.Genarray.create receives constant kind/layout
+ (wasm_of_ocaml
+  (compilation_mode whole_program)
   (flags :standard --opt 2)))
 
 (tests

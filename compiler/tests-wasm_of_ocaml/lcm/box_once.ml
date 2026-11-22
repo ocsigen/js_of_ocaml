@@ -93,6 +93,39 @@ let in_loop a n =
   | y :: z :: _, t :: _ -> y == z && z == t
   | _ -> false
 
+(* Boxed in a loop entered directly from a [Poptrap] *)
+let maybe_raise n = if n < 0 then raise E
+
+let in_loop_after_try a n =
+  let x = a +. 5. in
+  let l = ref [] in
+  let i = ref n in
+  (try maybe_raise n with E -> ());
+  while !i > 0 do
+    if Sys.opaque_identity true then l := x :: !l;
+    decr i
+  done;
+  match !l with
+  | u :: v :: _ -> u == v
+  | _ -> false
+
+(* Boxed only once inside a loop in an exception handler *)
+let maybe_raise_pos n = if n > 0 then raise E
+
+let in_handler_loop a n =
+  let x = a +. 7. in
+  let l = ref [] in
+  let i = ref n in
+  (try maybe_raise_pos n
+   with _ ->
+     while !i > 0 do
+       if Sys.opaque_identity true then l := x :: !l;
+       decr i
+     done);
+  match !l with
+  | u :: v :: _ -> u == v
+  | _ -> false
+
 let () =
   assert (in_handler fl);
   assert (after_join fl true true);
@@ -101,4 +134,6 @@ let () =
   assert (in_closure fl);
   assert (in_closure_int64 (Int64.of_int n));
   assert (in_two_closures fl);
-  assert (in_loop fl n)
+  assert (in_loop fl n);
+  assert (in_loop_after_try fl n);
+  assert (in_handler_loop fl n)

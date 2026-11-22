@@ -67,14 +67,15 @@
       removes the conversions and the block parameters which the peephole pass and the
       widening have left without uses.
 
-   Boxing conversions (box, tag) are placed in a specific way (see "Placement of boxing
-   conversions" below): a number is boxed where the boxed value is used, but at most once
-   per execution of its definition. So boxes are moved out of loops before the dataflow
+   Heap-allocating boxing conversions (box) are placed in a specific way (see "Placement of
+   boxing conversions" below): a number is boxed where the boxed value is used, but at most
+   once per execution of its definition. So boxes are moved out of loops before the dataflow
    analysis ([hoist_boxes_out_of_loops]) and, once all the functions are processed, out of
    closures ([hoist_boxes_out_of_closures]); the boxes of a value which may still follow
-   one another are then merged ([merge_repeated_boxes]). A number constant used in another
-   representation is not converted: a variable is bound to the constant in that
-   representation, right after the constant.
+   one another are then merged ([merge_repeated_boxes]). Integer tagging ([Tag_int]) does
+   not allocate or introduce object identity and is placed purely by LCM. A number constant
+   used in another representation is not converted: a variable is bound to the constant in
+   that representation, right after the constant.
 
    The phases are ordered so that each feeds into the next: LCM creates optimal placements
    but may introduce inverse pairs; peephole cleans those up; widening then eliminates the
@@ -1373,6 +1374,7 @@ let apply_subst subst x =
    which then replaces it. *)
 let optimize_peephole_conversions blocks types preds ~assigned ~(st : lcm_stats) =
   let defs = Var.Hashtbl.create 16 in
+  let propagated_params = Var.Hashtbl.create 16 in
   let subst = ref Var.Map.empty in
   (* The untaggings of a tagged unnormalized integer, which are replaced by
      its normalization *)
@@ -1429,12 +1431,16 @@ let optimize_peephole_conversions blocks types preds ~assigned ~(st : lcm_stats)
               | [ single_arg ] -> (
                   (* Exactly one incoming edge for this parameter *)
                   match Var.Hashtbl.find_opt defs single_arg with
-                  | Some def -> Var.Hashtbl.replace defs param def
+                  | Some def ->
+                      Var.Hashtbl.replace defs param def;
+                      Var.Hashtbl.replace propagated_params param ()
                   | None -> ())
               | first :: rest when List.for_all ~f:(fun a -> Var.equal a first) rest -> (
                   (* All edges pass the same variable *)
                   match Var.Hashtbl.find_opt defs first with
-                  | Some def -> Var.Hashtbl.replace defs param def
+                  | Some def ->
+                      Var.Hashtbl.replace defs param def;
+                      Var.Hashtbl.replace propagated_params param ()
                   | None -> ())
               | _ -> ())
             block.params))
@@ -1444,7 +1450,11 @@ let optimize_peephole_conversions blocks types preds ~assigned ~(st : lcm_stats)
       match Var.Hashtbl.find_opt defs y with
       | Some (k2, z) when Poly.equal (inverse_kind k1) (Some k2) -> (
           match k1, Typing.var_type types z with
-          | Untag_int, Int Unnormalized -> Var.Hashtbl.replace normalized x z
+          | Untag_int, Int Unnormalized ->
+              (* A block parameter is not a [Let] binding; its incoming
+                 untagging is already rewritten to a normalization. *)
+              if not (Var.Hashtbl.mem propagated_params x)
+              then Var.Hashtbl.replace normalized x z
           | _ -> subst := Var.Map.add x z !subst)
       | _ -> ())
     defs;
@@ -1531,13 +1541,18 @@ let eliminate_param_conversions
      constant table and candidate list in a single pass over the blocks. *)
   let conv_defs = Var.Hashtbl.create 16 in
   let constants = Var.Hashtbl.create 16 in
+  let let_def_block = Var.Hashtbl.create 16 in
   let block_computed = ref Addr.Map.empty in
   let candidates = ref [] in
   Addr.Map.iter
     (fun pc block ->
       let computed = ref ConvMap.empty in
       List.iter
-        ~f:(function
+        ~f:(fun i ->
+          (match i with
+          | Let (x, _) -> Var.Hashtbl.replace let_def_block x pc
+          | Assign _ | Set_field _ | Offset_ref _ | Array_set _ | Event _ -> ());
+          match i with
           | Let (x, Constant c) -> Var.Hashtbl.replace constants x c
           | Let (x, Prim (p, [ Pv y ])) when not (VarSet.mem y assigned) -> (
               match kind_of_prim p with
@@ -1637,6 +1652,11 @@ let eliminate_param_conversions
      Returns Some shadows_needed or None on failure.
      shadows_needed: list of (block_pc, origin) that need shadow params
      (includes the initial (bpc, origin) passed to the top-level call). *)
+    let defined_in_block q pc =
+      match Var.Hashtbl.find_opt let_def_block q with
+      | Some def_pc -> def_pc = pc
+      | None -> false
+    in
     (* Pre-sort and deduplicate predecessor lists once *)
     let sorted_preds = Addr.Map.map (fun ps -> List.sort_uniq ~cmp:compare ps) preds in
     let rec can_supply bpc origin kind visited =
@@ -1666,6 +1686,10 @@ let eliminate_param_conversions
                     | Some _ -> check_conts rest_conts acc
                     | None when Option.is_some (constant_supply q kind) ->
                         check_conts rest_conts acc
+                    | None when defined_in_block q pred_pc ->
+                        (* q is defined by a [Let] in [pred_block], so
+                           predecessors cannot supply it *)
+                        None
                     | None ->
                         (* q not directly available; trace how it enters pred *)
                         let pred_origin =
@@ -2302,9 +2326,11 @@ let process_function types entry fun_blocks ~assigned ~global_flow_info ~(st : l
         in
         let all_preds_processed = List.length processed_preds = List.length preds_pc in
         (* The conversions available in all processed predecessors with the
-           same variable are inherited. Those present in all predecessors
-           with different variables are merged by a phi, at fully-processed
-           merge points. *)
+           same variable are inherited. Those present in all processed
+           predecessors with different variables are merged by a phi,
+           including at loop headers with multiple entry predecessors: since
+           the conversion is in [avin], every remaining predecessor will
+           provide it as well. *)
         let conv_in, differing =
           Tracker.entry ranks processed_preds ~avin:(Addr.Map.find pc avin)
         in
@@ -2320,8 +2346,7 @@ let process_function types entry fun_blocks ~assigned ~global_flow_info ~(st : l
               !phi_info;
           merge_phis := (conv, phi_var) :: !merge_phis
         in
-        if all_preds_processed && List.length preds_pc > 1
-        then List.iter ~f:(fun i -> add_phi conv_of_rank.(i)) differing;
+        List.iter ~f:(fun i -> add_phi conv_of_rank.(i)) differing;
         (* A conversion inserted at the end of a predecessor which has not
            been processed yet (on a back edge) is merged by a phi as well,
            when the other predecessors provide it: the predecessors
@@ -2337,6 +2362,7 @@ let process_function types entry fun_blocks ~assigned ~global_flow_info ~(st : l
            | p :: rem ->
                let candidates = Bits.inter (inserted p) (Addr.Map.find pc avin) in
                List.iter ~f:(fun p -> Bits.inter_into candidates (inserted p)) rem;
+               List.iter ~f:(Bits.remove candidates) differing;
                Bits.iter
                  ~f:(fun i ->
                    let conv = conv_of_rank.(i) in
@@ -2518,7 +2544,7 @@ let process_function types entry fun_blocks ~assigned ~global_flow_info ~(st : l
 
 (* Placement of boxing conversions.
 
-   A boxing conversion (box or tag) is performed where the boxed value is
+   A heap-allocating boxing conversion is performed where the boxed value is
    used, so that no value is boxed on a path where the boxed value is not
    needed. But a value must not be boxed more than once per execution of its
    definition: a box of [y] must not be repeated by a loop or a function
@@ -2529,18 +2555,23 @@ let process_function types entry fun_blocks ~assigned ~global_flow_info ~(st : l
    contain the definition of [y]). Nor must a box of [y] be followed by
    another one: the data flow analysis removes a box when [y] has been
    boxed on all the paths leading to it, and the boxes remaining on a same
-   path are merged ([merge_repeated_boxes]). *)
+   path are merged ([merge_repeated_boxes]).
+
+   [Tag_int] ([ref.i31]) neither allocates nor introduces object identity
+   under physical equality, so it is left to LCM rather than hoisted out of
+   closures or merged speculatively. *)
 
 let is_boxing kind =
   match kind with
-  | Box_i32 | Box_i64 | Box_nativeint | Box_f64 | Box_f32 | Tag_int -> true
+  | Box_i32 | Box_i64 | Box_nativeint | Box_f64 | Box_f32 -> true
   | Unbox_i32
   | Unbox_i64
   | Unbox_nativeint
   | Unbox_f64
   | Unbox_f32
   | Untag_int
-  | Normalize_int -> false
+  | Normalize_int
+  | Tag_int -> false
 
 (* [Some (x, kind, y)] if the instruction is [x = kind(y)] with [kind] a
    boxing conversion *)
@@ -2620,8 +2651,9 @@ module Loops = struct
 end
 
 (* A block executed right before entering the loop, which is created if
-   needed. [None] if the loop is entered through an exception handler or
-   when leaving one. *)
+   needed. [None] if the loop has no entry predecessor outside its body.
+   Critical edges have already been split, so every entry predecessor ends
+   with [Branch] or [Poptrap]. *)
 let loop_preheader ~types ~free_pc ~preds blocks (header, (body, _)) =
   let entry_preds =
     preds header
@@ -2629,45 +2661,41 @@ let loop_preheader ~types ~free_pc ~preds blocks (header, (body, _)) =
     |> List.sort_uniq ~cmp:compare
   in
   let branch pc = (Addr.Map.find pc !blocks).branch in
-  if
-    List.is_empty entry_preds
-    || not
-         (List.for_all
-            ~f:(fun pc ->
-              match branch pc with
-              | Branch _ | Cond _ | Switch _ -> true
-              | Pushtrap _ | Poptrap _ | Return _ | Raise _ | Stop -> false)
-            entry_preds)
-  then None
-  else
-    match entry_preds with
-    | [ pc ]
-      when match branch pc with
-           | Branch _ -> true
-           | _ -> false -> Some pc
-    | _ ->
-        let params =
-          List.map
-            ~f:(fun x ->
-              let x' = Var.fork x in
-              Typing.set_var_type types x' (Typing.var_type types x);
-              x')
-            (Addr.Map.find header !blocks).params
-        in
-        let pc' = !free_pc in
-        incr free_pc;
-        blocks :=
-          Addr.Map.add pc' { params; body = []; branch = Branch (header, params) } !blocks;
-        List.iter
-          ~f:(fun pc ->
-            let b = Addr.Map.find pc !blocks in
-            let redirect ((pc'', args) as cont) =
-              if pc'' = header then pc', args else cont
-            in
-            blocks :=
-              Addr.Map.add pc { b with branch = map_conts redirect b.branch } !blocks)
-          entry_preds;
-        Some pc'
+  List.iter
+    ~f:(fun pc ->
+      match branch pc with
+      | Branch _ | Poptrap _ -> ()
+      | Cond _ | Switch _ | Pushtrap _ | Return _ | Raise _ | Stop -> assert false)
+    entry_preds;
+  match entry_preds with
+  | [] -> None
+  | [ pc ]
+    when match branch pc with
+         | Branch _ -> true
+         | _ -> false -> Some pc
+  | _ ->
+      let params =
+        List.map
+          ~f:(fun x ->
+            let x' = Var.fork x in
+            Typing.set_var_type types x' (Typing.var_type types x);
+            x')
+          (Addr.Map.find header !blocks).params
+      in
+      let pc' = !free_pc in
+      incr free_pc;
+      blocks :=
+        Addr.Map.add pc' { params; body = []; branch = Branch (header, params) } !blocks;
+      List.iter
+        ~f:(fun pc ->
+          let b = Addr.Map.find pc !blocks in
+          let redirect ((pc'', args) as cont) =
+            if pc'' = header then pc', args else cont
+          in
+          blocks :=
+            Addr.Map.add pc { b with branch = map_conts redirect b.branch } !blocks)
+        entry_preds;
+      Some pc'
 
 let append_instrs blocks pc l =
   let b = Addr.Map.find pc !blocks in
@@ -2781,6 +2809,9 @@ let functions (p : program) =
   let fun_of_block = Addr.Hashtbl.create 1024 in
   let blocks_of_fun = Addr.Hashtbl.create 64 in
   let parent = Addr.Hashtbl.create 64 in
+  (* Only the definitions of the operands of boxing conversions are
+     needed: recording all the variables of the program would be costly *)
+  let boxed = Var.Hashtbl.create 1024 in
   let rec visit f pc =
     if not (Addr.Hashtbl.mem fun_of_block pc)
     then (
@@ -2789,32 +2820,21 @@ let functions (p : program) =
         blocks_of_fun
         f
         (pc :: (Addr.Hashtbl.find_opt blocks_of_fun f |> Option.value ~default:[]));
-      List.iter ~f:(visit f) (CFG.successors p.blocks pc))
-  in
-  visit p.start p.start;
-  Addr.Map.iter
-    (fun pc b ->
+      let b = Addr.Map.find pc p.blocks in
       List.iter
         ~f:(fun i ->
+          (match boxing i with
+          | Some (_, _, y) -> Var.Hashtbl.replace boxed y ()
+          | None -> ());
           match i with
           | Let (_, Closure (_, (entry, _), _)) ->
               Addr.Hashtbl.replace parent entry pc;
               visit entry entry
           | Let _ | Assign _ | Set_field _ | Offset_ref _ | Array_set _ | Event _ -> ())
-        b.body)
-    p.blocks;
-  (* Only the definitions of the operands of boxing conversions are
-     needed: recording all the variables of the program would be costly *)
-  let boxed = Var.Hashtbl.create 1024 in
-  Addr.Map.iter
-    (fun _ b ->
-      List.iter
-        ~f:(fun i ->
-          match boxing i with
-          | Some (_, _, y) -> Var.Hashtbl.replace boxed y ()
-          | None -> ())
-        b.body)
-    p.blocks;
+        b.body;
+      List.iter ~f:(visit f) (CFG.successors p.blocks pc))
+  in
+  visit p.start p.start;
   let def_fun = Var.Hashtbl.create 1024 in
   let def_block = Var.Hashtbl.create 1024 in
   Addr.Map.iter
@@ -3013,15 +3033,17 @@ let repeated_boxes (p : program) fns =
   let repeated = ref false in
   Addr.Map.iter
     (fun pc b ->
-      List.iter
-        ~f:(fun i ->
-          match boxing i with
-          | Some (x, kind, y) ->
-              let l = Var.Hashtbl.find_opt sites y |> Option.value ~default:[] in
-              if not (List.is_empty l) then repeated := true;
-              Var.Hashtbl.replace sites y ((kind, pc, x) :: l)
-          | None -> ())
-        b.body)
+      if Addr.Hashtbl.mem fns.fun_of_block pc
+      then
+        List.iter
+          ~f:(fun i ->
+            match boxing i with
+            | Some (x, kind, y) ->
+                let l = Var.Hashtbl.find_opt sites y |> Option.value ~default:[] in
+                if not (List.is_empty l) then repeated := true;
+                Var.Hashtbl.replace sites y ((kind, pc, x) :: l)
+            | None -> ())
+          b.body)
     p.blocks;
   if not !repeated
   then []
@@ -3341,9 +3363,7 @@ let remove_dead_conversions ~(st : lcm_stats) (p : program) =
           match i with
           | Let (x, Prim (Wasm_conversion _, [ Pv y ])) -> add_dep x y
           | Let (_, Closure (_, c, _)) -> cont c
-          | Assign (x, y) ->
-              root x;
-              root y
+          | Assign (x, y) -> add_dep x y
           | _ -> Freevars.iter_instr_free_vars root i)
         block.body;
       (match block.branch with
@@ -3396,6 +3416,7 @@ let remove_dead_conversions ~(st : lcm_stats) (p : program) =
               | Let (x, Prim (Wasm_conversion _, _)) when not (is_live x) ->
                   st.dead_conversions_removed <- st.dead_conversions_removed + 1;
                   None
+              | Assign (x, _) when not (is_live x) -> None
               | Let (x, Closure (params, c, loc)) ->
                   Some (Let (x, Closure (params, filter_cont c, loc)))
               | _ -> Some i)
@@ -3434,34 +3455,38 @@ let f
     fun g -> live_vars.(Var.idx g) > 0 && Var.Set.mem g closures
   in
   let ts = tick () in
-  (* Collect function entry points, recording the defining block PC for closures *)
-  let fun_entries = ref [ None, p.start, None, [], [] ] in
-  Addr.Map.iter
-    (fun def_pc block ->
-      List.iter
-        ~f:(function
-          | Let (x, Closure (params, (pc, args), _)) ->
-              fun_entries := (Some x, pc, Some def_pc, params, args) :: !fun_entries
-          | _ -> ())
-        block.body)
-    p.blocks;
-
-  (* Precompute per-function block submaps via DFS.
+  (* Collect reachable function entry points (recording the defining block PC
+     for closures) and precompute per-function block submaps via DFS.
      Each function's blocks are disjoint, so total work is O(N log N). *)
-  let fun_block_tbl = Addr.Hashtbl.create (List.length !fun_entries) in
-  List.iter
-    ~f:(fun (_, entry, _, _, _) ->
+  let fun_entries = ref [] in
+  let fun_block_tbl = Addr.Hashtbl.create 16 in
+  let rec visit_fun name_opt entry def_pc_opt params args =
+    if not (Addr.Hashtbl.mem fun_block_tbl entry)
+    then (
+      fun_entries := (name_opt, entry, def_pc_opt, params, args) :: !fun_entries;
       let visited = ref Addr.Map.empty in
+      let nested = ref [] in
       let rec visit pc =
         if not (Addr.Map.mem pc !visited)
         then (
           let block = Addr.Map.find pc p.blocks in
           visited := Addr.Map.add pc block !visited;
+          List.iter
+            ~f:(function
+              | Let (x, Closure (params, (c_pc, c_args), _)) ->
+                  nested := (Some x, c_pc, Some pc, params, c_args) :: !nested
+              | _ -> ())
+            block.body;
           List.iter ~f:visit (CFG.successors p.blocks pc))
       in
       visit entry;
-      Addr.Hashtbl.add fun_block_tbl entry !visited)
-    !fun_entries;
+      Addr.Hashtbl.add fun_block_tbl entry !visited;
+      List.iter
+        ~f:(fun (name_opt, c_pc, def_pc_opt, params, c_args) ->
+          visit_fun name_opt c_pc def_pc_opt params c_args)
+        !nested)
+  in
+  visit_fun None p.start None [] [];
 
   (* Process each function independently to avoid cross-function variable leakage
      in the data flow analysis. *)

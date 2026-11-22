@@ -145,7 +145,28 @@ let f8 a n =
   done;
   !res && Float.equal !r 8190.
 
+(* An assigned variable boxed only once inside a loop in an exception handler *)
+let maybe_raise_pos n = if n > 0 then raise Exit
+
+let f9 a n =
+  let r = ref (a +. 1.) in
+  let l = ref [] in
+  let i = ref n in
+  (try
+     r := !r *. 2.;
+     maybe_raise_pos n;
+     r := !r +. 10.
+   with _ ->
+     while !i > 0 do
+       if Sys.opaque_identity true then l := !r :: !l;
+       decr i
+     done);
+  match !l with
+  | u :: v :: _ -> u == v && Float.equal u ((a +. 1.) *. 2.)
+  | _ -> false
+
 let () =
+  assert (f9 (float_of_int k) k);
   assert (f8 (float_of_int k) (k + 5));
   assert (Float.equal (f7 [ 1.5 ] 10) 55.);
   assert (Float.equal (f7 [ 1.5 ] 3) 4.5);

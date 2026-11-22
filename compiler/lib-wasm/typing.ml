@@ -761,21 +761,37 @@ let box_numbers ~lazy_boxing p st types =
           | Phi { known; _ } -> Var.Set.iter box known)
       | Number (_, Boxed) | Int _ | Tuple _ | Bigarray _ | Null | Bot -> ())
   in
-  (* An argument passed to a block parameter which is not unboxed is used
+  (* A value passed to a variable or parameter which is not unboxed is used
      boxed *)
+  let check_param param arg =
+    match Var.Tbl.get types param with
+    | Number (_, Boxed) | Top -> box arg
+    | Number (_, Unboxed) | Int _ | Tuple _ | Bigarray _ | Null | Bot -> ()
+  in
   let check_cont (pc', args) =
     let b' = Addr.Map.find pc' p.blocks in
-    List.iter2
-      ~f:(fun param arg ->
-        match Var.Tbl.get types param with
-        | Number (_, Boxed) | Top -> box arg
-        | Number (_, Unboxed) | Int _ | Tuple _ | Bigarray _ | Null | Bot -> ())
-      b'.params
-      args
+    List.iter2 ~f:check_param b'.params args
   in
   Code.fold_closures
     p
     (fun name_opt _ (pc, _) _ () ->
+      let boxed_return =
+        match name_opt with
+        | None -> false
+        | Some g -> (
+            (not (can_unbox_return_value st.fun_info g))
+            || lazy_boxing
+               &&
+               (* [Domain.join] prefers [Unboxed] over [Boxed], so this only
+                  boxes return values when the joined return type is [Top]
+                  (when all returns are [Boxed], [box] is a no-op). *)
+               let s = Var.Map.find g st.global_flow_info.info_return_vals in
+               match
+                 Var.Set.fold (fun x t -> Domain.join (Var.Tbl.get types x) t) s Bot
+               with
+               | Number (_, Boxed) | Top -> true
+               | Number (_, Unboxed) | Int _ | Tuple _ | Bigarray _ | Null | Bot -> false)
+      in
       traverse
         { fold = Code.fold_children }
         (fun pc () ->
@@ -790,7 +806,7 @@ let box_numbers ~lazy_boxing p st types =
                         Global_flow.get_unique_closure st.global_flow_info ~call:x f
                       with
                       | None -> List.iter ~f:box args
-                      | Some (g, _, cont) ->
+                      | Some (g, params, cont) ->
                           if (not cont) && can_unbox_return_value st.fun_info g
                           then
                             Var.Hashtbl.replace
@@ -800,7 +816,22 @@ let box_numbers ~lazy_boxing p st types =
                               :: (Var.Hashtbl.find_opt call_results g
                                  |> Option.value ~default:[]));
                           if not (can_unbox_parameters st.fun_info g)
-                          then List.iter ~f:box args)
+                          then List.iter ~f:box args
+                          else if lazy_boxing
+                          then
+                            (* [can_unbox_parameters] only holds when all call
+                               sites are exact; with double translation ([cont]),
+                               there is one trailing continuation argument. *)
+                            let rec check_args params args =
+                              match params, args with
+                              | p :: params, a :: args ->
+                                  check_param p a;
+                                  check_args params args
+                              | [], [] -> ()
+                              | [], [ k ] when cont -> box k
+                              | _ -> assert false
+                            in
+                            check_args params args)
                   | Block (tag, lst, _, _, _) -> if tag <> 254 then Array.iter ~f:box lst
                   | Prim (Extern (s, _), args) ->
                       if
@@ -846,13 +877,11 @@ let box_numbers ~lazy_boxing p st types =
                       if lazy_boxing then check_cont cont)
               | Set_field (_, _, (Non_float | Immediate), y) | Array_set (_, _, y) ->
                   box y
-              | Assign _ | Offset_ref _ | Set_field (_, _, Float, _) | Event _ -> ())
+              | Assign (x, y) -> if lazy_boxing then check_param x y
+              | Offset_ref _ | Set_field (_, _, Float, _) | Event _ -> ())
             b.body;
           match b.branch with
-          | Return y ->
-              Option.iter
-                ~f:(fun g -> if not (can_unbox_return_value st.fun_info g) then box y)
-                name_opt
+          | Return y -> if boxed_return then box y
           | Branch cont | Poptrap cont -> if lazy_boxing then check_cont cont
           | Cond (_, cont1, cont2) | Pushtrap (cont1, _, cont2) ->
               if lazy_boxing

@@ -1991,10 +1991,12 @@ module Generate (Target : Target_sig.S) = struct
     in
     (* A generic bigarray access is specialized when the kind and layout of
        the bigarray are known from its type, and the indices are a block
-       built in place, which gives their number *)
+       built in place, which gives their number. [indices] may be a fresh
+       variable created by [Lcm] after the global flow analysis has run. *)
     let generic_bigarray_access ~(info : Global_flow.info) (ta : Typing.typ) indices =
       match ta, indices with
-      | Bigarray { kind; layout; _ }, Pv indices -> (
+      | Bigarray { kind; layout; _ }, Pv indices
+        when Var.idx indices < Array.length info.info_defs -> (
           match info.info_defs.(Var.idx indices) with
           | Expr (Block (_, l, _, _, _)) -> Some (kind, layout, indices, Array.length l)
           | Expr _ | Phi _ -> None)

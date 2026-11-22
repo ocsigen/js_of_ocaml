@@ -46,9 +46,65 @@ let count f x n =
   done;
   !s
 
+(* Multi-entry loop headers where the entry edges provide the same conversion
+   in different variables:
+   - [two_entries_float]: loop-invariant [unbox_f64] merged by a phi at the
+     header;
+   - [two_entries_call_insert]: [untag_int] killed by a call inside the loop
+     and inserted on the back edge (present in both [differing] and
+     back-edge [candidates]);
+   - [two_entries_call_recomp]: [untag_int] killed by a call and recomputed
+     in the loop body. *)
+let side_effect = ref 0
+
+let tick_fn = ref (fun k -> side_effect := !side_effect + k)
+
+let two_entries_float c (r : float ref) n =
+  let x = !r in
+  let acc = ref (if c then x +. 1. else x +. 2.) in
+  let i = ref n in
+  while !i > 0 do
+    acc := !acc +. x;
+    decr i
+  done;
+  !acc
+
+let two_entries_call_insert c (r : Obj.t ref) n =
+  let x = !r in
+  let acc = ref (if c then (Obj.obj x : int) + 1 else (Obj.obj x : int) + 2) in
+  let i = ref n in
+  while !i > (Obj.obj x : int) do
+    !tick_fn !i;
+    acc := !acc + !i;
+    decr i
+  done;
+  !acc
+
+let two_entries_call_recomp c (r : Obj.t ref) n =
+  let x = !r in
+  let acc = ref (if c then (Obj.obj x : int) + 1 else (Obj.obj x : int) + 2) in
+  let i = ref n in
+  while !i > (Obj.obj x : int) do
+    !tick_fn !i;
+    acc := !acc + (Obj.obj x : int);
+    decr i
+  done;
+  !acc
+
 let () =
   assert (sum F 1.5 10 = 70);
   assert (sum F 0.5 0 = 0);
   assert (sum S "abc" 10 = 13);
   assert (count succ 3 10 = 44);
-  assert (count succ 3 0 = 4)
+  assert (count succ 3 0 = 4);
+  let rf = ref (float (Array.length Sys.argv + 3)) in
+  let ri = ref (Obj.repr (Array.length Sys.argv + 1)) in
+  let iv : int = Obj.obj !ri in
+  let n = iv + 3 in
+  assert (Float.equal (two_entries_float true rf n) (!rf +. 1. +. (float n *. !rf)));
+  assert (Float.equal (two_entries_float false rf n) (!rf +. 2. +. (float n *. !rf)));
+  assert (two_entries_call_insert true ri n = iv + 1 + n + (n - 1) + (n - 2));
+  assert (two_entries_call_insert false ri n = iv + 2 + n + (n - 1) + (n - 2));
+  assert (two_entries_call_recomp true ri n = iv + 1 + (3 * iv));
+  assert (two_entries_call_recomp false ri n = iv + 2 + (3 * iv));
+  assert (!side_effect = 4 * (n + (n - 1) + (n - 2)))

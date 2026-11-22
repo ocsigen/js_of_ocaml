@@ -42,9 +42,17 @@ let[@inline never] negate c y =
   let x = y +. 1. in
   if c then not (Obj.magic x : bool) else x > 0.
 
+(* A fresh conversion variable created by LCM can be passed as the indices
+   array of a generic bigarray access on a dead path *)
+let[@inline never] ba_generic c n =
+  let ba = Bigarray.Genarray.create Bigarray.int Bigarray.c_layout [| 4 |] in
+  let x = n + 1 in
+  if c then Bigarray.Genarray.get ba (Obj.magic x : int array) else x
+
 let () =
   let n = Array.length Sys.argv in
   let c = n > 100 in
   assert (ints c n = n + 1);
   assert (floats c (float n) = n + 1);
-  assert (negate c (float n))
+  assert (negate c (float n));
+  assert (ba_generic c n = n + 1)
