@@ -207,10 +207,14 @@ module type S = sig
       -> cps:bool
       -> ?pair:bool
       -> no_code_pointer:bool
+      -> precise_env:bool
       -> Code.Var.t
       -> unit Code_generation.t
-    (** [pair] indicates that the function is the direct-style version of a
-        function with a CPS version (double translation) *)
+    (** Bind the free variables of a function to the fields of its
+        environment. [pair] indicates that the function is the
+        direct-style version of a function with a CPS version (double
+        translation). With [precise_env], the environment parameter is
+        given the precise type of the closure. *)
 
     val curry_allocate :
          ?cps_f:Code.Var.t
@@ -363,7 +367,8 @@ module type S = sig
     -> unit Code_generation.t
 
   val post_process_function_body :
-       profile:Profile.t
+       context:Code_generation.context
+    -> profile:Profile.t
     -> param_names:Wasm_ast.var list
     -> param_types:Wasm_ast.value_type list
     -> locals:(Wasm_ast.var * Wasm_ast.value_type) list
