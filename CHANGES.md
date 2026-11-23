@@ -1,14 +1,36 @@
 # dev
 
 ## Features/Changes
+
+### OCaml versions
+* Compiler/JS: with OCaml 5.6 bytecode hints, access bigarrays of known kind
+  and layout directly (#2628)
+* Compiler/JS: with OCaml 5.6 bytecode hints, compare int64 values with
+  dedicated primitives rather than the polymorphic comparison (#2628)
+
+### Compiler
+* Compiler: split switches with more than 256 cases (instead of 60), or whose
+  case values span more than 1000, which the JavaScriptCore interpreter
+  compiles to a sequence of tests (#2612)
+* Compiler: name variables in a more regular order, which compresses better
+  (#2598)
+* Compiler/Runtime: files embedded by `build-fs`, `jsoo_mkcmis`, `--file` and
+  `--ofs` pass large binary contents in base64, decoded by the runtime;
+  `jsoo_create_file` (and a user-defined `globalThis.jsoo_create_file`) takes
+  a third argument, set when the content is base64. Such files need a runtime
+  at least as recent (#2620)
+* Compiler: call known functions stored in blocks (module fields, records
+  of closures) as `M[i](x)` rather than `M[i].call(null, x)`, which
+  prevented V8 from inlining them (#2613)
+
+### Effects
+* Compiler/Wasm: support `--effects=double-translation` (#2443)
+
+### Wasm
 * Compiler/Wasm: link with our own linker, which also removes dead code,
   instead of wasm-merge and wasm-metadce: faster compilation (#2506)
 * Compiler/Wasm: split the huge toplevel function of large programs into
   smaller functions, which are faster to optimize (#2423)
-* Compiler/Wasm: support `--effects=double-translation` (#2443)
-* Runtime: fast path for immediates in polymorphic comparisons (#2567)
-* Runtime: faster 16-, 32- and 64-bit reads and writes on bytes (#2608)
-* Runtime/JS: faster `Float.next_after`, `Float.succ` and `Float.pred` (#2638)
 * Compiler/Wasm: preprocess, validate and assemble the runtime files with Wax
   (new `wax-lib` dependency); remove `wasm_of_ocaml preprocess` (#2373)
 * Compiler/Wasm: faster calls to JavaScript: JavaScript values are
@@ -23,94 +45,45 @@
 * Compiler/Wasm: raising functions which can also be called through a closure
   return null too when called directly, using a wrapper otherwise (#2098)
 * Compiler/Wasm: require Binaryen 120 (#2580)
-* Compiler: split switches with more than 256 cases (instead of 60), or whose
-  case values span more than 1000, which the JavaScriptCore interpreter
-  compiles to a sequence of tests (#2612)
-* Compiler/Runtime: files embedded by `build-fs`, `jsoo_mkcmis`, `--file` and
-  `--ofs` pass large binary contents in base64, decoded by the runtime;
-  `jsoo_create_file` (and a user-defined `globalThis.jsoo_create_file`) takes
-  a third argument, set when the content is base64. Such files need a runtime
-  at least as recent (#2620)
-* Compiler: name variables in a more regular order, which compresses better
-  (#2598)
-* Runtime/Wasm: compute `mod_float` in Wasm rather than calling JavaScript (#2629)
 * Compiler/Wasm: Binaryen is now optional; without `wasm-opt`, the generated
   code is not optimized and a `missing-wasm-opt` warning is emitted (#2571)
-* Compiler/JS: with OCaml 5.6 bytecode hints, access bigarrays of known kind
-  and layout directly (#2628)
-* Compiler/JS: with OCaml 5.6 bytecode hints, compare int64 values with
-  dedicated primitives rather than the polymorphic comparison (#2628)
 * Compiler/Wasm: pass the arguments and result of `Float.fma` unboxed (#2632)
+* Runtime/Wasm: compute `mod_float` in Wasm rather than calling JavaScript (#2629)
+* Runtime/Wasm: parse short decimal floats without calling JavaScript (#2631)
+* Runtime/Wasm: faster decimal formatting of integers (#2631)
+* Runtime/Wasm: format integers in base 8 and 16 with shifts rather than
+  divisions (#2640)
+
+### Runtime
+* Runtime: fast path for immediates in polymorphic comparisons (#2567)
+* Runtime: faster 16-, 32- and 64-bit reads and writes on bytes (#2608)
 * Runtime: faster `Float.fma` when the result is subnormal (#2632)
 * Runtime: faster float formatting; the Wasm runtime formats floats with a
   short exact decimal expansion (integers, ...) without calling JavaScript (#2631)
-* Runtime/Wasm: parse short decimal floats without calling JavaScript (#2631)
-* Runtime/Wasm: faster decimal formatting of integers (#2631)
+* Runtime/JS: faster `Float.next_after`, `Float.succ` and `Float.pred` (#2638)
 * Runtime/JS: much faster int64 division, formatting and parsing (#2640)
-* Runtime/Wasm: format integers in base 8 and 16 with shifts rather than
-  divisions (#2640)
 * Runtime/JS: much faster Random (#2630)
-* Compiler: call known functions stored in blocks (module fields, records
-  of closures) as `M[i](x)` rather than `M[i].call(null, x)`, which
-  prevented V8 from inlining them (#2613)
 
 ## Bug fixes
-* Runtime: `Str.replace_matched` raises `Invalid_argument` when a group
-  referenced by the replacement extends past the end of the supplied string,
-  instead of truncating it (JS) or trapping (Wasm) (#NNNN)
-* Runtime: accurate `Float.erf` and `Float.erfc` (ported from fdlibm), instead
-  of an approximation good to 1e-7 only (#2635)
-* Runtime/Wasm: with WASI, parse negative decimal floats that round to the
-  smallest subnormal or to zero correctly (#2632)
-* Runtime/Wasm: reject hexadecimal floats with two exponent signs (#2632)
-* Runtime/Wasm: fix `Float.fma` when the result is subnormal (#2632)
-* Runtime: fix the rounding of `Float.fma` on some subnormal ties (#2632)
-* Runtime: round the float32 results of `fma`, of conversions from int64 and of
-  `Float32.of_string` only once (#2632)
-* Runtime/Wasm: parse hexadecimal floats with a subnormal value with a single
-  rounding (#2632)
-* Runtime/Wasm: the integer formatting primitives accept several flags, and
-  ignore `+` and ` ` for unsigned conversions, as in C (#2631)
-* Toplevel: `js_of_ocaml-toplevel` depends on `js_of_ocaml-ppx`, so that
-  `js_of_ocaml-toplevel.worker_lwt_client` is no longer silently skipped when
-  the ppx is not installed first (#2627)
-* Compiler/Wasm: fix comparisons with the result of `x lsr n` when `x` is
-  negative and `n` is not a constant and is zero (#2622)
+
+### Compiler
 * Compiler: fix `build-fs` output embedding large binary files, which called
   a base64 decoder it did not include (#2620)
 * Compiler: fix `--enable callgen`, which could crash the compiler or evaluate
   a function computed by a call several times (#2619)
-* Compiler/Wasm: box variables typed as integers before using them as a
-  reference cell, an array or a function (dead GADT branches) (#2615)
-* Compiler/Wasm: fix invalid code when a number is tested, raised, checked as
-  an array or used as another kind of number (dead GADT branches) (#2621)
-* Runtime/Wasm: add the system constants needed with `--disable staticeval`
-  (`caml_sys_const_big_endian`, `caml_sys_const_backend_type`, ...) (#2601)
-* Compiler/Wasm: fix the typing of array accesses to constant blocks (such as
-  the method names of classes): objects could fail with an illegal cast (#2596)
 * Compiler: trampoline tail calls between mutually recursive functions with
   `--disable optcall`, to avoid stack overflows (#2597)
-* Runtime: fix `Int32.of_string` and `Nativeint.of_string` failure messages, `%h`
-  with precision 0, flags and NaNs, and the `Marshal` header of empty arrays (#2602)
 * Compiler: fix a miscompilation of `Int_trie` by OxCaml's flambda2 at -O2
   and -O3 (#2560)
 * Compiler: fix a stack overflow in the dataflow solvers on deep graphs,
   when the compiler itself runs in Wasm (#2568)
-* Compiler/Wasm: export the shapes of separately compiled units, so that
-  other units can call their functions directly (#2587)
 * Compiler: fix mutually recursive tail calls with `--set tc_depth=0` (#2591)
-* Runtime: `Printf` float formatting matches C: `%e`, `%f` and `%g` round
-  ties to even, and `%g` of values >= 1e21 uses fixed notation while the
-  exponent is below the precision (#2527)
 * Compiler: with separate compilation, export the `//Alias` names of the
   primitives defined in user runtime files (#2604)
 * Compiler: do not inline functions with open recursion through a record
   of closures as functors (memory blow-up at --opt 2 with OCaml 5.6) (#2599)
 * Compiler: fix the compact printing of number literals with a trailing dot
   followed by a keyword (`5. in o` was printed as `5.in o`) (#2603)
-* Runtime: ensure empty float arrays use tag 0 rather than 254 for
-  Float.Array.concat and recursive dummy allocations, and in JavaScript also
-  for Float.Array.append, sub, create and make (#2594)
 * Compiler: fix a failure (`Targetint.of_string_exn`) when an integer
   addition, subtraction or shift is applied to a float constant in dead
   code (GADTs) (#2618)
@@ -118,8 +91,55 @@
   compiler itself runs in JavaScript (#2616)
 * Compiler: fix the naming of labels in default parameters, of `var`s in
   class static blocks, and of nested source and generated labels (#2598)
+
+### Effects
 * Compiler: with `--effects=double-translation`, trampoline mutually recursive
   functions without CPS version, and no longer give them one for tail calls (#2593)
+
+### Wasm
+* Compiler/Wasm: fix comparisons with the result of `x lsr n` when `x` is
+  negative and `n` is not a constant and is zero (#2622)
+* Compiler/Wasm: box variables typed as integers before using them as a
+  reference cell, an array or a function (dead GADT branches) (#2615)
+* Compiler/Wasm: fix invalid code when a number is tested, raised, checked as
+  an array or used as another kind of number (dead GADT branches) (#2621)
+* Compiler/Wasm: fix the typing of array accesses to constant blocks (such as
+  the method names of classes): objects could fail with an illegal cast (#2596)
+* Compiler/Wasm: export the shapes of separately compiled units, so that
+  other units can call their functions directly (#2587)
+* Runtime/Wasm: with WASI, parse negative decimal floats that round to the
+  smallest subnormal or to zero correctly (#2632)
+* Runtime/Wasm: reject hexadecimal floats with two exponent signs (#2632)
+* Runtime/Wasm: fix `Float.fma` when the result is subnormal (#2632)
+* Runtime/Wasm: parse hexadecimal floats with a subnormal value with a single
+  rounding (#2632)
+* Runtime/Wasm: the integer formatting primitives accept several flags, and
+  ignore `+` and ` ` for unsigned conversions, as in C (#2631)
+* Runtime/Wasm: add the system constants needed with `--disable staticeval`
+  (`caml_sys_const_big_endian`, `caml_sys_const_backend_type`, ...) (#2601)
+
+### Runtime
+* Runtime: `Str.replace_matched` raises `Invalid_argument` when a group
+  referenced by the replacement extends past the end of the supplied string,
+  instead of truncating it (JS) or trapping (Wasm) (#NNNN)
+* Runtime: accurate `Float.erf` and `Float.erfc` (ported from fdlibm), instead
+  of an approximation good to 1e-7 only (#2635)
+* Runtime: fix the rounding of `Float.fma` on some subnormal ties (#2632)
+* Runtime: round the float32 results of `fma`, of conversions from int64 and of
+  `Float32.of_string` only once (#2632)
+* Runtime: fix `Int32.of_string` and `Nativeint.of_string` failure messages, `%h`
+  with precision 0, flags and NaNs, and the `Marshal` header of empty arrays (#2602)
+* Runtime: `Printf` float formatting matches C: `%e`, `%f` and `%g` round
+  ties to even, and `%g` of values >= 1e21 uses fixed notation while the
+  exponent is below the precision (#2527)
+* Runtime: ensure empty float arrays use tag 0 rather than 254 for
+  Float.Array.concat and recursive dummy allocations, and in JavaScript also
+  for Float.Array.append, sub, create and make (#2594)
+
+### Libraries
+* Toplevel: `js_of_ocaml-toplevel` depends on `js_of_ocaml-ppx`, so that
+  `js_of_ocaml-toplevel.worker_lwt_client` is no longer silently skipped when
+  the ppx is not installed first (#2627)
 
 # 6.5.0 (2026-10-22) - Lille
 
