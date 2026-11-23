@@ -869,9 +869,9 @@ var caml_output_val = (function () {
         writer.size_32 += 1 + (((len + 4) / 4) | 0);
         writer.size_64 += 1 + (((len + 8) / 8) | 0);
       } else {
-        // If a [-0] is encountered, consider it to be a float instead of an int.  
-        // This is safe because OCaml's int operations all end in [| 0], which 
-        // clears the sign bit.
+        // If a [-0] is encountered, consider it to be a float instead of an int.
+        // This is safe because OCaml's int operations never return [-0]: they
+        // end in [| 0] or use [Math.imul].
         if (v !== (v | 0) || (v === 0 && 1 / v < 0)) {
           var type_of_v = typeof v;
           if (type_of_v !== "number")
