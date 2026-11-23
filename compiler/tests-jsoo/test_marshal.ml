@@ -172,6 +172,38 @@ let%expect_test "test float" =
     "\132\149\166\190\000\000\000\017\000\000\000\004\000\000\000\012\000\000\000\011\160\160\012\031\133\235Q\184\030\t@\004\001\160\004\003@"
     3.140000 3.140000 3.140000 3.140000 |}]
 
+let%expect_test "test negative zero" =
+  (* [-0.] is a double, not the int [0], so that it reads back as [-0.]. The [js]
+     variants record a bug: the js runtime writes [-0.] as the int [0]. *)
+  let r = Marshal.to_string (-.Sys.opaque_identity 0.) [ No_sharing ] in
+  Printf.printf "%S\n" r;
+  Printf.printf "%h" (Marshal.from_string r 0);
+  [%expect
+    ({|
+    "\132\149\166\190\000\000\000\001\000\000\000\000\000\000\000\000\000\000\000\000@"
+    0x0p+0 |}
+    [@when js])];
+  [%expect
+    {|
+    "\132\149\166\190\000\000\000\t\000\000\000\000\000\000\000\003\000\000\000\002\012\000\000\000\000\000\000\000\128"
+    -0x0p+0 |}];
+  (* shared: the same [-0.] twice in a block *)
+  let z = -.Sys.opaque_identity 0. in
+  let z1, z2 = Marshal.from_string (Marshal.to_string (z, z) []) 0 in
+  Printf.printf "%h %h" z1 z2;
+  [%expect ({| 0x0p+0 0x0p+0 |} [@when js])];
+  [%expect {| -0x0p+0 -0x0p+0 |}]
+
+let%expect_test "test int mod giving zero" =
+  (* [-3 % 3] is [-0] in JavaScript: the int [0] is still written as an int.
+     [int_of_string], not [Sys.opaque_identity], hides the divisor: [%opaque] is the
+     identity in bytecode, so js_of_ocaml would see the [3] and emit an inline [%]
+     ending in [| 0] instead of calling [caml_mod]. *)
+  let r = Marshal.to_string (-3 mod int_of_string "3") [ No_sharing ] in
+  Printf.printf "%S" r;
+  [%expect
+    {| "\132\149\166\190\000\000\000\001\000\000\000\000\000\000\000\000\000\000\000\000@" |}]
+
 let%expect_test "md5 digest via channel" =
   (* The MD5 buffer offset bug only triggers when MD5Update is called with
      in_buf != 0, i.e. when a previous update left a partial 64-byte block.
