@@ -49,14 +49,16 @@ let%expect_test ("replace_matched with groups that fit" [@when not wasi]) =
   replace_matched ~repl:"-" "x";
   [%expect {| "-" |}]
 
-(* FIXME: should raise [Invalid_argument]; the Wasm runtime traps instead.
-   Not run natively: the C stub reads out of bounds before OCaml 5.6. *)
-let%expect_test ("replace_matched with a string too short" [@when js]) =
+(* Not run natively: the C stub reads out of bounds without
+   ocaml/ocaml#15394. *)
+let%expect_test ("replace_matched with a string too short"
+    [@when (not wasi) && not native])
+  =
   let s = "abcde" in
   ignore (Str.search_forward (Str.regexp {|b\(c\)de|}) s 0);
   replace_matched ~repl:{|\0|} "xyz";
-  [%expect {| "yz" |}];
+  [%expect {| Invalid_argument: Str.replace_matched |}];
   replace_matched ~repl:{|\0|} "x";
-  [%expect {| "" |}];
+  [%expect {| Invalid_argument: Str.replace_matched |}];
   replace_matched ~repl:{|\1|} "ab";
-  [%expect {| "" |}]
+  [%expect {| Invalid_argument: Str.replace_matched |}]

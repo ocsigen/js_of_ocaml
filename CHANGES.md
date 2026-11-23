@@ -55,6 +55,9 @@
   prevented V8 from inlining them (#2613)
 
 ## Bug fixes
+* Runtime: `Str.replace_matched` raises `Invalid_argument` when a group
+  referenced by the replacement extends past the end of the supplied string,
+  instead of truncating it (JS) or trapping (Wasm) (#NNNN)
 * Runtime: accurate `Float.erf` and `Float.erfc` (ported from fdlibm), instead
   of an approximation good to 1e-7 only (#2635)
 * Runtime/Wasm: with WASI, parse negative decimal floats that round to the
