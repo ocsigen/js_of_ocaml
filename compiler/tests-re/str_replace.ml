@@ -28,3 +28,35 @@ let%expect_test ("valid backreferences" [@when not wasi]) =
   [%expect {| "b[a]n[a]n[a]" |}];
   show ~repl:"\\0!" ~re:"a" "banana";
   [%expect {| "ba!na!na!" |}]
+
+(* [Str.replace_matched repl s] reads the groups from [s] using the offsets
+   of the last match. If [s] is shorter than the string that was searched,
+   it must raise [Invalid_argument] (ocaml/ocaml#15290) rather than read out
+   of bounds. *)
+let replace_matched ~repl s =
+  match Str.replace_matched repl s with
+  | r -> Printf.printf "%S\n" r
+  | exception Invalid_argument msg -> Printf.printf "Invalid_argument: %s\n" msg
+
+let%expect_test ("replace_matched with groups that fit" [@when not wasi]) =
+  let s = "abcde" in
+  ignore (Str.search_forward (Str.regexp {|b\(c\)de|}) s 0);
+  replace_matched ~repl:{|\0,\1|} s;
+  [%expect {| "bcde,c" |}];
+  (* Group 1 fits in a shorter string, and group 0 is not referenced *)
+  replace_matched ~repl:{|\1|} "xyz";
+  [%expect {| "z" |}];
+  replace_matched ~repl:"-" "x";
+  [%expect {| "-" |}]
+
+(* FIXME: should raise [Invalid_argument]; the Wasm runtime traps instead.
+   Not run natively: the C stub reads out of bounds before OCaml 5.6. *)
+let%expect_test ("replace_matched with a string too short" [@when js]) =
+  let s = "abcde" in
+  ignore (Str.search_forward (Str.regexp {|b\(c\)de|}) s 0);
+  replace_matched ~repl:{|\0|} "xyz";
+  [%expect {| "yz" |}];
+  replace_matched ~repl:{|\0|} "x";
+  [%expect {| "" |}];
+  replace_matched ~repl:{|\1|} "ab";
+  [%expect {| "" |}]
