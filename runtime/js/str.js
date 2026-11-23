@@ -381,7 +381,7 @@ function re_partial_match(re, s, pos) {
 //Provides: re_replacement_text
 //Requires: caml_jsbytes_of_string, caml_string_of_jsbytes
 //Requires: caml_array_get
-//Requires: caml_failwith
+//Requires: caml_failwith, caml_invalid_argument
 // external re_replacement_text: string -> int array -> string -> string
 function re_replacement_text(repl, groups, orig) {
   var repl = caml_jsbytes_of_string(repl);
@@ -419,6 +419,8 @@ function re_replacement_text(repl, groups, orig) {
           end = caml_array_get(groups, c * 2 + 1);
           if (start === -1)
             caml_failwith("Str.replace: reference to unmatched group");
+          // [orig] may not be the string that was searched
+          if (end > orig.length) caml_invalid_argument("Str.replace_matched");
           res += orig.slice(start, end);
           break;
         default:

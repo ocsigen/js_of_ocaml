@@ -655,6 +655,7 @@
 
    (@string $illegal_backslash "Str.replace: illegal backslash sequence")
    (@string $unmatched_group "Str.replace: reference to unmatched group")
+   (@string $replace_matched "Str.replace_matched")
 
    (func (export "re_replacement_text")
       (param $vrepl (ref eq)) (param $vgroups (ref eq)) (param $vorig (ref eq))
@@ -711,6 +712,11 @@
                            (i32.add (local.get $c) (i32.const 2))))))
                (if (i32.eq (local.get $start) (i32.const -1))
                   (then (call $caml_failwith (global.get $unmatched_group))))
+               ;; [orig] may not be the string that was searched
+               (if (i32.gt_u (local.get $end) (array.len (local.get $orig)))
+                  (then
+                     (call $caml_invalid_argument
+                        (global.get $replace_matched))))
                (local.set $len
                    (i32.add (local.get $len)
                       (i32.sub (local.get $end) (local.get $start))))
