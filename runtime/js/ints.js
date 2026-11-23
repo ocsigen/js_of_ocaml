@@ -230,7 +230,8 @@ function caml_div(x, y) {
 //Alias: %int_mod
 function caml_mod(x, y) {
   if (y === 0) caml_raise_zero_divide();
-  return x % y;
+  // [| 0] turns [-0] ([-3 % 3]) into [0]: caml_output_val writes a [-0] as a double
+  return (x % y) | 0;
 }
 
 //Provides: caml_bswap16 const
