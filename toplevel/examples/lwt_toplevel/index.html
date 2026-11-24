@@ -407,6 +407,7 @@
       var prefix = "";
       var version = "";
       var main = "toplevel.js";
+      var wasmMain = "toplevel_wasm.js";
       var useWasm = globalThis?.WebAssembly?.JSTag;
       for(var f in fields){
         var data = fields[f].split(/=/);
@@ -415,6 +416,7 @@
         }
         else if (data[0] === "separate"){
           main = "toplevel.bc.js";
+          wasmMain = "toplevel_wasm.bc.wasm.js";
         }
         else if (data[0] === "js"){
           useWasm = false;
@@ -433,9 +435,13 @@
       }
       if (useWasm) {
         // The browser supports the Wasm features we need, but the Wasm
-        // toplevel may not have been built (e.g. wasm_of_ocaml unavailable).
-        // Fall back to the JavaScript toplevel if it fails to load.
-        load_script("toplevel_wasm.js", load_js_toplevel);
+        // toplevel may not have been built (e.g. wasm_of_ocaml unavailable),
+        // or only with separate compilation (dev profile). Try the
+        // separately compiled one, then fall back to the JavaScript toplevel.
+        load_script(wasmMain, function () {
+          if (wasmMain === "toplevel_wasm.bc.wasm.js") load_js_toplevel();
+          else load_script("toplevel_wasm.bc.wasm.js", load_js_toplevel);
+        });
       } else {
         load_js_toplevel();
       }
