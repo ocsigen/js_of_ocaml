@@ -1,4 +1,4 @@
-// Js_of_ocaml library
+// Js_of_ocaml runtime support
 // http://www.ocsigen.org/js_of_ocaml/
 // Copyright (C) 2010 Jérôme Vouillon
 // Laboratoire PPS - CNRS Université Paris Diderot

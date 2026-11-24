@@ -1,4 +1,4 @@
-(* Js_of_ocaml library
+(* Js_of_ocaml compiler
  * http://www.ocsigen.org/js_of_ocaml/
  * Copyright (C) 2022 Hugo Heuzard
  *

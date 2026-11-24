@@ -55,6 +55,14 @@ jobs:
       - name: Run biome
         run: biome ci
 
+  lint-license:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout tree
+        uses: actions/checkout@v7
+      - name: Check license headers
+        run: tools/check_license_headers.sh
+
   lint-wax:
     runs-on: ubuntu-latest
     steps:
