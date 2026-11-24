@@ -72,6 +72,16 @@
  (preprocess
   (pps js_of_ocaml-ppx)))
 
+;; CPS effects, as for the whole-program Wasm toplevel below. Only in
+;; the dev profile: the other profiles may already select an effects mode,
+;; and wasm_of_ocaml rejects a repeated --effects option.
+
+(env
+ (dev
+  (wasm_of_ocaml
+   (flags
+    (:standard --effects=cps)))))
+
 ;; Wasm executable (new)
 
 (executable
@@ -93,7 +103,18 @@
   (:standard -rectypes))
  (link_flags
   (:standard -linkall))
- (modes byte))
+ ;; Built with separate compilation in the dev profile (see the default
+ ;; alias below), which avoids the costly whole-program link.
+ (wasm_of_ocaml
+  (flags
+   (:standard --toplevel))
+  (link_flags
+   (:standard
+    --file
+    %{dep:examples.ml}
+    --file
+    (:include html_types_path.txt))))
+ (modes byte wasm))
 
 (rule
  (target html_types_path.txt)
@@ -238,6 +259,9 @@
 
 (rule
  (targets export_wasm.txt)
+ ;; Only used by the whole-program Wasm toplevel below
+ (enabled_if
+  (<> %{profile} dev))
  (deps
   (package js_of_ocaml)
   (package js_of_ocaml-compiler)
@@ -271,10 +295,15 @@
  (targets
   toplevel_wasm.js
   (dir toplevel_wasm.assets))
+ ;; Not defined in the dev profile, where the toplevel is built with
+ ;; separate compilation: dune build builds all the targets of the
+ ;; directory, whatever its default alias.
  (enabled_if
-  (or
-   (>= %{ocaml_version} 5.1.0)
-   (= %{arch_sixtyfour} true)))
+  (and
+   (or
+    (>= %{ocaml_version} 5.1.0)
+    (= %{arch_sixtyfour} true))
+   (<> %{profile} dev)))
  (action
   (run
    %{bin:wasm_of_ocaml}
@@ -298,12 +327,26 @@
 (alias
  (name default)
  (enabled_if
-  (or
-   (>= %{ocaml_version} 5.1.0)
-   (= %{arch_sixtyfour} true)))
+  (and
+   (or
+    (>= %{ocaml_version} 5.1.0)
+    (= %{arch_sixtyfour} true))
+   (<> %{profile} dev)))
  (deps
   toplevel_wasm.js
   (glob_files toplevel_wasm.assets/*)))
+
+(alias
+ (name default)
+ (enabled_if
+  (and
+   (or
+    (>= %{ocaml_version} 5.1.0)
+    (= %{arch_sixtyfour} true))
+   (= %{profile} dev)))
+ (deps
+  toplevel_wasm.bc.wasm.js
+  (glob_files toplevel_wasm.bc.wasm.assets/*)))
 
 (alias
  (name default)
