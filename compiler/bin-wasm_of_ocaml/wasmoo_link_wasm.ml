@@ -1,4 +1,4 @@
-(* Js_of_ocaml compiler
+(* Wasm_of_ocaml compiler
  * http://www.ocsigen.org/js_of_ocaml/
  * Copyright (C) 2013 Hugo Heuzard
  *

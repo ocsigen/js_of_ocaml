@@ -59,6 +59,9 @@ fmt-js:
 lint-js:
 	npx @biomejs/biome lint
 
+lint-license:
+	tools/check_license_headers.sh
+
 clean:
 	dune clean
 
