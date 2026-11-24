@@ -6,6 +6,7 @@ let () = print_endline "hello";;
 1+;;
 Missing_module.f;;
 let y = float 1 /. float 3;;
+"abc" < "def";;
 |}
   in
   Topdirs.dir_directory "/static/cmis";
