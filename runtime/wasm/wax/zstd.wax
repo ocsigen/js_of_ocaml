@@ -1,0 +1,218 @@
+// Wasm_of_ocaml runtime support
+// http://www.ocsigen.org/js_of_ocaml/
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, with linking exception;
+// either version 2.1 of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+
+#[if(ocaml_version >= (5, 1, 0))]
+{
+    import "fail" fn caml_failwith(&eq);
+    import "marshal" let caml_intern_decompress_input: &?decompress;
+    // The decoder entry points and the linear memory come from the single C
+    // module: c-impl.wasm ("c") for the non-wasi runtime, the combined
+    // libc.wasm ("libc") for wasi.
+    #[if(wasi)]
+    {
+        import "libc" {
+            #[import = "memory"]
+            memory mem: i32 [2];
+            fn zstd_reset();
+            fn zstd_alloc(i32) -> i32;
+            fn zstd_decompress(i32, i32, i32, i32) -> i32;
+            #[import = "zstd_window_size"]
+            fn window_size(i32, i32) -> i32;
+            #[import = "zstd_in_buf"]
+            fn in_buf() -> i32;
+            #[import = "zstd_in_cap"]
+            fn in_cap() -> i32;
+            #[import = "zstd_out_buf"]
+            fn out_buf() -> i32;
+            #[import = "zstd_stream_init"]
+            fn stream_init() -> i32;
+            #[import = "zstd_stream_set_input"]
+            fn stream_set_input(i32);
+            #[import = "zstd_stream_run"]
+            fn stream_run() -> i32;
+            #[import = "zstd_out_produced"]
+            fn out_produced() -> i32;
+            #[import = "zstd_in_done"]
+            fn in_done() -> i32;
+        }
+    }
+    #[else]
+    {
+        import "c" {
+            #[import = "memory"]
+            memory mem: i32 [2];
+            fn zstd_reset();
+            fn zstd_alloc(i32) -> i32;
+            fn zstd_decompress(i32, i32, i32, i32) -> i32;
+            #[import = "zstd_window_size"]
+            fn window_size(i32, i32) -> i32;
+            #[import = "zstd_in_buf"]
+            fn in_buf() -> i32;
+            #[import = "zstd_in_cap"]
+            fn in_cap() -> i32;
+            #[import = "zstd_out_buf"]
+            fn out_buf() -> i32;
+            #[import = "zstd_stream_init"]
+            fn stream_init() -> i32;
+            #[import = "zstd_stream_set_input"]
+            fn stream_set_input(i32);
+            #[import = "zstd_stream_run"]
+            fn stream_run() -> i32;
+            #[import = "zstd_out_produced"]
+            fn out_produced() -> i32;
+            #[import = "zstd_in_done"]
+            fn in_done() -> i32;
+        }
+    }
+
+    type bytes = [mut i8];
+    type decompress = fn(&bytes, i32, i32, i32) -> &bytes;
+
+    const decompress_failed = "input_value: zstd decompression failed";
+
+    // Bytes needed to parse any zstd frame header (= ZSTD_FRAMEHEADERSIZE_MAX).
+    const frame_header_max = 18;
+
+    // Blit a slice of a GC byte array into linear memory.
+    fn bytes_to_mem(src: &bytes, src_ofs: i32, dst: i32, len: i32) {
+        'done: do {
+            let i: i32;
+            'cont: loop {
+                br_if 'done i == len;
+                mem.store8(dst + i, src[src_ofs + i] as i32_u);
+                i += 1;
+                br 'cont;
+            }
+        }
+    }
+
+    // Blit a slice of linear memory into a GC byte array.
+    fn mem_to_bytes(src: i32, dst: &bytes, dst_ofs: i32, len: i32) {
+        'done: do {
+            let i: i32;
+            'cont: loop {
+                br_if 'done i == len;
+                dst[dst_ofs + i] = mem.load8(src + i) as i32_u;
+                i += 1;
+                br 'cont;
+            }
+        }
+    }
+
+    // One-shot decode of a small frame: blit the whole compressed input into
+    // linear memory, decode straight into an out_len-sized buffer (which zstd
+    // reuses as its history window), then blit the result into a GC array.
+    fn decompress_oneshot(input: &bytes, pos: i32, len: i32, out_len: i32) -> &bytes {
+        zstd_reset();
+        let in_buf = zstd_alloc(len);
+        let out_buf = zstd_alloc(out_len);
+        bytes_to_mem(input, pos, in_buf, len);
+        if zstd_decompress(out_buf, out_len, in_buf, len) != out_len {
+            caml_failwith(decompress_failed);
+        }
+        let output: &bytes = [0; out_len];
+        mem_to_bytes(out_buf, output, 0, out_len);
+        output;
+    }
+
+    // Stream a large frame through zstd's fixed chunk buffers, copying the
+    // compressed input in and the plaintext out a chunk at a time, so neither
+    // the input nor the full output is ever materialised in linear memory.
+    fn decompress_stream(input: &bytes, pos: i32, len: i32, out_len: i32) -> &bytes {
+        if stream_init() <s 0 {
+            caml_failwith(decompress_failed);
+        }
+        let output: &bytes = [0; out_len];
+        let src_ofs = pos;
+        let src_end = pos + len;
+        let need_input = 1;
+        let out_ofs: i32;
+        'done: do {
+            'loop: loop {
+                // Refill the input chunk once zstd has drained the previous one.
+                if need_input | in_done() {
+                    let avail = src_end - src_ofs;
+                    if avail >u in_cap() {
+                        avail = in_cap();
+                    }
+                    // Input exhausted before the frame ended: truncated data.
+                    br_if 'done !avail;
+                    bytes_to_mem(input, src_ofs, in_buf(), avail);
+                    src_ofs += avail;
+                    stream_set_input(avail);
+                    need_input = 0;
+                }
+                let ret = stream_run();
+                if ret <s 0 {
+                    caml_failwith(decompress_failed);
+                }
+                let produced = out_produced();
+                // Guard against a frame that decodes to more than out_len.
+                if out_ofs + produced >u out_len {
+                    caml_failwith(decompress_failed);
+                }
+                mem_to_bytes(out_buf(), output, out_ofs, produced);
+                out_ofs += produced;
+                br_if 'done !ret; // frame complete
+                if in_done() {
+                    need_input = 1;
+                }
+                br 'loop;
+            }
+        }
+        // A well-formed frame decodes to exactly out_len bytes.
+        if out_ofs != out_len {
+            caml_failwith(decompress_failed);
+        }
+        output;
+    }
+
+    // Peek at the frame's declared window size, then decode whichever way
+    // keeps the footprint smallest: one-shot when the output fits in the
+    // window (the output buffer then doubles as the window, so nothing larger
+    // than the window is allocated either way), streaming when it is larger
+    // (zstd keeps just a window-sized history buffer instead of the whole
+    // output).  An unparsable header yields window 0, routing to streaming,
+    // which then fails cleanly on the bad frame.
+    fn decompress(input: &bytes, pos: i32, len: i32, out_len: i32) -> &bytes {
+        let hdr = len;
+        if hdr >u frame_header_max {
+            hdr = frame_header_max;
+        }
+        // The header peek reuses the streaming input chunk as scratch; both
+        // decode paths overwrite or ignore it afterwards.
+        bytes_to_mem(input, pos, in_buf(), hdr);
+        if out_len <=u window_size(in_buf(), hdr) {
+            decompress_oneshot(input, pos, len, out_len);
+        } else {
+            decompress_stream(input, pos, len, out_len);
+        }
+    }
+
+    #[export]
+    fn caml_zstd_initialize(&eq) -> &eq {
+        caml_intern_decompress_input = decompress;
+        1 as &i31;
+    }
+}
+#[else]
+{
+    #[export]
+    fn caml_zstd_initialize(&eq) -> &eq {
+        0 as &i31;
+    }
+}

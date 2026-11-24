@@ -1,0 +1,448 @@
+// Wasm_of_ocaml runtime support
+// http://www.ocsigen.org/js_of_ocaml/
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, with linking exception;
+// either version 2.1 of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+
+import "fail" {
+    fn caml_invalid_argument(&eq);
+    fn caml_raise_out_of_memory();
+}
+
+type block = [mut &eq];
+type bytes = [mut i8];
+type float = { f: f64 };
+type float_array = [mut f64];
+
+const Array_make = "Array.make";
+const Array_concat = "Array.concat";
+const Float_Array_create = "Float.Array.create";
+
+// As in OCaml, arrays have at most Max_wosize elements, and float
+// arrays half as many (Sys.max_array_length and
+// Sys.max_floatarray_length). Every function which creates an array of
+// arbitrary length checks this bound, so that the compiler can rely on
+// it.
+const max_array_length = 0xfffffff;
+const max_float_array_length = 0x7ffffff;
+
+fn check_concat_length(len: i32, max: i32) {
+    if len >u max {
+        caml_invalid_argument(Array_concat);
+    }
+}
+
+#[export]
+fn caml_check_array_length(len: i32) {
+    if len >u max_array_length {
+        caml_raise_out_of_memory();
+    }
+}
+
+#[export]
+fn caml_check_float_array_length(len: i32) {
+    if len >u max_float_array_length {
+        caml_raise_out_of_memory();
+    }
+}
+
+const empty_array: &eq = [block|0 as &i31];
+
+#[export]
+#[export = "caml_array_make"]
+#[export = "caml_uniform_array_make"]
+fn caml_make_vect(n: &eq, v: &eq) -> &eq {
+    let sz = n as i32_s;
+    if sz >u max_array_length {
+        caml_invalid_argument(Array_make);
+    }
+    if !sz {
+        return empty_array;
+    }
+    match v {
+        fv: &float => {
+            let f = fv.f;
+            // A float init builds an unboxed float array, which has the tighter
+            // size limit of the dedicated floatarray primitives, not the generic
+            // one checked above.
+            if sz >u max_float_array_length {
+                caml_invalid_argument(Array_make);
+            }
+            return [float_array|f; sz];
+        }
+        _ => {
+            let b: &block = [v; sz + 1];
+            b[0] = 0 as &i31;
+            b;
+        }
+    }
+}
+
+#[export]
+fn caml_floatarray_make(n: &eq, v: &eq) -> &eq {
+    let sz = n as i32_s;
+    if sz >u max_float_array_length {
+        caml_invalid_argument(Array_make);
+    }
+    if !sz {
+        return empty_array;
+    }
+    let f = (v as &float).f;
+    [float_array|f; sz];
+}
+
+#[export]
+#[export = "caml_make_float_vect"]
+#[export = "caml_array_create_float"]
+#[export = "caml_floatarray_create_local"]
+fn caml_floatarray_create(n: &eq) -> &eq {
+    let sz = n as i32_s;
+    if sz >u max_float_array_length {
+        caml_invalid_argument(Float_Array_create);
+    }
+    if !sz {
+        return empty_array;
+    }
+    [float_array|0; sz];
+}
+
+#[export]
+#[export = "caml_make_array"]
+fn caml_array_of_uniform_array(vinit: &eq) -> &eq {
+    let init = vinit as &block;
+    let size = init.length();
+    if size != 1 {
+        if init[1] is &float {
+            size -= 1;
+            let res: &float_array = [0; size];
+            let i: i32;
+            'loop: loop {
+                res[i] = (init[i + 1] as &float).f;
+                i += 1;
+                br_if 'loop i <u size;
+            }
+            return res;
+        }
+    }
+    return init;
+}
+
+#[export]
+fn caml_floatarray_unsafe_get(a: &eq, i: &eq) -> &eq {
+    { f: (a as &float_array)[i as i32_s] };
+}
+
+#[export]
+fn caml_floatarray_unsafe_set(a: &eq, i: &eq, v: &eq) -> &eq {
+    (a as &float_array)[i as i32_s] = (v as &float).f;
+    0 as &i31;
+}
+
+#[export]
+#[export = "caml_array_sub_local"]
+fn caml_array_sub(a: &eq, i: &eq, vlen: &eq) -> &eq {
+    let len = vlen as i32_u;
+    if !len {
+        return empty_array;
+    }
+    match a {
+        a1: &block => {
+            let a2: &block = [0 as &i31; len + 1];
+            a2[0] = a1[0];
+            a2.copy(1, a1, i as i32_u + 1, len);
+            return a2;
+        }
+        _ => {
+            let fa1 = a as &float_array;
+            let fa2: &float_array = [0; len];
+            fa2.copy(0, fa1, i as i32_u, len);
+            fa2;
+        }
+    }
+}
+
+#[export]
+fn caml_floatarray_sub(a: &eq, i: &eq, vlen: &eq) -> &eq {
+    let len = vlen as i32_u;
+    if !len {
+        return empty_array;
+    }
+    let fa1 = a as &float_array;
+    let fa2: &float_array = [0; len];
+    fa2.copy(0, fa1, i as i32_u, len);
+    fa2;
+}
+
+fn caml_floatarray_dup(a: &float_array) -> &eq {
+    let len = a.length();
+    let a': &float_array = [0; len];
+    a'.copy(0, a, 0, len);
+    a';
+}
+
+#[export]
+#[export = "caml_array_append_local"]
+fn caml_array_append(va1: &eq, va2: &eq) -> &eq {
+    let l1: i32;
+    let l2: i32;
+    match va1 {
+        a1: &block => {
+            match va2 {
+                a2: &block => {
+                    l1 = a1.length();
+                    l2 = a2.length();
+                    check_concat_length(l1 + l2 - 2, max_array_length);
+                    let a: &block = [0 as &i31; l1 + l2 - 1];
+                    a.copy(1, a1, 1, l1 - 1);
+                    a.copy(l1, a2, 1, l2 - 1);
+                    return a;
+                }
+                _ => {
+                    become caml_floatarray_dup(va2 as &float_array);
+                }
+            }
+        }
+        _ => {
+            let fa1 = va1 as &float_array;
+            match va2 {
+                fa2: &float_array => {
+                    l1 = fa1.length();
+                    l2 = fa2.length();
+                    check_concat_length(l1 + l2, max_float_array_length);
+                    let fa: &float_array = [0; l1 + l2];
+                    fa.copy(0, fa1, 0, l1);
+                    fa.copy(l1, fa2, 0, l2);
+                    return fa;
+                }
+                _ => {
+                    become caml_floatarray_dup(fa1);
+                }
+            }
+        }
+    }
+}
+
+#[export]
+fn caml_floatarray_append(va1: &eq, va2: &eq) -> &eq {
+    let fa1 = va1 as &float_array;
+    match va2 {
+        fa2: &float_array => {
+            let l1 = fa1.length();
+            let l2 = fa2.length();
+            check_concat_length(l1 + l2, max_float_array_length);
+            let fa: &float_array = [0; l1 + l2];
+            fa.copy(0, fa1, 0, l1);
+            fa.copy(l1, fa2, 0, l2);
+            return fa;
+        }
+        _ => {
+            become caml_floatarray_dup(fa1);
+        }
+    }
+}
+
+#[export]
+#[export = "caml_array_concat_local"]
+fn caml_array_concat(vl: &eq) -> &eq {
+    let l = vl;
+    let len = 0;
+    let isfloat: i32;
+    let b: &block;
+    'compute_length: loop {
+        _ =
+            'exit: do {
+                b = br_on_cast_fail 'exit &block l;
+                let v = b[1];
+                'continue: do {
+                    _ =
+                        'not_block: do {
+                            len += (br_on_cast_fail 'not_block &block v).length() - 1;
+                            br 'continue;
+                        };
+                    len += (v as &float_array).length();
+                    isfloat = 1;
+                }
+                // Checked at each step, so that the sum does not overflow
+                check_concat_length(len, isfloat?max_float_array_length:max_array_length);
+                l = b[2];
+                br 'compute_length;
+            };
+    }
+    let i: i32;
+    if isfloat {
+        let fa: &float_array = [0; len];
+        l = vl;
+        i = 0;
+        'fill: loop {
+            _ =
+                'exit: do {
+                    b = br_on_cast_fail 'exit &block l;
+                    l = b[2];
+                    match b[1] {
+                        fa': &float_array => {
+                            len = fa'.length();
+                            fa.copy(i, fa', 0, len);
+                            i += len;
+                            br 'fill;
+                        }
+                        _ => {
+                            br 'fill;
+                        }
+                    }
+                };
+        }
+        fa;
+    } else {
+        let a: &block = [0 as &i31; len + 1];
+        l = vl;
+        i = 1;
+        'fill: loop {
+            _ =
+                'exit: do {
+                    b = br_on_cast_fail 'exit &block l;
+                    let a' = b[1] as &block;
+                    len = a'.length() - 1;
+                    a.copy(i, a', 1, len);
+                    i += len;
+                    l = b[2];
+                    br 'fill;
+                };
+        }
+        a;
+    }
+}
+
+#[export]
+fn caml_floatarray_concat(vl: &eq) -> &eq {
+    let l = vl;
+    let len = 0;
+    let b: &block;
+    'compute_length: loop {
+        _ =
+            'exit: do {
+                b = br_on_cast_fail 'exit &block l;
+                let v = b[1];
+                if v is &float_array {
+                    len += (v as &float_array).length();
+                    check_concat_length(len, max_float_array_length);
+                }
+                l = b[2];
+                br 'compute_length;
+            };
+    }
+    if !len {
+        return empty_array;
+    }
+    let fa: &float_array = [0; len];
+    l = vl;
+    let i = 0;
+    'fill: loop {
+        _ =
+            'exit: do {
+                b = br_on_cast_fail 'exit &block l;
+                l = b[2];
+                match b[1] {
+                    fa': &float_array => {
+                        len = fa'.length();
+                        fa.copy(i, fa', 0, len);
+                        i += len;
+                        br 'fill;
+                    }
+                    _ => {
+                        br 'fill;
+                    }
+                }
+            };
+    }
+    fa;
+}
+
+#[export]
+fn caml_uniform_array_concat(vl: &eq) -> &eq {
+    let l = vl;
+    let len = 0;
+    let b: &block;
+    'compute_length: loop {
+        _ =
+            'exit: do {
+                b = br_on_cast_fail 'exit &block l;
+                let v = b[1];
+                len += (v as &block).length() - 1;
+                check_concat_length(len, max_array_length);
+                l = b[2];
+                br 'compute_length;
+            };
+    }
+    let a: &block = [0 as &i31; len + 1];
+    l = vl;
+    let i = 1;
+    'fill: loop {
+        _ =
+            'exit: do {
+                b = br_on_cast_fail 'exit &block l;
+                let a' = b[1] as &block;
+                len = a'.length() - 1;
+                a.copy(i, a', 1, len);
+                i += len;
+                l = b[2];
+                br 'fill;
+            };
+    }
+    a;
+}
+
+#[export]
+fn caml_floatarray_blit(a1: &eq, i1: &eq, a2: &eq, i2: &eq, vlen: &eq) -> &eq {
+    let len = vlen as i32_s;
+    if len {
+        (a2 as &float_array).copy(i2 as i32_s, a1 as &float_array, i1 as i32_s, len);
+    }
+    0 as &i31;
+}
+
+#[export]
+fn caml_array_blit(a1: &eq, i1: &eq, a2: &eq, i2: &eq, vlen: &eq) -> &eq {
+    let len = vlen as i32_s;
+    if len {
+        if a1 is &float_array {
+            become caml_floatarray_blit(a1, i1, a2, i2, vlen);
+        } else {
+            (a2 as &block).copy(i2 as i32_s + 1, a1 as &block, i1 as i32_s + 1, len);
+        }
+    }
+    0 as &i31;
+}
+
+#[export]
+fn caml_array_fill(a: &eq, i: &eq, vlen: &eq, v: &eq) -> &eq {
+    let len = vlen as i32_u;
+    'done: if len {
+        _ =
+            'not_block: do {
+                (br_on_cast_fail 'not_block &block a).fill(i as i32_u + 1, v, len);
+                br 'done;
+            };
+        (a as &float_array).fill(i as i32_u, (v as &float).f, len);
+    }
+    0 as &i31;
+}
+
+#[export]
+fn caml_floatarray_fill(a: &eq, i: &eq, vlen: &eq, v: &eq) -> &eq {
+    let len = vlen as i32_u;
+    if len {
+        (a as &float_array).fill(i as i32_u, (v as &float).f, len);
+    }
+    0 as &i31;
+}

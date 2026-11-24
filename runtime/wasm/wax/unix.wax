@@ -1,0 +1,2461 @@
+// Wasm_of_ocaml runtime support
+// http://www.ocsigen.org/js_of_ocaml/
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, with linking exception;
+// either version 2.1 of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+
+#[if(wasi)]
+{
+    type path_op = fn(i32, i32, i32) -> i32;
+    import "wasi_snapshot_preview1" {
+        fn clock_time_get(i32, i64, i32) -> i32;
+        fn path_filestat_get(i32, i32, i32, i32, i32) -> i32;
+        fn path_rename(i32, i32, i32, i32, i32, i32) -> i32;
+        fn path_link(i32, i32, i32, i32, i32, i32, i32) -> i32;
+        fn path_symlink(i32, i32, i32, i32, i32) -> i32;
+        fn path_readlink(i32, i32, i32, i32, i32, i32) -> i32;
+        fn path_create_directory: path_op ;
+        fn path_unlink_file: path_op ;
+        fn path_remove_directory: path_op ;
+        fn path_open(i32, i32, i32, i32, i32, i64, i64, i32, i32) -> i32;
+        fn path_filestat_set_times(i32, i32, i32, i32, i64, i64, i32) -> i32;
+        fn fd_filestat_get(i32, i32) -> i32;
+        fn fd_filestat_set_size(i32, i64) -> i32;
+        fn fd_write(i32, i32, i32, i32) -> i32;
+        fn fd_read(i32, i32, i32, i32) -> i32;
+        fn fd_seek(i32, i64, i32, i32) -> i32;
+        fn fd_sync(i32) -> i32;
+        fn fd_close(i32) -> i32;
+        #[import = "fd_readdir"]
+        fn fd_readddir(i32, i32, i32, i64, i32) -> i32;
+    }
+    import "libc" {
+        #[import = "memory"]
+        memory m: i32 [2];
+        fn free(i32);
+        fn gmtime(i32) -> i32;
+        fn localtime(i32) -> i32;
+        fn mktime(i32) -> i64;
+    }
+    import "wasi_memory" {
+        fn checked_malloc(i32) -> i32;
+        fn get_buffer() -> i32;
+        fn write_string_to_memory(i32, i32, &eq) -> i32;
+        fn blit_memory_to_string(i32, i32) -> &bytes;
+        fn blit_memory_to_substring(i32, &bytes, i32, i32);
+        fn blit_substring_to_memory(i32, &bytes, i32, i32);
+    }
+    import "fs" {
+        fn wasi_resolve_path(&eq) -> (i32, i32, i32);
+        fn wasi_chdir(&eq);
+    }
+    import "wasi_errors" const error_messages: &block;
+    import "ints" fn caml_format_int(&eq, &eq) -> &eq;
+    import "string" fn caml_string_concat(&eq, &eq) -> &eq;
+}
+#[else]
+{
+    import "bindings" {
+        fn gettimeofday() -> f64;
+        fn times() -> &eq;
+        fn gmtime(f64) -> &eq;
+        fn localtime(f64) -> &eq;
+        fn mktime(i32, i32, i32, i32, i32, i32) -> f64;
+        fn utimes(&?extern, f64, f64);
+        fn stat(&?extern, i32) -> &eq;
+        fn lstat(&?extern, i32) -> &eq;
+        fn fstat(&eq, i32) -> &eq;
+        fn chmod(&?extern, &eq);
+        fn fchmod(&eq, &eq);
+        fn rename(&?extern, &?extern);
+        fn getcwd() -> &?extern;
+        fn chdir(&?extern);
+        fn mkdir(&?extern, i32);
+        fn opendir(&?extern) -> &?extern;
+        fn readdir(&?extern) -> &?extern;
+        fn closedir(&?extern);
+        fn rmdir(&?extern);
+        fn link(&?extern, &?extern);
+        fn symlink(&?extern, &?extern, i32);
+        fn readlink(&?extern) -> &?extern;
+        fn unlink(&?extern);
+        fn truncate(&?extern, &eq);
+        #[import = "truncate"]
+        fn truncate_64(&?extern, f64);
+        fn ftruncate(&eq, &eq);
+        #[import = "ftruncate"]
+        fn ftruncate_64(&eq, f64);
+        fn file_size(i32) -> i64;
+        fn access(&?extern, i32);
+        #[import = "open"]
+        fn open_fn(&?extern, i32, i32) -> i32;
+        fn write(i32, &extern, i32, i32, i64) -> i32;
+        #[import = "write"]
+        fn write'(i32, &extern, i32, i32, &?noextern) -> i32;
+        fn read(i32, &extern, i32, i32, i64) -> i32;
+        #[import = "read"]
+        fn read'(i32, &extern, i32, i32, &?noextern) -> i32;
+        fn fsync(&eq);
+        fn close(&eq);
+        #[export = "unix_isatty"]
+        #[export = "caml_unix_isatty"]
+        fn isatty(&eq) -> &eq;
+        fn getuid() -> i32;
+        fn geteuid() -> i32;
+        fn getgid() -> i32;
+        fn getegid() -> i32;
+    }
+    import "js" {
+        #[import = "unix_error"]
+        const unix_error_js: &extern;
+        fn caml_strerror(i32) -> &extern;
+    }
+    import "jslib" {
+        fn value_of_js(&?extern) -> &eq;
+        fn js_of_value(&eq) -> &?extern;
+        fn caml_js_meth_call(&eq, &eq, &eq) -> &eq;
+        fn caml_js_get(&eq, &eq) -> &eq;
+        fn caml_string_of_jsstring(&eq) -> &eq;
+        fn caml_jsstring_of_string(&eq) -> &eq;
+    }
+    import "jsstring" fn jsstring_test(&?extern) -> i32;
+}
+import "stdlib" fn caml_named_value(&eq) -> &?eq;
+import "fail" {
+    tag ocaml_exception(&eq);
+    tag javascript_exception(&?extern);
+    fn caml_raise_end_of_file();
+    fn caml_invalid_argument(&eq);
+    fn caml_raise_not_found();
+}
+import "io" {
+    fn convert_flag_list(&flags, &eq) -> i32;
+    const IO_BUFFER_SIZE: i32;
+    fn initialize_fd_offset(i32, i64, i32);
+    fn get_fd_offset_unchecked(i32) -> &?fd_offset;
+    fn release_fd_offset(i32);
+    fn caml_ml_open_descriptor_in(&eq) -> &eq;
+    fn caml_ml_open_descriptor_out(&eq) -> &eq;
+}
+import "bindings" {
+    fn ta_new(i32) -> &extern;
+    fn dv_make(&extern) -> &extern;
+}
+import "bigarray" {
+    fn caml_blit_dataview_to_bytes(&extern, i32, &bytes, i32, i32);
+    fn caml_blit_bytes_to_dataview(&bytes, i32, &extern, i32, i32);
+    fn caml_ba_get_data(&eq) -> &extern;
+}
+import "int64" {
+    fn caml_copy_int64(i64) -> &eq;
+    fn Int64_val(&eq) -> i64;
+}
+
+type bytes = [mut i8];
+type block = [mut &eq];
+type float = { f: f64 };
+type float_array = [mut f64];
+type js = { js: &?extern };
+
+type fd_offset = { offset: mut i64, seeked: mut i32, append: mut i32 };
+
+let unix_error_exn: &eq = 0 as &i31;
+
+const unix_error_str = "Unix.Unix_error";
+
+const unix_error_not_initialized =
+    "Exception Unix.Unix_error not initialized, please link unix.cma";
+
+fn get_unix_error_exn() -> &eq {
+    if unix_error_exn is &i31 {
+        let exn = caml_named_value(unix_error_str);
+        if !exn {
+            caml_invalid_argument(unix_error_not_initialized);
+        }
+        unix_error_exn = exn!;
+    }
+    unix_error_exn;
+}
+
+const no_arg = "";
+
+#[if(wasi)]
+{
+    #[export]
+    fn unix_resolve_path(cmd: &eq, path: &eq) -> (i32, i32, i32) {
+        let (res_0, res_1, res_2) = wasi_resolve_path(path);
+        if res_0 <s 0 {
+            caml_unix_error(
+                44, // ENOENT
+                cmd,
+                path,
+            );
+        }
+        res_0;
+        res_1;
+        res_2;
+    }
+
+    // Resolve $path, invoke a path-based syscall $f on it, free the
+    // resolved buffer and raise a Unix_error labelled $cmd on failure.
+    fn unix_path_op(cmd: &eq, path: &eq, f: &path_op) -> &eq {
+        let (p_fd, p_addr, p_len) = unix_resolve_path(cmd, path);
+        let res = f(p_fd, p_addr, p_len);
+        free(p_addr);
+        caml_unix_error_if(res, cmd, path);
+        0 as &i31;
+    }
+
+    type constr_table = [i8];
+    const error_codes: &constr_table =
+        [
+            -1,
+            0,
+            1,
+            50,
+            51,
+            49,
+            2,
+            39,
+            3,
+            -1,
+            4,
+            -1,
+            5,
+            55,
+            63,
+            56,
+            6,
+            41,
+            7,
+            -1,
+            8,
+            9,
+            10,
+            65,
+            -1,
+            -1,
+            38,
+            11,
+            12,
+            13,
+            58,
+            14,
+            66,
+            15,
+            16,
+            42,
+            -1,
+            17,
+            52,
+            54,
+            53,
+            18,
+            57,
+            19,
+            20,
+            21,
+            22,
+            -1,
+            23,
+            -1,
+            44,
+            24,
+            25,
+            59,
+            26,
+            27,
+            -1,
+            40,
+            47,
+            28,
+            29,
+            67,
+            -1,
+            30,
+            31,
+            -1,
+            45,
+            43,
+            32,
+            33,
+            34,
+            35,
+            -1,
+            62,
+            -1,
+            36,
+            -1,
+        ];
+
+    // Names of the Unix.error variants, in declaration order. Used as the
+    // message for variants that have no WASI errno equivalent (EWOULDBLOCK,
+    // ESHUTDOWN, ...), matching the JS runtime's "unix_error[errno]" fallback
+    // instead of reporting "Unknown error -1".
+    const error_names: &block =
+        [
+            "E2BIG",
+            "EACCES",
+            "EAGAIN",
+            "EBADF",
+            "EBUSY",
+            "ECHILD",
+            "EDEADLK",
+            "EDOM",
+            "EEXIST",
+            "EFAULT",
+            "EFBIG",
+            "EINTR",
+            "EINVAL",
+            "EIO",
+            "EISDIR",
+            "EMFILE",
+            "EMLINK",
+            "ENAMETOOLONG",
+            "ENFILE",
+            "ENODEV",
+            "ENOENT",
+            "ENOEXEC",
+            "ENOLCK",
+            "ENOMEM",
+            "ENOSPC",
+            "ENOSYS",
+            "ENOTDIR",
+            "ENOTEMPTY",
+            "ENOTTY",
+            "ENXIO",
+            "EPERM",
+            "EPIPE",
+            "ERANGE",
+            "EROFS",
+            "ESPIPE",
+            "ESRCH",
+            "EXDEV",
+            "EWOULDBLOCK",
+            "EINPROGRESS",
+            "EALREADY",
+            "ENOTSOCK",
+            "EDESTADDRREQ",
+            "EMSGSIZE",
+            "EPROTOTYPE",
+            "ENOPROTOOPT",
+            "EPROTONOSUPPORT",
+            "ESOCKTNOSUPPORT",
+            "EOPNOTSUPP",
+            "EPFNOSUPPORT",
+            "EAFNOSUPPORT",
+            "EADDRINUSE",
+            "EADDRNOTAVAIL",
+            "ENETDOWN",
+            "ENETUNREACH",
+            "ENETRESET",
+            "ECONNABORTED",
+            "ECONNRESET",
+            "ENOBUFS",
+            "EISCONN",
+            "ENOTCONN",
+            "ESHUTDOWN",
+            "ETOOMANYREFS",
+            "ETIMEDOUT",
+            "ECONNREFUSED",
+            "EHOSTDOWN",
+            "EHOSTUNREACH",
+            "ELOOP",
+            "EOVERFLOW",
+        ];
+
+    fn caml_unix_error_of_code(errcode: i32) -> &eq {
+        if errcode <=u 76 {
+            let err = error_codes[errcode] as i32_s;
+            if err != -1 {
+                return err as &i31;
+            }
+        }
+        [block|0 as &i31, errcode as &i31];
+    }
+
+    fn caml_unix_error(errcode: i32, cmd_name: &eq, cmd_arg: &eq) {
+        throw ocaml_exception(
+            [block|
+                0 as &i31,
+                get_unix_error_exn(),
+                caml_unix_error_of_code(errcode),
+                cmd_name,
+                cmd_arg,
+            ],
+        );
+    }
+
+    fn caml_unix_error_if(errcode: i32, cmd_name: &eq, cmd_arg: &eq) {
+        if errcode {
+            caml_unix_error(errcode, cmd_name, cmd_arg);
+        }
+    }
+
+    #[export]
+    #[export = "caml_unix_error_message"]
+    fn unix_error_message(err: &eq) -> &eq {
+        let i: i32;
+        let errcode: i32;
+        let n: i32;
+        if err is &i31 {
+            n = err as i32_u;
+            'loop: loop {
+                if errcode <u error_codes.length() {
+                    if n != error_codes[errcode] as i32_s {
+                        errcode += 1;
+                        br 'loop;
+                    }
+                } else {
+                    errcode = -1;
+                }
+            }
+        } else {
+            errcode = (err as &block)[1] as i32_u;
+        }
+        if errcode >=u error_messages.length() {
+            // A known variant with no WASI errno equivalent (EWOULDBLOCK, ...)
+            // is reported by its name, like the JS runtime, rather than as
+            // "Unknown error -1". EUNKNOWNERR(n) (a block) still falls through.
+            if err is &i31 & (n <u error_names.length()) {
+                return error_names[n];
+            }
+            become caml_string_concat("Unknown error ", caml_format_int("%d", errcode as &i31));
+        }
+        error_messages[errcode];
+    }
+}
+#[else]
+{
+    const unix_error = { js: unix_error_js };
+
+    fn ensure_string(s: &eq) -> &eq {
+        _ =
+            'not_jsstring: do &?any {
+                let str = (br_on_cast_fail 'not_jsstring &js s).js;
+                _ = br_if 'not_jsstring (0 as &i31, !jsstring_test(str));
+                return caml_string_of_jsstring(s);
+            };
+        return no_arg;
+    }
+
+    const code_str = "code";
+    const errno_str = "errno";
+    const indexOf = "indexOf";
+    const syscall = "syscall";
+    const path = "path";
+
+    fn caml_unix_error(exception: &?extern, cmd: &?eq) {
+        let exn = value_of_js(exception);
+        let code = caml_js_get(exn, code_str);
+        let variant = caml_js_meth_call(unix_error, indexOf, [block|0 as &i31, code]);
+        if variant == -1 as &i31 {
+            let errno = caml_js_get(exn, errno_str);
+            errno =
+                if errno is &i31 {
+                    0 - errno as i32_s;
+                } else {
+                    9999;
+                } as &i31;
+            variant = [block|0 as &i31, errno];
+        }
+        throw ocaml_exception(
+            [block|
+                0 as &i31,
+                get_unix_error_exn(),
+                variant,
+                if !cmd {
+                    ensure_string(caml_js_get(exn, syscall));
+                } else {
+                    cmd!;
+                },
+                ensure_string(caml_js_get(exn, path)),
+            ],
+        );
+    }
+
+    #[export]
+    #[export = "caml_unix_error_message"]
+    fn unix_error_message(err: &eq) -> &eq {
+        let errno =
+            if err is &i31 {
+                err as i32_u;
+            } else {
+                0 - (err as &block)[1] as i32_u;
+            };
+        become caml_string_of_jsstring(value_of_js(caml_strerror(errno)));
+    }
+}
+
+#[if(wasi)]
+{
+    #[export]
+    #[export = "caml_unix_gettimeofday"]
+    fn unix_gettimeofday(&eq) -> &eq {
+        let buffer = get_buffer();
+        let res = clock_time_get(0, 1000, buffer);
+        caml_unix_error_if(res, "gettimeofday", no_arg);
+        { f: m.load64(buffer) as f64_u * 1e-9 };
+    }
+}
+#[else]
+{
+    #[export]
+    #[export = "caml_unix_gettimeofday"]
+    fn unix_gettimeofday(&eq) -> &eq {
+        { f: gettimeofday() };
+    }
+}
+
+#[if(wasi)]
+{
+    #[export]
+    #[export = "caml_unix_times"]
+    fn unix_times(&eq) -> &eq {
+        let buffer = get_buffer();
+        let res = clock_time_get(2, 1, buffer);
+        // wasmtime does not support the CPU-time clock, so use the
+        // monotonic clock instead as a fallback
+        if res == 8 {
+            res = clock_time_get(1, 1, buffer);
+        }
+        caml_unix_error_if(res, "time", no_arg);
+        [float_array|m.load64(buffer) as f64_u * 1e-9, 0, 0, 0];
+    }
+}
+#[else]
+{
+    #[export]
+    fn caml_alloc_times(u: f64, s: f64) -> &eq {
+        [float_array|u, s, 0, 0];
+    }
+
+    #[export]
+    #[export = "caml_unix_times"]
+    fn unix_times(&eq) -> &eq {
+        become times();
+    }
+}
+
+#[if(wasi)]
+{
+    fn alloc_tm(tm: i32) -> &eq {
+        [block|
+            0 as &i31,
+            m.load32(tm) as &i31,
+            m.load32(tm, offset: 4) as &i31,
+            m.load32(tm, offset: 8) as &i31,
+            m.load32(tm, offset: 12) as &i31,
+            m.load32(tm, offset: 16) as &i31,
+            m.load32(tm, offset: 20) as &i31,
+            m.load32(tm, offset: 24) as &i31,
+            m.load32(tm, offset: 28) as &i31,
+            (m.load32(tm, offset: 32)?1:0) as &i31,
+        ];
+    }
+}
+#[else]
+{
+    #[export]
+    fn caml_alloc_tm(
+        sec: i32,
+        min: i32,
+        hour: i32,
+        mday: i32,
+        mon: i32,
+        year: i32,
+        wday: i32,
+        yday: i32,
+        isdst: i32,
+    ) -> &eq {
+        [block|
+            0 as &i31,
+            sec as &i31,
+            min as &i31,
+            hour as &i31,
+            mday as &i31,
+            mon as &i31,
+            year as &i31,
+            wday as &i31,
+            yday as &i31,
+            isdst as &i31,
+        ];
+    }
+}
+
+#[if(wasi)]
+{
+    #[export]
+    #[export = "unix_gmtime"]
+    fn caml_unix_gmtime(t: &eq) -> &eq {
+        let buffer = get_buffer();
+        m.store64(buffer, (t as &float).f as i64_s);
+        let tm = gmtime(buffer);
+        if !tm {
+            caml_unix_error(28 /* EINVAL */ , "gmtime", no_arg);
+        }
+        become alloc_tm(tm);
+    }
+}
+#[else]
+{
+    #[export]
+    #[export = "unix_gmtime"]
+    fn caml_unix_gmtime(t: &eq) -> &eq {
+        gmtime((t as &float).f);
+    }
+}
+
+#[if(wasi)]
+{
+    #[export]
+    #[export = "unix_localtime"]
+    fn caml_unix_localtime(t: &eq) -> &eq {
+        let buffer = get_buffer();
+        m.store64(buffer, (t as &float).f as i64_s);
+        let tm = localtime(buffer);
+        if !tm {
+            caml_unix_error(28 /* EINVAL */ , "localtime", no_arg);
+        }
+        become alloc_tm(tm);
+    }
+}
+#[else]
+{
+    #[export]
+    #[export = "unix_localtime"]
+    fn caml_unix_localtime(t: &eq) -> &eq {
+        localtime((t as &float).f);
+    }
+}
+
+#[if(wasi)]
+{
+    #[export]
+    #[export = "unix_time"]
+    fn caml_unix_time(&eq) -> &eq {
+        let buffer = get_buffer();
+        let res = clock_time_get(0, 1000, buffer);
+        caml_unix_error_if(res, "time", no_arg);
+        { f: (m.load64(buffer) as f64_u * 1e-9).floor() };
+    }
+}
+#[else]
+{
+    #[export]
+    #[export = "unix_time"]
+    fn caml_unix_time(&eq) -> &eq {
+        { f: gettimeofday().floor() };
+    }
+}
+
+#[if(wasi)]
+{
+    #[export]
+    #[export = "unix_mktime"]
+    fn caml_unix_mktime(v: &eq) -> &eq {
+        let t = v as &block;
+        let tm = get_buffer();
+        m.store32(tm, t[1] as i32_s);
+        m.store32(tm, t[2] as i32_s, offset: 4);
+        m.store32(tm, t[3] as i32_s, offset: 8);
+        m.store32(tm, t[4] as i32_s, offset: 12);
+        m.store32(tm, t[5] as i32_s, offset: 16);
+        m.store32(tm, t[6] as i32_s, offset: 20);
+        m.store32(tm, t[7] as i32_s, offset: 24);
+        m.store32(tm, t[8] as i32_s, offset: 28);
+        m.store32(tm, -1, offset: 32);
+        let time = mktime(tm);
+        if time == -1 {
+            caml_unix_error(68 /* ERANGE */ , "mktime", no_arg);
+        }
+        [block|0 as &i31, { f: time as f64_s }, alloc_tm(tm)];
+    }
+}
+#[else]
+{
+    #[export]
+    #[export = "unix_mktime"]
+    fn caml_unix_mktime(v: &eq) -> &eq {
+        let tm = v as &block;
+        let t =
+            mktime(
+                tm[6] as i32_s + 1900,
+                tm[5] as i32_s,
+                tm[4] as i32_s,
+                tm[3] as i32_s,
+                tm[2] as i32_s,
+                tm[1] as i32_s,
+            ) / 1000;
+        [block|0 as &i31, { f: t }, localtime(t)];
+    }
+}
+
+#[if(wasi)]
+{
+    const utimes_str = "utimes";
+
+    #[export]
+    #[export = "caml_unix_utimes"]
+    fn unix_utimes(path: &eq, atime: &eq, mtime: &eq) -> &eq {
+        let (p_fd, p_addr, p_len) = unix_resolve_path(utimes_str, path);
+        let at = (atime as &float).f;
+        let mt = (mtime as &float).f;
+        let set_to_now = (at == 0) & (mt == 0);
+        let atim: i64;
+        let mtim: i64;
+        if !set_to_now {
+            atim = (at * 1e9) as i64_s;
+            mtim = (mt * 1e9) as i64_s;
+        }
+        let res =
+            path_filestat_set_times(
+                p_fd,
+                1, // symlink_follow, like every other path op and native
+                p_addr,
+                p_len,
+                atim,
+                mtim,
+                5 << set_to_now,
+            );
+        free(p_addr);
+        caml_unix_error_if(res, utimes_str, path);
+        0 as &i31;
+    }
+}
+#[else]
+{
+    #[export]
+    #[export = "caml_unix_utimes"]
+    fn unix_utimes(path: &eq, atime: &eq, mtime: &eq) -> &eq {
+        let at = (atime as &float).f;
+        let mt = (mtime as &float).f;
+        if (at == 0) & (mt == 0) {
+            at = gettimeofday();
+            mt = at;
+        }
+        try_legacy {
+            utimes(js_of_value(caml_jsstring_of_string(path)), at, mt);
+        } catch {
+            javascript_exception => {
+                caml_unix_error(_, null);
+            }
+        }
+        0 as &i31;
+    }
+}
+
+#[if(wasi)]
+{
+    const file_kinds: &constr_table = [3, 3, 2, 1, 0, 6, 6, 4];
+
+    fn alloc_stat(large: i32, p: i32) -> &eq {
+        [block|
+            0 as &i31,
+            m.load64(p) as &i31,
+            m.load64(p, offset: 8) as &i31,
+            file_kinds[m.load8(p, offset: 16) as i32_u] as i32_s as &i31,
+            384 /*0600*/ as &i31,
+            m.load64(p, offset: 24) as &i31,
+            1 as &i31,
+            1 as &i31,
+            0 as &i31,
+            if large {
+                caml_copy_int64(m.load64(p, offset: 32));
+            } else {
+                m.load64(p, offset: 32) as &i31;
+            },
+            { f: 1e-9 * m.load64(p, offset: 40) as f64_s },
+            { f: 1e-9 * m.load64(p, offset: 48) as f64_s },
+            { f: 1e-9 * m.load64(p, offset: 56) as f64_s },
+        ];
+    }
+}
+
+#[export]
+fn caml_alloc_stat(
+    large: i32,
+    dev: i32,
+    ino: i32,
+    kind: i32,
+    perm: i32,
+    nlink: i32,
+    uid: i32,
+    gid: i32,
+    rdev: i32,
+    size: i64,
+    atime: f64,
+    mtime: f64,
+    ctime: f64,
+) -> &eq {
+    [block|
+        0 as &i31,
+        dev as &i31,
+        ino as &i31,
+        kind as &i31,
+        perm as &i31,
+        nlink as &i31,
+        uid as &i31,
+        gid as &i31,
+        rdev as &i31,
+        if large {
+            caml_copy_int64(size);
+        } else {
+            size as &i31;
+        },
+        { f: atime },
+        { f: mtime },
+        { f: ctime },
+    ];
+}
+
+#[if(wasi)]
+{
+    fn stat(path: &eq, large: i32, follow: i32, name: &eq) -> &eq {
+        let (p_fd, p_addr, p_len) = unix_resolve_path(name, path);
+        let buffer = get_buffer();
+        let res =
+            path_filestat_get(
+                p_fd,
+                follow, // symlink_follow
+                p_addr,
+                p_len,
+                buffer,
+            );
+        free(p_addr);
+        caml_unix_error_if(res, name, path);
+        become alloc_stat(large, buffer);
+    }
+
+    const stat_str = "stat";
+
+    #[export]
+    #[export = "caml_unix_stat"]
+    fn unix_stat(path: &eq) -> &eq {
+        become stat(path, 0, 1, stat_str);
+    }
+
+    #[export]
+    #[export = "caml_unix_stat_64"]
+    fn unix_stat_64(path: &eq) -> &eq {
+        become stat(path, 1, 1, stat_str);
+    }
+
+    const lstat_str = "lstat";
+
+    #[export]
+    #[export = "caml_unix_lstat"]
+    fn unix_lstat(path: &eq) -> &eq {
+        become stat(path, 0, 0, lstat_str);
+    }
+
+    #[export]
+    #[export = "caml_unix_lstat_64"]
+    fn unix_lstat_64(path: &eq) -> &eq {
+        become stat(path, 1, 0, lstat_str);
+    }
+
+    fn fstat(fd: &eq, large: i32) -> &eq {
+        let buffer = get_buffer();
+        let res = fd_filestat_get(fd as i32_u, buffer);
+        caml_unix_error_if(res, "fstat", no_arg);
+        become alloc_stat(large, buffer);
+    }
+
+    #[export]
+    #[export = "caml_unix_fstat"]
+    fn unix_fstat(fd: &eq) -> &eq {
+        become fstat(fd, 0);
+    }
+
+    #[export]
+    #[export = "caml_unix_fstat_64"]
+    fn unix_fstat_64(fd: &eq) -> &eq {
+        become fstat(fd, 1);
+    }
+}
+#[else]
+{
+    #[export]
+    #[export = "caml_unix_stat"]
+    fn unix_stat(path: &eq) -> &eq {
+        try_legacy {
+            stat(js_of_value(caml_jsstring_of_string(path)), 0);
+        } catch {
+            javascript_exception => {
+                caml_unix_error(_, null);
+                0 as &i31;
+            }
+        }
+    }
+
+    #[export]
+    #[export = "caml_unix_stat_64"]
+    fn unix_stat_64(path: &eq) -> &eq {
+        try_legacy {
+            stat(js_of_value(caml_jsstring_of_string(path)), 1);
+        } catch {
+            javascript_exception => {
+                caml_unix_error(_, null);
+                0 as &i31;
+            }
+        }
+    }
+
+    #[export]
+    #[export = "caml_unix_lstat"]
+    fn unix_lstat(path: &eq) -> &eq {
+        try_legacy {
+            lstat(js_of_value(caml_jsstring_of_string(path)), 0);
+        } catch {
+            javascript_exception => {
+                caml_unix_error(_, null);
+                0 as &i31;
+            }
+        }
+    }
+
+    #[export]
+    #[export = "caml_unix_lstat_64"]
+    fn unix_lstat_64(path: &eq) -> &eq {
+        try_legacy {
+            lstat(js_of_value(caml_jsstring_of_string(path)), 1);
+        } catch {
+            javascript_exception => {
+                caml_unix_error(_, null);
+                0 as &i31;
+            }
+        }
+    }
+
+    #[export]
+    #[export = "caml_unix_fstat"]
+    fn unix_fstat(fd: &eq) -> &eq {
+        try_legacy {
+            fstat(fd, 0);
+        } catch {
+            javascript_exception => {
+                caml_unix_error(_, null);
+                0 as &i31;
+            }
+        }
+    }
+
+    #[export]
+    #[export = "caml_unix_fstat_64"]
+    fn unix_fstat_64(fd: &eq) -> &eq {
+        try_legacy {
+            fstat(fd, 1);
+        } catch {
+            javascript_exception => {
+                caml_unix_error(_, null);
+                0 as &i31;
+            }
+        }
+    }
+}
+
+#[if(wasi)]
+{
+    const chmod_str = "chmod";
+
+    #[export]
+    #[export = "caml_unix_chmod"]
+    fn unix_chmod(path: &eq, perms: &eq) -> &eq {
+        // WASI has no notion of permissions, so the mode change is a no-op; but
+        // still report a missing path like native (which raises ENOENT) instead
+        // of silently succeeding. We can only check that the path exists.
+        let (p_fd, p_addr, p_len) = unix_resolve_path(chmod_str, path);
+        let buffer = get_buffer();
+        let res = path_filestat_get(p_fd, 1, p_addr, p_len, buffer);
+        free(p_addr);
+        caml_unix_error_if(res, chmod_str, path);
+        0 as &i31;
+    }
+}
+#[else]
+{
+    #[export]
+    #[export = "caml_unix_chmod"]
+    fn unix_chmod(path: &eq, perms: &eq) -> &eq {
+        try_legacy {
+            chmod(js_of_value(caml_jsstring_of_string(path)), perms);
+        } catch {
+            javascript_exception => {
+                caml_unix_error(_, null);
+            }
+        }
+        0 as &i31;
+    }
+}
+
+#[if(wasi)]
+{
+    #[export]
+    #[export = "caml_unix_fchmod"]
+    fn unix_fchmod(&eq, &eq) -> &eq {
+        // no notion of permissions in WASI
+        0 as &i31;
+    }
+}
+#[else]
+{
+    #[export]
+    #[export = "caml_unix_fchmod"]
+    fn unix_fchmod(fd: &eq, perms: &eq) -> &eq {
+        try_legacy {
+            fchmod(fd, perms);
+        } catch {
+            javascript_exception => {
+                caml_unix_error(_, null);
+            }
+        }
+        0 as &i31;
+    }
+}
+
+#[if(wasi)]
+{
+    const rename_str = "rename";
+
+    #[export]
+    #[export = "caml_unix_rename"]
+    fn unix_rename(o: &eq, n: &eq) -> &eq {
+        // Resolve both paths without raising, so that the first buffer is
+        // always freed below even if resolving the second path fails.
+        let (op_fd, op_addr, op_len) = wasi_resolve_path(o);
+        let (np_fd, np_addr, np_len) = wasi_resolve_path(n);
+        let arg = o;
+        let res = 44; // ENOENT
+        'error: do {
+            br_if 'error op_fd <s 0;
+            arg = n;
+            br_if 'error np_fd <s 0;
+            arg = o;
+            res = path_rename(op_fd, op_addr, op_len, np_fd, np_addr, np_len);
+        }
+        free(op_addr);
+        free(np_addr);
+        caml_unix_error_if(res, rename_str, arg);
+        0 as &i31;
+    }
+}
+#[else]
+{
+    #[export]
+    #[export = "caml_unix_rename"]
+    fn unix_rename(o: &eq, n: &eq) -> &eq {
+        try_legacy {
+            rename(
+                js_of_value(caml_jsstring_of_string(o)),
+                js_of_value(caml_jsstring_of_string(n)),
+            );
+        } catch {
+            javascript_exception => {
+                caml_unix_error(_, null);
+            }
+        }
+        0 as &i31;
+    }
+}
+
+#[if(wasi)]
+{
+    const chdir_str = "chdir";
+
+    #[export]
+    #[export = "caml_unix_chdir"]
+    fn unix_chdir(name: &eq) -> &eq {
+        let (p_fd, p_addr, p_len) = unix_resolve_path(chdir_str, name);
+        let buffer = get_buffer();
+        let res = path_filestat_get(p_fd, 1, p_addr, p_len, buffer);
+        free(p_addr);
+        caml_unix_error_if(res, chdir_str, name);
+        let kind = m.load8(buffer, offset: 16) as i32_u;
+        if kind != 3 {
+            caml_unix_error(
+                54, // ENOTDIR
+                chdir_str,
+                name,
+            );
+        }
+        wasi_chdir(name);
+        0 as &i31;
+    }
+}
+#[else]
+{
+    #[export]
+    #[export = "caml_unix_getcwd"]
+    fn unix_getcwd(&eq) -> &eq {
+        try_legacy {
+            caml_string_of_jsstring(value_of_js(getcwd()));
+        } catch {
+            javascript_exception => {
+                caml_unix_error(_, null);
+                0 as &i31;
+            }
+        }
+    }
+
+    #[export]
+    #[export = "caml_unix_chdir"]
+    fn unix_chdir(name: &eq) -> &eq {
+        try_legacy {
+            chdir(js_of_value(caml_jsstring_of_string(name)));
+        } catch {
+            javascript_exception => {
+                caml_unix_error(_, null);
+            }
+        }
+        0 as &i31;
+    }
+}
+
+#[if(wasi)]
+{
+    const mkdir_str = "mkdir";
+
+    #[export]
+    #[export = "caml_unix_mkdir"]
+    fn unix_mkdir(path: &eq, perm: &eq) -> &eq {
+        become unix_path_op(mkdir_str, path, path_create_directory);
+    }
+}
+#[else]
+{
+    #[export]
+    #[export = "caml_unix_mkdir"]
+    fn unix_mkdir(name: &eq, perm: &eq) -> &eq {
+        try_legacy {
+            mkdir(js_of_value(caml_jsstring_of_string(name)), perm as i32_u);
+        } catch {
+            javascript_exception => {
+                caml_unix_error(_, null);
+            }
+        }
+        0 as &i31;
+    }
+}
+
+#[if(wasi)]
+{
+    type directory = {
+        fd: i32,
+        buffer: mut i32,
+        size: mut i32,
+        pos: mut i32,
+        available: mut i32,
+        cookie: mut i64,
+        // "." / ".." still to emit (2: both, 1: just "..", 0: none); the
+        // host directory stream may omit them, so they are synthesized
+        dots: mut i32
+    };
+
+    const opendir_str = "opendir";
+
+    #[export]
+    #[export = "caml_unix_opendir"]
+    fn unix_opendir(name: &eq) -> &eq {
+        let (p_fd, p_addr, p_len) = unix_resolve_path(opendir_str, name);
+        let buffer = get_buffer();
+        let res =
+            path_open(
+                p_fd,
+                1, // symlink_follow
+                p_addr,
+                p_len,
+                2, // O_DIRECTORY
+                0x4000, // allow fd_readdir
+                0,
+                0,
+                buffer,
+            );
+        free(p_addr);
+        caml_unix_error_if(res, opendir_str, name);
+        {
+            fd: m.load32(buffer),
+            buffer: checked_malloc(512),
+            size: 512,
+            pos: 0,
+            available: 0,
+            cookie: 0,
+            dots: 2,
+        };
+    }
+
+    fn is_dot_entry(addr: i32, len: i32) -> i32 {
+        // "." has length 1, ".." length 2, both made of '.' (0x2e)
+        if len == 1 {
+            return m.load8(addr) as i32_u == 0x2e;
+        }
+        if len == 2 {
+            return (m.load8(addr) as i32_u == 0x2e) & (m.load8(addr, offset: 1) as i32_u == 0x2e);
+        }
+        0;
+    }
+
+    fn readdir_helper(vdir: &eq) -> &eq {
+        let dir = vdir as &directory;
+        // Emit the synthesized "." / ".." before the host entries, like native
+        // readdir and the js backend. Host-provided "." / ".." are skipped below
+        // so they are never duplicated on hosts that do report them.
+        'no_dots: do {
+            br_if 'no_dots !dir.dots;
+            if dir.dots == 2 {
+                dir.dots = 1;
+                return ".";
+            } else {
+                dir.dots = 0;
+                return "..";
+            }
+        }
+        'loop: loop {
+            let size: i32;
+            'refill: do {
+                let left = dir.available - dir.pos;
+                br_if 'refill left <u 24;
+                let entry = dir.buffer + dir.pos;
+                let namelen = m.load32(entry, offset: 16);
+                size = namelen + 24;
+                br_if 'refill left <u size;
+                dir.pos = dir.pos + size;
+                dir.cookie = m.load64(entry);
+                // skip a host-provided "." / ".." (already synthesized above)
+                br_if 'loop is_dot_entry(entry + 24, namelen);
+                become blit_memory_to_string(entry + 24, namelen);
+            }
+            // refill
+            if dir.size <u size {
+                // the entry does not fit
+                let buf = checked_malloc(size);
+                free(dir.buffer);
+                dir.buffer = buf;
+                dir.size = size;
+                // discard the stale buffer contents: the grown buffer must be
+                // refilled from $cookie, and a stale $available would otherwise
+                // falsely trigger the short-read termination below
+                dir.available = 0;
+            }
+            'done: do {
+                br_if 'done (0 != dir.available) & (dir.available <u dir.size);
+                let buffer = get_buffer();
+                let res = fd_readddir(dir.fd, dir.buffer, dir.size, dir.cookie, buffer);
+                caml_unix_error_if(res, "readdir", no_arg);
+                let available = m.load32(buffer);
+                br_if 'done !available;
+                dir.pos = 0;
+                dir.available = available;
+                br 'loop;
+            }
+        }
+        // done
+        caml_raise_end_of_file();
+        0 as &i31;
+    }
+
+    #[export]
+    #[export = "caml_unix_closedir"]
+    fn unix_closedir(vdir: &eq) -> &eq {
+        let dir = vdir as &directory;
+        let buf = dir.buffer;
+        let res: i32;
+        'error: do {
+            if !buf {
+                res = 8; // EBADF
+                br 'error;
+            }
+            free(buf);
+            dir.buffer = 0;
+            // Reset the read position so that a readdir on the closed
+            // directory does not parse leftover dirents out of the freed
+            // buffer (now address 0); instead it falls through to
+            // fd_readdir on the closed fd and fails with EBADF.
+            dir.pos = 0;
+            dir.available = 0;
+            // drop the pending "." / ".." so a readdir on the closed handle fails
+            dir.dots = 0;
+            res = fd_close(dir.fd);
+            br_if 'error res;
+            return 0 as &i31;
+        }
+        caml_unix_error(res, "closedir", no_arg);
+        0 as &i31;
+    }
+
+    #[export]
+    #[export = "caml_unix_rewinddir"]
+    fn unix_rewinddir(vdir: &eq) -> &eq {
+        let dir = vdir as &directory;
+        dir.cookie = 0;
+        dir.pos = 0;
+        dir.available = 0;
+        dir.dots = 2;
+        0 as &i31;
+    }
+}
+#[else]
+{
+    #[export]
+    #[export = "caml_unix_opendir"]
+    fn unix_opendir(name: &eq) -> &eq {
+        try_legacy {
+            value_of_js(opendir(js_of_value(caml_jsstring_of_string(name))));
+        } catch {
+            javascript_exception => {
+                caml_unix_error(_, null);
+                0 as &i31;
+            }
+        }
+    }
+
+    fn throw_ebadf(cmd: &eq) {
+        throw ocaml_exception(
+            [block|
+                0 as &i31,
+                get_unix_error_exn(),
+                3 as &i31, // EBADF
+                cmd,
+                no_arg,
+            ],
+        );
+    }
+
+    fn readdir_helper(dir: &eq) -> &eq {
+        'end: do {
+            return
+                try_legacy {
+                    caml_string_of_jsstring(value_of_js(
+                                                 br_on_null 'end readdir(js_of_value(dir)),
+                                             ));
+                } catch {
+                    javascript_exception => {
+                        _ = _;
+                        throw_ebadf("readdir");
+                        0 as &i31;
+                    }
+                };
+        }
+        caml_raise_end_of_file();
+        0 as &i31;
+    }
+
+    #[export]
+    #[export = "caml_unix_closedir"]
+    #[export = "win_findclose"]
+    #[export = "caml_unix_findclose"]
+    fn unix_closedir(dir: &eq) -> &eq {
+        try_legacy {
+            closedir(js_of_value(dir));
+        } catch {
+            javascript_exception => {
+                _ = _;
+                throw_ebadf("closedir");
+            }
+        }
+        0 as &i31;
+    }
+
+    #[export]
+    #[export = "caml_unix_rewinddir"]
+    fn unix_rewinddir(&eq) -> &eq {
+        caml_invalid_argument("rewinddir not implemented");
+        0 as &i31;
+    }
+}
+
+#[export]
+#[export = "caml_unix_readdir"]
+fn unix_readdir(dir: &eq) -> &eq {
+    'return: do {
+        br_on_non_null 'return readdir_helper(dir);
+        caml_raise_end_of_file();
+        0 as &i31;
+    }
+}
+
+#[export = "win_findnext"]
+#[export = "caml_unix_findnext"]
+fn win_find_next(dir: &eq) -> &eq {
+    // Like native [win_findnext] and the JS runtime, raise End_of_file at
+    // the end without closing the handle -- the caller closes it through
+    // [findclose]. [readdir_helper] already raises End_of_file (it never
+    // returns null), so the final raise here is just the type-level tail.
+    'return: do {
+        br_on_non_null 'return readdir_helper(dir);
+        caml_raise_end_of_file();
+        0 as &i31;
+    }
+}
+
+#[export]
+#[export = "caml_unix_findfirst"]
+fn win_findfirst(vpath: &eq) -> &eq {
+    let p = vpath as &bytes;
+    let len = p.length() - 3;
+    let p': &bytes = [0; len];
+    p'.copy(0, p, 0, len);
+    let dir = unix_opendir(p');
+    [block|0 as &i31, win_find_next(dir), dir];
+}
+
+#[if(wasi)]
+{
+    const unlink_str = "unlink";
+
+    #[export]
+    #[export = "caml_unix_unlink"]
+    fn unix_unlink(path: &eq) -> &eq {
+        become unix_path_op(unlink_str, path, path_unlink_file);
+    }
+}
+#[else]
+{
+    #[export]
+    #[export = "caml_unix_unlink"]
+    fn unix_unlink(p: &eq) -> &eq {
+        try_legacy {
+            unlink(js_of_value(caml_jsstring_of_string(p)));
+        } catch {
+            javascript_exception => {
+                caml_unix_error(_, null);
+            }
+        }
+        0 as &i31;
+    }
+}
+
+#[if(wasi)]
+{
+    const rmdir_str = "rmdir";
+
+    #[export]
+    #[export = "caml_unix_rmdir"]
+    fn unix_rmdir(path: &eq) -> &eq {
+        become unix_path_op(rmdir_str, path, path_remove_directory);
+    }
+}
+#[else]
+{
+    #[export]
+    #[export = "caml_unix_rmdir"]
+    fn unix_rmdir(p: &eq) -> &eq {
+        try_legacy {
+            rmdir(js_of_value(caml_jsstring_of_string(p)));
+        } catch {
+            javascript_exception => {
+                caml_unix_error(_, null);
+            }
+        }
+        0 as &i31;
+    }
+}
+
+#[if(wasi)]
+{
+    const link_str = "link";
+
+    #[export]
+    #[export = "caml_unix_link"]
+    fn unix_link(follow: &eq, o: &eq, n: &eq) -> &eq {
+        // Resolve both paths without raising, so that the first buffer is
+        // always freed below even if resolving the second path fails.
+        let (op_fd, op_addr, op_len) = wasi_resolve_path(o);
+        let (np_fd, np_addr, np_len) = wasi_resolve_path(n);
+        let flags: i32;
+        if follow is &block {
+            flags = (follow as &block)[1] as i32_u;
+        }
+        let arg = o;
+        let res = 44; // ENOENT
+        'error: do {
+            br_if 'error op_fd <s 0;
+            arg = n;
+            br_if 'error np_fd <s 0;
+            arg = o;
+            res = path_link(op_fd, flags, op_addr, op_len, np_fd, np_addr, np_len);
+        }
+        free(op_addr);
+        free(np_addr);
+        caml_unix_error_if(res, link_str, arg);
+        0 as &i31;
+    }
+}
+#[else]
+{
+    #[export]
+    #[export = "caml_unix_link"]
+    fn unix_link(follow: &eq, d: &eq, s: &eq) -> &eq {
+        if follow is &block {
+            throw ocaml_exception(
+                [block|
+                    0 as &i31,
+                    get_unix_error_exn(),
+                    25 as &i31, // ENOSYS
+                    "link",
+                    no_arg,
+                ],
+            );
+        }
+        try_legacy {
+            link(js_of_value(caml_jsstring_of_string(d)), js_of_value(caml_jsstring_of_string(s)));
+        } catch {
+            javascript_exception => {
+                caml_unix_error(_, null);
+            }
+        }
+        0 as &i31;
+    }
+}
+
+#[export]
+#[export = "caml_unix_has_symlink"]
+fn unix_has_symlink(&eq) -> &eq {
+    1 as &i31;
+}
+
+#[if(wasi)]
+{
+    const symlink_str = "symlink";
+
+    #[export]
+    #[export = "caml_unix_symlink"]
+    fn unix_symlink(to_dir: &eq, o: &eq, n: &eq) -> &eq {
+        let flags: i32;
+        let path = o as &bytes;
+        let len = path.length();
+        let op = write_string_to_memory(0, 0, path);
+        // Resolve the target path without raising, so that $op is always freed
+        // below even if resolving the second path fails.
+        let (np_fd, np_addr, np_len) = wasi_resolve_path(n);
+        let arg = n;
+        let res = 44; // ENOENT
+        'error: do {
+            br_if 'error np_fd <s 0;
+            arg = o;
+            res = path_symlink(op, len, np_fd, np_addr, np_len);
+        }
+        free(op);
+        free(np_addr);
+        caml_unix_error_if(res, symlink_str, arg);
+        0 as &i31;
+    }
+}
+#[else]
+{
+    #[export]
+    #[export = "caml_unix_symlink"]
+    fn unix_symlink(to_dir: &eq, t: &eq, p: &eq) -> &eq {
+        let kind: i32;
+        if to_dir is &block {
+            kind = 1 + (to_dir as &block)[1] as i32_s;
+        }
+        try_legacy {
+            symlink(
+                js_of_value(caml_jsstring_of_string(t)),
+                js_of_value(caml_jsstring_of_string(p)),
+                kind,
+            );
+        } catch {
+            javascript_exception => {
+                caml_unix_error(_, null);
+            }
+        }
+        0 as &i31;
+    }
+}
+
+#[if(wasi)]
+{
+    const readlink_str = "readlink";
+
+    #[export]
+    #[export = "caml_unix_readlink"]
+    fn unix_readlink(path: &eq) -> &eq {
+        let (p_fd, p_addr, p_len) = unix_resolve_path(readlink_str, path);
+        let buffer = get_buffer();
+        let buf = buffer + 4;
+        let res = path_readlink(p_fd, p_addr, p_len, buf, IO_BUFFER_SIZE, buffer);
+        free(p_addr);
+        caml_unix_error_if(res, readlink_str, path);
+        become blit_memory_to_string(buf, m.load32(buffer));
+    }
+}
+#[else]
+{
+    #[export]
+    #[export = "caml_unix_readlink"]
+    fn unix_readlink(path: &eq) -> &eq {
+        try_legacy {
+            become caml_string_of_jsstring(
+                value_of_js(readlink(js_of_value(caml_jsstring_of_string(path)))),
+            );
+        } catch {
+            javascript_exception => {
+                caml_unix_error(_, null);
+            }
+        }
+        0 as &i31;
+    }
+}
+
+#[if(wasi)]
+{
+    const truncate_str = "truncate";
+
+    fn truncate_impl(path: &eq, len: i64) -> &eq {
+        let res: i32;
+        'error: do {
+            let (p_fd, p_addr, p_len) = unix_resolve_path(truncate_str, path);
+            let buffer = get_buffer();
+            res =
+                path_open(
+                    p_fd,
+                    1, // symlink_follow
+                    p_addr,
+                    p_len,
+                    0,
+                    0x400040, // allow fd_filestat_set_size and fd_write
+                    0,
+                    0,
+                    buffer,
+                );
+            free(p_addr);
+            br_if 'error res;
+            let fd = m.load32(buffer);
+            res = fd_filestat_set_size(fd, len);
+            if res {
+                _ = fd_close(fd);
+                br 'error;
+            }
+            res = fd_close(fd);
+            br_if 'error res;
+            return 0 as &i31;
+        }
+        caml_unix_error(res, truncate_str, path);
+        return 0 as &i31;
+    }
+
+    #[export]
+    #[export = "caml_unix_truncate"]
+    fn unix_truncate(path: &eq, len: &eq) -> &eq {
+        become truncate_impl(path, len as i64_s);
+    }
+
+    #[export]
+    #[export = "caml_unix_truncate_64"]
+    fn unix_truncate_64(path: &eq, len: &eq) -> &eq {
+        become truncate_impl(path, Int64_val(len));
+    }
+}
+#[else]
+{
+    #[export]
+    #[export = "caml_unix_truncate"]
+    fn unix_truncate(path: &eq, len: &eq) -> &eq {
+        try_legacy {
+            truncate(js_of_value(caml_jsstring_of_string(path)), len);
+        } catch {
+            javascript_exception => {
+                caml_unix_error(_, null);
+            }
+        }
+        0 as &i31;
+    }
+
+    #[export]
+    #[export = "caml_unix_truncate_64"]
+    fn unix_truncate_64(path: &eq, vlen: &eq) -> &eq {
+        let len = Int64_val(vlen);
+        try_legacy {
+            truncate_64(js_of_value(caml_jsstring_of_string(path)), len as f64_s);
+        } catch {
+            javascript_exception => {
+                caml_unix_error(_, null);
+            }
+        }
+        0 as &i31;
+    }
+}
+
+#[if(wasi)]
+{
+    fn ftruncate(vfd: &eq, len: i64) -> &eq {
+        let fd = vfd as i32_u;
+        let res = fd_filestat_set_size(fd, len);
+        caml_unix_error_if(res, "ftruncate", no_arg);
+        0 as &i31;
+    }
+
+    #[export]
+    #[export = "caml_unix_ftruncate"]
+    fn unix_ftruncate(fd: &eq, len: &eq) -> &eq {
+        become ftruncate(fd, len as i64_s);
+    }
+
+    #[export]
+    #[export = "caml_unix_ftruncate_64"]
+    fn unix_ftruncate_64(fd: &eq, len: &eq) -> &eq {
+        become ftruncate(fd, Int64_val(len));
+    }
+}
+#[else]
+{
+    #[export]
+    #[export = "caml_unix_ftruncate"]
+    fn unix_ftruncate(fd: &eq, vlen: &eq) -> &eq {
+        // POSIX ftruncate leaves the seek pointer unchanged, even when it
+        // ends up past the (now shorter) end of the file.
+        try_legacy {
+            ftruncate(fd, vlen);
+        } catch {
+            javascript_exception => {
+                caml_unix_error(_, null);
+            }
+        }
+        0 as &i31;
+    }
+
+    #[export]
+    #[export = "caml_unix_ftruncate_64"]
+    fn unix_ftruncate_64(fd: &eq, vlen: &eq) -> &eq {
+        // POSIX ftruncate leaves the seek pointer unchanged, even when it
+        // ends up past the (now shorter) end of the file.
+        try_legacy {
+            ftruncate_64(fd, Int64_val(vlen) as f64_s);
+        } catch {
+            javascript_exception => {
+                caml_unix_error(_, null);
+            }
+        }
+        0 as &i31;
+    }
+}
+
+#[if(wasi)]
+{
+    const access_str = "access";
+
+    // We can only check that the file exists
+    #[export]
+    #[export = "caml_unix_access"]
+    fn unix_access(path: &eq, flags: &eq) -> &eq {
+        let (p_fd, p_addr, p_len) = unix_resolve_path(access_str, path);
+        let buffer = get_buffer();
+        let res = path_filestat_get(p_fd, 1, p_addr, p_len, buffer);
+        free(p_addr);
+        caml_unix_error_if(res, access_str, path);
+        return 0 as &i31;
+    }
+}
+#[else]
+{
+    const access_flags: &flags = [1, 2, 4, 8];
+
+    #[export]
+    #[export = "caml_unix_access"]
+    fn unix_access(path: &eq, vflags: &eq) -> &eq {
+        let flags = convert_flag_list(access_flags, vflags);
+        try_legacy {
+            access(js_of_value(caml_jsstring_of_string(path)), flags);
+        } catch {
+            javascript_exception => {
+                caml_unix_error(_, null);
+            }
+        }
+        0 as &i31;
+    }
+}
+
+type flags = [i16];
+
+#[if(wasi)]
+{
+    //    0x1 O_RDONLY
+    //    0x2 O_WRONLY
+    //    0x3 O_RDWR
+    //  0x400 O_NONBLOCK
+    //  0x100 O_APPEND
+    //   0x10 O_CREAT
+    //   0x80 O_TRUNC
+    //   0x40 O_EXCL
+    //      0 O_NOCTTY
+    //  0x200 O_DSYNC
+    // 0x1000 O_SYNC
+    //  0x800 O_RSYNC
+    const unix_open_flags: &flags =
+        [1, 2, 3, 0x400, 0x100, 0x10, 0x80, 0x40, 0, 0x200, 0x1000, 0x800, 0, 0, 0];
+
+    const open_str = "open";
+
+    #[export]
+    #[export = "caml_unix_open"]
+    fn unix_open(vpath: &eq, vflags: &eq, perm: &eq) -> &eq {
+        let offset: i64;
+        let (path_fd, path_addr, path_len) = unix_resolve_path(open_str, vpath);
+        let buffer = get_buffer();
+        let flags = convert_flag_list(unix_open_flags, vflags);
+        let res =
+            path_open(
+                path_fd,
+                1, // symlink_follow
+                path_addr,
+                path_len,
+                flags >>u 4 & 0xF,
+                (flags & 3) == 3?0x860007e:flags & 2?0x860007c:0x820003e,
+                0,
+                flags >>u 8,
+                buffer,
+            );
+        free(path_addr);
+        caml_unix_error_if(res, open_str, vpath);
+        m.load32(buffer) as &i31;
+    }
+}
+#[else]
+{
+    //    1 O_RDONLY
+    //    2 O_WRONLY
+    //    4 O_RDWR
+    //    8 O_APPEND
+    //   16 O_CREAT
+    //   32 O_TRUNC
+    //   64 O_EXCL
+    //  128 O_NONBLOCK
+    //  256 O_NOCTTY
+    //  512 O_DSYNC
+    // 1024 O_SYNC
+    const unix_open_flags: &flags = [1, 2, 4, 128, 8, 16, 32, 64, 256, 512, 1024, 0, 0, 0, 0];
+
+    #[export]
+    #[export = "caml_unix_open"]
+    fn unix_open(path: &eq, vflags: &eq, perm: &eq) -> &eq {
+        let flags = convert_flag_list(unix_open_flags, vflags);
+        let fd: i32;
+        try_legacy {
+            fd = open_fn(js_of_value(caml_jsstring_of_string(path)), flags, perm as i32_u);
+        } catch {
+            javascript_exception => {
+                caml_unix_error(_, null);
+            }
+        }
+        let offset: i64;
+        // Like native [O_APPEND], the offset starts at 0; writes reposition to
+        // EOF (see [unix_write]).
+        initialize_fd_offset(fd, offset, flags & 8); // O_APPEND
+        fd as &i31;
+    }
+}
+
+let io_buffer: &?extern = null;
+let io_buffer_view: &?extern = null;
+
+fn get_io_buffer() -> &extern {
+    if !io_buffer {
+        let buf = ta_new(IO_BUFFER_SIZE);
+        io_buffer = buf;
+        io_buffer_view = dv_make(buf);
+    }
+    io_buffer!;
+}
+
+fn get_fd_offset(fd: i32) -> &fd_offset {
+    'null: do {
+        return br_on_null 'null get_fd_offset_unchecked(fd);
+    }
+    { offset: 0, seeked: 0, append: 0 };
+}
+
+#[if(wasi)]
+{
+    #[export]
+    #[export = "caml_unix_write"]
+    fn unix_write(vfd: &eq, vbuf: &eq, vpos: &eq, vlen: &eq) -> &eq {
+        let fd = vfd as i32_u;
+        let s = vbuf as &bytes;
+        let pos = vpos as i32_u;
+        let len = vlen as i32_u;
+        let buffer = get_buffer();
+        let nwritten = buffer;
+        let iovs = buffer + 4;
+        buffer += 12;
+        m.store32(iovs, buffer);
+        let iovs_len = 1;
+        let written: i32;
+        while len >u 0 : (len -= n) {
+            let numbytes = len >u IO_BUFFER_SIZE?IO_BUFFER_SIZE:len;
+            blit_substring_to_memory(buffer, s, pos, numbytes);
+            m.store32(iovs, numbytes, offset: 4);
+            let res = fd_write(fd, iovs, iovs_len, nwritten);
+            caml_unix_error_if(res, "write", no_arg);
+            let n = m.load32(nwritten);
+            written += n;
+            pos += n;
+        }
+        written as &i31;
+    }
+
+    #[export]
+    #[export = "caml_unix_single_write"]
+    fn unix_single_write(vfd: &eq, vbuf: &eq, vpos: &eq, vlen: &eq) -> &eq {
+        let written: i32;
+        let n: i32;
+        let fd = vfd as i32_u;
+        let s = vbuf as &bytes;
+        let pos = vpos as i32_u;
+        let len = vlen as i32_u;
+        if !len {
+            return 0 as &i31;
+        }
+        let buffer = get_buffer();
+        let nwritten = buffer;
+        let iovs = buffer + 4;
+        buffer += 12;
+        m.store32(iovs, buffer);
+        let iovs_len = 1;
+        let numbytes = len >u IO_BUFFER_SIZE?IO_BUFFER_SIZE:len;
+        blit_substring_to_memory(buffer, s, pos, numbytes);
+        m.store32(iovs, numbytes, offset: 4);
+        let res = fd_write(fd, iovs, iovs_len, nwritten);
+        caml_unix_error_if(res, "write", no_arg);
+        m.load32(nwritten) as &i31;
+    }
+
+    #[export]
+    #[export = "caml_unix_read"]
+    fn unix_read(vfd: &eq, vbuf: &eq, vpos: &eq, vlen: &eq) -> &eq {
+        let fd = vfd as i32_u;
+        let pos = vpos as i32_u;
+        let len = vlen as i32_u;
+        if len >u IO_BUFFER_SIZE {
+            len = IO_BUFFER_SIZE;
+        }
+        let buffer = get_buffer();
+        let nread = buffer;
+        let iovs = buffer + 4;
+        buffer += 12;
+        m.store32(iovs, buffer);
+        m.store32(iovs, len, offset: 4);
+        let iovs_len = 1;
+        let res = fd_read(fd, iovs, iovs_len, nread);
+        caml_unix_error_if(res, "read", no_arg);
+        let n = m.load32(nread);
+        blit_memory_to_substring(buffer, vbuf as &bytes, pos, n);
+        n as &i31;
+    }
+
+    type dat = { array: &array, offset: i32, len: i32 };
+
+    #[export]
+    #[export = "caml_unix_write_bigarray"]
+    fn unix_write_bigarray(vfd: &eq, vbuf: &eq, vpos: &eq, vlen: &eq, vsingle: &eq) -> &eq {
+        let fd = vfd as i32_u;
+        let dat = caml_ba_get_data(vbuf) as &dat;
+        let buf = dat.array as &bytes;
+        let pos = vpos as i32_u + dat.offset;
+        let len = vlen as i32_u;
+        let buffer = get_buffer();
+        let nwritten = buffer;
+        let iovs = buffer + 4;
+        buffer += 12;
+        m.store32(iovs, buffer);
+        let iovs_len = 1;
+        let written: i32;
+        'loop: loop {
+            if len >u 0 {
+                let numbytes = len >u IO_BUFFER_SIZE?IO_BUFFER_SIZE:len;
+                blit_substring_to_memory(buffer, buf, pos, numbytes);
+                m.store32(iovs, numbytes, offset: 4);
+                let res = fd_write(fd, iovs, iovs_len, nwritten);
+                caml_unix_error_if(res, "write", no_arg);
+                let n = m.load32(nwritten);
+                written += n;
+                pos += n;
+                len -= n;
+                br_if 'loop vsingle == 0 as &i31;
+            }
+        }
+        written as &i31;
+    }
+
+    #[export]
+    #[export = "caml_unix_read_bigarray"]
+    fn unix_read_bigarray(vfd: &eq, vbuf: &eq, vpos: &eq, vlen: &eq) -> &eq {
+        let fd = vfd as i32_u;
+        let dat = caml_ba_get_data(vbuf) as &dat;
+        let buf = dat.array as &bytes;
+        let pos = vpos as i32_u + dat.offset;
+        let len = vlen as i32_u;
+        if len >u IO_BUFFER_SIZE {
+            len = IO_BUFFER_SIZE;
+        }
+        let buffer = get_buffer();
+        let nread = buffer;
+        let iovs = buffer + 4;
+        buffer += 12;
+        m.store32(iovs, buffer);
+        m.store32(iovs, len, offset: 4);
+        let iovs_len = 1;
+        let res = fd_read(fd, iovs, iovs_len, nread);
+        caml_unix_error_if(res, "read", no_arg);
+        let n = m.load32(nread);
+        blit_memory_to_substring(buffer, buf, pos, n);
+        n as &i31;
+    }
+}
+#[else]
+{
+    #[export]
+    #[export = "caml_unix_write"]
+    fn unix_write(vfd: &eq, vbuf: &eq, vpos: &eq, vlen: &eq) -> &eq {
+        let fd = vfd as i32_u;
+        let s = vbuf as &bytes;
+        let pos = vpos as i32_u;
+        let len = vlen as i32_u;
+        let buf = get_io_buffer();
+        let buf_view = io_buffer_view!;
+        let fd_offset = get_fd_offset(fd);
+        let offset = fd_offset.offset;
+        // [O_APPEND]: every write goes to the end of the file, regardless of the
+        // current offset.
+        if fd_offset.append {
+            offset = file_size(fd);
+        }
+        let written: i32;
+        while len >u 0 : (len -= n) {
+            let numbytes = len >u IO_BUFFER_SIZE?IO_BUFFER_SIZE:len;
+            caml_blit_bytes_to_dataview(s, pos, buf_view, 0, numbytes);
+            let n: i32;
+            try_legacy {
+                n =
+                    if fd_offset.seeked {
+                        write(fd, buf, 0, numbytes, offset);
+                    } else {
+                        write'(fd, buf, 0, numbytes, null);
+                    };
+            } catch {
+                javascript_exception => {
+                    caml_unix_error(_, null);
+                }
+            }
+            offset += n as i64_u;
+            fd_offset.offset = offset;
+            written += n;
+            pos += n;
+        }
+        written as &i31;
+    }
+
+    #[export]
+    #[export = "caml_unix_single_write"]
+    fn unix_single_write(vfd: &eq, vbuf: &eq, vpos: &eq, vlen: &eq) -> &eq {
+        let fd = vfd as i32_u;
+        let s = vbuf as &bytes;
+        let pos = vpos as i32_u;
+        let len = vlen as i32_u;
+        let buf = get_io_buffer();
+        let buf_view = io_buffer_view!;
+        let fd_offset = get_fd_offset(fd);
+        let offset = fd_offset.offset;
+        // [O_APPEND]: every write goes to the end of the file, regardless of the
+        // current offset.
+        if fd_offset.append {
+            offset = file_size(fd);
+        }
+        let n: i32;
+        if len >u 0 {
+            let numbytes = len >u IO_BUFFER_SIZE?IO_BUFFER_SIZE:len;
+            caml_blit_bytes_to_dataview(s, pos, buf_view, 0, numbytes);
+            try_legacy {
+                n =
+                    if fd_offset.seeked {
+                        write(fd, buf, 0, numbytes, offset);
+                    } else {
+                        write'(fd, buf, 0, numbytes, null);
+                    };
+            } catch {
+                javascript_exception => {
+                    caml_unix_error(_, null);
+                }
+            }
+            offset += n as i64_u;
+            fd_offset.offset = offset;
+        }
+        n as &i31;
+    }
+
+    #[export]
+    #[export = "caml_unix_read"]
+    fn unix_read(vfd: &eq, vbuf: &eq, vpos: &eq, vlen: &eq) -> &eq {
+        let fd = vfd as i32_u;
+        let pos = vpos as i32_u;
+        let len = vlen as i32_u;
+        if len >u IO_BUFFER_SIZE {
+            len = IO_BUFFER_SIZE;
+        }
+        let buf = get_io_buffer();
+        let buf_view = io_buffer_view!;
+        let fd_offset = get_fd_offset(fd);
+        let offset = fd_offset.offset;
+        let n: i32;
+        try_legacy {
+            n =
+                if fd_offset.seeked {
+                    read(fd, buf, 0, len, offset);
+                } else {
+                    read'(fd, buf, 0, len, null);
+                };
+        } catch {
+            javascript_exception => {
+                caml_unix_error(_, null);
+            }
+        }
+        offset += n as i64_u;
+        fd_offset.offset = offset;
+        caml_blit_dataview_to_bytes(buf_view, 0, vbuf as &bytes, pos, n);
+        n as &i31;
+    }
+
+    #[export]
+    #[export = "caml_unix_write_bigarray"]
+    fn unix_write_bigarray(vfd: &eq, vbuf: &eq, vpos: &eq, vlen: &eq, vsingle: &eq) -> &eq {
+        let fd = vfd as i32_u;
+        let buf = caml_ba_get_data(vbuf);
+        let pos = vpos as i32_u;
+        let len = vlen as i32_u;
+        let fd_offset = get_fd_offset(fd);
+        let offset = fd_offset.offset;
+        // [O_APPEND]: every write goes to the end of the file, regardless of the
+        // current offset.
+        if fd_offset.append {
+            offset = file_size(fd);
+        }
+        let written: i32;
+        'loop: loop {
+            if len >u 0 {
+                let n: i32;
+                try_legacy {
+                    n =
+                        if fd_offset.seeked {
+                            write(fd, buf, pos, len, offset);
+                        } else {
+                            write'(fd, buf, pos, len, null);
+                        };
+                } catch {
+                    javascript_exception => {
+                        caml_unix_error(_, null);
+                    }
+                }
+                offset += n as i64_u;
+                fd_offset.offset = offset;
+                written += n;
+                pos += n;
+                len -= n;
+                br_if 'loop vsingle == 0 as &i31;
+            }
+        }
+        written as &i31;
+    }
+
+    #[export]
+    #[export = "caml_unix_read_bigarray"]
+    fn unix_read_bigarray(vfd: &eq, vbuf: &eq, vpos: &eq, vlen: &eq) -> &eq {
+        let fd = vfd as i32_u;
+        let buf = caml_ba_get_data(vbuf);
+        let pos = vpos as i32_u;
+        let len = vlen as i32_u;
+        let fd_offset = get_fd_offset(fd);
+        let offset = fd_offset.offset;
+        let n: i32;
+        try_legacy {
+            n =
+                if fd_offset.seeked {
+                    read(fd, buf, pos, len, offset);
+                } else {
+                    read'(fd, buf, pos, len, null);
+                };
+        } catch {
+            javascript_exception => {
+                caml_unix_error(_, null);
+            }
+        }
+        offset += n as i64_u;
+        fd_offset.offset = offset;
+        n as &i31;
+    }
+}
+
+#[if(wasi)]
+{
+    fn lseek(fd: &eq, offset: i64, cmd: &eq) -> i64 {
+        let buffer = get_buffer();
+        let res = fd_seek(fd as i32_u, offset, cmd as i32_u, buffer);
+        caml_unix_error_if(res, "lseek", no_arg);
+        m.load64(buffer);
+    }
+}
+#[else]
+{
+    fn lseek_exn(errno: i32) -> &eq {
+        [block|0 as &i31, get_unix_error_exn(), errno as &i31, "lseek", no_arg];
+    }
+
+    fn lseek(vfd: &eq, offset: i64, cmd: &eq) -> i64 {
+        let fd = vfd as i32_u;
+        let fd_offset =
+            'non_null: do {
+                br_on_non_null 'non_null get_fd_offset_unchecked(fd);
+                throw ocaml_exception(lseek_exn(3));
+            }; // EBADF
+        if cmd == 1 as &i31 {
+            offset = fd_offset.offset + offset;
+        } else {
+            if cmd == 2 as &i31 {
+                offset = file_size(fd) + offset;
+            }
+        }
+        if offset <s 0 {
+            throw ocaml_exception(lseek_exn(12));
+        } // EINVAL
+        fd_offset.offset = offset;
+        fd_offset.seeked = 1;
+        offset;
+    }
+}
+
+#[export]
+#[export = "caml_unix_lseek"]
+fn unix_lseek(fd: &eq, ofs: &eq, cmd: &eq) -> &eq {
+    lseek(fd, ofs as i64_s, cmd) as &i31;
+}
+
+#[export]
+#[export = "caml_unix_lseek_64"]
+fn unix_lseek_64(fd: &eq, ofs: &eq, cmd: &eq) -> &eq {
+    become caml_copy_int64(lseek(fd, Int64_val(ofs), cmd));
+}
+
+#[if(wasi)]
+{
+    #[export]
+    #[export = "caml_unix_fsync"]
+    fn unix_fsync(fd: &eq) -> &eq {
+        let res = fd_sync(fd as i32_u);
+        caml_unix_error_if(res, "fsync", no_arg);
+        0 as &i31;
+    }
+}
+#[else]
+{
+    #[export]
+    #[export = "caml_unix_fsync"]
+    fn unix_fsync(fd: &eq) -> &eq {
+        try_legacy {
+            fsync(fd);
+        } catch {
+            javascript_exception => {
+                caml_unix_error(_, null);
+            }
+        }
+        0 as &i31;
+    }
+}
+
+const out_channel_of_descr = "out_channel_of_descr";
+const in_channel_of_descr = "in_channel_of_descr";
+
+fn channel_of_descr_name(out: i32) -> &eq {
+    out?out_channel_of_descr:in_channel_of_descr;
+}
+
+#[if(wasi)]
+{
+    fn caml_unix_check_stream_semantics(fd: &eq, out: i32) {
+        let s: &block;
+        let file_type: i32;
+        let buffer = get_buffer();
+        let res = fd_filestat_get(fd as i32_u, buffer);
+        caml_unix_error_if(res, channel_of_descr_name(out), no_arg);
+        let kind = m.load8(buffer, offset: 16) as i32_u;
+        dispatch kind [ 'ok, 'bad, 'ok, 'bad, 'ok, 'bad, 'ok, else 'bad ] {
+            'bad: {
+                caml_unix_error(28 /* EINVAL */ , channel_of_descr_name(out), no_arg);
+            }
+            'ok: {}
+        }
+    }
+}
+#[else]
+{
+    fn caml_unix_check_stream_semantics(fd: &eq, out: i32) {
+        let s =
+            try_legacy {
+                fstat(fd, 0);
+            } catch {
+                javascript_exception => {
+                    caml_unix_error(_, channel_of_descr_name(out));
+                    0 as &i31;
+                }
+            } as &block;
+        let kind = s[3] as i32_u;
+        dispatch kind [ 'ok, 'bad, 'ok, 'bad, 'bad, else 'ok ] {
+            'bad: {
+                throw ocaml_exception(
+                    [block|
+                        0 as &i31,
+                        get_unix_error_exn(),
+                        12 as &i31, // EINVAL
+                        channel_of_descr_name(out),
+                        no_arg,
+                    ],
+                );
+            }
+            'ok: {}
+        }
+    }
+}
+
+#[export]
+#[export = "win_inchannel_of_filedescr"]
+#[export = "caml_unix_inchannel_of_filedescr"]
+fn unix_inchannel_of_filedescr(fd: &eq) -> &eq {
+    caml_unix_check_stream_semantics(fd, 0);
+    become caml_ml_open_descriptor_in(fd);
+}
+
+#[export]
+#[export = "win_outchannel_of_filedescr"]
+#[export = "caml_unix_outchannel_of_filedescr"]
+fn unix_outchannel_of_filedescr(fd: &eq) -> &eq {
+    caml_unix_check_stream_semantics(fd, 1);
+    become caml_ml_open_descriptor_out(fd);
+}
+
+#[if(wasi)]
+{
+    #[export]
+    #[export = "caml_unix_close"]
+    fn unix_close(fd: &eq) -> &eq {
+        let res = fd_close(fd as i32_u);
+        caml_unix_error_if(res, "close", no_arg);
+        0 as &i31;
+    }
+}
+#[else]
+{
+    #[export]
+    #[export = "caml_unix_close"]
+    fn unix_close(fd: &eq) -> &eq {
+        release_fd_offset(fd as i32_u);
+        try_legacy {
+            close(fd);
+        } catch {
+            javascript_exception => {
+                caml_unix_error(_, null);
+            }
+        }
+        0 as &i31;
+    }
+}
+
+#[if(wasi)]
+{
+    #[export]
+    #[export = "caml_unix_isatty"]
+    fn unix_isatty(&eq) -> &eq {
+        0 as &i31;
+    }
+}
+
+#[if(wasi)]
+{
+    // WASI has no notion of user/group ids; return 1 like the JS runtime's
+    // fallback when [process.getuid] and friends are unavailable.
+    #[export]
+    #[export = "caml_unix_getuid"]
+    fn unix_getuid(&eq) -> &eq {
+        1 as &i31;
+    }
+    #[export]
+    #[export = "caml_unix_geteuid"]
+    fn unix_geteuid(&eq) -> &eq {
+        1 as &i31;
+    }
+    #[export]
+    #[export = "caml_unix_getgid"]
+    fn unix_getgid(&eq) -> &eq {
+        1 as &i31;
+    }
+    #[export]
+    #[export = "caml_unix_getegid"]
+    fn unix_getegid(&eq) -> &eq {
+        1 as &i31;
+    }
+}
+#[else]
+{
+    // On Node, return the real ids (the bindings fall back to 1 in a browser
+    // or wherever [process.getuid] is missing), matching runtime/js/unix.js.
+    #[export]
+    #[export = "caml_unix_getuid"]
+    fn unix_getuid(&eq) -> &eq {
+        getuid() as &i31;
+    }
+    #[export]
+    #[export = "caml_unix_geteuid"]
+    fn unix_geteuid(&eq) -> &eq {
+        geteuid() as &i31;
+    }
+    #[export]
+    #[export = "caml_unix_getgid"]
+    fn unix_getgid(&eq) -> &eq {
+        getgid() as &i31;
+    }
+    #[export]
+    #[export = "caml_unix_getegid"]
+    fn unix_getegid(&eq) -> &eq {
+        getegid() as &i31;
+    }
+}
+
+#[export]
+#[export = "caml_unix_getpwnam"]
+#[export = "unix_getpwuid"]
+#[export = "caml_unix_getpwuid"]
+#[export = "unix_getgrnam"]
+#[export = "caml_unix_getgrnam"]
+#[export = "unix_getgrgid"]
+#[export = "caml_unix_getgrgid"]
+fn unix_getpwnam(&eq) -> &eq {
+    caml_raise_not_found();
+    0 as &i31;
+}
+
+#[export]
+#[export = "caml_unix_inet_addr_of_string"]
+fn unix_inet_addr_of_string(&eq) -> &eq {
+    0 as &i31;
+}
+
+#[export]
+#[export = "caml_unix_filedescr_of_fd"]
+fn win_handle_fd(v: &eq) -> &eq {
+    v;
+}
+
+#[export]
+#[export = "caml_unix_cleanup"]
+fn win_cleanup(&eq) -> &eq {
+    0 as &i31;
+}

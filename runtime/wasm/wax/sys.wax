@@ -1,0 +1,560 @@
+// Wasm_of_ocaml runtime support
+// http://www.ocsigen.org/js_of_ocaml/
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, with linking exception;
+// either version 2.1 of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+
+import "fail" {
+    fn caml_raise_sys_error(&eq);
+    fn caml_raise_not_found();
+}
+#[if(wasi)]
+{
+    import "wasi_snapshot_preview1" {
+        fn random_get(i32, i32) -> i32;
+        fn clock_time_get(i32, i64, i32) -> i32;
+        fn args_get(i32, i32) -> i32;
+        fn args_sizes_get(i32, i32) -> i32;
+        fn environ_get(i32, i32) -> i32;
+        fn environ_sizes_get(i32, i32) -> i32;
+        #[import = "proc_exit"]
+        fn exit(i32);
+    }
+    import "libc" {
+        #[import = "memory"]
+        memory m: i32 [2];
+        fn free(i32);
+        fn strlen(i32) -> i32;
+    }
+    import "wasi_memory" {
+        fn checked_malloc(i32) -> i32;
+        fn get_buffer() -> i32;
+        fn blit_memory_to_string(i32, i32) -> &bytes;
+    }
+    import "wasi_errors" const error_messages: &block;
+    import "string" fn caml_string_concat(&eq, &eq) -> &eq;
+    import "fail" fn caml_invalid_argument(&eq);
+}
+#[else]
+{
+    import "bindings" {
+        fn ta_length(&extern) -> i32;
+        fn ta_get_i32(&extern, i32) -> i32;
+        fn random_seed() -> &extern;
+    }
+    import "jslib" {
+        fn js_of_value(&eq) -> &?extern;
+        fn value_of_js(&?extern) -> &eq;
+        fn caml_jsstring_of_string(&eq) -> &eq;
+        fn caml_string_of_jsstring(&eq) -> &eq;
+        fn caml_js_to_string_array(a: &extern) -> &eq;
+        fn caml_js_meth_call(&eq, &eq, &eq) -> &eq;
+    }
+    import "bindings" {
+        #[import = "argv"]
+        fn argv_fn() -> &extern;
+        const on_windows: i32;
+        const on_arm64: i32;
+        fn isatty(&eq) -> &eq;
+        fn system(&?extern) -> &eq;
+        fn getenv(&?extern) -> &?extern;
+        fn time() -> f64;
+    }
+    import "fail" tag javascript_exception(&?extern);
+    import "jsstring" fn jsstring_test(&?extern) -> i32;
+    import "bindings" fn exit(i32);
+}
+import "io" fn caml_channel_descriptor(&eq) -> &eq;
+import "string" fn caml_string_equal(&eq, &eq) -> &eq;
+
+type block = [mut &eq];
+type bytes = [mut i8];
+type float = { f: f64 };
+
+#[export]
+tag ocaml_exit();
+
+#[export]
+#[export = "unix_exit"]
+#[export = "caml_unix_exit"]
+fn caml_sys_exit(code: &eq) -> &eq {
+    exit(code as i32_s);
+    // Fallback: try to exit through an exception
+    throw ocaml_exit();
+}
+
+// Environment variables set at compile time (--setenv): the compiler
+// prepends calls to caml_set_static_env to the program, and lookups
+// consult these bindings before the actual environment.
+type env_entry = { name: &eq, value: &eq, next: &?env_entry };
+
+let static_env: &?env_entry = null;
+
+#[export]
+fn caml_set_static_env(name: &eq, value: &eq) -> &eq {
+    static_env = { name, value, next: static_env };
+    0 as &i31;
+}
+
+fn static_getenv(name: &eq) -> &?eq {
+    let e = static_env;
+    'done: do {
+        'loop: loop {
+            br_if 'done !e;
+            let entry = e!;
+            if caml_string_equal(entry.name, name) as i32_u {
+                return entry.value;
+            }
+            e = entry.next;
+            br 'loop;
+        }
+    }
+    null;
+}
+
+#[if(wasi)]
+{
+    let environment = 0;
+    let environment_count = 0;
+    let environment_data = 0;
+
+    fn initialize_env() {
+        if !environment {
+            let buffer = get_buffer();
+            let res = environ_sizes_get(buffer, buffer + 4);
+            if res {
+                caml_handle_sys_error(0 as &i31, res);
+            }
+            let env = checked_malloc(m.load32(buffer) << 2);
+            let dat = checked_malloc(m.load32(buffer, offset: 4));
+            res = environ_get(env, dat);
+            if res {
+                free(env);
+                free(dat);
+                caml_handle_sys_error(0 as &i31, res);
+            }
+            environment = env;
+            environment_data = dat;
+            environment_count = m.load32(buffer);
+        }
+    }
+
+    fn sys_getenv(name: &eq) -> &?eq {
+        initialize_env();
+        let var = name as &bytes;
+        let len = var.length();
+        'not_found: do {
+            let i: i32;
+            while i <u len : (i += 1) {
+                br_if 'not_found
+                    61 // '='
+                        == var[i] as i32_u;
+            }
+            i = 0;
+            while i <u environment_count : (i += 1) {
+                let s = m.load32(environment + (i << 2));
+                let j = 0;
+                'next: do {
+                    while j <u len : (j += 1) {
+                        let c = m.load8(s + j) as i32_u;
+                        br_if 'next !c;
+                        br_if 'next c != var[j] as i32_u;
+                    }
+                    br_if 'next
+                        61 // '='
+                            != m.load8(s + j) as i32_u;
+                    s += j + 1;
+                    become blit_memory_to_string(s, strlen(s));
+                }
+            }
+        }
+        null;
+    }
+}
+#[else]
+{
+    fn sys_getenv(name: &eq) -> &?eq {
+        let res = getenv(js_of_value(caml_jsstring_of_string(name)));
+        if !jsstring_test(res) {
+            return null;
+        }
+        become caml_string_of_jsstring(value_of_js(res));
+    }
+}
+
+fn caml_getenv(name: &eq) -> &?eq {
+    let res = static_getenv(name);
+    if !!res {
+        return res;
+    }
+    become sys_getenv(name);
+}
+
+#[export]
+#[export = "caml_sys_unsafe_getenv"]
+fn caml_sys_getenv(name: &eq) -> &eq {
+    let res = caml_getenv(name);
+    if !res {
+        caml_raise_not_found();
+    }
+    res!;
+}
+
+#[export]
+fn caml_sys_getenv_opt(name: &eq) -> &eq {
+    let res = caml_getenv(name);
+    if !res {
+        return 0 as &i31;
+    }
+    [block|0 as &i31, res!];
+}
+
+#[if(wasi)]
+{
+    let argv: &?block = null;
+
+    #[export]
+    fn caml_sys_argv(&eq) -> &eq {
+        'init: do {
+            return br_on_null 'init argv;
+        }
+        let res: i32;
+        let argv_ptr: i32;
+        let argv_buf: i32;
+        'error: do {
+            let buffer = get_buffer();
+            res = args_sizes_get(buffer, buffer + 4);
+            br_if 'error res;
+            let argc = m.load32(buffer);
+            argv_ptr = checked_malloc(argc << 2);
+            argv_buf = checked_malloc(m.load32(buffer, offset: 4));
+            res = args_get(argv_ptr, argv_buf);
+            br_if 'error res;
+            let args: &block = [0 as &i31; argc + 1];
+            let i: i32;
+            while i <u argc : (i += 1) {
+                let arg = m.load32(argv_ptr + (i << 2));
+                args[i + 1] = blit_memory_to_string(arg, strlen(arg));
+            }
+            argv = args;
+            free(argv_ptr);
+            free(argv_buf);
+            return args;
+        }
+        // error path: free any buffers already allocated (free(0) is a no-op
+        // when reached before the allocations)
+        free(argv_ptr);
+        free(argv_buf);
+        caml_handle_sys_error(0 as &i31, res);
+        [block|];
+    }
+
+    #[export]
+    fn caml_sys_executable_name(&eq) -> &eq {
+        (caml_sys_argv(0 as &i31) as &block)[1];
+    }
+}
+#[else]
+{
+    #[export]
+    fn caml_sys_argv(&eq) -> &eq {
+        // ZZZ
+        caml_js_to_string_array(argv_fn());
+    }
+
+    #[export]
+    fn caml_sys_executable_name(&eq) -> &eq {
+        (caml_js_to_string_array(argv_fn()) as &block)[1];
+    }
+}
+
+#[export]
+fn caml_sys_proc_self_exe(&eq) -> &eq {
+    0 as &i31;
+}
+
+#[if(wasi)]
+{
+    #[export]
+    #[export = "caml_sys_time_include_children"]
+    fn caml_sys_time(&eq) -> &eq {
+        let buffer = get_buffer();
+        let res = clock_time_get(2, 1, buffer);
+        // wasmtime does not support the CPU-time clock, so use the
+        // monotonic clock instead as a fallback
+        if res == 8 {
+            res = clock_time_get(1, 1, buffer);
+        }
+        if res {
+            caml_handle_sys_error(0 as &i31, res);
+        }
+        { f: m.load64(buffer) as f64_u * 1e-9 };
+    }
+}
+#[else]
+{
+    #[export]
+    #[export = "caml_sys_time_include_children"]
+    fn caml_sys_time(&eq) -> &eq {
+        { f: time() * 0.001 };
+    }
+}
+
+#[if(wasi)]
+{
+    #[export]
+    fn caml_sys_system_command(&eq) -> &eq {
+        caml_invalid_argument("Sys.command not implemented");
+        return 0 as &i31;
+    }
+}
+#[else]
+{
+    #[export]
+    fn caml_sys_system_command(cmd: &eq) -> &eq {
+        try_legacy {
+            return system(js_of_value(caml_jsstring_of_string(cmd)));
+        } catch {
+            javascript_exception => {
+                caml_handle_sys_error(_);
+            }
+        }
+        return 0 as &i31;
+    }
+}
+
+#[if(wasi)]
+{
+    #[export]
+    fn caml_sys_random_seed(&eq) -> &eq {
+        let r: &extern;
+        let n = 12;
+        let buffer = get_buffer();
+        let res = random_get(buffer, n << 2);
+        if res {
+            caml_handle_sys_error(0 as &i31, res);
+        }
+        let a: &block = [0 as &i31; n + 1];
+        let i: i32;
+        while i <u n : (i += 1) {
+            a[i + 1] = m.load32(buffer + (i << 2)) as &i31;
+        }
+        a;
+    }
+}
+#[else]
+{
+    #[export]
+    fn caml_sys_random_seed(&eq) -> &eq {
+        let r = random_seed();
+        let n = ta_length(r);
+        let a: &block = [0 as &i31; n + 1];
+        let i: i32;
+        while i <u n : (i += 1) {
+            a[i + 1] = ta_get_i32(r, i) as &i31;
+        }
+        a;
+    }
+}
+
+// These constants are usually computed statically (see [Eval]), but
+// are needed when compiling with --disable staticeval
+
+#[export]
+fn caml_sys_const_big_endian(&eq) -> &eq {
+    0 as &i31;
+}
+
+const wasm_of_ocaml = "wasm_of_ocaml";
+
+#[export]
+fn caml_sys_const_backend_type(&eq) -> &eq {
+    // Other "wasm_of_ocaml"
+    [block|0 as &i31, wasm_of_ocaml];
+}
+
+#[export]
+fn caml_sys_const_naked_pointers_checked(&eq) -> &eq {
+    0 as &i31;
+}
+
+#[export]
+fn caml_sys_const_word_size(&eq) -> &eq {
+    32 as &i31;
+}
+
+#[export]
+fn caml_sys_const_int_size(&eq) -> &eq {
+    31 as &i31;
+}
+
+#[export]
+fn caml_sys_const_max_wosize(&eq) -> &eq {
+    0xfffffff as &i31;
+}
+
+#[if(wasi)]
+{
+    const on_windows = 0;
+    const on_arm64 = 0;
+}
+
+#[export]
+fn caml_sys_const_ostype_unix(&eq) -> &eq {
+    !on_windows as &i31;
+}
+
+#[export]
+fn caml_sys_const_ostype_win32(&eq) -> &eq {
+    on_windows as &i31;
+}
+
+#[export]
+fn caml_sys_const_ostype_cygwin(&eq) -> &eq {
+    0 as &i31;
+}
+
+#[export]
+fn caml_sys_const_arch_amd64(&eq) -> &eq {
+    !on_arm64 as &i31;
+}
+
+#[export]
+fn caml_sys_const_arch_arm64(&eq) -> &eq {
+    on_arm64 as &i31;
+}
+
+#[export]
+fn caml_is_boot_compiler(&eq) -> &eq {
+    0 as &i31;
+}
+
+#[export]
+fn caml_sys_const_standard_library_default(&eq) -> &eq {
+    "/static/cmis";
+}
+
+#[export]
+fn caml_sys_get_stdlib_dirs(stdlib: &eq) -> &eq {
+    [block|0 as &i31, stdlib, 0 as &i31];
+}
+
+const Unix = "Unix";
+const Win32 = "Win32";
+
+#[export]
+fn caml_sys_get_config(&eq) -> &eq {
+    [block|0 as &i31, on_windows?Win32:Unix, 32 as &i31, 0 as &i31];
+}
+
+#[if(wasi)]
+{
+    #[export]
+    fn caml_sys_isatty(ch: &eq) -> &eq {
+        0 as &i31;
+    }
+}
+#[else]
+{
+    #[export]
+    fn caml_sys_isatty(ch: &eq) -> &eq {
+        become isatty(caml_channel_descriptor(ch));
+    }
+}
+
+#[export]
+fn caml_sys_const_runtime5(&eq) -> &eq {
+    1 as &i31;
+}
+
+#[export]
+fn caml_runtime_variant(&eq) -> &eq {
+    "";
+}
+
+#[export]
+fn caml_runtime_parameters(&eq) -> &eq {
+    "";
+}
+
+#[export]
+fn caml_install_signal_handler(&eq, &eq) -> &eq {
+    0 as &i31;
+}
+
+#[export]
+fn caml_sys_convert_signal_number(signo: &eq) -> &eq {
+    signo;
+}
+
+#[export]
+fn caml_sys_rev_convert_signal_number(signo: &eq) -> &eq {
+    signo;
+}
+
+let caml_runtime_warnings = 0;
+
+#[export]
+fn caml_ml_enable_runtime_warnings(v: &eq) -> &eq {
+    caml_runtime_warnings = v as i32_u;
+    0 as &i31;
+}
+
+#[export]
+fn caml_ml_runtime_warnings_enabled(&eq) -> &eq {
+    caml_runtime_warnings as &i31;
+}
+
+#[export]
+fn caml_xdg_defaults(&eq) -> &eq {
+    // empty list
+    0 as &i31;
+}
+
+const toString = "toString";
+
+#[if(wasi)]
+{
+    #[export]
+    fn caml_handle_sys_error(arg: &eq, errno: i32) {
+        let msg =
+            if errno >=u error_messages.length() {
+                "unknown system error";
+            } else {
+                error_messages[errno];
+            };
+        if arg is &bytes {
+            msg = caml_string_concat(arg, caml_string_concat(": ", msg));
+        }
+        caml_raise_sys_error(msg);
+    }
+
+    #[export]
+    fn caml_handle_sys_error_if(arg: &eq, errno: i32) {
+        if errno {
+            caml_handle_sys_error(arg, errno);
+        }
+    }
+}
+#[else]
+{
+    #[export]
+    fn caml_handle_sys_error(exn: &?extern) {
+        caml_raise_sys_error(
+            caml_string_of_jsstring(
+                caml_js_meth_call(value_of_js(exn), toString, [block|0 as &i31]),
+            ),
+        );
+    }
+}

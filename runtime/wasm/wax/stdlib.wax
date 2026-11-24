@@ -1,0 +1,390 @@
+// Wasm_of_ocaml runtime support
+// http://www.ocsigen.org/js_of_ocaml/
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, with linking exception;
+// either version 2.1 of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+
+import "hash" fn caml_string_hash(&eq, &eq) -> &eq;
+import "string" fn caml_string_equal(&eq, &eq) -> &eq;
+
+import "jslib" {
+    fn caml_jsstring_of_string(&eq) -> &eq;
+    fn js_of_value(&eq) -> &?extern;
+}
+import "obj" {
+    fn caml_callback_1(&eq, &eq) -> &eq;
+    fn caml_callback_2(&eq, &eq, &eq) -> &eq;
+}
+import "string" fn caml_string_concat(&eq, &eq) -> &eq;
+import "printexc" fn caml_format_exception(&eq) -> &eq;
+import "sys" tag ocaml_exit();
+import "fail" tag ocaml_exception(&eq);
+#[if(wasi)]
+{
+    import "wasi_snapshot_preview1"
+    #[import = "proc_exit"]
+    fn exit(i32);
+    import "io" fn write_all_to_fd(i32, &eq);
+}
+#[else]
+{
+    import "fail" tag javascript_exception(&?extern);
+    import "bindings" {
+        fn write(i32, &?extern);
+        fn exit(i32);
+    }
+}
+
+type block = [mut &eq];
+type bytes = [mut i8];
+
+type assoc = { name: &bytes, value: mut &eq, next: mut &?assoc };
+
+type assoc_array = [mut &?assoc];
+
+const Named_value_size = 13;
+
+const named_value_table: &assoc_array = [null; Named_value_size];
+
+let symbol_table: &assoc_array = [null; 1];
+
+const predef_prefix = "predef:";
+
+// Build a symbol key: for predefs, prepend "predef:" to the name.
+// For compunits (is_predef=0), return name unchanged.
+fn make_symbol_key(is_predef: i32, name: &bytes) -> &bytes {
+    if !is_predef {
+        return name;
+    }
+    let len = name.length();
+    let key: &bytes = [0; len + 7];
+    key.copy(0, predef_prefix, 0, 7);
+    key.copy(7, name, 0, len);
+    key;
+}
+let symbol_table_size = 1;
+
+fn assoc_find(s: &eq, l: &?assoc) -> &?assoc {
+    'tail: do {
+        'loop: loop {
+            let a = br_on_cast_fail 'tail &assoc l;
+            if caml_string_equal(s, a.name) as i32_u {
+                return a;
+            }
+            l = a.next;
+            br 'loop;
+        }
+        unreachable;
+    }
+}
+
+#[export]
+fn caml_named_value(s: &eq) -> &?eq {
+    'not_found: do {
+        return
+            (br_on_null 'not_found
+                 assoc_find(
+                     s,
+                     named_value_table[caml_string_hash(0 as &i31, s) as i32_s %u Named_value_size],
+                 )).value;
+    }
+    return null;
+}
+
+#[export]
+fn caml_register_named_value(name: &eq, value: &eq) -> &eq {
+    let h = caml_string_hash(0 as &i31, name) as i32_s %u Named_value_size;
+    let next = named_value_table[h];
+    'not_found: do {
+        (br_on_null 'not_found assoc_find(name, next)).value = value;
+        return 0 as &i31;
+    }
+    named_value_table[h] = { name: name as &bytes, value, next };
+    0 as &i31;
+}
+
+// Used only for testing (tests-jsoo/bin), but inconvenient to pull out
+#[export]
+fn caml_unregister_named_value(name: &eq) -> &eq {
+    let h = caml_string_hash(0 as &i31, name) as i32_s %u Named_value_size;
+    let r = named_value_table[h];
+    'done: do {
+        let a = br_on_null 'done r;
+        // Head of the bucket matches: drop it.
+        if caml_string_equal(name, a.name) as i32_u {
+            named_value_table[h] = a.next;
+            br 'done;
+        }
+        // $a is the previous (kept) node; scan its successors so the
+        // unlink can update the predecessor's next pointer.
+        'loop: loop {
+            let cur = br_on_null 'done a.next;
+            if caml_string_equal(name, cur.name) as i32_u {
+                a.next = cur.next;
+                br 'done;
+            }
+            a = cur;
+            br 'loop;
+        }
+    }
+    0 as &i31;
+}
+
+#[export]
+let caml_global_data: &block = [0 as &i31; 13];
+
+// Grow caml_global_data so that index $min_idx is valid.
+fn grow_global_data(min_idx: i32) {
+    let old = caml_global_data;
+    // new length = min_idx + 1, but at least double the old size
+    let new_len = min_idx + 1;
+    if new_len <u old.length() << 1 {
+        new_len = old.length() << 1;
+    }
+    caml_global_data = [0 as &i31; new_len];
+    caml_global_data.copy(0, old, 0, old.length());
+}
+
+// Link info: a single mutable block holding all linker-provided data.
+// Layout (OCaml block, field 0 = tag):
+//   field 1: sections  — bytesections record { symb; crcs; prim; dlpt }
+//   field 2: symbols   — array of (string * int) pairs for name→index mapping
+//   field 3: prim_count — int (number of registered primitives)
+//   field 4: aliases    — (string * string) list of primitive aliases
+// All fields default to 0 (unit/empty).
+#[export]
+let link_info: &block = [0 as &i31, 0 as &i31, 0 as &i31, 0 as &i31, 0 as &i31];
+
+// Field indices for $link_info (after tag at 0). Only SYMBOLS is currently
+// read by the runtime; the others are documented for the layout:
+//   LINK_INFO_SECTIONS = 1
+const LINK_INFO_SYMBOLS = 2;
+//   LINK_INFO_PRIM_COUNT = 3
+//   LINK_INFO_ALIASES = 4
+
+// Next available index for dynamically loaded modules not in the
+// static symbols table. Initialized when symbols are set.
+let next_idx = 0;
+
+#[export]
+fn caml_set_link_info(info: &eq) -> &eq {
+    link_info = info as &block;
+    // Compute next_idx from symbols field
+    if link_info[LINK_INFO_SYMBOLS] is &block {
+        let arr = link_info[LINK_INFO_SYMBOLS] as &block;
+        let max = -1;
+        // n = number of symbol entries (array.len - 1 to skip tag)
+        let n = arr.length() - 1;
+        // Create hash table of size max(n, 1)
+        if n >u 0 {
+            symbol_table_size = n;
+            symbol_table = [null; n];
+        }
+        let j = 1;
+        'done: do {
+            'loop: loop {
+                br_if 'done j >=u arr.length();
+                // pair = [tag, global_name, index]
+                // global_name = [is_predef, name]
+                let pair = arr[j] as &block;
+                let idx = pair[2] as i32_u;
+                if idx >s max {
+                    max = idx;
+                }
+                // Build key from global_name
+                let name =
+                    make_symbol_key(
+                        // is_predef = tag of global_name block
+                        (pair[1] as &block)[0] as i32_u,
+                        (pair[1] as &block)[1] as &bytes,
+                    );
+                // Insert into symbol hash table
+                let h = caml_string_hash(0 as &i31, name) as i32_s %u symbol_table_size;
+                symbol_table[h] = { name, value: pair[2], next: symbol_table[h] };
+                j += 1;
+                br 'loop;
+            }
+        }
+        next_idx = max + 1;
+    }
+    0 as &i31;
+}
+
+// Relocation callback: set by wasm_of_ocaml_compiler_dynlink when
+// the toplevel is active. Maps a name (string) to its symtable index.
+// Similar to jsoo_toplevel_reloc in the JS runtime.
+#[export]
+let toplevel_reloc: &eq = 0 as &i31;
+
+#[export]
+fn wasm_toplevel_init_reloc(f: &eq) -> &eq {
+    toplevel_reloc = f;
+    0 as &i31;
+}
+
+// Look up a name in the symbol hash table and return the symtable index.
+// Returns -1 if not found or if symbols is not set.
+fn lookup_symbol(name: &eq, kind: i32) -> i32 {
+    if link_info[LINK_INFO_SYMBOLS] is &i31 {
+        return -1;
+    }
+    let key = make_symbol_key(kind, name as &bytes);
+    'not_found: do {
+        return
+            (br_on_null 'not_found
+                 assoc_find(
+                     key,
+                     symbol_table[caml_string_hash(0 as &i31, key) as i32_s %u symbol_table_size],
+                 )).value as i32_u;
+    }
+    -1;
+}
+
+#[export]
+fn caml_register_global_by_index(v: &eq, idx: &eq) -> &eq {
+    // caml_global_data is a $block: index 0 is the tag, data starts at 1
+    let i = idx as i32_u + 1;
+    if i >=u caml_global_data.length() {
+        grow_global_data(i);
+    }
+    caml_global_data[i] = v;
+    0 as &i31;
+}
+
+fn do_register_global(v: &eq, name: &eq, is_predef: i32) -> &eq {
+    let i: i32;
+    // Try to resolve the name to a symtable index.
+    // 1. toplevel_reloc callback (set by wasm_of_ocaml_compiler_dynlink)
+    if !(toplevel_reloc is &i31) {
+        i =
+            caml_callback_1(
+                toplevel_reloc,
+                // Construct global_name: [tag, name]
+                [block|is_predef as &i31, name],
+            ) as i32_u + 1;
+    } else {
+        // 2. static symbols array (set by linker in link_info)
+        if !(link_info[LINK_INFO_SYMBOLS] is &i31) {
+            let idx = lookup_symbol(name, is_predef);
+            if idx >=s 0 {
+                i = idx + 1;
+            } else {
+                // Not found in symbols: assign a new index
+                i = next_idx + 1;
+                next_idx += 1;
+            }
+        } else {
+            // 3. No relocation info: nothing to do.
+            // caml_global_data is populated by caml_register_global_by_index.
+            return 0 as &i31;
+        }
+    }
+    if i >=u caml_global_data.length() {
+        grow_global_data(i);
+    }
+    caml_global_data[i] = v;
+    0 as &i31;
+}
+
+#[export]
+fn caml_register_global(v: &eq, name: &eq) -> &eq {
+    do_register_global(v, name, 0);
+}
+
+#[export]
+fn caml_register_global_predef(v: &eq, name: &eq) -> &eq {
+    do_register_global(v, name, 1);
+}
+
+#[export]
+fn caml_get_global_data(&eq) -> &eq {
+    caml_global_data;
+}
+
+type thunk = fn() -> &eq;
+
+const fatal_error = "Fatal error: exception ";
+const handle_uncaught_exception = "Printexc.handle_uncaught_exception";
+const do_at_exit = "Pervasives.do_at_exit";
+
+let uncaught_exception: &?extern = null;
+
+#[if(not(wasi))]
+{
+    fn reraise_exception() -> &eq {
+        throw javascript_exception(uncaught_exception);
+        0 as &i31;
+    }
+
+    #[export]
+    fn caml_handle_uncaught_exception(exn: &?extern) {
+        uncaught_exception = exn;
+        caml_main(reraise_exception);
+    }
+}
+
+#[export]
+fn caml_main(start: &func) {
+    try_legacy {
+        _ = (start as &thunk)();
+    } catch {
+        ocaml_exit => {}
+        ocaml_exception => {
+            let exn = _;
+            'exit: do {
+                'not_registered: do {
+                    try_legacy {
+                        _ =
+                            caml_callback_2(
+                                br_on_null 'not_registered
+                                    caml_named_value(handle_uncaught_exception),
+                                exn,
+                                0 as &i31,
+                            );
+                    } catch {
+                        ocaml_exit => {
+                            return;
+                        }
+                    }
+                    br 'exit;
+                }
+                'null: do {
+                    _ = caml_callback_1(br_on_null 'null caml_named_value(do_at_exit), 0 as &i31);
+                }
+                let msg =
+                    caml_string_concat(
+                        fatal_error,
+                        caml_string_concat(caml_format_exception(exn), "\n"),
+                    );
+                #[if(wasi)]
+                {
+                    write_all_to_fd(2, msg);
+                }
+                #[else]
+                {
+                    write(2, js_of_value(caml_jsstring_of_string(msg)));
+                }
+            }
+            exit(2);
+        }
+    }
+}
+
+#[export]
+fn caml_with_async_exns(f: &eq) -> &eq {
+    become caml_callback_1(f, 0 as &i31);
+}
+
+#[export]
+let caml_exception: &eq = 0 as &i31;

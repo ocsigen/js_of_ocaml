@@ -1,0 +1,116 @@
+// Wasm_of_ocaml runtime support
+// http://www.ocsigen.org/js_of_ocaml/
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, with linking exception;
+// either version 2.1 of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+
+import "fail" fn caml_is_special_exception(&eq) -> i32;
+import "ints" fn caml_format_int(&eq, &eq) -> &eq;
+
+type block = [mut &eq];
+type bytes = [mut i8];
+
+type buffer = { pos: mut i32, dat: mut &bytes };
+
+// Ensure the buffer has room for [$extra] more bytes, growing (and
+// copying) its backing array if needed -- so the formatted message is not
+// truncated at a fixed size, matching the unbounded JS runtime.
+fn ensure_capacity(buf: &buffer, extra: i32) {
+    let pos = buf.pos;
+    let dat = buf.dat;
+    let cap = dat.length();
+    let need = pos + extra;
+    if need >u cap {
+        let newcap = cap << 1;
+        if newcap <u need {
+            newcap = need;
+        }
+        let new: &bytes = [0; newcap];
+        new.copy(0, dat, 0, pos);
+        buf.dat = new;
+    }
+}
+
+fn add_char(buf: &buffer, c: i32) {
+    ensure_capacity(buf, 1);
+    let pos = buf.pos;
+    buf.dat[pos] = c;
+    buf.pos = pos + 1;
+}
+
+fn add_string(buf: &buffer, v: &eq) {
+    let s = v as &bytes;
+    let len = s.length();
+    ensure_capacity(buf, len);
+    let pos = buf.pos;
+    buf.dat.copy(pos, s, 0, len);
+    buf.pos = pos + len;
+}
+
+#[export]
+fn caml_format_exception(vexn: &eq) -> &eq {
+    let exn = vexn as &block;
+    if exn[0] == 0 as &i31 {
+        let buf = { pos: 0, dat: [0; 256] };
+        add_string(buf, (exn[1] as &block)[1]);
+        let v: &eq;
+        let bucket: &block;
+        let i: i32;
+        bucket =
+            'continue: do {
+                'default: do {
+                    br_if 'default exn.length() != 3;
+                    br_if 'default !caml_is_special_exception(exn[1]);
+                    v = exn[2];
+                    br_if 'default !(v is &block);
+                    bucket = v as &block;
+                    br_if 'default bucket[0] != 0 as &i31;
+                    i = 1;
+                    br 'continue bucket;
+                }
+                i = 2;
+                exn;
+            };
+        let len = bucket.length();
+        if i <u len {
+            add_char(buf, '(');
+            'loop: loop {
+                v = bucket[i];
+                if v is &i31 {
+                    add_string(buf, caml_format_int("%d", v as &i31));
+                } else {
+                    if v is &bytes {
+                        add_char(buf, '\"');
+                        add_string(buf, v);
+                        add_char(buf, '\"');
+                    } else {
+                        add_char(buf, '_');
+                    }
+                }
+                i += 1;
+                if i <u len {
+                    add_char(buf, ',');
+                    add_char(buf, ' ');
+                    br 'loop;
+                }
+            }
+            add_char(buf, ')');
+        }
+        let s: &bytes = [0; buf.pos];
+        s.copy(0, buf.dat, 0, buf.pos);
+        s;
+    } else {
+        exn[1];
+    }
+}

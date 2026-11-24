@@ -1,0 +1,131 @@
+// Wasm_of_ocaml runtime support
+// http://www.ocsigen.org/js_of_ocaml/
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, with linking exception;
+// either version 2.1 of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+
+import "fail" fn caml_failwith(&eq);
+import "custom" {
+    fn custom_compare_id(&eq, &eq, i32) -> i32;
+    fn custom_hash_id(&eq) -> i32;
+    fn custom_next_id() -> i64;
+}
+
+type bytes = [mut i8];
+type compare = fn(&eq, &eq, i32) -> i32;
+type hash = fn(&eq) -> i32;
+type fixed_length = { bsize_32: i32, bsize_64: i32 };
+type serialize = fn(&eq, &eq) -> (i32, i32);
+type deserialize = fn(&eq) -> (&eq, i32);
+type dup = fn(&eq) -> &eq;
+type custom_operations = {
+    id: &bytes,
+    compare: &?compare,
+    compare_ext: &?compare,
+    hash: &?hash,
+    fixed_length: &?fixed_length,
+    serialize: &?serialize,
+    deserialize: &?deserialize,
+    dup: &?dup
+};
+type custom = open { ops: &custom_operations };
+type custom_with_id: custom = open { .., id: i64 };
+
+const mutex_ops =
+    {
+        id: "_mutex",
+        compare: custom_compare_id,
+        compare_ext: null,
+        hash: custom_hash_id,
+        fixed_length: null,
+        serialize: null,
+        deserialize: null,
+        dup: null,
+    };
+
+type mutex: custom_with_id = { .., state: mut i32 };
+
+#[export]
+fn caml_ml_mutex_new(&eq) -> &eq {
+    { ops: mutex_ops, id: custom_next_id(), state: 0 };
+}
+
+const lock_failure = "Mutex.lock: mutex already locked. Cannot wait.";
+
+#[export]
+fn caml_ml_mutex_lock(vt: &eq) -> &eq {
+    let t = vt as &mutex;
+    if t.state {
+        caml_failwith(lock_failure);
+    }
+    t.state = 1;
+    0 as &i31;
+}
+
+#[export]
+fn caml_ml_mutex_try_lock(vt: &eq) -> &eq {
+    let t = vt as &mutex;
+    if t.state {
+        0 as &i31;
+    } else {
+        t.state = 1;
+        1 as &i31;
+    }
+}
+
+#[export]
+fn caml_ml_mutex_unlock(vt: &eq) -> &eq {
+    (vt as &mutex).state = 0;
+    0 as &i31;
+}
+
+const condition_ops =
+    {
+        id: "_condition",
+        compare: custom_compare_id,
+        compare_ext: null,
+        hash: custom_hash_id,
+        fixed_length: null,
+        serialize: null,
+        deserialize: null,
+        dup: null,
+    };
+
+type condition: custom_with_id = { .. };
+
+#[export]
+fn caml_ml_condition_new(&eq) -> &eq {
+    // Each condition variable gets a distinct identity, like the JS runtime
+    // (which allocates a fresh object). The previous immediate 0 made all
+    // condition variables physically equal.
+    {condition| ops: condition_ops, id: custom_next_id() };
+}
+
+#[export]
+fn caml_ml_condition_wait(&eq, &eq) -> &eq {
+    // A no-op, like the JS runtime: single-threaded, there is nothing to
+    // wait for. The two runtimes must agree (the JS one returns 0 rather
+    // than raising).
+    0 as &i31;
+}
+
+#[export]
+fn caml_ml_condition_signal(&eq) -> &eq {
+    0 as &i31;
+}
+
+#[export]
+fn caml_ml_condition_broadcast(&eq) -> &eq {
+    0 as &i31;
+}

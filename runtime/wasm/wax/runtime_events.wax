@@ -1,0 +1,87 @@
+// Wasm_of_ocaml runtime support
+// http://www.ocsigen.org/js_of_ocaml/
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, with linking exception;
+// either version 2.1 of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+
+type block = [mut &eq];
+
+let caml_custom_event_index = 0;
+
+#[export]
+fn caml_runtime_events_user_register(evname: &eq, evtag: &eq, evtype: &eq) -> &eq {
+    caml_custom_event_index += 1;
+    // The record is { id; name; typ; tag } -- typ comes before tag.
+    [block|0 as &i31, caml_custom_event_index as &i31, evname, evtype, evtag];
+}
+
+#[if(ocaml_version >= (5, 2, 0))]
+{
+    #[export]
+    fn caml_runtime_events_user_write(&eq, &eq, &eq) -> &eq {
+        0 as &i31;
+    }
+}
+#[else]
+{
+    #[export]
+    fn caml_runtime_events_user_write(&eq, &eq) -> &eq {
+        0 as &i31;
+    }
+}
+
+#[export]
+fn caml_runtime_events_user_resolve(&eq, &eq, &eq) -> &eq {
+    0 as &i31;
+}
+
+#[export]
+fn caml_ml_runtime_events_start(&eq) -> &eq {
+    0 as &i31;
+}
+
+#[export]
+fn caml_ml_runtime_events_pause(&eq) -> &eq {
+    0 as &i31;
+}
+
+#[export]
+fn caml_ml_runtime_events_resume(&eq) -> &eq {
+    0 as &i31;
+}
+
+#[export]
+fn caml_ml_runtime_events_are_active(&eq) -> &eq {
+    0 as &i31;
+}
+
+#[export]
+fn caml_ml_runtime_events_create_cursor(&eq) -> &eq {
+    0 as &i31;
+}
+
+#[export]
+fn caml_ml_runtime_events_free_cursor(&eq) -> &eq {
+    0 as &i31;
+}
+
+#[export]
+fn caml_ml_runtime_events_read_poll(&eq, &eq, &eq) -> &eq {
+    0 as &i31;
+}
+
+#[export]
+fn caml_ml_runtime_events_path(&eq) -> &eq {
+    0 as &i31;
+}

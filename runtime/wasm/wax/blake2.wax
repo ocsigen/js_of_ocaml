@@ -1,0 +1,166 @@
+// Wasm_of_ocaml runtime support
+// http://www.ocsigen.org/js_of_ocaml/
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, with linking exception;
+// either version 2.1 of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+
+#[if(ocaml_version >= (5, 2, 0))]
+{
+    // The buffers and algorithm primitives come from the single C module that
+    // owns the linear memory: c-impl.wasm ("c") for the non-wasi runtime, the
+    // combined libc.wasm ("libc") for wasi.
+    #[if(wasi)]
+    {
+        import "libc" {
+            #[import = "memory"]
+            memory mem: i32 [1];
+            #[import = "blake2_state_buf"]
+            fn state_buf() -> i32;
+            #[import = "blake2_key_buf"]
+            fn key_buf() -> i32;
+            #[import = "blake2_out_buf"]
+            fn out_buf() -> i32;
+            #[import = "blake2_chunk_buf"]
+            fn chunk_buf() -> i32;
+            #[import = "blake2_chunk_buf_size"]
+            fn chunk_buf_size() -> i32;
+            fn blake2_init(i32, i32);
+            fn blake2_update(i32);
+            fn blake2_finalize(i32);
+        }
+    }
+    #[else]
+    {
+        import "c" {
+            #[import = "memory"]
+            memory mem: i32 [1];
+            #[import = "blake2_state_buf"]
+            fn state_buf() -> i32;
+            #[import = "blake2_key_buf"]
+            fn key_buf() -> i32;
+            #[import = "blake2_out_buf"]
+            fn out_buf() -> i32;
+            #[import = "blake2_chunk_buf"]
+            fn chunk_buf() -> i32;
+            #[import = "blake2_chunk_buf_size"]
+            fn chunk_buf_size() -> i32;
+            fn blake2_init(i32, i32);
+            fn blake2_update(i32);
+            fn blake2_finalize(i32);
+        }
+    }
+
+    type bytes = [mut i8];
+
+    // Must match BLAKE2_STATE_SIZE in blake2_wrap.c.  A _Static_assert there
+    // rejects shrinking blake2b_state past this value at C compile time.
+    const blake2_state_size = 248;
+
+    // BLAKE2B_KEYBYTES: the width of $key_buf and the maximum key length.
+    const blake2_key_size = 64;
+
+    // Blit a slice of a GC byte array into linear memory.
+    fn bytes_to_mem(src: &bytes, src_ofs: i32, dst: i32, len: i32) {
+        'done: do {
+            let i: i32;
+            'cont: loop {
+                br_if 'done i == len;
+                mem.store8(dst + i, src[src_ofs + i] as i32_u);
+                i += 1;
+                br 'cont;
+            }
+        }
+    }
+
+    // Blit a slice of linear memory into a GC byte array.
+    fn mem_to_bytes(src: i32, dst: &bytes, dst_ofs: i32, len: i32) {
+        'done: do {
+            let i: i32;
+            'cont: loop {
+                br_if 'done i == len;
+                dst[dst_ofs + i] = mem.load8(src + i) as i32_u;
+                i += 1;
+                br 'cont;
+            }
+        }
+    }
+
+    // Allocate a fresh state byte array and run blake2_init into it.
+    fn do_create(hashlen: i32, key: &bytes) -> &bytes {
+        let state: &bytes = [0; blake2_state_size];
+        // BLAKE2b keys are at most BLAKE2B_KEYBYTES (64), the width of $key_buf.
+        // Truncate a longer key to its 64-byte prefix (matching the JS runtime)
+        // so the blit and blake2_init stay in bounds.
+        let keylen = key.length();
+        if keylen >u blake2_key_size {
+            keylen = blake2_key_size;
+        }
+        bytes_to_mem(key, 0, key_buf(), keylen);
+        blake2_init(hashlen, keylen);
+        mem_to_bytes(state_buf(), state, 0, blake2_state_size);
+        state;
+    }
+
+    // Feed input through the fixed-size chunk buffer.
+    fn do_update(state: &bytes, buf: &bytes, ofs: i32, len: i32) {
+        bytes_to_mem(state, 0, state_buf(), blake2_state_size);
+        let chunk_max = chunk_buf_size();
+        'done: do {
+            'cont: loop {
+                br_if 'done !len;
+                let chunk = len >u chunk_max?chunk_max:len;
+                bytes_to_mem(buf, ofs, chunk_buf(), chunk);
+                blake2_update(chunk);
+                ofs += chunk;
+                len -= chunk;
+                br 'cont;
+            }
+        }
+        mem_to_bytes(state_buf(), state, 0, blake2_state_size);
+    }
+
+    // Run blake2_finalize and copy the digest into a fresh byte array.
+    fn do_final(state: &bytes, hashlen: i32) -> &bytes {
+        bytes_to_mem(state, 0, state_buf(), blake2_state_size);
+        blake2_finalize(hashlen);
+        let output: &bytes = [0; hashlen];
+        mem_to_bytes(out_buf(), output, 0, hashlen);
+        output;
+    }
+
+    #[export]
+    fn caml_blake2_create(hashlen: &eq, key: &eq) -> &eq {
+        do_create(hashlen as i32_u, key as &bytes);
+    }
+
+    #[export]
+    fn caml_blake2_update(ctx: &eq, buf: &eq, ofs: &eq, len: &eq) -> &eq {
+        do_update(ctx as &bytes, buf as &bytes, ofs as i32_u, len as i32_u);
+        0 as &i31;
+    }
+
+    #[export]
+    fn caml_blake2_final(ctx: &eq, hashlen: &eq) -> &eq {
+        do_final(ctx as &bytes, hashlen as i32_u);
+    }
+
+    #[export]
+    #[export = "caml_blake2_bytes"]
+    fn caml_blake2_string(hashlen: &eq, key: &eq, buf: &eq, ofs: &eq, len: &eq) -> &eq {
+        let hl = hashlen as i32_u;
+        let state = do_create(hl, key as &bytes);
+        do_update(state, buf as &bytes, ofs as i32_u, len as i32_u);
+        do_final(state, hl);
+    }
+}

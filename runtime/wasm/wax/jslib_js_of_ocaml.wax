@@ -1,0 +1,56 @@
+// Wasm_of_ocaml runtime support
+// http://www.ocsigen.org/js_of_ocaml/
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, with linking exception;
+// either version 2.1 of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+
+#[if(not(wasi))]
+{
+    import "jslib" {
+        fn value_of_js(&?extern) -> &eq;
+        fn js_of_value(&eq) -> &?extern;
+        fn caml_js_global(&eq) -> &eq;
+        fn caml_js_get(&eq, &eq) -> &eq;
+        fn caml_js_new(&eq, &eq) -> &eq;
+        fn caml_js_from_array(&eq) -> &eq;
+    }
+    import "js"
+    #[import = "caml_js_html_entities"]
+    fn caml_js_html_entities_js(&?extern) -> &?extern;
+
+    type block = [mut &eq];
+    type bytes = [mut i8];
+
+    #[export]
+    fn caml_js_html_entities(v: &eq) -> &eq {
+        become value_of_js(caml_js_html_entities_js(js_of_value(v)));
+    }
+
+    const console = "console";
+
+    #[export]
+    fn caml_js_get_console(&eq) -> &eq {
+        become caml_js_get(caml_js_global(0 as &i31), console);
+    }
+
+    const XMLHttpRequest = "XMLHttpRequest";
+
+    #[export]
+    fn caml_xmlhttprequest_create(&eq) -> &eq {
+        become caml_js_new(
+            caml_js_get(caml_js_global(0 as &i31), XMLHttpRequest),
+            [block|0 as &i31],
+        );
+    }
+}

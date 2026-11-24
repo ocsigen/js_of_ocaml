@@ -1,0 +1,504 @@
+// Wasm_of_ocaml runtime support
+// http://www.ocsigen.org/js_of_ocaml/
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, with linking exception;
+// either version 2.1 of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+
+import "bindings" fn equals(&?extern, &?extern) -> i32;
+import "obj" {
+    const forward_tag: i32;
+    const object_tag: i32;
+    fn caml_obj_tag(&eq) -> &eq;
+    fn caml_is_closure(&eq) -> i32;
+    #[import = "null"]
+    const null_value: &eq;
+}
+import "fail" fn caml_invalid_argument(&eq);
+import "effect" fn caml_is_continuation(&eq) -> i32;
+import "string" fn caml_string_compare(&eq, &eq) -> &eq;
+import "jsstring" {
+    fn jsstring_test(&?extern) -> i32;
+    fn jsstring_compare(&?extern, &?extern) -> i32;
+}
+
+type block = [mut &eq];
+type bytes = [mut i8];
+type float = { f: f64 };
+type float_array = [mut f64];
+type js = { js: &?extern };
+
+type compare = fn(&eq, &eq, i32) -> i32;
+type hash = fn(&eq) -> i32;
+type fixed_length = { bsize_32: i32, bsize_64: i32 };
+type serialize = fn(&eq, &eq) -> (i32, i32);
+type deserialize = fn(&eq) -> (&eq, i32);
+type dup = fn(&eq) -> &eq;
+type custom_operations = {
+    id: &bytes,
+    compare: &?compare,
+    compare_ext: &?compare,
+    hash: &?hash,
+    fixed_length: &?fixed_length,
+    serialize: &?serialize,
+    deserialize: &?deserialize,
+    dup: &?dup
+};
+type custom = open { ops: &custom_operations };
+
+// Compare stack: pairs of blocks whose fields remain to be compared.
+// The top of the stack is kept in local variables, so that comparing
+// flat blocks (tuples, records, list cells) does not need any memory.
+// The other entries are stored as triples (first block, second block,
+// index of the next field) in a single array. This array is allocated
+// by each comparison, the first time an entry has to be stored, rather
+// than being a global: stores into a young object are cheap (no
+// generational write barrier slow path), and a dead stack cannot cause
+// a memory leak, so it does not need to be cleared. This also makes
+// comparison reentrant (a custom comparison function can call compare).
+const empty_stack: &block = [];
+
+#[export]
+const unordered = 0x80000000;
+
+fn compare_bytes(s1: &bytes, s2: &bytes) -> i32 {
+    if s1 == s2 {
+        return 0;
+    }
+    let l1 = s1.length();
+    let l2 = s2.length();
+    let len = l1 <=u l2?l1:l2;
+    let i = 0;
+    while i <s len : (i += 1) {
+        let c1 = s1[i] as i32_u;
+        let c2 = s2[i] as i32_u;
+        if c1 != c2 {
+            if c1 <=u c2 {
+                return -1;
+            } else {
+                return 1;
+            }
+        }
+    }
+    l1 - l2;
+}
+
+fn compare_val(v1: &eq, v2: &eq, total: i32) -> i32 {
+    do_compare_val(v1, v2, total);
+}
+
+const abstract_value = "compare: abstract value";
+const functional_value = "compare: functional value";
+const continuation_value = "compare: continuation value";
+
+fn do_compare_val(v1: &eq, v2: &eq, total: i32) -> i32 {
+    // the top of the stack is kept in local variables: the two blocks,
+    // the index of the next field and the block size (0 if no top)
+    // the rest of the stack, and its size
+    let cur1 = empty_stack;
+    let cur2 = empty_stack;
+    let cur_len = 0;
+    let stack = empty_stack;
+    let sp = 0;
+    let cur_pos: i32;
+    'loop: loop {
+        'next_item: do {
+            if total {
+                br_if 'next_item v1 == v2;
+            }
+            if v1 == null_value {
+                if v2 == null_value {
+                    return 0;
+                } else {
+                    return -1;
+                }
+            }
+            if v2 == null_value {
+                return 1;
+            }
+            let b2: &block;
+            let t2: i32;
+            let c2: &custom;
+            let res: i32;
+            match v1 {
+                i1: &i31 => {
+                    br_if 'next_item v1 == v2;
+                    match v2 {
+                        i2: &i31 => {
+                            // v1 and v2 are both integers
+                            return i1 as i32_s - i2 as i32_s;
+                        }
+                        _ => {
+                            // check for forward tag
+                            _ =
+                                'v2_not_forward: do {
+                                    b2 = br_on_cast_fail 'v2_not_forward &block v2;
+                                    t2 = b2[0] as i32_u;
+                                    if t2 == forward_tag {
+                                        v2 = b2[1];
+                                        br 'loop;
+                                    }
+                                    1 as &i31;
+                                };
+                            'v2_not_comparable: do {
+                                _ =
+                                    'v2_not_custom: do {
+                                        c2 = br_on_cast_fail 'v2_not_custom &custom v2;
+                                        res =
+                                            (br_on_null 'v2_not_comparable c2.ops.compare_ext)(
+                                                v1,
+                                                v2,
+                                                total,
+                                            );
+                                        br_if 'next_item !res;
+                                        return res;
+                                    };
+                            }
+                            // v1 long < v2 block
+                            return -1;
+                        }
+                    }
+                }
+                _ => {
+                    let b1: &block;
+                    let t1: i32;
+                    let c1: &custom;
+                    if v2 is &i31 {
+                        // check for forward tag
+                        _ =
+                            'v1_not_forward: do {
+                                b1 = br_on_cast_fail 'v1_not_forward &block v1;
+                                t1 = b1[0] as i32_u;
+                                if t1 == forward_tag {
+                                    v1 = b1[1];
+                                    br 'loop;
+                                }
+                                1 as &i31;
+                            };
+                        'v1_not_comparable: do {
+                            _ =
+                                'v1_not_custom: do {
+                                    c1 = br_on_cast_fail 'v1_not_custom &custom v1;
+                                    res =
+                                        (br_on_null 'v1_not_comparable c1.ops.compare_ext)(
+                                            v1,
+                                            v2,
+                                            total,
+                                        );
+                                    br_if 'next_item !res;
+                                    return res;
+                                };
+                        }
+                        // v1 block > v1 long
+                        return 1;
+                    }
+                    _ =
+                        'heterogeneous: do &eq {
+                            let s1: i32;
+                            let s2: i32;
+                            _ =
+                                'v1_not_block: do {
+                                    b1 = br_on_cast_fail 'v1_not_block &block v1;
+                                    t1 = b1[0] as i32_u;
+                                    b2 = br_on_cast_fail 'heterogeneous &block v2;
+                                    t2 = b2[0] as i32_u;
+                                    _ = br_if 'heterogeneous (0 as &i31, t1 != t2);
+                                    // forward tag
+                                    if t1 == forward_tag {
+                                        v1 = b1[1];
+                                        v2 = b2[1];
+                                        br 'loop;
+                                    }
+                                    if t1 == object_tag {
+                                        v1 = b1[2];
+                                        v2 = b2[2];
+                                        br_if 'next_item v1 == v2;
+                                        return v1 as i32_s - v2 as i32_s;
+                                    }
+                                    s1 = b1.length();
+                                    s2 = b2.length();
+                                    // compare size first
+                                    if s1 != s2 {
+                                        return s1 - s2;
+                                    }
+                                    br_if 'next_item s1 == 1;
+                                    if s1 >u 2 {
+                                        // push the blocks, to compare the remaining fields
+                                        if cur_len {
+                                            // spill the current top of the stack
+                                            if sp == stack.length() {
+                                                if sp {
+                                                    // the stack is full: double its
+                                                    // size
+                                                    let new_stack: &block = [0 as &i31; sp << 1];
+                                                    new_stack.copy(0, stack, 0, sp);
+                                                    stack = new_stack;
+                                                } else {
+                                                    // first use: allocate the stack
+                                                    // (room for two entries)
+                                                    stack = [0 as &i31; 6];
+                                                }
+                                            }
+                                            stack[sp] = cur1;
+                                            stack[sp + 1] = cur2;
+                                            stack[sp + 2] = cur_pos as &i31;
+                                            sp += 3;
+                                        }
+                                        cur1 = b1;
+                                        cur2 = b2;
+                                        cur_pos = 2;
+                                        cur_len = s1;
+                                    }
+                                    v1 = b1[1];
+                                    v2 = b2[1];
+                                    br 'loop;
+                                };
+                            let f1: f64;
+                            let f2: f64;
+                            match v1 {
+                                fl1: &float => {
+                                    f1 = fl1.f;
+                                    f2 = (br_on_cast_fail 'heterogeneous &float v2).f;
+                                    if f1 < f2 {
+                                        return -1;
+                                    }
+                                    if f1 > f2 {
+                                        return 1;
+                                    }
+                                    if f1 != f2 {
+                                        if !total {
+                                            return unordered;
+                                        }
+                                        if f1 == f1 {
+                                            return 1;
+                                        }
+                                        if f2 == f2 {
+                                            return -1;
+                                        }
+                                    }
+                                    br 'next_item;
+                                }
+                                str1: &bytes => {
+                                    let str2 = br_on_cast_fail 'heterogeneous &bytes v2;
+                                    res = compare_bytes(str1, str2);
+                                    br_if 'next_item !res;
+                                    return res;
+                                }
+                                fa1: &float_array => {
+                                    let fa2 = br_on_cast_fail 'heterogeneous &float_array v2;
+                                    s1 = fa1.length();
+                                    s2 = fa2.length();
+                                    if s1 != s2 {
+                                        return s1 - s2;
+                                    }
+                                    let i = 0;
+                                    while i <s s1 : (i += 1) {
+                                        f1 = fa1[i];
+                                        f2 = fa2[i];
+                                        if f1 < f2 {
+                                            return -1;
+                                        }
+                                        if f1 > f2 {
+                                            return 1;
+                                        }
+                                        if f1 != f2 {
+                                            if !total {
+                                                return unordered;
+                                            }
+                                            if f1 == f1 {
+                                                return 1;
+                                            }
+                                            if f2 == f2 {
+                                                return -1;
+                                            }
+                                        }
+                                    }
+                                    br 'next_item;
+                                }
+                                _ => {
+                                    _ =
+                                        'v1_not_custom: do {
+                                            c1 = br_on_cast_fail 'v1_not_custom &custom v1;
+                                            c2 = br_on_cast_fail 'heterogeneous &custom v2;
+                                            if c1.ops != c2.ops {
+                                                return
+                                                    caml_string_compare(c1.ops.id, c2.ops.id)
+                                                        as i32_s;
+                                            }
+                                            'not_comparable: do {
+                                                res =
+                                                    (br_on_null 'not_comparable c1.ops.compare)(
+                                                        v1,
+                                                        v2,
+                                                        total,
+                                                    );
+                                                br_if 'next_item !res;
+                                                return res;
+                                            }
+                                            caml_invalid_argument(abstract_value);
+                                            0 as &i31;
+                                        };
+                                    let jsv: &js;
+                                    let js1: &?extern;
+                                    let js2: &?extern;
+                                    #[if(not(wasi))]
+                                    {
+                                        _ =
+                                            'v1_not_js: do {
+                                                jsv = br_on_cast_fail 'v1_not_js &js v1;
+                                                js1 = jsv.js;
+                                                js2 = (br_on_cast_fail 'heterogeneous &js v2).js;
+                                                'not_jsstring: do {
+                                                    br_if 'not_jsstring !jsstring_test(js1);
+                                                    br_if 'not_jsstring !jsstring_test(js2);
+                                                    res = jsstring_compare(js1, js2);
+                                                    br_if 'next_item !res;
+                                                    return res;
+                                                }
+                                                // We cannot order two JavaScript objects,
+                                                // but we can tell whether they are equal or not
+                                                if !total {
+                                                    br_if 'next_item equals(js1, js2);
+                                                    return unordered;
+                                                }
+                                                br 'heterogeneous 0 as &i31;
+                                            };
+                                    }
+                                    if caml_is_closure(v1) {
+                                        _ = br_if 'heterogeneous (0 as &i31, !caml_is_closure(v2));
+                                        caml_invalid_argument(functional_value);
+                                    }
+                                    if caml_is_continuation(v1) {
+                                        _ =
+                                            br_if 'heterogeneous
+                                                (0 as &i31, !caml_is_continuation(v2));
+                                        caml_invalid_argument(continuation_value);
+                                    }
+                                    0 as &i31;
+                                }
+                            }
+                        }; // fall through
+                    // heterogeneous comparison
+                    t1 = caml_obj_tag(v1) as i32_u;
+                    t2 = caml_obj_tag(v2) as i32_u;
+                    if t1 == forward_tag {
+                        v1 = (v1 as &block)[1];
+                        br 'loop;
+                    }
+                    if t2 == forward_tag {
+                        v2 = (v2 as &block)[1];
+                        br 'loop;
+                    }
+                    res = t1 - t2;
+                    if !res {
+                        caml_invalid_argument(abstract_value);
+                    }
+                    return res;
+                }
+            }
+        }
+        // compare the next fields of the blocks at the top of the stack
+        if !cur_len {
+            if !sp {
+                return 0;
+            }
+            sp -= 3;
+            cur1 = stack[sp] as &block;
+            cur2 = stack[sp + 1] as &block;
+            cur_pos = stack[sp + 2] as i32_u;
+            cur_len = cur1.length();
+        }
+        v1 = cur1[cur_pos];
+        v2 = cur2[cur_pos];
+        cur_pos += 1;
+        if cur_pos == cur_len {
+            cur_len = 0;
+        }
+        br 'loop;
+    }
+    unreachable;
+}
+
+#[export]
+fn caml_compare(v1: &eq, v2: &eq) -> i32 {
+    let res = compare_val(v1, v2, 1);
+    if res <s 0 {
+        return -1;
+    }
+    if res >s 0 {
+        return 1;
+    }
+    0;
+}
+
+#[export]
+fn caml_equal(v1: &eq, v2: &eq) -> i32 {
+    if v1 is &i31 {
+        if v2 is &i31 {
+            return v1 as i32_s == v2 as i32_s;
+        }
+    }
+    !compare_val(v1, v2, 0);
+}
+
+#[export]
+fn caml_notequal(v1: &eq, v2: &eq) -> i32 {
+    if v1 is &i31 {
+        if v2 is &i31 {
+            return v1 as i32_s != v2 as i32_s;
+        }
+    }
+    0 != compare_val(v1, v2, 0);
+}
+
+#[export]
+fn caml_lessthan(v1: &eq, v2: &eq) -> i32 {
+    if v1 is &i31 {
+        if v2 is &i31 {
+            return v1 as i32_s <s v2 as i32_s;
+        }
+    }
+    let res = compare_val(v1, v2, 0);
+    (res <s 0) & (res != unordered);
+}
+
+#[export]
+fn caml_lessequal(v1: &eq, v2: &eq) -> i32 {
+    if v1 is &i31 {
+        if v2 is &i31 {
+            return v1 as i32_s <=s v2 as i32_s;
+        }
+    }
+    let res = compare_val(v1, v2, 0);
+    (res <=s 0) & (res != unordered);
+}
+
+#[export]
+fn caml_greaterthan(v1: &eq, v2: &eq) -> i32 {
+    if v1 is &i31 {
+        if v2 is &i31 {
+            return v1 as i32_s >s v2 as i32_s;
+        }
+    }
+    0 <s compare_val(v1, v2, 0);
+}
+
+#[export]
+fn caml_greaterequal(v1: &eq, v2: &eq) -> i32 {
+    if v1 is &i31 {
+        if v2 is &i31 {
+            return v1 as i32_s >=s v2 as i32_s;
+        }
+    }
+    0 <=s compare_val(v1, v2, 0);
+}

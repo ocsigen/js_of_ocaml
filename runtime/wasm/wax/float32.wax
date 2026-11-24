@@ -1,0 +1,450 @@
+import "marshal" {
+    fn caml_serialize_int_4(&eq, i32);
+    fn caml_deserialize_int_4(&eq) -> i32;
+}
+import "float" {
+    fn caml_parse_float(&eq, &eq) -> &eq;
+    fn caml_format_float(&eq, &eq) -> &eq;
+}
+#[if(wasi)]
+{
+    import "libc" fn strtof(i32, i32) -> f32;
+    import "io" const IO_BUFFER_SIZE: i32;
+    import "wasi_memory" {
+        fn get_buffer() -> i32;
+        fn write_string_to_memory(i32, i32, &eq) -> i32;
+        fn release_memory(i32, i32);
+    }
+}
+#[else]
+{
+    import "bindings" fn float32_exact_compare(&?extern, f64) -> i32;
+    import "jsstring" fn jsstring_of_bytes(&bytes) -> &?extern;
+}
+import "float" {
+    fn caml_erf_float(f64) -> f64;
+    fn caml_erfc_float(f64) -> f64;
+    fn caml_frexp_float(&eq) -> &eq;
+    fn caml_ldexp_float(f64, i32) -> f64;
+}
+import "bigarray" {
+    fn caml_ba_uint8_get32(&eq, i32) -> i32;
+    fn caml_ba_uint8_get32u(&eq, i32) -> i32;
+    fn caml_ba_uint8_set32(&eq, i32, i32) -> &eq;
+    fn caml_ba_uint8_set32u(&eq, i32, i32) -> &eq;
+}
+import "string" {
+    fn caml_string_get32(&eq, i32) -> i32;
+    fn caml_string_get32u(&eq, i32) -> i32;
+    fn caml_bytes_get32(&eq, i32) -> i32;
+    fn caml_bytes_get32u(&eq, i32) -> i32;
+    fn caml_bytes_set32(&eq, i32, i32) -> &eq;
+    fn caml_bytes_set32u(&eq, i32, i32) -> &eq;
+}
+
+type float = { f: f64 };
+
+fn box_float(f: f64) -> &eq {
+    { f };
+}
+
+fn unbox_float(f: &eq) -> f64 {
+    (f as &float).f;
+}
+
+type block = [mut &eq];
+type bytes = [mut i8];
+type compare = fn(&eq, &eq, i32) -> i32;
+type hash = fn(&eq) -> i32;
+type fixed_length = { bsize_32: i32, bsize_64: i32 };
+type serialize = fn(&eq, &eq) -> (i32, i32);
+type deserialize = fn(&eq) -> (&eq, i32);
+type dup = fn(&eq) -> &eq;
+type custom_operations = {
+    id: &bytes,
+    compare: &?compare,
+    compare_ext: &?compare,
+    hash: &?hash,
+    fixed_length: &?fixed_length,
+    serialize: &?serialize,
+    deserialize: &?deserialize,
+    dup: &?dup
+};
+type custom = open { ops: &custom_operations };
+
+#[export]
+const float32_ops =
+    {
+        id: "_f32",
+        compare: float32_cmp,
+        compare_ext: null,
+        hash: float32_hash,
+        fixed_length: { bsize_32: 4, bsize_64: 4 },
+        serialize: float32_serialize,
+        deserialize: float32_deserialize,
+        dup: float32_dup,
+    };
+
+type float32: custom = { .., f32: f32 };
+
+fn box_float32(f32: f32) -> &eq {
+    { ops: float32_ops, f32 };
+}
+
+fn unbox_float32(f: &eq) -> f32 {
+    (f as &float32).f32;
+}
+
+fn float32_cmp(v1: &eq, v2: &eq, i32) -> i32 {
+    let x = unbox_float32(v1);
+    let y = unbox_float32(v2);
+    (x > y) - (x < y) + ((x == x) - (y == y));
+}
+
+fn float32_hash(v: &eq) -> i32 {
+    let i = unbox_float32(v).to_bits();
+    // Normalize NaNs and negative zero so that equal float32 values hash
+    // identically, like caml_hash_mix_float.
+    if (i & 0x7F800000) == 0x7F800000 {
+        if (i & 0x7FFFFF) != 0 {
+            i = 0x7F800001;
+        }
+    }
+    if i == 0x80000000 {
+        i = 0;
+    }
+    i;
+}
+
+fn float32_serialize(s: &eq, v: &eq) -> (i32, i32) {
+    caml_serialize_int_4(s, unbox_float32(v).to_bits());
+    4;
+    4;
+}
+
+fn float32_deserialize(s: &eq) -> (&eq, i32) {
+    box_float32(caml_deserialize_int_4(s).from_bits());
+    4;
+}
+
+fn float32_dup(v: &eq) -> &eq {
+    let d = v as &float32;
+    { ops: d.ops, f32: d.f32 };
+}
+
+fn caml_float_of_float32(f32: &eq) -> &eq {
+    box_float(unbox_float32(f32) as f64);
+}
+
+fn caml_float32_of_float(f64: &eq) -> &eq {
+    box_float32(unbox_float(f64) as f32);
+}
+
+#[export]
+fn caml_round_float32_bytecode(x: f32) -> f32 {
+    let y: f32;
+    if x >= 0 {
+        y = x.floor();
+        if x - y >= 0.5 {
+            y + 1;
+        } else {
+            y;
+        }
+    } else {
+        y = x.ceil();
+        if y - x >= 0.5 {
+            y - 1;
+        } else {
+            y;
+        }
+    }
+}
+
+const float32_of_string = "float32_of_string";
+
+#[if(wasi)]
+{
+    // strtof on the absolute value of the literal (without its leading
+    // whitespace, its sign and its underscores): wasi-libc's strtof returns
+    // +0 for some negative values that round to the smallest subnormal or
+    // to zero
+    fn strtof_bytes(s: &bytes) -> f32 {
+        let len = s.length();
+        let t: &bytes = [0; len];
+        let i: i32;
+        let j: i32;
+        while i <u len : (i += 1) {
+            let c = s[i] as i32_u;
+            if (c != '_') & ((j != 0) | !((c == '-') | (c == '+') | ((c == ' ') | (c - 9 <u 5)))) {
+                t[j] = c;
+                j += 1;
+            }
+        }
+        s = [0; j];
+        s.copy(0, t, 0, j);
+        let buffer = get_buffer();
+        let buf = write_string_to_memory(buffer + 4, IO_BUFFER_SIZE, s);
+        let f = strtof(buf, buffer);
+        release_memory(buffer + 4, buf);
+        f;
+    }
+}
+
+#[export]
+fn caml_float32_of_string(s: &eq) -> &eq {
+    let d = unbox_float(caml_parse_float(float32_of_string, s));
+    let f = d as f32;
+    if (f as f64 == d) | (d != d) {
+        return box_float32(f);
+    }
+    // Rounding the literal to the double d may have moved it to the
+    // midpoint between two float32 values; rounding d to a float32 then
+    // picks the even one, which is wrong if the literal is on the other
+    // side of the midpoint. In that case, look at the literal again.
+    let a = d.abs();
+    let lo: f32;
+    let hi: f32;
+    if f.abs() as f64 > a {
+        hi = f.abs();
+        lo = (hi.to_bits() - 1).from_bits();
+    } else {
+        lo = f.abs();
+        hi = (lo.to_bits() + 1).from_bits();
+    }
+    let mid =
+        if hi == inf {
+            0x1.ffffffp127;
+        } // 2^128 - 2^103
+        else {
+            (lo as f64 + hi as f64) * 0.5;
+        };
+    if a != mid {
+        return box_float32(f);
+    }
+    let c: i32;
+    #[if(wasi)]
+    {
+        box_float32(strtof_bytes(s as &bytes).copysign(f));
+    }
+    #[else]
+    {
+        // sign of |literal| - a
+        c = float32_exact_compare(jsstring_of_bytes(s as &bytes), a);
+        if !c {
+            return box_float32(f);
+        }
+        box_float32((c >s 0?hi:lo).copysign(f));
+    }
+}
+
+#[export]
+fn caml_format_float32(s: &eq, f: &eq) -> &eq {
+    caml_format_float(s, caml_float_of_float32(f));
+}
+
+#[export]
+fn caml_float32_compare(x: f32, y: f32) -> i32 {
+    (x > y) - (x < y) + ((x == x) - (y == y));
+}
+
+#[export]
+fn caml_modf_float32(vx: &eq) -> &eq {
+    let x = unbox_float32(vx);
+    let a = x.abs();
+    let i: f32;
+    let f: f32;
+    if a >= 0 {
+        if a < inf { // normal
+            i = a.floor();
+            f = a - i;
+            i = i.copysign(x);
+            f = f.copysign(x);
+        } else { // infinity
+            i = x;
+            f = (0).copysign(x);
+        }
+    } else { // zero or nan
+        i = x;
+        f = x;
+    }
+    [block|0 as &i31, box_float32(f), box_float32(i)];
+}
+
+#[export]
+fn caml_nextafter_float32_bytecode(x: f32, y: f32) -> f32 {
+    if x != x {
+        return x;
+    }
+    if y != y {
+        return y;
+    }
+    if x == y {
+        return y;
+    }
+    if x == 0 {
+        if y >= 0 {
+            return 0x1p-149;
+        } else {
+            return -0x1p-149;
+        }
+    } else {
+        let i = x.to_bits();
+        let j = y.to_bits();
+        if (i <s j) & (i <u j) {
+            i += 1;
+        } else {
+            i -= 1;
+        }
+        return i.from_bits();
+    }
+}
+
+#[export]
+fn caml_classify_float32_bytecode(a: f32) -> i32 {
+    a = a.abs();
+    if a >= 0x1p-126 {
+        if a < inf {
+            0;
+        } // normal
+        else {
+            3;
+        }
+    } // infinity
+    else {
+        if a == 0 {
+            2;
+        } // zero
+        else {
+            if a == a {
+                1;
+            } // subnormal
+            else {
+                4;
+            }
+        }
+    }
+} // nan
+
+#[export]
+fn caml_ldexp_float32_bytecode(x: f32, n: i32) -> f32 {
+    caml_ldexp_float(x as f64, n) as f32;
+}
+
+#[export]
+fn caml_frexp_float32(v: &eq) -> &eq {
+    let frexp = caml_frexp_float(caml_float_of_float32(v)) as &block;
+    [block|0 as &i31, caml_float32_of_float(frexp[1]), frexp[2]];
+}
+
+#[export]
+fn caml_erf_float32_bytecode(x: f32) -> f32 {
+    caml_erf_float(x as f64) as f32;
+}
+
+#[export]
+fn caml_erfc_float32_bytecode(x: f32) -> f32 {
+    caml_erfc_float(x as f64) as f32;
+}
+
+// Rounding a value to a double, then to a float32, can give a different
+// result than rounding it directly to a float32: the first rounding can
+// land exactly halfway between two float32 values. This does not happen
+// if the first rounding is to odd (the double with an odd significand
+// among the two surrounding the value, when it is not representable).
+// Given the double [s] nearest to a value and their difference [err]
+// (value - s), this returns the value rounded to odd.
+fn round_odd(s: f64, err: f64) -> f64 {
+    if (err == 0) | ((s == 0) | (s - s != 0)) // not finite
+    {
+        return s;
+    }
+    let b = s.to_bits();
+    if (b & 1) as i32 {
+        return s;
+    }
+    // move one ulp toward the value: up in magnitude iff err and s have
+    // the same sign
+    ((err > 0) == (s > 0)?b + 1:b - 1).from_bits();
+}
+
+#[export]
+fn caml_fma_float32_bytecode(x: f32, y: f32, z32: f32) -> f32 {
+    // The product of two float32 values is exact as a double; s + err is
+    // the exact value of x * y + z (TwoSum)
+    let p = x as f64 * y as f64;
+    let z = z32 as f64;
+    let s = p + z;
+    let b = s - p;
+    round_odd(s, p - (s - b) + (z - b)) as f32;
+}
+
+#[export]
+fn caml_ba_uint8_getf32(a: &eq, i: i32) -> f32 {
+    caml_ba_uint8_get32(a, i).from_bits();
+}
+
+#[export]
+fn caml_ba_uint8_getf32u(a: &eq, i: i32) -> f32 {
+    caml_ba_uint8_get32u(a, i).from_bits();
+}
+
+#[export]
+fn caml_ba_uint8_setf32(a: &eq, i: i32, v: f32) -> &eq {
+    caml_ba_uint8_set32(a, i, v.to_bits());
+}
+
+#[export]
+fn caml_ba_uint8_setf32u(a: &eq, i: i32, v: f32) -> &eq {
+    caml_ba_uint8_set32u(a, i, v.to_bits());
+}
+
+#[export]
+fn caml_string_getf32(a: &eq, i: i32) -> f32 {
+    caml_string_get32(a, i).from_bits();
+}
+
+#[export]
+fn caml_string_getf32u(a: &eq, i: i32) -> f32 {
+    caml_string_get32u(a, i).from_bits();
+}
+
+#[export]
+fn caml_bytes_getf32(a: &eq, i: i32) -> f32 {
+    caml_bytes_get32(a, i).from_bits();
+}
+
+#[export]
+fn caml_bytes_getf32u(a: &eq, i: i32) -> f32 {
+    caml_bytes_get32u(a, i).from_bits();
+}
+
+#[export]
+fn caml_bytes_setf32(a: &eq, i: i32, v: f32) -> &eq {
+    caml_bytes_set32(a, i, v.to_bits());
+}
+
+// Mirrors x86 MINSS/MAXSS: returns $y when the comparison fails
+// (NaN or equal, including ±0). Unlike f32.min/f32.max, which
+// propagate NaN and canonicalise -0 vs +0.
+#[export]
+fn caml_simd_float32_min_bytecode(x: f32, y: f32) -> f32 {
+    if x < y {
+        x;
+    } else {
+        y;
+    }
+}
+
+#[export]
+fn caml_simd_float32_max_bytecode(x: f32, y: f32) -> f32 {
+    if x > y {
+        x;
+    } else {
+        y;
+    }
+}
+
+#[export]
+fn caml_bytes_setf32u(a: &eq, i: i32, v: f32) -> &eq {
+    caml_bytes_set32u(a, i, v.to_bits());
+}

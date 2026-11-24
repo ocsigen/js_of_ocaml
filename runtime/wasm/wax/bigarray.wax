@@ -1,0 +1,2254 @@
+// Wasm_of_ocaml runtime support
+// http://www.ocsigen.org/js_of_ocaml/
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, with linking exception;
+// either version 2.1 of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+
+import "fail" {
+    fn caml_bound_error();
+    fn caml_raise_out_of_memory();
+    fn caml_invalid_argument(&eq);
+    fn caml_failwith(&eq);
+}
+import "jslib" {
+    fn value_of_js(&?extern) -> &eq;
+    fn js_of_value(&eq) -> &?extern;
+}
+import "int32" {
+    fn caml_copy_int32(i32) -> &eq;
+    fn Int32_val(&eq) -> i32;
+    fn caml_copy_nativeint(i32) -> &eq;
+}
+import "int64" {
+    fn caml_copy_int64(i64) -> &eq;
+    fn Int64_val(&eq) -> i64;
+}
+import "compare" const unordered: i32;
+import "hash" {
+    fn caml_hash_mix_int(i32, i32) -> i32;
+    fn caml_hash_mix_int64(i32, i64) -> i32;
+    fn caml_hash_mix_double(i32, f64) -> i32;
+    fn caml_hash_mix_float(i32, f32) -> i32;
+    fn caml_hash_mix_float16(i32, i32) -> i32;
+}
+import "marshal" {
+    fn caml_serialize_int_1(&eq, i32);
+    fn caml_serialize_int_2(&eq, i32);
+    fn caml_serialize_int_4(&eq, i32);
+    fn caml_serialize_int_8(&eq, i64);
+    fn caml_deserialize_uint_1(&eq) -> i32;
+    fn caml_deserialize_sint_1(&eq) -> i32;
+    fn caml_deserialize_uint_2(&eq) -> i32;
+    fn caml_deserialize_sint_2(&eq) -> i32;
+    fn caml_deserialize_int_4(&eq) -> i32;
+    fn caml_deserialize_int_8(&eq) -> i64;
+}
+
+#[if(wasi)]
+{
+    type i64_array = [mut i64];
+    type i32_array = [mut i32];
+    type i16_array = [mut i16];
+    type i8_array = [mut i8];
+    type f64_array = [mut f64];
+    type f32_array = [mut f32];
+
+    type dat = { array: &array, offset: i32, len: i32 };
+
+    #[export]
+    fn ta_create(kind: i32, len: i32) -> &extern {
+        let array =
+            'cont: do {
+                dispatch kind [
+                    'f32, 'f64, 'i8, 'i8, 'i16, 'i16, 'i32, 'i64, 'i32, 'i32, 'f32, 'f64, 'i8,
+                    else 'i16
+                ] {
+                    'i64: {
+                        // i64
+                        len >>u= 1;
+                        br 'cont [i64_array|0; len];
+                    }
+                    'i32: {
+                        // i32
+                        br 'cont [i32_array|0; len];
+                    }
+                    'i16: {
+                        // i16
+                        br 'cont [i16_array|0; len];
+                    }
+                    'i8: {
+                        // i8
+                        br 'cont [i8_array|0; len];
+                    }
+                    'f64: {
+                        // f64
+                        br 'cont [f64_array|0; len];
+                    }
+                    'f32: {
+                        // f32
+                        [f32_array|0; len];
+                    }
+                }
+            };
+        { array, offset: 0, len } as &extern;
+    }
+
+    fn ta_fill_int(b: &extern, v: i32) {
+        let d = b as &dat;
+        let a = d.array;
+        let ofs = d.offset;
+        let len = d.len;
+        let i: i32;
+        if a is &i32_array {
+            let a32 = a as &i32_array;
+            while i <u len : (i += 1) {
+                a32[ofs + i] = v;
+            }
+        } else {
+            if a is &i16_array {
+                let a16 = a as &i16_array;
+                while i <u len : (i += 1) {
+                    a16[ofs + i] = v;
+                }
+            } else {
+                let a8 = a as &bytes;
+                while i <u len : (i += 1) {
+                    a8[ofs + i] = v;
+                }
+            }
+        }
+    }
+
+    fn ta_fill_float(b: &extern, f: f64) {
+        let d = b as &dat;
+        let a = d.array;
+        let ofs = d.offset;
+        let len = d.len;
+        let i: i32;
+        if a is &float_array {
+            let a64 = a as &float_array;
+            while i <u len : (i += 1) {
+                a64[ofs + i] = f;
+            }
+        } else {
+            let a32 = a as &f32_array;
+            let f32 = f as f32;
+            while i <u len : (i += 1) {
+                a32[ofs + i] = f32;
+            }
+        }
+    }
+
+    #[export]
+    fn ta_set(d: &extern, s: &extern, doff: i32) {
+        let sd = s as &dat;
+        let sa = sd.array;
+        let so = sd.offset;
+        let len = sd.len;
+        let dd = d as &dat;
+        let da = dd.array;
+        doff = dd.offset + doff;
+        let i: i32;
+        if sa is &float_array {
+            let sf64 = sa as &float_array;
+            let df64 = da as &float_array;
+            while i <u len : (i += 1) {
+                df64[doff + i] = sf64[so + i];
+            }
+        }
+        if sa is &f32_array {
+            let sf32 = sa as &f32_array;
+            let df32 = da as &f32_array;
+            while i <u len : (i += 1) {
+                df32[doff + i] = sf32[so + i];
+            }
+        }
+        if sa is &i64_array {
+            let si64 = sa as &i64_array;
+            let di64 = da as &i64_array;
+            while i <u len : (i += 1) {
+                di64[doff + i] = si64[so + i];
+            }
+        }
+        if sa is &i32_array {
+            let si32 = sa as &i32_array;
+            let di32 = da as &i32_array;
+            while i <u len : (i += 1) {
+                di32[doff + i] = si32[so + i];
+            }
+        }
+        if sa is &i16_array {
+            let si16 = sa as &i16_array;
+            let di16 = da as &i16_array;
+            while i <u len : (i += 1) {
+                di16[doff + i] = si16[so + i] as i32_u;
+            }
+        }
+        if sa is &bytes {
+            let si8 = sa as &bytes;
+            let di8 = da as &bytes;
+            while i <u len : (i += 1) {
+                di8[doff + i] = si8[so + i] as i32_u;
+            }
+        }
+    }
+
+    fn ta_blit(s: &extern, d: &extern) {
+        become ta_set(d, s, 0);
+    }
+
+    #[export]
+    fn ta_subarray(b: &extern, s: i32, e: i32) -> &extern {
+        let d = b as &dat;
+        let array = d.array;
+        if array is &i64_array {
+            s >>u= 1;
+            e >>u= 1;
+        }
+        { array, offset: d.offset + s, len: e - s } as &extern;
+    }
+
+    #[export]
+    fn ta_blit_from_bytes(s: &bytes, so: i32, b: &extern, doff: i32, len: i32) {
+        let dat = b as &dat;
+        let d = dat.array as &bytes;
+        doff += dat.offset;
+        let i: i32;
+        while i <u len : (i += 1) {
+            d[doff + i] = s[so + i] as i32_u;
+        }
+    }
+
+    #[export]
+    fn ta_blit_to_bytes(b: &extern, so: i32, d: &bytes, doff: i32, len: i32) {
+        let dat = b as &dat;
+        let s = dat.array as &bytes;
+        so += dat.offset;
+        let i: i32;
+        while i <u len : (i += 1) {
+            d[doff + i] = s[so + i] as i32_u;
+        }
+    }
+
+    fn dv_make(a: &extern) -> &extern {
+        a;
+    }
+
+    #[export]
+    fn dv_get_i8(a: &extern, i: i32) -> i32 {
+        let d = a as &dat;
+        (d.array as &i8_array)[d.offset + i] as i32_s;
+    }
+
+    #[export]
+    fn dv_get_ui8(a: &extern, i: i32) -> i32 {
+        let d = a as &dat;
+        (d.array as &i8_array)[d.offset + i] as i32_u;
+    }
+
+    #[export]
+    fn dv_get_i16(a: &extern, i: i32, i32) -> i32 {
+        let d = a as &dat;
+        (d.array as &i16_array)[d.offset + (i >>u 1)] as i32_s;
+    }
+
+    #[export]
+    fn dv_get_ui16(a: &extern, i: i32, i32) -> i32 {
+        let d = a as &dat;
+        (d.array as &i16_array)[d.offset + (i >>u 1)] as i32_u;
+    }
+
+    #[export]
+    fn dv_get_i32(a: &extern, i: i32, i32) -> i32 {
+        let d = a as &dat;
+        (d.array as &i32_array)[d.offset + (i >>u 2)];
+    }
+
+    #[export]
+    fn dv_get_i64(a: &extern, i: i32, i32) -> i64 {
+        let d = a as &dat;
+        (d.array as &i64_array)[d.offset + (i >>u 3)];
+    }
+
+    #[export]
+    fn dv_get_f32(a: &extern, i: i32, i32) -> f32 {
+        let d = a as &dat;
+        (d.array as &f32_array)[d.offset + (i >>u 2)];
+    }
+
+    #[export]
+    fn dv_get_f64(a: &extern, i: i32, i32) -> f64 {
+        let d = a as &dat;
+        (d.array as &f64_array)[d.offset + (i >>u 3)];
+    }
+
+    #[export]
+    fn dv_set_i8(a: &extern, i: i32, v: i32) {
+        let d = a as &dat;
+        (d.array as &i8_array)[d.offset + i] = v;
+    }
+
+    #[export]
+    fn dv_set_i16(a: &extern, i: i32, v: i32, i32) {
+        let d = a as &dat;
+        (d.array as &i16_array)[d.offset + (i >>u 1)] = v;
+    }
+
+    #[export]
+    fn dv_set_i32(a: &extern, i: i32, v: i32, i32) {
+        let d = a as &dat;
+        (d.array as &i32_array)[d.offset + (i >>u 2)] = v;
+    }
+
+    #[export]
+    fn dv_set_i64(a: &extern, i: i32, v: i64, i32) {
+        let d = a as &dat;
+        (d.array as &i64_array)[d.offset + (i >>u 3)] = v;
+    }
+
+    #[export]
+    fn dv_set_f32(a: &extern, i: i32, v: f32, i32) {
+        let d = a as &dat;
+        (d.array as &f32_array)[d.offset + (i >>u 2)] = v;
+    }
+
+    #[export]
+    fn dv_set_f64(a: &extern, i: i32, v: f64, i32) {
+        let d = a as &dat;
+        (d.array as &f64_array)[d.offset + (i >>u 3)] = v;
+    }
+
+    fn dv_get_ui16_unaligned(b: &extern, i: i32, i32) -> i32 {
+        let d = b as &dat;
+        let s = d.array as &bytes;
+        i = d.offset + i;
+        s[i] as i32_u | s[i + 1] as i32_u << 8;
+    }
+
+    #[export]
+    fn dv_get_i32_unaligned(b: &extern, i: i32, i32) -> i32 {
+        let d = b as &dat;
+        let s = d.array as &bytes;
+        i = d.offset + i;
+        s[i] as i32_u | s[i + 1] as i32_u << 8
+            | (s[i + 2] as i32_u << 16 | s[i + 3] as i32_u << 24);
+    }
+
+    #[export]
+    fn dv_get_i64_unaligned(b: &extern, i: i32, le: i32) -> i64 {
+        dv_get_i32_unaligned(b, i, le) as i64_u | dv_get_i32_unaligned(b, i + 4, le) as i64_u << 32;
+    }
+
+    fn dv_set_i16_unaligned(b: &extern, i: i32, v: i32, i32) {
+        let j: i32;
+        let d = b as &dat;
+        let s = d.array as &bytes;
+        i = d.offset + i;
+        s[i] = v;
+        s[i + 1] = v >>u 8;
+    }
+
+    fn dv_set_i32_unaligned(b: &extern, i: i32, v: i32, i32) {
+        let d = b as &dat;
+        let s = d.array as &bytes;
+        i = d.offset + i;
+        s[i] = v;
+        s[i + 1] = v >>u 8;
+        s[i + 2] = v >>u 16;
+        s[i + 3] = v >>u 24;
+    }
+
+    fn dv_set_i64_unaligned(b: &extern, i: i32, v: i64, le: i32) {
+        dv_set_i32_unaligned(b, i, v as i32, le);
+        dv_set_i32_unaligned(b, i + 4, (v >>u 32) as i32, le);
+    }
+
+    const littleEndian = 1;
+}
+#[else]
+{
+    import "bindings" {
+        fn ta_create(i32, i32) -> &extern;
+        fn ta_normalize(&extern) -> &extern;
+        fn ta_kind(&extern) -> i32;
+        fn ta_length(&extern) -> i32;
+        #[import = "ta_fill"]
+        fn ta_fill_int(&extern, i32);
+        #[import = "ta_fill"]
+        fn ta_fill_float(&extern, f64);
+        fn ta_blit(&extern, &extern);
+        fn ta_subarray(&extern, i32, i32) -> &extern;
+        fn dv_make(&extern) -> &extern;
+        fn dv_get_f64(&?extern, i32, i32) -> f64;
+        fn dv_get_f32(&?extern, i32, i32) -> f32;
+        fn dv_get_i64(&?extern, i32, i32) -> i64;
+        fn dv_get_i32(&?extern, i32, i32) -> i32;
+        fn dv_get_i16(&?extern, i32, i32) -> i32;
+        fn dv_get_ui16(&?extern, i32, i32) -> i32;
+        fn dv_get_i8(&?extern, i32) -> i32;
+        fn dv_get_ui8(&?extern, i32) -> i32;
+        fn dv_set_f64(&?extern, i32, f64, i32);
+        fn dv_set_f32(&?extern, i32, f32, i32);
+        fn dv_set_i64(&?extern, i32, i64, i32);
+        fn dv_set_i32(&?extern, i32, i32, i32);
+        fn dv_set_i16(&?extern, i32, i32, i32);
+        fn dv_set_i8(&?extern, i32, i32);
+        #[import = "dv_get_i64"]
+        fn dv_get_i64_unaligned(&?extern, i32, i32) -> i64;
+        #[import = "dv_get_i32"]
+        fn dv_get_i32_unaligned(&?extern, i32, i32) -> i32;
+        #[import = "dv_get_ui16"]
+        fn dv_get_ui16_unaligned(&?extern, i32, i32) -> i32;
+        #[import = "dv_set_i64"]
+        fn dv_set_i64_unaligned(&?extern, i32, i64, i32);
+        #[import = "dv_set_i32"]
+        fn dv_set_i32_unaligned(&?extern, i32, i32, i32);
+        #[import = "dv_set_i16"]
+        fn dv_set_i16_unaligned(&?extern, i32, i32, i32);
+        const littleEndian: i32;
+    }
+}
+
+type block = [mut &eq];
+type bytes = [mut i8];
+type float = { f: f64 };
+type float_array = [mut f64];
+
+type compare = fn(&eq, &eq, i32) -> i32;
+type hash = fn(&eq) -> i32;
+type fixed_length = { bsize_32: i32, bsize_64: i32 };
+type serialize = fn(&eq, &eq) -> (i32, i32);
+type deserialize = fn(&eq) -> (&eq, i32);
+type dup = fn(&eq) -> &eq;
+type custom_operations = {
+    id: &bytes,
+    compare: &?compare,
+    compare_ext: &?compare,
+    hash: &?hash,
+    fixed_length: &?fixed_length,
+    serialize: &?serialize,
+    deserialize: &?deserialize,
+    dup: &?dup
+};
+type custom = open { ops: &custom_operations };
+
+#[export]
+const bigarray_ops =
+    {
+        id: "_bigarr02",
+        compare: caml_ba_compare,
+        compare_ext: null,
+        hash: bigarray_hash,
+        fixed_length: null,
+        serialize: bigarray_serialize,
+        deserialize: bigarray_deserialize,
+        dup: null,
+    };
+
+type int_array = [mut i32];
+
+type bigarray: custom = {
+    ..,
+    ba_data: mut &extern, // data
+    ba_view: mut &extern, // view
+    ba_dim: &int_array, // size in each dimension
+    ba_num_dims: i8, // number of dimensions
+    ba_kind: i8, // kind
+    ba_layout: i8
+}; // layout
+
+#[export = "caml_float16_of_double"]
+fn double_to_float16(f: f64) -> i32 {
+    let x = (f as f32).to_bits();
+    let sign = x & 0x80000000;
+    x ^= sign;
+    let o: i32;
+    if x >=u 0x47800000 {
+        o =
+            x >u 0x7f800000?0x7E00 // NaN
+                :0x7C00; // infinity
+    } else {
+        if x <u 0x38800000 {
+            o = (x.from_bits() + 0.5).to_bits() - 0x3f000000;
+        } else {
+            o = (x + 0xC8000FFF + (x >>u 13 & 1)) >>u 13;
+        }
+    }
+    o | sign >>u 16;
+}
+
+#[export = "caml_double_of_float16"]
+fn double_of_float16(d: i32) -> f64 {
+    let f =
+        // exponent and mantissa
+        ((d & 0x7FFF) << 13).from_bits() * 0x1p+112;
+    if f >= 65536 {
+        // NaN / infinity
+        f = (f.to_bits() | 0x7f800000).from_bits();
+    }
+    (f.to_bits() | 
+         // sign bit
+         (d & 0x8000) << 16).from_bits() as f64;
+}
+
+#[export]
+fn caml_ba_num_elts(b: &eq) -> i32 {
+    let dim = (b as &bigarray).ba_dim;
+    let num_elts = 1;
+    let i: i32;
+    while i <u dim.length() : (i += 1) {
+        num_elts *= dim[i];
+    }
+    num_elts;
+}
+
+fn bigarray_hash(vba: &eq) -> i32 {
+    let b = vba as &bigarray;
+    let view = b.ba_view;
+    let len = caml_ba_num_elts(b);
+    let h: i32;
+    let i: i32;
+    dispatch (b.ba_kind as i32_u) [
+        'float32, 'float64, 'int8, 'int8, 'int16, 'int16, 'int32, 'int64, 'int32, 'int32,
+        'complex32, 'complex64, 'int8, else 'float16
+    ] {
+        'float16: {
+            // float16
+            len <<= 1;
+            if len >u 256 {
+                len = 256;
+            }
+            while i <u len : (i += 2) {
+                h = caml_hash_mix_float16(h, dv_get_ui16(view, i, littleEndian));
+            }
+            return h;
+        }
+        'int64: {
+            // int64
+            len <<= 3;
+            if len >u 256 {
+                len = 256;
+            }
+            while i <u len : (i += 8) {
+                h = caml_hash_mix_int64(h, dv_get_i64(view, i, littleEndian));
+            }
+            return h;
+        }
+        'int32: {
+            // int32
+            len <<= 2;
+            if len >u 256 {
+                len = 256;
+            }
+            while i <u len : (i += 4) {
+                h = caml_hash_mix_int(h, dv_get_i32(view, i, littleEndian));
+            }
+            return h;
+        }
+        'int16: {
+            // int16 / uint16
+            len <<= 1;
+            if len >u 256 {
+                len = 256;
+            }
+            while i + 4 <=u len : (i += 4) {
+                h =
+                    caml_hash_mix_int(
+                        h,
+                        dv_get_ui16(view, i, littleEndian)
+                            | dv_get_ui16(view, i + 2, littleEndian) << 16,
+                    );
+            }
+            if len & 2 {
+                h = caml_hash_mix_int(h, dv_get_ui16(view, i, littleEndian));
+            }
+            return h;
+        }
+        'int8: {
+            // int8 / uint8
+            if len >u 256 {
+                len = 256;
+            }
+            while i + 4 <=u len : (i += 4) {
+                h = caml_hash_mix_int(h, dv_get_i32_unaligned(view, i, 1));
+            }
+            let w = 0;
+            dispatch (len & 3) [ 'zero_bytes, 'one_byte, 'two_bytes, else 'three_bytes ] {
+                'three_bytes: {
+                    w = dv_get_ui8(view, i + 2) << 16;
+                }
+                'two_bytes: {
+                    w |= dv_get_ui8(view, i + 1) << 8;
+                }
+                'one_byte: {
+                    w |= dv_get_ui8(view, i);
+                    h = caml_hash_mix_int(h, w);
+                }
+                'zero_bytes: {
+                    return h;
+                }
+            }
+        }
+        'complex32: {
+            // complex32
+            len <<= 1;
+        }
+        'float32: {
+            // fallthrough
+            // float32
+            len <<= 2;
+            if len >u 256 {
+                len = 256;
+            }
+            while i <u len : (i += 4) {
+                h = caml_hash_mix_float(h, dv_get_f32(view, i, littleEndian));
+            }
+            return h;
+        }
+        'complex64: {
+            // complex64
+            len <<= 1;
+        }
+        'float64: {
+            // fallthrough
+            // float64
+            len <<= 3;
+            if len >u 256 {
+                len = 256;
+            }
+            while i <u len : (i += 8) {
+                h = caml_hash_mix_double(h, dv_get_f64(view, i, littleEndian));
+            }
+            return h;
+        }
+    }
+}
+
+fn bigarray_serialize(s: &eq, v: &eq) -> (i32, i32) {
+    let b = v as &bigarray;
+    let num_dims = b.ba_num_dims as i32_u;
+    let dim = b.ba_dim;
+    caml_serialize_int_4(s, num_dims);
+    caml_serialize_int_4(s, b.ba_kind as i32_u | b.ba_layout as i32_u << 8);
+    let i: i32;
+    let len: i32;
+    while i <u num_dims : (i += 1) {
+        len = dim[i];
+        if len <u 0xffff {
+            caml_serialize_int_2(s, len);
+        } else {
+            caml_serialize_int_2(s, 0xffff);
+            caml_serialize_int_8(s, len as i64_u);
+        }
+    }
+    'done: do {
+        let view = b.ba_view;
+        len = caml_ba_num_elts(b);
+        i = 0;
+        dispatch (b.ba_kind as i32_u) [
+            'float32, 'float64, 'int8, 'int8, 'int16, 'int16, 'int32, 'int64, 'int, 'int,
+            'complex32, 'complex64, 'int8, else 'int16
+        ] {
+            'complex64: {
+                // complex64
+                len <<= 1;
+            }
+            'float64: {
+                // fallthrough
+                // float64
+                len <<= 3;
+                while i <u len : (i += 8) {
+                    caml_serialize_int_8(s, dv_get_f64(view, i, littleEndian).to_bits());
+                }
+                br 'done;
+            }
+            'complex32: {
+                // complex32
+                len <<= 1;
+            }
+            'float32: {
+                // fallthrough
+                // float32
+                len <<= 2;
+                while i <u len : (i += 4) {
+                    caml_serialize_int_4(s, dv_get_f32(view, i, littleEndian).to_bits());
+                }
+                br 'done;
+            }
+            'int64: {
+                // int64
+                len <<= 3;
+                while i <u len : (i += 8) {
+                    caml_serialize_int_8(s, dv_get_i64(view, i, littleEndian));
+                }
+                br 'done;
+            }
+            'int: {
+                // int
+                caml_serialize_int_1(s, 0);
+            }
+            'int32: {
+                // fallthrough
+                // int32
+                len <<= 2;
+                while i <u len : (i += 4) {
+                    caml_serialize_int_4(s, dv_get_i32(view, i, littleEndian));
+                }
+                br 'done;
+            }
+            'int16: {
+                // int16 / uint16 / float16
+                len <<= 1;
+                while i <u len : (i += 2) {
+                    caml_serialize_int_2(s, dv_get_i16(view, i, littleEndian));
+                }
+                br 'done;
+            }
+            'int8: {
+                // int8 / uint8
+                while i <u len : (i += 1) {
+                    caml_serialize_int_1(s, dv_get_i8(view, i));
+                }
+            }
+        }
+    }
+    (4 + num_dims) * 4;
+    (4 + num_dims) * 8;
+}
+
+const intern_overflow = "input_value: cannot read bigarray with 64-bit OCaml ints";
+
+fn bigarray_deserialize(s: &eq) -> (&eq, i32) {
+    let ba_num_dims = caml_deserialize_int_4(s);
+    // CAML_BA_MAX_NUM_DIMS is 16; the unsigned test also rejects a
+    // negative (hostile) count.
+    if ba_num_dims >u 16 {
+        caml_failwith("input_value: wrong number of bigarray dimensions");
+    }
+    let flags = caml_deserialize_int_4(s);
+    let ba_kind = flags & 0xff;
+    let ba_dim: &int_array = [0; ba_num_dims];
+    let i: i32;
+    let len: i32;
+    while i <u ba_num_dims : (i += 1) {
+        len = caml_deserialize_uint_2(s);
+        if len == 0xffff {
+            // A dimension that does not fit in a 32-bit machine
+            // integer would be silently truncated; fail instead.
+            let l = caml_deserialize_int_8(s);
+            if l >u 0x7fffffff {
+                caml_failwith("input_value: size overflow for bigarray");
+            }
+            len = l as i32;
+        }
+        ba_dim[i] = len;
+    }
+    len = caml_ba_get_size(ba_dim);
+    let ba_data = caml_ba_create_buffer(ba_kind, len);
+    let ba_view = dv_make(ba_data);
+    let b =
+        {
+            ops: bigarray_ops,
+            ba_data,
+            ba_view,
+            ba_dim,
+            ba_num_dims,
+            ba_kind,
+            ba_layout: flags >>u 8,
+        };
+    'done: do {
+        i = 0;
+        dispatch (b.ba_kind as i32_u) [
+            'float32, 'float64, 'int8, 'int8, 'int16, 'int16, 'int32, 'int64, 'int, 'int,
+            'complex32, 'complex64, 'int8, else 'int16
+        ] {
+            'complex64: {
+                // complex64
+                len <<= 1;
+            }
+            'float64: {
+                // fallthrough
+                // float64
+                len <<= 3;
+                while i <u len : (i += 8) {
+                    dv_set_f64(ba_view, i, caml_deserialize_int_8(s).from_bits(), littleEndian);
+                }
+                br 'done;
+            }
+            'complex32: {
+                // complex32
+                len <<= 1;
+            }
+            'float32: {
+                // fallthrough
+                // float32
+                len <<= 2;
+                while i <u len : (i += 4) {
+                    dv_set_f32(ba_view, i, caml_deserialize_int_4(s).from_bits(), littleEndian);
+                }
+                br 'done;
+            }
+            'int64: {
+                // int64
+                len <<= 3;
+                while i <u len : (i += 8) {
+                    dv_set_i64(ba_view, i, caml_deserialize_int_8(s), littleEndian);
+                }
+                br 'done;
+            }
+            'int: {
+                // int
+                if caml_deserialize_uint_1(s) {
+                    caml_failwith(intern_overflow);
+                }
+            }
+            'int32: {
+                // fallthrough
+                // int32
+                len <<= 2;
+                while i <u len : (i += 4) {
+                    dv_set_i32(ba_view, i, caml_deserialize_int_4(s), littleEndian);
+                }
+                br 'done;
+            }
+            'int16: {
+                // int16 / uint16 / float16
+                len <<= 1;
+                while i <u len : (i += 2) {
+                    dv_set_i16(ba_view, i, caml_deserialize_sint_2(s), littleEndian);
+                }
+                br 'done;
+            }
+            'int8: {
+                // int8 / uint8
+                while i <u len : (i += 1) {
+                    dv_set_i8(ba_view, i, caml_deserialize_sint_1(s));
+                }
+            }
+        }
+    }
+    b;
+    (4 + ba_num_dims) * 4;
+}
+
+fn caml_ba_get_size(dim: &int_array) -> i32 {
+    let n = dim.length();
+    let i = 0;
+    let sz: i64 = 1;
+    while i <u n : (i += 1) {
+        sz *= dim[i] as i64_s;
+        if sz != sz as i32 as i64_s {
+            caml_raise_out_of_memory();
+        }
+    }
+    sz as i32;
+}
+
+fn caml_ba_size_per_element(kind: i32) -> i32 {
+    (kind == 7) | ((kind == 10) | (kind == 11))?2:1;
+}
+
+#[export]
+fn caml_ba_create_buffer(kind: i32, sz: i32) -> &extern {
+    let l = sz as i64_s * caml_ba_size_per_element(kind) as i64_s;
+    if l != l as i32 as i64_s {
+        caml_raise_out_of_memory();
+    }
+    become ta_create(kind, l as i32);
+}
+
+const CAML_BA_MAX_NUM_DIMS = 16;
+
+const ba_create_bad_dims = "Bigarray.create: bad number of dimensions";
+const ba_create_negative_dim = "Bigarray.create: negative dimension";
+
+#[export]
+fn caml_ba_create(vkind: &eq, layout: &eq, d: &eq) -> &eq {
+    let ba_kind = vkind as i32_s;
+    let vdim = d as &block;
+    let ba_num_dims = vdim.length() - 1;
+    if ba_num_dims >u CAML_BA_MAX_NUM_DIMS {
+        caml_invalid_argument(ba_create_bad_dims);
+    }
+    let ba_dim: &int_array = [0; ba_num_dims];
+    let i = 0;
+    while i <u ba_num_dims : (i += 1) {
+        let n = vdim[i + 1] as i32_s;
+        if n <s 0 {
+            caml_invalid_argument(ba_create_negative_dim);
+        }
+        ba_dim[i] = n;
+    }
+    let ba_data = caml_ba_create_buffer(ba_kind, caml_ba_get_size(ba_dim));
+    {
+        ops: bigarray_ops,
+        ba_data,
+        ba_view: dv_make(ba_data),
+        ba_dim,
+        ba_num_dims,
+        ba_kind,
+        ba_layout: layout as i32_s,
+    };
+}
+
+const ta_unsupported_kind = "Typed_array.to_genarray: unsupported kind";
+const ta_too_large = "Typed_array.to_genarray: too large";
+
+#[if(not(wasi))]
+{
+    #[export]
+    fn caml_ba_from_typed_array(v: &eq) -> &eq {
+        let ba_data = ta_normalize(js_of_value(v)!);
+        let ba_kind = ta_kind(ba_data);
+        if ba_kind <s 0 {
+            caml_invalid_argument(ta_unsupported_kind);
+        }
+        if ba_kind == 14 // Uint8ClampedArray
+        {
+            ba_kind = 3;
+        }
+        let len = ta_length(ba_data);
+        if len <s 0 {
+            caml_invalid_argument(ta_too_large);
+        }
+        {
+            ops: bigarray_ops,
+            ba_data,
+            ba_view: dv_make(ba_data),
+            ba_dim: [len],
+            ba_num_dims: 1,
+            ba_kind,
+            ba_layout: 0,
+        };
+    }
+
+    // Like caml_ba_from_typed_array but forces the char kind (12) instead
+    // of re-inferring it (a Uint8Array would otherwise yield int8_unsigned,
+    // kind 3). Used for bigstrings, which are char bigarrays.
+    #[export]
+    fn caml_ba_char_of_typed_array(v: &eq) -> &eq {
+        let ba_data = ta_normalize(js_of_value(v)!);
+        let len = ta_length(ba_data);
+        if len <s 0 {
+            caml_invalid_argument(ta_too_large);
+        }
+        {
+            ops: bigarray_ops,
+            ba_data,
+            ba_view: dv_make(ba_data),
+            ba_dim: [len],
+            ba_num_dims: 1,
+            ba_kind: 12, // char
+            ba_layout: 0,
+        };
+    }
+
+    #[export]
+    fn caml_ba_to_typed_array(vba: &eq) -> &eq {
+        value_of_js((vba as &bigarray).ba_data);
+    }
+
+    const ba_kind_unsupported = "caml_ba_kind_of_typed_array: unsupported kind";
+
+    #[export]
+    fn caml_ba_kind_of_typed_array(ta: &eq) -> &eq {
+        let kind = ta_kind(js_of_value(ta)!);
+        if kind <s 0 {
+            caml_invalid_argument(ba_kind_unsupported);
+        }
+        if kind == 14 // Uint8ClampedArray
+        {
+            kind = 3;
+        }
+        kind as &i31;
+    }
+}
+
+fn caml_ba_get_at_offset(ba: &bigarray, i: i32) -> &eq {
+    let view = ba.ba_view;
+    dispatch (ba.ba_kind as i32_u) [
+        'float32, 'float64, 'int8, 'uint8, 'int16, 'uint16, 'int32, 'int64, 'int, 'nativeint,
+        'complex32, 'complex64, 'uint8, else 'float16
+    ] {
+        'float16: {
+            // float16
+            return { f: double_of_float16(dv_get_ui16(view, i << 1, littleEndian)) };
+        }
+        'complex64: {
+            // complex64
+            i <<= 4;
+            return
+                [float_array|
+                    dv_get_f64(view, i, littleEndian),
+                    dv_get_f64(view, i + 8, littleEndian),
+                ];
+        }
+        'complex32: {
+            // complex32
+            i <<= 3;
+            return
+                [float_array|
+                    dv_get_f32(view, i, littleEndian) as f64,
+                    dv_get_f32(view, i + 4, littleEndian) as f64,
+                ];
+        }
+        'nativeint: {
+            // nativeint
+            become caml_copy_nativeint(dv_get_i32(view, i << 2, littleEndian));
+        }
+        'int: {
+            // int
+            return dv_get_i32(view, i << 2, littleEndian) as &i31;
+        }
+        'int64: {
+            // int64
+            become caml_copy_int64(dv_get_i64(view, i << 3, littleEndian));
+        }
+        'int32: {
+            // int32
+            become caml_copy_int32(dv_get_i32(view, i << 2, littleEndian));
+        }
+        'uint16: {
+            // uint16
+            return dv_get_ui16(view, i << 1, littleEndian) as &i31;
+        }
+        'int16: {
+            // int16
+            return dv_get_i16(view, i << 1, littleEndian) as &i31;
+        }
+        'uint8: {
+            // uint8
+            return dv_get_ui8(view, i) as &i31;
+        }
+        'int8: {
+            // int8
+            return dv_get_i8(view, i) as &i31;
+        }
+        'float64: {
+            // float64
+            return { f: dv_get_f64(view, i << 3, littleEndian) };
+        }
+        'float32: {
+            // float32
+            return { f: dv_get_f32(view, i << 2, littleEndian) as f64 };
+        }
+    }
+}
+
+fn caml_ba_set_at_offset(ba: &bigarray, i: i32, v: &eq) {
+    let view = ba.ba_view;
+    let b: &float_array;
+    dispatch (ba.ba_kind as i32_u) [
+        'float32, 'float64, 'int8, 'int8, 'int16, 'int16, 'int32, 'int64, 'int, 'int32, 'complex32,
+        'complex64, 'int8, else 'float16
+    ] {
+        'float16: {
+            // float16
+            dv_set_i16(view, i << 1, double_to_float16((v as &float).f), littleEndian);
+            return;
+        }
+        'complex64: {
+            // complex64
+            i <<= 4;
+            b = v as &float_array;
+            dv_set_f64(view, i, b[0], littleEndian);
+            dv_set_f64(view, i + 8, b[1], littleEndian);
+            return;
+        }
+        'complex32: {
+            // complex32
+            i <<= 3;
+            b = v as &float_array;
+            dv_set_f32(view, i, b[0] as f32, littleEndian);
+            dv_set_f32(view, i + 4, b[1] as f32, littleEndian);
+            return;
+        }
+        'int32: {
+            // int32 / nativeint
+            dv_set_i32(view, i << 2, Int32_val(v), littleEndian);
+            return;
+        }
+        'int: {
+            // int
+            dv_set_i32(view, i << 2, v as i32_s, littleEndian);
+            return;
+        }
+        'int64: {
+            // int64
+            dv_set_i64(view, i << 3, Int64_val(v), littleEndian);
+            return;
+        }
+        'int16: {
+            // int16/ uint16
+            dv_set_i16(view, i << 1, v as i32_s, littleEndian);
+            return;
+        }
+        'int8: {
+            // int8 / uint8
+            dv_set_i8(view, i, v as i32_s);
+            return;
+        }
+        'float64: {
+            // float64
+            dv_set_f64(view, i << 3, (v as &float).f, littleEndian);
+            return;
+        }
+        'float32: {
+            // float32
+            dv_set_f32(view, i << 2, (v as &float).f as f32, littleEndian);
+            return;
+        }
+    }
+}
+
+const Bigarray_dim = "Bigarray.dim";
+
+#[export]
+fn caml_ba_dim(vba: &eq, vi: &eq) -> &eq {
+    let dim = (vba as &bigarray).ba_dim;
+    let i = vi as i32_s;
+    if i >=u dim.length() {
+        caml_invalid_argument(Bigarray_dim);
+        unreachable;
+    }
+    dim[i] as &i31;
+}
+
+#[export]
+fn caml_ba_dim_1(vba: &eq) -> &eq {
+    become caml_ba_dim(vba, 0 as &i31);
+}
+
+#[export]
+fn caml_ba_get_1(vba: &eq, vi: &eq) -> &eq {
+    let ba = vba as &bigarray;
+    let i = vi as i32_u;
+    if ba.ba_layout as i32_u {
+        i -= 1;
+    }
+    if i >=u ba.ba_dim[0] {
+        caml_bound_error();
+    }
+    become caml_ba_get_at_offset(ba, i);
+}
+
+#[export]
+fn caml_ba_set_1(vba: &eq, vi: &eq, v: &eq) -> &eq {
+    let ba = vba as &bigarray;
+    let i = vi as i32_u;
+    if ba.ba_layout as i32_u {
+        i -= 1;
+    }
+    if i >=u ba.ba_dim[0] {
+        caml_bound_error();
+    }
+    caml_ba_set_at_offset(ba, i, v);
+    0 as &i31;
+}
+
+#[export]
+fn caml_ba_get_2(vba: &eq, vi: &eq, vj: &eq) -> &eq {
+    let ba = vba as &bigarray;
+    let i = vi as i32_u;
+    let j = vj as i32_u;
+    let dim = ba.ba_dim;
+    let offset: i32;
+    if ba.ba_layout as i32_u {
+        i -= 1;
+        j -= 1;
+        offset = j * dim[0] + i;
+    } else {
+        offset = i * dim[1] + j;
+    }
+    if (i >=u dim[0]) | (j >=u dim[1]) {
+        caml_bound_error();
+    }
+    become caml_ba_get_at_offset(ba, offset);
+}
+
+#[export]
+fn caml_ba_set_2(vba: &eq, vi: &eq, vj: &eq, v: &eq) -> &eq {
+    let ba = vba as &bigarray;
+    let i = vi as i32_u;
+    let j = vj as i32_u;
+    let dim = ba.ba_dim;
+    let offset: i32;
+    if ba.ba_layout as i32_u {
+        i -= 1;
+        j -= 1;
+        offset = j * dim[0] + i;
+    } else {
+        offset = i * dim[1] + j;
+    }
+    if (i >=u dim[0]) | (j >=u dim[1]) {
+        caml_bound_error();
+    }
+    caml_ba_set_at_offset(ba, offset, v);
+    0 as &i31;
+}
+
+#[export]
+fn caml_ba_dim_2(vba: &eq) -> &eq {
+    become caml_ba_dim(vba, 1 as &i31);
+}
+
+#[export]
+fn caml_ba_get_3(vba: &eq, vi: &eq, vj: &eq, vk: &eq) -> &eq {
+    let ba = vba as &bigarray;
+    let i = vi as i32_u;
+    let j = vj as i32_u;
+    let k = vk as i32_u;
+    let dim = ba.ba_dim;
+    let offset: i32;
+    if ba.ba_layout as i32_u {
+        i -= 1;
+        j -= 1;
+        k -= 1;
+        offset = (k * dim[1] + j) * dim[0] + i;
+    } else {
+        offset = (i * dim[1] + j) * dim[2] + k;
+    }
+    if (i >=u dim[0]) | ((j >=u dim[1]) | (k >=u dim[2])) {
+        caml_bound_error();
+    }
+    become caml_ba_get_at_offset(ba, offset);
+}
+
+#[export]
+fn caml_ba_set_3(vba: &eq, vi: &eq, vj: &eq, vk: &eq, v: &eq) -> &eq {
+    let ba = vba as &bigarray;
+    let i = vi as i32_u;
+    let j = vj as i32_u;
+    let k = vk as i32_u;
+    let dim = ba.ba_dim;
+    let offset: i32;
+    if ba.ba_layout as i32_u {
+        i -= 1;
+        j -= 1;
+        k -= 1;
+        offset = (k * dim[1] + j) * dim[0] + i;
+    } else {
+        offset = (i * dim[1] + j) * dim[2] + k;
+    }
+    if (i >=u dim[0]) | ((j >=u dim[1]) | (k >=u dim[2])) {
+        caml_bound_error();
+    }
+    caml_ba_set_at_offset(ba, offset, v);
+    0 as &i31;
+}
+
+#[export]
+fn caml_ba_dim_3(vba: &eq) -> &eq {
+    become caml_ba_dim(vba, 2 as &i31);
+}
+
+fn caml_ba_float32_get_at_offset(ba: &bigarray, i: i32) -> f32 {
+    let view = ba.ba_view;
+    return dv_get_f32(view, i << 2, littleEndian);
+}
+
+fn caml_ba_float32_set_at_offset(ba: &bigarray, i: i32, v: f32) {
+    let view = ba.ba_view;
+    dv_set_f32(view, i << 2, v, littleEndian);
+}
+
+#[export]
+fn caml_ba_float32_get_1(vba: &eq, i: i32) -> f32 {
+    let ba = vba as &bigarray;
+    if ba.ba_layout as i32_u {
+        i -= 1;
+    }
+    if i >=u ba.ba_dim[0] {
+        caml_bound_error();
+    }
+    become caml_ba_float32_get_at_offset(ba, i);
+}
+
+#[export]
+fn caml_ba_float32_set_1(vba: &eq, i: i32, v: f32) -> &eq {
+    let ba = vba as &bigarray;
+    if ba.ba_layout as i32_u {
+        i -= 1;
+    }
+    if i >=u ba.ba_dim[0] {
+        caml_bound_error();
+    }
+    caml_ba_float32_set_at_offset(ba, i, v);
+    0 as &i31;
+}
+
+#[export]
+fn caml_ba_float32_get_2(vba: &eq, i: i32, j: i32) -> f32 {
+    let ba = vba as &bigarray;
+    let dim = ba.ba_dim;
+    let offset: i32;
+    if ba.ba_layout as i32_u {
+        i -= 1;
+        j -= 1;
+        offset = j * dim[0] + i;
+    } else {
+        offset = i * dim[1] + j;
+    }
+    if (i >=u dim[0]) | (j >=u dim[1]) {
+        caml_bound_error();
+    }
+    become caml_ba_float32_get_at_offset(ba, offset);
+}
+
+#[export]
+fn caml_ba_float32_set_2(vba: &eq, i: i32, j: i32, v: f32) -> &eq {
+    let ba = vba as &bigarray;
+    let dim = ba.ba_dim;
+    let offset: i32;
+    if ba.ba_layout as i32_u {
+        i -= 1;
+        j -= 1;
+        offset = j * dim[0] + i;
+    } else {
+        offset = i * dim[1] + j;
+    }
+    if (i >=u dim[0]) | (j >=u dim[1]) {
+        caml_bound_error();
+    }
+    caml_ba_float32_set_at_offset(ba, offset, v);
+    0 as &i31;
+}
+
+#[export]
+fn caml_ba_float32_get_3(vba: &eq, i: i32, j: i32, k: i32) -> f32 {
+    let ba = vba as &bigarray;
+    let dim = ba.ba_dim;
+    let offset: i32;
+    if ba.ba_layout as i32_u {
+        i -= 1;
+        j -= 1;
+        k -= 1;
+        offset = (k * dim[1] + j) * dim[0] + i;
+    } else {
+        offset = (i * dim[1] + j) * dim[2] + k;
+    }
+    if (i >=u dim[0]) | ((j >=u dim[1]) | (k >=u dim[2])) {
+        caml_bound_error();
+    }
+    become caml_ba_float32_get_at_offset(ba, offset);
+}
+
+#[export]
+fn caml_ba_float32_set_3(vba: &eq, i: i32, j: i32, k: i32, v: f32) -> &eq {
+    let ba = vba as &bigarray;
+    let dim = ba.ba_dim;
+    let offset: i32;
+    if ba.ba_layout as i32_u {
+        i -= 1;
+        j -= 1;
+        k -= 1;
+        offset = (k * dim[1] + j) * dim[0] + i;
+    } else {
+        offset = (i * dim[1] + j) * dim[2] + k;
+    }
+    if (i >=u dim[0]) | ((j >=u dim[1]) | (k >=u dim[2])) {
+        caml_bound_error();
+    }
+    caml_ba_float32_set_at_offset(ba, offset, v);
+    0 as &i31;
+}
+
+fn caml_ba_offset(b: &bigarray, index: &int_array) -> i32 {
+    let dim = b.ba_dim;
+    let idx: i32;
+    let offset: i32;
+    let i: i32;
+    let l: i32;
+    if b.ba_layout as i32_u {
+        i = b.ba_num_dims as i32_u - 1;
+        while i >=s 0 : (i -= 1) {
+            idx = index[i] - 1;
+            l = dim[i];
+            if idx >=u l {
+                caml_bound_error();
+            }
+            offset = offset * l + idx;
+        }
+    } else {
+        let num_dims = b.ba_num_dims as i32_u;
+        while i <s num_dims : (i += 1) {
+            idx = index[i];
+            l = dim[i];
+            if idx >=u l {
+                caml_bound_error();
+            }
+            offset = offset * l + idx;
+        }
+    }
+    offset;
+}
+
+fn caml_ba_offset'(b: &bigarray, index: &block) -> i32 {
+    let dim = b.ba_dim;
+    let idx: i32;
+    let offset: i32;
+    let i: i32;
+    let l: i32;
+    if b.ba_layout as i32_u {
+        i = b.ba_num_dims as i32_u - 1;
+        while i >=s 0 : (i -= 1) {
+            idx = index[i + 1] as i32_s - 1;
+            l = dim[i];
+            if idx >=u l {
+                caml_bound_error();
+            }
+            offset = offset * l + idx;
+        }
+    } else {
+        let num_dims = b.ba_num_dims as i32_u;
+        while i <s num_dims : (i += 1) {
+            idx = index[i + 1] as i32_s;
+            l = dim[i];
+            if idx >=u l {
+                caml_bound_error();
+            }
+            offset = offset * l + idx;
+        }
+    }
+    offset;
+}
+
+const ba_get_wrong_num_indices = "Bigarray.get: wrong number of indices";
+
+#[export]
+fn caml_ba_get_generic(vba: &eq, vindex: &eq) -> &eq {
+    let ba = vba as &bigarray;
+    let index = vindex as &block;
+    if index.length() - 1 != ba.ba_num_dims as i32_u {
+        caml_invalid_argument(ba_get_wrong_num_indices);
+        unreachable;
+    }
+    become caml_ba_get_at_offset(ba, caml_ba_offset'(ba, index));
+}
+
+const ba_set_wrong_num_indices = "Bigarray.set: wrong number of indices";
+
+#[export]
+fn caml_ba_set_generic(vba: &eq, vindex: &eq, v: &eq) -> &eq {
+    let ba = vba as &bigarray;
+    let index = vindex as &block;
+    if index.length() - 1 != ba.ba_num_dims as i32_u {
+        caml_invalid_argument(ba_set_wrong_num_indices);
+        unreachable;
+    }
+    caml_ba_set_at_offset(ba, caml_ba_offset'(ba, index), v);
+    0 as &i31;
+}
+
+const too_many_indices = "Bigarray.slice: too many indices";
+
+#[export]
+fn caml_ba_slice(vb: &eq, vind: &eq) -> &eq {
+    let b = vb as &bigarray;
+    let ind = vind as &block;
+    let num_inds = ind.length() - 1;
+    let num_dims = b.ba_num_dims as i32_u;
+    if num_inds >u b.ba_num_dims as i32_u {
+        caml_invalid_argument(too_many_indices);
+    }
+    let ba_dim: &int_array = [0; num_dims - num_inds];
+    let index: &int_array;
+    let i: i32;
+    let offset: i32;
+    if b.ba_layout as i32_u {
+        index = [1; num_dims];
+        while i <u num_inds : (i += 1) {
+            index[num_dims + i - num_inds] = ind[i + 1] as i32_u;
+        }
+        offset = caml_ba_offset(b, index);
+        ba_dim.copy(0, b.ba_dim, 0, num_dims - num_inds);
+    } else {
+        index = [0; num_dims];
+        while i <u num_inds : (i += 1) {
+            index[i] = ind[i + 1] as i32_u;
+        }
+        offset = caml_ba_offset(b, index);
+        ba_dim.copy(0, b.ba_dim, num_inds, num_dims - num_inds);
+    }
+    let mul = caml_ba_size_per_element(b.ba_kind as i32_u);
+    let size = caml_ba_get_size(ba_dim);
+    let ba_data = ta_subarray(b.ba_data, offset * mul, (offset + size) * mul);
+    {
+        ops: bigarray_ops,
+        ba_data,
+        ba_view: dv_make(ba_data),
+        ba_dim,
+        ba_num_dims: ba_dim.length(),
+        ba_kind: b.ba_kind as i32_u,
+        ba_layout: b.ba_layout as i32_u,
+    };
+}
+
+const bad_subarray = "Bigarray.sub: bad sub-array";
+
+#[export]
+fn caml_ba_sub(vba: &eq, vofs: &eq, vlen: &eq) -> &eq {
+    let ba = vba as &bigarray;
+    let ofs = vofs as i32_s;
+    let len = vlen as i32_s;
+    let ba_num_dims = ba.ba_num_dims as i32_u;
+    let dim = ba.ba_dim;
+    let mul = 1;
+    let changed_dim: i32;
+    let i: i32;
+    if ba.ba_layout as i32_u {
+        changed_dim = ba_num_dims - 1;
+        ofs -= 1;
+        i = 0;
+        while i <u changed_dim : (i += 1) {
+            mul *= dim[i];
+        }
+    } else {
+        changed_dim = 0;
+        i = 1;
+        while i <u ba_num_dims : (i += 1) {
+            mul *= dim[i];
+        }
+    }
+    if (ofs <s 0) | (len <s 0) | (ofs + len >s dim[changed_dim]) {
+        caml_invalid_argument(bad_subarray);
+    }
+    let ba_dim: &int_array = [0; ba_num_dims];
+    ba_dim.copy(0, dim, 0, ba_num_dims);
+    ba_dim[changed_dim] = len;
+    mul *= caml_ba_size_per_element(ba.ba_kind as i32_u);
+    let ba_data = ta_subarray(ba.ba_data, ofs * mul, (ofs + len) * mul);
+    {
+        ops: bigarray_ops,
+        ba_data,
+        ba_view: dv_make(ba_data),
+        ba_dim,
+        ba_num_dims,
+        ba_kind: ba.ba_kind as i32_u,
+        ba_layout: ba.ba_layout as i32_u,
+    };
+}
+
+#[export]
+fn caml_ba_fill(vba: &eq, v: &eq) -> &eq {
+    let ba = vba as &bigarray;
+    let dat = ba.ba_data;
+    let view: &extern;
+    let i: i32;
+    let len: i32;
+    let b: &float_array;
+    dispatch (ba.ba_kind as i32_u) [
+        'float, 'float, 'int, 'int, 'int, 'int, 'int32, 'int64, 'int, 'int32, 'complex32,
+        'complex64, 'int, else 'float16
+    ] {
+        'float16: {
+            // float16
+            ta_fill_int(dat, double_to_float16((v as &float).f));
+            return 0 as &i31;
+        }
+        'complex64: {
+            // complex64
+            view = ba.ba_view;
+            len = caml_ba_num_elts(ba) << 4;
+            b = v as &float_array;
+            let f1 = b[0];
+            let f2 = b[1];
+            while i <u len : (i += 16) {
+                dv_set_f64(view, i, f1, littleEndian);
+                dv_set_f64(view, i + 8, f2, littleEndian);
+            }
+            return 0 as &i31;
+        }
+        'complex32: {
+            // complex32
+            view = ba.ba_view;
+            len = caml_ba_num_elts(ba) << 3;
+            b = v as &float_array;
+            let f1' = b[0] as f32;
+            let f2' = b[1] as f32;
+            while i <u len : (i += 8) {
+                dv_set_f32(view, i, f1', littleEndian);
+                dv_set_f32(view, i + 4, f2', littleEndian);
+            }
+            return 0 as &i31;
+        }
+        'int64: {
+            // int64
+            view = ba.ba_view;
+            len = caml_ba_num_elts(ba) << 3;
+            let l = Int64_val(v);
+            while i <u len : (i += 8) {
+                dv_set_i64(view, i, l, littleEndian);
+            }
+            return 0 as &i31;
+        }
+        'int32: {
+            // int32
+            ta_fill_int(dat, Int32_val(v));
+            return 0 as &i31;
+        }
+        'int: {
+            // int
+            ta_fill_int(dat, v as i32_s);
+            return 0 as &i31;
+        }
+        'float: {
+            // float
+            ta_fill_float(dat, (v as &float).f);
+            return 0 as &i31;
+        }
+    }
+}
+
+const dim_mismatch = "Bigarray.blit: dimension mismatch";
+
+#[export]
+fn caml_ba_blit(vsrc: &eq, vdst: &eq) -> &eq {
+    let src = vsrc as &bigarray;
+    let dst = vdst as &bigarray;
+    let len = dst.ba_num_dims as i32_u;
+    if len != src.ba_num_dims as i32_u {
+        caml_invalid_argument(dim_mismatch);
+    }
+    let sdim = src.ba_dim;
+    let ddim = dst.ba_dim;
+    let i: i32;
+    while i <s len : (i += 1) {
+        if sdim[i] != ddim[i] {
+            caml_invalid_argument(dim_mismatch);
+        }
+    }
+    ta_blit(src.ba_data, dst.ba_data);
+    0 as &i31;
+}
+
+const bad_number_dim = "Bigarray.reshape: bad number of dimensions";
+const negative_dim = "Bigarray.reshape: negative dimension";
+const size_mismatch = "Bigarray.reshape: size mismatch";
+
+#[export]
+fn caml_ba_reshape(vb: &eq, vd: &eq) -> &eq {
+    let vdim = vd as &block;
+    let ba_num_dims = vdim.length() - 1;
+    let b = vb as &bigarray;
+    if ba_num_dims >u CAML_BA_MAX_NUM_DIMS {
+        caml_invalid_argument(bad_number_dim);
+    }
+    let num_elts: i64 = 1;
+    let ba_dim: &int_array = [0; ba_num_dims];
+    let i: i32;
+    while i <u ba_num_dims : (i += 1) {
+        let d = vdim[i + 1] as i32_s;
+        if d <s 0 {
+            caml_invalid_argument(negative_dim);
+        }
+        ba_dim[i] = d;
+        num_elts *= d as i64_s;
+        if num_elts != num_elts as i32 as i64_s {
+            caml_raise_out_of_memory();
+        }
+    }
+    if num_elts as i32 != caml_ba_get_size(b.ba_dim) {
+        caml_invalid_argument(size_mismatch);
+    }
+    {
+        ops: bigarray_ops,
+        ba_data: b.ba_data,
+        ba_view: b.ba_view,
+        ba_dim,
+        ba_num_dims,
+        ba_kind: b.ba_kind as i32_u,
+        ba_layout: b.ba_layout as i32_u,
+    };
+}
+
+#[export]
+fn caml_ba_change_layout(vb: &eq, vlayout: &eq) -> &eq {
+    let b = vb as &bigarray;
+    let ba_layout = vlayout as i32_s;
+    if b.ba_layout as i32_u != ba_layout {
+        let ba_num_dims = b.ba_num_dims as i32_u;
+        let dim = b.ba_dim;
+        let ba_dim: &int_array = [0; ba_num_dims];
+        let i: i32;
+        while i <u ba_num_dims : (i += 1) {
+            ba_dim[i] = dim[ba_num_dims - i - 1];
+        }
+        {
+            ops: bigarray_ops,
+            ba_data: b.ba_data,
+            ba_view: b.ba_view,
+            ba_dim,
+            ba_num_dims,
+            ba_kind: b.ba_kind as i32_u,
+            ba_layout,
+        };
+    } else {
+        vb;
+    }
+}
+
+#[export]
+fn caml_ba_num_dims(vba: &eq) -> &eq {
+    (vba as &bigarray).ba_num_dims as i32_u as &i31;
+}
+
+#[export]
+fn caml_ba_kind(vba: &eq) -> &eq {
+    (vba as &bigarray).ba_kind as i32_u as &i31;
+}
+
+#[export]
+fn caml_ba_layout(vba: &eq) -> &eq {
+    (vba as &bigarray).ba_layout as i32_u as &i31;
+}
+
+fn caml_ba_compare(v1: &eq, v2: &eq, total: i32) -> i32 {
+    let b1 = v1 as &bigarray;
+    let b2 = v2 as &bigarray;
+    if b2.ba_layout as i32_u != b1.ba_layout as i32_u {
+        return b2.ba_layout as i32_u - b1.ba_layout as i32_u;
+    }
+    if b2.ba_kind as i32_u != b1.ba_kind as i32_u {
+        return b2.ba_kind as i32_u - b1.ba_kind as i32_u;
+    }
+    if b2.ba_num_dims as i32_u != b1.ba_num_dims as i32_u {
+        return b2.ba_num_dims as i32_u - b1.ba_num_dims as i32_u;
+    }
+    let len = b2.ba_num_dims as i32_u;
+    let i1: i32;
+    let i2: i32;
+    let i: i32;
+    while i <u len : (i += 1) {
+        i1 = b1.ba_dim[i];
+        i2 = b2.ba_dim[i];
+        if i1 != i2 {
+            return i1 <u i2?-1:1;
+        }
+    }
+    let view1 = b1.ba_view;
+    let view2 = b2.ba_view;
+    len = caml_ba_num_elts(b1);
+    i = 0;
+    let f1: f64;
+    let f2: f64;
+    dispatch (b1.ba_kind as i32_u) [
+        'float32, 'float64, 'int8, 'uint8, 'int16, 'uint16, 'int32, 'int64, 'int32, 'int32,
+        'complex32, 'complex64, 'uint8, else 'float16
+    ] {
+        'float16: {
+            // float16
+            len <<= 1;
+            while i <u len : (i += 2) {
+                f1 = double_of_float16(dv_get_ui16(view1, i, littleEndian));
+                f2 = double_of_float16(dv_get_ui16(view2, i, littleEndian));
+                if f1 < f2 {
+                    return -1;
+                }
+                if f1 > f2 {
+                    return 1;
+                }
+                if f1 != f2 {
+                    if !total {
+                        return unordered;
+                    }
+                    if f1 == f1 {
+                        return 1;
+                    }
+                    if f2 == f2 {
+                        return -1;
+                    }
+                }
+            }
+            return 0;
+        }
+        'int64: {
+            // int64
+            len <<= 3;
+            while i <u len : (i += 8) {
+                let l1 = dv_get_i64(view1, i, littleEndian);
+                let l2 = dv_get_i64(view2, i, littleEndian);
+                if l1 <s l2 {
+                    return -1;
+                }
+                if l1 >s l2 {
+                    return 1;
+                }
+            }
+            return 0;
+        }
+        'int32: {
+            // int32
+            len <<= 2;
+            while i <u len : (i += 4) {
+                i1 = dv_get_i32(view1, i, littleEndian);
+                i2 = dv_get_i32(view2, i, littleEndian);
+                if i1 <s i2 {
+                    return -1;
+                }
+                if i1 >s i2 {
+                    return 1;
+                }
+            }
+            return 0;
+        }
+        'uint16: {
+            // uint16
+            len <<= 1;
+            while i <u len : (i += 2) {
+                i1 = dv_get_ui16(view1, i, littleEndian);
+                i2 = dv_get_ui16(view2, i, littleEndian);
+                if i1 <s i2 {
+                    return -1;
+                }
+                if i1 >s i2 {
+                    return 1;
+                }
+            }
+            return 0;
+        }
+        'int16: {
+            // int16
+            len <<= 1;
+            while i <u len : (i += 2) {
+                i1 = dv_get_i16(view1, i, littleEndian);
+                i2 = dv_get_i16(view2, i, littleEndian);
+                if i1 <s i2 {
+                    return -1;
+                }
+                if i1 >s i2 {
+                    return 1;
+                }
+            }
+            return 0;
+        }
+        'uint8: {
+            // uint8
+            while i <u len : (i += 1) {
+                i1 = dv_get_ui8(view1, i);
+                i2 = dv_get_ui8(view2, i);
+                if i1 <s i2 {
+                    return -1;
+                }
+                if i1 >s i2 {
+                    return 1;
+                }
+            }
+            return 0;
+        }
+        'int8: {
+            // int8
+            while i <u len : (i += 1) {
+                i1 = dv_get_i8(view1, i);
+                i2 = dv_get_i8(view2, i);
+                if i1 <s i2 {
+                    return -1;
+                }
+                if i1 >s i2 {
+                    return 1;
+                }
+            }
+            return 0;
+        }
+        'complex64: {
+            // complex64
+            len <<= 1;
+        }
+        'float64: {
+            // fallthrough
+            // float64
+            len <<= 3;
+            while i <u len : (i += 8) {
+                f1 = dv_get_f64(view1, i, littleEndian);
+                f2 = dv_get_f64(view2, i, littleEndian);
+                if f1 < f2 {
+                    return -1;
+                }
+                if f1 > f2 {
+                    return 1;
+                }
+                if f1 != f2 {
+                    if !total {
+                        return unordered;
+                    }
+                    if f1 == f1 {
+                        return 1;
+                    }
+                    if f2 == f2 {
+                        return -1;
+                    }
+                }
+            }
+            return 0;
+        }
+        'complex32: {
+            // complex32
+            len <<= 1;
+        }
+        'float32: {
+            // fallthrough
+            // float32
+            len <<= 2;
+            while i <u len : (i += 4) {
+                let f1' = dv_get_f32(view1, i, littleEndian);
+                let f2' = dv_get_f32(view2, i, littleEndian);
+                if f1' < f2' {
+                    return -1;
+                }
+                if f1' > f2' {
+                    return 1;
+                }
+                if f1' != f2' {
+                    if !total {
+                        return unordered;
+                    }
+                    if f1' == f1' {
+                        return 1;
+                    }
+                    if f2' == f2' {
+                        return -1;
+                    }
+                }
+            }
+            return 0;
+        }
+    }
+}
+
+#[export]
+fn caml_ba_uint8_geti8(vba: &eq, i: i32) -> i32 {
+    let ba = vba as &bigarray;
+    let view = ba.ba_view;
+    if i <s 0 {
+        caml_bound_error();
+    }
+    if i >=u ba.ba_dim[0] {
+        caml_bound_error();
+    }
+    dv_get_ui8(view, i).extend8_s();
+}
+
+#[export]
+fn caml_ba_uint8_geti16(vba: &eq, i: i32) -> i32 {
+    caml_ba_uint8_get16(vba, i).extend16_s();
+}
+
+#[export]
+fn caml_ba_uint8_get16(vba: &eq, i: i32) -> i32 {
+    let ba = vba as &bigarray;
+    let view = ba.ba_view;
+    if i <s 0 {
+        caml_bound_error();
+    }
+    if i + 1 >=u ba.ba_dim[0] {
+        caml_bound_error();
+    }
+    dv_get_ui16_unaligned(view, i, 1);
+}
+
+#[export]
+fn caml_ba_uint8_get16u(vba: &eq, i: i32) -> i32 {
+    let ba = vba as &bigarray;
+    let view = ba.ba_view;
+    become dv_get_ui16_unaligned(view, i, 1);
+}
+
+#[export]
+fn caml_ba_uint8_get32(vba: &eq, i: i32) -> i32 {
+    let ba = vba as &bigarray;
+    let view = ba.ba_view;
+    if i <s 0 {
+        caml_bound_error();
+    }
+    if i + 3 >=u ba.ba_dim[0] {
+        caml_bound_error();
+    }
+    dv_get_i32_unaligned(view, i, 1);
+}
+
+#[export]
+fn caml_ba_uint8_get32u(vba: &eq, i: i32) -> i32 {
+    let ba = vba as &bigarray;
+    let view = ba.ba_view;
+    become dv_get_i32_unaligned(view, i, 1);
+}
+
+#[export]
+fn caml_ba_uint8_get64(vba: &eq, i: i32) -> i64 {
+    let ba = vba as &bigarray;
+    let view = ba.ba_view;
+    if i <s 0 {
+        caml_bound_error();
+    }
+    if i + 7 >=u ba.ba_dim[0] {
+        caml_bound_error();
+    }
+    dv_get_i64_unaligned(view, i, 1);
+}
+
+#[export]
+fn caml_ba_uint8_get64u(vba: &eq, i: i32) -> i64 {
+    let ba = vba as &bigarray;
+    let view = ba.ba_view;
+    dv_get_i64_unaligned(view, i, 1);
+}
+
+#[export]
+fn caml_ba_uint8_set8(vba: &eq, i: i32, d: i32) -> &eq {
+    let ba = vba as &bigarray;
+    let view = ba.ba_view;
+    if i <s 0 {
+        caml_bound_error();
+    }
+    if i >=u ba.ba_dim[0] {
+        caml_bound_error();
+    }
+    dv_set_i8(view, i, d);
+    0 as &i31;
+}
+
+#[export]
+fn caml_ba_uint8_set16(vba: &eq, i: i32, d: i32) -> &eq {
+    let ba = vba as &bigarray;
+    let view = ba.ba_view;
+    if i <s 0 {
+        caml_bound_error();
+    }
+    if i + 1 >=u ba.ba_dim[0] {
+        caml_bound_error();
+    }
+    dv_set_i16_unaligned(view, i, d, 1);
+    0 as &i31;
+}
+
+#[export]
+fn caml_ba_uint8_set16u(vba: &eq, i: i32, d: i32) -> &eq {
+    let ba = vba as &bigarray;
+    let view = ba.ba_view;
+    dv_set_i16_unaligned(view, i, d, 1);
+    0 as &i31;
+}
+
+#[export]
+fn caml_ba_uint8_set32(vba: &eq, i: i32, d: i32) -> &eq {
+    let ba = vba as &bigarray;
+    let view = ba.ba_view;
+    if i <s 0 {
+        caml_bound_error();
+    }
+    if i + 3 >=u ba.ba_dim[0] {
+        caml_bound_error();
+    }
+    dv_set_i32_unaligned(view, i, d, 1);
+    0 as &i31;
+}
+
+#[export]
+fn caml_ba_uint8_set32u(vba: &eq, i: i32, d: i32) -> &eq {
+    let ba = vba as &bigarray;
+    let view = ba.ba_view;
+    dv_set_i32_unaligned(view, i, d, 1);
+    0 as &i31;
+}
+
+#[export]
+fn caml_ba_uint8_set64(vba: &eq, i: i32, d: i64) -> &eq {
+    let ba = vba as &bigarray;
+    let view = ba.ba_view;
+    if i <s 0 {
+        caml_bound_error();
+    }
+    if i + 7 >=u ba.ba_dim[0] {
+        caml_bound_error();
+    }
+    dv_set_i64_unaligned(view, i, d, 1);
+    0 as &i31;
+}
+
+#[export]
+fn caml_ba_uint8_set64u(vba: &eq, i: i32, d: i64) -> &eq {
+    let ba = vba as &bigarray;
+    let view = ba.ba_view;
+    dv_set_i64_unaligned(view, i, d, 1);
+    0 as &i31;
+}
+
+#[export]
+fn caml_blit_dataview_to_bytes(dv: &extern, i: i32, s: &bytes, j: i32, len: i32) {
+    let k: i32;
+    let j': i32;
+    'loop: loop {
+        let k' = k + 8;
+        if k' <=u len {
+            j' = j + k;
+            let v = dv_get_i64_unaligned(dv, i + k, 1);
+            s[j'] = v as i32;
+            s[j' + 1] = (v >>u 8) as i32;
+            s[j' + 2] = (v >>u 16) as i32;
+            s[j' + 3] = (v >>u 24) as i32;
+            s[j' + 4] = (v >>u 32) as i32;
+            s[j' + 5] = (v >>u 40) as i32;
+            s[j' + 6] = (v >>u 48) as i32;
+            s[j' + 7] = (v >>u 56) as i32;
+            k = k';
+            br 'loop;
+        }
+    }
+    let remaining = len - k;
+    let v': i32;
+    if remaining >=u 4 {
+        j' = j + k;
+        v' = dv_get_i32_unaligned(dv, i + k, 1);
+        s[j'] = v';
+        s[j' + 1] = v' >>u 8;
+        s[j' + 2] = v' >>u 16;
+        s[j' + 3] = v' >>u 24;
+        k += 4;
+        remaining -= 4;
+    }
+    if remaining >=u 2 {
+        j' = j + k;
+        v' = dv_get_ui16_unaligned(dv, i + k, 1);
+        s[j'] = v';
+        s[j' + 1] = v' >>u 8;
+        k += 2;
+        remaining -= 2;
+    }
+    if remaining {
+        s[j + k] = dv_get_ui8(dv, i + k);
+    }
+}
+
+#[export]
+fn caml_blit_bytes_to_dataview(s: &bytes, i: i32, dv: &extern, j: i32, len: i32) {
+    let k: i32;
+    let i': i32;
+    'loop: loop {
+        let k' = k + 8;
+        if k' <=u len {
+            i' = i + k;
+            dv_set_i64_unaligned(
+                dv,
+                j + k,
+                s[i'] as i64_u | s[i' + 1] as i64_u << 8
+                    | (s[i' + 2] as i64_u << 16 | s[i' + 3] as i64_u << 24)
+                    | (s[i' + 4] as i64_u << 32 | s[i' + 5] as i64_u << 40
+                           | (s[i' + 6] as i64_u << 48 | s[i' + 7] as i64_u << 56)),
+                1,
+            );
+            k = k';
+            br 'loop;
+        }
+    }
+    let remaining = len - k;
+    if remaining >=u 4 {
+        i' = i + k;
+        dv_set_i32_unaligned(
+            dv,
+            j + k,
+            s[i'] as i32_u | s[i' + 1] as i32_u << 8
+                | (s[i' + 2] as i32_u << 16 | s[i' + 3] as i32_u << 24),
+            1,
+        );
+        k += 4;
+        remaining -= 4;
+    }
+    if remaining >=u 2 {
+        i' = i + k;
+        dv_set_i16_unaligned(dv, j + k, s[i'] as i32_u | s[i' + 1] as i32_u << 8, 1);
+        k += 2;
+        remaining -= 2;
+    }
+    if remaining {
+        dv_set_i8(dv, j + k, s[i + k] as i32_u);
+    }
+}
+
+#[if(not(wasi))]
+{
+    #[export]
+    #[export = "caml_bytes_of_uint8_array"]
+    fn caml_string_of_uint8_array(v: &eq) -> &eq {
+        // used to convert a typed array to a string
+        let a = js_of_value(v)!;
+        let len = ta_length(a);
+        let s: &bytes = [0; len];
+        caml_blit_dataview_to_bytes(dv_make(a), 0, s, 0, len);
+        s;
+    }
+
+    #[export]
+    #[export = "caml_uint8_array_of_bytes"]
+    fn caml_uint8_array_of_string(vs: &eq) -> &eq {
+        // Convert bytes to a typed array
+        let s = vs as &bytes;
+        let len = s.length();
+        let ta =
+            ta_create(
+                3, // Uint8Array
+                len,
+            );
+        caml_blit_bytes_to_dataview(s, 0, dv_make(ta), 0, len);
+        value_of_js(ta);
+    }
+}
+
+#[export]
+fn caml_ba_get_kind(vba: &eq) -> i32 {
+    (vba as &bigarray).ba_kind as i32_u;
+}
+
+#[export]
+fn caml_ba_get_layout(vba: &eq) -> i32 {
+    (vba as &bigarray).ba_layout as i32_u;
+}
+
+#[export]
+fn caml_ba_get_data(vba: &eq) -> &extern {
+    (vba as &bigarray).ba_data;
+}
+
+#[export]
+fn caml_ba_get_view(vba: &eq) -> &extern {
+    (vba as &bigarray).ba_view;
+}
+
+#[export]
+fn caml_ba_set_data(vba: &eq, ba_data: &extern) {
+    (vba as &bigarray).ba_data = ba_data;
+}
+
+#[export]
+fn caml_ba_get_dim(vba: &eq) -> &int_array {
+    (vba as &bigarray).ba_dim;
+}
+
+#[export]
+fn caml_ba_alloc(
+    ba_kind: i32,
+    ba_layout: i32,
+    ba_num_dims: i32,
+    ba_data: &extern,
+    ba_dim: &int_array,
+) -> &eq {
+    {
+        ops: bigarray_ops,
+        ba_data,
+        ba_view: dv_make(ba_data),
+        ba_dim,
+        ba_num_dims,
+        ba_kind,
+        ba_layout,
+    };
+}

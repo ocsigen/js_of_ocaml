@@ -1,0 +1,698 @@
+// Wasm_of_ocaml runtime support
+// http://www.ocsigen.org/js_of_ocaml/
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, with linking exception;
+// either version 2.1 of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+
+type bytes = [mut i8];
+
+#[if(not(wasi))]
+{
+    import "bindings" {
+        #[import = "identity"]
+        fn to_float(&?extern) -> f64;
+        #[import = "identity"]
+        fn from_float(f64) -> &?extern;
+        #[import = "identity"]
+        fn to_bool(&?extern) -> i32;
+        #[import = "identity"]
+        fn to_int32(&?extern) -> i32;
+        #[import = "identity"]
+        fn from_int32(i32) -> &?extern;
+        const true: &?extern;
+        const false: &?extern;
+        fn get(&extern, &?extern) -> &?extern;
+        fn set(&?extern, &?extern, &?extern);
+        fn delete(&?extern, &?extern);
+        fn instanceof(&?extern, &?extern) -> i32;
+        fn is_js_error(&?extern) -> i32;
+        fn to_js_string(&?extern) -> &?extern;
+        fn typeof(&?extern) -> &?extern;
+        fn equals(&?extern, &?extern) -> i32;
+        fn strict_equals(&?extern, &?extern) -> i32;
+        fn fun_call(&?extern, &?extern, &?extern) -> &?extern;
+        fn meth_call(&?extern, &?extern, &?extern) -> &?extern;
+        fn new(&?extern, &?extern) -> &?extern;
+        fn new_obj() -> &?extern;
+        fn new_array(i32) -> &extern;
+        const global_this: &?extern;
+        fn iter_props(&?extern, &?extern);
+        fn array_length(&extern) -> i32;
+        fn array_get(&extern, i32) -> &?extern;
+        fn array_set(&extern, i32, &?extern);
+        fn wrap_callback(&eq) -> &?extern;
+        fn wrap_callback_args(&eq) -> &?extern;
+        fn wrap_callback_strict(i32, &eq) -> &?extern;
+        fn wrap_callback_unsafe(&eq) -> &?extern;
+        fn wrap_meth_callback(&eq) -> &?extern;
+        fn wrap_meth_callback_args(&eq) -> &?extern;
+        fn wrap_meth_callback_strict(i32, &eq) -> &?extern;
+        fn wrap_meth_callback_unsafe(&eq) -> &?extern;
+        fn wrap_fun_arguments(&?extern) -> &?extern;
+    }
+    import "array" {
+        fn caml_check_array_length(i32);
+        fn caml_check_float_array_length(i32);
+    }
+    import "fail" {
+        fn caml_failwith_tag() -> &eq;
+        tag javascript_exception(&?extern);
+    }
+    import "stdlib" fn caml_named_value(&eq) -> &?eq;
+    import "obj" {
+        fn caml_callback_1(&eq, &eq) -> &eq;
+        fn caml_is_closure(&eq) -> i32;
+        fn caml_is_last_arg(&eq) -> i32;
+    }
+    import "jsstring" {
+        fn jsstring_of_bytes(&bytes) -> &?extern;
+        fn bytes_of_jsstring(&?extern) -> &bytes;
+        fn jsstring_of_subbytes(&bytes, i32, i32) -> &?extern;
+    }
+    import "int32" {
+        fn caml_copy_int32(i32) -> &eq;
+        fn Int32_val(&eq) -> i32;
+        fn caml_copy_nativeint(i32) -> &eq;
+        fn Nativeint_val(&eq) -> i32;
+    }
+
+    type block = [mut &eq];
+    type float = { f: f64 };
+    type float_array = [mut f64];
+    type js = { js: &?extern };
+
+    // Conversions between JavaScript values and OCaml values: a JavaScript
+    // value which is not an OCaml value is wrapped in a $js struct.
+    #[export]
+    fn value_of_js(v: &?extern) -> &eq {
+        'is_eq: do {
+            _ = br_on_cast 'is_eq &eq v as &?any;
+            return { js: v };
+        }
+    }
+
+    #[export]
+    fn js_of_value(v: &eq) -> &?extern {
+        ('not_js: do {
+             return (br_on_cast_fail 'not_js &js v).js;
+         } as &extern);
+    }
+
+    // Deprecated: use $value_of_js and $js_of_value, which take and return an
+    // externref. These anyref versions are kept for the code that imports
+    // them, including stubs of other libraries.
+    #[export]
+    fn wrap(v: &?any) -> &eq {
+        'is_eq: do {
+            return { js: (br_on_cast 'is_eq &eq v) as &?extern };
+        }
+    }
+
+    #[export]
+    fn unwrap(v: &eq) -> &?any {
+        'not_js: do &eq {
+            return (br_on_cast_fail 'not_js &js v).js as &?any;
+        }
+    }
+
+    #[export]
+    fn caml_js_equals(v1: &eq, v2: &eq) -> &eq {
+        equals(js_of_value(v1), js_of_value(v2)) as &i31;
+    }
+
+    #[export]
+    fn caml_js_strict_equals(v1: &eq, v2: &eq) -> &eq {
+        caml_js_strict_equals_i32(v1, v2) as &i31;
+    }
+
+    // Used by the compiler for physical equality on JavaScript values
+    #[export]
+    fn caml_js_strict_equals_i32(v1: &eq, v2: &eq) -> i32 {
+        strict_equals(js_of_value(v1), js_of_value(v2));
+    }
+
+    #[export]
+    fn caml_js_global(&eq) -> &eq {
+        value_of_js(global_this);
+    }
+
+    #[export]
+    fn caml_js_to_float(v: &eq) -> &eq {
+        { f: to_float(js_of_value(v)) };
+    }
+
+    #[export]
+    fn caml_js_from_float(v: &eq) -> &eq {
+        become value_of_js(from_float((v as &float).f));
+    }
+
+    #[export]
+    fn caml_js_to_bool(v: &eq) -> &eq {
+        to_bool(js_of_value(v)) as &i31;
+    }
+
+    const js_true = { js: true };
+    const js_false = { js: false };
+
+    #[export]
+    fn caml_js_from_bool(v: &eq) -> &eq {
+        v as i32_s?js_true:js_false;
+    }
+
+    #[export]
+    fn caml_js_to_int32(v: &eq) -> &eq {
+        become caml_copy_int32(to_int32(js_of_value(v)));
+    }
+
+    #[export]
+    fn caml_js_from_int32(v: &eq) -> &eq {
+        become value_of_js(from_int32(Int32_val(v)));
+    }
+
+    #[export]
+    fn caml_js_to_nativeint(v: &eq) -> &eq {
+        become caml_copy_nativeint(to_int32(js_of_value(v)));
+    }
+
+    #[export]
+    fn caml_js_from_nativeint(v: &eq) -> &eq {
+        become value_of_js(from_int32(Nativeint_val(v)));
+    }
+
+    #[export]
+    fn caml_js_pure_expr(f: &eq) -> &eq {
+        become caml_callback_1(f, 0 as &i31);
+    }
+
+    #[export]
+    fn caml_js_fun_call(f: &eq, args: &eq) -> &eq {
+        become value_of_js(fun_call(js_of_value(f), null, js_of_value(caml_js_from_array(args))));
+    }
+
+    #[export]
+    fn caml_js_call(f: &eq, o: &eq, args: &eq) -> &eq {
+        become value_of_js(
+            fun_call(js_of_value(f), js_of_value(o), js_of_value(caml_js_from_array(args))),
+        );
+    }
+
+    #[export]
+    fn caml_js_meth_call(o: &eq, f: &eq, args: &eq) -> &eq {
+        // Decode the method name as UTF-8, like the JS runtime
+        // (caml_js_meth_call uses caml_jsstring_of_string); a non-ASCII method
+        // name otherwise resolved differently than on the JS backend.
+        if f is &bytes {
+            f = caml_jsstring_of_bytes(f);
+        }
+        become value_of_js(
+            meth_call(js_of_value(o), js_of_value(f), js_of_value(caml_js_from_array(args))),
+        );
+    }
+
+    #[export]
+    fn caml_js_get(o: &eq, f: &eq) -> &eq {
+        if f is &bytes {
+            f = caml_jsbytes_of_bytes(f);
+        }
+        become value_of_js(get(js_of_value(o)!, js_of_value(f)));
+    }
+
+    #[export]
+    fn caml_js_set(o: &eq, f: &eq, v: &eq) -> &eq {
+        if f is &bytes {
+            f = caml_jsbytes_of_bytes(f);
+        }
+        set(js_of_value(o), js_of_value(f), js_of_value(v));
+        0 as &i31;
+    }
+
+    #[export]
+    fn caml_js_delete(o: &eq, f: &eq) -> &eq {
+        if f is &bytes {
+            f = caml_jsbytes_of_bytes(f);
+        }
+        delete(js_of_value(o), js_of_value(f));
+        0 as &i31;
+    }
+
+    #[export]
+    fn caml_js_instanceof(v1: &eq, v2: &eq) -> &eq {
+        instanceof(js_of_value(v1), js_of_value(v2)) as &i31;
+    }
+
+    #[export]
+    fn caml_js_typeof(v: &eq) -> &eq {
+        { js: typeof(js_of_value(v)) };
+    }
+
+    #[export]
+    fn caml_js_new(c: &eq, args: &eq) -> &eq {
+        become value_of_js(new(js_of_value(c), js_of_value(caml_js_from_array(args))));
+    }
+
+    #[export]
+    fn caml_ojs_new_arr(c: &eq, args: &eq) -> &eq {
+        become value_of_js(new(js_of_value(c), js_of_value(args)));
+    }
+
+    #[export]
+    fn caml_ojs_iterate_properties(o: &eq, f: &eq) -> &eq {
+        iter_props(js_of_value(o), js_of_value(f));
+        0 as &i31;
+    }
+
+    #[export]
+    fn caml_js_object(va: &eq) -> &eq {
+        let a = va as &block;
+        let l = a.length();
+        let i = 1;
+        let js = new_obj();
+        while i <u l : (i += 1) {
+            let p = a[i] as &block;
+            set(js, js_of_value(caml_jsstring_of_bytes(p[1])), js_of_value(p[2]));
+        }
+        { js };
+    }
+
+    #[export]
+    fn caml_js_from_array(va: &eq) -> &eq {
+        let a': &extern;
+        let i: i32;
+        let l: i32;
+        match va {
+            a: &block => {
+                l = a.length() - 1;
+                a' = new_array(l);
+                i = 0;
+                while i <u l : (i += 1) {
+                    array_set(a', i, js_of_value(a[i + 1]));
+                }
+                return { js: a' };
+            }
+            _ => {
+                let fa = va as &float_array;
+                l = fa.length();
+                a' = new_array(l);
+                i = 0;
+                while i <u l : (i += 1) {
+                    array_set(a', i, { f: fa[i] } as &extern);
+                }
+                { js: a' };
+            }
+        }
+    }
+
+    #[export]
+    fn caml_js_to_array(v: &eq) -> &eq {
+        let a = js_of_value(v)!;
+        let l = array_length(a);
+        caml_check_array_length(l);
+        let i: i32;
+        if l {
+            if array_get(a, 0) as &?any is &float {
+                caml_check_float_array_length(l);
+                let fa: &float_array = [0; l];
+                i = 0;
+                while i <u l : (i += 1) {
+                    fa[i] = (array_get(a, i) as &float).f;
+                }
+                return fa;
+            }
+        }
+        let a': &block = [0 as &i31; l + 1];
+        i = 0;
+        while i <u l : (i += 1) {
+            a'[i + 1] = value_of_js(array_get(a, i));
+        }
+        a';
+    }
+
+    #[export]
+    fn caml_js_to_string_array(a: &extern) -> &eq {
+        let l = array_length(a);
+        caml_check_array_length(l);
+        let a': &block = [0 as &i31; l + 1];
+        let i = 0;
+        while i <u l : (i += 1) {
+            a'[i + 1] = caml_string_of_jsstring(value_of_js(array_get(a, i)));
+        }
+        a';
+    }
+
+    #[export]
+    fn caml_js_wrap_callback(f: &eq) -> &eq {
+        become value_of_js(wrap_callback(f));
+    }
+
+    #[export]
+    fn caml_js_wrap_callback_arguments(f: &eq) -> &eq {
+        become value_of_js(wrap_callback_args(f));
+    }
+
+    #[export]
+    fn caml_js_wrap_callback_strict(n: &eq, f: &eq) -> &eq {
+        become value_of_js(wrap_callback_strict(n as i32_u, f));
+    }
+
+    #[export]
+    fn caml_js_wrap_callback_unsafe(f: &eq) -> &eq {
+        become value_of_js(wrap_callback_unsafe(f));
+    }
+
+    #[export]
+    fn caml_js_wrap_meth_callback(f: &eq) -> &eq {
+        become value_of_js(wrap_meth_callback(f));
+    }
+
+    #[export]
+    fn caml_js_wrap_meth_callback_arguments(f: &eq) -> &eq {
+        become value_of_js(wrap_meth_callback_args(f));
+    }
+
+    #[export]
+    fn caml_js_wrap_meth_callback_strict(n: &eq, f: &eq) -> &eq {
+        become value_of_js(wrap_meth_callback_strict(n as i32_u, f));
+    }
+
+    #[export]
+    fn caml_js_wrap_meth_callback_unsafe(f: &eq) -> &eq {
+        become value_of_js(wrap_meth_callback_unsafe(f));
+    }
+
+    #[export]
+    fn caml_ojs_wrap_fun_arguments(f: &eq) -> &eq {
+        become value_of_js(wrap_fun_arguments(wrap_callback_strict(1, f)));
+    }
+
+    #[export]
+    fn caml_callback(
+        f: &eq,
+        count: i32,
+        args: &extern,
+        kind: i32 // 0 ==> strict / 2 ==> unsafe
+    ) -> &?extern {
+        let acc = f;
+        let i: i32;
+        if kind == 2 {
+            'loop: loop {
+                f = acc;
+                acc = caml_callback_1(acc, value_of_js(get(args, i as &extern)));
+                i += 1;
+                br_if 'loop !caml_is_last_arg(f);
+            }
+        } else {
+            i = 0;
+            'done: do {
+                while i <u count : (i += 1) {
+                    br_if 'done !caml_is_closure(acc);
+                    acc = caml_callback_1(acc, value_of_js(get(args, i as &extern)));
+                }
+            }
+            if kind {
+                if caml_is_closure(acc) {
+                    acc = caml_js_wrap_callback(acc);
+                }
+            }
+        }
+        become js_of_value(acc);
+    }
+
+    // Cache of the conversions of short strings into JavaScript strings.
+    // Strings used as property names, such as attribute names, are often
+    // converted repeatedly. Converting them once avoids the cost of the
+    // conversion, and above all lets the JavaScript engine reuse the same
+    // string object: a fresh string must be looked up in the table of
+    // internalized strings each time it is used as a property name. The keys
+    // are copies of the converted strings, which may be bytes mutated later
+    // on.
+    type string_cache_keys = [mut &?bytes];
+    type string_cache_values = [mut &?eq];
+    const string_cache_size_log = 10;
+    const string_cache_max_length = 16;
+    const string_cache_keys: &string_cache_keys = [..; 1024];
+    const string_cache_values: &string_cache_values = [..; 1024];
+    // Hashes of strings which missed the cache. A string is only inserted in
+    // the cache when it misses it while its hash is in this table, that is,
+    // when it is converted again: strings converted only once then do not pay
+    // for their insertion (copying the key and storing new objects in the
+    // cache). This table is larger than the cache, so that a string converted
+    // again after many other conversions is still found there.
+    type string_cache_hashes = [mut i32];
+    const string_cache_seen_size_log = 13;
+    const string_cache_seen: &string_cache_hashes = [..; 8192];
+
+    #[export = "caml_jsstring_of_string"]
+    #[export = "caml_js_from_string"]
+    fn caml_jsstring_of_bytes(vs: &eq) -> &eq {
+        let s = vs as &bytes;
+        let len = s.length();
+        if len >u string_cache_max_length {
+            return { js: jsstring_of_bytes(s) };
+        }
+        let h = len;
+        let i: i32;
+        while i <u len : (i += 1) {
+            h = h * 31 + s[i] as i32_u;
+        }
+        let full = h * 0x9e3779b1;
+        h = full >>u (32 - string_cache_size_log);
+        let k: &bytes;
+        'miss: do {
+            k = br_on_null 'miss string_cache_keys[h];
+            br_if 'miss k.length() != len;
+            i = 0;
+            while i <u len : (i += 1) {
+                br_if 'miss k[i] as i32_u != s[i] as i32_u;
+            }
+            return string_cache_values[h]!;
+        }
+        let v = { js: jsstring_of_bytes(s) };
+        i = full >>u (32 - string_cache_seen_size_log);
+        if string_cache_seen[i] != full {
+            string_cache_seen[i] = full;
+            return v;
+        }
+        k = [..; len];
+        k.copy(0, s, 0, len);
+        string_cache_keys[h] = k;
+        string_cache_values[h] = v;
+        v;
+    }
+
+    #[export]
+    fn caml_jsstring_of_substring(s: &eq, i: &eq, l: &eq) -> &eq {
+        return { js: jsstring_of_subbytes(s as &bytes, i as i32_u, l as i32_u) };
+    }
+
+    #[export = "caml_jsbytes_of_string"]
+    fn caml_jsbytes_of_bytes(vs: &eq) -> &eq {
+        let s = vs as &bytes;
+        let l = s.length();
+        let i = 0;
+        let n = 0;
+        while i <u l : (i += 1) {
+            if s[i] as i32_u >=u 128 {
+                n += 1;
+            }
+        }
+        if !n {
+            return { js: jsstring_of_bytes(s) };
+        }
+        let s': &bytes = [0; i + n];
+        i = 0;
+        n = 0;
+        while i <u l : (i += 1) {
+            let c = s[i] as i32_u;
+            if c <u 128 {
+                s'[n] = c;
+                n += 1;
+            } else {
+                s'[n] = c >>u 6 | 0xC0;
+                s'[n + 1] = 0x80 | c & 0x3F;
+                n += 2;
+            }
+        }
+        return { js: jsstring_of_bytes(s') };
+    }
+
+    #[export]
+    #[export = "caml_js_to_string"]
+    fn caml_string_of_jsstring(s: &eq) -> &eq {
+        become bytes_of_jsstring((s as &js).js);
+    }
+
+    #[export]
+    fn caml_string_of_jsbytes(s: &eq) -> &eq {
+        let s' = bytes_of_jsstring((s as &js).js);
+        let l = s'.length();
+        let i = 0;
+        let n = 0;
+        while i <u l : (i += 1) {
+            if s'[i] as i32_u >=u 0xC0 {
+                n += 1;
+            }
+        }
+        if !n {
+            return s';
+        }
+        let s'': &bytes = [0; i - n];
+        i = 0;
+        n = 0;
+        while i <u l {
+            let c = s'[i] as i32_u;
+            if c <u 0xC0 {
+                s''[n] = c;
+                i += 1;
+            } else {
+                s''[n] = (c << 6) + s'[i + 1] as i32_u - 0x3080;
+                i += 2;
+            }
+            n += 1;
+        }
+        s'';
+    }
+
+    #[export]
+    fn caml_list_to_js_array(v: &eq) -> &eq {
+        let i = 0;
+        let l = v;
+        _ =
+            'done: do {
+                'compute_length: loop {
+                    l = (br_on_cast_fail 'done &block l)[2];
+                    i += 1;
+                    br 'compute_length;
+                }
+                unreachable;
+            };
+        let a = new_array(i);
+        i = 0;
+        l = v;
+        _ =
+            'exit: do {
+                'loop: loop {
+                    let b = br_on_cast_fail 'exit &block l;
+                    array_set(a, i, js_of_value(b[1]));
+                    l = b[2];
+                    i += 1;
+                    br 'loop;
+                }
+                unreachable;
+            };
+        { js: a };
+    }
+
+    #[export]
+    fn caml_list_of_js_array(v: &eq) -> &eq {
+        let a = js_of_value(v)!;
+        let len = array_length(a);
+        let i = len;
+        let l: &eq = 0 as &i31;
+        while i {
+            i -= 1;
+            l = [block|0 as &i31, value_of_js(array_get(a, i)), l];
+        }
+        l;
+    }
+
+    const jsError = "jsError";
+
+    const toString = "toString";
+
+    #[export]
+    fn caml_wrap_exception(vexn: &?extern) -> &eq {
+        // ZZZ special case for stack overflows?
+        // Wrap in Js.Error only an actual JS Error, like the JS runtime; other
+        // thrown values fall through to Failure below.
+        'fallback: do {
+            br_if 'fallback !is_js_error(vexn);
+            return
+                [block|
+                    0 as &i31,
+                    br_on_null 'fallback caml_named_value(jsError),
+                    value_of_js(vexn),
+                ];
+        }
+        // Failure(String(exn)). String() is null/undefined-safe, unlike calling
+        // exn.toString() which throws on a thrown null/undefined.
+        [block|
+            0 as &i31,
+            caml_failwith_tag(),
+            caml_string_of_jsstring(value_of_js(to_js_string(vexn))),
+        ];
+    }
+
+    #[export]
+    fn caml_js_error_option_of_exception(vexn: &eq) -> &eq {
+        let exn = vexn as &block;
+        if exn[0] == 0 as &i31 {
+            if exn[1] == caml_named_value(jsError) {
+                return [block|0 as &i31, exn[2]];
+            }
+        }
+        0 as &i31;
+    }
+
+    #[export]
+    fn caml_throw_js_exception(exn: &eq) -> &eq {
+        throw javascript_exception(js_of_value(exn));
+    }
+
+    #[export]
+    fn caml_js_error_of_exception(vexn: &eq) -> &eq {
+        let exn = vexn as &block;
+        if exn[0] == 0 as &i31 {
+            if exn[1] == caml_named_value(jsError) {
+                return exn[2];
+            }
+        }
+        { js: null };
+    }
+}
+
+#[export]
+fn caml_exn_with_js_backtrace(exn: &eq, &eq) -> &eq {
+    exn;
+}
+
+#[export]
+fn caml_jsoo_flags_use_js_string(&eq) -> &eq {
+    0 as &i31;
+}
+
+#[export]
+fn caml_jsoo_flags_effects(&eq) -> &eq {
+    #[if(effects = "cps")]
+    {
+        "cps";
+    }
+    #[else]
+    {
+        #[if(effects = "double-translation")]
+        {
+            "double-translation";
+        }
+        #[else]
+        {
+            #[if(effects = "jspi")]
+            {
+                "jspi";
+            }
+            #[else]
+            {
+                "disabled";
+            }
+        }
+    }
+}

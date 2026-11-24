@@ -1,0 +1,104 @@
+// Wasm_of_ocaml runtime support
+// http://www.ocsigen.org/js_of_ocaml/
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, with linking exception;
+// either version 2.1 of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+
+import "bigarray" fn caml_uint8_array_of_string(&eq) -> &eq;
+import "jslib" {
+    fn js_of_value(&eq) -> &?extern;
+    fn value_of_js(&?extern) -> &eq;
+    fn caml_jsstring_of_string(&eq) -> &eq;
+}
+import "bindings" {
+    fn load_module(&?extern) -> &?extern;
+    fn load_wasmo(&?extern);
+    fn register_fragments(&?extern, &?extern);
+}
+import "stdlib" let link_info: &block;
+
+type block = [mut &eq];
+
+#[if(not(wasi))]
+{
+    #[export]
+    fn caml_wasm_load_module(str: &eq) -> &eq {
+        value_of_js(load_module(js_of_value(caml_uint8_array_of_string(str))));
+    }
+
+    #[export]
+    fn caml_wasm_load_wasmo(str: &eq) -> &eq {
+        load_wasmo(js_of_value(caml_uint8_array_of_string(str)));
+        0 as &i31;
+    }
+
+    #[export]
+    fn caml_wasm_register_fragments(unit_name: &eq, source: &eq) -> &eq {
+        register_fragments(
+            js_of_value(caml_jsstring_of_string(unit_name)),
+            js_of_value(caml_jsstring_of_string(source)),
+        );
+        0 as &i31;
+    }
+}
+
+// Field index for prim_count in link_info (must match stdlib.wat)
+const LINK_INFO_PRIM_COUNT = 3;
+
+// Standard OCaml dynlink primitives
+
+#[if(all(ocaml_version >= (5, 1, 0), not(oxcaml)))]
+{
+    #[export]
+    fn caml_dynlink_open_lib(&eq) -> &eq {
+        0 as &i31;
+    }
+}
+#[else]
+{
+    #[export]
+    fn caml_dynlink_open_lib(&eq, &eq) -> &eq {
+        0 as &i31;
+    }
+}
+
+#[export]
+fn caml_dynlink_close_lib(&eq) -> &eq {
+    0 as &i31;
+}
+
+#[export]
+fn caml_dynlink_lookup_symbol(&eq, &eq) -> &eq {
+    0 as &i31;
+}
+
+#[export]
+fn caml_dynlink_add_primitive(&eq) -> &eq {
+    let idx = link_info[LINK_INFO_PRIM_COUNT] as i32_u;
+    link_info[LINK_INFO_PRIM_COUNT] = (idx + 1) as &i31;
+    idx as &i31;
+}
+
+#[export]
+fn caml_dynlink_get_current_libs(&eq) -> &eq {
+    [block|0 as &i31];
+}
+
+#[if(ocaml_version >= (5, 5, 0))]
+{
+    #[export]
+    fn caml_dynlink_parse_ld_conf(&eq) -> &eq {
+        0 as &i31;
+    }
+}

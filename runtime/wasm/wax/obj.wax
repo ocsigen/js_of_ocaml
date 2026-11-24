@@ -1,0 +1,575 @@
+// Wasm_of_ocaml runtime support
+// http://www.ocsigen.org/js_of_ocaml/
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, with linking exception;
+// either version 2.1 of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+
+import "fail" fn caml_failwith(&eq);
+import "array" {
+    fn caml_check_array_length(i32);
+    fn caml_check_float_array_length(i32);
+}
+import "custom" {
+    fn caml_is_custom(&eq) -> i32;
+    fn caml_dup_custom(&eq) -> &eq;
+}
+import "effect" fn caml_is_continuation(&eq) -> i32;
+#[if(effects = "cps")]
+{
+    import "effect" fn caml_cps_trampoline(&eq, &eq) -> &eq;
+}
+
+type block = [mut &eq];
+type bytes = [mut i8];
+type float = { f: f64 };
+type float_array = [mut f64];
+type function_1 = fn(&eq, &eq) -> &eq;
+type closure = open { func: &function_1 };
+type closure_last_arg: closure = open { .. };
+type function_2 = fn(&eq, &eq, &eq) -> &eq;
+#[if(not(effects = "double-translation"))]
+{
+    type cps_closure = open { func: &function_2 };
+    type cps_closure_last_arg: cps_closure = open { .. };
+}
+#[else]
+{
+    // With double translation, the closure of a function with a CPS version is
+    // a direct-style closure extended with the code pointers of the CPS
+    // version (see Gc_target.Type.code_pointer_fields in the compiler). Since
+    // Wasm types are structural, $cps_closure would otherwise be the same type
+    // as $closure_2; it is made a subtype of $closure_last_arg to keep the two
+    // apart. This does not mean it has a single argument left: as in direct
+    // style, that is what $cps_closure_last_arg denotes.
+    type cps_closure: closure_last_arg = open { .., cps_func: &function_2 };
+    type cps_closure_last_arg: cps_closure = open { .. };
+}
+
+type int_array = [mut i32];
+
+type dummy_closure_1: closure_last_arg = { .., closure: mut &?closure };
+
+type closure_2: closure = open { .., direct: &function_2 };
+
+type dummy_closure_2: closure_2 = { .., closure: mut &?closure_2 };
+
+type function_3 = fn(&eq, &eq, &eq, &eq) -> &eq;
+
+type closure_3: closure = open { .., direct: &function_3 };
+
+type dummy_closure_3: closure_3 = { .., closure: mut &?closure_3 };
+
+type function_4 = fn(&eq, &eq, &eq, &eq, &eq) -> &eq;
+
+type closure_4: closure = open { .., direct: &function_4 };
+
+type dummy_closure_4: closure_4 = { .., closure: mut &?closure_4 };
+
+// Only used when functions are compiled in CPS: with double translation,
+// recursive values are initialised with direct-style dummy closures.
+#[if(not(effects = "double-translation"))]
+{
+    type cps_dummy_closure: cps_closure_last_arg = { .., closure: mut &?cps_closure };
+}
+#[else]
+{
+    type cps_dummy_closure: cps_closure_last_arg = { .., closure: mut &?cps_closure };
+}
+
+#[export]
+const forcing_tag = 244;
+#[export]
+const cont_tag = 245;
+#[export]
+const lazy_tag = 246;
+const closure_tag = 247;
+#[export]
+const object_tag = 248;
+#[export]
+const forward_tag = 250;
+#[export]
+const abstract_tag = 251;
+const string_tag = 252;
+const float_tag = 253;
+#[export]
+const double_array_tag = 254;
+const custom_tag = 255;
+
+#[export]
+fn caml_obj_is_stack(&eq) -> &eq {
+    0 as &i31;
+}
+
+#[export]
+fn caml_succ_scannable_prefix_len(&eq) -> &eq {
+    0 as &i31;
+}
+
+const unique_words_unsupported = "Obj.uniquely_reachable_words is not available in wasm.";
+
+#[export]
+fn caml_obj_uniquely_reachable_words(&eq) -> &eq {
+    caml_failwith(unique_words_unsupported);
+    0 as &i31;
+}
+
+#[export]
+fn caml_is_closure(v: &eq) -> i32 {
+    v is &closure | v is &cps_closure;
+}
+
+// Whether applying one more argument to this closure completes the call.
+// With double translation, $cps_closure is a subtype of $closure_last_arg,
+// so the CPS hierarchy must be tested first.
+#[export]
+fn caml_is_last_arg(v: &eq) -> i32 {
+    if v is &cps_closure {
+        v is &cps_closure_last_arg;
+    } else {
+        v is &closure_last_arg;
+    }
+}
+
+#[export]
+fn caml_alloc_dummy(size: &eq) -> &eq {
+    caml_check_array_length(size as i32_u);
+    [block|0 as &i31; size as i32_u + 1];
+}
+
+#[export]
+fn caml_alloc_dummy_float(size: &eq) -> &eq {
+    let sz = size as i32_u;
+    caml_check_float_array_length(sz);
+    if !sz {
+        return [block|0 as &i31];
+    }
+    [float_array|0; sz];
+}
+
+#[export]
+fn caml_alloc_dummy_mixed(size: &eq, &eq) -> &eq {
+    caml_check_array_length(size as i32_u);
+    [block|0 as &i31; size as i32_u + 1];
+}
+
+#[export]
+fn caml_update_dummy(dummy: &eq, newval: &eq) -> &eq {
+    match dummy {
+        dst: &block => {
+            let src = newval as &block;
+            dst.copy(0, src, 0, dst.length());
+            return 0 as &i31;
+        }
+        fdst: &float_array => {
+            fdst.copy(0, newval as &float_array, 0, fdst.length());
+            return 0 as &i31;
+        }
+        c1: &dummy_closure_1 => {
+            c1.closure = newval as &closure;
+            return 0 as &i31;
+        }
+        c2: &dummy_closure_2 => {
+            c2.closure = newval as &closure_2;
+            return 0 as &i31;
+        }
+        c3: &dummy_closure_3 => {
+            c3.closure = newval as &closure_3;
+            return 0 as &i31;
+        }
+        c4: &dummy_closure_4 => {
+            c4.closure = newval as &closure_4;
+            return 0 as &i31;
+        }
+        ccps: &cps_dummy_closure => {
+            ccps.closure = newval as &cps_closure;
+            return 0 as &i31;
+        }
+        _ => {
+            unreachable;
+        }
+    }
+}
+
+#[export]
+fn caml_alloc_dummy_lazy(&eq) -> &eq {
+    [block|0 as &i31, 0 as &i31];
+}
+
+#[export]
+fn caml_update_dummy_lazy(dummy: &eq, newval: &eq) -> &eq {
+    let tg = caml_obj_tag(newval) as i32_s;
+    'update: do {
+        br_if 'update tg == lazy_tag;
+        br_if 'update tg == forcing_tag;
+        br_if 'update tg == forward_tag;
+        let b = dummy as &block;
+        b[0] = forward_tag as &i31;
+        b[1] = newval;
+        return 0 as &i31;
+    }
+    become caml_update_dummy(dummy, newval);
+}
+
+#[export]
+fn caml_obj_dup(v: &eq) -> &eq {
+    // Handle null values for or_null
+    if v == null_value {
+        return null_value;
+    }
+    // Handle immediate integers
+    if v is &i31 {
+        return v;
+    }
+    let len: i32;
+    match v {
+        orig: &block => {
+            len = orig.length();
+            let res: &block = [orig[0]; len];
+            res.copy(1, orig, 1, len - 1);
+            return res;
+        }
+        forig: &float_array => {
+            len = forig.length();
+            let fres: &float_array = [0; len];
+            fres.copy(0, forig, 0, len);
+            return fres;
+        }
+        s: &bytes => {
+            len = s.length();
+            let s': &bytes = [0; len];
+            s'.copy(0, s, 0, len);
+            return s';
+        }
+        _ => {
+            _ =
+                'not_float: do {
+                    return { f: (br_on_cast_fail 'not_float &float v).f };
+                };
+            caml_dup_custom(v);
+        }
+    }
+}
+
+#[export]
+fn caml_obj_with_tag(tg: &eq, v: &eq) -> &eq {
+    let res = caml_obj_dup(v);
+    (res as &block)[0] = tg;
+    res;
+}
+
+#[export]
+fn caml_obj_block(tg: &eq, size: &eq) -> &eq {
+    // TODO: fail for values that are not represented as an array
+    let n = size as i32_s;
+    // Float arrays have a dedicated representation; a generic block
+    // would trap on the first float-array primitive.
+    if tg as i32_s == double_array_tag {
+        caml_check_float_array_length(n);
+        return [float_array|0; n];
+    }
+    caml_check_array_length(n);
+    let res: &block = [0 as &i31; n + 1];
+    res[0] = tg;
+    res;
+}
+
+#[export]
+fn caml_obj_tag(v: &eq) -> &eq {
+    if v == null_value {
+        return 1010 as &i31;
+    }
+    if v is &i31 {
+        return 1000 as &i31;
+    }
+    _ =
+        'not_block: do {
+            return (br_on_cast_fail 'not_block &block v)[0];
+        };
+    if v is &bytes {
+        return string_tag as &i31;
+    }
+    if v is &float {
+        return float_tag as &i31;
+    }
+    if v is &float_array {
+        return double_array_tag as &i31;
+    }
+    if caml_is_custom(v) {
+        return custom_tag as &i31;
+    }
+    if caml_is_closure(v) {
+        return closure_tag as &i31;
+    }
+    if caml_is_continuation(v) {
+        return cont_tag as &i31;
+    }
+    abstract_tag as &i31;
+}
+
+#[export]
+fn caml_obj_make_forward(b: &eq, v: &eq) -> &eq {
+    let block = b as &block;
+    block[0] = forward_tag as &i31;
+    block[1] = v;
+    0 as &i31;
+}
+
+#[export]
+fn caml_lazy_make_forward(v: &eq) -> &eq {
+    [block|forward_tag as &i31, v];
+}
+
+fn obj_update_tag(v: &eq, o: i32, n: i32) -> i32 {
+    let b = v as &block;
+    if b[0] == o as &i31 {
+        b[0] = n as &i31;
+        1;
+    } else {
+        0;
+    }
+}
+
+#[export]
+fn caml_lazy_reset_to_lazy(v: &eq) -> &eq {
+    _ = obj_update_tag(v, forcing_tag, lazy_tag);
+    0 as &i31;
+}
+
+#[export]
+fn caml_lazy_update_to_forward(v: &eq) -> &eq {
+    _ = obj_update_tag(v, forcing_tag, forward_tag);
+    0 as &i31;
+}
+
+#[export]
+fn caml_lazy_update_to_forcing(v: &eq) -> &eq {
+    if v is &block {
+        if obj_update_tag(v, lazy_tag, forcing_tag) {
+            return 0 as &i31;
+        }
+    }
+    1 as &i31;
+}
+
+#[export]
+fn caml_obj_compare_and_swap(v: &eq, vi: &eq, old: &eq, new: &eq) -> &eq {
+    let b = v as &block;
+    let i = vi as i32_u + 1;
+    if b[i] == old {
+        b[i] = new;
+        1 as &i31;
+    } else {
+        0 as &i31;
+    }
+}
+
+#[export]
+fn caml_obj_is_shared(&eq) -> &eq {
+    1 as &i31;
+}
+
+#[export]
+fn caml_obj_raw_field(o: &eq, i: &eq) -> &eq {
+    if o is &block {
+        return (o as &block)[i as i32_u + 1];
+    }
+    0 as &i31;
+}
+
+#[export]
+fn caml_obj_set_raw_field(o: &eq, i: &eq, v: &eq) -> &eq {
+    if o is &block {
+        (o as &block)[i as i32_u + 1] = v;
+    }
+    0 as &i31;
+}
+
+const not_implemented = "Obj.add_offset is not supported";
+
+#[export]
+fn caml_obj_add_offset(&eq, &eq) -> &eq {
+    caml_failwith(not_implemented);
+    0 as &i31;
+}
+
+const truncate_not_implemented = "Obj.truncate is not supported";
+
+#[export]
+fn caml_obj_truncate(&eq, &eq) -> &eq {
+    caml_failwith(truncate_not_implemented);
+    0 as &i31;
+}
+
+let method_cache: &int_array = [4; 8];
+
+let caml_oo_cache_id_last = 0;
+
+#[export]
+fn caml_oo_cache_id() -> &eq {
+    let cacheid = caml_oo_cache_id_last;
+    caml_oo_cache_id_last = cacheid + 1;
+    let len = method_cache.length();
+    if cacheid >=s len {
+        'size: loop {
+            len <<= 1;
+            br_if 'size cacheid >=s len;
+        }
+        let a: &int_array = [4; len];
+        a.copy(0, method_cache, 0, method_cache.length());
+        method_cache = a;
+    }
+    cacheid as &i31;
+}
+
+#[export]
+fn caml_get_cached_method(obj: &eq, vtag: &eq, vcacheid: &eq) -> &eq {
+    let meths = (obj as &block)[1] as &block;
+    let cacheid = vcacheid as i32_u;
+    let ofs = method_cache[cacheid];
+    if ofs <u meths.length() {
+        if vtag == meths[ofs] {
+            return meths[ofs - 1];
+        }
+    }
+    let tg = vtag as i32_s;
+    let li = 3;
+    let hi = (meths[1] as i32_u << 1) + 1;
+    while li <u hi {
+        let mi = (li + hi) >>u 1 | 1;
+        if tg <s meths[mi + 1] as i32_s {
+            hi = mi - 2;
+        } else {
+            li = mi;
+        }
+    }
+    method_cache[cacheid] = li + 1;
+    meths[li];
+}
+
+#[export]
+fn caml_get_public_method(obj: &eq, vtag: &eq) -> &eq {
+    let meths = (obj as &block)[1] as &block;
+    let tg = vtag as i32_s;
+    let li = 3;
+    let hi = (meths[1] as i32_u << 1) + 1;
+    while li <u hi {
+        let mi = (li + hi) >>u 1 | 1;
+        if tg <s meths[mi + 1] as i32_s {
+            hi = mi - 2;
+        } else {
+            li = mi;
+        }
+    }
+    if vtag == meths[li + 1] {
+        meths[li];
+    } else {
+        0 as &i31;
+    }
+}
+
+let caml_oo_last_id = 0;
+
+#[export]
+fn caml_set_oo_id(v: &eq) -> &eq {
+    let id = caml_oo_last_id;
+    (v as &block)[2] = id as &i31;
+    caml_oo_last_id = id + 1;
+    v;
+}
+
+#[export]
+fn caml_fresh_oo_id(&eq) -> &eq {
+    let id = caml_oo_last_id;
+    caml_oo_last_id = id + 1;
+    id as &i31;
+}
+
+#[export]
+fn caml_obj_reachable_words(&eq) -> &eq {
+    0 as &i31;
+}
+
+#[if(effects = "cps")]
+{
+    #[export]
+    fn caml_callback_1(f: &eq, x: &eq) -> &eq {
+        become caml_cps_trampoline(f, [block|0 as &i31, x]);
+    }
+
+    #[export]
+    fn caml_callback_2(f: &eq, x: &eq, y: &eq) -> &eq {
+        become caml_cps_trampoline(f, [block|0 as &i31, x, y]);
+    }
+}
+#[else]
+{
+    #[export]
+    fn caml_callback_1(f: &eq, x: &eq) -> &eq {
+        become (f as &closure).func(x, f);
+    }
+
+    #[export]
+    fn caml_callback_2(f: &eq, x: &eq, y: &eq) -> &eq {
+        _ =
+            'not_direct: do {
+                become (br_on_cast_fail 'not_direct &closure_2 f).direct(x, y, f);
+            };
+        become caml_callback_1(caml_callback_1(f, x), y);
+    }
+}
+
+type null_value = { };
+#[export = "null"]
+const null_value = { };
+
+const int_as_pointer_not_implemented = "caml_int_as_pointer is not supported";
+
+#[export]
+fn caml_int_as_pointer(x: &eq) -> &eq {
+    if x != 0 as &i31 {
+        caml_failwith(int_as_pointer_not_implemented);
+    }
+    null_value;
+}
+
+#[if(introspect)]
+{
+    // A reference cell holding the (empty) list of block descriptors
+    const block_descs: &eq = [block|0 as &i31, 0 as &i31];
+
+    #[export]
+    fn caml_compiler_block_descs(&eq) -> &eq {
+        block_descs;
+    }
+
+    #[export]
+    fn caml_obj_reserved_bits(&eq) -> &eq {
+        0 as &i31;
+    }
+
+    #[export]
+    fn caml_obj_get_reserved(&eq) -> &eq {
+        0 as &i31;
+    }
+
+    #[export]
+    fn caml_obj_set_reserved(&eq, &eq) -> &eq {
+        0 as &i31;
+    }
+
+    #[export]
+    fn caml_read_bdsc_section(&eq) -> &eq {
+        0 as &i31;
+    }
+}

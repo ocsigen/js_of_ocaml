@@ -1,0 +1,935 @@
+// Wasm_of_ocaml runtime support
+// http://www.ocsigen.org/js_of_ocaml/
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, with linking exception;
+// either version 2.1 of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+
+import "fail" {
+    fn caml_raise_constant(&eq);
+    fn caml_raise_with_arg(tg: &eq, arg: &eq);
+    fn caml_failwith(&eq);
+}
+import "obj" {
+    fn caml_fresh_oo_id(&eq) -> &eq;
+    const cont_tag: i32;
+    const object_tag: i32;
+    fn caml_callback_1(&eq, &eq) -> &eq;
+}
+import "stdlib" fn caml_named_value(&eq) -> &?eq;
+import "fail" {
+    tag ocaml_exception(&eq);
+    tag javascript_exception(&?extern);
+}
+#[if(wasi)]
+{
+    fn caml_wrap_exception(&?extern) -> &eq {
+        unreachable;
+    }
+}
+#[else]
+{
+    import "jslib" fn caml_wrap_exception(&?extern) -> &eq;
+    import "bindings" {
+        fn start_fiber(&eq);
+        fn suspend_fiber(f: &?func, env: &?eq) -> &?any;
+        fn resume_fiber(&?extern, &eq);
+    }
+}
+
+type block = [mut &eq];
+type bytes = [mut i8];
+type function_1 = fn(&eq, &eq) -> &eq;
+type closure = open { func: &function_1 };
+type function_3 = fn(&eq, &eq, &eq, &eq) -> &eq;
+type closure_3: closure = open { .., direct: &function_3 };
+
+// Generic fibers
+
+type generic_fiber = open { value: mut &eq, exn: mut &eq, effect: mut &eq };
+
+const already_resumed = "Effect.Continuation_already_resumed";
+
+const effect_unhandled = "Effect.Unhandled";
+
+fn raise_unhandled(eff: &eq, &eq) -> &eq {
+    'null: do {
+        caml_raise_with_arg(br_on_null 'null caml_named_value(effect_unhandled), eff);
+    }
+    caml_raise_constant([block|object_tag as &i31, effect_unhandled, caml_fresh_oo_id(0 as &i31)]);
+    0 as &i31;
+}
+
+const raise_unhandled_closure = { func: raise_unhandled };
+
+#[export]
+fn caml_continuation_use_noexc(vcont: &eq) -> &eq {
+    _ =
+        'used: do {
+            let continuation = vcont as &block;
+            let stack = br_on_cast_fail 'used &generic_fiber continuation[1];
+            continuation[1] = 0 as &i31;
+            return stack;
+        };
+    0 as &i31;
+}
+
+#[export]
+fn caml_continuation_use_and_update_handler_noexc(
+    continuation: &eq,
+    value: &eq,
+    exn: &eq,
+    effect: &eq,
+) -> &eq {
+    let stack = caml_continuation_use_noexc(continuation);
+    if stack is &generic_fiber {
+        let tail = (continuation as &block)[2] as &generic_fiber;
+        tail.value = value;
+        tail.exn = exn;
+        tail.effect = effect;
+    }
+    stack;
+}
+
+#[export]
+fn caml_continuation_update_handler_noexc(
+    continuation: &eq,
+    value: &eq,
+    exn: &eq,
+    effect: &eq,
+) -> &eq {
+    // Peek at the stack without consuming the continuation. If it is null
+    // the continuation has already been taken, so we leave it untouched.
+    if (continuation as &block)[1] is &generic_fiber {
+        let tail = (continuation as &block)[2] as &generic_fiber;
+        tail.value = value;
+        tail.exn = exn;
+        tail.effect = effect;
+    }
+    continuation;
+}
+
+#[export]
+fn caml_get_continuation_callstack(&eq, &eq) -> &eq {
+    [block|0 as &i31];
+}
+
+#[export]
+fn caml_is_continuation(v: &eq) -> i32 {
+    match v {
+        blk: &block => {
+            return blk[0] == cont_tag as &i31;
+        }
+        _ => {
+            0;
+        }
+    }
+}
+
+#[if(all(effects = "jspi", not(wasi)))]
+{
+    // Apply a function f to a value v, both contained in a pair (f, v)
+
+    type pair = { f: &eq, v: &eq };
+
+    fn apply_pair(p: &pair) -> &eq {
+        let f: &eq;
+        become (f as &closure).func(p.v, f := p.f);
+    }
+
+    // Low-level primitives
+
+    // Capturing the current continuation
+
+    type cont_func = fn(&pair, &eq);
+    type continuation = open { cont_func: &cont_func };
+
+    type called_with_continuation = fn(&continuation, &eq);
+
+    type thunk = { func: &called_with_continuation, v: &eq };
+
+    type cont_resume: continuation = { .., cont_resolver: &?extern };
+
+    fn invoke_promise_resolver(p: &pair, k: &eq) {
+        become resume_fiber((k as &cont_resume).cont_resolver, p);
+    }
+
+    fn apply_continuation(cont_resolver: &extern, v: &eq) {
+        let t = v as &thunk;
+        become t.func({ cont_func: invoke_promise_resolver, cont_resolver }, t.v);
+    }
+
+    const unsupported =
+        "Effect handlers are not supported: the JavaScript Promise Integration API is not enabled";
+
+    fn capture_continuation(func: &called_with_continuation, v: &eq) -> &eq {
+        _ =
+            'unsupported: do {
+                become apply_pair(
+                    br_on_cast_fail 'unsupported &pair
+                        suspend_fiber(apply_continuation, { func, v }),
+                );
+            };
+        caml_failwith(unsupported);
+        0 as &i31;
+    }
+
+    // Stack of fibers
+
+    type fiber: generic_fiber = { .., continuation: mut &continuation, next: mut &?fiber };
+
+    fn initial_cont(p: &pair, &eq) {
+        become start_fiber(p);
+    }
+
+    const initial_cont_closure = { cont_func: initial_cont };
+
+    let stack =
+        {
+            value: 0 as &i31,
+            exn: 0 as &i31,
+            effect: 0 as &i31,
+            continuation: initial_cont_closure,
+            next: null,
+        };
+
+    // Utility functions moving fibers between a continuation and the
+    // current stack of fibers
+
+    fn pop_fiber() -> &continuation {
+        let f = stack.next!;
+        stack.next = null;
+        stack = f;
+        f.continuation;
+    }
+
+    fn push_stack(head: &fiber, tail: &fiber, continuation: &continuation) -> &continuation {
+        stack.continuation = continuation;
+        tail.next = stack;
+        stack = head;
+        head.continuation;
+    }
+
+    // Resume
+
+    type resume_state = { head: &eq, tail: &eq, dat: &pair };
+
+    fn do_resume(k: &continuation, vp: &eq) {
+        let p = vp as &resume_state;
+        let head = p.head as &fiber;
+        let tail: &fiber;
+        tail =
+            'available: do {
+                _ = br_on_cast 'available &fiber p.tail;
+                tail = head;
+                // Pre OCaml 5.2, last was not populated.
+                'done: do {
+                    'loop: loop {
+                        tail = br_on_null 'done tail.next;
+                        br 'loop;
+                    }
+                }
+                tail;
+            };
+        k = push_stack(head, tail, k);
+        become k.cont_func(p.dat, k);
+    }
+
+    #[export = "%resume"]
+    fn resume_prim(head: &eq, f: &eq, v: &eq, tail: &eq) -> &eq {
+        let k: &continuation;
+        let pair: &pair;
+        if head == 0 as &i31 {
+            caml_raise_constant(caml_named_value(already_resumed)!);
+        }
+        become capture_continuation(do_resume, { head, tail, dat: { f, v } });
+    }
+
+    // Perform
+
+    type call_handler_env: closure = { .., handler: &eq, eff: &eq, continuation: &eq };
+
+    #[if(ocaml_version < (5, 6, 0))]
+    {
+        fn call_effect_handler(tail: &eq, venv: &eq) -> &eq {
+            let env = venv as &call_handler_env;
+            let handler: &closure_3;
+            become handler.direct(
+                env.eff,
+                env.continuation,
+                tail,
+                handler := env.handler as &closure_3,
+            );
+        }
+    }
+    #[else]
+    {
+        type function_2 = fn(&eq, &eq, &eq) -> &eq;
+        type closure_2: closure = open { .., direct: &function_2 };
+
+        fn call_effect_handler(_tail: &eq, venv: &eq) -> &eq {
+            let env = venv as &call_handler_env;
+            let handler: &closure_2;
+            become handler.direct(env.eff, env.continuation, handler := env.handler as &closure_2);
+        }
+    }
+
+    fn do_perform(k0: &continuation, eff: &eq) {
+        let handler = stack.effect;
+        let v = stack;
+        v.continuation = k0;
+        let continuation: &block = [cont_tag as &i31, v, v];
+        let k1 = pop_fiber();
+        become k1.cont_func(
+            { f: { func: call_effect_handler, handler, eff, continuation }, v },
+            k1,
+        );
+    }
+
+    #[export = "%perform"]
+    fn f(eff: &eq) -> &eq {
+        if !stack.next {
+            become raise_unhandled(eff, 0 as &i31);
+        }
+        become capture_continuation(do_perform, eff);
+    }
+
+    type reperform = { eff: &eq, continuation: &eq, tail: &eq };
+
+    fn do_reperform(k0: &continuation, vp: &eq) {
+        let eff: &eq;
+        let p = vp as &reperform;
+        let continuation = p.continuation as &block;
+        let tail = p.tail as &fiber;
+        let handler = stack.effect;
+        let last_fiber = stack;
+        last_fiber.continuation = k0;
+        tail.next = last_fiber;
+        continuation[2] = last_fiber;
+        let k1 = pop_fiber();
+        become k1.cont_func(
+            { f: { func: call_effect_handler, handler, eff: p.eff, continuation }, v: last_fiber },
+            k1,
+        );
+    }
+
+    #[if(ocaml_version < (5, 6, 0))]
+    {
+        #[export = "%reperform"]
+        fn reperform(eff: &eq, continuation: &eq, tail: &eq) -> &eq {
+            if !stack.next {
+                become resume_prim(
+                    caml_continuation_use_noexc(continuation),
+                    raise_unhandled_closure,
+                    eff,
+                    tail,
+                );
+            }
+            become capture_continuation(do_reperform, { eff, continuation, tail });
+        }
+    }
+    #[else]
+    {
+        #[export = "%reperform"]
+        fn reperform(eff: &eq, continuation: &eq, _tail: &eq) -> &eq {
+            // [cont_last_fiber] is gone in OCaml 5.6, but we still maintain the
+            // tail at cont[2] ourselves on every (re)perform.
+            let tail = (continuation as &block)[2];
+            if !stack.next {
+                become resume_prim(
+                    caml_continuation_use_noexc(continuation),
+                    raise_unhandled_closure,
+                    eff,
+                    tail,
+                );
+            }
+            become capture_continuation(do_reperform, { eff, continuation, tail });
+        }
+    }
+
+    // Allocate a stack
+
+    fn call_handler(f: &eq, v: &eq) {
+        let continuation: &continuation;
+        // Propagate a value or an exception to the parent fiber
+        become continuation.cont_func({ f, v }, continuation := pop_fiber());
+    }
+
+    #[export]
+    fn caml_start_fiber(p: &?eq) {
+        // Start executing some code in a new fiber
+        let res =
+            try_legacy {
+                try_legacy {
+                    apply_pair(p as &pair);
+                } catch {
+                    javascript_exception => {
+                        throw ocaml_exception(caml_wrap_exception(_));
+                    }
+                }
+            } catch {
+                ocaml_exception => {
+                    let exn = _;
+                    become call_handler(stack.exn, exn);
+                }
+            };
+        become call_handler(stack.value, res);
+    }
+
+    #[export]
+    fn caml_alloc_stack(value: &eq, exn: &eq, effect: &eq) -> &eq {
+        { value, exn, effect, continuation: initial_cont_closure, next: null };
+    }
+
+    #[export = "%with_stack"]
+    fn f_2(value: &eq, exn: &eq, effect: &eq, f: &eq, v: &eq) -> &eq {
+        let stack = { value, exn, effect, continuation: initial_cont_closure, next: null };
+        become capture_continuation(do_resume, { head: stack, tail: stack, dat: { f, v } });
+    }
+
+    #[export = "%with_stack_bind"]
+    fn f_3(value: &eq, exn: &eq, effect: &eq, dyn: &eq, bind: &eq, f: &eq, v: &eq) -> &eq {
+        let stack = { value, exn, effect, continuation: initial_cont_closure, next: null };
+        become capture_continuation(do_resume, { head: stack, tail: stack, dat: { f, v } });
+    }
+
+    #[export]
+    fn caml_assume_no_perform(f: &eq) -> &eq {
+        // Run [f] on a fresh root fiber: an effect performed directly in
+        // [f] sees no handler and raises Effect.Unhandled, while a handler
+        // installed inside [f] pushes onto this root and works as usual.
+        // The root's continuation is filled in by $push_stack when needed.
+        let saved_stack = stack;
+        stack =
+            {
+                value: 0 as &i31,
+                exn: 0 as &i31,
+                effect: 0 as &i31,
+                continuation: initial_cont_closure,
+                next: null,
+            };
+        let exn: &eq;
+        let res =
+            try_legacy {
+                caml_callback_1(f, 0 as &i31);
+            } catch {
+                ocaml_exception => {
+                    exn = _;
+                    stack = saved_stack;
+                    throw ocaml_exception(exn);
+                }
+                javascript_exception => {
+                    exn = caml_wrap_exception(_);
+                    stack = saved_stack;
+                    throw ocaml_exception(exn);
+                }
+            };
+        stack = saved_stack;
+        res;
+    }
+}
+
+#[if(any(effects = "cps", effects = "double-translation"))]
+{
+    type function_2 = fn(&eq, &eq, &eq) -> &eq;
+    type function_4 = fn(&eq, &eq, &eq, &eq, &eq) -> &eq;
+    #[if(not(effects = "double-translation"))]
+    {
+        type cps_closure = open { cps_func: &function_2 };
+        type cps_closure_0 = open { cps_func: &function_1 };
+        type cps_closure_2: cps_closure = open { .., cps_direct: &function_3 };
+        type cps_closure_3: cps_closure = open { .., cps_direct: &function_4 };
+    }
+    #[else]
+    {
+        // With double translation, functions are compiled in direct style, and
+        // those that may be involved in the handling of effects also have a
+        // CPS version. Their closure is a direct-style closure extended with the
+        // code pointers of the CPS version (see Gc_target.Type.code_pointer_fields
+        // in the compiler). The other functions have plain direct-style closures.
+        type function_0 = fn(&eq) -> &eq;
+        type closure_0 = open { func: &function_0 };
+        type closure_last_arg: closure = open { .. };
+        type closure_2: closure = open { .., direct: &function_2 };
+        // Wasm types are structural, but include the supertype: $cps_closure has
+        // the same fields as $closure_2, and is a subtype of $closure_last_arg
+        // rather than of $closure to be a distinct type.
+        type cps_closure: closure_last_arg = open { .., cps_func: &function_2 };
+        type cps_closure_0: closure_0 = open { .., cps_func: &function_1 };
+        type cps_closure_2: closure_2 = open {
+            ..,
+            cps_func: &function_2,
+            cps_direct: &function_3
+        };
+        type cps_closure_3: closure_3 = open {
+            ..,
+            cps_func: &function_2,
+            cps_direct: &function_4
+        };
+    }
+
+    type iterator: closure = { .., i: mut i32, args: &block };
+
+    type exn_stack = { h: &eq, next: &?exn_stack };
+
+    type cps_fiber: generic_fiber = {
+        ..,
+        continuation: mut &eq,
+        exn_stack: mut &?exn_stack,
+        next: mut &?cps_fiber
+    };
+
+    let cps_fiber_stack =
+        {
+            value: 0 as &i31,
+            exn: 0 as &i31,
+            effect: 0 as &i31,
+            continuation: 0 as &i31,
+            exn_stack: null,
+            next: null,
+        };
+
+    #[export]
+    fn caml_push_trap(h: &eq) -> &eq {
+        cps_fiber_stack.exn_stack = { h, next: cps_fiber_stack.exn_stack };
+        0 as &i31;
+    }
+
+    fn raise_exception(exn: &eq, &eq) -> &eq {
+        throw ocaml_exception(exn);
+    }
+
+    const raise_exception_closure = { func: raise_exception };
+
+    #[export]
+    fn caml_pop_trap() -> &eq {
+        'empty: do {
+            let top = br_on_null 'empty cps_fiber_stack.exn_stack;
+            cps_fiber_stack.exn_stack = top.next;
+            return top.h;
+        }
+        raise_exception_closure;
+    }
+
+    #[export]
+    fn caml_maybe_attach_backtrace(exn: &eq, &eq) -> &eq {
+        exn;
+    }
+
+    fn identity(v: &eq, &eq) -> &eq {
+        v;
+    }
+
+    const identity_closure = { func: identity };
+
+    fn trampoline_iterator(f: &eq, venv: &eq) -> &eq {
+        let env = venv as &iterator;
+        let i = env.i;
+        let args = env.args;
+        env.i = i + 1;
+        become cps_call_1(
+            args[i],
+            if i + 1 == args.length() {
+                identity_closure;
+            } else {
+                env;
+            },
+            f,
+        );
+    }
+
+    fn apply_iterator(f: &eq, venv: &eq) -> &eq {
+        let env = venv as &iterator;
+        let i = env.i;
+        let args = env.args;
+        env.i = i + 1;
+        become cps_call_1(
+            args[i],
+            if i + 2 == args.length() {
+                args[i + 1];
+            } else {
+                env;
+            },
+            f,
+        );
+    }
+
+    #[export]
+    fn caml_apply_continuation(args: &eq) -> &eq {
+        { func: apply_iterator, i: 1, args: args as &block };
+    }
+
+    // CPS calls to functions which may, with double translation, have no CPS
+    // version: such functions cannot perform an effect; they are then called
+    // in direct style and the result is passed to the continuation (see
+    // Gc_target.Memory.cps_call_or_direct in the compiler).
+
+    fn call_continuation(k: &eq, v: &eq) -> &eq {
+        become (k as &closure).func(v, k);
+    }
+
+    fn cps_call_0(k: &eq, f: &eq) -> &eq {
+        #[if(effects = "double-translation")]
+        {
+            _ =
+                'direct: do {
+                    become (br_on_cast_fail 'direct &cps_closure_0 f).cps_func(k, f);
+                };
+            become call_continuation(k, (f as &closure_0).func(f));
+        }
+        #[else]
+        {
+            become (f as &cps_closure_0).cps_func(k, f);
+        }
+    }
+
+    fn cps_call_1(x: &eq, k: &eq, f: &eq) -> &eq {
+        #[if(effects = "double-translation")]
+        {
+            _ =
+                'direct: do {
+                    become (br_on_cast_fail 'direct &cps_closure f).cps_func(x, k, f);
+                };
+            become call_continuation(k, (f as &closure).func(x, f));
+        }
+        #[else]
+        {
+            become (f as &cps_closure).cps_func(x, k, f);
+        }
+    }
+
+    fn cps_call_2(x: &eq, y: &eq, k: &eq, f: &eq) -> &eq {
+        #[if(effects = "double-translation")]
+        {
+            _ =
+                'direct: do {
+                    become (br_on_cast_fail 'direct &cps_closure_2 f).cps_direct(x, y, k, f);
+                };
+            become call_continuation(k, (f as &closure_2).direct(x, y, f));
+        }
+        #[else]
+        {
+            become (f as &cps_closure_2).cps_direct(x, y, k, f);
+        }
+    }
+
+    fn cps_call_3(x: &eq, y: &eq, z: &eq, k: &eq, f: &eq) -> &eq {
+        #[if(effects = "double-translation")]
+        {
+            _ =
+                'direct: do {
+                    become (br_on_cast_fail 'direct &cps_closure_3 f).cps_direct(x, y, z, k, f);
+                };
+            become call_continuation(k, (f as &closure_3).direct(x, y, z, f));
+        }
+        #[else]
+        {
+            become (f as &cps_closure_3).cps_direct(x, y, z, k, f);
+        }
+    }
+
+    fn dummy_cps_fun(&eq, &eq, &eq) -> &eq {
+        unreachable;
+    }
+
+    #[export = "caml_cps_trampoline"]
+    fn caml_trampoline(f: &eq, vargs: &eq) -> &eq {
+        let i: i32;
+        let saved_fiber_stack = cps_fiber_stack;
+        cps_fiber_stack =
+            {
+                value: 0 as &i31,
+                exn: 0 as &i31,
+                effect: 0 as &i31,
+                continuation: 0 as &i31,
+                exn_stack: null,
+                next: null,
+            };
+        let args = vargs as &block;
+        let res: &eq;
+        let exn =
+            try_legacy {
+                res =
+                    if args.length() == 1 {
+                        cps_call_0(identity_closure, f);
+                    } else {
+                        cps_call_1(
+                            args[1],
+                            if 2 == args.length() {
+                                identity_closure;
+                            } else {
+                                { func: trampoline_iterator, i: 2, args };
+                            },
+                            f,
+                        );
+                    };
+                cps_fiber_stack = saved_fiber_stack;
+                return res;
+            } catch {
+                ocaml_exception => {}
+                javascript_exception => {
+                    caml_wrap_exception(_);
+                }
+            };
+        'loop: loop {
+            'empty: do {
+                let top = br_on_null 'empty cps_fiber_stack.exn_stack;
+                cps_fiber_stack.exn_stack = top.next;
+                f = top.h;
+                try_legacy {
+                    res = (f as &closure).func(exn, f);
+                    cps_fiber_stack = saved_fiber_stack;
+                    return res;
+                } catch {
+                    ocaml_exception => {
+                        exn = _;
+                        br 'loop;
+                    }
+                    javascript_exception => {
+                        exn = caml_wrap_exception(_);
+                        br 'loop;
+                    }
+                }
+            }
+        }
+        cps_fiber_stack = saved_fiber_stack;
+        throw ocaml_exception(exn);
+    }
+
+    fn caml_pop_fiber() -> &eq {
+        let f = cps_fiber_stack.next!;
+        cps_fiber_stack.next = null;
+        cps_fiber_stack = f;
+        f.continuation;
+    }
+
+    #[export]
+    fn caml_resume_stack(vhead: &eq, vtail: &eq, continuation: &eq) -> &eq {
+        match vhead {
+            head: &cps_fiber => {
+                let tail: &cps_fiber;
+                tail =
+                    'available: do {
+                        _ = br_on_cast 'available &cps_fiber vtail;
+                        tail = head;
+                        // Pre OCaml 5.2, last was not populated.
+                        'done: do {
+                            'loop: loop {
+                                tail = br_on_null 'done tail.next;
+                                br 'loop;
+                            }
+                        }
+                        tail;
+                    };
+                cps_fiber_stack.continuation = continuation;
+                tail.next = cps_fiber_stack;
+                cps_fiber_stack = head;
+                return head.continuation;
+            }
+            _ => {
+                caml_raise_constant(caml_named_value(already_resumed)!);
+                0 as &i31;
+            }
+        }
+    }
+
+    #[if(ocaml_version < (5, 6, 0))]
+    {
+        #[export]
+        fn caml_perform_effect(eff: &eq, k0: &eq) -> &eq {
+            if !cps_fiber_stack.next {
+                become raise_unhandled(eff, 0 as &i31);
+            }
+            let handler = cps_fiber_stack.effect;
+            let last_fiber = cps_fiber_stack;
+            last_fiber.continuation = k0;
+            let continuation: &block = [cont_tag as &i31, last_fiber, last_fiber];
+            let k1 = caml_pop_fiber();
+            become cps_call_3(eff, continuation, last_fiber, k1, handler);
+        }
+    }
+    #[else]
+    {
+        #[export]
+        fn caml_perform_effect(eff: &eq, k0: &eq) -> &eq {
+            if !cps_fiber_stack.next {
+                become raise_unhandled(eff, 0 as &i31);
+            }
+            let handler = cps_fiber_stack.effect;
+            let last_fiber = cps_fiber_stack;
+            last_fiber.continuation = k0;
+            let continuation: &block = [cont_tag as &i31, last_fiber, last_fiber];
+            let k1 = caml_pop_fiber();
+            become cps_call_2(eff, continuation, k1, handler);
+        }
+    }
+
+    #[if(ocaml_version < (5, 6, 0))]
+    {
+        #[export]
+        fn caml_reperform_effect(eff: &eq, vcont: &eq, vtail: &eq, k0: &eq) -> &eq {
+            if !cps_fiber_stack.next {
+                _ = caml_resume_stack(caml_continuation_use_noexc(vcont), vtail, k0);
+                become raise_unhandled(eff, 0 as &i31);
+            }
+            let continuation = vcont as &block;
+            let tail = vtail as &cps_fiber;
+            let handler = cps_fiber_stack.effect;
+            let next = cps_fiber_stack;
+            next.continuation = k0;
+            tail.next = next;
+            continuation[2] = next;
+            let k1 = caml_pop_fiber();
+            become cps_call_3(eff, continuation, next, k1, handler);
+        }
+    }
+    #[else]
+    {
+        #[export]
+        fn caml_reperform_effect(eff: &eq, vcont: &eq, _vtail: &eq, k0: &eq) -> &eq {
+            let continuation = vcont as &block;
+            // [cont_last_fiber] is gone in OCaml 5.6, but we still maintain the
+            // tail at cont[2] ourselves on every (re)perform.
+            let tail = continuation[2] as &cps_fiber;
+            if !cps_fiber_stack.next {
+                _ = caml_resume_stack(caml_continuation_use_noexc(vcont), tail, k0);
+                become raise_unhandled(eff, 0 as &i31);
+            }
+            let handler = cps_fiber_stack.effect;
+            let last_fiber = cps_fiber_stack;
+            last_fiber.continuation = k0;
+            tail.next = last_fiber;
+            continuation[2] = last_fiber;
+            let k1 = caml_pop_fiber();
+            become cps_call_2(eff, continuation, k1, handler);
+        }
+    }
+
+    fn cps_call_handler(handler: &eq, x: &eq) -> &eq {
+        become cps_call_1(x, caml_pop_fiber(), handler);
+    }
+
+    fn value_handler(x: &eq, &eq) -> &eq {
+        become cps_call_handler(cps_fiber_stack.value, x);
+    }
+
+    const value_handler_closure = { func: value_handler };
+
+    fn exn_handler(x: &eq, &eq) -> &eq {
+        become cps_call_handler(cps_fiber_stack.exn, x);
+    }
+
+    const exn_handler_closure = { func: exn_handler };
+
+    #[if(effects = "double-translation")]
+    {
+        // Direct-style versions of the effect primitives, used by the
+        // direct-style code (see Effects.rewrite_direct_block in the compiler).
+        // They run CPS code to completion, as $caml_trampoline does.
+
+        fn dt_fresh_fiber() -> &cps_fiber {
+            // A fresh fiber, so that effects cannot cross into the caller (this
+            // code is only reached by calls that cannot perform an effect).
+            {
+                value: 0 as &i31,
+                exn: 0 as &i31,
+                effect: 0 as &i31,
+                continuation: 0 as &i31,
+                exn_stack: null,
+                next: null,
+            };
+        }
+
+        fn dt_handle_exception(saved: &cps_fiber, exn: &eq) -> &eq {
+            // Dispatch an exception to the exception handlers of the current
+            // fiber, then restore the fiber stack
+            'loop: loop {
+                'empty: do {
+                    let top = br_on_null 'empty cps_fiber_stack.exn_stack;
+                    cps_fiber_stack.exn_stack = top.next;
+                    let f = top.h;
+                    try_legacy {
+                        let res = (f as &closure).func(exn, f);
+                        cps_fiber_stack = saved;
+                        return res;
+                    } catch {
+                        ocaml_exception => {
+                            exn = _;
+                            br 'loop;
+                        }
+                        javascript_exception => {
+                            exn = caml_wrap_exception(_);
+                            br 'loop;
+                        }
+                    }
+                }
+            }
+            cps_fiber_stack = saved;
+            throw ocaml_exception(exn);
+        }
+
+        #[export]
+        fn caml_resume(f: &eq, arg: &eq, stack: &eq, last: &eq) -> &eq {
+            // Run [f arg] on the given stack
+            let saved = cps_fiber_stack;
+            cps_fiber_stack = dt_fresh_fiber();
+            let exn =
+                try_legacy {
+                    // Inside the [try], so that the fiber stack is restored if
+                    // the continuation has already been resumed
+                    let k = caml_resume_stack(stack, last, identity_closure);
+                    let res = cps_call_1(arg, k, f);
+                    cps_fiber_stack = saved;
+                    return res;
+                } catch {
+                    ocaml_exception => {}
+                    javascript_exception => {
+                        caml_wrap_exception(_);
+                    }
+                };
+            become dt_handle_exception(saved, exn);
+        }
+
+        #[export]
+        fn caml_raise_unhandled(eff: &eq) -> &eq {
+            become raise_unhandled(eff, 0 as &i31);
+        }
+    }
+    #[export]
+    fn caml_alloc_stack(value: &eq, exn: &eq, effect: &eq) -> &eq {
+        {
+            value,
+            exn,
+            effect,
+            continuation: value_handler_closure,
+            exn_stack: { h: exn_handler_closure, next: null },
+            next: null,
+        };
+    }
+}
+
+#[if(not(any(effects = "native", all(effects = "jspi", not(wasi)))))]
+{
+    // With the CPS transformation, the trampoline already runs [f] with no
+    // reachable handler; nothing to do beyond calling it.
+    #[export]
+    fn caml_assume_no_perform(f: &eq) -> &eq {
+        try_legacy {
+            caml_callback_1(f, 0 as &i31);
+        } catch {
+            javascript_exception => {
+                throw ocaml_exception(caml_wrap_exception(_));
+            }
+        }
+    }
+}

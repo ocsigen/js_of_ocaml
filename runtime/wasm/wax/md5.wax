@@ -1,0 +1,244 @@
+// Wasm_of_ocaml runtime support
+// http://www.ocsigen.org/js_of_ocaml/
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, with linking exception;
+// either version 2.1 of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+
+import "io" fn caml_getblock(&eq, &bytes, i32, i32) -> i32;
+import "fail" fn caml_raise_end_of_file();
+
+type bytes = [mut i8];
+type int_array = [mut i32];
+
+type context = {
+    w: &int_array, // w
+    len: mut i64, // len
+    buffer: &int_array, // buffer
+    intermediate: &bytes
+}; // intermediate buffer
+
+#[export]
+#[export = "caml_md5_bytes"]
+fn caml_md5_string(vs: &eq, vofs: &eq, vlen: &eq) -> &eq {
+    let ctx = MD5Init();
+    MD5Update(ctx, vs as &bytes, vofs as i32_u, vlen as i32_u);
+    become MD5Final(ctx);
+}
+
+#[export]
+fn caml_md5_chan(ch: &eq, vlen: &eq) -> &eq {
+    let len = vlen as i32_s;
+    let buf: &bytes = [0; 4096];
+    let ctx = MD5Init();
+    let read: i32;
+    if len <s 0 {
+        'loop: loop {
+            read = caml_getblock(ch, buf, 0, 4096);
+            if read {
+                MD5Update(ctx, buf, 0, read);
+                br 'loop;
+            }
+        }
+    } else {
+        while len : (len -= read) {
+            read = caml_getblock(ch, buf, 0, len <=u 4096?len:4096);
+            if !read {
+                caml_raise_end_of_file();
+            }
+            MD5Update(ctx, buf, 0, read);
+        }
+    }
+    become MD5Final(ctx);
+}
+
+fn xx(q: i32, a: i32, b: i32, x: i32, s: i32, t: i32) -> i32 {
+    (a + q + (x + t)).rotl(s) + b;
+}
+
+fn ff(a: i32, b: i32, c: i32, d: i32, x: i32, s: i32, t: i32) -> i32 {
+    xx(d ^ b & (c ^ d), a, b, x, s, t);
+}
+
+fn gg(a: i32, b: i32, c: i32, d: i32, x: i32, s: i32, t: i32) -> i32 {
+    xx(c ^ d & (b ^ c), a, b, x, s, t);
+}
+
+fn hh(a: i32, b: i32, c: i32, d: i32, x: i32, s: i32, t: i32) -> i32 {
+    xx(b ^ (c ^ d), a, b, x, s, t);
+}
+
+fn ii(a: i32, b: i32, c: i32, d: i32, x: i32, s: i32, t: i32) -> i32 {
+    xx(c ^ (b | d ^ -1), a, b, x, s, t);
+}
+
+fn get_32(s: &bytes, p: i32) -> i32 {
+    s[p] as i32_u | s[p + 1] as i32_u << 8 | (s[p + 2] as i32_u << 16 | s[p + 3] as i32_u << 24);
+}
+
+fn MD5Transform(w: &int_array, buffer: &int_array, buffer': &bytes, p: i32) {
+    let i: i32;
+    'loop: loop {
+        buffer[i] = get_32(buffer', p);
+        i += 1;
+        p += 4;
+        br_if 'loop i <u 16;
+    }
+    let a = w[0];
+    let b = w[1];
+    let c = w[2];
+    let d = w[3];
+    a = ff(a, b, c, d, buffer[0], 7, 0xD76AA478);
+    d = ff(d, a, b, c, buffer[1], 12, 0xE8C7B756);
+    c = ff(c, d, a, b, buffer[2], 17, 0x242070DB);
+    b = ff(b, c, d, a, buffer[3], 22, 0xC1BDCEEE);
+    a = ff(a, b, c, d, buffer[4], 7, 0xF57C0FAF);
+    d = ff(d, a, b, c, buffer[5], 12, 0x4787C62A);
+    c = ff(c, d, a, b, buffer[6], 17, 0xA8304613);
+    b = ff(b, c, d, a, buffer[7], 22, 0xFD469501);
+    a = ff(a, b, c, d, buffer[8], 7, 0x698098D8);
+    d = ff(d, a, b, c, buffer[9], 12, 0x8B44F7AF);
+    c = ff(c, d, a, b, buffer[10], 17, 0xFFFF5BB1);
+    b = ff(b, c, d, a, buffer[11], 22, 0x895CD7BE);
+    a = ff(a, b, c, d, buffer[12], 7, 0x6B901122);
+    d = ff(d, a, b, c, buffer[13], 12, 0xFD987193);
+    c = ff(c, d, a, b, buffer[14], 17, 0xA679438E);
+    b = ff(b, c, d, a, buffer[15], 22, 0x49B40821);
+    a = gg(a, b, c, d, buffer[1], 5, 0xF61E2562);
+    d = gg(d, a, b, c, buffer[6], 9, 0xC040B340);
+    c = gg(c, d, a, b, buffer[11], 14, 0x265E5A51);
+    b = gg(b, c, d, a, buffer[0], 20, 0xE9B6C7AA);
+    a = gg(a, b, c, d, buffer[5], 5, 0xD62F105D);
+    d = gg(d, a, b, c, buffer[10], 9, 0x02441453);
+    c = gg(c, d, a, b, buffer[15], 14, 0xD8A1E681);
+    b = gg(b, c, d, a, buffer[4], 20, 0xE7D3FBC8);
+    a = gg(a, b, c, d, buffer[9], 5, 0x21E1CDE6);
+    d = gg(d, a, b, c, buffer[14], 9, 0xC33707D6);
+    c = gg(c, d, a, b, buffer[3], 14, 0xF4D50D87);
+    b = gg(b, c, d, a, buffer[8], 20, 0x455A14ED);
+    a = gg(a, b, c, d, buffer[13], 5, 0xA9E3E905);
+    d = gg(d, a, b, c, buffer[2], 9, 0xFCEFA3F8);
+    c = gg(c, d, a, b, buffer[7], 14, 0x676F02D9);
+    b = gg(b, c, d, a, buffer[12], 20, 0x8D2A4C8A);
+    a = hh(a, b, c, d, buffer[5], 4, 0xFFFA3942);
+    d = hh(d, a, b, c, buffer[8], 11, 0x8771F681);
+    c = hh(c, d, a, b, buffer[11], 16, 0x6D9D6122);
+    b = hh(b, c, d, a, buffer[14], 23, 0xFDE5380C);
+    a = hh(a, b, c, d, buffer[1], 4, 0xA4BEEA44);
+    d = hh(d, a, b, c, buffer[4], 11, 0x4BDECFA9);
+    c = hh(c, d, a, b, buffer[7], 16, 0xF6BB4B60);
+    b = hh(b, c, d, a, buffer[10], 23, 0xBEBFBC70);
+    a = hh(a, b, c, d, buffer[13], 4, 0x289B7EC6);
+    d = hh(d, a, b, c, buffer[0], 11, 0xEAA127FA);
+    c = hh(c, d, a, b, buffer[3], 16, 0xD4EF3085);
+    b = hh(b, c, d, a, buffer[6], 23, 0x04881D05);
+    a = hh(a, b, c, d, buffer[9], 4, 0xD9D4D039);
+    d = hh(d, a, b, c, buffer[12], 11, 0xE6DB99E5);
+    c = hh(c, d, a, b, buffer[15], 16, 0x1FA27CF8);
+    b = hh(b, c, d, a, buffer[2], 23, 0xC4AC5665);
+    a = ii(a, b, c, d, buffer[0], 6, 0xF4292244);
+    d = ii(d, a, b, c, buffer[7], 10, 0x432AFF97);
+    c = ii(c, d, a, b, buffer[14], 15, 0xAB9423A7);
+    b = ii(b, c, d, a, buffer[5], 21, 0xFC93A039);
+    a = ii(a, b, c, d, buffer[12], 6, 0x655B59C3);
+    d = ii(d, a, b, c, buffer[3], 10, 0x8F0CCC92);
+    c = ii(c, d, a, b, buffer[10], 15, 0xFFEFF47D);
+    b = ii(b, c, d, a, buffer[1], 21, 0x85845DD1);
+    a = ii(a, b, c, d, buffer[8], 6, 0x6FA87E4F);
+    d = ii(d, a, b, c, buffer[15], 10, 0xFE2CE6E0);
+    c = ii(c, d, a, b, buffer[6], 15, 0xA3014314);
+    b = ii(b, c, d, a, buffer[13], 21, 0x4E0811A1);
+    a = ii(a, b, c, d, buffer[4], 6, 0xF7537E82);
+    d = ii(d, a, b, c, buffer[11], 10, 0xBD3AF235);
+    c = ii(c, d, a, b, buffer[2], 15, 0x2AD7D2BB);
+    b = ii(b, c, d, a, buffer[9], 21, 0xEB86D391);
+    w[0] = w[0] + a;
+    w[1] = w[1] + b;
+    w[2] = w[2] + c;
+    w[3] = w[3] + d;
+}
+
+fn MD5Init() -> &context {
+    {
+        w: [0x67452301, 0xEFCDAB89, 0x98BADCFE, 0x10325476],
+        len: 0,
+        buffer: [0; 16],
+        intermediate: [0; 64],
+    };
+}
+
+fn MD5Update(ctx: &context, input: &bytes, input_pos: i32, input_len: i32) {
+    let len = ctx.len;
+    let in_buf = len as i32 & 0x3f;
+    ctx.len = len + input_len as i64_u;
+    if in_buf {
+        let missing = 64 - in_buf;
+        if input_len <u missing {
+            ctx.intermediate.copy(in_buf, input, input_pos, input_len);
+            return;
+        }
+        ctx.intermediate.copy(in_buf, input, input_pos, missing);
+        MD5Transform(ctx.w, ctx.buffer, ctx.intermediate, 0);
+        input_pos += missing;
+        input_len -= missing;
+    }
+    while input_len >=u 64 : (input_len -= 64) {
+        MD5Transform(ctx.w, ctx.buffer, input, input_pos);
+        input_pos += 64;
+    }
+    if input_len {
+        ctx.intermediate.copy(0, input, input_pos, input_len);
+    }
+}
+
+fn MD5Final(ctx: &context) -> &bytes {
+    let len = ctx.len;
+    let in_buf = len as i32 & 0x3f;
+    let buffer = ctx.intermediate;
+    buffer[in_buf] = 0x80;
+    in_buf += 1;
+    let i: i32;
+    if in_buf >u 56 {
+        i = in_buf;
+        while i <u 64 : (i += 1) {
+            buffer[i] = 0;
+        }
+        MD5Transform(ctx.w, ctx.buffer, buffer, 0);
+        in_buf = 0;
+    }
+    i = in_buf;
+    'loop: loop {
+        buffer[i] = 0;
+        i += 1;
+        br_if 'loop i <u 56;
+    }
+    len <<= 3;
+    buffer[56] = len as i32;
+    buffer[57] = (len >>u 8) as i32;
+    buffer[58] = (len >>u 16) as i32;
+    buffer[59] = (len >>u 24) as i32;
+    buffer[60] = (len >>u 32) as i32;
+    buffer[61] = (len >>u 40) as i32;
+    buffer[62] = (len >>u 48) as i32;
+    buffer[63] = (len >>u 56) as i32;
+    MD5Transform(ctx.w, ctx.buffer, buffer, 0);
+    let res: &bytes = [0; 16];
+    i = 0;
+    let w = ctx.w;
+    'loop: loop {
+        res[i] = w[i >>u 2] >>u (i << 3);
+        i += 1;
+        br_if 'loop i <u 16;
+    }
+    res;
+}
