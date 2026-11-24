@@ -124,6 +124,8 @@
   (`caml_sys_const_big_endian`, `caml_sys_const_backend_type`, ...) (#2601)
 
 ### Runtime
+* Runtime/JS: `Marshal` keeps the sign of `-0.`, which was read back as `+0.`
+  (#2650)
 * Runtime: `Str.replace_matched` raises `Invalid_argument` when a group
   referenced by the replacement extends past the end of the supplied string,
   instead of truncating it (JS) or trapping (Wasm) (#NNNN)
