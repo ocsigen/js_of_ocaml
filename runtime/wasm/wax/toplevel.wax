@@ -1,0 +1,248 @@
+// Wasm_of_ocaml runtime support
+// http://www.ocsigen.org/js_of_ocaml/
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, with linking exception;
+// either version 2.1 of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+
+#[if(not(wasi))]
+{
+    import "stdlib" {
+        let caml_global_data: &block;
+        let link_info: &block;
+    }
+    import "obj" fn caml_callback_2(&eq, &eq, &eq) -> &eq;
+    import "fail" fn caml_failwith(&eq);
+    import "string" fn caml_string_concat(&eq, &eq) -> &eq;
+    import "jslib" {
+        fn value_of_js(&?extern) -> &eq;
+        fn js_of_value(&eq) -> &?extern;
+        fn caml_jsstring_of_string(&eq) -> &eq;
+        fn caml_string_of_jsstring(&eq) -> &eq;
+    }
+    import "bindings" {
+        fn get_ocaml_unit_list() -> &?extern;
+        fn get_prim_list() -> &?extern;
+        fn get_crcs() -> &?extern;
+    }
+    import "bigarray" {
+        fn caml_ba_to_typed_array(&eq) -> &eq;
+        fn caml_string_of_uint8_array(&eq) -> &eq;
+    }
+
+    type block = [mut &eq];
+    type bytes = [mut i8];
+
+    #[export]
+    fn caml_terminfo_rows(&eq) -> &eq {
+        0 as &i31;
+    }
+
+    // Grow caml_global_data to accommodate at least len+1 entries.
+    // caml_global_data is a $block: index 0 is the tag, data starts at 1,
+    // so the array length must be len + 2.
+    #[export]
+    fn caml_realloc_global(len: &eq) -> &eq {
+        let new_len = len as i32_u + 2;
+        if new_len >u caml_global_data.length() {
+            let old = caml_global_data;
+            let new: &block = [0 as &i31; new_len];
+            new.copy(0, old, 0, old.length());
+            caml_global_data = new;
+        }
+        0 as &i31;
+    }
+
+    // Field indices for link_info (must match stdlib.wat)
+    const LINK_INFO_SECTIONS = 1;
+    const LINK_INFO_ALIASES = 4;
+
+    // Compile callback: set by OCaml-side init code
+    let toplevel_compile: &eq = 0 as &i31;
+
+    #[export]
+    fn wasm_toplevel_init_compile(f: &eq) -> &eq {
+        toplevel_compile = f;
+        0 as &i31;
+    }
+
+    // Called by OCaml's Dynlink/Toploop to compile bytecode.
+    // Passes the raw code as a string and debug info to the registered
+    // callback, which compiles to Wasm and returns a (unit -> unit) thunk.
+    // Returns (0, thunk) as expected by the caller.
+    //
+    // In OCaml >= 5.2, code arrives as a bigarray and is converted to a string.
+    // In OCaml < 5.2, code is a block (array) of bytes values that are
+    // concatenated into a single string.
+
+    #[if(ocaml_version >= (5, 2, 0))]
+    {
+        #[export]
+        fn caml_reify_bytecode(code: &eq, debug: &eq, digest: &eq) -> &eq {
+            if toplevel_compile is &i31 {
+                caml_failwith("Toplevel compile callback not initialized");
+                unreachable;
+            }
+            [block|
+                0 as &i31,
+                0 as &i31,
+                caml_callback_2(
+                    toplevel_compile,
+                    caml_string_of_uint8_array(caml_ba_to_typed_array(code)),
+                    debug,
+                ),
+            ];
+        }
+    }
+    #[else]
+    {
+        #[export]
+        fn caml_reify_bytecode(code: &eq, debug: &eq, digest: &eq) -> &eq {
+            if toplevel_compile is &i31 {
+                caml_failwith("Toplevel compile callback not initialized");
+                unreachable;
+            }
+            // code is a block: [tag, bytes0, bytes1, ...].
+            // First pass: compute total length.
+            let arr = code as &block;
+            let i = 1;
+            let len: i32;
+            'done1: do {
+                'loop1: loop {
+                    br_if 'done1 i >=u arr.length();
+                    len += (arr[i] as &bytes).length();
+                    i += 1;
+                    br 'loop1;
+                }
+            }
+            // Second pass: concatenate into a single $bytes.
+            let buf: &bytes = [0; len];
+            i = 1;
+            let pos = 0;
+            'done2: do {
+                'loop2: loop {
+                    br_if 'done2 i >=u arr.length();
+                    let chunk = arr[i] as &bytes;
+                    let chunk_len = chunk.length();
+                    buf.copy(pos, chunk, 0, chunk_len);
+                    pos += chunk_len;
+                    i += 1;
+                    br 'loop2;
+                }
+            }
+            [block|0 as &i31, 0 as &i31, caml_callback_2(toplevel_compile, buf, debug)];
+        }
+    }
+
+    #[export]
+    fn caml_static_release_bytecode(&eq) -> &eq {
+        0 as &i31;
+    }
+
+    const nul = "\x00";
+
+    // Convert an OCaml string list to a \0-separated string.
+    // E.g. ["a"; "b"; "c"] -> "a\x00b\x00c\x00"
+    fn string_list_to_sep(l: &eq) -> &eq {
+        let acc: &eq = [bytes|0; 0];
+        'done: do {
+            'loop: loop {
+                br_if 'done l is &i31;
+                let cell = l as &block;
+                acc = caml_string_concat(acc, caml_string_concat(cell[1], "\x00"));
+                l = cell[2];
+                br 'loop;
+            }
+        }
+        acc;
+    }
+
+    // Return the bytecode sections record, or fail like the JS runtime
+    // when the program was not compiled with --toplevel (the field is
+    // left as the integer 0 instead of a record block).
+    fn get_sections() -> &block {
+        let s = link_info[LINK_INFO_SECTIONS];
+        if s is &i31 {
+            caml_failwith("Program not compiled with --toplevel");
+            unreachable;
+        }
+        s as &block;
+    }
+
+    #[if(ocaml_version < (5, 3, 0))]
+    {
+        #[export]
+        fn caml_get_section_table(&eq) -> &eq {
+            let sections = get_sections();
+            let symb = sections[1];
+            let crcs = sections[2];
+            let prim = string_list_to_sep(sections[3]);
+            let dlpt = string_list_to_sep(sections[4]);
+            // Return assoc list: [("SYMB",symb); ("CRCS",crcs); ("PRIM",prim); ("DLPT",dlpt)]
+            // Cons = [0, head, tail], pair = [0, fst, snd], nil = 0
+            [block|
+                0 as &i31,
+                [block|0 as &i31, "SYMB", symb],
+                [block|
+                    0 as &i31,
+                    [block|0 as &i31, "CRCS", crcs],
+                    [block|
+                        0 as &i31,
+                        [block|0 as &i31, "PRIM", prim],
+                        [block|0 as &i31, [block|0 as &i31, "DLPT", dlpt], 0 as &i31],
+                    ],
+                ],
+            ];
+        }
+    }
+
+    // Returns the bytecode_sections record registered by OCaml init code.
+    // { symb: GlobalMap.t; crcs: ...; prim: string list; dlpt: string list }
+    #[export]
+    fn caml_dynlink_get_bytecode_sections(&eq) -> &eq {
+        get_sections();
+    }
+
+    #[export]
+    fn wasm_get_bytecode_sections(&eq) -> &eq {
+        get_sections();
+    }
+
+    #[export]
+    fn wasm_get_runtime_aliases(&eq) -> &eq {
+        link_info[LINK_INFO_ALIASES];
+    }
+
+    // Stubs for primitives required by compiler-libs.toplevel.
+    // These must be proper Wasm exports so that any failure raises an OCaml
+    // exception (via caml_failwith) instead of a JS Error from dummy stubs,
+    // which would cause "illegal cast" in OCaml exception handlers.
+
+    #[export]
+    fn caml_sys_modify_argv(&eq) -> &eq {
+        // no-op: Sys.argv modification is not meaningful in Wasm
+        0 as &i31;
+    }
+
+    #[export]
+    fn caml_get_current_environment(&eq) -> &eq {
+        caml_failwith("caml_get_current_environment: not available in Wasm");
+        unreachable;
+    }
+
+    #[export]
+    fn caml_invoke_traced_function(&eq, &eq, &eq) -> &eq {
+        caml_failwith("caml_invoke_traced_function: not available in Wasm");
+        unreachable;
+    }
+}

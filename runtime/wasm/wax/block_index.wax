@@ -1,0 +1,116 @@
+// Wasm_of_ocaml runtime support
+// http://www.ocsigen.org/js_of_ocaml/
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, with linking exception;
+// either version 2.1 of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+
+import "fail" fn caml_invalid_argument(&eq);
+
+type block = [mut &eq];
+type string = [mut i8];
+type float = { f: f64 };
+type float_array = [mut f64];
+
+data invalid_get_idx = "caml_get_idx_bytecode: attempted to read from an invalid index";
+data invalid_set_idx = "caml_set_idx_bytecode: attempted to write to an invalid index";
+
+// caml_get_idx_bytecode : base -> idx -> result
+// idx is a block (tag 0) of integer field positions.
+// Iterates through the positions, indexing into nested blocks.
+// Special case: if base is a float array (all-float record), box the result.
+// Raises if [idx] has a non-zero tag (an "invalid" index).
+#[export]
+fn caml_unsafe_get_idx_bytecode(base: &eq, idx: &eq) -> &eq {
+    let idx_block = idx as &block;
+    let depth = idx_block.length() - 1;
+    // Invalid (non-zero-tag) index: raise.
+    if idx_block[0] as i32_s != 0 {
+        caml_invalid_argument([string| invalid_get_idx @ 0; 62]);
+    }
+    let pos: i32;
+    match
+    // Float array case: base is $float_array, depth must be 1
+    base {
+        fa: &float_array => {
+            pos = idx_block[1] as i32_s;
+            return { f: fa[pos] };
+        }
+        _ => {
+            // General case: iterate through block fields
+            let res = base;
+            let i = 1;
+            while i <=u depth : (i += 1) {
+                pos = idx_block[i] as i32_s;
+                res = (res as &block)[pos + 1];
+            }
+            res;
+        }
+    }
+}
+
+// caml_set_idx_bytecode : base -> idx -> value -> unit
+// idx is a block (tag 0) of integer field positions.
+// Traverses to the parent block, then sets the final field.
+// Special case: if base is a float array (all-float record), unbox the value.
+// Raises if [idx] has a non-zero tag (an "invalid" index).
+#[export]
+fn caml_unsafe_set_idx_bytecode(base: &eq, idx: &eq, v: &eq) -> &eq {
+    let idx_block = idx as &block;
+    let depth = idx_block.length() - 1;
+    // Invalid (non-zero-tag) index: raise.
+    if idx_block[0] as i32_s != 0 {
+        caml_invalid_argument([string| invalid_set_idx @ 0; 61]);
+    }
+    let pos: i32;
+    match
+    // Float array case: base is $float_array, depth must be 1
+    base {
+        fa: &float_array => {
+            pos = idx_block[1] as i32_s;
+            fa[pos] = (v as &float).f;
+            return 0 as &i31;
+        }
+        _ => {
+            // General case
+            let dst = base;
+            let i = 1;
+            // Traverse to the parent (all but the last position)
+            while i <u depth : (i += 1) {
+                pos = idx_block[i] as i32_s;
+                dst = (dst as &block)[pos + 1];
+            }
+            // Set the final field
+            pos = idx_block[depth] as i32_s;
+            (dst as &block)[pos + 1] = v;
+            0 as &i31;
+        }
+    }
+}
+
+// caml_deepen_idx_bytecode : idx_prefix -> idx_suffix -> idx
+// Concatenates two block indices into a new one.
+#[export]
+fn caml_deepen_idx_bytecode(idx_prefix: &eq, idx_suffix: &eq) -> &eq {
+    let prefix = idx_prefix as &block;
+    let suffix = idx_suffix as &block;
+    let prefix_depth = prefix.length() - 1;
+    let suffix_depth = suffix.length() - 1;
+    // Allocate result block: tag 0, size = prefix_depth + suffix_depth
+    let result: &block = [0 as &i31; prefix_depth + suffix_depth + 1];
+    // Copy prefix fields
+    result.copy(1, prefix, 1, prefix_depth);
+    // Copy suffix fields
+    result.copy(prefix_depth + 1, suffix, 1, suffix_depth);
+    result;
+}

@@ -1,0 +1,326 @@
+// Wasm_of_ocaml runtime support
+// http://www.ocsigen.org/js_of_ocaml/
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, with linking exception;
+// either version 2.1 of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+
+import "obj" {
+    const object_tag: i32;
+    const forward_tag: i32;
+    const abstract_tag: i32;
+}
+import "jsstring" {
+    fn jsstring_test(&?extern) -> i32;
+    fn jsstring_hash(i32, &?extern) -> i32;
+}
+
+type block = [mut &eq];
+type bytes = [mut i8];
+type float = { f: f64 };
+type js = { js: &?extern };
+
+type compare = fn(&eq, &eq, i32) -> i32;
+type hash = fn(&eq) -> i32;
+type fixed_length = { bsize_32: i32, bsize_64: i32 };
+type serialize = fn(&eq, &eq) -> (i32, i32);
+type deserialize = fn(&eq) -> (&eq, i32);
+type dup = fn(&eq) -> &eq;
+type custom_operations = {
+    id: &bytes,
+    compare: &?compare,
+    compare_ext: &?compare,
+    hash: &?hash,
+    fixed_length: &?fixed_length,
+    serialize: &?serialize,
+    deserialize: &?deserialize,
+    dup: &?dup
+};
+type custom = open { ops: &custom_operations };
+
+#[export]
+fn caml_hash_mix_int(h: i32, d: i32) -> i32 {
+    ((d * 0xcc9e2d51).rotl(15) * 0x1b873593 ^ h).rotl(13) * 5 + 0xe6546b64;
+}
+
+#[export]
+fn caml_hash_mix_final(h: i32) -> i32 {
+    h ^= h >>u 16;
+    h *= 0x85ebca6b;
+    h ^= h >>u 13;
+    h *= 0xc2b2ae35;
+    h ^ h >>u 16;
+}
+
+#[export]
+fn caml_hash_mix_int64(h: i32, d: i64) -> i32 {
+    become caml_hash_mix_int(caml_hash_mix_int(h, d as i32), (d >>u 32) as i32);
+}
+
+#[export]
+fn caml_hash_mix_double(h: i32, d: f64) -> i32 {
+    let i = d.to_bits();
+    if (i & 0x7FF0000000000000) == 0x7ff0000000000000 {
+        if (i & 0xFFFFFFFFFFFFF) != 0 {
+            i = 0x7ff0000000000001;
+        }
+    }
+    if i == 0x8000000000000000 {
+        i = 0;
+    }
+    become caml_hash_mix_int64(h, i);
+}
+
+#[export]
+fn caml_hash_mix_float(h: i32, d: f32) -> i32 {
+    let i = d.to_bits();
+    if (i & 0x7F800000) == 0x7F800000 {
+        if (i & 0x7FFFFF) != 0 {
+            i = 0x7F800001;
+        }
+    }
+    if i == 0x80000000 {
+        i = 0;
+    }
+    become caml_hash_mix_int(h, i);
+}
+
+#[export]
+fn caml_hash_mix_float16(h: i32, i: i32) -> i32 {
+    if (i & 0x7c00) == 0x7c00 {
+        if i & 0x03ff {
+            i = 0x7C01;
+        }
+    }
+    if i == 0x8000 {
+        i = 0;
+    }
+    become caml_hash_mix_int(h, i);
+}
+
+#[export]
+fn caml_hash_mix_string(h: i32, s: &bytes) -> i32 {
+    let len = s.length();
+    let i = 0;
+    while i + 4 <=u len : (i += 4) {
+        h =
+            caml_hash_mix_int(
+                h,
+                s[i] as i32_u | s[i + 1] as i32_u << 8
+                    | (s[i + 2] as i32_u << 16 | s[i + 3] as i32_u << 24),
+            );
+    }
+    let w = 0;
+    dispatch (len & 3) [ 'zero_bytes, 'one_byte, 'two_bytes, else 'three_bytes ] {
+        'three_bytes: {
+            w = s[i + 2] as i32_u << 16;
+        }
+        'two_bytes: {
+            w |= s[i + 1] as i32_u << 8;
+        }
+        'one_byte: {
+            w |= s[i] as i32_u;
+            h = caml_hash_mix_int(h, w);
+        }
+        'zero_bytes: {
+            h ^ len;
+        }
+    }
+}
+
+const HASH_QUEUE_SIZE = 256;
+const MAX_FORWARD_DEREFERENCE = 1000;
+
+// The values are visited in breadth-first order, like in the C
+// runtime: first the root, then the fields of each block, in the
+// order the blocks are visited. Rather than copying these fields into
+// a queue, we keep a queue of the blocks whose fields remain to be
+// visited, and we read the fields directly from the blocks. The block
+// whose fields are being visited is kept in a local variable, so that
+// the queue is only needed when a block is found while the fields of
+// another block are still pending. The queue is then allocated, and
+// grown as needed, by the current call rather than being a global:
+// stores into a young object are cheap (no generational write barrier
+// slow path), and a dead queue cannot cause a memory leak, so it does
+// not need to be cleared.
+type block_queue = [mut &?block];
+
+const empty_queue: &block_queue = [];
+const empty_block: &block = [];
+
+type float_array = [mut f64];
+
+#[export]
+#[export = "caml_hash_exn"]
+fn caml_hash(count: &eq, limit: &eq, seed: &eq, obj: &eq) -> &eq {
+    // number of values visited / scheduled for visit so far
+    // read and write positions in the queue of blocks
+    // block whose fields are being visited, next field, field count
+    let sz = limit as i32_u;
+    if sz >u HASH_QUEUE_SIZE {
+        sz = HASH_QUEUE_SIZE;
+    }
+    let num = count as i32_s;
+    let h = seed as i32_s;
+    let v = obj;
+    let rd = 1;
+    let wr = 1;
+    // no current block ($cur_pos = $cur_len = 0)
+    let cur = empty_block;
+    let queue = empty_queue;
+    'done: do {
+        br_if 'done num <=s 0;
+        let qrd: i32;
+        let qwr: i32;
+        let cur_pos: i32;
+        let cur_len: i32;
+        'loop: loop {
+            'next: do {
+                let i: i32;
+                let len: i32;
+                match v {
+                    iv: &i31 => {
+                        h = caml_hash_mix_int(h, (iv as i32_s << 1) + 1);
+                        num -= 1;
+                        br 'next;
+                    }
+                    sv: &bytes => {
+                        h = caml_hash_mix_string(h, sv);
+                        num -= 1;
+                        br 'next;
+                    }
+                    bv: &block => {
+                        let tg = bv[0] as i32_u;
+                        if tg == forward_tag {
+                            i = 0;
+                            'forward: loop {
+                                v = bv[1];
+                                _ =
+                                    'not_block': do {
+                                        bv = br_on_cast_fail 'not_block' &block v;
+                                        br_if 'loop bv[0] != forward_tag as &i31;
+                                        i += 1;
+                                        // give up on this object
+                                        br_if 'next i == MAX_FORWARD_DEREFERENCE;
+                                        br 'forward;
+                                    };
+                                // hash the value found
+                                br 'loop;
+                            }
+                        }
+                        if tg == object_tag {
+                            h = caml_hash_mix_int(h, bv[2] as i32_s);
+                            num -= 1;
+                            br 'next;
+                        }
+                        // abstract tag: block contents unknown, do nothing
+                        br_if 'next tg == abstract_tag;
+                        len = bv.length();
+                        h = caml_hash_mix_int(h, (len - 1) << 10 | tg);
+                        // schedule the fields for visit, not exceeding the
+                        // total size $sz
+                        br_if 'next (len <=u 1) | (wr >=s sz);
+                        wr += len - 1;
+                        if wr >s sz {
+                            wr = sz;
+                        }
+                        // Only the last scheduled block can have been
+                        // truncated. The check $rd < $wr ensures that we do not
+                        // visit its fields beyond the limit.
+                        if (cur_pos >=u cur_len) & (qrd == qwr) {
+                            // nothing else pending: visit the fields next
+                            cur = bv;
+                            cur_pos = 1;
+                            cur_len = len;
+                        } else {
+                            if qwr == queue.length() {
+                                if qwr {
+                                    // the queue is full: double its size
+                                    let new_queue: &block_queue = [..; qwr << 1];
+                                    new_queue.copy(0, queue, 0, qwr);
+                                    queue = new_queue;
+                                } else {
+                                    // first use: allocate the queue
+                                    queue = [..; 2];
+                                }
+                            }
+                            queue[qwr] = bv;
+                            qwr += 1;
+                        }
+                        br 'next;
+                    }
+                    flv: &float => {
+                        h = caml_hash_mix_double(h, flv.f);
+                        num -= 1;
+                        br 'next;
+                    }
+                    fa: &float_array => {
+                        // mix the elements directly, no header
+                        len = fa.length();
+                        i = 0;
+                        'fa_iter: loop {
+                            if i <u len {
+                                h = caml_hash_mix_double(h, fa[i]);
+                                num -= 1;
+                                i += 1;
+                                br_if 'fa_iter num >s 0;
+                            }
+                        }
+                        br 'next;
+                    }
+                    cv: &custom => {
+                        h = caml_hash_mix_int(h, (br_on_null 'next cv.ops.hash)(v));
+                        num -= 1;
+                        br 'next;
+                    }
+                    _ => {
+                        let str: &?extern;
+                        #[if(not(wasi))]
+                        {
+                            _ =
+                                'not_jsstring: do &?any {
+                                    str = (br_on_cast_fail 'not_jsstring &js v).js;
+                                    _ = br_if 'not_jsstring (0 as &i31, !jsstring_test(str));
+                                    h = jsstring_hash(h, str);
+                                    // count the string against the budget, like every other
+                                    // hashed leaf (and like the JS runtime)
+                                    num -= 1;
+                                    0 as &i31;
+                                };
+                        }
+                    }
+                }
+            }
+            // closures and continuations and other js values are ignored
+            // move to the next value
+            br_if 'done (rd >=u wr) | (num <=s 0);
+            if cur_pos >=u cur_len {
+                // the queue cannot be empty since $rd < $wr
+                cur = queue[qrd]!;
+                qrd += 1;
+                cur_pos = 1;
+                cur_len = cur.length();
+            }
+            v = cur[cur_pos];
+            cur_pos += 1;
+            rd += 1;
+            br 'loop;
+        }
+    }
+    (caml_hash_mix_final(h) & 0x3FFFFFFF) as &i31;
+}
+
+#[export]
+fn caml_string_hash(vh: &eq, vs: &eq) -> &eq {
+    (caml_hash_mix_final(caml_hash_mix_string(vh as i32_s, vs as &bytes)) & 0x3FFFFFFF) as &i31;
+}

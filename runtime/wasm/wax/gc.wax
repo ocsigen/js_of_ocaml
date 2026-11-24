@@ -1,0 +1,261 @@
+// Wasm_of_ocaml runtime support
+// http://www.ocsigen.org/js_of_ocaml/
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, with linking exception;
+// either version 2.1 of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+
+import "obj" fn caml_callback_1(&eq, &eq) -> &eq;
+import "fail" fn caml_invalid_argument(&eq);
+
+type float = { f: f64 };
+type block = [mut &eq];
+type bytes = [mut i8];
+
+#[export]
+fn caml_gc_minor(&eq) -> &eq {
+    0 as &i31;
+}
+
+#[export]
+fn caml_gc_major(&eq) -> &eq {
+    0 as &i31;
+}
+
+#[export]
+fn caml_gc_full_major(&eq) -> &eq {
+    0 as &i31;
+}
+
+#[export]
+fn caml_gc_compaction(&eq) -> &eq {
+    0 as &i31;
+}
+
+#[export]
+fn caml_gc_counters(&eq) -> &eq {
+    let f = { f: 0 };
+    [block|0 as &i31, f, f, f];
+}
+
+#[if(ocaml_version >= (5, 5, 0))]
+{
+    #[export]
+    #[export = "caml_gc_quick_stat"]
+    fn caml_gc_stat(&eq) -> &eq {
+        let f = { f: 0 };
+        [block|
+            0 as &i31,
+            f,
+            f,
+            f,
+            0 as &i31,
+            0 as &i31,
+            0 as &i31,
+            0 as &i31,
+            0 as &i31,
+            0 as &i31,
+            0 as &i31,
+            0 as &i31,
+            0 as &i31,
+            0 as &i31,
+            0 as &i31,
+            0 as &i31,
+            0 as &i31,
+            0 as &i31,
+            0 as &i31,
+        ];
+    }
+}
+#[else]
+{
+    #[export]
+    #[export = "caml_gc_quick_stat"]
+    fn caml_gc_stat(&eq) -> &eq {
+        let f = { f: 0 };
+        [block|
+            0 as &i31,
+            f,
+            f,
+            f,
+            0 as &i31,
+            0 as &i31,
+            0 as &i31,
+            0 as &i31,
+            0 as &i31,
+            0 as &i31,
+            0 as &i31,
+            0 as &i31,
+            0 as &i31,
+            0 as &i31,
+            0 as &i31,
+            0 as &i31,
+            0 as &i31,
+            0 as &i31,
+        ];
+    }
+}
+
+#[export]
+fn caml_gc_set(&eq) -> &eq {
+    0 as &i31;
+}
+
+#[export]
+fn caml_gc_get(&eq) -> &eq {
+    [block|
+        0 as &i31,
+        0 as &i31,
+        0 as &i31,
+        0 as &i31,
+        0 as &i31,
+        0 as &i31,
+        0 as &i31,
+        0 as &i31,
+        0 as &i31,
+        0 as &i31,
+        0 as &i31,
+        0 as &i31,
+    ];
+}
+
+#[export]
+fn caml_gc_huge_fallback_count(&eq) -> &eq {
+    0 as &i31;
+}
+
+#[export]
+fn caml_gc_major_slice(&eq) -> &eq {
+    0 as &i31;
+}
+
+#[export]
+fn caml_gc_major_bucket(&eq) -> &eq {
+    0 as &i31;
+}
+
+#[export]
+fn caml_gc_major_credit(&eq) -> &eq {
+    0 as &i31;
+}
+
+#[export]
+fn caml_gc_minor_free(&eq) -> &eq {
+    0 as &i31;
+}
+
+#[export]
+fn caml_gc_minor_words(&eq) -> &eq {
+    { f: 0 };
+}
+
+#[export]
+fn caml_final_register(&eq, &eq) -> &eq {
+    0 as &i31;
+}
+
+#[export]
+fn caml_final_register_called_without_value(&eq, &eq) -> &eq {
+    // ZZZ Use FinalizationRegistry?
+    0 as &i31;
+}
+
+#[export]
+fn caml_final_release(&eq) -> &eq {
+    0 as &i31;
+}
+
+#[export]
+fn caml_memprof_start(&eq, &eq, &eq) -> &eq {
+    0 as &i31;
+}
+
+#[export]
+fn caml_memprof_set(&eq) -> &eq {
+    0 as &i31;
+}
+
+#[export]
+fn caml_memprof_stop(&eq) -> &eq {
+    0 as &i31;
+}
+
+#[export]
+fn caml_memprof_discard(&eq) -> &eq {
+    0 as &i31;
+}
+
+#[export]
+fn caml_memprof_participate(&eq) -> &eq {
+    0 as &i31;
+}
+
+#[export]
+fn caml_eventlog_pause(&eq) -> &eq {
+    0 as &i31;
+}
+
+#[export]
+fn caml_eventlog_resume(&eq) -> &eq {
+    0 as &i31;
+}
+
+#[export]
+fn caml_ml_gc_ramp_up(f: &eq) -> &eq {
+    [block|0 as &i31, caml_callback_1(f, 0 as &i31), 0 as &i31];
+}
+
+#[export]
+fn caml_ml_gc_ramp_down(&eq) -> &eq {
+    0 as &i31;
+}
+
+#[export]
+fn caml_memprof_is_sampling(&eq) -> &eq {
+    0 as &i31;
+}
+
+const gc_tweak_error = "Gc.Tweak: parameter not found";
+
+#[export]
+fn caml_gc_tweak_get(&eq) -> &eq {
+    caml_invalid_argument(gc_tweak_error);
+    0 as &i31;
+}
+
+#[export]
+fn caml_gc_tweak_set(&eq, &eq) -> &eq {
+    caml_invalid_argument(gc_tweak_error);
+    0 as &i31;
+}
+
+#[export]
+fn caml_gc_tweak_list_active(&eq) -> &eq {
+    0 as &i31;
+}
+
+#[if(ocaml_version >= (5, 6, 0))]
+{
+    let caml_runtime_hashtbl_randomized = 0;
+
+    #[export]
+    fn caml_runtime_hashtbl_randomize(&eq) -> &eq {
+        caml_runtime_hashtbl_randomized = 1;
+        0 as &i31;
+    }
+
+    #[export]
+    fn caml_runtime_hashtbl_is_randomized(&eq) -> &eq {
+        caml_runtime_hashtbl_randomized as &i31;
+    }
+}

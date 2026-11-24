@@ -1,0 +1,646 @@
+// Wasm_of_ocaml runtime support
+// http://www.ocsigen.org/js_of_ocaml/
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, with linking exception;
+// either version 2.1 of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+
+// Legacy [num] library: the [nat] (natural number) primitives, a port of the
+// JavaScript runtime in runtime/js/nat.js. A nat is a custom block ("_nat")
+// backed by an array of 32-bit digits, least significant first; the digits
+// are unsigned. Carry-sensitive arithmetic is done in i64 to mirror the
+// JS implementation's use of doubles.
+
+import "marshal" {
+    fn caml_serialize_int_4(&eq, i32);
+    fn caml_deserialize_int_4(&eq) -> i32;
+}
+import "hash" fn caml_hash_mix_int(i32, i32) -> i32;
+import "int32" {
+    fn caml_copy_nativeint(i32) -> &eq;
+    fn Nativeint_val(&eq) -> i32;
+}
+
+type bytes = [mut i8];
+type compare = fn(&eq, &eq, i32) -> i32;
+type hash = fn(&eq) -> i32;
+type fixed_length = { bsize_32: i32, bsize_64: i32 };
+type serialize = fn(&eq, &eq) -> (i32, i32);
+type deserialize = fn(&eq) -> (&eq, i32);
+type dup = fn(&eq) -> &eq;
+type custom_operations = {
+    id: &bytes,
+    compare: &?compare,
+    compare_ext: &?compare,
+    hash: &?hash,
+    fixed_length: &?fixed_length,
+    serialize: &?serialize,
+    deserialize: &?deserialize,
+    dup: &?dup
+};
+type custom = open { f: &custom_operations };
+
+type digits = [mut i32];
+type nat: custom = { .., dat: &digits };
+
+#[export]
+const nat_ops =
+    {
+        id: "_nat",
+        compare: null,
+        compare_ext: null,
+        hash: caml_hash_nat,
+        fixed_length: null,
+        serialize: serialize_nat,
+        deserialize: deserialize_nat,
+        dup: null,
+    };
+
+// Helpers
+
+fn get_data(v: &eq) -> &digits {
+    (v as &nat).dat;
+}
+
+fn int(v: &eq) -> i32 {
+    v as i32_s;
+}
+
+// A nat of [len] digits, all set to [fill].
+fn alloc_nat(len: i32, fill: i32) -> &nat {
+    { f: nat_ops, dat: [fill; len] };
+}
+
+// A one-digit nat holding [v] (the [nat_of_array [|v|]] of the JS runtime).
+fn single(v: i32) -> &nat {
+    become alloc_nat(1, v);
+}
+
+fn num_digits(d: &digits, ofs: i32, len: i32) -> i32 {
+    let i = len - 1;
+    while i >=s 0 : (i -= 1) {
+        if d[ofs + i] != 0 {
+            return i + 1;
+        }
+    }
+    1;
+} // 0 counts as 1 digit
+
+// Assuming c > a, returns the quotient and remainder of (a<<32 + b)/c.
+fn div_helper(a: i32, b: i32, c: i32) -> (i32, i32) {
+    let c64 = c as i64_u;
+    // x = a*65536 + (b >>> 16)
+    let x = a as i64_u * 65536 + (b >>u 16) as i64_u;
+    // y = floor(x/c)*65536
+    let y = x /u c64 * 65536;
+    // z = (x%c)*65536
+    let z = x %u c64 * 65536;
+    // w = z + (b & 0xffff)
+    let w = z + (b & 0xffff) as i64_u;
+    // quotient, remainder
+    (y + w /u c64) as i32;
+    (w %u c64) as i32;
+}
+
+// Custom operations
+
+fn caml_hash_nat(v: &eq) -> i32 {
+    let d = get_data(v);
+    let len = num_digits(d, 0, d.length());
+    let h: i32;
+    let i: i32;
+    while i <s len : (i += 1) {
+        h = caml_hash_mix_int(h, d[i]);
+    }
+    h;
+}
+
+fn serialize_nat(s: &eq, v: &eq) -> (i32, i32) {
+    let d = get_data(v);
+    let len = d.length();
+    caml_serialize_int_4(s, len);
+    let i: i32;
+    while i <s len : (i += 1) {
+        caml_serialize_int_4(s, d[i]);
+    }
+    // 64-bit platforms use 64-bit digits, serialized as two 32-bit
+    // words: they pad an odd number of words with a zero word
+    len * 4;
+    (len + (len & 1)) * 4;
+}
+
+fn deserialize_nat(s: &eq) -> (&eq, i32) {
+    let len = caml_deserialize_int_4(s);
+    let dat: &digits = [0; len];
+    let i: i32;
+    while i <s len : (i += 1) {
+        dat[i] = caml_deserialize_int_4(s);
+    }
+    { f: nat_ops, dat };
+    len * 4;
+}
+
+// Primitives
+
+#[export]
+fn initialize_nat(&eq) -> &eq {
+    0 as &i31;
+}
+
+#[export]
+fn create_nat(size: &eq) -> &eq {
+    become alloc_nat(int(size), -1);
+}
+
+#[export]
+fn length_nat(nat: &eq) -> &eq {
+    get_data(nat).length() as &i31;
+}
+
+#[export]
+fn set_to_zero_nat(nat: &eq, ofs: &eq, len: &eq) -> &eq {
+    let d = get_data(nat);
+    let o = int(ofs);
+    let l = int(len);
+    let i: i32;
+    while i <s l : (i += 1) {
+        d[o + i] = 0;
+    }
+    0 as &i31;
+}
+
+#[export]
+fn blit_nat(nat1: &eq, ofs1: &eq, nat2: &eq, ofs2: &eq, len: &eq) -> &eq {
+    get_data(nat1).copy(int(ofs1), get_data(nat2), int(ofs2), int(len));
+    0 as &i31;
+}
+
+#[export]
+fn set_digit_nat(nat: &eq, ofs: &eq, digit: &eq) -> &eq {
+    get_data(nat)[int(ofs)] = int(digit);
+    0 as &i31;
+}
+
+#[export]
+fn nth_digit_nat(nat: &eq, ofs: &eq) -> &eq {
+    get_data(nat)[int(ofs)] as &i31;
+}
+
+#[export]
+fn set_digit_nat_native(nat: &eq, ofs: &eq, digit: &eq) -> &eq {
+    get_data(nat)[int(ofs)] = Nativeint_val(digit);
+    0 as &i31;
+}
+
+#[export]
+fn nth_digit_nat_native(nat: &eq, ofs: &eq) -> &eq {
+    become caml_copy_nativeint(get_data(nat)[int(ofs)]);
+}
+
+#[export]
+fn num_digits_nat(nat: &eq, ofs: &eq, len: &eq) -> &eq {
+    num_digits(get_data(nat), int(ofs), int(len)) as &i31;
+}
+
+#[export]
+fn num_leading_zero_bits_in_digit(nat: &eq, ofs: &eq) -> &eq {
+    get_data(nat)[int(ofs)].clz() as &i31;
+}
+
+#[export]
+fn is_digit_int(nat: &eq, ofs: &eq) -> &eq {
+    // Does the digit fit in a positive OCaml int? An int on wasm is 31 bits
+    // (like the native 32-bit platform that the num library targets), so the
+    // digit must have its top two bits clear, i.e. be < 2^30. (The JS runtime
+    // only clears the top bit because there an int is 32 bits.)
+    (get_data(nat)[int(ofs)] <u 0x40000000) as &i31;
+}
+
+#[export]
+fn is_digit_zero(nat: &eq, ofs: &eq) -> &eq {
+    !get_data(nat)[int(ofs)] as &i31;
+}
+
+#[export]
+fn is_digit_normalized(nat: &eq, ofs: &eq) -> &eq {
+    1 as &i31;
+}
+
+#[export]
+fn is_digit_odd(nat: &eq, ofs: &eq) -> &eq {
+    (get_data(nat)[int(ofs)] & 1) as &i31;
+}
+
+fn incr(d: &digits, ofs: i32, len: i32, carry: i32) -> i32 {
+    let i: i32;
+    'loop: loop {
+        if i <s len {
+            let idx = ofs + i;
+            let x = d[idx] as i64_u + carry as i64_u;
+            d[idx] = x as i32;
+            carry = (x >>u 32) as i32;
+            br_if 'loop (carry != 0) & ((i := i + 1) <s len);
+        }
+    }
+    carry;
+}
+
+#[export]
+fn incr_nat(nat: &eq, ofs: &eq, len: &eq, carry: &eq) -> &eq {
+    incr(get_data(nat), int(ofs), int(len), int(carry)) as &i31;
+}
+
+fn add(d1: &digits, o1: i32, l1: i32, d2: &digits, o2: i32, l2: i32, carry: i32) -> i32 {
+    let i: i32;
+    while i <s l2 : (i += 1) {
+        let x = d1[o1 + i] as i64_u + d2[o2 + i] as i64_u + carry as i64_u;
+        d1[o1 + i] = x as i32;
+        carry = (x >>u 32) as i32;
+    }
+    become incr(d1, o1 + l2, l1 - l2, carry);
+}
+
+#[export]
+fn add_nat(nat1: &eq, ofs1: &eq, len1: &eq, nat2: &eq, ofs2: &eq, len2: &eq, carry: &eq) -> &eq {
+    add(get_data(nat1), int(ofs1), int(len1), get_data(nat2), int(ofs2), int(len2), int(carry))
+        as &i31;
+}
+
+#[export]
+fn complement_nat(nat: &eq, ofs: &eq, len: &eq) -> &eq {
+    let d = get_data(nat);
+    let o = int(ofs);
+    let l = int(len);
+    let i: i32;
+    while i <s l : (i += 1) {
+        let idx = o + i;
+        d[idx] = -1 - d[idx];
+    }
+    0 as &i31;
+}
+
+// [carry_in] follows the OCaml convention (1 means no incoming borrow).
+fn decr(d: &digits, ofs: i32, len: i32, carry_in: i32) -> i32 {
+    let borrow = !carry_in;
+    let i: i32;
+    'loop: loop {
+        if i <s len {
+            let idx = ofs + i;
+            let x = d[idx] as i64_u - borrow as i64_u;
+            d[idx] = x as i32;
+            borrow = x <s 0;
+            br_if 'loop borrow & ((i := i + 1) <s len);
+        }
+    }
+    !borrow;
+}
+
+#[export]
+fn decr_nat(nat: &eq, ofs: &eq, len: &eq, carry: &eq) -> &eq {
+    decr(get_data(nat), int(ofs), int(len), int(carry)) as &i31;
+}
+
+fn sub(d1: &digits, o1: i32, l1: i32, d2: &digits, o2: i32, l2: i32, carry_in: i32) -> i32 {
+    let borrow = !carry_in;
+    let i: i32;
+    while i <s l2 : (i += 1) {
+        let x = d1[o1 + i] as i64_u - d2[o2 + i] as i64_u - borrow as i64_u;
+        d1[o1 + i] = x as i32;
+        borrow = x <s 0;
+    }
+    become decr(d1, o1 + l2, l1 - l2, !borrow);
+}
+
+#[export]
+fn sub_nat(nat1: &eq, ofs1: &eq, len1: &eq, nat2: &eq, ofs2: &eq, len2: &eq, carry: &eq) -> &eq {
+    sub(get_data(nat1), int(ofs1), int(len1), get_data(nat2), int(ofs2), int(len2), int(carry))
+        as &i31;
+}
+
+fn mult_digit(
+    d1: &digits,
+    o1: i32,
+    l1: i32,
+    d2: &digits,
+    o2: i32,
+    l2: i32,
+    d3: &digits,
+    o3: i32,
+) -> i32 {
+    let a = d3[o3];
+    let i: i32;
+    let carry: i64;
+    while i <s l2 : (i += 1) {
+        let b = d2[o2 + i] as i64_u;
+        // x1 = d1[o1+i] + b*(a & 0xffff) + carry
+        let x1 = d1[o1 + i] as i64_u + b * (a & 0xffff) as i64_u + carry;
+        // x2 = b*(a >>> 16)
+        let x2 = b * (a >>u 16) as i64_u;
+        carry = x2 >>u 16;
+        // x3 = x1 + (x2 % 65536) * 65536
+        let x3 = x1 + ((x2 & 0xffff) << 16);
+        d1[o1 + i] = x3 as i32;
+        carry += x3 >>u 32;
+    }
+    if (l2 <s l1) & (carry != 0) {
+        become add(d1, o1 + l2, l1 - l2, single(carry as i32).dat, 0, 1, 0);
+    }
+    carry as i32;
+}
+
+#[export]
+fn mult_digit_nat(
+    nat1: &eq,
+    ofs1: &eq,
+    len1: &eq,
+    nat2: &eq,
+    ofs2: &eq,
+    len2: &eq,
+    nat3: &eq,
+    ofs3: &eq,
+) -> &eq {
+    mult_digit(
+        get_data(nat1),
+        int(ofs1),
+        int(len1),
+        get_data(nat2),
+        int(ofs2),
+        int(len2),
+        get_data(nat3),
+        int(ofs3),
+    ) as &i31;
+}
+
+fn mult(
+    d1: &digits,
+    o1: i32,
+    l1: i32,
+    d2: &digits,
+    o2: i32,
+    l2: i32,
+    d3: &digits,
+    o3: i32,
+    l3: i32,
+) -> i32 {
+    let i: i32;
+    let carry: i32;
+    while i <s l3 : (i += 1) {
+        carry += mult_digit(d1, o1 + i, l1 - i, d2, o2, l2, d3, o3 + i);
+    }
+    carry;
+}
+
+#[export]
+fn mult_nat(
+    nat1: &eq,
+    ofs1: &eq,
+    len1: &eq,
+    nat2: &eq,
+    ofs2: &eq,
+    len2: &eq,
+    nat3: &eq,
+    ofs3: &eq,
+    len3: &eq,
+) -> &eq {
+    mult(
+        get_data(nat1),
+        int(ofs1),
+        int(len1),
+        get_data(nat2),
+        int(ofs2),
+        int(len2),
+        get_data(nat3),
+        int(ofs3),
+        int(len3),
+    ) as &i31;
+}
+
+#[export]
+fn square_nat(nat1: &eq, ofs1: &eq, len1: &eq, nat2: &eq, ofs2: &eq, len2: &eq) -> &eq {
+    let d1 = get_data(nat1);
+    let o1 = int(ofs1);
+    let l1 = int(len1);
+    let d2 = get_data(nat2);
+    let o2 = int(ofs2);
+    let l2 = int(len2);
+    let carry = add(d1, o1, l1, d1, o1, l1, 0);
+    carry += mult(d1, o1, l1, d2, o2, l2, d2, o2, l2);
+    carry as &i31;
+}
+
+fn shift_left(d1: &digits, o1: i32, l1: i32, d2: &digits, o2: i32, nbits: i32) {
+    if !nbits {
+        d2[o2] = 0;
+        return;
+    }
+    let i: i32;
+    let wrap: i32;
+    while i <s l1 : (i += 1) {
+        let idx = o1 + i;
+        let a = d1[idx];
+        d1[idx] = a << nbits | wrap;
+        wrap = a >>u (32 - nbits);
+    }
+    d2[o2] = wrap;
+}
+
+#[export]
+fn shift_left_nat(nat1: &eq, ofs1: &eq, len1: &eq, nat2: &eq, ofs2: &eq, nbits: &eq) -> &eq {
+    shift_left(get_data(nat1), int(ofs1), int(len1), get_data(nat2), int(ofs2), int(nbits));
+    0 as &i31;
+}
+
+fn shift_right(d1: &digits, o1: i32, l1: i32, d2: &digits, o2: i32, nbits: i32) {
+    if !nbits {
+        d2[o2] = 0;
+        return;
+    }
+    let i = l1 - 1;
+    let wrap: i32;
+    while i >=s 0 : (i -= 1) {
+        let idx = o1 + i;
+        let a = d1[idx];
+        d1[idx] = a >>u nbits | wrap;
+        wrap = a << (32 - nbits);
+    }
+    d2[o2] = wrap;
+}
+
+#[export]
+fn shift_right_nat(nat1: &eq, ofs1: &eq, len1: &eq, nat2: &eq, ofs2: &eq, nbits: &eq) -> &eq {
+    shift_right(get_data(nat1), int(ofs1), int(len1), get_data(nat2), int(ofs2), int(nbits));
+    0 as &i31;
+}
+
+fn compare(d1: &digits, o1: i32, l1: i32, d2: &digits, o2: i32, l2: i32) -> i32 {
+    let a = num_digits(d1, o1, l1);
+    let b = num_digits(d2, o2, l2);
+    if a >s b {
+        return 1;
+    }
+    if a <s b {
+        return -1;
+    }
+    let i = a - 1;
+    while i >=s 0 : (i -= 1) {
+        let x = d1[o1 + i];
+        let y = d2[o2 + i];
+        if x >u y {
+            return 1;
+        }
+        if x <u y {
+            return -1;
+        }
+    }
+    0;
+}
+
+#[export]
+fn compare_nat(nat1: &eq, ofs1: &eq, len1: &eq, nat2: &eq, ofs2: &eq, len2: &eq) -> &eq {
+    compare(get_data(nat1), int(ofs1), int(len1), get_data(nat2), int(ofs2), int(len2)) as &i31;
+}
+
+#[export]
+fn compare_digits_nat(nat1: &eq, ofs1: &eq, nat2: &eq, ofs2: &eq) -> &eq {
+    let x = get_data(nat1)[int(ofs1)];
+    let y = get_data(nat2)[int(ofs2)];
+    // Digits are unsigned
+    ((x >u y) - (x <u y)) as &i31;
+}
+
+#[export]
+fn land_digit_nat(nat1: &eq, ofs1: &eq, nat2: &eq, ofs2: &eq) -> &eq {
+    let d1 = get_data(nat1);
+    let o1 = int(ofs1);
+    d1[o1] = d1[o1] & get_data(nat2)[int(ofs2)];
+    0 as &i31;
+}
+
+#[export]
+fn lor_digit_nat(nat1: &eq, ofs1: &eq, nat2: &eq, ofs2: &eq) -> &eq {
+    let d1 = get_data(nat1);
+    let o1 = int(ofs1);
+    d1[o1] = d1[o1] | get_data(nat2)[int(ofs2)];
+    0 as &i31;
+}
+
+#[export]
+fn lxor_digit_nat(nat1: &eq, ofs1: &eq, nat2: &eq, ofs2: &eq) -> &eq {
+    let d1 = get_data(nat1);
+    let o1 = int(ofs1);
+    d1[o1] = d1[o1] ^ get_data(nat2)[int(ofs2)];
+    0 as &i31;
+}
+
+// natq[ofsq..] := natq / nat2[ofs2], natr[ofsr] := remainder
+fn div_digit(
+    dq: &digits,
+    oq: i32,
+    dr: &digits,
+    or: i32,
+    d1: &digits,
+    o1: i32,
+    len: i32,
+    d2: &digits,
+    o2: i32,
+) {
+    let rem = d1[o1 + len - 1];
+    let div = d2[o2];
+    let i = len - 2;
+    while i >=s 0 : (i -= 1) {
+        div_helper(rem, d1[o1 + i], div);
+        rem = _;
+        let q = _;
+        dq[oq + i] = q;
+    }
+    dr[or] = rem;
+}
+
+#[export]
+fn div_digit_nat(
+    natq: &eq,
+    ofsq: &eq,
+    natr: &eq,
+    ofsr: &eq,
+    nat1: &eq,
+    ofs1: &eq,
+    len: &eq,
+    nat2: &eq,
+    ofs2: &eq,
+) -> &eq {
+    div_digit(
+        get_data(natq),
+        int(ofsq),
+        get_data(natr),
+        int(ofsr),
+        get_data(nat1),
+        int(ofs1),
+        int(len),
+        get_data(nat2),
+        int(ofs2),
+    );
+    0 as &i31;
+}
+
+#[export]
+fn div_nat(nat1: &eq, ofs1: &eq, len1: &eq, nat2: &eq, ofs2: &eq, len2: &eq) -> &eq {
+    let d1 = get_data(nat1);
+    let o1 = int(ofs1);
+    let l1 = int(len1);
+    let d2 = get_data(nat2);
+    let o2 = int(ofs2);
+    let l2 = int(len2);
+    if l2 == 1 {
+        div_digit(d1, o1 + 1, d1, o1, d1, o1, l1, d2, o2);
+        return 0 as &i31;
+    }
+    let zero: &digits = [0; 1];
+    let s = d2[o2 + l2 - 1].clz();
+    shift_left(d2, o2, l2, zero, 0, s);
+    shift_left(d1, o1, l1, zero, 0, s);
+    let d = d2[o2 + l2 - 1] as i64_u + 1;
+    let a: &digits = [-1; l2 + 1];
+    let i = l1 - 1;
+    while i >=s l2 : (i -= 1) {
+        let quo: i32;
+        // lower bound on the quotient digit
+        if d == 0x100000000 {
+            quo = d1[o1 + i];
+        } else {
+            // div_helper returns (quotient, remainder); keep quotient
+            div_helper(d1[o1 + i], d1[o1 + i - 1], d as i32);
+            _ = _;
+            quo = _;
+        }
+        // a := nat2 * quo
+        set_zero(a, 0, l2 + 1);
+        _ = mult_digit(a, 0, l2 + 1, d2, o2, l2, single(quo).dat, 0);
+        _ = sub(d1, o1 + i - l2, l2 + 1, a, 0, l2 + 1, 1);
+        while (d1[o1 + i] != 0) | (compare(d1, o1 + i - l2, l2, d2, o2, l2) >=s 0) {
+            quo += 1;
+            _ = sub(d1, o1 + i - l2, l2 + 1, d2, o2, l2, 1);
+        }
+        d1[o1 + i] = quo;
+    }
+    shift_right(d1, o1, l2, zero, 0, s);
+    shift_right(d2, o2, l2, zero, 0, s);
+    0 as &i31;
+}
+
+// internal set-to-zero on a raw digit array
+fn set_zero(d: &digits, ofs: i32, len: i32) {
+    let i: i32;
+    while i <s len : (i += 1) {
+        d[ofs + i] = 0;
+    }
+}

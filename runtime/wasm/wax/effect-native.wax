@@ -1,0 +1,248 @@
+// Wasm_of_ocaml runtime support
+// http://www.ocsigen.org/js_of_ocaml/
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, with linking exception;
+// either version 2.1 of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+
+#[if(effects = "native")]
+{
+    import "fail" {
+        fn caml_raise_constant(&eq);
+        fn caml_raise_with_arg(tg: &eq, arg: &eq);
+    }
+    import "obj" {
+        fn caml_fresh_oo_id(&eq) -> &eq;
+        const cont_tag: i32;
+        const object_tag: i32;
+    }
+    import "stdlib" fn caml_named_value(&eq) -> &?eq;
+    import "fail" {
+        tag ocaml_exception(&eq);
+        tag javascript_exception(&?extern);
+    }
+    import "obj" fn caml_callback_1(&eq, &eq) -> &eq;
+    import "effect" fn caml_continuation_use_noexc(&eq) -> &eq;
+    #[if(wasi)]
+    {
+        // Never actually called since there is no JavaScript exception
+        fn caml_wrap_exception(&?extern) -> &eq {
+            0 as &i31;
+        }
+    }
+    #[else]
+    {
+        import "jslib" fn caml_wrap_exception(&?extern) -> &eq;
+    }
+
+    type block = [mut &eq];
+    type bytes = [mut i8];
+    type function_1 = fn(&eq, &eq) -> &eq;
+    type closure = open { /*(field i32)*/ func: &function_1 };
+    #[if(ocaml_version < (5, 6, 0))]
+    {
+        type function_3 = fn(&eq, &eq, &eq, &eq) -> &eq;
+        type closure_3: closure = open { .., direct: &function_3 };
+    }
+    #[else]
+    {
+        type function_2 = fn(&eq, &eq, &eq) -> &eq;
+        type closure_2: closure = open { .., direct: &function_2 };
+    }
+
+    // Effect types
+
+    tag effect(&eq) -> (&eq, &eq);
+
+    type cont_function = fn(&eq, &eq) -> &eq;
+
+    type continuation = cont cont_function;
+
+    type generic_fiber = open { value: mut &eq, exn: mut &eq, effect: mut &eq };
+
+    type fiber: generic_fiber = { .., continuation: mut &continuation };
+
+    // Unhandled effects
+
+    const effect_unhandled = "Effect.Unhandled";
+
+    fn raise_unhandled(eff: &eq, &eq) -> &eq {
+        'null: do {
+            caml_raise_with_arg(br_on_null 'null caml_named_value(effect_unhandled), eff);
+        }
+        caml_raise_constant(
+            [block|object_tag as &i31, effect_unhandled, caml_fresh_oo_id(0 as &i31)],
+        );
+        0 as &i31;
+    }
+
+    const raise_unhandled_closure = { func: raise_unhandled };
+
+    // A suspend with no enclosing handler traps, so we cannot let
+    // %perform suspend blindly. $effect_allowed tells whether a
+    // $resume_fiber frame is directly above us with no JavaScript frame
+    // in between: it is initially 0 (toplevel), set to 1 by
+    // $resume_fiber while a fiber runs, and reset to 0 by the
+    // JavaScript callback wrappers (runtime.js) around each call into
+    // OCaml, since suspending across a JavaScript frame is not
+    // possible. Effects performed while it is 0 raise Effect.Unhandled,
+    // as in the native OCaml runtime when crossing C frames.
+    // caml_assume_no_perform also sets it to 0.
+    #[export]
+    let effect_allowed = 0;
+
+    #[export]
+    fn caml_assume_no_perform(f: &eq) -> &eq {
+        let saved_effect_allowed = effect_allowed;
+        effect_allowed = 0;
+        let exn: &eq;
+        let res =
+            try_legacy {
+                caml_callback_1(f, 0 as &i31);
+            } catch {
+                ocaml_exception => {
+                    exn = _;
+                    effect_allowed = saved_effect_allowed;
+                    throw ocaml_exception(exn);
+                }
+                javascript_exception => {
+                    exn = caml_wrap_exception(_);
+                    effect_allowed = saved_effect_allowed;
+                    throw ocaml_exception(exn);
+                }
+            };
+        effect_allowed = saved_effect_allowed;
+        res;
+    }
+
+    // Resume
+
+    const already_resumed = "Effect.Continuation_already_resumed";
+
+    fn resume_fiber(vfiber: &eq, f: &eq, v: &eq) -> &eq {
+        if vfiber == 0 as &i31 {
+            caml_raise_constant(caml_named_value(already_resumed)!);
+        }
+        let fiber = vfiber as &fiber;
+        // Effects are handled while the fiber runs; the handlers below
+        // run in the enclosing context, so restore the flag on each exit
+        let saved_effect_allowed = effect_allowed;
+        effect_allowed = 1;
+        let exn =
+            'handle_exception: do {
+                let (val, continuation) =
+                    'handle_effect: do () -> (&eq, &continuation) {
+                        let res =
+                            try_legacy {
+                                fiber.continuation.resume(f, v) on [effect -> 'handle_effect];
+                            } catch {
+                                javascript_exception => {
+                                    br 'handle_exception caml_wrap_exception(_);
+                                }
+                                ocaml_exception => {
+                                    br 'handle_exception _;
+                                }
+                            };
+                        // handle return
+                        effect_allowed = saved_effect_allowed;
+                        become (f as &closure).func(res, f := fiber.value);
+                    };
+                // handle effect
+                effect_allowed = saved_effect_allowed;
+                fiber.continuation = continuation;
+                #[if(ocaml_version < (5, 6, 0))]
+                {
+                    become (f as &closure_3).direct(
+                        val,
+                        [block|cont_tag as &i31, fiber, fiber],
+                        // last_fiber: only ever handed back to %reperform, which
+                        // ignores it (no stack relinking is needed here)
+                        fiber,
+                        f := fiber.effect,
+                    );
+                }
+                #[else]
+                {
+                    become (f as &closure_2).direct(
+                        val,
+                        [block|cont_tag as &i31, fiber, fiber],
+                        f := fiber.effect,
+                    );
+                }
+            };
+        // handle exception
+        effect_allowed = saved_effect_allowed;
+        become (f as &closure).func(exn, f := fiber.exn);
+    }
+
+    #[export = "%resume"]
+    fn f(vfiber: &eq, f: &eq, v: &eq, _tail: &eq) -> &eq {
+        become resume_fiber(vfiber, f, v);
+    }
+
+    // Perform
+
+    #[export = "%reperform"]
+    fn f_2(eff: &eq, continuation: &eq, _tail: &eq) -> &eq {
+        if !effect_allowed {
+            // No enclosing handler: raise Effect.Unhandled inside the
+            // inner fiber, at the point where the effect was performed
+            become resume_fiber(
+                caml_continuation_use_noexc(continuation),
+                raise_unhandled_closure,
+                eff,
+            );
+        }
+        let (res_0, res_1) = suspend effect(eff);
+        // Forward the resumption to the inner fiber
+        become resume_fiber((continuation as &block)[1]!, res_0, res_1);
+    }
+
+    #[export = "%perform"]
+    fn f_3(eff: &eq) -> &eq {
+        if !effect_allowed {
+            become raise_unhandled(eff, 0 as &i31);
+        }
+        let (res_0, res_1) = suspend effect(eff);
+        become (res_0 as &closure).func(res_1, res_0);
+    }
+
+    // Allocate a stack
+
+    fn initial_cont(f: &eq, x: &eq) -> &eq {
+        become (f as &closure).func(x, f);
+    }
+
+    #[export]
+    fn caml_alloc_stack(value: &eq, exn: &eq, effect: &eq) -> &eq {
+        { value, exn, effect, continuation: continuation::new(initial_cont) };
+    }
+
+    #[export = "%with_stack"]
+    fn f_4(value: &eq, exn: &eq, effect: &eq, f: &eq, v: &eq) -> &eq {
+        become resume_fiber(
+            { value, exn, effect, continuation: continuation::new(initial_cont) },
+            f,
+            v,
+        );
+    }
+
+    #[export = "%with_stack_bind"]
+    fn f_5(value: &eq, exn: &eq, effect: &eq, dyn: &eq, bind: &eq, f: &eq, v: &eq) -> &eq {
+        become resume_fiber(
+            { value, exn, effect, continuation: continuation::new(initial_cont) },
+            f,
+            v,
+        );
+    }
+}

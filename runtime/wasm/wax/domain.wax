@@ -1,0 +1,346 @@
+// Wasm_of_ocaml runtime support
+// http://www.ocsigen.org/js_of_ocaml/
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, with linking exception;
+// either version 2.1 of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+
+import "obj" fn caml_callback_1(&eq, &eq) -> &eq;
+import "fail" tag ocaml_exception(&eq);
+import "sync" fn caml_ml_mutex_unlock(&eq) -> &eq;
+
+type block = [mut &eq];
+
+#[export]
+fn caml_atomic_cas(ref: &eq, o: &eq, n: &eq) -> &eq {
+    let b = ref as &block;
+    if b[1] == o {
+        b[1] = n;
+        1 as &i31;
+    } else {
+        0 as &i31;
+    }
+}
+
+#[export]
+fn caml_atomic_cas_field(ref: &eq, i: &eq, o: &eq, n: &eq) -> &eq {
+    let j = i as i32_u + 1;
+    let b = ref as &block;
+    if b[j] == o {
+        b[j] = n;
+        1 as &i31;
+    } else {
+        0 as &i31;
+    }
+}
+
+#[export]
+fn caml_atomic_compare_exchange(ref: &eq, o: &eq, n: &eq) -> &eq {
+    let b = ref as &block;
+    let old = b[1];
+    if old == o {
+        b[1] = n;
+        old;
+    } else {
+        old;
+    }
+}
+
+#[export]
+fn caml_atomic_load(b: &eq) -> &eq {
+    (b as &block)[1];
+}
+
+#[export]
+fn caml_atomic_load_field(b: &eq, i: &eq) -> &eq {
+    (b as &block)[i as i32_u + 1];
+}
+
+#[export]
+fn caml_atomic_fetch_add(ref: &eq, i: &eq) -> &eq {
+    let b = ref as &block;
+    let old = b[1];
+    b[1] = (old as i32_s + i as i32_s) as &i31;
+    old;
+}
+
+#[export]
+fn caml_atomic_fetch_add_field(ref: &eq, i: &eq, n: &eq) -> &eq {
+    let j = i as i32_u + 1;
+    let b = ref as &block;
+    let old = b[j];
+    b[j] = (old as i32_s + n as i32_s) as &i31;
+    old;
+}
+
+#[export]
+fn caml_atomic_add(ref: &eq, i: &eq) -> &eq {
+    let b = ref as &block;
+    let old = b[1];
+    b[1] = (old as i32_s + i as i32_s) as &i31;
+    0 as &i31;
+}
+
+#[export]
+fn caml_atomic_sub(ref: &eq, i: &eq) -> &eq {
+    let b = ref as &block;
+    let old = b[1];
+    b[1] = (old as i32_s - i as i32_s) as &i31;
+    0 as &i31;
+}
+
+#[export]
+fn caml_atomic_land(ref: &eq, i: &eq) -> &eq {
+    let b = ref as &block;
+    let old = b[1];
+    b[1] = (old as i32_s & i as i32_s) as &i31;
+    0 as &i31;
+}
+
+#[export]
+fn caml_atomic_lor(ref: &eq, i: &eq) -> &eq {
+    let b = ref as &block;
+    let old = b[1];
+    b[1] = (old as i32_s | i as i32_s) as &i31;
+    0 as &i31;
+}
+
+#[export]
+fn caml_atomic_lxor(ref: &eq, i: &eq) -> &eq {
+    let b = ref as &block;
+    let old = b[1];
+    b[1] = (old as i32_s ^ i as i32_s) as &i31;
+    0 as &i31;
+}
+
+#[export]
+fn caml_atomic_exchange(ref: &eq, v: &eq) -> &eq {
+    let b = ref as &block;
+    let r = b[1];
+    b[1] = v;
+    r;
+}
+
+#[export]
+fn caml_atomic_exchange_field(ref: &eq, i: &eq, v: &eq) -> &eq {
+    let j = i as i32_u + 1;
+    let b = ref as &block;
+    let r = b[j];
+    b[j] = v;
+    r;
+}
+
+#[export]
+fn caml_atomic_set(ref: &eq, v: &eq) -> &eq {
+    let b = ref as &block;
+    b[1] = v;
+    0 as &i31;
+}
+
+#[export]
+fn caml_atomic_make_contended(v: &eq) -> &eq {
+    [block|0 as &i31, v];
+}
+
+let caml_domain_dls: &eq = [block|0 as &i31];
+
+#[export]
+fn caml_domain_dls_set(a: &eq) -> &eq {
+    caml_domain_dls = a;
+    0 as &i31;
+}
+
+#[export]
+fn caml_domain_dls_compare_and_set(old: &eq, new: &eq) -> &eq {
+    if caml_domain_dls == old {
+        caml_domain_dls = new;
+        1 as &i31;
+    } else {
+        0 as &i31;
+    }
+}
+
+#[export]
+fn caml_domain_dls_get(&eq) -> &eq {
+    caml_domain_dls;
+}
+
+let caml_domain_tls: &eq = [block|0 as &i31];
+
+#[export]
+fn caml_domain_tls_set(a: &eq) -> &eq {
+    caml_domain_tls = a;
+    0 as &i31;
+}
+
+#[export]
+fn caml_domain_tls_get(&eq) -> &eq {
+    caml_domain_tls;
+}
+
+const domain_unique_token: &eq = [block|0 as &i31];
+
+#[export]
+fn caml_ml_domain_unique_token(&eq) -> &eq {
+    domain_unique_token;
+}
+
+#[export]
+fn caml_ml_domain_set_name(&eq) -> &eq {
+    0 as &i31;
+}
+
+#[export]
+fn caml_recommended_domain_count(&eq) -> &eq {
+    1 as &i31;
+}
+
+#[export]
+let caml_domain_id = 0;
+#[export]
+let caml_domain_latest_id = 1;
+
+#[if(ocaml_version >= (5, 2, 0))]
+{
+    #[export]
+    fn caml_domain_spawn(f: &eq, term_sync_v: &eq) -> &eq {
+        let id = caml_domain_latest_id;
+        caml_domain_latest_id = id + 1;
+        let old = caml_domain_id;
+        caml_domain_id = id;
+        let ts = term_sync_v as &block;
+        let result: &?eq;
+        try_legacy {
+            // state = Finished (Ok res)
+            result = [block|0 as &i31, [block|0 as &i31, caml_callback_1(f, 0 as &i31)]];
+        } catch {
+            ocaml_exception => {
+                let exn = _;
+                // state = Finished (Error exn) for OCaml < 5.5
+                // state = Finished (Error (exn, backtrace)) for OCaml >= 5.5
+                #[if(ocaml_version >= (5, 5, 0))]
+                {
+                    exn = [block|0 as &i31, exn, [block|0 as &i31]];
+                }
+                result = [block|0 as &i31, [block|1 as &i31, exn]];
+            }
+        }
+        caml_domain_id = old;
+        _ = caml_ml_mutex_unlock(ts[2]);
+        ts[1] = result!;
+        id as &i31;
+    }
+}
+#[else]
+{
+    #[export]
+    fn caml_domain_spawn(f: &eq, mutex: &eq) -> &eq {
+        let id = caml_domain_latest_id;
+        caml_domain_latest_id = id + 1;
+        let old = caml_domain_id;
+        caml_domain_id = id;
+        try_legacy {
+            _ = caml_callback_1(f, 0 as &i31);
+        } catch {
+            ocaml_exception => {
+                let exn = _;
+                caml_domain_id = old;
+                _ = caml_ml_mutex_unlock(mutex);
+                throw ocaml_exception(exn);
+            }
+        }
+        caml_domain_id = old;
+        _ = caml_ml_mutex_unlock(mutex);
+        id as &i31;
+    }
+}
+
+#[export]
+#[export = "caml_ml_domain_index"]
+fn caml_ml_domain_id(&eq) -> &eq {
+    caml_domain_id as &i31;
+}
+
+#[export]
+fn caml_ml_domain_cpu_relax(&eq) -> &eq {
+    0 as &i31;
+}
+
+#[export]
+fn caml_domain_count(&eq) -> &eq {
+    1 as &i31;
+}
+
+#[export]
+fn caml_atomic_add_field(ref: &eq, field: &eq, i: &eq) -> &eq {
+    let b = ref as &block;
+    let idx = field as i32_s + 1;
+    let old = b[idx];
+    b[idx] = (old as i32_s + i as i32_s) as &i31;
+    0 as &i31;
+}
+
+#[export]
+fn caml_atomic_sub_field(ref: &eq, field: &eq, i: &eq) -> &eq {
+    let b = ref as &block;
+    let idx = field as i32_s + 1;
+    let old = b[idx];
+    b[idx] = (old as i32_s - i as i32_s) as &i31;
+    0 as &i31;
+}
+
+#[export]
+fn caml_atomic_land_field(ref: &eq, field: &eq, i: &eq) -> &eq {
+    let b = ref as &block;
+    let idx = field as i32_s + 1;
+    let old = b[idx];
+    b[idx] = (old as i32_s & i as i32_s) as &i31;
+    0 as &i31;
+}
+
+#[export]
+fn caml_atomic_lor_field(ref: &eq, field: &eq, i: &eq) -> &eq {
+    let b = ref as &block;
+    let idx = field as i32_s + 1;
+    let old = b[idx];
+    b[idx] = (old as i32_s | i as i32_s) as &i31;
+    0 as &i31;
+}
+
+#[export]
+fn caml_atomic_lxor_field(ref: &eq, field: &eq, i: &eq) -> &eq {
+    let b = ref as &block;
+    let idx = field as i32_s + 1;
+    let old = b[idx];
+    b[idx] = (old as i32_s ^ i as i32_s) as &i31;
+    0 as &i31;
+}
+
+#[export]
+fn caml_atomic_compare_exchange_field(ref: &eq, field: &eq, o: &eq, n: &eq) -> &eq {
+    let b = ref as &block;
+    let idx = field as i32_s + 1;
+    let old = b[idx];
+    if old == o {
+        b[idx] = n;
+    }
+    old;
+}
+
+#[export]
+fn caml_atomic_set_field(ref: &eq, field: &eq, v: &eq) -> &eq {
+    let b = ref as &block;
+    let idx = field as i32_s + 1;
+    b[idx] = v;
+    0 as &i31;
+}

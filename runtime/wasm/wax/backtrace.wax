@@ -1,0 +1,93 @@
+// Wasm_of_ocaml runtime support
+// http://www.ocsigen.org/js_of_ocaml/
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, with linking exception;
+// either version 2.1 of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+
+import "fail" fn caml_invalid_argument(&eq);
+#[if(wasi)]
+{
+    let backtrace_status: &eq = 0 as &i31;
+    fn get_backtrace_status() -> &eq {
+        backtrace_status;
+    }
+    fn record_backtrace(b: &eq) {
+        backtrace_status = b;
+    }
+}
+#[else]
+{
+    import "bindings" {
+        #[import = "backtrace_status"]
+        fn get_backtrace_status() -> &eq;
+        fn record_backtrace(&eq);
+    }
+}
+
+type block = [mut &eq];
+type bytes = [mut i8];
+
+#[export]
+fn caml_get_exception_raw_backtrace(&eq) -> &eq {
+    [block|0 as &i31];
+}
+
+#[export]
+fn caml_backtrace_status(&eq) -> &eq {
+    get_backtrace_status();
+}
+
+#[export]
+fn caml_convert_raw_backtrace(&eq) -> &eq {
+    [block|0 as &i31];
+}
+
+#[export]
+fn caml_raw_backtrace_next_slot(&eq) -> &eq {
+    0 as &i31;
+}
+
+const raw_backtrace_slot_err = "Printexc.get_raw_backtrace_slot: index out of bounds";
+
+#[export]
+fn caml_raw_backtrace_slot(&eq, &eq) -> &eq {
+    caml_invalid_argument(raw_backtrace_slot_err);
+    0 as &i31;
+}
+
+#[export]
+fn caml_convert_raw_backtrace_slot(&eq) -> &eq {
+    0 as &i31;
+}
+
+#[export]
+fn caml_restore_raw_backtrace(&eq, &eq) -> &eq {
+    0 as &i31;
+}
+
+#[export]
+fn caml_get_current_callstack(&eq) -> &eq {
+    [block|0 as &i31];
+}
+
+#[export]
+fn caml_ml_debug_info_status(&eq) -> &eq {
+    0 as &i31;
+}
+
+#[export]
+fn caml_record_backtrace(b: &eq) -> &eq {
+    record_backtrace(b);
+    0 as &i31;
+}

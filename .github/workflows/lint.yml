@@ -66,8 +66,10 @@ jobs:
         uses: ocaml/setup-ocaml@v3
         with:
           ocaml-compiler: "5.5"
+      # The generated wax files depend on the version of wax: after
+      # changing it, regenerate them with tools/wat2wax.sh.
       - name: Install wax
         run: |
-          opam install --yes wax
-      - name: Convert Wasm runtime files to wax
-        run: opam exec -- ./tools/wat2wax.sh
+          opam install --yes wax.0.3.0
+      - name: Check that the wax files are in sync with the wat files
+        run: opam exec -- ./tools/wat2wax.sh --check

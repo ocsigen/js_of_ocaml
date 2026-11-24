@@ -1,0 +1,541 @@
+// Wasm_of_ocaml runtime support
+// http://www.ocsigen.org/js_of_ocaml/
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, with linking exception;
+// either version 2.1 of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+
+import "fail" {
+    fn caml_invalid_argument(&eq);
+    fn caml_failwith(&eq);
+}
+
+type bytes = [mut i8];
+type block = [mut &eq];
+
+type char_table = [i8];
+type int_array = [mut i32];
+
+const re_word_letters: &char_table =
+    [
+        0x00,
+        0x00,
+        0x00,
+        0x00, // 0x00-0x1F: none
+        0x00,
+        0x00,
+        0xFF,
+        0x03, // 0x20-0x3F: digits 0-9
+        0xFE,
+        0xFF,
+        0xFF,
+        0x87, // 0x40-0x5F: A to Z, _
+        0xFE,
+        0xFF,
+        0xFF,
+        0x07, // 0x60-0x7F: a to z
+        0x00,
+        0x00,
+        0x00,
+        0x00, // 0x80-0x9F: none
+        0x00,
+        0x00,
+        0x00,
+        0x00, // 0xA0-0xBF: none
+        0xFF,
+        0xFF, // 0xC0-0xDF:
+        0x7F,
+        0xFF, // Latin-1 accented uppercase
+        0xFF,
+        0xFF, // 0xE0-0xFF:
+        0x7F,
+        0xFF,
+    ]; // Latin-1 accented lowercase
+
+type stack = open { next: &?stack };
+type pos: stack = { pos_previous: &?stack, pc: i32, pos: i32 };
+type undo: stack = { undo_previous: &?stack, tbl: &int_array, idx: i32, val: i32 };
+
+fn is_word_letter(c: i32) -> i32 {
+    1 & re_word_letters[c >>u 3] as i32_u >>u (c & 7);
+}
+
+fn in_bitset(s: &bytes, c: i32) -> i32 {
+    1 & s[c >>u 3] as i32_u >>u (c & 7);
+}
+
+fn re_match(vre: &eq, s: &bytes, pos: i32, accept_partial_match: i32) -> &eq {
+    let len = s.length();
+    let re = vre as &block;
+    let prog = re[1] as &block;
+    let cpool = re[2] as &block;
+    let normtable = re[3] as &bytes;
+    let numgroups = re[4] as i32_s;
+    let numregisters = re[5] as i32_s;
+    let group_start: &int_array = [-1; numgroups];
+    let group_end: &int_array = [-1; numgroups];
+    let re_register: &int_array = [-1; numregisters];
+    let pc = 1;
+    group_start[0] = pos;
+    'reject: do {
+        let i: i32;
+        let j: i32;
+        'ACCEPT: do {
+            let stack: &?stack;
+            'continue: loop {
+                'backtrack: do {
+                    'prefix_match: do {
+                        let instr = prog[pc] as i32_s;
+                        pc += 1;
+                        let s': &bytes;
+                        let set: &bytes;
+                        let idx: i32;
+                        let l: i32;
+                        dispatch (instr & 0xff) [
+                            'CHAR, 'CHARNORM, 'STRING, 'STRINGNORM, 'CHARCLASS, 'BOL, 'EOL,
+                            'WORDBOUNDARY, 'BEGGROUP, 'ENDGROUP, 'REFGROUP, 'ACCEPT, 'SIMPLEOPT,
+                            'SIMPLESTAR, 'SIMPLEPLUS, 'GOTO, 'PUSHBACK, 'SETMARK,
+                            else 'CHECKPROGRESS
+                        ] {
+                            'CHAR: {
+                                // CHAR
+                                br_if 'prefix_match pos == len;
+                                idx = instr >>u 8;
+                                br_if 'backtrack idx != s[pos] as i32_u;
+                                pos += 1;
+                                br 'continue;
+                            }
+                            'CHARNORM: {
+                                // CHARNORM
+                                br_if 'prefix_match pos == len;
+                                idx = instr >>u 8;
+                                br_if 'backtrack idx != normtable[s[pos] as i32_u] as i32_u;
+                                pos += 1;
+                                br 'continue;
+                            }
+                            'STRING: {
+                                // STRING
+                                idx = instr >>u 8;
+                                s' = cpool[idx + 1] as &bytes;
+                                i = 0;
+                                l = s'.length();
+                                while i <u l : (i += 1) {
+                                    br_if 'prefix_match pos == len;
+                                    br_if 'backtrack s'[i] as i32_u != s[pos] as i32_u;
+                                    pos += 1;
+                                }
+                                br 'continue;
+                            }
+                            'STRINGNORM: {
+                                // STRINGNORM
+                                idx = instr >>u 8;
+                                s' = cpool[idx + 1] as &bytes;
+                                i = 0;
+                                l = s'.length();
+                                while i <u l : (i += 1) {
+                                    br_if 'prefix_match pos == len;
+                                    br_if 'backtrack
+                                        s'[i] as i32_u != normtable[s[pos] as i32_u] as i32_u;
+                                    pos += 1;
+                                }
+                                br 'continue;
+                            }
+                            'CHARCLASS: {
+                                // CHARCLASS
+                                br_if 'prefix_match pos == len;
+                                idx = instr >>u 8;
+                                br_if 'backtrack
+                                    !in_bitset(cpool[idx + 1] as &bytes, s[pos] as i32_u);
+                                pos += 1;
+                                br 'continue;
+                            }
+                            'BOL: {
+                                // BOL
+                                br_if 'continue !pos;
+                                br_if 'continue '\n' == s[pos - 1] as i32_u;
+                                br 'backtrack;
+                            }
+                            'EOL: {
+                                // EOL
+                                br_if 'continue pos == len;
+                                br_if 'continue '\n' == s[pos] as i32_u;
+                                br 'backtrack;
+                            }
+                            'WORDBOUNDARY: {
+                                // WORDBOUNDARY
+                                if !pos {
+                                    br_if 'prefix_match pos == len;
+                                    br_if 'continue is_word_letter(s[pos] as i32_u);
+                                    br 'backtrack;
+                                } else {
+                                    if pos == len {
+                                        br_if 'continue is_word_letter(s[pos - 1] as i32_u);
+                                        br 'backtrack;
+                                    } else {
+                                        br_if 'continue
+                                            is_word_letter(s[pos - 1] as i32_u)
+                                                != is_word_letter(s[pos] as i32_u);
+                                        br 'backtrack;
+                                    }
+                                }
+                            }
+                            'BEGGROUP: {
+                                // BEGGROUP
+                                idx = instr >>u 8;
+                                stack =
+                                    {
+                                        undo_previous: stack,
+                                        tbl: group_start,
+                                        idx,
+                                        val: group_start[idx],
+                                    };
+                                group_start[idx] = pos;
+                                br 'continue;
+                            }
+                            'ENDGROUP: {
+                                // ENDGROUP
+                                idx = instr >>u 8;
+                                stack =
+                                    {
+                                        undo_previous: stack,
+                                        tbl: group_end,
+                                        idx,
+                                        val: group_end[idx],
+                                    };
+                                group_end[idx] = pos;
+                                br 'continue;
+                            }
+                            'REFGROUP: {
+                                // REFGROUP
+                                idx = instr >>u 8;
+                                i = group_start[idx];
+                                j = group_end[idx];
+                                br_if 'backtrack (i <s 0) | (j <s 0);
+                                while i <u j : (i += 1) {
+                                    br_if 'prefix_match pos == len;
+                                    br_if 'backtrack s[i] as i32_u != s[pos] as i32_u;
+                                    pos += 1;
+                                }
+                                br 'continue;
+                            }
+                            'SIMPLEOPT: {
+                                // SIMPLEOPT
+                                idx = instr >>u 8;
+                                if pos <u len {
+                                    if in_bitset(cpool[idx + 1] as &bytes, s[pos] as i32_u) {
+                                        pos += 1;
+                                    }
+                                }
+                                br 'continue;
+                            }
+                            'SIMPLESTAR: {
+                                // SIMPLESTAR
+                                idx = instr >>u 8;
+                                set = cpool[idx + 1] as &bytes;
+                                'loop: loop {
+                                    if pos <u len {
+                                        if in_bitset(set, s[pos] as i32_u) {
+                                            pos += 1;
+                                            br 'loop;
+                                        }
+                                    }
+                                }
+                                br 'continue;
+                            }
+                            'SIMPLEPLUS: {
+                                // SIMPLEPLUS
+                                br_if 'prefix_match pos == len;
+                                idx = instr >>u 8;
+                                set = cpool[idx + 1] as &bytes;
+                                br_if 'backtrack !in_bitset(set, s[pos] as i32_u);
+                                'loop: loop {
+                                    pos += 1;
+                                    if pos <u len {
+                                        br_if 'loop in_bitset(set, s[pos] as i32_u);
+                                    }
+                                }
+                                br 'continue;
+                            }
+                            'GOTO: {
+                                // GOTO
+                                pc += instr >>s 8;
+                                br 'continue;
+                            }
+                            'PUSHBACK: {
+                                // PUSHBACK
+                                stack = { pos_previous: stack, pc: pc + (instr >>s 8), pos };
+                                br 'continue;
+                            }
+                            'SETMARK: {
+                                // SETMARK
+                                idx = instr >>u 8;
+                                stack =
+                                    {
+                                        undo_previous: stack,
+                                        tbl: re_register,
+                                        idx,
+                                        val: re_register[idx],
+                                    };
+                                re_register[idx] = pos;
+                                br 'continue;
+                            }
+                            'CHECKPROGRESS: {
+                                // CHECKPROGRESS
+                                idx = instr >>u 8;
+                                br_if 'backtrack pos == re_register[idx];
+                                br 'continue;
+                            }
+                        }
+                    }
+                    // prefix_match
+                    br_if 'ACCEPT accept_partial_match;
+                }
+                // backtrack
+                'loop: loop {
+                    let u =
+                        'undo: do {
+                            let p = br_on_cast_fail 'undo &pos br_on_null 'reject stack;
+                            pc = p.pc;
+                            pos = p.pos;
+                            stack = p.pos_previous;
+                            br 'continue;
+                        } as &undo;
+                    u.tbl[u.idx] = u.val;
+                    stack = u.undo_previous;
+                    br 'loop;
+                }
+            }
+        }
+        // ACCEPT
+        group_end[0] = pos;
+        let res: &block = [0 as &i31; (numgroups << 1) + 1];
+        i = 0;
+        while i <u numgroups : (i += 1) {
+            j = i << 1;
+            if (group_start[i] <s 0) | (group_end[i] <s 0) | (group_start[i] >s group_end[i]) {
+                res[j + 1] = -1 as &i31;
+                res[j + 2] = -1 as &i31;
+            } else {
+                res[j + 1] = group_start[i] as &i31;
+                res[j + 2] = group_end[i] as &i31;
+            }
+        }
+        return res;
+    }
+    // reject
+    0 as &i31;
+}
+
+fn get_startchars(vre: &eq) -> &?bytes {
+    // table of the characters a match can start with, if any
+    let re = vre as &block;
+    let i = re[6] as i32_s;
+    if i <s 0 {
+        return null as &?none;
+    }
+    (re[2] as &block)[i + 1] as &bytes;
+}
+
+const search_forward = "Str.search_forward";
+
+#[export]
+fn re_search_forward(re: &eq, vs: &eq, vpos: &eq) -> &eq {
+    let s = vs as &bytes;
+    let pos = vpos as i32_s;
+    let len = s.length();
+    if pos >u len {
+        caml_invalid_argument(search_forward);
+    }
+    let startchars = get_startchars(re);
+    'loop: loop {
+        if !!startchars {
+            'skipped: do {
+                'skip: loop {
+                    br_if 'skipped pos >=u len;
+                    br_if 'skipped startchars[s[pos] as i32_u] as i32_u;
+                    pos += 1;
+                    br 'skip;
+                }
+            }
+        }
+        let res = re_match(re, s, pos, 0);
+        if res is &block {
+            return res;
+        }
+        pos += 1;
+        br_if 'loop pos <=u len;
+    }
+    [block|0 as &i31];
+}
+
+const search_backward = "Str.search_backward";
+
+#[export]
+fn re_search_backward(re: &eq, vs: &eq, vpos: &eq) -> &eq {
+    let s = vs as &bytes;
+    let pos = vpos as i32_s;
+    let len = s.length();
+    if pos >u len {
+        caml_invalid_argument(search_backward);
+    }
+    let startchars = get_startchars(re);
+    'loop: loop {
+        if !!startchars {
+            'skipped: do {
+                'skip: loop {
+                    br_if 'skipped pos <=s 0;
+                    // a regexp with a startchars table needs at least one
+                    // character to match, so no match starts at the end
+                    // of the string
+                    if pos <u len {
+                        br_if 'skipped startchars[s[pos] as i32_u] as i32_u;
+                    }
+                    pos -= 1;
+                    br 'skip;
+                }
+            }
+        }
+        let res = re_match(re, s, pos, 0);
+        if res is &block {
+            return res;
+        }
+        pos -= 1;
+        br_if 'loop pos >=s 0;
+    }
+    [block|0 as &i31];
+}
+
+const string_match = "Str.string_match";
+
+#[export]
+fn re_string_match(re: &eq, vs: &eq, vpos: &eq) -> &eq {
+    let s = vs as &bytes;
+    let pos = vpos as i32_s;
+    let len = s.length();
+    if pos >u len {
+        caml_invalid_argument(string_match);
+    }
+    let res = re_match(re, s, pos, 0);
+    if res is &block {
+        return res;
+    }
+    [block|0 as &i31];
+}
+
+const string_partial_match = "Str.string_partial_match";
+
+#[export]
+fn re_partial_match(re: &eq, vs: &eq, vpos: &eq) -> &eq {
+    let s = vs as &bytes;
+    let pos = vpos as i32_s;
+    let len = s.length();
+    if pos >u len {
+        caml_invalid_argument(string_partial_match);
+    }
+    let res = re_match(re, s, pos, 1);
+    if res is &block {
+        return res;
+    }
+    [block|0 as &i31];
+}
+
+const illegal_backslash = "Str.replace: illegal backslash sequence";
+const unmatched_group = "Str.replace: reference to unmatched group";
+const replace_matched = "Str.replace_matched";
+
+#[export]
+fn re_replacement_text(vrepl: &eq, vgroups: &eq, vorig: &eq) -> &eq {
+    let repl = vrepl as &bytes;
+    let l = repl.length();
+    let groups = vgroups as &block;
+    let orig = vorig as &bytes;
+    let i: i32;
+    let len: i32;
+    let c: i32;
+    let start: i32;
+    let end: i32;
+    'loop: while i <u l {
+        c = repl[i] as i32_u;
+        i += 1;
+        if c != '\\' {
+            len += 1;
+            br 'loop;
+        }
+        if i == l {
+            caml_failwith(illegal_backslash);
+        }
+        c = repl[i] as i32_u;
+        i += 1;
+        if c == '\\' {
+            len += 1;
+            br 'loop;
+        }
+        c -= '0';
+        if c >u 9 {
+            len += 2;
+            br 'loop;
+        }
+        c <<= 1;
+        if c + 1 >=u groups.length() {
+            caml_failwith(unmatched_group);
+            unreachable;
+        }
+        start = groups[c + 1] as i32_s;
+        end = groups[c + 2] as i32_s;
+        if start == -1 {
+            caml_failwith(unmatched_group);
+        }
+        // [orig] may not be the string that was searched
+        if end >u orig.length() {
+            caml_invalid_argument(replace_matched);
+        }
+        len += end - start;
+    }
+    let res: &bytes = [0; len];
+    i = 0;
+    let j: i32;
+    'loop: while i <u l {
+        c = repl[i] as i32_u;
+        i += 1;
+        if c != '\\' {
+            res[j] = c;
+            j += 1;
+            br 'loop;
+        }
+        c = repl[i] as i32_u;
+        i += 1;
+        if c == '\\' {
+            res[j] = c;
+            j += 1;
+            br 'loop;
+        }
+        c -= '0';
+        if c >u 9 {
+            res[j] = '\\';
+            res[j + 1] = c + '0';
+            j += 2;
+            br 'loop;
+        }
+        c <<= 1;
+        if c + 1 >=u groups.length() {
+            caml_failwith(unmatched_group);
+            unreachable;
+        }
+        start = groups[c + 1] as i32_s;
+        end = groups[c + 2] as i32_s;
+        len = end - start;
+        res.copy(j, orig, start, len);
+        j += len;
+    }
+    res;
+}

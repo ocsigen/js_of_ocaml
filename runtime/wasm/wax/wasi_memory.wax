@@ -1,0 +1,87 @@
+#[if(wasi)]
+{
+    import "libc" {
+        #[import = "memory"]
+        memory m: i32 [2];
+        fn malloc(i32) -> i32;
+        fn free(i32);
+    }
+    import "io" const IO_BUFFER_SIZE: i32;
+    import "fail" fn caml_raise_out_of_memory();
+
+    type bytes = [mut i8];
+
+    #[export]
+    fn checked_malloc(size: i32) -> i32 {
+        let p = malloc(size);
+        if !p {
+            caml_raise_out_of_memory();
+        }
+        p;
+    }
+
+    #[export]
+    fn blit_substring_to_memory(buf: i32, s: &bytes, ofs: i32, len: i32) {
+        let i: i32;
+        while i <u len : (i += 1) {
+            m.store8(buf + i, s[ofs + i] as i32_u);
+        }
+    }
+
+    #[export]
+    fn blit_string_to_memory(buf: i32, s: &bytes) {
+        let len = s.length();
+        let i: i32;
+        while i <u len : (i += 1) {
+            m.store8(buf + i, s[i] as i32_u);
+        }
+    }
+
+    #[export]
+    fn blit_memory_to_substring(buf: i32, s: &bytes, ofs: i32, len: i32) {
+        let i: i32;
+        while i <u len : (i += 1) {
+            s[ofs + i] = m.load8(buf + i) as i32_u;
+        }
+    }
+
+    #[export]
+    fn blit_memory_to_string(buf: i32, len: i32) -> &bytes {
+        let s: &bytes = [0; len];
+        let i: i32;
+        while i <u len : (i += 1) {
+            s[i] = m.load8(buf + i) as i32_u;
+        }
+        s;
+    }
+
+    #[export]
+    fn write_string_to_memory(buf: i32, avail: i32, v: &eq) -> i32 {
+        let i: i32;
+        let s = v as &bytes;
+        let len = s.length();
+        if avail <u len + 1 {
+            buf = checked_malloc(len + 1);
+        }
+        blit_string_to_memory(buf, s);
+        m.store8(buf + len, 0);
+        buf;
+    }
+
+    #[export]
+    fn release_memory(initial_buffer: i32, buf: i32) {
+        if initial_buffer != buf {
+            free(buf);
+        }
+    }
+
+    let buffer = 0;
+
+    #[export]
+    fn get_buffer() -> i32 {
+        if !buffer {
+            buffer = checked_malloc(IO_BUFFER_SIZE + 12);
+        }
+        buffer;
+    }
+}

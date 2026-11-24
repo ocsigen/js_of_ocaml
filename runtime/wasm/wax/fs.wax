@@ -1,0 +1,815 @@
+// Wasm_of_ocaml runtime support
+// http://www.ocsigen.org/js_of_ocaml/
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, with linking exception;
+// either version 2.1 of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+
+#[if(wasi)]
+{
+    type path_op = fn(i32, i32, i32) -> i32;
+    import "libc" {
+        #[import = "memory"]
+        memory m: i32 [2];
+        fn free(i32);
+    }
+    import "wasi_memory" {
+        fn checked_malloc(i32) -> i32;
+        fn get_buffer() -> i32;
+        fn write_string_to_memory(i32, i32, &eq) -> i32;
+        fn blit_memory_to_string(i32, i32) -> &bytes;
+    }
+    import "wasi_snapshot_preview1" {
+        fn fd_prestat_get(i32, i32) -> i32;
+        fn fd_prestat_dir_name(i32, i32, i32) -> i32;
+        fn path_rename(i32, i32, i32, i32, i32, i32) -> i32;
+        fn path_unlink_file: path_op ;
+        fn path_create_directory: path_op ;
+        fn path_remove_directory: path_op ;
+        fn path_filestat_get(i32, i32, i32, i32, i32) -> i32;
+        fn path_open(i32, i32, i32, i32, i32, i64, i64, i32, i32) -> i32;
+        #[import = "fd_readdir"]
+        fn fd_readddir(i32, i32, i32, i64, i32) -> i32;
+        fn fd_close(i32) -> i32;
+    }
+    import "sys" {
+        fn caml_handle_sys_error(&eq, i32);
+        fn caml_handle_sys_error_if(&eq, i32);
+    }
+}
+#[else]
+{
+    import "bindings" {
+        const on_windows: i32;
+        fn getcwd() -> &?extern;
+        fn chdir(&?extern);
+        fn mkdir(&?extern, i32);
+        fn rmdir(&?extern);
+        fn unlink(&?extern);
+        fn tmpdir() -> &?extern;
+        fn read_dir(&?extern) -> &extern;
+        fn file_exists(&?extern) -> &eq;
+        fn filepath_exists(&?extern) -> &eq;
+        fn is_directory(&?extern) -> &eq;
+        fn is_file(&?extern) -> &eq;
+        fn rename(&?extern, &?extern);
+    }
+    import "jslib" {
+        fn value_of_js(&?extern) -> &eq;
+        fn js_of_value(&eq) -> &?extern;
+        fn caml_string_of_jsstring(&eq) -> &eq;
+        fn caml_jsstring_of_string(&eq) -> &eq;
+        fn caml_js_to_string_array(a: &extern) -> &eq;
+    }
+    import "fail" tag javascript_exception(&?extern);
+    import "sys" fn caml_handle_sys_error(&?extern);
+    import "bigarray" {
+        fn caml_uint8_array_of_string(&eq) -> &eq;
+        fn caml_string_of_uint8_array(&eq) -> &eq;
+    }
+}
+import "string" fn caml_string_concat(&eq, &eq) -> &eq;
+import "fail" fn caml_raise_sys_error(&eq);
+import "bindings" {
+    fn register_file(&?extern, &?extern);
+    fn read_file(&?extern) -> &?extern;
+}
+
+type bytes = [mut i8];
+type block = [mut &eq];
+
+#[if(wasi)]
+{
+    type preopen = { prefix: &bytes, fd: i32, next: &?preopen };
+
+    let preopens: &?preopen = null;
+
+    let preopens_initialized = 0;
+
+    fn normalize_prefix(prefix: &bytes) -> &bytes {
+        let len = prefix.length();
+        let i: i32;
+        'loop: loop {
+            if i <u len {
+                let c = prefix[i] as i32_u;
+                if c == 47 // '/'
+                {
+                    i += 1;
+                    br 'loop;
+                }
+                if c == 46 // '.'
+                {
+                    if i == len - 1 {
+                        i += 1;
+                        br 'loop;
+                    } else {
+                        c = prefix[i + 1] as i32_u;
+                        if c == 47 // '/'
+                        {
+                            i += 2;
+                            br 'loop;
+                        }
+                    }
+                }
+            }
+        }
+        if i == len {
+            return "";
+        }
+        // [$i] points at the first non-prefix character. When some leading
+        // component was stripped ([$i] > 1, e.g. "./x" or "//x") keep one
+        // leading slash by copying from [$i - 1]. For a plain relative prefix
+        // ([$i] = 0, e.g. "x") or a single leading slash ([$i] = 1) the prefix
+        // is already normalized, so return it unchanged. Subtracting from
+        // [$i = 0] would wrap to a huge unsigned index and trap the copy.
+        if i >u 1 {
+            i -= 1;
+            let res: &bytes = [0; len - i];
+            res.copy(0, prefix, i, len - i);
+            return res;
+        }
+        return prefix;
+    }
+
+    fn get_preopens() -> &?preopen {
+        'done: if !preopens_initialized {
+            let buffer = get_buffer();
+            let fd = 3;
+            'loop: loop {
+                let res = fd_prestat_get(fd, buffer);
+                br_if 'done res == 8; // EBADF
+                'skip: do {
+                    br_if 'skip !(!res & !(m.load8(buffer) as i32_u));
+                    let len = m.load32(buffer, offset: 4);
+                    res = fd_prestat_dir_name(fd, buffer, len);
+                    br_if 'skip res;
+                    preopens =
+                        {
+                            prefix: normalize_prefix(blit_memory_to_string(buffer, len)),
+                            fd,
+                            next: preopens,
+                        };
+                }
+                fd += 1;
+                br 'loop;
+            }
+            preopens_initialized = 1;
+        }
+        preopens;
+    }
+
+    let current_dir = "";
+
+    const root_dir = "/";
+
+    fn make_absolute(path: &bytes) -> &bytes {
+        if !path.length() { // empty path: left empty here; wasi_resolve_path rejects it
+            // with ENOENT before resolution, like native (stat ""/open
+            // "" etc.). It cannot be rejected from the resolved path
+            // because "" would also match the current-directory preopen.
+            return path;
+        }
+        if
+            47 // '/'
+                == path[0] as i32_u { // absolute path
+            return path;
+        }
+        if
+            (46 // '.'
+                 == path[0] as i32_u) & (path.length() == 1) {
+            // "."
+            return current_dir;
+        }
+        let i: i32;
+        if path.length() >=u 2 {
+            if
+                (46 // '.'
+                     == path[0] as i32_u)
+                    & (47 // '/'
+                           == path[1] as i32_u) { // starts with "./"
+                i = 2;
+            }
+        }
+        if i == path.length() { // "./"
+            return current_dir;
+        }
+        let need_slash =
+            if current_dir.length() {
+                47 // '/'
+                    != current_dir[current_dir.length() - 1] as i32_u;
+            } else {
+                1;
+            };
+        let abs_path: &bytes = [0; current_dir.length() + (need_slash - i + path.length())];
+        abs_path.copy(0, current_dir, 0, current_dir.length());
+        abs_path[current_dir.length()] = 47; // '/'
+        abs_path.copy(current_dir.length() + need_slash, path, i, path.length() - i);
+        abs_path;
+    }
+
+    #[export]
+    fn wasi_chdir(name: &eq) {
+        let abs_path = make_absolute(name as &bytes);
+        let i = abs_path.length() - 1;
+        // remove trailing slashes
+        'loop: loop {
+            if i >=s 0 {
+                if
+                    47 // '/'
+                        == abs_path[i] as i32_u {
+                    i -= 1;
+                    br 'loop;
+                }
+            }
+        }
+        i += 1;
+        if i <u abs_path.length() {
+            let path: &bytes = [0; i];
+            path.copy(0, abs_path, 0, i);
+            abs_path = path;
+        }
+        current_dir = abs_path;
+    }
+
+    fn prefix_match(prefix: &bytes, path: &bytes) -> i32 {
+        let len = prefix.length();
+        // A preopen prefix may carry a trailing slash (e.g. "--dir=tmp/");
+        // ignore it so it still matches "<prefix>/<rest>". The length guard
+        // must be an enclosing `if`: `i32.and` evaluates both operands, so
+        // folding it in would still read $prefix[$len - 1] when $len is 0.
+        if len >u 0 {
+            if prefix[len - 1] as i32_u == 47 // '/'
+            {
+                len -= 1;
+            }
+        }
+        if path.length() <u len {
+            return 0;
+        }
+        if path.length() >u len {
+            if path[len] as i32_u != 47 {
+                return 0;
+            }
+        }
+        let i: i32;
+        while i <u len : (i += 1) {
+            if path[i] as i32_u != prefix[i] as i32_u {
+                return 0;
+            }
+        }
+        return 1;
+    }
+
+    fn resolve_abs_path(path: &bytes) -> (i32, &bytes) {
+        let preopens = get_preopens();
+        let i = -1;
+        let fd: i32;
+        'done: do {
+            'loop: loop {
+                let current = br_on_null 'done preopens;
+                let prefix = current.prefix;
+                if (prefix.length() >s i) & prefix_match(prefix, path) {
+                    fd = current.fd;
+                    i = prefix.length();
+                }
+                preopens = current.next;
+                br 'loop;
+            }
+        }
+        if i == -1 { // not found
+            return (-1, "");
+        }
+        // skip leading slashes
+        let len = i;
+        'loop: loop {
+            if i <u path.length() {
+                if path[i] as i32_u == 47 // 47
+                {
+                    i += 1;
+                    br 'loop;
+                }
+                let rel_path: &bytes = [0; path.length() - i];
+                rel_path.copy(0, path, i, path.length() - i);
+                return (fd, rel_path);
+            }
+        }
+        return (fd, ".");
+    }
+
+    #[export]
+    fn wasi_resolve_path(vpath: &eq /*fd*/ /*address*/ /*length*/ ) -> (i32, i32, i32) {
+        // An empty path matches no entry and fails with ENOENT like native,
+        // rather than resolving to the current directory. This is checked on
+        // the original path: make_absolute would turn "" into current_dir,
+        // which is indistinguishable from ".".
+        if !(vpath as &bytes).length() {
+            return (-1, 0, 0);
+        }
+        let (res_0, res_1) = resolve_abs_path(make_absolute(vpath as &bytes));
+        let p: i32;
+        if res_0 >=s 0 {
+            p = write_string_to_memory(0, 0, res_1);
+        }
+        return (res_0, p, res_1.length());
+    }
+
+    #[export]
+    fn caml_sys_resolve_path(path: &eq) -> (i32, i32, i32) {
+        let (res_0, res_1, res_2) = wasi_resolve_path(path);
+        if res_0 <s 0 { // ENOENT
+            caml_handle_sys_error(path, 44);
+        }
+        res_0;
+        res_1;
+        res_2;
+    }
+}
+
+#[if(wasi)]
+{
+    // Resolve $name, invoke a path-based syscall $f on it, free the
+    // resolved buffer and raise a Sys_error labelled $name on failure.
+    fn sys_path_op(name: &eq, f: &path_op) -> &eq {
+        let (p_fd, p_addr, p_len) = caml_sys_resolve_path(name);
+        let res = f(p_fd, p_addr, p_len);
+        free(p_addr);
+        caml_handle_sys_error_if(name, res);
+        0 as &i31;
+    }
+
+    #[export]
+    #[export = "unix_getcwd"]
+    #[export = "caml_unix_getcwd"]
+    fn caml_sys_getcwd(&eq) -> &eq {
+        if current_dir.length() {
+            return current_dir;
+        }
+        root_dir;
+    }
+}
+#[else]
+{
+    #[export]
+    fn caml_sys_getcwd(&eq) -> &eq {
+        try_legacy {
+            caml_string_of_jsstring(value_of_js(getcwd()));
+        } catch {
+            javascript_exception => {
+                caml_handle_sys_error(_);
+                0 as &i31;
+            }
+        }
+    }
+}
+
+#[if(wasi)]
+{
+    #[export]
+    fn caml_sys_chdir(name: &eq) -> &eq {
+        let (p_fd, p_addr, p_len) = caml_sys_resolve_path(name);
+        let buffer = get_buffer();
+        let res = path_filestat_get(p_fd, 1, p_addr, p_len, buffer);
+        free(p_addr);
+        caml_handle_sys_error_if(name, res);
+        let kind = m.load8(buffer, offset: 16) as i32_u;
+        if kind != 3 {
+            caml_handle_sys_error(name, 54);
+        } // ENOTDIR
+        wasi_chdir(name);
+        0 as &i31;
+    }
+}
+#[else]
+{
+    #[export]
+    fn caml_sys_chdir(name: &eq) -> &eq {
+        try_legacy {
+            chdir(js_of_value(caml_jsstring_of_string(name)));
+        } catch {
+            javascript_exception => {
+                caml_handle_sys_error(_);
+            }
+        }
+        0 as &i31;
+    }
+}
+
+#[if(wasi)]
+{
+    #[export]
+    fn caml_sys_mkdir(name: &eq, perm: &eq) -> &eq {
+        become sys_path_op(name, path_create_directory);
+    }
+}
+#[else]
+{
+    #[export]
+    fn caml_sys_mkdir(name: &eq, perm: &eq) -> &eq {
+        try_legacy {
+            mkdir(js_of_value(caml_jsstring_of_string(name)), perm as i32_u);
+        } catch {
+            javascript_exception => {
+                caml_handle_sys_error(_);
+            }
+        }
+        0 as &i31;
+    }
+}
+
+#[if(wasi)]
+{
+    #[export]
+    fn caml_sys_read_directory(name: &eq) -> &eq {
+        let (p_fd, p_addr, p_len) = caml_sys_resolve_path(name);
+        let buffer = get_buffer();
+        let res =
+            path_open(
+                p_fd,
+                1, // symlink_follow
+                p_addr,
+                p_len,
+                2, // O_DIRECTORY
+                0x4000, // allow fd_readdir
+                0,
+                0,
+                buffer,
+            );
+        free(p_addr);
+        caml_handle_sys_error_if(name, res);
+        let fd = m.load32(buffer);
+        let buf = checked_malloc(512);
+        let size = 512;
+        let tbl: &block = [0 as &i31; 50];
+        let i = 1;
+        let pos: i32;
+        let available: i32;
+        let new_tbl: &block;
+        'loop: loop {
+            let entry_size: i32;
+            let cookie: i64;
+            'refill: do {
+                let left = available - pos;
+                br_if 'refill left <u 24;
+                let entry = buf + pos;
+                let namelen = m.load32(entry, offset: 16);
+                entry_size = namelen + 24;
+                br_if 'refill left <u entry_size;
+                pos += entry_size;
+                cookie = m.load64(entry);
+                if i == tbl.length() {
+                    new_tbl = [0 as &i31; i << 1];
+                    new_tbl.copy(0, tbl, 0, i);
+                    tbl = new_tbl;
+                }
+                let s = blit_memory_to_string(entry + 24, namelen);
+                // skip "." and ".."
+                if namelen == 2 {
+                    br_if 'loop (46 == s[0] as i32_u) & (46 == s[1] as i32_u);
+                } else {
+                    if namelen == 1 {
+                        br_if 'loop s[0] as i32_u == 46;
+                    }
+                }
+                tbl[i] = s;
+                i += 1;
+                br 'loop;
+            }
+            // refill
+            if size <u entry_size {
+                // the entry does not fit
+                let new_buf = checked_malloc(entry_size);
+                free(buf);
+                buf = new_buf;
+                size = entry_size;
+                // discard the stale buffer contents: the grown buffer must be
+                // refilled from $cookie, and a stale $available would otherwise
+                // falsely trigger the short-read termination below
+                available = 0;
+            }
+            'done: do {
+                br_if 'done (0 != available) & (available <u size);
+                res = fd_readddir(fd, buf, size, cookie, buffer);
+                if res {
+                    free(buf);
+                    _ = fd_close(fd);
+                    caml_handle_sys_error(name, res);
+                }
+                available = m.load32(buffer);
+                br_if 'done !available;
+                pos = 0;
+                br 'loop;
+            }
+        }
+        // done
+        free(buf);
+        res = fd_close(fd);
+        caml_handle_sys_error_if(name, res);
+        if i == tbl.length() {
+            return tbl;
+        }
+        new_tbl = [0 as &i31; i];
+        new_tbl.copy(0, tbl, 0, i);
+        new_tbl;
+    }
+}
+#[else]
+{
+    #[export]
+    fn caml_sys_read_directory(name: &eq) -> &eq {
+        try_legacy {
+            caml_js_to_string_array(read_dir(js_of_value(caml_jsstring_of_string(name))));
+        } catch {
+            javascript_exception => {
+                caml_handle_sys_error(_);
+                0 as &i31;
+            }
+        }
+    }
+}
+
+#[if(wasi)]
+{
+    #[export]
+    fn caml_sys_rmdir(name: &eq) -> &eq {
+        become sys_path_op(name, path_remove_directory);
+    }
+}
+#[else]
+{
+    #[export]
+    fn caml_sys_rmdir(name: &eq) -> &eq {
+        try_legacy {
+            rmdir(js_of_value(caml_jsstring_of_string(name)));
+        } catch {
+            javascript_exception => {
+                caml_handle_sys_error(_);
+            }
+        }
+        0 as &i31;
+    }
+}
+
+#[if(wasi)]
+{
+    #[export]
+    fn caml_sys_remove(name: &eq) -> &eq {
+        become sys_path_op(name, path_unlink_file);
+    }
+}
+#[else]
+{
+    #[export]
+    fn caml_sys_remove(name: &eq) -> &eq {
+        try_legacy {
+            unlink(js_of_value(caml_jsstring_of_string(name)));
+        } catch {
+            javascript_exception => {
+                caml_handle_sys_error(_);
+            }
+        }
+        0 as &i31;
+    }
+}
+
+#[if(wasi)]
+{
+    #[export]
+    fn caml_sys_rename(o: &eq, n: &eq) -> &eq {
+        // Resolve both paths without raising, so that the first buffer is
+        // always freed below even if resolving the second path fails.
+        let (op_fd, op_addr, op_len) = wasi_resolve_path(o);
+        let (np_fd, np_addr, np_len) = wasi_resolve_path(n);
+        let arg = o;
+        let res = 44; // ENOENT
+        'error: do {
+            br_if 'error op_fd <s 0;
+            arg = n;
+            br_if 'error np_fd <s 0;
+            arg = o;
+            res = path_rename(op_fd, op_addr, op_len, np_fd, np_addr, np_len);
+        }
+        free(op_addr);
+        free(np_addr);
+        caml_handle_sys_error_if(arg, res);
+        0 as &i31;
+    }
+}
+#[else]
+{
+    #[export]
+    fn caml_sys_rename(o: &eq, n: &eq) -> &eq {
+        try_legacy {
+            rename(
+                js_of_value(caml_jsstring_of_string(o)),
+                js_of_value(caml_jsstring_of_string(n)),
+            );
+        } catch {
+            javascript_exception => {
+                caml_handle_sys_error(_);
+            }
+        }
+        0 as &i31;
+    }
+}
+
+#[if(wasi)]
+{
+    #[export]
+    fn caml_sys_file_exists(name: &eq) -> &eq {
+        let (p_fd, p_addr, p_len) = wasi_resolve_path(name);
+        if p_fd <s 0 {
+            free(p_addr);
+            return 0 as &i31;
+        }
+        let buffer = get_buffer();
+        let res = path_filestat_get(p_fd, 1, p_addr, p_len, buffer);
+        free(p_addr);
+        !res as &i31;
+    }
+
+    #[export]
+    fn caml_sys_filepath_exists(name: &eq) -> &eq {
+        let (p_fd, p_addr, p_len) = wasi_resolve_path(name);
+        if p_fd <s 0 {
+            free(p_addr);
+            return 0 as &i31;
+        }
+        let buffer = get_buffer();
+        let res = path_filestat_get(p_fd, 1, p_addr, p_len, buffer);
+        free(p_addr);
+        if
+            (res == 44) // ENOENT
+                | (res == 54) // ENOTDIR
+        {
+            return 0 as &i31;
+        }
+        caml_handle_sys_error_if(name, res);
+        1 as &i31;
+    }
+}
+#[else]
+{
+    #[export]
+    fn caml_sys_file_exists(name: &eq) -> &eq {
+        become file_exists(js_of_value(caml_jsstring_of_string(name)));
+    }
+
+    #[export]
+    fn caml_sys_filepath_exists(name: &eq) -> &eq {
+        try_legacy {
+            filepath_exists(js_of_value(caml_jsstring_of_string(name)));
+        } catch {
+            javascript_exception => {
+                caml_handle_sys_error(_);
+                0 as &i31;
+            }
+        }
+    }
+}
+
+const no_such_file = ": No such file or directory";
+
+fn caml_raise_no_such_file(name: &eq) {
+    caml_raise_sys_error(caml_string_concat(name, no_such_file));
+}
+
+#[if(wasi)]
+{
+    #[export]
+    fn caml_read_file_content(name: &eq) -> &eq {
+        caml_raise_no_such_file(name);
+        0 as &i31;
+    }
+}
+#[else]
+{
+    #[export]
+    fn caml_read_file_content(name: &eq) -> &eq {
+        let res = read_file(js_of_value(caml_jsstring_of_string(name)));
+        if !res {
+            caml_raise_no_such_file(name);
+            return 0 as &i31;
+        }
+        become caml_string_of_uint8_array(value_of_js(res));
+    }
+}
+
+#[if(wasi)]
+{
+    #[export]
+    fn caml_create_file(name: &eq, content: &eq) -> &eq {
+        0 as &i31;
+    }
+}
+#[else]
+{
+    #[export]
+    fn caml_create_file(name: &eq, content: &eq) -> &eq {
+        register_file(
+            js_of_value(caml_jsstring_of_string(name)),
+            js_of_value(caml_uint8_array_of_string(content)),
+        );
+        0 as &i31;
+    }
+}
+
+#[export]
+fn caml_fs_init() -> &eq {
+    0 as &i31;
+}
+
+#[if(wasi)]
+{
+    fn caml_sys_file_mode(name: &eq) -> i32 {
+        let (p_fd, p_addr, p_len) = caml_sys_resolve_path(name);
+        let buffer = get_buffer();
+        let res = path_filestat_get(p_fd, 1, p_addr, p_len, buffer);
+        free(p_addr);
+        caml_handle_sys_error_if(name, res);
+        m.load8(buffer, offset: 16) as i32_u;
+    }
+
+    #[export]
+    fn caml_sys_is_directory(name: &eq) -> &eq {
+        (caml_sys_file_mode(name) == 3) as &i31;
+    }
+}
+#[else]
+{
+    #[export]
+    fn caml_sys_is_directory(name: &eq) -> &eq {
+        try_legacy {
+            is_directory(js_of_value(caml_jsstring_of_string(name)));
+        } catch {
+            javascript_exception => {
+                caml_handle_sys_error(_);
+                0 as &i31;
+            }
+        }
+    }
+}
+
+#[if(wasi)]
+{
+    #[export]
+    fn caml_sys_is_regular_file(name: &eq) -> &eq {
+        (caml_sys_file_mode(name) == 4) as &i31;
+    }
+}
+#[else]
+{
+    #[export]
+    fn caml_sys_is_regular_file(name: &eq) -> &eq {
+        try_legacy {
+            is_file(js_of_value(caml_jsstring_of_string(name)));
+        } catch {
+            javascript_exception => {
+                caml_handle_sys_error(_);
+                0 as &i31;
+            }
+        }
+    }
+}
+
+#[if(wasi)]
+{
+    #[export]
+    fn caml_sys_temp_dir_name(&eq) -> &eq {
+        "/tmp";
+    }
+}
+#[else]
+{
+    #[export]
+    fn caml_sys_temp_dir_name(&eq) -> &eq {
+        if on_windows {
+            become caml_string_of_jsstring(value_of_js(tmpdir()));
+        }
+        "";
+    }
+}
+
+#[export]
+fn caml_mount_autoload(&eq, &eq) -> &eq {
+    0 as &i31;
+}
+
+#[export]
+fn caml_list_mount_point(&eq) -> &eq {
+    0 as &i31;
+}
+
+#[export]
+fn caml_unmount(&eq) -> &eq {
+    0 as &i31;
+}

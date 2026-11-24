@@ -1,0 +1,44 @@
+// Wasm_of_ocaml runtime support
+// http://www.ocsigen.org/js_of_ocaml/
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, with linking exception;
+// either version 2.1 of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+
+// Helpers for the [Js_of_ocaml.Promise] binding. Implementations live in
+// runtime/js/promise.js — the Wasm side just bridges between OCaml's
+// (ref eq) representation and the JS [externref] world.
+
+#[if(not(wasi))]
+{
+    import "jslib" {
+        fn value_of_js(&?extern) -> &eq;
+        fn js_of_value(&eq) -> &?extern;
+    }
+    import "js" {
+        #[import = "caml_jsoo_promise_wrap"]
+        fn caml_jsoo_promise_wrap_js(&?extern) -> &?extern;
+        #[import = "caml_jsoo_promise_unwrap"]
+        fn caml_jsoo_promise_unwrap_js(&?extern) -> &?extern;
+    }
+
+    #[export]
+    fn caml_jsoo_promise_wrap(v: &eq) -> &eq {
+        become value_of_js(caml_jsoo_promise_wrap_js(js_of_value(v)));
+    }
+
+    #[export]
+    fn caml_jsoo_promise_unwrap(v: &eq) -> &eq {
+        become value_of_js(caml_jsoo_promise_unwrap_js(js_of_value(v)));
+    }
+}

@@ -1,0 +1,481 @@
+// Wasm_of_ocaml runtime support
+// http://www.ocsigen.org/js_of_ocaml/
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, with linking exception;
+// either version 2.1 of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+
+#[if(not(wasi))]
+{
+
+    // Imports from other wasm modules
+    import "fail" {
+        fn caml_failwith(&eq);
+        fn caml_raise_with_arg(&eq, &eq);
+    }
+    import "stdlib" fn caml_named_value(&eq) -> &?eq;
+    import "jslib" {
+        fn value_of_js(&?extern) -> &eq;
+        fn js_of_value(&eq) -> &?extern;
+        fn caml_jsstring_of_string(&eq) -> &eq;
+    }
+    import "bindings" {
+        #[import = "identity"]
+        fn from_int32(i32) -> &?extern;
+        fn new_array(i32) -> &extern;
+        fn array_set(&extern, i32, &?extern);
+    }
+
+    // JS helper imports
+    import "js" {
+        #[import = "gr_state_for_wasm"]
+        fn gr_state() -> &?extern;
+        #[import = "gr_open_for_wasm"]
+        fn gr_open(&?extern) -> i32;
+        #[import = "gr_close_for_wasm"]
+        fn gr_close();
+        #[import = "gr_clear_for_wasm"]
+        fn gr_clear();
+        #[import = "gr_size_x_for_wasm"]
+        fn gr_size_x() -> i32;
+        #[import = "gr_size_y_for_wasm"]
+        fn gr_size_y() -> i32;
+        #[import = "gr_current_x_for_wasm"]
+        fn gr_current_x() -> i32;
+        #[import = "gr_current_y_for_wasm"]
+        fn gr_current_y() -> i32;
+        #[import = "gr_set_color_for_wasm"]
+        fn gr_set_color(i32);
+        #[import = "gr_plot_for_wasm"]
+        fn gr_plot(i32, i32);
+        #[import = "gr_point_color_for_wasm"]
+        fn gr_point_color(i32, i32) -> i32;
+        #[import = "gr_moveto_for_wasm"]
+        fn gr_moveto(i32, i32);
+        #[import = "gr_lineto_for_wasm"]
+        fn gr_lineto(i32, i32);
+        #[import = "gr_draw_rect_for_wasm"]
+        fn gr_draw_rect(i32, i32, i32, i32);
+        #[import = "gr_fill_rect_for_wasm"]
+        fn gr_fill_rect(i32, i32, i32, i32);
+        #[import = "gr_draw_arc_for_wasm"]
+        fn gr_draw_arc(i32, i32, i32, i32, i32, i32);
+        #[import = "gr_fill_arc_for_wasm"]
+        fn gr_fill_arc(i32, i32, i32, i32, i32, i32);
+        #[import = "gr_set_line_width_for_wasm"]
+        fn gr_set_line_width(i32);
+        #[import = "gr_resize_window_for_wasm"]
+        fn gr_resize_window(i32, i32);
+        #[import = "gr_draw_char_for_wasm"]
+        fn gr_draw_char(i32);
+        #[import = "gr_draw_str_for_wasm"]
+        fn gr_draw_str(&?extern);
+        #[import = "gr_set_font_for_wasm"]
+        fn gr_set_font(&?extern);
+        #[import = "gr_set_text_size_for_wasm"]
+        fn gr_set_text_size(i32);
+        #[import = "gr_set_window_title_for_wasm"]
+        fn gr_set_window_title(&?extern);
+        #[import = "gr_text_size_w_for_wasm"]
+        fn gr_text_size_w(&?extern) -> i32;
+        #[import = "gr_text_size_h_for_wasm"]
+        fn gr_text_size_h() -> i32;
+        #[import = "gr_fill_poly_for_wasm"]
+        fn gr_fill_poly(&?extern, i32);
+        #[import = "gr_create_image_for_wasm"]
+        fn gr_create_image(i32, i32) -> &?extern;
+        #[import = "gr_draw_image_for_wasm"]
+        fn gr_draw_image(&?extern, i32, i32);
+        #[import = "gr_blit_image_for_wasm"]
+        fn gr_blit_image(&?extern, i32, i32);
+        #[import = "gr_make_image_for_wasm"]
+        fn gr_make_image(&?extern, i32, i32) -> &?extern;
+        #[import = "gr_dump_image_width_for_wasm"]
+        fn gr_dump_image_width(&?extern) -> i32;
+        #[import = "gr_dump_image_height_for_wasm"]
+        fn gr_dump_image_height(&?extern) -> i32;
+        #[import = "gr_dump_image_pixel_for_wasm"]
+        fn gr_dump_image_pixel(&?extern, i32, i32) -> i32;
+        #[import = "gr_state_set_for_wasm"]
+        fn gr_state_set(&?extern);
+        #[import = "gr_state_create_for_wasm"]
+        fn gr_state_create(&?extern, i32, i32) -> &?extern;
+        #[import = "gr_doc_of_state_for_wasm"]
+        fn gr_doc_of_state(&?extern) -> &?extern;
+    }
+
+    // Types
+    type block = [mut &eq];
+    type bytes = [mut i8];
+    type js = { js: &?extern };
+
+    // String constants
+    const graphic_failure = "Graphics.Graphic_failure";
+    const not_initialized = "Not initialized";
+    const open_failed = "Graphics.open_graph: cannot open the window";
+    const wait_event = "caml_gr_wait_event not Implemented: use Graphics_js instead";
+    const synchronize = "caml_gr_synchronize not Implemented";
+    const remember_mode = "caml_gr_remember_mode not Implemented";
+    const display_mode = "caml_gr_display_mode not Implemented";
+    const window_id = "caml_gr_window_id not Implemented";
+    const open_subwindow = "caml_gr_open_subwindow not Implemented";
+    const close_subwindow = "caml_gr_close_subwindow not Implemented";
+
+    // State check helper: raises Graphics.Graphic_failure if not initialized
+    fn check_state() {
+        if !gr_state() {
+            'no_named_value: do {
+                caml_raise_with_arg(
+                    br_on_null 'no_named_value caml_named_value(graphic_failure),
+                    not_initialized,
+                );
+                return;
+            }
+            caml_failwith(not_initialized);
+        }
+    }
+
+    // --- Open / Close / Clear ---
+
+    #[export]
+    fn caml_gr_open_graph(s: &eq) -> &eq {
+        if gr_open(js_of_value(caml_jsstring_of_string(s))) {
+            caml_failwith(open_failed);
+        }
+        0 as &i31;
+    }
+
+    #[export]
+    fn caml_gr_close_graph(&eq) -> &eq {
+        check_state();
+        gr_close();
+        0 as &i31;
+    }
+
+    #[export]
+    fn caml_gr_clear_graph(&eq) -> &eq {
+        check_state();
+        gr_clear();
+        0 as &i31;
+    }
+
+    // --- Size / Position getters ---
+
+    #[export]
+    fn caml_gr_size_x(&eq) -> &eq {
+        check_state();
+        gr_size_x() as &i31;
+    }
+
+    #[export]
+    fn caml_gr_size_y(&eq) -> &eq {
+        check_state();
+        gr_size_y() as &i31;
+    }
+
+    #[export]
+    fn caml_gr_current_x(&eq) -> &eq {
+        check_state();
+        gr_current_x() as &i31;
+    }
+
+    #[export]
+    fn caml_gr_current_y(&eq) -> &eq {
+        check_state();
+        gr_current_y() as &i31;
+    }
+
+    // --- Drawing with ints ---
+
+    #[export]
+    fn caml_gr_set_color(c: &eq) -> &eq {
+        check_state();
+        gr_set_color(c as i32_s);
+        0 as &i31;
+    }
+
+    #[export]
+    fn caml_gr_plot(x: &eq, y: &eq) -> &eq {
+        check_state();
+        gr_plot(x as i32_s, y as i32_s);
+        0 as &i31;
+    }
+
+    #[export]
+    fn caml_gr_point_color(x: &eq, y: &eq) -> &eq {
+        check_state();
+        gr_point_color(x as i32_s, y as i32_s) as &i31;
+    }
+
+    #[export]
+    fn caml_gr_moveto(x: &eq, y: &eq) -> &eq {
+        check_state();
+        gr_moveto(x as i32_s, y as i32_s);
+        0 as &i31;
+    }
+
+    #[export]
+    fn caml_gr_lineto(x: &eq, y: &eq) -> &eq {
+        check_state();
+        gr_lineto(x as i32_s, y as i32_s);
+        0 as &i31;
+    }
+
+    #[export]
+    fn caml_gr_draw_rect(x: &eq, y: &eq, w: &eq, h: &eq) -> &eq {
+        check_state();
+        gr_draw_rect(x as i32_s, y as i32_s, w as i32_s, h as i32_s);
+        0 as &i31;
+    }
+
+    #[export]
+    fn caml_gr_fill_rect(x: &eq, y: &eq, w: &eq, h: &eq) -> &eq {
+        check_state();
+        gr_fill_rect(x as i32_s, y as i32_s, w as i32_s, h as i32_s);
+        0 as &i31;
+    }
+
+    #[export]
+    fn caml_gr_draw_arc(x: &eq, y: &eq, rx: &eq, ry: &eq, a1: &eq, a2: &eq) -> &eq {
+        check_state();
+        gr_draw_arc(x as i32_s, y as i32_s, rx as i32_s, ry as i32_s, a1 as i32_s, a2 as i32_s);
+        0 as &i31;
+    }
+
+    #[export]
+    fn caml_gr_fill_arc(x: &eq, y: &eq, rx: &eq, ry: &eq, a1: &eq, a2: &eq) -> &eq {
+        check_state();
+        gr_fill_arc(x as i32_s, y as i32_s, rx as i32_s, ry as i32_s, a1 as i32_s, a2 as i32_s);
+        0 as &i31;
+    }
+
+    #[export]
+    fn caml_gr_set_line_width(w: &eq) -> &eq {
+        check_state();
+        gr_set_line_width(w as i32_s);
+        0 as &i31;
+    }
+
+    #[export]
+    fn caml_gr_resize_window(w: &eq, h: &eq) -> &eq {
+        check_state();
+        gr_resize_window(w as i32_s, h as i32_s);
+        0 as &i31;
+    }
+
+    // --- Text / String operations ---
+
+    #[export]
+    fn caml_gr_draw_char(c: &eq) -> &eq {
+        check_state();
+        gr_draw_char(c as i32_s);
+        0 as &i31;
+    }
+
+    #[export]
+    fn caml_gr_draw_string(s: &eq) -> &eq {
+        check_state();
+        gr_draw_str(js_of_value(caml_jsstring_of_string(s)));
+        0 as &i31;
+    }
+
+    #[export]
+    fn caml_gr_set_font(s: &eq) -> &eq {
+        check_state();
+        gr_set_font(js_of_value(caml_jsstring_of_string(s)));
+        0 as &i31;
+    }
+
+    #[export]
+    fn caml_gr_set_text_size(s: &eq) -> &eq {
+        check_state();
+        gr_set_text_size(s as i32_s);
+        0 as &i31;
+    }
+
+    #[export]
+    fn caml_gr_set_window_title(s: &eq) -> &eq {
+        check_state();
+        gr_set_window_title(js_of_value(caml_jsstring_of_string(s)));
+        0 as &i31;
+    }
+
+    #[export]
+    fn caml_gr_text_size(s: &eq) -> &eq {
+        check_state();
+        [block|
+            0 as &i31,
+            gr_text_size_w(js_of_value(caml_jsstring_of_string(s))) as &i31,
+            gr_text_size_h() as &i31,
+        ];
+    }
+
+    // --- Polygon ---
+
+    #[export]
+    fn caml_gr_fill_poly(ar: &eq) -> &eq {
+        check_state();
+        let a = ar as &block;
+        let n = a.length() - 1;
+        let flat = new_array(n * 2);
+        let i = 0;
+        while i <u n : (i += 1) {
+            let p = a[i + 1] as &block;
+            array_set(flat, i * 2, from_int32(p[1] as i32_s));
+            array_set(flat, i * 2 + 1, from_int32(p[2] as i32_s));
+        }
+        gr_fill_poly(flat, n);
+        0 as &i31;
+    }
+
+    // --- Image operations ---
+
+    #[export]
+    fn caml_gr_create_image(w: &eq, h: &eq) -> &eq {
+        check_state();
+        { js: gr_create_image(w as i32_s, h as i32_s) };
+    }
+
+    #[export]
+    fn caml_gr_draw_image(im: &eq, x: &eq, y: &eq) -> &eq {
+        check_state();
+        gr_draw_image(js_of_value(im), x as i32_s, y as i32_s);
+        0 as &i31;
+    }
+
+    #[export]
+    fn caml_gr_blit_image(im: &eq, x: &eq, y: &eq) -> &eq {
+        check_state();
+        gr_blit_image(js_of_value(im), x as i32_s, y as i32_s);
+        0 as &i31;
+    }
+
+    #[export]
+    fn caml_gr_make_image(arr: &eq) -> &eq {
+        check_state();
+        let a = arr as &block;
+        let h = a.length() - 1;
+        let row = a[1] as &block;
+        let w = row.length() - 1;
+        let flat = new_array(h * w);
+        let idx = 0;
+        let i = 0;
+        while i <u h : (i += 1) {
+            row = a[i + 1] as &block;
+            let j = 0;
+            while j <u w : (j += 1) {
+                array_set(flat, idx, from_int32(row[j + 1] as i32_s));
+                idx += 1;
+            }
+        }
+        { js: gr_make_image(flat, w, h) };
+    }
+
+    #[export]
+    fn caml_gr_dump_image(im: &eq) -> &eq {
+        let js_im = js_of_value(im);
+        let w = gr_dump_image_width(js_im);
+        let h = gr_dump_image_height(js_im);
+        let result: &block = [0 as &i31; h + 1];
+        let i = 0;
+        while i <u h : (i += 1) {
+            let row: &block = [0 as &i31; w + 1];
+            let j = 0;
+            while j <u w : (j += 1) {
+                row[j + 1] = gr_dump_image_pixel(js_im, i, j) as &i31;
+            }
+            result[i + 1] = row;
+        }
+        result;
+    }
+
+    // --- Graphics_js state management ---
+
+    #[export]
+    fn caml_gr_state_get(&eq) -> &eq {
+        check_state();
+        value_of_js(gr_state());
+    }
+
+    #[export]
+    fn caml_gr_state_set(s: &eq) -> &eq {
+        gr_state_set(js_of_value(s));
+        0 as &i31;
+    }
+
+    #[export]
+    fn caml_gr_state_create(s: &eq, w: &eq, h: &eq) -> &eq {
+        value_of_js(gr_state_create(js_of_value(s), w as i32_s, h as i32_s));
+    }
+
+    #[export]
+    fn caml_gr_doc_of_state(s: &eq) -> &eq {
+        value_of_js(gr_doc_of_state(js_of_value(s)));
+    }
+
+    // --- Stubs returning unit ---
+
+    #[export]
+    fn caml_gr_sigio_handler(&eq) -> &eq {
+        0 as &i31;
+    }
+
+    #[export]
+    fn caml_gr_sigio_signal(&eq) -> &eq {
+        0 as &i31;
+    }
+
+    // --- Stubs raising Failure ---
+
+    #[export]
+    fn caml_gr_wait_event(&eq) -> &eq {
+        caml_failwith(wait_event);
+        0 as &i31;
+    }
+
+    #[export]
+    fn caml_gr_synchronize(&eq) -> &eq {
+        caml_failwith(synchronize);
+        0 as &i31;
+    }
+
+    #[export]
+    fn caml_gr_remember_mode(&eq) -> &eq {
+        caml_failwith(remember_mode);
+        0 as &i31;
+    }
+
+    #[export]
+    fn caml_gr_display_mode(&eq) -> &eq {
+        caml_failwith(display_mode);
+        0 as &i31;
+    }
+
+    #[export]
+    fn caml_gr_window_id(&eq) -> &eq {
+        caml_failwith(window_id);
+        0 as &i31;
+    }
+
+    #[export]
+    fn caml_gr_open_subwindow(&eq, &eq, &eq, &eq) -> &eq {
+        caml_failwith(open_subwindow);
+        0 as &i31;
+    }
+
+    #[export]
+    fn caml_gr_close_subwindow(&eq) -> &eq {
+        caml_failwith(close_subwindow);
+        0 as &i31;
+    }
+}

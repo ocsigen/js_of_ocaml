@@ -1,0 +1,294 @@
+// Wasm_of_ocaml runtime support
+// http://www.ocsigen.org/js_of_ocaml/
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, with linking exception;
+// either version 2.1 of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+
+import "fail" fn caml_failwith(&eq);
+
+type block = [mut &eq];
+type bytes = [mut i8];
+
+// The lexer tables are strings of signed 16-bit little-endian
+// integers. Reading an entry byte per byte costs two array accesses
+// (with two bounds checks), so we convert the tables into arrays of
+// 16-bit integers the first time they are used, and cache the result.
+// Lexer tables are static data, and a program has only a few lexers,
+// so the cache is a list which is never pruned.
+type lex_table = [mut i16];
+type lex_tables = {
+    key: &block,
+    base: &lex_table,
+    backtrk: &lex_table,
+    default: &lex_table,
+    trans: &lex_table,
+    check: &lex_table,
+    base_code: &lex_table,
+    backtrk_code: &lex_table,
+    default_code: &lex_table,
+    trans_code: &lex_table,
+    check_code: &lex_table,
+    next: mut &?lex_tables
+};
+
+let lex_tables_cache: &?lex_tables = null;
+
+fn convert_table(tbl: &block, i: i32) -> &lex_table {
+    let s = tbl[i] as &bytes;
+    // an odd trailing byte cannot be part of a valid entry
+    let len = s.length() >>u 1;
+    let t: &lex_table = [..; len];
+    let j = 0;
+    while j <u len : (j += 1) {
+        t[j] = s[j << 1] as i32_u | s[(j << 1) + 1] as i32_u << 8;
+    }
+    t;
+}
+
+fn get_tables(tbl: &block) -> &lex_tables {
+    let t = lex_tables_cache;
+    while !!t : (t = t.next) {
+        let prev: &?lex_tables;
+        if t.key == tbl {
+            // move to the front: the lexer in use is found at once
+            if !!prev {
+                prev.next = t.next;
+                t.next = lex_tables_cache;
+                lex_tables_cache = t;
+            }
+            return t!;
+        }
+        prev = t;
+    }
+    let r =
+        {
+            key: tbl,
+            base: convert_table(tbl, lex_base_field),
+            backtrk: convert_table(tbl, lex_backtrk_field),
+            default: convert_table(tbl, lex_default_field),
+            trans: convert_table(tbl, lex_trans_field),
+            check: convert_table(tbl, lex_check_field),
+            base_code: convert_table(tbl, lex_base_code_field),
+            backtrk_code: convert_table(tbl, lex_backtrk_code_field),
+            default_code: convert_table(tbl, lex_default_code_field),
+            trans_code: convert_table(tbl, lex_trans_code_field),
+            check_code: convert_table(tbl, lex_check_code_field),
+            next: lex_tables_cache,
+        };
+    lex_tables_cache = r;
+    r;
+}
+
+fn get(t: &lex_table, i: i32) -> i32 {
+    t[i] as i32_s;
+}
+
+const lex_buffer = 2;
+const lex_buffer_len = 3;
+const lex_start_pos = 5;
+const lex_curr_pos = 6;
+const lex_last_pos = 7;
+const lex_last_action = 8;
+const lex_eof_reached = 9;
+const lex_mem = 10;
+const lex_base_field = 1;
+const lex_backtrk_field = 2;
+const lex_default_field = 3;
+const lex_trans_field = 4;
+const lex_check_field = 5;
+const lex_base_code_field = 6;
+const lex_backtrk_code_field = 7;
+const lex_default_code_field = 8;
+const lex_trans_code_field = 9;
+const lex_check_code_field = 10;
+const lex_code_field = 11;
+
+const lexing_empty_token = "lexing: empty token";
+
+#[export]
+fn caml_lex_engine(vtbl: &eq, start_state: &eq, vlexbuf: &eq) -> &eq {
+    let tbl = vtbl as &block;
+    let lexbuf = vlexbuf as &block;
+    let state = start_state as i32_s;
+    let buffer = lexbuf[lex_buffer] as &bytes;
+    if state >=s 0 {
+        let vpos = lexbuf[lex_curr_pos];
+        lexbuf[lex_last_pos] = vpos;
+        lexbuf[lex_start_pos] = vpos;
+        lexbuf[lex_last_action] = -1 as &i31;
+    } else {
+        state = -1 - state;
+    }
+    let tbls = get_tables(tbl);
+    let lex_base = tbls.base;
+    let lex_backtrk = tbls.backtrk;
+    let lex_check = tbls.check;
+    let lex_trans = tbls.trans;
+    let lex_default = tbls.default;
+    let c: i32;
+    'loop: loop {
+        let base = get(lex_base, state);
+        if base <s 0 {
+            return (-1 - base) as &i31;
+        }
+        let backtrk = get(lex_backtrk, state);
+        if backtrk >=s 0 {
+            lexbuf[lex_last_pos] = lexbuf[lex_curr_pos];
+            lexbuf[lex_last_action] = backtrk as &i31;
+        }
+        if lexbuf[lex_curr_pos] as i32_s >=s lexbuf[lex_buffer_len] as i32_s {
+            if lexbuf[lex_eof_reached] == 0 as &i31 {
+                return (-1 - state) as &i31;
+            } else {
+                c = 256;
+            }
+        } else {
+            let pos = lexbuf[lex_curr_pos] as i32_u;
+            c = buffer[pos] as i32_u;
+            lexbuf[lex_curr_pos] = (pos + 1) as &i31;
+        }
+        if get(lex_check, base + c) == state {
+            state = get(lex_trans, base + c);
+        } else {
+            state = get(lex_default, state);
+        }
+        if state <s 0 {
+            lexbuf[lex_curr_pos] = lexbuf[lex_last_pos];
+            let action = lexbuf[lex_last_action];
+            if action == -1 as &i31 {
+                caml_failwith(lexing_empty_token);
+            }
+            return action;
+        }
+        if c == 256 {
+            lexbuf[lex_eof_reached] = 0 as &i31;
+        }
+        br 'loop;
+    }
+    unreachable;
+}
+
+fn run_mem(s: &bytes, i: i32, lexbuf: &block, curr_pos: &eq) {
+    let mem = lexbuf[lex_mem] as &block;
+    'loop: loop {
+        let dst = s[i] as i32_u;
+        if dst == 0xff {
+            return;
+        }
+        let src = s[i + 1] as i32_u;
+        i += 2;
+        mem[dst + 1] =
+            if src == 0xff {
+                curr_pos;
+            } else {
+                mem[src + 1];
+            };
+        br 'loop;
+    }
+    unreachable;
+}
+
+fn run_tag(s: &bytes, i: i32, lexbuf: &block) {
+    become run_mem(s, i, lexbuf, -1 as &i31);
+}
+
+#[export]
+fn caml_new_lex_engine(vtbl: &eq, start_state: &eq, vlexbuf: &eq) -> &eq {
+    let tbl = vtbl as &block;
+    let lexbuf = vlexbuf as &block;
+    let state = start_state as i32_s;
+    let buffer = lexbuf[lex_buffer] as &bytes;
+    if state >=s 0 {
+        let vpos = lexbuf[lex_curr_pos];
+        lexbuf[lex_last_pos] = vpos;
+        lexbuf[lex_start_pos] = vpos;
+        lexbuf[lex_last_action] = -1 as &i31;
+    } else {
+        state = -1 - state;
+    }
+    let lex_code = tbl[lex_code_field] as &bytes;
+    let tbls = get_tables(tbl);
+    let lex_base = tbls.base;
+    let lex_base_code = tbls.base_code;
+    let lex_backtrk = tbls.backtrk;
+    let lex_backtrk_code = tbls.backtrk_code;
+    let lex_check = tbls.check;
+    let lex_check_code = tbls.check_code;
+    let lex_trans = tbls.trans;
+    let lex_trans_code = tbls.trans_code;
+    let lex_default = tbls.default;
+    let lex_default_code = tbls.default_code;
+    let c: i32;
+    'loop: loop {
+        let base = get(lex_base, state);
+        let pc_off: i32;
+        if base <s 0 {
+            pc_off = get(lex_base_code, state);
+            run_tag(lex_code, pc_off, lexbuf);
+            return (-1 - base) as &i31;
+        }
+        let backtrk = get(lex_backtrk, state);
+        if backtrk >=s 0 {
+            pc_off = get(lex_backtrk_code, state);
+            run_tag(lex_code, pc_off, lexbuf);
+            lexbuf[lex_last_pos] = lexbuf[lex_curr_pos];
+            lexbuf[lex_last_action] = backtrk as &i31;
+        }
+        if lexbuf[lex_curr_pos] as i32_s >=s lexbuf[lex_buffer_len] as i32_s {
+            if lexbuf[lex_eof_reached] == 0 as &i31 {
+                return (-1 - state) as &i31;
+            } else {
+                c = 256;
+            }
+        } else {
+            let pos = lexbuf[lex_curr_pos] as i32_u;
+            c = buffer[pos] as i32_u;
+            lexbuf[lex_curr_pos] = (pos + 1) as &i31;
+        }
+        let pstate = state;
+        if get(lex_check, base + c) == state {
+            state = get(lex_trans, base + c);
+        } else {
+            state = get(lex_default, state);
+        }
+        if state <s 0 {
+            lexbuf[lex_curr_pos] = lexbuf[lex_last_pos];
+            let action = lexbuf[lex_last_action];
+            if action == -1 as &i31 {
+                caml_failwith(lexing_empty_token);
+            }
+            return action;
+        }
+        let base_code = get(lex_base_code, pstate);
+        pc_off =
+            if get(lex_check_code, base_code + c) == pstate {
+                get(lex_trans_code, base_code + c);
+            } else {
+                get(lex_default_code, pstate);
+            };
+        // Only perform memory moves when the transition has a memory
+        // action, like the C and JS runtimes. (ocamllex reserves code
+        // address 0 for the empty action, so an unguarded call would just
+        // read the 0xff terminator and return; this keeps us aligned with
+        // the reference and skips a redundant call.)
+        if pc_off >s 0 {
+            run_mem(lex_code, pc_off, lexbuf, lexbuf[lex_curr_pos]);
+        }
+        if c == 256 {
+            lexbuf[lex_eof_reached] = 0 as &i31;
+        }
+        br 'loop;
+    }
+    unreachable;
+}

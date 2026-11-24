@@ -1,0 +1,56 @@
+// Wasm_of_ocaml runtime support
+// http://www.ocsigen.org/js_of_ocaml/
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, with linking exception;
+// either version 2.1 of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+
+import "bigarray" fn caml_ba_get_view(&eq) -> &extern;
+#[if(wasi)]
+{
+    import "bigarray" {
+        fn dv_get_i64(&extern, i32, i32) -> i64;
+        fn dv_set_i64(&extern, i32, i64, i32);
+    }
+    const littleEndian = 1;
+}
+#[else]
+{
+    import "bindings" {
+        fn dv_get_i64(&?extern, i32, i32) -> i64;
+        fn dv_set_i64(&?extern, i32, i64, i32);
+        const littleEndian: i32;
+    }
+}
+
+#[export]
+fn caml_lxm_next(v: &eq) -> i64 {
+    let view = caml_ba_get_view(v);
+    let a = dv_get_i64(view, 0, littleEndian);
+    let s = dv_get_i64(view, 8, littleEndian);
+    let q0 = dv_get_i64(view, 16, littleEndian);
+    let q1 = dv_get_i64(view, 24, littleEndian);
+    let z = s + q0;
+    z = (z ^ z >>u 32) * 0xdaba0b6eb09322e3;
+    z = (z ^ z >>u 32) * 0xdaba0b6eb09322e3;
+    z ^= z >>u 32;
+    s = s * 0xd1342543de82ef95 + a;
+    dv_set_i64(view, 8, s, littleEndian);
+    q1 ^= q0;
+    q0 = q0.rotl(24);
+    q0 = q0 ^ q1 ^ q1 << 16;
+    q1 = q1.rotl(37);
+    dv_set_i64(view, 16, q0, littleEndian);
+    dv_set_i64(view, 24, q1, littleEndian);
+    return z;
+}

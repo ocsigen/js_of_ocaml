@@ -1,0 +1,126 @@
+// Wasm_of_ocaml runtime support
+// http://www.ocsigen.org/js_of_ocaml/
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, with linking exception;
+// either version 2.1 of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+
+import "stdlib" let caml_global_data: &block;
+#[if(wasi)]
+{
+    #[export]
+    tag javascript_exception(&?extern);
+}
+#[else]
+{
+    import "bindings"
+    #[import = "jstag"]
+    #[export]
+    tag javascript_exception(&?extern);
+}
+
+type block = [mut &eq];
+type bytes = [mut i8];
+
+#[export]
+tag ocaml_exception(&eq);
+
+#[export]
+fn caml_raise_constant(v: &eq) {
+    throw ocaml_exception(v);
+}
+
+#[export]
+fn caml_raise_with_arg(tg: &eq, arg: &eq) {
+    throw ocaml_exception([block|0 as &i31, tg, arg]);
+}
+
+// caml_global_data is a $block: index 0 is the tag, data starts at 1
+const OUT_OF_MEMORY_EXN = 1;
+
+#[export]
+fn caml_raise_out_of_memory() {
+    become caml_raise_constant(caml_global_data[OUT_OF_MEMORY_EXN]);
+}
+
+const SYS_ERROR_EXN = 2;
+
+#[export]
+fn caml_raise_sys_error(msg: &eq) {
+    become caml_raise_with_arg(caml_global_data[SYS_ERROR_EXN], msg);
+}
+
+const FAILURE_EXN = 3;
+
+#[export]
+fn caml_failwith_tag() -> &eq {
+    caml_global_data[FAILURE_EXN];
+}
+
+#[export]
+fn caml_failwith(arg: &eq) {
+    become caml_raise_with_arg(caml_global_data[FAILURE_EXN], arg);
+}
+
+const INVALID_EXN = 4;
+
+#[export]
+fn caml_invalid_argument(arg: &eq) {
+    become caml_raise_with_arg(caml_global_data[INVALID_EXN], arg);
+}
+
+const index_out_of_bounds = "index out of bounds";
+
+#[export]
+fn caml_bound_error() {
+    become caml_invalid_argument(index_out_of_bounds);
+}
+
+const END_OF_FILE_EXN = 5;
+
+#[export]
+fn caml_raise_end_of_file() {
+    become caml_raise_constant(caml_global_data[END_OF_FILE_EXN]);
+}
+
+const ZERO_DIVIDE_EXN = 6;
+
+#[export]
+fn caml_raise_zero_divide() {
+    become caml_raise_constant(caml_global_data[ZERO_DIVIDE_EXN]);
+}
+
+const NOT_FOUND_EXN = 7;
+
+#[export]
+fn caml_raise_not_found() {
+    become caml_raise_constant(caml_global_data[NOT_FOUND_EXN]);
+}
+
+const MATCH_FAILURE_EXN = 8;
+const ASSERT_FAILURE_EXN = 11;
+const UNDEFINED_RECURSIVE_MODULE_EXN = 12;
+
+const no_bytecode_impl = "No bytecode implementation provided for this external";
+
+#[export]
+fn caml_no_bytecode_impl() {
+    become caml_failwith(no_bytecode_impl);
+}
+
+#[export]
+fn caml_is_special_exception(v: &eq) -> i32 {
+    (v == caml_global_data[MATCH_FAILURE_EXN])
+        | ((v == caml_global_data[ASSERT_FAILURE_EXN])
+               | (v == caml_global_data[UNDEFINED_RECURSIVE_MODULE_EXN]));
+}
