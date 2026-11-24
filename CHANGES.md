@@ -58,7 +58,7 @@
 * Runtime: fast path for immediates in polymorphic comparisons (#2567)
 * Runtime: faster 16-, 32- and 64-bit reads and writes on bytes (#2608)
 * Runtime: faster hashing of strings: a single pass, without first scanning
-  the string with a regular expression (#2610)
+  the string with a regular expression (#2610, #2649)
 * Runtime: faster `Float.fma` when the result is subnormal (#2632)
 * Runtime: faster float formatting; the Wasm runtime formats floats with a
   short exact decimal expansion (integers, ...) without calling JavaScript (#2631)
