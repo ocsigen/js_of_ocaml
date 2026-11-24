@@ -37,6 +37,8 @@
   represented as externref, floats, integers and booleans are passed as
   f64 and i32, and the conversions of short strings are cached (#2563)
 * Compiler/Wasm: skip wasm-opt at --opt 1 (#2238)
+* Compiler/Wasm: `wasm_of_ocaml link` accepts `--file`, so that files can be
+  embedded in programs built with separate compilation (#2653)
 * Compiler/Wasm: functions called under an exception handler signal an
   exception by returning null rather than throwing, which is much cheaper (#2098)
 * Compiler/Wasm: at -O2 and -O3, clone higher-order functions for each

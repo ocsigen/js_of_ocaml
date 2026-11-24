@@ -28,6 +28,7 @@ type t =
   ; dynlink : bool
   ; mklib : bool
   ; enable_source_maps : bool
+  ; fs_files : string list
   }
 
 let options () =
@@ -68,9 +69,34 @@ let options () =
     in
     Arg.(value & flag & info [ "dynlink"; "toplevel" ] ~doc)
   in
-  let build_t common no_sourcemap sourcemap output_file files linkall dynlink mklib =
-    let enable_source_maps = (not no_sourcemap) && sourcemap in
-    `Ok { common; output_file; files; linkall; dynlink; mklib; enable_source_maps }
+  let fs_files =
+    let doc = "Register [$(docv)] to the pseudo filesystem." in
+    Arg.(value & opt_all filepath [] & info [ "file" ] ~docv:"FILE" ~doc)
+  in
+  let build_t
+      common
+      no_sourcemap
+      sourcemap
+      output_file
+      files
+      linkall
+      dynlink
+      mklib
+      fs_files =
+    if mklib && not (List.is_empty fs_files)
+    then `Error (false, "options -a and --file are incompatible")
+    else
+      let enable_source_maps = (not no_sourcemap) && sourcemap in
+      `Ok
+        { common
+        ; output_file
+        ; files
+        ; linkall
+        ; dynlink
+        ; mklib
+        ; enable_source_maps
+        ; fs_files
+        }
   in
   let t =
     Term.(
@@ -82,7 +108,8 @@ let options () =
       $ files
       $ linkall
       $ dynlink
-      $ mklib)
+      $ mklib
+      $ fs_files)
   in
   Term.ret t
 
@@ -97,10 +124,17 @@ let f
          to globals, since the full set of modules is known at link time. *)
     ; enable_source_maps
     ; mklib
+    ; fs_files
     } =
   Js_of_ocaml_compiler.Config.set_target `Wasm;
   Jsoo_cmdline.Arg.eval common;
-  Link.link ~output_file ~linkall ~mklib ~enable_source_maps ~embedded_files:[] ~files
+  let embedded_files =
+    List.concat_map fs_files ~f:(fun f ->
+        List.map
+          (Js_of_ocaml_compiler.Pseudo_fs.list_files f [])
+          ~f:(fun (name, filename) -> name, Js_of_ocaml_compiler.Fs.read_file filename))
+  in
+  Link.link ~output_file ~linkall ~mklib ~enable_source_maps ~embedded_files ~files
 
 let info =
   Info.make
