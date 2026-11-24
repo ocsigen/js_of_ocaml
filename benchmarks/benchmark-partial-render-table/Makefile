@@ -13,12 +13,13 @@ bench:
 	$(MAKE) perform COMPILER=wasm_of_ocaml SCRIPT=main.bc.wasm.js KIND=wasm
 	@date -u +"%FT%TZ - $(NAME): done"
 
+# The benchmark runs each test for 10s by default, 1s is enough
 perform:
 	/usr/bin/time -f "%E %M" $(COMPILER) --debug times --opt 2 --pretty main.bc-for-jsoo -o out.js 2>&1 | \
 	tee /dev/stderr | \
 	ocaml -I +str str.cma ../utils/compilation_metrics.ml $(COMPILER) "$(NAME)" out.js | \
 	sh ../utils/aggregate.sh $(KIND)
-	node $(SCRIPT) | \
+	node $(SCRIPT) -quota 1s | \
 	tee /dev/stderr | \
 	ocaml -I +str str.cma summarize_results.ml $(COMPILER) | \
 	sh ../utils/aggregate.sh $(KIND)
