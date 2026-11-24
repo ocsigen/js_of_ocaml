@@ -124,7 +124,7 @@
  (action
   (with-stdout-to
    %{target}
-   (run node %{dep:test_toplevel.js}))))
+   (run node %{dep:test_toplevel_wasm.js}))))
 
 (rule
  (alias runtest-wasm)
