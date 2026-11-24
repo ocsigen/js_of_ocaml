@@ -82,6 +82,9 @@
 ## Bug fixes
 
 ### Compiler
+* Compiler/Wasm: with separate compilation, code compiled at run time
+  (toplevel, dynlink) can call all the primitives of the runtime, not only
+  some of them (#2653)
 * Compiler: fix `build-fs` output embedding large binary files, which called
   a base64 decoder it did not include (#2620)
 * Compiler: fix `--enable callgen`, which could crash the compiler or evaluate

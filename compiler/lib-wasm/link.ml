@@ -1020,8 +1020,17 @@ let link ~output_file ~linkall ~enable_source_maps ~embedded_files ~files =
             ~pos:0
             ~len:8
       in
+      let module_names, ((runtime_intf, _) as interfaces) =
+        link_to_directory ~files_to_link ~files ~enable_source_maps ~dir:tmp_dir
+      in
+      (* The primitives exported by the runtime are available to code
+         compiled at run time (toplevel, dynlink), even when no linked unit
+         uses them. *)
       let all_primitives =
-        List.fold_left files ~init:StringSet.empty ~f:(fun acc (_, (_, units)) ->
+        List.fold_left
+          files
+          ~init:(StringSet.of_list runtime_intf.Wasm_binary.exports)
+          ~f:(fun acc (_, (_, units)) ->
             List.fold_left units ~init:acc ~f:(fun acc { unit_info; _ } ->
                 List.fold_left unit_info.Unit_info.primitives ~init:acc ~f:(fun acc p ->
                     StringSet.add p acc)))
@@ -1031,9 +1040,6 @@ let link ~output_file ~linkall ~enable_source_maps ~embedded_files ~files =
       let out = Filename.concat tmp_dir (link_info_module ^ ".wasm") in
       Fs.write_file ~name:out ~contents:link_info_wasm;
       let start_to_link = link_info_module :: to_link in
-      let module_names, interfaces =
-        link_to_directory ~files_to_link ~files ~enable_source_maps ~dir:tmp_dir
-      in
       let missing_primitives = compute_missing_primitives interfaces in
       generate_start_function
         ~to_link:start_to_link
