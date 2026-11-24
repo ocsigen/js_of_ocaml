@@ -125,3 +125,16 @@
   (compilation_mode whole_program)
   (flags
    (:standard --file file.txt))))
+
+(tests
+ (names gh1856_separate)
+ (modes wasm)
+ (enabled_if
+  (<> %{env:JSOO_TEST_ENGINE=node} wasi))
+ (wasm_of_ocaml
+  (compilation_mode separate)
+  (link_flags
+   (:standard --file %{dep:file.txt}))))
+
+(rule
+ (copy gh1856.ml gh1856_separate.ml))
