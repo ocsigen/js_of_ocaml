@@ -684,7 +684,15 @@
     unregister_channel,
     channel_list,
     exit: (n) => isNode && globalThis.process.exit(n),
-    argv: () => (isNode ? globalThis.process.argv.slice(1) : ["a.out"]),
+    // like caml_argv in the JavaScript runtime: globalThis.scriptArgs is
+    // [program, ...arguments] (QuickJS), and can be set by a page
+    argv: () =>
+      isNode
+        ? globalThis.process.argv.slice(1)
+        : Array.isArray(globalThis.scriptArgs) &&
+            globalThis.scriptArgs.length > 0
+          ? globalThis.scriptArgs
+          : ["a.out"],
     on_windows: +on_windows,
     on_arm64: +on_arm64,
     getenv,
