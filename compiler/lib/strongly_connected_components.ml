@@ -40,15 +40,24 @@ end = struct
       stack.(!pos) <- i;
       incr pos
     in
-    let rec aux node =
-      if not marked.(node)
-      then (
-        marked.(node) <- true;
-        List.iter ~f:aux graph.(node);
-        push node)
+    let rec aux todo =
+      match todo with
+      | [] -> ()
+      | (node, []) :: rem ->
+          push node;
+          aux rem
+      | (node, succ :: succs) :: rem ->
+          if marked.(succ)
+          then aux ((node, succs) :: rem)
+          else (
+            marked.(succ) <- true;
+            aux ((succ, graph.(succ)) :: (node, succs) :: rem))
     in
     for i = 0 to size - 1 do
-      aux i
+      if not marked.(i)
+      then (
+        marked.(i) <- true;
+        aux [ i, graph.(i) ])
     done;
     stack
 
@@ -58,18 +67,22 @@ end = struct
     let marked = Array.make size false in
     let id = Array.make size ~-1 in
     let count = ref 0 in
-    let rec aux node =
-      if not marked.(node)
-      then (
-        marked.(node) <- true;
-        id.(node) <- !count;
-        List.iter ~f:aux graph.(node))
+    let rec aux nodes =
+      match nodes with
+      | [] -> ()
+      | node :: rem ->
+          if marked.(node)
+          then aux rem
+          else (
+            marked.(node) <- true;
+            id.(node) <- !count;
+            aux (graph.(node) @ rem))
     in
     for i = size - 1 downto 0 do
       let node = order.(i) in
       if not marked.(node)
       then (
-        aux order.(i);
+        aux [ order.(i) ];
         incr count)
     done;
     id, !count

@@ -1,0 +1,11 @@
+; Run with a 256 KiB stack, so that the deep_cfg test can use a short chain of
+; blocks and still overflow if a pass uses a stack frame per block.
+
+(test
+ (name deep_cfg)
+ (libraries js_of_ocaml_compiler)
+ (action
+  (setenv
+   OCAMLRUNPARAM
+   l=32k
+   (run %{test}))))

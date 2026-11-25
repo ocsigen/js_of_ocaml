@@ -51,31 +51,36 @@ let pure_instr pure_funs i =
 (****)
 
 let rec traverse blocks pc visited pure_blocks funs =
-  if BitSet.mem visited pc
-  then
-    (* Back-edge (cycle in the CFG): conservatively treat as impure.
-       We cannot determine whether the loop terminates, so we treat
-       it as potentially non-terminating. This is consistent with how
-       we handle recursive function calls in [pure_expr], where a
-       call to a function not yet known to be pure is considered
-       impure. Since dead code elimination relies on purity to remove
-       unused calls, incorrectly marking a non-terminating loop as
-       pure could change program behavior. *)
-    BitSet.mem pure_blocks pc
-  else (
+  let rec loop stack =
+    match stack with
+    | [] -> ()
+    | (pc, pure, []) :: rem ->
+        if pure then BitSet.set pure_blocks pc;
+        loop rem
+    | (pc, pure, pc' :: children) :: rem ->
+        if BitSet.mem visited pc'
+        then
+          (* Either [pc'] was already finished, or this is a back-edge (cycle in the CFG):
+             in the latter case [pure_blocks] is unset so we conservatively treat it as
+             impure. We cannot determine whether the loop terminates, so we treat it as
+             potentially non-terminating. This is consistent with how we handle recursive
+             function calls in [pure_expr], where a call to a function not yet known to be
+             pure is considered impure. Since dead code elimination relies on purity to
+             remove unused calls, incorrectly marking a non-terminating loop as pure could
+             change program behavior. *)
+          loop ((pc, pure && BitSet.mem pure_blocks pc', children) :: rem)
+        else enter pc' ((pc, pure, pc' :: children) :: rem)
+  and enter pc stack =
     BitSet.set visited pc;
     let pure = block blocks pc visited pure_blocks funs in
-    let pure =
-      fold_children
-        blocks
-        pc
-        (fun pc pure ->
-          let pure' = traverse blocks pc visited pure_blocks funs in
-          pure && pure')
-        pure
-    in
-    if pure then BitSet.set pure_blocks pc;
-    pure)
+    (* Reverse the child list so blocks are visited in the same order as a
+       recursive traversal. Child lists are small (typically 1-2 elements), so
+       the extra cons cells are negligible compared to the per-block work. *)
+    let children = List.rev (fold_children blocks pc (fun pc l -> pc :: l) []) in
+    loop ((pc, pure, children) :: stack)
+  in
+  if not (BitSet.mem visited pc) then enter pc [];
+  BitSet.mem pure_blocks pc
 
 and block blocks pc visited pure_blocks funs =
   let b = Addr.Map.find pc blocks in

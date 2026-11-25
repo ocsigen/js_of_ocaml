@@ -1,0 +1,13 @@
+; Run with a 256 KiB stack, so that the wasm_tail_call test can use a short
+; list of instructions and still overflow if the pass uses a stack frame per
+; instruction.
+
+(test
+ (name wasm_tail_call)
+ (enabled_if %{lib-available:wasm_of_ocaml-compiler})
+ (libraries js_of_ocaml-compiler wasm_of_ocaml-compiler)
+ (action
+  (setenv
+   OCAMLRUNPARAM
+   l=32k
+   (run %{test}))))
