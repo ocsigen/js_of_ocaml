@@ -65,6 +65,9 @@
 * Runtime/JS: faster `Float.next_after`, `Float.succ` and `Float.pred` (#2638)
 * Runtime/JS: much faster int64 division, formatting and parsing (#2640)
 * Runtime/JS: much faster Random (#2630)
+* Runtime/Wasm: like the JavaScript runtime, outside of node, read the
+  command line from `globalThis.scriptArgs` if it is defined, so that e.g. a
+  page can pass arguments to a program (#2644)
 
 ## Bug fixes
 
