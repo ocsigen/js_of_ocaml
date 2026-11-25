@@ -1,8 +1,32 @@
-(executables
- (names wasm_of_ocaml wasmoo_link_wasm)
- (public_names wasm_of_ocaml -)
+;; Shared by wasm_of_ocaml and wasmoo_link_wasm. The latter, used to build
+;; the Wasm runtime, does not depend on the JavaScript runtime files, so
+;; that both can be built in parallel.
+
+(library
+ (name wasm_of_ocaml_cmd)
+ (modules info link_wasm preprocess)
+ (wrapped false)
+ (libraries js_of_ocaml-compiler wasm_of_ocaml-compiler cmdliner)
+ (flags
+  (:standard -safe-string)))
+
+(executable
+ (name wasmoo_link_wasm)
+ (modules wasmoo_link_wasm)
+ (libraries wasm_of_ocaml_cmd js_of_ocaml-compiler cmdliner)
+ (modes
+  byte
+  (best exe))
+ (flags
+  (:standard -safe-string)))
+
+(executable
+ (name wasm_of_ocaml)
+ (public_name wasm_of_ocaml)
  (package wasm_of_ocaml-compiler)
+ (modules :standard \ info link_wasm preprocess wasmoo_link_wasm)
  (libraries
+  wasm_of_ocaml_cmd
   jsoo_cmdline
   wasm_of_ocaml-compiler
   cmdliner
