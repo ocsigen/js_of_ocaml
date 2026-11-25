@@ -68,6 +68,9 @@
 * Runtime/Wasm: like the JavaScript runtime, outside of node, read the
   command line from `globalThis.scriptArgs` if it is defined, so that e.g. a
   page can pass arguments to a program (#2644)
+* Runtime/Wasm: like the JavaScript runtime, `exit` calls `globalThis.quit`
+  with the exit code if it is defined, so that e.g. a page knows when a
+  program terminated (#2645)
 
 ### Misc
 * Misc: the opam packages are licensed under the LGPL-2.1-or-later with OCaml
