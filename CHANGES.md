@@ -99,6 +99,9 @@
   functions without CPS version, and no longer give them one for tail calls (#2593)
 
 ### Wasm
+* Compiler/Wasm: no stack overflow on very long functions in the tail call
+  pass, e.g. when compiling the bytecode of a large library at run time
+  (Dynlink in a browser, where the stack can't be enlarged) (#2642)
 * Compiler/Wasm: fix comparisons with the result of `x lsr n` when `x` is
   negative and `n` is not a constant and is zero (#2622)
 * Compiler/Wasm: box variables typed as integers before using them as a
