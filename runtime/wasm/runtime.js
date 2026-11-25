@@ -683,7 +683,11 @@
     register_channel,
     unregister_channel,
     channel_list,
-    exit: (n) => isNode && globalThis.process.exit(n),
+    exit: (n) => {
+      // like caml_sys_exit in the JavaScript runtime
+      if (globalThis.quit) globalThis.quit(n);
+      if (isNode) globalThis.process.exit(n);
+    },
     // like caml_argv in the JavaScript runtime: globalThis.scriptArgs is
     // [program, ...arguments] (QuickJS), and can be set by a page
     argv: () =>
