@@ -1,0 +1,6 @@
+a call followed by a return of its result becomes a tail call:
+return_call of the called function: true
+
+a flat list of many instructions:
+lengths agree: true
+

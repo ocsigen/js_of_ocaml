@@ -1,0 +1,28 @@
+traverse and preorder_traverse on a deep chain of blocks:
+postorder visited 100001 blocks
+preorder visited 100001 blocks
+
+merge_blocks merges a chain and substitutes block parameters:
+blocks after merge: 1
+returns the variable bound in the first block: true
+
+merge_blocks on a deep chain of blocks:
+blocks after merge: 1
+
+merge_blocks on a deep chain of unmergeable blocks:
+blocks after merge: 100001
+
+pure function analysis on a deep chain of blocks:
+closure is pure: true
+
+pure function analysis: a closure that loops is not pure:
+closure is pure: false
+
+strongly connected components:
+has_loop [1 0]
+no_loop 2
+
+strongly connected components of a deep chain:
+components: 100001
+first 0, last 100000
+

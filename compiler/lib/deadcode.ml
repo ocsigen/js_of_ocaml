@@ -270,46 +270,63 @@ let merge_blocks p =
   in
   let p =
     let visited = BitSet.create' p.free_pc in
-    let rec process_branch pc blocks =
-      let block = Addr.Map.find pc blocks in
-      match block.branch with
-      | Branch (pc_, args) when preds.(pc_) = 1 ->
-          let to_inline = Addr.Map.find pc_ blocks in
-          if List.exists to_inline.params ~f:(fun x -> Var.Set.mem x !assigned)
-          then block, blocks
-          else (
-            incr merged;
-            let to_inline, blocks = process_branch pc_ blocks in
-            List.iter2 args to_inline.params ~f:(fun arg param ->
-                Code.Var.propagate_name param arg;
-                subst.(Code.Var.idx param) <- arg);
-            let block =
-              { params = block.params
-              ; branch = to_inline.branch
-              ; body =
-                  (let[@tail_mod_cons] rec aux = function
-                     | [ (Event _ as ev) ] -> (
-                         match to_inline.body with
-                         | Event _ :: _ -> to_inline.body
-                         | _ -> ev :: to_inline.body)
-                     | [] -> to_inline.body
-                     | x :: rest -> x :: aux rest
-                   in
-                   aux block.body)
-              }
-            in
-            let blocks = Addr.Map.remove pc_ blocks in
-            let blocks = Addr.Map.add pc block blocks in
-            block, blocks)
-      | _ -> block, blocks
+    let process_branch pc blocks =
+      let rec chain pc acc =
+        let block = Addr.Map.find pc blocks in
+        match block.branch with
+        | Branch (pc_, args) when preds.(pc_) = 1 ->
+            let to_inline = Addr.Map.find pc_ blocks in
+            if List.exists to_inline.params ~f:(fun x -> Var.Set.mem x !assigned)
+            then block, acc
+            else (
+              incr merged;
+              chain pc_ ((pc_, block, args) :: acc))
+        | _ -> block, acc
+      in
+      match chain pc [] with
+      | _, [] -> blocks
+      | to_inline, rem ->
+          let rec merge to_inline blocks rem =
+            match rem with
+            | [] -> Addr.Map.add pc to_inline blocks
+            | (pc_, block, args) :: rem ->
+                List.iter2 args to_inline.params ~f:(fun arg param ->
+                    Code.Var.propagate_name param arg;
+                    subst.(Code.Var.idx param) <- arg);
+                let block =
+                  { params = block.params
+                  ; branch = to_inline.branch
+                  ; body =
+                      (let[@tail_mod_cons] rec aux = function
+                         | [ (Event _ as ev) ] -> (
+                             match to_inline.body with
+                             | Event _ :: _ -> to_inline.body
+                             | _ -> ev :: to_inline.body)
+                         | [] -> to_inline.body
+                         | x :: rest -> x :: aux rest
+                       in
+                       aux block.body)
+                  }
+                in
+                let blocks = Addr.Map.remove pc_ blocks in
+                merge block blocks rem
+          in
+          merge to_inline blocks rem
     in
-    let rec traverse pc blocks =
-      if BitSet.mem visited pc
-      then blocks
-      else
-        let () = BitSet.set visited pc in
-        let _block, blocks = process_branch pc blocks in
-        Code.fold_children blocks pc traverse blocks
+    let traverse pc blocks =
+      let rec loop blocks stack =
+        match stack with
+        | [] -> blocks
+        | pc :: rem ->
+            if BitSet.mem visited pc
+            then loop blocks rem
+            else
+              let () = BitSet.set visited pc in
+              let blocks = process_branch pc blocks in
+              let children = Code.fold_children blocks pc (fun pc' l -> pc' :: l) [] in
+              loop blocks (List.rev_append children rem)
+      in
+      loop blocks [ pc ]
     in
     let blocks =
       Code.fold_closures p (fun _ _ (pc, _) _ blocks -> traverse pc blocks) p.blocks

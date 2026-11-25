@@ -93,6 +93,10 @@
   compiler itself runs in JavaScript (#2616)
 * Compiler: fix the naming of labels in default parameters, of `var`s in
   class static blocks, and of nested source and generated labels (#2598)
+* Compiler: fix stack overflows on functions with very long chains of blocks
+  (e.g. the initialization code of a large program), in the block traversals,
+  the merging of blocks, the purity analysis and the computation of strongly
+  connected components (#2656)
 
 ### Effects
 * Compiler: with `--effects=double-translation`, trampoline mutually recursive
