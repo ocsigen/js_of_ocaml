@@ -33,6 +33,7 @@ OCaml integers are represented as JavaScript numbers. Unlike native OCaml where 
 
 - Arithmetic behaves slightly differently at the boundaries
 - `max_int` and `min_int` have different values than native OCaml
+JavaScript primitives that return an `int` (or an `int32` or `nativeint`) must not return `-0`: `Marshal` writes `-0` as the float `-0.`. Ending the computation in `| 0` (for example `(x % y) | 0`) or using `Math.imul` ensures this.
 
 ## Floats
 
