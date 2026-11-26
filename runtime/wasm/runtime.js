@@ -423,14 +423,25 @@
     r.dev.register(r.parts, content, "open", name);
   }
 
+  // The content of a file given from JavaScript: a Uint8Array, or a string
+  // with one character per byte, possibly encoded in base64.
+  const file_content = (content, base64) =>
+    typeof content === "string"
+      ? Uint8Array.from(base64 ? atob(content) : content, (c) =>
+          c.charCodeAt(0),
+        )
+      : new Uint8Array(content);
+
   if (args.files) {
     for (const [name, data] of Object.entries(args.files)) {
-      register_file(
-        name,
-        Uint8Array.from(atob(data), (c) => c.charCodeAt(0)),
-      );
+      register_file(name, file_content(data, 1));
     }
   }
+
+  // The host can create files while the program runs, as with the
+  // JavaScript runtime. Fails if the file exists.
+  globalThis.jsoo_create_file = (name, content, base64) =>
+    register_file(name, file_content(content, base64));
 
   const fs_cst = fs?.constants;
 

@@ -57,6 +57,9 @@
   devices (the root when not running under node, and `/static/`) supporting
   the `Sys` and `Unix` file operations, and `Sys_js.mount`, `Sys_js.unmount`
   and `Sys_js.mount_point`, to load files on demand (#2658)
+* Runtime/Wasm: `globalThis.jsoo_create_file`, to create files from
+  JavaScript while the program runs, as with the JavaScript runtime; the
+  content can also be a `Uint8Array` (#2658)
 
 ### Runtime
 * Runtime: fast path for immediates in polymorphic comparisons (#2567)

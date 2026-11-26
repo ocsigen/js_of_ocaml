@@ -574,3 +574,73 @@ let%expect_test ("mount on a Windows drive" [@when not js]) =
     C:/jsoo_vfs/d
     false
     |}]
+
+let%expect_test "Unix operations on in-memory files" =
+  Unix.mkdir "/static/ux" 0o755;
+  Unix.access "/static/ux" [ Unix.F_OK ];
+  let name = "/static/ux/f" in
+  let fd = Unix.openfile name [ Unix.O_RDWR; Unix.O_CREAT ] 0o644 in
+  ignore (Unix.write_substring fd "0123456789" 0 10);
+  ignore (Unix.lseek fd 3 Unix.SEEK_SET);
+  let b = Bytes.create 4 in
+  let n = Unix.read fd b 0 4 in
+  Printf.printf "%d %s\n" n (Bytes.to_string b);
+  Unix.ftruncate fd 5;
+  Printf.printf "%d\n" (Unix.lseek fd 0 Unix.SEEK_END);
+  Unix.close fd;
+  Unix.rename name "/static/ux/g";
+  (try Unix.access name [ Unix.F_OK ]
+   with Unix.Unix_error (e, _, _) -> print_endline (unix_error e));
+  (try Unix.rmdir "/static/ux"
+   with Unix.Unix_error (_, cmd, _) -> Printf.printf "%s failed\n" cmd);
+  Unix.unlink "/static/ux/g";
+  Unix.rmdir "/static/ux";
+  Printf.printf "%b\n" (Sys.file_exists "/static/ux");
+  [%expect {|
+    4 3456
+    5
+    ENOENT
+    rmdir failed
+    false
+    |}]
+
+(* The host can create files from JavaScript *)
+
+let host_create_file name content : unit =
+  Js.Unsafe.fun_call
+    (Js.Unsafe.get Js.Unsafe.global (Js.string "jsoo_create_file"))
+    (Array.append [| Js.Unsafe.inject (Js.string name) |] content)
+
+let show_bytes name =
+  String.iter (fun c -> Printf.printf " %02x" (Char.code c)) (read_all name);
+  print_newline ()
+
+let%expect_test "globalThis.jsoo_create_file" =
+  host_create_file "/static/host/dir/s.bin" [| Js.Unsafe.inject (Js.bytestring "a\xe9") |];
+  show_bytes "/static/host/dir/s.bin";
+  (try
+     host_create_file "/static/host/dir/s.bin" [| Js.Unsafe.inject (Js.bytestring "b") |]
+   with _ -> print_endline "exists");
+  host_create_file
+    "/static/host/b64.txt"
+    [| Js.Unsafe.inject (Js.string "aGk="); Js.Unsafe.inject Js._true |];
+  print_endline (read_all "/static/host/b64.txt");
+  print_endline (sorted (Sys.readdir "/static/host"));
+  [%expect {|
+     61 e9
+    exists
+    hi
+    b64.txt dir
+    |}]
+
+(* With the JavaScript runtime, the content has to be a string *)
+let%expect_test ("globalThis.jsoo_create_file: Uint8Array" [@when not js]) =
+  let bytes l =
+    Js.Unsafe.inject
+      (Js.Unsafe.new_obj
+         (Js.Unsafe.get Js.Unsafe.global (Js.string "Uint8Array"))
+         [| Js.Unsafe.inject (Js.array (Array.of_list l)) |])
+  in
+  host_create_file "/static/host/f.bin" [| bytes [ 0xff; 0x00; 0x80 ] |];
+  show_bytes "/static/host/f.bin";
+  [%expect {| ff 00 80 |}]
