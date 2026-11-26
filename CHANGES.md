@@ -69,7 +69,7 @@
   command line from `globalThis.scriptArgs` if it is defined, so that e.g. a
   page can pass arguments to a program (#2644)
 * Runtime/JS: `globalThis.jsoo_create_file` accepts a `Uint8Array` as the
-  content of the file
+  content of the file (#2661)
 
 ### Misc
 * Misc: the opam packages are licensed under the LGPL-2.1-or-later with OCaml
