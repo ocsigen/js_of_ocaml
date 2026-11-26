@@ -90,6 +90,8 @@
       (func $caml_uint8_array_of_string (param (ref eq)) (result (ref eq))))
    (import "bigarray" "caml_string_of_uint8_array"
       (func $caml_string_of_uint8_array (param (ref eq)) (result (ref eq))))
+   (import "bindings" "register_lazy_file"
+      (func $register_lazy_file (param externref) (param i32) (param (ref eq))))
    (import "bindings" "mount_autoload"
       (func $mount_autoload (param externref) (param (ref eq))))
    (import "bindings" "unmount" (func $unmount (param externref)))
@@ -855,6 +857,35 @@
          (call $js_of_value
             (call $caml_uint8_array_of_string (local.get $content))))
       (ref.i31 (i32.const 0)))
+))
+
+(@if $wasi
+(@then
+   (func (export "caml_create_lazy_file")
+      (param $name (ref eq)) (param $size (ref eq)) (param $f (ref eq))
+      (result (ref eq))
+      (ref.i31 (i32.const 0)))
+)
+(@else
+   (func (export "caml_create_lazy_file")
+      (param $name (ref eq)) (param $size (ref eq)) (param $f (ref eq))
+      (result (ref eq))
+      ;; [$size] is negative when the size is not known
+      (call $register_lazy_file
+         (call $js_of_value (call $caml_jsstring_of_string (local.get $name)))
+         (i31.get_s (ref.cast (ref i31) (local.get $size)))
+         (local.get $f))
+      (ref.i31 (i32.const 0)))
+
+   ;; Called by the in-memory device to get the content of a lazy file.
+   ;; [$f] is the callback given to [caml_create_lazy_file]: a JavaScript
+   ;; function wrapping an OCaml function of type [unit -> string].
+   (func (export "caml_fs_load") (param $f (ref eq)) (result externref)
+      (call $js_of_value
+         (call $caml_uint8_array_of_string
+            (call $caml_js_fun_call (local.get $f)
+               (array.new_fixed $block 2 (ref.i31 (i32.const 0))
+                  (ref.i31 (i32.const 0)))))))
 ))
 
    (func (export "caml_fs_init") (result (ref eq))

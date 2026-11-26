@@ -437,15 +437,37 @@ function caml_create_file(name, content) {
   return 0;
 }
 
+//Provides: caml_create_lazy_file
+//Requires: caml_failwith, resolve_fs_device
+function caml_create_lazy_file(name, size, f) {
+  var root = resolve_fs_device(name);
+  if (!root.device.register_lazy) caml_failwith("cannot register file");
+  root.device.register_lazy(root.rest, f, size);
+  return 0;
+}
+
+// The content can be an object { load, size } for a lazy file: [load] is
+// called to get the actual content when the file is first used, and
+// [size], if given, is the size reported until then.
 //Provides: jsoo_create_file
 //Requires: caml_create_file, caml_string_of_jsbytes, caml_string_of_jsstring
-//Requires: caml_string_of_base64
+//Requires: caml_string_of_base64, caml_create_lazy_file
 function jsoo_create_file(name, content, base64) {
   var name = caml_string_of_jsstring(name);
-  var content = base64
-    ? caml_string_of_base64(content)
-    : caml_string_of_jsbytes(content);
-  return caml_create_file(name, content);
+  function convert(content) {
+    return base64
+      ? caml_string_of_base64(content)
+      : caml_string_of_jsbytes(content);
+  }
+  if (typeof content?.load === "function")
+    return caml_create_lazy_file(
+      name,
+      content.size === undefined ? -1 : content.size,
+      function () {
+        return convert(content.load());
+      },
+    );
+  return caml_create_file(name, convert(content));
 }
 
 //Provides: caml_read_file_content

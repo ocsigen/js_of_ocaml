@@ -22,6 +22,12 @@ external create_file : name:string -> content:string -> unit = "caml_create_file
 
 external read_file : name:string -> string = "caml_read_file_content"
 
+external create_lazy_file' : string -> int -> (unit -> string) Js.callback -> unit
+  = "caml_create_lazy_file"
+
+let create_lazy_file ~name ?(size = -1) f =
+  create_lazy_file' name size (Js.wrap_callback f)
+
 let update_file ~name ~content =
   let oc = open_out name in
   output_string oc content;

@@ -127,6 +127,39 @@
   const mem_file = (data, mode) =>
     Object.assign(mem_node(mode), { data, size: data.length });
 
+  // A lazy file: the file exists and is listed in its directory, but its
+  // content is only loaded when it is needed: when the file is read or
+  // written, or to get its size if [size] was not given. If [load] fails,
+  // it is called again on the next use.
+  function mem_lazy(n, load, size) {
+    const define = (k, value) =>
+      Object.defineProperty(n, k, {
+        value,
+        writable: true,
+        enumerable: true,
+        configurable: true,
+      });
+    const force = () => {
+      const data = load();
+      define("data", data);
+      define("size", data.length);
+    };
+    for (const k of size == null ? ["data", "size"] : ["data"])
+      Object.defineProperty(n, k, {
+        get: () => {
+          force();
+          return n[k];
+        },
+        set: (v) => {
+          force();
+          n[k] = v;
+        },
+        enumerable: true,
+        configurable: true,
+      });
+    if (size != null) n.size = size;
+  }
+
   function mem_resize(n, size) {
     if (size > n.data.length) {
       const data = new Uint8Array(Math.max(size, 2 * n.data.length));
@@ -316,8 +349,11 @@
   function mem_read(f, b, o, l, p) {
     if (f.flags & 2) throw fs_error("EBADF", "read", "");
     const pos = p == null ? f.pos : Number(p);
+    // Get the content first: the declared size of a lazy file is replaced
+    // by the actual one when the content is loaded
+    const data = f.node.data;
     const n = Math.max(0, Math.min(l, f.node.size - pos));
-    b.set(f.node.data.subarray(pos, pos + n), o);
+    b.set(data.subarray(pos, pos + n), o);
     f.pos = pos + n;
     return n;
   }
@@ -330,6 +366,7 @@
       l = b.length;
     }
     const n = f.node;
+    n.data; // load the content of a lazy file
     const pos = f.flags & 8 ? n.size : p == null ? f.pos : Number(p);
     if (pos + l > n.size) mem_resize(n, pos + l);
     n.data.set(b.subarray(o, o + l), pos);
@@ -420,8 +457,11 @@
   function register_file(name, content) {
     const r = resolve(name, "open");
     if (!r) throw new Error(`${name}: cannot register file`);
-    r.dev.register(r.parts, content, "open", name);
+    return r.dev.register(r.parts, content, "open", name);
   }
+
+  const register_lazy_file = (name, load, size) =>
+    mem_lazy(register_file(name, new Uint8Array(0)), load, size);
 
   // The content of a file given from JavaScript: a Uint8Array, or a string
   // with one character per byte, possibly encoded in base64.
@@ -439,9 +479,18 @@
   }
 
   // The host can create files while the program runs, as with the
-  // JavaScript runtime. Fails if the file exists.
+  // JavaScript runtime. Fails if the file exists. The content can be an
+  // object { load, size } for a lazy file: [load] is called to get the
+  // actual content when the file is first used, and [size], if given,
+  // is the size reported until then.
   globalThis.jsoo_create_file = (name, content, base64) =>
-    register_file(name, file_content(content, base64));
+    typeof content?.load === "function"
+      ? register_lazy_file(
+          name,
+          () => file_content(content.load(), base64),
+          content.size,
+        )
+      : void register_file(name, file_content(content, base64));
 
   const fs_cst = fs?.constants;
 
@@ -1291,7 +1340,9 @@
       const names = decoder.decode(entries.link_order).split("\x00");
       for (const name of names) inst.exports[name + ".init"]();
     },
-    register_file,
+    register_file: (name, content) => void register_file(name, content),
+    register_lazy_file: (name, size, f) =>
+      register_lazy_file(name, () => caml_fs_load(f), size < 0 ? null : size),
     read_file: (name) => {
       const r = resolve(name, "open");
       if (r) {
@@ -1451,6 +1502,7 @@
     caml_alloc_tm,
     caml_alloc_stat,
     caml_fs_autoload,
+    caml_fs_load,
     caml_start_fiber,
     caml_handle_uncaught_exception,
     caml_buffer,

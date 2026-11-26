@@ -356,6 +356,38 @@ class MlFakeDevice {
     }
   }
 
+  // A lazy file: the file exists and is listed in its directory, but [f]
+  // is only called to get its content (an OCaml string) when it is first
+  // needed. Until then, its length is [size], if given. If [f] fails, it
+  // is called again on the next use.
+  register_lazy(name, f, size) {
+    if (this.content[name])
+      caml_raise_sys_error(this.nm(name) + " : file already exists");
+    var file = new MlFakeFile(caml_create_bytes(0));
+    function set(value) {
+      delete file.length;
+      Object.defineProperty(file, "data", {
+        value: value,
+        writable: true,
+        configurable: true,
+      });
+    }
+    Object.defineProperty(file, "data", {
+      get: function () {
+        set(caml_bytes_of_string(f()));
+        return file.data;
+      },
+      set: set,
+      configurable: true,
+    });
+    if (size >= 0)
+      file.length = function () {
+        return size;
+      };
+    this.create_dir_if_needed(name);
+    this.content[name] = file;
+  }
+
   register(name, content) {
     var file;
     if (this.content[name])

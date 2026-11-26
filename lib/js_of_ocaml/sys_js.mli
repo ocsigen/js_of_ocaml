@@ -60,6 +60,16 @@ val create_file : name:string -> content:string -> unit
       [create_file ~name ~content] register the file [name] with content [content]
       so it can be opened with [open_in name] *)
 
+val create_lazy_file : name:string -> ?size:int -> (unit -> string) -> unit
+(** Register a file to a Pseudo Filesystem, without its content.
+      [create_lazy_file ~name f] register the file [name]: it exists and it is
+      listed in its directory, but [f] is only called to get its content when
+      it is first needed (when the file is read or written). If [f] raises
+      an exception, it is called again the next time the content is needed.
+
+      [size] is the size of the file: when it is given, the size can be
+      queried (with [in_channel_length], for instance) without calling [f]. *)
+
 val update_file : name:string -> content:string -> unit
 (** Update a file in the Pseudo Filesystem.
       [update_file ~name ~content] update the file [name] with content [content] *)

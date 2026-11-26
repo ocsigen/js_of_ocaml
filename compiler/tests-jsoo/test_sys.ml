@@ -644,3 +644,123 @@ let%expect_test ("globalThis.jsoo_create_file: Uint8Array" [@when not js]) =
   host_create_file "/static/host/f.bin" [| bytes [ 0xff; 0x00; 0x80 ] |];
   show_bytes "/static/host/f.bin";
   [%expect {| ff 00 80 |}]
+
+(* Lazy files: they are listed, but their content is loaded on demand *)
+
+let%expect_test "create_lazy_file" =
+  let lazy_file ?size name content =
+    Sys_js.create_lazy_file ~name ?size (fun () ->
+        Printf.printf "load %s\n" name;
+        content)
+  in
+  lazy_file "/static/lz/a/x" "xx";
+  lazy_file "/static/lz/y" "yyy";
+  lazy_file ~size:4 "/static/lz/z" "zzzz";
+  print_endline (sorted (Sys.readdir "/static/lz"));
+  Printf.printf
+    "%b %b %b\n"
+    (Sys.file_exists "/static/lz/y")
+    (Sys.is_directory "/static/lz/a")
+    (Sys.is_directory "/static/lz/y");
+  [%expect {|
+    a y z
+    true true false
+    |}];
+  (* The content is loaded once *)
+  print_endline (read_all "/static/lz/y");
+  print_endline (read_all "/static/lz/y");
+  [%expect {|
+    load /static/lz/y
+    yyy
+    yyy
+    |}];
+  (* A file can be renamed before it is loaded *)
+  Sys.rename "/static/lz/a/x" "/static/lz/x";
+  print_endline (sorted (Sys.readdir "/static/lz"));
+  print_endline (Sys_js.read_file ~name:"/static/lz/x");
+  [%expect {|
+    a x y z
+    load /static/lz/a/x
+    xx
+    |}];
+  (* With a size, the length is known without loading the file *)
+  let c = open_in_bin "/static/lz/z" in
+  Printf.printf "%d\n" (in_channel_length c);
+  [%expect {| 4 |}];
+  print_endline (really_input_string c 4);
+  close_in c;
+  [%expect {|
+    load /static/lz/z
+    zzzz
+    |}];
+  (* A file can be removed without being loaded *)
+  lazy_file "/static/lz/w" "w";
+  Sys.remove "/static/lz/w";
+  Printf.printf "%b\n" (Sys.file_exists "/static/lz/w");
+  (try lazy_file "/static/lz/y" "" with _ -> print_endline "exists");
+  [%expect {|
+    false
+    exists
+    |}]
+
+let%expect_test "create_lazy_file: failure" =
+  let fail = ref true in
+  Sys_js.create_lazy_file ~name:"/static/lz/f" (fun () ->
+      if !fail then failwith "not available" else "ok");
+  (try print_endline (read_all "/static/lz/f") with Failure m -> print_endline m);
+  fail := false;
+  print_endline (read_all "/static/lz/f");
+  [%expect {|
+    not available
+    ok
+    |}]
+
+let%expect_test "globalThis.jsoo_create_file: lazy file" =
+  let loader content =
+    Js.Unsafe.inject
+      (Js.wrap_callback (fun () ->
+           print_endline "load";
+           Js.bytestring content))
+  in
+  host_create_file
+    "/static/lz/h1"
+    [| Js.Unsafe.inject (Js.Unsafe.obj [| "load", loader "h1" |]) |];
+  host_create_file
+    "/static/lz/h2"
+    [| Js.Unsafe.inject
+         (Js.Unsafe.obj [| "load", loader "h2!"; "size", Js.Unsafe.inject 3 |])
+    |];
+  Printf.printf "%b\n" (Sys.file_exists "/static/lz/h1");
+  let c = open_in_bin "/static/lz/h2" in
+  Printf.printf "%d\n" (in_channel_length c);
+  close_in c;
+  [%expect {|
+    true
+    3
+    |}];
+  print_endline (read_all "/static/lz/h1");
+  print_endline (read_all "/static/lz/h2");
+  [%expect {|
+    load
+    h1
+    load
+    h2!
+    |}]
+
+(* [Unix.stat] is not implemented by the in-memory file system of the
+   JavaScript runtime *)
+let%expect_test ("create_lazy_file: stat" [@when not js]) =
+  let lazy_file ?size name content =
+    Sys_js.create_lazy_file ~name ?size (fun () ->
+        print_endline "load";
+        content)
+  in
+  lazy_file ~size:5 "/static/lz/s1" "12345";
+  lazy_file "/static/lz/s2" "123";
+  Printf.printf "%d\n" (Unix.stat "/static/lz/s1").Unix.st_size;
+  [%expect {| 5 |}];
+  Printf.printf "%d\n" (Unix.stat "/static/lz/s2").Unix.st_size;
+  [%expect {|
+    load
+    3
+    |}]

@@ -185,6 +185,8 @@ Files can also be provided at runtime:
 - {!Js_of_ocaml.Sys_js.mount} registers a function called when a file is
   missing under a given path, for instance to fetch it on demand;
 - {!Js_of_ocaml.Sys_js.create_file} creates a file from OCaml;
+- {!Js_of_ocaml.Sys_js.create_lazy_file} creates a file which is listed in
+  its directory, but whose content is only loaded when it is first needed;
 - [globalThis.jsoo_create_file(name, content)] creates a file from
   JavaScript, where [content] is a [Uint8Array], or a string with one
   character per byte.
