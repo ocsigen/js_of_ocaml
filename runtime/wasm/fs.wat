@@ -90,6 +90,14 @@
       (func $caml_uint8_array_of_string (param (ref eq)) (result (ref eq))))
    (import "bigarray" "caml_string_of_uint8_array"
       (func $caml_string_of_uint8_array (param (ref eq)) (result (ref eq))))
+   (import "bindings" "register_lazy_file"
+      (func $register_lazy_file (param externref) (param i32) (param (ref eq))))
+   (import "bindings" "mount_autoload"
+      (func $mount_autoload (param externref) (param (ref eq))))
+   (import "bindings" "unmount" (func $unmount (param externref)))
+   (import "bindings" "mount_points" (func $mount_points (result (ref extern))))
+   (import "jslib" "caml_js_fun_call"
+      (func $caml_js_fun_call (param (ref eq)) (param (ref eq)) (result (ref eq))))
 ))
    (import "string" "caml_string_concat"
       (func $caml_string_concat (param (ref eq) (ref eq)) (result (ref eq))))
@@ -851,6 +859,35 @@
       (ref.i31 (i32.const 0)))
 ))
 
+(@if $wasi
+(@then
+   (func (export "caml_create_lazy_file")
+      (param $name (ref eq)) (param $size (ref eq)) (param $f (ref eq))
+      (result (ref eq))
+      (ref.i31 (i32.const 0)))
+)
+(@else
+   (func (export "caml_create_lazy_file")
+      (param $name (ref eq)) (param $size (ref eq)) (param $f (ref eq))
+      (result (ref eq))
+      ;; [$size] is negative when the size is not known
+      (call $register_lazy_file
+         (call $js_of_value (call $caml_jsstring_of_string (local.get $name)))
+         (i31.get_s (ref.cast (ref i31) (local.get $size)))
+         (local.get $f))
+      (ref.i31 (i32.const 0)))
+
+   ;; Called by the in-memory device to get the content of a lazy file.
+   ;; [$f] is the callback given to [caml_create_lazy_file]: a JavaScript
+   ;; function wrapping an OCaml function of type [unit -> string].
+   (func (export "caml_fs_load") (param $f (ref eq)) (result externref)
+      (call $js_of_value
+         (call $caml_uint8_array_of_string
+            (call $caml_js_fun_call (local.get $f)
+               (array.new_fixed $block 2 (ref.i31 (i32.const 0))
+                  (ref.i31 (i32.const 0)))))))
+))
+
    (func (export "caml_fs_init") (result (ref eq))
       (ref.i31 (i32.const 0)))
 
@@ -927,6 +964,8 @@
       (@string ""))
 ))
 
+(@if $wasi
+(@then
    (func (export "caml_mount_autoload")
       (param (ref eq) (ref eq)) (result (ref eq))
       (ref.i31 (i32.const 0)))
@@ -938,4 +977,59 @@
    (func (export "caml_unmount")
       (param (ref eq)) (result (ref eq))
       (ref.i31 (i32.const 0)))
+)
+(@else
+   (func (export "caml_mount_autoload")
+      (param $name (ref eq)) (param $f (ref eq)) (result (ref eq))
+      (call $mount_autoload
+         (call $js_of_value (call $caml_jsstring_of_string (local.get $name)))
+         (local.get $f))
+      (ref.i31 (i32.const 0)))
+
+   ;; Called by the in-memory device when a file is missing. [$f] is the
+   ;; callback given to [caml_mount_autoload]: a JavaScript function
+   ;; wrapping an OCaml function of type [string -> string -> string option].
+   (func (export "caml_fs_autoload")
+      (param $f (ref eq)) (param $prefix externref) (param $name externref)
+      (result externref)
+      (local $res (ref eq))
+      (local.set $res
+         (call $caml_js_fun_call (local.get $f)
+            (array.new_fixed $block 3 (ref.i31 (i32.const 0))
+               (call $caml_string_of_jsstring
+                  (call $value_of_js (local.get $prefix)))
+               (call $caml_string_of_jsstring
+                  (call $value_of_js (local.get $name))))))
+      (if (ref.test (ref i31) (local.get $res))
+         (then (return (ref.null extern))))
+      (call $js_of_value
+         (call $caml_uint8_array_of_string
+            (array.get $block (ref.cast (ref $block) (local.get $res))
+               (i32.const 1)))))
+
+   (func (export "caml_list_mount_point")
+      (param (ref eq)) (result (ref eq))
+      (local $a (ref $block)) (local $l (ref eq)) (local $i i32)
+      (local.set $a
+         (ref.cast (ref $block)
+            (call $caml_js_to_string_array (call $mount_points))))
+      (local.set $l (ref.i31 (i32.const 0)))
+      (local.set $i (array.len (local.get $a)))
+      (loop $loop
+         (if (i32.gt_u (local.get $i) (i32.const 1))
+            (then
+               (local.set $i (i32.sub (local.get $i) (i32.const 1)))
+               (local.set $l
+                  (array.new_fixed $block 3 (ref.i31 (i32.const 0))
+                     (array.get $block (local.get $a) (local.get $i))
+                     (local.get $l)))
+               (br $loop))))
+      (local.get $l))
+
+   (func (export "caml_unmount")
+      (param $name (ref eq)) (result (ref eq))
+      (call $unmount
+         (call $js_of_value (call $caml_jsstring_of_string (local.get $name))))
+      (ref.i31 (i32.const 0)))
+))
 )

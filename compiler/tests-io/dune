@@ -83,28 +83,17 @@
 (tests
  (names non_ascii_filenames)
  (deps "accentué")
- (modes js)
+ (modes js wasm)
+ (enabled_if
+  (<> %{env:JSOO_TEST_ENGINE=node} wasi))
  (js_of_ocaml
   (compilation_mode whole_program)
   (flags
-   (:standard --file "accentué"))))
-
-(tests
- (names non_ascii_filenames_wasm)
- (deps "accentué")
- (modes wasm)
- (enabled_if
-  (<> %{env:JSOO_TEST_ENGINE=node} wasi))
+   (:standard --file "accentué")))
  (wasm_of_ocaml
   (compilation_mode whole_program)
   (flags
    (:standard --file "accentué"))))
-
-(rule
- (copy non_ascii_filenames.ml non_ascii_filenames_wasm.ml))
-
-(rule
- (copy non_ascii_filenames.expected.wasm non_ascii_filenames_wasm.expected))
 
 (rule
  (with-stdout-to

@@ -273,7 +273,8 @@ let%expect_test "double close" =
   | Sys_error _ -> print_endline "Sys_error");
   [%expect {| EBADF |}]
 
-let%expect_test "register bytes content" =
+(* [jsoo_create_file] is a primitive of the JavaScript runtime only *)
+let%expect_test ("register bytes content" [@when js]) =
   jsoo_create_file "/static/bin.dat" (Bytes.of_string "\xff\x00\x80a");
   let c = open_in_bin "/static/bin.dat" in
   let s = In_channel.input_all c in
@@ -373,3 +374,404 @@ let%expect_test "filepath_exists" =
     /static/fpe/f/x: false
     |}]
 [@@if ocaml_version >= (5, 6, 0)]
+
+(* The pseudo filesystem: same behavior with js_of_ocaml and wasm_of_ocaml *)
+
+let read_all name =
+  let c = open_in_bin name in
+  let s = really_input_string c (in_channel_length c) in
+  close_in c;
+  s
+
+let sorted a =
+  let l = Array.to_list a in
+  String.concat " " (List.sort compare l)
+
+let%expect_test "mount: files are loaded on demand" =
+  Sys_js.mount ~path:"/lazy/" (fun ~prefix ~path ->
+      Printf.printf "load %s %s\n" prefix path;
+      if String.equal path "missing" then None else Some ("<" ^ path ^ ">"));
+  print_endline (read_all "/lazy/a/b.txt");
+  [%expect {|
+    load /lazy/ a/b.txt
+    <a/b.txt>
+    |}];
+  (* Loaded only once *)
+  print_endline (read_all "/lazy/a/b.txt");
+  print_endline (Sys_js.read_file ~name:"/lazy/a/b.txt");
+  Printf.printf "%b %b\n" (Sys.is_directory "/lazy/a") (Sys.is_directory "/lazy/a/b.txt");
+  print_endline (sorted (Sys.readdir "/lazy/a"));
+  [%expect {|
+    <a/b.txt>
+    <a/b.txt>
+    true false
+    b.txt
+    |}];
+  Printf.printf "%b\n" (Sys.file_exists "/lazy/missing");
+  (try ignore (open_in "/lazy/missing") with Sys_error m -> print_endline m);
+  [%expect
+    {|
+    load /lazy/ missing
+    false
+    load /lazy/ missing
+    /lazy/missing: No such file or directory
+    |}];
+  Printf.printf "%b\n" (List.mem "/lazy/" (Sys_js.mount_point ()));
+  Sys_js.unmount ~path:"/lazy/";
+  Printf.printf "%b\n" (List.mem "/lazy/" (Sys_js.mount_point ()));
+  [%expect {|
+    true
+    false
+    |}]
+
+let%expect_test "create_file, update_file, read_file" =
+  Sys_js.create_file ~name:"/static/reg/x.txt" ~content:"abc";
+  print_endline (Sys_js.read_file ~name:"/static/reg/x.txt");
+  Sys_js.update_file ~name:"/static/reg/x.txt" ~content:"defgh";
+  print_endline (read_all "/static/reg/x.txt");
+  print_endline (sorted (Sys.readdir "/static/reg"));
+  (try ignore (Sys_js.read_file ~name:"/static/reg/y.txt")
+   with Sys_error m -> print_endline m);
+  [%expect
+    {|
+    abc
+    defgh
+    x.txt
+    /static/reg/y.txt: No such file or directory
+    |}]
+
+let%expect_test "write, seek, append, truncate" =
+  let name = "/static/rw.bin" in
+  let c = open_out_bin name in
+  output_string c "0123456789";
+  seek_out c 2;
+  output_string c "ab";
+  close_out c;
+  print_endline (read_all name);
+  let c = open_out_gen [ Open_wronly; Open_append ] 0o666 name in
+  output_string c "XY";
+  close_out c;
+  print_endline (read_all name);
+  let c = open_in_bin name in
+  seek_in c 8;
+  print_endline (really_input_string c 4);
+  close_in c;
+  Unix.truncate name 3;
+  print_endline (read_all name);
+  (* A removed file can still be read through an open channel *)
+  let c = open_in_bin name in
+  Sys.remove name;
+  Printf.printf "%b %s\n" (Sys.file_exists name) (really_input_string c 3);
+  close_in c;
+  [%expect {|
+    01ab456789
+    01ab456789XY
+    89XY
+    01a
+    false 01a
+    |}]
+
+let%expect_test "directories" =
+  Sys.mkdir "/static/d1" 0o777;
+  Sys.mkdir "/static/d1/d2" 0o777;
+  close_out (open_out "/static/d1/f");
+  print_endline (sorted (Sys.readdir "/static/d1"));
+  (try Sys.rmdir "/static/d1" with Sys_error _ -> print_endline "not empty");
+  (try Sys.mkdir "/static/d1/d2" 0o777 with Sys_error _ -> print_endline "exists");
+  Sys.rename "/static/d1/f" "/static/d1/d2/g";
+  Sys.rename "/static/d1/d2" "/static/d1/d3";
+  print_endline (sorted (Sys.readdir "/static/d1"));
+  print_endline (sorted (Sys.readdir "/static/d1/d3"));
+  let h = Unix.opendir "/static/d1" in
+  let rec loop acc =
+    match Unix.readdir h with
+    | e -> loop (e :: acc)
+    | exception End_of_file -> acc
+  in
+  print_endline (String.concat " " (List.sort compare (loop [])));
+  Unix.closedir h;
+  Sys.remove "/static/d1/d3/g";
+  Sys.rmdir "/static/d1/d3";
+  Sys.rmdir "/static/d1";
+  Printf.printf "%b\n" (Sys.file_exists "/static/d1");
+  [%expect {|
+    d2 f
+    not empty
+    exists
+    d3
+    g
+    . .. d3
+    false
+    |}]
+
+let%expect_test "relative paths" =
+  let cwd = Sys.getcwd () in
+  Sys.mkdir "/static/cd" 0o777;
+  Sys.chdir "/static/cd";
+  close_out (open_out "rel");
+  Printf.printf
+    "%b %b\n"
+    (Sys.file_exists "/static/cd/rel")
+    (Sys.file_exists "../cd/./rel");
+  Sys.chdir cwd;
+  Printf.printf "%b\n" (Sys.file_exists "rel");
+  [%expect {|
+    true true
+    false
+    |}]
+
+(* The in-memory file system of the JavaScript runtime does not implement
+   [Unix.stat], and creates the missing parent directories when opening a
+   file. *)
+let%expect_test ("stat, missing parent directory" [@when not js]) =
+  let name = "/static/st.txt" in
+  let c = open_out name in
+  output_string c "hello";
+  close_out c;
+  let st = Unix.stat name in
+  Printf.printf "%d %b\n" st.Unix.st_size (st.Unix.st_kind = Unix.S_REG);
+  Unix.chmod name 0o600;
+  Printf.printf "0o%o\n" (Unix.stat name).Unix.st_perm;
+  Printf.printf "%b\n" ((Unix.lstat "/static").Unix.st_kind = Unix.S_DIR);
+  (try close_out (open_out "/static/nodir/f") with Sys_error m -> print_endline m);
+  (try ignore (Unix.stat "/static/st.txt/x")
+   with Unix.Unix_error (e, cmd, p) -> Printf.printf "%s %s %s\n" (unix_error e) cmd p);
+  [%expect
+    {|
+    5 true
+    0o600
+    true
+    /static/nodir/f: No such file or directory
+    ENOTDIR stat /static/st.txt/x
+    |}]
+
+(* On Windows, a mount point can be on a drive. The drive letter is not case
+   sensitive. *)
+let%expect_test ("mount on a Windows drive" [@when not js]) =
+  if Sys.win32
+  then begin
+    Sys_js.mount ~path:"c:\\jsoo_vfs" (fun ~prefix ~path -> Some (prefix ^ path));
+    print_endline (read_all "C:/jsoo_vfs/a/b");
+    print_endline (read_all "c:\\jsoo_vfs\\c");
+    Printf.printf "%b\n" (List.mem "C:/jsoo_vfs/" (Sys_js.mount_point ()));
+    let cwd = Sys.getcwd () in
+    Sys.chdir "C:/jsoo_vfs/a";
+    print_endline (Sys.getcwd ());
+    print_endline (read_all "..\\d");
+    Sys.chdir cwd;
+    Sys_js.unmount ~path:"C:/jsoo_vfs/";
+    Printf.printf "%b\n" (List.mem "C:/jsoo_vfs/" (Sys_js.mount_point ()))
+  end
+  else
+    print_string
+      "C:/jsoo_vfs/a/b\nC:/jsoo_vfs/c\ntrue\nC:/jsoo_vfs/a\nC:/jsoo_vfs/d\nfalse\n";
+  [%expect
+    {|
+    C:/jsoo_vfs/a/b
+    C:/jsoo_vfs/c
+    true
+    C:/jsoo_vfs/a
+    C:/jsoo_vfs/d
+    false
+    |}]
+
+let%expect_test "Unix operations on in-memory files" =
+  Unix.mkdir "/static/ux" 0o755;
+  Unix.access "/static/ux" [ Unix.F_OK ];
+  let name = "/static/ux/f" in
+  let fd = Unix.openfile name [ Unix.O_RDWR; Unix.O_CREAT ] 0o644 in
+  ignore (Unix.write_substring fd "0123456789" 0 10);
+  ignore (Unix.lseek fd 3 Unix.SEEK_SET);
+  let b = Bytes.create 4 in
+  let n = Unix.read fd b 0 4 in
+  Printf.printf "%d %s\n" n (Bytes.to_string b);
+  Unix.ftruncate fd 5;
+  Printf.printf "%d\n" (Unix.lseek fd 0 Unix.SEEK_END);
+  Unix.close fd;
+  Unix.rename name "/static/ux/g";
+  (try Unix.access name [ Unix.F_OK ]
+   with Unix.Unix_error (e, _, _) -> print_endline (unix_error e));
+  (try Unix.rmdir "/static/ux"
+   with Unix.Unix_error (_, cmd, _) -> Printf.printf "%s failed\n" cmd);
+  Unix.unlink "/static/ux/g";
+  Unix.rmdir "/static/ux";
+  Printf.printf "%b\n" (Sys.file_exists "/static/ux");
+  [%expect {|
+    4 3456
+    5
+    ENOENT
+    rmdir failed
+    false
+    |}]
+
+(* The host can create files from JavaScript *)
+
+let host_create_file name content : unit =
+  Js.Unsafe.fun_call
+    (Js.Unsafe.get Js.Unsafe.global (Js.string "jsoo_create_file"))
+    (Array.append [| Js.Unsafe.inject (Js.string name) |] content)
+
+let show_bytes name =
+  String.iter (fun c -> Printf.printf " %02x" (Char.code c)) (read_all name);
+  print_newline ()
+
+let%expect_test "globalThis.jsoo_create_file" =
+  host_create_file "/static/host/dir/s.bin" [| Js.Unsafe.inject (Js.bytestring "a\xe9") |];
+  show_bytes "/static/host/dir/s.bin";
+  (try
+     host_create_file "/static/host/dir/s.bin" [| Js.Unsafe.inject (Js.bytestring "b") |]
+   with _ -> print_endline "exists");
+  host_create_file
+    "/static/host/b64.txt"
+    [| Js.Unsafe.inject (Js.string "aGk="); Js.Unsafe.inject Js._true |];
+  print_endline (read_all "/static/host/b64.txt");
+  print_endline (sorted (Sys.readdir "/static/host"));
+  [%expect {|
+     61 e9
+    exists
+    hi
+    b64.txt dir
+    |}]
+
+(* With the JavaScript runtime, the content has to be a string *)
+let%expect_test ("globalThis.jsoo_create_file: Uint8Array" [@when not js]) =
+  let bytes l =
+    Js.Unsafe.inject
+      (Js.Unsafe.new_obj
+         (Js.Unsafe.get Js.Unsafe.global (Js.string "Uint8Array"))
+         [| Js.Unsafe.inject (Js.array (Array.of_list l)) |])
+  in
+  host_create_file "/static/host/f.bin" [| bytes [ 0xff; 0x00; 0x80 ] |];
+  show_bytes "/static/host/f.bin";
+  [%expect {| ff 00 80 |}]
+
+(* Lazy files: they are listed, but their content is loaded on demand *)
+
+let%expect_test "create_lazy_file" =
+  let lazy_file ?size name content =
+    Sys_js.create_lazy_file ~name ?size (fun () ->
+        Printf.printf "load %s\n" name;
+        content)
+  in
+  lazy_file "/static/lz/a/x" "xx";
+  lazy_file "/static/lz/y" "yyy";
+  lazy_file ~size:4 "/static/lz/z" "zzzz";
+  print_endline (sorted (Sys.readdir "/static/lz"));
+  Printf.printf
+    "%b %b %b\n"
+    (Sys.file_exists "/static/lz/y")
+    (Sys.is_directory "/static/lz/a")
+    (Sys.is_directory "/static/lz/y");
+  [%expect {|
+    a y z
+    true true false
+    |}];
+  (* The content is loaded once *)
+  print_endline (read_all "/static/lz/y");
+  print_endline (read_all "/static/lz/y");
+  [%expect {|
+    load /static/lz/y
+    yyy
+    yyy
+    |}];
+  (* A file can be renamed before it is loaded *)
+  Sys.rename "/static/lz/a/x" "/static/lz/x";
+  print_endline (sorted (Sys.readdir "/static/lz"));
+  print_endline (Sys_js.read_file ~name:"/static/lz/x");
+  [%expect {|
+    a x y z
+    load /static/lz/a/x
+    xx
+    |}];
+  (* With a size, the length is known without loading the file *)
+  let c = open_in_bin "/static/lz/z" in
+  Printf.printf "%d\n" (in_channel_length c);
+  [%expect {| 4 |}];
+  print_endline (really_input_string c 4);
+  close_in c;
+  [%expect {|
+    load /static/lz/z
+    zzzz
+    |}];
+  (* A file can be removed without being loaded *)
+  lazy_file "/static/lz/w" "w";
+  Sys.remove "/static/lz/w";
+  Printf.printf "%b\n" (Sys.file_exists "/static/lz/w");
+  (try lazy_file "/static/lz/y" "" with _ -> print_endline "exists");
+  [%expect {|
+    false
+    exists
+    |}]
+
+let%expect_test "create_lazy_file: failure" =
+  let fail = ref true in
+  Sys_js.create_lazy_file ~name:"/static/lz/f" (fun () ->
+      if !fail then failwith "not available" else "ok");
+  (try print_endline (read_all "/static/lz/f") with Failure m -> print_endline m);
+  fail := false;
+  print_endline (read_all "/static/lz/f");
+  [%expect {|
+    not available
+    ok
+    |}]
+
+let%expect_test "globalThis.jsoo_create_file: lazy file" =
+  let loader content =
+    Js.Unsafe.inject
+      (Js.wrap_callback (fun () ->
+           print_endline "load";
+           Js.bytestring content))
+  in
+  host_create_file
+    "/static/lz/h1"
+    [| Js.Unsafe.inject (Js.Unsafe.obj [| "load", loader "h1" |]) |];
+  host_create_file
+    "/static/lz/h2"
+    [| Js.Unsafe.inject
+         (Js.Unsafe.obj [| "load", loader "h2!"; "size", Js.Unsafe.inject 3 |])
+    |];
+  Printf.printf "%b\n" (Sys.file_exists "/static/lz/h1");
+  let c = open_in_bin "/static/lz/h2" in
+  Printf.printf "%d\n" (in_channel_length c);
+  close_in c;
+  [%expect {|
+    true
+    3
+    |}];
+  print_endline (read_all "/static/lz/h1");
+  print_endline (read_all "/static/lz/h2");
+  [%expect {|
+    load
+    h1
+    load
+    h2!
+    |}]
+
+(* [Unix.stat] is not implemented by the in-memory file system of the
+   JavaScript runtime *)
+let%expect_test ("create_lazy_file: stat" [@when not js]) =
+  let lazy_file ?size name content =
+    Sys_js.create_lazy_file ~name ?size (fun () ->
+        print_endline "load";
+        content)
+  in
+  lazy_file ~size:5 "/static/lz/s1" "12345";
+  lazy_file "/static/lz/s2" "123";
+  Printf.printf "%d\n" (Unix.stat "/static/lz/s1").Unix.st_size;
+  [%expect {| 5 |}];
+  Printf.printf "%d\n" (Unix.stat "/static/lz/s2").Unix.st_size;
+  [%expect {|
+    load
+    3
+    |}]
+
+(* Opening a lazy file for writing replaces its content without loading it *)
+let%expect_test "create_lazy_file: overwrite" =
+  Sys_js.create_lazy_file ~name:"/static/lz/o" ~size:3 (fun () ->
+      print_endline "load";
+      "old");
+  let c = open_out_bin "/static/lz/o" in
+  output_string c "new!";
+  close_out c;
+  print_endline (read_all "/static/lz/o");
+  [%expect {| new! |}]

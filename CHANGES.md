@@ -53,6 +53,18 @@
 * Runtime/Wasm: faster decimal formatting of integers (#2631)
 * Runtime/Wasm: format integers in base 8 and 16 with shifts rather than
   divisions (#2640)
+* Runtime/Wasm: pseudo filesystem, as in the JavaScript runtime: in-memory
+  devices (the root when not running under node, and `/static/`) supporting
+  the `Sys` and `Unix` file operations, and `Sys_js.mount`, `Sys_js.unmount`
+  and `Sys_js.mount_point`, to load files on demand (#2658)
+* Runtime/Wasm: `globalThis.jsoo_create_file`, to create files from
+  JavaScript while the program runs, as with the JavaScript runtime; the
+  content can also be a `Uint8Array` (#2658)
+* Lib/Runtime: lazy files in the pseudo filesystem, with
+  `Sys_js.create_lazy_file` and `globalThis.jsoo_create_file(name, {load, size})`:
+  the file exists and is listed in its directory, but its content is only
+  loaded when it is first needed; an optional size can be reported before that
+  (#2658)
 
 ### Runtime
 * Runtime: fast path for immediates in polymorphic comparisons (#2567)

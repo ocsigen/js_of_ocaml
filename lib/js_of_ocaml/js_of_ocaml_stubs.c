@@ -1,5 +1,9 @@
 #include <caml/misc.h>
 
+CAMLweakdef void caml_create_lazy_file () {
+  caml_fatal_error("Unimplemented Javascript primitive caml_create_lazy_file!");
+}
+
 CAMLweakdef void caml_js_error_of_exception () {
   caml_fatal_error("Unimplemented Javascript primitive caml_js_error_of_exception!");
 }

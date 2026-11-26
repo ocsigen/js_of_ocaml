@@ -113,6 +113,24 @@
     "reaches": ["alloc_tm"]
   },
   {
+    "name": "fs_load",
+    "export": "caml_fs_load"
+  },
+  {
+    "name": "register_lazy_file",
+    "import": ["bindings", "register_lazy_file"],
+    "reaches": ["fs_load"]
+  },
+  {
+    "name": "fs_autoload",
+    "export": "caml_fs_autoload"
+  },
+  {
+    "name": "mount_autoload",
+    "import": ["bindings", "mount_autoload"],
+    "reaches": ["fs_autoload"]
+  },
+  {
     "name": "alloc_stat",
     "export": "caml_alloc_stat"
   },

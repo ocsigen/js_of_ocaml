@@ -18,7 +18,7 @@
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 //Provides: MlFakeDevice
-//Requires: MlFakeFile, MlFakeFd, caml_create_bytes
+//Requires: MlFakeFile, MlLazyFile, MlFakeFd, caml_create_bytes
 //Requires: caml_raise_sys_error, caml_raise_no_such_file
 //Requires: caml_string_of_jsbytes, caml_string_of_jsstring
 //Requires: caml_bytes_of_array, caml_bytes_of_string, caml_bytes_of_jsbytes
@@ -356,6 +356,13 @@ class MlFakeDevice {
     }
   }
 
+  register_lazy(name, f, size) {
+    if (this.content[name])
+      caml_raise_sys_error(this.nm(name) + " : file already exists");
+    this.create_dir_if_needed(name);
+    this.content[name] = new MlLazyFile(f, size);
+  }
+
   register(name, content) {
     var file;
     if (this.content[name])
@@ -434,6 +441,50 @@ class MlFakeFile extends MlFile {
       return len;
     }
     return 0;
+  }
+}
+
+// A lazy file: the file exists and is listed in its directory, but [load]
+// is only called to get its content (an OCaml string) when it is first
+// needed. Until then, its length is [size], if not negative. If [load]
+// fails, it is called again on the next use.
+//Provides: MlLazyFile
+//Requires: MlFakeFile, caml_create_bytes, caml_bytes_of_string
+class MlLazyFile extends MlFakeFile {
+  constructor(load, size) {
+    super(caml_create_bytes(0));
+    this.load = load;
+    this.size = size;
+  }
+
+  force() {
+    if (this.load) {
+      this.data = caml_bytes_of_string(this.load());
+      this.load = null;
+    }
+  }
+
+  truncate(len) {
+    // No need to load the content to discard it
+    if (len === 0) this.load = null;
+    this.force();
+    super.truncate(len);
+  }
+
+  length() {
+    if (this.load && this.size >= 0) return this.size;
+    this.force();
+    return super.length();
+  }
+
+  write(offset, buf, pos, len) {
+    this.force();
+    return super.write(offset, buf, pos, len);
+  }
+
+  read(offset, buf, pos, len) {
+    this.force();
+    return super.read(offset, buf, pos, len);
   }
 }
 
