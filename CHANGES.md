@@ -150,6 +150,8 @@
 * Runtime: ensure empty float arrays use tag 0 rather than 254 for
   Float.Array.concat and recursive dummy allocations, and in JavaScript also
   for Float.Array.append, sub, create and make (#2594)
+* Runtime/JS: on Windows, the drive letter of a mount point is not case
+  sensitive
 
 ### Libraries
 * Toplevel: `js_of_ocaml-toplevel` depends on `js_of_ocaml-ppx`, so that

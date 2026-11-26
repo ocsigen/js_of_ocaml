@@ -75,7 +75,12 @@ function make_path_is_absolute() {
     if (result[2] || isUnc) {
       var root = result[1] || "";
       var sep = result[2] || "";
-      return [root, path.slice(root.length + sep.length)];
+      // The drive letter is not case sensitive: normalize it, so that
+      // [c:/dir] and [C:/dir] resolve to the same mount point.
+      return [
+        isUnc ? root : root.toUpperCase(),
+        path.slice(root.length + sep.length),
+      ];
     }
     return;
   }

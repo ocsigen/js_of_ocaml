@@ -373,3 +373,26 @@ let%expect_test "filepath_exists" =
     /static/fpe/f/x: false
     |}]
 [@@if ocaml_version >= (5, 6, 0)]
+
+(* On Windows, the drive letter of a mount point is not case sensitive *)
+let%expect_test "mount on a Windows drive" =
+  if Sys.win32
+  then begin
+    let read name =
+      let c = open_in_bin name in
+      let s = really_input_string c (in_channel_length c) in
+      close_in c;
+      s
+    in
+    Sys_js.mount ~path:"c:\\jsoo_vfs" (fun ~prefix ~path -> Some (prefix ^ path));
+    print_endline (read "C:/jsoo_vfs/a/b");
+    print_endline (read "c:\\jsoo_vfs\\c");
+    Printf.printf "%b\n" (List.mem "C:/jsoo_vfs/" (Sys_js.mount_point ()));
+    Sys_js.unmount ~path:"C:/jsoo_vfs/"
+  end
+  else print_string "C:/jsoo_vfs/a/b\nC:/jsoo_vfs/c\ntrue\n";
+  [%expect {|
+    C:/jsoo_vfs/a/b
+    C:/jsoo_vfs/c
+    true
+    |}]
