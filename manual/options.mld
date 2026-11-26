@@ -75,6 +75,10 @@ See {{!page-"effects"}Effect handlers} for details.
 Js_of_ocaml provides a pseudo filesystem for programs that read files at runtime.
 The [--file] flag is also supported by wasm_of_ocaml.
 
+Files can also be added at runtime, from OCaml with {!Js_of_ocaml.Sys_js}
+([create_file], or [mount] to load files on demand), or from JavaScript with
+[globalThis.jsoo_create_file(name, content)].
+
 {t
  | Option | Description |
  | [--file <file>[:<target>]] | Register file to pseudo filesystem (default target: [/static/]) |

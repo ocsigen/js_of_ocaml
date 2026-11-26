@@ -176,6 +176,19 @@ the same way as with js_of_ocaml:
 wasm_of_ocaml --file data.txt cubes.byte
 v}
 
+As with js_of_ocaml, files live in memory when there is no real filesystem:
+under [/static/], and everywhere when not running under Node.js. Such files
+can be read, written, renamed and removed with the usual [Stdlib], [Sys] and
+[Unix] functions.
+
+Files can also be provided at runtime:
+- {!Js_of_ocaml.Sys_js.mount} registers a function called when a file is
+  missing under a given path, for instance to fetch it on demand;
+- {!Js_of_ocaml.Sys_js.create_file} creates a file from OCaml;
+- [globalThis.jsoo_create_file(name, content)] creates a file from
+  JavaScript, where [content] is a [Uint8Array], or a string with one
+  character per byte.
+
 {1 See also}
 
 - {{!page-"build-toplevel"}Toplevel and Dynlink} — Build a toplevel or use dynamic linking

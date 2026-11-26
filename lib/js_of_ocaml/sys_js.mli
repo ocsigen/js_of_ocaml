@@ -32,7 +32,11 @@ val set_channel_filler : in_channel -> (unit -> string) -> unit
       [chan] in_channel. The string returned by [cb] will be appended
       to the channel buffer. *)
 
-(** {2 Pseudo filesystem.} *)
+(** {2 Pseudo filesystem.}
+
+    Files live in memory when there is no real filesystem: under [/static/],
+    and everywhere when not running under Node.js. This is supported by both
+    js_of_ocaml and wasm_of_ocaml. *)
 
 val mount_point : unit -> string list
 
@@ -45,7 +49,7 @@ val mount : path:string -> (prefix:string -> path:string -> string option) -> un
       [mount ~path f] register the callback [f] to the path [path].
       The callback [f] receives [(prefix,suffix)] where:
        - [prefix] is the path the function has been registered to.
-       - [Filename.contact prefix suffix] is the absolute filename .*)
+       - [Filename.concat prefix suffix] is the absolute filename .*)
 
 val read_file : name:string -> string
 (** [read_file name] returns the content of the file [name].
