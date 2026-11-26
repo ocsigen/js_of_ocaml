@@ -46,9 +46,7 @@ let fannkuch n =
              incr i;
              decr j;
              !i < !j
-           do
-             ()
-           done);
+           do () done);
         q0 := qq;
         incr flips
       done);

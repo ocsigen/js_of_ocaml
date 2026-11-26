@@ -30,10 +30,7 @@ let read_uleb contents pos =
 (* Ranges (as [(start, end)] offsets) of the entries of the code section of a
    Wasm module. Each entry corresponds to a function. *)
 let function_ranges contents =
-  let pos =
-    ref 8
-    (* magic number and version *)
-  in
+  let pos = ref 8 (* magic number and version *) in
   let len = String.length contents in
   let ranges = ref [] in
   while !pos < len do

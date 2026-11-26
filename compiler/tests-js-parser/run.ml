@@ -142,9 +142,7 @@ let accepted_by_node ?(debug = false) file =
        while
          print_endline (input_line ic);
          true
-       do
-         ()
-       done
+       do () done
      with _ -> ());
   let _pid, status = Unix.waitpid [] pid in
   close_in ic;
