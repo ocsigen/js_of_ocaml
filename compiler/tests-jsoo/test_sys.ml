@@ -764,3 +764,14 @@ let%expect_test ("create_lazy_file: stat" [@when not js]) =
     load
     3
     |}]
+
+(* Opening a lazy file for writing replaces its content without loading it *)
+let%expect_test "create_lazy_file: overwrite" =
+  Sys_js.create_lazy_file ~name:"/static/lz/o" ~size:3 (fun () ->
+      print_endline "load";
+      "old");
+  let c = open_out_bin "/static/lz/o" in
+  output_string c "new!";
+  close_out c;
+  print_endline (read_all "/static/lz/o");
+  [%expect {| new! |}]

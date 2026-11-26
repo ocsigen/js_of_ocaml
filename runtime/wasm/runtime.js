@@ -131,37 +131,41 @@
   // content is only loaded when it is needed: when the file is read or
   // written, or to get its size if [size] was not given. If [load] fails,
   // it is called again on the next use.
-  function mem_lazy(n, load, size) {
-    const define = (k, value) =>
-      Object.defineProperty(n, k, {
-        value,
-        writable: true,
-        enumerable: true,
-        configurable: true,
-      });
-    const force = () => {
-      const data = load();
-      define("data", data);
-      define("size", data.length);
-    };
-    for (const k of size == null ? ["data", "size"] : ["data"])
-      Object.defineProperty(n, k, {
-        get: () => {
-          force();
-          return n[k];
-        },
-        set: (v) => {
-          force();
-          n[k] = v;
-        },
-        enumerable: true,
-        configurable: true,
-      });
-    if (size != null) n.size = size;
+  class MemLazyFile {
+    constructor(load, size) {
+      Object.assign(this, mem_node(0o666));
+      this._load = load;
+      this._size = size;
+    }
+    force() {
+      if (this._load) {
+        this._data = this._load();
+        this._size = this._data.length;
+        this._load = null;
+      }
+    }
+    get data() {
+      this.force();
+      return this._data;
+    }
+    // Replace the content, without loading it
+    set data(data) {
+      this._load = null;
+      this._data = data;
+    }
+    get size() {
+      if (this._size == null) this.force();
+      return this._size;
+    }
+    set size(size) {
+      this._size = size;
+    }
   }
 
   function mem_resize(n, size) {
-    if (size > n.data.length) {
+    // No need to load the content of a lazy file to discard it
+    if (size === 0) n.data = new Uint8Array(0);
+    else if (size > n.data.length) {
       const data = new Uint8Array(Math.max(size, 2 * n.data.length));
       data.set(n.data.subarray(0, n.size));
       n.data = data;
@@ -205,8 +209,8 @@
       }
       return n;
     }
-    // Create a file and the missing parent directories
-    register(parts, data, sc, p) {
+    // Add a file, creating the missing parent directories
+    register(parts, n, sc, p) {
       let d = this.root;
       const name = parts.at(-1);
       for (let i = 0; i < parts.length - 1; i++) {
@@ -217,7 +221,6 @@
       }
       if (name === undefined || d.entries.has(name))
         throw fs_error("EEXIST", sc, p);
-      const n = mem_file(data, 0o666);
       d.entries.set(name, n);
       return n;
     }
@@ -225,7 +228,9 @@
       const n = this.find(parts, sc, p);
       if (n || !this.autoload || !parts.length) return n;
       const data = this.autoload(parts.join("/"));
-      return data ? this.register(parts, data, sc, p) : undefined;
+      return data
+        ? this.register(parts, mem_file(data, 0o666), sc, p)
+        : undefined;
     }
     get(parts, sc, p) {
       const n = this.lookup(parts, sc, p);
@@ -454,14 +459,17 @@
   mount("/", fs ? null : new MemDevice());
   mount("/static", new MemDevice());
 
-  function register_file(name, content) {
+  function register_node(name, n) {
     const r = resolve(name, "open");
     if (!r) throw new Error(`${name}: cannot register file`);
-    return r.dev.register(r.parts, content, "open", name);
+    r.dev.register(r.parts, n, "open", name);
   }
 
+  const register_file = (name, content) =>
+    register_node(name, mem_file(content, 0o666));
+
   const register_lazy_file = (name, load, size) =>
-    mem_lazy(register_file(name, new Uint8Array(0)), load, size);
+    register_node(name, new MemLazyFile(load, size));
 
   // The content of a file given from JavaScript: a Uint8Array, or a string
   // with one character per byte, possibly encoded in base64.
@@ -490,7 +498,7 @@
           () => file_content(content.load(), base64),
           content.size,
         )
-      : void register_file(name, file_content(content, base64));
+      : register_file(name, file_content(content, base64));
 
   const fs_cst = fs?.constants;
 
@@ -1340,7 +1348,7 @@
       const names = decoder.decode(entries.link_order).split("\x00");
       for (const name of names) inst.exports[name + ".init"]();
     },
-    register_file: (name, content) => void register_file(name, content),
+    register_file,
     register_lazy_file: (name, size, f) =>
       register_lazy_file(name, () => caml_fs_load(f), size < 0 ? null : size),
     read_file: (name) => {
