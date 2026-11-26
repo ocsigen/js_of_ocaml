@@ -1097,10 +1097,7 @@ module DTree = struct
         with Not_found -> (
           (* do we have to split again ? *)
           (* we count the number of cases, default/last case count for one *)
-          let nbcases =
-            ref 1
-            (* default case *)
-          in
+          let nbcases = ref 1 (* default case *) in
           let min_case = ref max_int and max_case = ref min_int in
           for i = 0 to array_len - 2 do
             let l = snd array_norm.(i) in

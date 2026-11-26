@@ -134,9 +134,7 @@ let find_loops p in_loop pc =
         l := pc' :: !l;
         (Addr.Map.find pc' !state).in_stack <- false;
         pc' <> pc
-      do
-        ()
-      done;
+      do () done;
       (* If we revisit the top element of the stack, then we have a loop.
          This work even for loops of size 1 *)
       if st.revisited
