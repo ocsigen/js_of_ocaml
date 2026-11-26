@@ -437,14 +437,19 @@ function caml_create_file(name, content) {
   return 0;
 }
 
+// The content is a Uint8Array, or a string with one character per byte,
+// possibly encoded in base64.
 //Provides: jsoo_create_file
 //Requires: caml_create_file, caml_string_of_jsbytes, caml_string_of_jsstring
-//Requires: caml_string_of_base64
+//Requires: caml_string_of_base64, caml_string_of_uint8_array
 function jsoo_create_file(name, content, base64) {
   var name = caml_string_of_jsstring(name);
-  var content = base64
-    ? caml_string_of_base64(content)
-    : caml_string_of_jsbytes(content);
+  var content =
+    content instanceof Uint8Array
+      ? caml_string_of_uint8_array(content)
+      : base64
+        ? caml_string_of_base64(content)
+        : caml_string_of_jsbytes(content);
   return caml_create_file(name, content);
 }
 

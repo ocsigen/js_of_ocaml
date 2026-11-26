@@ -373,3 +373,22 @@ let%expect_test "filepath_exists" =
     /static/fpe/f/x: false
     |}]
 [@@if ocaml_version >= (5, 6, 0)]
+
+(* The host can create a file from a Uint8Array *)
+let%expect_test "globalThis.jsoo_create_file: Uint8Array" =
+  let content =
+    Js.Unsafe.new_obj
+      (Js.Unsafe.get Js.Unsafe.global (Js.string "Uint8Array"))
+      [| Js.Unsafe.inject (Js.array [| 0xff; 0x00; 0x80 |]) |]
+  in
+  let () =
+    Js.Unsafe.fun_call
+      (Js.Unsafe.get Js.Unsafe.global (Js.string "jsoo_create_file"))
+      [| Js.Unsafe.inject (Js.string "/static/host/f.bin"); Js.Unsafe.inject content |]
+  in
+  let c = open_in_bin "/static/host/f.bin" in
+  let s = really_input_string c (in_channel_length c) in
+  close_in c;
+  String.iter (fun c -> Printf.printf " %02x" (Char.code c)) s;
+  print_newline ();
+  [%expect {| ff 00 80 |}]
