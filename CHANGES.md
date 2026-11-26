@@ -151,7 +151,7 @@
   Float.Array.concat and recursive dummy allocations, and in JavaScript also
   for Float.Array.append, sub, create and make (#2594)
 * Runtime/JS: on Windows, the drive letter of a mount point is not case
-  sensitive
+  sensitive (#2660)
 
 ### Libraries
 * Toplevel: `js_of_ocaml-toplevel` depends on `js_of_ocaml-ppx`, so that
