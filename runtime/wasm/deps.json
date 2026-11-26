@@ -113,6 +113,15 @@
     "reaches": ["alloc_tm"]
   },
   {
+    "name": "fs_autoload",
+    "export": "caml_fs_autoload"
+  },
+  {
+    "name": "mount_autoload",
+    "import": ["bindings", "mount_autoload"],
+    "reaches": ["fs_autoload"]
+  },
+  {
     "name": "alloc_stat",
     "export": "caml_alloc_stat"
   },

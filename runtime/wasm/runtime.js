@@ -72,17 +72,6 @@
 
   const on_windows = isNode && globalThis.process.platform === "win32";
 
-  // Virtual filesystem for embedded files (e.g. CMIs for toplevel)
-  const virtual_files = new Map(); // path -> Uint8Array
-  const virtual_dirs = new Set(); // directory paths
-  const virtual_fds = new Map(); // fd -> { data, offset }
-  let next_virtual_fd = 1000000;
-
-  // The virtual filesystem uses "/" as path separator. On Windows, the
-  // program manipulates paths with "\" (Sys.os_type is "Win32"), so
-  // normalize paths on registration and before each lookup.
-  const virtual_path = on_windows ? (p) => p.replaceAll("\\", "/") : (p) => p;
-
   // Windows console device names (CON, CONIN$, CONOUT$). Node resolves a
   // relative path against the current directory and prefixes it with \\?\,
   // which turns off the recognition of device names, so they must reach it
@@ -94,21 +83,349 @@
       }
     : (p) => p;
 
-  function register_virtual_file(name, content) {
-    name = virtual_path(name);
-    virtual_files.set(name, content);
-    let dir = name;
-    while (true) {
-      const i = dir.lastIndexOf("/");
-      if (i <= 0) break;
-      dir = dir.slice(0, i);
-      virtual_dirs.add(dir);
+  // Pseudo filesystem, as in the JavaScript runtime: a table of mount
+  // points, each bound to a device. A device is either the real file
+  // system (node:fs, [dev] is null) or an in-memory file system. Under
+  // node, the root is the real file system; otherwise, it is in memory.
+  // There is always an in-memory device at /static/, which holds the
+  // embedded files. Sys_js.mount adds in-memory devices that load missing
+  // files through a callback.
+
+  const fs_errors = {
+    EPERM: [1, "operation not permitted"],
+    ENOENT: [2, "no such file or directory"],
+    EBADF: [9, "bad file descriptor"],
+    EBUSY: [16, "resource busy or locked"],
+    EEXIST: [17, "file already exists"],
+    EXDEV: [18, "cross-device link not permitted"],
+    ENOTDIR: [20, "not a directory"],
+    EISDIR: [21, "illegal operation on a directory"],
+    EINVAL: [22, "invalid argument"],
+    ENOTEMPTY: [39, "directory not empty"],
+  };
+
+  // Errors have the shape of the ones of node:fs, so that they are
+  // converted to Sys_error / Unix.Unix_error in the same way. The message
+  // of Sys_error is the one of the JavaScript runtime.
+  function fs_error(code, syscall, path) {
+    const [errno, msg] = fs_errors[code];
+    const e = new Error(`${code}: ${msg}, ${syscall} '${path}'`);
+    e.toString = () =>
+      code === "ENOENT" ? `${path}: No such file or directory` : e.message;
+    return Object.assign(e, { errno: -errno, code, syscall, path });
+  }
+
+  let next_ino = 1;
+
+  function mem_node(mode) {
+    const t = Date.now();
+    return { ino: next_ino++, mode, atimeMs: t, mtimeMs: t, ctimeMs: t };
+  }
+
+  const mem_dir = () => Object.assign(mem_node(0o777), { entries: new Map() });
+
+  const mem_file = (data, mode) =>
+    Object.assign(mem_node(mode), { data, size: data.length });
+
+  function mem_resize(n, size) {
+    if (size > n.data.length) {
+      const data = new Uint8Array(Math.max(size, 2 * n.data.length));
+      data.set(n.data.subarray(0, n.size));
+      n.data = data;
+    } else if (size < n.size) n.data.fill(0, size, n.size);
+    n.size = size;
+    n.mtimeMs = n.ctimeMs = Date.now();
+  }
+
+  function mem_stat(n) {
+    const d = !!n.entries;
+    return {
+      isFile: () => !d,
+      isDirectory: () => d,
+      dev: 0,
+      ino: n.ino,
+      mode: n.mode,
+      nlink: 1,
+      uid: 1,
+      gid: 1,
+      rdev: 0,
+      size: d ? 0 : n.size,
+      atimeMs: n.atimeMs,
+      mtimeMs: n.mtimeMs,
+      ctimeMs: n.ctimeMs,
+    };
+  }
+
+  // In the methods below, [parts] is the path relative to the root of the
+  // device, split into components, and [p] is the path given by the
+  // program, for error reporting.
+  class MemDevice {
+    constructor(autoload) {
+      this.root = mem_dir();
+      this.autoload = autoload;
     }
+    find(parts, sc, p, len = parts.length) {
+      let n = this.root;
+      for (let i = 0; n && i < len; i++) {
+        if (!n.entries) throw fs_error("ENOTDIR", sc, p);
+        n = n.entries.get(parts[i]);
+      }
+      return n;
+    }
+    // Create a file and the missing parent directories
+    register(parts, data, sc, p) {
+      let d = this.root;
+      const name = parts.at(-1);
+      for (let i = 0; i < parts.length - 1; i++) {
+        let n = d.entries.get(parts[i]);
+        if (!n) d.entries.set(parts[i], (n = mem_dir()));
+        if (!n.entries) throw fs_error("ENOTDIR", sc, p);
+        d = n;
+      }
+      if (name === undefined || d.entries.has(name))
+        throw fs_error("EEXIST", sc, p);
+      const n = mem_file(data, 0o666);
+      d.entries.set(name, n);
+      return n;
+    }
+    lookup(parts, sc, p) {
+      const n = this.find(parts, sc, p);
+      if (n || !this.autoload || !parts.length) return n;
+      const data = this.autoload(parts.join("/"));
+      return data ? this.register(parts, data, sc, p) : undefined;
+    }
+    get(parts, sc, p) {
+      const n = this.lookup(parts, sc, p);
+      if (!n) throw fs_error("ENOENT", sc, p);
+      return n;
+    }
+    get_dir(parts, sc, p) {
+      const n = this.get(parts, sc, p);
+      if (!n.entries) throw fs_error("ENOTDIR", sc, p);
+      return n;
+    }
+    get_file(parts, sc, p) {
+      const n = this.get(parts, sc, p);
+      if (n.entries) throw fs_error("EISDIR", sc, p);
+      return n;
+    }
+    parent(parts, sc, p) {
+      // The root of a device can be neither created, removed nor renamed
+      if (!parts.length) throw fs_error("EBUSY", sc, p);
+      const d = this.find(parts, sc, p, parts.length - 1);
+      if (!d) throw fs_error("ENOENT", sc, p);
+      if (!d.entries) throw fs_error("ENOTDIR", sc, p);
+      return d;
+    }
+    exists(parts) {
+      try {
+        return this.lookup(parts) ? 1 : 0;
+      } catch (e) {
+        if (e.code === "ENOTDIR") return 0;
+        throw e;
+      }
+    }
+    open(parts, flags, perm, p) {
+      let n = this.lookup(parts, "open", p);
+      if (n) {
+        if (n.entries) throw fs_error("EISDIR", "open", p);
+        if ((flags & 80) === 80) throw fs_error("EEXIST", "open", p);
+        if (flags & 32) mem_resize(n, 0);
+      } else {
+        if (!(flags & 16)) throw fs_error("ENOENT", "open", p);
+        const d = this.parent(parts, "open", p);
+        n = mem_file(new Uint8Array(0), perm & 0o7777);
+        d.entries.set(parts.at(-1), n);
+      }
+      const fd = next_mem_fd++;
+      mem_fds.set(fd, { node: n, pos: 0, flags });
+      return fd;
+    }
+    mkdir(parts, mode, p) {
+      if (this.lookup(parts, "mkdir", p)) throw fs_error("EEXIST", "mkdir", p);
+      const n = mem_dir();
+      n.mode = mode & 0o7777;
+      this.parent(parts, "mkdir", p).entries.set(parts.at(-1), n);
+    }
+    rmdir(parts, p) {
+      const n = this.get_dir(parts, "rmdir", p);
+      if (n.entries.size) throw fs_error("ENOTEMPTY", "rmdir", p);
+      this.parent(parts, "rmdir", p).entries.delete(parts.at(-1));
+    }
+    unlink(parts, p) {
+      this.get_file(parts, "unlink", p);
+      this.parent(parts, "unlink", p).entries.delete(parts.at(-1));
+    }
+    link(parts, new_parts, p) {
+      const n = this.get(parts, "link", p);
+      if (n.entries) throw fs_error("EPERM", "link", p);
+      const d = this.parent(new_parts, "link", p);
+      if (d.entries.has(new_parts.at(-1))) throw fs_error("EEXIST", "link", p);
+      d.entries.set(new_parts.at(-1), n);
+    }
+    rename(parts, new_parts, o, p) {
+      const n = this.get(parts, "rename", o);
+      const d = this.parent(parts, "rename", o);
+      if (
+        n.entries &&
+        new_parts.length > parts.length &&
+        parts.every((c, i) => c === new_parts[i])
+      )
+        throw fs_error("EINVAL", "rename", p);
+      const new_d = this.parent(new_parts, "rename", p);
+      const old = new_d.entries.get(new_parts.at(-1));
+      if (old === n) return;
+      if (old) {
+        if (n.entries) {
+          if (!old.entries) throw fs_error("ENOTDIR", "rename", p);
+          if (old.entries.size) throw fs_error("ENOTEMPTY", "rename", p);
+        } else if (old.entries) throw fs_error("EISDIR", "rename", p);
+      }
+      d.entries.delete(parts.at(-1));
+      new_d.entries.set(new_parts.at(-1), n);
+    }
+    opendir(parts, p) {
+      const names = [...this.get_dir(parts, "opendir", p).entries.keys()];
+      let i = 0;
+      const check = (sc) => {
+        if (i < 0) throw fs_error("EBADF", sc, p);
+      };
+      return {
+        readSync: () => {
+          check("readdir");
+          return i < names.length ? { name: names[i++] } : null;
+        },
+        closeSync: () => {
+          check("closedir");
+          i = -1;
+        },
+      };
+    }
+  }
+
+  const mem_fds = new Map(); // fd -> { node, pos, flags }
+  let next_mem_fd = 1000000;
+
+  function mem_fd(fd, sc) {
+    const f = mem_fds.get(fd);
+    // Without node, all the files are in memory
+    if (!f && !fs) throw fs_error("EBADF", sc, fd);
+    return f;
+  }
+
+  function mem_read(f, b, o, l, p) {
+    if (f.flags & 2) throw fs_error("EBADF", "read", "");
+    const pos = p == null ? f.pos : Number(p);
+    const n = Math.max(0, Math.min(l, f.node.size - pos));
+    b.set(f.node.data.subarray(pos, pos + n), o);
+    f.pos = pos + n;
+    return n;
+  }
+
+  function mem_write(f, b, o, l, p) {
+    if (!(f.flags & 6)) throw fs_error("EBADF", "write", "");
+    if (typeof b === "string") {
+      b = encoder.encode(b);
+      o = 0;
+      l = b.length;
+    }
+    const n = f.node;
+    const pos = f.flags & 8 ? n.size : p == null ? f.pos : Number(p);
+    if (pos + l > n.size) mem_resize(n, pos + l);
+    n.data.set(b.subarray(o, o + l), pos);
+    n.mtimeMs = n.ctimeMs = Date.now();
+    f.pos = pos + l;
+    return l;
+  }
+
+  // The mount points. On Windows, a path either starts with a drive
+  // ([C:/lib]) or has none: [/static/...] is not resolved against the
+  // current drive, as in the JavaScript runtime.
+  const mounts = [];
+
+  function mount(path, dev) {
+    const parts = split_path(path);
+    if (!parts) throw new Error(`${path}: cannot mount`);
+    const m = { path: join_path(parts, 1), parts, dev };
+    mounts.push(m);
+    return m;
+  }
+
+  // The current directory, when it is in an in-memory device
+  let mem_cwd = isNode ? null : "/static";
+
+  const getcwd = () => mem_cwd ?? globalThis.process.cwd();
+
+  // Absolute path, split into components. On Windows, the drive, if any,
+  // is the first component, in upper case ("C:"). Returns null for the
+  // Windows paths which always belong to the real file system: UNC paths
+  // (//server/share/...) and device paths (//./..., //?/...).
+  function split_path(p) {
+    if (on_windows) p = p.replaceAll("\\", "/");
+    if (!(p.startsWith("/") || (on_windows && /^[a-zA-Z]:\//.test(p)))) {
+      const cwd = getcwd();
+      p = `${on_windows ? cwd.replaceAll("\\", "/") : cwd}/${p}`;
+    }
+    const parts = [];
+    if (on_windows) {
+      if (p.startsWith("//")) return null;
+      if (p[1] === ":") {
+        parts.push(p.slice(0, 2).toUpperCase());
+        p = p.slice(2);
+      }
+    }
+    const root = parts.length;
+    for (const c of p.split("/")) {
+      if (c === "..") {
+        if (parts.length > root) parts.pop();
+      } else if (c !== "" && c !== ".") parts.push(c);
+    }
+    return parts;
+  }
+
+  // The inverse of split_path, possibly with a trailing slash
+  function join_path(parts, slash) {
+    const drive = on_windows && /^[A-Z]:$/.test(parts[0]);
+    const s = (drive ? "" : "/") + parts.join("/");
+    return s.endsWith("/") || !(slash || (drive && parts.length === 1))
+      ? s
+      : `${s}/`;
+  }
+
+  // Find the device a path belongs to (the longest mount point which is a
+  // prefix of the path). Returns undefined for the real file system.
+  function resolve(p, sc) {
+    if (p === "") {
+      if (fs) return;
+      throw fs_error("ENOENT", sc, p);
+    }
+    const parts = split_path(p);
+    if (!parts) return;
+    let res;
+    for (const m of mounts) {
+      if (
+        (!res || m.parts.length > res.parts.length) &&
+        m.parts.length <= parts.length &&
+        m.parts.every((c, i) => c === parts[i])
+      )
+        res = m;
+    }
+    if (res?.dev) return { dev: res.dev, parts: parts.slice(res.parts.length) };
+    if (!fs) throw fs_error("ENOENT", sc, p);
+  }
+
+  mount("/", fs ? null : new MemDevice());
+  mount("/static", new MemDevice());
+
+  function register_file(name, content) {
+    const r = resolve(name, "open");
+    if (!r) throw new Error(`${name}: cannot register file`);
+    r.dev.register(r.parts, content, "open", name);
   }
 
   if (args.files) {
     for (const [name, data] of Object.entries(args.files)) {
-      register_virtual_file(
+      register_file(
         name,
         Uint8Array.from(atob(data), (c) => c.charCodeAt(0)),
       );
@@ -630,18 +947,17 @@
     mktime: (year, month, day, h, m, s) =>
       new Date(year, month, day, h, m, s).getTime(),
     random_seed: () => crypto.getRandomValues(new Int32Array(12)),
-    access: (p, flags) =>
+    access: (p, flags) => {
+      const r = resolve(p, "access");
+      if (r) return void r.dev.get(r.parts, "access", p);
       fs.accessSync(
         p,
         access_flags.reduce((f, v, i) => (flags & (1 << i) ? f | v : f), 0),
-      ),
+      );
+    },
     open: (p, flags, perm) => {
-      const vp = virtual_path(p);
-      if (virtual_files.has(vp) && !(flags & 2)) {
-        const fd = next_virtual_fd++;
-        virtual_fds.set(fd, { data: virtual_files.get(vp), offset: 0 });
-        return fd;
-      }
+      const r = resolve(p, "open");
+      if (r) return r.dev.open(r.parts, flags, perm, p);
       return fs.openSync(
         console_name(p),
         open_flags.reduce((f, v, i) => (flags & (1 << i) ? f | v : f), 0),
@@ -649,36 +965,31 @@
       );
     },
     close: (fd) => {
-      if (virtual_fds.has(fd)) {
-        virtual_fds.delete(fd);
-        return;
-      }
-      fs.closeSync(fd);
+      if (mem_fds.delete(fd)) return;
+      // Without node, there is nothing to do for the standard channels
+      if (fs) fs.closeSync(fd);
+      else if (fd > 2) throw fs_error("EBADF", "close", fd);
     },
-    write: (fd, b, o, l, p) =>
-      fs
+    write: (fd, b, o, l, p) => {
+      const f = mem_fds.get(fd);
+      if (f) return mem_write(f, b, o, l, p);
+      return fs
         ? fs.writeSync(fd, b, o, l, p === null ? p : Number(p))
         : (console[fd === 2 ? "error" : "log"](
             typeof b === "string" ? b : decoder.decode(b.slice(o, o + l)),
           ),
-          l),
-    read: (fd, b, o, l, p) => {
-      const vf = virtual_fds.get(fd);
-      if (vf) {
-        const pos = p === null ? vf.offset : Number(p);
-        const n = Math.min(l, vf.data.length - pos);
-        if (n <= 0) return 0;
-        b.set(vf.data.subarray(pos, pos + n), o);
-        vf.offset = pos + n;
-        return n;
-      }
-      return fs.readSync(fd, b, o, l, p);
+          l);
     },
-    fsync: (fd) => fs.fsyncSync(fd),
+    read: (fd, b, o, l, p) => {
+      const f = mem_fd(fd, "read");
+      return f ? mem_read(f, b, o, l, p) : fs.readSync(fd, b, o, l, p);
+    },
+    fsync: (fd) => {
+      if (!mem_fd(fd, "fsync")) fs.fsyncSync(fd);
+    },
     file_size: (fd) => {
-      const vf = virtual_fds.get(fd);
-      if (vf) return BigInt(vf.data.length);
-      return fs.fstatSync(fd, { bigint: true }).size;
+      const f = mem_fd(fd, "fstat");
+      return f ? BigInt(f.node.size) : fs.fstatSync(fd, { bigint: true }).size;
     },
     register_channel,
     unregister_channel,
@@ -718,36 +1029,60 @@
     getegid: () =>
       globalThis.process?.getegid ? globalThis.process.getegid() : 1,
     time: () => performance.now(),
-    getcwd: () => (isNode ? globalThis.process.cwd() : "/static"),
-    chdir: (x) => globalThis.process.chdir(x),
-    mkdir: (p, m) => fs.mkdirSync(p, m),
-    rmdir: (p) => fs.rmdirSync(p),
-    link: (d, s) => fs.linkSync(d, s),
-    symlink: (t, p, kind) => fs.symlinkSync(t, p, [null, "file", "dir"][kind]),
-    readlink: (p) => fs.readlinkSync(p),
-    unlink: (p) => fs.unlinkSync(p),
+    getcwd,
+    chdir: (p) => {
+      const r = resolve(p, "chdir");
+      if (r) {
+        r.dev.get_dir(r.parts, "chdir", p);
+        mem_cwd = join_path(split_path(p));
+      } else {
+        globalThis.process.chdir(p);
+        mem_cwd = null;
+      }
+    },
+    mkdir: (p, m) => {
+      const r = resolve(p, "mkdir");
+      return r ? r.dev.mkdir(r.parts, m, p) : fs.mkdirSync(p, m);
+    },
+    rmdir: (p) => {
+      const r = resolve(p, "rmdir");
+      return r ? r.dev.rmdir(r.parts, p) : fs.rmdirSync(p);
+    },
+    link: (d, s) => {
+      const r = resolve(d, "link");
+      const r2 = resolve(s, "link");
+      if (r?.dev !== r2?.dev) throw fs_error("EXDEV", "link", s);
+      return r ? r.dev.link(r.parts, r2.parts, s) : fs.linkSync(d, s);
+    },
+    symlink: (t, p, kind) => {
+      // No symbolic link in the in-memory devices
+      if (resolve(p, "symlink")) throw fs_error("EPERM", "symlink", p);
+      fs.symlinkSync(t, p, [null, "file", "dir"][kind]);
+    },
+    readlink: (p) => {
+      const r = resolve(p, "readlink");
+      if (!r) return fs.readlinkSync(p);
+      r.dev.get(r.parts, "readlink", p);
+      throw fs_error("EINVAL", "readlink", p);
+    },
+    unlink: (p) => {
+      const r = resolve(p, "unlink");
+      return r ? r.dev.unlink(r.parts, p) : fs.unlinkSync(p);
+    },
     read_dir: (p) => {
-      const vp = virtual_path(p);
-      const prefix = vp.endsWith("/") ? vp : vp + "/";
-      const entries = new Set();
-      for (const name of virtual_files.keys()) {
-        if (name.startsWith(prefix)) {
-          const rest = name.slice(prefix.length);
-          const slash = rest.indexOf("/");
-          entries.add(slash < 0 ? rest : rest.slice(0, slash));
-        }
-      }
-      if (fs) {
-        try {
-          for (const e of fs.readdirSync(p)) entries.add(e);
-        } catch (e) {
-          if (entries.size === 0) throw e;
-        }
-      }
-      return [...entries];
+      const r = resolve(p, "scandir");
+      return r
+        ? [...r.dev.get_dir(r.parts, "scandir", p).entries.keys()]
+        : fs.readdirSync(p);
     },
     // node's Dir.readSync does not report "." and ".."; native does
-    opendir: (p) => ({ dir: fs.opendirSync(p), dots: [".", ".."] }),
+    opendir: (p) => {
+      const r = resolve(p, "opendir");
+      return {
+        dir: r ? r.dev.opendir(r.parts, p) : fs.opendirSync(p),
+        dots: [".", ".."],
+      };
+    },
     readdir: (d) => {
       if (d.dots.length > 0) return d.dots.shift();
       var n = d.dir.readSync()?.name;
@@ -757,20 +1092,43 @@
       d.dots = []; // a read on the closed handle must fail, not return "." / ".."
       d.dir.closeSync();
     },
-    stat: (p, l) => alloc_stat(fs.statSync(p), l),
-    lstat: (p, l) => alloc_stat(fs.lstatSync(p), l),
-    fstat: (fd, l) => alloc_stat(fs.fstatSync(fd), l),
-    chmod: (p, perms) => fs.chmodSync(p, perms),
-    fchmod: (p, perms) => fs.fchmodSync(p, perms),
+    stat: (p, l) => {
+      const r = resolve(p, "stat");
+      return alloc_stat(
+        r ? mem_stat(r.dev.get(r.parts, "stat", p)) : fs.statSync(p),
+        l,
+      );
+    },
+    lstat: (p, l) => {
+      const r = resolve(p, "lstat");
+      return alloc_stat(
+        r ? mem_stat(r.dev.get(r.parts, "lstat", p)) : fs.lstatSync(p),
+        l,
+      );
+    },
+    fstat: (fd, l) => {
+      const f = mem_fd(fd, "fstat");
+      return alloc_stat(f ? mem_stat(f.node) : fs.fstatSync(fd), l);
+    },
+    chmod: (p, perms) => {
+      const r = resolve(p, "chmod");
+      if (r) r.dev.get(r.parts, "chmod", p).mode = perms & 0o7777;
+      else fs.chmodSync(p, perms);
+    },
+    fchmod: (fd, perms) => {
+      const f = mem_fd(fd, "fchmod");
+      if (f) f.node.mode = perms & 0o7777;
+      else fs.fchmodSync(fd, perms);
+    },
     file_exists: (p) => {
-      const vp = virtual_path(p);
-      if (virtual_files.has(vp) || virtual_dirs.has(vp)) return 1;
-      return fs ? +fs.existsSync(p) : 0;
+      if (!fs && p === "") return 0;
+      const r = resolve(p);
+      return r ? r.dev.exists(r.parts) : +fs.existsSync(p);
     },
     filepath_exists: (p) => {
-      const vp = virtual_path(p);
-      if (virtual_files.has(vp) || virtual_dirs.has(vp)) return 1;
-      if (!fs) return 0;
+      if (!fs && p === "") return 0;
+      const r = resolve(p);
+      if (r) return r.dev.exists(r.parts);
       try {
         fs.statSync(p);
         return 1;
@@ -779,24 +1137,43 @@
         throw e;
       }
     },
+    // Follow symlinks, like native and the JS runtime (statSync, not lstat).
     is_directory: (p) => {
-      const vp = virtual_path(p);
-      if (virtual_dirs.has(vp)) return 1;
-      if (virtual_files.has(vp)) return 0;
-      // Follow symlinks, like native and the JS runtime (statSync, not lstat).
-      return +fs.statSync(p).isDirectory();
+      const r = resolve(p, "stat");
+      return r
+        ? +!!r.dev.get(r.parts, "stat", p).entries
+        : +fs.statSync(p).isDirectory();
     },
     is_file: (p) => {
-      const vp = virtual_path(p);
-      if (virtual_files.has(vp)) return 1;
-      if (virtual_dirs.has(vp)) return 0;
-      // Follow symlinks, like native and the JS runtime (statSync, not lstat).
-      return +fs.statSync(p).isFile();
+      const r = resolve(p, "stat");
+      return r
+        ? +!r.dev.get(r.parts, "stat", p).entries
+        : +fs.statSync(p).isFile();
     },
-    utimes: (p, a, m) => fs.utimesSync(p, a, m),
-    truncate: (p, l) => fs.truncateSync(p, l),
-    ftruncate: (fd, l) => fs.ftruncateSync(fd, l),
+    utimes: (p, a, m) => {
+      const r = resolve(p, "utime");
+      if (!r) return fs.utimesSync(p, a, m);
+      const n = r.dev.get(r.parts, "utime", p);
+      n.atimeMs = a * 1000;
+      n.mtimeMs = m * 1000;
+    },
+    truncate: (p, l) => {
+      const r = resolve(p, "open");
+      if (!r) return fs.truncateSync(p, l);
+      if (l < 0) throw fs_error("EINVAL", "truncate", p);
+      mem_resize(r.dev.get_file(r.parts, "open", p), l);
+    },
+    ftruncate: (fd, l) => {
+      const f = mem_fd(fd, "ftruncate");
+      if (!f) return fs.ftruncateSync(fd, l);
+      if (l < 0 || !(f.flags & 6)) throw fs_error("EINVAL", "ftruncate", "");
+      mem_resize(f.node, l);
+    },
     rename: (o, n) => {
+      const r = resolve(o, "rename");
+      const r2 = resolve(n, "rename");
+      if (r?.dev !== r2?.dev) throw fs_error("EXDEV", "rename", n);
+      if (r) return r.dev.rename(r.parts, r2.parts, o, n);
       var n_stat;
       if (
         on_windows &&
@@ -822,7 +1199,7 @@
       }
       fs.renameSync(o, n);
     },
-    tmpdir: () => require("node:os").tmpdir(),
+    tmpdir: () => (isNode ? require("node:os").tmpdir() : "/tmp"),
     start_fiber: (x) => start_fiber(x),
     suspend_fiber: make_suspending((f, env) => new Promise((k) => f(k, env))),
     resume_fiber: (k, v) => k(v),
@@ -903,8 +1280,33 @@
       const names = decoder.decode(entries.link_order).split("\x00");
       for (const name of names) inst.exports[name + ".init"]();
     },
-    register_file: (name, data) => register_virtual_file(name, data),
-    read_file: (name) => virtual_files.get(virtual_path(name)) ?? null,
+    register_file,
+    read_file: (name) => {
+      const r = resolve(name, "open");
+      if (r) {
+        const n = r.dev.lookup(r.parts, "open", name);
+        return n?.data ? n.data.subarray(0, n.size) : null;
+      }
+      return fs.statSync(name, { throwIfNoEntry: false })?.isFile()
+        ? fs.readFileSync(name)
+        : null;
+    },
+    mount_autoload: (path, f) => {
+      const m = mount(
+        path,
+        new MemDevice((name) => caml_fs_autoload(f, m.path, name)),
+      );
+    },
+    unmount: (path) => {
+      const parts = split_path(path);
+      const i = mounts.findLastIndex(
+        (m) =>
+          m.parts.length === parts?.length &&
+          m.parts.every((c, i) => c === parts[i]),
+      );
+      if (i >= 0) mounts.splice(i, 1);
+    },
+    mount_points: () => mounts.map((m) => m.path).reverse(),
   };
   const string_ops = {
     test: (v) => +(typeof v === "string"),
@@ -1037,6 +1439,7 @@
     caml_alloc_times,
     caml_alloc_tm,
     caml_alloc_stat,
+    caml_fs_autoload,
     caml_start_fiber,
     caml_handle_uncaught_exception,
     caml_buffer,

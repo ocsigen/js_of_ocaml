@@ -273,7 +273,8 @@ let%expect_test "double close" =
   | Sys_error _ -> print_endline "Sys_error");
   [%expect {| EBADF |}]
 
-let%expect_test "register bytes content" =
+(* [jsoo_create_file] is a primitive of the JavaScript runtime only *)
+let%expect_test ("register bytes content" [@when js]) =
   jsoo_create_file "/static/bin.dat" (Bytes.of_string "\xff\x00\x80a");
   let c = open_in_bin "/static/bin.dat" in
   let s = In_channel.input_all c in
@@ -373,3 +374,203 @@ let%expect_test "filepath_exists" =
     /static/fpe/f/x: false
     |}]
 [@@if ocaml_version >= (5, 6, 0)]
+
+(* The pseudo filesystem: same behavior with js_of_ocaml and wasm_of_ocaml *)
+
+let read_all name =
+  let c = open_in_bin name in
+  let s = really_input_string c (in_channel_length c) in
+  close_in c;
+  s
+
+let sorted a =
+  let l = Array.to_list a in
+  String.concat " " (List.sort compare l)
+
+let%expect_test "mount: files are loaded on demand" =
+  Sys_js.mount ~path:"/lazy/" (fun ~prefix ~path ->
+      Printf.printf "load %s %s\n" prefix path;
+      if String.equal path "missing" then None else Some ("<" ^ path ^ ">"));
+  print_endline (read_all "/lazy/a/b.txt");
+  [%expect {|
+    load /lazy/ a/b.txt
+    <a/b.txt>
+    |}];
+  (* Loaded only once *)
+  print_endline (read_all "/lazy/a/b.txt");
+  print_endline (Sys_js.read_file ~name:"/lazy/a/b.txt");
+  Printf.printf "%b %b\n" (Sys.is_directory "/lazy/a") (Sys.is_directory "/lazy/a/b.txt");
+  print_endline (sorted (Sys.readdir "/lazy/a"));
+  [%expect {|
+    <a/b.txt>
+    <a/b.txt>
+    true false
+    b.txt
+    |}];
+  Printf.printf "%b\n" (Sys.file_exists "/lazy/missing");
+  (try ignore (open_in "/lazy/missing") with Sys_error m -> print_endline m);
+  [%expect
+    {|
+    load /lazy/ missing
+    false
+    load /lazy/ missing
+    /lazy/missing: No such file or directory
+    |}];
+  Printf.printf "%b\n" (List.mem "/lazy/" (Sys_js.mount_point ()));
+  Sys_js.unmount ~path:"/lazy/";
+  Printf.printf "%b\n" (List.mem "/lazy/" (Sys_js.mount_point ()));
+  [%expect {|
+    true
+    false
+    |}]
+
+let%expect_test "create_file, update_file, read_file" =
+  Sys_js.create_file ~name:"/static/reg/x.txt" ~content:"abc";
+  print_endline (Sys_js.read_file ~name:"/static/reg/x.txt");
+  Sys_js.update_file ~name:"/static/reg/x.txt" ~content:"defgh";
+  print_endline (read_all "/static/reg/x.txt");
+  print_endline (sorted (Sys.readdir "/static/reg"));
+  (try ignore (Sys_js.read_file ~name:"/static/reg/y.txt")
+   with Sys_error m -> print_endline m);
+  [%expect
+    {|
+    abc
+    defgh
+    x.txt
+    /static/reg/y.txt: No such file or directory
+    |}]
+
+let%expect_test "write, seek, append, truncate" =
+  let name = "/static/rw.bin" in
+  let c = open_out_bin name in
+  output_string c "0123456789";
+  seek_out c 2;
+  output_string c "ab";
+  close_out c;
+  print_endline (read_all name);
+  let c = open_out_gen [ Open_wronly; Open_append ] 0o666 name in
+  output_string c "XY";
+  close_out c;
+  print_endline (read_all name);
+  let c = open_in_bin name in
+  seek_in c 8;
+  print_endline (really_input_string c 4);
+  close_in c;
+  Unix.truncate name 3;
+  print_endline (read_all name);
+  (* A removed file can still be read through an open channel *)
+  let c = open_in_bin name in
+  Sys.remove name;
+  Printf.printf "%b %s\n" (Sys.file_exists name) (really_input_string c 3);
+  close_in c;
+  [%expect {|
+    01ab456789
+    01ab456789XY
+    89XY
+    01a
+    false 01a
+    |}]
+
+let%expect_test "directories" =
+  Sys.mkdir "/static/d1" 0o777;
+  Sys.mkdir "/static/d1/d2" 0o777;
+  close_out (open_out "/static/d1/f");
+  print_endline (sorted (Sys.readdir "/static/d1"));
+  (try Sys.rmdir "/static/d1" with Sys_error _ -> print_endline "not empty");
+  (try Sys.mkdir "/static/d1/d2" 0o777 with Sys_error _ -> print_endline "exists");
+  Sys.rename "/static/d1/f" "/static/d1/d2/g";
+  Sys.rename "/static/d1/d2" "/static/d1/d3";
+  print_endline (sorted (Sys.readdir "/static/d1"));
+  print_endline (sorted (Sys.readdir "/static/d1/d3"));
+  let h = Unix.opendir "/static/d1" in
+  let rec loop acc =
+    match Unix.readdir h with
+    | e -> loop (e :: acc)
+    | exception End_of_file -> acc
+  in
+  print_endline (String.concat " " (List.sort compare (loop [])));
+  Unix.closedir h;
+  Sys.remove "/static/d1/d3/g";
+  Sys.rmdir "/static/d1/d3";
+  Sys.rmdir "/static/d1";
+  Printf.printf "%b\n" (Sys.file_exists "/static/d1");
+  [%expect {|
+    d2 f
+    not empty
+    exists
+    d3
+    g
+    . .. d3
+    false
+    |}]
+
+let%expect_test "relative paths" =
+  let cwd = Sys.getcwd () in
+  Sys.mkdir "/static/cd" 0o777;
+  Sys.chdir "/static/cd";
+  close_out (open_out "rel");
+  Printf.printf
+    "%b %b\n"
+    (Sys.file_exists "/static/cd/rel")
+    (Sys.file_exists "../cd/./rel");
+  Sys.chdir cwd;
+  Printf.printf "%b\n" (Sys.file_exists "rel");
+  [%expect {|
+    true true
+    false
+    |}]
+
+(* The in-memory file system of the JavaScript runtime does not implement
+   [Unix.stat], and creates the missing parent directories when opening a
+   file. *)
+let%expect_test ("stat, missing parent directory" [@when not js]) =
+  let name = "/static/st.txt" in
+  let c = open_out name in
+  output_string c "hello";
+  close_out c;
+  let st = Unix.stat name in
+  Printf.printf "%d %b\n" st.Unix.st_size (st.Unix.st_kind = Unix.S_REG);
+  Unix.chmod name 0o600;
+  Printf.printf "0o%o\n" (Unix.stat name).Unix.st_perm;
+  Printf.printf "%b\n" ((Unix.lstat "/static").Unix.st_kind = Unix.S_DIR);
+  (try close_out (open_out "/static/nodir/f") with Sys_error m -> print_endline m);
+  (try ignore (Unix.stat "/static/st.txt/x")
+   with Unix.Unix_error (e, cmd, p) -> Printf.printf "%s %s %s\n" (unix_error e) cmd p);
+  [%expect
+    {|
+    5 true
+    0o600
+    true
+    /static/nodir/f: No such file or directory
+    ENOTDIR stat /static/st.txt/x
+    |}]
+
+(* On Windows, a mount point can be on a drive. The drive letter is not case
+   sensitive. *)
+let%expect_test ("mount on a Windows drive" [@when not js]) =
+  if Sys.win32
+  then begin
+    Sys_js.mount ~path:"c:\\jsoo_vfs" (fun ~prefix ~path -> Some (prefix ^ path));
+    print_endline (read_all "C:/jsoo_vfs/a/b");
+    print_endline (read_all "c:\\jsoo_vfs\\c");
+    Printf.printf "%b\n" (List.mem "C:/jsoo_vfs/" (Sys_js.mount_point ()));
+    let cwd = Sys.getcwd () in
+    Sys.chdir "C:/jsoo_vfs/a";
+    print_endline (Sys.getcwd ());
+    print_endline (read_all "..\\d");
+    Sys.chdir cwd;
+    Sys_js.unmount ~path:"C:/jsoo_vfs/";
+    Printf.printf "%b\n" (List.mem "C:/jsoo_vfs/" (Sys_js.mount_point ()))
+  end
+  else
+    print_string
+      "C:/jsoo_vfs/a/b\nC:/jsoo_vfs/c\ntrue\nC:/jsoo_vfs/a\nC:/jsoo_vfs/d\nfalse\n";
+  [%expect
+    {|
+    C:/jsoo_vfs/a/b
+    C:/jsoo_vfs/c
+    true
+    C:/jsoo_vfs/a
+    C:/jsoo_vfs/d
+    false
+    |}]

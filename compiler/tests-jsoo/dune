@@ -175,10 +175,10 @@
  (preprocess
   (pps ppx_devtools-expect)))
 
-; test_sys drives the jsoo fake filesystem (Sys_js, jsoo_create_file, Unix) under
-; the /static mount, which only exists on the JavaScript runtime, so it is
-; js-only (never wasm, native or WASI). It also needs OCaml >= 5, gated in the
-; source as a floating [@@@if] (hence ppx_devtools-optcomp).
+; test_sys drives the pseudo filesystem (Sys_js, jsoo_create_file, Unix) under
+; the /static mount, which only exists on the JavaScript and Wasm runtimes, so
+; it runs on js and wasm (never native or WASI). It also needs OCaml >= 5, gated
+; in the source as a floating [@@@if] (hence ppx_devtools-optcomp).
 
 (library
  (name jsoo_testsuite_sys)
@@ -189,7 +189,7 @@
  (inline_tests
   (deps
    (sandbox preserve_file_kind))
-  (modes js))
+  (modes js wasm))
  (preprocess
   (pps ppx_devtools-optcomp ppx_devtools-expect)))
 
