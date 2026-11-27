@@ -23,13 +23,13 @@ include
     let rec (int_list_of_json : Deriving_Json_lexer.lexbuf -> int_list) =
       fun buf ->
         Deriving_Json.read_list (fun buf -> Deriving_Json.Json_int.read buf)
-          buf[@@ocaml.warning "-39"]
+          buf[@@ocaml.warning "-unused-rec-flag"]
     let _ = int_list_of_json
     let rec (int_list_to_json : Buffer.t -> int_list -> unit) =
       fun buf a ->
         Deriving_Json.write_list
           (fun buf a -> Deriving_Json.Json_int.write buf a) buf a[@@ocaml.warning
-                                                                   "-39"]
+                                                                   "-unused-rec-flag"]
     let _ = int_list_to_json
     let (int_list_json : int_list Deriving_Json.t) =
       Deriving_Json.make int_list_to_json int_list_of_json
@@ -52,13 +52,13 @@ include
     let rec (int_ref_of_json : Deriving_Json_lexer.lexbuf -> int_ref) =
       fun buf ->
         Deriving_Json.read_ref (fun buf -> Deriving_Json.Json_int.read buf)
-          buf[@@ocaml.warning "-39"]
+          buf[@@ocaml.warning "-unused-rec-flag"]
     let _ = int_ref_of_json
     let rec (int_ref_to_json : Buffer.t -> int_ref -> unit) =
       fun buf a ->
         Deriving_Json.write_ref
           (fun buf a -> Deriving_Json.Json_int.write buf a) buf a[@@ocaml.warning
-                                                                   "-39"]
+                                                                   "-unused-rec-flag"]
     let _ = int_ref_to_json
     let (int_ref_json : int_ref Deriving_Json.t) =
       Deriving_Json.make int_ref_to_json int_ref_of_json
@@ -82,13 +82,13 @@ include
       fun buf ->
         Deriving_Json.read_option
           (fun buf -> Deriving_Json.Json_int.read buf) buf[@@ocaml.warning
-                                                            "-39"]
+                                                            "-unused-rec-flag"]
     let _ = int_option_of_json
     let rec (int_option_to_json : Buffer.t -> int_option -> unit) =
       fun buf a ->
         Deriving_Json.write_option
           (fun buf a -> Deriving_Json.Json_int.write buf a) buf a[@@ocaml.warning
-                                                                   "-39"]
+                                                                   "-unused-rec-flag"]
     let _ = int_option_to_json
     let (int_option_json : int_option Deriving_Json.t) =
       Deriving_Json.make int_option_to_json int_option_of_json
@@ -111,13 +111,13 @@ include
     let rec (int_array_of_json : Deriving_Json_lexer.lexbuf -> int_array) =
       fun buf ->
         Deriving_Json.read_array (fun buf -> Deriving_Json.Json_int.read buf)
-          buf[@@ocaml.warning "-39"]
+          buf[@@ocaml.warning "-unused-rec-flag"]
     let _ = int_array_of_json
     let rec (int_array_to_json : Buffer.t -> int_array -> unit) =
       fun buf a ->
         Deriving_Json.write_array
           (fun buf a -> Deriving_Json.Json_int.write buf a) buf a[@@ocaml.warning
-                                                                   "-39"]
+                                                                   "-unused-rec-flag"]
     let _ = int_array_to_json
     let (int_array_json : int_array Deriving_Json.t) =
       Deriving_Json.make int_array_to_json int_array_of_json
@@ -146,7 +146,7 @@ include
          Deriving_Json_lexer.read_comma buf;
          (let b = Deriving_Json.Json_string.read buf in
           Deriving_Json_lexer.read_rbracket buf; (a, b)))[@@ocaml.warning
-                                                           "-39"]
+                                                           "-unused-rec-flag"]
     let _ = tuple1_of_json
     let rec (tuple1_to_json : Buffer.t -> tuple1 -> unit) =
       fun buf a ->
@@ -155,7 +155,7 @@ include
         ((Buffer.add_string buf ","; Deriving_Json.Json_int.write buf a);
          Buffer.add_string buf ",";
          Deriving_Json.Json_string.write buf b);
-        Buffer.add_string buf "]"[@@ocaml.warning "-39"]
+        Buffer.add_string buf "]"[@@ocaml.warning "-unused-rec-flag"]
     let _ = tuple1_to_json
     let (tuple1_json : tuple1 Deriving_Json.t) =
       Deriving_Json.make tuple1_to_json tuple1_of_json
@@ -195,7 +195,7 @@ include
         | `Cst 1 -> B
         | `Cst 0 -> A
         | _ -> Deriving_Json_lexer.tag_error ~typename:"" buf[@@ocaml.warning
-                                                               "-39"]
+                                                               "-unused-rec-flag"]
     let _ = variant1_of_json
     let rec (variant1_to_json : Buffer.t -> variant1 -> unit) =
       fun buf ->
@@ -206,7 +206,8 @@ include
              Buffer.add_string buf "]")
         | C -> Deriving_Json.Json_int.write buf 2
         | B -> Deriving_Json.Json_int.write buf 1
-        | A -> Deriving_Json.Json_int.write buf 0[@@ocaml.warning "-39"]
+        | A -> Deriving_Json.Json_int.write buf 0[@@ocaml.warning
+                                                   "-unused-rec-flag"]
     let _ = variant1_to_json
     let (variant1_json : variant1 Deriving_Json.t) =
       Deriving_Json.make variant1_to_json variant1_of_json
@@ -243,7 +244,7 @@ include
              (let a = Deriving_Json.Json_string.read buf in
               Deriving_Json_lexer.read_rbracket buf; D a))
         | _ -> Deriving_Json_lexer.tag_error ~typename:"" buf[@@ocaml.warning
-                                                               "-39"]
+                                                               "-unused-rec-flag"]
     let _ = variant2_of_json
     let rec (variant2_to_json : Buffer.t -> variant2 -> unit) =
       fun buf ->
@@ -256,7 +257,7 @@ include
             (Buffer.add_string buf "[0";
              (Buffer.add_string buf ",";
               Deriving_Json.Json_string.write buf a);
-             Buffer.add_string buf "]")[@@ocaml.warning "-39"]
+             Buffer.add_string buf "]")[@@ocaml.warning "-unused-rec-flag"]
     let _ = variant2_to_json
     let (variant2_json : variant2 Deriving_Json.t) =
       Deriving_Json.make variant2_to_json variant2_of_json
@@ -295,7 +296,7 @@ include
           (let c =
              Deriving_Json.read_option (fun buf -> record1_of_json buf) buf in
            Deriving_Json_lexer.read_rbracket buf; { f = a; g = b; h = c })))
-      [@@ocaml.warning "-39"]
+      [@@ocaml.warning "-unused-rec-flag"]
     let _ = record1_of_json
     let rec (record1_to_json : Buffer.t -> record1 -> unit) =
       fun buf { f; g; h } ->
@@ -306,7 +307,7 @@ include
          Buffer.add_string buf ",";
          Deriving_Json.write_option (fun buf a -> record1_to_json buf a) buf
            h);
-        Buffer.add_string buf "]"[@@ocaml.warning "-39"]
+        Buffer.add_string buf "]"[@@ocaml.warning "-unused-rec-flag"]
     let _ = record1_to_json
     let (record1_json : record1 Deriving_Json.t) =
       Deriving_Json.make record1_to_json record1_of_json
@@ -331,7 +332,7 @@ include
     let _ = fun (_ : poly1) -> ()
     let rec (poly1_recognize : [ `NCst of int  | `Cst of int ] -> bool) =
       function | `Cst 65 -> true | `NCst 66 -> true | _ -> false[@@ocaml.warning
-                                                                  "-39"]
+                                                                  "-unused-rec-flag"]
     let _ = poly1_recognize
     let rec (poly1_of_json_with_tag :
               Deriving_Json_lexer.lexbuf ->
@@ -345,11 +346,11 @@ include
              (let v = Deriving_Json.Json_string.read buf in
               Deriving_Json_lexer.read_rbracket buf; `B v))
         | _ -> Deriving_Json_lexer.tag_error ~typename:"" buf[@@ocaml.warning
-                                                               "-39"]
+                                                               "-unused-rec-flag"]
     and (poly1_of_json : Deriving_Json_lexer.lexbuf -> poly1) =
       fun buf ->
         poly1_of_json_with_tag buf (Deriving_Json_lexer.read_vcase buf)
-    [@@ocaml.warning "-39"]
+    [@@ocaml.warning "-unused-rec-flag"]
     let _ = poly1_of_json_with_tag
     and _ = poly1_of_json
     let rec (poly1_to_json : Buffer.t -> [> poly1] -> unit) =
@@ -362,7 +363,7 @@ include
              ((Buffer.add_string buf ","; Deriving_Json.Json_int.write buf a);
               Buffer.add_string buf ",";
               Deriving_Json.Json_string.write buf b);
-             Buffer.add_string buf "]")[@@ocaml.warning "-39"]
+             Buffer.add_string buf "]")[@@ocaml.warning "-unused-rec-flag"]
     let _ = poly1_to_json
     let (poly1_json : poly1 Deriving_Json.t) =
       Deriving_Json.make poly1_to_json poly1_of_json
@@ -393,7 +394,7 @@ include
       function
       | x when poly1_recognize x -> true
       | `NCst 67 -> true
-      | _ -> false[@@ocaml.warning "-39"]
+      | _ -> false[@@ocaml.warning "-unused-rec-flag"]
     let _ = poly2_recognize
     let rec (poly2_of_json_with_tag :
               Deriving_Json_lexer.lexbuf ->
@@ -408,11 +409,11 @@ include
              (let v = Deriving_Json.Json_int.read buf in
               Deriving_Json_lexer.read_rbracket buf; `C v))
         | _ -> Deriving_Json_lexer.tag_error ~typename:"" buf[@@ocaml.warning
-                                                               "-39"]
+                                                               "-unused-rec-flag"]
     and (poly2_of_json : Deriving_Json_lexer.lexbuf -> poly2) =
       fun buf ->
         poly2_of_json_with_tag buf (Deriving_Json_lexer.read_vcase buf)
-    [@@ocaml.warning "-39"]
+    [@@ocaml.warning "-unused-rec-flag"]
     let _ = poly2_of_json_with_tag
     and _ = poly2_of_json
     let rec (poly2_to_json : Buffer.t -> [> poly2] -> unit) =
@@ -425,7 +426,7 @@ include
              ((Buffer.add_string buf ","; Deriving_Json.Json_int.write buf a);
               Buffer.add_string buf ",";
               Deriving_Json.Json_int.write buf b);
-             Buffer.add_string buf "]")[@@ocaml.warning "-39"]
+             Buffer.add_string buf "]")[@@ocaml.warning "-unused-rec-flag"]
     let _ = poly2_to_json
     let (poly2_json : poly2 Deriving_Json.t) =
       Deriving_Json.make poly2_to_json poly2_of_json
@@ -475,7 +476,7 @@ include
               (let b = Deriving_Json.Json_int.read buf in
                Deriving_Json_lexer.read_rbracket buf; I { name = a; age = b })))
         | _ -> Deriving_Json_lexer.tag_error ~typename:"" buf[@@ocaml.warning
-                                                               "-39"]
+                                                               "-unused-rec-flag"]
     let _ = inline_record_of_json
     let rec (inline_record_to_json : Buffer.t -> inline_record -> unit) =
       fun buf ->
@@ -491,7 +492,7 @@ include
                Deriving_Json.Json_string.write buf name);
               Buffer.add_string buf ",";
               Deriving_Json.Json_int.write buf age);
-             Buffer.add_string buf "]")[@@ocaml.warning "-39"]
+             Buffer.add_string buf "]")[@@ocaml.warning "-unused-rec-flag"]
     let _ = inline_record_to_json
     let (inline_record_json : inline_record Deriving_Json.t) =
       Deriving_Json.make inline_record_to_json inline_record_of_json
@@ -517,13 +518,13 @@ include
                 Deriving_Json_lexer.lexbuf -> 'a t)
       =
       fun poly_a buf -> Deriving_Json.read_array (fun buf -> poly_a buf) buf
-      [@@ocaml.warning "-39"]
+      [@@ocaml.warning "-unused-rec-flag"]
     let _ = of_json
     let rec (to_json : (Buffer.t -> 'a -> unit) -> Buffer.t -> 'a t -> unit)
       =
       fun poly_a buf a ->
         Deriving_Json.write_array (fun buf a -> poly_a buf a) buf a[@@ocaml.warning
-                                                                    "-39"]
+                                                                    "-unused-rec-flag"]
     let _ = to_json
     let (json : 'a Deriving_Json.t -> 'a t Deriving_Json.t) =
       fun poly_a ->
@@ -558,7 +559,7 @@ include
         (let a = Deriving_Json.read_array (fun buf -> poly_a buf) buf in
          Deriving_Json_lexer.read_comma buf;
          (let b = poly_b buf in Deriving_Json_lexer.read_rbracket buf; (a, b)))
-      [@@ocaml.warning "-39"]
+      [@@ocaml.warning "-unused-rec-flag"]
     let _ = of_json
     let rec (to_json :
               (Buffer.t -> 'a -> unit) ->
@@ -571,7 +572,7 @@ include
           Deriving_Json.write_array (fun buf a -> poly_a buf a) buf a);
          Buffer.add_string buf ",";
          poly_b buf b);
-        Buffer.add_string buf "]"[@@ocaml.warning "-39"]
+        Buffer.add_string buf "]"[@@ocaml.warning "-unused-rec-flag"]
     let _ = to_json
     let (json :
           'a Deriving_Json.t ->
@@ -612,13 +613,14 @@ include
         | `Cst 1 -> B
         | `Cst 0 -> A
         | _ -> Deriving_Json_lexer.tag_error ~typename:"" buf[@@ocaml.warning
-                                                               "-39"]
+                                                               "-unused-rec-flag"]
     let _ = of_json
     let rec (to_json : Buffer.t -> t -> unit) =
       fun buf ->
         function
         | B -> Deriving_Json.Json_int.write buf 1
-        | A -> Deriving_Json.Json_int.write buf 0[@@ocaml.warning "-39"]
+        | A -> Deriving_Json.Json_int.write buf 0[@@ocaml.warning
+                                                   "-unused-rec-flag"]
     let _ = to_json
     let (json : t Deriving_Json.t) = Deriving_Json.make to_json of_json
     let _ = json
@@ -682,10 +684,12 @@ include
   struct
     let _ = fun (_ : id') -> ()
     let rec (id'_of_json : Deriving_Json_lexer.lexbuf -> id') =
-      fun buf -> Deriving_Json.Json_int.read buf[@@ocaml.warning "-39"]
+      fun buf -> Deriving_Json.Json_int.read buf[@@ocaml.warning
+                                                  "-unused-rec-flag"]
     let _ = id'_of_json
     let rec (id'_to_json : Buffer.t -> id' -> unit) =
-      fun buf a -> Deriving_Json.Json_int.write buf a[@@ocaml.warning "-39"]
+      fun buf a -> Deriving_Json.Json_int.write buf a[@@ocaml.warning
+                                                       "-unused-rec-flag"]
     let _ = id'_to_json
     let (id'_json : id' Deriving_Json.t) =
       Deriving_Json.make id'_to_json id'_of_json
@@ -714,7 +718,7 @@ include
       function
       | x when poly1_recognize x -> true
       | `NCst 67 -> true
-      | _ -> false[@@ocaml.warning "-39"]
+      | _ -> false[@@ocaml.warning "-unused-rec-flag"]
     let _ = poly3_recognize
     let rec (poly3_of_json_with_tag :
               Deriving_Json_lexer.lexbuf ->
@@ -749,11 +753,11 @@ include
                   (Deriving_Json_lexer.read_vcase buf) in
               Deriving_Json_lexer.read_rbracket buf; `C v))
         | _ -> Deriving_Json_lexer.tag_error ~typename:"" buf[@@ocaml.warning
-                                                               "-39"]
+                                                               "-unused-rec-flag"]
     and (poly3_of_json : Deriving_Json_lexer.lexbuf -> poly3) =
       fun buf ->
         poly3_of_json_with_tag buf (Deriving_Json_lexer.read_vcase buf)
-    [@@ocaml.warning "-39"]
+    [@@ocaml.warning "-unused-rec-flag"]
     let _ = poly3_of_json_with_tag
     and _ = poly3_of_json
     let rec (poly3_to_json : Buffer.t -> [> poly3] -> unit) =
@@ -790,7 +794,7 @@ include
                      Buffer.add_string buf ",";
                      poly3_to_json buf b);
                     Buffer.add_string buf "]")));
-             Buffer.add_string buf "]")[@@ocaml.warning "-39"]
+             Buffer.add_string buf "]")[@@ocaml.warning "-unused-rec-flag"]
     let _ = poly3_to_json
     let (poly3_json : poly3 Deriving_Json.t) =
       Deriving_Json.make poly3_to_json poly3_of_json
