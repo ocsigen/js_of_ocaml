@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>WebGL2 particles</title>
+<style type="text/css">
+body {
+  background-color: #111;
+  color: #ddd;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 14px;
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 16px;
+}
+h1 {
+  font-size: 1.6em;
+  font-weight: 300;
+  letter-spacing: 0.05em;
+  color: #eee;
+  margin: 0 0 16px;
+}
+canvas {
+  display: block;
+  border-radius: 8px;
+  box-shadow: 0 0 32px rgba(0,0,0,0.6);
+}
+.info {
+  margin-top: 12px;
+  color: #777;
+  font-size: 0.85em;
+}
+.info span {
+  color: #aaa;
+  font-variant-numeric: tabular-nums;
+}
+.info input[type="range"] {
+  vertical-align: middle;
+  width: 160px;
+  accent-color: #67c;
+}
+</style>
+<script id="update-vertex-shader" type="x-shader/x-vertex">
+  #version 300 es
+  precision highp float;
+
+  layout(location = 0) in vec2 a_position;
+  layout(location = 1) in vec2 a_velocity;
+
+  uniform float u_dt;
+  uniform vec2 u_attractor;
+  uniform float u_gravity;
+  uniform float u_damping;
+
+  out vec2 v_position;
+  out vec2 v_velocity;
+
+  void main() {
+    vec2 d = u_attractor - a_position;
+    float r = max(length(d), 0.05);
+    vec2 dir = d / r;
+    float force = min(u_gravity / (r * r), 3.0);
+    // scale the per-frame damping by the timestep so slow motion (or pause)
+    // does not damp more than real time
+    float damping = pow(u_damping, u_dt * 62.5);
+    vec2 vel = (a_velocity + dir * force * u_dt) * damping;
+    vec2 pos = a_position + vel * u_dt;
+    if (pos.x < -1.0 || pos.x > 1.0) { vel.x = -vel.x; pos.x = clamp(pos.x, -1.0, 1.0); }
+    if (pos.y < -1.0 || pos.y > 1.0) { vel.y = -vel.y; pos.y = clamp(pos.y, -1.0, 1.0); }
+    v_position = pos;
+    v_velocity = vel;
+    gl_Position = vec4(pos, 0.0, 1.0);
+    gl_PointSize = 1.0;
+  }
+</script>
+<script id="update-fragment-shader" type="x-shader/x-fragment">
+  #version 300 es
+  precision mediump float;
+  out vec4 color;
+  void main() {
+    // never runs: rasterization is discarded during the simulation pass
+    color = vec4(1.0);
+  }
+</script>
+<script id="fade-vertex-shader" type="x-shader/x-vertex">
+  #version 300 es
+  // fullscreen triangle from gl_VertexID, no vertex attributes needed
+  void main() {
+    vec2 p = vec2(float((gl_VertexID << 1) & 2), float(gl_VertexID & 2));
+    gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0);
+  }
+</script>
+<script id="fade-fragment-shader" type="x-shader/x-fragment">
+  #version 300 es
+  precision mediump float;
+  uniform float u_fade;
+  out vec4 color;
+  void main() {
+    color = vec4(0.02, 0.02, 0.05, u_fade);
+  }
+</script>
+<script id="render-vertex-shader" type="x-shader/x-vertex">
+  #version 300 es
+  precision highp float;
+
+  layout(location = 0) in vec2 a_position;
+  layout(location = 1) in vec2 a_velocity;
+
+  out float v_speed;
+
+  void main() {
+    v_speed = length(a_velocity);
+    gl_Position = vec4(a_position, 0.0, 1.0);
+    gl_PointSize = 2.0;
+  }
+</script>
+<script id="render-fragment-shader" type="x-shader/x-fragment">
+  #version 300 es
+  precision mediump float;
+
+  in float v_speed;
+  out vec4 color;
+
+  void main() {
+    float s = clamp(v_speed * 0.8, 0.0, 1.0);
+    vec3 slow = vec3(0.15, 0.3, 0.9);
+    vec3 fast = vec3(1.0, 0.9, 0.6);
+    color = vec4(mix(slow, fast, s), 0.6);
+  }
+</script>
+  <script type="text/javascript">
+    var s = (new URLSearchParams(location.search)).has('wasm') ? 'particles.bc.wasm.js' : 'particles.bc.js';
+    document.write('<script type="text/javascript" src="' + s + '" defer><\/script>');
+  </script>
+  </head>
+  <body>
+    <h1>WebGL2 Particles</h1>
+    <canvas id="canvas" height="600" width="600"></canvas>
+    <div class="info">
+      <!-- max and value are set from the OCaml side (max_particles) -->
+      <input id="count" type="range" min="1000" step="1000">
+      <span id="count-label"></span> particles —
+      speed <input id="speed" type="range" min="0" max="3" step="0.05" value="1">
+      ×<span id="speed-label"></span> —
+      <span id="fps"></span> fps<br>
+      gravity <input id="gravity" type="range" min="0.02" max="2" step="0.01" value="0.35">
+      <span id="gravity-label"></span> —
+      damping <input id="damping" type="range" min="0.98" max="1.002" step="0.0005" value="0.999">
+      <span id="damping-label"></span> —
+      trails <input id="trail" type="range" min="0" max="0.98" step="0.02" value="0.2">
+      <span id="trail-label"></span><br>
+      simulated with transform feedback — move the mouse over the canvas
+    </div>
+  </body>
+</html>

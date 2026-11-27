@@ -1,0 +1,115 @@
+# Debugging
+
+This page explains how to debug OCaml programs compiled to JavaScript.
+
+## Compiler flags
+
+### OCaml flags
+
+Use `-g` when compiling and linking OCaml bytecode. Js\_of\_ocaml will attempt to preserve variable names.
+
+### Js\_of\_ocaml flags
+
+| --- | --- |
+| Flag | Description |
+| `--pretty` | Format JavaScript readably, preserve OCaml variable names |
+| `--no-inline` | Prevent function inlining |
+| `--debug-info` | Add source location comments |
+| `--source-map` | Generate source map |
+
+### Dune configuration
+
+For development builds, add to your dune file:
+
+```
+(executable
+ (name main)
+ (modes js)
+ (js_of_ocaml (flags --pretty --source-map)))
+```
+
+## Source maps
+
+Source maps map generated JavaScript back to OCaml sources. With source maps enabled, you can set breakpoints, step through code, and inspect variables directly in your OCaml files.
+
+To enable source maps:
+
+```
+js_of_ocaml --source-map program.byte
+```
+This generates `program.js` and `program.js.map`.
+
+## Breakpoints
+
+### In browser developer tools
+
+Open browser developer tools (F12), navigate to the Sources panel, and set breakpoints in your OCaml files (when using source maps) or JavaScript files.
+
+See the [Chrome DevTools documentation](https://developer.chrome.com/docs/devtools/javascript) for details.
+
+### Programmatic breakpoints
+
+Insert breakpoints in your OCaml code using [Js.debugger](./Js_of_ocaml-Js.md#val-debugger):
+
+```ocaml
+let my_function x =
+  Js_of_ocaml.Js.debugger ();  (* Breaks here when devtools are open *)
+  x + 1
+```
+Note: Browsers only pause at `debugger` statements when developer tools are open.
+
+## Debugging in Node.js
+
+### Using \--inspect
+
+Run your program with Node.js inspector:
+
+```
+node --inspect _build/default/main.bc.js
+```
+This prints a URL like:
+
+```
+Debugger listening on ws://127.0.0.1:9229/...
+```
+
+### Chrome DevTools for Node.js
+
+1. Run `node --inspect` or `node --inspect-brk` (breaks on first line)
+2. Open Chrome and navigate to `chrome://inspect`
+3. Click "Open dedicated DevTools for Node"
+4. Your program appears in the Sources panel
+
+## Stack traces
+
+### Attaching JavaScript backtraces
+
+To get JavaScript stack traces attached to OCaml exceptions:
+
+```
+OCAMLRUNPARAM=b=1 node program.js
+```
+Or compile with:
+
+```
+js_of_ocaml --enable with-js-error program.byte
+```
+See [Error handling](./errors.md#stack_traces) for details.
+
+## Chrome DevTools tips
+
+Useful settings in Chrome DevTools (Settings \> Experiments):
+
+- **Display variable values inline while debugging** \- Shows values next to variables
+- **Resolve variable names** \- Maps minified names back to original names
+
+### Displaying OCaml values
+
+When the compiler is built with Introcaml (an OCaml fork with runtime introspection), OCaml values carry a description of their type at runtime. Calling [Js\_of\_ocaml\_devtools.register\_formatters](./Js_of_ocaml_devtools.md#val-register_formatters) (library `js_of_ocaml.devtools`) installs a custom formatter so that values logged with `Console` or inspected in the debugger are displayed in OCaml syntax, e.g. `Circle ({x = 0; name = "o"}, 1)` rather than `Array(3)`, and expand to their fields by name. Custom formatters must be enabled in DevTools (Settings \> Preferences \> Console \> Enable custom formatters). This also applies to Node.js programs debugged with `--inspect`, which use the same DevTools front-end.
+
+Only values allocated by compiled OCaml code carry the description of their type; blocks built by the runtime (the result of `Array.make`, the internals of a `Hashtbl.t`...) do not, and are displayed from their raw shape, e.g. as tuples. JavaScript values embedded in OCaml ones (DOM nodes, promises...) and closures are left to the console, which displays them as usual.
+
+## See also
+
+- [Error handling](./errors.md) \- Exception handling between OCaml and JavaScript
+- [Command line options](./options.md) \- Full list of compiler flags
