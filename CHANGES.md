@@ -87,7 +87,7 @@
 ### Compiler
 * Compiler: fix the negation of a comparison of an integer with zero,
   which gave a wrong result when used as a value (`not (compare x 0 <> 0)`
-  could evaluate to a negative integer, hence to `true`) (#NNNN)
+  could evaluate to a negative integer, hence to `true`) (#2665)
 * Compiler/Wasm: with separate compilation, code compiled at run time
   (toplevel, dynlink) can call all the primitives of the runtime, not only
   some of them (#2653)
