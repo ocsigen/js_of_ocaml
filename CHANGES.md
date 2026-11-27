@@ -22,6 +22,9 @@
 * Compiler: call known functions stored in blocks (module fields, records
   of closures) as `M[i](x)` rather than `M[i].call(null, x)`, which
   prevented V8 from inlining them (#2613)
+* Compiler: evaluate a pure expression in the branch of a conditional or
+  switch that uses it, rather than before the conditional. In particular,
+  the increment of a `for` loop counter no longer needs a temporary (#2534)
 
 ### Effects
 * Compiler/Wasm: support `--effects=double-translation` (#2443)
