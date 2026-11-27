@@ -23,7 +23,8 @@
 
    Along such an edge, a fresh variable bound to the constant is substituted
    for [x] in the arguments of the edge, and in the block it leads to when
-   that block is reached through this edge only.
+   that block is reached through this edge only. A test of [x] at the end of
+   this block is folded.
 
    The value tested by a conditional is either an integer or a block
    corresponding to a variant, so the second branch is indeed taken exactly
@@ -33,12 +34,12 @@
    by zero. The compiler does not preserve the truthiness of such values
    elsewhere either: [Eval] folds a [Cond] on [""] or on [nan] as true.
 
-   We only do so when this rewrites the last use of the value of [x]: the
-   code generator does not have to materialize a variable which is just
-   tested by conditionals, so this is where the transformation pays off.
-   Rewriting the other uses costs more than it saves, since the constant then
-   has to be bound to a variable of its own. The typical pattern is [if not c
-   then ... else <value of c>], compiled to
+   We only substitute the constant when this rewrites the last use of the
+   value of [x]: the code generator does not have to materialize a variable
+   which is just tested by conditionals, so this is where the transformation
+   pays off. Rewriting the other uses costs more than it saves, since the
+   constant then has to be bound to a variable of its own. The typical
+   pattern is [if not c then ... else <value of c>], compiled to
 
      var a = x === y ? 1 : 0; if(! a) return a;
 
@@ -94,6 +95,30 @@ let iter_value_uses f block =
   | Switch (_, conts) -> Array.iter ~f:cont conts
   | (Return _ | Raise _ | Stop | Branch _ | Pushtrap _ | Poptrap _) as branch ->
       Freevars.iter_last_free_var f branch
+
+let subst_cont s ((pc, args) as cont) =
+  let args' = List.map_sharing args ~f:s in
+  if phys_equal args' args then cont else pc, args'
+
+(* Like [Subst.Excluding_Binders.block], but does not substitute the variable
+   tested by a [Cond] or a [Switch] (matching [iter_value_uses]). *)
+let subst_block_value_uses s block =
+  let body = Subst.Excluding_Binders.instrs s block.body in
+  let branch =
+    match block.branch with
+    | Cond (x, c1, c2) ->
+        let c1' = subst_cont s c1 in
+        let c2' = subst_cont s c2 in
+        if phys_equal c1' c1 && phys_equal c2' c2 then block.branch else Cond (x, c1', c2')
+    | Switch (x, conts) ->
+        let conts' = Array.map_sharing conts ~f:(fun c -> subst_cont s c) in
+        if phys_equal conts' conts then block.branch else Switch (x, conts')
+    | Return _ | Raise _ | Stop | Branch _ | Pushtrap _ | Poptrap _ ->
+        Subst.Excluding_Binders.last s block.branch
+  in
+  if phys_equal body block.body && phys_equal branch block.branch
+  then block
+  else { block with body; branch }
 
 (* [Assign] needs no special care: it amounts to passing an argument to an
    exception handler (the parser uses it to avoid adding explicit parameters
@@ -164,22 +189,33 @@ let set_cont branch i cont =
       Switch (x, conts)
   | Return _ | Raise _ | Stop | Branch _ | Pushtrap _ | Poptrap _ -> assert false
 
-(* What we plan to do along an edge: bind a fresh variable to the value [v]
-   of [x], and substitute it for [x] in the arguments of the edge ([in_args]
-   occurrences) and in the block the edge leads to ([target], [in_target]
-   occurrences). The fresh variable is only created when a use is actually
-   substituted: there is a candidate edge for most conditionals, and few of
-   them are rewritten. The binding goes at the end of the block the edge
-   starts from when the arguments are rewritten — it is then in scope in the
-   target block, which this block dominates — and at the beginning of the
-   target block otherwise, so that it stays in the branch. *)
+(* Fold a test of [x], whose value is [v] *)
+let fold_branch x v branch =
+  match branch with
+  | Cond (y, c1, c2) when Var.equal x y ->
+      Some (Branch (if Targetint.is_zero v then c2 else c1))
+  | Switch (y, conts) when Var.equal x y ->
+      let i = Targetint.to_int_exn v in
+      if i >= 0 && i < Array.length conts then Some (Branch conts.(i)) else None
+  | Cond _ | Switch _ | Return _ | Raise _ | Stop | Branch _ | Pushtrap _ | Poptrap _ ->
+      None
+
+(* What we plan to do along an edge where [x] has value [v]: bind a fresh
+   variable to [v] and substitute it for [x] in the arguments of the edge
+   (when [edge] is set) and in the block the edge leads to ([target]); fold a
+   redundant test of [x] at the end of [target]. [rewrites] is the number of
+   occurrences of [x] to be substituted. The fresh variable is only created
+   when a use is actually substituted. The binding goes at the end of the
+   block the edge starts from when the arguments are rewritten — it is then
+   in scope in the target block, which this block dominates — and at the
+   beginning of the target block otherwise, so that it stays in the
+   branch. *)
 type plan =
   { x : Var.t
   ; v : Targetint.t
   ; edge : (Addr.t * int) option
-  ; in_args : int
   ; target : Addr.t option
-  ; in_target : int
+  ; rewrites : int
   }
 
 let count_in_args x args =
@@ -190,125 +226,170 @@ let count_in_block x block =
   iter_value_uses (fun y -> if Var.equal x y then incr n) block;
   !n
 
+let make_plans info blocks =
+  (* Collect candidate edges and record, for each single-predecessor target
+     block, the variable whose value is known there. *)
+  let target_var = Addr.Hashtbl.create 128 in
+  let raw_edges =
+    Addr.Map.fold
+      (fun pc block acc ->
+        List.fold_left
+          ~f:(fun acc (i, x, v, (pc', args)) ->
+            let target =
+              if reached_once info pc'
+              then (
+                Addr.Hashtbl.replace target_var pc' x;
+                Some pc')
+              else None
+            in
+            (pc, i, x, v, args, target) :: acc)
+          ~init:acc
+          (known_edges info block))
+      blocks
+      []
+  in
+  List.fold_left
+    ~f:(fun plans (pc, i, x, v, args, target) ->
+      (* When [pc] is itself a target block for [x], the incoming plan for
+         [pc] already covers the uses of [x] in [pc]'s outgoing branch
+         arguments (and folds its branch); do not count or rewrite them
+         again here. *)
+      let pc_is_target_for_x =
+        match Addr.Hashtbl.find_opt target_var pc with
+        | Some y -> Var.equal x y
+        | None -> false
+      in
+      let in_args = if pc_is_target_for_x then 0 else count_in_args x args in
+      let edge = if in_args > 0 then Some (pc, i) else None in
+      let target, in_target =
+        match target with
+        | None -> None, 0
+        | Some pc' ->
+            let block' = Addr.Map.find pc' blocks in
+            let in_target = count_in_block x block' in
+            let can_fold = Option.is_some (fold_branch x v block'.branch) in
+            if in_target > 0 || can_fold then Some pc', in_target else None, 0
+      in
+      if Option.is_none edge && Option.is_none target
+      then plans
+      else { x; v; edge; target; rewrites = in_args + in_target } :: plans)
+    ~init:[]
+    raw_edges
+
+type stats =
+  { mutable rewritten_edges : int
+  ; mutable rewritten_blocks : int
+  ; mutable folded_tests : int
+  }
+
+let apply_plans blocks plans =
+  let st = { rewritten_edges = 0; rewritten_blocks = 0; folded_tests = 0 } in
+  (* How many times the value of a candidate variable is used, and how many
+     of these uses we would rewrite. *)
+  let rewritable = Var.Hashtbl.create 128 in
+  List.iter plans ~f:(fun { x; _ } -> Var.Hashtbl.replace rewritable x ());
+  let uses = Var.Hashtbl.create 128 in
+  Addr.Map.iter
+    (fun _ block ->
+      iter_value_uses
+        (fun x -> if Var.Hashtbl.mem rewritable x then incr_var uses x)
+        block)
+    blocks;
+  let rewritten = Var.Hashtbl.create 128 in
+  List.iter plans ~f:(fun { x; rewrites; _ } -> add_var_count rewritten x rewrites);
+  let blocks =
+    List.fold_left
+      ~f:(fun blocks { x; v; edge; target; rewrites = _ } ->
+        let rewrite_values = var_count rewritten x = var_count uses x in
+        let z = ref None in
+        let get_z () =
+          match !z with
+          | Some z -> z
+          | None ->
+              let z' = Var.fork x in
+              z := Some z';
+              z'
+        in
+        let blocks =
+          match edge with
+          | Some (pc, i) when rewrite_values ->
+              st.rewritten_edges <- st.rewritten_edges + 1;
+              let z = get_z () in
+              let block = Addr.Map.find pc blocks in
+              let pc', args = cont_of_branch block.branch i in
+              let args = List.map args ~f:(fun y -> if Var.equal x y then z else y) in
+              Addr.Map.add
+                pc
+                { block with
+                  body = block.body @ [ Let (z, Constant (Int v)) ]
+                ; branch = set_cont block.branch i (pc', args)
+                }
+                blocks
+          | None | Some _ -> blocks
+        in
+        match target with
+        | None -> blocks
+        | Some pc ->
+            let block = Addr.Map.find pc blocks in
+            let block =
+              match fold_branch x v block.branch with
+              | Some branch ->
+                  st.folded_tests <- st.folded_tests + 1;
+                  { block with branch }
+              | None -> block
+            in
+            let used = ref false in
+            let block =
+              if rewrite_values
+              then
+                subst_block_value_uses
+                  (fun y ->
+                    if Var.equal x y
+                    then (
+                      used := true;
+                      get_z ())
+                    else y)
+                  block
+              else block
+            in
+            if !used then st.rewritten_blocks <- st.rewritten_blocks + 1;
+            if !used && Option.is_none edge
+            then
+              let z = get_z () in
+              let body =
+                (* After a leading [Event], which other passes expect to
+                   find at the very beginning of a block *)
+                match block.body with
+                | (Event _ as event) :: rem -> event :: Let (z, Constant (Int v)) :: rem
+                | rem -> Let (z, Constant (Int v)) :: rem
+              in
+              Addr.Map.add pc { block with body } blocks
+            else Addr.Map.add pc block blocks)
+      ~init:blocks
+      plans
+  in
+  blocks, st
+
 let f p =
   let t = Timer.make () in
   let info = collect_info p.blocks p.start in
-  let plans =
-    Addr.Map.fold
-      (fun pc block plans ->
-        List.fold_left
-          ~f:(fun plans (i, x, v, (pc', args)) ->
-            let in_args = count_in_args x args in
-            let target, in_target =
-              if reached_once info pc'
-              then
-                let in_target = count_in_block x (Addr.Map.find pc' p.blocks) in
-                if in_target > 0 then Some pc', in_target else None, 0
-              else None, 0
-            in
-            if in_args = 0 && Option.is_none target
-            then plans
-            else
-              { x
-              ; v
-              ; edge = (if in_args > 0 then Some (pc, i) else None)
-              ; in_args
-              ; target
-              ; in_target
-              }
-              :: plans)
-          ~init:plans
-          (known_edges info block))
-      p.blocks
-      []
+  let plans = make_plans info p.blocks in
+  let p, st =
+    if List.is_empty plans
+    then p, { rewritten_edges = 0; rewritten_blocks = 0; folded_tests = 0 }
+    else
+      let blocks, st = apply_plans p.blocks plans in
+      let p = { p with blocks } in
+      let p = if st.folded_tests > 0 then Deadcode.remove_unused_blocks p else p in
+      Code.invariant p;
+      p, st
   in
-  if List.is_empty plans
-  then p
-  else
-    (* How many times the value of a candidate variable is used, and how many
-       of these uses we would rewrite. *)
-    let rewritable = Var.Hashtbl.create 128 in
-    List.iter plans ~f:(fun { x; _ } -> Var.Hashtbl.replace rewritable x ());
-    let uses = Var.Hashtbl.create 128 in
-    Addr.Map.iter
-      (fun _ block ->
-        iter_value_uses
-          (fun x -> if Var.Hashtbl.mem rewritable x then incr_var uses x)
-          block)
-      p.blocks;
-    let rewritten = Var.Hashtbl.create 128 in
-    List.iter plans ~f:(fun { x; in_args; in_target; _ } ->
-        add_var_count rewritten x (in_args + in_target));
-    let n = ref 0 in
-    let blocks =
-      List.fold_left
-        ~f:(fun blocks { x; v; edge; target; in_args = _; in_target = _ } ->
-          if var_count rewritten x <> var_count uses x
-          then blocks
-          else
-            let z = ref None in
-            let get_z () =
-              match !z with
-              | Some z -> z
-              | None ->
-                  let z' = Var.fork x in
-                  z := Some z';
-                  z'
-            in
-            let blocks =
-              match edge with
-              | None -> blocks
-              | Some (pc, i) ->
-                  incr n;
-                  let z = get_z () in
-                  let block = Addr.Map.find pc blocks in
-                  let pc', args = cont_of_branch block.branch i in
-                  let args = List.map args ~f:(fun y -> if Var.equal x y then z else y) in
-                  Addr.Map.add
-                    pc
-                    { block with
-                      body = block.body @ [ Let (z, Constant (Int v)) ]
-                    ; branch = set_cont block.branch i (pc', args)
-                    }
-                    blocks
-            in
-            match target with
-            | None -> blocks
-            | Some pc ->
-                let block = Addr.Map.find pc blocks in
-                let used = ref false in
-                let block =
-                  Subst.Excluding_Binders.block
-                    (fun y ->
-                      if Var.equal x y
-                      then (
-                        used := true;
-                        get_z ())
-                      else y)
-                    block
-                in
-                if not !used
-                then blocks
-                else (
-                  incr n;
-                  let body =
-                    if Option.is_some edge
-                    then block.body
-                    else
-                      let z = get_z () in
-                      (* After a leading [Event], which other passes expect to
-                         find at the very beginning of a block *)
-                      match block.body with
-                      | (Event _ as event) :: rem ->
-                          event :: Let (z, Constant (Int v)) :: rem
-                      | rem -> Let (z, Constant (Int v)) :: rem
-                  in
-                  Addr.Map.add pc { block with body } blocks))
-        ~init:p.blocks
-        plans
-    in
-    let p = { p with blocks } in
-    Code.invariant p;
-    if times () then Format.eprintf "  condition propagation: %a@." Timer.print t;
-    if stats () then Format.eprintf "Stats - condition propagation: %d@." !n;
-    p
+  if times () then Format.eprintf "  condition propagation: %a@." Timer.print t;
+  if stats ()
+  then
+    Format.eprintf
+      "Stats - condition propagation: %d edges and %d blocks rewritten, %d tests folded@."
+      st.rewritten_edges
+      st.rewritten_blocks
+      st.folded_tests;
+  p

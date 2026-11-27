@@ -58,7 +58,8 @@ let retest (x : bool) =
     g r)
 
 (* Same thing, but [x] is also used in the branch where its value is not
-   known. This use cannot be rewritten, so nothing should be. *)
+   known. The redundant test is folded, while the value of [x] is not
+   replaced by a constant. *)
 let retest_other_use (x : bool) h =
   if x
   then h x
@@ -76,6 +77,57 @@ let retest_no_arg (x : bool) =
     g (Obj.magic x : int);
     if x then g 2 else g 3)
 
+(* [x] has no value uses, only a redundant test in the false branch. *)
+let retest_no_use (x : bool) =
+  if x
+  then g 1
+  else (
+    g 0;
+    if x then g 2 else g 3)
+
+(* A boolean tested again in the branch where it is one *)
+let retest_true (a : int) (b : int) =
+  let c = a = b in
+  if c
+  then (
+    g 1;
+    if c then g 2 else g 3)
+  else g 4
+
+(* An option tested again in the branch where it is not [None]: its value
+   is not known there, so the second test is kept. *)
+let retest_some (o : int option) =
+  match o with
+  | None -> g 0
+  | Some _ -> (
+      g 1;
+      match o with
+      | None -> g 2
+      | Some n -> g n)
+
+(* A [Switch] followed by a [Cond] on the same variable *)
+let switch_then_cond (x : t) =
+  match x with
+  | A ->
+      g 0;
+      if (Obj.magic x : bool) then g 1 else g 2
+  | B ->
+      g 3;
+      if (Obj.magic x : bool) then g 4 else g 5
+  | C -> g 6
+
+(* A [Cond] on a boolean followed by a [Switch] on the same variable *)
+let cond_then_switch (a : int) (b : int) =
+  let c = a = b in
+  if c
+  then (
+    g 0;
+    match (Obj.magic c : t) with
+    | A -> g 1
+    | B -> g 2
+    | C -> g 3)
+  else g 4
+
 let () =
   let h b = g (if b then 7 else 8) in
   let pb b = g (if b then 1 else 0) in
@@ -86,16 +138,23 @@ let () =
   List.iter retest [ false; true ];
   List.iter (fun b -> retest_other_use b h) [ false; true ];
   List.iter retest_no_arg [ false; true ];
+  List.iter retest_no_use [ false; true ];
+  List.iter (fun (a, b) -> retest_true a b) [ 1, 1; 1, 2 ];
+  List.iter retest_some [ None; Some 5 ];
+  List.iter switch_then_cond [ A; B; C ];
+  List.iter (fun (a, b) -> cond_then_switch a b) [ 1, 1; 1, 2 ];
   print_newline ()
 |}
 
 let%expect_test "behaviour" =
   compile_and_run ~flags:[ "--debug"; "invariant" ] prog;
-  [%expect {| 10 1 20 0 1 0 10 0 20 1 30 2 0 0 0 1 0 0 0 7 0 3 1 |}]
+  [%expect
+    {| 10 1 20 0 1 0 10 0 20 1 30 2 0 0 0 1 0 0 0 7 0 3 1 0 3 1 1 2 4 0 1 5 0 2 3 4 6 0 2 4 |}]
 
 let%expect_test "behaviour (cps)" =
   compile_and_run ~effects:`Cps ~flags:[ "--debug"; "invariant" ] prog;
-  [%expect {| 10 1 20 0 1 0 10 0 20 1 30 2 0 0 0 1 0 0 0 7 0 3 1 |}]
+  [%expect
+    {| 10 1 20 0 1 0 10 0 20 1 30 2 0 0 0 1 0 0 0 7 0 3 1 0 3 1 1 2 4 0 1 5 0 2 3 4 6 0 2 4 |}]
 
 let program = lazy (compile_and_parse ~flags:[ "--debug"; "invariant" ] prog)
 
@@ -114,8 +173,8 @@ let%expect_test "edge args" =
   [%expect
     {|
     function edge_args(a, b){
-     var c = a <= b, r = c ? b <= 10 : 0, _a_ = r ? 1 : 0;
-     return g(_a_);
+     var c = a <= b, r = c ? b <= 10 : 0, _c_ = r ? 1 : 0;
+     return g(_c_);
     }
     //end
     |}]
@@ -136,8 +195,6 @@ let%expect_test "switch" =
     //end
     |}]
 
-(* FIXME: [r] is zero. The use of [x] in the argument of the second test is
-   counted twice, so the pass believes that some uses would be left. *)
 let%expect_test "tested again" =
   print "retest";
   [%expect
@@ -145,26 +202,19 @@ let%expect_test "tested again" =
     function retest(x){
      if(x) return g(1);
      g(0);
-     var r = x && 2;
-     g(r);
-     return g(r);
+     var x$0 = 0;
+     g(x$0);
+     return g(x$0);
     }
     //end
     |}]
 
-(* FIXME: nothing should be rewritten, since [x] is still used by [h x] (the
-   same use is counted twice). And the test of a constant is left in the
-   generated code. *)
 let%expect_test "tested again, with another use" =
   print "retest_other_use";
   [%expect
     {|
     function retest_other_use(x, h){
-     if(x) return caml_call1(h, x);
-     g(0);
-     var r = 0 ? 2 : 0;
-     g(r);
-     return g(r);
+     return x ? caml_call1(h, x) : (g(0), g(x), g(x));
     }
     //end
     |}]
@@ -176,6 +226,63 @@ let%expect_test "tested again, not passed along" =
     function retest_no_arg(x){return x ? g(1) : (g(0), g(3));}
     //end
     |}]
+
+let%expect_test "tested again, no value use" =
+  print "retest_no_use";
+  [%expect
+    {|
+    function retest_no_use(x){return x ? g(1) : (g(0), g(3));}
+    //end
+    |}]
+
+let%expect_test "tested again in the first branch" =
+  print "retest_true";
+  [%expect
+    {|
+           function retest_true(a, b){var c = a === b; return c ? (g(1), g(2)) : g(4);}
+           //end
+           |}]
+
+let%expect_test "option tested again" =
+  print "retest_some";
+  [%expect
+    {|
+    function retest_some(o){
+     if(! o) return g(0);
+     g(1);
+     if(! o) return g(2);
+     var n = o[1];
+     return g(n);
+    }
+    //end
+    |}]
+
+let%expect_test "switch, then cond" =
+  print "switch_then_cond";
+  [%expect
+    {|
+           function switch_then_cond(x){
+            switch(x){
+              case 0:
+               g(0); return g(2);
+              case 1:
+               g(3); return g(4);
+              default: return g(6);
+            }
+           }
+           //end
+           |}]
+
+let%expect_test "cond, then switch" =
+  print "cond_then_switch";
+  [%expect
+    {|
+           function cond_then_switch(a, b){
+            var c = a === b;
+            return c ? (g(0), g(2)) : g(4);
+           }
+           //end
+           |}]
 
 (* A mutable variable (a reference live in an exception handler), tested
    before and after being assigned. Compiled without [-g]: otherwise, the
