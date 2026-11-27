@@ -564,9 +564,12 @@ let maybe_bool ctx x e =
 (* When the result [x] of an integer comparison with 0 is only used as
    a condition, [0 === e] can be written [!e], and [0 !== e] just [e]:
    an integer is falsy only when equal to 0. Returns the compared
-   expression [e]. *)
-let int_test_zero ctx x ~int_only cy cz =
-  if int_only && Bool_context.is_bool_context_only ctx.Ctx.bool_context x
+   expression [e]. With [!e], [x] is a JS boolean, so it just has to be
+   used in boolean contexts ([usable] is
+   [Bool_context.is_bool_context_only]). With [e], it is an arbitrary
+   integer, so it must only be tested ([Bool_context.is_test_only]). *)
+let int_test_zero ctx x ~usable ~int_only cy cz =
+  if int_only && usable ctx.Ctx.bool_context x
   then
     match cy, cz with
     | J.ENum n, e when J.Num.is_zero n -> Some e
@@ -2055,14 +2058,24 @@ let rec translate_expr ctx loc x e level : (_ * J.statement_list) Expr_builder.t
             let* cy = access' ~ctx y in
             let* cz = access' ~ctx z in
             return
-              (match int_test_zero ctx x ~int_only cy cz with
+              (match
+                 int_test_zero
+                   ctx
+                   x
+                   ~usable:Bool_context.is_bool_context_only
+                   ~int_only
+                   cy
+                   cz
+               with
               | Some e -> Js_simpl.enot e
               | None -> maybe_bool ctx x (J.EBin (J.EqEqEq, cy, cz)))
         | Neq { int_only }, [ y; z ] ->
             let* cy = access' ~ctx y in
             let* cz = access' ~ctx z in
             return
-              (match int_test_zero ctx x ~int_only cy cz with
+              (match
+                 int_test_zero ctx x ~usable:Bool_context.is_test_only ~int_only cy cz
+               with
               | Some e -> e
               | None -> maybe_bool ctx x (J.EBin (J.NotEqEq, cy, cz)))
         | IsInt _, [ y ] ->

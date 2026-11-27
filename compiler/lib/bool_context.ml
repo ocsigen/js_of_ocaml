@@ -34,11 +34,23 @@ let times = Debug.find "times"
      bool-context-only
 
    Everything else is a non-boolean context. We propagate "not bool-context-only"
-   taint backward through phi-nodes (block params) and Assign edges. *)
+   taint backward through phi-nodes (block params) and Assign edges.
 
-type t = BitSet.t (* not_bool_only: variables that are NOT bool-context-only *)
+   A variable which is bool-context-only can be a JS boolean. We also
+   compute which variables are only tested, so that any JS value with the
+   right truthiness will do (an integer rather than its comparison with
+   zero, for instance). This is more restrictive: [1 - v] expects [v] to be
+   a boolean or 0/1, so the argument of a [Not] whose result is not
+   bool-context-only is not only tested. *)
 
-let is_bool_context_only (t : t) x = not (BitSet.mem t (Var.idx x))
+type t =
+  { not_bool_only : BitSet.t (* variables that are NOT bool-context-only *)
+  ; not_test_only : BitSet.t (* variables that are NOT only tested *)
+  }
+
+let is_bool_context_only t x = not (BitSet.mem t.not_bool_only (Var.idx x))
+
+let is_test_only t x = not (BitSet.mem t.not_test_only (Var.idx x))
 
 let mark_var not_bool_only worklist v =
   let idx = Var.idx v in
@@ -121,11 +133,23 @@ let f (p : program) =
   (* Process all blocks *)
   Addr.Map.iter process_block p.blocks;
   (* Propagate taint backward *)
-  while not (Queue.is_empty worklist) do
-    let v = Queue.pop worklist in
-    List.iter
-      backward_edges.(Var.idx v)
-      ~f:(fun pred -> mark_var not_bool_only worklist pred)
-  done;
+  let propagate taint =
+    while not (Queue.is_empty worklist) do
+      let v = Queue.pop worklist in
+      List.iter backward_edges.(Var.idx v) ~f:(fun pred -> mark_var taint worklist pred)
+    done
+  in
+  propagate not_bool_only;
+  (* The argument of a [Not] compiled to [1 - v] is not only tested *)
+  let not_test_only = BitSet.copy not_bool_only in
+  Addr.Map.iter
+    (fun _ block ->
+      List.iter block.body ~f:(fun instr ->
+          match instr with
+          | Let (x, Prim (Not, [ Pv y ])) when BitSet.mem not_bool_only (Var.idx x) ->
+              mark_var not_test_only worklist y
+          | _ -> ()))
+    p.blocks;
+  propagate not_test_only;
   if times () then Format.eprintf "  bool-analysis: %a@." Timer.print t;
-  not_bool_only
+  { not_bool_only; not_test_only }

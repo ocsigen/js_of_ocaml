@@ -21,3 +21,9 @@ type t
 val f : Code.program -> t
 
 val is_bool_context_only : t -> Code.Var.t -> bool
+(** The variable is only used in contexts where a JS boolean behaves like the
+    corresponding OCaml boolean. *)
+
+val is_test_only : t -> Code.Var.t -> bool
+(** The variable is only tested: any JS value with the same truthiness can be
+    used instead. Implies {!is_bool_context_only}. *)
