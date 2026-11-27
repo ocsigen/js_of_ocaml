@@ -787,6 +787,10 @@ module Q : sig
   val empty : queue
 
   val is_empty : queue -> bool
+
+  val extract : queue -> Var.t list -> queue * queue
+  (** [extract queue l] removes from [queue] the pure expressions bound
+      to the variables in [l]. Returns them, and the remaining queue. *)
 end = struct
   type elt =
     { prop : prop'
@@ -805,6 +809,17 @@ end = struct
   let empty = { map = Var.Map.empty; muts = Var.Set.empty; rank = 0 }
 
   let is_empty t = Var.Map.is_empty t.map
+
+  let extract queue l =
+    List.fold_left
+      l
+      ~init:({ empty with rank = queue.rank }, queue)
+      ~f:(fun ((q, queue) as acc) x ->
+        match Var.Map.find_opt x queue.map with
+        | Some ({ prop = Const; _ } as elt) ->
+            ( { q with map = Var.Map.add x elt q.map }
+            , { queue with map = Var.Map.remove x queue.map } )
+        | Some _ | None -> acc)
 
   let access_queue ~live queue x =
     let idx = Var.idx x in
@@ -2513,8 +2528,21 @@ and compile_block_no_loop st loc queue (pc : Addr.t) ~fall_through scope_stack =
   in
   never_after, seq @ after
 
-and compile_decision_tree kind st scope_stack loc_before cx loc_after dtree ~fall_through
-    =
+and compile_decision_tree
+    kind
+    st
+    scope_stack
+    queue
+    loc_before
+    cx
+    loc_after
+    dtree
+    ~fall_through =
+  (* The pending pure expressions which are only used as an argument of
+     a single branch are evaluated in this branch. Since they are used
+     only once, they can be inlined there. The other expressions are
+     returned, to be evaluated before the conditional. *)
+  let queue = ref queue in
   (* Some changes here may require corresponding changes
      in function [DTree.fold_cont] above. *)
   let rec loop loc cx scope_stack : _ -> bool * _ = function
@@ -2529,8 +2557,10 @@ and compile_decision_tree kind st scope_stack loc_before cx loc_after dtree ~fal
                 ~pp_sep:(fun fmt () -> Format.pp_print_string fmt ", ")
                 (fun fmt pc -> Format.fprintf fmt "%d" pc))
             l;
+        let branch_queue, rem = Q.extract !queue (snd cont) in
+        queue := rem;
         let never, code =
-          compile_branch st loc_after Q.empty cont scope_stack ~fall_through
+          compile_branch st loc_after branch_queue cont scope_stack ~fall_through
         in
         if debug () then Format.eprintf "}@]@;";
         never, code
@@ -2608,7 +2638,7 @@ and compile_decision_tree kind st scope_stack loc_before cx loc_after dtree ~fal
         J.EVar v, [ J.variable_declaration [ v, (cx, loc_before) ], J.N ], loc_after
   in
   let never, code = loop loc cx scope_stack dtree in
-  never, binds @ code
+  never, binds @ code, !queue
 
 and compile_conditional st queue ~fall_through loc last scope_stack : _ * _ =
   (if debug ()
@@ -2712,11 +2742,12 @@ and compile_conditional st queue ~fall_through loc last scope_stack : _ * _ =
         in
         (* We keep track of the location [loc_before] before the
            expression is evaluated and of the location after [loc]. *)
-        let never, b =
+        let never, b, queue =
           compile_decision_tree
             "Bool"
             st
             scope_stack
+            queue
             ~fall_through
             loc_before
             cx
@@ -2730,11 +2761,12 @@ and compile_conditional st queue ~fall_through loc last scope_stack : _ * _ =
         in
         (* We keep track of the location [loc_before] before the
            expression is evaluated and of the location after [loc]. *)
-        let never, code =
+        let never, code, queue =
           compile_decision_tree
             "Int"
             st
             scope_stack
+            queue
             ~fall_through
             loc_before
             cx
