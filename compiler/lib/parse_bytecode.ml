@@ -261,7 +261,15 @@ end = struct
     match Int.Hashtbl.find_opt events_by_pc pc with
     | None -> [||], Env.Env_empty
     | Some { event; _ } ->
-        let names = Array.make event.ev_stacksize None in
+        (* The array ends at the last named slot: the stack may be shorter
+           than [ev_stacksize]. *)
+        let size =
+          Ident.fold_name
+            (fun _ i acc -> max acc (event.ev_stacksize - i + 1))
+            event.ev_compenv.ce_stack
+            0
+        in
+        let names = Array.make size None in
         Ident.fold_name
           (fun ident i () -> names.(event.ev_stacksize - i) <- Some ident)
           event.ev_compenv.ce_stack

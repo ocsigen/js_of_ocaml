@@ -9,6 +9,7 @@ let y = float 1 /. float 3;;
 "abc" < "def";;
 |}
   in
+  Clflags.debug := true;
   Topdirs.dir_directory "/static/cmis";
   Toploop.initialize_toplevel_env ();
   Toploop.input_name := "//toplevel//";

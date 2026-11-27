@@ -109,6 +109,8 @@
   compiler itself runs in JavaScript (#2616)
 * Compiler: fix the naming of labels in default parameters, of `var`s in
   class static blocks, and of nested source and generated labels (#2598)
+* Compiler: fix a crash of the toplevel when debug information is enabled
+  ("Assertion failed" in parse_bytecode.ml), a regression in 6.5.0 (#2652)
 
 ### Effects
 * Compiler: with `--effects=double-translation`, trampoline mutually recursive
