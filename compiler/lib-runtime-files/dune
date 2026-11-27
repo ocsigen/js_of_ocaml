@@ -12,3 +12,12 @@
   (with-stdout-to
    %{target}
    (run %{deps}))))
+
+(rule
+ (target runtime_files.checked)
+ (deps
+  (glob_files ../../runtime/js/*.js))
+ (action
+  (with-stdout-to
+   %{target}
+   (run %{exe:gen/gen.exe} --check %{deps}))))

@@ -48,64 +48,66 @@ let rec list_product l =
       let tail = list_product xs in
       List.concat_map values ~f:(fun v -> List.map tail ~f:(fun l -> (key, v) :: l))
 
-let main () =
-  Js_of_ocaml_compiler.Warning.werror := true;
-  Js_of_ocaml_compiler.Warning.enable `Unused_js_variable;
-  Js_of_ocaml_compiler.Config.set_target `JavaScript;
-  let () = set_binary_mode_out stdout true in
-  match Array.to_list Sys.argv with
-  | [] -> assert false
-  | _ :: rest ->
-      let rest = List.sort_uniq ~cmp:String.compare rest in
-      let fragments =
-        List.map rest ~f:(fun f -> f, Js_of_ocaml_compiler.Linker.Fragment.parse_file f)
-      in
-      let keys = Js_of_ocaml_compiler.Build_info.config_keys `JavaScript in
-      let variants =
-        list_product
-          (List.map keys ~f:(fun key ->
-               let name = Js_of_ocaml_compiler.Build_info.config_key_name key in
-               let values = Js_of_ocaml_compiler.Build_info.config_key_values key in
-               name, values))
-      in
-      (* load all files to make sure they are valid *)
-      List.iter variants ~f:(fun setup ->
-          Js_of_ocaml_compiler.Build_info.set_values keys setup;
-          List.iter Js_of_ocaml_compiler.Target_env.all ~f:(fun target_env ->
-              Js_of_ocaml_compiler.Linker.reset ();
-              List.iter fragments ~f:(fun (filename, frags) ->
-                  Js_of_ocaml_compiler.Linker.load_fragments ~target_env ~filename frags);
-              let linkinfos = Js_of_ocaml_compiler.Linker.init () in
-              let prov = Js_of_ocaml_compiler.Linker.list_all () in
-              let _linkinfos, missing =
-                Js_of_ocaml_compiler.Linker.resolve_deps linkinfos prov
-              in
-              Js_of_ocaml_compiler.Linker.check_deps ();
-              assert (StringSet.is_empty missing)));
-      Js_of_ocaml_compiler.Warning.process_warnings ();
-      (* generation *)
-      List.iter fragments ~f:(fun (f, _fragments) ->
-          let name = Filename.basename f in
-          let content = read_file f in
+let check files =
+  let fragments =
+    List.map files ~f:(fun f -> f, Js_of_ocaml_compiler.Linker.Fragment.parse_file f)
+  in
+  let keys = Js_of_ocaml_compiler.Build_info.config_keys `JavaScript in
+  let variants =
+    list_product
+      (List.map keys ~f:(fun key ->
+           let name = Js_of_ocaml_compiler.Build_info.config_key_name key in
+           let values = Js_of_ocaml_compiler.Build_info.config_key_values key in
+           name, values))
+  in
+  List.iter variants ~f:(fun setup ->
+      Js_of_ocaml_compiler.Build_info.set_values keys setup;
+      List.iter Js_of_ocaml_compiler.Target_env.all ~f:(fun target_env ->
+          Js_of_ocaml_compiler.Linker.reset ();
+          List.iter fragments ~f:(fun (filename, frags) ->
+              Js_of_ocaml_compiler.Linker.load_fragments ~target_env ~filename frags);
+          let linkinfos = Js_of_ocaml_compiler.Linker.init () in
+          let prov = Js_of_ocaml_compiler.Linker.list_all () in
+          let _linkinfos, missing =
+            Js_of_ocaml_compiler.Linker.resolve_deps linkinfos prov
+          in
+          Js_of_ocaml_compiler.Linker.check_deps ();
+          assert (StringSet.is_empty missing)));
+  Js_of_ocaml_compiler.Warning.process_warnings ()
 
-          let fragments =
-            Js_of_ocaml_compiler.Linker.Fragment.parse_builtin
-              (Js_of_ocaml_compiler.Builtins.File.create ~name:("+" ^ name) ~content)
-          in
-          let fragments =
-            List.map fragments ~f:Js_of_ocaml_compiler.Linker.Fragment.pack
-          in
-          Printf.printf
-            {|
+let generate files =
+  List.iter files ~f:(fun f ->
+      let name = Filename.basename f in
+      let content = read_file f in
+      let fragments =
+        Js_of_ocaml_compiler.Linker.Fragment.parse_builtin
+          (Js_of_ocaml_compiler.Builtins.File.create ~name:("+" ^ name) ~content)
+      in
+      let fragments = List.map fragments ~f:Js_of_ocaml_compiler.Linker.Fragment.pack in
+      Printf.printf
+        {|
 let %s = Js_of_ocaml_compiler.Builtins.register
   ~name:%S
   ~content:{frag|%s|frag}
   ~fragments:(Some %S)
 |}
-            (to_ident (Filename.chop_extension name))
-            name
-            content
-            (Marshal.to_string fragments []))
+        (to_ident (Filename.chop_extension name))
+        name
+        content
+        (Marshal.to_string fragments []));
+  Js_of_ocaml_compiler.Warning.process_warnings ()
+
+(* With --check, make sure that the runtime files are valid in all
+   configurations, which is slow. This is done by a separate rule, so
+   that generating files.ml does not have to wait for it. *)
+let main () =
+  Js_of_ocaml_compiler.Warning.werror := true;
+  Js_of_ocaml_compiler.Warning.enable `Unused_js_variable;
+  Js_of_ocaml_compiler.Config.set_target `JavaScript;
+  let () = set_binary_mode_out stdout true in
+  match List.tl (Array.to_list Sys.argv) with
+  | "--check" :: files -> check (List.sort_uniq ~cmp:String.compare files)
+  | files -> generate (List.sort_uniq ~cmp:String.compare files)
 
 (* Report errors the way the compiler does, rather than as an uncaught
    exception, which escapes the message *)
