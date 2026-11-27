@@ -395,16 +395,25 @@ let build_js_runtime ~primitives ?runtime_arguments () =
     | [ (Expression_statement f, _) ] -> f
     | _ -> assert false
   in
-  let launcher =
-    let js = Javascript.call init_fun [ primitives ] N in
-    let js =
-      match runtime_arguments with
-      | None -> js
-      | Some runtime_arguments -> Javascript.call js [ runtime_arguments ] N
-    in
-    [ Javascript.Expression_statement js, Javascript.N ]
-  in
-  Link.output_js (always_required_js @ launcher)
+  let launcher = Javascript.call init_fun [ primitives ] N in
+  match runtime_arguments with
+  | None ->
+      (* The runtime is linked later: [runtime.js] for a script, and
+         [runtime-module.js], with the loader bound to a variable, for an
+         ES module (see [Link.link]). *)
+      ( Link.output_js
+          (always_required_js @ [ Javascript.Expression_statement launcher, Javascript.N ])
+      , Some
+          (Link.output_js
+             (always_required_js
+             @ [ ( Javascript.variable_declaration
+                     [ ( Javascript.ident (Utf8_string.of_string_exn Link.launcher_var)
+                       , (launcher, Javascript.N) )
+                     ]
+                 , Javascript.N )
+               ])) )
+  | Some runtime_arguments ->
+      Link.output_js (always_required_js @ Link.launch ~launcher ~runtime_arguments), None
 
 let add_source_map sourcemap_don't_inline_content z opt_source_map =
   let sm =
@@ -614,10 +623,12 @@ let run
            if String.equal module_ "js" then Some name else None)
        |> StringSet.of_list
      in
-     let js_runtime = build_js_runtime ~primitives () in
+     let js_runtime, js_runtime_module = build_js_runtime ~primitives () in
      let z = Zip.open_out tmp_output_file in
      Zip.add_file z ~name:"runtime.wasm" ~file:tmp_wasm_file;
      Zip.add_entry z ~name:"runtime.js" ~contents:js_runtime;
+     Option.iter js_runtime_module ~f:(fun contents ->
+         Zip.add_entry z ~name:"runtime-module.js" ~contents);
      let prelude_uinfo = build_prelude z in
      Link.add_info
        z
@@ -797,7 +808,7 @@ let run
              ~file:tmp_wasm_file'
              ~url:(wasm_name ^ ".wasm.map"));
          if times () then Format.eprintf "Start building js runtime@.";
-         let js_runtime =
+         let js_runtime, _ =
            let missing_primitives =
              let l = Link.Wasm_binary.read_imports ~file:tmp_wasm_file' in
              List.filter_map

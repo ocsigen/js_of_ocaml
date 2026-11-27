@@ -581,6 +581,7 @@ let build_runtime_arguments
       :: generated_js
     else generated_js
   in
+  let es_module = Config.Flag.es_module () in
   let generated_js =
     if List.is_empty generated_js
     then obj generated_js
@@ -592,28 +593,46 @@ let build_runtime_arguments
         (EArrow
            ( Javascript.fun_
                [ Javascript.ident Global_constant.global_object_ ]
-               [ var
-                   Global_constant.old_global_object_
-                   (EVar (Javascript.ident Global_constant.global_object_))
-               ; var
-                   Global_constant.exports_
-                   (EBin
-                      ( Or
-                      , EDot
-                          ( EDot
-                              ( EVar (Javascript.ident Global_constant.global_object_)
-                              , ANullish
-                              , Utf8_string.of_string_exn "module" )
-                          , ANullish
-                          , Utf8_string.of_string_exn "export" )
-                      , EVar (Javascript.ident Global_constant.global_object_) ))
-               ; Return_statement (Some (obj generated_js), N), N
-               ]
+               ([ var
+                    Global_constant.old_global_object_
+                    (EVar (Javascript.ident Global_constant.global_object_))
+                ]
+               @ (if es_module
+                  then [] (* [jsoo_exports] is a parameter, see below *)
+                  else
+                    [ var
+                        Global_constant.exports_
+                        (EBin
+                           ( Or
+                           , EDot
+                               ( EDot
+                                   ( EVar (Javascript.ident Global_constant.global_object_)
+                                   , ANullish
+                                   , Utf8_string.of_string_exn "module" )
+                               , ANullish
+                               , Utf8_string.of_string_exn "export" )
+                           , EVar (Javascript.ident Global_constant.global_object_) ))
+                    ])
+               @ [ Return_statement (Some (obj generated_js), N), N ])
                N
            , true
            , AUnknown ))
         [ EVar (Javascript.ident Global_constant.global_object_) ]
         N
+  in
+  let generated_js =
+    if es_module
+    then
+      (* The loader calls this function with the object that receives the
+         values exported by the program, and returns this object. *)
+      Javascript.EArrow
+        ( Javascript.fun_
+            [ Javascript.ident Global_constant.exports_ ]
+            [ Return_statement (Some generated_js, N), N ]
+            N
+        , true
+        , AUnknown )
+    else generated_js
   in
   let props : (string * Javascript.expression) list =
     [ ( "link"
@@ -649,6 +668,17 @@ let build_runtime_arguments
     | `Disabled | `Cps | `Double_translation -> props
   in
   let props =
+    if es_module
+    then
+      ("es_module", Javascript.EBool true)
+      :: (* Base URL of the .wasm files *)
+         ( "base"
+         , Javascript.EVar
+             (Javascript.ident_unsafe (Utf8_string.of_string_exn "import.meta.url")) )
+      :: props
+    else props
+  in
+  let props =
     if List.is_empty embedded_files
     then props
     else
@@ -666,6 +696,58 @@ let build_runtime_arguments
       :: props
   in
   obj props
+
+(* Name of the variable bound to the loader in [runtime-module.js] *)
+let launcher_var = "jsoo_launcher"
+
+(* The statements that start the program: [launcher] applied to
+   [runtime_arguments], or, with [--enable es-module], a default export
+   [(options) => launcher(Object.assign(runtime_arguments, options))]. *)
+let launch ~launcher ~runtime_arguments : Javascript.program =
+  if not (Config.Flag.es_module ())
+  then
+    [ ( Javascript.Expression_statement (Javascript.call launcher [ runtime_arguments ] N)
+      , N )
+    ]
+  else
+    let str = Utf8_string.of_string_exn in
+    let id s = Javascript.ident (str s) in
+    let options = id "options" in
+    [ (* There is no [require] in an ES module. On Node.js, the loader uses
+         [process.getBuiltinModule] instead. *)
+      ( Javascript.variable_declaration
+          [ ( id "require"
+            , ( EDot
+                  ( EDot (EVar (id "globalThis"), ANormal, str "process")
+                  , ANullish
+                  , str "getBuiltinModule" )
+              , N ) )
+          ]
+      , N )
+    ; ( Export
+          ( ExportDefaultExpression
+              (EArrow
+                 ( Javascript.fun_
+                     [ options ]
+                     [ ( Return_statement
+                           ( Some
+                               (Javascript.call
+                                  launcher
+                                  [ Javascript.call
+                                      (EDot (EVar (id "Object"), ANormal, str "assign"))
+                                      [ runtime_arguments; EVar options ]
+                                      N
+                                  ]
+                                  N)
+                           , N )
+                       , N )
+                     ]
+                     N
+                 , true
+                 , AUnknown ))
+          , Parse_info.zero )
+      , N )
+    ]
 
 let source_name i j file =
   let prefix =
@@ -1066,24 +1148,41 @@ let link ~output_file ~linkall ~enable_source_maps ~embedded_files ~files =
     @@ List.map files ~f:(fun (_, (_, units)) ->
         List.map units ~f:(fun { unit_name; fragments; _ } -> Some unit_name, fragments))
   in
+  let runtime_args_js =
+    build_runtime_arguments
+      ~link_spec
+      ~separate_compilation:true
+      ~missing_primitives
+      ~wasm_dir
+      ~generated_js
+      ~embedded_files
+      ()
+  in
   let runtime_args =
-    let js =
-      build_runtime_arguments
-        ~link_spec
-        ~separate_compilation:true
-        ~missing_primitives
-        ~wasm_dir
-        ~generated_js
-        ~embedded_files
-        ()
-    in
-    output_js [ Javascript.Expression_statement js, Javascript.N ]
+    output_js [ Javascript.Expression_statement runtime_args_js, Javascript.N ]
+  in
+  let contents =
+    if not (Config.Flag.es_module ())
+    then trim_semi js_runtime ^ "\n" ^ runtime_args
+    else
+      (* Same as [runtime.js], but the loader is bound to [launcher_var]
+         instead of being the value of the last statement *)
+      let js_runtime_module =
+        match files with
+        | (file, _) :: _ ->
+            Zip.with_open_in file (fun z -> Zip.read_entry z ~name:"runtime-module.js")
+        | _ -> assert false
+      in
+      js_runtime_module
+      ^ "\n"
+      ^ output_js
+          (launch
+             ~launcher:(EVar (Javascript.ident (Utf8_string.of_string_exn launcher_var)))
+             ~runtime_arguments:runtime_args_js)
   in
   Fs.gen_file output_file
   @@ fun tmp_output_file ->
-  Fs.write_file
-    ~name:tmp_output_file
-    ~contents:(trim_semi js_runtime ^ "\n" ^ runtime_args);
+  Fs.write_file ~name:tmp_output_file ~contents;
   if times () then Format.eprintf "    build JS runtime: %a@." Timer.print t1;
   if times () then Format.eprintf "  emit: %a@." Timer.print t
 

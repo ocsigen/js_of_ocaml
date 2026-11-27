@@ -135,6 +135,8 @@ module Flag = struct
 
   let wasi = o ~name:"wasi" ~default:false
 
+  let es_module = o ~name:"es-module" ~default:false
+
   let split_toplevel = o ~name:"split-toplevel" ~default:true
 end
 

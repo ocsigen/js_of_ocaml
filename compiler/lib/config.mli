@@ -97,6 +97,8 @@ module Flag : sig
 
   val wasi : unit -> bool
 
+  val es_module : unit -> bool
+
   val split_toplevel : unit -> bool
 
   val enable : string -> unit

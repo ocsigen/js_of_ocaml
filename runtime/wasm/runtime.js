@@ -18,9 +18,31 @@
 (js) => async (args) => {
   // biome-ignore lint/suspicious/noRedundantUseStrict: needed for non-module execution
   "use strict";
-  const { link, src, generated, enable_jspi, native_effects } = args;
+  const { link, src, enable_jspi, native_effects, load, base, es_module } =
+    args;
 
-  const isNode = globalThis.process?.versions?.node;
+  // Cloudflare Workers (workerd) define a Node-like [process] object,
+  // including [process.versions.node], but provide neither [require] nor a
+  // file system.
+  const isWorkerd = globalThis.navigator?.userAgent === "Cloudflare-Workers";
+  // [args.isNode], when set, takes precedence over detection.
+  const isNode =
+    args.isNode ?? (!isWorkerd && globalThis.process?.versions?.node);
+  // The [process] object, unless we know we are not running on Node.js
+  const node_process =
+    (args.isNode ?? !isWorkerd) === false ? undefined : globalThis.process;
+
+  // In an ES module, [generated] is a function taking the object that
+  // receives the values exported by the OCaml program (with [Js.export]);
+  // this object is the result of the initialization.
+  const ocaml_exports = typeof args.generated === "function" ? {} : undefined;
+  const generated = ocaml_exports
+    ? args.generated(ocaml_exports)
+    : args.generated;
+
+  // Exit code of the program, if it exits during initialization
+  let initializing = false;
+  let exit_code = 0;
 
   const math = {
     cos: Math.cos,
@@ -561,8 +583,8 @@
     },
     gettimeofday: () => Date.now() / 1000,
     times: () => {
-      if (globalThis.process?.cpuUsage) {
-        var t = globalThis.process.cpuUsage();
+      if (node_process?.cpuUsage) {
+        var t = node_process.cpuUsage();
         return caml_alloc_times(t.user / 1e6, t.system / 1e6);
       } else {
         var t = performance.now() / 1000;
@@ -687,6 +709,7 @@
       // like caml_sys_exit in the JavaScript runtime
       if (globalThis.quit) globalThis.quit(n);
       if (isNode) globalThis.process.exit(n);
+      else if (initializing) exit_code = n;
     },
     // like caml_argv in the JavaScript runtime: globalThis.scriptArgs is
     // [program, ...arguments] (QuickJS), and can be set by a page
@@ -713,14 +736,10 @@
     // In a browser there is no tty and no [require]; report false instead of
     // throwing on the undefined [require].
     isatty: (fd) => (isNode ? +require("node:tty").isatty(fd) : 0),
-    getuid: () =>
-      globalThis.process?.getuid ? globalThis.process.getuid() : 1,
-    geteuid: () =>
-      globalThis.process?.geteuid ? globalThis.process.geteuid() : 1,
-    getgid: () =>
-      globalThis.process?.getgid ? globalThis.process.getgid() : 1,
-    getegid: () =>
-      globalThis.process?.getegid ? globalThis.process.getegid() : 1,
+    getuid: () => (node_process?.getuid ? node_process.getuid() : 1),
+    geteuid: () => (node_process?.geteuid ? node_process.geteuid() : 1),
+    getgid: () => (node_process?.getgid ? node_process.getgid() : 1),
+    getegid: () => (node_process?.getegid ? node_process.getegid() : 1),
     time: () => performance.now(),
     getcwd: () => (isNode ? globalThis.process.cwd() : "/static"),
     chdir: (x) => globalThis.process.chdir(x),
@@ -985,11 +1004,15 @@
   };
 
   function loadRelative(src) {
-    const path = require("node:path");
-    const f = path.join(path.dirname(module.filename), src);
+    let f;
+    if (base) f = new URL(src, base);
+    else {
+      const path = require("node:path");
+      f = path.join(path.dirname(module.filename), src);
+    }
     return require("node:fs/promises").readFile(f);
   }
-  const fetchBase = globalThis?.document?.currentScript?.src;
+  const fetchBase = base ?? globalThis?.document?.currentScript?.src;
   function fetchRelative(src) {
     const url = fetchBase ? new URL(src, fetchBase) : src;
     return fetch(url);
@@ -1000,15 +1023,33 @@
       ? WebAssembly.instantiate(await code, imports, options)
       : WebAssembly.instantiateStreaming(code, imports, options);
   }
+  // Code supplied by [args.load]: a compiled module, a [Response] or bytes
+  async function instantiateLoaded(code) {
+    code = await code;
+    if (code instanceof WebAssembly.Module)
+      return { instance: await WebAssembly.instantiate(code, imports) };
+    if (globalThis.Response && code instanceof globalThis.Response)
+      return WebAssembly.instantiateStreaming(code, imports, options);
+    // Compile bytes synchronously: some embedders only allow compiling
+    // code while the program starts (workerd accepts [new
+    // WebAssembly.Module] there, but an asynchronous compilation never
+    // completes).
+    const module = new WebAssembly.Module(code, options);
+    return { instance: await WebAssembly.instantiate(module, imports) };
+  }
   async function instantiateFromDir() {
     imports.OCaml = {};
     const deps = [];
     async function loadModule(module, isRuntime) {
       const sync = module[1].constructor !== Array;
       async function instantiate() {
-        const code = loadCode(src + "/" + module[0] + ".wasm");
+        const code = load
+          ? load(module[0] + ".wasm")
+          : loadCode(src + "/" + module[0] + ".wasm");
         await Promise.all(sync ? deps : module[1].map((i) => deps[i]));
-        const wasmModule = await instantiateModule(code);
+        const wasmModule = await (load
+          ? instantiateLoaded(code)
+          : instantiateModule(code));
         Object.assign(
           isRuntime ? imports.env : imports.OCaml,
           wasmModule.instance.exports,
@@ -1051,8 +1092,8 @@
 
   start_fiber = make_promising(caml_start_fiber);
   var _initialize = make_promising(_initialize);
-  if (globalThis.process?.on) {
-    globalThis.process.on("uncaughtException", (err, _origin) =>
+  if (node_process?.on) {
+    node_process.on("uncaughtException", (err, _origin) =>
       caml_handle_uncaught_exception(err),
     );
   } else if (globalThis.addEventListener) {
@@ -1061,5 +1102,19 @@
       (event) => event.error && caml_handle_uncaught_exception(event.error),
     );
   }
-  await _initialize();
+  initializing = true;
+  try {
+    await _initialize();
+  } finally {
+    initializing = false;
+  }
+  // Outside Node.js, [exit] does not stop the program. With an ES module,
+  // the caller can observe the outcome: report a failed initialization
+  // (uncaught exception, or non-zero exit code).
+  if (es_module && exit_code) {
+    throw new Error(
+      `OCaml program exited with code ${exit_code} during initialization`,
+    );
+  }
+  return ocaml_exports;
 };

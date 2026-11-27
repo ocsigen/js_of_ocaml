@@ -64,6 +64,13 @@ val build_runtime_arguments :
 
 val output_js : Javascript.program -> string
 
+val launcher_var : string
+
+val launch :
+     launcher:Javascript.expression
+  -> runtime_arguments:Javascript.expression
+  -> Javascript.program
+
 val link :
      output_file:string
   -> linkall:bool
