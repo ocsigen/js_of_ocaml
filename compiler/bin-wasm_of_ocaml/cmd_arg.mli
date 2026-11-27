@@ -40,6 +40,7 @@ type t =
   ; no_cmis : bool
   ; export_file : string option
   ; fs_files : string list
+  ; target_env : Target_env.t
   }
 
 val options : unit -> t Cmdliner.Term.t

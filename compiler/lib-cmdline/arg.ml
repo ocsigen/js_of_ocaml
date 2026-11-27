@@ -127,6 +127,13 @@ let custom_header =
   in
   Arg.(value & opt (some string) None & info [ "custom-header" ] ~doc)
 
+let target_env =
+  let doc = "Runtime compile target." in
+  let options = List.map ~f:(fun env -> Target_env.to_string env, env) Target_env.all in
+  let docv = Printf.sprintf "{%s}" (String.concat ~sep:"," (List.map ~f:fst options)) in
+  Arg.(
+    value & opt (enum options) Target_env.Isomorphic & info [ "target-env" ] ~docv ~doc)
+
 let build_config =
   let doc = "Print build-relevant configuration as key=value pairs and exit." in
   Arg.(value & flag & info [ "build-config" ] ~doc)

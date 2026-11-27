@@ -31,6 +31,8 @@ type t =
   ; custom_header : string option
   }
 
+val target_env : Js_of_ocaml_compiler.Target_env.t Cmdliner.Term.t
+
 val build_config : bool Cmdliner.Term.t
 
 val apply_build_config : string option Cmdliner.Term.t

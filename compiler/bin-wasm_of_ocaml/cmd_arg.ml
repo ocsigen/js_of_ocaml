@@ -74,6 +74,7 @@ type t =
   ; no_cmis : bool
   ; export_file : string option
   ; fs_files : string list
+  ; target_env : Target_env.t
   }
 
 let set_param =
@@ -221,7 +222,8 @@ let options () =
       effects
       shape_files
       build_config
-      apply_build_config =
+      apply_build_config
+      target_env =
     let chop_extension s = try Filename.chop_extension s with Invalid_argument _ -> s in
     let common =
       if toplevel
@@ -280,6 +282,7 @@ let options () =
           ; no_cmis
           ; export_file
           ; fs_files
+          ; target_env
           }
   in
   let t =
@@ -306,7 +309,8 @@ let options () =
       $ effects
       $ shape_files
       $ build_config
-      $ apply_build_config)
+      $ apply_build_config
+      $ Jsoo_cmdline.Arg.target_env)
   in
   Term.ret t
 
@@ -411,6 +415,7 @@ let options_runtime_only () =
       ; no_cmis = false
       ; export_file = None
       ; fs_files = []
+      ; target_env = Target_env.Isomorphic
       }
   in
   let t =

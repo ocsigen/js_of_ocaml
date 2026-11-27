@@ -521,6 +521,7 @@ let report_missing_primitives missing =
       missing
 
 let build_runtime_arguments
+    ~target_env
     ~link_spec
     ~separate_compilation
     ~missing_primitives
@@ -666,6 +667,15 @@ let build_runtime_arguments
     | `Jspi -> ("enable_jspi", Javascript.EBool true) :: props
     | `Native -> ("native_effects", Javascript.EBool true) :: props
     | `Disabled | `Cps | `Double_translation -> props
+  in
+  let props =
+    match (target_env : Target_env.t) with
+    | Isomorphic -> props
+    | Browser | Nodejs ->
+        (* The environment is fixed: the loader does not detect it *)
+        ( "target_env"
+        , Javascript.EStr (Utf8_string.of_string_exn (Target_env.to_string target_env)) )
+        :: props
   in
   let props =
     if es_module
@@ -990,7 +1000,7 @@ let link_to_module ~to_link ~files_to_link ~files ~enable_source_maps:_ ~dir =
        ~filter_export:(fun nm -> String.equal nm "_start" || String.equal nm "memory")
        ~output_file:(Filename.concat dir "code.wasm"))
 
-let link ~output_file ~linkall ~enable_source_maps ~embedded_files ~files =
+let link ~target_env ~output_file ~linkall ~enable_source_maps ~embedded_files ~files =
   if times () then Format.eprintf "linking@.";
   let t = Timer.make () in
   let embedded_files = embedded_files @ List.concat_map ~f:read_embedded_files files in
@@ -1150,6 +1160,7 @@ let link ~output_file ~linkall ~enable_source_maps ~embedded_files ~files =
   in
   let runtime_args_js =
     build_runtime_arguments
+      ~target_env
       ~link_spec
       ~separate_compilation:true
       ~missing_primitives
@@ -1294,11 +1305,18 @@ let make_library ~linkall ~output_file ~enable_source_maps ~files =
   if enable_source_maps then add_source_map files z output_sourcemap.source_map;
   Zip.close_out z
 
-let link ~output_file ~linkall ~mklib ~enable_source_maps ~embedded_files ~files =
+let link
+    ~target_env
+    ~output_file
+    ~linkall
+    ~mklib
+    ~enable_source_maps
+    ~embedded_files
+    ~files =
   try
     if mklib
     then make_library ~linkall ~output_file ~enable_source_maps ~files
-    else link ~output_file ~linkall ~enable_source_maps ~embedded_files ~files
+    else link ~target_env ~output_file ~linkall ~enable_source_maps ~embedded_files ~files
   with Build_info.Incompatible_build_info { key; first = f1, v1; second = f2, v2 } ->
     let string_of_v = function
       | None -> "<empty>"

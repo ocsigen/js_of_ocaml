@@ -170,13 +170,7 @@ let options =
     in
     `Ok (runtime_files, bc_files, target_env)
   in
-  let target_env =
-    let doc = "Runtime compile target." in
-    let options = List.map ~f:(fun env -> Target_env.to_string env, env) Target_env.all in
-    let docv = Printf.sprintf "{%s}" (String.concat ~sep:"," (List.map ~f:fst options)) in
-    Arg.(
-      value & opt (enum options) Target_env.Isomorphic & info [ "target-env" ] ~docv ~doc)
-  in
+  let target_env = Jsoo_cmdline.Arg.target_env in
   let t = Term.(const build_t $ files $ target_env) in
   Term.ret t
 

@@ -18,19 +18,36 @@
 (js) => async (args) => {
   // biome-ignore lint/suspicious/noRedundantUseStrict: needed for non-module execution
   "use strict";
-  const { link, src, enable_jspi, native_effects, load, base, es_module } =
-    args;
+  const {
+    link,
+    src,
+    enable_jspi,
+    native_effects,
+    load,
+    base,
+    es_module,
+    target_env,
+  } = args;
 
-  // Cloudflare Workers (workerd) define a Node-like [process] object,
-  // including [process.versions.node], but provide neither [require] nor a
-  // file system.
-  const isWorkerd = globalThis.navigator?.userAgent === "Cloudflare-Workers";
-  // [args.isNode], when set, takes precedence over detection.
-  const isNode =
-    args.isNode ?? (!isWorkerd && globalThis.process?.versions?.node);
+  // [target_env] ("browser" or "nodejs", from [--target-env]) fixes the
+  // environment at link time. Otherwise (isomorphic), Node.js is detected,
+  // unless [args.isNode] is given. Contradicting [target_env] is an error.
+  if (
+    target_env &&
+    args.isNode !== undefined &&
+    !args.isNode !== (target_env === "browser")
+  )
+    throw new Error(
+      `isNode: ${args.isNode} contradicts --target-env=${target_env}`,
+    );
+  const isNode = target_env
+    ? target_env === "nodejs"
+    : (args.isNode ?? globalThis.process?.versions?.node);
   // The [process] object, unless we know we are not running on Node.js
   const node_process =
-    (args.isNode ?? !isWorkerd) === false ? undefined : globalThis.process;
+    isNode || (target_env !== "browser" && args.isNode !== false)
+      ? globalThis.process
+      : undefined;
 
   // In an ES module, [generated] is a function taking the object that
   // receives the values exported by the OCaml program (with [Js.export]);
@@ -327,7 +344,7 @@
     );
   }
 
-  const on_arm64 = globalThis.process?.arch === "arm64";
+  const on_arm64 = node_process?.arch === "arm64";
 
   // See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error/stack
   const isV8 = new Error().stack?.includes("\n    at ") ?? false;
@@ -742,7 +759,7 @@
     getegid: () => (node_process?.getegid ? node_process.getegid() : 1),
     time: () => performance.now(),
     getcwd: () => (isNode ? globalThis.process.cwd() : "/static"),
-    chdir: (x) => globalThis.process.chdir(x),
+    chdir: (x) => node_process.chdir(x),
     mkdir: (p, m) => fs.mkdirSync(p, m),
     rmdir: (p) => fs.rmdirSync(p),
     link: (d, s) => fs.linkSync(d, s),

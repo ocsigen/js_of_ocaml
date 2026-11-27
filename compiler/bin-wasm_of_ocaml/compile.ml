@@ -464,6 +464,7 @@ let run
     ; no_cmis
     ; export_file
     ; fs_files
+    ; target_env
     } =
   Config.set_target `Wasm;
   Jsoo_cmdline.Arg.eval common;
@@ -531,8 +532,8 @@ let run
   List.iter builtin ~f:(fun t ->
       let filename = Builtins.File.name t in
       let runtimes = Linker.Fragment.parse_builtin t in
-      Linker.load_fragments ~target_env:Target_env.Isomorphic ~filename runtimes);
-  Linker.load_files ~target_env:Target_env.Isomorphic runtime_js_files;
+      Linker.load_fragments ~target_env ~filename runtimes);
+  Linker.load_files ~target_env runtime_js_files;
   Linker.check_deps ();
   if times () then Format.eprintf "  parsing js: %a@." Timer.print t1;
   if times () then Format.eprintf "Start parsing...@.";
@@ -820,6 +821,7 @@ let run
              ~primitives
              ~runtime_arguments:
                (Link.build_runtime_arguments
+                  ~target_env
                   ~missing_primitives
                   ~wasm_dir:dir
                   ~link_spec:[ wasm_name, None ]

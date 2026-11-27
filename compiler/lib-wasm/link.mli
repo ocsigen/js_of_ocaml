@@ -53,7 +53,8 @@ val add_info :
   Zip.output -> build_info:Build_info.t -> unit_data:unit_data list -> unit -> unit
 
 val build_runtime_arguments :
-     link_spec:(string * int list option) list
+     target_env:Target_env.t
+  -> link_spec:(string * int list option) list
   -> separate_compilation:bool
   -> missing_primitives:string list
   -> wasm_dir:string
@@ -72,7 +73,8 @@ val launch :
   -> Javascript.program
 
 val link :
-     output_file:string
+     target_env:Target_env.t
+  -> output_file:string
   -> linkall:bool
   -> mklib:bool
   -> enable_source_maps:bool

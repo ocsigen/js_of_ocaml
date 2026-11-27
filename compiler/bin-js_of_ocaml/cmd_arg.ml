@@ -191,13 +191,7 @@ let options =
       & opt_all (list (pair ~sep:'=' string string)) []
       & info [ "setenv" ] ~docv:"PARAM=VALUE" ~doc)
   in
-  let target_env =
-    let doc = "Runtime compile target." in
-    let options = List.map ~f:(fun env -> Target_env.to_string env, env) Target_env.all in
-    let docv = Printf.sprintf "{%s}" (String.concat ~sep:"," (List.map ~f:fst options)) in
-    Arg.(
-      value & opt (enum options) Target_env.Isomorphic & info [ "target-env" ] ~docv ~doc)
-  in
+  let target_env = Jsoo_cmdline.Arg.target_env in
   let toplevel =
     let doc =
       "Compile a toplevel and embed necessary cmis (unless '--no-cmis' is provided). \
@@ -495,13 +489,7 @@ let options_runtime_only =
     let doc = "Do not include cmis when compiling toplevel." in
     Arg.(value & flag & info [ "nocmis"; "no-cmis" ] ~docs:toplevel_section ~doc)
   in
-  let target_env =
-    let doc = "Runtime compile target." in
-    let options = List.map ~f:(fun env -> Target_env.to_string env, env) Target_env.all in
-    let docv = Printf.sprintf "{%s}" (String.concat ~sep:"," (List.map ~f:fst options)) in
-    Arg.(
-      value & opt (enum options) Target_env.Isomorphic & info [ "target-env" ] ~docv ~doc)
-  in
+  let target_env = Jsoo_cmdline.Arg.target_env in
   let wrap_with_function =
     let doc =
       "Wrap the generated JavaScript code inside a function that needs to be applied \

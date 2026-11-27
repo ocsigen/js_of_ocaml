@@ -29,6 +29,7 @@ type t =
   ; mklib : bool
   ; enable_source_maps : bool
   ; fs_files : string list
+  ; target_env : Js_of_ocaml_compiler.Target_env.t
   }
 
 let options () =
@@ -82,7 +83,8 @@ let options () =
       linkall
       dynlink
       mklib
-      fs_files =
+      fs_files
+      target_env =
     if mklib && not (List.is_empty fs_files)
     then `Error (false, "options -a and --file are incompatible")
     else
@@ -96,6 +98,7 @@ let options () =
         ; mklib
         ; enable_source_maps
         ; fs_files
+        ; target_env
         }
   in
   let t =
@@ -109,7 +112,8 @@ let options () =
       $ linkall
       $ dynlink
       $ mklib
-      $ fs_files)
+      $ fs_files
+      $ Jsoo_cmdline.Arg.target_env)
   in
   Term.ret t
 
@@ -125,6 +129,7 @@ let f
     ; enable_source_maps
     ; mklib
     ; fs_files
+    ; target_env
     } =
   Js_of_ocaml_compiler.Config.set_target `Wasm;
   Jsoo_cmdline.Arg.eval common;
@@ -134,7 +139,14 @@ let f
           (Js_of_ocaml_compiler.Pseudo_fs.list_files f [])
           ~f:(fun (name, filename) -> name, Js_of_ocaml_compiler.Fs.read_file filename))
   in
-  Link.link ~output_file ~linkall ~mklib ~enable_source_maps ~embedded_files ~files
+  Link.link
+    ~target_env
+    ~output_file
+    ~linkall
+    ~mklib
+    ~enable_source_maps
+    ~embedded_files
+    ~files
 
 let info =
   Info.make
