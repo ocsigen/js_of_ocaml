@@ -1200,9 +1200,15 @@ val request_animation_frame : unit -> unit Lwt.t
     (see JS method [window.requestAnimationFrame]) *)
 
 val onload : unit -> Dom_html.event Js.t Lwt.t
-(** Returns when the page is loaded *)
+(** Returns at the next [load] event of the window. If the page is already
+    loaded (as is usual when a program compiled with wasm_of_ocaml starts),
+    the promise never resolves: see {!domContentLoaded}. *)
 
 val domContentLoaded : unit -> unit Lwt.t
+(** Returns when the HTML document has been parsed ([DOMContentLoaded]
+    event). If the page is already completely loaded, returns immediately. If
+    the document is already parsed but not completely loaded, returns when it
+    is completely loaded. *)
 
 val onunload : unit -> Dom_html.event Js.t Lwt.t
 
