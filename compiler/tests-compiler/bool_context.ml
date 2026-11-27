@@ -64,10 +64,9 @@ let () =
   print_newline ()
 |}
 
-(* FIXME: should be [0 1 false true 20 10 false true true] *)
 let%expect_test "behaviour" =
   compile_and_run prog;
-  [%expect {| -4 1 true true 20 10 true true true |}]
+  [%expect {| 0 1 false true 20 10 false true true |}]
 
 let program = lazy (compile_and_parse prog)
 
@@ -75,14 +74,15 @@ let print name = print_fun_decl (Stdlib.Lazy.force program) (Some name)
 
 let%expect_test "negation used as a value" =
   print "not_value";
-  [%expect {|
-    function not_value(a){var c = a, r = 1 - c; return r;}
+  [%expect
+    {|
+    function not_value(a){var c = a !== 0, r = 1 - c; return r;}
     //end
     |}];
   print "not_stored";
   [%expect
     {|
-    function not_stored(a){var c = a, r = 1 - c; return [0, r];}
+    function not_stored(a){var c = a !== 0, r = 1 - c; return [0, r];}
     //end
     |}]
 
@@ -98,7 +98,7 @@ let%expect_test "negation of a join" =
   [%expect
     {|
     function not_join(a, b){
-     var c = a, d = b ? c : a !== 1, r = 1 - d;
+     var c = a !== 0, d = b ? c : a !== 1, r = 1 - d;
      return [0, r];
     }
     //end
