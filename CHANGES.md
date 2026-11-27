@@ -169,8 +169,8 @@
 * Toplevel: `js_of_ocaml-toplevel` depends on `js_of_ocaml-ppx`, so that
   `js_of_ocaml-toplevel.worker_lwt_client` is no longer silently skipped when
   the ppx is not installed first (#2627)
-* Ppx: [@@deriving json] on a non-recursive type no longer triggers warning 39
-  (unused rec flag), an error in the dev profile of dune (#2662)
+* Ppx: `[@@deriving json]` on a non-recursive type no longer triggers warning
+  39 (unused rec flag), an error in the dev profile of dune (#2662)
 
 # 6.5.0 (2026-10-22) - Lille
 

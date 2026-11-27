@@ -56,7 +56,7 @@
  (modules unused_rec)
  (modes byte)
  (flags
-  (:standard -w +39 -warn-error +39))
+  (:standard -w +unused-rec-flag -warn-error +unused-rec-flag))
  (preprocess
   (pps js_of_ocaml-ppx_deriving_json))
  (libraries js_of_ocaml.deriving))

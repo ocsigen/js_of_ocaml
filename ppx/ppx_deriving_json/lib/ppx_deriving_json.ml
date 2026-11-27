@@ -826,7 +826,7 @@ let type_decl_str ~loc:_ ~path:_ (_, l) =
     let attr =
       Attr.mk
         { txt = "ocaml.warning"; loc }
-        (PStr [ Str.eval (Exp.constant (Const.string "-39")) ])
+        (PStr [ Str.eval (Exp.constant (Const.string "-unused-rec-flag")) ])
     in
     { vb with pvb_attributes = attr :: vb.pvb_attributes }
   in
