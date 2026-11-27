@@ -2374,3 +2374,189 @@ let%expect_test "using declarations binding of" =
            of
            x);}
            |}]
+
+let%expect_test "arrow returning async arrow" =
+  let test ?(compact = false) s =
+    print_endline ("=== " ^ String.concat ~sep:"\\n" (String.split_on_char ~sep:'\n' s));
+    print ~debuginfo:false ~report:true ~compact s
+  in
+  (* Concise body which is an async arrow function *)
+  test "x => async y => 1";
+  test "x => async (y) => 1";
+  test "(x) => async y => { return 1 }";
+  test "x => async y => async z => 1";
+  test "async x => async y => 1";
+  test "f(x => async y => 1)";
+  test "var f = js => async args => { await args; }";
+  test ~compact:true "(js=> async args=>{})";
+  test ~compact:true "js=> async args=>{}";
+  test ~compact:true "var f = (js=> async args=>{})";
+  test ~compact:true "var f = js=> async(args)=>{}";
+  (* [async] as an identifier ending a concise body *)
+  test "x => async";
+  test "x => async;";
+  test "f(x => async)";
+  test "(x => async, 1)";
+  test "[x => async]";
+  test "x => async ? 1 : 2";
+  test "x => async\ny => 1";
+  (* Other uses of [async] *)
+  test "async x => 1";
+  test "async(x)";
+  test "x => async(y)";
+  test "var async = 1; async + 1";
+  test "for (async of => 1; ; ) break";
+  test "for ((async) of []);";
+  test "async\nx => 1";
+  [%expect
+    {|
+           === x => async y => 1
+
+           x=>async y=>1;
+
+
+
+           === x => async (y) => 1
+
+           x=>async y=>1;
+
+
+
+           === (x) => async y => { return 1 }
+
+           x=>async y=>{return 1;};
+
+
+
+           === x => async y => async z => 1
+
+           x=>async y=>async z=>1;
+
+
+
+           === async x => async y => 1
+
+           async x=>async y=>1;
+
+
+
+           === f(x => async y => 1)
+
+           f(x=>async y=>1);
+
+
+
+           === var f = js => async args => { await args; }
+
+           var f = js=>async args=>{await args;};
+
+
+
+           === (js=> async args=>{})
+
+           js=>async args=>{};
+
+
+
+           === js=> async args=>{}
+
+           js=>async args=>{};
+
+
+
+           === var f = (js=> async args=>{})
+
+           var
+           f=js=>async args=>{};
+
+
+
+           === var f = js=> async(args)=>{}
+
+           var
+           f=js=>async args=>{};
+
+
+
+           === x => async
+
+           x=>async;
+
+
+
+           === x => async;
+
+           x=>async;
+
+
+
+           === f(x => async)
+
+           f(x=>async);
+
+
+
+           === (x => async, 1)
+
+           x=>async, 1;
+
+
+
+           === [x => async]
+
+           [x=>async];
+
+
+
+           === x => async ? 1 : 2
+
+           x=>async ? 1 : 2;
+
+
+
+           === x => async\ny => 1
+
+           x=>async; y=>1;
+
+
+
+           === async x => 1
+
+           async x=>1;
+
+
+
+           === async(x)
+
+           async(x);
+
+
+
+           === x => async(y)
+
+           x=>async(y);
+
+
+
+           === var async = 1; async + 1
+
+           var async = 1; async + 1;
+
+
+
+           === for (async of => 1; ; ) break
+
+           for(async of=>1;;) break;
+
+
+
+           === for ((async) of []);
+
+           for((async) of []) ;
+
+
+
+           === async\nx => 1
+
+           async; x=>1;
+           |}]

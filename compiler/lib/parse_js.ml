@@ -411,6 +411,18 @@ let dummy_loc = Loc.create Lexer.dummy_pos Lexer.dummy_pos
 
 let dummy_ident = Js_token.T_IDENTIFIER (Utf8_string.of_string_exn "<DUMMY>", "<DUMMY>")
 
+(* Whether [token] would be accepted as the parameter of an async arrow
+   function [async token => ...] whose [async] keyword was the last token
+   fed to [state]. *)
+let async_arrow_parameter_acceptable state token =
+  acceptable state T_YIELDOFF
+  &&
+  let state = State.offer state T_YIELDOFF dummy_loc in
+  acceptable state T_AWAITON
+  &&
+  let state = State.offer state T_AWAITON dummy_loc in
+  acceptable state token
+
 let rec offer_one t (lexbuf : Lexer.t) =
   let tok, loc = Lexer.token lexbuf in
   match tok with
@@ -557,6 +569,16 @@ let recover error_checkpoint previous_checkpoint =
               (token_to_ident T_OF)
               last_token_loc
             |> State.try_recover
+        (* [async x => ...] in a position where [async] alone could also
+           end an enclosing concise body, as in [x => async y => ...]:
+           both [T_YIELD_AWAIT_POP] (closing that body) and [T_YIELDOFF]
+           (opening the async arrow) are acceptable. Open the async arrow
+           when the offending token is on the same line and can be its
+           parameter. *)
+        | Some (T_ASYNC, _, _)
+          when (not (nl_separated rest offending_loc))
+               && async_arrow_parameter_acceptable previous_checkpoint offending_token ->
+            State.Cursor.insert_token rest T_YIELDOFF dummy_loc |> State.try_recover
         (* Entering function body after '{': push yield/await state.
                    The appropriate state depends on the function kind
                    (regular, generator, async, async generator). *)
