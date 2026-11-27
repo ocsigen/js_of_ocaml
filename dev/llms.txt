@@ -27,7 +27,6 @@
 - [Performance](js_of_ocaml/performances.md)
 - [Contributing to Js\_of\_ocaml](js_of_ocaml/contribute.md)
 - [Examples](js_of_ocaml/examples.md)
-- [OCaml Package Documentation](index.md)
 - [js\_of\_ocaml-compiler index](js_of_ocaml-compiler/index.md)
 - [js\_of\_ocaml-lwt index](js_of_ocaml-lwt/index.md)
 - [js\_of\_ocaml-ppx index](js_of_ocaml-ppx/index.md)
