@@ -8,15 +8,10 @@
 (css /css/style.css /css/ocsigen-odoc.css)  ; shared Ocsigen theme (wodoc css default changed)
 (landing js_of_ocaml/index.html)
 ;; no (highlight …): wodoc's default starter already colours js_of_ocaml/lwt/eliom syntax.
-;; Build the API with odoc_driver (the engine ocaml.org uses) on the INSTALLED
-;; packages, exactly like the other Ocsigen projects: it links against the whole
-;; installed universe and --remaps non-selected packages to ocaml.org, so
-;; cross-project refs (e.g. {!Lwt}) resolve instead of breaking `dune build @doc`
-;; in an include expansion. js_of_ocaml's API spans several packages, so list
-;; them all (js_of_ocaml-lwt etc. are NOT deps of js_of_ocaml — they need to be
-;; selected explicitly to be documented), and assemble their subtrees via
-;; (packages …). Wasm_of_ocaml refs are remapped to ocaml.org by --remap.
-(odoc-driver js_of_ocaml js_of_ocaml-lwt js_of_ocaml-tyxml js_of_ocaml-toplevel)
+;; The API is built from this tree by `dune build @doc`, wodoc's default. Its
+;; layout (<pkg>/<Module>/…) is what the published URLs, the nav below and
+;; the other Ocsigen projects' links rely on; odoc_driver would add a library
+;; directory (<pkg>/<lib>/<Module>/…). The packages to assemble:
 (packages js_of_ocaml js_of_ocaml-lwt js_of_ocaml-tyxml js_of_ocaml-toplevel)
 (doc-manual true)              ; also build @doc-manual (the interactive examples)
 (manual-files js_of_ocaml)    ; copy _build/.../manual/files into js_of_ocaml/files
