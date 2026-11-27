@@ -1,5 +1,6 @@
 (executables
  (names main)
+ (modules main)
  (libraries
   ppxlib
   toplevel_expect_test
@@ -46,3 +47,16 @@
  ;; (package js_of_ocaml-ppx)
  (action
   (diff gen.mlt gen.mlt.corrected)))
+
+; The generated functions of a non-recursive type must not trigger
+; warning 39 (unused rec flag), an error in dune's dev profile.
+
+(test
+ (name unused_rec)
+ (modules unused_rec)
+ (modes byte)
+ (flags
+  (:standard -w +39 -warn-error +39))
+ (preprocess
+  (pps js_of_ocaml-ppx_deriving_json))
+ (libraries js_of_ocaml.deriving))
