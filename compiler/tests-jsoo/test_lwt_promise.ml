@@ -55,9 +55,13 @@ let main : unit Lwt.t =
         let* () = Promise.to_lwt (Promise.of_lwt (Lwt.fail (Failure "lwt-boom"))) in
         log "of_lwt failure NOT caught";
         Lwt.return ())
-      (fun _ ->
-        log "of_lwt failure round-trip";
-        Lwt.return ())
+      (function
+        | Failure s ->
+            log (Printf.sprintf "of_lwt failure round-trip: Failure %S" s);
+            Lwt.return ()
+        | exn ->
+            log (Printf.sprintf "unexpected exn %s" (Printexc.to_string exn));
+            Lwt.return ())
   in
   log "done";
   Lwt.return ()

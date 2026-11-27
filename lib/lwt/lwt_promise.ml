@@ -25,7 +25,11 @@ let to_lwt (p : 'a Promise.t) : 'a Lwt.t =
   let _ : unit Promise.t =
     Promise.then_
       ~on_error:(fun e ->
-        Lwt.wakeup_later_exn w (Rejected e);
+        Lwt.wakeup_later_exn
+          w
+          (match Promise.exn_of_error e with
+          | Some exn -> exn
+          | None -> Rejected e);
         Promise.resolve ())
       (fun x ->
         Lwt.wakeup_later w x;

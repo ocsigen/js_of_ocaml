@@ -89,7 +89,9 @@ function caml_format_exception(exn) {
 
 //Provides: caml_fatal_uncaught_exception
 //Requires: caml_named_value, caml_format_exception, caml_callback
+//Requires: caml_ocaml_error_exception
 function caml_fatal_uncaught_exception(err) {
+  err = caml_ocaml_error_exception(err) || err;
   if (Array.isArray(err) && (TAG(err) === 0 || TAG(err) === 248)) {
     var handler = caml_named_value("Printexc.handle_uncaught_exception");
     if (handler) caml_callback(handler, [err, false]);

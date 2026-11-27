@@ -1,0 +1,11 @@
+object | true | OCamlException | Dune__exe__Test_exn_boundary.Custom("raw callback", 7) | true
+object | true | OCamlException | Not_found | true
+object | true | OCamlException | Failure("boom") | true
+caught Custom ("round trip", 1)
+caught Not_found
+caught Custom ("nested", 2)
+object | true | TypeError | bad type | true
+caught Js_error.Exn: bad type
+error_of_exn: instanceof Error true, OCamlException: Dune__exe__Test_exn_boundary.Custom("rejected", 3)
+exn_of_error: Custom ("rejected", 3)
+exn_of_error on a string: None

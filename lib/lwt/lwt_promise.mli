@@ -22,13 +22,15 @@ open Js_of_ocaml
 
 exception Rejected of Promise.error
 (** Raised by the [Lwt.t] returned by {!to_lwt} when the underlying
-    [Promise] rejects. The rejection reason is wrapped unchanged — even
-    when it is an OCaml exception (e.g. produced via
-    {!Promise.error_of_exn}), use {!Promise.error_to_any} to inspect it. *)
+    [Promise] rejects with something else than an OCaml exception. The
+    rejection reason is wrapped unchanged; use {!Promise.error_to_any} to
+    inspect it. *)
 
 val to_lwt : 'a Promise.t -> 'a Lwt.t
 (** [to_lwt p] is an Lwt thread that fulfils with the value [p] resolves
-    with, or fails with {!Rejected} if [p] is rejected. *)
+    with. If [p] is rejected, it fails with the OCaml exception the
+    rejection reason carries (see {!Promise.exn_of_error}), and with
+    {!Rejected} otherwise. *)
 
 val of_lwt : 'a Lwt.t -> 'a Promise.t
 (** [of_lwt t] is a [Promise] that resolves with the value [t] returns,

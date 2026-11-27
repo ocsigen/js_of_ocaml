@@ -172,9 +172,50 @@ function caml_jsoo_build_config(_unit) {
   return caml_string_of_jsstring(BUILD_CONFIG());
 }
 
+//Provides: caml_ocaml_exception_key
+var caml_ocaml_exception_key = Symbol("OCaml exception");
+
+//Provides: caml_ocaml_error_exception
+//Requires: caml_ocaml_exception_key
+// The OCaml exception kept by an Error built by caml_exception_to_js
+function caml_ocaml_error_exception(e) {
+  return e instanceof globalThis.Error &&
+    Object.hasOwn(e, caml_ocaml_exception_key)
+    ? e[caml_ocaml_exception_key]
+    : undefined;
+}
+
+//Provides: caml_exception_to_js
+//Requires: caml_ocaml_exception_key, caml_format_exception, caml_named_value
+// The JavaScript value thrown when an OCaml exception escapes to
+// JavaScript: the JavaScript error for [Js_error.Exn], and otherwise an
+// Error (named "OCamlException") which keeps the exception, so that
+// caml_wrap_exception gets it back.
+function caml_exception_to_js(exn) {
+  if (!Array.isArray(exn) || (TAG(exn) !== 0 && TAG(exn) !== 248)) return exn;
+  if (TAG(exn) === 0 && exn[1] === caml_named_value("jsError")) return exn[2];
+  var err = new globalThis.Error(
+    caml_format_exception(exn),
+    exn.js_error ? { cause: exn.js_error } : undefined,
+  );
+  err.name = "OCamlException";
+  Object.defineProperty(err, caml_ocaml_exception_key, { value: exn });
+  return err;
+}
+
+//Provides: caml_exception_of_js_error
+//Requires: caml_ocaml_error_exception
+function caml_exception_of_js_error(e) {
+  var exn = caml_ocaml_error_exception(e);
+  return exn ? [0, exn] : 0;
+}
+
 //Provides: caml_wrap_exception const (mutable)
 //Requires: caml_global_data,caml_string_of_jsstring,caml_named_value
+//Requires: caml_ocaml_error_exception
 function caml_wrap_exception(e) {
+  var exn = caml_ocaml_error_exception(e);
+  if (exn) return exn;
   if (FLAG("excwrap")) {
     if (Array.isArray(e)) return e;
     var exn;
@@ -407,74 +448,106 @@ function caml_ojs_new_arr(c, a) {
   return new F();
 }
 //Provides: caml_js_wrap_callback const (const)
-//Requires: caml_callback
+//Requires: caml_callback, caml_exception_to_js
 function caml_js_wrap_callback(f) {
   return function (...args) {
     if (args.length === 0) {
       args = [undefined];
     }
-    var res = caml_callback(f, args);
+    try {
+      var res = caml_callback(f, args);
+    } catch (e) {
+      throw caml_exception_to_js(e);
+    }
     return res instanceof Function ? caml_js_wrap_callback(res) : res;
   };
 }
 
 //Provides: caml_js_wrap_callback_arguments
-//Requires: caml_callback
+//Requires: caml_callback, caml_exception_to_js
 function caml_js_wrap_callback_arguments(f) {
   return function (...args) {
-    return caml_callback(f, [args]);
+    try {
+      return caml_callback(f, [args]);
+    } catch (e) {
+      throw caml_exception_to_js(e);
+    }
   };
 }
 //Provides: caml_js_wrap_callback_strict const
-//Requires: caml_callback
+//Requires: caml_callback, caml_exception_to_js
 function caml_js_wrap_callback_strict(arity, f) {
   return function (...args) {
     args.length = arity;
-    return caml_callback(f, args);
+    try {
+      return caml_callback(f, args);
+    } catch (e) {
+      throw caml_exception_to_js(e);
+    }
   };
 }
 //Provides: caml_js_wrap_callback_unsafe const (const)
-//Requires: caml_callback, caml_js_function_arity
+//Requires: caml_callback, caml_exception_to_js, caml_js_function_arity
 function caml_js_wrap_callback_unsafe(f) {
   return function (...args) {
     var len = caml_js_function_arity(f);
     args.length = len;
-    return caml_callback(f, args);
+    try {
+      return caml_callback(f, args);
+    } catch (e) {
+      throw caml_exception_to_js(e);
+    }
   };
 }
 //Provides: caml_js_wrap_meth_callback const (const)
-//Requires: caml_callback, caml_js_wrap_callback
+//Requires: caml_callback, caml_exception_to_js, caml_js_wrap_callback
 function caml_js_wrap_meth_callback(f) {
   return function (...args) {
     args.unshift(this);
-    var res = caml_callback(f, args);
+    try {
+      var res = caml_callback(f, args);
+    } catch (e) {
+      throw caml_exception_to_js(e);
+    }
     return res instanceof Function ? caml_js_wrap_callback(res) : res;
   };
 }
 //Provides: caml_js_wrap_meth_callback_arguments const (const)
-//Requires: caml_callback
+//Requires: caml_callback, caml_exception_to_js
 function caml_js_wrap_meth_callback_arguments(f) {
   return function (...args) {
-    return caml_callback(f, [this, args]);
+    try {
+      return caml_callback(f, [this, args]);
+    } catch (e) {
+      throw caml_exception_to_js(e);
+    }
   };
 }
 //Provides: caml_js_wrap_meth_callback_strict const
-//Requires: caml_callback
+//Requires: caml_callback, caml_exception_to_js
 function caml_js_wrap_meth_callback_strict(arity, f) {
   return function (...args) {
     args.length = arity;
     args.unshift(this);
-    return caml_callback(f, args);
+    try {
+      return caml_callback(f, args);
+    } catch (e) {
+      throw caml_exception_to_js(e);
+    }
   };
 }
 //Provides: caml_js_wrap_meth_callback_unsafe const (const)
-//Requires: caml_callback, caml_js_function_arity
+//Requires: caml_callback, caml_exception_to_js, caml_js_function_arity
 function caml_js_wrap_meth_callback_unsafe(f) {
   return function (...args) {
     var len = caml_js_function_arity(f);
     args.unshift(this);
     args.length = len;
-    return caml_callback(f, args);
+    try {
+      return caml_callback(f, args);
+    } catch (e) {
+      throw caml_exception_to_js(e);
+    }
   };
 }
 

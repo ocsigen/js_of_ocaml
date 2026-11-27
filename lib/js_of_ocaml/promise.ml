@@ -195,7 +195,9 @@ let error_of_any (x : Js.Unsafe.any) : error = x
 
 let error_to_any (e : error) : Js.Unsafe.any = e
 
-let error_of_exn (e : exn) : error = Js.Unsafe.inject e
+external error_of_exn : exn -> error = "caml_exception_to_js"
+
+external exn_of_error : error -> exn option = "caml_exception_of_js_error"
 
 let to_any (p : 'a t) : Js.Unsafe.any = Js.Unsafe.coerce p
 

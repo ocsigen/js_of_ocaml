@@ -55,7 +55,15 @@ val error_of_any : Js.Unsafe.any -> error
 val error_to_any : error -> Js.Unsafe.any
 
 val error_of_exn : exn -> error
-(** Use an OCaml exception as a rejection reason. *)
+(** Use an OCaml exception as a rejection reason: a JavaScript [Error]
+    named ["OCamlException"], whose message is the exception printed by
+    the runtime, and which keeps the exception (see {!exn_of_error}). For
+    [Js_error.Exn e], this is the JavaScript error [e]. *)
+
+val exn_of_error : error -> exn option
+(** [exn_of_error (error_of_exn e)] is [Some e]. This also holds for an
+    OCaml exception that escaped from a callback ([Js.wrap_callback]...).
+    For other rejection reasons, this is [None]. *)
 
 (** {1 Building promises} *)
 

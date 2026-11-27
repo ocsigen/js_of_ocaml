@@ -36,6 +36,12 @@
       (func $instanceof (param externref) (param externref) (result i32)))
    (import "bindings" "is_js_error"
       (func $is_js_error (param externref) (result i32)))
+   (import "bindings" "ocaml_error"
+      (func $ocaml_error (param externref) (param (ref eq)) (result externref)))
+   (import "bindings" "ocaml_error_exception"
+      (func $ocaml_error_exception (param externref) (result (ref null eq))))
+   (import "printexc" "caml_format_exception"
+      (func $caml_format_exception (param (ref eq)) (result (ref eq))))
    (import "bindings" "to_js_string"
       (func $to_js_string (param externref) (result externref)))
    (import "bindings" "typeof" (func $typeof (param externref) (result externref)))
@@ -776,6 +782,12 @@
    (@string $toString "toString")
 
    (func (export "caml_wrap_exception") (param $vexn externref) (result (ref eq))
+      ;; An OCaml exception that went through JavaScript as an Error (see
+      ;; $exception_to_js): recover the original exception
+      (block $not_ocaml
+         (return
+            (br_on_null $not_ocaml
+               (call $ocaml_error_exception (local.get $vexn)))))
       ;; ZZZ special case for stack overflows?
       ;; Wrap in Js.Error only an actual JS Error, like the JS runtime; other
       ;; thrown values fall through to Failure below.
@@ -792,6 +804,46 @@
          (call $caml_failwith_tag)
          (call $caml_string_of_jsstring
             (call $value_of_js (call $to_js_string (local.get $vexn))))))
+
+   ;; The JavaScript value thrown when the OCaml exception [exn] escapes to
+   ;; JavaScript: the JavaScript error for [Js_error.Exn], and otherwise an
+   ;; Error (named "OCamlException") which keeps the exception, so that
+   ;; caml_wrap_exception gets it back.
+   (func $exception_to_js (export "caml_exception_to_js_value")
+      (param $exn (ref eq)) (result externref)
+      (local $b (ref $block))
+      (block $not_js_error
+         (br_if $not_js_error
+            (i32.eqz (ref.test (ref $block) (local.get $exn))))
+         (local.set $b (ref.cast (ref $block) (local.get $exn)))
+         (br_if $not_js_error
+            (i32.eqz
+               (ref.eq (array.get $block (local.get $b) (i32.const 0))
+                  (ref.i31 (i32.const 0)))))
+         (br_if $not_js_error
+            (i32.eqz
+               (ref.eq (array.get $block (local.get $b) (i32.const 1))
+                  (br_on_null $not_js_error
+                     (call $caml_named_value (global.get $jsError))))))
+         (return
+            (call $js_of_value (array.get $block (local.get $b) (i32.const 2)))))
+      (call $ocaml_error
+         (call $js_of_value
+            (call $caml_jsstring_of_bytes
+               (call $caml_format_exception (local.get $exn))))
+         (local.get $exn)))
+
+   (func (export "caml_exception_to_js") (param $exn (ref eq)) (result (ref eq))
+      (call $value_of_js (call $exception_to_js (local.get $exn))))
+
+   ;; Some exn if [v] is an Error built by $exception_to_js, None otherwise
+   (func (export "caml_exception_of_js_error") (param $v (ref eq)) (result (ref eq))
+      (block $none
+         (return
+            (array.new_fixed $block 2 (ref.i31 (i32.const 0))
+               (br_on_null $none
+                  (call $ocaml_error_exception (call $js_of_value (local.get $v)))))))
+      (ref.i31 (i32.const 0)))
 
    (func (export "caml_js_error_option_of_exception")
       (param $vexn (ref eq)) (result (ref eq))

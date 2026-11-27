@@ -358,15 +358,39 @@
   // %perform then raises Effect.Unhandled instead of trapping with an
   // unhandled suspend. The flag is restored in a finally block so that a
   // Wasm trap unwinding through this frame cannot leave it stale.
+  // Calls from JavaScript into OCaml (wrapped callbacks). An OCaml
+  // exception that escapes is thrown as an Error (see exception_to_js).
   function callback(f, count, args, kind) {
-    if (!native_effects) return caml_callback(f, count, args, kind);
-    const saved = effect_allowed.value;
-    effect_allowed.value = 0;
     try {
-      return caml_callback(f, count, args, kind);
-    } finally {
-      effect_allowed.value = saved;
+      if (!native_effects) return caml_callback(f, count, args, kind);
+      const saved = effect_allowed.value;
+      effect_allowed.value = 0;
+      try {
+        return caml_callback(f, count, args, kind);
+      } finally {
+        effect_allowed.value = saved;
+      }
+    } catch (e) {
+      throw exception_to_js(e);
     }
+  }
+
+  // An OCaml exception escaping to JavaScript is a WebAssembly.Exception,
+  // which JavaScript can neither print nor inspect. Throw an Error instead,
+  // which keeps the OCaml exception, so that it is recovered if it goes
+  // back to OCaml (caml_wrap_exception).
+  const ocaml_exception_key = Symbol("OCaml exception");
+  function exception_to_js(e) {
+    if (!(e instanceof WebAssembly.Exception) || !e.is(ocaml_exception_tag))
+      return e;
+    return caml_exception_to_js_value(e.getArg(ocaml_exception_tag, 0));
+  }
+  // The converse, for uncaught exceptions (caml_handle_uncaught_exception
+  // rethrows them where an OCaml exception is expected)
+  function exception_of_js(e) {
+    return e instanceof Error && Object.hasOwn(e, ocaml_exception_key)
+      ? new WebAssembly.Exception(ocaml_exception_tag, [e[ocaml_exception_key]])
+      : e;
   }
 
   // Exact decimal expansion through BigInt, for precisions beyond
@@ -433,6 +457,16 @@
     delete: (x, y) => delete x[y],
     instanceof: (x, y) => x instanceof y,
     is_js_error: (x) => x instanceof Error,
+    ocaml_error: (message, exn) => {
+      const e = new Error(message);
+      e.name = "OCamlException";
+      Object.defineProperty(e, ocaml_exception_key, { value: exn });
+      return e;
+    },
+    ocaml_error_exception: (e) =>
+      e instanceof Error && Object.hasOwn(e, ocaml_exception_key)
+        ? e[ocaml_exception_key]
+        : null,
     to_js_string: (x) => String(x),
     typeof: (x) => typeof x,
     // biome-ignore lint/suspicious/noDoubleEquals: ..
@@ -1101,6 +1135,8 @@
     caml_alloc_stat,
     caml_start_fiber,
     caml_handle_uncaught_exception,
+    caml_exception_to_js_value,
+    ocaml_exception: ocaml_exception_tag,
     caml_buffer,
     caml_buffer_size,
     caml_extract_bytes,
@@ -1111,12 +1147,14 @@
   var _initialize = make_promising(_initialize);
   if (node_process?.on) {
     node_process.on("uncaughtException", (err, _origin) =>
-      caml_handle_uncaught_exception(err),
+      caml_handle_uncaught_exception(exception_of_js(err)),
     );
   } else if (globalThis.addEventListener) {
     globalThis.addEventListener(
       "error",
-      (event) => event.error && caml_handle_uncaught_exception(event.error),
+      (event) =>
+        event.error &&
+        caml_handle_uncaught_exception(exception_of_js(event.error)),
     );
   }
   initializing = true;
