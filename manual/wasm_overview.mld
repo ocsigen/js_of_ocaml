@@ -74,7 +74,8 @@ supported in general. However:
 Compared to js_of_ocaml:
 - The default effect handler mode is [jspi] (instead of [disabled])
 - The [--effects] flag also accepts [jspi] and [native]
-- There is no [build-fs] subcommand; use the [--file] flag instead
+- There is no [build-fs] subcommand; use the [--file] flag, or a file
+  produced by [js_of_ocaml build-fs] (see {!section-"pseudo-fs"})
 
 {2 Effect handlers}
 
@@ -190,6 +191,10 @@ Files can also be provided at runtime:
 - [globalThis.jsoo_create_file(name, content)] creates a file from
   JavaScript, where [content] is a [Uint8Array], or a string with one
   character per byte.
+
+A file produced by [js_of_ocaml build-fs] can also be used: its files are
+added to the pseudo filesystem whether it is loaded before or after the
+program.
 
 {1 See also}
 

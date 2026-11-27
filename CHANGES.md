@@ -60,6 +60,10 @@
 * Runtime/Wasm: `globalThis.jsoo_create_file`, to create files from
   JavaScript while the program runs, as with the JavaScript runtime; the
   content can also be a `Uint8Array` (#2658)
+* Runtime/Wasm: files registered before the runtime is loaded (in
+  `globalThis.jsoo_fs_tmp`, for instance by the output of
+  `js_of_ocaml build-fs`) are added to the pseudo filesystem, as with the
+  JavaScript runtime (#2658)
 * Lib/Runtime: lazy files in the pseudo filesystem, with
   `Sys_js.create_lazy_file` and `globalThis.jsoo_create_file(name, {load, size})`:
   the file exists and is listed in its directory, but its content is only

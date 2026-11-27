@@ -155,7 +155,7 @@
 (executable
  (name fs_read)
  (modules fs_read)
- (modes byte)
+ (modes byte wasm)
  (libraries js_of_ocaml))
 
 (rule
@@ -183,3 +183,14 @@
  (alias runtest)
  (action
   (run node %{dep:fs_check.output.js})))
+
+; The same with wasm_of_ocaml: the files loaded before the program are
+; queued until the runtime is loaded.
+
+(rule
+ (alias runtest-wasm)
+ (enabled_if
+  (<> %{env:JSOO_TEST_ENGINE=node} wasi))
+ (deps fs.output.js fs_late.output.js fs_check.js)
+ (action
+  (run %{bin:node} %{dep:fs_check_wasm.js} %{dep:fs_read.bc.wasm.js})))

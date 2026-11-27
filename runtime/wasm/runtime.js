@@ -500,6 +500,12 @@
         )
       : register_file(name, file_content(content, base64));
 
+  // Files registered before the runtime was loaded, for instance by the
+  // output of [js_of_ocaml build-fs]
+  for (const { name, content, base64 } of globalThis.jsoo_fs_tmp ?? [])
+    globalThis.jsoo_create_file(name, content, base64);
+  globalThis.jsoo_fs_tmp = [];
+
   const fs_cst = fs?.constants;
 
   const access_flags = fs
