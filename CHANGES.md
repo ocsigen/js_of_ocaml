@@ -82,6 +82,8 @@
 ## Bug fixes
 
 ### Compiler
+* Compiler: fix parsing of an arrow function whose body is an async arrow
+  function with an unparenthesized parameter, such as `x => async y => y`
 * Compiler/Wasm: with separate compilation, code compiled at run time
   (toplevel, dynlink) can call all the primitives of the runtime, not only
   some of them (#2653)
