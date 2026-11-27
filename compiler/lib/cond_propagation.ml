@@ -164,23 +164,31 @@ let set_cont branch i cont =
       Switch (x, conts)
   | Return _ | Raise _ | Stop | Branch _ | Pushtrap _ | Poptrap _ -> assert false
 
-(* What we plan to do along an edge: bind [z] to the value [v] of [x], and
-   substitute it for [x] in the arguments of the edge ([in_args] occurrences)
-   and in the block the edge leads to ([target]). The binding goes at the end
-   of the block the edge starts from when the arguments are rewritten — it is
-   then in scope in the target block, which this block dominates — and at the
-   beginning of the target block otherwise, so that it stays in the branch. *)
+(* What we plan to do along an edge: bind a fresh variable to the value [v]
+   of [x], and substitute it for [x] in the arguments of the edge ([in_args]
+   occurrences) and in the block the edge leads to ([target], [in_target]
+   occurrences). The fresh variable is only created when a use is actually
+   substituted: there is a candidate edge for most conditionals, and few of
+   them are rewritten. The binding goes at the end of the block the edge
+   starts from when the arguments are rewritten — it is then in scope in the
+   target block, which this block dominates — and at the beginning of the
+   target block otherwise, so that it stays in the branch. *)
 type plan =
   { x : Var.t
   ; v : Targetint.t
-  ; z : Var.t
   ; edge : (Addr.t * int) option
   ; in_args : int
   ; target : Addr.t option
+  ; in_target : int
   }
 
 let count_in_args x args =
   List.fold_left ~f:(fun n y -> if Var.equal x y then n + 1 else n) ~init:0 args
+
+let count_in_block x block =
+  let n = ref 0 in
+  iter_value_uses (fun y -> if Var.equal x y then incr n) block;
+  !n
 
 let f p =
   let t = Timer.make () in
@@ -191,16 +199,22 @@ let f p =
         List.fold_left
           ~f:(fun plans (i, x, v, (pc', args)) ->
             let in_args = count_in_args x args in
-            let target = if reached_once info pc' then Some pc' else None in
+            let target, in_target =
+              if reached_once info pc'
+              then
+                let in_target = count_in_block x (Addr.Map.find pc' p.blocks) in
+                if in_target > 0 then Some pc', in_target else None, 0
+              else None, 0
+            in
             if in_args = 0 && Option.is_none target
             then plans
             else
               { x
               ; v
-              ; z = Var.fork x
               ; edge = (if in_args > 0 then Some (pc, i) else None)
               ; in_args
               ; target
+              ; in_target
               }
               :: plans)
           ~init:plans
@@ -223,24 +237,30 @@ let f p =
           block)
       p.blocks;
     let rewritten = Var.Hashtbl.create 128 in
-    List.iter plans ~f:(fun { x; in_args; target; _ } ->
-        add_var_count rewritten x in_args;
-        Option.iter target ~f:(fun pc ->
-            iter_value_uses
-              (fun y -> if Var.equal x y then incr_var rewritten x)
-              (Addr.Map.find pc p.blocks)));
+    List.iter plans ~f:(fun { x; in_args; in_target; _ } ->
+        add_var_count rewritten x (in_args + in_target));
     let n = ref 0 in
     let blocks =
       List.fold_left
-        ~f:(fun blocks { x; v; z; edge; target; in_args = _ } ->
+        ~f:(fun blocks { x; v; edge; target; in_args = _; in_target = _ } ->
           if var_count rewritten x <> var_count uses x
           then blocks
           else
+            let z = ref None in
+            let get_z () =
+              match !z with
+              | Some z -> z
+              | None ->
+                  let z' = Var.fork x in
+                  z := Some z';
+                  z'
+            in
             let blocks =
               match edge with
               | None -> blocks
               | Some (pc, i) ->
                   incr n;
+                  let z = get_z () in
                   let block = Addr.Map.find pc blocks in
                   let pc', args = cont_of_branch block.branch i in
                   let args = List.map args ~f:(fun y -> if Var.equal x y then z else y) in
@@ -263,7 +283,7 @@ let f p =
                       if Var.equal x y
                       then (
                         used := true;
-                        z)
+                        get_z ())
                       else y)
                     block
                 in
@@ -275,6 +295,7 @@ let f p =
                     if Option.is_some edge
                     then block.body
                     else
+                      let z = get_z () in
                       (* After a leading [Event], which other passes expect to
                          find at the very beginning of a block *)
                       match block.body with
