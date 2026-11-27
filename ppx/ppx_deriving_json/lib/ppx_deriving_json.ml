@@ -819,7 +819,18 @@ let type_decl_str ~loc:_ ~path:_ (_, l) =
         | None -> lrv )
     and acc = [], [], [], [], [] in
     List.fold_right ~f l ~init:acc
-  and f = Ast_helper.Str.value Asttypes.Recursive
+  in
+  (* The functions are recursive only when the type is: silence the
+     unused rec flag warning for the other types. *)
+  let allow_unused_rec ({ pvb_loc = loc; _ } as vb) =
+    let attr =
+      Attr.mk
+        { txt = "ocaml.warning"; loc }
+        (PStr [ Str.eval (Exp.constant (Const.string "-39")) ])
+    in
+    { vb with pvb_attributes = attr :: vb.pvb_attributes }
+  in
+  let f l = Ast_helper.Str.value Asttypes.Recursive (List.map ~f:allow_unused_rec l)
   and f' = Ast_helper.Str.value Asttypes.Nonrecursive in
   let l = [ f (lrv @ lr); f lw; f' lj ] in
   match lp with
