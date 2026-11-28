@@ -57,11 +57,11 @@ let rec odd n' = function
        b.caml_register_global
         ([0,
           (a, b)=>{
-           for(;;){
-            if(0 === b) return [0, a, 0];
+           while(0 !== b){
             if(1 === b) return [0, a, 1];
             [a, b] = [(b - 1 | 0) - 1 | 0, (a - 1 | 0) - 1 | 0];
-           }}],
+           }
+           return [0, a, 0];}],
          "Test");
        return;})
      (globalThis);
@@ -77,13 +77,13 @@ let rec odd n' = function
        b.caml_register_global
         ([0,
           function(a, b){
-           for(;;){
-            if(0 === b) return [0, a, 0];
+           while(0 !== b){
             if(1 === b) return [0, a, 1];
             var c = (a - 1 | 0) - 1 | 0;
             a = (b - 1 | 0) - 1 | 0;
             b = c;
            }
+           return [0, a, 0];
           }],
          "Test");
        return;

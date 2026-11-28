@@ -277,7 +277,8 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
     //end
     function loop3$0(param){
      var l = caml_call1(list_rev, _c_), x = l;
-     for(;;){if(! x) return l; var r = x[2]; x = r;}
+     while(x){var r = x[2]; x = r;}
+     return l;
     }
     //end
     function loop3$1(param, cont){

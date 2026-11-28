@@ -41,14 +41,12 @@ let rec fun_with_loop acc = function
     {|
     function fun_with_loop(acc$1, _a_){
      var acc = acc$1;
-     for(;;){
-      if(! _a_)
-       return caml_call1
-               (list_rev, caml_call1(list_rev, caml_call1(list_rev, acc)));
+     while(_a_){
       var xs = _a_[2], x = _a_[1], acc$0 = [0, x, acc];
       acc = acc$0;
       _a_ = xs;
      }
+     return caml_call1(list_rev, caml_call1(list_rev, caml_call1(list_rev, acc)));
     }
     //end
     |}]
@@ -435,11 +433,7 @@ let add_substitute =
     {|
     function add_substitute(b, f, s){
      var lim$1 = caml_ml_string_length(s), previous = 32, i$4 = 0;
-     for(;;){
-      if(i$4 >= lim$1){
-       var _b_ = 92 === previous ? 1 : 0;
-       return _b_ && caml_call2(add_char, b, previous);
-      }
+     while(i$4 < lim$1){
       var previous$0 = caml_string_get(s, i$4);
       if(36 === previous$0)
        if(92 === previous){
@@ -463,7 +457,7 @@ let add_substitute =
            b:
            {
             if(lim$0 > i$2){
-             _b_ = caml_string_get(s, i$2);
+             var _b_ = caml_string_get(s, i$2);
              if(91 <= _b_){
               if(97 <= _b_){
                if(123 <= _b_){var stop$0 = i$2; break b;}
@@ -540,6 +534,8 @@ let add_substitute =
        i$4 = i$8;
       }
      }
+     _b_ = 92 === previous ? 1 : 0;
+     return _b_ && caml_call2(add_char, b, previous);
     }
     //end
     |}]
@@ -582,8 +578,7 @@ let () = print_endline (trim " ")
       s$0 = copy(caml_bytes_of_string(x)),
       len = caml_ml_bytes_length(s$0),
       i = 0;
-     for(;;){
-      if(i >= len) break;
+     while(i < len){
       if(! is_space(caml_bytes_unsafe_get(s$0, i))) break;
       var i$0 = i + 1 | 0;
       i = i$0;

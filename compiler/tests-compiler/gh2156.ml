@@ -29,13 +29,8 @@ let rec f n x y = if n = 0 then (x, y) else f (n - 1) y x
     {|
     function f(n$1, x$0, y$0){
      var n = n$1, x = x$0, y = y$0;
-     for(;;){
-      if(0 === n) return [0, x, y];
-      var n$0 = n - 1 | 0, _a_ = y;
-      n = n$0;
-      y = x;
-      x = _a_;
-     }
+     while(0 !== n){var n$0 = n - 1 | 0, _a_ = y; n = n$0; y = x; x = _a_;}
+     return [0, x, y];
     }
     //end
     |}]

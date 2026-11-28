@@ -39,13 +39,13 @@ let rec f x y z =
        b.caml_register_global
         ([0,
           function(a, b, c){
-           for(;;){
-            if(0 === a && 0 === b && 0 === c) return 1;
+           while(0 !== a || 0 !== b || 0 !== c){
             var d = (c + a | 0) + b | 0;
             a = a + c | 0;
             b = b - c | 0;
             c = d;
            }
+           return 1;
           }],
          "Test");
        return;

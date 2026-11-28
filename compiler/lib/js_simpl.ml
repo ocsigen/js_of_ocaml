@@ -333,3 +333,108 @@ let function_body b =
     in
     List.rev (remove [] b)
   else b
+
+(* Whether some [break] or [continue] in [l] targets the enclosing loop, of
+   label [label]. We do not look inside expressions: a jump cannot cross a
+   function boundary. *)
+let loop_jumps ~label l =
+  let break = ref false in
+  let continue = ref false in
+  let is_label l' =
+    match label with
+    | Some l -> J.Label.equal l l'
+    | None -> false
+  in
+  let rec stmts ~in_breakable ~in_loop l =
+    List.iter l ~f:(fun (s, _) -> stmt ~in_breakable ~in_loop s)
+  and stmt ~in_breakable ~in_loop (s : J.statement) =
+    match s with
+    | Break_statement None -> if not in_breakable then break := true
+    | Break_statement (Some l) -> if is_label l then break := true
+    | Continue_statement None -> if not in_loop then continue := true
+    | Continue_statement (Some l) -> if is_label l then continue := true
+    | Block l -> stmts ~in_breakable ~in_loop l
+    | If_statement (_, (s1, _), s2) -> (
+        stmt ~in_breakable ~in_loop s1;
+        match s2 with
+        | Some (s2, _) -> stmt ~in_breakable ~in_loop s2
+        | None -> ())
+    | Do_while_statement ((s, _), _)
+    | While_statement (_, (s, _))
+    | For_statement (_, _, _, (s, _))
+    | ForIn_statement (_, _, (s, _))
+    | ForOf_statement (_, _, (s, _))
+    | ForAwaitOf_statement (_, _, (s, _)) -> stmt ~in_breakable:true ~in_loop:true s
+    | With_statement (_, (s, _)) | Labelled_statement (_, (s, _)) ->
+        stmt ~in_breakable ~in_loop s
+    | Switch_statement (_, l1, d, l2) ->
+        let case (_, l) = stmts ~in_breakable:true ~in_loop l in
+        List.iter l1 ~f:case;
+        Option.iter d ~f:(fun l -> stmts ~in_breakable:true ~in_loop l);
+        List.iter l2 ~f:case
+    | Try_statement (b, h, f) ->
+        stmts ~in_breakable ~in_loop b;
+        Option.iter h ~f:(fun (_, b) -> stmts ~in_breakable ~in_loop b);
+        Option.iter f ~f:(fun b -> stmts ~in_breakable ~in_loop b)
+    | Variable_statement _
+    | Function_declaration _
+    | Class_declaration _
+    | Empty_statement
+    | Expression_statement _
+    | Return_statement _
+    | Throw_statement _
+    | Debugger_statement
+    | Import _
+    | Export _ -> ()
+  in
+  stmts ~in_breakable:false ~in_loop:false l;
+  !break, !continue
+
+let rec never_falls_through (s : J.statement) =
+  match s with
+  | Return_statement _ | Throw_statement _ -> true
+  | Block l -> (
+      match List.rev l with
+      | (s, _) :: _ -> never_falls_through s
+      | [] -> false)
+  | _ -> false
+
+(* Declarations scoped to the loop body. The exit test may refer to them, so
+   it cannot be moved out of the body. *)
+let has_scoped_declaration l =
+  List.exists l ~f:(fun ((s : J.statement), _) ->
+      match s with
+      | Variable_statement ((Let | Const | Using | AwaitUsing), _)
+      | Function_declaration _ | Class_declaration _ -> true
+      | _ -> false)
+
+let loop ~label body loc =
+  let cond, body, after =
+    if has_scoped_declaration body
+    then None, body, []
+    else
+      match body with
+      | (J.If_statement (c, (Break_statement None, _), None), _) :: rem ->
+          Some (enot c), rem, []
+      | (If_statement (c, (Break_statement (Some l), _), None), _) :: rem
+        when Option.equal J.Label.equal label (Some l) -> Some (enot c), rem, []
+      | (If_statement (c, ((s, _) as exit), None), _) :: rem
+        when never_falls_through s
+             &&
+             let exit = unblock exit in
+             let break, continue = loop_jumps ~label exit in
+             (not break)
+             && (not continue)
+             && (not (has_scoped_declaration exit))
+             && not (fst (loop_jumps ~label rem)) ->
+          (* The loop can only be left through [exit], which can thus be moved
+             after it. *)
+          Some (enot c), rem, unblock exit
+      | _ -> None, body, []
+  in
+  let loop =
+    match cond with
+    | None -> J.For_statement (Left None, None, None, block body)
+    | Some c -> J.While_statement (c, block body)
+  in
+  (loop, loc), after

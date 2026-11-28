@@ -168,12 +168,12 @@ let rec grow (iters : int) (n : t) : t =
     {|
     function grow(iters$1, n$1){
      var iters = iters$1, n = n$1;
-     for(;;){
-      if(0 > iters) return n;
+     while(0 <= iters){
       var n$0 = step(n), iters$0 = iters - 1 | 0;
       iters = iters$0;
       n = n$0;
      }
+     return n;
     }
     //end
     |}]
