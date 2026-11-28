@@ -1110,7 +1110,15 @@
         r.dev.get_dir(r.parts, "chdir", p);
         mem_cwd = join_path(split_path(p));
       } else {
-        globalThis.process.chdir(p);
+        // Leaving a device for the directory the process is already in
+        // does not need process.chdir, which is not available in a
+        // worker thread.
+        const parts = split_path(p);
+        if (
+          !parts ||
+          join_path(parts) !== join_path(split_path(globalThis.process.cwd()))
+        )
+          globalThis.process.chdir(p);
         mem_cwd = null;
       }
     },

@@ -520,6 +520,30 @@ let%expect_test "relative paths" =
     false
     |}]
 
+(* In a node worker thread, [process.chdir] fails. One can still enter an
+   in-memory directory and come back. *)
+let%expect_test "chdir without process.chdir" =
+  let process = Js.Unsafe.get Js.Unsafe.global (Js.string "process") in
+  let chdir = Js.Unsafe.get process (Js.string "chdir") in
+  Js.Unsafe.set
+    process
+    (Js.string "chdir")
+    (Js.wrap_callback (fun _ -> Js.Unsafe.eval_string "throw new Error('no chdir')"));
+  let cwd = Sys.getcwd () in
+  Sys.chdir "/static";
+  Printf.printf "%b\n" (Sys.getcwd () = cwd);
+  Sys.chdir cwd;
+  Printf.printf "%b\n" (Sys.getcwd () = cwd);
+  Sys.chdir "/static";
+  Sys.chdir (Filename.concat cwd ".");
+  Printf.printf "%b\n" (Sys.getcwd () = cwd);
+  Js.Unsafe.set process (Js.string "chdir") chdir;
+  [%expect {|
+    false
+    true
+    true
+    |}]
+
 (* The in-memory file system of the JavaScript runtime does not implement
    [Unix.stat], and creates the missing parent directories when opening a
    file. *)
