@@ -65,26 +65,31 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
       if(exn[1] !== Stdlib[7]) throw caml_maybe_attach_backtrace(exn, 0);
       n = 0;
      }
-     try{
-      if(caml_string_equal(s, cst))
-       throw caml_maybe_attach_backtrace(Stdlib[8], 1);
-      var m = 7;
-     }
-     catch(exn){
-      var exn$0 = caml_wrap_exception(exn);
+     a:
+     {
+      b:
+      try{
+       if(caml_string_equal(s, cst)){
+        var exn$0 = caml_maybe_attach_backtrace(Stdlib[8], 1);
+        break b;
+       }
+       var m = 7;
+       break a;
+      }
+      catch(exn){exn$0 = caml_wrap_exception(exn);}
       if(exn$0 !== Stdlib[8]) throw caml_maybe_attach_backtrace(exn$0, 0);
       m = 0;
      }
+     a:
      try{
-      if(caml_string_equal(s, cst))
-       throw caml_maybe_attach_backtrace(Stdlib[8], 1);
-      return [0, [0, caml_call1(Stdlib[79], cst_toto), n, m]];
+      if(! caml_string_equal(s, cst))
+       return [0, [0, caml_call1(Stdlib[79], cst_toto), n, m]];
+      var exn$1 = caml_maybe_attach_backtrace(Stdlib[8], 1);
+      break a;
      }
-     catch(exn){
-      var exn$1 = caml_wrap_exception(exn);
-      if(exn$1 === Stdlib[8]) return 0;
-      throw caml_maybe_attach_backtrace(exn$1, 0);
-     }
+     catch(exn){exn$1 = caml_wrap_exception(exn);}
+     if(exn$1 === Stdlib[8]) return 0;
+     throw caml_maybe_attach_backtrace(exn$1, 0);
     }
     //end
     function exceptions$1(s, cont){
@@ -97,13 +102,18 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
       }
       n = 0;
      }
-     try{
-      if(caml_string_equal(s, cst))
-       throw caml_maybe_attach_backtrace(Stdlib[8], 1);
-      var m = 7;
-     }
-     catch(exn$0){
-      var exn$1 = caml_wrap_exception(exn$0);
+     a:
+     {
+      b:
+      try{
+       if(caml_string_equal(s, cst)){
+        var exn$1 = caml_maybe_attach_backtrace(Stdlib[8], 1);
+        break b;
+       }
+       var m = 7;
+       break a;
+      }
+      catch(exn){exn$1 = caml_wrap_exception(exn);}
       if(exn$1 !== Stdlib[8]){
        _c_ = caml_pop_trap();
        var exn = caml_maybe_attach_backtrace(exn$1, 0);

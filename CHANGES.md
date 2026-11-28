@@ -22,6 +22,8 @@
 * Compiler: call known functions stored in blocks (module fields, records
   of closures) as `M[i](x)` rather than `M[i].call(null, x)`, which
   prevented V8 from inlining them (#2613)
+* Compiler/JS: functions called under an exception handler signal exceptions
+  by returning a sentinel value rather than throwing (#2582)
 
 ### Effects
 * Compiler/Wasm: support `--effects=double-translation` (#2443)

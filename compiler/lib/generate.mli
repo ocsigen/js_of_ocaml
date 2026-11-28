@@ -24,6 +24,7 @@ val f :
   -> live_vars:Deadcode.variable_uses
   -> trampolined_calls:Effects.trampolined_calls
   -> in_cps:Effects.in_cps
+  -> raising:Raising_calls.t
   -> should_export:bool
   -> warn_on_unhandled_effect:bool
   -> deadcode_sentinel:Code.Var.t

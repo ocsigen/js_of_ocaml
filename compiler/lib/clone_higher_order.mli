@@ -16,7 +16,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-val f : Code.program -> Code.program
+val f : ?cold:(Code.Var.t -> bool) -> Code.program -> Code.program
 (** Duplicate higher-order functions for each combination of known
     closures passed as the parameters they call, and redirect the
     corresponding call sites to the copies. *)
