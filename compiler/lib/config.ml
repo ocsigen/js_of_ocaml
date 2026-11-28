@@ -103,6 +103,8 @@ module Flag = struct
 
   let inline_callgen = o ~name:"callgen" ~default:false
 
+  let for_loops = o ~name:"for-loops" ~default:true
+
   let safe_string = o ~name:"safestring" ~default:true
 
   let introspection = o ~name:"introspection" ~default:introspect

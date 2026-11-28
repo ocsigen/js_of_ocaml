@@ -285,6 +285,7 @@ let generate
     ~should_export
     ~warn_on_unhandled_effect
     ~deadcode_sentinel
+  |> fun p -> if Config.Flag.for_loops () then For_loops.f p else p
 
 let debug_linker = Debug.find "linker"
 

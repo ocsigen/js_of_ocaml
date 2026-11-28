@@ -2323,6 +2323,22 @@ class simpl =
           when Code.Var.equal x y && Code.Var.Tbl.get declared x -> Empty_statement
         | Variable_statement (Var, [ DeclIdent (V x, None) ])
           when Code.Var.Tbl.get declared x -> Empty_statement
+        | For_statement (Right (Var, l), c, u, b)
+          when List.exists l ~f:(fun (d : variable_declaration) ->
+                   match d with
+                   | DeclIdent (V x, Some (EVar (V y), _)) ->
+                       Code.Var.equal x y && Code.Var.Tbl.get declared x
+                   | _ -> false) -> (
+            (* Remove the declarations [x = x] *)
+            match
+              List.filter l ~f:(fun (d : variable_declaration) ->
+                  match d with
+                  | DeclIdent (V x, Some (EVar (V y), _)) ->
+                      not (Code.Var.equal x y && Code.Var.Tbl.get declared x)
+                  | _ -> true)
+            with
+            | [] -> For_statement (Left None, c, u, b)
+            | l -> For_statement (Right (Var, l), c, u, b))
         | Expression_statement (EBin (Eq, EVar (V x), EVar (V y))) when Code.Var.equal x y
           -> Empty_statement
         | Variable_statement (Var, [ DeclIdent (V x, Some (expr, _)) ])

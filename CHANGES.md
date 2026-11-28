@@ -56,6 +56,7 @@
 * Compiler/JS: use an exit test at the start of a loop as the condition of
   the loop (`while(c){...}` rather than `for(;;){if(!c) break; ...}`)
   (#2667)
+* Compiler/JS: emit counting loops as `for(var i = lo; i <= hi; i++){...}`
 * Runtime/Wasm: compute `mod_float` in Wasm rather than calling JavaScript (#2629)
 * Runtime/Wasm: parse short decimal floats without calling JavaScript (#2631)
 * Runtime/Wasm: faster decimal formatting of integers (#2631)

@@ -74,6 +74,8 @@ module Flag : sig
 
   val inline_callgen : unit -> bool
 
+  val for_loops : unit -> bool
+
   val safe_string : unit -> bool
 
   val introspection : unit -> bool

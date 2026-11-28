@@ -128,10 +128,7 @@ let%expect_test "for loop" =
   [%expect
     {|
     function for_loop(f, n){
-     if(n >= 0){
-      var i = 0;
-      for(;;){caml_call1(f, i); if(n === i) break; i = i + 1 | 0;}
-     }
+     for(var i = 0; i <= n; i++) caml_call1(f, i);
      return 0;
     }
     //end
@@ -237,17 +234,12 @@ let%expect_test "in a try body" =
     function mutable_in_try(c, f, n){
      var r = [0, 0];
      try{
-      if(n >= 0){
-       var i = 0;
-       for(;;){
-        var y = r[1] + 1 | 0;
-        r[1] = r[1] + i | 0;
-        y = c ? y : 0;
-        caml_call1(f, y);
-        caml_call1(f, y);
-        if(n === i) break;
-        i = i + 1 | 0;
-       }
+      for(var i = 0; i <= n; i++){
+       var y = r[1] + 1 | 0;
+       r[1] = r[1] + i | 0;
+       y = c ? y : 0;
+       caml_call1(f, y);
+       caml_call1(f, y);
       }
      }
      catch(exn){

@@ -51,3 +51,11 @@ val loop :
     into [while(!c){...} return e;]. [label] is the label of the loop, if
     any. Returns the loop (without its label) and the statements that should
     follow it. *)
+
+val loop_jumps :
+  label:Javascript.Label.t option -> (statement * location) list -> bool * bool
+(** Whether some [break] (resp. [continue]) in the given loop body targets
+    the loop, of label [label]. *)
+
+val has_scoped_declaration : (statement * location) list -> bool
+(** Whether a block contains declarations which are local to it. *)
