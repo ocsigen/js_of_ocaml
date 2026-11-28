@@ -71,6 +71,8 @@ let f (p : program) =
   let backward_edges = Array.make nv [] in
   let not_bool_only = BitSet.create' nv in
   let worklist = Queue.create () in
+  (* The [Not] instructions, as pairs (result, argument) *)
+  let negations = ref [] in
   (* Build backward edges from continuation args to block params *)
   let add_cont_edges (pc, args) =
     let block = Addr.Map.find pc p.blocks in
@@ -83,9 +85,9 @@ let f (p : program) =
     (* Classify instruction uses *)
     List.iter block.body ~f:(fun instr ->
         match instr with
-        | Let (_, Prim (Not, [ Pv _ ])) ->
+        | Let (x, Prim (Not, [ Pv y ])) ->
             (* Bool context: both 1 - v and !v work for JS booleans *)
-            ()
+            negations := (x, y) :: !negations
         | Let (_, Prim (Extern (name, _), [ Pv _ ]))
           when String.equal name "caml_js_from_bool" ->
             (* Bool context: !!v works for JS booleans *)
@@ -142,14 +144,8 @@ let f (p : program) =
   propagate not_bool_only;
   (* The argument of a [Not] compiled to [1 - v] is not only tested *)
   let not_test_only = BitSet.copy not_bool_only in
-  Addr.Map.iter
-    (fun _ block ->
-      List.iter block.body ~f:(fun instr ->
-          match instr with
-          | Let (x, Prim (Not, [ Pv y ])) when BitSet.mem not_bool_only (Var.idx x) ->
-              mark_var not_test_only worklist y
-          | _ -> ()))
-    p.blocks;
+  List.iter !negations ~f:(fun (x, y) ->
+      if BitSet.mem not_bool_only (Var.idx x) then mark_var not_test_only worklist y);
   propagate not_test_only;
   if times () then Format.eprintf "  bool-analysis: %a@." Timer.print t;
   { not_bool_only; not_test_only }
