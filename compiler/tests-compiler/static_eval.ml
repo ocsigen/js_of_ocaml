@@ -145,8 +145,7 @@ let%expect_test "static eval of string get" =
       prec$1 = [0, key, data, next],
       prec = prec$1,
       _a_ = next;
-     for(;;){
-      if(! _a_) return prec$1;
+     while(_a_){
       var
        key$0 = _a_[1],
        data$0 = _a_[2],
@@ -156,6 +155,7 @@ let%expect_test "static eval of string get" =
       prec = prec$0;
       _a_ = next$0;
      }
+     return prec$1;
     }
     //end
     |}]

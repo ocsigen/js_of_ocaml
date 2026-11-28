@@ -38,3 +38,16 @@ val block : (Javascript.statement * location) list -> Javascript.statement * loc
 val unblock : Javascript.statement * location -> (Javascript.statement * location) list
 
 val function_body : (statement * location) list -> (statement * location) list
+
+val loop :
+     label:Javascript.Label.t option
+  -> (statement * location) list
+  -> location
+  -> (statement * location) * (statement * location) list
+(** [loop ~label body loc] is an infinite loop of body [body]. When the body
+    starts with an exit test, it becomes the condition of the loop:
+    [for(;;){if(c) break; ...}] is turned into [while(!c){...}] and, when
+    the loop has no other exit, [for(;;){if(c) return e; ...}] is turned
+    into [while(!c){...} return e;]. [label] is the label of the loop, if
+    any. Returns the loop (without its label) and the statements that should
+    follow it. *)

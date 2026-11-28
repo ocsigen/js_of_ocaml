@@ -32,19 +32,15 @@ let read_line buf =
     function read_line(buf){
      var start = buf[1];
      try{
-      for(;;){
-       if(caml_string_get(buf[2], buf[1]) === 10){
-        var
-         l =
-           0 < buf[1] && caml_string_get(buf[2], buf[1] - 1 | 0) === 13
-            ? (buf[1] - start | 0) - 1 | 0
-            : buf[1] - start | 0,
-         s = caml_call3(string_sub, buf[2], start, l);
-        buf[1] = buf[1] + 1 | 0;
-        return s;
-       }
-       buf[1] = buf[1] + 1 | 0;
-      }
+      while(caml_string_get(buf[2], buf[1]) !== 10) buf[1] = buf[1] + 1 | 0;
+      var
+       l =
+         0 < buf[1] && caml_string_get(buf[2], buf[1] - 1 | 0) === 13
+          ? (buf[1] - start | 0) - 1 | 0
+          : buf[1] - start | 0,
+       s = caml_call3(string_sub, buf[2], start, l);
+      buf[1] = buf[1] + 1 | 0;
+      return s;
      }
      catch(exn){
       var len = runtime.caml_ml_string_length(buf[2]);

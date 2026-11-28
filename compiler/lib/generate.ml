@@ -2355,16 +2355,14 @@ and compile_block st loc (queue : Q.queue) (pc : Addr.t) scope_stack ~fall_throu
             compile_block_no_loop st loc queue pc scope_stack ~fall_through:(Block pc)
           in
           if debug () then Format.eprintf "}@]@,";
-          let for_loop =
-            J.For_statement (J.Left None, None, None, Js_simpl.block body), loc
-          in
           let label = if !lab_used then Some lab else None in
+          let for_loop, after = Js_simpl.loop ~label body loc in
           let for_loop =
             match label with
             | None -> for_loop
             | Some label -> J.Labelled_statement (label, for_loop), J.N
           in
-          (not !exit_branch_used) && never_body, [ for_loop ]
+          (not !exit_branch_used) && never_body, for_loop :: after
         in
         never_body, body
 

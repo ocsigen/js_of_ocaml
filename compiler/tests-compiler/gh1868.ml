@@ -45,11 +45,8 @@ let wrap f =
      try{return caml_call1(f, 0);}
      catch(exn$1){
       var exn = caml_wrap_exception(exn$1);
-      for(;;){
-       if(exn[1] !== Nested) throw caml_maybe_attach_backtrace(exn, 1);
-       var exn$0 = exn[2];
-       exn = exn$0;
-      }
+      while(exn[1] === Nested){var exn$0 = exn[2]; exn = exn$0;}
+      throw caml_maybe_attach_backtrace(exn, 1);
      }
     }
     //end

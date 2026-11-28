@@ -50,6 +50,8 @@
 * Compiler/Wasm: Binaryen is now optional; without `wasm-opt`, the generated
   code is not optimized and a `missing-wasm-opt` warning is emitted (#2571)
 * Compiler/Wasm: pass the arguments and result of `Float.fma` unboxed (#2632)
+* Compiler/JS: use an exit test at the start of a loop as the condition of
+  the loop (`while(c){...}` rather than `for(;;){if(!c) break; ...}`)
 * Runtime/Wasm: compute `mod_float` in Wasm rather than calling JavaScript (#2629)
 * Runtime/Wasm: parse short decimal floats without calling JavaScript (#2631)
 * Runtime/Wasm: faster decimal formatting of integers (#2631)
