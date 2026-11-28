@@ -185,6 +185,7 @@ Use [--enable <opt>] or [--disable <opt>] to control these flags:
  | [globaldeadcode] | true | Global dead code elimination |
  | [inline] | true | Function inlining |
  | [staticeval] | true | Static evaluation of constants |
+ | [cond-propagation] | true | Propagate the value of the variable tested by a conditional into its branches |
  | [share] | true | Share string and number constants |
  | [optcall] | true | JavaScript call optimizations |
  | [constant-sinking] | true | Move constant declarations closer to usage sites |

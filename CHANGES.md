@@ -25,6 +25,8 @@
 * Compiler: evaluate a pure expression in the branch of a conditional or
   switch that uses it, rather than before the conditional. In particular,
   the increment of a `for` loop counter no longer needs a temporary (#2534)
+* Compiler: propagate the value of the variable tested by a conditional into
+  the branch where it is known (#2545)
 
 ### Effects
 * Compiler/Wasm: support `--effects=double-translation` (#2443)
