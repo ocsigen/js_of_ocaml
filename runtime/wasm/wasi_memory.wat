@@ -23,6 +23,8 @@
    (import "libc" "free" (func $free (param i32)))
    (import "io" "IO_BUFFER_SIZE" (global $IO_BUFFER_SIZE i32))
    (import "fail" "caml_raise_out_of_memory" (func $caml_raise_out_of_memory))
+   (import "string" "caml_check_string_length"
+      (func $caml_check_string_length (param i32)))
 
    (type $bytes (array (mut i8)))
 
@@ -74,6 +76,7 @@
       (param $buf i32) (param $len i32) (result (ref $bytes))
       (local $s (ref $bytes))
       (local $i i32)
+      (call $caml_check_string_length (local.get $len))
       (local.set $s (array.new $bytes (i32.const 0) (local.get $len)))
       (loop $loop
          (if (i32.lt_u (local.get $i) (local.get $len))

@@ -39,6 +39,19 @@ let test_custom_len_size_64 () =
     assert (ba'.{i} = i + 1)
   done
 
+(* The length of a string is an OCaml integer, which the compiler relies
+   on: a string of 2^30 bytes or more must be rejected. We craft a header
+   followed by a [CODE_STRING32] with length 0x40000000 and no contents. *)
+let test_long_string () =
+  let bad =
+    Bytes.of_string
+      "\x84\x95\xA6\xBE\x00\x00\x00\x05\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x0A\x40\x00\x00\x00"
+  in
+  match Marshal.from_bytes bad 0 with
+  | (_ : string) -> assert false
+  | exception Failure _ -> ()
+
 let () =
   test_bad_length ();
-  test_custom_len_size_64 ()
+  test_custom_len_size_64 ();
+  test_long_string ()

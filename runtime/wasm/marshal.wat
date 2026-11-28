@@ -17,6 +17,8 @@
 
 (module
    (import "fail" "caml_failwith" (func $caml_failwith (param (ref eq))))
+   (import "string" "caml_check_string_length"
+      (func $caml_check_string_length (param i32)))
    (import "fail" "ocaml_exception" (tag $ocaml_exception (param (ref eq))))
    (import "fail" "javascript_exception"
       (tag $javascript_exception (param externref)))
@@ -691,12 +693,19 @@
            (call $register_object (local.get $s) (local.get $v))
            (br $done))
           ;; read_string
+          ;; The length of a string is an OCaml integer; the compiler
+          ;; relies on it
+          (if (i32.gt_u (local.get $len) (i32.const 0x3fffffff))
+             (then (call $fail_too_large (global.get $input_value))))
           (local.set $str (array.new $bytes (i32.const 0) (local.get $len)))
           (call $readblock (local.get $s) (local.get $str))
           (local.set $v (local.get $str))
           (call $register_object (local.get $s) (local.get $v))
           (br $done))
          ;; read_block
+         ;; The size comes from a 32-bit header, so it is less than 2^22:
+         ;; no need to check it against the maximal array length (see
+         ;; array.wat), unlike the length of a float array ($readfloats)
          (local.set $b
             (array.new $block (ref.i31 (i32.const 0))
                (i32.add (local.get $size) (i32.const 1))))
@@ -1900,6 +1909,8 @@
       (drop)
       (local.set $r_1)
       (local.set $r_0)
+      (call $caml_check_string_length
+         (i32.add (local.get $r_0) (i32.const 20)))
       (local.set $res
          (array.new $bytes (i32.const 0)
             (i32.add (local.get $r_0) (i32.const 20))))

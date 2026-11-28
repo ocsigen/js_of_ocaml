@@ -112,6 +112,70 @@
   (flags :standard --opt 2)))
 
 (tests
+ (names int_range)
+ (modes js wasm)
+ ; The range analysis relies on the global flow analysis, which is more
+ ; precise at --opt 2 and with whole-program compilation
+ (wasm_of_ocaml
+  (compilation_mode whole_program)
+  (flags :standard --opt 2)))
+
+(tests
+ (names bound_checks)
+ (modes js wasm)
+ ; The range analysis relies on the global flow analysis, which is more
+ ; precise at --opt 2 and with whole-program compilation
+ (wasm_of_ocaml
+  (compilation_mode whole_program)
+  (flags :standard --opt 2)))
+
+(tests
+ (names bound_checks_iarray)
+ ; The sums overflow 31-bit integers
+ (modes wasm)
+ ; Immutable arrays are available from OCaml 5.4
+ (enabled_if
+  (>= %{ocaml_version} 5.4))
+ (wasm_of_ocaml
+  (compilation_mode whole_program)
+  (flags :standard --opt 2)))
+
+; The same tests with the CPS transformation of effect handlers, which
+; changes the calls the range analysis looks through
+
+(rule
+ (copy int_range.ml int_range_cps.ml))
+
+(rule
+ (copy int_range.ml int_range_double_translation.ml))
+
+(rule
+ (copy bound_checks.ml bound_checks_cps.ml))
+
+(rule
+ (copy bound_checks.expected bound_checks_cps.expected))
+
+(rule
+ (copy bound_checks.ml bound_checks_double_translation.ml))
+
+(rule
+ (copy bound_checks.expected bound_checks_double_translation.expected))
+
+(tests
+ (names int_range_cps bound_checks_cps)
+ (modes wasm)
+ (wasm_of_ocaml
+  (compilation_mode whole_program)
+  (flags :standard --opt 2 --effects=cps)))
+
+(tests
+ (names int_range_double_translation bound_checks_double_translation)
+ (modes wasm)
+ (wasm_of_ocaml
+  (compilation_mode whole_program)
+  (flags :standard --opt 2 --effects=double-translation)))
+
+(tests
  (names string_interning)
  (modes wasm))
 
@@ -168,6 +232,12 @@
 
 (cram
  (applies_to open_recursion)
+ ; The bytecode only carries the type checker's hints from OCaml 5.6
+ (enabled_if
+  (>= %{ocaml_version} 5.6)))
+
+(cram
+ (applies_to bound_checks_hints)
  ; The bytecode only carries the type checker's hints from OCaml 5.6
  (enabled_if
   (>= %{ocaml_version} 5.6)))

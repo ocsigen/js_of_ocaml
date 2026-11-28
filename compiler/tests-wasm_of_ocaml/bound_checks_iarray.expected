@@ -1,0 +1,8 @@
+sum of constants: -1073741819 true -536870909
+sum of constants as index: Invalid_argument index out of bounds
+element or zero: -1073741824 true
+element as index: Invalid_argument index out of bounds
+block or shorter constant: Invalid_argument index out of bounds
+block or constant: 1
+rows of a block or of a constant: Invalid_argument index out of bounds
+constant table: 6

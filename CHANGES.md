@@ -55,6 +55,8 @@
 * Runtime/Wasm: faster decimal formatting of integers (#2631)
 * Runtime/Wasm: format integers in base 8 and 16 with shifts rather than
   divisions (#2640)
+* Compiler/wasm: integer range analysis (from `--opt 2`), to skip normalizing
+  integers and remove bound checks when it is safe (#2478)
 
 ### Runtime
 * Runtime: fast path for immediates in polymorphic comparisons (#2567)

@@ -873,6 +873,29 @@ let called_version info ~call g =
     ~call
     g
 
+let call_results state info ~call f ~nargs =
+  match get_approx info f with
+  | Top | Values { others = true; _ } -> None
+  | Values { known; others = false } ->
+      Var.Set.fold
+        (fun g acc ->
+          match acc with
+          | None -> None
+          | Some l -> (
+              let g, cont = called_version info ~call g in
+              match state.defs.(Var.idx g) with
+              | Expr (Closure (params, _, _))
+                when (not cont) && List.compare_length_with params ~len:nargs = 0 ->
+                  Some ((g, params, Var.Map.find g state.return_values) :: l)
+              | Expr (Closure _) ->
+                  (* The result is passed to a continuation, or the function
+                     is partially applied or over applied *)
+                  None
+              | Expr (Block _) -> acc
+              | Expr _ | Phi _ -> None))
+        known
+        (Some [])
+
 let get_unique_closure info ~call f =
   match get_approx info f with
   | Top | Values { others = true; _ } -> None
